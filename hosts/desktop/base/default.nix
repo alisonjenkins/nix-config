@@ -5,11 +5,6 @@
     plymouth = {
       enable = true;
       theme = "breeze";
-      themePackages = [
-        (pkgs.breeze-plymouth.override {
-          nixosBranding = true;
-        })
-      ];
     };
     kernelParams = [ "quiet" ];
   };
