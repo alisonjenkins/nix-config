@@ -1,7 +1,11 @@
 { config, lib, pkgs, ... }:
 {
-  boot.plymouth.enable = true;
-  boot.initrd.systemd.enable = true;
+  boot = {
+    initrd.systemd.enable = true;
+    plymouth.enable = true;
+    kernelParams = [ "quiet" ];
+  };
+
   environment.systemPackages = with pkgs; [
     git
     neovim
