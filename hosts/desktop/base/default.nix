@@ -9,6 +9,11 @@
     kernelParams = [ "quiet" ];
   };
 
+  services.xserver.displayManager.sddm = {
+    enable = true;
+    theme = "breeze";
+  };
+
   environment.systemPackages = with pkgs; [
     fd
     git
