@@ -5,7 +5,7 @@
     plymouth = {
       enable = true;
       theme = "breeze";
-      themePackages = mkDefault [
+      themePackages = [
         (pkgs.breeze-plymouth.override {
           nixosBranding = true;
           nixosVersion = config.system.nixosRelease;
