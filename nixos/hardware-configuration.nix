@@ -14,10 +14,6 @@
   boot.extraModulePackages = [ ];
 
   boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
     initrd = {
       availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
       kernelModules = [ "dm-snapshot" ];
