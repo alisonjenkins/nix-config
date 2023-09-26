@@ -29,7 +29,7 @@
   fileSystems."/" =
     {
       device = "/dev/mapper/nixvg-root";
-      fsType = "btrfs";
+      fsType = "xfs";
     };
 
   fileSystems."/boot" =
