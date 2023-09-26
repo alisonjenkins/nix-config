@@ -10,7 +10,7 @@
   ];
 
   wayland.windowManager.hyprland = {
-    enable = true;
+    enable = false;
     systemdIntegration = false;
     extraConfig = ''
       $mainMod = SUPER
