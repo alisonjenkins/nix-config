@@ -13,187 +13,187 @@
     enable = true;
     systemdIntegration = true;
     extraConfig = ''
+      $mainMod = SUPER
 
-    # Monitor
-    monitor=,preferred,auto,1,bitdepth,10
+      # Monitor
+      monitor=,preferred,auto,1,bitdepth,10
 
 
-    # Fix slow startup
-    exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
-    exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+      # Fix slow startup
+      exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+      exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 
-    # Autostart
+      # Autostart
 
-    exec-once = hyprctl setcursor Bibata-Modern-Classic 24
-    exec-once = dunst
+      exec-once = hyprctl setcursor Bibata-Modern-Classic 24
+      exec-once = dunst
 
-    source = /home/ali/.config/hypr/colors
-    exec = pkill waybar & sleep 0.5 && waybar
-    exec-once = swww init
-    # exec = swww img /home/ali/Pictures/wallpapers/wallpaper.jpg
+      source = /home/ali/.config/hypr/colors
+      exec = pkill waybar & sleep 0.5 && waybar
+      exec-once = swww init
+      # exec = swww img /home/ali/Pictures/wallpapers/wallpaper.jpg
 
-    # Input config
-    input {
-        kb_layout = us
-        kb_variant =
-        kb_model =
-        kb_options =
-        kb_rules =
+      # Input config
+      input {
+          kb_layout = us
+          kb_variant =
+          kb_model =
+          kb_options =
+          kb_rules =
 
-        follow_mouse = 1
+          follow_mouse = 1
 
-        touchpad {
-            natural_scroll = false
-        }
+          touchpad {
+              natural_scroll = false
+          }
 
-        sensitivity = 0
-    }
+          sensitivity = 0
+      }
 
-    general {
-        gaps_in = 5
-        gaps_out = 10
-        border_size = 2
-        col.active_border = rgba(33ccffee) rgba(00ff99ee) 45deg
-        col.inactive_border = rgba(595959aa)
+      general {
+          gaps_in = 5
+          gaps_out = 10
+          border_size = 2
+          col.active_border = rgba(33ccffee) rgba(00ff99ee) 45deg
+          col.inactive_border = rgba(595959aa)
 
-        layout = dwindle
-    }
+          layout = dwindle
+      }
 
-    decoration {
-        rounding = 5
+      decoration {
+          rounding = 5
 
-        blur {
-            enabled = true
-            size = 7
-            passes = 4
-            new_optimizations = true
-        }
+          blur {
+              enabled = true
+              size = 7
+              passes = 4
+              new_optimizations = true
+          }
 
-        blurls = lockscreen
+          blurls = lockscreen
 
-        drop_shadow = yes
-        shadow_range = 4
-        shadow_render_power = 3
-        col.shadow = rgba(1a1a1aee)
-    }
+          drop_shadow = yes
+          shadow_range = 4
+          shadow_render_power = 3
+          col.shadow = rgba(1a1a1aee)
+      }
 
-    animations {
-        enabled = yes
+      animations {
+          enabled = yes
 
-        bezier = myBezier, 0.10, 0.9, 0.1, 1.05
+          bezier = myBezier, 0.10, 0.9, 0.1, 1.05
 
-        animation = windows, 1, 7, myBezier, slide
-        animation = windowsOut, 1, 7, myBezier, slide
-        animation = border, 1, 10, default
-        animation = fade, 1, 7, default
-        animation = workspaces, 1, 6, default
-    }
+          animation = windows, 1, 7, myBezier, slide
+          animation = windowsOut, 1, 7, myBezier, slide
+          animation = border, 1, 10, default
+          animation = fade, 1, 7, default
+          animation = workspaces, 1, 6, default
+      }
 
-    dwindle {
-        pseudotile = yes
-        preserve_split = yes
-    }
+      dwindle {
+          pseudotile = yes
+          preserve_split = yes
+      }
 
-    master {
-        new_is_master = yes
-    }
+      master {
+          new_is_master = yes
+      }
 
-    gestures {
-        workspace_swipe = false
-    }
+      gestures {
+          workspace_swipe = false
+      }
 
-    windowrulev2 = opacity 1 0.8,title:^(.*)$
+      windowrulev2 = opacity 1 0.8,title:^(.*)$
 
-    windowrule = float, title:^(btop)$
-    windowrule = float, title:^(update-sys)$
-    windowrule = float,^(blueman-manager)$
-    windowrule = float,^(chromium)$
-    windowrule = float,^(nm-connection-editor)$
-    windowrule = float,^(pavucontrol)$
-    windowrule = float,^(thunar)$
+      windowrule = float, title:^(btop)$
+      windowrule = float, title:^(update-sys)$
+      windowrule = float,^(blueman-manager)$
+      windowrule = float,^(chromium)$
+      windowrule = float,^(nm-connection-editor)$
+      windowrule = float,^(pavucontrol)$
+      windowrule = float,^(thunar)$
 
-    bind = $mainMod, G, fullscreen,
+      bind = $mainMod, G, fullscreen,
 
-    windowrule = float,^(zoom)$
+      windowrule = float,^(zoom)$
 
-    windowrulev2 = animation popin,class:^(chromium)$
-    windowrulev2 = animation popin,class:^(kitty)$,title:^(update-sys)$
-    windowrulev2 = animation popin,class:^(thunar)$
-    windowrulev2 = move cursor -3% -105%,class:^(wofi)$
-    windowrulev2 = noanim,class:^(wofi)$
-    # windowrulev2 = nofocus,class:^(steam)$
-    windowrulev2 = opacity 0.8 0.6,class:^(wofi)$
-    windowrulev2 = opacity 0.8 0.8,class:^(VSCodium)$
-    windowrulev2 = opacity 0.8 0.8,class:^(kitty)$
-    windowrulev2 = opacity 0.8 0.8,class:^(thunar)$
-    windowrulev2 = workspace 1,class:^(discord)$
-    windowrulev2 = workspace 1,class:^(zoom)$
-    windowrulev2 = workspace 2,class:^(Alacritty)$
-    windowrulev2 = workspace 3,class:^(firefox)$
-    # windowrulev2 = workspace 4,class:^(steam)$
+      windowrulev2 = animation popin,class:^(chromium)$
+      windowrulev2 = animation popin,class:^(kitty)$,title:^(update-sys)$
+      windowrulev2 = animation popin,class:^(thunar)$
+      windowrulev2 = move cursor -3% -105%,class:^(wofi)$
+      windowrulev2 = noanim,class:^(wofi)$
+      # windowrulev2 = nofocus,class:^(steam)$
+      windowrulev2 = opacity 0.8 0.6,class:^(wofi)$
+      windowrulev2 = opacity 0.8 0.8,class:^(VSCodium)$
+      windowrulev2 = opacity 0.8 0.8,class:^(kitty)$
+      windowrulev2 = opacity 0.8 0.8,class:^(thunar)$
+      windowrulev2 = workspace 1,class:^(discord)$
+      windowrulev2 = workspace 1,class:^(zoom)$
+      windowrulev2 = workspace 2,class:^(Alacritty)$
+      windowrulev2 = workspace 3,class:^(firefox)$
+      # windowrulev2 = workspace 4,class:^(steam)$
 
-    # See https://wiki.hyprland.org/Configuring/Keywords/ for more
-    $mainMod = SUPER
+      # See https://wiki.hyprland.org/Configuring/Keywords/ for more
 
-    # Example binds, see https://wiki.hyprland.org/Configuring/Binds/ for more
-    # bind = ,mouse:275,pass,^(Discord)$
+      # Example binds, see https://wiki.hyprland.org/Configuring/Binds/ for more
+      # bind = ,mouse:275,pass,^(Discord)$
 
-    bind = $mainMod, A, exec, audacity
-    bind = $mainMod, C, killactive,
-    bind = $mainMod, E, exec, thunar # Show the graphical file browser
-    bind = $mainMod, J, togglesplit, # dwindle
-    bind = $mainMod, M, exec, wlogout --protocol layer-shell # show the logout window
-    bind = $mainMod, P, pseudo, # dwindle
-    bind = $mainMod, Q, exec, alacritty
-    bind = $mainMod, R, exec, wofi --show drun
-    bind = $mainMod, S, exec, grim -g "$(slurp)" - | wl-copy # take a screenshot
-    bind = $mainMod, V, togglefloating,
-    bind = $mainMod, f, fullscreen,
+      bind = $mainMod, A, exec, audacity
+      bind = $mainMod, C, killactive,
+      bind = $mainMod, E, exec, thunar # Show the graphical file browser
+      bind = $mainMod, J, togglesplit, # dwindle
+      bind = $mainMod, M, exec, wlogout --protocol layer-shell # show the logout window
+      bind = $mainMod, P, pseudo, # dwindle
+      bind = $mainMod, Q, exec, alacritty
+      bind = $mainMod, R, exec, wofi --show drun
+      bind = $mainMod, S, exec, grim -g "$(slurp)" - | wl-copy # take a screenshot
+      bind = $mainMod, V, togglefloating,
+      bind = $mainMod, f, fullscreen,
 
-    # Move focus with mainMod + arrow keys
-    bind = $mainMod, h, movefocus, l
-    bind = $mainMod, l, movefocus, r
-    bind = $mainMod, j, movefocus, u
-    bind = $mainMod, k, movefocus, d
+      # Move focus with mainMod + arrow keys
+      bind = $mainMod, h, movefocus, l
+      bind = $mainMod, l, movefocus, r
+      bind = $mainMod, j, movefocus, u
+      bind = $mainMod, k, movefocus, d
 
-    # Switch workspaces with mainMod + [0-9]
-    bind = $mainMod, 1, workspace, 1
-    bind = $mainMod, 2, workspace, 2
-    bind = $mainMod, 3, workspace, 3
-    bind = $mainMod, 4, workspace, 4
-    bind = $mainMod, 5, workspace, 5
-    bind = $mainMod, 6, workspace, 6
-    bind = $mainMod, 7, workspace, 7
-    bind = $mainMod, 8, workspace, 8
-    bind = $mainMod, 9, workspace, 9
-    bind = $mainMod, 0, workspace, 10
+      # Switch workspaces with mainMod + [0-9]
+      bind = $mainMod, 1, workspace, 1
+      bind = $mainMod, 2, workspace, 2
+      bind = $mainMod, 3, workspace, 3
+      bind = $mainMod, 4, workspace, 4
+      bind = $mainMod, 5, workspace, 5
+      bind = $mainMod, 6, workspace, 6
+      bind = $mainMod, 7, workspace, 7
+      bind = $mainMod, 8, workspace, 8
+      bind = $mainMod, 9, workspace, 9
+      bind = $mainMod, 0, workspace, 10
 
-    # Move active window to a workspace with mainMod + SHIFT + [0-9]
-    bind = $mainMod SHIFT, 1, movetoworkspace, 1
-    bind = $mainMod SHIFT, 2, movetoworkspace, 2
-    bind = $mainMod SHIFT, 3, movetoworkspace, 3
-    bind = $mainMod SHIFT, 4, movetoworkspace, 4
-    bind = $mainMod SHIFT, 5, movetoworkspace, 5
-    bind = $mainMod SHIFT, 6, movetoworkspace, 6
-    bind = $mainMod SHIFT, 7, movetoworkspace, 7
-    bind = $mainMod SHIFT, 8, movetoworkspace, 8
-    bind = $mainMod SHIFT, 9, movetoworkspace, 9
-    bind = $mainMod SHIFT, 0, movetoworkspace, 10
+      # Move active window to a workspace with mainMod + SHIFT + [0-9]
+      bind = $mainMod SHIFT, 1, movetoworkspace, 1
+      bind = $mainMod SHIFT, 2, movetoworkspace, 2
+      bind = $mainMod SHIFT, 3, movetoworkspace, 3
+      bind = $mainMod SHIFT, 4, movetoworkspace, 4
+      bind = $mainMod SHIFT, 5, movetoworkspace, 5
+      bind = $mainMod SHIFT, 6, movetoworkspace, 6
+      bind = $mainMod SHIFT, 7, movetoworkspace, 7
+      bind = $mainMod SHIFT, 8, movetoworkspace, 8
+      bind = $mainMod SHIFT, 9, movetoworkspace, 9
+      bind = $mainMod SHIFT, 0, movetoworkspace, 10
 
-    # Scroll through existing workspaces with mainMod + scroll
-    bind = $mainMod, mouse_down, workspace, e+1
-    bind = $mainMod, mouse_up, workspace, e-1
+      # Scroll through existing workspaces with mainMod + scroll
+      bind = $mainMod, mouse_down, workspace, e+1
+      bind = $mainMod, mouse_up, workspace, e-1
 
-    # Move/resize windows with mainMod + LMB/RMB and dragging
-    bindm = $mainMod, mouse:272, movewindow
-    bindm = $mainMod, mouse:273, resizewindow
+      # Move/resize windows with mainMod + LMB/RMB and dragging
+      bindm = $mainMod, mouse:272, movewindow
+      bindm = $mainMod, mouse:273, resizewindow
 
-    source = ~/.config/hypr/media-binds.conf
-    source = ~/.config/hypr/env_var.conf
-    source = ~/.config/hypr/submaps/submaps.conf
+      source = ~/.config/hypr/media-binds.conf
+      source = ~/.config/hypr/env_var.conf
+      source = ~/.config/hypr/submaps/submaps.conf
 
-    bind = $mainMod, g, submap, games
-        '';
+      bind = $mainMod, g, submap, games
+    '';
   };
 
   home.file.".config/hypr/colors".text = ''
