@@ -4,7 +4,13 @@
     initrd.systemd.enable = true;
     plymouth = {
       enable = true;
-      themePackages = [ pkgs.plymouthThemes.solar ];
+      theme = "breeze";
+      themePackages = mkDefault [
+        (pkgs.breeze-plymouth.override {
+          nixosBranding = true;
+          nixosVersion = config.system.nixosRelease;
+        })
+      ];
     };
     kernelParams = [ "quiet" ];
   };
