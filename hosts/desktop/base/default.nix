@@ -13,6 +13,7 @@
     fd
     git
     neovim
+    nnn
     ripgrep
     tmux
   ];
