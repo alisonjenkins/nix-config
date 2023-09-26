@@ -2,7 +2,10 @@
 {
   boot = {
     initrd.systemd.enable = true;
-    plymouth.enable = true;
+    plymouth = {
+      enable = true;
+      themePackages = [ pkgs.plymouthThemes.solar ];
+    };
     kernelParams = [ "quiet" ];
   };
 
