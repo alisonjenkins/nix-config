@@ -10,6 +10,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    fd
     git
     neovim
     ripgrep
