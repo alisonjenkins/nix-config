@@ -8,7 +8,6 @@
       themePackages = [
         (pkgs.breeze-plymouth.override {
           nixosBranding = true;
-          nixosVersion = config.system.nixosRelease;
         })
       ];
     };
