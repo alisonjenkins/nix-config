@@ -9,16 +9,6 @@
     kernelParams = [ "quiet" ];
   };
 
-  services.xserver = {
-    displayManager = {
-      autoLogin.enable = false;
-      sddm = {
-        enable = true;
-        theme = "breeze";
-      };
-    };
-  };
-
   environment.systemPackages = with pkgs; [
     fd
     git
