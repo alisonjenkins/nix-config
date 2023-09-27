@@ -11,6 +11,7 @@
 
   environment.systemPackages = with pkgs; [
     fd
+    fzf
     git
     htop
     neovim
