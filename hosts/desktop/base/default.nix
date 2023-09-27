@@ -11,6 +11,7 @@
 
   environment.systemPackages = with pkgs; [
     bat
+    cargo
     fd
     fzf
     git
@@ -18,7 +19,7 @@
     neovim
     nnn
     ripgrep
-    rust
+    rustc
     tmux
     zsh
   ];
