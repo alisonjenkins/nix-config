@@ -22,7 +22,7 @@
     curl
     discord
     dunst
-    eza
+    exa
     git
     gnumake
     grim
