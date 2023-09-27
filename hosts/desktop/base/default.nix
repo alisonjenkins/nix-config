@@ -18,6 +18,7 @@
     neovim
     nnn
     ripgrep
+    rust
     tmux
     zsh
   ];
