@@ -16,6 +16,9 @@
     fzf
     git
     htop
+    kbfs
+    keybase
+    keybase-gui
     neovim
     nnn
     ripgrep
@@ -23,4 +26,13 @@
     tmux
     zsh
   ];
+
+  services = {
+    kbfs = {
+      enable = true;
+    };
+    keybase = {
+      enable = true;
+    };
+  };
 }
