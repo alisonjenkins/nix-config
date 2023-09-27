@@ -17,5 +17,6 @@
     nnn
     ripgrep
     tmux
+    zsh
   ];
 }
