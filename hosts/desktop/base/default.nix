@@ -22,6 +22,7 @@
   environment.systemPackages = with pkgs; [
     fd
     git
+    htop
     neovim
     nnn
     ripgrep
