@@ -10,6 +10,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    bat
     fd
     fzf
     git
