@@ -27,6 +27,7 @@
           specialArgs = { inherit hyprland; };
           modules = [
             ./nixos/configuration.nix
+            ./hosts/desktop/wms/plasma5
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
             {
