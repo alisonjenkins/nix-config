@@ -13,10 +13,6 @@
   outputs = { self, nixpkgs, home-manager, hyprland, ... }:
 
     let
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
       lib = nixpkgs.lib;
     in
     {
