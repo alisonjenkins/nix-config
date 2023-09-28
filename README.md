@@ -38,7 +38,7 @@ Desktop Environment:
 │  │   └── cava
 │  ├── wallpapers
 │  └── home.nix
-├── profiles
+├── app-profiles
 │  └── desktop
 │      ├── fonts
 │      ├── base
