@@ -29,6 +29,7 @@
   fileSystems."/" = {
     device = "/dev/mapper/nixvg-root";
     fsType = "ext4";
+    options = [ "defaults" "noatime" "discard" "fast_commit" ];
   };
 
   fileSystems."/boot" = {
