@@ -26,7 +26,7 @@
           inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
-            ./nixos/configuration.nix
+            ./hosts/ali-desktop/configuration.nix
             ./profiles/desktop/display-managers/greetd
             ./profiles/desktop/wms/plasma5
             hyprland.nixosModules.default
