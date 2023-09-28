@@ -10,35 +10,35 @@
       (modulesPath + "/profiles/qemu-guest.nix")
     ];
 
-  boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
-
   boot = {
+    kernelModules = [ "kvm-amd" ];
+    extraModulePackages = [ ];
+
     initrd = {
       availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
       kernelModules = [ "dm-snapshot" ];
       luks.devices.luksroot =
         {
-          device = "/dev/disk/by-uuid/b3df406e-ffd4-4e0a-8a2e-2832155d947e";
+          device = "/dev/disk/by-uuid/ffd03485-6e3d-41ec-abc1-d773fc667e73";
           preLVM = true;
           allowDiscards = true;
         };
     };
   };
 
-  fileSystems."/" =
-    {
-      device = "/dev/mapper/nixvg-root";
-      fsType = "xfs";
-    };
+  fileSystems."/" = {
+    device = "/dev/mapper/nixvg-root";
+    fsType = "xfs";
+  };
 
-  fileSystems."/boot" =
-    {
-      device = "/dev/disk/by-uuid/3410-4CDC";
-      fsType = "vfat";
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/3410-4CDC";
+    fsType = "vfat";
+  };
 
-  swapDevices = [ ];
+  swapDevices = [
+    { device = "/dev/mapper/nixvg-swap"; }
+  ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
