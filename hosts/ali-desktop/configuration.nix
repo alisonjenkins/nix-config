@@ -95,8 +95,15 @@
     ];
   };
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs = {
+    config.allowUnfree = true;
+
+    localSystem = {
+      gcc.arch = "znver4";
+      gcc.tune = "znver4";
+      system = "x86_64-linux";
+    };
+  };
 
   nix.gc = {
     automatic = true;
