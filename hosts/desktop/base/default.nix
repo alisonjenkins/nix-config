@@ -24,8 +24,26 @@
     ripgrep
     rustc
     tmux
+    vulkan-tools
     zsh
   ];
+
+  hardware = {
+    bluetooth = {
+      enable = true;
+      settings = {
+        General = {
+          Enable = "Source,Sink,Media,Socket";
+        };
+      };
+    };
+
+    opengl = {
+      driSupport = true;
+      driSupport32Bit = true;
+      enable = true;
+    };
+  };
 
   services = {
     kbfs = {
