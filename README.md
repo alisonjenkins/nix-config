@@ -38,13 +38,20 @@ Desktop Environment:
 │  │   └── cava
 │  ├── wallpapers
 │  └── home.nix
-├── host
+├── profiles
 │  └── desktop
-│      └── fonts
+│      ├── fonts
+│      ├── base
+│      ├── display-managers
+│      ├── fonts
+│      ├── media
+│      ├── virtualisation
+│      ├── wms
 │      └── virtualisation
-├── nixos
-│  ├── configuration.nix
-│  └── hardware-configuration.nix
+├── hosts
+│  └── ali-desktop
+│    ├── configuration.nix
+│    └── hardware-configuration.nix
 ├── flake.nix
 └── install-ali-desktop.sh
 ```
@@ -66,5 +73,5 @@ or
 
 ```bash
 $ cd nix-config
-$ sudo nixos-rebuild switch --flake .#ali
+$ sudo nixos-rebuild switch --flake .#host
 ```
