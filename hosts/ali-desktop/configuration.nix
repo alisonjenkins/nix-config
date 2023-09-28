@@ -97,11 +97,6 @@
 
   nixpkgs = {
     config.allowUnfree = true;
-
-    localSystem = {
-      gcc.arch = "znver4";
-      gcc.tune = "znver4";
-    };
   };
 
   nix.gc = {
