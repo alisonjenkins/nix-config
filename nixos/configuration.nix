@@ -4,7 +4,7 @@
   imports =
     [
       ./hardware-configuration.nix
-      ../hosts/desktop
+      ../profiles/desktop
     ];
 
   boot.kernelPackages = pkgs.linuxPackages_xanmod_stable;
