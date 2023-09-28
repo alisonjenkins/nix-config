@@ -28,7 +28,7 @@
 
   fileSystems."/" = {
     device = "/dev/mapper/nixvg-root";
-    fsType = "xfs";
+    fsType = "ext4";
   };
 
   fileSystems."/boot" = {
