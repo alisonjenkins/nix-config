@@ -18,7 +18,6 @@
     {
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
-          inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
             ./hosts/ali-desktop/configuration.nix
