@@ -39,6 +39,24 @@
             }
           ];
         };
+
+        ali-laptop = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = { inherit hyprland; };
+          modules = [
+            ./hosts/ali-laptop/configuration.nix
+            ./profiles/desktop/display-managers/greetd
+            ./profiles/desktop/wms/plasma5
+            hyprland.nixosModules.default
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.ali = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs;
+            }
+          ];
+        };
       };
     };
 }
