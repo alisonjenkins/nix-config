@@ -20,7 +20,7 @@
       kernelModules = [ "dm-snapshot" ];
       luks.devices.luksroot =
         {
-          device = "/dev/disk/by-uuid/ba6f8ba7-2220-4507-a4e9-aff50cb0dbf5";
+          device = "/dev/disk/by-label/vg";
           preLVM = true;
           allowDiscards = true;
         };
@@ -35,7 +35,7 @@
 
   fileSystems."/boot" =
     {
-      device = "/dev/disk/by-uuid/385F-014B";
+      device = "/dev/disk/by-label/esp";
       fsType = "vfat";
     };
 
