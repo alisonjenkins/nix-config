@@ -11,7 +11,7 @@
     };
   };
 
-  programs.greetd.tuigreet = {
-    enable = true;
-  };
+  environment.systemPackages = with pkgs; [
+    greetd.tuigreet
+  ];
 }
