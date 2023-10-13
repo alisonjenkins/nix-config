@@ -5,7 +5,7 @@
       enable = true;
       settings = {
         default_session = {
-          command = "${pkgs.greetd.tuigreet}/bin/tuigreet";
+          command = "${pkgs.greetd.tuigreet}/bin/tuigreet --remember --remember-user-session";
         };
       };
     };
