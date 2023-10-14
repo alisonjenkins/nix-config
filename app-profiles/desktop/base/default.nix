@@ -23,6 +23,7 @@
     nnn
     ripgrep
     rustc
+    starship
     tmux
     vulkan-tools
     zsh
