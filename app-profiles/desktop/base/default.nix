@@ -26,6 +26,7 @@
     starship
     tmux
     vulkan-tools
+    zoom
     zsh
   ];
 
