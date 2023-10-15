@@ -66,6 +66,8 @@
     driSupport32Bit = true;
   };
 
+  programs.zsh.enable = true;
+
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
@@ -93,17 +95,20 @@
     NIXPKGS_ALLOW_UNFREE = "1";
   };
 
-  users.users.ali = {
-    isNormalUser = true;
-    description = "Alison Jenkins";
-    initialPassword = "initPw!";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
-    packages = with pkgs; [
-      firefox
-      (opera.override { proprietaryCodecs = true; })
-      neofetch
-      lolcat
-    ];
+  users = {
+    defaultUserShell = pkgs.zsh;
+    users.ali = {
+      isNormalUser = true;
+      description = "Alison Jenkins";
+      initialPassword = "initPw!";
+      extraGroups = [ "networkmanager" "wheel" "docker" ];
+      packages = with pkgs; [
+        firefox
+          (opera.override { proprietaryCodecs = true; })
+          neofetch
+          lolcat
+      ];
+    };
   };
 
   # Allow unfree packages

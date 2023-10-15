@@ -5,6 +5,7 @@
     enable = true;
     newSession = true;
     prefix = "C-a";
+    defaultShell = "${pkgs.zsh}/bin/zsh";
     plugins = with pkgs; [
       tmuxPlugins.cpu
       tmuxPlugins.pain-control
