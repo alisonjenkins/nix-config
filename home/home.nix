@@ -20,6 +20,7 @@
     catimg
     cava
     curl
+    direnv
     discord
     dunst
     exa
@@ -28,6 +29,7 @@
     grim
     lollypop
     lutris
+    mcfly
     mpc-cli
     neovide
     neovim
@@ -37,13 +39,16 @@
     pavucontrol
     qpwgraph
     rofi
-    slurp
     rtx
+    rtx
+    slurp
+    starship
     tty-clock
     wget
     wl-clipboard
     wlr-randr
     xflux
+    zoxide
   ]) ++ (with pkgs.gnome; [
     zenity
     eog

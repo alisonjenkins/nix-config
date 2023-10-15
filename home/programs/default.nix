@@ -4,6 +4,7 @@
     ./dunst
     ./kitty
     ./rofi
+    ./tmux
     ./waybar
     ./zsh
   ];

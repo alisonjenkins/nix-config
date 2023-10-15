@@ -19,6 +19,7 @@ fi
 
 # zinit ice from"gh-r" as"program" atclone"./starship init zsh > init.zsh" atpull"%atclone" src"init.zsh"
 # zinit light starship/starship
+eval "$(starship init zsh)"
 
 # Plugins
 zinit load Aloxaf/fzf-tab
@@ -42,13 +43,14 @@ zinit light jeffreytse/zsh-vi-mode
 
 # install zoxide
 # rtx global zoxide@0.9.0 &>/dev/null
-# zinit light ajeetdsouza/zoxide
+zinit light ajeetdsouza/zoxide
 
 # Setup direnv
 # eval "$(rtx exec direnv -- direnv hook zsh)"
 
 # A shortcut for asdf managed direnv.
 # direnv() { rtx exec direnv -- direnv "$@"; }
+eval "$(direnv hook zsh)"
 
 zinit snippet 'https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/aws/aws.plugin.zsh'
 zinit snippet 'https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/command-not-found/command-not-found.plugin.zsh'
@@ -86,7 +88,7 @@ zinit snippet OMZP::fzf
 # else
 #   zinit ice lucid wait"0a" from"gh-r" as"program" atload'eval "$(mcfly init zsh)"' bpick"${mcfly_os}"
 # fi
-# zinit light cantino/mcfly
+zinit light cantino/mcfly
 
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
