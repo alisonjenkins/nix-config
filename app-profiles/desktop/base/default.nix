@@ -14,6 +14,7 @@
     cargo
     fd
     fzf
+    gcc-unwrapped
     git
     htop
     kbfs
@@ -24,6 +25,7 @@
     ripgrep
     rustc
     starship
+    stow
     tmux
     vulkan-tools
     zoom

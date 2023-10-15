@@ -50,6 +50,7 @@
   ]);
 
   programs.home-manager.enable = true;
+  targets.genericLinux.enable = true;
 
   home.stateVersion = "23.05";
 }
