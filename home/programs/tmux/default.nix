@@ -5,6 +5,7 @@
     enable = true;
     newSession = true;
     prefix = "C-a";
+    extraConfig = builtins.readFile ./tmux.conf;
     plugins = with pkgs; [
       tmuxPlugins.cpu
       tmuxPlugins.pain-control
@@ -22,9 +23,6 @@
         extraConfig = "set -g @resurrect-strategy-nvim 'session'";
       }
     ];
-  };
-  home.file = {
-    ".tmux.conf".text = builtins.readFile ./tmux.conf;
   };
 }
 
