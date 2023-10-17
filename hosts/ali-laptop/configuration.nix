@@ -100,7 +100,6 @@
     extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
       firefox
-      (opera.override { proprietaryCodecs = true; })
       neofetch
       lolcat
     ];
