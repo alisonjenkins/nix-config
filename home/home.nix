@@ -23,7 +23,7 @@
     direnv
     discord
     dunst
-    exa
+    eza
     git
     gnumake
     grim
