@@ -24,7 +24,7 @@
         };
       };
       shell = {
-        program = "zsh";
+        program = "${pkgs.zsh}/bin/zsh";
       };
     };
   };

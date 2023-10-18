@@ -5,6 +5,7 @@
     enable = true;
     newSession = true;
     prefix = "C-a";
+    shell = "${pkgs.zsh}/bin/zsh";
     extraConfig = builtins.readFile ./tmux.conf;
     plugins = with pkgs; [
       tmuxPlugins.cpu
