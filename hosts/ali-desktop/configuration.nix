@@ -88,16 +88,22 @@
     NIXPKGS_ALLOW_UNFREE = "1";
   };
 
-  users.users.ali = {
-    isNormalUser = true;
-    description = "Alison Jenkins";
-    initialPassword = "initPw!";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
-    packages = with pkgs; [
-      firefox
-      neofetch
-      lolcat
-    ];
+  users = {
+    defaultUserShell = pkgs.zsh;
+    users = {
+      ali = {
+        description = "Alison Jenkins";
+        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        initialPassword = "initPw!";
+        isNormalUser = true;
+        useDefaultShell = true;
+        packages = with pkgs; [
+          firefox
+            neofetch
+            lolcat
+        ];
+      };
+    };
   };
 
   nixpkgs = {
