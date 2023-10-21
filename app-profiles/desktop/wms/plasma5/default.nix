@@ -4,6 +4,7 @@
   };
 
   programs.dconf.enable = true;
+  security.pam.services.greetd.enableKwallet = true;
 
   services = {
     xserver = {
