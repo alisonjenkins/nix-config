@@ -16,6 +16,7 @@
     fzf
     gcc-unwrapped
     git
+    glxinfo
     htop
     kbfs
     keybase
