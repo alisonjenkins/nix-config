@@ -28,7 +28,7 @@
     stow
     tmux
     vulkan-tools
-    zoom
+    zoom-us
     zsh
   ];
 
