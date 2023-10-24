@@ -20,6 +20,7 @@
     kbfs
     keybase
     keybase-gui
+    lshw
     neovim
     nnn
     ripgrep
