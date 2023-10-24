@@ -67,6 +67,28 @@
     driSupport32Bit = true;
   };
 
+  hardware.nvidia = {
+    modesetting.enable = true;
+    nvidiaSettings = true;
+    open = true;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+    powerManagement = {
+        enable = true;
+        finegrained = true;
+    };
+
+    prime = {
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+
+      offload = {
+        enable = true;
+        enableOffloadCmd = true;
+      };
+    };
+  };
+
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
