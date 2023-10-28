@@ -2,6 +2,10 @@
   description = "My flake";
 
   inputs = {
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -10,7 +14,7 @@
     hyprland.url = "github:hyprwm/Hyprland";
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, ... }:
+  outputs = { self, nixpkgs, home-manager, hyprland, disko, ... }:
 
     let
       system = "x86_64-linux";
@@ -62,6 +66,7 @@
           inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
+	    disko.nixosModules.disko
             ./hosts/dev-vm/configuration.nix
             #./app-profiles/desktop/display-managers/greetd
             #./app-profiles/desktop/wms/plasma5
