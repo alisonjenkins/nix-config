@@ -9,6 +9,7 @@ let
   }) {
     inherit lib;
   };
+in
 {
   imports =
     [
