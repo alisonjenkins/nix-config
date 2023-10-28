@@ -45,7 +45,7 @@
           specialArgs = { inherit hyprland; };
           modules = [
             ./hosts/ali-laptop/configuration.nix
-            ./app-profiles/desktop/display-managers/lightdm
+            ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/plasma5
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
