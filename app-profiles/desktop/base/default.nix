@@ -12,6 +12,7 @@
   environment.systemPackages = with pkgs; [
     bat
     cargo
+    comma
     fd
     fzf
     gcc-unwrapped
