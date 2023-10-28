@@ -2,23 +2,22 @@
 # and may be overwritten by future invocations.  Please make changes
 # to /etc/nixos/configuration.nix instead.
 { config, lib, pkgs, modulesPath, ... }:
-let
-  disko = import (builtins.fetchGit {
-    url = "https://github.com/nix-community/disko";
-    ref = "master";
-  }) {
-    inherit lib;
-  };
-in
+#let
+  #disko = import (builtins.fetchGit {
+    #url = "https://github.com/nix-community/disko";
+    #ref = "master";
+  #}) {
+    #inherit lib;
+  #};
+#in
 {
   imports =
     [
       (modulesPath + "/installer/scan/not-detected.nix")
       (modulesPath + "/profiles/qemu-guest.nix")
-      (modulesPath + "disko/modules/disko.nix")
     ];
 
-  cfg.disko.devices = {
+  disko.devices = {
     disk = {
       vda = {
         device = "/dev/vda";
