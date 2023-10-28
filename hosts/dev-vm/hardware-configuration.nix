@@ -17,64 +17,95 @@
       (modulesPath + "/profiles/qemu-guest.nix")
     ];
 
+#  disko.devices = {
+#    disk = {
+#      vda = {
+#        device = "/dev/vda";
+#	type = "disk";
+#	content = {
+#	  type = "table";
+#	  format = "gpt";
+#	  partitions = {
+#	    ESP = {
+#	      name = "esp";
+#	      part-type = "primary";
+#	      start = "1M";
+#	      end = "4G";
+#	      type = "EF00";
+#	      bootable = true;
+#	      content = {
+#	        type = "filesystem";
+#		format = "vfat";
+#		mountpoint = "/efi";
+#	      };
+#	    };
+#	    luks = {
+#	      part-type = "primary";
+#	      start = "4G";
+#	      end = "100%";
+#	      content = {
+#	        type = "luks";
+#		name = "osvg";
+#		askPassword = true;
+#	        content = {
+#		  type = "lvm_pv";
+#		  vg = "osvg";
+#		};
+#	      };
+#	    };
+#	  };
+#	};
+#      };
+#      lvm_vg = {
+#        pool = {
+#	  type = "lvm_vg";
+#	  lvs = {
+#	    root = {
+#	      size = "100%";
+#	      content = {
+#	        name = "root";
+#	        type = "filesystem";
+#		format = "ext4";
+#		mountpoint = "/";
+#		mountOptions = [
+#		  "defaults"
+#		  "noatime"
+#		];
+#	      };
+#	    };
+#	  };
+#	};
+#      };
+#    };
+#  };
+
   disko.devices = {
     disk = {
       vda = {
         device = "/dev/vda";
-	type = "disk";
-	content = {
-	  type = "table";
-	  format = "gpt";
-	  partitions = {
-	    ESP = {
-	      name = "esp";
-	      part-type = "primary";
-	      start = "1M";
-	      end = "4G";
-	      type = "EF00";
-	      bootable = true;
-	      content = {
-	        type = "filesystem";
-		format = "vfat";
-		mountpoint = "/efi";
-	      };
-	    };
-	    luks = {
-	      part-type = "primary";
-	      start = "4G";
-	      end = "100%";
-	      content = {
-	        type = "luks";
-		name = "osvg";
-		askPassword = true;
-	        content = {
-		  type = "lvm_pv";
-		  vg = "osvg";
-		};
-	      };
-	    };
-	  };
-	};
-      };
-      lvm_vg = {
-        pool = {
-	  type = "lvm_vg";
-	  lvs = {
-	    root = {
-	      size = "100%";
-	      content = {
-	        name = "root";
-	        type = "filesystem";
-		format = "ext4";
-		mountpoint = "/";
-		mountOptions = [
-		  "defaults"
-		  "noatime"
-		];
-	      };
-	    };
-	  };
-	};
+        type = "disk";
+        content = {
+          type = "gpt";
+          partitions = {
+            ESP = {
+              type = "EF00";
+              size = "100M";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+              };
+            };
+            root = {
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
+            };
+          };
+        };
       };
     };
   };
