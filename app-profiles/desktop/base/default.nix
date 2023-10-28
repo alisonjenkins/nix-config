@@ -28,6 +28,7 @@
     rustc
     starship
     stow
+    tig
     tmux
     vulkan-tools
     zoom-us
