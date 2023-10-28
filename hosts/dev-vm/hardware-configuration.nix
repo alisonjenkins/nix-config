@@ -15,6 +15,7 @@ in
     [
       (modulesPath + "/installer/scan/not-detected.nix")
       (modulesPath + "/profiles/qemu-guest.nix")
+      (modulesPath + "disko/modules/disko.nix")
     ];
 
   cfg.disko.devices = {
