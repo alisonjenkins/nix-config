@@ -116,6 +116,8 @@
     NIXPKGS_ALLOW_UNFREE = "1";
   };
 
+  programs.zsh.enable = true;
+
   users.users.ali = {
     isNormalUser = true;
     description = "Alison Jenkins";

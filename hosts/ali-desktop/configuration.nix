@@ -88,6 +88,8 @@
     NIXPKGS_ALLOW_UNFREE = "1";
   };
 
+  programs.zsh.enable = true;
+
   users = {
     defaultUserShell = pkgs.zsh;
     users = {
