@@ -19,23 +19,13 @@ fi
 
 # zinit ice from"gh-r" as"program" atclone"./starship init zsh > init.zsh" atpull"%atclone" src"init.zsh"
 # zinit light starship/starship
-eval "$(starship init zsh)"
 
-# Plugins
-# zinit load Aloxaf/fzf-tab
-# zinit load alisonjenkins/kube-aliases
-# zinit load fabiokiatkowski/exercism.plugin.zsh
-# zinit load joepvd/zsh-hints
-# zinit load l-umaca/omz-fluxcd-plugin
-# zinit load macunha1/zsh-terraform
-# zinit load zsh-users/zsh-autosuggestions
-# zinit load molovo/tipz
+# _evalcache starship init zsh
+_evalcache zoxide init zsh
+_evalcache direnv hook zsh
+_evalcache mcfly init zsh
 
-# zinit snippet 'https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/aws/aws.plugin.zsh'
-
-eval "$(zoxide init zsh)"
-eval "$(direnv hook zsh)"
-eval "$(mcfly init zsh)"
+# smartcache comp rustup completions zsh
 
 # zinit ice lucid wait
 # zinit snippet OMZP::fzf
