@@ -12,11 +12,9 @@
     ];
 
   virtualisation = {
-    vmVariant = {
-      cores = 32;
-      memory = 4096;
-      diskSize = 32000;
-    };
+    diskSize = 64000;
+    cores = 32;
+    memorySize = 4096;
   };
 
   boot = {
