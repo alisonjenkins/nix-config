@@ -1,7 +1,5 @@
 source ~/.config/zshrc.d/zsh_settings.zsh
 
-# source ~/.config/zshrc.d/p10k.zsh
-
 source ~/.config/zshrc.d/aliases.zsh
 source ~/.config/zshrc.d/environment_vars.zsh
 source ~/.config/zshrc.d/plugins.zsh
