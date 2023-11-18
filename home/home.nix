@@ -39,8 +39,6 @@
     pavucontrol
     qpwgraph
     rofi
-    rtx
-    rtx
     slurp
     starship
     tty-clock

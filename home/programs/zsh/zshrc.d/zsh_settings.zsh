@@ -5,7 +5,6 @@ setopt interactive_comments # Allow comments even in interactive shells (especia
 setopt no_beep              # don't beep on error
 
 # ===== Changing Directories
-setopt auto_cd           # If you type foo, and it isn't a command, and it is a directory in your cdpath, go there
 setopt cdablevarS        # if argument to cd is the name of a parameter whose value is a valid directory, it will become the current directory
 setopt pushd_ignore_dups # don't push multiple copies of the same directory onto the directory stack
 
@@ -13,9 +12,6 @@ setopt pushd_ignore_dups # don't push multiple copies of the same directory onto
 setopt extended_glob # treat #, ~, and ^ as part of patterns for filename generation
 
 # ===== History
-HISTFILE=~/.local/share/zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
 setopt append_history         # Allow multiple terminal sessions to all append to one zsh command history
 setopt extended_history       # save timestamp of command and duration
 setopt inc_append_history     # Add comamnds as they are typed, don't wait until shell exit

@@ -44,27 +44,13 @@ if uname -a | grep 'Darwin' &> /dev/null; then
 fi
 
 # Setup Path variable
-export PATH="$PATH:$HOME/.asdf/installs/ruby/truffleruby-19.2.0/bin"
-export PATH="$PATH:$HOME/.asdf/installs/ruby/truffleruby-19.2.0/bin"
 export PATH="$PATH:$HOME/.cargo/bin"
-export PATH="$PATH:$HOME/.gem/ruby/2.4.0/bin"
-export PATH="$PATH:$HOME/.gem/ruby/2.5.0/bin"
-export PATH="$PATH:$HOME/.gem/ruby/2.6.0/bin"
-export PATH="$PATH:$HOME/.gem/ruby/2.7.0/bin"
 export PATH="$PATH:$HOME/.homebrew/bin"
 export PATH="$PATH:$HOME/.local/bin"
-export PATH="$PATH:$HOME/.local/share/gem/ruby/3.0.0/bin"
-export PATH="$PATH:$HOME/Library/Python/3.8/bin/"
 export PATH="$PATH:$HOME/bin"
 export PATH="$PATH:$HOME/go/bin"
-export PATH="$PATH:/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin"
 export PATH="$PATH:/usr/local/sbin"
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-
-# Todo.txt
-export TODO_DIR="$HOME/gdrive/todo/"
-export TODO_FILE="$HOME/gdrive/todo/todo.txt"
-export DONE_FILE="$HOME/gdrive/todo/done.txt"
 
 # nnn Environment variables
 export NNN_OPTS="aedF"
