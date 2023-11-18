@@ -12,3 +12,4 @@ test-run hostname:
     -accel kvm
     #-vga virtio
     #-display sdl,gl=on
+  rm "${hostname}.qcow2"
