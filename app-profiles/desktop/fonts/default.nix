@@ -6,13 +6,15 @@
   ];
   fonts = {
     packages = with pkgs; [
+      dejavu_fonts
       noto-fonts
       noto-fonts-cjk
       noto-fonts-emoji
-      nerdfonts
-      twemoji-color-font
-      fira-code
-      fira-code-symbols
+      (nerdfonts.override { fonts = [
+        "FiraCode"
+        "DroidSansMono"
+        "Hack"
+      ]; })
     ];
     fontconfig = {
       localConf = ''
