@@ -5,7 +5,7 @@
       enable = true;
       settings = {
         default_session = {
-          command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --remember-user-session --sessions /run/booted-system/sw/share/xsessions/:/run/booted-system/sw/share/wayland-sessions/";
+          command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --remember-user-session --sessions /run/booted-system/sw/share/wayland-sessions/:/run/booted-system/sw/share/xsessions/";
         };
       };
     };
