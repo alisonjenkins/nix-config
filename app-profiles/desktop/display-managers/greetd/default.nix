@@ -13,10 +13,10 @@
 
   system.activationScripts.makeTuigreetCacheDir = lib.stringAfter [ "var" ] ''
     mkdir -p /var/cache/tuigreet
+    chown greeter:greeter -R /var/cache/tuigreet
   '';
 
   environment.systemPackages = with pkgs; [
     greetd.tuigreet
   ];
 }
-
