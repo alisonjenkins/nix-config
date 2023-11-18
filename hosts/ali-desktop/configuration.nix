@@ -79,6 +79,7 @@
     pulse.enable = true;
   };
 
+  environment.pathsToLink = [ "/share/zsh" ];
   environment.variables = {
     NIXOS_OZONE_WL = "1";
     PATH = [
