@@ -6,6 +6,7 @@
   programs.dconf.enable = true;
   programs.kdeconnect.enable = true;
   security.pam.services.enableKwallet = true;
+  security.pam.services.greetd.enableKwallet = true;
 
   networking.firewall = {
     enable = true;
