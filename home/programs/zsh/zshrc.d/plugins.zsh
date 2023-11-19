@@ -35,7 +35,6 @@ PLUGINS=(
   "fzf"
   "fzf-tab"
   "kube-aliases"
-  # "mcfly"
   "omz-fluxcd-plugin"
   "tipz"
   "zoxide"
