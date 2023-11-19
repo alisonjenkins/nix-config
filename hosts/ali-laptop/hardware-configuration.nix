@@ -8,14 +8,14 @@
     [
       (modulesPath + "/installer/scan/not-detected.nix")
       (modulesPath + "/profiles/qemu-guest.nix")
-      (modulesPath + "/virtualisation/qemu-vm.nix")
+      # (modulesPath + "/virtualisation/qemu-vm.nix")
     ];
 
-  virtualisation = {
-    diskSize = 64000;
-    cores = 32;
-    memorySize = 4096;
-  };
+  # virtualisation = {
+  #   diskSize = 64000;
+  #   cores = 32;
+  #   memorySize = 4096;
+  # };
 
   boot = {
     kernelModules = [ "kvm-amd" ];
