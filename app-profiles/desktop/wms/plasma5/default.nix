@@ -19,7 +19,7 @@
 
   services = {
     xserver = {
-      enable = true;
+      enable = false;
       desktopManager = {
         plasma5 = {
           enable = true;
