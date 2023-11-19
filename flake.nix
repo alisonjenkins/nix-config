@@ -52,6 +52,7 @@
             ./hosts/ali-laptop/configuration.nix
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/plasma5
+            ./app-profiles/desktop/wms/hypr
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
             {
