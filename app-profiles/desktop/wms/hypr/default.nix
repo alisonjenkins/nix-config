@@ -15,8 +15,6 @@
     xfce.thunar
   ];
 
-  security.pam.services.enableKwallet = true;
-
   environment.sessionVariables = {
     BROWSER = "firefox";
     CLUTTER_BACKEND = "wayland";
