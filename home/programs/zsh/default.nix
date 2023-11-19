@@ -8,6 +8,7 @@
       dotDir = ".config/zsh";
       enable = true;
       enableAutosuggestions = true;
+      initExtraFirst = builtins.readFile ./zshrc-first.zsh;
       initExtraBeforeCompInit = builtins.readFile ./zshrc.sh;
 
       history = {
