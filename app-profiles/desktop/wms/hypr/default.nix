@@ -2,7 +2,6 @@
 {
   environment.systemPackages = with pkgs; [
     grim
-    kdeFrameworks.kwallet
     kitty
     kwallet-pam
     slurp
