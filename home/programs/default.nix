@@ -2,6 +2,7 @@
   imports = [
     ./alacritty
     ./dunst
+    ./gh
     ./gh-dash
     ./git
     ./kitty
