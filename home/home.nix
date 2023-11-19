@@ -30,6 +30,7 @@
     lollypop
     lutris
     mcfly
+    mission-center
     mpc-cli
     neovide
     neovim
@@ -38,7 +39,6 @@
     pamixer
     pavucontrol
     qpwgraph
-    rofi
     slurp
     starship
     tty-clock

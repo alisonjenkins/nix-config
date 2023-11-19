@@ -5,6 +5,7 @@
     ./gh
     ./gh-dash
     ./git
+    ./hyprland
     ./kitty
     ./rofi
     ./starship

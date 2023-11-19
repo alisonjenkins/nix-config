@@ -2,6 +2,7 @@
 {
   programs.rofi = {
     enable = true;
+    package = pkgs.rofi-wayland;
     terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
     theme = ./theme.rasi;
   };
@@ -135,7 +136,7 @@ listview {
     reverse:                     false;
     fixed-height:                true;
     fixed-columns:               true;
-    
+
     spacing:                     10px;
     background-color:            transparent;
     text-color:                  @foreground;
