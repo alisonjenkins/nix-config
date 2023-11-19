@@ -145,8 +145,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "ajeetdsouza";
             repo = "zoxide";
-            rev = "master";
-            sha256 = "OK/VDY5eKopzQXo8cekpfxC3MCh9lAkn/Rm5lnMVxTo=";
+            rev = "f537a4e6d2f8c2eb84c63f79e290a6d1b16eeb71";
+            sha256 = "O3ooElNtSorSsWkymmEim1iWKtHqTHa312EcD4uzupQ=";
           };
         }
         {
