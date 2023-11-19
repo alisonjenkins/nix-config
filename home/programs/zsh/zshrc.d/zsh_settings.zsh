@@ -12,6 +12,7 @@ setopt pushd_ignore_dups # don't push multiple copies of the same directory onto
 setopt extended_glob # treat #, ~, and ^ as part of patterns for filename generation
 
 # ===== History
+HISTFILE=~/.local/share/zsh/history
 setopt append_history         # Allow multiple terminal sessions to all append to one zsh command history
 setopt extended_history       # save timestamp of command and duration
 setopt inc_append_history     # Add comamnds as they are typed, don't wait until shell exit
