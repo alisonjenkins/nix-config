@@ -34,6 +34,7 @@
     mpc-cli
     neovide
     neovim
+    networkmanagerapplet
     nitch
     openrgb
     pamixer

@@ -16,6 +16,7 @@
   exec-once = hyprctl setcursor Bibata-Modern-Classic 24
   exec-once = swaynotificationcenter
   exec-once = kwalletd
+  exec-once = nm-applet
 
   source = /home/ali/.config/hypr/colors
   exec = pkill waybar & sleep 0.5 && waybar
