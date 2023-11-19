@@ -96,10 +96,6 @@
       # Delete the remote version of the current branch
       unpublish = "!git push origin :$(git branch-name)";
 
-      # Delete any branches that have been merged into master
-      # See also: https://gist.github.com/robmiller/5133264
-      delete-merged-branches = "!git branch --no-color --merged | grep -v '\\*\\|master\\|main' | xargs -n 1 git branch -d";
-
       # Git status-all - shows the status of all git repos under a directory
       # https://stackoverflow.com/questions/12499195/git-how-to-find-all-unpushed-commits-for-all-projects-in-a-directory
       status-all = "!for d in `find . -name \".git\"`; do echo \"\n*** Repository: $d ***\" && git --git-dir=$d --work-tree=$d/.. status; done";
