@@ -1,16 +1,12 @@
 local M = {
-  "alvarosevilla95/luatab.nvim",
+  dir = "~/.local/share/nvim/nix/luatab",
   lazy = true,
   event = "TabNew",
-  dependencies = { "nvim-tree/nvim-web-devicons" },
+  dependencies = { dir = "~/.local/share/nvim/nix/nvim-web-devicons" },
 }
 
 function M.config()
-  local ok, luatab = pcall(require, "luatab")
-
-  if not ok then
-    return
-  end
+  local luatab = require"luatab"
 
   luatab.setup({})
 end

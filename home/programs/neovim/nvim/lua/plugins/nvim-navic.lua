@@ -1,5 +1,5 @@
 return  {
-    "SmiteshP/nvim-navic",
+    dir = "~/.local/share/nvim/nix/navic",
     config = function()
       vim.g.navic_silence = true
       require("nvim-navic").setup({ separator = " ", highlight = true, depth_limit = 5 })

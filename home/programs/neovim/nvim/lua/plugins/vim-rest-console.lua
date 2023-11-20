@@ -1,3 +1,3 @@
 return {
-  "diepm/vim-rest-console",
+  dir = ".local/share/nvim/nix/rest-console",
 }

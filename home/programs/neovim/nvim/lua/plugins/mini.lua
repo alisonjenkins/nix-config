@@ -1,12 +1,9 @@
 local M = {
-  "echasnovski/mini.nvim",
+  dir = ".local/share/nvim/nix/mini",
 }
 
 function M.config()
-  local ok, surround = pcall(require, "mini.surround")
-  if not ok then
-    return
-  end
+  local surround = require"mini.surround"
 
   surround.setup({}) -- Surround mappings like vim-sandwich and vim-surround
   require("mini.trailspace").setup({}) -- Highlight and remove trailing spaces

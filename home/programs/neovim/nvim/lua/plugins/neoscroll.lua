@@ -1,16 +1,10 @@
 local M = {
-  "karb94/neoscroll.nvim",
+  dir = "~/.local/share/nvim/nix/neoscroll",
   keys = { "<C-u>", "<C-d>", "<C-b>", "<C-f>", "<C-e>", "zt", "zz", "zb" },
 }
 
 function M.config()
-  local ok, neoscroll = pcall(require, "neoscroll")
-
-  if not ok then
-    return
-  end
-
-  neoscroll.setup({
+  require"neoscroll".setup({
     -- All these keys will be mapped to their corresponding default scrolling animation
     mappings = {
       "<C-u>",

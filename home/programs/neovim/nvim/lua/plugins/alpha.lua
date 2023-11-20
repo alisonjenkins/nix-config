@@ -1,6 +1,6 @@
 local M = {
   dir = "~/.local/share/nvim/nix/alpha-nvim",
-  dependencies = { "nvim-tree/nvim-web-devicons" },
+  dependencies = { dir = "~/.local/share/nvim/nix/nvim-web-devicons" },
   lazy = false,
   priority = 1001,
 }

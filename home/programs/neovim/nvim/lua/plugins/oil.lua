@@ -1,5 +1,5 @@
 local M = {
-	"stevearc/oil.nvim",
+	dir = "~/.local/share/nvim/nix/oil",
 	lazy = true,
 	keys = { "-" },
 }

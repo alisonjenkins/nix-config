@@ -1,7 +1,7 @@
 return {
-  "Bryley/neoai.nvim",
+  dir = "~/.local/share/nvim/nix/neoai",
   dependencies = {
-    "MunifTanjim/nui.nvim",
+    dir = "~/.local/share/nvim/nix/nui",
   },
   cmd = {
     "NeoAI",

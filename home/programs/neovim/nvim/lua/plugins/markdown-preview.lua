@@ -1,5 +1,5 @@
 local M = {
-  "iamcco/markdown-preview.nvim",
+  dir = "~/.local/share/nvim/nix/markdown-preview",
   build = function()
     vim.fn["mkdp#util#install"]()
   end,

@@ -1,5 +1,5 @@
 return {
-	"nvim-treesitter/playground",
+	dir = "~/.local/share/nvim/nix/treesitter-playground",
 	lazy = true,
 	cmd = "TSPlaygroundToggle",
 }

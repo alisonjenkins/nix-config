@@ -1,7 +1,9 @@
 local M = {
   dir = "~/.local/share/nvim/nix/comment",
   lazy = false,
-  config = true,
+  config = function()
+    require"Comment".setup()
+  end,
 }
 
 return M

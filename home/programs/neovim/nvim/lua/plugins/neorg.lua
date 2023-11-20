@@ -1,22 +1,16 @@
 local M = {
-  "nvim-neorg/neorg",
+  dir = "~/.local/share/nvim/nix/neorg",
   build = ":Neorg sync-parsers",
   lazy = true,
   cmd = {
     "Neorg",
   },
   ft = "norg",
-  dependencies = "nvim-lua/plenary.nvim",
+  dependencies = {dir = "~/.local/share/nvim/nix/plenary"},
 }
 
 function M.config()
-  local ok, neorg = pcall(require, "neorg")
-
-  if not ok then
-    return
-  end
-
-  neorg.setup({
+  require"neorg".setup({
     -- Tell Neorg what modules to load
     load = {
       ["core.defaults"] = {},  -- Load all the default modules

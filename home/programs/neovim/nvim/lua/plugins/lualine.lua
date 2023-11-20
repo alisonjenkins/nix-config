@@ -1,13 +1,9 @@
 local M = {
-	"nvim-lualine/lualine.nvim",
+	dir = ".local/share/nvim/nix/lualine",
 }
 
 function M.config()
-	local ok, lualine = pcall(require, "lualine")
-
-	if not ok then
-		return
-	end
+	local lualine = require"lualine"
 
 	local colors = {
 		bg = "#202328",

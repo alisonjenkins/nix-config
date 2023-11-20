@@ -1,17 +1,11 @@
 local M = {
-  "b0o/incline.nvim",
+  dir = ".local/share/nvim/nix/incline",
   lazy = true,
   event = "VeryLazy",
 }
 
 function M.config()
-  local ok, incline = pcall(require, "incline")
-
-  if not ok then
-    return
-  end
-
-  incline.setup()
+  require"incline".setup()
 end
 
 return M

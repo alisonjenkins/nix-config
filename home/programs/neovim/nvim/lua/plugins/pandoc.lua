@@ -1,20 +1,14 @@
 local M = {
-  "aspeddro/pandoc.nvim",
+  dir = "~/.local/share/nvim/nix/pandoc",
   lazy = true,
   dependencies = {
-    "nvim-lua/plenary.nvim",
-    "jbyuki/nabla.nvim", -- Optional. See Extra Features
+    dir = "~/.local/share/nvim/nix/plenary",
+    dir = "~/.local/share/nvim/nix/nabla", -- Optional. See Extra Features
   },
 }
 
 function M.config()
-  local ok, pandoc = pcall(require, "pandoc")
-
-  if not ok then
-    return
-  end
-
-  pandoc.setup()
+  require"pandoc".setup()
 end
 
 return M

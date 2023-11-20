@@ -1,3 +1,3 @@
 return {
-	"onsails/lspkind.nvim",
+	dir = ".local/share/nvim/nix/lspkind",
 }

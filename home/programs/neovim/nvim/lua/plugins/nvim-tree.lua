@@ -1,5 +1,5 @@
 local M = {
-	"nvim-tree/nvim-tree.lua",
+	dir = "~/.local/share/nvim/nix/tree",
 }
 
 function M.config()

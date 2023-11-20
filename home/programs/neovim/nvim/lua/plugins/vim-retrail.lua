@@ -1,5 +1,5 @@
 local M = {
-  "zakharykaplan/nvim-retrail",
+  dir = ".local/share/nvim/nix/retrail",
 }
 
 function M.config()

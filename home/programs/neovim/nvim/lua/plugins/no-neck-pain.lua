@@ -1,5 +1,5 @@
 local M = {
-  "shortcuts/no-neck-pain.nvim",
+  dir = "~/.local/share/nvim/nix/no-neck-pain",
   version = "*",
   lazy = true,
   cmd = "NoNeckPain",

@@ -1,5 +1,5 @@
 local M = {
-  "tpope/vim-sleuth",
+  dir = "~/.local/share/nvim/nix/sleuth",
   lazy = true,
   event = "BufRead",
 }

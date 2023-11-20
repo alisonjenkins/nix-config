@@ -1,5 +1,5 @@
 return {
-	"roobert/tailwindcss-colorizer-cmp.nvim",
+	dir = "~/.local/share/nvim/nix/tailwindcss-colorizer-cmp",
 	-- optionally, override the default options:
 	config = function()
 		require("tailwindcss-colorizer-cmp").setup({

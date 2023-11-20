@@ -1,6 +1,6 @@
 return {
-	"wthollingsworth/pomodoro.nvim",
-	dependencies = { "MunifTanjim/nui.nvim" },
+	dir = "~/.local/share/nvim/nix/pomodoro",
+	dependencies = { dir = "~/.local/share/nvim/nix/nui" },
 	cmd = {
 		"PomodoroStart",
 		"PomodoroStop",

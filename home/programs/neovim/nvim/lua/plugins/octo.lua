@@ -1,11 +1,11 @@
 local M = {
-  "pwntester/octo.nvim",
+  dir = "~/.local/share/nvim/nix/octo",
   lazy = true,
   cmd = "Octo",
   dependencies = {
-    "nvim-lua/plenary.nvim",
-    "nvim-telescope/telescope.nvim",
-    "nvim-tree/nvim-web-devicons",
+    dir = "~/.local/share/nvim/nix/plenary",
+    dir = "~/.local/share/nvim/nix/telescope",
+    dir = "~/.local/share/nvim/nix/nvim-web-devicons",
   },
 }
 
