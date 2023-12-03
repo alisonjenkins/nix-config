@@ -68,11 +68,8 @@
           inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
-	    disko.nixosModules.disko
+            disko.nixosModules.disko
             ./hosts/dev-vm/configuration.nix
-            #./app-profiles/desktop/display-managers/greetd
-            #./app-profiles/desktop/wms/plasma5
-            #hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
@@ -80,6 +77,23 @@
               home-manager.users.ali = import ./home/home.nix;
               home-manager.extraSpecialArgs = specialArgs;
             }
+          ];
+        };
+
+        home-kvm-hypervisor-1 = lib.nixosSystem rec {
+          inherit system;
+          # specialArgs = {};
+          modules = [
+            disko.nixosModules.disko
+            ./hosts/home-kvm-hypervisor-1/disko-config.nix
+            ./hosts/home-kvm-hypervisor-1/configuration.nix
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
           ];
         };
       };
