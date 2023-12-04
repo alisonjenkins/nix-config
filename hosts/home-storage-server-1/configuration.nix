@@ -6,14 +6,11 @@
       ./hardware-configuration.nix
       ../../app-profiles/server-base
       # ../../app-profiles/server-base/luks-tor-unlock
-      ../../app-profiles/kvm-server
+      ../../app-profiles/storage-server
     ];
 
   boot = {
     kernelPackages = pkgs.linuxPackages_hardened;
-    kernelParams = [
-      "vfio-pci.ids=1000:0072"
-    ];
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
@@ -37,7 +34,7 @@
     };
   };
 
-  networking.hostName = "home-kvm-hypervisor-1";
+  networking.hostName = "home-storage-server-1";
   networking.networkmanager.enable = true;
 
   time.timeZone = "Europe/London";
@@ -69,7 +66,7 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = [ "docker" "libvirtd" "networkmanager" "wheel" ];
+    extraGroups = [ "docker" "networkmanager" "wheel" ];
     packages = with pkgs; [];
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
