@@ -33,7 +33,7 @@
   };
 
   networking.hostName = "dev-vm";
-  networking.networkmanager.enable = true;
+  networking.networkmanager.enable = false;
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {
