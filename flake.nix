@@ -17,9 +17,9 @@
   outputs = { self, nixpkgs, home-manager, hyprland, disko, ... }:
 
     let
-      # system = "x86_64-linux";
+      system = "x86_64-linux";
       pkgs = import nixpkgs {
-        # inherit system;
+        inherit system;
         config.allowUnfree = true;
       };
       lib = nixpkgs.lib;
@@ -27,7 +27,7 @@
     {
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
-          # inherit system;
+          inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
             ./hosts/ali-desktop/configuration.nix
@@ -46,7 +46,7 @@
         };
 
         ali-laptop = lib.nixosSystem rec {
-          # inherit system;
+          inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
             ./hosts/ali-laptop/configuration.nix
@@ -65,7 +65,7 @@
         };
 
         dev-vm = lib.nixosSystem rec {
-          # inherit system;
+          inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
             disko.nixosModules.disko
@@ -81,7 +81,7 @@
         };
 
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
-          # inherit system;
+          inherit system;
           # specialArgs = {};
           modules = [
             disko.nixosModules.disko
@@ -97,7 +97,7 @@
           ];
         };
         home-storage-server-1 = lib.nixosSystem rec {
-          # inherit system;
+          inherit system;
           # specialArgs = {};
           modules = [
             disko.nixosModules.disko
