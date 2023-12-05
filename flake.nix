@@ -64,21 +64,6 @@
           ];
         };
 
-        dev-vm = lib.nixosSystem rec {
-          inherit system;
-          specialArgs = { inherit hyprland; };
-          modules = [
-            disko.nixosModules.disko
-            ./hosts/dev-vm/configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
-              home-manager.extraSpecialArgs = specialArgs;
-            }
-          ];
-        };
 
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
@@ -113,5 +98,28 @@
           ];
         };
       };
+      nixosConfigurations."dev-vm" = let
+        system = "aarch64-linux";
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
+        lib = nixpkgs.lib;
+
+      in lib.nixosSystem rec {
+          inherit system;
+          specialArgs = { inherit hyprland; };
+          modules = [
+            disko.nixosModules.disko
+            ./hosts/dev-vm/configuration.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.ali = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs;
+            }
+          ];
+        };
     };
 }
