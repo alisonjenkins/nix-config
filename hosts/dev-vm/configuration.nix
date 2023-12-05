@@ -50,10 +50,6 @@
 
   services.xserver = {
     enable = true;
-    videoDrivers = [
-      "fbdev"
-      "modesetting"
-    ];
     layout = "us";
     xkbVariant = "";
   };
