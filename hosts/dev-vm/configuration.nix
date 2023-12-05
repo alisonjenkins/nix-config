@@ -8,7 +8,7 @@
     ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_xanmod_stable;
+    kernelPackages = pkgs.linuxPackages_latest;
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
