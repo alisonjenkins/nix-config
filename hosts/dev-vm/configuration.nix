@@ -52,7 +52,10 @@
     enable = true;
     layout = "us";
     xkbVariant = "";
+    videoDrivers = [ "qxl" ];
   };
+
+  services.spice-vdagentd.enable = true;
 
   hardware.opengl = {
     enable = true;
