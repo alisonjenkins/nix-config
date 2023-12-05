@@ -4,7 +4,7 @@
   imports =
     [
       ./hardware-configuration.nix
-      ../../app-profiles/desktop
+      # ../../app-profiles/desktop
     ];
 
   boot = {
