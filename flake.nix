@@ -112,13 +112,13 @@
           modules = [
             disko.nixosModules.disko
             ./hosts/dev-vm/configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
-              home-manager.extraSpecialArgs = specialArgs;
-            }
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
           ];
         };
     };
