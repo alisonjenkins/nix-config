@@ -2,14 +2,6 @@
 # and may be overwritten by future invocations.  Please make changes
 # to /etc/nixos/configuration.nix instead.
 { config, lib, pkgs, modulesPath, ... }:
-#let
-  #disko = import (builtins.fetchGit {
-    #url = "https://github.com/nix-community/disko";
-    #ref = "master";
-  #}) {
-    #inherit lib;
-  #};
-#in
 {
   imports =
     [
@@ -18,98 +10,6 @@
       (modulesPath + "/virtualisation/qemu-vm.nix")
     ];
 
-#  disko.devices = {
-#    disk = {
-#      vda = {
-#        device = "/dev/vda";
-#	type = "disk";
-#	content = {
-#	  type = "table";
-#	  format = "gpt";
-#	  partitions = {
-#	    ESP = {
-#	      name = "esp";
-#	      part-type = "primary";
-#	      start = "1M";
-#	      end = "4G";
-#	      type = "EF00";
-#	      bootable = true;
-#	      content = {
-#	        type = "filesystem";
-#		format = "vfat";
-#		mountpoint = "/efi";
-#	      };
-#	    };
-#	    luks = {
-#	      part-type = "primary";
-#	      start = "4G";
-#	      end = "100%";
-#	      content = {
-#	        type = "luks";
-#		name = "osvg";
-#		askPassword = true;
-#	        content = {
-#		  type = "lvm_pv";
-#		  vg = "osvg";
-#		};
-#	      };
-#	    };
-#	  };
-#	};
-#      };
-#      lvm_vg = {
-#        pool = {
-#	  type = "lvm_vg";
-#	  lvs = {
-#	    root = {
-#	      size = "100%";
-#	      content = {
-#	        name = "root";
-#	        type = "filesystem";
-#		format = "ext4";
-#		mountpoint = "/";
-#		mountOptions = [
-#		  "defaults"
-#		  "noatime"
-#		];
-#	      };
-#	    };
-#	  };
-#	};
-#      };
-#    };
-#  };
-
-  disko.devices = {
-    disk = {
-      vda = {
-        device = "/dev/vda";
-        type = "disk";
-        content = {
-          type = "gpt";
-          partitions = {
-            ESP = {
-              type = "EF00";
-              size = "100M";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-              };
-            };
-            root = {
-              size = "100%";
-              content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = "/";
-              };
-            };
-          };
-        };
-      };
-    };
-  };
 
   boot = {
     kernelModules = [ "kvm-amd" ];
@@ -118,36 +18,8 @@
     initrd = {
       availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
       kernelModules = [ "dm-snapshot" ];
-      luks.devices.luksroot =
-        {
-          device = "/dev/disk/by-partlabel/vg";
-          preLVM = true;
-          allowDiscards = true;
-        };
     };
   };
-
-  virtualisation = {
-    diskSize = 64000;
-    cores = 32;
-    memorySize = 4096;
-  };
-
-  #fileSystems."/" =
-  #  {
-  #    device = "/dev/vg/root";
-  #    fsType = "ext4";
-  #  };
-#
-#  fileSystems."/boot" =
-#    {
-#      device = "/dev/disk/by-partlabel/esp";
-#      fsType = "vfat";
-    #};
-
-  # swapDevices = [
-    # { device = "/dev/vg/swap"; }
-  # ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's

@@ -5,7 +5,6 @@
     [
       ./hardware-configuration.nix
       ../../app-profiles/desktop
-      #../../app-profiles/hardware/touchpad
     ];
 
   boot = {
@@ -63,12 +62,6 @@
     enable = true;
     driSupport = true;
     driSupport32Bit = true;
-  };
-
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
   };
 
   console.keyMap = "us";
