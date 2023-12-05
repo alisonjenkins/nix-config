@@ -21,7 +21,7 @@
     cava
     curl
     direnv
-    discord
+    # discord
     dunst
     eza
     git
