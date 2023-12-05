@@ -7,7 +7,7 @@
     [
       (modulesPath + "/installer/scan/not-detected.nix")
       (modulesPath + "/profiles/qemu-guest.nix")
-      (modulesPath + "/virtualisation/qemu-vm.nix")
+      # (modulesPath + "/virtualisation/qemu-vm.nix")
     ];
 
 
@@ -16,7 +16,7 @@
     extraModulePackages = [ ];
 
     initrd = {
-      availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
+      # availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
       kernelModules = [ "dm-snapshot" ];
     };
   };
