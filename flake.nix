@@ -12,12 +12,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland.url = "github:hyprwm/Hyprland";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, disko, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem(system:
+  outputs = { self, nixpkgs, home-manager, hyprland, disko, ... }:
+
     let
+      system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
@@ -113,5 +113,5 @@
           ];
         };
       };
-    });
+    };
 }
