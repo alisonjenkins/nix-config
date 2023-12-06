@@ -12,9 +12,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland.url = "github:hyprwm/Hyprland";
+    jovian-nixos = {
+      url = "github:Jovian-Experiments/Jovian-NixOS";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, disko, ... }:
+  outputs = { self, nixpkgs, home-manager, hyprland, disko, jovian-nixos, ... }:
 
     let
       system = "x86_64-linux";
@@ -64,6 +68,33 @@
           ];
         };
 
+        ali-steamdeck = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = { inherit jovian-nixos; };
+
+          modules = [
+            ./hosts/ali-steamdeck/configuration.nix
+            jovian-nixos.nixosModules.jovian {
+              services.xserver.desktopManager.plasma5.enable = true;
+              jovian = {
+                devices.steamdeck = {
+                  enable = true;
+                  autoUpdate = true;
+                  enableGyroDsuService = true;
+                };
+                decky-loader = {
+                  enable = true;
+                };
+                steam = {
+                  enable = true;
+                  autoStart = true;
+                  user = "ali";
+                  desktopSession = "plasma";
+                };
+              };
+            }
+          ];
+        };
 
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
