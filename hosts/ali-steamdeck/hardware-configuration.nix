@@ -11,7 +11,7 @@
     ];
 
   boot = {
-    kernelModules = [ "virtio_gpu" ];
+    kernelModules = [ "kvm-amd" ];
     extraModulePackages = [ ];
 
     initrd = {
