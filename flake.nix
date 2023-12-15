@@ -74,25 +74,6 @@
 
           modules = [
             ./hosts/ali-steamdeck/configuration.nix
-            jovian-nixos.nixosModules.jovian {
-              services.xserver.desktopManager.plasma5.enable = true;
-              jovian = {
-                devices.steamdeck = {
-                  enable = true;
-                  autoUpdate = true;
-                  enableGyroDsuService = true;
-                };
-                decky-loader = {
-                  enable = true;
-                };
-                steam = {
-                  enable = true;
-                  autoStart = true;
-                  user = "ali";
-                  desktopSession = "plasma";
-                };
-              };
-            }
           ];
         };
 

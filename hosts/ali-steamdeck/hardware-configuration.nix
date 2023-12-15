@@ -7,7 +7,6 @@
     [
       (modulesPath + "/installer/scan/not-detected.nix")
       (modulesPath + "/profiles/qemu-guest.nix")
-      # (modulesPath + "/virtualisation/qemu-vm.nix")
     ];
 
   boot = {
