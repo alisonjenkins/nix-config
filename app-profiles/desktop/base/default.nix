@@ -27,6 +27,8 @@
     keybase-gui
     libdrm_git
     lshw
+    mesa32_git
+    mesa_git
     mpv-vapoursynth
     ncdu
     neovim
