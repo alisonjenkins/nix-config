@@ -12,12 +12,14 @@
   environment.systemPackages = with pkgs; [
     bat
     cargo
+    chromium
     comma
     fd
     fzf
     gcc-unwrapped
     git
     glxinfo
+    google-chrome
     htop
     kbfs
     keybase
