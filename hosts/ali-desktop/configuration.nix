@@ -61,9 +61,10 @@
         efiSysMountPoint = "/boot";
       };
       grub = {
-        enable = true;
         devices = [ "nodev" ];
         efiSupport = true;
+        enable = true;
+        gfxmodeEfi = "5140x1440";
         useOSProber = true;
         theme = pkgs.stdenv.mkDerivation {
           pname = "distro-grub-themes";
