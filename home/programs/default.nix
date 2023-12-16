@@ -7,6 +7,7 @@
     ./git
     ./hyprland
     ./kitty
+    ./mimetypes
     ./rofi
     ./starship
     ./tmux
