@@ -5,6 +5,8 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
+    kernelParams = [ "quiet" "loglevel=3" ];
+
     kernel.sysctl = {
       # Network Perf Tuning
       "net.core.netdev_max_backlog" = 100000;
