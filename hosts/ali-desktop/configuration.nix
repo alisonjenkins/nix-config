@@ -57,6 +57,7 @@
       "vm.dirty_background_ratio" = 3;
       "vm.vfs_cache_pressure" = 50;
     };
+
     loader = {
       efi = {
         canTouchEfiVariables = true;
