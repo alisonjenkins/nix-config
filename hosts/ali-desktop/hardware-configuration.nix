@@ -7,7 +7,6 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     (modulesPath + "/profiles/qemu-guest.nix")
-    (modulesPath + "/virtualisation/qemu-vm.nix")
   ];
 
   boot = {
@@ -45,7 +44,13 @@
   };
 
   fileSystems."/" = {
-    device = "/dev/mapper/nixvg-root";
+    device = "/dev/osvg/nixroot";
+    fsType = "ext4";
+    # options = [ "defaults" "noatime" "discard" "fast_commit" ];
+  };
+
+  fileSystems."/media/archroot" = {
+    device = "/dev/osvg/root";
     fsType = "ext4";
     # options = [ "defaults" "noatime" "discard" "fast_commit" ];
   };
@@ -55,7 +60,7 @@
     fsType = "vfat";
   };
 
-  swapDevices = [{ device = "/dev/mapper/nixvg-swap"; }];
+  swapDevices = [{ device = "/dev/osvg/swap"; }];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
