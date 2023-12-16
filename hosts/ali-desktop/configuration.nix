@@ -10,7 +10,10 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_xanmod_stable;
     loader = {
-      efi.efiSysMountPoint = "/boot";
+      efi = {
+        canTouchEfiVariables = true;
+        efiSysMountPoint = "/boot";
+      };
       grub = {
         enable = true;
         devices = [ "nodev" ];
