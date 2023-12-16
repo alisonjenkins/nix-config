@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 
 {
   imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
@@ -144,7 +144,11 @@
         initialPassword = "initPw!";
         isNormalUser = true;
         useDefaultShell = true;
-        packages = with pkgs; [ firefox neofetch lolcat ];
+        packages = with pkgs; [
+          firefox
+          neofetch
+          lolcat
+        ];
       };
     };
   };
