@@ -27,6 +27,8 @@
     keybase-gui
     libdrm_git
     lshw
+    mangohud32_git
+    mangohud_git
     mesa32_git
     mesa_git
     mpv-vapoursynth
