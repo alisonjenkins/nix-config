@@ -23,6 +23,7 @@
     keybase
     keybase-gui
     lshw
+    ncdu
     neovim
     nnn
     ripgrep
