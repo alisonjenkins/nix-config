@@ -66,7 +66,7 @@
         devices = [ "nodev" ];
         efiSupport = true;
         enable = true;
-        gfxmodeEfi = "5140x1440";
+        gfxmodeEfi = "3440x1440";
         useOSProber = true;
         theme = pkgs.stdenv.mkDerivation {
           pname = "distro-grub-themes";
