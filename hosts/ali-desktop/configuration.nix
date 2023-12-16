@@ -3,6 +3,7 @@
 {
   imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
 
+  chaotic.hdr.enable = true;
   chaotic.mesa-git = {
     enable = true;
     method = "GBM_BACKENDS_PATH";
