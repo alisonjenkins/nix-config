@@ -15,18 +15,19 @@
 
     initrd = {
       availableKernelModules = [
-        "xhci_pci"
-        "nvme"
+        "aesni_intel"
         "ahci"
-        "uas"
-        "usbhid"
-        "usb_storage"
+        "cryptd"
+        "ehci_pci"
+        "nvme"
         "sd_mod"
         "sr_mod"
+        "uas"
+        "usb_storage"
+        "usbhid"
         "virtio_blk"
-        "ehci_pci"
-        "cryptd"
         "virtio_pci"
+        "xhci_pci"
       ];
       kernelModules = [ "amdgpu" "dm-snapshot" ];
       luks.devices.luksroot = {
