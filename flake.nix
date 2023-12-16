@@ -2,23 +2,15 @@
   description = "My flake";
 
   inputs = {
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    disko = { url = "github:nix-community/disko"; inputs.nixpkgs.follows = "nixpkgs"; };
+    home-manager = { url = "github:nix-community/home-manager"; inputs.nixpkgs.follows = "nixpkgs"; };
     hyprland.url = "github:hyprwm/Hyprland";
-    jovian-nixos = {
-      url = "github:Jovian-Experiments/Jovian-NixOS";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    jovian-nixos = { url = "github:Jovian-Experiments/Jovian-NixOS"; inputs.nixpkgs.follows = "nixpkgs"; };
+    nix-colors.url = "github:misterio77/nix-colors";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, disko, jovian-nixos, ... }:
+  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, ... }:
 
     let
       system = "x86_64-linux";
@@ -51,7 +43,7 @@
 
         ali-laptop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = { inherit hyprland; };
+          specialArgs = { inherit hyprland; inherit nix-colors; };
           modules = [
             ./hosts/ali-laptop/configuration.nix
             ./app-profiles/desktop/display-managers/greetd
