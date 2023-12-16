@@ -38,6 +38,7 @@
     tig
     tmux
     vulkan-tools
+    yuzu-early-access_git
     zoom-us
     zsh
   ];
