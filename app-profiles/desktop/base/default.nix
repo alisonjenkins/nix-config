@@ -16,7 +16,7 @@
     comma
     fd
     fzf
-    gamescope
+    gamescope_git
     gcc-unwrapped
     git
     glxinfo
