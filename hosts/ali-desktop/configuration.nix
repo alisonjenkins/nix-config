@@ -3,6 +3,11 @@
 {
   imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
 
+  chaotic.mesa-git = {
+    enable = true;
+    method = "GBM_BACKENDS_PATH";
+  };
+
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
     kernelParams = [ "quiet" "loglevel=3" ];
