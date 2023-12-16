@@ -4,7 +4,7 @@
   imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_xanmod_stable;
+    kernelPackages = pkgs.linuxPackages_cachyos;
     loader = {
       efi = {
         canTouchEfiVariables = true;
