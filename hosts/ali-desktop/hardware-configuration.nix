@@ -20,7 +20,7 @@
       kernelModules = [ "dm-snapshot" ];
       luks.devices.luksroot =
         {
-          device = "/dev/disk/by-uuid/ffd03485-6e3d-41ec-abc1-d773fc667e73";
+          device = "/dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246";
           preLVM = true;
           allowDiscards = true;
         };
