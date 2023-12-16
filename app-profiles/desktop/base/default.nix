@@ -25,6 +25,7 @@
     kbfs
     keybase
     keybase-gui
+    libdrm_git
     lshw
     mpv-vapoursynth
     ncdu
