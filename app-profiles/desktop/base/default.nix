@@ -25,7 +25,6 @@
     kbfs
     keybase
     keybase-gui
-    libdrm_git
     lshw
     luxtorpeda
     mangohud32_git
