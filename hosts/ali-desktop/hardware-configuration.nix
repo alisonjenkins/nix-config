@@ -55,6 +55,12 @@
     # options = [ "defaults" "noatime" "discard" "fast_commit" ];
   };
 
+  fileSystems."/media/storage1" = {
+    device = "/dev/disk/by-label/storage";
+    fsType = "xfs";
+    # options = [ "defaults" "noatime" "discard" "fast_commit" ];
+  };
+
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/12AE-8C8B";
     fsType = "vfat";
