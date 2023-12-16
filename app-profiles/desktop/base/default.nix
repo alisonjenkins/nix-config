@@ -27,6 +27,7 @@
     keybase-gui
     libdrm_git
     lshw
+    luxtorpeda
     mangohud32_git
     mangohud_git
     mesa32_git
