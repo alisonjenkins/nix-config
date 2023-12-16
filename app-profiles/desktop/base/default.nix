@@ -26,6 +26,7 @@
     keybase
     keybase-gui
     lshw
+    mpv-vapoursynth
     ncdu
     neovim
     nnn
