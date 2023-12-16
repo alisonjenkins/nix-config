@@ -48,11 +48,8 @@
   };
 
   services = {
-    kbfs = {
-      enable = true;
-    };
-    keybase = {
-      enable = true;
-    };
+    flatpak.enable = true;
+    kbfs.enable = true;
+    keybase.enable = true;
   };
 }
