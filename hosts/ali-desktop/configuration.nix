@@ -1,11 +1,7 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../app-profiles/desktop
-    ];
+  imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
 
   boot = {
     kernelPackages = pkgs.linuxPackages_xanmod_stable;
@@ -84,10 +80,7 @@
   environment.pathsToLink = [ "/share/zsh" ];
   environment.variables = {
     NIXOS_OZONE_WL = "1";
-    PATH = [
-      "\${HOME}/.local/bin"
-      "\${HOME}/.config/rofi/scripts"
-    ];
+    PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
     NIXPKGS_ALLOW_UNFREE = "1";
   };
 
@@ -102,18 +95,12 @@
         initialPassword = "initPw!";
         isNormalUser = true;
         useDefaultShell = true;
-        packages = with pkgs; [
-          firefox
-            neofetch
-            lolcat
-        ];
+        packages = with pkgs; [ firefox neofetch lolcat ];
       };
     };
   };
 
-  nixpkgs = {
-    config.allowUnfree = true;
-  };
+  nixpkgs = { config.allowUnfree = true; };
 
   nix.gc = {
     automatic = true;
