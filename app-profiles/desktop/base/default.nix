@@ -30,6 +30,7 @@
     ncdu
     neovim
     nnn
+    proton-ge-custom
     ripgrep
     rustc
     starship
