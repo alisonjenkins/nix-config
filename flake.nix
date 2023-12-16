@@ -102,15 +102,17 @@
           ];
         };
       };
-      nixosConfigurations."dev-vm" = let
-        system = "aarch64-linux";
-        pkgs = import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-        };
-        lib = nixpkgs.lib;
+      nixosConfigurations."dev-vm" =
+        let
+          system = "aarch64-linux";
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          lib = nixpkgs.lib;
 
-      in lib.nixosSystem rec {
+        in
+        lib.nixosSystem rec {
           inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
