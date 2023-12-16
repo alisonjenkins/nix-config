@@ -137,12 +137,28 @@
     pulse.enable = true;
   };
 
-  environment.pathsToLink = [ "/share/zsh" ];
-  environment.variables = {
-    NIXOS_OZONE_WL = "1";
-    PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
-    NIXPKGS_ALLOW_UNFREE = "1";
+  environment = {
+    pathsToLink = [ "/share/zsh" ];
+
+    etc = {
+      "pipewire/pipewire.conf.d/92-low-latency.conf".text = ''
+        context.properties = {
+          default.clock.rate = 96000
+          default.clock.quantum = 32
+          default.clock.min-quantum = 32
+          default.clock.max-quantum = 32
+        }
+      '';
+    };
+
+    variables = {
+      NIXOS_OZONE_WL = "1";
+      PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
+      NIXPKGS_ALLOW_UNFREE = "1";
+    };
   };
+
+
 
   programs.zsh.enable = true;
 
