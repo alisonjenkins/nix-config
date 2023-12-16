@@ -7,8 +7,6 @@
   imports =
     [
       (modulesPath + "/installer/scan/not-detected.nix")
-      (modulesPath + "/profiles/qemu-guest.nix")
-      (modulesPath + "/virtualisation/qemu-vm.nix")
     ];
 
   boot = {
@@ -25,12 +23,6 @@
           allowDiscards = true;
         };
     };
-  };
-
-  virtualisation = {
-    diskSize = 64000;
-    cores = 32;
-    memorySize = 4096;
   };
 
   fileSystems."/" = {
