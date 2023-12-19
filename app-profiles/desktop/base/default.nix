@@ -39,6 +39,7 @@
     nnn
     parted
     proton-ge-custom
+    psmisc
     ripgrep
     rustc
     sops
