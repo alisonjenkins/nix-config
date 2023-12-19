@@ -1,0 +1,13 @@
+keys:
+  - &admin_ali age1rne0eqj5jfqahm5s5mmp3u0v97xm0lvwm2ghtjlv4p7m0l78tq5stgjtu4
+  - &server_ali-desktop age1h3hqvnnyey9sgnkssz0l35a795fk9msx9ft6wj30ejepyah609fqlg70lv
+creation_rules:
+  - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
+    key_groups:
+    - age:
+      - *admin_ali
+  - path_regex: secrets/ali-desktop/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+    - age:
+      - *admin_ali
+      - *server_ali-desktop

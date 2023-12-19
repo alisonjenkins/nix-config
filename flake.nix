@@ -8,10 +8,12 @@
     hyprland.url = "github:hyprwm/Hyprland";
     jovian-nixos = { url = "github:Jovian-Experiments/Jovian-NixOS"; inputs.nixpkgs.follows = "nixpkgs"; };
     nix-colors.url = "github:misterio77/nix-colors";
+    nix-gaming.url = "github:fufexan/nix-gaming";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    sops-nix.url = "github:Mic92/sops-nix";
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, ... }:
+  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, ... }@inputs:
 
     let
       system = "x86_64-linux";
@@ -25,12 +27,15 @@
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = { inherit hyprland; };
+          specialArgs = {
+            inherit hyprland; inherit inputs;
+          };
           modules = [
             ./hosts/ali-desktop/configuration.nix
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/plasma5
             ./app-profiles/desktop/wms/hypr
+            sops-nix.nixosModules.sops
             chaotic.nixosModules.default
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
@@ -51,6 +56,7 @@
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/plasma5
             ./app-profiles/desktop/wms/hypr
+            sops-nix.nixosModules.sops
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
             {
@@ -78,6 +84,7 @@
             disko.nixosModules.disko
             ./hosts/home-kvm-hypervisor-1/disko-config.nix
             ./hosts/home-kvm-hypervisor-1/configuration.nix
+            sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
             #   home-manager.useGlobalPkgs = true;
@@ -120,6 +127,7 @@
           modules = [
             disko.nixosModules.disko
             ./hosts/dev-vm/configuration.nix
+            sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
             #   home-manager.useGlobalPkgs = true;
