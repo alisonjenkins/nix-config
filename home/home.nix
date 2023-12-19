@@ -65,6 +65,7 @@
 
   programs.home-manager.enable = true;
   targets.genericLinux.enable = true;
+  services.ssh-agent.enable = true;
 
   home.stateVersion = "23.11";
 }
