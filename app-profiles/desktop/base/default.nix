@@ -81,6 +81,7 @@
   };
 
   services = {
+    cpupower-gui.enable = true;
     flatpak.enable = true;
     kbfs.enable = true;
     keybase.enable = true;
