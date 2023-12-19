@@ -8,6 +8,7 @@
     nix-gaming.url = "github:fufexan/nix-gaming";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     sops-nix.url = "github:Mic92/sops-nix";
+    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
 
     disko = {
       url = "github:nix-community/disko";
@@ -38,7 +39,9 @@
         ali-desktop = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            inherit hyprland; inherit inputs;
+            inherit hyprland;
+            inherit inputs;
+            inherit system;
           };
           modules = [
             ./app-profiles/desktop/display-managers/greetd

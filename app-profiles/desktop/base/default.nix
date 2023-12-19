@@ -41,7 +41,6 @@
     mesa_git
     mpv-vapoursynth
     ncdu
-    neovim
     nnn
     parted
     proton-ge-custom

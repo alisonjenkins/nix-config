@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, system, ... }:
 
 {
   imports = [
@@ -201,6 +201,8 @@
   };
 
   programs.zsh.enable = true;
+
+  environment.systemPackages = [ inputs.ali-neovim.packages.${system}.nvim ];
 
   users = {
     defaultUserShell = pkgs.zsh;
