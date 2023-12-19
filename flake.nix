@@ -3,14 +3,24 @@
 
   inputs = {
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-    disko = { url = "github:nix-community/disko"; inputs.nixpkgs.follows = "nixpkgs"; };
-    home-manager = { url = "github:nix-community/home-manager"; inputs.nixpkgs.follows = "nixpkgs"; };
     hyprland.url = "github:hyprwm/Hyprland";
-    jovian-nixos = { url = "github:Jovian-Experiments/Jovian-NixOS"; inputs.nixpkgs.follows = "nixpkgs"; };
     nix-colors.url = "github:misterio77/nix-colors";
     nix-gaming.url = "github:fufexan/nix-gaming";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     sops-nix.url = "github:Mic92/sops-nix";
+
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    jovian-nixos = {
+      url = "github:Jovian-Experiments/Jovian-NixOS";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, ... }@inputs:
