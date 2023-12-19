@@ -22,6 +22,7 @@
     gcc-unwrapped
     git
     glxinfo
+    gnupg
     google-chrome
     htop
     kbfs
@@ -43,8 +44,10 @@
     ncdu
     nnn
     parted
+    pinentry
     proton-ge-custom
     psmisc
+    pwgen
     ripgrep
     rustc
     sops
