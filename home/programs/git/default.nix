@@ -4,7 +4,7 @@
   programs.git = {
     enable = true;
     userName = "Alison Jenkins";
-    userEmail = "alison.juliet.jenkins@gmail.com";
+    userEmail = "1176328+alisonjenkins@users.noreply.github.com";
 
     aliases = {
       # branch
