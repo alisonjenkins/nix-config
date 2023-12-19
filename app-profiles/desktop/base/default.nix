@@ -37,6 +37,7 @@
     ncdu
     neovim
     nnn
+    parted
     proton-ge-custom
     ripgrep
     rustc
