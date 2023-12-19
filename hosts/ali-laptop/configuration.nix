@@ -74,8 +74,8 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
 
     powerManagement = {
-        enable = true;
-        finegrained = true;
+      enable = true;
+      finegrained = true;
     };
 
     prime = {
