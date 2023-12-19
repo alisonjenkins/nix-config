@@ -115,10 +115,10 @@
       }
     ];
 
-    # signing = {
-    #   key = "7A161192";
-    #   signByDefault = true;
-    # };
+    signing = {
+      key = "B561E7F6";
+      signByDefault = true;
+    };
   };
 
   home.file = {
