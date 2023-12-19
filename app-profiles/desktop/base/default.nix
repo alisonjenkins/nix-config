@@ -15,6 +15,7 @@
     cargo
     chromium
     comma
+    discord
     fd
     fzf
     gamescope_git
