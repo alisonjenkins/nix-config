@@ -1,7 +1,35 @@
-{ pkgs, ... }:
+{ config, pkgs, inputs, ... }:
 
 {
-  imports = [ ./hardware-configuration.nix ../../app-profiles/desktop ];
+  imports = [
+    ../../app-profiles/desktop
+    ./hardware-configuration.nix
+    inputs.nix-gaming.nixosModules.pipewireLowLatency
+  ];
+
+  sops = {
+    defaultSopsFile = ../../secrets/main.enc.yaml;
+    defaultSopsFormat = "yaml";
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets = {
+      # "myservice/my_subdir/my_secret" = {
+      #   mode = "0400";
+      #   owner = config.users.users.nobody.name;
+      #   group = config.users.users.nobody.group;
+      #   restartUnits = ["example.service"];
+      #   path = "/a/secret/path.yaml";
+      #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
+      # };
+      home_enc_key = {
+        mode = "0400";
+        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
+        owner = config.users.users.root.name;
+        group = config.users.users.nobody.group;
+        path = "/etc/luks/home.key";
+        format = "binary";
+      };
+    };
+  };
 
   chaotic.hdr.enable = true;
   chaotic.mesa-git = {
@@ -118,10 +146,21 @@
     driSupport32Bit = true;
   };
 
+  powerManagement = {
+    cpuFreqGovernor = "ondemand";
+  };
+
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+  };
+
+  services.openssh = {
+    enable = true;
+    settings.PasswordAuthentication = false;
+    settings.KbdInteractiveAuthentication = false;
+    settings.PermitRootLogin = "no";
   };
 
   console.keyMap = "us";
@@ -135,30 +174,31 @@
     alsa.support32Bit = true;
     jack.enable = true;
     pulse.enable = true;
+
+    lowLatency = {
+      enable = true;
+      quantum = 4;
+      rate = 48000;
+    };
   };
 
   environment = {
     pathsToLink = [ "/share/zsh" ];
-
-    etc = {
-      "pipewire/pipewire.conf.d/92-low-latency.conf".text = ''
-        context.properties = {
-          default.clock.rate = 96000
-          default.clock.quantum = 32
-          default.clock.min-quantum = 32
-          default.clock.max-quantum = 32
-        }
-      '';
-    };
 
     variables = {
       NIXOS_OZONE_WL = "1";
       PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
       NIXPKGS_ALLOW_UNFREE = "1";
     };
+
+    etc = {
+      "crypttab".text = ''
+        # <name>       <device>                                     <password>              <options>
+        home1          UUID=ee7395ed-e76a-4179-8e92-42e35250e98d    /etc/luks/home.key
+        home2          UUID=1ac3af7c-5af5-4972-b4b6-0245cc072a65    /etc/luks/home.key
+      '';
+    };
   };
-
-
 
   programs.zsh.enable = true;
 
@@ -190,10 +230,10 @@
 
   system.autoUpgrade = {
     enable = true;
-    channel = "https://nixos.org/channels/nixos-23.05";
+    channel = "https://nixos.org/channels/nixos-23.11";
   };
 
-  system.stateVersion = "23.05";
+  system.stateVersion = "23.11";
 
   nix = {
     package = pkgs.nixFlakes;

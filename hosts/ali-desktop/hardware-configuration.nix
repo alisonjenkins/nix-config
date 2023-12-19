@@ -18,6 +18,7 @@
         "aesni_intel"
         "ahci"
         "cryptd"
+        "dm-raid"
         "ehci_pci"
         "nvme"
         "sd_mod"
@@ -29,7 +30,11 @@
         "virtio_pci"
         "xhci_pci"
       ];
-      kernelModules = [ "amdgpu" "dm-snapshot" ];
+      kernelModules = [
+        "amdgpu"
+        "dm-raid"
+        "dm-snapshot"
+      ];
       luks.devices.luksroot = {
         device = "/dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246";
         preLVM = true;
@@ -66,6 +71,25 @@
     device = "/dev/disk/by-uuid/12AE-8C8B";
     fsType = "vfat";
   };
+
+  fileSystems."/home" = {
+    device = "/dev/home/home";
+    fsType = "ext4";
+  };
+
+  fileSystems."/media/steam-games-1" = {
+    device = "/dev/osvg/steam-games-1";
+    fsType = "ext4";
+  };
+
+  # systemd.services.mountHome = {
+  #   enable = true;
+  #   path = with pkgs; [ cryptsetup util-linux ];
+  #   script = ''
+  #     mkdir -p /home/
+  #     if [[ ! -e
+  #   '';
+  # };
 
   swapDevices = [{ device = "/dev/osvg/swap"; }];
 
