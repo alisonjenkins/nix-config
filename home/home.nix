@@ -65,7 +65,16 @@
 
   programs.home-manager.enable = true;
   targets.genericLinux.enable = true;
-  services.ssh-agent.enable = true;
+
+  services = {
+    ssh-agent.enable = true;
+    gpg-agent = {
+      enable = true;
+      pinentryFlavor = "qt";
+      enableBashIntegration = true;
+      enableZshIntegration = true;
+    };
+  };
 
   home.stateVersion = "23.11";
 }
