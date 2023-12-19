@@ -10,6 +10,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    age
     bat
     cargo
     chromium
@@ -38,6 +39,7 @@
     proton-ge-custom
     ripgrep
     rustc
+    sops
     starship
     stow
     tig
