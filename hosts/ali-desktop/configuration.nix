@@ -147,7 +147,7 @@
   };
 
   powerManagement = {
-    cpuFreqGovernor = "ondemand";
+    cpuFreqGovernor = "performance";
   };
 
   programs.steam = {
