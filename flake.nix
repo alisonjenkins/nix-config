@@ -31,10 +31,10 @@
             inherit hyprland; inherit inputs;
           };
           modules = [
-            ./hosts/ali-desktop/configuration.nix
             ./app-profiles/desktop/display-managers/greetd
-            ./app-profiles/desktop/wms/plasma5
             ./app-profiles/desktop/wms/hypr
+            ./app-profiles/desktop/wms/plasma5
+            ./hosts/ali-desktop/configuration.nix
             sops-nix.nixosModules.sops
             chaotic.nixosModules.default
             hyprland.nixosModules.default
@@ -52,10 +52,10 @@
           inherit system;
           specialArgs = { inherit hyprland; inherit nix-colors; };
           modules = [
-            ./hosts/ali-laptop/configuration.nix
             ./app-profiles/desktop/display-managers/greetd
-            ./app-profiles/desktop/wms/plasma5
             ./app-profiles/desktop/wms/hypr
+            ./app-profiles/desktop/wms/plasma5
+            ./hosts/ali-laptop/configuration.nix
             sops-nix.nixosModules.sops
             hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
@@ -81,9 +81,9 @@
           inherit system;
           # specialArgs = {};
           modules = [
-            disko.nixosModules.disko
-            ./hosts/home-kvm-hypervisor-1/disko-config.nix
             ./hosts/home-kvm-hypervisor-1/configuration.nix
+            ./hosts/home-kvm-hypervisor-1/disko-config.nix
+            disko.nixosModules.disko
             sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
