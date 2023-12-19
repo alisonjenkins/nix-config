@@ -27,6 +27,12 @@
     kbfs
     keybase
     keybase-gui
+    keyutils
+    libkrb5
+    libpng
+    libpulseaudio
+    libreoffice
+    libvorbis
     lshw
     luxtorpeda
     mangohud32_git
@@ -44,10 +50,15 @@
     rustc
     sops
     starship
+    stdenv.cc.cc.lib
     stow
     tig
     tmux
     vulkan-tools
+    xorg.libXScrnSaver
+    xorg.libXcursor
+    xorg.libXi
+    xorg.libXinerama
     yuzu-early-access_git
     zoom-us
     zsh
