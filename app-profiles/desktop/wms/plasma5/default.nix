@@ -5,6 +5,7 @@
 
   programs.dconf.enable = true;
   programs.kdeconnect.enable = true;
+  environment.systemPackages = with pkgs; [ plasma-browser-integration ];
 
   networking.firewall = {
     enable = true;
