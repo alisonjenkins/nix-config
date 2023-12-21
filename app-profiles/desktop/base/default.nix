@@ -26,6 +26,7 @@
     gnupg
     google-chrome
     htop
+    just
     kbfs
     keybase
     keybase-gui
