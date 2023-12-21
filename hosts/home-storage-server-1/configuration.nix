@@ -57,7 +57,6 @@
       "\${HOME}/.local/bin"
       "\${HOME}/.config/rofi/scripts"
     ];
-    NIXPKGS_ALLOW_UNFREE = "1";
   };
 
   programs.zsh.enable = true;
@@ -71,7 +70,6 @@
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
 
-  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   nix.gc = {

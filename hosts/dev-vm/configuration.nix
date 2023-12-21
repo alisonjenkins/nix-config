@@ -81,7 +81,6 @@
       "\${HOME}/.local/bin"
       "\${HOME}/.config/rofi/scripts"
     ];
-    NIXPKGS_ALLOW_UNFREE = "1";
   };
 
   programs.zsh.enable = true;
@@ -94,7 +93,6 @@
     packages = with pkgs; [];
   };
 
-  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   nix.gc = {
