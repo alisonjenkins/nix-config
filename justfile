@@ -4,6 +4,9 @@ switch:
     #!/usr/bin/env bash
     sudo nixos-rebuild switch --flake ".#$HOST"
 
+update:
+    @nix flake update .
+
 test-build hostname:
   #!/usr/bin/env bash
   CORES=$(nproc)
@@ -19,3 +22,4 @@ test-run hostname:
   rm "${hostname}.qcow2"
 
 alias s := switch
+alias u := update
