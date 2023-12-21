@@ -40,6 +40,7 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
     kernelParams = [ "quiet" "loglevel=3" ];
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
     kernel.sysctl = {
       # Network Perf Tuning
