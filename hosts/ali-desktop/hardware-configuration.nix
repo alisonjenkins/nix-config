@@ -49,6 +49,16 @@
     memorySize = 4096;
   };
 
+  services.udev = {
+    extraRules = ''
+      ACTION=="add", ATTRS{idVendor}=="0a12", ATTRS{idProduct}=="0001", ATTR{power/wakeup}="disabled"
+      ACTION=="add", ATTRS{idVendor}=="c547", ATTRS{idProduct}=="046d", ATTR{power/wakeup}="disabled"
+      ACTION=="add", ATTRS{idVendor}=="28de", ATTRS{idProduct}=="1142", ATTR{power/wakeup}="disabled"
+      ACTION=="add", ATTRS{idVendor}=="0a12", ATTRS{idProduct}=="0001", RUN+="${pkgs.bash}/bin/sh -c 'echo disabled > /sys$env{DEVPATH}/power/wakeup'"
+      ACTION=="add", ATTRS{idVendor}=="0a12", ATTRS{idProduct}=="0001", RUN{program}+="${pkgs.bash}/bin/sh -c 'echo test > /tmp/testpath'"
+    '';
+  };
+
   fileSystems."/" = {
     device = "/dev/osvg/nixroot";
     fsType = "ext4";
