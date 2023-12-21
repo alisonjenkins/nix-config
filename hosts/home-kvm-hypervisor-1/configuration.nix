@@ -69,8 +69,8 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = [ "docker" "libvirtd" "networkmanager" "wheel" ];
-    packages = with pkgs; [];
-    openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
+    packages = with pkgs; [ ];
+    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
   };
 
   nixpkgs.config.allowUnfree = true;

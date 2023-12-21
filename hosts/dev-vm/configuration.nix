@@ -90,7 +90,7 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = [ "networkmanager" "wheel" "docker" ];
-    packages = with pkgs; [];
+    packages = with pkgs; [ ];
   };
 
   nixpkgs.config.allowUnfree = true;

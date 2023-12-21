@@ -2,16 +2,21 @@
   description = "My flake";
 
   inputs = {
+    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     hyprland.url = "github:hyprwm/Hyprland";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-gaming.url = "github:fufexan/nix-gaming";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nur.url = "github:nix-community/NUR";
     sops-nix.url = "github:Mic92/sops-nix";
-    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
 
     disko = {
       url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    firefox-addons = {
+      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
@@ -24,14 +29,10 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, ... }@inputs:
+  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
 
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
       lib = nixpkgs.lib;
     in
     {
@@ -48,10 +49,11 @@
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma5
             ./hosts/ali-desktop/configuration.nix
-            sops-nix.nixosModules.sops
             chaotic.nixosModules.default
-            hyprland.nixosModules.default
             home-manager.nixosModules.home-manager
+            hyprland.nixosModules.default
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
@@ -127,10 +129,6 @@
       nixosConfigurations."dev-vm" =
         let
           system = "aarch64-linux";
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
           lib = nixpkgs.lib;
 
         in
