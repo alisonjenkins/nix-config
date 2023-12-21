@@ -154,6 +154,29 @@
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+    package = pkgs.steam.override {
+      extraEnv = { };
+      extraLibraries = pkgs: with pkgs; [
+        xorg.libXcursor
+        xorg.libXi
+        xorg.libXinerama
+        xorg.libXScrnSaver
+        libpng
+        libpulseaudio
+        libvorbis
+        stdenv.cc.cc.lib
+        libkrb5
+        keyutils
+      ];
+    };
+    gamescopeSession = {
+      enable = true;
+      args = [
+        "--rt"
+        "-f"
+        "-o 10"
+      ];
+    };
   };
 
   services.openssh = {
