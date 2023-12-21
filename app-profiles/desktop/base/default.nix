@@ -70,6 +70,24 @@
 
   programs = {
     partition-manager.enable = true;
+
+    gamemode = {
+      enable = true;
+      settings = {
+        general = {
+          defaultgov = "powersave";
+          desiredgov = "performance";
+          softrealtime = "auto";
+          ioprio = 0;
+          renice = 10;
+        };
+
+        custom = {
+          start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
+          end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
+        };
+      };
+    };
   };
 
   hardware = {
