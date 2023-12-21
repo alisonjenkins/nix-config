@@ -18,6 +18,7 @@
     discord
     fd
     fzf
+    gamemode
     gamescope_git
     gcc-unwrapped
     git
