@@ -9,6 +9,7 @@
     ./hyprland
     ./kitty
     ./mimetypes
+    ./obs
     ./rofi
     ./starship
     ./tmux
