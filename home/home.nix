@@ -1,4 +1,4 @@
-{ hyprland, pkgs, nix-colors, ... }: {
+{ hyprland, pkgs, nix-colors, inputs, ... }: {
 
   imports = [
     hyprland.homeManagerModules.default
