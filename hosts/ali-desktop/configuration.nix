@@ -40,6 +40,9 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
     kernelParams = [ "quiet" "loglevel=3" ];
+    kernelModules = [
+      "v4l2loopback"
+    ];
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
     kernel.sysctl = {
