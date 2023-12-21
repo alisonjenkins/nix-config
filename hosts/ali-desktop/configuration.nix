@@ -31,7 +31,7 @@
     };
   };
 
-  chaotic.hdr.enable = true;
+  chaotic.hdr.enable = false;
   chaotic.mesa-git = {
     enable = true;
     method = "GBM_BACKENDS_PATH";
