@@ -72,7 +72,7 @@
       "net.ipv4.tcp_keepalive_probes" = 6;
       "net.ipv4.tcp_mtu_probing" = 1;
       "net.ipv4.tcp_timestamps" = 0;
-      "net.core.default_qdisc" = "fq";
+      "net.core.default_qdisc" = "cake";
       "net.ipv4.tcp_congestion_control" = "bbr";
       "net.ipv4.tcp_syncookies" = 1;
       "net.ipv4.tcp_rfc1337" = 1;
