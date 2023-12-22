@@ -52,19 +52,19 @@
   fileSystems."/" = {
     device = "/dev/osvg/nixroot";
     fsType = "ext4";
-    # options = [ "defaults" "noatime" "discard" "fast_commit" ];
+    options = [ "defaults" "noatime" "discard" ];
   };
 
   fileSystems."/media/archroot" = {
     device = "/dev/osvg/root";
     fsType = "ext4";
-    # options = [ "defaults" "noatime" "discard" "fast_commit" ];
+    options = [ "defaults" "noatime" "discard" ];
   };
 
   fileSystems."/media/storage1" = {
     device = "/dev/disk/by-label/storage";
     fsType = "xfs";
-    # options = [ "defaults" "noatime" "discard" "fast_commit" ];
+    options = [ "defaults" "noatime" "discard" ];
   };
 
   fileSystems."/boot" = {
@@ -80,16 +80,8 @@
   fileSystems."/media/steam-games-1" = {
     device = "/dev/osvg/steam-games-1";
     fsType = "ext4";
+    options = [ "defaults" "noatime" "barrier=0" "data=writeback" "discard" ];
   };
-
-  # systemd.services.mountHome = {
-  #   enable = true;
-  #   path = with pkgs; [ cryptsetup util-linux ];
-  #   script = ''
-  #     mkdir -p /home/
-  #     if [[ ! -e
-  #   '';
-  # };
 
   swapDevices = [{ device = "/dev/osvg/swap"; }];
 
