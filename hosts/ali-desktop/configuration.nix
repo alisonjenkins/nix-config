@@ -89,6 +89,7 @@
       "net.ipv4.conf.all.send_redirects" = 0;
       "net.ipv4.conf.default.send_redirects" = 0;
       "net.ipv4.icmp_echo_ignore_all" = 1;
+      "net.net.ipv4.tcp_window_scaling" = 1;
 
       # Virtual memory tuning
       "vm.swappiness" = 10;
