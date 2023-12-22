@@ -161,6 +161,8 @@
     xkbVariant = "";
   };
 
+  services.irqbalance.enable = true;
+
   hardware.opengl = {
     enable = true;
     driSupport = true;
