@@ -124,6 +124,10 @@
 
   networking.hostName = "ali-desktop";
   networking.networkmanager.enable = true;
+  networking.nameservers = [
+    "9.9.9.9"
+    "149.112.112.112"
+  ];
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {
@@ -136,6 +140,10 @@
     LC_PAPER = "en_GB.UTF-8";
     LC_TELEPHONE = "en_GB.UTF-8";
     LC_TIME = "en_GB.UTF-8";
+  };
+
+  services.resolved = {
+    enable = true;
   };
 
   services.xserver = {
