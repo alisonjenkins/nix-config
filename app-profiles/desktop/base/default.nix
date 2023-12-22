@@ -17,6 +17,7 @@
     comma
     dig
     discord
+    ethtool
     fd
     fzf
     gamemode
