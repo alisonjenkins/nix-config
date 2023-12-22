@@ -28,6 +28,7 @@
     gnupg
     google-chrome
     htop
+    iotop
     just
     kbfs
     keybase
