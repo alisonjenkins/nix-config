@@ -15,6 +15,7 @@
     cargo
     chromium
     comma
+    dig
     discord
     fd
     fzf
