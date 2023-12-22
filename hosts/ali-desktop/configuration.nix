@@ -130,6 +130,7 @@
     "9.9.9.9"
     "149.112.112.112"
   ];
+  networking.enableIPv6 = false;
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {
