@@ -1,6 +1,10 @@
-{ pkgs, inputs, system, ... }:
+{ pkgs, inputs, system, lib, firefox-addons, ... }:
 {
   # inputs.firefox-addons.pkgs.config.allowUnfree = true;
+  # nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+  #   inputs.firefox-addons.packages.${system}.onepassword-password-manager
+  # ];
+
   programs.firefox = {
     enable = true;
 
@@ -20,18 +24,18 @@
       };
       search.force = true;
 
-      extensions = [
-        inputs.firefox-addons.packages.${system}.darkreader
-        inputs.firefox-addons.packages.${system}.firenvim
-        inputs.firefox-addons.packages.${system}.multi-account-containers
-        # inputs.firefox-addons.packages.${system}.onepassword-password-manager
-        inputs.firefox-addons.packages.${system}.privacy-badger
-        inputs.firefox-addons.packages.${system}.surfingkeys
-        inputs.firefox-addons.packages.${system}.switchyomega
-        inputs.firefox-addons.packages.${system}.ublock-origin
+      extensions = with inputs.firefox-addons.packages.${system}; [
+        darkreader
+        firenvim
+        multi-account-containers
+        # onepassword-password-manager
+        privacy-badger
+        surfingkeys
+        switchyomega
+        ublock-origin
       ] ++ (
         if pkgs.stdenv.isLinux then [
-          inputs.firefox-addons.packages.${system}.plasma-integration
+          firefox-addons.packages.${system}.plasma-integration
         ] else [ ]
       );
     };
