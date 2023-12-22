@@ -56,14 +56,19 @@
         extraConfig = ''
           set -g @thumbs-key F
           set -g @thumbs-osc52 1
-          set -g @thumbs-command 'echo -n {} | pbcopy'
 
-          if-shell -b '[ -z "$WAYLAND_DISPLAY" ] && ! uname | grep -q Darwin' \
-            "set -g @thumbs-command 'echo -n {} | xclip -selection clipboard'
-          if-shell 'uname | grep -q Darwin' \
-            "set -g @thumbs-command 'echo -n {} | pbcopy'
-          if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
-            "set -g @thumbs-command 'echo -n {} | wl-copy'
+          # if-shell -b '[ -z "$WAYLAND_DISPLAY" ] && ! uname | grep -q Darwin' \
+          #   "set -g @thumbs-command 'echo -n {} | xclip -selection clipboard'
+          # if-shell 'uname | grep -q Darwin' \
+          #   "set -g @thumbs-command 'echo -n {} | pbcopy'
+          # if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
+          #   "set -g @thumbs-command 'echo -n {} | wl-copy'
+        '';
+      }
+      {
+        plugin = tmuxPlugins.jump;
+        extraConfig = ''
+          set -g @jump-key 's'
         '';
       }
     ];
