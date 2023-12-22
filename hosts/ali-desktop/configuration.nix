@@ -149,6 +149,10 @@
     enable = true;
   };
 
+  services.fstrim = {
+    enable = true;
+  };
+
   services.xserver = {
     videoDrivers = [ "amdgpu" ];
     layout = "us";
