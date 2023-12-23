@@ -12,6 +12,7 @@
   environment.systemPackages = with pkgs; [
     age
     bat
+    bc
     cargo
     chromium
     comma
