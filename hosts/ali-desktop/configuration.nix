@@ -38,8 +38,8 @@
   };
 
   boot = {
-    # kernelPackages = pkgs.linuxPackages_cachyos;
-    kernelPackages = pkgs.linuxPackages_xanmod;
+    kernelPackages = pkgs.linuxPackages_cachyos;
+    # kernelPackages = pkgs.linuxPackages_xanmod;
     kernelParams = [ "quiet" "loglevel=3" ];
     kernelModules = [
       "v4l2loopback"
