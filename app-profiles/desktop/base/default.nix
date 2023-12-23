@@ -24,6 +24,7 @@
     gamemode
     gamescope_git
     gcc-unwrapped
+    gimp
     git
     glxinfo
     gnupg
