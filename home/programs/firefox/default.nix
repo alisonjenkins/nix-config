@@ -1,4 +1,4 @@
-{ pkgs, inputs, system, lib, firefox-addons, ... }:
+{ pkgs, inputs, system, lib, ... }:
 {
   # inputs.firefox-addons.pkgs.config.allowUnfree = true;
   # nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
@@ -35,7 +35,7 @@
         ublock-origin
       ] ++ (
         if pkgs.stdenv.isLinux then [
-          firefox-addons.packages.${system}.plasma-integration
+          inputs.firefox-addons.packages.${system}.plasma-integration
         ] else [ ]
       );
     };
