@@ -4,6 +4,7 @@
   inputs = {
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     nix-colors.url = "github:misterio77/nix-colors";
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
@@ -64,6 +65,7 @@
             chaotic.nixosModules.default
             home-manager.nixosModules.home-manager
             hyprland.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             {

@@ -107,7 +107,23 @@
 
   services = {
     cpupower-gui.enable = true;
-    flatpak.enable = true;
+    flatpak = {
+      enable = true;
+      packages = [
+        "de.shorsh.discord-screenaudio"
+      ];
+      remotes = [{
+        name = "flathub-beta";
+        location = "https://flathub.org/beta-repo/flathub-beta.flatpakrepo";
+      }];
+      update = {
+        onActivation = true;
+        auto = {
+          enable = true;
+          onCalendar = "daily";
+        };
+      };
+    };
     kbfs.enable = true;
     keybase.enable = true;
   };
