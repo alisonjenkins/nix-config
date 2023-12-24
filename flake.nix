@@ -108,21 +108,25 @@
 
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
-          # specialArgs = {};
+          specialArgs = {
+            inherit inputs;
+            inherit system;
+          };
           modules = [
             ./hosts/home-kvm-hypervisor-1/configuration.nix
             ./hosts/home-kvm-hypervisor-1/disko-config.nix
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
-            # home-manager.nixosModules.home-manager
-            # {
-            #   home-manager.useGlobalPkgs = true;
-            #   home-manager.useUserPackages = true;
-            #   home-manager.users.ali = import ./home/home.nix;
-            #   home-manager.extraSpecialArgs = specialArgs;
-            # }
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.ali = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs;
+            }
           ];
         };
+
         home-storage-server-1 = lib.nixosSystem rec {
           inherit system;
           # specialArgs = {};
