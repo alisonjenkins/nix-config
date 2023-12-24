@@ -1,15 +1,16 @@
-{ config, lib, pkgs, ... }:
+{ system, pkgs, ... }:
 {
   imports = [
     ./ssh
   ];
 
-  # config.environment.systemPackages = with pkgs; [
-  #   git
-  #   htop
-  #   lshw
-  #   nnn
-  #   tmux
-  #   toybox
-  # ];
+  environment.systemPackages = with pkgs; [
+    git
+    htop
+    # inputs.ali-neovim.packages.${system}.nvim
+    lshw
+    nnn
+    tmux
+    toybox
+  ];
 }
