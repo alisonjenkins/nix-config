@@ -16,6 +16,7 @@
     cargo
     chromium
     comma
+    corectrl
     dig
     discord
     ethtool
