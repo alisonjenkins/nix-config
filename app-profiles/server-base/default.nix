@@ -4,12 +4,12 @@
     ./ssh
   ];
 
-  config.environment.systemPackages = with pkgs; [
-    git
-    htop
-    lshw
-    nnn
-    tmux
-    toybox
-  ];
+  # config.environment.systemPackages = with pkgs; [
+  #   git
+  #   htop
+  #   lshw
+  #   nnn
+  #   tmux
+  #   toybox
+  # ];
 }
