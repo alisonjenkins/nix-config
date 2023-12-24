@@ -4,7 +4,7 @@
     ./ssh
   ];
 
-  environment.systemPackages = with pkgs; [
+  config.environment.systemPackages = with pkgs; [
     git
     htop
     lshw
