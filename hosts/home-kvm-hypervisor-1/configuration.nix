@@ -10,9 +10,10 @@
     ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_hardened;
+    kernelPackages = pkgs.linuxPackages_latest;
     kernelParams = [
       "vfio-pci.ids=1000:0072"
+      "systemd.gpt_auto=no"
     ];
     loader = {
       efi.efiSysMountPoint = "/boot";
