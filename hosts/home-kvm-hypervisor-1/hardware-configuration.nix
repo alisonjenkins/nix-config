@@ -20,6 +20,9 @@
   boot = {
     kernelModules = [ "kvm-amd" ];
     extraModulePackages = [ ];
+    extraModprobeConfig = ''
+      softdep drm pre: vfio-pci
+    '';
 
     initrd = {
       availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
