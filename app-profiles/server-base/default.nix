@@ -11,6 +11,5 @@
     lshw
     nnn
     tmux
-    toybox
   ];
 }
