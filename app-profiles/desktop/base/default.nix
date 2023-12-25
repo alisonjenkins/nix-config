@@ -64,6 +64,7 @@
     stow
     tig
     tmux
+    virt-manager
     vulkan-tools
     xorg.libXScrnSaver
     xorg.libXcursor
