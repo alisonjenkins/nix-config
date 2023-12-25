@@ -8,6 +8,7 @@
     git
     htop
     inputs.ali-neovim.packages.${system}.nvim
+    just
     lshw
     nnn
     tmux
