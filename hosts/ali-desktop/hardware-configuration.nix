@@ -44,8 +44,8 @@
   };
 
   virtualisation.vmVariant = {
-    diskSize = 64000;
-    cores = 32;
+    diskSize = 65536;
+    cores = 8;
     memorySize = 4096;
   };
 
