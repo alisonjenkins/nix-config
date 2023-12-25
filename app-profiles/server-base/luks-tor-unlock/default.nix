@@ -7,6 +7,6 @@
     port = 22;
     shell = "/bin/cryptsetup-askpass";
     authorizedKeys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
-    hostKeys = [ "/etc/secrets/initrd/ssh_host_ed25519_key" ];
+    hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 }
