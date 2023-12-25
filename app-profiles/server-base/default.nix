@@ -11,6 +11,7 @@
     just
     lshw
     nnn
+    pciutils
     tmux
   ];
 }
