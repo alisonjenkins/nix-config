@@ -129,7 +129,10 @@
 
         home-storage-server-1 = lib.nixosSystem rec {
           inherit system;
-          # specialArgs = {};
+          specialArgs = {
+            inherit inputs;
+            inherit system;
+          };
           modules = [
             disko.nixosModules.disko
             ./hosts/home-storage-server-1/disko-config.nix
