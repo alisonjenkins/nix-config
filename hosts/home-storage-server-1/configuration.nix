@@ -34,6 +34,8 @@
     };
   };
 
+  services.logrotate.checkConfig = false;
+
   networking.hostName = "home-storage-server-1";
   networking.networkmanager.enable = true;
 
