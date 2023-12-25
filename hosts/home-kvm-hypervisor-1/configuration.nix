@@ -15,6 +15,13 @@
       "vfio-pci.ids=1000:0072"
       "systemd.gpt_auto=no"
     ];
+    initrd = {
+      availableKernelModules = [
+        "ixgbe"
+        "mt7921e"
+        "r8169"
+      ];
+    };
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
