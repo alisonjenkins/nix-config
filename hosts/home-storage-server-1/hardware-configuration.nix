@@ -15,7 +15,20 @@
     extraModulePackages = [ ];
 
     initrd = {
-      availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
+      availableKernelModules = [
+        "ahci"
+        "cryptd"
+        "ehci_pci"
+        "nvme"
+        "sd_mod"
+        "sr_mod"
+        "uas"
+        "usb_storage"
+        "usbhid"
+        "virtio_blk"
+        "virtio_pci"
+        "xhci_pci"
+      ];
       kernelModules = [ "dm-snapshot" ];
     };
   };
