@@ -61,6 +61,7 @@
     sops
     starship
     stdenv.cc.cc.lib
+    steamtinkerlaunch
     stow
     tig
     tmux
