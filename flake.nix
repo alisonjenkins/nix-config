@@ -96,8 +96,11 @@
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma5
             ./hosts/ali-laptop/configuration.nix
-            sops-nix.nixosModules.sops
+            chaotic.nixosModules.default
             hyprland.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
