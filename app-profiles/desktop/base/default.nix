@@ -70,6 +70,7 @@
     tmux
     virt-manager
     vulkan-tools
+    xdg-utils
     xorg.libXScrnSaver
     xorg.libXcursor
     xorg.libXi
