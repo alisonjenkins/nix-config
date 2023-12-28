@@ -52,11 +52,16 @@
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = {
-            inherit hyprland;
-            inherit inputs;
-            inherit system;
-          };
+          specialArgs =
+            let
+              gpgSigningKey = "B561E7F6";
+            in
+            {
+              inherit hyprland;
+              inherit inputs;
+              inherit system;
+              inherit gpgSigningKey;
+            };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr
@@ -79,7 +84,13 @@
 
         ali-laptop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = { inherit hyprland; inherit nix-colors; };
+          specialArgs = let gpgSigningKey = "AD723B26"; in
+            {
+              inherit gpgSigningKey;
+              inherit hyprland;
+              inherit inputs;
+              inherit system;
+            };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr

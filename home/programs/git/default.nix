@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, gpgSigningKey, ... }:
 
 {
   programs.git = {
@@ -116,7 +116,7 @@
     ];
 
     signing = {
-      key = "B561E7F6";
+      key = gpgSigningKey;
       signByDefault = true;
     };
   };
