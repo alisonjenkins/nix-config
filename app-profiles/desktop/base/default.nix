@@ -30,6 +30,7 @@
     glxinfo
     gnupg
     google-chrome
+    gtk3
     haveged
     htop
     inputs.ali-neovim.packages.${system}.nvim
