@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, inputs, system, ... }:
 {
   boot = {
     initrd.systemd.enable = true;
@@ -31,6 +31,7 @@
     gnupg
     google-chrome
     htop
+    inputs.ali-neovim.packages.${system}.nvim
     iotop
     just
     kbfs
