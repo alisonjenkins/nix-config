@@ -247,8 +247,6 @@
 
   programs.zsh.enable = true;
 
-  environment.systemPackages = [ inputs.ali-neovim.packages.${system}.nvim ];
-
   users = {
     defaultUserShell = pkgs.zsh;
     users = {
