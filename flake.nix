@@ -68,11 +68,11 @@
             ./app-profiles/desktop/wms/plasma5
             ./hosts/ali-desktop/configuration.nix
             chaotic.nixosModules.default
-            home-manager.nixosModules.home-manager
             hyprland.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
