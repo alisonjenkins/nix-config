@@ -30,6 +30,7 @@
     glxinfo
     gnupg
     google-chrome
+    haveged
     htop
     inputs.ali-neovim.packages.${system}.nvim
     iotop
@@ -58,6 +59,7 @@
     psmisc
     pwgen
     ripgrep
+    rng-tools
     rustc
     sops
     starship
@@ -130,6 +132,7 @@
         };
       };
     };
+    haveged.enable = true;
     kbfs.enable = true;
     keybase.enable = true;
   };
