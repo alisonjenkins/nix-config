@@ -117,6 +117,16 @@
 
   services = {
     cpupower-gui.enable = true;
+    haveged.enable = true;
+    kbfs.enable = true;
+    keybase.enable = true;
+
+    avahi = {
+      enable = true;
+      nssmdns = true;
+      openFirewall = true;
+    };
+
     flatpak = {
       enable = true;
       packages = [
@@ -134,8 +144,9 @@
         };
       };
     };
-    haveged.enable = true;
-    kbfs.enable = true;
-    keybase.enable = true;
+
+    printing = {
+      enable = true;
+    };
   };
 }
