@@ -171,8 +171,8 @@
           inherit system;
           specialArgs = { inherit hyprland; };
           modules = [
-            disko.nixosModules.disko
             ./hosts/dev-vm/configuration.nix
+            disko.nixosModules.disko
             sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
