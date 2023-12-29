@@ -13,6 +13,7 @@
     age
     bat
     bc
+    beancount
     cargo
     chromium
     comma
@@ -20,6 +21,7 @@
     dig
     discord
     ethtool
+    fava
     fd
     fzf
     gamemode
