@@ -6,11 +6,11 @@
         "nixvim": "nixvim"
       },
       "locked": {
-        "lastModified": 1704100014,
-        "narHash": "sha256-PzukRL00YrvDJWTbiH4s44OYp8q1l/PKrcS+FP/wIbI=",
+        "lastModified": 1704100194,
+        "narHash": "sha256-tzsF6zTaG8HL8tx3/ggh9hKyWaBKtWkG7FCDaYe5WqM=",
         "ref": "refs/heads/main",
-        "rev": "bc350f9370a95d99158fb089ddd22f2213869e40",
-        "revCount": 30,
+        "rev": "94ae6b1f85f11042a382f0e0572864358d03fcca",
+        "revCount": 31,
         "type": "git",
         "url": "file:///home/ali/git/neovim-nix-flake"
       },
