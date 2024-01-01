@@ -2,8 +2,8 @@
   description = "My flake";
 
   inputs = {
-    # ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
-    ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
+    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
+    # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
