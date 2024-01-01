@@ -118,6 +118,7 @@
   };
 
   services = {
+    atd.enable = true;
     cpupower-gui.enable = true;
     haveged.enable = true;
     kbfs.enable = true;
