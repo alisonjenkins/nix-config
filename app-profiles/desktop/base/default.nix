@@ -56,6 +56,7 @@
     mpv-vapoursynth
     ncdu
     nnn
+    nushellFull
     parted
     pinentry
     proton-ge-custom
