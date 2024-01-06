@@ -18,6 +18,7 @@
     chromium
     comma
     corectrl
+    crunchy-cli
     dig
     discord
     ethtool
