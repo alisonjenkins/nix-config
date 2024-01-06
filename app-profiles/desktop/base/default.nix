@@ -37,6 +37,7 @@
     haveged
     htop
     inputs.ali-neovim.packages.${system}.nvim
+    inputs.nh.packages.${system}.default
     iotop
     just
     kbfs
