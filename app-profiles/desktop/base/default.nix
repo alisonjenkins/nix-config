@@ -16,6 +16,7 @@
     beancount
     cargo
     chromium
+    colmena
     comma
     corectrl
     crunchy-cli
