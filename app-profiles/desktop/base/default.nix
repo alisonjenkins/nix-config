@@ -77,6 +77,7 @@
     tmux
     usbutils
     virt-manager
+    vmtouch
     vulkan-tools
     xdg-utils
     xorg.libXScrnSaver
