@@ -73,6 +73,7 @@
     stow
     tig
     tmux
+    usbutils
     virt-manager
     vulkan-tools
     xdg-utils
