@@ -35,6 +35,10 @@
 
   networking.hostName = "ali-laptop";
   networking.networkmanager.enable = true;
+  networking.extraHosts =
+    ''
+      192.168.1.202 home-kvm-hypervisor-1
+    '';
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {

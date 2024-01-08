@@ -132,6 +132,10 @@
     "9.9.9.9"
     "149.112.112.112"
   ];
+  networking.extraHosts =
+    ''
+      192.168.1.202 home-kvm-hypervisor-1
+    '';
   networking.enableIPv6 = false;
 
   time.timeZone = "Europe/London";
