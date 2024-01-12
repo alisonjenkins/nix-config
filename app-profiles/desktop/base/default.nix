@@ -22,6 +22,7 @@
     crunchy-cli
     dig
     discord
+    droidcam
     ethtool
     fava
     fd
