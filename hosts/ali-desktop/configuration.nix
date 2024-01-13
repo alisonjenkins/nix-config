@@ -269,6 +269,10 @@
     };
   };
 
+  environment.systemPackages = [
+    pkgs.radeontop
+  ];
+
   nixpkgs = { config.allowUnfree = true; };
 
   nix.gc = {
