@@ -2,6 +2,9 @@ set export
 
 switch:
     #!/usr/bin/env bash
+    if command -v nh &>/dev/null; then
+        nh os switch .;
+    fi
     sudo nixos-rebuild switch --flake ".#$HOST"
 
 update:
