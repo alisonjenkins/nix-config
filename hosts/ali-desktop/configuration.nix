@@ -33,7 +33,7 @@
 
   chaotic.hdr.enable = false;
   chaotic.mesa-git = {
-    enable = false;
+    enable = true;
     method = "GBM_BACKENDS_PATH";
   };
 
