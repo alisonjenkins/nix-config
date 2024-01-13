@@ -33,6 +33,7 @@
         surfingkeys
         switchyomega
         ublock-origin
+        tree-style-tab
       ] ++ (
         if pkgs.stdenv.isLinux then [
           inputs.firefox-addons.packages.${system}.plasma-integration
