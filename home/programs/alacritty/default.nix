@@ -5,10 +5,6 @@
     enable = true;
 
     settings = {
-      import = [
-        "${pkgs.vimPlugins.nightfox-nvim}/extra/carbonfox/nightfox_alacritty.yml"
-      ];
-
       font = {
         normal = {
           family = "Hack";
