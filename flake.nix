@@ -7,6 +7,7 @@
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
@@ -47,7 +48,7 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs_stable, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
 
     let
       system = "x86_64-linux";
