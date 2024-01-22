@@ -63,6 +63,7 @@
     nushellFull
     parted
     pinentry
+    polymc
     proton-ge-custom
     psmisc
     pwgen
