@@ -63,7 +63,6 @@
     nushellFull
     parted
     pinentry
-    polymc
     proton-ge-custom
     psmisc
     pwgen
@@ -142,6 +141,7 @@
       enable = true;
       packages = [
         "de.shorsh.discord-screenaudio"
+        "org.polymc.PolyMC"
       ];
       remotes = [{
         name = "flathub-beta";
