@@ -137,6 +137,9 @@
       192.168.1.202 home-kvm-hypervisor-1
     '';
   networking.enableIPv6 = false;
+  networking.firewall.allowedTCPPorts = [
+    25565
+  ];
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {
