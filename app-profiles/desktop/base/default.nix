@@ -41,6 +41,7 @@
     inputs.ali-neovim.packages.${system}.nvim
     inputs.nh.packages.${system}.default
     iotop
+    jdk17
     just
     kbfs
     keybase
