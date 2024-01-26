@@ -73,6 +73,13 @@
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma5
             ./hosts/ali-desktop/configuration.nix
+            ./modules/nixos/alvr.nix
+            {
+              programs.alvr = {
+                enable = true;
+                openFirewall = true;
+              };
+            }
             chaotic.nixosModules.default
             hyprland.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
