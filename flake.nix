@@ -70,6 +70,7 @@
             };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
+            ./app-profiles/desktop/aws
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma5
             ./hosts/ali-desktop/configuration.nix
