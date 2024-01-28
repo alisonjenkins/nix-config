@@ -159,6 +159,9 @@
 
     printing = {
       enable = true;
+      drivers = [
+        pkgs.brlaser
+      ];
     };
   };
 }
