@@ -241,6 +241,7 @@
     variables = {
       NIXOS_OZONE_WL = "1";
       PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
+      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
 
     etc = {

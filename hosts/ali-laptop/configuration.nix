@@ -118,6 +118,7 @@
       "\${HOME}/.local/bin"
       "\${HOME}/.config/rofi/scripts"
     ];
+    ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
   };
 
   programs.zsh.enable = true;
