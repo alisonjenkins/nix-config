@@ -82,6 +82,7 @@
     virt-manager
     vmtouch
     vulkan-tools
+    wine
     xdg-utils
     xorg.libXScrnSaver
     xorg.libXcursor
