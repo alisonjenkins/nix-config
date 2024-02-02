@@ -8,6 +8,7 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs_master.url = "github:nixos/nixpkgs";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
@@ -48,7 +49,7 @@
     };
   };
 
-  outputs = { nixpkgs, nixpkgs_stable, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs_stable, nixpkgs_master, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
 
     let
       system = "x86_64-linux";
