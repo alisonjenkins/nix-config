@@ -164,8 +164,8 @@
 
   services.xserver = {
     videoDrivers = [ "amdgpu" ];
-    layout = "us";
-    xkbVariant = "";
+    xkb.layout = "us";
+    xkb.variant = "";
   };
 
   services.irqbalance.enable = true;
