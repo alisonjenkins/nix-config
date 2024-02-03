@@ -1,12 +1,12 @@
 { config, lib, pkgs, ... }:
 
 {
-  imports = [ 
+  imports = [
     ./cava
   ];
-  
+
   gtk = {
-    enable = true;
+    enable = false;
     iconTheme = {
       name = "Yaru-magenta-dark";
       package = pkgs.yaru-theme;
