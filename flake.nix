@@ -43,13 +43,33 @@
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    plasma-manager = {
+      url = "github:pjones/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { nixpkgs, nixpkgs_stable, nixpkgs_master, home-manager, hyprland, disko, jovian-nixos, nix-colors, chaotic, nix-gaming, sops-nix, nur, ... }@inputs:
+  outputs =
+    { chaotic
+    , disko
+    , home-manager
+    , hyprland
+    , jovian-nixos
+    , nix-colors
+    , nix-gaming
+    , nixpkgs
+    , nixpkgs_master
+    , nixpkgs_stable
+    , nur
+    , plasma-manager
+    , sops-nix
+    , ...
+    }@inputs:
 
     let
       system = "x86_64-linux";
@@ -64,10 +84,10 @@
               gpgSigningKey = "B561E7F6";
             in
             {
+              inherit gpgSigningKey;
               inherit hyprland;
               inherit inputs;
               inherit system;
-              inherit gpgSigningKey;
             };
           modules = [
             ./app-profiles/desktop/display-managers/greetd

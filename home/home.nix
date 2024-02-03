@@ -2,6 +2,7 @@
 
   imports = [
     hyprland.homeManagerModules.default
+    inputs.plasma-manager.homeManagerModules.plasma-manager
     ./programs
     ./scripts
     ./themes

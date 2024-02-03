@@ -10,6 +10,7 @@
     ./kitty
     ./mimetypes
     ./obs
+    ./plasma5
     ./rofi
     ./starship
     ./tmux
