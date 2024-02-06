@@ -6,51 +6,51 @@
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_stable";
     };
     firefox-addons = {
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     home-manager = {
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     hyprland = {
       url = "github:hyprwm/Hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     jovian-nixos = {
       url = "github:Jovian-Experiments/Jovian-NixOS";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     nh = {
       url = "github:viperML/nh";
-      inputs.nixpkgs.follows = "nixpkgs"; # override this repo's nixpkgs snapshot
+      inputs.nixpkgs.follows = "nixpkgs_stable"; # override this repo's nixpkgs snapshot
     };
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_stable";
     };
     plasma-manager = {
       url = "github:pjones/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
       inputs.home-manager.follows = "home-manager";
     };
     sops-nix = {
       url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_stable";
     };
   };
 
@@ -62,7 +62,7 @@
     , jovian-nixos
     , nix-colors
     , nix-gaming
-    , nixpkgs
+    , nixpkgs_unstable
     , nixpkgs_master
     , nixpkgs_stable
     , nur
@@ -73,7 +73,7 @@
 
     let
       system = "x86_64-linux";
-      lib = nixpkgs.lib;
+      lib = nixpkgs_stable.lib;
     in
     {
       nixosConfigurations = {
@@ -192,7 +192,7 @@
       nixosConfigurations."dev-vm" =
         let
           system = "aarch64-linux";
-          lib = nixpkgs.lib;
+          lib = nixpkgs_stable.lib;
 
         in
         lib.nixosSystem rec {
