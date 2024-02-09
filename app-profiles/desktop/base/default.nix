@@ -143,7 +143,7 @@
     flatpak = {
       enable = true;
       packages = [
-        "de.shorsh.discord-screenaudio"
+        "dev.vencord.Vesktop"
         "org.polymc.PolyMC"
       ];
       remotes = [{
