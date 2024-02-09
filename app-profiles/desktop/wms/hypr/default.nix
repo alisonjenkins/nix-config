@@ -1,4 +1,4 @@
-{ config, lib, pkgs, home, ... }:
+{ config, lib, pkgs, inputs, system, home, ... }:
 {
   environment.systemPackages = with pkgs; [
     grim
@@ -30,5 +30,6 @@
   };
 
   programs.hyprland.enable = true;
+  programs.hyprland.package = inputs.hyprland.packages.${system}.hyprland;
 }
 
