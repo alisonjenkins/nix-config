@@ -26,6 +26,7 @@
     ethtool
     fava
     fd
+    ffmpeg
     fzf
     gamemode
     gamescope_git
