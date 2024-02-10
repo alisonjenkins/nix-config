@@ -9,92 +9,106 @@
     kernelParams = [ "quiet" ];
   };
 
-  environment.systemPackages = with pkgs; [
-    age
-    bat
-    bc
-    beancount
-    cargo
-    chromium
-    colmena
-    comma
-    corectrl
-    crunchy-cli
-    dig
-    discord
-    droidcam
-    ethtool
-    fava
-    fd
-    ffmpeg
-    fzf
-    gamemode
-    gamescope_git
-    gcc-unwrapped
-    gimp
-    git
-    glxinfo
-    gnupg
-    google-chrome
-    gtk3
-    haveged
-    htop
-    inputs.ali-neovim.packages.${system}.nvim
-    inputs.nh.packages.${system}.default
-    inputs.nixpkgs_master.legacyPackages.${system}.alvr
-    iotop
-    jdk17
-    just
-    kbfs
-    keybase
-    keybase-gui
-    keyutils
-    kodi-cli
-    kodi-wayland
-    libkrb5
-    libpng
-    libpulseaudio
-    libreoffice
-    libvorbis
-    lshw
-    luxtorpeda
-    mangohud32_git
-    mangohud_git
-    mesa32_git
-    mesa_git
-    mpv-vapoursynth
-    ncdu
-    nnn
-    nushellFull
-    parted
-    pinentry
-    proton-ge-custom
-    psmisc
-    pwgen
-    ripgrep
-    rng-tools
-    rustc
-    sops
-    starship
-    stdenv.cc.cc.lib
-    steamtinkerlaunch
-    stow
-    tig
-    tmux
-    usbutils
-    virt-manager
-    vmtouch
-    vulkan-tools
-    wine
-    xdg-utils
-    xorg.libXScrnSaver
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXinerama
-    yuzu-early-access_git
-    zoom-us
-    zsh
-  ];
+  programs.gamescope = {
+    enable = true;
+    capSysNice = true;
+  };
+
+  services.xserver.deviceSection = ''
+    Option "DRI" "3"
+  '';
+
+  environment.systemPackages = with pkgs;
+    [
+      # gamescope
+      # inputs.jovian-nixos.legacyPackages.${system}.gamescope
+      # mangohud32_git
+      # mangohud_git
+      age
+      arrpc
+      bat
+      bc
+      beancount
+      cachix
+      cargo
+      chromium
+      colmena
+      comma
+      corectrl
+      crunchy-cli
+      dig
+      discord
+      droidcam
+      ethtool
+      fava
+      fd
+      ffmpeg
+      fzf
+      gamemode
+      gcc-unwrapped
+      gimp
+      git
+      glxinfo
+      gnupg
+      google-chrome
+      gtk3
+      haveged
+      htop
+      inputs.ali-neovim.packages.${system}.nvim
+      inputs.jovian-nixos.legacyPackages.${system}.mangohud
+      inputs.nh.packages.${system}.default
+      inputs.nixpkgs_master.legacyPackages.${system}.alvr
+      iotop
+      jdk17
+      just
+      kbfs
+      keybase
+      keybase-gui
+      keyutils
+      kodi-cli
+      kodi-wayland
+      libkrb5
+      libpng
+      libpulseaudio
+      libreoffice
+      libvorbis
+      lshw
+      luxtorpeda
+      mesa32_git
+      mesa_git
+      mpv-vapoursynth
+      ncdu
+      nnn
+      nushellFull
+      parted
+      pinentry
+      proton-ge-custom
+      psmisc
+      pwgen
+      ripgrep
+      rng-tools
+      rustc
+      sops
+      starship
+      stdenv.cc.cc.lib
+      steamtinkerlaunch
+      stow
+      tig
+      tmux
+      usbutils
+      virt-manager
+      vmtouch
+      vulkan-tools
+      wine
+      xdg-utils
+      xorg.libXScrnSaver
+      xorg.libXcursor
+      xorg.libXi
+      xorg.libXinerama
+      yuzu-early-access_git
+      zoom-us
+      zsh
+    ];
 
   programs = {
     partition-manager.enable = true;
