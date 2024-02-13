@@ -4,7 +4,6 @@
     binfmt = {
       emulatedSystems = [
         "aarch64-linux"
-        "x86_64-darwin"
       ];
     };
     initrd.systemd.enable = true;
