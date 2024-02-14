@@ -104,6 +104,7 @@
       virt-manager
       vmtouch
       vulkan-tools
+      vulnix
       wine
       xdg-utils
       xorg.libXScrnSaver
