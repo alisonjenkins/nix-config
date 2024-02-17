@@ -1,4 +1,4 @@
-{ pkgs, inputs, system, ... }:
+{ lib, pkgs, inputs, system, ... }:
 {
   boot = {
     binfmt = {
@@ -63,6 +63,7 @@
       inputs.jovian-nixos.legacyPackages.${system}.mangohud
       inputs.nh.packages.${system}.default
       inputs.nixpkgs_master.legacyPackages.${system}.alvr
+      obsidian
       iotop
       jdk17
       just
@@ -85,8 +86,6 @@
       ncdu
       nnn
       nushellFull
-      obsidian
-      obsidian
       parted
       pinentry
       proton-ge-custom
