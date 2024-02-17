@@ -86,6 +86,7 @@
       nnn
       nushellFull
       obsidian
+      obsidian
       parted
       pinentry
       proton-ge-custom
