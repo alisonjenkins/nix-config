@@ -88,6 +88,7 @@
       obsidian
       parted
       pinentry
+      prismlauncher
       proton-ge-custom
       psmisc
       pwgen
