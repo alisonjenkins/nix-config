@@ -88,7 +88,6 @@
       obsidian
       parted
       pinentry
-      prismlauncher
       proton-ge-custom
       psmisc
       pwgen
@@ -169,6 +168,7 @@
       enable = true;
       packages = [
         "dev.vencord.Vesktop"
+        "org.prismlauncher.PrismLauncher"
       ];
       remotes = [{
         name = "flathub-beta";
