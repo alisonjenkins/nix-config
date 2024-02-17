@@ -168,7 +168,6 @@
       enable = true;
       packages = [
         "dev.vencord.Vesktop"
-        "org.polymc.PolyMC"
       ];
       remotes = [{
         name = "flathub-beta";
