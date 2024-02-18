@@ -2,13 +2,15 @@
   description = "My flake";
 
   inputs = {
-    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
+    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
+    deploy-rs.url = "github:serokell/deploy-rs";
+    flake-utils.url = "github:numtide/flake-utils";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
-    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs_master.url = "github:nixos/nixpkgs";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
@@ -55,8 +57,11 @@
   };
 
   outputs =
-    { chaotic
+    { self
+    , chaotic
+    , deploy-rs
     , disko
+    , flake-utils
     , home-manager
     , hyprland
     , jovian-nixos
@@ -211,5 +216,19 @@
             # }
           ];
         };
+
+      deploy = {
+        nodes = {
+          home-kvm-hypervisor-1 = {
+            hostname = "home-kvm-hypervisor-1";
+            profiles.system = {
+              user = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-kvm-hypervisor-1;
+            };
+          };
+        };
+      };
+      # This is highly advised, and will prevent many possible mistakes
+      checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
     };
 }
