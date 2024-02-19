@@ -4,8 +4,11 @@ switch:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
         nh os switch .;
+    elif [ "$(uname)" == "Darwin" ]; then
+        darwin-rebuild switch --option sandbox false --flake .
+    else
+        sudo nixos-rebuild switch --flake ".#$HOST"
     fi
-    sudo nixos-rebuild switch --flake ".#$HOST"
 
 update:
     @nix flake update .
