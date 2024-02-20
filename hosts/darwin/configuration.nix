@@ -53,6 +53,8 @@
       just
       kind
       kitty
+      kubecm
+      kubectx
       kubernetes-helm
       libffi
       libiconv
