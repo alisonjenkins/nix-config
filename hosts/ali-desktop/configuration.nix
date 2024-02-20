@@ -1,10 +1,9 @@
-{ config, pkgs, inputs, system, ... }:
+{ config, pkgs, inputs, ... }:
 
 {
   imports = [
-    ../../app-profiles/desktop
+    # ../../app-profiles/desktop
     ./hardware-configuration.nix
-    inputs.nix-gaming.nixosModules.pipewireLowLatency
   ];
 
   sops = {
@@ -277,12 +276,12 @@
     pkgs.radeontop
   ];
 
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-      permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
-    };
-  };
+  # nixpkgs = {
+  #   config = {
+  #     allowUnfree = true;
+  #     permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
+  #   };
+  # };
 
   nix.gc = {
     automatic = true;
