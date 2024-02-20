@@ -267,6 +267,27 @@
         "type": "github"
       }
     },
+    "ecrrepos": {
+      "inputs": {
+        "flake-utils": "flake-utils_5",
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "dir": "ecrrepos",
+        "lastModified": 1708437871,
+        "narHash": "sha256-or9YyGlnr19K/lNYJd8ssG8apBx+0iIFNOJ2vxB2lio=",
+        "ref": "refs/heads/master",
+        "rev": "605e0b9b4a66b447bd21304a9617d1f77278b550",
+        "revCount": 234,
+        "type": "git",
+        "url": "ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos"
+      },
+      "original": {
+        "dir": "ecrrepos",
+        "type": "git",
+        "url": "ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos"
+      }
+    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -311,7 +332,7 @@
     },
     "firefox-addons": {
       "inputs": {
-        "flake-utils": "flake-utils_5",
+        "flake-utils": "flake-utils_6",
         "nixpkgs": [
           "nixpkgs_unstable"
         ]
@@ -519,6 +540,24 @@
       }
     },
     "flake-utils_5": {
+      "inputs": {
+        "systems": "systems_4"
+      },
+      "locked": {
+        "lastModified": 1705309234,
+        "narHash": "sha256-uNRRNRKmJyCRC/8y1RqBkqWBLM034y4qN7EprSdmgyA=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "1ef2e671c3b0c19053962c07dbda38332dcebf26",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_6": {
       "locked": {
         "lastModified": 1629284811,
         "narHash": "sha256-JHgasjPR0/J1J3DRm4KxM4zTyAj4IOJY8vIl75v/kPI=",
@@ -625,7 +664,7 @@
         "nixpkgs": [
           "nixpkgs_unstable"
         ],
-        "systems": "systems_4",
+        "systems": "systems_5",
         "wlroots": "wlroots",
         "xdph": "xdph"
       },
@@ -1088,6 +1127,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1708407374,
+        "narHash": "sha256-EECzarm+uqnNDCwaGg/ppXCO11qibZ1iigORShkkDf0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f33dd27a47ebdf11dc8a5eb05e7c8fbdaf89e73f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_master": {
       "locked": {
         "lastModified": 1708366181,
@@ -1233,6 +1288,7 @@
         "chaotic": "chaotic",
         "darwin": "darwin",
         "disko": "disko",
+        "ecrrepos": "ecrrepos",
         "fenix": "fenix_2",
         "firefox-addons": "firefox-addons",
         "home-manager": "home-manager_3",
@@ -1378,6 +1434,21 @@
       }
     },
     "systems_4": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_5": {
       "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",

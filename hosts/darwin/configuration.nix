@@ -47,6 +47,7 @@
       gradle
       htop
       inputs.ali-neovim.packages.${system}.nvim
+      inputs.ecrrepos.packages.${system}.default
       ipcalc
       isort
       jq

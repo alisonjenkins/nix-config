@@ -5,11 +5,13 @@
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     attic.url = "github:zhaofengli/attic";
+    ecrrepos.url =
+      "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
-    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs_master.url = "github:nixos/nixpkgs";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
