@@ -9,6 +9,7 @@
     ./hyprland
     ./kitty
     ./mimetypes
+    ./nushell
     ./obs
     ./plasma5
     ./rofi

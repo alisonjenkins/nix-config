@@ -1,5 +1,8 @@
 { config, pkgs, ... }:
-
+let
+  plugins-zsh-config = builtins.readFile ./plugins.zsh;
+  plugins-zsh-config-built = pkgs.writeScriptBin "plugins-zsh-config" plugins-zsh-config;
+in
 {
   programs = {
     zsh = {
@@ -37,15 +40,6 @@
             repo = "ohmyzsh";
             rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
             sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
-          };
-        }
-        {
-          name = "evalcache";
-          src = pkgs.fetchFromGitHub {
-            owner = "mroth";
-            repo = "evalcache";
-            rev = "3153dcd77a2c93aa8fdf5d17cece7edb1aa3e040";
-            sha256 = "GAjsTQJs9JdBEf9LGurme3zqXN//kVUM2YeBo0sCR2c=";
           };
         }
         {
@@ -167,11 +161,22 @@
             sha256 = "xbchXJTFWeABTwq6h4KWLh+EvydDrDzcY9AQVK65RS8=";
           };
         }
+        {
+          name = "mcfly";
+          src = pkgs.fetchFromGitHub {
+            owner = "cantino";
+            repo = "mcfly";
+            rev = "caad8168c407ee239e61ec10e4e02101a77cd0e4";
+            sha256 = "pPQyoLKATuuscW7BwlICxKHeOtp7BAZ1cdhQgYBrNtM=";
+          };
+        }
       ];
-      # plugins = [
-      # ];
     };
   };
+
+  home.packages = [
+    plugins-zsh-config-built
+  ];
 
   home.file = {
     ".local/share/zsh/.keep".text = "";
@@ -180,6 +185,7 @@
       source = ./zshrc.d;
       recursive = true;
     };
+    # ".config/zshrc.d/plugins.zsh".text = builtins.readFile "${plugins-zsh-config-built}/bin/plugins-zsh-config";
   };
 }
 

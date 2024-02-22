@@ -19,14 +19,12 @@ fi
 # eval "$(starship init zsh)"
 
 # Plugins
-zinit light "$PLUGDIR/evalcache"
-
 zinit light "$PLUGDIR/gitstatus"
 source ~/.config/zsh/p10k.zsh
 zinit light "$PLUGDIR/powerlevel10k"
 zinit light "$PLUGDIR/zsh-vi-mode"
 
-_evalcache mcfly init zsh
+eval "$(mcfly init zsh)"
 
 PLUGINS=(
   "aws-plugin"
