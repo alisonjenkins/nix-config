@@ -25,8 +25,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "ohmyzsh";
             repo = "ohmyzsh";
-            rev = "master";
-            sha256 = "D6P8jferap3yqQvs2zpQHvbgGf0jxOlBPieOwyts3Qs=";
+            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
+            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
           };
         }
         {
@@ -35,8 +35,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "ohmyzsh";
             repo = "ohmyzsh";
-            rev = "master";
-            sha256 = "D6P8jferap3yqQvs2zpQHvbgGf0jxOlBPieOwyts3Qs=";
+            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
+            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
           };
         }
         {
@@ -44,7 +44,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "mroth";
             repo = "evalcache";
-            rev = "master";
+            rev = "3153dcd77a2c93aa8fdf5d17cece7edb1aa3e040";
             sha256 = "GAjsTQJs9JdBEf9LGurme3zqXN//kVUM2YeBo0sCR2c=";
           };
         }
@@ -53,7 +53,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "fabiokiatkowski";
             repo = "exercism.plugin.zsh";
-            rev = "master";
+            rev = "37f15229070a5f5073eb0fddc9fc86efa4d56cbc";
             sha256 = "/h7ZkPnep1aq9oTEh3mgHZ8OiC01tZ0Ktq1zhvQ098Y=";
           };
         }
@@ -63,8 +63,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "ohmyzsh";
             repo = "ohmyzsh";
-            rev = "master";
-            sha256 = "D6P8jferap3yqQvs2zpQHvbgGf0jxOlBPieOwyts3Qs=";
+            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
+            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
           };
         }
         {
@@ -72,7 +72,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "Aloxaf";
             repo = "fzf-tab";
-            rev = "master";
+            rev = "f045ed050dbdd27a95feea187c41f75336b2480a";
             sha256 = "gvZp8P3quOtcy1Xtt1LAW1cfZ/zCtnAmnWqcwrKel6w=";
           };
         }
@@ -81,8 +81,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "romkatv";
             repo = "gitstatus";
-            rev = "master";
-            sha256 = "O0ZJQgsGfM2yB1HEm1acuWPsDzmmno0QlsdpIP/wghQ=";
+            rev = "215063d4703b944f66cc7cc92543205586a35485";
+            sha256 = "3prHeI7PoNq4tzPQ+vzNLt+7EytNJzRcTqOnZ+da4EU=";
           };
         }
         {
@@ -90,19 +90,10 @@
           src = pkgs.fetchFromGitHub {
             owner = "alisonjenkins";
             repo = "kube-aliases";
-            rev = "master";
+            rev = "a1964cd720d93b0cde3a6ed848e9be54e10c6ccf";
             sha256 = "S60HdgCXjsjX2L1k3PmFEfNb64cdM7luXSBA7CvWyCM=";
           };
         }
-        # {
-        #   name = "mcfly";
-        #   src = pkgs.fetchFromGitHub {
-        #     owner = "cantino";
-        #     repo = "mcfly";
-        #     rev = "master";
-        #     sha256 = "SpWF4T51g5cHM09FDNKz4cid+LdawtuF5GCwfNWNugk=";
-        #   };
-        # }
         {
           name = "omz-fluxcd-plugin";
           src = pkgs.fetchFromGitHub {
@@ -118,8 +109,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "romkatv";
             repo = "powerlevel10k";
-            rev = "master";
-            sha256 = "3fvqWS/Zm3GLFqo36s5tPBfVX3SOpUyxjHDatMhD/u0=";
+            rev = "b973805f019cb9a4ecb1ccdf8879d89eb2b1b111";
+            sha256 = "IrKn6pWfQDbC4334JaNZ9/FFNfyse9ZD8j1Or1w7bMk=";
           };
         }
         {
@@ -127,7 +118,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "molovo";
             repo = "tipz";
-            rev = "master";
+            rev = "594eab4642cc6dcfe063ecd51d76478bd84e2878";
             sha256 = "oFZJwHYDfK4f53lhcZg6PCw2AgHxFC0CRiqiinKZz8k=";
           };
         }
@@ -136,8 +127,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "zdharma-continuum";
             repo = "zinit";
-            rev = "master";
-            sha256 = "WVolKlLL5FoD6sXBIbNOZtbbMdIcjbvzh5E2ad/74dI=";
+            rev = "6511ca7fe319feeeda8678449512da162d957740";
+            sha256 = "x3YMcS+G7QVVfQRMc2cfIKsCAwtF7hIlCmFC+2Exm3Y=";
           };
         }
         {
@@ -154,7 +145,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "joepvd";
             repo = "zsh-hints";
-            rev = "master";
+            rev = "3874e279fece8817d3940e5b93b40960214ce1a2";
             sha256 = "i/dGAx7HF1DQuAzUNdpjaf53nQPeSDBX/mpMcG+9+fQ=";
           };
         }
@@ -163,8 +154,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "macunha1";
             repo = "zsh-terraform";
-            rev = "master";
-            sha256 = "65UWgMeW33fl2XJY1gkwZeGdzo+b1G6yI5bzXk17aD4=";
+            rev = "fd1471d3757f8ed13f56c4426f88616111de2a87";
+            sha256 = "83nXtvfYjgY/3+g5zG7rKagSOzRzgc72+a0rcV4v/Ao=";
           };
         }
         {
@@ -172,7 +163,7 @@
           src = pkgs.fetchFromGitHub {
             owner = "jeffreytse";
             repo = "zsh-vi-mode";
-            rev = "master";
+            rev = "ea1f58ab9b1f3eac50e2cde3e3bc612049ef683b";
             sha256 = "xbchXJTFWeABTwq6h4KWLh+EvydDrDzcY9AQVK65RS8=";
           };
         }
