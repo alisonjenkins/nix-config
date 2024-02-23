@@ -26,11 +26,22 @@ in
     extraConfig = ''
       source ${zoxide-config}/zoxide.nu
       source ${starship-config}/starship.nu
+      source ${pkgs.nu_scripts}/share/nu_scripts/custom-completions/git/git-completions.nu
       source ~/.config/nushell/nnn-quitcd.nu
       # source ~/.config/nushell/ssh-agent.nu
       $env.config = {
         edit_mode: vi
         show_banner: false
+
+        hooks: {
+            pre_prompt: [{ ||
+              if (which direnv | is-empty) {
+                return
+              }
+
+              direnv export json | from json | default {} | load-env
+            }]
+        }
       }
     '';
     shellAliases = {
