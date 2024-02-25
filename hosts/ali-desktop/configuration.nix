@@ -292,7 +292,13 @@
 
   system.autoUpgrade = {
     enable = true;
-    channel = "https://nixos.org/channels/nixos-23.11";
+    flake = inputs.self.outPath;
+    flags = [
+      "--update-input"
+      "nixpkgs"
+      "-L"
+    ];
+    dates = "17:30";
   };
 
   system.stateVersion = "23.11";
