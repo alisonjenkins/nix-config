@@ -443,7 +443,7 @@
       "keybase"
       "microsoft-auto-update"
       "microsoft-teams"
-      "neovide"
+      # "neovide"
       "perimeter81"
       "rectangle"
       "slack"
