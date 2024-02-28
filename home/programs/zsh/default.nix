@@ -185,7 +185,7 @@ in
       source = ./zshrc.d;
       recursive = true;
     };
-    # ".config/zshrc.d/plugins.zsh".text = builtins.readFile "${plugins-zsh-config-built}/bin/plugins-zsh-config";
+    ".config/zshrc.d/plugins.zsh".text = builtins.readFile "${plugins-zsh-config-built}/bin/plugins-zsh-config";
   };
 }
 
