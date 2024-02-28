@@ -20,7 +20,6 @@ fi
 
 # Plugins
 zinit light "$PLUGDIR/gitstatus"
-source ~/.config/zsh/p10k.zsh
 zinit light "$PLUGDIR/powerlevel10k"
 zinit light "$PLUGDIR/zsh-vi-mode"
 
