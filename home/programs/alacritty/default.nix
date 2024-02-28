@@ -20,10 +20,10 @@
         };
       };
       shell = {
-        program = "${pkgs.nushell}/bin/nu";
+        program = "${pkgs.zsh}/bin/zsh";
         args = [
           "-l"
-          "-e"
+          "-c"
           "tmux attach ; tmux"
         ];
       };
