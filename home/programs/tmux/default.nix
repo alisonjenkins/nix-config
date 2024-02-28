@@ -5,7 +5,7 @@
     enable = true;
     newSession = true;
     prefix = "C-a";
-    shell = "${pkgs.nushell}/bin/nu";
+    shell = "${pkgs.zsh}/bin/zsh";
     baseIndex = 1;
     terminal = "tmux-256color";
     escapeTime = 0;
