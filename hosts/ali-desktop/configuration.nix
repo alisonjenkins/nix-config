@@ -275,6 +275,8 @@
 
   environment.systemPackages = [
     pkgs.radeontop
+    pkgs.uhk-agent
+    pkgs.uhk-udev-rules
   ];
 
   nixpkgs = {
