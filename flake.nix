@@ -20,11 +20,11 @@
     };
     darwin = {
       url = "github:lnl7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs_stable";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs_stable";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     fenix = {
       url = "github:nix-community/fenix";
@@ -49,11 +49,11 @@
     nh = {
       url = "github:viperML/nh";
       inputs.nixpkgs.follows =
-        "nixpkgs_stable"; # override this repo's nixpkgs snapshot
+        "nixpkgs_unstable"; # override this repo's nixpkgs snapshot
     };
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
-      inputs.nixpkgs.follows = "nixpkgs_stable";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     plasma-manager = {
       url = "github:pjones/plasma-manager";
@@ -62,28 +62,46 @@
     };
     sops-nix = {
       url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs_stable";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
   };
 
-  outputs = { chaotic, darwin, disko, fenix, home-manager, hyprland
-    , jovian-nixos, nix-colors, nix-gaming, nixpkgs_unstable, nixpkgs_master
-    , nixpkgs_stable, nur, plasma-manager, sops-nix, ... }@inputs:
+  outputs =
+    { chaotic
+    , darwin
+    , disko
+    , fenix
+    , home-manager
+    , hyprland
+    , jovian-nixos
+    , nix-colors
+    , nix-gaming
+    , nixpkgs_unstable
+    , nixpkgs_master
+    , nixpkgs_stable
+    , nur
+    , plasma-manager
+    , sops-nix
+    , ...
+    }@inputs:
 
     let
       system = "x86_64-linux";
       lib = nixpkgs_stable.lib;
-    in {
+    in
+    {
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = let gpgSigningKey = "B561E7F6";
-          in {
-            inherit gpgSigningKey;
-            inherit hyprland;
-            inherit inputs;
-            inherit system;
-          };
+          specialArgs =
+            let gpgSigningKey = "B561E7F6";
+            in
+            {
+              inherit gpgSigningKey;
+              inherit hyprland;
+              inherit inputs;
+              inherit system;
+            };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/aws
@@ -107,13 +125,15 @@
 
         ali-laptop = lib.nixosSystem rec {
           inherit system;
-          specialArgs = let gpgSigningKey = "AD723B26";
-          in {
-            inherit gpgSigningKey;
-            inherit hyprland;
-            inherit inputs;
-            inherit system;
-          };
+          specialArgs =
+            let gpgSigningKey = "AD723B26";
+            in
+            {
+              inherit gpgSigningKey;
+              inherit hyprland;
+              inherit inputs;
+              inherit system;
+            };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr
@@ -183,51 +203,55 @@
         };
       };
 
-      darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" = let
-        system = "aarch64-darwin";
-        lib = nixpkgs_stable.lib;
-        specialArgs = {
-          gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-          gitGPGSigningKey = "37F33EF6";
-          username = "ajenkins";
+      darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =
+        let
+          system = "aarch64-darwin";
+          lib = nixpkgs_unstable.lib;
+          specialArgs = {
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "37F33EF6";
+            username = "ajenkins";
+          };
+        in
+        darwin.lib.darwinSystem {
+          modules = [
+            ./hosts/darwin/configuration.nix
+            # home-manager.darwinModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
+            # }
+          ];
+          specialArgs = {
+            inherit fenix;
+            inherit inputs;
+            inherit system;
+            inherit specialArgs;
+          };
         };
-      in darwin.lib.darwinSystem {
-        modules = [
-          ./hosts/darwin/configuration.nix
-          # home-manager.darwinModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
-          # }
-        ];
-        specialArgs = {
-          inherit fenix;
-          inherit inputs;
+
+      nixosConfigurations."dev-vm" =
+        let
+          system = "aarch64-linux";
+          lib = nixpkgs_unstable.lib;
+
+        in
+        lib.nixosSystem {
           inherit system;
-          inherit specialArgs;
+          specialArgs = { inherit hyprland; };
+          modules = [
+            ./hosts/dev-vm/configuration.nix
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
+          ];
         };
-      };
-
-      nixosConfigurations."dev-vm" = let
-        system = "aarch64-linux";
-        lib = nixpkgs_stable.lib;
-
-      in lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit hyprland; };
-        modules = [
-          ./hosts/dev-vm/configuration.nix
-          disko.nixosModules.disko
-          sops-nix.nixosModules.sops
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
-        ];
-      };
     };
 }
