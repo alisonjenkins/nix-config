@@ -106,7 +106,7 @@
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/wms/hypr
-            ./app-profiles/desktop/wms/plasma5
+            ./app-profiles/desktop/wms/plasma6
             ./hosts/ali-desktop/configuration.nix
             chaotic.nixosModules.default
             hyprland.nixosModules.default
