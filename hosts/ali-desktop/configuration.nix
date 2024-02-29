@@ -4,7 +4,7 @@
   imports = [
     ../../app-profiles/desktop
     ./hardware-configuration.nix
-    inputs.nix-gaming.nixosModules.pipewireLowLatency
+    # inputs.nix-gaming.nixosModules.pipewireLowLatency
   ];
 
   sops = {
@@ -228,11 +228,11 @@
     jack.enable = true;
     pulse.enable = true;
 
-    lowLatency = {
-      enable = true;
-      quantum = 4;
-      rate = 48000;
-    };
+    # lowLatency = {
+    #   enable = true;
+    #   quantum = 4;
+    #   rate = 48000;
+    # };
   };
 
   environment = {

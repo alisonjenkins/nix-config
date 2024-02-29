@@ -17,7 +17,7 @@
     ];
   };
 
-  master.services = {
+  services = {
     xserver = {
       enable = false;
       desktopManager = {

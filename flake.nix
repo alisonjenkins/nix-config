@@ -11,58 +11,58 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
-    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
       url = "github:lnl7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     fenix = {
       url = "github:nix-community/fenix";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     firefox-addons = {
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland = {
       url = "github:hyprwm/Hyprland";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     jovian-nixos = {
       url = "github:Jovian-Experiments/Jovian-NixOS";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     nh = {
       url = "github:viperML/nh";
       inputs.nixpkgs.follows =
-        "nixpkgs_unstable"; # override this repo's nixpkgs snapshot
+        "nixpkgs"; # override this repo's nixpkgs snapshot
     };
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     plasma-manager = {
       url = "github:pjones/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
     sops-nix = {
       url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -76,7 +76,7 @@
     , jovian-nixos
     , nix-colors
     , nix-gaming
-    , nixpkgs_unstable
+    , nixpkgs
     , nixpkgs_master
     , nixpkgs_stable
     , nur
@@ -87,7 +87,14 @@
 
     let
       system = "x86_64-linux";
-      lib = nixpkgs_stable.lib;
+      lib = nixpkgs.lib;
+      # pkgs = import inputs.nixpkgs {
+      #   inherit system;
+      #   config = {
+      #     allowUnfree = true;
+      #     permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
+      #   };
+      # };
     in
     {
       nixosConfigurations = {
@@ -206,7 +213,7 @@
       darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =
         let
           system = "aarch64-darwin";
-          lib = nixpkgs_unstable.lib;
+          lib = nixpkgs.lib;
           specialArgs = {
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "37F33EF6";
@@ -234,7 +241,7 @@
       nixosConfigurations."dev-vm" =
         let
           system = "aarch64-linux";
-          lib = nixpkgs_unstable.lib;
+          lib = nixpkgs.lib;
 
         in
         lib.nixosSystem {
