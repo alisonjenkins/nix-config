@@ -274,6 +274,7 @@
   };
 
   environment.systemPackages = [
+    pkgs.polkit
     pkgs.radeontop
     pkgs.uhk-agent
     pkgs.uhk-udev-rules
