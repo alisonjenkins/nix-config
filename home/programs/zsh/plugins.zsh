@@ -23,7 +23,7 @@ zinit light "$PLUGDIR/gitstatus"
 zinit light "$PLUGDIR/powerlevel10k"
 zinit light "$PLUGDIR/zsh-vi-mode"
 
-eval "$(mcfly init zsh)"
+eval "$(${pkgs.mcfly}/bin/mcfly init zsh)"
 
 PLUGINS=(
   "aws-plugin"

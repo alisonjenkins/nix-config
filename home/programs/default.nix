@@ -8,6 +8,7 @@
     ./git
     ./hyprland
     ./kitty
+    ./mcfly
     ./mimetypes
     ./nushell
     ./obs
