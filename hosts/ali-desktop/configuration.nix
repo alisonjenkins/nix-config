@@ -31,11 +31,16 @@
     };
   };
 
-  chaotic.hdr.enable = false;
-  chaotic.mesa-git = {
-    enable = false;
-    method = "GBM_BACKENDS_PATH";
+  chaotic = {
+    mesa-git = {
+      enable = true;
+      # method = "GBM_BACKENDS_PATH";
+    };
+    scx = {
+      enable = true;
+    };
   };
+
 
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
@@ -273,11 +278,13 @@
     };
   };
 
-  environment.systemPackages = [
-    pkgs.polkit
-    pkgs.radeontop
-    pkgs.uhk-agent
-    pkgs.uhk-udev-rules
+  environment.systemPackages = with pkgs; [
+    ananicy-cpp
+    ananicy-cpp-rules
+    polkit
+    radeontop
+    uhk-agent
+    uhk-udev-rules
   ];
 
   nixpkgs = {
