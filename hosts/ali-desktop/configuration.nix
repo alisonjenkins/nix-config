@@ -159,26 +159,40 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  services.resolved = {
-    enable = true;
-  };
-
-  services.fstrim = {
-    enable = true;
-  };
-
-  services.xserver = {
-    videoDrivers = [ "amdgpu" ];
-    xkb.layout = "us";
-    xkb.variant = "";
-  };
-
-  services.irqbalance.enable = true;
-
   hardware.opengl = {
     enable = true;
     driSupport = true;
     driSupport32Bit = true;
+  };
+
+  services = {
+    fstrim.enable = true;
+    irqbalance.enable = true;
+    resolved.enable = true;
+
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      jack.enable = true;
+      pulse.enable = true;
+
+      # lowLatency = {
+      #   enable = true;
+      #   quantum = 4;
+      #   rate = 48000;
+      # };
+    };
+
+    udev.packages = [
+      pkgs.uhk-udev-rules
+    ];
+
+    xserver = {
+      videoDrivers = [ "amdgpu" ];
+      xkb.layout = "us";
+      xkb.variant = "";
+    };
   };
 
   powerManagement = {
@@ -226,19 +240,6 @@
   sound.enable = true;
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    jack.enable = true;
-    pulse.enable = true;
-
-    # lowLatency = {
-    #   enable = true;
-    #   quantum = 4;
-    #   rate = 48000;
-    # };
-  };
 
   environment = {
     pathsToLink = [ "/share/zsh" ];
@@ -284,8 +285,8 @@
     polkit
     radeontop
     uhk-agent
-    uhk-udev-rules
   ];
+
 
   nixpkgs = {
     config = {
@@ -300,18 +301,22 @@
     options = "--delete-older-than 60d";
   };
 
-  system.autoUpgrade = {
-    enable = true;
-    flake = inputs.self.outPath;
-    flags = [
-      "--update-input"
-      "nixpkgs"
-      "-L"
-    ];
-    dates = "17:30";
+  system = {
+    autoUpgrade = {
+      enable = true;
+      flake = inputs.self.outPath;
+      flags = [
+        "--update-input"
+        "nixpkgs"
+        "-L"
+      ];
+      dates = "17:30";
+    };
+    stateVersion = "23.11";
   };
 
-  system.stateVersion = "23.11";
+
+
 
   nix = {
     package = pkgs.nixFlakes;
