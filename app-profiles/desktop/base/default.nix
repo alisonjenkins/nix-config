@@ -17,6 +17,7 @@
   programs.gamescope = {
     enable = true;
     capSysNice = true;
+    package = pkgs.gamescope_git;
   };
 
   services.xserver.deviceSection = ''
