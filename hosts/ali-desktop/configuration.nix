@@ -37,7 +37,8 @@
       # method = "GBM_BACKENDS_PATH";
     };
     scx = {
-      enable = true;
+      enable = false;
+      scheduler = "scx_rustland";
     };
   };
 
