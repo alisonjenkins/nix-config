@@ -52,6 +52,10 @@
     ];
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
+    extraModprobeConfig = ''
+      options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
+    '';
+
     kernel.sysctl = {
       # Network Perf Tuning
       "net.core.netdev_max_backlog" = 16384;
