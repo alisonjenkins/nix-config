@@ -110,7 +110,8 @@
               inherit system;
             };
           modules = [
-            ./app-profiles/desktop/display-managers/greetd
+            # ./app-profiles/desktop/display-managers/greetd
+            ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma6

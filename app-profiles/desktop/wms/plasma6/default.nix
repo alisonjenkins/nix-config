@@ -19,7 +19,7 @@
 
   services = {
     xserver = {
-      enable = false;
+      displayManager.defaultSession = "plasma";
       desktopManager = {
         plasma6 = {
           enable = true;
