@@ -12,7 +12,7 @@
     ./mimetypes
     ./nushell
     ./obs
-    ./plasma5
+    # ./plasma5
     ./rofi
     ./starship
     ./tmux
