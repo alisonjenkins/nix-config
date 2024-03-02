@@ -44,9 +44,16 @@
 
 
   boot = {
+    consoleLogLevel = 0;
+    initrd.verbose = false;
     kernelPackages = pkgs.linuxPackages_cachyos;
     # kernelPackages = pkgs.linuxPackages_xanmod;
-    kernelParams = [ "quiet" "loglevel=3" ];
+    kernelParams = [
+      "quiet"
+      "rd.systemd.show_status=false"
+      "rd.udev.log_level=3"
+      "udev.log_priority=3"
+    ];
     kernelModules = [
       "v4l2loopback"
     ];
