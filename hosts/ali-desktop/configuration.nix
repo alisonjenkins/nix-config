@@ -299,7 +299,6 @@
     uhk-agent
   ];
 
-
   nixpkgs = {
     config = {
       allowUnfree = true;
@@ -326,8 +325,6 @@
     };
     stateVersion = "23.11";
   };
-
-
 
 
   nix = {
