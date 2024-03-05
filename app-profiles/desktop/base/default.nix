@@ -113,7 +113,6 @@
       xorg.libXcursor
       xorg.libXi
       xorg.libXinerama
-      yuzu-early-access_git
       zoom-us
       zsh
     ];
