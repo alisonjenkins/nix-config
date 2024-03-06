@@ -49,6 +49,7 @@
       fava
       fd
       ffmpeg
+      filelight
       fzf
       gamemode
       gcc-unwrapped
