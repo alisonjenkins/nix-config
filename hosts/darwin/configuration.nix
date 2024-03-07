@@ -109,7 +109,7 @@
       inputs.attic.packages.${system}.attic-client
       inputs.nixpkgs_stable.legacyPackages.${system}.buildah
       inputs.nixpkgs_stable.legacyPackages.${system}.k9s
-      inputs.nixpkgs_unstable.legacyPackages.${system}.neovide
+      pkgs.neovide
     ];
   environment.variables = { ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten"; };
 
