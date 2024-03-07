@@ -294,7 +294,7 @@
   environment.systemPackages = with pkgs; [
     ananicy-cpp
     ananicy-cpp-rules
-    cheese
+    gnome.cheese
     polkit
     radeontop
     uhk-agent
