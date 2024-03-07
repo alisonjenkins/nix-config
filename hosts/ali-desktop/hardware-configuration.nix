@@ -10,8 +10,11 @@
   ];
 
   boot = {
-    kernelModules = [ "kvm-amd" ];
     extraModulePackages = [ ];
+    kernelModules = [ "kvm-amd" ];
+    supportedFilesystems = [ "btrfs" "ext4" "xfs" ];
+
+    zfs.devNodes = "/dev/osvg/nix";
 
     initrd = {
       availableKernelModules = [
@@ -49,38 +52,60 @@
     memorySize = 4096;
   };
 
-  fileSystems."/" = {
-    device = "/dev/osvg/nixroot";
-    fsType = "ext4";
-    options = [ "defaults" "noatime" "discard" ];
-  };
+  fileSystems = {
 
-  fileSystems."/media/archroot" = {
-    device = "/dev/osvg/root";
-    fsType = "ext4";
-    options = [ "defaults" "noatime" "discard" ];
-  };
+    "/" = lib.mkForce {
+      device = "tmpfs";
+      fsType = "tmpfs";
+      neededForBoot = true;
+      options = [
+        "defaults"
+        "size=2G"
+        "mode=755"
+      ];
+    };
 
-  fileSystems."/media/storage1" = {
-    device = "/dev/disk/by-label/storage";
-    fsType = "xfs";
-    options = [ "defaults" "noatime" "discard" ];
-  };
+    "/boot" = {
+      device = "/dev/disk/by-uuid/12AE-8C8B";
+      fsType = "vfat";
+    };
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/12AE-8C8B";
-    fsType = "vfat";
-  };
+    "/home" = {
+      device = "/dev/home/home";
+      fsType = "ext4";
+    };
 
-  fileSystems."/home" = {
-    device = "/dev/home/home";
-    fsType = "ext4";
-  };
+    "/media/archroot" = {
+      device = "/dev/osvg/root";
+      fsType = "ext4";
+      options = [ "defaults" "noatime" "discard" ];
+    };
 
-  fileSystems."/media/steam-games-1" = {
-    device = "/dev/osvg/steam-games-1";
-    fsType = "ext4";
-    options = [ "defaults" "noatime" "barrier=0" "data=writeback" "discard" ];
+    "/media/storage1" = {
+      device = "/dev/disk/by-label/storage";
+      fsType = "xfs";
+      options = [ "defaults" "noatime" "discard" ];
+    };
+
+    "/media/steam-games-1" = {
+      device = "/dev/osvg/steam-games-1";
+      fsType = "ext4";
+      options = [ "defaults" "noatime" "barrier=0" "data=writeback" "discard" ];
+    };
+
+    "/nix" = {
+      device = "/dev/osvg/persistence";
+      fsType = "btrfs";
+      options = [ "subvol=nix" "compress=zstd" "noatime" ];
+      neededForBoot = true;
+    };
+
+    "/persistence" = {
+      device = "/dev/osvg/persistence";
+      fsType = "btrfs";
+      options = [ "subvol=persistence" "compress=zstd" "noatime" ];
+      neededForBoot = true;
+    };
   };
 
   swapDevices = [{ device = "/dev/osvg/swap"; }];
@@ -89,10 +114,15 @@
   # (the default) this is the recommended approach. When using systemd-networkd it's
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = lib.mkDefault true;
+  networking = {
+    hostId = "77f0d408";
+    useDHCP = lib.mkDefault true;
+  };
   # networking.interfaces.enp16s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode =
     lib.mkDefault config.hardware.enableRedistributableFirmware;
 }
+
+

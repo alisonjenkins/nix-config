@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, system, ... }:
+{ config, cfg, pkgs, inputs, lib, system, ... }:
 
 {
   imports = [
@@ -134,6 +134,28 @@
       '';
     };
 
+    persistence = {
+      "/persistence" = {
+        hideMounts = true;
+        directories = [
+          "/etc/NetworkManager/system-connections"
+          "/etc/luks"
+          "/etc/ssh"
+          "/var/lib/bluetooth"
+          "/var/lib/flatpak"
+          "/var/lib/nixos"
+          "/var/lib/systemd/coredump"
+          "/var/log"
+          { directory = "/var/lib/colord"; user = "colord"; group = "colord"; mode = "u=rwx,g=rx,o="; }
+          { directory = "/var/cache/tuigreet"; user = "greetd"; group = "greetd"; mode = "u=rwx,g=rx,o="; }
+        ];
+        files = [
+          "/etc/machine-id"
+          { file = "/var/keys/secret_file"; parentDirectory = { mode = "u=rwx,g=,o="; }; }
+        ];
+      };
+    };
+
     systemPackages = with pkgs; [
       ananicy-cpp
       ananicy-cpp-rules
@@ -255,9 +277,23 @@
     irqbalance.enable = true;
     resolved.enable = true;
 
+    beesd = {
+      filesystems = {
+        persistence = {
+          extraOptions = [ "--loadavg-target" "5.0" ];
+          hashTableSizeMB = 2048;
+          spec = "LABEL=persistence";
+          verbosity = "crit";
+        };
+      };
+    };
+
     btrfs = {
       autoScrub = {
         enable = true;
+        fileSystems = [
+          "/persistence"
+        ];
       };
     };
 
@@ -333,21 +369,20 @@
 
   users = {
     defaultUserShell = pkgs.zsh;
+    mutableUsers = false;
+
     users = {
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
-        initialPassword = "initPw!";
         isNormalUser = true;
+        hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
-        packages = with pkgs; [
-          firefox
-          neofetch
-          lolcat
-        ];
+      };
+      root = {
+        hashedPasswordFile = "/persistence/passwords/root";
       };
     };
   };
-
 }
