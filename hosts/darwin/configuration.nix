@@ -1,4 +1,13 @@
-{ inputs, specialArgs, system, fenix, lib, pkgs, config, modulesPath, options,
+{ inputs
+, specialArgs
+, system
+, fenix
+, lib
+, pkgs
+, config
+, modulesPath
+, options
+,
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
