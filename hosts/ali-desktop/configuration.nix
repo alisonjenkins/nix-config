@@ -297,6 +297,7 @@
     polkit
     radeontop
     uhk-agent
+    webcamoid
   ];
 
   nixpkgs = {
