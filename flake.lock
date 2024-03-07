@@ -800,6 +800,22 @@
         "type": "github"
       }
     },
+    "maven": {
+      "locked": {
+        "lastModified": 1659311112,
+        "narHash": "sha256-VAZliSasLGO1T1YSm01+W0vNHE4BUiTikba+wc16vTw=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "15e3765c4e5ec347935e737f57c1b20874f2de69",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "15e3765c4e5ec347935e737f57c1b20874f2de69",
+        "type": "github"
+      }
+    },
     "nh": {
       "inputs": {
         "nixpkgs": [
@@ -1275,6 +1291,7 @@
         "home-manager": "home-manager_3",
         "hyprland": "hyprland",
         "jovian-nixos": "jovian-nixos",
+        "maven": "maven",
         "nh": "nh",
         "nix-colors": "nix-colors",
         "nix-flatpak": "nix-flatpak",

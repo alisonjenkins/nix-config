@@ -7,6 +7,7 @@
     attic.url = "github:zhaofengli/attic";
     ecrrepos.url =
       "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
+    maven.url = "github:nixos/nixpkgs/15e3765c4e5ec347935e737f57c1b20874f2de69";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs_master.url = "github:nixos/nixpkgs";

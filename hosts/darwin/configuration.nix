@@ -57,8 +57,10 @@
       htop
       inputs.ali-neovim.packages.${system}.nvim
       inputs.ecrrepos.packages.${system}.default
+      inputs.maven.legacyPackages.${system}.maven
       ipcalc
       isort
+      jdk11
       jq
       just
       kind
@@ -70,7 +72,6 @@
       libiconv
       lolcat
       luajitPackages.lpeg
-      maven
       mcfly
       mmtc
       ncdu_1
@@ -111,7 +112,12 @@
       inputs.nixpkgs_stable.legacyPackages.${system}.k9s
       pkgs.neovide
     ];
-  environment.variables = { ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten"; };
+
+  environment.variables = {
+    JAVA_HOME = ''${pkgs.jdk11}'';
+    PATH = ''${pkgs.jdk11}/bin:$PATH'';
+    ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten";
+  };
 
   homebrew = {
     enable = true;
