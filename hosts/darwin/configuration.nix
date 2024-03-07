@@ -437,6 +437,7 @@
     casks = [
       "alacritty"
       "alfred"
+      "amethyst"
       "audacity"
       "discord"
       "docker"
