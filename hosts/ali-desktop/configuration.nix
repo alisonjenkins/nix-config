@@ -294,6 +294,7 @@
   environment.systemPackages = with pkgs; [
     ananicy-cpp
     ananicy-cpp-rules
+    libsForQt5.polonium
     polkit
     radeontop
     uhk-agent
