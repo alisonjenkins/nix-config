@@ -7,41 +7,12 @@
     # inputs.nix-gaming.nixosModules.pipewireLowLatency
   ];
 
-  sops = {
-    defaultSopsFile = ../../secrets/main.enc.yaml;
-    defaultSopsFormat = "yaml";
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-    secrets = {
-      # "myservice/my_subdir/my_secret" = {
-      #   mode = "0400";
-      #   owner = config.users.users.nobody.name;
-      #   group = config.users.users.nobody.group;
-      #   restartUnits = ["example.service"];
-      #   path = "/a/secret/path.yaml";
-      #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
-      # };
-      home_enc_key = {
-        mode = "0400";
-        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
-        owner = config.users.users.root.name;
-        group = config.users.users.nobody.group;
-        path = "/etc/luks/home.key";
-        format = "binary";
-      };
-    };
-  };
-
-  chaotic = {
-    mesa-git = {
-      enable = true;
-      # method = "GBM_BACKENDS_PATH";
-    };
-    scx = {
-      enable = false;
-      scheduler = "scx_rustland";
-    };
-  };
-
+  console.keyMap = "us";
+  hardware.pulseaudio.enable = false;
+  programs.zsh.enable = true;
+  security.rtkit.enable = true;
+  sound.enable = true;
+  time.timeZone = "Europe/London";
 
   boot = {
     consoleLogLevel = 0;
@@ -142,23 +113,51 @@
     };
   };
 
-  networking.hostName = "ali-desktop";
-  networking.networkmanager.enable = true;
-  networking.interfaces.enp16s0.mtu = 9000;
-  networking.nameservers = [
-    "9.9.9.9"
-    "149.112.112.112"
-  ];
-  networking.extraHosts =
-    ''
-      192.168.1.202 home-kvm-hypervisor-1
-    '';
-  networking.enableIPv6 = false;
-  networking.firewall.allowedTCPPorts = [
-    25565
-  ];
+  chaotic = {
+    mesa-git = {
+      enable = true;
+      # method = "GBM_BACKENDS_PATH";
+    };
+    scx = {
+      enable = false;
+      scheduler = "scx_rustland";
+    };
+  };
 
-  time.timeZone = "Europe/London";
+  environment = {
+    pathsToLink = [ "/share/zsh" ];
+
+    etc = {
+      "crypttab".text = ''
+        # <name>       <device>                                     <password>              <options>
+        home1          UUID=ee7395ed-e76a-4179-8e92-42e35250e98d    /etc/luks/home.key
+        home2          UUID=1ac3af7c-5af5-4972-b4b6-0245cc072a65    /etc/luks/home.key
+      '';
+    };
+
+    systemPackages = with pkgs; [
+      ananicy-cpp
+      ananicy-cpp-rules
+      libsForQt5.polonium
+      polkit
+      radeontop
+      uhk-agent
+      webcamoid
+    ];
+
+    variables = {
+      NIXOS_OZONE_WL = "1";
+      PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
+      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+    };
+  };
+
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+  };
+
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_GB.UTF-8";
     LC_IDENTIFICATION = "en_GB.UTF-8";
@@ -171,39 +170,42 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
+  networking = {
+    enableIPv6 = false;
+    hostName = "ali-desktop";
+    interfaces.enp16s0.mtu = 9000;
+    networkmanager.enable = true;
 
-  services = {
-    fstrim.enable = true;
-    irqbalance.enable = true;
-    resolved.enable = true;
+    extraHosts =
+      ''
+        192.168.1.202 home-kvm-hypervisor-1
+      '';
 
-    pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      jack.enable = true;
-      pulse.enable = true;
-
-      # lowLatency = {
-      #   enable = true;
-      #   quantum = 4;
-      #   rate = 48000;
-      # };
-    };
-
-    udev.packages = [
-      pkgs.uhk-udev-rules
+    firewall.allowedTCPPorts = [
+      25565
     ];
 
-    xserver = {
-      videoDrivers = [ "amdgpu" ];
-      xkb.layout = "us";
-      xkb.variant = "";
+    nameservers = [
+      "9.9.9.9"
+      "149.112.112.112"
+    ];
+  };
+
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
+    };
+  };
+
+  nix = {
+    package = pkgs.nixFlakes;
+    extraOptions = "experimental-features = nix-command flakes";
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 60d";
     };
   };
 
@@ -240,38 +242,80 @@
     };
   };
 
-  services.openssh = {
-    enable = true;
-    settings.PasswordAuthentication = false;
-    settings.KbdInteractiveAuthentication = false;
-    settings.PermitRootLogin = "no";
-  };
+  services = {
+    fstrim.enable = true;
+    irqbalance.enable = true;
+    resolved.enable = true;
 
-  console.keyMap = "us";
-
-  sound.enable = true;
-  hardware.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-
-  environment = {
-    pathsToLink = [ "/share/zsh" ];
-
-    variables = {
-      NIXOS_OZONE_WL = "1";
-      PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
-      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+    openssh = {
+      enable = true;
+      settings.PasswordAuthentication = false;
+      settings.KbdInteractiveAuthentication = false;
+      settings.PermitRootLogin = "no";
     };
 
-    etc = {
-      "crypttab".text = ''
-        # <name>       <device>                                     <password>              <options>
-        home1          UUID=ee7395ed-e76a-4179-8e92-42e35250e98d    /etc/luks/home.key
-        home2          UUID=1ac3af7c-5af5-4972-b4b6-0245cc072a65    /etc/luks/home.key
-      '';
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      jack.enable = true;
+      pulse.enable = true;
+
+      # lowLatency = {
+      #   enable = true;
+      #   quantum = 4;
+      #   rate = 48000;
+      # };
+    };
+
+    udev.packages = [
+      pkgs.uhk-udev-rules
+    ];
+
+    xserver = {
+      videoDrivers = [ "amdgpu" ];
+      xkb.layout = "us";
+      xkb.variant = "";
     };
   };
 
-  programs.zsh.enable = true;
+  sops = {
+    defaultSopsFile = ../../secrets/main.enc.yaml;
+    defaultSopsFormat = "yaml";
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets = {
+      # "myservice/my_subdir/my_secret" = {
+      #   mode = "0400";
+      #   owner = config.users.users.nobody.name;
+      #   group = config.users.users.nobody.group;
+      #   restartUnits = ["example.service"];
+      #   path = "/a/secret/path.yaml";
+      #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
+      # };
+      home_enc_key = {
+        mode = "0400";
+        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
+        owner = config.users.users.root.name;
+        group = config.users.users.nobody.group;
+        path = "/etc/luks/home.key";
+        format = "binary";
+      };
+    };
+  };
+
+  system = {
+    autoUpgrade = {
+      enable = true;
+      flake = inputs.self.outPath;
+      flags = [
+        "--update-input"
+        "nixpkgs"
+        "-L"
+      ];
+      dates = "17:30";
+    };
+    stateVersion = "23.11";
+  };
 
   users = {
     defaultUserShell = pkgs.zsh;
@@ -291,46 +335,4 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    ananicy-cpp
-    ananicy-cpp-rules
-    libsForQt5.polonium
-    polkit
-    radeontop
-    uhk-agent
-    webcamoid
-  ];
-
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-      permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
-    };
-  };
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 60d";
-  };
-
-  system = {
-    autoUpgrade = {
-      enable = true;
-      flake = inputs.self.outPath;
-      flags = [
-        "--update-input"
-        "nixpkgs"
-        "-L"
-      ];
-      dates = "17:30";
-    };
-    stateVersion = "23.11";
-  };
-
-
-  nix = {
-    package = pkgs.nixFlakes;
-    extraOptions = "experimental-features = nix-command flakes";
-  };
 }
