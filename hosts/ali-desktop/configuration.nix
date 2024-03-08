@@ -329,6 +329,7 @@
     defaultUserShell = pkgs.zsh;
     users = {
       ali = {
+        autoSubUidGidRange = true;
         description = "Alison Jenkins";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
         initialPassword = "initPw!";
