@@ -10,7 +10,6 @@
   console.keyMap = "us";
   hardware.pulseaudio.enable = false;
   programs.zsh.enable = true;
-  security.rtkit.enable = true;
   sound.enable = true;
   time.timeZone = "Europe/London";
 
@@ -239,6 +238,15 @@
         "-f"
         "-o 10"
       ];
+    };
+  };
+
+  security = {
+    rtkit.enable = true;
+
+    sudo = {
+      enable = true;
+      wheelNeedsPassword = true;
     };
   };
 
