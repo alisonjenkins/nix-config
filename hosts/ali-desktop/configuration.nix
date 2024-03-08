@@ -255,6 +255,12 @@
     irqbalance.enable = true;
     resolved.enable = true;
 
+    btrfs = {
+      autoScrub = {
+        enable = true;
+      };
+    };
+
     openssh = {
       enable = true;
       settings.PasswordAuthentication = false;
