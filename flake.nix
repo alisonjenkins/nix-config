@@ -2,17 +2,17 @@
   description = "My flake";
 
   inputs = {
-    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
+    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     attic.url = "github:zhaofengli/attic";
-    ecrrepos.url =
-      "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
+    ecrrepos.url = "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
+    impermanence.url = "github:nix-community/impermanence";
     maven.url = "github:nixos/nixpkgs/15e3765c4e5ec347935e737f57c1b20874f2de69";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
     chaotic = {
@@ -102,7 +102,8 @@
         ali-desktop = lib.nixosSystem rec {
           inherit system;
           specialArgs =
-            let gpgSigningKey = "B561E7F6";
+            let
+              gpgSigningKey = "B561E7F6";
             in
             {
               inherit gpgSigningKey;
@@ -120,6 +121,7 @@
             chaotic.nixosModules.default
             hyprland.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.impermanence.nixosModules.impermanence
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
