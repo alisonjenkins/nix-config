@@ -323,6 +323,7 @@
       pkgs.uhk-udev-rules
     ];
     system76-scheduler = {
+      enable = true;
       settings = {
         processScheduler = {
           pipewireBoost = {
@@ -330,6 +331,7 @@
             profile = {
               ioClass = "realtime";
               class = "fifo";
+              prio = "80";
             };
           };
         };
