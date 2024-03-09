@@ -321,6 +321,20 @@
     udev.packages = [
       pkgs.uhk-udev-rules
     ];
+    system76-scheduler = {
+      settings = {
+        processScheduler = {
+          pipewireBoost = {
+            enable = true;
+            profile = {
+              ioClass = "realtime";
+              class = "fifo";
+            };
+          };
+        };
+      };
+    };
+
 
     xserver = {
       videoDrivers = [ "amdgpu" ];
