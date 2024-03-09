@@ -390,7 +390,7 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        extraGroups = [ "docker" "networkmanager" "pipewire" "wheel" ];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
