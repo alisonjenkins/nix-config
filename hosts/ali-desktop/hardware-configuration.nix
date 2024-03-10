@@ -60,7 +60,7 @@
       neededForBoot = true;
       options = [
         "defaults"
-        "size=2G"
+        "size=4G"
         "mode=755"
       ];
     };
