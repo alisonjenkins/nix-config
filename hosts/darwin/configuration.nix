@@ -26,6 +26,7 @@
       cachix
       cargo-lambda
       cargo-machete
+      cargo-make
       cargo-tarpaulin
       cargo-watch
       chezmoi
@@ -38,11 +39,7 @@
       docker-credential-helpers
       eza
       fd
-      fenix.packages.${system}.complete.toolchain
-      fenix.packages.${system}.targets.aarch64-apple-darwin.latest.rust-std
-      fenix.packages.${system}.targets.aarch64-unknown-linux-gnu.latest.rust-std
-      fenix.packages.${system}.targets.wasm32-unknown-unknown.latest.rust-std
-      fenix.packages.${system}.targets.x86_64-unknown-linux-gnu.latest.rust-std
+      rust-bin.nightly."2024-03-02".default
       figlet
       fluxcd
       fzf

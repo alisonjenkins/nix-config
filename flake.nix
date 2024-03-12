@@ -14,6 +14,7 @@
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nur.url = "github:nix-community/NUR";
+    rust-overlay.url = "github:oxalica/rust-overlay";
 
     chaotic = {
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
@@ -25,10 +26,6 @@
     };
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    fenix = {
-      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     firefox-addons = {
@@ -81,6 +78,7 @@
     , nixpkgs_master
     , nixpkgs_stable
     , nur
+    , rust-overlay
     , plasma-manager
     , sops-nix
     , ...
@@ -227,6 +225,9 @@
         darwin.lib.darwinSystem {
           modules = [
             ./hosts/darwin/configuration.nix
+            ({ pkgs, ... }: {
+              nixpkgs.overlays = [ rust-overlay.overlays.default ];
+            })
             # home-manager.darwinModules.home-manager
             # {
             #   home-manager.useGlobalPkgs = true;
