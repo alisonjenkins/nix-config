@@ -310,7 +310,7 @@
       alsa.support32Bit = true;
       jack.enable = true;
       pulse.enable = true;
-      systemWide = true;
+      systemWide = false;
 
       # lowLatency = {
       #   enable = true;
