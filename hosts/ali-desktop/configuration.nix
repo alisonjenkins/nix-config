@@ -164,6 +164,7 @@
       radeontop
       uhk-agent
       webcamoid
+      wireguard-tools
     ];
 
     variables = {
