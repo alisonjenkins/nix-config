@@ -161,6 +161,7 @@
       ananicy-cpp-rules
       libsForQt5.polonium
       polkit
+      protontricks
       radeontop
       uhk-agent
       webcamoid
