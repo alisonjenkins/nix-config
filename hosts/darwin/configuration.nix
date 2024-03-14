@@ -84,7 +84,6 @@
       pwgen
       python311Packages.python-lsp-server
       ripgrep
-      rnix-lsp
       ruff-lsp
       selene
       skopeo
