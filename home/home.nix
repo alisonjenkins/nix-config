@@ -71,7 +71,7 @@
     ssh-agent.enable = true;
     gpg-agent = {
       enable = true;
-      pinentryFlavor = null;
+      pinentryPackage = pkgs.kwalletcli;
       enableBashIntegration = true;
       enableZshIntegration = true;
       extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
