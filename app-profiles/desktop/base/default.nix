@@ -45,6 +45,7 @@
       dig
       discord
       droidcam
+      element-desktop
       ethtool
       fava
       fd
