@@ -564,7 +564,7 @@
       };
     };
     distributedBuilds = true;
-    package = pkgs.nixUnstable;
+    package = pkgs.nixVersions.nix_2_20;
     extraOptions = ''
       keep-derivations = true
       keep-outputs = true
