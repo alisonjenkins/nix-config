@@ -444,6 +444,7 @@
       "discord"
       "docker"
       "drawio"
+      "element"
       "firefox"
       "flameshot"
       "font-hack-nerd-font"
