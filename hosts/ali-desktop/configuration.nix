@@ -159,6 +159,7 @@
     systemPackages = with pkgs; [
       ananicy-cpp
       ananicy-cpp-rules
+      lact
       libsForQt5.polonium
       polkit
       protontricks
