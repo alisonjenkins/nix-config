@@ -165,6 +165,7 @@
       protontricks
       radeontop
       uhk-agent
+      upscayl
       webcamoid
       wireguard-tools
     ];
