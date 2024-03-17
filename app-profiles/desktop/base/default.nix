@@ -51,6 +51,7 @@
       fd
       ffmpeg
       filelight
+      freeplane
       fzf
       gamemode
       gcc-unwrapped
