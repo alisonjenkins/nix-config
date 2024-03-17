@@ -93,6 +93,7 @@
       parted
       pinentry
       proton-ge-custom
+      protonup-qt
       psmisc
       pwgen
       ripgrep
