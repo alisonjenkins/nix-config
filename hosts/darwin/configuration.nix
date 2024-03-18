@@ -59,6 +59,7 @@
       jdk11
       jq
       just
+      k9s
       kind
       kitty
       kubecm
@@ -105,7 +106,6 @@
     ] ++ [
       inputs.attic.packages.${system}.attic-client
       inputs.nixpkgs_stable.legacyPackages.${system}.buildah
-      inputs.nixpkgs_stable.legacyPackages.${system}.k9s
       pkgs.neovide
     ];
 
