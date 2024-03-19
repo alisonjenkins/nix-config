@@ -1,6 +1,10 @@
-{ pkgs, system, inputs, ... }:
+{ 
+  lib,
+  pkgs,
+  ... 
+}:
 {
-  programs.plasma = {
+  programs.plasma = (lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
 
     panels = [
@@ -19,5 +23,5 @@
         ];
       }
     ];
-  };
+  } {});
 }

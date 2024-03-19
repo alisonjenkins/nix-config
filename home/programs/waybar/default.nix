@@ -1,18 +1,18 @@
 { config, lib, pkgs, ... }:
 
 {
-    home.packages = with pkgs; [
+    home.packages = (lib.mkIf pkgs.stdenv.isLinux (with pkgs; [
         brightnessctl
         cpupower-gui
         hyprshade
         playerctl
         swaynotificationcenter
         swww
-    ];
+    ]) []) ;
 
-    programs.waybar = {
+    programs.waybar = (lib.mkIf pkgs.stdenv.isLinux {
       enable = true;
-    };
+    } {});
 
     home.file.".config/waybar" = {
       source = ./configs/new;

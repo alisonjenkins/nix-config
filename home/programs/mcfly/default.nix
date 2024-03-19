@@ -6,5 +6,3 @@
     keyScheme = "vim";
   };
 }
-
-

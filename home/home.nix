@@ -1,19 +1,21 @@
-{ hyprland, pkgs, nix-colors, inputs, ... }: {
+{ lib, hyprland, pkgs, nix-colors, inputs, username, ... }: rec {
 
-  imports = [
-    hyprland.homeManagerModules.default
-    inputs.plasma-manager.homeManagerModules.plasma-manager
-    ./programs
-    ./scripts
-    ./themes
-  ];
+  # imports = [
+  #   hyprland.homeManagerModules.default
+  #   inputs.plasma-manager.homeManagerModules.plasma-manager
+  #   ./programs
+  #   ./scripts
+  #   ./themes
+  # ];
+
+  isMac=lib.version.platform.system=="darwin";
 
   home = {
-    username = "ali";
-    homeDirectory = "/home/ali";
+    username = username;
+    homeDirectory = (lib.mkIf isMac "/Users/${username}" "/home/${username}");
   };
 
-  home.packages = (with pkgs; [
+  home.packages = (if isMac then [] else (with pkgs; [
     appimage-run
     audacity
     bibata-cursors
@@ -51,21 +53,21 @@
   ]) ++ (with pkgs.gnome; [
     zenity
     eog
-  ]);
-
-  programs.home-manager.enable = true;
-  targets.genericLinux.enable = true;
-
-  services = {
-    ssh-agent.enable = true;
-    gpg-agent = {
-      enable = true;
-      pinentryPackage = pkgs.kwalletcli;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
-      extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
-    };
-  };
+  ]));
+  #
+  # programs.home-manager.enable = true;
+  # targets.genericLinux.enable = true;
+  #
+  # services = (lib.mkIf isMac {} {
+  #   ssh-agent.enable = true;
+  #   gpg-agent = {
+  #     enable = true;
+  #     pinentryPackage = pkgs.kwalletcli;
+  #     enableBashIntegration = true;
+  #     enableZshIntegration = true;
+  #     extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
+  #   };
+  # });
 
   home.stateVersion = "23.11";
 }

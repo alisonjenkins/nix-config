@@ -99,16 +99,15 @@
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
           inherit system;
-          specialArgs =
-            let
-              gpgSigningKey = "B561E7F6";
-            in
-            {
-              inherit gpgSigningKey;
-              inherit hyprland;
-              inherit inputs;
-              inherit system;
-            };
+          specialArgs = {
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "B561E7F6";
+            gitName = "Alison Jenkins";
+            inherit hyprland;
+            inherit inputs;
+            inherit system;
+            username = "ali";
+          };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             # ./app-profiles/desktop/display-managers/sddm
@@ -134,15 +133,15 @@
 
         ali-laptop = lib.nixosSystem rec {
           inherit system;
-          specialArgs =
-            let gpgSigningKey = "AD723B26";
-            in
-            {
-              inherit gpgSigningKey;
-              inherit hyprland;
-              inherit inputs;
-              inherit system;
-            };
+          specialArgs = {
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "AD723B26";
+            gitName = "Alison Jenkins";
+            inherit hyprland;
+            inherit inputs;
+            inherit system;
+            username = "ali";
+          };
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr
@@ -163,7 +162,7 @@
           ];
         };
 
-        ali-steamdeck = lib.nixosSystem rec {
+        ali-steamdeck = lib.nixosSystem {
           inherit system;
           specialArgs = { inherit jovian-nixos; };
 
@@ -215,10 +214,18 @@
       darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =
         let
           system = "aarch64-darwin";
-          lib = nixpkgs.lib;
+          # lib = nixpkgs.lib;
+          # pkgs = import inputs.nixpkgs {
+          #   inherit system;
+          #   config = {
+          #     allowUnfree = true;
+          #     permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
+          #   };
+          # };
           specialArgs = {
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "37F33EF6";
+            gitName = "Alison Jenkins";
             username = "ajenkins";
           };
         in
@@ -228,12 +235,13 @@
             ({ pkgs, ... }: {
               nixpkgs.overlays = [ rust-overlay.overlays.default ];
             })
-            # home-manager.darwinModules.home-manager
-            # {
-            #   home-manager.useGlobalPkgs = true;
-            #   home-manager.useUserPackages = true;
-            #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
-            # }
+            home-manager.darwinModules.home-manager
+            {
+              # home-manager.useGlobalPkgs = true;
+              # home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              # home-manager.extraSpecialArgs = specialArgs;
+            }
           ];
           specialArgs = {
             inherit fenix;

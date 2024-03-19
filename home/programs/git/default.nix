@@ -1,10 +1,14 @@
-{ config, pkgs, gpgSigningKey, ... }:
-
+{ 
+  gitEmail,
+  gitName,
+  gitGPGSigningKey,
+  ... 
+}:
 {
   programs.git = {
     enable = true;
-    userName = "Alison Jenkins";
-    userEmail = "1176328+alisonjenkins@users.noreply.github.com";
+    userName = gitName;
+    userEmail = gitEmail;
 
     aliases = {
       # branch
@@ -116,7 +120,7 @@
     ];
 
     signing = {
-      key = gpgSigningKey;
+      key = gitGPGSigningKey;
       signByDefault = true;
     };
   };

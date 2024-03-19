@@ -1,11 +1,15 @@
-{ config, pkgs, ... }:
+{ 
+  lib,
+  pkgs,
+  ... 
+}:
 {
-  programs.rofi = {
+  programs.rofi = (lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     package = pkgs.rofi-wayland;
     terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
     theme = ./theme.rasi;
-  };
+  } {});
 
     home.file.".config/rofi/theme.rasi".text = ''
 
