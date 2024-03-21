@@ -7,7 +7,6 @@
     slurp
     swaynotificationcenter
     swww
-    waybar
     wl-clipboard
     wlogout
     wofi

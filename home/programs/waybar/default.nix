@@ -12,6 +12,7 @@
 
     programs.waybar = {
       enable = true;
+      package = pkgs.stable.waybar;
     };
 
     home.file.".config/waybar" = {

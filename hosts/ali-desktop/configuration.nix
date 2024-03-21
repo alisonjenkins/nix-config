@@ -1,5 +1,10 @@
-{ config, cfg, pkgs, inputs, lib, system, ... }:
-
+{ 
+  config,
+  inputs,
+  outputs,
+  pkgs,
+  ... 
+}:
 {
   imports = [
     ../../app-profiles/desktop
@@ -217,6 +222,13 @@
   };
 
   nixpkgs = {
+    overlays = [
+      outputs.overlays.additions
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+    ];
+
     config = {
       allowUnfree = true;
       permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";

@@ -65,7 +65,9 @@
   };
 
   outputs =
-    { chaotic
+    {
+      self
+    , chaotic
     , darwin
     , disko
     , fenix
@@ -85,15 +87,21 @@
     }@inputs:
 
     let
+      inherit (self) outputs;
       system = "x86_64-linux";
       lib = nixpkgs.lib;
-      # pkgs = import inputs.nixpkgs {
-      #   inherit system;
-      #   config = {
-      #     allowUnfree = true;
-      #     permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
-      #   };
-      # };
+
+      add_master_packages = final: _prev: {
+        master = import nixpkgs_master {
+          inherit system;
+        };
+      };
+
+      add_stable_packages = final: _prev: {
+        master = import nixpkgs_stable {
+          inherit system;
+        };
+      };
     in
     {
       nixosConfigurations = {
@@ -107,6 +115,7 @@
               inherit gpgSigningKey;
               inherit hyprland;
               inherit inputs;
+              inherit outputs;
               inherit system;
             };
           modules = [
@@ -141,6 +150,7 @@
               inherit gpgSigningKey;
               inherit hyprland;
               inherit inputs;
+              inherit outputs;
               inherit system;
             };
           modules = [
@@ -173,8 +183,10 @@
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            inherit inputs;
-            inherit system;
+              inherit hyprland;
+              inherit inputs;
+              inherit outputs;
+              inherit system;
           };
           modules = [
             ./hosts/home-kvm-hypervisor-1/configuration.nix
@@ -219,6 +231,9 @@
           specialArgs = {
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "37F33EF6";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
             username = "ajenkins";
           };
         in
@@ -235,12 +250,7 @@
             #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
             # }
           ];
-          specialArgs = {
-            inherit fenix;
-            inherit inputs;
-            inherit system;
-            inherit specialArgs;
-          };
+          specialArgs = specialArgs;
         };
 
       nixosConfigurations."dev-vm" =
@@ -265,5 +275,7 @@
             # }
           ];
         };
+
+      overlays = import ./overlays { inherit inputs; };
     };
 }

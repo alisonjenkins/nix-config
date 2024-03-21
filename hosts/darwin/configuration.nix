@@ -1,18 +1,17 @@
-{ inputs
-, specialArgs
-, system
+{ 
+  config
 , fenix
+, inputs
 , lib
-, pkgs
-, config
 , modulesPath
 , options
-,
+, outputs
+, pkgs
+, specialArgs
+, system
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
-  nixpkgs.overlays = [ fenix.overlays.default ];
-
   environment.systemPackages = with pkgs;
     [
       # azure-cli
@@ -105,7 +104,7 @@
       zoxide
     ] ++ [
       inputs.attic.packages.${system}.attic-client
-      inputs.nixpkgs_stable.legacyPackages.${system}.buildah
+      pkgs.stable.buildah
       pkgs.neovide
     ];
 
@@ -596,6 +595,12 @@
 
   nixpkgs = {
     config = { allowUnfree = true; };
+    overlays = [
+      outputs.overlays.additions
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+    ];
     hostPlatform = system;
   };
 
