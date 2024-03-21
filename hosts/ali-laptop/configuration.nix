@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{ 
+  outputs,
+  config,
+  pkgs,
+  ... 
+}:
 
 {
   imports =
@@ -136,6 +141,12 @@
   };
 
   nixpkgs = {
+    overlays = [
+      outputs.overlays.additions
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+    ];
     config = {
       allowUnfree = true;
       permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
