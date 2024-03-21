@@ -36,7 +36,7 @@
           darkreader
           firenvim
           multi-account-containers
-          onepassword-password-manager
+          # onepassword-password-manager
           privacy-badger
           surfingkeys
           switchyomega
