@@ -1,6 +1,4 @@
-{ config, pkgs, gpgSigningKey, ... }:
-
-{
+{gpgSigningKey, ...}: {
   programs.git = {
     enable = true;
     userName = "Alison Jenkins";

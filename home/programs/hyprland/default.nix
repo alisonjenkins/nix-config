@@ -1,5 +1,4 @@
-{ hyprland, config, lib, pkgs, ... }:
-{
+{...}: {
   home.file.".config/hypr/hyprland.conf".text = ''
     $mainMod = SUPER
 

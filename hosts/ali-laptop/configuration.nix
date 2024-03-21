@@ -1,17 +1,14 @@
-{ 
+{
   outputs,
   config,
   pkgs,
-  ... 
-}:
-
-{
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../app-profiles/desktop
-      ../../app-profiles/hardware/touchpad
-    ];
+  ...
+}: {
+  imports = [
+    ./hardware-configuration.nix
+    ../../app-profiles/desktop
+    ../../app-profiles/hardware/touchpad
+  ];
 
   boot = {
     kernelPackages = pkgs.linuxPackages_cachyos;
@@ -19,7 +16,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = [ "nodev" ];
+        devices = ["nodev"];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -40,10 +37,9 @@
 
   networking.hostName = "ali-laptop";
   networking.networkmanager.enable = true;
-  networking.extraHosts =
-    ''
-      192.168.1.202 home-kvm-hypervisor-1
-    '';
+  networking.extraHosts = ''
+    192.168.1.202 home-kvm-hypervisor-1
+  '';
 
   time.timeZone = "Europe/London";
   i18n.extraLocaleSettings = {
@@ -116,7 +112,7 @@
     pulse.enable = true;
   };
 
-  environment.pathsToLink = [ "/share/zsh" ];
+  environment.pathsToLink = ["/share/zsh"];
   environment.variables = {
     NIXOS_OZONE_WL = "1";
     PATH = [
@@ -132,7 +128,7 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
+    extraGroups = ["networkmanager" "wheel" "docker"];
     packages = with pkgs; [
       firefox
       neofetch

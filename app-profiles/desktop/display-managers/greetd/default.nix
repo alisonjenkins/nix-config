@@ -1,5 +1,10 @@
-{ config, pkgs, lib, system, ... }:
 {
+  config,
+  pkgs,
+  lib,
+  system,
+  ...
+}: {
   services = {
     greetd = {
       enable = true;
@@ -12,7 +17,7 @@
   };
 
   security.pam.services.greetd.enableKwallet = true;
-  system.activationScripts.makeTuigreetCacheDir = lib.stringAfter [ "var" ] ''
+  system.activationScripts.makeTuigreetCacheDir = lib.stringAfter ["var"] ''
     mkdir -p /var/cache/tuigreet
     chown greeter:greeter -R /var/cache/tuigreet
   '';

@@ -1,7 +1,15 @@
-{ config, lib, pkgs, ... }:
-{
+{pkgs, ...}: {
   programs.gh = {
     enable = true;
+
+    extensions = with pkgs; [
+      unstable.gh-actions-cache
+      unstable.gh-cal
+      unstable.gh-dash
+      unstable.gh-eco
+      unstable.gh-markdown-preview
+      unstable.gh-poi
+    ];
 
     settings = {
       git_protocol = "ssh";

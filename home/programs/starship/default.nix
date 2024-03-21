@@ -1,6 +1,4 @@
-{ config, pkgs, ... }:
-
-{
+{...}: {
   programs.starship = {
     enable = true;
   };
@@ -9,4 +7,3 @@
     ".config/starship/config.toml".text = builtins.readFile ./config.toml;
   };
 }
-

@@ -1,6 +1,4 @@
-{ config, pkgs, ... }:
-
-{
+{pkgs, ...}: {
   programs.tmux = {
     enable = true;
     newSession = true;
@@ -74,4 +72,3 @@
     ];
   };
 }
-

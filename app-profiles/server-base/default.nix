@@ -1,5 +1,9 @@
-{ inputs, system, pkgs, ... }:
 {
+  inputs,
+  system,
+  pkgs,
+  ...
+}: {
   imports = [
     ./ssh
   ];

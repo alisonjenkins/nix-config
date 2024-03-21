@@ -1,5 +1,4 @@
-{ config, pkgs, ... }:
-let
+{pkgs, ...}: let
   # plugins-zsh-config = builtins.readFile ./plugins.zsh;
   plugins-zsh-config-built = pkgs.writeScriptBin "plugins-zsh-config" ''
     # Configure zinit
@@ -45,8 +44,7 @@ let
     autoload -Uz _zinit
     (( ''${+_comps} )) && _comps[zinit]=_zinit
   '';
-in
-{
+in {
   programs = {
     zsh = {
       autocd = true;
@@ -222,4 +220,3 @@ in
     ".config/zshrc.d/plugins.zsh".text = builtins.readFile "${plugins-zsh-config-built}/bin/plugins-zsh-config";
   };
 }
-
