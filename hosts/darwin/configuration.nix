@@ -1,21 +1,21 @@
-{ 
-  config
-, fenix
-, inputs
-, lib
-, modulesPath
-, options
-, outputs
-, pkgs
-, specialArgs
-, system
+{
+  config,
+  fenix,
+  inputs,
+  lib,
+  modulesPath,
+  options,
+  outputs,
+  pkgs,
+  specialArgs,
+  system,
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs;
     [
       # azure-cli
-      (pkgs.python3.withPackages (ps: with ps; [ requests boto3 pyyaml ]))
+      (pkgs.python3.withPackages (ps: with ps; [requests boto3 pyyaml]))
       alacritty
       aws-vault
       awscli2
@@ -102,7 +102,8 @@
       wget
       zk
       zoxide
-    ] ++ [
+    ]
+    ++ [
       inputs.attic.packages.${system}.attic-client
       pkgs.stable.buildah
       pkgs.neovide
@@ -492,7 +493,7 @@
     fontDir.enable = true;
     fonts = with pkgs; [
       recursive
-      (nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; })
+      (nerdfonts.override {fonts = ["FiraCode" "Hack" "JetBrainsMono"];})
       hack-font
       nerdfonts
     ];
@@ -579,7 +580,7 @@
       require-sigs = true;
       sandbox = true;
       sandbox-fallback = false;
-      trusted-users = [ "root" specialArgs.username "@admin" "@staff" ];
+      trusted-users = ["root" specialArgs.username "@admin" "@staff"];
       substituters = [
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
@@ -594,7 +595,7 @@
   };
 
   nixpkgs = {
-    config = { allowUnfree = true; };
+    config = {allowUnfree = true;};
     overlays = [
       outputs.overlays.additions
       outputs.overlays.master-packages

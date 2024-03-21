@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
-
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   environment.systemPackages = with pkgs; [
     twemoji-color-font
   ];
@@ -10,11 +13,13 @@
       noto-fonts
       noto-fonts-cjk
       noto-fonts-emoji
-      (nerdfonts.override { fonts = [
-        "FiraCode"
-        "DroidSansMono"
-        "Hack"
-      ]; })
+      (nerdfonts.override {
+        fonts = [
+          "FiraCode"
+          "DroidSansMono"
+          "Hack"
+        ];
+      })
     ];
     fontconfig = {
       localConf = ''
@@ -248,5 +253,4 @@
       '';
     };
   };
-
 }

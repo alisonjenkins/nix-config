@@ -1,11 +1,13 @@
-{ config, pkgs, lib, ... }:
-
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      # ../../app-profiles/desktop
-    ];
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
+  imports = [
+    ./hardware-configuration.nix
+    # ../../app-profiles/desktop
+  ];
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
@@ -13,7 +15,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = [ "nodev" ];
+        devices = ["nodev"];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -52,7 +54,7 @@
     enable = true;
     layout = "us";
     xkbVariant = "";
-    videoDrivers = [ "qxl" ];
+    videoDrivers = ["qxl"];
   };
 
   services.spice-vdagentd.enable = true;
@@ -74,7 +76,7 @@
     pulse.enable = true;
   };
 
-  environment.pathsToLink = [ "/share/zsh" ];
+  environment.pathsToLink = ["/share/zsh"];
   environment.variables = {
     NIXOS_OZONE_WL = "1";
     PATH = [
@@ -89,8 +91,8 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
-    packages = with pkgs; [ ];
+    extraGroups = ["networkmanager" "wheel" "docker"];
+    packages = with pkgs; [];
   };
 
   nixpkgs.config.allowUnfree = true;

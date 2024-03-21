@@ -1,5 +1,9 @@
-{ config, pkgs, lib, ... }:
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   virtualisation.libvirtd = {
     enable = true;
     parallelShutdown = 4;
@@ -10,7 +14,7 @@
   networking.interfaces.br0.useDHCP = true;
   networking.bridges = {
     "br0" = {
-      interfaces = [ "enp12s0" ];
+      interfaces = ["enp12s0"];
     };
   };
 }

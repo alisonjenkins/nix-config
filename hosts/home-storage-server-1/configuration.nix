@@ -1,13 +1,15 @@
-{ config, pkgs, lib, ... }:
-
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../app-profiles/server-base
-      ../../app-profiles/server-base/luks-tor-unlock
-      ../../app-profiles/storage-server
-    ];
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
+  imports = [
+    ./hardware-configuration.nix
+    ../../app-profiles/server-base
+    ../../app-profiles/server-base/luks-tor-unlock
+    ../../app-profiles/storage-server
+  ];
 
   boot = {
     kernelPackages = pkgs.linuxPackages_hardened;
@@ -15,7 +17,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = [ "nodev" ];
+        devices = ["nodev"];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -53,7 +55,7 @@
   };
 
   console.keyMap = "us";
-  environment.pathsToLink = [ "/share/zsh" ];
+  environment.pathsToLink = ["/share/zsh"];
   environment.variables = {
     PATH = [
       "\${HOME}/.local/bin"
@@ -67,9 +69,9 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = [ "docker" "networkmanager" "wheel" ];
-    packages = with pkgs; [ ];
-    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+    extraGroups = ["docker" "networkmanager" "wheel"];
+    packages = with pkgs; [];
+    openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
 
   nixpkgs.config.allowUnfree = true;

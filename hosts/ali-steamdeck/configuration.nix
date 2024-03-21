@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   console.keyMap = "us";
   networking.hostName = "ali-steamdeck";
   nixpkgs.config.allowUnfree = true;
@@ -24,7 +23,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = [ "nodev" ];
+        devices = ["nodev"];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -44,7 +43,7 @@
   };
 
   environment = {
-    pathsToLink = [ "/share/zsh" ];
+    pathsToLink = ["/share/zsh"];
     variables = {
       NIXOS_OZONE_WL = "1";
       PATH = [
@@ -58,7 +57,7 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
+    extraGroups = ["networkmanager" "wheel" "docker"];
   };
 
   nix = {

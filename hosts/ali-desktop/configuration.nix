@@ -1,11 +1,10 @@
-{ 
+{
   config,
   inputs,
   outputs,
   pkgs,
-  ... 
-}:
-{
+  ...
+}: {
   imports = [
     ../../app-profiles/desktop
     ./hardware-configuration.nix
@@ -97,7 +96,7 @@
         efiSysMountPoint = "/boot";
       };
       grub = {
-        devices = [ "nodev" ];
+        devices = ["nodev"];
         efiSupport = true;
         enable = true;
         gfxmodeEfi = "3440x1440";
@@ -129,7 +128,7 @@
   };
 
   environment = {
-    pathsToLink = [ "/share/zsh" ];
+    pathsToLink = ["/share/zsh"];
 
     etc = {
       "crypttab".text = ''
@@ -151,12 +150,25 @@
           "/var/lib/nixos"
           "/var/lib/systemd/coredump"
           "/var/log"
-          { directory = "/var/lib/colord"; user = "colord"; group = "colord"; mode = "u=rwx,g=rx,o="; }
-          { directory = "/var/cache/tuigreet"; user = "greetd"; group = "greetd"; mode = "u=rwx,g=rx,o="; }
+          {
+            directory = "/var/lib/colord";
+            user = "colord";
+            group = "colord";
+            mode = "u=rwx,g=rx,o=";
+          }
+          {
+            directory = "/var/cache/tuigreet";
+            user = "greetd";
+            group = "greetd";
+            mode = "u=rwx,g=rx,o=";
+          }
         ];
         files = [
           "/etc/machine-id"
-          { file = "/var/keys/secret_file"; parentDirectory = { mode = "u=rwx,g=,o="; }; }
+          {
+            file = "/var/keys/secret_file";
+            parentDirectory = {mode = "u=rwx,g=,o=";};
+          }
         ];
       };
     };
@@ -177,7 +189,7 @@
 
     variables = {
       NIXOS_OZONE_WL = "1";
-      PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
+      PATH = ["\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts"];
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
   };
@@ -206,10 +218,9 @@
     interfaces.enp16s0.mtu = 9000;
     networkmanager.enable = true;
 
-    extraHosts =
-      ''
-        192.168.1.202 home-kvm-hypervisor-1
-      '';
+    extraHosts = ''
+      192.168.1.202 home-kvm-hypervisor-1
+    '';
 
     firewall.allowedTCPPorts = [
       25565
@@ -255,19 +266,20 @@
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
     package = pkgs.steam.override {
-      extraEnv = { };
-      extraLibraries = pkgs: with pkgs; [
-        xorg.libXcursor
-        xorg.libXi
-        xorg.libXinerama
-        xorg.libXScrnSaver
-        libpng
-        libpulseaudio
-        libvorbis
-        stdenv.cc.cc.lib
-        libkrb5
-        keyutils
-      ];
+      extraEnv = {};
+      extraLibraries = pkgs:
+        with pkgs; [
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXinerama
+          xorg.libXScrnSaver
+          libpng
+          libpulseaudio
+          libvorbis
+          stdenv.cc.cc.lib
+          libkrb5
+          keyutils
+        ];
     };
     gamescopeSession = {
       enable = true;
@@ -296,7 +308,7 @@
     beesd = {
       filesystems = {
         persistence = {
-          extraOptions = [ "--loadavg-target" "5.0" ];
+          extraOptions = ["--loadavg-target" "5.0"];
           hashTableSizeMB = 2048;
           spec = "LABEL=persistence";
           verbosity = "crit";
@@ -354,9 +366,8 @@
       };
     };
 
-
     xserver = {
-      videoDrivers = [ "amdgpu" ];
+      videoDrivers = ["amdgpu"];
       xkb.layout = "us";
       xkb.variant = "";
     };
@@ -365,7 +376,7 @@
   sops = {
     defaultSopsFile = ../../secrets/main.enc.yaml;
     defaultSopsFormat = "yaml";
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = ["/etc/ssh/ssh_host_ed25519_key"];
     secrets = {
       # "myservice/my_subdir/my_secret" = {
       #   mode = "0400";
@@ -408,7 +419,7 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = [ "docker" "networkmanager" "pipewire" "wheel" ];
+        extraGroups = ["docker" "networkmanager" "pipewire" "wheel"];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;

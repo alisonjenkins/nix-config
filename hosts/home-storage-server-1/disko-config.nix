@@ -24,7 +24,7 @@
               content = {
                 type = "luks";
                 name = "crypted";
-                extraOpenArgs = [ ];
+                extraOpenArgs = [];
                 passwordFile = "/tmp/secret.key";
                 settings.allowDiscards = true;
                 content = {

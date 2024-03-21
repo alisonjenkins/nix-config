@@ -1,5 +1,10 @@
-{ lib, pkgs, inputs, system, ... }:
 {
+  lib,
+  pkgs,
+  inputs,
+  system,
+  ...
+}: {
   boot = {
     binfmt = {
       emulatedSystems = [
@@ -11,7 +16,7 @@
       enable = true;
       theme = "breeze";
     };
-    kernelParams = [ "quiet" ];
+    kernelParams = ["quiet"];
   };
 
   programs.gamescope = {
@@ -24,102 +29,101 @@
     Option "DRI" "3"
   '';
 
-  environment.systemPackages = with pkgs;
-    [
-      # gamescope
-      # inputs.jovian-nixos.legacyPackages.${system}.gamescope
-      # mangohud32_git
-      # mangohud_git
-      age
-      arrpc
-      bat
-      bc
-      beancount
-      cachix
-      cargo
-      chromium
-      colmena
-      comma
-      corectrl
-      crunchy-cli
-      dig
-      discord
-      droidcam
-      element-desktop
-      ethtool
-      fava
-      fd
-      ffmpeg
-      filelight
-      freeplane
-      fzf
-      gamemode
-      gcc-unwrapped
-      gimp
-      git
-      glxinfo
-      gnupg
-      google-chrome
-      gtk3
-      haveged
-      htop
-      inputs.ali-neovim.packages.${system}.nvim
-      inputs.jovian-nixos.legacyPackages.${system}.mangohud
-      inputs.nh.packages.${system}.default
-      inputs.nixpkgs_master.legacyPackages.${system}.alvr
-      iotop
-      jdk17
-      just
-      kbfs
-      keybase
-      keybase-gui
-      keyutils
-      kodi-cli
-      kodi-wayland
-      libkrb5
-      libpng
-      libpulseaudio
-      libreoffice
-      libvorbis
-      lshw
-      luxtorpeda
-      mesa32_git
-      mesa_git
-      mpv-vapoursynth
-      ncdu
-      nnn
-      nushellFull
-      obsidian
-      parted
-      pinentry
-      proton-ge-custom
-      protonup-qt
-      psmisc
-      pwgen
-      ripgrep
-      rng-tools
-      rustc
-      sops
-      starship
-      stdenv.cc.cc.lib
-      steamtinkerlaunch
-      stow
-      tig
-      tmux
-      usbutils
-      virt-manager
-      vmtouch
-      vulkan-tools
-      vulnix
-      wine
-      xdg-utils
-      xorg.libXScrnSaver
-      xorg.libXcursor
-      xorg.libXi
-      xorg.libXinerama
-      zoom-us
-      zsh
-    ];
+  environment.systemPackages = with pkgs; [
+    # gamescope
+    # inputs.jovian-nixos.legacyPackages.${system}.gamescope
+    # mangohud32_git
+    # mangohud_git
+    age
+    arrpc
+    bat
+    bc
+    beancount
+    cachix
+    cargo
+    chromium
+    colmena
+    comma
+    corectrl
+    crunchy-cli
+    dig
+    discord
+    droidcam
+    element-desktop
+    ethtool
+    fava
+    fd
+    ffmpeg
+    filelight
+    freeplane
+    fzf
+    gamemode
+    gcc-unwrapped
+    gimp
+    git
+    glxinfo
+    gnupg
+    google-chrome
+    gtk3
+    haveged
+    htop
+    inputs.ali-neovim.packages.${system}.nvim
+    inputs.jovian-nixos.legacyPackages.${system}.mangohud
+    inputs.nh.packages.${system}.default
+    inputs.nixpkgs_master.legacyPackages.${system}.alvr
+    iotop
+    jdk17
+    just
+    kbfs
+    keybase
+    keybase-gui
+    keyutils
+    kodi-cli
+    kodi-wayland
+    libkrb5
+    libpng
+    libpulseaudio
+    libreoffice
+    libvorbis
+    lshw
+    luxtorpeda
+    mesa32_git
+    mesa_git
+    mpv-vapoursynth
+    ncdu
+    nnn
+    nushellFull
+    obsidian
+    parted
+    pinentry
+    proton-ge-custom
+    protonup-qt
+    psmisc
+    pwgen
+    ripgrep
+    rng-tools
+    rustc
+    sops
+    starship
+    stdenv.cc.cc.lib
+    steamtinkerlaunch
+    stow
+    tig
+    tmux
+    usbutils
+    virt-manager
+    vmtouch
+    vulkan-tools
+    vulnix
+    wine
+    xdg-utils
+    xorg.libXScrnSaver
+    xorg.libXcursor
+    xorg.libXi
+    xorg.libXinerama
+    zoom-us
+    zsh
+  ];
 
   programs = {
     partition-manager.enable = true;

@@ -1,5 +1,12 @@
-{ config, lib, pkgs, inputs, system, home, ... }:
 {
+  config,
+  lib,
+  pkgs,
+  inputs,
+  system,
+  home,
+  ...
+}: {
   environment.systemPackages = with pkgs; [
     grim
     kitty
@@ -31,4 +38,3 @@
   programs.hyprland.enable = true;
   programs.hyprland.package = inputs.hyprland.packages.${system}.hyprland;
 }
-
