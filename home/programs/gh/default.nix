@@ -3,12 +3,12 @@
     enable = true;
 
     extensions = with pkgs; [
-      unstable.gh-actions-cache
-      unstable.gh-cal
-      unstable.gh-dash
-      unstable.gh-eco
-      unstable.gh-markdown-preview
-      unstable.gh-poi
+      gh-actions-cache
+      gh-cal
+      gh-dash
+      gh-eco
+      gh-markdown-preview
+      gh-poi
     ];
 
     settings = {
