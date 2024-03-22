@@ -1,0 +1,5 @@
+{
+  programs.noti = {
+    enable = true;
+  };
+}

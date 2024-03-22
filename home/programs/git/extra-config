@@ -10,9 +10,8 @@
   UseHttpPath = true
 
 [commit]
-  template = ~/.config/git/template
-  #gpgSign = true
-
+  # template = ~/.config/git/template
+  gpgSign = true
 
 [difftool]
   prompt = false
@@ -44,8 +43,8 @@
 [push]
   default = current
 
-#[tag]
-  #gpgSign = true
+[tag]
+  gpgSign = true
 
 [url "git@github.com:"]
   insteadof = github:
