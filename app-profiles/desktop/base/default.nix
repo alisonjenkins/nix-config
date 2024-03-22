@@ -92,7 +92,6 @@
     mesa_git
     mpv-vapoursynth
     ncdu
-    nnn
     nushellFull
     obsidian
     parted

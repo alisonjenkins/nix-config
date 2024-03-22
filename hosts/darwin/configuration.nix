@@ -74,7 +74,6 @@
       mmtc
       ncdu_1
       nixfmt
-      nnn
       nodejs
       nushellFull
       openssl
