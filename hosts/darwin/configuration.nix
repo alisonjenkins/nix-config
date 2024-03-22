@@ -36,6 +36,7 @@
       diskus
       dive
       docker-credential-helpers
+      dua
       eza
       fd
       figlet
