@@ -27,3 +27,24 @@ n ()
             rm -f "$NNN_TMPFILE" > /dev/null
     fi
 }
+
+# This is a function for switching directory using yazi
+# it is similar to the n function above but using yazi instead of nnn.
+y ()
+{
+    # # Block nesting of nnn in subshells
+    # if [ -n $NNNLVL ] && [ "${NNNLVL:-0}" -ge 1 ]; then
+    #     echo "nnn is already running"
+    #     return
+    # fi
+
+    export YAZI_TMPFILE="${XDG_CONFIG_HOME:-$HOME/.config}/yazi/.lastd"
+    mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/yazi"
+
+    yazi "--cwd-file $YAZI_TMPFILE $@"
+
+    if [ -f "$YAZI_TMPFILE" ]; then
+            . "$YAZI_TMPFILE"
+            rm -f "$YAZI_TMPFILE" > /dev/null
+    fi
+}
