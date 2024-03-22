@@ -29,13 +29,13 @@
   };
 
   services = {
+    desktopManager = {
+      plasma6 = {
+        enable = true;
+      };
+    };
     xserver = {
       displayManager.defaultSession = "plasma";
-      desktopManager = {
-        plasma6 = {
-          enable = true;
-        };
-      };
     };
   };
 }
