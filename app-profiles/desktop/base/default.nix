@@ -49,6 +49,7 @@
     dig
     discord
     droidcam
+    dua
     element-desktop
     ethtool
     fava
@@ -121,6 +122,7 @@
     xorg.libXcursor
     xorg.libXi
     xorg.libXinerama
+    yazi
     zoom-us
     zsh
   ];

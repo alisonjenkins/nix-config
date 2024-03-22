@@ -9,6 +9,7 @@
   pkgs,
   specialArgs,
   system,
+  username,
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
@@ -36,6 +37,7 @@
       diskus
       dive
       docker-credential-helpers
+      dua
       eza
       fd
       figlet
@@ -100,6 +102,7 @@
       typst-live
       watch
       wget
+      yazi
       zk
       zoxide
     ]

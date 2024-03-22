@@ -220,8 +220,8 @@
       system = "aarch64-darwin";
       lib = nixpkgs.lib;
       specialArgs = {
-        gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-        gitGPGSigningKey = "37F33EF6";
+        # gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+        # gitGPGSigningKey = "37F33EF6";
         inherit inputs;
         inherit outputs;
         inherit system;
