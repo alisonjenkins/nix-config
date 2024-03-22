@@ -1,22 +1,43 @@
 {
+  pkgs,
+  ...
+}:
+{
   imports = [
     ./alacritty
-    ./dunst
-    ./firefox
+    ./bat
+    ./broot
+    ./carapace
+    ./comodoro
     ./gh
     ./gh-dash
     ./git
-    ./hyprland
+    ./granted
+    ./hyfetch
+    ./info
+    ./k9s
     ./kitty
+    ./lsd
+    ./man
     ./mcfly
-    ./mimetypes
+    ./newsboat
+    ./nix-index
+    ./noti
     ./nushell
-    ./obs
-    # ./plasma5
-    ./rofi
     ./starship
     ./tmux
-    ./waybar
+    ./yazi
     ./zsh
   ];
+  # ++ (if pkgs.stdenv.isLinux then [
+  #   # ./plasma5
+  #   ./dunst
+    # ./firefox
+  #   ./hyprland
+  #   ./mimetypes
+    # ./obs
+  #   ./rofi
+  #   ./waybar
+  # ] else []) ++ (if pkgs.stdenv.isDarwin then [
+  # ] else []);
 }

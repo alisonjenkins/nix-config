@@ -51,9 +51,13 @@ in {
       defaultKeymap = "viins";
       dotDir = ".config/zsh";
       enable = true;
-      enableAutosuggestions = true;
       initExtraFirst = builtins.readFile ./zshrc-first.zsh;
       initExtraBeforeCompInit = builtins.readFile ./zshrc.sh;
+
+
+      autosuggestion = {
+        enable = true;
+      };
 
       history = {
         size = 999999;

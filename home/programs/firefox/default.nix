@@ -2,12 +2,13 @@
   pkgs,
   inputs,
   system,
+  username,
   ...
 }: {
   programs.firefox = {
     enable = true;
 
-    profiles.ali = {
+    profiles.${username} = {
       search.engines = {
         "Nix Packages" = {
           urls = [

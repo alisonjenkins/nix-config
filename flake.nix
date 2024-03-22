@@ -86,18 +86,6 @@
     inherit (self) outputs;
     system = "x86_64-linux";
     lib = nixpkgs.lib;
-
-    add_master_packages = final: _prev: {
-      master = import nixpkgs_master {
-        inherit system;
-      };
-    };
-
-    add_stable_packages = final: _prev: {
-      master = import nixpkgs_stable {
-        inherit system;
-      };
-    };
   in {
     nixosConfigurations = {
       ali-desktop = lib.nixosSystem rec {
@@ -218,14 +206,16 @@
 
     darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" = let
       system = "aarch64-darwin";
-      lib = nixpkgs.lib;
       specialArgs = {
-        # gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-        # gitGPGSigningKey = "37F33EF6";
         inherit inputs;
         inherit outputs;
         inherit system;
         username = "ajenkins";
+      };
+      gitSpecialArgs = {
+        gitUserName = "Alison Jenkins";
+        gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+        gitGPGSigningKey = "37F33EF6";
       };
     in
       darwin.lib.darwinSystem {
@@ -234,12 +224,13 @@
           ({pkgs, ...}: {
             nixpkgs.overlays = [rust-overlay.overlays.default];
           })
-          # home-manager.darwinModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
-          # }
+          home-manager.darwinModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.${specialArgs.username} = import ./home/home.nix;
+            home-manager.extraSpecialArgs = specialArgs // gitSpecialArgs;
+          }
         ];
         specialArgs = specialArgs;
       };

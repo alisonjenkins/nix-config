@@ -1,0 +1,5 @@
+{
+  programs.comodoro = {
+    enable = true;
+  };
+}
