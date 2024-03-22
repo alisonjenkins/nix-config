@@ -102,6 +102,7 @@
       typst-live
       watch
       wget
+      yazi
       zk
       zoxide
     ]

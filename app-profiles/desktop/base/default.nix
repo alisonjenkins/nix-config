@@ -122,6 +122,7 @@
     xorg.libXcursor
     xorg.libXi
     xorg.libXinerama
+    yazi
     zoom-us
     zsh
   ];
