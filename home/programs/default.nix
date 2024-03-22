@@ -9,35 +9,31 @@
     ./broot
     ./carapace
     ./comodoro
+    ./dunst
+    ./firefox
     ./gh
     ./gh-dash
     ./git
     ./granted
     ./hyfetch
+    ./hyprland
     ./info
     ./k9s
     ./kitty
     ./lsd
     ./man
     ./mcfly
+    ./mimetypes
     ./newsboat
     ./nix-index
     ./noti
     ./nushell
+    ./obs
+    ./rofi
     ./starship
     ./tmux
+    ./waybar
     ./yazi
     ./zsh
   ];
-  # ++ (if pkgs.stdenv.isLinux then [
-  #   # ./plasma5
-  #   ./dunst
-    # ./firefox
-  #   ./hyprland
-  #   ./mimetypes
-    # ./obs
-  #   ./rofi
-  #   ./waybar
-  # ] else []) ++ (if pkgs.stdenv.isDarwin then [
-  # ] else []);
 }
