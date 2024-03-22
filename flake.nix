@@ -90,11 +90,8 @@
     nixosConfigurations = {
       ali-desktop = lib.nixosSystem rec {
         inherit system;
-        specialArgs = let
-          gpgSigningKey = "B561E7F6";
-        in {
-          inherit gpgSigningKey;
-          inherit hyprland;
+        specialArgs = {
+          username = "ali";
           inherit inputs;
           inherit outputs;
           inherit system;
@@ -116,8 +113,12 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.ali = import ./home/home.nix;
-            home-manager.extraSpecialArgs = specialArgs;
+            home-manager.users.${specialArgs.username} = import ./home/home.nix;
+            home-manager.extraSpecialArgs = specialArgs // {
+              gitUserName = "Alison Jenkins";
+              gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+              gitGPGSigningKey = "B561E7F6";
+            };
           }
         ];
       };
