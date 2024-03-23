@@ -63,200 +63,205 @@
     };
   };
 
-  outputs = {
-    self,
-    chaotic,
-    darwin,
-    disko,
-    fenix,
-    home-manager,
-    hyprland,
-    jovian-nixos,
-    nix-colors,
-    nix-gaming,
-    nixpkgs,
-    nixpkgs_master,
-    nixpkgs_stable,
-    nur,
-    rust-overlay,
-    plasma-manager,
-    sops-nix,
-    ...
-  } @ inputs: let
-    inherit (self) outputs;
-    system = "x86_64-linux";
-    lib = nixpkgs.lib;
-  in {
-    nixosConfigurations = {
-      ali-desktop = lib.nixosSystem rec {
-        inherit system;
-        specialArgs = {
-          username = "ali";
-          inherit inputs;
-          inherit outputs;
-          inherit system;
-        };
-        modules = [
-          ./app-profiles/desktop/display-managers/greetd
-          # ./app-profiles/desktop/display-managers/sddm
-          ./app-profiles/desktop/aws
-          ./app-profiles/desktop/wms/hypr
-          ./app-profiles/desktop/wms/plasma6
-          ./hosts/ali-desktop/configuration.nix
-          chaotic.nixosModules.default
-          hyprland.nixosModules.default
-          inputs.nix-flatpak.nixosModules.nix-flatpak
-          inputs.impermanence.nixosModules.impermanence
-          nur.nixosModules.nur
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.${specialArgs.username} = import ./home/home.nix;
-            home-manager.extraSpecialArgs = specialArgs // {
-              gitUserName = "Alison Jenkins";
-              gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-              gitGPGSigningKey = "B561E7F6";
-            };
-          }
-        ];
-      };
-
-      ali-laptop = lib.nixosSystem rec {
-        inherit system;
-        specialArgs = let
-          gpgSigningKey = "AD723B26";
-        in {
-          inherit gpgSigningKey;
-          inherit hyprland;
-          inherit inputs;
-          inherit outputs;
-          inherit system;
-        };
-        modules = [
-          ./app-profiles/desktop/display-managers/greetd
-          ./app-profiles/desktop/wms/hypr
-          ./app-profiles/desktop/wms/plasma5
-          ./hosts/ali-laptop/configuration.nix
-          chaotic.nixosModules.default
-          hyprland.nixosModules.default
-          inputs.nix-flatpak.nixosModules.nix-flatpak
-          nur.nixosModules.nur
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.ali = import ./home/home.nix;
-            home-manager.extraSpecialArgs = specialArgs;
-          }
-        ];
-      };
-
-      ali-steamdeck = lib.nixosSystem rec {
-        inherit system;
-        specialArgs = {inherit jovian-nixos;};
-
-        modules = [./hosts/ali-steamdeck/configuration.nix];
-      };
-
-      home-kvm-hypervisor-1 = lib.nixosSystem rec {
-        inherit system;
-        specialArgs = {
-          inherit hyprland;
-          inherit inputs;
-          inherit outputs;
-          inherit system;
-        };
-        modules = [
-          ./hosts/home-kvm-hypervisor-1/configuration.nix
-          ./hosts/home-kvm-hypervisor-1/disko-config.nix
-          disko.nixosModules.disko
-          sops-nix.nixosModules.sops
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
-        ];
-      };
-
-      home-storage-server-1 = lib.nixosSystem rec {
-        inherit system;
-        specialArgs = {
-          inherit inputs;
-          inherit system;
-        };
-        modules = [
-          disko.nixosModules.disko
-          ./hosts/home-storage-server-1/disko-config.nix
-          ./hosts/home-storage-server-1/configuration.nix
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
-        ];
-      };
-    };
-
-    darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" = let
-      system = "aarch64-darwin";
-      specialArgs = {
-        inherit inputs;
-        inherit outputs;
-        inherit system;
-        username = "ajenkins";
-      };
-      gitSpecialArgs = {
-        gitUserName = "Alison Jenkins";
-        gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-        gitGPGSigningKey = "37F33EF6";
-      };
-    in
-      darwin.lib.darwinSystem {
-        modules = [
-          ./hosts/darwin/configuration.nix
-          ({pkgs, ...}: {
-            nixpkgs.overlays = [rust-overlay.overlays.default];
-          })
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.${specialArgs.username} = import ./home/home.nix;
-            home-manager.extraSpecialArgs = specialArgs // gitSpecialArgs;
-          }
-        ];
-        specialArgs = specialArgs;
-      };
-
-    nixosConfigurations."dev-vm" = let
-      system = "aarch64-linux";
+  outputs =
+    { self
+    , chaotic
+    , darwin
+    , disko
+    , fenix
+    , home-manager
+    , hyprland
+    , jovian-nixos
+    , nix-colors
+    , nix-gaming
+    , nixpkgs
+    , nixpkgs_master
+    , nixpkgs_stable
+    , nur
+    , rust-overlay
+    , plasma-manager
+    , sops-nix
+    , ...
+    } @ inputs:
+    let
+      inherit (self) outputs;
+      system = "x86_64-linux";
       lib = nixpkgs.lib;
     in
-      lib.nixosSystem {
-        inherit system;
-        specialArgs = {inherit hyprland;};
-        modules = [
-          ./hosts/dev-vm/configuration.nix
-          disko.nixosModules.disko
-          sops-nix.nixosModules.sops
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
-        ];
+    {
+      nixosConfigurations = {
+        ali-desktop = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            username = "ali";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./app-profiles/desktop/display-managers/greetd
+            # ./app-profiles/desktop/display-managers/sddm
+            ./app-profiles/desktop/aws
+            ./app-profiles/desktop/wms/hypr
+            ./app-profiles/desktop/wms/plasma6
+            ./hosts/ali-desktop/configuration.nix
+            chaotic.nixosModules.default
+            hyprland.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.impermanence.nixosModules.impermanence
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "B561E7F6";
+              };
+            }
+          ];
+        };
+
+        ali-laptop = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            username = "ali";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./app-profiles/desktop/display-managers/greetd
+            ./app-profiles/desktop/wms/hypr
+            ./app-profiles/desktop/wms/plasma5
+            ./hosts/ali-laptop/configuration.nix
+            chaotic.nixosModules.default
+            hyprland.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "AD723B26";
+              };
+            }
+          ];
+        };
+
+        ali-steamdeck = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = { inherit jovian-nixos; };
+
+          modules = [ ./hosts/ali-steamdeck/configuration.nix ];
+        };
+
+        home-kvm-hypervisor-1 = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            inherit hyprland;
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./hosts/home-kvm-hypervisor-1/configuration.nix
+            ./hosts/home-kvm-hypervisor-1/disko-config.nix
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
+          ];
+        };
+
+        home-storage-server-1 = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            inherit inputs;
+            inherit system;
+          };
+          modules = [
+            disko.nixosModules.disko
+            ./hosts/home-storage-server-1/disko-config.nix
+            ./hosts/home-storage-server-1/configuration.nix
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
+          ];
+        };
       };
 
-    overlays = import ./overlays {inherit inputs;};
-  };
+      darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =
+        let
+          system = "aarch64-darwin";
+          specialArgs = {
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+            username = "ajenkins";
+          };
+          gitSpecialArgs = {
+            gitUserName = "Alison Jenkins";
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "37F33EF6";
+          };
+        in
+        darwin.lib.darwinSystem {
+          modules = [
+            ./hosts/darwin/configuration.nix
+            ({ pkgs, ... }: {
+              nixpkgs.overlays = [ rust-overlay.overlays.default ];
+            })
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs // gitSpecialArgs;
+            }
+          ];
+          specialArgs = specialArgs;
+        };
+
+      nixosConfigurations."dev-vm" =
+        let
+          system = "aarch64-linux";
+          lib = nixpkgs.lib;
+        in
+        lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit hyprland; };
+          modules = [
+            ./hosts/dev-vm/configuration.nix
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs = specialArgs;
+            # }
+          ];
+        };
+
+      overlays = import ./overlays { inherit inputs; };
+    };
 }
