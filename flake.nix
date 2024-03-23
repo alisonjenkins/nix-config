@@ -136,7 +136,7 @@
           modules = [
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr
-            ./app-profiles/desktop/wms/plasma5
+            ./app-profiles/desktop/wms/plasma6
             ./hosts/ali-laptop/configuration.nix
             chaotic.nixosModules.default
             hyprland.nixosModules.default
