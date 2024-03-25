@@ -1,12 +1,13 @@
 {
-  pkgs,
   inputs,
+  lib,
+  pkgs,
   system,
   username,
   ...
 }: {
   programs.firefox = {
-    enable = true;
+    enable = lib.mkIf pkgs.stdenv.isLinux true;
 
     profiles.${username} = {
       search.engines = {
