@@ -19,7 +19,7 @@
       (pkgs.python3.withPackages (ps: with ps; [requests boto3 pyyaml]))
       alacritty
       aws-vault
-      awscli2
+      stable.awscli2
       bacon
       bat
       cacert
