@@ -1,11 +1,12 @@
 {
   pkgs,
+  lib,
   system,
   inputs,
   ...
 }: {
   programs.obs-studio = {
-    enable = true;
+    enable = lib.mkIf pkgs.stdenv.isLinux true;
     plugins = with pkgs.obs-studio-plugins; [
       inputs.nixpkgs_stable.legacyPackages.${system}.obs-studio-plugins.advanced-scene-switcher
       droidcam-obs

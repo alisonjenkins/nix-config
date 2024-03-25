@@ -68,9 +68,9 @@
   targets.genericLinux.enable = if pkgs.stdenv.isLinux then true else false;
 
   services = {
-    ssh-agent.enable = true;
+    ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
     gpg-agent = {
-      enable = true;
+      enable = lib.mkIf pkgs.stdenv.isLinux true;
       pinentryPackage = pkgs.kwalletcli;
       enableBashIntegration = true;
       enableZshIntegration = true;
