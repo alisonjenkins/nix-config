@@ -12,8 +12,8 @@
     settings = {
       font = {
         normal = {
-          family = "Hack";
-          style = "Medium";
+          family = "Hack Nerd Font Mono";
+          style = "Regular";
         };
         size = 12;
       };
