@@ -42,7 +42,6 @@
       grim
       lollypop
       lutris
-      mcfly
       mission-center
       mpc-cli
       neovide
