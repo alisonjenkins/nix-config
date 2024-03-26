@@ -70,7 +70,6 @@
       libiconv
       lolcat
       luajitPackages.lpeg
-      mcfly
       mmtc
       ncdu_1
       nixfmt
