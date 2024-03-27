@@ -66,6 +66,8 @@
   programs.home-manager.enable = if pkgs.stdenv.isLinux then true else false;
   targets.genericLinux.enable = if pkgs.stdenv.isLinux then true else false;
 
+  home.shellAliases = import ./shellAliases.nix;
+
   services = {
     ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
     gpg-agent = {
