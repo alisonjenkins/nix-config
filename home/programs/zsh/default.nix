@@ -54,7 +54,6 @@ in {
       initExtraFirst = builtins.readFile ./zshrc-first.zsh;
       initExtraBeforeCompInit = builtins.readFile ./zshrc.sh;
 
-
       autosuggestion = {
         enable = true;
       };
@@ -66,20 +65,12 @@ in {
         extended = true;
       };
 
+      # zprof.enable = true;
+
       plugins = [
         {
           name = "aws-plugin";
           file = "plugins/aws/aws.plugin.zsh";
-          src = pkgs.fetchFromGitHub {
-            owner = "ohmyzsh";
-            repo = "ohmyzsh";
-            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
-            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
-          };
-        }
-        {
-          name = "direnv";
-          file = "plugins/direnv/direnv.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "ohmyzsh";
             repo = "ohmyzsh";
@@ -115,15 +106,15 @@ in {
             sha256 = "gvZp8P3quOtcy1Xtt1LAW1cfZ/zCtnAmnWqcwrKel6w=";
           };
         }
-        {
-          name = "gitstatus";
-          src = pkgs.fetchFromGitHub {
-            owner = "romkatv";
-            repo = "gitstatus";
-            rev = "215063d4703b944f66cc7cc92543205586a35485";
-            sha256 = "3prHeI7PoNq4tzPQ+vzNLt+7EytNJzRcTqOnZ+da4EU=";
-          };
-        }
+        # {
+        #   name = "gitstatus";
+        #   src = pkgs.fetchFromGitHub {
+        #     owner = "romkatv";
+        #     repo = "gitstatus";
+        #     rev = "215063d4703b944f66cc7cc92543205586a35485";
+        #     sha256 = "3prHeI7PoNq4tzPQ+vzNLt+7EytNJzRcTqOnZ+da4EU=";
+        #   };
+        # }
         {
           name = "kube-aliases";
           src = pkgs.fetchFromGitHub {
@@ -142,16 +133,16 @@ in {
             sha256 = "Y+65EmVqCx9Bmnpy/TCZutYOTSY/kLVIN6mwkXdQd8c=";
           };
         }
-        {
-          name = "powerlevel10k";
-          file = "powerlevel10k.zsh-theme";
-          src = pkgs.fetchFromGitHub {
-            owner = "romkatv";
-            repo = "powerlevel10k";
-            rev = "b973805f019cb9a4ecb1ccdf8879d89eb2b1b111";
-            sha256 = "IrKn6pWfQDbC4334JaNZ9/FFNfyse9ZD8j1Or1w7bMk=";
-          };
-        }
+        # {
+        #   name = "powerlevel10k";
+        #   file = "powerlevel10k.zsh-theme";
+        #   src = pkgs.fetchFromGitHub {
+        #     owner = "romkatv";
+        #     repo = "powerlevel10k";
+        #     rev = "b973805f019cb9a4ecb1ccdf8879d89eb2b1b111";
+        #     sha256 = "IrKn6pWfQDbC4334JaNZ9/FFNfyse9ZD8j1Or1w7bMk=";
+        #   };
+        # }
         {
           name = "tipz";
           src = pkgs.fetchFromGitHub {
@@ -161,24 +152,24 @@ in {
             sha256 = "oFZJwHYDfK4f53lhcZg6PCw2AgHxFC0CRiqiinKZz8k=";
           };
         }
-        {
-          name = "zinit";
-          src = pkgs.fetchFromGitHub {
-            owner = "zdharma-continuum";
-            repo = "zinit";
-            rev = "6511ca7fe319feeeda8678449512da162d957740";
-            sha256 = "x3YMcS+G7QVVfQRMc2cfIKsCAwtF7hIlCmFC+2Exm3Y=";
-          };
-        }
-        {
-          name = "zoxide";
-          src = pkgs.fetchFromGitHub {
-            owner = "ajeetdsouza";
-            repo = "zoxide";
-            rev = "f537a4e6d2f8c2eb84c63f79e290a6d1b16eeb71";
-            sha256 = "O3ooElNtSorSsWkymmEim1iWKtHqTHa312EcD4uzupQ=";
-          };
-        }
+        # {
+        #   name = "zinit";
+        #   src = pkgs.fetchFromGitHub {
+        #     owner = "zdharma-continuum";
+        #     repo = "zinit";
+        #     rev = "6511ca7fe319feeeda8678449512da162d957740";
+        #     sha256 = "x3YMcS+G7QVVfQRMc2cfIKsCAwtF7hIlCmFC+2Exm3Y=";
+        #   };
+        # }
+      #   {
+      #     name = "zoxide";
+      #     src = pkgs.fetchFromGitHub {
+      #       owner = "ajeetdsouza";
+      #       repo = "zoxide";
+      #       rev = "f537a4e6d2f8c2eb84c63f79e290a6d1b16eeb71";
+      #       sha256 = "O3ooElNtSorSsWkymmEim1iWKtHqTHa312EcD4uzupQ=";
+      #     };
+      #   }
         {
           name = "zsh-hints";
           src = pkgs.fetchFromGitHub {
@@ -197,25 +188,25 @@ in {
             sha256 = "83nXtvfYjgY/3+g5zG7rKagSOzRzgc72+a0rcV4v/Ao=";
           };
         }
-        {
-          name = "zsh-vi-mode";
-          src = pkgs.fetchFromGitHub {
-            owner = "jeffreytse";
-            repo = "zsh-vi-mode";
-            rev = "ea1f58ab9b1f3eac50e2cde3e3bc612049ef683b";
-            sha256 = "xbchXJTFWeABTwq6h4KWLh+EvydDrDzcY9AQVK65RS8=";
-          };
-        }
+      #   {
+      #     name = "zsh-vi-mode";
+      #     src = pkgs.fetchFromGitHub {
+      #       owner = "jeffreytse";
+      #       repo = "zsh-vi-mode";
+      #       rev = "ea1f58ab9b1f3eac50e2cde3e3bc612049ef683b";
+      #       sha256 = "xbchXJTFWeABTwq6h4KWLh+EvydDrDzcY9AQVK65RS8=";
+      #     };
+      #   }
       ];
     };
   };
 
-  home.packages = [
-    plugins-zsh-config-built
-  ];
+  # home.packages = [
+  #   plugins-zsh-config-built
+  # ];
 
   home.file = {
-    ".local/share/zsh/.keep".text = "";
+  #   ".local/share/zsh/.keep".text = "";
     ".config/zsh/.p10k.zsh".text = builtins.readFile ./p10k.zsh;
     ".config/zshrc.d" = {
       source = ./zshrc.d;
