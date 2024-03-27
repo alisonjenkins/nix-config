@@ -34,6 +34,7 @@
     ./tmux
     ./waybar
     ./yazi
+    ./zoxide
     ./zsh
   ];
 }
