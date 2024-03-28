@@ -77,16 +77,6 @@ in {
           };
         }
         {
-          name = "direnv";
-          file = "plugins/direnv/direnv.plugin.zsh";
-          src = pkgs.fetchFromGitHub {
-            owner = "ohmyzsh";
-            repo = "ohmyzsh";
-            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
-            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
-          };
-        }
-        {
           name = "exercism";
           src = pkgs.fetchFromGitHub {
             owner = "fabiokiatkowski";

@@ -9,6 +9,7 @@
     ./broot
     ./carapace
     ./comodoro
+    ./direnv
     ./dunst
     ./firefox
     ./gh
