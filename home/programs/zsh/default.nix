@@ -151,15 +151,6 @@ in {
           };
         }
         {
-          name = "zinit";
-          src = pkgs.fetchFromGitHub {
-            owner = "zdharma-continuum";
-            repo = "zinit";
-            rev = "6511ca7fe319feeeda8678449512da162d957740";
-            sha256 = "x3YMcS+G7QVVfQRMc2cfIKsCAwtF7hIlCmFC+2Exm3Y=";
-          };
-        }
-        {
           name = "zoxide";
           src = pkgs.fetchFromGitHub {
             owner = "ajeetdsouza";
