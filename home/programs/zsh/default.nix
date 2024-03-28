@@ -6,7 +6,10 @@
       dotDir = ".config/zsh";
       enable = true;
       initExtraFirst = builtins.readFile ./zshrc-first.zsh;
-      # initExtraBeforeCompInit = builtins.readFile ./zshrc.sh;
+      initExtraBeforeCompInit = ''
+        source ~/.config/zshrc.d/zsh_settings.zsh
+        source ~/.config/zshrc.d/environment_vars.zsh
+      '';
 
       autosuggestion = {
         enable = true;
