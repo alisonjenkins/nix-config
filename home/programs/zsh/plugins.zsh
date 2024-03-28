@@ -14,10 +14,6 @@ if [[ -e ~/git/secret-envvars ]]; then
   eval $(~/git/secret-envvars/target/release/get-secrets)
 fi
 
-# zinit ice from"gh-r" as"program" atclone"./starship init zsh > init.zsh" atpull"%atclone" src"init.zsh"
-# zinit light starship/starship
-# eval "$(starship init zsh)"
-
 # Plugins
 zinit light "$PLUGDIR/gitstatus"
 zinit light "$PLUGDIR/powerlevel10k"
