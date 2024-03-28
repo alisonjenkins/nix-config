@@ -1,6 +1,6 @@
 {...}: {
   programs.starship = {
-    enable = true;
+    enable = false;
   };
 
   home.file = {
