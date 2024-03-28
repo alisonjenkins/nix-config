@@ -23,6 +23,8 @@
       else "/home/${username}");
   };
 
+  home.shellAliases = import ./shellAliases.nix;
+
   home.packages =
     if pkgs.stdenv.isLinux then
     (with pkgs; [
