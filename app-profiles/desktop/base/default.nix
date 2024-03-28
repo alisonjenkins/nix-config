@@ -104,7 +104,6 @@
     rng-tools
     rustc
     sops
-    starship
     stdenv.cc.cc.lib
     steamtinkerlaunch
     stow

@@ -89,7 +89,6 @@
       selene
       skopeo
       ssm-session-manager-plugin
-      starship
       statix
       tealdeer
       tektoncd-cli

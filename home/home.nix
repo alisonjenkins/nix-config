@@ -55,7 +55,6 @@
       pkgs.gnome.zenity
       qpwgraph
       slurp
-      starship
       tty-clock
       wget
       wl-clipboard
