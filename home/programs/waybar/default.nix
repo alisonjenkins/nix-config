@@ -11,7 +11,7 @@
   programs.waybar = {
     enable = (if pkgs.stdenv.isLinux then true else false);
     package = pkgs.stable.waybar;
-    style = ./configs/new/style.css;
+    style = ./style.css;
 
     settings = [{
       layer = "top";
