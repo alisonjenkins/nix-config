@@ -111,8 +111,7 @@
         tooltip = true;
         exec = "echo '{\"text\":\"💧\",\"tooltip\":\"Drun | Run\"}'";
         return-type = "json";
-        on-click = "~/.config/hypr/scripts/rofilaunch.sh d";
-        on-click-right = "~/.config/hypr/scripts/rofilaunch.sh w";
+        on-click = "wofi --show drun";
       };
 
       "custom/notifications" = {
