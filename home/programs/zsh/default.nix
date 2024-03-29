@@ -154,9 +154,5 @@
   home.file = {
     ".local/share/zsh/.keep".text = "";
     ".config/zsh/.p10k.zsh".text = builtins.readFile ./p10k.zsh;
-    ".config/zshrc.d" = {
-      source = ./zshrc.d;
-      recursive = true;
-    };
   };
 }
