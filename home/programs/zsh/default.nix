@@ -1,50 +1,8 @@
-{pkgs, ...}: let
-  # plugins-zsh-config = builtins.readFile ./plugins.zsh;
-  plugins-zsh-config-built = pkgs.writeScriptBin "plugins-zsh-config" ''
-    # Configure zinit
-    PLUGDIR=~/.config/zsh/plugins
-    mkdir -p ~/.local/share/zinit
-    declare -A ZINIT
-    ZINIT[BIN_DIR]=~/.local/share/zinit/bin
-    ZINIT[HOME_DIR]=~/.local/share/zinit
-    source ~/.config/zsh/plugins/zinit/zinit.zsh
-
-    export _ZL_MATCH_MODE=1
-
-    # Load sensitive envvars
-    if [[ -e ~/git/secret-envvars ]]; then
-      eval $(~/git/secret-envvars/target/release/get-secrets)
-    fi
-
-    # Plugins
-    zinit light "$PLUGDIR/gitstatus"
-    zinit light "$PLUGDIR/powerlevel10k"
-    zinit light "$PLUGDIR/zsh-vi-mode"
-
-    PLUGINS=(
-      "aws-plugin"
-      "direnv"
-      "exercism"
-      "fzf"
-      "fzf-tab"
-      "kube-aliases"
-      "omz-fluxcd-plugin"
-      "tipz"
-      "zoxide"
-      "zsh-autosuggestions"
-      "zsh-hints"
-      "zsh-terraform"
-    )
-
-    for PLUGIN in "''${PLUGINS[@]}"; do
-      zinit ice wait"2" lucid
-      zinit load "$PLUGDIR/$PLUGIN"
-    done
-
-    autoload -Uz _zinit
-    (( ''${+_comps} )) && _comps[zinit]=_zinit
-  '';
-in {
+{
+  pkgs,
+  lib,
+  ...
+}: {
   programs = {
     zsh = {
       autocd = true;
@@ -52,8 +10,10 @@ in {
       dotDir = ".config/zsh";
       enable = true;
       initExtraFirst = builtins.readFile ./zshrc-first.zsh;
-      initExtraBeforeCompInit = builtins.readFile ./zshrc.sh;
-
+      initExtraBeforeCompInit = lib.strings.concatStringsSep "\n" [
+        (builtins.readFile ./zshrc.d/zsh_settings.zsh)
+        (builtins.readFile ./zshrc.d/environment_vars.zsh)
+      ];
 
       autosuggestion = {
         enable = true;
@@ -70,16 +30,6 @@ in {
         {
           name = "aws-plugin";
           file = "plugins/aws/aws.plugin.zsh";
-          src = pkgs.fetchFromGitHub {
-            owner = "ohmyzsh";
-            repo = "ohmyzsh";
-            rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
-            sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
-          };
-        }
-        {
-          name = "direnv";
-          file = "plugins/direnv/direnv.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "ohmyzsh";
             repo = "ohmyzsh";
@@ -162,24 +112,6 @@ in {
           };
         }
         {
-          name = "zinit";
-          src = pkgs.fetchFromGitHub {
-            owner = "zdharma-continuum";
-            repo = "zinit";
-            rev = "6511ca7fe319feeeda8678449512da162d957740";
-            sha256 = "x3YMcS+G7QVVfQRMc2cfIKsCAwtF7hIlCmFC+2Exm3Y=";
-          };
-        }
-        {
-          name = "zoxide";
-          src = pkgs.fetchFromGitHub {
-            owner = "ajeetdsouza";
-            repo = "zoxide";
-            rev = "f537a4e6d2f8c2eb84c63f79e290a6d1b16eeb71";
-            sha256 = "O3ooElNtSorSsWkymmEim1iWKtHqTHa312EcD4uzupQ=";
-          };
-        }
-        {
           name = "zsh-hints";
           src = pkgs.fetchFromGitHub {
             owner = "joepvd";
@@ -210,17 +142,8 @@ in {
     };
   };
 
-  home.packages = [
-    plugins-zsh-config-built
-  ];
-
   home.file = {
     ".local/share/zsh/.keep".text = "";
     ".config/zsh/.p10k.zsh".text = builtins.readFile ./p10k.zsh;
-    ".config/zshrc.d" = {
-      source = ./zshrc.d;
-      recursive = true;
-    };
-    ".config/zshrc.d/plugins.zsh".text = builtins.readFile "${plugins-zsh-config-built}/bin/plugins-zsh-config";
   };
 }

@@ -1,14 +1,11 @@
 {
-  pkgs,
-  ...
-}:
-{
   imports = [
     ./alacritty
     ./bat
     ./broot
     ./carapace
     ./comodoro
+    ./direnv
     ./dunst
     ./firefox
     ./gh
@@ -34,6 +31,7 @@
     ./tmux
     ./waybar
     ./yazi
+    ./zoxide
     ./zsh
   ];
 }
