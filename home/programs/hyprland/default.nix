@@ -98,6 +98,7 @@
         "alacritty"
         "flatpak run de.shorsh.discord-screenaudio"
         "swww init"
+        "waybar"
       ];
 
       general = {
