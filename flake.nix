@@ -8,6 +8,7 @@
     ecrrepos.url = "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
     impermanence.url = "github:nix-community/impermanence";
     maven.url = "github:nixos/nixpkgs/15e3765c4e5ec347935e737f57c1b20874f2de69";
+    musnix  = { url = "github:musnix/musnix"; };
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -99,16 +100,17 @@
             inherit system;
           };
           modules = [
-            ./app-profiles/desktop/display-managers/greetd
             # ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/aws
+            ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hypr
             ./app-profiles/desktop/wms/plasma6
             ./hosts/ali-desktop/configuration.nix
             chaotic.nixosModules.default
             hyprland.nixosModules.default
-            inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.impermanence.nixosModules.impermanence
+            inputs.musnix.nixosModules.musnix
+            inputs.nix-flatpak.nixosModules.nix-flatpak
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager

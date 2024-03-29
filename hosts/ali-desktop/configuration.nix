@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   outputs,
   pkgs,
   ...
@@ -84,7 +85,7 @@
       "net.net.ipv4.tcp_window_scaling" = 1;
 
       # Virtual memory tuning
-      "vm.swappiness" = 10;
+      "vm.swappiness" = lib.mkForce 10;
       "vm.dirty_ratio" = 10;
       "vm.dirty_background_ratio" = 3;
       "vm.vfs_cache_pressure" = 50;
@@ -197,6 +198,10 @@
     LC_PAPER = "en_GB.UTF-8";
     LC_TELEPHONE = "en_GB.UTF-8";
     LC_TIME = "en_GB.UTF-8";
+  };
+
+  musnix = {
+    enable = true;
   };
 
   networking = {
@@ -406,7 +411,7 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = ["docker" "networkmanager" "pipewire" "wheel"];
+        extraGroups = ["audio" "docker" "networkmanager" "pipewire" "wheel"];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
