@@ -89,14 +89,14 @@
         pseudotile = "yes";
       };
 
-      "exec-once" = [
+      exec-once = [
+        "alacritty"
+        "firefox"
+        "flatpak run de.shorsh.discord-screenaudio"
         "hyprctl setcursor Bibata-Modern-Classic 24"
-        "swaynotificationcenter"
         "kwalletd"
         "nm-applet"
-        "firefox"
-        "alacritty"
-        "flatpak run de.shorsh.discord-screenaudio"
+        "swaynotificationcenter"
         "swww init"
         "waybar"
       ];
