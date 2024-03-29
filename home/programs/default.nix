@@ -1,8 +1,4 @@
 {
-  pkgs,
-  ...
-}:
-{
   imports = [
     ./alacritty
     ./bat
