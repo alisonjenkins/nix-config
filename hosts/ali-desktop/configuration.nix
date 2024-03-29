@@ -95,23 +95,10 @@
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
       };
-      grub = {
-        devices = ["nodev"];
-        efiSupport = true;
+      systemd-boot = {
         enable = true;
-        gfxmodeEfi = "3440x1440";
-        useOSProber = true;
-        theme = pkgs.stdenv.mkDerivation {
-          pname = "distro-grub-themes";
-          version = "3.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "AdisonCavani";
-            repo = "distro-grub-themes";
-            rev = "v3.1";
-            hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
-          };
-          installPhase = "cp -r customize/nixos $out";
-        };
+        memtest86.enable = true;
+        netbootxyz.enable = true;
       };
     };
   };
