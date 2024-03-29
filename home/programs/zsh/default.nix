@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  lib,
+  ...
+}: {
   programs = {
     zsh = {
       autocd = true;
@@ -6,10 +10,10 @@
       dotDir = ".config/zsh";
       enable = true;
       initExtraFirst = builtins.readFile ./zshrc-first.zsh;
-      initExtraBeforeCompInit = ''
-        source ~/.config/zshrc.d/zsh_settings.zsh
-        source ~/.config/zshrc.d/environment_vars.zsh
-      '';
+      initExtraBeforeCompInit = lib.strings.concatStringsSep "\n" [
+        (builtins.readFile ./zshrc.d/zsh_settings.zsh)
+        (builtins.readFile ./zshrc.d/environment_vars.zsh)
+      ];
 
       autosuggestion = {
         enable = true;
