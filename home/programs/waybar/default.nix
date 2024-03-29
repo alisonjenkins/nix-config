@@ -100,7 +100,7 @@
 
       "custom/gpu" = {
         interval = 1;
-        exec = "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits";
+        # exec = "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits";
         format = "󰢮 {}%";
         return-type = "";
         on-click = "missioncenter";
