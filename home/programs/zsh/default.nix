@@ -112,15 +112,6 @@
           };
         }
         {
-          name = "zoxide";
-          src = pkgs.fetchFromGitHub {
-            owner = "ajeetdsouza";
-            repo = "zoxide";
-            rev = "f537a4e6d2f8c2eb84c63f79e290a6d1b16eeb71";
-            sha256 = "O3ooElNtSorSsWkymmEim1iWKtHqTHa312EcD4uzupQ=";
-          };
-        }
-        {
           name = "zsh-hints";
           src = pkgs.fetchFromGitHub {
             owner = "joepvd";
