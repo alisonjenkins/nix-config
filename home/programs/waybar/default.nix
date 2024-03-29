@@ -44,9 +44,7 @@
         "custom/notifications"
         "tray"
         "clock"
-        "custom/weather"
         "custom/power"
-        "cava"
       ];
 
       backlight = {
@@ -97,7 +95,7 @@
         format = "󰌢 {load}";
         tooltip = false;
         on-click = "missioncenter";
-        on-click-right = "kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'btop'";
+        on-click-right = "kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'htop'";
       };
 
       "custom/gpu" = {
@@ -106,7 +104,6 @@
         format = "󰢮 {}%";
         return-type = "";
         on-click = "missioncenter";
-        on-click-right = "kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'nvidia-smi'";
       };
 
       "custom/launcher" = {
@@ -139,23 +136,13 @@
         format = "{}";
         exec = "echo '{\"text\":\"⏻\",\"tooltip\":\"Power\"}'";
         return-type = "json";
-        on-click = "~/.config/wlogout/launch.sh";
-      };
-
-      "custom/weather" = {
-        format = "{}";
-        on-click = "wpaperd";
-        tooltip = true;
-        restart-interval = 300;
-        exec = "$HOME/.config/waybar/scripts/waybar-wttr.py";
-        return-type = "json";
+        on-click = "wlogout";
       };
 
       disk = {
         format = " {free}";
         format-alt = " {percentage_used}% ({free})";
         tooltip = true;
-        on-click-right = "kitty --start-as=fullscreen --title all_is_kitty sh -c 'ncdu'";
         interval = 10;
       };
 
