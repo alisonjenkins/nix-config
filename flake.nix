@@ -208,6 +208,19 @@
             # }
           ];
         };
+
+        live = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            (nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")
+            # ./hosts/live/configuration.nix {
+            #   specialArgs = [
+            #     system
+            #     inputs
+            #   ];
+            # }
+          ];
+        };
       };
 
       darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =

@@ -27,5 +27,10 @@ test-run hostname:
     #-display sdl,gl=on
   rm "${hostname}.qcow2"
 
+# Build live-cd
+live-cd:
+    @nix build '.#nixosConfigurations.live.config.system.build.isoImage'
+
+alias l := live-cd
 alias s := switch
 alias u := update
