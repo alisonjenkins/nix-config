@@ -41,6 +41,7 @@
     beancount
     cachix
     cargo
+    cargo-nextest
     chromium
     colmena
     comma
