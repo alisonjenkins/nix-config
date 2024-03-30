@@ -98,6 +98,7 @@
       };
       systemd-boot = {
         enable = true;
+        consoleMode = "auto";
         memtest86.enable = true;
         netbootxyz.enable = true;
       };
