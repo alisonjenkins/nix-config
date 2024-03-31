@@ -72,7 +72,6 @@
     inputs.ali-neovim.packages.${system}.nvim
     inputs.jovian-nixos.legacyPackages.${system}.mangohud
     inputs.nh.packages.${system}.default
-    inputs.nixpkgs_master.legacyPackages.${system}.alvr
     iotop
     jdk17
     just
