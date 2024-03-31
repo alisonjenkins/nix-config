@@ -5,11 +5,6 @@
   system,
   ...
 }: {
-  alvr = {
-    enable = true;
-    openFirewall = true;
-  };
-
   boot = {
     binfmt = {
       emulatedSystems = [
