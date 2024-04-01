@@ -1,6 +1,5 @@
 {
   config,
-  fenix,
   inputs,
   lib,
   modulesPath,

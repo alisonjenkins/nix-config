@@ -69,7 +69,6 @@
     , chaotic
     , darwin
     , disko
-    , fenix
     , home-manager
     , hyprland
     , jovian-nixos
