@@ -170,6 +170,9 @@
       polkit
       protontricks
       radeontop
+      sweethome3d.application
+      sweethome3d.furniture-editor
+      sweethome3d.textures-editor
       uhk-agent
       upscayl
       webcamoid
