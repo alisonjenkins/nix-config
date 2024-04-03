@@ -1,9 +1,10 @@
 {
+  pkgs,
   ...
 }:
 {
   wayland.windowManager.hyprland = {
-    enable = true;
+    enable = if pkgs.stdenv.isLinux then true else false;
     settings = {
       "$mainMod" = "SUPER";
       monitor = ",preferred,auto,1,bitdepth,10";
