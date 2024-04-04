@@ -9,7 +9,6 @@
   imports = [
     ../../app-profiles/desktop
     ./hardware-configuration.nix
-    inputs.nixos-cosmic.nixosModules.default
     # inputs.nix-gaming.nixosModules.pipewireLowLatency
   ];
 
@@ -252,11 +251,6 @@
       dates = "weekly";
       options = "--delete-older-than 60d";
     };
-
-    settings = {
-      substituters = [ "https://cosmic.cachix.org/" ];
-      trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
-    };
   };
 
   powerManagement = {
@@ -325,10 +319,6 @@
           "/persistence"
         ];
       };
-    };
-
-    desktopManager = {
-      cosmic.enable = true;
     };
 
     openssh = {
