@@ -92,6 +92,7 @@
     mesa_git
     mpv-vapoursynth
     ncdu
+    nix-tree
     nushellFull
     obsidian
     parted
