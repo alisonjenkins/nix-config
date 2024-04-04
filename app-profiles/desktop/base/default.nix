@@ -111,6 +111,7 @@
     tig
     tmux
     usbutils
+    vesktop
     virt-manager
     vmtouch
     vulkan-tools
@@ -176,7 +177,6 @@
     flatpak = {
       enable = true;
       packages = [
-        "dev.vencord.Vesktop"
         "org.prismlauncher.PrismLauncher"
       ];
       remotes = [
