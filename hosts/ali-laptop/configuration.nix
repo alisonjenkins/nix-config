@@ -62,8 +62,10 @@
       "modesetting"
       "nvidia"
     ];
-    layout = "us";
-    xkbVariant = "";
+    xkb = {
+      layout = "us";
+      variant = "";
+    };
   };
 
   hardware.opengl = {
