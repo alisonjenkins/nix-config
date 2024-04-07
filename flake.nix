@@ -5,6 +5,7 @@
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     attic.url = "github:zhaofengli/attic";
+    deploy-rs.url = "github:serokell/deploy-rs";
     ecrrepos.url = "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
     impermanence.url = "github:nix-community/impermanence";
     maven.url = "github:nixos/nixpkgs/15e3765c4e5ec347935e737f57c1b20874f2de69";
@@ -158,12 +159,12 @@
           ];
         };
 
-        ali-steamdeck = lib.nixosSystem rec {
-          inherit system;
-          specialArgs = { inherit jovian-nixos; };
-
-          modules = [ ./hosts/ali-steamdeck/configuration.nix ];
-        };
+        # ali-steamdeck = lib.nixosSystem rec {
+        #   inherit system;
+        #   specialArgs = { inherit jovian-nixos; };
+        #
+        #   modules = [ ./hosts/ali-steamdeck/configuration.nix ];
+        # };
 
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
@@ -209,6 +210,8 @@
         };
       };
 
+      checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
+
       darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" =
         let
           system = "aarch64-darwin";
@@ -240,6 +243,20 @@
           ];
           specialArgs = specialArgs;
         };
+
+      deploy = {
+        nodes = {
+          home-kvm-hypervisor-1 = {
+            hostname = "home-kvm-hypervisor.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-kvm-hypervisor-1;
+              };
+            };
+          };
+        };
+      };
 
       nixosConfigurations."dev-vm" =
         let
