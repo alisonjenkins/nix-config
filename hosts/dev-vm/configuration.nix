@@ -52,9 +52,11 @@
 
   services.xserver = {
     enable = true;
-    layout = "us";
-    xkbVariant = "";
     videoDrivers = ["qxl"];
+    xkb = {
+      layout = "us";
+      variant = "";
+    };
   };
 
   services.spice-vdagentd.enable = true;
