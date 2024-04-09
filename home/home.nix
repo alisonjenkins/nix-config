@@ -28,7 +28,6 @@
   home.packages =
     if pkgs.stdenv.isLinux then
     (with pkgs; [
-      # discord
       appimage-run
       audacity
       bibata-cursors
