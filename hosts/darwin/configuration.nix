@@ -59,7 +59,6 @@
       jdk11
       jq
       just
-      k9s
       kind
       kitty
       kubecm
