@@ -38,9 +38,13 @@
       direnv
       dunst
       eza
+      fluxcd
       git
       gnumake
       grim
+      helm
+      kubectl
+      kustomize
       lollypop
       lutris
       mission-center
