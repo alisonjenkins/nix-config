@@ -1,10 +1,9 @@
-{
-  pkgs,
-  ...
-}:
-{
+{pkgs, ...}: {
   wayland.windowManager.hyprland = {
-    enable = if pkgs.stdenv.isLinux then true else false;
+    enable =
+      if pkgs.stdenv.isLinux
+      then true
+      else false;
     settings = {
       "$mainMod" = "SUPER";
       monitor = ",preferred,auto,1,bitdepth,10";
@@ -158,7 +157,6 @@
         # "nofocus,class:^(steam)$"
         # "workspace 4,class:^(steam)$"
       ];
-
     };
   };
 

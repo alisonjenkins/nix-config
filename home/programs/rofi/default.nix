@@ -1,6 +1,9 @@
 {pkgs, ...}: {
   programs.rofi = {
-    enable = (if pkgs.stdenv.isLinux then true else false);
+    enable =
+      if pkgs.stdenv.isLinux
+      then true
+      else false;
     package = pkgs.rofi-wayland;
     terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
     theme = ./theme.rasi;

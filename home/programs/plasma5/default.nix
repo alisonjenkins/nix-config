@@ -1,9 +1,9 @@
-{
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   programs.plasma = {
-    enable = (if pkgs.stdenv.isLinux then true else false);
+    enable =
+      if pkgs.stdenv.isLinux
+      then true
+      else false;
 
     panels = [
       {
