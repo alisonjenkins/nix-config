@@ -97,6 +97,7 @@
           ./app-profiles/desktop/aws
           ./app-profiles/desktop/display-managers/greetd
           ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/sway
           ./hosts/ali-desktop/configuration.nix
           chaotic.nixosModules.default
           inputs.impermanence.nixosModules.impermanence
@@ -131,6 +132,7 @@
         modules = [
           ./app-profiles/desktop/display-managers/greetd
           ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/sway
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
           inputs.nix-flatpak.nixosModules.nix-flatpak
