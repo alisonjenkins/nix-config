@@ -103,6 +103,7 @@
           ./app-profiles/desktop/display-managers/greetd
           ./app-profiles/desktop/wms/hypr
           ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/sway
           ./hosts/ali-desktop/configuration.nix
           chaotic.nixosModules.default
           hyprland.nixosModules.default
@@ -139,6 +140,7 @@
           ./app-profiles/desktop/display-managers/greetd
           ./app-profiles/desktop/wms/hypr
           ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/sway
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
           hyprland.nixosModules.default
