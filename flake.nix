@@ -38,10 +38,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    hyprland = {
-      url = "github:hyprwm/Hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     jovian-nixos = {
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -71,7 +67,6 @@
     darwin,
     disko,
     home-manager,
-    hyprland,
     jovian-nixos,
     nix-colors,
     nix-gaming,
@@ -101,11 +96,9 @@
           # ./app-profiles/desktop/display-managers/sddm
           ./app-profiles/desktop/aws
           ./app-profiles/desktop/display-managers/greetd
-          ./app-profiles/desktop/wms/hypr
           ./app-profiles/desktop/wms/plasma6
           ./hosts/ali-desktop/configuration.nix
           chaotic.nixosModules.default
-          hyprland.nixosModules.default
           inputs.impermanence.nixosModules.impermanence
           inputs.musnix.nixosModules.musnix
           inputs.nix-flatpak.nixosModules.nix-flatpak
@@ -137,11 +130,9 @@
         };
         modules = [
           ./app-profiles/desktop/display-managers/greetd
-          ./app-profiles/desktop/wms/hypr
           ./app-profiles/desktop/wms/plasma6
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
-          hyprland.nixosModules.default
           inputs.nix-flatpak.nixosModules.nix-flatpak
           nur.nixosModules.nur
           sops-nix.nixosModules.sops
@@ -171,7 +162,6 @@
       home-kvm-hypervisor-1 = lib.nixosSystem rec {
         inherit system;
         specialArgs = {
-          inherit hyprland;
           inherit inputs;
           inherit outputs;
           inherit system;
@@ -265,7 +255,7 @@
     in
       lib.nixosSystem {
         inherit system;
-        specialArgs = {inherit hyprland;};
+        specialArgs = {};
         modules = [
           ./hosts/dev-vm/configuration.nix
           disko.nixosModules.disko

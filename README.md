@@ -9,7 +9,7 @@
 
 |                          |             NixOS 23.11                               |
 |--------------------------|:-----------------------------------------------------:|
-| **Desktop Environment**  |   [Hyprland](https://hyprland.org)                    |
+| **Desktop Environment**  |   [KDE Plasma 6](https://kde.org/announcements/megarelease/6/)                    |
 | **Terminal Emulator**    |   [Alacritty](https://github.com/alacritty/alacritty) |
 | **Display Server**       |   [Wayland](https://wayland.freedesktop.org)          |
 | **Application Launcher** |   [Rofi](https://github.com/davatorium/rofi)          |
@@ -19,7 +19,7 @@
 
 ### DE/WM
 
-**Hyprland**
+**KDE Plasma 6**
 
 Desktop Environment:
 
