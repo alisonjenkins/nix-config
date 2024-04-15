@@ -66,6 +66,7 @@
         wl-clipboard
         wlr-randr
         xflux
+        zola
         zoxide
       ])
     else [];
