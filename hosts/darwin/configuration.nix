@@ -18,7 +18,6 @@
       (pkgs.python3.withPackages (ps: with ps; [requests boto3 pyyaml]))
       alacritty
       aws-vault
-      stable.awscli2
       bacon
       bat
       cacert
@@ -80,12 +79,14 @@
       pkg-config
       pwgen
       python311Packages.python-lsp-server
+      qview
       ripgrep
       ruff-lsp
       rust-bin.nightly."2024-03-02".default
       selene
       skopeo
       ssm-session-manager-plugin
+      stable.awscli2
       statix
       tealdeer
       tektoncd-cli
