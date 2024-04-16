@@ -104,6 +104,7 @@
           ./app-profiles/desktop/wms/hypr
           ./app-profiles/desktop/wms/plasma6
           ./app-profiles/desktop/wms/sway
+          ./app-profiles/hardware/vr
           ./hosts/ali-desktop/configuration.nix
           chaotic.nixosModules.default
           hyprland.nixosModules.default
