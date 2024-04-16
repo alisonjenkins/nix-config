@@ -34,6 +34,9 @@
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    ghostty = {
+      url = "git+ssh://git@github.com/mitchellh/ghostty";
+    };
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -114,6 +117,11 @@
           nur.nixosModules.nur
           sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
+          {
+            environment.systemPackages = [
+              inputs.ghostty.packages.x86_64-linux.default
+            ];
+          }
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
