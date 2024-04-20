@@ -10,7 +10,10 @@
 
   programs.dconf.enable = true;
   programs.kdeconnect.enable = true;
-  environment.systemPackages = with pkgs; [plasma-browser-integration];
+  environment.systemPackages = with pkgs; [
+    libsForQt5.polonium
+    plasma-browser-integration
+  ];
 
   networking.firewall = {
     enable = true;
