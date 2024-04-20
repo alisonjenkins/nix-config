@@ -88,8 +88,6 @@
     libvorbis
     lshw
     luxtorpeda
-    mesa32_git
-    mesa_git
     mpv-vapoursynth
     ncdu
     nix-tree
