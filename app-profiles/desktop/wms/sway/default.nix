@@ -9,9 +9,22 @@
     mako
     slurp
     wl-clipboard
+    wofi
   ];
 
-  security.pam.services.${username}.enableKwallet = true;
+  security = {
+    pam = {
+      services = {
+        ${username} = {
+          enableKwallet = true;
+        };
+        swaylock = {};
+      };
+    };
+    polkit = {
+      enable = true;
+    };
+  };
 
   programs.sway = {
     enable = true;

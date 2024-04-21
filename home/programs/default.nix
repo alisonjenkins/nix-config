@@ -28,6 +28,7 @@
     ./obs
     ./rofi
     ./starship
+    ./sway
     ./tmux
     ./waybar
     ./yazi
