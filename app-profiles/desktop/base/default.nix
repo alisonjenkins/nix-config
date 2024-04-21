@@ -22,7 +22,7 @@
   programs.gamescope = {
     enable = true;
     capSysNice = false;
-    package = pkgs.gamescope_git;
+    # package = pkgs.gamescope_git;
   };
 
   services.xserver.deviceSection = ''
