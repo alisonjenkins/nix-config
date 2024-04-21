@@ -163,6 +163,7 @@
     };
 
     systemPackages = with pkgs; [
+      amdgpu_top
       ananicy-cpp
       ananicy-cpp-rules
       lact
