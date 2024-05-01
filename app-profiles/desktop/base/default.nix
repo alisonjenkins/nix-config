@@ -108,7 +108,7 @@
     tig
     tmux
     usbutils
-    vesktop
+    master.vesktop
     virt-manager
     vmtouch
     vulkan-tools
