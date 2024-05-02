@@ -72,6 +72,14 @@
     ];
   };
 
+  microvm = {
+    autostart = [
+      "home-k8s-master-1"
+    ];
+    vms = [
+    ];
+  };
+
   programs.zsh.enable = true;
 
   users.users.ali = {

@@ -49,6 +49,10 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    microvm = {
+      url = "github:astro/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nh = {
       url = "github:viperML/nh";
       inputs.nixpkgs.follows = "nixpkgs"; # override this repo's nixpkgs snapshot
@@ -197,6 +201,7 @@
           ./hosts/home-kvm-hypervisor-1/disko-config.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
+          inputs.microvm.nixosModules.host
           # home-manager.nixosModules.home-manager
           # {
           #   home-manager.useGlobalPkgs = true;
@@ -293,6 +298,40 @@
           #   home-manager.users.ali = import ./home/home.nix;
           #   home-manager.extraSpecialArgs = specialArgs;
           # }
+        ];
+      };
+
+      nixosConfigurations."home-k8s-master-1" = let
+        system = "x86_64-linux";
+        lib = nixpkgs.lib;
+      in
+      lib.nixosSystem {
+        inherit system;
+        modules = [
+          inputs.microvm.nixosModules.microvm
+          {
+            networking.hostName = "home-k8s-master-1";
+            users.users.root.password = "";
+            microvm = {
+              volumes = [ {
+                mountPoint = "/var";
+                image = "var.img";
+                size = 256;
+              } ];
+              shares = [ {
+                  # use "virtiofs" for MicroVMs that are started by systemd
+                  proto = "9p";
+                  tag = "ro-store";
+                  # a host's /nix/store will be picked up so that no
+                  # squashfs/erofs will be built for it.
+                  source = "/nix/store";
+                  mountPoint = "/nix/.ro-store";
+                } ];
+
+                hypervisor = "qemu";
+                socket = "control.socket";
+            };
+          }
         ];
       };
 
