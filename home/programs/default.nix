@@ -13,7 +13,6 @@
     ./git
     ./granted
     ./hyfetch
-    ./hyprland
     ./info
     ./k9s
     ./kitty

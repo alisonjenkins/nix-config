@@ -1,5 +1,4 @@
 {
-  # hyprland,
   pkgs,
   # nix-colors,
   inputs,
@@ -11,7 +10,6 @@
     ./programs
     ./scripts
     ./themes
-    inputs.hyprland.homeManagerModules.default
     inputs.plasma-manager.homeManagerModules.plasma-manager
   ];
 

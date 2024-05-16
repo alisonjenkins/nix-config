@@ -9,52 +9,13 @@
 
 |                          |             NixOS 23.11                               |
 |--------------------------|:-----------------------------------------------------:|
-| **Desktop Environment**  |   [Hyprland](https://hyprland.org)                    |
+| **Desktop Environment**  |   [KDE Plasma 6](https://kde.org/announcements/megarelease/6/)                    |
 | **Terminal Emulator**    |   [Alacritty](https://github.com/alacritty/alacritty) |
 | **Display Server**       |   [Wayland](https://wayland.freedesktop.org)          |
 | **Application Launcher** |   [Rofi](https://github.com/davatorium/rofi)          |
 | **Shell**                |   [Zsh](https://zsh.sourceforge.io)                   |
 | **Text Editor**          |   [Neovim](https://neovim.io)                         |
 
-
-### DE/WM
-
-**Hyprland**
-
-Desktop Environment:
-
-## Nix Dotfiles Directory Structure
-```
-├── home
-│  ├── programs
-│  │   ├── alacritty
-│  │   ├── hypr
-│  │   ├── kitty
-│  │   ├── rofi
-│  │   ├── waybar
-│  │   └── zsh
-│  ├── scripts
-│  ├── themes
-│  │   └── cava
-│  ├── wallpapers
-│  └── home.nix
-├── app-profiles
-│  └── desktop
-│      ├── fonts
-│      ├── base
-│      ├── display-managers
-│      ├── fonts
-│      ├── media
-│      ├── virtualisation
-│      ├── wms
-│      └── virtualisation
-├── hosts
-│  └── ali-desktop
-│    ├── configuration.nix
-│    └── hardware-configuration.nix
-├── flake.nix
-└── install-ali-desktop.sh
-```
 
 ### Installation
 
@@ -64,12 +25,6 @@ Desktop Environment:
 ```
 
 1. Install the project:
-
-```bash
-$ chmod +x install-ali-desktop.sh
-$ ./install-ali-desktop.sh
-```
-or
 
 ```bash
 $ cd nix-config
