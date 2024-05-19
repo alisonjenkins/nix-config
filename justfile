@@ -1,5 +1,15 @@
 set export
 
+boot:
+    #!/usr/bin/env bash
+    if command -v nh &>/dev/null; then
+        nh os boot .;
+    elif [ "$(uname)" == "Darwin" ]; then
+        darwin-rebuild boot --option sandbox false --flake .
+    else
+        sudo nixos-rebuild boot --flake ".#$HOST"
+    fi
+
 switch:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
@@ -27,5 +37,6 @@ test-run hostname:
     #-display sdl,gl=on
   rm "${hostname}.qcow2"
 
+alias b := boot
 alias s := switch
 alias u := update
