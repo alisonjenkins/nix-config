@@ -105,7 +105,6 @@
     ++ [
       inputs.attic.packages.${system}.attic-client
       pkgs.stable.buildah
-      pkgs.neovide
     ];
 
   environment.variables = {
