@@ -86,7 +86,7 @@
       selene
       skopeo
       ssm-session-manager-plugin
-      stable.awscli2
+      awscli2
       statix
       tealdeer
       tektoncd-cli
@@ -104,7 +104,7 @@
     ]
     ++ [
       inputs.attic.packages.${system}.attic-client
-      pkgs.stable.buildah
+      buildah
     ];
 
   environment.variables = {
@@ -563,7 +563,7 @@
       };
     };
     distributedBuilds = true;
-    package = pkgs.nixVersions.nix_2_20;
+    package = pkgs.nixVersions.nix_2_19;
     extraOptions = ''
       keep-derivations = true
       keep-outputs = true
@@ -598,7 +598,7 @@
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
-      outputs.overlays.stable-packages
+      outputs.overlays.unstable-packages
     ];
     hostPlatform = system;
   };

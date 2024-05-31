@@ -8,7 +8,7 @@
       gh-dash
       gh-eco
       gh-markdown-preview
-      gh-poi
+      unstable.gh-poi
     ];
 
     settings = {

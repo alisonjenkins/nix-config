@@ -12,9 +12,9 @@
     musnix = {url = "github:musnix/musnix";};
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     nur.url = "github:nix-community/NUR";
     rust-overlay.url = "github:oxalica/rust-overlay";
 
@@ -75,7 +75,7 @@
     nix-gaming,
     nixpkgs,
     nixpkgs_master,
-    nixpkgs_stable,
+    nixpkgs_unstable,
     nur,
     rust-overlay,
     plasma-manager,

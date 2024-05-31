@@ -1477,16 +1477,16 @@
     },
     "nixpkgs_8": {
       "locked": {
-        "lastModified": 1716948383,
-        "narHash": "sha256-SzDKxseEcHR5KzPXLwsemyTR/kaM9whxeiJohbL04rs=",
+        "lastModified": 1716991068,
+        "narHash": "sha256-Av0UWCCiIGJxsZ6TFc+OiKCJNqwoxMNVYDBChmhjNpo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ad57eef4ef0659193044870c731987a6df5cf56b",
+        "rev": "25cf937a30bf0801447f6bf544fc7486c6309234",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixos-unstable",
+        "ref": "nixos-23.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -1509,11 +1509,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1717141278,
-        "narHash": "sha256-3FkhCTadKJn6meTvmY5jjHQ9hrRo7RUedHa0Iub9CQ0=",
+        "lastModified": 1717141793,
+        "narHash": "sha256-6chYKW6OEDPMX+auEdVjevca1aSN27XQT4r9hATRfrU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "89cba267d761cb5f142bf101ea030fd62bdc241e",
+        "rev": "7eafeb43fc81defd0b88b6d305bcf8bb9c998d27",
         "type": "github"
       },
       "original": {
@@ -1522,18 +1522,18 @@
         "type": "github"
       }
     },
-    "nixpkgs_stable": {
+    "nixpkgs_unstable": {
       "locked": {
-        "lastModified": 1716991068,
-        "narHash": "sha256-Av0UWCCiIGJxsZ6TFc+OiKCJNqwoxMNVYDBChmhjNpo=",
+        "lastModified": 1716948383,
+        "narHash": "sha256-SzDKxseEcHR5KzPXLwsemyTR/kaM9whxeiJohbL04rs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "25cf937a30bf0801447f6bf544fc7486c6309234",
+        "rev": "ad57eef4ef0659193044870c731987a6df5cf56b",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixos-23.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -1641,7 +1641,7 @@
         "nix-gaming": "nix-gaming",
         "nixpkgs": "nixpkgs_8",
         "nixpkgs_master": "nixpkgs_master",
-        "nixpkgs_stable": "nixpkgs_stable",
+        "nixpkgs_unstable": "nixpkgs_unstable",
         "nur": "nur",
         "plasma-manager": "plasma-manager",
         "rust-overlay": "rust-overlay_2",
