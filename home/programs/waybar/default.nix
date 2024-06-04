@@ -17,7 +17,7 @@
       if pkgs.stdenv.isLinux
       then true
       else false;
-    package = pkgs.stable.waybar;
+    package = pkgs.waybar;
     style = ./style.css;
 
     settings = [
