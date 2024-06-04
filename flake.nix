@@ -11,7 +11,7 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nur.url = "github:nix-community/NUR";
     rust-overlay.url = "github:oxalica/rust-overlay";
 
