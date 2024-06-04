@@ -4,11 +4,8 @@
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
-    attic.url = "github:zhaofengli/attic";
     deploy-rs.url = "github:serokell/deploy-rs";
-    ecrrepos.url = "git+ssh://git@github.com/Synalogik/various-maintenance-scripts?dir=ecrrepos";
     impermanence.url = "github:nix-community/impermanence";
-    maven.url = "github:nixos/nixpkgs/15e3765c4e5ec347935e737f57c1b20874f2de69";
     musnix = {url = "github:musnix/musnix";};
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
@@ -219,37 +216,6 @@
     };
 
     checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
-
-    darwinConfigurations."Alison-SYNALOGIK-MBP-20W1M" = let
-      system = "aarch64-darwin";
-      specialArgs = {
-        inherit inputs;
-        inherit outputs;
-        inherit system;
-        username = "ajenkins";
-      };
-      gitSpecialArgs = {
-        gitUserName = "Alison Jenkins";
-        gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-        gitGPGSigningKey = "37F33EF6";
-      };
-    in
-      darwin.lib.darwinSystem {
-        modules = [
-          ./hosts/darwin/configuration.nix
-          ({pkgs, ...}: {
-            nixpkgs.overlays = [rust-overlay.overlays.default];
-          })
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.${specialArgs.username} = import ./home/home.nix;
-            home-manager.extraSpecialArgs = specialArgs // gitSpecialArgs;
-          }
-        ];
-        specialArgs = specialArgs;
-      };
 
     deploy = {
       nodes = {
