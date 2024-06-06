@@ -169,6 +169,7 @@
       amdgpu_top
       ananicy-cpp
       ananicy-cpp-rules
+      kdePackages.korganizer
       lact
       libsForQt5.polonium
       polkit
