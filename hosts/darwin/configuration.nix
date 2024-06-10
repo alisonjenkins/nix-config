@@ -19,7 +19,7 @@
       alacritty
       aws-vault
       bacon
-      bat
+      unstable.bat
       cacert
       cachix
       cargo-lambda
