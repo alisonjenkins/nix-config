@@ -36,7 +36,6 @@
         cava
         curl
         direnv
-        dunst
         eza
         fluxcd
         git

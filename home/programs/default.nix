@@ -6,7 +6,7 @@
     ./carapace
     ./comodoro
     ./direnv
-    ./dunst
+    # ./dunst
     ./firefox
     ./gh
     ./gh-dash
