@@ -37,8 +37,6 @@
         enable = true;
       };
     };
-    xserver = {
-      displayManager.defaultSession = "plasma";
-    };
+    displayManager.defaultSession = "plasma";
   };
 }
