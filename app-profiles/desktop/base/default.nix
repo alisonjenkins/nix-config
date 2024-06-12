@@ -88,7 +88,7 @@
     libvorbis
     lshw
     luxtorpeda
-    mpv-vapoursynth
+    # mpv-vapoursynth
     ncdu
     nix-tree
     nushellFull
