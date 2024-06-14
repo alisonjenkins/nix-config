@@ -46,7 +46,7 @@
     colmena
     comma
     corectrl
-    crunchy-cli
+    unstable.crunchy-cli
     dig
     discord
     droidcam
