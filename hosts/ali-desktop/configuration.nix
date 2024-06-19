@@ -32,9 +32,10 @@
       "rd.udev.log_level=3"
       "udev.log_priority=3"
     ];
-    # kernelModules = [
-    #   "v4l2loopback"
-    # ];
+    kernelModules = [
+      "sg"
+      # "v4l2loopback"
+    ];
     # extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
     # extraModprobeConfig = ''
