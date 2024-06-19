@@ -174,6 +174,7 @@
       kdePackages.korganizer
       lact
       libsForQt5.polonium
+      makemkv
       polkit
       protontricks
       radeontop
