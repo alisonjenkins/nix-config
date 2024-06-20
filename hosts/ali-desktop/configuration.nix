@@ -268,13 +268,19 @@
     cpuFreqGovernor = "performance";
   };
 
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
-    package = pkgs.steam.override {
-      extraEnv = {};
-      extraLibraries = pkgs:
+  programs = {
+    java = {
+      enable = true;
+      package = pkgs.jdk;
+    };
+
+    steam = {
+      enable = true;
+      remotePlay.openFirewall = true;
+      dedicatedServer.openFirewall = true;
+      package = pkgs.steam.override {
+        extraEnv = {};
+        extraLibraries = pkgs:
         with pkgs; [
           xorg.libXcursor
           xorg.libXi
@@ -287,14 +293,15 @@
           libkrb5
           keyutils
         ];
-    };
-    gamescopeSession = {
-      enable = true;
-      args = [
-        "--rt"
-        "-f"
-        "-o 10"
-      ];
+      };
+      gamescopeSession = {
+        enable = true;
+        args = [
+          "--rt"
+          "-f"
+          "-o 10"
+        ];
+      };
     };
   };
 
