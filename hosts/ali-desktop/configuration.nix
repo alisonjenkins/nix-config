@@ -173,6 +173,7 @@
       handbrake
       kdePackages.korganizer
       lact
+      libaacs
       libsForQt5.polonium
       makemkv
       polkit
