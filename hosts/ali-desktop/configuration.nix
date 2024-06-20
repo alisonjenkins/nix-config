@@ -243,6 +243,7 @@
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.unstable-packages
+      outputs.overlays.bluray-playback
     ];
 
     config = {

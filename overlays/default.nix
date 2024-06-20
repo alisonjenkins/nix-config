@@ -35,4 +35,11 @@
       config.allowUnfree = true;
     };
   };
+
+  bluray-playback = final: _prev: {
+    libbluray = _prev.libbluray.override {
+      withAACS = true;
+      withBDplus = true;
+    };
+  };
 }
