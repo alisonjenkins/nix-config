@@ -20,8 +20,8 @@
   #   };
   # };
 
-  unstable-packages = final: _prev: {
-    unstable = import inputs.nixpkgs_unstable {
+  stable-packages = final: _prev: {
+    stable = import inputs.nixpkgs_stable {
       system = final.system;
       config.allowUnfree = true;
     };

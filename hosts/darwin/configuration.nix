@@ -19,7 +19,7 @@
       alacritty
       aws-vault
       bacon
-      unstable.bat
+      bat
       cacert
       cachix
       cargo-lambda
@@ -598,7 +598,7 @@
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
-      outputs.overlays.unstable-packages
+      outputs.overlays.stable-packages
     ];
     hostPlatform = system;
   };

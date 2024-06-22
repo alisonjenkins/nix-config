@@ -70,7 +70,6 @@
 
   hardware.opengl = {
     enable = true;
-    driSupport = true;
     driSupport32Bit = true;
   };
 
@@ -143,7 +142,7 @@
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
-      outputs.overlays.unstable-packages
+      outputs.overlays.stable-packages
     ];
     config = {
       allowUnfree = true;
