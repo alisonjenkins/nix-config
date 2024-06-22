@@ -241,10 +241,10 @@
   nixpkgs = {
     overlays = [
       outputs.overlays.additions
+      outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.unstable-packages
-      outputs.overlays.bluray-playback
     ];
 
     config = {
