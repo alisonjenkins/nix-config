@@ -5,7 +5,6 @@
   ...
 }: {
   services.xserver = {
-    enable = true;
     displayManager = {
       autoLogin.enable = false;
       sddm = {

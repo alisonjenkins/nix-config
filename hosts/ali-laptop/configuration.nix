@@ -55,7 +55,6 @@
   };
 
   services.xserver = {
-    enable = false;
     videoDrivers = [
       "fbdev"
       "intel"
