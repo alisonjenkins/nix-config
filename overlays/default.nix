@@ -40,6 +40,7 @@
     libbluray = _prev.libbluray.override {
       withAACS = true;
       withBDplus = true;
+      withJava = true;
     };
   };
 }
