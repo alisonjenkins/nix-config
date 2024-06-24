@@ -189,7 +189,6 @@
     ];
 
     variables = {
-      JAVA_HOME = "${pkgs.jdk}";
       NIXOS_OZONE_WL = "1";
       PATH = ["\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts"];
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
@@ -270,7 +269,7 @@
   programs = {
     java = {
       enable = true;
-      package = pkgs.jdk;
+      package = pkgs.jdk17;
     };
 
     steam = {
