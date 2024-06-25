@@ -170,6 +170,7 @@
       amdgpu_top
       ananicy-cpp
       ananicy-cpp-rules
+      cpu-x
       handbrake
       kdePackages.korganizer
       lact
