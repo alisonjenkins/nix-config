@@ -180,6 +180,7 @@
       polkit
       protontricks
       radeontop
+      s-tui
       stress
       sweethome3d.application
       sweethome3d.furniture-editor
