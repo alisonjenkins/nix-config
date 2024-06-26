@@ -171,6 +171,7 @@
       ananicy-cpp
       ananicy-cpp-rules
       cpu-x
+      geekbench
       handbrake
       kdePackages.korganizer
       lact
