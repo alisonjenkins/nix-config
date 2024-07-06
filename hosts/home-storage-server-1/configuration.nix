@@ -11,6 +11,14 @@
     ../../app-profiles/storage-server
   ];
 
+  console.keyMap = "us";
+  networking.hostName = "home-storage-server-1";
+  networking.networkmanager.enable = true;
+  nixpkgs.config.allowUnfree = true;
+  programs.zsh.enable = true;
+  services.logrotate.checkConfig = false;
+  time.timeZone = "Europe/London";
+
   boot = {
     kernelPackages = pkgs.linuxPackages_hardened;
     kernelParams = [
@@ -39,12 +47,17 @@
     };
   };
 
-  services.logrotate.checkConfig = false;
+  environment = {
+    pathsToLink = ["/share/zsh"];
 
-  networking.hostName = "home-storage-server-1";
-  networking.networkmanager.enable = true;
-
-  time.timeZone = "Europe/London";
+    variables = {
+      PATH = [
+        "\${HOME}/.local/bin"
+        "\${HOME}/.config/rofi/scripts"
+      ];
+    };
+  };
+  
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_GB.UTF-8";
     LC_IDENTIFICATION = "en_GB.UTF-8";
@@ -57,16 +70,35 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  console.keyMap = "us";
-  environment.pathsToLink = ["/share/zsh"];
-  environment.variables = {
-    PATH = [
-      "\${HOME}/.local/bin"
-      "\${HOME}/.config/rofi/scripts"
-    ];
+  nix = {
+    package = pkgs.nixFlakes;
+    extraOptions = "experimental-features = nix-command flakes";
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 60d";
+    };
+
+    settings = {
+      trusted-users = [ "root" "@wheel" ];
+    };
   };
 
-  programs.zsh.enable = true;
+  system = {
+    stateVersion = "23.11";
+
+    autoUpgrade = {
+      enable = true;
+      channel = "https://nixos.org/channels/nixos-23.11";
+    };
+  };
+
+  security = {
+    sudo = {
+      wheelNeedsPassword = false;
+    };
+  };
 
   users.users.ali = {
     isNormalUser = true;
@@ -75,35 +107,5 @@
     extraGroups = ["docker" "networkmanager" "wheel"];
     packages = with pkgs; [];
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
-  };
-
-  nixpkgs.config.allowUnfree = true;
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 60d";
-  };
-
-  system.autoUpgrade = {
-    enable = true;
-    channel = "https://nixos.org/channels/nixos-23.11";
-  };
-
-  system.stateVersion = "23.11";
-
-  nix = {
-    package = pkgs.nixFlakes;
-    extraOptions = "experimental-features = nix-command flakes";
-
-    settings = {
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
-  security = {
-    sudo = {
-      wheelNeedsPassword = false;
-    };
   };
 }
