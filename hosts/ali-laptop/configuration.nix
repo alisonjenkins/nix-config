@@ -165,4 +165,9 @@
     package = pkgs.nixFlakes;
     extraOptions = "experimental-features = nix-command flakes";
   };
+
+  xdg.portal = {
+    enable = true;
+    xdgOpenUsePortal = true;
+  };
 }
