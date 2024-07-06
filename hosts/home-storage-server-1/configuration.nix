@@ -13,6 +13,9 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_hardened;
+    kernelParams = [
+      "irqpoll"
+    ];
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
