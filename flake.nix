@@ -35,7 +35,7 @@
       url = "git+ssh://git@github.com/ghostty-org/ghostty";
     };
     home-manager = {
-      url = "github:nix-community/home-manager?ref=release-24.05";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     jovian-nixos = {

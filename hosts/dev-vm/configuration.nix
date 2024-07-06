@@ -61,7 +61,7 @@
 
   services.spice-vdagentd.enable = true;
 
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
   };
 

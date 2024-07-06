@@ -91,7 +91,7 @@
     # mpv-vapoursynth
     ncdu
     nix-tree
-    nushellFull
+    nushell
     obsidian
     parted
     pinentry

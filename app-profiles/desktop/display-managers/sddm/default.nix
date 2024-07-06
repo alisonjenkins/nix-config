@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  services.xserver = {
+  services = {
     displayManager = {
       autoLogin.enable = false;
       sddm = {

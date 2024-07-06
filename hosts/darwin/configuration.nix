@@ -71,7 +71,7 @@
       ncdu_1
       nixfmt
       nodejs
-      nushellFull
+      nushell
       openssl
       parallel
       pcre2

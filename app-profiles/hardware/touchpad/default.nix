@@ -8,7 +8,7 @@
     libinput-gestures
   ];
 
-  services.xserver.libinput.touchpad = {
+  services.libinput.touchpad = {
     tapping = true;
   };
 }

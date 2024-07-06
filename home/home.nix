@@ -54,8 +54,8 @@
         openrgb
         pamixer
         pavucontrol
-        pkgs.gnome.eog
-        pkgs.gnome.zenity
+        pkgs.eog
+        pkgs.zenity
         qpwgraph
         slurp
         tty-clock

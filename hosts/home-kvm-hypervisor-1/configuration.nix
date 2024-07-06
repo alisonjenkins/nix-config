@@ -101,6 +101,8 @@
   nix = {
     extraOptions = "experimental-features = nix-command flakes";
     package = pkgs.nixFlakes;
-    trustedUsers = [ "root" "@wheel" ];
+    settings = {
+      trusted-users = [ "root" "@wheel" ];
+    };
   };
 }

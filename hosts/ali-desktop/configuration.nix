@@ -200,9 +200,8 @@
     };
   };
 
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport32Bit = true;
   };
 
   i18n.extraLocaleSettings = {
