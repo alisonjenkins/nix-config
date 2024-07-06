@@ -212,6 +212,19 @@
           # }
         ];
       };
+
+      home-k8s-server-1 = lib.nixosSystem rec {
+        inherit system;
+        specialArgs = {
+          inherit inputs;
+          inherit system;
+        };
+        modules = [
+          disko.nixosModules.disko
+          ./hosts/home-k8s-server-1/disko-config.nix
+          ./hosts/home-k8s-server-1/configuration.nix
+        ];
+      };
     };
 
     checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
@@ -233,6 +246,15 @@
             system = {
               user = "root";
               path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-storage-server-1;
+            };
+          };
+        };
+        home-k8s-server-1 = {
+          hostname = "home-k8s-server-1.lan";
+          profiles = {
+            system = {
+              user = "root";
+              path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
             };
           };
         };
