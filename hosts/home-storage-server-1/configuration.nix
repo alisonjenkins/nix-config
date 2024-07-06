@@ -50,6 +50,10 @@
   environment = {
     pathsToLink = ["/share/zsh"];
 
+    systemPackages = with pkgs; [
+      parted
+    ];
+
     variables = {
       PATH = [
         "\${HOME}/.local/bin"
