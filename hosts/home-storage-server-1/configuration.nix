@@ -20,7 +20,7 @@
   time.timeZone = "Europe/London";
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_hardened;
+    kernelPackages = pkgs.linuxPackages;
     kernelParams = [
       "irqpoll"
     ];
