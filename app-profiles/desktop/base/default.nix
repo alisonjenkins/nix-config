@@ -53,7 +53,7 @@
     dua
     element-desktop
     ethtool
-    fava
+    # fava
     fd
     ffmpeg
     filelight
