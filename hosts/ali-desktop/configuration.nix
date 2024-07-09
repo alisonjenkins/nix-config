@@ -168,7 +168,7 @@
 
     systemPackages = with pkgs; [
       amdgpu_top
-      ananicy-cpp
+      stable.ananicy-cpp
       ananicy-cpp-rules
       cpu-x
       geekbench
