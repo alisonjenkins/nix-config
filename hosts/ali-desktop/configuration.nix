@@ -15,7 +15,6 @@
   console.keyMap = "us";
   hardware.pulseaudio.enable = false;
   programs.zsh.enable = true;
-  sound.enable = true;
   time.timeZone = "Europe/London";
 
   boot = {
