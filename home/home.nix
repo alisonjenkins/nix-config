@@ -44,7 +44,6 @@
         helm
         kubectl
         kustomize
-        lollypop
         lutris
         mission-center
         mpc-cli

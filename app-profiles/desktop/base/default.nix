@@ -79,7 +79,6 @@
     keybase
     keybase-gui
     keyutils
-    kodi-cli
     kodi-wayland
     libkrb5
     libpng
