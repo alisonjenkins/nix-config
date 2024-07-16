@@ -81,9 +81,11 @@
     gpg-agent = {
       enable = lib.mkIf pkgs.stdenv.isLinux true;
       pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
-        meta = prev.meta // {
-          mainProgram = "pinentry-qt";
-        };
+        meta =
+          prev.meta
+          // {
+            mainProgram = "pinentry-qt";
+          };
       });
       enableBashIntegration = true;
       enableZshIntegration = true;
