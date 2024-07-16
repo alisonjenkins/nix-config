@@ -61,7 +61,7 @@
       ];
     };
   };
-  
+
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_GB.UTF-8";
     LC_IDENTIFICATION = "en_GB.UTF-8";
@@ -85,7 +85,7 @@
     };
 
     settings = {
-      trusted-users = [ "root" "@wheel" ];
+      trusted-users = ["root" "@wheel"];
     };
   };
 
