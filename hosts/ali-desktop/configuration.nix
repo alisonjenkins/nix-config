@@ -263,6 +263,10 @@
       dates = "weekly";
       options = "--delete-older-than 60d";
     };
+
+    settings = {
+      auto-optimise-store = true;
+    };
   };
 
   powerManagement = {
