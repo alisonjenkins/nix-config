@@ -1,16 +1,17 @@
 {
   imports = [
+    # ./dunst
     ./alacritty
     ./bat
     ./broot
     ./carapace
     ./comodoro
     ./direnv
-    # ./dunst
     ./firefox
     ./gh
     ./gh-dash
     ./git
+    ./gitui
     ./granted
     ./hyfetch
     ./info
