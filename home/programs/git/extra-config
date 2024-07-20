@@ -43,6 +43,9 @@
 [push]
   default = current
 
+[rerere]
+	enabled = true
+
 [tag]
   gpgSign = true
 
