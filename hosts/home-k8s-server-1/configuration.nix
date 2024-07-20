@@ -8,7 +8,7 @@
     ./hardware-configuration.nix
     ../../app-profiles/server-base
     # ../../app-profiles/server-base/luks-tor-unlock
-    # ../../app-profiles/storage-server
+    ../../app-profiles/k8s-master
   ];
 
   console.keyMap = "us";
