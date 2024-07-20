@@ -50,6 +50,13 @@
         '';
       }
       {
+        plugin = tmuxPlugins.tmux-sessionx;
+        extraConfig = ''
+          set -g @sessionx-bind 'o'
+          set -g @sessionx-zoxide-mode 'on'
+        '';
+      }
+      {
         plugin = tmuxPlugins.tmux-thumbs;
         extraConfig = ''
           set -g @thumbs-key F

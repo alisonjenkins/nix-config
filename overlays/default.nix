@@ -1,4 +1,8 @@
-{inputs, ...}: {
+{
+  inputs,
+  system,
+  ...
+}: {
   # This one brings our custom packages from the 'pkgs' directory
   additions = final: _prev: import ../pkgs {pkgs = final;};
 
@@ -42,5 +46,13 @@
       withBDplus = true;
       withJava = true;
     };
+  };
+
+  tmux-sessionx = final: _prev: {
+    tmuxPlugins =
+      _prev.tmuxPlugins
+      // {
+        tmux-sessionx = inputs.tmux-sessionx.packages.${system}.default;
+      };
   };
 }

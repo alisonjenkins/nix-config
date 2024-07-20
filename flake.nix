@@ -9,11 +9,12 @@
     musnix = {url = "github:musnix/musnix";};
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.05";
-    nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs_master.url = "github:nixos/nixpkgs";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.05";
     nur.url = "github:nix-community/NUR";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    tmux-sessionx.url = "github:omerxx/tmux-sessionx";
 
     chaotic = {
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
@@ -281,6 +282,9 @@
         ];
       };
 
-    overlays = import ./overlays {inherit inputs;};
+    overlays = import ./overlays {
+      inherit inputs;
+      inherit system;
+    };
   };
 }

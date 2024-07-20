@@ -246,6 +246,7 @@
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionx
     ];
 
     config = {
