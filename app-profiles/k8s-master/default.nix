@@ -33,6 +33,6 @@ in {
     addons.dns.enable = true;
 
     # needed if you use swap
-    kubelet.extraOpts = "--fail-swap-on=false";
+    kubelet.extraOpts = "--fail-swap-on=false --kubelet-client-certificate --kubelet-client-key";
   };
 }
