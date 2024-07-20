@@ -25,7 +25,11 @@
       "irqpoll"
     ];
     loader = {
-      efi.efiSysMountPoint = "/boot";
+      efi = {
+        efiSysMountPoint = "/boot";
+        canTouchEfiVariables = true;
+      };
+
       grub = {
         enable = true;
         devices = ["nodev"];
