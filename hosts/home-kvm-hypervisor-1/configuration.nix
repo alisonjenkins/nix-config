@@ -29,7 +29,7 @@
       grub = {
         enable = true;
         devices = ["nodev"];
-        efiInstallAsRemovable = false;
+        efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
         theme = pkgs.stdenv.mkDerivation {
