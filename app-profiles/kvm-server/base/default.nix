@@ -14,7 +14,7 @@
   networking.interfaces.br0.useDHCP = true;
   networking.bridges = {
     "br0" = {
-      interfaces = ["enp12s0"];
+      interfaces = ["enp11s0"];
     };
   };
 }
