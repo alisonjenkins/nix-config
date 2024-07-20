@@ -7,7 +7,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../app-profiles/server-base
-    ../../app-profiles/server-base/luks-tor-unlock
+    # ../../app-profiles/server-base/luks-tor-unlock
     # ../../app-profiles/storage-server
   ];
 
