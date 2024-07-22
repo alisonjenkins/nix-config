@@ -242,6 +242,7 @@
   nixpkgs = {
     overlays = [
       outputs.overlays.additions
+      outputs.overlays.alvr
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications
