@@ -31,8 +31,5 @@ in {
 
     # use coredns
     addons.dns.enable = true;
-
-    # needed if you use swap
-    kubelet.extraOpts = "--kubelet-client-certificate --kubelet-client-key";
   };
 }
