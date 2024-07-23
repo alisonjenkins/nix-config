@@ -179,6 +179,7 @@
       makemkv
       polkit
       protontricks
+      qbittorrent
       radeontop
       s-tui
       stable.ananicy-cpp
