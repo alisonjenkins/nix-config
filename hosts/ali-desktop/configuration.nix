@@ -192,6 +192,7 @@
       upscayl
       webcamoid
       wireguard-tools
+      xd
     ];
 
     variables = {
