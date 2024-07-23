@@ -171,6 +171,7 @@
       cpu-x
       geekbench
       handbrake
+      i2pd
       kdePackages.korganizer
       lact
       libaacs
