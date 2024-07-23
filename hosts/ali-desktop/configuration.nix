@@ -167,7 +167,6 @@
 
     systemPackages = with pkgs; [
       amdgpu_top
-      stable.ananicy-cpp
       ananicy-cpp-rules
       cpu-x
       geekbench
@@ -181,6 +180,7 @@
       protontricks
       radeontop
       s-tui
+      stable.ananicy-cpp
       stress
       sweethome3d.application
       sweethome3d.furniture-editor
