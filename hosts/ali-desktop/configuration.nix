@@ -251,6 +251,7 @@
       outputs.overlays.modifications
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionx
+      outputs.overlays.quirc
     ];
 
     config = {

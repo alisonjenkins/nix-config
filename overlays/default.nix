@@ -151,4 +151,13 @@
         tmux-sessionx = inputs.tmux-sessionx.packages.${system}.default;
       };
   };
+
+  quirc = final: _prev: {
+    quirc = _prev.quirc.overrideAttrs (oldAttrs: rec {
+      postInstall = ''
+        # don't install static library
+        rm $out/lib/libquirc.a
+      '';
+    });
+  };
 }
