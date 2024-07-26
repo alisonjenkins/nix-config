@@ -134,6 +134,18 @@
     ];
   };
 
+  users.users.lace = {
+    isNormalUser = true;
+    description = "Alice Jones";
+    initialPassword = "initPw!";
+    extraGroups = ["networkmanager" "docker"];
+    packages = with pkgs; [
+      firefox
+      neofetch
+      lolcat
+    ];
+  };
+
   nixpkgs = {
     overlays = [
       outputs.overlays.additions
