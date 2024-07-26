@@ -78,7 +78,7 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
 
     powerManagement = {
-      enable = true;
+      enable = false;
       finegrained = false;
     };
 
