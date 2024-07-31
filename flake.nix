@@ -99,6 +99,7 @@
           ./app-profiles/desktop/wms/sway
           ./app-profiles/hardware/vr
           ./hosts/ali-desktop/configuration.nix
+          ./hosts/ali-desktop/disko-config.nix
           chaotic.nixosModules.default
           inputs.impermanence.nixosModules.impermanence
           inputs.musnix.nixosModules.musnix
