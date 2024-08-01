@@ -332,16 +332,16 @@
     irqbalance.enable = true;
     resolved.enable = true;
 
-    beesd = {
-      filesystems = {
-        persistence = {
-          extraOptions = ["--loadavg-target" "5.0"];
-          hashTableSizeMB = 2048;
-          spec = "LABEL=persistence";
-          verbosity = "crit";
-        };
-      };
-    };
+    # beesd = {
+    #   filesystems = {
+    #     persistence = {
+    #       extraOptions = ["--loadavg-target" "5.0"];
+    #       hashTableSizeMB = 2048;
+    #       spec = "LABEL=persistence";
+    #       verbosity = "crit";
+    #     };
+    #   };
+    # };
 
     btrfs = {
       autoScrub = {
