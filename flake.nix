@@ -81,6 +81,9 @@
     inherit (self) outputs;
     system = "x86_64-linux";
     lib = nixpkgs.lib;
+    pkgs = import nixpkgs {
+      inherit system;
+    };
   in {
     nixosConfigurations = {
       ali-desktop = lib.nixosSystem rec {
@@ -285,6 +288,7 @@
     overlays = import ./overlays {
       inherit inputs;
       inherit system;
+      inherit pkgs;
     };
   };
 }

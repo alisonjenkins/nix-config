@@ -245,14 +245,15 @@
 
   nixpkgs = {
     overlays = [
-      outputs.overlays.additions
       # outputs.overlays.alvr
+      outputs.overlays.additions
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications
+      outputs.overlays.quirc
+      outputs.overlays.snapper
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionx
-      outputs.overlays.quirc
     ];
 
     config = {
@@ -377,6 +378,26 @@
     udev.packages = [
       pkgs.uhk-udev-rules
     ];
+
+    snapper = {
+      persistentTimer = true;
+      configs = {
+        nix = {
+          SUBVOLUME = "/nix";
+          ALLOW_USERS = ["ali"];
+          TIMELINE_CREATE = true;
+          TIMELINE_CLEANUP = true;
+        };
+
+        persistence = {
+          SUBVOLUME = "/persistence";
+          ALLOW_USERS = ["ali"];
+          TIMELINE_CREATE = true;
+          TIMELINE_CLEANUP = true;
+        };
+      };
+    };
+
     system76-scheduler = {
       enable = true;
       settings = {

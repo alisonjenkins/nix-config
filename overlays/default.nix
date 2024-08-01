@@ -1,6 +1,7 @@
 {
   inputs,
   system,
+  pkgs,
   ...
 }: {
   # This one brings our custom packages from the 'pkgs' directory
@@ -158,6 +159,12 @@
         # don't install static library
         rm $out/lib/libquirc.a
       '';
+    });
+  };
+
+  snapper = final: _prev: {
+    snapper = _prev.snapper.overrideAttrs (oldAttrs: rec {
+      buildInputs = oldAttrs.buildInputs ++ [pkgs.zlib];
     });
   };
 }
