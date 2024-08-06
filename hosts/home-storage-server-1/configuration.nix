@@ -89,7 +89,7 @@
     };
 
     settings = {
-      auto-optimise-store = true;
+      auto-optimise-store = false;
       trusted-users = ["root" "@wheel"];
     };
   };

@@ -111,7 +111,7 @@
 
   chaotic = {
     mesa-git = {
-      enable = false;
+      enable = true;
       # method = "GBM_BACKENDS_PATH";
     };
     scx = {
@@ -273,7 +273,7 @@
     };
 
     settings = {
-      auto-optimise-store = true;
+      auto-optimise-store = false;
       trusted-users = ["root" "@wheel"];
     };
   };

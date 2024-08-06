@@ -102,7 +102,7 @@
     extraOptions = "experimental-features = nix-command flakes";
     package = pkgs.nixFlakes;
     settings = {
-      auto-optimise-store = true;
+      auto-optimise-store = false;
       trusted-users = ["root" "@wheel"];
     };
   };
