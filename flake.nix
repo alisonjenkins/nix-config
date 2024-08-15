@@ -229,6 +229,20 @@
           ./hosts/home-k8s-server-1/configuration.nix
         ];
       };
+
+      live-cd = nixpkgs.lib.nixosSystem {
+        inherit system;
+
+        specialArgs = {
+          inherit inputs;
+          inherit system;
+        };
+
+        modules = [
+          (nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")
+          ./hosts/live-cd/configuration.nix
+        ];
+      };
     };
 
     checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
