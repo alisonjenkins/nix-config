@@ -200,12 +200,6 @@
         ];
       };
 
-      # ali-steamdeck = lib.nixosSystem rec {
-      #   inherit system;
-      #   specialArgs = { inherit jovian-nixos; };
-      #
-      #   modules = [ ./hosts/ali-steamdeck/configuration.nix ];
-      # };
 
       home-kvm-hypervisor-1 = lib.nixosSystem rec {
         inherit system;
