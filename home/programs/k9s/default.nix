@@ -1,7 +1,14 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  username,
+  ...
+}: {
   programs.k9s = {
     enable = true;
-    package = pkgs.master.k9s;
+    package =
+      if username == "deck"
+      then pkgs.k9s
+      else pkgs.master.k9s;
     settings = {
       refreshRate = 2;
       maxConnRetry = 5;
