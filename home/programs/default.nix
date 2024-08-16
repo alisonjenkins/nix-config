@@ -28,6 +28,7 @@
     ./nushell
     ./obs
     ./rofi
+    ./rust
     ./starship
     ./tmux
     ./waybar
