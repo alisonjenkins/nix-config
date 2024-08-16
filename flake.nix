@@ -84,8 +84,39 @@
     lib = nixpkgs.lib;
     pkgs = import nixpkgs {
       inherit system;
+
+      config = {
+        allowUnfree = true;
+      };
+
+      overlays =
+        [
+          inputs.rust-overlay.overlays.default
+        ]
+        ++ (
+          if builtins.getEnv "HOSTNAME" == "steamdeck"
+          then [inputs.nixgl.overlay]
+          else []
+        );
     };
   in {
+    homeConfigurations = {
+      "deck" = inputs.home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+
+        modules = [./home/home.nix];
+
+        extraSpecialArgs = {
+          inherit inputs;
+          inherit system;
+          username = "deck";
+          gitUserName = "Alison Jenkins";
+          gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+          gitGPGSigningKey = "";
+        };
+      };
+    };
+
     nixosConfigurations = {
       ali-desktop = lib.nixosSystem rec {
         inherit system;
