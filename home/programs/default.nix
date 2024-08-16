@@ -1,6 +1,7 @@
 {
   imports = [
     # ./dunst
+    ./1password
     ./alacritty
     ./bat
     ./broot
