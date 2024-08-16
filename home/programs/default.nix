@@ -23,6 +23,7 @@
     ./man
     ./mcfly
     ./mimetypes
+    ./neovim
     ./newsboat
     ./nix-index
     ./noti
