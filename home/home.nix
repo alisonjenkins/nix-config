@@ -22,6 +22,10 @@
     );
   };
 
+  fonts = {
+    fontconfig.enable = pkgs.stdenv.isLinux;
+  };
+
   home.shellAliases = import ./shellAliases.nix;
 
   home.packages =
