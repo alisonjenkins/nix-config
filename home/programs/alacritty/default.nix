@@ -4,7 +4,7 @@
   lib,
   ...
 }: {
-  home.packages = lib.optionals config.programs.alacritty.enable [pkgs.nerdfonts];
+  home.packages = lib.optionals config.programs.alacritty.enable [(pkgs.nerdfonts.override {fonts = ["FiraCode" "Hack" "JetBrainsMono"];})];
 
   programs.alacritty = {
     enable = true;
