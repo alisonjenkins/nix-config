@@ -31,6 +31,7 @@
     ./obs
     ./rofi
     ./rust
+    ./ssh
     ./starship
     ./tmux
     ./waybar
