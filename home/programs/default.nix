@@ -9,6 +9,7 @@
     ./comodoro
     ./direnv
     ./firefox
+    ./fzf
     ./gcc
     ./gh
     ./gh-dash
