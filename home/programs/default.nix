@@ -8,6 +8,7 @@
     ./comodoro
     ./direnv
     ./firefox
+    ./gcc
     ./gh
     ./gh-dash
     ./git
