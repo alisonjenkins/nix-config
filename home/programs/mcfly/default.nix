@@ -3,7 +3,7 @@
     name = "mcfly-init";
 
     dontUnpack = true;
-    buildInputs = [pkgs.unstable.mcfly];
+    buildInputs = [pkgs.mcfly];
 
     buildPhase = ''
       mcfly init zsh > $out
