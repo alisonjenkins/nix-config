@@ -122,16 +122,6 @@
           };
         }
         {
-          name = "zsh-hints";
-          file = "zsh-hints";
-          src = pkgs.fetchFromGitHub {
-            owner = "joepvd";
-            repo = "zsh-hints";
-            rev = "3874e279fece8817d3940e5b93b40960214ce1a2";
-            sha256 = "i/dGAx7HF1DQuAzUNdpjaf53nQPeSDBX/mpMcG+9+fQ=";
-          };
-        }
-        {
           name = "zsh-terraform";
           file = "terraform.plugin.zsh";
           src = pkgs.fetchFromGitHub {
