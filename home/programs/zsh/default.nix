@@ -3,6 +3,11 @@
   lib,
   ...
 }: {
+  home.packages = [
+    pkgs.exercism
+    pkgs.fzf
+  ];
+
   programs = {
     zsh = {
       autocd = true;
@@ -39,6 +44,7 @@
         }
         {
           name = "exercism";
+          file = "exercism.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "fabiokiatkowski";
             repo = "exercism.plugin.zsh";
@@ -58,6 +64,7 @@
         }
         {
           name = "fzf-tab";
+          file = "fzf-tab.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "Aloxaf";
             repo = "fzf-tab";
@@ -76,6 +83,7 @@
         }
         {
           name = "kube-aliases";
+          file = "kube-aliases.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "alisonjenkins";
             repo = "kube-aliases";
@@ -85,6 +93,7 @@
         }
         {
           name = "omz-fluxcd-plugin";
+          file = "fluxcd.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "l-umaca";
             repo = "omz-fluxcd-plugin";
@@ -104,6 +113,7 @@
         }
         {
           name = "tipz";
+          file = "tipz.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "molovo";
             repo = "tipz";
@@ -113,6 +123,7 @@
         }
         {
           name = "zsh-hints";
+          file = "zsh-hints";
           src = pkgs.fetchFromGitHub {
             owner = "joepvd";
             repo = "zsh-hints";
@@ -122,6 +133,7 @@
         }
         {
           name = "zsh-terraform";
+          file = "terraform.plugin.zsh";
           src = pkgs.fetchFromGitHub {
             owner = "macunha1";
             repo = "zsh-terraform";
@@ -131,12 +143,8 @@
         }
         {
           name = "zsh-vi-mode";
-          src = pkgs.fetchFromGitHub {
-            owner = "jeffreytse";
-            repo = "zsh-vi-mode";
-            rev = "ea1f58ab9b1f3eac50e2cde3e3bc612049ef683b";
-            sha256 = "xbchXJTFWeABTwq6h4KWLh+EvydDrDzcY9AQVK65RS8=";
-          };
+          src = pkgs.unstable.zsh-vi-mode;
+          file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
         }
       ];
     };
