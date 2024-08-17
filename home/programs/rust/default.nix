@@ -8,6 +8,7 @@
     then
       with pkgs; [
         rust-bin.stable.latest.default
+        bacon
       ]
     else [];
 }
