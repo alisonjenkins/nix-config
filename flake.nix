@@ -52,6 +52,10 @@
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     plasma-manager = {
       url = "github:pjones/plasma-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -104,7 +108,10 @@
       "deck" = inputs.home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
 
-        modules = [./home/home.nix];
+        modules = [
+          ./home/home.nix
+          inputs.nix-index-database.hmModules.nix-index
+        ];
 
         extraSpecialArgs = {
           inherit inputs;
@@ -199,7 +206,6 @@
           }
         ];
       };
-
 
       home-kvm-hypervisor-1 = lib.nixosSystem rec {
         inherit system;
