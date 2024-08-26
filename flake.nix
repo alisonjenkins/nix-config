@@ -322,5 +322,11 @@
       inherit system;
       inherit pkgs;
     };
+
+    devShells.x86_64-linux.default = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        deploy-rs
+      ];
+    };
   };
 }
