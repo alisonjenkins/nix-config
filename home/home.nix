@@ -53,6 +53,7 @@
         mpc-cli
         neovide
         networkmanagerapplet
+        nurl
         openrgb
         pamixer
         pavucontrol
