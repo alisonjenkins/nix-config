@@ -34,6 +34,8 @@
       (with pkgs; [
         appimage-run
         audacity
+        aws-vault
+        awscli2
         bibata-cursors
         btop
         catimg
