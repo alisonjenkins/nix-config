@@ -11,7 +11,7 @@
   programs.dconf.enable = true;
   programs.kdeconnect.enable = true;
   environment.systemPackages = with pkgs; [
-    libsForQt5.polonium
+    # libsForQt5.polonium
     plasma-browser-integration
   ];
 
