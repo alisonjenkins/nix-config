@@ -35,13 +35,48 @@
     };
   };
 
-  networking.hostName = "ali-laptop";
-  networking.networkmanager.enable = true;
-  networking.extraHosts = ''
-    192.168.1.202 home-kvm-hypervisor-1
-  '';
+  console.keyMap = "us";
 
-  time.timeZone = "Europe/London";
+  environment = {
+    pathsToLink = ["/share/zsh"];
+
+    variables = {
+      NIXOS_OZONE_WL = "1";
+      PATH = [
+        "\${HOME}/.local/bin"
+        "\${HOME}/.config/rofi/scripts"
+      ];
+      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+    };
+  };
+
+  hardware = {
+    graphics.enable = true;
+    pulseaudio.enable = false;
+
+    nvidia = {
+      modesetting.enable = true;
+      nvidiaSettings = true;
+      open = false;
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+      powerManagement = {
+        enable = false;
+        finegrained = false;
+      };
+
+      prime = {
+        intelBusId = "PCI:0:2:0";
+        nvidiaBusId = "PCI:1:0:0";
+
+        offload = {
+          enable = true;
+          enableOffloadCmd = true;
+        };
+      };
+    };
+  };
+
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_GB.UTF-8";
     LC_IDENTIFICATION = "en_GB.UTF-8";
@@ -54,96 +89,23 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  services.xserver = {
-    videoDrivers = [
-      "fbdev"
-      "intel"
-      "modesetting"
-      "nvidia"
-    ];
-    xkb = {
-      layout = "us";
-      variant = "";
+  networking = {
+    hostName = "ali-laptop";
+    extraHosts = ''
+      192.168.1.202 home-kvm-hypervisor-1
+    '';
+    networkmanager.enable = true;
+  };
+
+  nix = {
+    package = pkgs.nixVersions.nix_2_22;
+    extraOptions = "experimental-features = nix-command flakes";
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 60d";
     };
-  };
-
-  hardware.graphics = {
-    enable = true;
-  };
-
-  hardware.nvidia = {
-    modesetting.enable = true;
-    nvidiaSettings = true;
-    open = false;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-
-    powerManagement = {
-      enable = false;
-      finegrained = false;
-    };
-
-    prime = {
-      intelBusId = "PCI:0:2:0";
-      nvidiaBusId = "PCI:1:0:0";
-
-      offload = {
-        enable = true;
-        enableOffloadCmd = true;
-      };
-    };
-  };
-
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
-  };
-
-  console.keyMap = "us";
-
-  hardware.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
-
-  environment.pathsToLink = ["/share/zsh"];
-  environment.variables = {
-    NIXOS_OZONE_WL = "1";
-    PATH = [
-      "\${HOME}/.local/bin"
-      "\${HOME}/.config/rofi/scripts"
-    ];
-    ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
-  };
-
-  programs.zsh.enable = true;
-
-  users.users.ali = {
-    isNormalUser = true;
-    description = "Alison Jenkins";
-    initialPassword = "initPw!";
-    extraGroups = ["networkmanager" "wheel" "docker"];
-    packages = with pkgs; [
-      firefox
-      neofetch
-      lolcat
-    ];
-  };
-
-  users.users.lace = {
-    isNormalUser = true;
-    description = "Alice Jones";
-    initialPassword = "initPw!";
-    extraGroups = ["networkmanager" "docker"];
-    packages = with pkgs; [
-      firefox
-      neofetch
-      lolcat
-    ];
   };
 
   nixpkgs = {
@@ -160,22 +122,76 @@
     };
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 60d";
+  programs = {
+    steam = {
+      enable = true;
+      remotePlay.openFirewall = true;
+      dedicatedServer.openFirewall = true;
+    };
+    zsh.enable = true;
   };
 
-  system.autoUpgrade = {
-    enable = true;
-    channel = "https://nixos.org/channels/nixos-23.11";
+  security.rtkit.enable = true;
+
+  services = {
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+    };
+
+    xserver = {
+      videoDrivers = [
+        "fbdev"
+        "intel"
+        "modesetting"
+        "nvidia"
+      ];
+      xkb = {
+        layout = "us";
+        variant = "";
+      };
+    };
   };
 
-  system.stateVersion = "23.11";
+  system = {
+    stateVersion = "23.11";
 
-  nix = {
-    package = pkgs.nixFlakes;
-    extraOptions = "experimental-features = nix-command flakes";
+    autoUpgrade = {
+      enable = true;
+      channel = "https://nixos.org/channels/nixos-23.11";
+    };
+  };
+
+  time.timeZone = "Europe/London";
+
+  users = {
+    users = {
+      ali = {
+        isNormalUser = true;
+        description = "Alison Jenkins";
+        initialPassword = "initPw!";
+        extraGroups = ["networkmanager" "wheel" "docker"];
+        packages = with pkgs; [
+          firefox
+          neofetch
+          lolcat
+        ];
+      };
+
+      lace = {
+        isNormalUser = true;
+        description = "Alice Jones";
+        initialPassword = "initPw!";
+        extraGroups = ["networkmanager" "docker"];
+        packages = with pkgs; [
+          firefox
+          neofetch
+          lolcat
+        ];
+      };
+    };
   };
 
   xdg.portal = {
