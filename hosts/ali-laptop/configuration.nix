@@ -53,28 +53,6 @@
   hardware = {
     graphics.enable = true;
     pulseaudio.enable = false;
-
-    nvidia = {
-      modesetting.enable = true;
-      nvidiaSettings = true;
-      open = false;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
-
-      powerManagement = {
-        enable = false;
-        finegrained = false;
-      };
-
-      prime = {
-        intelBusId = "PCI:0:2:0";
-        nvidiaBusId = "PCI:1:0:0";
-
-        offload = {
-          enable = true;
-          enableOffloadCmd = true;
-        };
-      };
-    };
   };
 
   i18n.extraLocaleSettings = {
@@ -118,7 +96,10 @@
     ];
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = pkgs.lib.optional (pkgs.obsidian.version == "1.4.16") "electron-25.9.0";
+
+      permittedInsecurePackages = [
+        "nix-2.24.5"
+      ];
     };
   };
 
@@ -151,6 +132,32 @@
       xkb = {
         layout = "us";
         variant = "";
+      };
+    };
+  };
+
+  specialisation = {
+    nvidia-graphics-enabled.configuration = {
+      hardware.nvidia = {
+        modesetting.enable = true;
+        nvidiaSettings = true;
+        open = false;
+        package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+        powerManagement = {
+          enable = false;
+          finegrained = false;
+        };
+
+        prime = {
+          intelBusId = "PCI:0:2:0";
+          nvidiaBusId = "PCI:1:0:0";
+
+          offload = {
+            enable = true;
+            enableOffloadCmd = true;
+          };
+        };
       };
     };
   };
