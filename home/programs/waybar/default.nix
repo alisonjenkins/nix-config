@@ -7,7 +7,6 @@
         cpupower-gui
         hyprshade
         playerctl
-        swaynotificationcenter
         swww
       ]
     else [];
