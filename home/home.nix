@@ -36,6 +36,7 @@
         audacity
         aws-vault
         awscli2
+        bc
         bibata-cursors
         btop
         catimg
