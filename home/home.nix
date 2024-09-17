@@ -64,6 +64,7 @@
         pkgs.zenity
         qpwgraph
         slurp
+        tig
         tty-clock
         wget
         wl-clipboard
