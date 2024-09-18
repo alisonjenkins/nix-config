@@ -43,6 +43,7 @@
         cava
         curl
         direnv
+        dive
         eza
         fluxcd
         git
@@ -74,6 +75,10 @@
         zoxide
       ])
     else [];
+
+  home.sessionVariables = {
+    ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+  };
 
   programs.home-manager.enable =
     if pkgs.stdenv.isLinux
