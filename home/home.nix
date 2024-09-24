@@ -67,6 +67,7 @@
         screen
         slurp
         ssm-session-manager-plugin
+        teams-for-linux
         tig
         tty-clock
         wget
