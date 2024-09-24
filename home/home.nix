@@ -65,6 +65,7 @@
         pkgs.zenity
         qpwgraph
         slurp
+        ssm-session-manager-plugin
         tig
         tty-clock
         wget
