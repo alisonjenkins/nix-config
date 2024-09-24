@@ -64,6 +64,7 @@
         pkgs.eog
         pkgs.zenity
         qpwgraph
+        screen
         slurp
         ssm-session-manager-plugin
         tig
