@@ -179,6 +179,7 @@
         modules = [
           # ./app-profiles/desktop/display-managers/greetd
           # ./app-profiles/desktop/wms/sway
+          ./app-profiles/desktop/aws
           ./app-profiles/desktop/display-managers/sddm
           ./app-profiles/desktop/wms/plasma6
           ./app-profiles/desktop/local-k8s
