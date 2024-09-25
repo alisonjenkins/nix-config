@@ -8,7 +8,6 @@
     ./base
     ./fonts
     ./media
-    ./virtualisation
   ];
 
   programs.dconf.enable = true;

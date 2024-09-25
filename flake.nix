@@ -181,6 +181,7 @@
           # ./app-profiles/desktop/display-managers/greetd
           ./app-profiles/desktop/wms/plasma6
           # ./app-profiles/desktop/wms/sway
+          ./app-profiles/desktop/local-k8s
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
           inputs.nix-flatpak.nixosModules.nix-flatpak
