@@ -49,8 +49,8 @@
         git
         gnumake
         grim
-        helm
         kubectl
+        kubernetes-helm
         kustomize
         lutris
         mission-center
