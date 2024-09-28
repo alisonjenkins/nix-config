@@ -68,12 +68,6 @@
         size = 12;
       };
 
-      window = {
-        padding = {
-          x = 12;
-          y = 12;
-        };
-      };
       shell = {
         program = "${pkgs.zsh}/bin/zsh";
         args = [
@@ -81,6 +75,20 @@
           "-c"
           "tmux attach ; tmux"
         ];
+      };
+
+      mouse = {
+        hide_when_typing = true;
+      };
+
+      window = {
+        decorations = "None";
+        startup_mode = "Maximized";
+
+        padding = {
+          x = 12;
+          y = 12;
+        };
       };
     };
   };
