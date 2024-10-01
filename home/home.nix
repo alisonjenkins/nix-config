@@ -43,6 +43,7 @@
         catimg
         cava
         curl
+        dipc
         direnv
         dive
         eza
