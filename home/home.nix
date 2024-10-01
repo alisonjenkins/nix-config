@@ -39,6 +39,7 @@
         bc
         bibata-cursors
         btop
+        cargo-nextest
         catimg
         cava
         curl
