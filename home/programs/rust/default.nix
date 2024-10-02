@@ -1,14 +1,6 @@
-{
-  pkgs,
-  username,
-  ...
-}: {
-  home.packages =
-    if pkgs.stdenv.isLinux && username == "deck"
-    then
-      with pkgs; [
-        rust-bin.stable.latest.default
-        bacon
-      ]
-    else [];
+{pkgs, ...}: {
+  home.packages = [
+    pkgs.rust-bin.stable.latest.default
+    pkgs.bacon
+  ];
 }
