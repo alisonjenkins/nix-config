@@ -211,18 +211,6 @@
           lolcat
         ];
       };
-
-      lace = {
-        isNormalUser = true;
-        description = "Alice Jones";
-        initialPassword = "initPw!";
-        extraGroups = ["networkmanager" "docker"];
-        packages = with pkgs; [
-          firefox
-          neofetch
-          lolcat
-        ];
-      };
     };
   };
 
