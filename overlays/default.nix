@@ -49,8 +49,8 @@
       src = pkgs.fetchFromGitHub {
         owner = "Canop";
         repo = "bacon";
-        rev = "8b6f140409108e3a926006000047565cbacfba52";
-        hash = "sha256-m5FaxAjK+CkKhN4gRae7rxXzRbHF+CZ6GnOkhLY7PxM=";
+        rev = "nextest";
+        hash = "sha256-X3GRw3B714UD5WTIJVvARgr+mQpOURm9aL2qcHs1Wks";
       };
 
       # Overriding `cargoHash` has no effect; we must override the resultant
@@ -58,7 +58,7 @@
       cargoDeps = oldAttrs.cargoDeps.overrideAttrs (lib.const {
         name = "bacon-vendor.tar.gz";
         inherit src;
-        outputHash = "sha256-O9XtPIabwEgKHXRfMTrK2Jj83PoovpVEAEc2S954VYo=";
+        outputHash = "sha256-msQaeunfeWzbeDGA4Vay/tbxvhcLrS9Rs3lHFyUhOKo=";
       });
     });
   };
