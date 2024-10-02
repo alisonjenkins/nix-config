@@ -1,6 +1,7 @@
 {
-  outputs,
   config,
+  inputs,
+  outputs,
   pkgs,
   ...
 }: {
@@ -88,7 +89,9 @@
 
   nixpkgs = {
     overlays = [
+      inputs.rust-overlay.overlays.default
       outputs.overlays.additions
+      outputs.overlays.bacon-nextest
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.stable-packages
