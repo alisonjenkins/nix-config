@@ -96,6 +96,7 @@
       overlays =
         [
           inputs.rust-overlay.overlays.default
+          (import ./overlays {inherit inputs system pkgs lib;}).bacon-nextest
         ]
         ++ (
           if builtins.getEnv "HOSTNAME" == "steamdeck"
@@ -323,6 +324,7 @@
       inherit inputs;
       inherit system;
       inherit pkgs;
+      inherit lib;
     };
 
     devShells.x86_64-linux.default = pkgs.mkShell {
