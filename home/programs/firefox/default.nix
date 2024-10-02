@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -53,5 +54,27 @@
           else []
         );
     };
+  };
+
+  home.file = {
+    ".local/share/applications/Firefox.desktop".text = ''
+      [Desktop Entry]
+      Comment[en_US]=
+      Comment=
+      Exec=${pkgs.firefox}/bin/firefox
+      GenericName[en_US]=
+      GenericName=
+      Icon=${pkgs.firefox}/share/icons/hicolor/128x128/apps/firefox.png
+      MimeType=
+      Name[en_US]=Firefox
+      Name=Firefox
+      Path=
+      StartupNotify=true
+      Terminal=false
+      TerminalOptions=
+      Type=Application
+      X-KDE-SubstituteUID=false
+      X-KDE-Username=
+    '';
   };
 }
