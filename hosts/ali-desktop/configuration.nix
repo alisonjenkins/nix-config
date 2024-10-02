@@ -247,6 +247,7 @@
     overlays = [
       # outputs.overlays.alvr
       outputs.overlays.additions
+      outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications
