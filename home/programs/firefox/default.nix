@@ -39,15 +39,18 @@
           auto-tab-discard
           darkreader
           firenvim
-          multi-account-containers
-          onepassword-password-manager
           libredirect
           link-cleaner
-          privacy-badger
+          multi-account-containers
           offline-qr-code-generator
+          onepassword-password-manager
+          privacy-badger
           surfingkeys
           switchyomega
+          tab-session-manager
           tree-style-tab
+          tst-fade-old-tabs
+          tst-indent-line
           tst-tab-search
           ublock-origin
         ]
