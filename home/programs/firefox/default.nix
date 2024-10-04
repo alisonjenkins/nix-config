@@ -34,22 +34,27 @@
       };
       search.force = true;
 
-      extensions = with inputs.firefox-addons.packages.${system};
+      extensions = with pkgs.nur.repos.rycee.firefox-addons;
         [
+          auto-tab-discard
           darkreader
           firenvim
           multi-account-containers
-          # onepassword-password-manager
+          onepassword-password-manager
+          libredirect
+          link-cleaner
           privacy-badger
+          offline-qr-code-generator
           surfingkeys
           switchyomega
-          ublock-origin
           tree-style-tab
+          tst-tab-search
+          ublock-origin
         ]
         ++ (
           if pkgs.stdenv.isLinux
           then [
-            inputs.firefox-addons.packages.${system}.plasma-integration
+            pkgs.nur.repos.rycee.firefox-addons.plasma-integration
           ]
           else []
         );
