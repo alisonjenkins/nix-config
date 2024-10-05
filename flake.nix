@@ -46,7 +46,6 @@
     };
     nur = {
       url = "github:nix-community/nur";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
