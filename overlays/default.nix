@@ -49,8 +49,8 @@
       src = pkgs.fetchFromGitHub {
         owner = "Canop";
         repo = "bacon";
-        rev = "nextest";
-        hash = "sha256-X3GRw3B714UD5WTIJVvARgr+mQpOURm9aL2qcHs1Wks";
+        rev = "31685793ba294faf7a8ed7e8317b3b2f405f71e0";
+        hash = "sha256-IJRCYjAyA5059mof1+D5vjxzsdCoQ08FIxq1DiwgBNU=";
       };
 
       # Overriding `cargoHash` has no effect; we must override the resultant
