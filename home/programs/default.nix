@@ -3,6 +3,7 @@
     # ./dunst
     ./1password
     ./alacritty
+    ./aws
     ./bat
     ./broot
     ./carapace
