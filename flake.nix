@@ -111,6 +111,7 @@
 
         modules = [
           ./home/home.nix
+          ./hosts/steam-deck/configuration.nix
           inputs.nix-index-database.hmModules.nix-index
         ];
 
