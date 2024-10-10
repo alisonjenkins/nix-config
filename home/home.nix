@@ -72,6 +72,7 @@
         teams-for-linux
         tig
         tty-clock
+        unigine-heaven
         wget
         wl-clipboard
         wlr-randr
