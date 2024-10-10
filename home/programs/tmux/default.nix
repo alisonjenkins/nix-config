@@ -1,10 +1,18 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  username,
+  ...
+}: {
   home.packages = [
     pkgs.tmux-sessionizer
   ];
 
   home.file = {
-    ".config/tms/config.toml" = builtins.readFile ./tmux-sessionizer-config.toml;
+    ".config/tms/config.toml".text = ''
+      [[search_dirs]]
+      path = "/home/${username}/git"
+      depth = 10
+    '';
   };
 
   programs.tmux = {
