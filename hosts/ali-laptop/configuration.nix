@@ -166,12 +166,12 @@
       hardware.nvidia = {
         modesetting.enable = true;
         nvidiaSettings = true;
-        open = false;
+        open = true;
         package = config.boot.kernelPackages.nvidiaPackages.stable;
 
         powerManagement = {
-          enable = false;
-          finegrained = false;
+          enable = true;
+          finegrained = true;
         };
 
         prime = {
