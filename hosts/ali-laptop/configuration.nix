@@ -89,6 +89,7 @@
 
   nixpkgs = {
     overlays = [
+      inputs.nur.overlay
       inputs.rust-overlay.overlays.default
       outputs.overlays.additions
       outputs.overlays.bacon-nextest
