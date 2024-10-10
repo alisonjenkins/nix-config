@@ -246,6 +246,7 @@
   nixpkgs = {
     overlays = [
       # outputs.overlays.alvr
+      inputs.nur.overlay
       outputs.overlays.additions
       outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
