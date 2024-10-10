@@ -1,4 +1,12 @@
 {pkgs, ...}: {
+  home.packages = [
+    pkgs.tmux-sessionizer
+  ];
+
+  home.file = {
+    ".config/tms/config.toml" = builtins.readFile ./tmux-sessionizer-config.toml;
+  };
+
   programs.tmux = {
     enable = true;
     newSession = true;

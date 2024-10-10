@@ -1,0 +1,3 @@
+[[search_dirs]]
+path = "/home/${username}/git"
+depth = 10
