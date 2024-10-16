@@ -51,6 +51,7 @@
         git
         gnumake
         grim
+        inputs.umu.packages.${pkgs.system}.umu
         kubectl
         kubernetes-helm
         kustomize
