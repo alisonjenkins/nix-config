@@ -4,14 +4,17 @@
   inputs,
   lib,
   username,
+  extraImports ? [],
   ...
 }: {
-  imports = [
-    ./programs
-    ./scripts
-    ./themes
-    inputs.plasma-manager.homeManagerModules.plasma-manager
-  ];
+  imports =
+    [
+      ./programs
+      ./scripts
+      ./themes
+      inputs.plasma-manager.homeManagerModules.plasma-manager
+    ]
+    ++ extraImports;
 
   home = {
     inherit username;
