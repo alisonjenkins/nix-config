@@ -187,6 +187,7 @@
           ./app-profiles/desktop/aws
           ./app-profiles/desktop/display-managers/sddm
           ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/hyprland
           ./app-profiles/desktop/local-k8s
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
@@ -204,6 +205,7 @@
                 gitUserName = "Alison Jenkins";
                 gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                 gitGPGSigningKey = "AD723B26";
+                extraImports = [./home/wms/hyprland];
               };
           }
         ];
