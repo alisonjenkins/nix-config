@@ -115,13 +115,6 @@
     };
   };
 
-  openssh = {
-    enable = true;
-    settings.PasswordAuthentication = false;
-    settings.KbdInteractiveAuthentication = false;
-    settings.PermitRootLogin = "no";
-  };
-
   programs = {
     steam = {
       enable = true;
@@ -134,6 +127,13 @@
   security.rtkit.enable = true;
 
   services = {
+    openssh = {
+      enable = true;
+      settings.PasswordAuthentication = false;
+      settings.KbdInteractiveAuthentication = false;
+      settings.PermitRootLogin = "no";
+    };
+
     pipewire = {
       enable = true;
       alsa.enable = true;
