@@ -69,11 +69,15 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  jovian.steam = {
-    enable = true;
-    autoStart = true;
-    user = username;
-    desktopSession = "hyprland";
+  jovian = {
+    devices.steamdeck.enable = true;
+
+    steam = {
+      enable = true;
+      autoStart = true;
+      user = username;
+      desktopSession = "hyprland";
+    };
   };
 
   networking = {
