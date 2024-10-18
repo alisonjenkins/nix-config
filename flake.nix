@@ -6,6 +6,7 @@
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     deploy-rs.url = "github:serokell/deploy-rs";
     impermanence.url = "github:nix-community/impermanence";
+    jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     musnix = {url = "github:musnix/musnix";};
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
@@ -33,10 +34,6 @@
     # };
     home-manager = {
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    jovian-nixos = {
-      url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nh = {
@@ -192,6 +189,45 @@
           ./hosts/ali-laptop/configuration.nix
           chaotic.nixosModules.default
           inputs.nix-flatpak.nixosModules.nix-flatpak
+          nur.nixosModules.nur
+          sops-nix.nixosModules.sops
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.${specialArgs.username} = import ./home/home.nix;
+            home-manager.extraSpecialArgs =
+              specialArgs
+              // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "AD723B26";
+                extraImports = [./home/wms/hyprland];
+              };
+          }
+        ];
+      };
+
+      ali-steam-deck = lib.nixosSystem rec {
+        inherit system;
+        specialArgs = {
+          username = "ali";
+          inherit inputs;
+          inherit outputs;
+          inherit system;
+        };
+        modules = [
+          # ./app-profiles/desktop/display-managers/greetd
+          # ./app-profiles/desktop/wms/sway
+          ./app-profiles/desktop/aws
+          ./app-profiles/desktop/display-managers/sddm
+          ./app-profiles/desktop/wms/plasma6
+          ./app-profiles/desktop/wms/hyprland
+          ./app-profiles/desktop/local-k8s
+          ./hosts/ali-steam-deck/configuration.nix
+          chaotic.nixosModules.default
+          inputs.nix-flatpak.nixosModules.nix-flatpak
+          inputs.jovian-nixos.nixosModules.default
           nur.nixosModules.nur
           sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
