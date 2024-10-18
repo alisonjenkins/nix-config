@@ -16,11 +16,11 @@
     initrd = {
       availableKernelModules = ["xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci"];
       kernelModules = ["dm-snapshot"];
-      luks.devices.luksroot = {
-        device = "/dev/disk/by-partlabel/vg";
-        preLVM = true;
-        allowDiscards = true;
-      };
+      # luks.devices.luksroot = {
+      #   device = "/dev/disk/by-partlabel/vg";
+      #   preLVM = true;
+      #   allowDiscards = true;
+      # };
     };
   };
 
