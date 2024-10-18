@@ -37,7 +37,7 @@
   # bind = $mainMod SHIFT, S, exec, $HYPRSCRIPTS/screenshot.sh # Take a screenshot
   # bind = $mainMod, PRINT, exec, $HYPRSCRIPTS/screenshot.sh # Take a screenshot
   bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
-  bind = $mainMod SHIFT, Q, exec, ${pkgs.wlogout}/bin/wlogout --show-binds --layout ~/.config/hypr/conf/wlogout-layout.conf # Start wlogout
+  bind = $mainMod, DELETE, exec, ${pkgs.wlogout}/bin/wlogout --show-binds --layout ~/.config/hypr/conf/wlogout-layout.conf # Start wlogout
   bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random # Change the wallpaper
   bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi # Open application launcher-
 
