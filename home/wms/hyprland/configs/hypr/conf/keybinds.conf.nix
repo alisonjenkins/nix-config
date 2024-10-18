@@ -39,7 +39,7 @@
   bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
   bind = $mainMod, DELETE, exec, ${pkgs.wlogout}/bin/wlogout --show-binds --layout ~/.config/hypr/conf/wlogout-layout.conf # Start wlogout
   bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random # Change the wallpaper
-  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi # Open application launcher-
+  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi --show drun # Open application launcher-
 
   # Workspaces
   bind = $mainMod, 1, workspace, 1 # Open workspace 1
