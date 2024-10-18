@@ -76,7 +76,7 @@
       enable = true;
       autoStart = true;
       user = username;
-      desktopSession = "hyprland";
+      desktopSession = "plasma";
     };
   };
 
