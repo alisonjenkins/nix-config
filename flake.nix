@@ -239,7 +239,7 @@
               // {
                 gitUserName = "Alison Jenkins";
                 gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                gitGPGSigningKey = "AD723B26";
+                gitGPGSigningKey = "";
                 extraImports = [./home/wms/hyprland];
               };
           }
