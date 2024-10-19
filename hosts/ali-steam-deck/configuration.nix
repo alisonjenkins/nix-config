@@ -13,7 +13,7 @@
   ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_cachyos;
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
