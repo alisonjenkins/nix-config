@@ -2,6 +2,7 @@
   config,
   inputs,
   outputs,
+  lib,
   pkgs,
   username,
   ...
