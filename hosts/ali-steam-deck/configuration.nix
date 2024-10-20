@@ -94,6 +94,12 @@
     };
   };
 
+  chaotic = {
+    mesa-git = {
+      enable = true;
+    };
+  };
+
   console.keyMap = "us";
 
   environment = {
