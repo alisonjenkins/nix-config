@@ -27,6 +27,7 @@
     # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
     kernelParams = [
+      "amdgpu.ppfeaturemask=0xfff7ffff"
       "quiet"
       "rd.systemd.show_status=false"
       "rd.udev.log_level=3"
