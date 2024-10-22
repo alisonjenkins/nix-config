@@ -167,12 +167,8 @@
     };
   };
 
-  tmux-sessionx = final: _prev: {
-    tmuxPlugins =
-      _prev.tmuxPlugins
-      // {
-        tmux-sessionx = inputs.tmux-sessionx.packages.${system}.default;
-      };
+  tmux-sessionizer = final: _prev: {
+    tmux-sessionizer = inputs.tmux-sessionizer.packages.${system}.default;
   };
 
   quirc = final: _prev: {

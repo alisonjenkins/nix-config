@@ -15,7 +15,7 @@
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.05";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    tmux-sessionx.url = "github:omerxx/tmux-sessionx";
+    tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
 
     chaotic = {
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
