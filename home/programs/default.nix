@@ -16,6 +16,7 @@
     ./gh-dash
     ./git
     ./gitui
+    ./go
     ./granted
     ./hyfetch
     ./info
