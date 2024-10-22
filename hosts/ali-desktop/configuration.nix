@@ -463,6 +463,20 @@
     stateVersion = "23.11";
   };
 
+  systemd = {
+    services = {
+      lact = {
+        description = "AMDGPU Control Daemon";
+        after = ["multi-user.target"];
+        wantedBy = ["multi-user.target"];
+        serviceConfig = {
+          ExecStart = "${pkgs.lact}/bin/lact daemon";
+        };
+        enable = true;
+      };
+    };
+  };
+
   users = {
     defaultUserShell = pkgs.zsh;
     mutableUsers = false;
