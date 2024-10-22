@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   outputs,
   pkgs,
   ...
@@ -13,6 +14,18 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
+
+    kernelPatches = [
+      {
+        name = "no-hz"; # reduce the amount of ticks to improve battery life
+        patch = null;
+        extraConfig = ''
+          NO_HZ_IDLE y
+          NO_HZ_FULL n
+        '';
+      }
+    ];
+
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
@@ -115,6 +128,21 @@
   security.rtkit.enable = true;
 
   services = {
+    auto-cpufreq = {
+      enable = true;
+
+      settings = {
+        battery = {
+          governor = "powersave";
+          turbo = "never";
+        };
+        charger = {
+          governor = "performance";
+          turbo = "auto";
+        };
+      };
+    };
+
     pipewire = {
       enable = true;
       alsa.enable = true;
@@ -122,8 +150,14 @@
       pulse.enable = true;
     };
 
-    tlp = {
+    power-profiles-daemon.enable = lib.mkForce false;
+
+    thermald = {
       enable = true;
+    };
+
+    tlp = {
+      enable = false;
       settings = {
         CPU_SCALING_GOVERNOR_ON_AC = "performance";
         CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
@@ -137,8 +171,8 @@
         CPU_MAX_PERF_ON_BAT = 20;
 
         #Optional helps save long term battery health
-        START_CHARGE_THRESH_BAT0 = 40; # 40 and bellow it starts to charge
-        STOP_CHARGE_THRESH_BAT0 = 80; # 80 and above it stops charging
+        START_CHARGE_THRESH_BAT0 = 40; # below this percentage it starts to charge
+        STOP_CHARGE_THRESH_BAT0 = 95; # above this percentage it stops charging
       };
     };
 
@@ -187,7 +221,8 @@
         modesetting.enable = true;
         nvidiaSettings = true;
         open = false;
-        package = config.boot.kernelPackages.nvidiaPackages.stable;
+        # package = config.boot.kernelPackages.nvidiaPackages.stable;
+        package = config.boot.kernelPackages.nvidiaPackages.beta;
 
         powerManagement = {
           enable = true;
