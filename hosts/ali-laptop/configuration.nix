@@ -210,6 +210,9 @@
     };
 
     nvidia-graphics-enabled.configuration = {
+      environment.systemPackages = [
+        pkgs.gwe
+      ];
       services.xserver.videoDrivers = [
         "fbdev"
         "intel"
@@ -262,7 +265,6 @@
         extraGroups = ["networkmanager" "wheel" "docker"];
         packages = with pkgs; [
           firefox
-          gwe
           lolcat
           neofetch
         ];
