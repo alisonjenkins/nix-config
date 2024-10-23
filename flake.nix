@@ -69,16 +69,10 @@
   outputs = {
     self,
     chaotic,
-    darwin,
     disko,
     home-manager,
-    jovian-nixos,
-    nix-colors,
-    nix-gaming,
     nixpkgs,
     nur,
-    rust-overlay,
-    plasma-manager,
     sops-nix,
     ...
   } @ inputs: let

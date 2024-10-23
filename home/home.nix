@@ -1,6 +1,5 @@
 {
   pkgs,
-  # nix-colors,
   inputs,
   lib,
   username,
