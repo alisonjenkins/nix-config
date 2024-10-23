@@ -13,18 +13,7 @@
   ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
-
-    kernelPatches = [
-      {
-        name = "no-hz"; # reduce the amount of ticks to improve battery life
-        patch = null;
-        extraConfig = ''
-          NO_HZ_IDLE y
-          NO_HZ_FULL n
-        '';
-      }
-    ];
+    kernelPackages = pkgs.linuxPackages_zen;
 
     loader = {
       efi.efiSysMountPoint = "/boot";
