@@ -46,6 +46,7 @@
         dipc
         direnv
         dive
+        eog
         eza
         fluxcd
         git
@@ -65,8 +66,6 @@
         openrgb
         pamixer
         pavucontrol
-        pkgs.eog
-        pkgs.zenity
         qpwgraph
         screen
         slurp
@@ -79,6 +78,7 @@
         wl-clipboard
         wlr-randr
         xflux
+        zenity
         zola
         zoxide
       ])
