@@ -100,7 +100,7 @@
 
   nix = {
     extraOptions = "experimental-features = nix-command flakes";
-    package = pkgs.nixFlakes;
+    package = pkgs.nixVersions.stable;
     settings = {
       auto-optimise-store = false;
       trusted-users = ["root" "@wheel"];

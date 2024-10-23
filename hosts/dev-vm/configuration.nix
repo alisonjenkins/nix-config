@@ -111,7 +111,7 @@
   system.stateVersion = "23.11";
 
   nix = {
-    package = pkgs.nixFlakes;
+    package = pkgs.nixVersions.stable;
     extraOptions = "experimental-features = nix-command flakes";
   };
 }
