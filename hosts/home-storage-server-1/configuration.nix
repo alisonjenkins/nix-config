@@ -1,7 +1,7 @@
 {
-  config,
+  inputs,
+  outputs,
   pkgs,
-  lib,
   ...
 }: {
   imports = [
@@ -14,7 +14,6 @@
   console.keyMap = "us";
   networking.hostName = "home-storage-server-1";
   networking.networkmanager.enable = true;
-  nixpkgs.config.allowUnfree = true;
   programs.zsh.enable = true;
   services.logrotate.checkConfig = false;
   time.timeZone = "Europe/London";
@@ -94,8 +93,27 @@
     };
   };
 
+  nixpkgs = {
+    overlays = [
+      # outputs.overlays.alvr
+      inputs.nur.overlay
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.additions
+      outputs.overlays.bacon-nextest
+      outputs.overlays.bluray-playback
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.quirc
+      outputs.overlays.snapper
+      outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionizer
+    ];
+
+    config.allowUnfree = true;
+  };
+
   system = {
-    stateVersion = "23.11";
+    stateVersion = "24.05";
   };
 
   security = {
@@ -109,7 +127,6 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = ["docker" "networkmanager" "wheel"];
-    packages = with pkgs; [];
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
 }

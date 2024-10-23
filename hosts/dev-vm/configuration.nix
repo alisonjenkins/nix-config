@@ -1,7 +1,7 @@
 {
-  config,
+  inputs,
+  outputs,
   pkgs,
-  lib,
   ...
 }: {
   imports = [
@@ -92,10 +92,25 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = ["networkmanager" "wheel" "docker"];
-    packages = with pkgs; [];
   };
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs = {
+    config.allowUnfree = true;
+    overlays = [
+      # outputs.overlays.alvr
+      inputs.nur.overlay
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.additions
+      outputs.overlays.bacon-nextest
+      outputs.overlays.bluray-playback
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.quirc
+      outputs.overlays.snapper
+      outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionizer
+    ];
+  };
 
   nix.gc = {
     automatic = true;
@@ -103,12 +118,7 @@
     options = "--delete-older-than 7d";
   };
 
-  system.autoUpgrade = {
-    enable = true;
-    channel = "https://nixos.org/channels/nixos-23.11";
-  };
-
-  system.stateVersion = "23.11";
+  system.stateVersion = "24.05";
 
   nix = {
     package = pkgs.nixVersions.stable;

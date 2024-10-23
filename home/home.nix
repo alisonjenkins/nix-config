@@ -30,57 +30,64 @@
   home.packages =
     if pkgs.stdenv.isLinux
     then
-      (with pkgs; [
-        appimage-run
-        audacity
-        aws-vault
-        awscli2
-        bc
-        bibata-cursors
-        btop
-        cargo-nextest
-        catimg
-        cava
-        curl
-        dipc
-        direnv
-        dive
-        eog
-        eza
-        fluxcd
-        git
-        gnumake
-        grim
-        heroic
-        inputs.umu.packages.${pkgs.system}.umu
-        kubectl
-        kubernetes-helm
-        kustomize
-        lutris
-        mission-center
-        mpc-cli
-        neovide
-        networkmanagerapplet
-        nurl
-        openrgb
-        pamixer
-        pavucontrol
-        qpwgraph
-        screen
-        slurp
-        ssm-session-manager-plugin
-        teams-for-linux
-        tig
-        tty-clock
-        unigine-heaven
-        wget
-        wl-clipboard
-        wlr-randr
-        xflux
-        zenity
-        zola
-        zoxide
-      ])
+      (with pkgs;
+        [
+          appimage-run
+          audacity
+          aws-vault
+          awscli2
+          bc
+          bibata-cursors
+          btop
+          cargo-nextest
+          catimg
+          cava
+          curl
+          dipc
+          direnv
+          dive
+          eog
+          eza
+          fluxcd
+          git
+          gnumake
+          grim
+          kubectl
+          kubernetes-helm
+          kustomize
+          mission-center
+          mpc-cli
+          neovide
+          networkmanagerapplet
+          nurl
+          openrgb
+          pamixer
+          pavucontrol
+          qpwgraph
+          screen
+          slurp
+          ssm-session-manager-plugin
+          teams-for-linux
+          tig
+          tty-clock
+          wget
+          wl-clipboard
+          wlr-randr
+          xflux
+          zenity
+          zola
+          zoxide
+        ]
+        ++ (
+          if pkgs.system == "x86_64-linux"
+          then [
+            heroic
+            inputs.umu.packages.${pkgs.system}.umu
+            lutris
+            unigine-heaven
+          ]
+          else []
+        ))
     else [];
 
   home.sessionVariables = {
@@ -113,5 +120,5 @@
     };
   };
 
-  home.stateVersion = "23.11";
+  home.stateVersion = "24.05";
 }

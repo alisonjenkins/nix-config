@@ -1,7 +1,7 @@
 {
-  config,
   pkgs,
-  lib,
+  inputs,
+  outputs,
   ...
 }: {
   imports = [
@@ -79,11 +79,22 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = ["docker" "libvirtd" "networkmanager" "wheel"];
-    packages = with pkgs; [];
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs = {
+    config.allowUnfree = true;
+    overlays = [
+      inputs.nur.overlay
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.additions
+      outputs.overlays.bacon-nextest
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionizer
+    ];
+  };
 
   nix.gc = {
     automatic = true;
@@ -91,12 +102,7 @@
     options = "--delete-older-than 60d";
   };
 
-  system.autoUpgrade = {
-    enable = true;
-    channel = "https://nixos.org/channels/nixos-24.05";
-  };
-
-  system.stateVersion = "23.11";
+  system.stateVersion = "24.05";
 
   nix = {
     extraOptions = "experimental-features = nix-command flakes";

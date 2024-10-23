@@ -3,8 +3,9 @@
 # to /etc/nixos/configuration.nix instead.
 {
   config,
+  inputs,
   lib,
-  pkgs,
+  outputs,
   modulesPath,
   ...
 }: {
@@ -132,5 +133,18 @@
     interfaces.enp16s0.useDHCP = lib.mkDefault true;
   };
 
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  nixpkgs = {
+    config.allowUnfree = true;
+
+    overlays = [
+      inputs.nur.overlay
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.additions
+      outputs.overlays.bacon-nextest
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionizer
+    ];
+  };
 }

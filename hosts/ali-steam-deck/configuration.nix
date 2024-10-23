@@ -1,5 +1,4 @@
 {
-  config,
   inputs,
   outputs,
   lib,
@@ -48,7 +47,7 @@
         "net.ipv4.tcp_keepalive_time" = 60;
         "net.ipv4.tcp_max_syn_backlog" = 8192;
         "net.ipv4.tcp_max_tw_buckets" = 2000000;
-        "net.ipv4.tcp_mtu_probing" = 1;
+        "net.ipv4.tcp_mtu_probing" = lib.mkForce 1;
         "net.ipv4.tcp_rfc1337" = 1;
         "net.ipv4.tcp_rmem" = "4096 1048576 2097152";
         "net.ipv4.tcp_sack" = 1;
@@ -218,7 +217,7 @@
   };
 
   system = {
-    stateVersion = "23.11";
+    stateVersion = "24.05";
   };
 
   time.timeZone = "Europe/London";

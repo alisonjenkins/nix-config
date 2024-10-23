@@ -1,14 +1,9 @@
 {
-  config,
   inputs,
-  lib,
-  modulesPath,
-  options,
   outputs,
   pkgs,
   specialArgs,
   system,
-  username,
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
@@ -595,6 +590,7 @@
   nixpkgs = {
     config = {allowUnfree = true;};
     overlays = [
+      inputs.nur.overlay
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications

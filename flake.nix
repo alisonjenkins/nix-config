@@ -243,6 +243,7 @@
       home-kvm-hypervisor-1 = lib.nixosSystem rec {
         inherit system;
         specialArgs = {
+          username = "ali";
           inherit inputs;
           inherit outputs;
           inherit system;
@@ -252,40 +253,58 @@
           ./hosts/home-kvm-hypervisor-1/disko-config.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.ali = import ./home/home.nix;
+            home-manager.extraSpecialArgs =
+              specialArgs
+              // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "";
+                extraImports = [./home/wms/hyprland];
+              };
+          }
         ];
       };
 
       home-storage-server-1 = lib.nixosSystem rec {
         inherit system;
         specialArgs = {
+          username = "ali";
           inherit inputs;
+          inherit outputs;
           inherit system;
         };
         modules = [
           disko.nixosModules.disko
           ./hosts/home-storage-server-1/disko-config.nix
           ./hosts/home-storage-server-1/configuration.nix
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.ali = import ./home/home.nix;
+            home-manager.extraSpecialArgs =
+              specialArgs
+              // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "";
+                extraImports = [./home/wms/hyprland];
+              };
+          }
         ];
       };
 
       home-k8s-server-1 = lib.nixosSystem rec {
         inherit system;
         specialArgs = {
+          username = "ali";
           inherit inputs;
+          inherit outputs;
           inherit system;
         };
         modules = [
@@ -334,19 +353,34 @@
       system = "aarch64-linux";
       lib = nixpkgs.lib;
     in
-      lib.nixosSystem {
+      lib.nixosSystem rec {
         inherit system;
+
+        specialArgs = {
+          username = "ali";
+          inherit inputs;
+          inherit outputs;
+          inherit system;
+        };
+
         modules = [
           ./hosts/dev-vm/configuration.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
-          # home-manager.nixosModules.home-manager
-          # {
-          #   home-manager.useGlobalPkgs = true;
-          #   home-manager.useUserPackages = true;
-          #   home-manager.users.ali = import ./home/home.nix;
-          #   home-manager.extraSpecialArgs = specialArgs;
-          # }
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.ali = import ./home/home.nix;
+            home-manager.extraSpecialArgs =
+              specialArgs
+              // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = "";
+                extraImports = [./home/wms/hyprland];
+              };
+          }
         ];
       };
 

@@ -7,7 +7,7 @@
 
 ### Apps:
 
-|                          |             NixOS 23.11                               |
+|                          |             NixOS 24.05                               |
 |--------------------------|:-----------------------------------------------------:|
 | **Desktop Environment**  |   [KDE Plasma 6](https://kde.org/announcements/megarelease/6/)                    |
 | **Terminal Emulator**    |   [Alacritty](https://github.com/alacritty/alacritty) |

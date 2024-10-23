@@ -1,6 +1,14 @@
-{
+{pkgs, ...}: {
   programs.man = {
-    enable = true;
-    generateCaches = true;
+    enable = (
+      if pkgs.system == "x86_64-linux"
+      then true
+      else false
+    );
+    generateCaches = (
+      if pkgs.system == "x86_64-linux"
+      then true
+      else false
+    );
   };
 }

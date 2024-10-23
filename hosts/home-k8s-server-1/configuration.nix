@@ -1,9 +1,4 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: {
+{pkgs, ...}: {
   imports = [
     ./hardware-configuration.nix
     ../../app-profiles/server-base
@@ -95,7 +90,7 @@
   };
 
   system = {
-    stateVersion = "23.11";
+    stateVersion = "24.05";
   };
 
   security = {
@@ -109,7 +104,6 @@
     description = "Alison Jenkins";
     initialPassword = "initPw!";
     extraGroups = ["docker" "networkmanager" "wheel"];
-    packages = with pkgs; [];
     openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
   };
 }
