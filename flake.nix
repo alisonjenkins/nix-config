@@ -399,7 +399,7 @@
       ];
 
       shellHook = ''
-        NIX_CONFIG="access-tokens = github.com=\"$(secret-tool lookup github.com pat)\""
+        export NIX_CONFIG="access-tokens = github.com=$(secret-tool lookup github.com pat)"
       '';
     };
   };
