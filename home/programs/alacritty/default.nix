@@ -83,6 +83,7 @@
 
       window = {
         decorations = "None";
+        opacity = 0.9;
         startup_mode = "Maximized";
 
         padding = {
