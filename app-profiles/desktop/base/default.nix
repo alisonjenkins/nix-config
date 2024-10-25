@@ -112,6 +112,7 @@
     vmtouch
     vulkan-tools
     vulnix
+    watchexec
     wine
     xdg-utils
     xorg.libXScrnSaver
