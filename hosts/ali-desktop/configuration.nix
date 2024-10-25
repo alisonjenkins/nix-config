@@ -168,6 +168,7 @@
     };
 
     systemPackages = with pkgs; [
+      alsa-scarlett-gui
       amdgpu_top
       ananicy-cpp-rules
       cpu-x
