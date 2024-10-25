@@ -30,10 +30,12 @@
   '';
 
   environment.systemPackages = with pkgs; [
+    # fava
     # gamescope
     # inputs.jovian-nixos.legacyPackages.${system}.gamescope
     # mangohud32_git
     # mangohud_git
+    # mpv-vapoursynth
     age
     arrpc
     bat
@@ -53,7 +55,6 @@
     dua
     element-desktop
     ethtool
-    # fava
     fd
     ffmpeg
     filelight
@@ -87,7 +88,6 @@
     libvorbis
     lshw
     luxtorpeda
-    # mpv-vapoursynth
     ncdu
     nix-tree
     nushell
