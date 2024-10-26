@@ -30,6 +30,10 @@
       emulatedSystems = [ "aarch64-linux" ];
     };
 
+    # extraModprobeConfig = ''
+    #   options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
+    # '';
+
     kernelParams = [
       "amdgpu.ppfeaturemask=0xfff7ffff"
       "quiet"
@@ -37,15 +41,12 @@
       "rd.udev.log_level=3"
       "udev.log_priority=3"
     ];
+
     kernelModules = [
       "sg"
       "v4l2loopback"
     ];
-    # extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
-    # extraModprobeConfig = ''
-    #   options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
-    # '';
 
     kernel.sysctl = {
       # Network Perf Tuning
