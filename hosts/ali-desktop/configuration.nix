@@ -1,10 +1,9 @@
-{
-  config,
-  inputs,
-  lib,
-  outputs,
-  pkgs,
-  ...
+{ config
+, inputs
+, lib
+, outputs
+, pkgs
+, ...
 }: {
   imports = [
     ../../app-profiles/desktop
@@ -23,9 +22,9 @@
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
     # kernelPackages = pkgs.linuxPackages_cachyos;
-    kernelPackages = pkgs.linuxPackages_cachyos-lto;
     # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
+    kernelPackages = pkgs.linuxPackages_cachyos-lto;
     kernelParams = [
       "amdgpu.ppfeaturemask=0xfff7ffff"
       "quiet"
@@ -122,7 +121,7 @@
   };
 
   environment = {
-    pathsToLink = ["/share/zsh"];
+    pathsToLink = [ "/share/zsh" ];
 
     etc = {
       "crypttab".text = ''
@@ -161,7 +160,7 @@
           "/etc/machine-id"
           {
             file = "/var/keys/secret_file";
-            parentDirectory = {mode = "u=rwx,g=,o=";};
+            parentDirectory = { mode = "u=rwx,g=,o="; };
           }
         ];
       };
@@ -200,7 +199,7 @@
 
     variables = {
       NIXOS_OZONE_WL = "1";
-      PATH = ["\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts"];
+      PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
   };
@@ -263,14 +262,14 @@
 
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [];
+      permittedInsecurePackages = [ ];
     };
   };
 
   nix = {
     package = pkgs.nixVersions.stable;
     extraOptions = "experimental-features = nix-command flakes";
-    nixPath = ["nixpkgs=${inputs.nixpkgs}"];
+    nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
 
     gc = {
       automatic = true;
@@ -280,7 +279,7 @@
 
     settings = {
       auto-optimise-store = false;
-      trusted-users = ["root" "@wheel"];
+      trusted-users = [ "root" "@wheel" ];
     };
   };
 
@@ -299,7 +298,7 @@
       remotePlay.openFirewall = true;
       dedicatedServer.openFirewall = true;
       package = pkgs.steam.override {
-        extraEnv = {};
+        extraEnv = { };
         extraLibraries = pkgs:
           with pkgs; [
             xorg.libXcursor
@@ -396,14 +395,14 @@
       configs = {
         nix = {
           SUBVOLUME = "/nix";
-          ALLOW_USERS = ["ali"];
+          ALLOW_USERS = [ "ali" ];
           TIMELINE_CREATE = true;
           TIMELINE_CLEANUP = true;
         };
 
         persistence = {
           SUBVOLUME = "/persistence";
-          ALLOW_USERS = ["ali"];
+          ALLOW_USERS = [ "ali" ];
           TIMELINE_CREATE = true;
           TIMELINE_CLEANUP = true;
         };
@@ -427,7 +426,7 @@
     };
 
     xserver = {
-      videoDrivers = ["amdgpu"];
+      videoDrivers = [ "amdgpu" ];
       xkb.layout = "us";
       xkb.variant = "";
     };
@@ -436,7 +435,7 @@
   sops = {
     defaultSopsFile = ../../secrets/main.enc.yaml;
     defaultSopsFormat = "yaml";
-    age.sshKeyPaths = ["/etc/ssh/ssh_host_ed25519_key"];
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
     secrets = {
       # "myservice/my_subdir/my_secret" = {
       #   mode = "0400";
@@ -465,8 +464,8 @@
     services = {
       lact = {
         description = "AMDGPU Control Daemon";
-        after = ["multi-user.target"];
-        wantedBy = ["multi-user.target"];
+        after = [ "multi-user.target" ];
+        wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           ExecStart = "${pkgs.lact}/bin/lact daemon";
         };
@@ -483,7 +482,7 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = ["audio" "docker" "networkmanager" "pipewire" "wheel"];
+        extraGroups = [ "audio" "docker" "networkmanager" "pipewire" "wheel" ];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
