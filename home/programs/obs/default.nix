@@ -32,6 +32,7 @@
       [
         # unstable.advanced-scene-switcher
         droidcam-obs
+        looking-glass-obs
         obs-backgroundremoval
         obs-vkcapture
       ];
