@@ -1,4 +1,4 @@
-{pkgs, ...}: ''
+{ pkgs, ... }: ''
   # SUPER KEY
   $mainMod = SUPER
   # $HYPRSCRIPTS = ~/.config/hypr/scripts

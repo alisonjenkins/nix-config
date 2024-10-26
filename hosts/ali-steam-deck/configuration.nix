@@ -1,10 +1,9 @@
-{
-  inputs,
-  outputs,
-  lib,
-  pkgs,
-  username,
-  ...
+{ inputs
+, outputs
+, lib
+, pkgs
+, username
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -74,7 +73,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -102,7 +101,7 @@
   console.keyMap = "us";
 
   environment = {
-    pathsToLink = ["/share/zsh"];
+    pathsToLink = [ "/share/zsh" ];
 
     variables = {
       NIXOS_OZONE_WL = "1";
@@ -228,8 +227,8 @@
         isNormalUser = true;
         description = "Alison Jenkins";
         initialPassword = "initPw!";
-        extraGroups = ["networkmanager" "wheel" "docker"];
-        openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
+        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
         packages = with pkgs; [
           firefox
           neofetch

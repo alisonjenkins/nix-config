@@ -1,11 +1,7 @@
-{
-  config,
-  inputs,
-  lib,
-  pkgs,
-  system,
-  username,
-  ...
+{ lib
+, pkgs
+, username
+, ...
 }: {
   programs.firefox = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
@@ -29,7 +25,7 @@
             }
           ];
           icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-          definedAliases = ["@np"];
+          definedAliases = [ "@np" ];
         };
       };
       search.force = true;
@@ -59,7 +55,7 @@
           then [
             pkgs.nur.repos.rycee.firefox-addons.plasma-integration
           ]
-          else []
+          else [ ]
         );
     };
   };

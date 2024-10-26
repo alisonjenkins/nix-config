@@ -1,10 +1,9 @@
-{
-  lib,
-  disks ? ["/dev/vda"],
-  ...
+{ lib
+, disks ? [ "/dev/vda" ]
+, ...
 }: {
   disko.devices = {
-    disk = lib.genAttrs ["1" "2"] (
+    disk = lib.genAttrs [ "1" "2" ] (
       id: {
         type = "disk";
         device = "/dev/nvme${id}n1";

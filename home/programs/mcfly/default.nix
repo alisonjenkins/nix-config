@@ -1,16 +1,18 @@
-{pkgs, ...}: let
+{ pkgs, ... }:
+let
   mcfly_init = pkgs.stdenv.mkDerivation {
     name = "mcfly-init";
 
     dontUnpack = true;
-    buildInputs = [pkgs.mcfly];
+    buildInputs = [ pkgs.mcfly ];
 
     buildPhase = ''
       mcfly init zsh > $out
     '';
   };
   zshViModeEnabled = true;
-in {
+in
+{
   programs.zsh.initExtra =
     if zshViModeEnabled
     then ''

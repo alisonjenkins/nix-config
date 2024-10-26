@@ -1,12 +1,12 @@
-{
-  pkgs,
-  system,
-  inputs,
-  ...
-}: let
+{ pkgs
+, system
+, inputs
+, ...
+}:
+let
   zoxide-config = pkgs.stdenv.mkDerivation {
     name = "nushell-zoxide-config";
-    buildInputs = [pkgs.zoxide];
+    buildInputs = [ pkgs.zoxide ];
     dontUnpack = true;
     buildPhase = ''
       mkdir -p $out
@@ -15,14 +15,15 @@
   };
   starship-config = pkgs.stdenv.mkDerivation {
     name = "nushell-starship-config";
-    buildInputs = [pkgs.starship];
+    buildInputs = [ pkgs.starship ];
     dontUnpack = true;
     buildPhase = ''
       mkdir -p $out
       starship init nushell > $out/starship.nu
     '';
   };
-in {
+in
+{
   programs.nushell = {
     enable = true;
 

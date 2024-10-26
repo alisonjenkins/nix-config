@@ -1,8 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ ...
 }: {
   services = {
     displayManager = {
@@ -18,8 +14,8 @@
   systemd.services = {
     sddm-avatar = {
       description = "Service to copy or update users Avatars at startup.";
-      wantedBy = ["multi-user.target"];
-      before = ["sddm.service"];
+      wantedBy = [ "multi-user.target" ];
+      before = [ "sddm.service" ];
       script = ''
         set -eu
         for user in /home/*; do
@@ -44,6 +40,6 @@
         StandardError = "journal+console";
       };
     };
-    sddm = {after = ["sddm-avatar.service"];};
+    sddm = { after = [ "sddm-avatar.service" ]; };
   };
 }

@@ -1,11 +1,12 @@
-{
-  gitUserName,
-  gitEmail,
-  gitGPGSigningKey ? "",
-  ...
-}: let
+{ gitUserName
+, gitEmail
+, gitGPGSigningKey ? ""
+, ...
+}:
+let
   gpgSign = gitGPGSigningKey != "";
-in {
+in
+{
   programs.git =
     {
       enable = true;
@@ -129,7 +130,7 @@ in {
           signByDefault = true;
         };
       }
-      else {}
+      else { }
     );
 
   home.file = {

@@ -1,4 +1,4 @@
-{...}: {
+{ ... }: {
   home.file.".config/kitty/kitty.conf".text = ''
     # vim:ft=kitty
 

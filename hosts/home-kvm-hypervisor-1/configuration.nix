@@ -1,8 +1,7 @@
-{
-  pkgs,
-  inputs,
-  outputs,
-  ...
+{ pkgs
+, inputs
+, outputs
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -28,7 +27,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -64,7 +63,7 @@
   };
 
   console.keyMap = "us";
-  environment.pathsToLink = ["/share/zsh"];
+  environment.pathsToLink = [ "/share/zsh" ];
   environment.variables = {
     PATH = [
       "\${HOME}/.local/bin"
@@ -78,8 +77,8 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = ["docker" "libvirtd" "networkmanager" "wheel"];
-    openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
+    extraGroups = [ "docker" "libvirtd" "networkmanager" "wheel" ];
+    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
   };
 
   nixpkgs = {
@@ -109,7 +108,7 @@
     package = pkgs.nixVersions.stable;
     settings = {
       auto-optimise-store = false;
-      trusted-users = ["root" "@wheel"];
+      trusted-users = [ "root" "@wheel" ];
     };
   };
 

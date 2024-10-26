@@ -1,7 +1,6 @@
-{
-  pkgs,
-  username,
-  ...
+{ pkgs
+, username
+, ...
 }: {
   home.packages =
     if pkgs.stdenv.isLinux && username == "deck"
@@ -9,5 +8,5 @@
       with pkgs; [
         gcc
       ]
-    else [];
+    else [ ];
 }

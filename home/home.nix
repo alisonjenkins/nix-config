@@ -1,9 +1,8 @@
-{
-  pkgs,
-  inputs,
-  lib,
-  username,
-  ...
+{ pkgs
+, inputs
+, lib
+, username
+, ...
 }: {
   imports = [
     ./programs
@@ -31,64 +30,64 @@
     if pkgs.stdenv.isLinux
     then
       (with pkgs;
-        [
-          appimage-run
-          audacity
-          aws-vault
-          awscli2
-          bc
-          bibata-cursors
-          btop
-          cargo-nextest
-          catimg
-          cava
-          curl
-          dipc
-          direnv
-          dive
-          eog
-          eza
-          fluxcd
-          git
-          gnumake
-          grim
-          kubectl
-          kubernetes-helm
-          kustomize
-          mission-center
-          mpc-cli
-          neovide
-          networkmanagerapplet
-          nurl
-          openrgb
-          pamixer
-          pavucontrol
-          qpwgraph
-          screen
-          slurp
-          ssm-session-manager-plugin
-          teams-for-linux
-          tig
-          tty-clock
-          wget
-          wl-clipboard
-          wlr-randr
-          xflux
-          zenity
-          zola
-          zoxide
+      [
+        appimage-run
+        audacity
+        aws-vault
+        awscli2
+        bc
+        bibata-cursors
+        btop
+        cargo-nextest
+        catimg
+        cava
+        curl
+        dipc
+        direnv
+        dive
+        eog
+        eza
+        fluxcd
+        git
+        gnumake
+        grim
+        kubectl
+        kubernetes-helm
+        kustomize
+        mission-center
+        mpc-cli
+        neovide
+        networkmanagerapplet
+        nurl
+        openrgb
+        pamixer
+        pavucontrol
+        qpwgraph
+        screen
+        slurp
+        ssm-session-manager-plugin
+        teams-for-linux
+        tig
+        tty-clock
+        wget
+        wl-clipboard
+        wlr-randr
+        xflux
+        zenity
+        zola
+        zoxide
+      ]
+      ++ (
+        if pkgs.system == "x86_64-linux"
+        then [
+          heroic
+          inputs.umu.packages.${pkgs.system}.umu
+          lutris
+          unigine-heaven
         ]
-        ++ (
-          if pkgs.system == "x86_64-linux"
-          then [
-            heroic
-            inputs.umu.packages.${pkgs.system}.umu
-            lutris
-            unigine-heaven
-          ]
-          else []
-        ))
-    else [];
+        else [ ]
+      ))
+    else [ ];
 
   home.sessionVariables = {
     ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";

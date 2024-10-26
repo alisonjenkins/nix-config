@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   programs.man = {
     enable = (
       if pkgs.system == "x86_64-linux"

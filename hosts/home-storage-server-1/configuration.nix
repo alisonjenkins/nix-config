@@ -1,8 +1,7 @@
-{
-  inputs,
-  outputs,
-  pkgs,
-  ...
+{ inputs
+, outputs
+, pkgs
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -31,7 +30,7 @@
 
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiInstallAsRemovable = false;
         efiSupport = true;
         useOSProber = true;
@@ -51,7 +50,7 @@
   };
 
   environment = {
-    pathsToLink = ["/share/zsh"];
+    pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
       parted
@@ -89,7 +88,7 @@
 
     settings = {
       auto-optimise-store = false;
-      trusted-users = ["root" "@wheel"];
+      trusted-users = [ "root" "@wheel" ];
     };
   };
 
@@ -126,7 +125,7 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = ["docker" "networkmanager" "wheel"];
-    openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"];
+    extraGroups = [ "docker" "networkmanager" "wheel" ];
+    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
   };
 }

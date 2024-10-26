@@ -1,8 +1,7 @@
-{
-  inputs,
-  outputs,
-  pkgs,
-  ...
+{ inputs
+, outputs
+, pkgs
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -15,7 +14,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -52,7 +51,7 @@
 
   services.xserver = {
     enable = true;
-    videoDrivers = ["qxl"];
+    videoDrivers = [ "qxl" ];
     xkb = {
       layout = "us";
       variant = "";
@@ -76,7 +75,7 @@
     pulse.enable = true;
   };
 
-  environment.pathsToLink = ["/share/zsh"];
+  environment.pathsToLink = [ "/share/zsh" ];
   environment.variables = {
     NIXOS_OZONE_WL = "1";
     PATH = [
@@ -91,7 +90,7 @@
     isNormalUser = true;
     description = "Alison Jenkins";
     initialPassword = "initPw!";
-    extraGroups = ["networkmanager" "wheel" "docker"];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
   };
 
   nixpkgs = {

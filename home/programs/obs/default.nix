@@ -1,7 +1,5 @@
 { pkgs
 , lib
-, system
-, inputs
 , ...
 }: {
   home.file =

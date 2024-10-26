@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   home.packages =
     if pkgs.stdenv.isLinux
     then
@@ -9,7 +9,7 @@
         playerctl
         swww
       ]
-    else [];
+    else [ ];
 
   programs.waybar = {
     enable =
@@ -57,7 +57,7 @@
         backlight = {
           format = "{icon} {percent}%";
           interval = 2;
-          format-icons = ["󰹇" "󰃜" "󰃛" "󰃝" "󰃟" "󰃠"];
+          format-icons = [ "󰹇" "󰃜" "󰃛" "󰃝" "󰃟" "󰃠" ];
           states = {
             normal = 0;
             warning = 80;
@@ -225,7 +225,7 @@
             phone = "";
             portable = "";
             car = "";
-            default = ["" "" ""];
+            default = [ "" "" "" ];
           };
           on-click = "pavucontrol";
         };
@@ -233,7 +233,7 @@
         temperature = {
           interval = 2;
           format = "{temperatureC}°C ";
-          format-icons = ["" "" "" "" ""];
+          format-icons = [ "" "" "" "" "" ];
         };
 
         tray = {

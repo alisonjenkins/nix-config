@@ -1,16 +1,16 @@
-{
-  inputs,
-  outputs,
-  pkgs,
-  specialArgs,
-  system,
+{ inputs
+, outputs
+, pkgs
+, specialArgs
+, system
+,
 }: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs;
     [
       # azure-cli
-      (pkgs.python3.withPackages (ps: with ps; [requests boto3 pyyaml]))
+      (pkgs.python3.withPackages (ps: with ps; [ requests boto3 pyyaml ]))
       alacritty
       aws-vault
       bacon
@@ -486,7 +486,7 @@
     fontDir.enable = true;
     fonts = with pkgs; [
       recursive
-      (nerdfonts.override {fonts = ["FiraCode" "Hack" "JetBrainsMono"];})
+      (nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; })
       hack-font
       nerdfonts
     ];
@@ -573,7 +573,7 @@
       require-sigs = true;
       sandbox = true;
       sandbox-fallback = false;
-      trusted-users = ["root" specialArgs.username "@admin" "@staff"];
+      trusted-users = [ "root" specialArgs.username "@admin" "@staff" ];
       substituters = [
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
@@ -588,7 +588,7 @@
   };
 
   nixpkgs = {
-    config = {allowUnfree = true;};
+    config = { allowUnfree = true; };
     overlays = [
       inputs.nur.overlay
       outputs.overlays.additions

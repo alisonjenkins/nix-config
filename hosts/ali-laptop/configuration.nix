@@ -1,10 +1,9 @@
-{
-  config,
-  lib,
-  inputs,
-  outputs,
-  pkgs,
-  ...
+{ config
+, lib
+, inputs
+, outputs
+, pkgs
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -19,7 +18,7 @@
       efi.efiSysMountPoint = "/boot";
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiInstallAsRemovable = true;
         efiSupport = true;
         useOSProber = true;
@@ -41,7 +40,7 @@
   console.keyMap = "us";
 
   environment = {
-    pathsToLink = ["/share/zsh"];
+    pathsToLink = [ "/share/zsh" ];
 
     variables = {
       NIXOS_OZONE_WL = "1";
@@ -195,7 +194,7 @@
         # Remove NVIDIA VGA/3D controller devices
         ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto", ATTR{remove}="1"
       '';
-      boot.blacklistedKernelModules = ["nouveau" "nvidia" "nvidia_drm" "nvidia_modeset"];
+      boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
     };
 
     nvidia-graphics-enabled.configuration = {
@@ -246,7 +245,7 @@
         isNormalUser = true;
         description = "Alison Jenkins";
         initialPassword = "initPw!";
-        extraGroups = ["networkmanager" "wheel" "docker"];
+        extraGroups = [ "networkmanager" "wheel" "docker" ];
         packages = with pkgs; [
           firefox
           lolcat

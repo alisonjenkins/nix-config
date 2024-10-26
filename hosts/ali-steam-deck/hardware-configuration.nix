@@ -1,8 +1,7 @@
-{
-  config,
-  lib,
-  modulesPath,
-  ...
+{ config
+, lib
+, modulesPath
+, ...
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -10,8 +9,8 @@
   ];
 
   boot = {
-    kernelModules = ["kvm-amd"];
-    extraModulePackages = [];
+    kernelModules = [ "kvm-amd" ];
+    extraModulePackages = [ ];
 
     initrd = {
       availableKernelModules = [
@@ -28,7 +27,7 @@
         "virtio_pci"
         "xhci_pci"
       ];
-      kernelModules = ["dm-snapshot"];
+      kernelModules = [ "dm-snapshot" ];
       # luks.devices.luksroot = {
       #   device = "/dev/disk/by-partlabel/vg";
       #   preLVM = true;
@@ -48,7 +47,7 @@
   };
 
   swapDevices = [
-    {device = "/dev/vg/swap";}
+    { device = "/dev/vg/swap"; }
   ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking

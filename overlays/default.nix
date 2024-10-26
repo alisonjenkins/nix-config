@@ -1,12 +1,11 @@
-{
-  inputs,
-  system,
-  pkgs,
-  lib,
-  ...
+{ inputs
+, system
+, pkgs
+, lib
+, ...
 }: {
   # This one brings our custom packages from the 'pkgs' directory
-  additions = final: _prev: import ../pkgs {pkgs = final;};
+  additions = final: _prev: import ../pkgs { pkgs = final; };
 
   # This one contains whatever you want to overlay
   # You can change versions, add patches, set compilation flags, anything really.
@@ -172,7 +171,7 @@
   };
 
   quirc = final: _prev: {
-    quirc = _prev.quirc.overrideAttrs (oldAttrs: rec {
+    quirc = _prev.quirc.overrideAttrs (oldAttrs: {
       postInstall = ''
         # don't install static library
         rm $out/lib/libquirc.a
@@ -181,8 +180,8 @@
   };
 
   snapper = final: _prev: {
-    snapper = _prev.snapper.overrideAttrs (oldAttrs: rec {
-      buildInputs = oldAttrs.buildInputs ++ [pkgs.zlib];
+    snapper = _prev.snapper.overrideAttrs (oldAttrs: {
+      buildInputs = oldAttrs.buildInputs ++ [ pkgs.zlib ];
     });
   };
 }

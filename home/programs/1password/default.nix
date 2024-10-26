@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   home.packages =
     if pkgs.stdenv.isLinux
     then
@@ -6,7 +6,7 @@
         _1password
         _1password-gui
       ]
-    else [];
+    else [ ];
 
   home.file =
     if pkgs.stdenv.isLinux
@@ -31,5 +31,5 @@
         X-KDE-Username=
       '';
     }
-    else {};
+    else { };
 }

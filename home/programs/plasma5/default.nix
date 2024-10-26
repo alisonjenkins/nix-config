@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   programs.plasma = {
     enable =
       if pkgs.stdenv.isLinux

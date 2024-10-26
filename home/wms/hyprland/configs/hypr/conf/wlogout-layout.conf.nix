@@ -1,4 +1,4 @@
-{pkgs}: ''
+{ pkgs }: ''
   {
       "label" : "lock",
       "action" : "${pkgs.hyprlock}/bin/hyprlock --config ~/.config/hypr/conf/hyprlock.conf",

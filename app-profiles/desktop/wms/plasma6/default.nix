@@ -1,8 +1,6 @@
-{
-  config,
-  pkgs,
-  user,
-  ...
+{ config
+, pkgs
+, ...
 }: {
   environment.sessionVariables = {
     NIX_PROFILES = "${pkgs.lib.concatStringsSep " " (pkgs.lib.reverseList config.environment.profiles)}";

@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   programs.rofi = {
     enable =
       if pkgs.stdenv.isLinux
