@@ -157,6 +157,15 @@
     };
   };
 
+  security.wrappers = {
+    gamescope = {
+      owner = "root";
+      group = "root";
+      source = "${pkgs.gamescope}/bin/gamescope";
+      capabilities = "cap_sys_nice+ep";
+    };
+  };
+
   services = {
     atd.enable = true;
     cpupower-gui.enable = true;
