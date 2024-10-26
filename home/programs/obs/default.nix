@@ -1,26 +1,39 @@
-{
-  pkgs,
-  lib,
-  system,
-  inputs,
-  ...
+{ pkgs
+, lib
+, system
+, inputs
+, ...
 }: {
+  home.file =
+    if pkgs.stdenv.isLinux
+    then {
+      ".local/share/applications/OBS - Autostart Webcam.desktop".text = ''
+        [Desktop Entry]
+        Comment=
+        Exec=${pkgs.obs-studio}/bin/obs --startvirtualcam
+        GenericName=
+        Icon=${pkgs.obs-studio}/share/icons/hicolor/512x512/apps/com.obsproject.Studio.png
+        MimeType=
+        Name=OBS Studio - Autostart Webcam
+        Path=
+        StartupNotify=true
+        Terminal=false
+        TerminalOptions=
+        Type=Application
+        X-KDE-SubstituteUID=false
+        X-KDE-Username=
+      '';
+    }
+    else { };
+
   programs.obs-studio = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
     plugins = with pkgs.obs-studio-plugins;
       [
-        # inputs.nixpkgs.legacyPackages.${system}.obs-studio-plugins.advanced-scene-switcher
-        # obs-vkcapture
+        # unstable.advanced-scene-switcher
         droidcam-obs
-      ]
-      ++ (
-        if pkgs.system == "x86_64-linux"
-        then [
-          inputs.nixpkgs.legacyPackages.${system}.obs-studio-plugins.obs-backgroundremoval
-          obs-pipewire-audio-capture
-          wlrobs
-        ]
-        else []
-      );
+        obs-backgroundremoval
+        obs-vkcapture
+      ];
   };
 }
