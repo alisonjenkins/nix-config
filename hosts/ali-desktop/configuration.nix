@@ -25,6 +25,11 @@
     consoleLogLevel = 0;
     initrd.verbose = false;
     kernelPackages = pkgs.linuxPackages_cachyos-lto;
+
+    binfmt = {
+      emulatedSystems = [ "aarch64-linux" ];
+    };
+
     kernelParams = [
       "amdgpu.ppfeaturemask=0xfff7ffff"
       "quiet"
