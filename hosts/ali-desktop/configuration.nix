@@ -210,8 +210,16 @@
     };
   };
 
-  hardware.graphics = {
-    enable = true;
+  hardware = {
+    cpu = {
+      amd = {
+        updateMicrocode = true;
+      };
+    };
+
+    graphics = {
+      enable = true;
+    };
   };
 
   i18n.extraLocaleSettings = {
