@@ -34,6 +34,7 @@
         droidcam-obs
         looking-glass-obs
         obs-backgroundremoval
+        obs-source-clone
         obs-vkcapture
       ];
   };
