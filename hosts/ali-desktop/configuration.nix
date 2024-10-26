@@ -34,7 +34,7 @@
     ];
     kernelModules = [
       "sg"
-      # "v4l2loopback"
+      "v4l2loopback"
     ];
     # extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
