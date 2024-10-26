@@ -1,9 +1,8 @@
-{
-  lib,
-  pkgs,
-  inputs,
-  system,
-  ...
+{ lib
+, pkgs
+, inputs
+, system
+, ...
 }: {
   boot = {
     binfmt = {
@@ -16,7 +15,7 @@
       enable = true;
       theme = "breeze";
     };
-    kernelParams = ["quiet"];
+    kernelParams = [ "quiet" ];
   };
 
   programs.gamescope = {
