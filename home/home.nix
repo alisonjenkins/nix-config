@@ -54,6 +54,7 @@
         k9s
         kubecm
         kubectl
+        kubectx
         kubernetes-helm
         kustomize
         mission-center
