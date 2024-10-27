@@ -30,9 +30,9 @@
       emulatedSystems = [ "aarch64-linux" ];
     };
 
-    # extraModprobeConfig = ''
-    #   options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
-    # '';
+    extraModprobeConfig = ''
+      options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
+    '';
 
     kernelParams = [
       "amdgpu.ppfeaturemask=0xfff7ffff"

@@ -23,6 +23,12 @@
     inputs.ali-neovim.packages.${system}.nvim
   ];
 
+  networking = {
+    firewall.allowedTCPPorts = [
+      6443
+    ];
+  };
+
   nix = {
     package = pkgs.nixVersions.stable;
     extraOptions = "experimental-features = nix-command flakes";
