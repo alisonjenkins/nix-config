@@ -241,6 +241,22 @@
           ];
         };
 
+        home-k8s-master-1 = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            username = "ali";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./hosts/home-k8s-master-1/configuration.nix
+            ./hosts/home-k8s-master-1/hardware-configuration.nix
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+          ];
+        };
+
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
@@ -398,6 +414,7 @@
           deploy-rs
           just
           libsecret
+          nix-fast-build
         ];
 
         shellHook = ''
