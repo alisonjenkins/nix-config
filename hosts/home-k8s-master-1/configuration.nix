@@ -1,6 +1,8 @@
 { modulesPath
 , lib
 , pkgs
+, inputs
+, system
 , ...
 }:
 {
@@ -18,7 +20,24 @@
   environment.systemPackages = map lib.lowPrio [
     pkgs.curl
     pkgs.gitMinimal
+    inputs.ali-neovim.packages.${system}.nvim
   ];
+
+  nix = {
+    package = pkgs.nixVersions.stable;
+    extraOptions = "experimental-features = nix-command flakes";
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 60d";
+    };
+
+    settings = {
+      auto-optimise-store = false;
+      trusted-users = [ "root" "@wheel" ];
+    };
+  };
 
   security = {
     sudo = {
@@ -26,7 +45,45 @@
     };
   };
 
-  services.openssh.enable = true;
+  services = {
+    openssh = {
+      enable = true;
+    };
+
+    k3s = {
+      enable = true;
+      role = "server";
+      tokenFile = "/run/secrets/k8s-token";
+      extraFlags = toString [
+        "--write-kubeconfig-mode \"0400\""
+        "--cluster-init"
+        "--disable servicelb"
+        "--disable traefik"
+      ];
+    };
+  };
+
+  sops = {
+    defaultSopsFile = ../../secrets/home-k8s-master-1/secrets.yaml;
+    defaultSopsFormat = "yaml";
+
+    age = {
+      sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+      keyFile = "/var/lib/sops-nix/key.txt";
+      generateKey = true;
+    };
+
+    secrets = {
+      k8s-token = {
+        sopsFile = ../../secrets/home-k8s-master-1/secrets.yaml;
+        mode = "0400";
+        owner = "root";
+        group = "root";
+        path = "/run/secrets/k8s-token";
+        restartUnits = [ "k3s.service" ];
+      };
+    };
+  };
 
   system.stateVersion = "24.05";
 
@@ -41,6 +98,3 @@
       ];
     };
 }
-
-
-

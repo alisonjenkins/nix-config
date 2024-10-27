@@ -358,7 +358,7 @@
             hostname = "home-k8s-master-1.lan";
             profiles = {
               system = {
-                user = "ali";
+                user = "root";
                 path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-master-1;
               };
             };
@@ -375,41 +375,41 @@
         };
       };
 
-      nixosConfigurations."dev-vm" =
-        let
-          system = "aarch64-linux";
-          lib = nixpkgs.lib;
-        in
-        lib.nixosSystem rec {
-          inherit system;
-
-          specialArgs = {
-            username = "ali";
-            inherit inputs;
-            inherit outputs;
-            inherit system;
-          };
-
-          modules = [
-            ./hosts/dev-vm/configuration.nix
-            disko.nixosModules.disko
-            sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
-              home-manager.extraSpecialArgs =
-                specialArgs
-                // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                  gitGPGSigningKey = "";
-                  extraImports = [ ./home/wms/hyprland ];
-                };
-            }
-          ];
-        };
+      # nixosConfigurations."dev-vm" =
+      #   let
+      #     system = "aarch64-linux";
+      #     lib = nixpkgs.lib;
+      #   in
+      #   lib.nixosSystem rec {
+      #     inherit system;
+      #
+      #     specialArgs = {
+      #       username = "ali";
+      #       inherit inputs;
+      #       inherit outputs;
+      #       inherit system;
+      #     };
+      #
+      #     modules = [
+      #       ./hosts/dev-vm/configuration.nix
+      #       disko.nixosModules.disko
+      #       sops-nix.nixosModules.sops
+      #       home-manager.nixosModules.home-manager
+      #       {
+      #         home-manager.useGlobalPkgs = true;
+      #         home-manager.useUserPackages = true;
+      #         home-manager.users.ali = import ./home/home.nix;
+      #         home-manager.extraSpecialArgs =
+      #           specialArgs
+      #           // {
+      #             gitUserName = "Alison Jenkins";
+      #             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+      #             gitGPGSigningKey = "";
+      #             extraImports = [ ./home/wms/hyprland ];
+      #           };
+      #       }
+      #     ];
+      #   };
 
       overlays = import ./overlays {
         inherit inputs;

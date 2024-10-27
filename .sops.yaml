@@ -1,6 +1,7 @@
 keys:
   - &admin_ali age1rne0eqj5jfqahm5s5mmp3u0v97xm0lvwm2ghtjlv4p7m0l78tq5stgjtu4
   - &server_ali-desktop age1h3hqvnnyey9sgnkssz0l35a795fk9msx9ft6wj30ejepyah609fqlg70lv
+  - &server_home-k8s-master-1 age1nsxwy5s97eent9tvkeh755ggkpkslzjhknpqnwrqsvd2etprmcwqtsrf24
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
@@ -11,3 +12,8 @@ creation_rules:
     - age:
       - *admin_ali
       - *server_ali-desktop
+  - path_regex: secrets/home-k8s-master-1/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+    - age:
+      - *admin_ali
+      - *server_home-k8s-master-1
