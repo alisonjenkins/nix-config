@@ -51,6 +51,7 @@
         git
         gnumake
         grim
+        k9s
         kubectl
         kubernetes-helm
         kustomize
