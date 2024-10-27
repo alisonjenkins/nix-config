@@ -8,7 +8,7 @@
       ".local/share/applications/OBS - Autostart Webcam.desktop".text = ''
         [Desktop Entry]
         Comment=
-        Exec=${pkgs.obs-studio}/bin/obs --startvirtualcam
+        Exec=obs --startvirtualcam
         GenericName=
         Icon=${pkgs.obs-studio}/share/icons/hicolor/512x512/apps/com.obsproject.Studio.png
         MimeType=
