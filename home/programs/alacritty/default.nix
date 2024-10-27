@@ -67,13 +67,15 @@
         size = 12;
       };
 
-      shell = {
-        program = "${pkgs.zsh}/bin/zsh";
-        args = [
-          "-l"
-          "-c"
-          "tmux attach ; tmux"
-        ];
+      terminal = {
+        shell = {
+          program = "${pkgs.zsh}/bin/zsh";
+          args = [
+            "-l"
+            "-c"
+            "tmux attach ; tmux"
+          ];
+        };
       };
 
       mouse = {
