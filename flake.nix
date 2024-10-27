@@ -354,6 +354,15 @@
               };
             };
           };
+          home-k8s-master-1 = {
+            hostname = "home-k8s-master-1.lan";
+            profiles = {
+              system = {
+                user = "ali";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-master-1;
+              };
+            };
+          };
           home-k8s-server-1 = {
             hostname = "home-k8s-server-1.lan";
             profiles = {
