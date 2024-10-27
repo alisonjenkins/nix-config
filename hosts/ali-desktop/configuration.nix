@@ -372,6 +372,11 @@
       };
     };
 
+    earlyoom = {
+      enable = true;
+      enableNotifications = true;
+    };
+
     openssh = {
       enable = true;
       settings.PasswordAuthentication = false;
