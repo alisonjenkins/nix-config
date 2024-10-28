@@ -1,4 +1,5 @@
+**/*.dec.*
 **/*.qcow2
 **/result
-**/*.dec.*
 .direnv/
+result-*
