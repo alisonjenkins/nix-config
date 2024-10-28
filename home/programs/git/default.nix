@@ -10,8 +10,9 @@ in
   programs.git =
     {
       enable = true;
-      userName = gitUserName;
+      lfs.enable = true;
       userEmail = gitEmail;
+      userName = gitUserName;
 
       aliases = {
         # branch
