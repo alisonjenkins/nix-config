@@ -88,6 +88,7 @@
     lshw
     luxtorpeda
     ncdu
+    nix-fast-build
     nix-tree
     nushell
     obsidian
