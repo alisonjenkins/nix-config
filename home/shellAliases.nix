@@ -1,4 +1,4 @@
-{
+{ pkgs }: {
   "-- -" = "cd -";
   ".." = "cd ..";
   "..." = "cd ../..";
@@ -8,6 +8,7 @@
   "cdg" = "cd ~/git/";
   "cdgo" = "cd \$GOPATH";
   "cdot" = "cd ~/.local/share/chezmoi";
+  "gc" = "${pkgs.callPackage ../pkgs/git-clean { inherit pkgs; }}/bin/git-clean";
   "j" = "just";
   "key" = "ssh-add ~/.ssh/ssh_keys/id_bashton_alan";
   "keyaur" = "ssh-add ~/.ssh/ssh_keys/id_aur";

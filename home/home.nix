@@ -25,7 +25,7 @@
     fontconfig.enable = pkgs.stdenv.isLinux;
   };
 
-  home.shellAliases = import ./shellAliases.nix;
+  home.shellAliases = import ./shellAliases.nix { inherit pkgs; };
 
   home.packages =
     if pkgs.stdenv.isLinux
