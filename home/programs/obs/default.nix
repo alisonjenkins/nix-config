@@ -36,4 +36,19 @@
         obs-vkcapture
       ];
   };
+
+  home.packages = [
+    (pkgs.writeShellScriptBin ''obs-webcam'' ''
+      ${pkgs.obs-do}/bin/obs-do set-scene "Webcam"
+    '')
+    (pkgs.writeShellScriptBin ''obs-webcam-bg'' ''
+      ${pkgs.obs-do}/bin/obs-do set-scene "Webcam BG"
+    '')
+    (pkgs.writeShellScriptBin ''obs-game-stream'' ''
+      ${pkgs.obs-do}/bin/obs-do set-scene "Game Streaming"
+    '')
+    (pkgs.writeShellScriptBin ''obs-droidcam'' ''
+      ${pkgs.obs-do}/bin/obs-do set-scene "Droidcam"
+    '')
+  ];
 }
