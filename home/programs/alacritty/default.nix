@@ -68,6 +68,7 @@
       };
 
       terminal = {
+        osc52 = "CopyPaste";
         shell = {
           program = "${pkgs.zsh}/bin/zsh";
           args = [
