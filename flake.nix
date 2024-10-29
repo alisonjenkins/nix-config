@@ -203,7 +203,7 @@
         };
 
         ali-work-laptop = lib.nixosSystem rec {
-          inherit system;
+          system = "aarch64-linux";
           specialArgs = {
             username = "ali";
             inherit inputs;
