@@ -50,5 +50,8 @@
     (pkgs.writeShellScriptBin ''obs-droidcam'' ''
       ${pkgs.obs-do}/bin/obs-do set-scene "Droidcam"
     '')
+    (pkgs.writeShellScriptBin ''obs-coding'' ''
+      ${pkgs.obs-do}/bin/obs-do set-scene "Coding"
+    '')
   ];
 }
