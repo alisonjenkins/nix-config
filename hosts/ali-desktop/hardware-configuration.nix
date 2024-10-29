@@ -18,8 +18,6 @@
     kernelModules = [ "kvm-amd" ];
     supportedFilesystems = [ "btrfs" "ext4" "xfs" ];
 
-    zfs.devNodes = "/dev/osvg/nix";
-
     initrd = {
       availableKernelModules = [
         "aesni_intel"
