@@ -197,7 +197,42 @@
                   gitUserName = "Alison Jenkins";
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "AD723B26";
-                  extraImports = [ ./home/wms/hyprland ];
+                };
+            }
+          ];
+        };
+
+        ali-work-laptop = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            username = "ali";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./app-profiles/desktop/aws
+            ./app-profiles/desktop/display-managers/sddm
+            ./app-profiles/desktop/wms/plasma6
+            ./app-profiles/desktop/wms/hyprland
+            ./app-profiles/desktop/local-k8s
+            ./hosts/ali-work-laptop/configuration.nix
+            ./hosts/ali-work-laptop/disko-config.nix
+            disko.nixosModules.disko
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs =
+                specialArgs
+                // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "";
                 };
             }
           ];
