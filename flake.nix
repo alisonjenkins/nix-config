@@ -101,6 +101,22 @@
       };
     in
     {
+      darwinConfigurations = {
+        ali-work-laptop = inputs.darwin.lib.darwinSystem {
+          system = "aarch64-darwin";
+          modules = [
+            ./hosts/ali-work-laptop-macos/configuration.nix
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.ajenkins = import ./home.nix;
+              home-manager.extraSpecialArgs = [ ];
+            }
+          ];
+        };
+      };
+
       homeConfigurations = {
         "deck" = inputs.home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
