@@ -15,7 +15,7 @@
         [Desktop Entry]
         Comment[en_US]=
         Comment=
-        Exec=${inputs.nixgl.packages.${system}.nixGLIntel}/bin/nixGLIntel ${pkgs.alacritty}/bin/alacritty
+        Exec=${inputs.nixgl.packages.${system}.nixGLIntel}/bin/nixGLIntel alacritty
         GenericName[en_US]=
         GenericName=
         Icon=${pkgs.alacritty}/share/icons/hicolor/scalable/apps/Alacritty.svg
@@ -37,7 +37,7 @@
         [Desktop Entry]
         Comment[en_US]=
         Comment=
-        Exec=${pkgs.alacritty}/bin/alacritty
+        Exec=alacritty
         GenericName[en_US]=
         GenericName=
         Icon=${pkgs.alacritty}/share/icons/hicolor/scalable/apps/Alacritty.svg
@@ -86,7 +86,7 @@
       window = {
         decorations = "None";
         opacity = 0.9;
-        startup_mode = "Maximized";
+        # startup_mode = "Maximized";
 
         padding = {
           x = 12;
