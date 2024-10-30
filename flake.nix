@@ -101,7 +101,8 @@
       };
     in
     {
-      darwinConfigurations = let
+      darwinConfigurations =
+        let
           username = "ajenkins";
           system = "aarch64-darwin";
           hostname = "ali-work-laptop";
@@ -112,26 +113,27 @@
             inherit system;
             inherit outputs;
           };
-      in {
-        "${hostname}" = inputs.darwin.lib.darwinSystem {
-          system = system;
-          modules = [
-            ./hosts/ali-work-laptop-macos/configuration.nix
-            home-manager.darwinModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.${username} = import ./home/home.nix;
-              home-manager.extraSpecialArgs = specialArgs // {
-                gitUserName = "Alison Jenkins";
-                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                gitGPGSigningKey = ""; 
-             };
-            }
-          ];
-          specialArgs = specialArgs;
+        in
+        {
+          "${hostname}" = inputs.darwin.lib.darwinSystem {
+            system = system;
+            modules = [
+              ./hosts/ali-work-laptop-macos/configuration.nix
+              home-manager.darwinModules.home-manager
+              {
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.users.${username} = import ./home/home.nix;
+                home-manager.extraSpecialArgs = specialArgs // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "";
+                };
+              }
+            ];
+            specialArgs = specialArgs;
+          };
         };
-      };
 
       homeConfigurations = {
         "deck" = inputs.home-manager.lib.homeManagerConfiguration {
