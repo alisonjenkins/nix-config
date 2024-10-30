@@ -30,8 +30,9 @@
       };
       search.force = true;
 
-      extensions = with pkgs.nur.repos.rycee.firefox-addons;
-        [
+      extensions = (
+        if pkgs.stdenv.isLinux
+        then with pkgs.nur.repos.rycee.firefox-addons; [
           auto-tab-discard
           darkreader
           firenvim
@@ -40,6 +41,7 @@
           multi-account-containers
           offline-qr-code-generator
           onepassword-password-manager
+          plasma-integration
           privacy-badger
           surfingkeys
           switchyomega
@@ -50,35 +52,31 @@
           tst-tab-search
           ublock-origin
         ]
-        ++ (
-          if pkgs.stdenv.isLinux
-          then [
-            pkgs.nur.repos.rycee.firefox-addons.plasma-integration
-          ]
-          else [ ]
-        );
+        else [ ]
+      );
     };
   };
 
-  home.file = {
-    ".local/share/applications/Firefox.desktop".text = ''
-      [Desktop Entry]
-      Comment[en_US]=
-      Comment=
-      Exec=${pkgs.firefox}/bin/firefox
-      GenericName[en_US]=
-      GenericName=
-      Icon=${pkgs.firefox}/share/icons/hicolor/128x128/apps/firefox.png
-      MimeType=
-      Name[en_US]=Firefox
-      Name=Firefox
-      Path=
-      StartupNotify=true
-      Terminal=false
-      TerminalOptions=
-      Type=Application
-      X-KDE-SubstituteUID=false
-      X-KDE-Username=
-    '';
-  };
+  home.file =
+    if pkgs.stdenv.isLinux then {
+      ".local/share/applications/Firefox.desktop".text = ''
+        [Desktop Entry]
+        Comment[en_US]=
+        Comment=
+        Exec=${pkgs.firefox}/bin/firefox
+        GenericName[en_US]=
+        GenericName=
+        Icon=${pkgs.firefox}/share/icons/hicolor/128x128/apps/firefox.png
+        MimeType=
+        Name[en_US]=Firefox
+        Name=Firefox
+        Path=
+        StartupNotify=true
+        Terminal=false
+        TerminalOptions=
+        Type=Application
+        X-KDE-SubstituteUID=false
+        X-KDE-Username=
+      '';
+    } else { };
 }
