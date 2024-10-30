@@ -30,3 +30,6 @@
 $ cd nix-config
 $ sudo nixos-rebuild switch --flake .#host
 ```
+
+# Docs
+* [Fix broken Nix store on ali-desktop](./docs/ali-desktop-fix-broken-nix-store.md)
