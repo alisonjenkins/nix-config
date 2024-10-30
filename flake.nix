@@ -101,19 +101,35 @@
       };
     in
     {
-      darwinConfigurations = {
-        ali-work-laptop = inputs.darwin.lib.darwinSystem {
+      darwinConfigurations = let
+          username = "ajenkins";
           system = "aarch64-darwin";
+          hostname = "ali-work-laptop";
+          specialArgs = {
+            inherit hostname;
+            inherit username;
+            inherit inputs;
+            inherit system;
+            inherit outputs;
+          };
+      in {
+        "${hostname}" = inputs.darwin.lib.darwinSystem {
+          system = system;
           modules = [
             ./hosts/ali-work-laptop-macos/configuration.nix
             home-manager.darwinModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.ajenkins = import ./home.nix;
-              home-manager.extraSpecialArgs = [ ];
+              home-manager.users.${username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs = specialArgs // {
+                gitUserName = "Alison Jenkins";
+                gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                gitGPGSigningKey = ""; 
+             };
             }
           ];
+          specialArgs = specialArgs;
         };
       };
 

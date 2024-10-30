@@ -1,20 +1,15 @@
 { pkgs
-, inputs
 , outputs
+, inputs
 , system
+, username
+, hostname
 , ...
 }:
-let
-  username = "ajenkins";
-  hostname = "ali-work-laptop-macos";
-in
 {
   environment = {
     systemPackages = with pkgs; [
-      # azure-cli
-      # tektoncd-cli
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
-      alacritty
       aws-vault
       awscli2
       bacon
@@ -26,22 +21,18 @@ in
       cargo-make
       cargo-tarpaulin
       cargo-watch
-      chezmoi
       comma
       cowsay
-      darwin.apple_sdk.frameworks.Security
       direnv
       diskus
       dive
       docker-credential-helpers
       dua
-      eza
       fd
       figlet
       fluxcd
       fzf
       gh
-      gimme-aws-creds
       gitui
       glow
       gnupg
@@ -50,15 +41,12 @@ in
       gradle
       htop
       inputs.ali-neovim.packages.${system}.nvim
-      inputs.ecrrepos.packages.${system}.default
-      inputs.maven.legacyPackages.${system}.maven
       ipcalc
       isort
       jdk11
       jq
       just
       kind
-      kitty
       kubecm
       kubectx
       kubernetes-helm
@@ -66,9 +54,6 @@ in
       libiconv
       lolcat
       luajitPackages.lpeg
-      mmtc
-      ncdu_1
-      nixfmt
       nodejs
       nushell
       openssl
@@ -77,16 +62,18 @@ in
       pinentry_mac
       pkg-config
       pwgen
-      python311Packages.python-lsp-server
       qview
       ripgrep
       ruff-lsp
-      rust-bin.stable.default
+      rust-bin.stable.latest.default
       selene
       skopeo
       ssm-session-manager-plugin
+      stable.azure-cli
+      stable.gimme-aws-creds
       statix
       tealdeer
+      tektoncd-cli
       tig
       tigervnc
       tilt
@@ -94,6 +81,7 @@ in
       typst
       typst-live
       watch
+      watchexec
       wget
       yazi
       zk
@@ -108,8 +96,7 @@ in
   };
 
   fonts = {
-    fontDir.enable = true;
-    fonts = with pkgs; [
+    packages = with pkgs; [
       (nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; })
     ];
   };
@@ -119,18 +106,18 @@ in
 
     brews = [
       "choose-gui"
-      "zathura"
-      "zathura-pdf-mupdf"
     ];
 
     # https://medium.com/rahasak/switching-from-docker-desktop-to-podman-on-macos-m1-m2-arm64-cpu-7752c02453ec
     casks = [
       "1password"
       "alacritty"
+      "alfred"
       "amethyst"
       "audacity"
       "cyberduck"
       "discord"
+      "docker"
       "drawio"
       "element"
       "firefox"
@@ -143,29 +130,30 @@ in
       "inkscape"
       "karabiner-elements"
       "keybase"
+      "microsoft-auto-update"
+      "microsoft-outlook"
       "microsoft-teams"
       "obs"
       "obsidian"
-      "podman-desktop"
       "rectangle"
       "slack"
       "soundsource"
       "utm"
       "yubico-authenticator"
       "zoom"
-      # "alfred"
-      # "docker"
+      # "podman-desktop"
     ];
 
-    masApps = {
-      "Reeder" = 1529448980;
-      "Things" = 904280696;
-      "Timery" = 1425368544;
-    };
+    # need to login to apple app store
+    # masApps = {
+    #   "Reeder" = 1529448980;
+    #   "Things" = 904280696;
+    #   "Timery" = 1425368544;
+    # };
 
     onActivation = {
       autoUpdate = true;
-      cleanup = false;
+      cleanup = "uninstall";
       upgrade = true;
     };
   };
@@ -186,6 +174,7 @@ in
       automatic = true;
     };
 
+    # run: "nix run 'nixpkgs#darwin.linux-builder'" before enabling
     linux-builder = {
       enable = true;
       ephemeral = false;
@@ -203,9 +192,9 @@ in
       };
     };
 
-    optimise = {
-      enable = true;
-    };
+    # optimise = {
+    #   enable = true;
+    # };
 
     settings = {
       experimental-features = "nix-command flakes";
@@ -216,13 +205,13 @@ in
     zsh.enable = true;
   };
 
-  security = {
-    pam.enableSudoTouchIdAuth = true;
-  };
+  # security = {
+  #   pam.enableSudoTouchIdAuth = true;
+  # };
 
   services = {
     nix-daemon.enable = true;
-    karabiner-elements.enable = true;
+    # karabiner-elements.enable = true;
   };
 
   system = {
@@ -256,6 +245,7 @@ in
 
     overlays = [
       inputs.nur.overlay
+      inputs.rust-overlay.overlays.default
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
