@@ -19,9 +19,9 @@
   "keypa" = "ssh-add ~/.ssh/ssh_keys/id_alan-aws";
   "keypo" = "ssh-add ~/.ssh/ssh_keys/id_personal_old";
   "kmse" = "export EYAML_CONFIG=$PWD/.kms-eyaml.yaml";
-  "ll" = "eza -l --grid --git";
-  "ls" = "eza";
-  "lt" = "eza --tree --git --long";
+  "ll" = "${pkgs.eza}/bin/eza -l --grid --git";
+  "ls" = "${pkgs.eza}/bin/eza";
+  "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
   "pwhash" = "python -c \"import crypt,getpass; print(crypt.crypt(getpass.getpass(), crypt.mksalt(crypt.METHOD_SHA512)))\"";
   "vi" = "nvim";
   "vim" = "nvim";
