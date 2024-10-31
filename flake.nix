@@ -126,7 +126,7 @@
                 home-manager.users.${username} = import ./home/home.nix;
                 home-manager.extraSpecialArgs = specialArgs // {
                   gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitEmail = "alison.jenkins@brambles.com";
                   gitGPGSigningKey = "";
                 };
               }
