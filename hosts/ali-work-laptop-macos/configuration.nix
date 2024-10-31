@@ -163,7 +163,7 @@
   };
 
   nix = {
-    package = pkgs.nix;
+    package = pkgs.nixVersions.nix_2_18;
 
     channel = {
       enable = true;
