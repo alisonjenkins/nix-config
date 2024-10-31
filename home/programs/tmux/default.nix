@@ -6,24 +6,29 @@
     pkgs.tmux-sessionizer
   ];
 
-  home.file = {
-    ".config/tms/config.toml".text = ''
-      [[search_dirs]]
-      path = "/home/${username}/git"
-      depth = 10
-    '';
-  };
+  home.file =
+    let
+      home =
+        if pkgs.stdenv.isDarwin then "/Users/${username}" else "/home/${username}";
+    in
+    {
+      ".config/tms/config.toml".text = ''
+        [[search_dirs]]
+        path = "${home}/git"
+        depth = 10
+      '';
+    };
 
   programs.tmux = {
     enable = true;
     newSession = true;
     prefix = "C-a";
-    shell = "${pkgs.zsh}/bin/zsh";
+    # shell = if pkgs.stdenv.isDarwin then "/etc/profiles/per-user/${username}/bin/zsh" else "${pkgs.zsh}/bin/zsh";
     baseIndex = 1;
     terminal = "tmux-256color";
     escapeTime = 0;
 
-    extraConfig = builtins.readFile ./tmux.conf;
+    extraConfig = import ./tmux.conf.nix { inherit username; };
     keyMode = "vi";
     plugins = with pkgs; [
       tmuxPlugins.cpu
