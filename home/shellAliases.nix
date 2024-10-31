@@ -25,4 +25,5 @@
   "pwhash" = "python -c \"import crypt,getpass; print(crypt.crypt(getpass.getpass(), crypt.mksalt(crypt.METHOD_SHA512)))\"";
   "vi" = "nvim";
   "vim" = "nvim";
+  "vpn" = "sudo openconnect --config ~/.config/openconnect/config";
 }
