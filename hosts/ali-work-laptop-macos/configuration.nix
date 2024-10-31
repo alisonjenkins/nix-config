@@ -145,13 +145,6 @@
       # "podman-desktop"
     ];
 
-    # need to login to apple app store
-    # masApps = {
-    #   "Reeder" = 1529448980;
-    #   "Things" = 904280696;
-    #   "Timery" = 1425368544;
-    # };
-
     onActivation = {
       autoUpdate = true;
       cleanup = "uninstall";
