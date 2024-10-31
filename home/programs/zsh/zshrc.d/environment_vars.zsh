@@ -45,7 +45,7 @@ fi
 
 # Setup Path variable
 export PATH="$PATH:$HOME/.cargo/bin"
-export PATH="$PATH:$HOME/.homebrew/bin"
+export PATH="$PATH:/opt/homebrew/bin"
 export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/bin"
 export PATH="$PATH:$HOME/go/bin"
