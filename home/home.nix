@@ -53,7 +53,6 @@
         git
         gnumake
         grim
-        k9s
         kubecm
         kubectl
         kubectx
