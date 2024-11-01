@@ -15,6 +15,7 @@
     ./gcc
     ./gh
     ./gh-dash
+    ./ghostty
     ./git
     ./gitui
     ./go
