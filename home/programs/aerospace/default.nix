@@ -1,5 +1,5 @@
-{ pkgs }: {
-  home.files =
+{ pkgs, ... }: {
+  home.file =
     let
       termal_app = "Ghostty";
     in
