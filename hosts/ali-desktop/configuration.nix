@@ -177,6 +177,7 @@
       amdgpu_top
       ananicy-cpp-rules
       cpu-x
+      deadd-notification-center
       geekbench
       handbrake
       i2pd
