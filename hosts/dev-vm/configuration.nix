@@ -5,7 +5,7 @@
 }: {
   imports = [
     ./hardware-configuration.nix
-    # ../../app-profiles/desktop
+    ./disko-config.nix
   ];
 
   boot = {
