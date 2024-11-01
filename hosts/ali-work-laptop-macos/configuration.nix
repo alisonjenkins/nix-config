@@ -116,6 +116,7 @@
       "alacritty"
       "alfred"
       "amethyst"
+      "apache-directory-studio"
       "audacity"
       "cyberduck"
       "discord"
