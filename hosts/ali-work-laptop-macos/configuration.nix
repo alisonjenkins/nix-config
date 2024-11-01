@@ -140,6 +140,7 @@
       "rectangle"
       "slack"
       "soundsource"
+      "uhk-agent"
       "utm"
       "yubico-authenticator"
       "zoom"
