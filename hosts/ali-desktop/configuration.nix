@@ -173,6 +173,8 @@
     };
 
     systemPackages = with pkgs; [
+      # libsForQt5.polonium
+      # makemkv
       alsa-scarlett-gui
       amdgpu_top
       ananicy-cpp-rules
@@ -184,8 +186,6 @@
       kdePackages.korganizer
       lact
       libaacs
-      # libsForQt5.polonium
-      # makemkv
       polkit
       protontricks
       qbittorrent
