@@ -5,7 +5,7 @@
     in
     if pkgs.stdenv.isDarwin then
       {
-        ".config/aerospace/config.toml".text = ''
+        ".aerospace.toml".text = ''
           # Reference: https://github.com/i3/i3/blob/next/etc/config
 
           # i3 doesn't have "normalizations" feature that why we disable them here.
