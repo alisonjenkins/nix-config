@@ -329,7 +329,7 @@
           ];
       };
       gamescopeSession = {
-        enable = true;
+        enable = false;
         args = [
           "--rt"
           "-f"
