@@ -20,12 +20,12 @@
 
           [mode.main.binding]
           # See: https://nikitabobko.github.io/AeroSpace/goodness#open-a-new-window-with-applescript
-          alt-enter = '''exec-and-forget osascript -e '
+          alt-enter = ''''exec-and-forget osascript -e '
           tell application "${termal_app}"
               do script
               activate
           end tell'
-          '''
+          ''''
 
           # i3 wraps focus by default
           alt-j =         'focus --boundaries-action wrap-around-the-workspace left'
