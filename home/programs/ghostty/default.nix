@@ -18,7 +18,6 @@
         font-size = 13
         font-style = Regular
         font-thicken = true
-        mouse-hide-while-typing = true
         palette = 12=#344CFF
         palette = 4=#3D52E2
         selection-background = 1d3c3b
