@@ -29,9 +29,9 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # ghostty = {
-    #   url = "git+ssh://git@github.com/ghostty-org/ghostty";
-    # };
+    ghostty = {
+      url = "git+ssh://git@github.com/ghostty-org/ghostty";
+    };
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -293,6 +293,11 @@
             inputs.jovian-nixos.nixosModules.default
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
+            {
+              environment.systemPackages = [
+                inputs.ghostty.packages.x86_64-linux.default
+              ];
+            }
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
