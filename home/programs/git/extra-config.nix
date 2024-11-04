@@ -58,10 +58,12 @@ gpgSign: ''
     else "false"
   }
 
-
   [url "git@github.com:"]
     insteadof = github:
 
   [url "https://github.com/"]
     insteadof = githubh:
+
+  [url "git@bitbucket.org:"]
+  insteadOf = https://bitbucket.org/
 ''
