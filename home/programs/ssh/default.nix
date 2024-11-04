@@ -38,6 +38,11 @@
           User alisonjenkins
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
+
+        Host bitbucket.org
+          User git
+          IdentityFile ~/.ssh/id_brambles.pub
+          IdentitiesOnly yes
       '';
   };
 }
