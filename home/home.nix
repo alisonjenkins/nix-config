@@ -63,7 +63,6 @@
         neovide
         networkmanagerapplet
         nurl
-        openrgb
         pamixer
         pavucontrol
         qpwgraph

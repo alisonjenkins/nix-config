@@ -55,7 +55,7 @@
     element-desktop
     ethtool
     fd
-    ffmpeg
+    # ffmpeg
     filelight
     freeplane
     fzf

@@ -177,11 +177,11 @@
       # makemkv
       alsa-scarlett-gui
       amdgpu_top
-      ananicy-cpp-rules
+      # stable.ananicy-cpp-rules
       cpu-x
       deadd-notification-center
       geekbench
-      handbrake
+      # handbrake
       i2pd
       kdePackages.korganizer
       lact
@@ -264,11 +264,15 @@
       # outputs.overlays.alvr
       inputs.nur.overlay
       inputs.rust-overlay.overlays.default
+      outputs.overlays._7zz
       outputs.overlays.additions
       outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
+      # outputs.overlays.ffmpeg
       outputs.overlays.master-packages
       outputs.overlays.modifications
+      outputs.overlays.python3PackagesOverlay
+      outputs.overlays.qtwebengine
       outputs.overlays.quirc
       outputs.overlays.snapper
       outputs.overlays.stable-packages
