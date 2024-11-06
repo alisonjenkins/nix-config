@@ -17,7 +17,7 @@
       bat
       cacert
       cachix
-      cargo-lambda
+      # cargo-lambda
       cargo-machete
       cargo-make
       cargo-tarpaulin
