@@ -129,6 +129,7 @@
       "gephi"
       "gimp"
       "github"
+      "google-chrome"
       "hammerspoon"
       "inkscape"
       "karabiner-elements"
