@@ -1,6 +1,7 @@
 { gitUserName
 , gitEmail
 , gitGPGSigningKey ? ""
+, pkgs
 , ...
 }:
 let
@@ -133,6 +134,14 @@ in
       }
       else { }
     );
+
+  home.packages =
+    let
+      git-wc = import ./git-wc.nix { inherit pkgs; };
+    in
+    [
+      git-wc
+    ];
 
   home.file = {
     ".config/git/includes/extra-config".text = import ./extra-config.nix gpgSign;
