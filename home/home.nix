@@ -5,6 +5,7 @@
 , ...
 }: {
   imports = [
+    ./autostart
     ./programs
     ./scripts
     ./themes
