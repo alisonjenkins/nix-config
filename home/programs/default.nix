@@ -22,6 +22,7 @@
     ./granted
     ./hyfetch
     ./info
+    ./jq
     ./k9s
     ./kitty
     ./lsd
