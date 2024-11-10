@@ -43,6 +43,7 @@
     ./waybar
     ./yazi
     ./zoxide
+    ./zq
     ./zsh
   ];
 }
