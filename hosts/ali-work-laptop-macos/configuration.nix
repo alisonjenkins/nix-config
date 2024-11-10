@@ -70,7 +70,6 @@
       skopeo
       ssm-session-manager-plugin
       stable.azure-cli
-      stable.gimme-aws-creds
       statix
       tealdeer
       tektoncd-cli
