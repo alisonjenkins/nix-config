@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  home.file =
+  home.file = (if pkgs.stdenv.isLinux then
     let
       steam-autostart-silent = pkgs.stdenvNoCC.mkDerivation {
         name = "steam-autostart-silent";
@@ -18,5 +18,5 @@
       ".config/autostart/vesktop.desktop".source = "${pkgs.vesktop}/share/applications/vesktop.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
-    };
+    } else { });
 }
