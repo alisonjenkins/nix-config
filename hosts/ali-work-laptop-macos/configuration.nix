@@ -41,6 +41,7 @@
       goreleaser
       gradle
       htop
+      hurl
       inputs.ali-neovim.packages.${system}.nvim
       ipcalc
       isort
