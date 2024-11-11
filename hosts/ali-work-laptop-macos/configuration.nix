@@ -9,6 +9,8 @@
 {
   environment = {
     systemPackages = with pkgs; [
+      # cargo-lambda
+      # stable.azure-cli
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
       aws-vault
       awscli2
@@ -16,7 +18,6 @@
       bat
       cacert
       cachix
-      # cargo-lambda
       cargo-machete
       cargo-make
       cargo-tarpaulin
@@ -69,7 +70,6 @@
       selene
       skopeo
       ssm-session-manager-plugin
-      # stable.azure-cli
       statix
       tealdeer
       tektoncd-cli
