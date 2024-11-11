@@ -47,6 +47,7 @@
       isort
       jdk11
       jq
+      json2hcl
       just
       kind
       kubecm
