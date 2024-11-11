@@ -55,6 +55,7 @@
       libiconv
       lolcat
       luajitPackages.lpeg
+      nix-fast-build
       nodejs
       nushell
       openssl
