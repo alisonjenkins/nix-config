@@ -69,7 +69,7 @@
       selene
       skopeo
       ssm-session-manager-plugin
-      stable.azure-cli
+      # stable.azure-cli
       statix
       tealdeer
       tektoncd-cli
