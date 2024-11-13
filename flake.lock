@@ -50,11 +50,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1731286286,
-        "narHash": "sha256-7jpkIFzw+dHqtn6/iPHQLnxk6X4RdTwaE03ivRulmaY=",
+        "lastModified": 1731455157,
+        "narHash": "sha256-wvJANj/uqb0faYvdll+boJ2unDEfzAT/bvg131Mw0Hw=",
         "owner": "chaotic-cx",
         "repo": "nyx",
-        "rev": "363a6f38bc9a634e7431a5623194757b3f8c68a1",
+        "rev": "9dd4ee2b46644cc736c789bcfbf8f904ecbf3529",
         "type": "github"
       },
       "original": {
@@ -71,11 +71,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1731450320,
-        "narHash": "sha256-7QroOhMptfA6Pz5/Ig/apHdxF3+zvlZV8D3NMc6aEiM=",
+        "lastModified": 1731454423,
+        "narHash": "sha256-TtwvgFxUa0wyptLhQbKaixgNW1UXf3+TDqfX3Kp63oM=",
         "owner": "lnl7",
         "repo": "nix-darwin",
-        "rev": "839fd2a2b5bb60a6c15f2347a92269d57d51012f",
+        "rev": "6c71c49e2448e51ad830ed211024e6d0edc50116",
         "type": "github"
       },
       "original": {
@@ -400,11 +400,11 @@
         "zig": "zig"
       },
       "locked": {
-        "lastModified": 1731382085,
-        "narHash": "sha256-LsodhMaIkXdlAalv/t1xNA3xAnJ5ukclMDNM779/n2E=",
+        "lastModified": 1731469793,
+        "narHash": "sha256-ZewQYTlsysOt6orTIIKNR+y43iklehOzeBF/Gfy7fog=",
         "ref": "refs/heads/main",
-        "rev": "2661792cf7e322ef165271db71e8977fa2188cab",
-        "revCount": 7944,
+        "rev": "523e3a6ae3e62463b309c1b3222bafd7b1fb11ef",
+        "revCount": 7949,
         "type": "git",
         "url": "ssh://git@github.com/ghostty-org/ghostty"
       },
@@ -1240,11 +1240,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1731448760,
-        "narHash": "sha256-WAT9NBqtHqi3iWlEs/BYMbK0KfHPRWPepuAKsWzc7Iw=",
+        "lastModified": 1731522901,
+        "narHash": "sha256-uL515hQgs8dqxvtpzwL/ASh4/dxy8LUvOLNcaUs1I+s=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "45d55abd3964711133c2c3bdfdae82e178e9ce55",
+        "rev": "efdd0dd6f08801860ecad75a3a81d2dba7e51191",
         "type": "github"
       },
       "original": {
@@ -1297,11 +1297,11 @@
     },
     "nur": {
       "locked": {
-        "lastModified": 1731450879,
-        "narHash": "sha256-HDZRerqM701nge7KnkO28+Wumrr9c83nQLMYPjN0fzk=",
+        "lastModified": 1731522829,
+        "narHash": "sha256-LWkO4ks0y4A9LAlahNWC+ZY5nYjL6ylFT0gmvHStJsA=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "a180e6461d394d215b3645f068a070c7d9a6f7f6",
+        "rev": "2647900a849e6ca7929585515fa96c90572a59c8",
         "type": "github"
       },
       "original": {
@@ -1391,11 +1391,11 @@
         "nixpkgs": "nixpkgs_10"
       },
       "locked": {
-        "lastModified": 1731378398,
-        "narHash": "sha256-a0QWaiX8+AJ9/XBLGMDy6c90GD7HzpxKVdlFwCke5Pw=",
+        "lastModified": 1731464916,
+        "narHash": "sha256-WZ5rpjr/wCt7yBOUsvDE2i22hYz9g8W921jlwVktRQ4=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "0ae9fc2f2fe5361837d59c0bdebbda176427111e",
+        "rev": "2c19bad6e881b5a154cafb7f9106879b5b356d1f",
         "type": "github"
       },
       "original": {
@@ -1562,11 +1562,11 @@
       },
       "locked": {
         "dir": "packaging/nix",
-        "lastModified": 1730836236,
-        "narHash": "sha256-8jrg1DQrgYVaO4hpPRxRTAVluo8cE1Lcuvyv2EXuXpA=",
+        "lastModified": 1731482559,
+        "narHash": "sha256-anoaUsHmI9b8xRYPzv8XyGLTfiyErtZz2Grrl+37dMQ=",
         "ref": "refs/heads/main",
-        "rev": "90352466d502c40e147cfd11a428dde6c2899ab3",
-        "revCount": 833,
+        "rev": "223cd9e2a5f62a9eede6ab6695b2e522fcf78301",
+        "revCount": 835,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging/nix"
