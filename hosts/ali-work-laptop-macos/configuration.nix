@@ -202,6 +202,7 @@
 
     settings = {
       experimental-features = "nix-command flakes";
+      extra-trusted-users = "${username}";
     };
   };
 
