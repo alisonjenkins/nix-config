@@ -203,6 +203,7 @@
     settings = {
       experimental-features = "nix-command flakes";
       extra-trusted-users = "${username}";
+      extra-platforms = "x86_64-linux";
     };
   };
 
