@@ -42,6 +42,7 @@
         bibata-cursors
         btop
         cachix
+        cargo-cross
         cargo-nextest
         catimg
         cava
