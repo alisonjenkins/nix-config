@@ -68,6 +68,7 @@
         nurl
         pamixer
         pavucontrol
+        prismlauncher
         qpwgraph
         screen
         slurp
