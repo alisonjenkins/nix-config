@@ -2,7 +2,7 @@
 , ...
 }: {
   imports = [
-    ./cava
+    # ./cava
   ];
 
   gtk = {

@@ -45,7 +45,7 @@
         cargo-cross
         cargo-nextest
         catimg
-        cava
+        # cava
         curl
         dipc
         direnv
@@ -61,7 +61,7 @@
         kubectx
         kubernetes-helm
         kustomize
-        mission-center
+        # mission-center
         mpc-cli
         neovide
         networkmanagerapplet
