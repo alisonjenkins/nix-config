@@ -11,9 +11,10 @@
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixgl.url = "github:nix-community/nixGL";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
 
@@ -33,7 +34,7 @@
       url = "git+ssh://git@github.com/ghostty-org/ghostty";
     };
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nh = {
