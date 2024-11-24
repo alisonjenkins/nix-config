@@ -63,7 +63,7 @@
         kustomize
         # mission-center
         mpc-cli
-        neovide
+        # neovide
         networkmanagerapplet
         nurl
         pamixer
