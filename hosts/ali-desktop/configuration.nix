@@ -13,7 +13,6 @@
 
   console.keyMap = "us";
   hardware.pulseaudio.enable = false;
-  programs.zsh.enable = true;
   time.timeZone = "Europe/London";
 
   boot = {
@@ -345,6 +344,10 @@
           "-o 10"
         ];
       };
+    };
+
+    zsh = {
+      enable = true;
     };
   };
 
