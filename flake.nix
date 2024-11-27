@@ -11,9 +11,9 @@
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixgl.url = "github:nix-community/nixGL";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixos-cosmic.url = "github:lilyinstarlight/nixos-cosmic";
     nixpkgs_master.url = "github:nixos/nixpkgs";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
@@ -43,6 +43,9 @@
     };
     nur = {
       url = "github:nix-community/nur";
+    };
+    nixpkgs = {
+      url = "github:nixos/nixpkgs/nixos-24.11";
     };
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
@@ -167,16 +170,17 @@
             inherit system;
           };
           modules = [
+            # ./app-profiles/desktop/wms/sway
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/wms/plasma6
-            # ./app-profiles/desktop/wms/sway
             ./app-profiles/hardware/vr
             ./hosts/ali-desktop/configuration.nix
             chaotic.nixosModules.default
             inputs.impermanence.nixosModules.impermanence
             inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.nixos-cosmic.nixosModules.default
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
@@ -184,6 +188,12 @@
               environment.systemPackages = [
                 # inputs.ghostty.packages.x86_64-linux.default
               ];
+            }
+            {
+              nix.settings = {
+                substituters = [ "https://cosmic.cachix.org/" ];
+                trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
+              };
             }
             {
               home-manager.useGlobalPkgs = true;

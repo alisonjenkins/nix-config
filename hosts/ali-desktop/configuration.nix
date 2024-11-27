@@ -378,6 +378,12 @@
       };
     };
 
+    desktopManager = {
+      cosmic = {
+        enable = true;
+      };
+    };
+
     earlyoom = {
       enable = true;
       enableNotifications = true;
