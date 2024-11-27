@@ -16,14 +16,16 @@
   time.timeZone = "Europe/London";
 
   boot = {
+    consoleLogLevel = 0;
+    initrd.verbose = false;
+
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
+    # kernelPackages = pkgs.linuxPackages_cachyos-lto;
     # kernelPackages = pkgs.linuxPackages_cachyos;
     # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
-    consoleLogLevel = 0;
-    initrd.verbose = false;
-    kernelPackages = pkgs.linuxPackages_cachyos-lto;
+    kernelPackages = pkgs.linuxPackages;
 
     binfmt = {
       emulatedSystems = [ "aarch64-linux" ];
