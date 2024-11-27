@@ -117,7 +117,7 @@
 
   chaotic = {
     mesa-git = {
-      enable = true;
+      enable = false;
       # method = "GBM_BACKENDS_PATH";
     };
     scx = {
