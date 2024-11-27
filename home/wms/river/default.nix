@@ -130,7 +130,7 @@
       # not have a modifier
       for mode in normal locked
       do
-        # Eject the optical drive (well if you still have one that is)
+        # Eject the optical drive
         riverctl map $mode None XF86Eject spawn 'eject -T'
 
         # Control pulse audio volume with wpctl
@@ -144,7 +144,7 @@
         riverctl map $mode None XF86AudioPrev  spawn '${pkgs.playerctl}/bin/playerctl previous'
         riverctl map $mode None XF86AudioNext  spawn '${pkgs.playerctl}/bin/playerctl next'
 
-        # Control screen backlight brightness with brightnessctl (https://github.com/Hummer12007/brightnessctl)
+        # Control screen backlight brightness with brightnessctl
         riverctl map $mode None XF86MonBrightnessUp   spawn '${pkgs.brightnessctl}/bin/brightnessctl set +5%'
         riverctl map $mode None XF86MonBrightnessDown spawn '${pkgs.brightnessctl}/bin/brightnessctl set 5%-'
       done
