@@ -537,4 +537,8 @@
     enable = true;
     xdgOpenUsePortal = true;
   };
+
+  zramSwap = {
+    enable = true;
+  };
 }
