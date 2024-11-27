@@ -17,7 +17,7 @@
 
       # Note: the "Super" modifier is also known as Logo, GUI, Windows, Mod4, etc.
 
-      # Super+Shift+Return to start an instance of alacritty (https://codeberg.org/dnkl/foot)
+      # Super+Shift+Return to start an instance of alacritty
       riverctl map normal Super+Shift Return spawn alacritty
 
       # Super+Q to close the focused view
