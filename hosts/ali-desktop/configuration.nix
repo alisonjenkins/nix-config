@@ -313,6 +313,10 @@
       package = pkgs.jdk17;
     };
 
+    river = {
+      enable = true;
+    };
+
     steam = {
       enable = true;
       remotePlay.openFirewall = true;
