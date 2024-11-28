@@ -1,6 +1,6 @@
 { gitUserName
 , gitEmail
-, gitGPGSigningKey ? ""
+, gitGPGSigningKey ? "~/.ssh/id_personal.pub"
 , pkgs
 , ...
 }:
@@ -144,6 +144,6 @@ in
     ];
 
   home.file = {
-    ".config/git/includes/extra-config".text = import ./extra-config.nix gpgSign;
+    ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey pkgs; };
   };
 }

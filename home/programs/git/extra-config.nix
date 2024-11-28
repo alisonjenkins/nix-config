@@ -1,4 +1,9 @@
-gpgSign: ''
+{ pkgs
+, gpgSign
+, gitGPGSigningKey
+, gpgSigningProgram ? "${pkgs._1password-gui}/bin/op-ssh-sign"
+, ...
+}: ''
   [branch]
     autosetuprebase = always
 
@@ -26,6 +31,12 @@ gpgSign: ''
     smudge = git-lfs smudge -- %f
     process = git-lfs filter-process
     required = true
+
+  [gpg]
+    format = ssh
+
+  [gpg "ssh"]
+    program = ${gpgSigningProgram}
 
   [http]
     postBuffer = 524288000
@@ -66,4 +77,7 @@ gpgSign: ''
 
   [url "git@bitbucket.org:"]
   insteadOf = https://bitbucket.org/
+
+  [user]
+    signingKey = ${gitGPGSigningKey}
 ''
