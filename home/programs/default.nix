@@ -25,6 +25,7 @@
     ./jq
     ./k9s
     ./kitty
+    ./kwalletd
     ./lsd
     ./man
     ./mcfly
