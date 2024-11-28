@@ -121,10 +121,6 @@
       enable = true;
       # method = "GBM_BACKENDS_PATH";
     };
-    scx = {
-      enable = false;
-      scheduler = "scx_rustland";
-    };
   };
 
   environment = {
