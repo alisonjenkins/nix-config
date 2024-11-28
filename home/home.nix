@@ -27,6 +27,7 @@
     fontconfig.enable = pkgs.stdenv.isLinux;
   };
 
+  home.sessionVariables = import ./environmentVariables.nix { inherit pkgs; };
   home.shellAliases = import ./shellAliases.nix { inherit pkgs; };
 
   home.packages =
@@ -96,10 +97,6 @@
         else [ ]
       ))
     else [ ];
-
-  home.sessionVariables = {
-    ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
-  };
 
   programs.home-manager.enable =
     if pkgs.stdenv.isLinux
