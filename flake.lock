@@ -1454,8 +1454,7 @@
         "plasma-manager": "plasma-manager",
         "rust-overlay": "rust-overlay_2",
         "sops-nix": "sops-nix",
-        "tmux-sessionizer": "tmux-sessionizer",
-        "umu": "umu_2"
+        "tmux-sessionizer": "tmux-sessionizer"
       }
     },
     "rust-overlay": {
@@ -1635,30 +1634,6 @@
         "ref": "refs/heads/main",
         "rev": "f6a6af3191f5497d95d8f8aaa08826a45da199c4",
         "revCount": 842,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging/nix"
-      },
-      "original": {
-        "dir": "packaging/nix",
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging/nix"
-      }
-    },
-    "umu_2": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "dir": "packaging/nix",
-        "lastModified": 1732870135,
-        "narHash": "sha256-Bzwj82dwzmVQJ0SjwuH4+nKvUPWD1Klpnd7BHjMbhm4=",
-        "ref": "refs/heads/main",
-        "rev": "d006222c50fe13380feb432b73332643d634dffb",
-        "revCount": 856,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging/nix"

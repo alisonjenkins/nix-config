@@ -91,7 +91,7 @@
         if pkgs.system == "x86_64-linux"
         then [
           heroic
-          inputs.umu.packages.${pkgs.system}.umu
+          # inputs.umu.packages.${pkgs.system}.umu
           lutris
           unigine-heaven
         ]
