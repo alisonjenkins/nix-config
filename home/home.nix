@@ -9,6 +9,7 @@
     ./programs
     ./scripts
     ./themes
+    ./wms/hyprland
     ./wms/river
     inputs.plasma-manager.homeManagerModules.plasma-manager
     inputs.nix-index-database.hmModules.nix-index

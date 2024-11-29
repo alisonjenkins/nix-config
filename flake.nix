@@ -175,6 +175,7 @@
             ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
+            ./app-profiles/desktop/wms/hyprland
             ./hosts/ali-desktop/configuration.nix
             chaotic.nixosModules.default
             inputs.impermanence.nixosModules.impermanence
