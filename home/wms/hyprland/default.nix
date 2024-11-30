@@ -2,6 +2,7 @@
 , ...
 }: {
   # config.programs.hyprland.enable = true;
+  wayland.windowManager.hyprland.systemd.enable = false;
 
   home.file = {
     ".config/hypr/conf/autostart.conf".text = import ./configs/hypr/conf/autostart.conf.nix { inherit pkgs; };
