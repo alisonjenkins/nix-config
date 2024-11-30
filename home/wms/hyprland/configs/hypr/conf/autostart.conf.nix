@@ -33,5 +33,5 @@
   exec-once = ${pkgs.firefox}/bin/firefox
   exec-once = ${pkgs.steam}/bin/steam
   exec-once = ${pkgs.vesktop}/bin/vesktop
-  exec-once = ${pkgs.vesktop}/bin/vesktop
+  exec-once = ${pkgs.waybar}/bin/waybar
 ''
