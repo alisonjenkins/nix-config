@@ -63,10 +63,10 @@
             warning = 80;
             critical = 9;
           };
-          on-click = "hyprshade toggle bluefilter";
-          on-click-right = "hyprshade toggle extradark";
-          on-scroll-down = "brightnessctl -q set 5%-";
-          on-scroll-up = "brightnessctl -q set 5%+";
+          on-click = "${pkgs.hyprshade}/bin/hyprshade toggle bluefilter";
+          on-click-right = "${pkgs.hyprshade}/bin/hyprshade toggle extradark";
+          on-scroll-down = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%-";
+          on-scroll-up = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%+";
           tooltip = false;
         };
 
@@ -101,8 +101,8 @@
           interval = 1;
           format = "󰌢 {load}";
           tooltip = false;
-          on-click = "missioncenter";
-          on-click-right = "kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'htop'";
+          on-click = "${pkgs.mission-center}/bin/missioncenter";
+          on-click-right = "${pkgs.kitty}/bin/kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'htop'";
         };
 
         "custom/gpu" = {
@@ -110,7 +110,7 @@
           # exec = "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits";
           format = "󰢮 {}%";
           return-type = "";
-          on-click = "missioncenter";
+          on-click = "${pkgs.mission-center}/bin/missioncenter";
         };
 
         "custom/launcher" = {
@@ -118,7 +118,7 @@
           tooltip = true;
           exec = "echo '{\"text\":\"💧\",\"tooltip\":\"Drun | Run\"}'";
           return-type = "json";
-          on-click = "wofi --show drun";
+          on-click = "${pkgs.wofi}/bin/wofi --show drun";
         };
 
         "custom/notifications" = {
@@ -131,10 +131,9 @@
             dnd-none = "";
           };
           return-type = "json";
-          exec-if = "which swaync-client";
-          exec = "swaync-client -swb";
-          on-click = "swaync-client -t -sw";
-          on-click-right = "swaync-client -d -sw";
+          exec = "${pkgs.swaynotificationcenter}/bin/swaync-client -swb";
+          on-click = "${pkgs.swaynotificationcenter}/bin/swaync-client -t -sw";
+          on-click-right = "${pkgs.swaynotificationcenter}/bin/swaync-client -d -sw";
           escape = true;
         };
 
@@ -172,8 +171,8 @@
           active-only = false;
           disable-scroll = false;
           format = "{icon} {id} {name}";
-          on-scroll-down = "hyprctl dispatch workspace +1";
-          on-scroll-up = "hyprctl dispatch workspace -1";
+          on-scroll-down = "${pkgs.hyprland}/bin/hyprctl dispatch workspace +1";
+          on-scroll-up = "${pkgs.hyprland}/bin/hyprctl dispatch workspace -1";
           sort-by-number = true;
 
           format-icons = {
@@ -193,8 +192,8 @@
           max-length = 30;
           tooltip = true;
           tooltip-format = " {used:0.1f}GB/{total:0.1f}GB";
-          on-click = "missioncenter";
-          on-click-right = "kitty --start-as=fullscreen --title all_is_kitty sh -c 'btop'";
+          on-click = "${pkgs.mission-center}/bin/missioncenter";
+          on-click-right = "${pkgs.kitty}/bin/kitty --start-as=fullscreen --title all_is_kitty sh -c 'btop'";
         };
 
         network = {
@@ -207,7 +206,7 @@
           tooltip-format-wifi = "󰖩  {essid}({signalStrength}%)";
           tooltip-format-ethernet = "🌐 {ipaddr}/{cidr}";
           tooltip-format-disconnected = "󰖪 ";
-          on-click-right = "nm-connection-editor";
+          on-click-right = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
           interval = 2;
         };
 
@@ -227,7 +226,8 @@
             car = "";
             default = [ "" "" "" ];
           };
-          on-click = "pavucontrol";
+          on-click = "${pkgs.pavucontrol}/bin/pavucontrol";
+          on-click-right = "${pkgs.qpwgraph}/bin/qpwgraph";
         };
 
         temperature = {
@@ -247,7 +247,7 @@
           tooltip = false;
           tooltip-spacing = 20;
           tooltip-padding = 8;
-          on-click = "cpupower-gui";
+          on-click = "${pkgs.cpupower-gui}/bin/cpupower-gui";
         };
       }
     ];
