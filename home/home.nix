@@ -36,6 +36,9 @@
     then
       (with pkgs;
       [
+        # cava
+        # mission-center
+        # neovide
         (pkgs.callPackage ../pkgs/git-clean { inherit pkgs; })
         appimage-run
         audacity
@@ -48,7 +51,6 @@
         cargo-cross
         cargo-nextest
         catimg
-        # cava
         curl
         dipc
         direnv
@@ -64,9 +66,7 @@
         kubectx
         kubernetes-helm
         kustomize
-        # mission-center
         mpc-cli
-        # neovide
         networkmanagerapplet
         nurl
         pamixer
