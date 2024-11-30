@@ -193,7 +193,7 @@
           tooltip = true;
           tooltip-format = " {used:0.1f}GB/{total:0.1f}GB";
           on-click = "${pkgs.mission-center}/bin/missioncenter";
-          on-click-right = "${pkgs.kitty}/bin/kitty --start-as=fullscreen --title all_is_kitty sh -c 'btop'";
+          on-click-right = "${pkgs.kitty}/bin/kitty --start-as=fullscreen --title all_is_kitty sh -c '${pkgs.btop}/bin/btop'";
         };
 
         network = {
