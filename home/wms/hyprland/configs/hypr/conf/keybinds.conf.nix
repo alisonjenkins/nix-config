@@ -9,6 +9,9 @@
   bind = $mainMod, B, exec, ${pkgs.firefox}/bin/firefox # Open the browser
   bind = $mainMod, E, exec, ${pkgs.pcmanfm}/bin/pcmanfm # Open the filemanager
 
+  # Push to talk passthrough
+  bind = CTRL, , pass, ^discord$
+
   # Windows
   # bind = $mainMod SHIFT, T, exec, $HYPRSCRIPTS/toggleallfloat.sh # Toggle all windows into floating mode
   bind = $mainMod SHIFT, h, resizeactive, -100 0 # Reduce window width with keyboard
