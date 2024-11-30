@@ -27,7 +27,6 @@
 
   # Actions
   # bind = $mainMod CTRL, K, exec, $HYPRSCRIPTS/keybindings.sh # Show keybindings
-  # bind = $mainMod CTRL, S, exec, ~/.config/ml4w/apps/ML4W_Dotfiles_Settings-x86_64.AppImage # Open ML4W Dotfiles Settings app
   # bind = $mainMod CTRL, T, exec, ~/.config/waybar/themeswitcher.sh # Open waybar theme switcher
   # bind = $mainMod SHIFT, A, exec, $HYPRSCRIPTS/toggle-animations.sh # Toggle animations
   # bind = $mainMod SHIFT, B, exec, ~/.config/waybar/launch.sh # Reload waybar
