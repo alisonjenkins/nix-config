@@ -58,6 +58,7 @@
         eog
         eza
         fluxcd
+        freeplane
         git
         gnumake
         grim
