@@ -26,20 +26,32 @@
   bindm = $mainMod, mouse:273, resizewindow # Resize window with the mouse
 
   # Actions
-  # bind = $mainMod CTRL, B, exec, ~/.config/waybar/toggle.sh # Toggle waybar
   # bind = $mainMod CTRL, K, exec, $HYPRSCRIPTS/keybindings.sh # Show keybindings
   # bind = $mainMod CTRL, S, exec, ~/.config/ml4w/apps/ML4W_Dotfiles_Settings-x86_64.AppImage # Open ML4W Dotfiles Settings app
   # bind = $mainMod CTRL, T, exec, ~/.config/waybar/themeswitcher.sh # Open waybar theme switcher
   # bind = $mainMod SHIFT, A, exec, $HYPRSCRIPTS/toggle-animations.sh # Toggle animations
   # bind = $mainMod SHIFT, B, exec, ~/.config/waybar/launch.sh # Reload waybar
   # bind = $mainMod SHIFT, H, exec, $HYPRSCRIPTS/hyprshade.sh # Toggle screenshader
-  # bind = $mainMod SHIFT, R, exec, $HYPRSCRIPTS/loadconfig.sh # Reload hyprland config
   # bind = $mainMod SHIFT, S, exec, $HYPRSCRIPTS/screenshot.sh # Take a screenshot
   # bind = $mainMod, PRINT, exec, $HYPRSCRIPTS/screenshot.sh # Take a screenshot
-  bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
-  bind = $mainMod, DELETE, exec, ${pkgs.wleave}/bin/wleave --show-keybinds --layout ~/.config/hypr/conf/wleave-layout.conf # Start wlogout
-  bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random # Change the wallpaper
-  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi --show drun # Open application launcher-
+
+  # Reload hyprland config
+  bind = $mainMod SHIFT, R, exec, ${pkgs.hyprland}/bin/hyprctl reload
+
+  # Toggle waybar
+  bind = $mainMod CTRL, B, exec, ${pkgs.psmisc}/bin/killall -SIGUSR1 waybar 
+
+  # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
+  bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper                                                             
+
+  # Start wleave
+  bind = $mainMod, DELETE, exec, ${pkgs.wleave}/bin/wleave --show-keybinds --layout ~/.config/hypr/conf/wleave-layout.conf
+
+  # Change the wallpaper
+  bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random
+
+  # Open application launcher-
+  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi --show drun 
 
   # Workspaces
   bind = $mainMod, 1, workspace, 1 # Open workspace 1
