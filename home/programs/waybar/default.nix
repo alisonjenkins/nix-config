@@ -71,8 +71,8 @@
         };
 
         clock = {
-          format = "{:󰥔 %H:%M 󰃭 %d %b %Y}";
-          format-alt = "{: %I:%M %p  %a %d}";
+          format = "󰥔 {:%H:%M 󰃭 %d %b %Y}";
+          format-alt = " {:%I:%M %p  %a %d}";
           tooltip-format = "<tt><small>{calendar}</small></tt>";
           calendar = {
             mode = "year";
