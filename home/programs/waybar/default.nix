@@ -142,7 +142,7 @@
           format = "{}";
           exec = "echo '{\"text\":\"⏻\",\"tooltip\":\"Power\"}'";
           return-type = "json";
-          on-click = "wlogout";
+          on-click = "${pkgs.wleave}/bin/wleave";
         };
 
         disk = {

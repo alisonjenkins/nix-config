@@ -13,9 +13,9 @@
   }
   {
       "label" : "logout",
-      "action" : "${pkgs.hyprland}/bin/hyprctl dispatch exit",
+      "action" : "${pkgs.uwsm}/bin/uwsm stop",
       "text" : "Logout",
-      "keybind" : "e"
+      "keybind" : "L"
   }
   {
       "label" : "shutdown",
