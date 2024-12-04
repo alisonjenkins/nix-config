@@ -1,7 +1,7 @@
 { pkgs
 , gpgSign
 , gitGPGSigningKey
-, gpgSigningProgram ? "${pkgs._1password-gui}/bin/op-ssh-sign"
+, gpgSigningProgram
 , ...
 }: ''
   [branch]

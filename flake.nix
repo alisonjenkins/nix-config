@@ -131,7 +131,7 @@
                 home-manager.extraSpecialArgs = specialArgs // {
                   gitUserName = "Alison Jenkins";
                   gitEmail = "alison.jenkins@brambles.com";
-                  gitGPGSigningKey = "";
+                  gitGPGSigningKey = "~/.ssh/id_brambles.pub";
                 };
               }
             ];

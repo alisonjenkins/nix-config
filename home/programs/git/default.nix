@@ -6,6 +6,14 @@
 }:
 let
   gpgSign = gitGPGSigningKey != "";
+  gpgSigningProgram = (
+    if pkgs.stdenv.isLinux then
+      "${pkgs._1password-gui}/bin/op-ssh-sign"
+    else if pkgs.stdenv.isDarwin then
+      "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+    else
+      ""
+  );
 in
 {
   programs.git =
@@ -144,6 +152,6 @@ in
     ];
 
   home.file = {
-    ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey pkgs; };
+    ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey gpgSigningProgram pkgs; };
   };
 }

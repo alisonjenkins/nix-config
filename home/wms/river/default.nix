@@ -2,7 +2,9 @@
 , ...
 }:
 {
-  home.file = {
+  home.file = (
+    if pkgs.stdenv.isLinux then
+    {
     ".config/river/init" = {
       text = ''
         #!/usr/bin/env bash
@@ -173,5 +175,5 @@
       '';
       executable = true;
     };
-  };
+  } else {});
 }
