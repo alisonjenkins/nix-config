@@ -141,6 +141,7 @@
       "microsoft-teams"
       "obs"
       "obsidian"
+      "ollama"
       "rectangle"
       "slack"
       "soundsource"
