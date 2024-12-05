@@ -6,37 +6,37 @@
 * Catppuccin Mocha palette
 */
 
-@define-color base #1e1e2e;
-@define-color mantle #181825;
-@define-color crust #11111b;
-
-@define-color text #cdd6f4;
-@define-color subtext0 #a6adc8;
-@define-color subtext1 #bac2de;
-
-@define-color surface0 rgba(22, 25, 37, 0.9);
-@define-color surface1 #45475a;
-@define-color surface2 #585b70;
-@define-color surface3 #394161;
-
-@define-color overlay0 #6c7086;
-@define-color overlay1 #7f849c;
-@define-color overlay2 #9ba3c3;
-
-@define-color blue #89b4fa;
-@define-color lavender #b4befe;
-@define-color sapphire #74c7ec;
-@define-color sky #89dceb;
-@define-color teal #94e2d5;
-@define-color green #a6e3a1;
-@define-color yellow #f9e2af;
-@define-color peach #fab387;
-@define-color maroon #eba0ac;
-@define-color red #f38ba8;
-@define-color mauve #cba6f7;
-@define-color pink #f5c2e7;
-@define-color flamingo #f2cdcd;
-@define-color rosewater #f5e0dc;
+/* @define-color base #1e1e2e; */
+/* @define-color mantle #181825; */
+/* @define-color crust #11111b; */
+/**/
+/* @define-color text #cdd6f4; */
+/* @define-color subtext0 #a6adc8; */
+/* @define-color subtext1 #bac2de; */
+/**/
+/* @define-color surface0 rgba(22, 25, 37, 0.9); */
+/* @define-color surface1 #45475a; */
+/* @define-color surface2 #585b70; */
+/* @define-color surface3 #394161; */
+/**/
+/* @define-color overlay0 #6c7086; */
+/* @define-color overlay1 #7f849c; */
+/* @define-color overlay2 #9ba3c3; */
+/**/
+/* @define-color blue #89b4fa; */
+/* @define-color lavender #b4befe; */
+/* @define-color sapphire #74c7ec; */
+/* @define-color sky #89dceb; */
+/* @define-color teal #94e2d5; */
+/* @define-color green #a6e3a1; */
+/* @define-color yellow #f9e2af; */
+/* @define-color peach #fab387; */
+/* @define-color maroon #eba0ac; */
+/* @define-color red #f38ba8; */
+/* @define-color mauve #cba6f7; */
+/* @define-color pink #f5c2e7; */
+/* @define-color flamingo #f2cdcd; */
+/* @define-color rosewater #f5e0dc; */
 
 /* =============================== */
 /* Universal Styling */
@@ -54,7 +54,7 @@
 /* Bar Styling */
 #waybar {
   background: transparent;
-  color: @text;
+  color: @base00;
 }
 
 /* =============================== */
@@ -88,8 +88,8 @@
 #custom-ss,
 /* #custom-hyprshade, */
 #custom-weather {
-  background-color: @surface0;
-  color: @yellow;
+  background-color: @base00;
+  color: @base0A;
   border-radius: 16px;
   padding: 0.5rem 1rem;
   box-shadow: rgba(0, 0, 0, 0.116) 2px 2px 5px 2px;
@@ -103,7 +103,7 @@
 /* =============================== */
 /* Launcher Module */
 #custom-launcher {
-  color: @green;
+  color: @base0B;
   padding-top: 0px;
   padding-bottom: 0px;
   padding-right: 10px;
@@ -121,8 +121,8 @@
 }
 
 #workspaces button {
-  background-color: @surface3;
-  color: @mauve;
+  background-color: @base02;
+  color: @base0E;
   border-radius: 100%;
   min-height: 14px;
   min-width: 14px;
@@ -212,7 +212,7 @@
 #cpu,
 #memory,
 #cpu {
-  color: @sapphire;
+  color: @base0F;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: 0px;
@@ -227,7 +227,7 @@
 }
 
 #custom-gpu {
-  color: @green;
+  color: @base0C;
   border-radius: 0px;
   margin-right: 0px;
   padding-left: 5px;
@@ -235,7 +235,7 @@
 }
 
 #temperature {
-  color: @red;
+  color: @base08;
   border-radius: 0px;
   margin-right: 0px;
   padding-left: 5px;
@@ -243,7 +243,7 @@
 }
 
 #disk {
-  color: @peach;
+  color: @base09;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 5px;
@@ -252,7 +252,7 @@
 
 /* Updates Module */
 #custom-updates {
-  color: @sky;
+  color: @base0D;
 }
 
 /* =============================== */
@@ -260,7 +260,7 @@
 /* =============================== */
 /* Clock Module */
 #clock {
-  color: @flamingo;
+  color: @base0E;
 }
 
 /* =============================== */
@@ -278,7 +278,7 @@
   text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.377);
   animation: gradient 15s ease infinite;
   font-weight: bold;
-  color: #fff;
+  color: @base07;
 }
 
 #custom-music.random {
@@ -296,7 +296,7 @@
   animation: gradient_f 4s ease infinite;
   text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.377);
   font-weight: bold;
-  color: #fff;
+  color: @base07;
 }
 
 #custom-music.critical {
@@ -311,7 +311,7 @@
   animation: gradient 15s cubic-bezier(0.55, -0.68, 0.48, 1.68) infinite;
   text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.377);
   font-weight: bold;
-  color: #fff;
+  color: @base07;
 }
 
 #custom-music.Playing {
@@ -335,18 +335,18 @@
   animation: gradient_f 9s cubic-bezier(0.72, 0.39, 0.21, 1) infinite;
   text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.377);
   font-weight: bold;
-  color: #fff;
+  color: @base07;
 }
 
 #custom-music.Paused,
 #custom-music.Stopped {
-  background: @surface0;
+  background: @base0D;
 }
 
 /* =============================== */
 /* Music/PlayerCTL Module */
 #custom-music {
-  color: @mauve;
+  color: @base0A;
 }
 
 /* =============================== */
@@ -354,7 +354,7 @@
 /* =============================== */
 /* Network Module */
 #network {
-  color: @blue;
+  color: @base0D;
   /* border-top-right-radius: 0; */
   /* border-bottom-right-radius: 0; */
   margin-right: 0px;
@@ -366,7 +366,7 @@
 /* =============================== */
 /* PulseAudio Module */
 #pulseaudio {
-  color: @mauve;
+  color: @base0E;
   /* border-radius: 0px; */
   /* margin-right: 0px; */
   /* padding-left: 5px; */
@@ -382,7 +382,7 @@
 /* =============================== */
 /* Backlight Module */
 #backlight {
-  color: @peach;
+  color: @base0F;
   border-radius: 0;
   margin-right: 0px;
   padding-left: 5px;
@@ -406,7 +406,7 @@
 /* =============================== */
 /* Battery Module */
 #upower {
-  color: @green;
+  color: @base0B;
   border-radius: 0;
   margin-right: 0px;
   padding-left: 5px;
@@ -414,7 +414,7 @@
 }
 
 #battery {
-  color: @green;
+  color: @base0B;
   border-radius: 0;
   margin-right: 0px;
   padding-left: 5px;
@@ -422,15 +422,15 @@
 }
 
 #battery.charging {
-  color: @green;
+  color: @base0B;
 }
 
 #battery.warning:not(.charging) {
-  color: @maroon;
+  color: @base0A;
 }
 
 #battery.critical:not(.charging) {
-  color: @red;
+  color: @base08;
   animation-name: blink;
   animation-duration: 1s;
   animation-timing-function: linear;
@@ -440,8 +440,8 @@
 
 @keyframes blink {
   to {
-    background: @red;
-    color: @surface1;
+    background: @base08;
+    color: @base03;
   }
 }
 
@@ -449,7 +449,7 @@
 
 /* Notifications Module */
 #custom-notifications {
-  color: @mauve;
+  color: @base0D;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 5px;
@@ -459,7 +459,7 @@
 /* =============================== */
 /* Tray Module */
 #tray {
-  color: @mauve;
+  color: @base0E;
   padding-right: 1.25rem;
 }
 
@@ -469,14 +469,14 @@
 /* |       Custom Modules        | */
 /* =============================== */
 #custom-custom {
-  color: @peach;
+  color: @base0E;
   padding-right: 1.25rem;
   margin-right: 0px;
 }
 
 /* Screenshot */
 #custom-ss {
-  color: @mauve;
+  color: @base0C;
   padding-right: 1.5rem;
 }
 
@@ -500,7 +500,7 @@
 
 /* Notifications Module */
 #custom-clipboard {
-  color: @mauve;
+  color: @base0A;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: 0px;
@@ -510,7 +510,7 @@
 /* Powermenu Module */
 #custom-power {
   /* color: @mauve; */
-  color: @red;
+  color: @base08;
   /* border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 8px; */

@@ -6,7 +6,7 @@
       else false;
     package = pkgs.rofi-wayland;
     terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
-    theme = ./theme.rasi;
+    # theme = ./theme.rasi;
   };
 
   home.file.".config/rofi/theme.rasi".text = ''

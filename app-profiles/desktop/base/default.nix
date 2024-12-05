@@ -13,7 +13,7 @@
     initrd.systemd.enable = true;
     plymouth = {
       enable = true;
-      theme = "breeze";
+      # theme = "breeze";
     };
     kernelParams = [ "quiet" ];
   };

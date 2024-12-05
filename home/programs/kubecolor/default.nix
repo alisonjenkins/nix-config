@@ -1,0 +1,3 @@
+{ ... }: {
+  programs.kubecolor.enable = true;
+}
