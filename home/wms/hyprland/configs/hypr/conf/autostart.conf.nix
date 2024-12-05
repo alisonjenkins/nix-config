@@ -29,7 +29,6 @@
 
   # Start main tools
   exec-once = ${pkgs._1password-gui}/bin/1password
-  # exec-once = ${pkgs.alacritty}/bin/alacritty
   exec-once = ${pkgs.firefox}/bin/firefox
   exec-once = ${pkgs.steam}/bin/steam
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
