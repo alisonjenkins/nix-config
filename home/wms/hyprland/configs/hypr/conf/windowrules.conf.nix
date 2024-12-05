@@ -8,6 +8,7 @@
   windowrule = float,^(nm-connection-editor)$
   windowrule = float,^(nm-connection-editor)$
 
+  windowrulev2 = workspace 1, class:discord
   windowrulev2 = workspace 1, class:vesktop
   windowrulev2 = workspace 2, class:Alacritty
   windowrulev2 = fullscreenstate:* 2, class:Alacritty

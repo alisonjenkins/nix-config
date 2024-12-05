@@ -30,6 +30,7 @@
 
   environment.systemPackages = with pkgs; [
     # fava
+    # ffmpeg
     # gamescope
     # inputs.jovian-nixos.legacyPackages.${system}.gamescope
     # mangohud32_git
@@ -49,13 +50,12 @@
     corectrl
     crunchy-cli
     dig
-    discord
+    discord-canary
     droidcam
     dua
     element-desktop
     ethtool
     fd
-    # ffmpeg
     filelight
     freeplane
     fzf
@@ -107,7 +107,6 @@
     tig
     tmux
     usbutils
-    vesktop
     virt-manager
     vmtouch
     vulkan-tools

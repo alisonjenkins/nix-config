@@ -32,6 +32,6 @@
   exec-once = ${pkgs.alacritty}/bin/alacritty
   exec-once = ${pkgs.firefox}/bin/firefox
   exec-once = ${pkgs.steam}/bin/steam
-  exec-once = ${pkgs.vesktop}/bin/vesktop
+  exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.waybar}/bin/waybar
 ''
