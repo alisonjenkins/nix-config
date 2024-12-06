@@ -270,6 +270,7 @@
             ./app-profiles/hardware/vr
             ./hosts/ali-framework-laptop/configuration.nix
             chaotic.nixosModules.default
+            disko.nixosModules.disko
             inputs.impermanence.nixosModules.impermanence
             inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
