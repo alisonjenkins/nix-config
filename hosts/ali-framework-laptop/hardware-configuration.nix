@@ -33,11 +33,17 @@
     };
   };
 
-  # fileSystems."/" = {
-  #   device = "none";
-  #   fsType = "tmpfs";
-  # };
-  #
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+    neededForBoot = true;
+    options = [
+      "default"
+      "size=16G"
+      "mode=755"
+    ];
+  };
+
   # fileSystems."/boot" = {
   #   device = "/dev/disk/by-partlabel/esp";
   #   fsType = "vfat";
