@@ -274,8 +274,8 @@
             inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
-            inputs.stylix.nixosModules.stylix
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
+            inputs.stylix.nixosModules.stylix
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
