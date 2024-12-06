@@ -103,6 +103,7 @@
   };
 
   fileSystems = {
+    "/".neededForBoot = true;
     "/nix".neededForBoot = true;
     "/persistence".neededForBoot = true;
   };
