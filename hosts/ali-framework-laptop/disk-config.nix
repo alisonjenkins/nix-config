@@ -48,6 +48,7 @@
               type = "filesystem";
               format = "ext4";
               mountpoint = "/nix";
+              neededForBoot = true;
               mountOptions = [
                 "defaults"
               ];
@@ -59,6 +60,7 @@
               type = "filesystem";
               format = "ext4";
               mountpoint = "/persistence";
+              neededForBoot = true;
               mountOptions = [
                 "defaults"
               ];
