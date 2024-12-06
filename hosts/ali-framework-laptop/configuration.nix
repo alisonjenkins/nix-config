@@ -102,6 +102,11 @@
     };
   };
 
+  fileSystems = {
+    "/nix".neededForBoot = true;
+    "/persistence".neededForBoot = true;
+  };
+
   hardware = {
     graphics.enable = true;
     pulseaudio.enable = false;
