@@ -6,9 +6,10 @@
 , ...
 }: {
   imports = [
-    ./hardware-configuration.nix
     ../../app-profiles/desktop
     ../../app-profiles/hardware/touchpad
+    ./disk-config.nix
+    ./hardware-configuration.nix
   ];
 
   boot = {
