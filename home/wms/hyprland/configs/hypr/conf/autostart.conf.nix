@@ -29,8 +29,6 @@
 
   # Start main tools
   exec-once = ${pkgs._1password-gui}/bin/1password
-  exec-once = ${pkgs.firefox}/bin/firefox
-  exec-once = ${pkgs.steam}/bin/steam -silent
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.waybar}/bin/waybar
   exec-once = ${pkgs.swww}/bin/swww-daemon
