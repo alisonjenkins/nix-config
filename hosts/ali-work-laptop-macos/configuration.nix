@@ -169,7 +169,21 @@
   };
 
   nix = {
+    distributedBuilds = true;
     package = pkgs.nixVersions.nix_2_18;
+
+    buildMachines =
+      let
+        linuxSystem = builtins.replaceStrings [ "darwin" ] [ "linux" ] system;
+      in
+      [{
+        hostName = "localhost";
+        sshUser = "builder";
+        sshKey = "/etc/nix/builder_ed25519";
+        system = linuxSystem;
+        maxJobs = 4;
+        supportedFeatures = [ "kvm" "benchmark" "big-parallel" ];
+      }];
 
     channel = {
       enable = true;
@@ -192,7 +206,7 @@
             diskSize = 80 * 1024;
             memorySize = 8 * 1024;
           };
-          cores = 6;
+          cores = 8;
         };
       };
     };
@@ -202,8 +216,8 @@
     # };
 
     settings = {
-      builders = "ssh-ng://builder@linux-builder aarch64-linux /etc/nix/builder_ed25519 11 - - - c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUpCV2N4Yi9CbGFxdDFhdU90RStGOFFVV3JVb3RpQzVxQkorVXVFV2RWQ2Igcm9vdEBuaXhvcwo=";
-      builders-use-substitutes = true;
+      # builders = "ssh-ng://builder@linux-builder aarch64-linux /etc/nix/builder_ed25519 11 - - - c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUpCV2N4Yi9CbGFxdDFhdU90RStGOFFVV3JVb3RpQzVxQkorVXVFV2RWQ2Igcm9vdEBuaXhvcwo=";
+      # builders-use-substitutes = true;
       experimental-features = "nix-command flakes";
       extra-trusted-users = "${username}";
       extra-platforms = "x86_64-linux";
