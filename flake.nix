@@ -252,6 +252,52 @@
           ];
         };
 
+        ali-framework-laptop = lib.nixosSystem rec {
+          inherit system;
+          specialArgs = {
+            username = "ali";
+            inherit inputs;
+            inherit outputs;
+            inherit system;
+          };
+          modules = [
+            ./app-profiles/desktop/aws
+            ./app-profiles/desktop/display-managers/sddm
+            ./app-profiles/desktop/local-k8s
+            ./app-profiles/desktop/wms/hyprland
+            ./app-profiles/desktop/wms/plasma6
+            ./app-profiles/hardware/vr
+            ./hosts/ali-framework-laptop/configuration.nix
+            chaotic.nixosModules.default
+            inputs.impermanence.nixosModules.impermanence
+            inputs.musnix.nixosModules.musnix
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.nixos-cosmic.nixosModules.default
+            inputs.stylix.nixosModules.stylix
+            nur.nixosModules.nur
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs =
+                specialArgs
+                // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "AD723B26";
+                };
+            }
+            {
+              nix.settings = {
+                substituters = [ "https://cosmic.cachix.org/" ];
+                trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
+              };
+            }
+          ];
+        };
+
         ali-work-laptop = lib.nixosSystem rec {
           system = "aarch64-linux";
           specialArgs = {

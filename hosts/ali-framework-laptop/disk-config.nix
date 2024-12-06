@@ -1,0 +1,90 @@
+{ lib, ... }:
+{
+  disko.devices = {
+    disk.disk1 = {
+      device = lib.mkDefault "/dev/nvme0n1";
+      type = "disk";
+      content = {
+        type = "gpt";
+        partitions = {
+          boot = {
+            name = "boot";
+            size = "1M";
+            type = "EF02";
+          };
+          esp = {
+            name = "ESP";
+            size = "4G";
+            type = "EF00";
+            content = {
+              type = "filesystem";
+              format = "vfat";
+              mountpoint = "/boot";
+            };
+          };
+          luks = {
+            size = "100%";
+            content = {
+              type = "luks";
+              name = "crypted";
+              passwordFile = "/tmp/secret.key";
+              settings.allowDiscards = true;
+              content = {
+                type = "lvm_pv";
+                vg = "pool";
+              };
+            };
+          };
+        };
+      };
+    };
+    lvm_vg = {
+      pool = {
+        type = "lvm_vg";
+        lvs = {
+          nix = {
+            size = "10%FREE";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/nix";
+              mountOptions = [
+                "defaults"
+              ];
+            };
+          };
+          persistence = {
+            size = "10%FREE";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/persistence";
+              mountOptions = [
+                "defaults"
+              ];
+            };
+          };
+          home = {
+            size = "50%FREE";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/home";
+              mountOptions = [
+                "defaults"
+              ];
+            };
+          };
+          swap = {
+            size = "32G";
+            content = {
+              type = "swap";
+              discardPolicy = "both";
+              resumeDevice = true;
+            };
+          };
+        };
+      };
+    };
+  };
+}
