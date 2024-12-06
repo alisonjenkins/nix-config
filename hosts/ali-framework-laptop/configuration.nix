@@ -91,6 +91,10 @@
       };
     };
 
+    systemPackages = with pkgs; [
+      framework-tool
+    ];
+
     variables = {
       NIXOS_OZONE_WL = "1";
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
