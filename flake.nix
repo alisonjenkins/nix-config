@@ -12,6 +12,7 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixgl.url = "github:nix-community/nixGL";
     nixos-cosmic.url = "github:lilyinstarlight/nixos-cosmic";
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -274,6 +275,7 @@
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             inputs.stylix.nixosModules.stylix
+            inputs.nixos-hardware.nixosModules.framework-16-7040-amd
             nur.nixosModules.nur
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
