@@ -93,9 +93,11 @@
 
         overlays =
           [
+            (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
+            (import ./overlays { inherit inputs system pkgs lib; }).master-packages
+            (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
             inputs.nur.overlay
             inputs.rust-overlay.overlays.default
-            (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
           ]
           ++ (
             if builtins.getEnv "HOSTNAME" == "steamdeck"
