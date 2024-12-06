@@ -43,7 +43,7 @@
         type = "lvm_vg";
         lvs = {
           nix = {
-            size = "10%FREE";
+            size = "400G";
             content = {
               type = "filesystem";
               format = "ext4";
@@ -54,7 +54,7 @@
             };
           };
           persistence = {
-            size = "10%FREE";
+            size = "32G";
             content = {
               type = "filesystem";
               format = "ext4";
@@ -65,7 +65,7 @@
             };
           };
           home = {
-            size = "50%FREE";
+            size = "400G";
             content = {
               type = "filesystem";
               format = "ext4";
