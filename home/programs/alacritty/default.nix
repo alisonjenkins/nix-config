@@ -59,13 +59,13 @@
     enable = true;
 
     settings = {
-      font = {
-        normal = {
-          family = "FiraCode Nerd Font Mono";
-          style = "Regular";
-        };
-        size = 12;
-      };
+      # font = {
+      #   normal = {
+      #     family = "FiraCode Nerd Font Mono";
+      #     style = "Regular";
+      #   };
+      #   size = 12;
+      # };
 
       terminal = {
         osc52 = "CopyPaste";
@@ -85,7 +85,7 @@
 
       window = {
         decorations = "None";
-        opacity = 0.9;
+        # opacity = 0.9;
         # startup_mode = "Maximized";
 
         padding = {

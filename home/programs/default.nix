@@ -25,6 +25,7 @@
     ./jq
     ./k9s
     ./kitty
+    # ./kubecolor
     ./kwalletd
     ./lsd
     ./man
