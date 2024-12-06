@@ -23,35 +23,34 @@
     extraModulePackages = [ ];
 
     initrd = {
-      availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
+      availableKernelModules = [
+        "xhci_pci"
+        "nvme"
+        "ahci"
+        "uas"
+        "usbhid"
+        "usb_storage"
+        "sd_mod"
+        "sr_mod"
+        "virtio_blk"
+        "ehci_pci"
+        "cryptd"
+        "virtio_pci"
+      ];
       kernelModules = [ "dm-snapshot" ];
       luks.devices.luksroot = {
-        device = "/dev/disk/by-partlabel/vg";
+        device = "/dev/disk/by-partlabel/crypted";
         preLVM = true;
         allowDiscards = true;
       };
     };
   };
 
-  fileSystems."/" = {
-    device = "none";
-    fsType = "tmpfs";
-    neededForBoot = true;
-    options = [
-      "default"
-      "size=16G"
-      "mode=755"
-    ];
+  fileSystems = {
+    "/".neededForBoot = true;
+    "/nix".neededForBoot = true;
+    "/persistence".neededForBoot = true;
   };
-
-  # fileSystems."/boot" = {
-  #   device = "/dev/disk/by-partlabel/esp";
-  #   fsType = "vfat";
-  # };
-  #
-  # swapDevices = [
-  #   { device = "/dev/vg/swap"; }
-  # ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
