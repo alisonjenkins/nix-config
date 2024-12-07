@@ -2,10 +2,11 @@
 , ...
 }: {
   # config.programs.hyprland.enable = true;
-  wayland.windowManager.hyprland.systemd.enable = false;
   services.hypridle.enable = true;
+  wayland.windowManager.hyprland.systemd.enable = false;
 
   home.packages = with pkgs; [
+    hyprpolkitagent
     waypaper
   ];
 
