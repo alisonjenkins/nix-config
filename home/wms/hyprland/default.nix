@@ -1,7 +1,6 @@
 { pkgs
 , ...
 }: {
-  # config.programs.hyprland.enable = true;
   services.hypridle.enable = true;
   wayland.windowManager.hyprland.systemd.enable = false;
 
