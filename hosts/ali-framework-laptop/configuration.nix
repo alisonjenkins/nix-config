@@ -1,5 +1,4 @@
-{ config
-, lib
+{ lib
 , inputs
 , outputs
 , pkgs
@@ -100,12 +99,6 @@
       NIXOS_OZONE_WL = "1";
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
-  };
-
-  fileSystems = {
-    "/".neededForBoot = true;
-    "/nix".neededForBoot = true;
-    "/persistence".neededForBoot = true;
   };
 
   hardware = {
@@ -325,15 +318,15 @@
   users = {
     users = {
       ali = {
+        autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
         initialPassword = "initPw!";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
-        packages = with pkgs; [
-          firefox
-          lolcat
-          neofetch
-        ];
+        hashedPasswordFile = "/persistence/passwords/ali";
+      };
+      root = {
+        hashedPasswordFile = "/persistence/passwords/root";
       };
     };
   };
