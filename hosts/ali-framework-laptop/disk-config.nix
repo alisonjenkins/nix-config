@@ -27,8 +27,10 @@
             content = {
               type = "luks";
               name = "crypted";
-              passwordFile = "/tmp/secret.key";
-              settings.allowDiscards = true;
+              settings = {
+                keyFile = "/tmp/secret.key";
+                allowDiscards = true;
+              };
               content = {
                 type = "lvm_pv";
                 vg = "pool";
