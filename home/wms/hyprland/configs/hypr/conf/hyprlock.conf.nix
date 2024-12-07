@@ -12,6 +12,8 @@
   }
 
   background {
+    path = screenshot
+    blur_passes = 2
     color = rgb(23, 39, 41)
   }
 ''
