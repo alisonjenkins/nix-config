@@ -12,8 +12,6 @@
   # Load Sway Notification Centre Notification Manager
   exec-once = ${pkgs.swaynotificationcenter}/bin/swaync
 
-  # Restore wallpaper and launch waybar
-  # exec-once = ${pkgs.swww}/bin/swww img ~/git/alijenkins-wallpapers/static/5440x1440/sakura-mountains.png
 
   # Load GTK settings
   # exec-once = ~/.config/hypr/scripts/gtk.sh
@@ -29,4 +27,7 @@
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.waybar}/bin/waybar
   exec-once = ${pkgs.swww}/bin/swww-daemon
+
+  # Restore wallpaper
+  exec-once = ${pkgs.swww}/bin/swww img ~/git/alijenkins-wallpapers/static/5440x1440/sakura-mountains.png
 ''
