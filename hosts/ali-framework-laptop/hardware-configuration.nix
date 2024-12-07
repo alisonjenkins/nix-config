@@ -38,11 +38,6 @@
         "virtio_pci"
       ];
       kernelModules = [ "dm-snapshot" ];
-      luks.devices.luksroot = {
-        device = "/dev/disk/by-partlabel/crypted";
-        preLVM = true;
-        allowDiscards = true;
-      };
     };
   };
 
