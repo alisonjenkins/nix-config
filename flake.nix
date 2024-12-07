@@ -98,7 +98,7 @@
             (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
             (import ./overlays { inherit inputs system pkgs lib; }).master-packages
             (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
-            inputs.nur.overlay
+            inputs.nur.overlays.default
             inputs.rust-overlay.overlays.default
           ]
           ++ (
@@ -187,7 +187,7 @@
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             inputs.stylix.nixosModules.stylix
-            nur.nixosModules.nur
+            nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
@@ -235,7 +235,7 @@
             ./hosts/ali-laptop/configuration.nix
             chaotic.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            nur.nixosModules.nur
+            nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
@@ -277,7 +277,7 @@
             inputs.nixos-cosmic.nixosModules.default
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
             inputs.stylix.nixosModules.stylix
-            nur.nixosModules.nur
+            nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
@@ -319,7 +319,7 @@
             ./hosts/ali-work-laptop/disko-config.nix
             disko.nixosModules.disko
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            nur.nixosModules.nur
+            nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
@@ -356,7 +356,7 @@
             chaotic.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.jovian-nixos.nixosModules.default
-            nur.nixosModules.nur
+            nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
               environment.systemPackages = [
