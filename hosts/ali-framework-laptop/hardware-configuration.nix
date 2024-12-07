@@ -45,6 +45,11 @@
     "/".neededForBoot = true;
     "/nix".neededForBoot = true;
     "/persistence".neededForBoot = true;
+    "/media/storage" = {
+      label = "storage";
+      fsType = "ext4";
+      neededForBoot = false;
+    };
   };
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
