@@ -3,7 +3,6 @@
 , lib
 , outputs
 , pkgs
-, system
 , ...
 }: {
   imports = [
