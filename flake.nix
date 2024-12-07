@@ -235,6 +235,7 @@
             ./hosts/ali-laptop/configuration.nix
             chaotic.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
