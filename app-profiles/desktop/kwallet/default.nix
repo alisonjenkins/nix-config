@@ -1,3 +1,14 @@
-{ username, ... }: {
-  security.pam.services.${username}.enableKwallet = true;
+{ ... }: {
+  security.pam.services = {
+    login = {
+      kwallet = {
+        enable = true;
+      };
+    };
+    kde = {
+      kwallet = {
+        enable = true;
+      };
+    };
+  };
 }
