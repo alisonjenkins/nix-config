@@ -1,9 +1,12 @@
-{ lib
-, pkgs
+{ pkgs
 , inputs
 , system
 , ...
 }: {
+  imports = [
+    ../1password
+  ];
+
   boot = {
     binfmt = {
       emulatedSystems = [

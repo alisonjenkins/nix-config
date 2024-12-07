@@ -1,7 +1,6 @@
 {
   imports = [
     # ./dunst
-    ./1password
     ./aerospace
     ./alacritty
     ./aws
