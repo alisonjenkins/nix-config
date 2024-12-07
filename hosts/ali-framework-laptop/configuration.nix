@@ -6,6 +6,7 @@
 }: {
   imports = [
     ../../app-profiles/desktop
+    ../../app-profiles/desktop/kwallet
     ../../app-profiles/hardware/touchpad
     ./disk-config.nix
     ./hardware-configuration.nix
