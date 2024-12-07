@@ -10,8 +10,6 @@
     wl-clipboard
   ];
 
-  security.pam.services.${username}.enableKwallet = true;
-
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
