@@ -260,7 +260,7 @@
     overlays = [
       # outputs.overlays.alvr
       # outputs.overlays.ffmpeg
-      inputs.nur.overlay
+      inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
       outputs.overlays._7zz
       outputs.overlays.additions

@@ -590,7 +590,7 @@
   nixpkgs = {
     config = { allowUnfree = true; };
     overlays = [
-      inputs.nur.overlay
+      inputs.nur.overlays.default
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications

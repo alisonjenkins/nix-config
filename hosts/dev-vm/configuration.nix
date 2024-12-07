@@ -97,7 +97,7 @@
     config.allowUnfree = true;
     overlays = [
       # outputs.overlays.alvr
-      inputs.nur.overlay
+      inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
       outputs.overlays.additions
       outputs.overlays.bacon-nextest
