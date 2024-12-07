@@ -164,7 +164,7 @@
 }
 
 #workspaces button:hover {
-  background-color: @mauve;
+  background-color: @base0E;
 }
 
 @keyframes gradient {
@@ -210,8 +210,7 @@
 /* =============================== */
 /* System Monitoring Modules */
 #cpu,
-#memory,
-#cpu {
+#memory {
   color: @base0F;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
@@ -247,7 +246,7 @@
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 5px;
-  padding-right: 1rem;
+  padding-right: 3rem;
 }
 
 /* Updates Module */
@@ -373,6 +372,7 @@
   /* padding-right: 5px; */
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  margin-left: 5px;
   margin-right: 0px;
   /* padding-right: 5px; */
 }
