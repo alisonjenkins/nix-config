@@ -67,6 +67,7 @@
           "/etc/ssh"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
+          "/var/lib/fprint"
           "/var/lib/nixos"
           "/var/lib/systemd/coredump"
           "/var/log"
