@@ -5,6 +5,10 @@
   wayland.windowManager.hyprland.systemd.enable = false;
   services.hypridle.enable = true;
 
+  home.packages = with pkgs; [
+    waypaper
+  ];
+
   home.file =
     if pkgs.stdenv.isLinux then {
       ".config/hypr/conf/autostart.conf".text = import ./configs/hypr/conf/autostart.conf.nix { inherit pkgs; };
