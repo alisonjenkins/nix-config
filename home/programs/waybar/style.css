@@ -104,9 +104,9 @@
 /* Launcher Module */
 #custom-launcher {
   color: @base0B;
-  padding-top: 0px;
-  padding-bottom: 0px;
-  padding-right: 10px;
+  /* padding-top: 0px; */
+  /* padding-bottom: 0px; */
+  /* padding-right: 10px; */
 }
 
 /* =============================== */
@@ -216,30 +216,30 @@
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: 0px;
-  padding-right: 5px;
+  /* padding-right: 5px; */
 }
 
 #memory {
   border-radius: 0px;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 #custom-gpu {
   color: @base0C;
   border-radius: 0px;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 #temperature {
   color: @base08;
   border-radius: 0px;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 #disk {
@@ -374,7 +374,7 @@
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: 0px;
-  padding-right: 5px;
+  /* padding-right: 5px; */
 }
 
 /* =============================== */
@@ -385,8 +385,8 @@
   color: @base0F;
   border-radius: 0;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 /* =============================== */
@@ -409,16 +409,16 @@
   color: @base0B;
   border-radius: 0;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 #battery {
   color: @base0B;
   border-radius: 0;
   margin-right: 0px;
-  padding-left: 5px;
-  padding-right: 5px;
+  /* padding-left: 5px; */
+  /* padding-right: 5px; */
 }
 
 #battery.charging {
@@ -452,15 +452,15 @@
   color: @base0D;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  padding-left: 5px;
-  padding-right: 1.25rem;
+  /* padding-left: 5px; */
+  /* padding-right: 1.25rem; */
 }
 
 /* =============================== */
 /* Tray Module */
 #tray {
   color: @base0E;
-  padding-right: 1.25rem;
+  /* padding-right: 1.25rem; */
 }
 
 /* =============================== */
@@ -470,14 +470,14 @@
 /* =============================== */
 #custom-custom {
   color: @base0E;
-  padding-right: 1.25rem;
+  /* padding-right: 1.25rem; */
   margin-right: 0px;
 }
 
 /* Screenshot */
 #custom-ss {
   color: @base0C;
-  padding-right: 1.5rem;
+  /* padding-right: 1.5rem; */
 }
 
 /* Wallpaper */
@@ -504,7 +504,7 @@
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: 0px;
-  padding-right: 8px;
+  /* padding-right: 8px; */
 }
 
 /* Powermenu Module */
@@ -514,7 +514,7 @@
   /* border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 8px; */
-  padding-right: 1.2rem;
+  /* padding-right: 1.2rem; */
 }
 
 /* =============================== */
