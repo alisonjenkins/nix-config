@@ -3,7 +3,7 @@
     if pkgs.stdenv.isLinux
     then
       with pkgs; [
-        _1password
+        _1password-cli
         _1password-gui
       ]
     else [ ];
