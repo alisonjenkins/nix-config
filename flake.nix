@@ -512,7 +512,7 @@
             };
           };
           ali-framework-laptop = {
-            hostname = "ali-framework-laptop.lan";
+            hostname = "ali-framework-laptop-wifi.lan";
             profiles = {
               system = {
                 user = "root";
