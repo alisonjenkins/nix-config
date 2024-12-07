@@ -321,7 +321,6 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        initialPassword = "initPw!";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
