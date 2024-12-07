@@ -18,9 +18,6 @@
   # Load GTK settings
   # exec-once = ~/.config/hypr/scripts/gtk.sh
 
-  # Using hypridle to start hyprlock
-  exec-once = ${pkgs.hypridle}/bin/hypridle
-
   # Start eww daemon
   exec-once = ${pkgs.eww}/bin/ags &
 
