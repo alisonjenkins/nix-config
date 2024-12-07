@@ -22,11 +22,11 @@
               mountpoint = "/boot";
             };
           };
-          luks = {
+          crypted = {
             size = "100%";
-            name = "crypted";
             content = {
               type = "luks";
+              name = "crypted";
               passwordFile = "/tmp/secret.key";
               settings.allowDiscards = true;
               content = {
