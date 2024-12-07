@@ -108,6 +108,7 @@
   hardware = {
     graphics.enable = true;
     pulseaudio.enable = false;
+    wirelessRegulatoryDatabase = true;
   };
 
   i18n.extraLocaleSettings = {
