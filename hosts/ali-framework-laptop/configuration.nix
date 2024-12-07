@@ -139,6 +139,11 @@
       dates = "weekly";
       options = "--delete-older-than 60d";
     };
+
+    settings = {
+      auto-optimise-store = false;
+      trusted-users = [ "root" "@wheel" ];
+    };
   };
 
   nixpkgs = {

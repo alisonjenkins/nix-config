@@ -511,6 +511,15 @@
               };
             };
           };
+          ali-framework-laptop = {
+            hostname = "ali-framework-laptop.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-framework-laptop;
+              };
+            };
+          };
         };
       };
 
