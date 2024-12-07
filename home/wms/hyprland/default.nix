@@ -5,6 +5,7 @@
   wayland.windowManager.hyprland.systemd.enable = false;
 
   home.packages = with pkgs; [
+    blueman
     hyprpolkitagent
     waypaper
   ];
