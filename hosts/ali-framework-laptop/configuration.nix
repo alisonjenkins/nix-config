@@ -97,6 +97,7 @@
 
     systemPackages = with pkgs; [
       framework-tool
+      ldacbt
     ];
 
     variables = {
