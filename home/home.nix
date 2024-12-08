@@ -80,6 +80,7 @@
         teams-for-linux
         tig
         tty-clock
+        vesktop
         webcord
         wget
         wl-clipboard
