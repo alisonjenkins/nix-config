@@ -18,9 +18,10 @@
   };
 
   environment.systemPackages = map lib.lowPrio [
+    inputs.ali-neovim.packages.${system}.nvim
     pkgs.curl
     pkgs.gitMinimal
-    inputs.ali-neovim.packages.${system}.nvim
+    pkgs.htop
   ];
 
   networking = {
