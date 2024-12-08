@@ -6,7 +6,7 @@
       sddm = {
         enable = true;
         theme = "breeze";
-        wayland.enable = true;
+        wayland.enable = false;
       };
     };
 
