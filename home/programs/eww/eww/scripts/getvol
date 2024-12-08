@@ -1,0 +1,9 @@
+#!/bin/sh
+VOLUME=$(wpctl get-volume "$DEVICE_ID")
+
+if echo "$VOLUME" | grep -q '[MUTED]' > /dev/null; then
+    echo 0
+    exit
+else
+    echo "$(echo "$VOLUME" | cut -d ' ' -f 2) * 100" | bc -l
+fi
