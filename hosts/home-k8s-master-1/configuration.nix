@@ -65,6 +65,8 @@
         "--cluster-init"
         "--disable servicelb"
         "--disable traefik"
+        "--disable-network-policy"
+        "--flannel-backend=none"
       ];
     };
   };
