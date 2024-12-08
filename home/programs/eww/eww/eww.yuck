@@ -10,13 +10,15 @@
   (box :class "sidestuff" :orientation "h" :space-evenly false :halign "end"
     (metric :label "🔊"
             :value volume
-            :onchange "amixer -D pulse sset Master {}%")
-    (metric :label ""
+            :onchange "wpctl set-volume @DEFAULT_SINK@ {}%")
+    (metric :label ""
             :value {EWW_RAM.used_mem_perc}
             :onchange "")
-    (metric :label "💾"
-            :value {round((1 - (EWW_DISK["/"].free / EWW_DISK["/"].total)) * 100, 0)}
-            :onchange "")
+    ;; (metric :label "💾"
+    ;;         :value {round((1 - (EWW_DISK["/"].free / EWW_DISK["/"].total)) * 100, 0)}
+    ;;         :onchange "")
+    (systray :pack-direction "ltr"
+             :icon-size "10px")
     time
   )
 )
@@ -73,11 +75,12 @@
 (defwindow bar
   :monitor 0
   :windowtype "dock"
+  :exclusive true
   :geometry (geometry :x "0%"
-                      :y "0%"
-                      :width "90%"
-                      :height "10px"
+                      :y "10px"
+                      :width "99.4%"
+                      :height "40px"
                       :anchor "top center")
-  :reserve (struts :side "top" :distance "4%")
+  :reserve (struts :side "top" :distance "30px")
   (bar)
 )

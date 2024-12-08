@@ -1,6 +1,7 @@
 {
   imports = [
     # ./dunst
+    # ./kubecolor
     ./aerospace
     ./alacritty
     ./aws
@@ -9,6 +10,7 @@
     ./carapace
     ./comodoro
     ./direnv
+    ./eww
     ./firefox
     ./fzf
     ./gcc
@@ -24,7 +26,6 @@
     ./jq
     ./k9s
     ./kitty
-    # ./kubecolor
     ./kwalletd
     ./lsd
     ./man
