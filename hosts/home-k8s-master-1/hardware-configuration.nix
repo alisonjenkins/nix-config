@@ -14,6 +14,15 @@
   boot.initrd.kernelModules = [ "dm-snapshot" ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPatches = [
+    {
+      name = "enable-netkit";
+      patch = null;
+      extraConfig = ''
+        NETKIT y
+      '';
+    }
+  ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
