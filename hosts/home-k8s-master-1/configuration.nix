@@ -62,12 +62,12 @@
       role = "server";
       tokenFile = "/run/secrets/k8s-token";
       extraFlags = toString [
-        "--write-kubeconfig-mode \"0400\""
         "--cluster-init"
         "--disable servicelb"
         "--disable traefik"
         "--disable-network-policy"
         "--flannel-backend=none"
+        "--write-kubeconfig-mode \"0400\""
       ];
     };
   };
@@ -77,19 +77,19 @@
     defaultSopsFormat = "yaml";
 
     age = {
-      sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-      keyFile = "/var/lib/sops-nix/key.txt";
       generateKey = true;
+      keyFile = "/var/lib/sops-nix/key.txt";
+      sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
     };
 
     secrets = {
       k8s-token = {
-        sopsFile = ../../secrets/home-k8s-master-1/secrets.yaml;
+        group = "root";
         mode = "0400";
         owner = "root";
-        group = "root";
         path = "/run/secrets/k8s-token";
         restartUnits = [ "k3s.service" ];
+        sopsFile = ../../secrets/home-k8s-master-1/secrets.yaml;
       };
     };
   };
