@@ -9,6 +9,8 @@
         wayland.enable = true;
       };
     };
+
+    xserver.enable = true;
   };
 
   systemd.services = {
