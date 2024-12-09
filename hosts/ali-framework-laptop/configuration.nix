@@ -69,6 +69,7 @@
           "/var/lib/flatpak"
           "/var/lib/fprint"
           "/var/lib/nixos"
+          "/var/lib/power-profiles-daemon"
           "/var/lib/sddm"
           "/var/lib/systemd/coredump"
           "/var/log"
