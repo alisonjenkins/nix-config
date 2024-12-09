@@ -22,6 +22,7 @@
   # Start main tools
   exec-once = ${pkgs._1password-gui}/bin/1password
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
+  exec-once = ${pkgs.swww}/bin/swww-daemon
   exec-once = ${pkgs.blueman}/bin/blueman-applet
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.eww}/bin/ags &
