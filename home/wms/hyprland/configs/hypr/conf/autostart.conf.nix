@@ -25,9 +25,10 @@
   exec-once = ${pkgs.swww}/bin/swww-daemon
   exec-once = ${pkgs.blueman}/bin/blueman-applet
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
-  exec-once = ${pkgs.eww}/bin/ags &
+  exec-once = ${pkgs.eww}/bin/eww daemon
   exec-once = ${pkgs.swww}/bin/swww-daemon
 
   # Restore wallpaper
   exec-once = ${pkgs.swww}/bin/swww img ~/git/alijenkins-wallpapers/static/5440x1440/sakura-mountains.png
+  exec-once = ${pkgs.eww}/bin/eww open bar
 ''
