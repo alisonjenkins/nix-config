@@ -40,8 +40,8 @@
   # Reload hyprland config
   bind = $mainMod SHIFT, R, exec, ${pkgs.hyprland}/bin/hyprctl reload
 
-  # Toggle waybar
-  bind = $mainMod CTRL, B, exec, ${pkgs.psmisc}/bin/killall -SIGUSR1 .waybar-wrapped
+  # # Toggle waybar
+  # bind = $mainMod CTRL, B, exec, ${pkgs.psmisc}/bin/killall -SIGUSR1 .waybar-wrapped
 
   # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
   bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper                                                             
