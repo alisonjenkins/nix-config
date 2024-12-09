@@ -43,6 +43,7 @@
     ./starship
     ./tmux
     ./waybar
+    ./yambar
     ./yazi
     ./zoxide
     ./zq
