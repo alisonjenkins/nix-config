@@ -17,8 +17,10 @@
     ;; (metric :label "💾"
     ;;         :value {round((1 - (EWW_DISK["/"].free / EWW_DISK["/"].total)) * 100, 0)}
     ;;         :onchange "")
-    (systray :pack-direction "ltr"
-             :icon-size "10px")
+    (box :class "systray" :orientation "h" :space-evenly false :halign "end"
+      (systray :pack-direction "ltr"
+               :icon-size "10px")
+    )
     time
   )
 )
