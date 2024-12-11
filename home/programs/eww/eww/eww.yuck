@@ -8,18 +8,19 @@
 
 (defwidget sidestuff []
   (box :class "sidestuff" :orientation "h" :space-evenly false :halign "end"
+    (metric :label "🔋"
+            :value battery
+            :onchange ""
+    )
     (metric :label "🔆"
             :value brightness
             :onchange "brightnessctl set {}%")
     (metric :label "🔊"
             :value volume
             :onchange "wpctl set-volume @DEFAULT_SINK@ {}%")
-    (metric :label ""
-            :value {EWW_RAM.used_mem_perc}
+    (metric :label "💾"
+            :value {round((1 - (EWW_DISK["/"].free / EWW_DISK["/"].total)) * 100, 0)}
             :onchange "")
-    ;; (metric :label "💾"
-    ;;         :value {round((1 - (EWW_DISK["/"].free / EWW_DISK["/"].total)) * 100, 0)}
-    ;;         :onchange "")
     (box :class "systray" :orientation "h" :space-evenly false :halign "end"
       (systray :pack-direction "ltr"
                :icon-size "10px")
@@ -71,11 +72,14 @@
 (deflisten music :initial ""
   "playerctl --follow metadata --format '{{ artist }} - {{ title }}' || true")
 
-(defpoll volume :interval "1s"
+(defpoll volume :interval "10s"
   "scripts/getvol")
 
 (defpoll brightness :interval "1s"
   "brightnessctl info | grep -Eo '[0-9]{1,3}%' | tr -d '%'")
+
+(defpoll battery :interval "10s"
+  "scripts/battery")
 
 (defpoll time :interval "10s"
   "date '+%H:%M %b %d, %Y'")
