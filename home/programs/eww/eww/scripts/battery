@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+upower -i "$(upower -e | grep 'BAT')" | rg 'percentage:\s*(?P<percent>\d*)%' --replace '$percent.00' | tr -d ' '
