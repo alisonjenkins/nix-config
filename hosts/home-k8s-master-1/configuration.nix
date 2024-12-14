@@ -62,12 +62,14 @@
       role = "server";
       tokenFile = "/run/secrets/k8s-token";
       extraFlags = toString [
+        "--cluster-cidr=10.42.0.0/16"
         "--cluster-init"
         "--disable servicelb"
         "--disable traefik"
         "--disable-kube-proxy"
         "--disable-network-policy"
         "--flannel-backend=none"
+        "--service-cidr=10.43.0.0/16"
         "--write-kubeconfig-mode \"0400\""
       ];
     };
