@@ -63,9 +63,9 @@
       tokenFile = "/run/secrets/k8s-token";
       extraFlags = toString [
         "--cluster-init"
-        "--disable-kube-proxy"
         "--disable servicelb"
         "--disable traefik"
+        "--disable-kube-proxy"
         "--disable-network-policy"
         "--flannel-backend=none"
         "--write-kubeconfig-mode \"0400\""
