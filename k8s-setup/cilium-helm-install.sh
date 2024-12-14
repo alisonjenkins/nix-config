@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+kubectl kustomize --enable-helm | kubectl apply -f -
+
+# --set cluster.name="$CLUSTER_NAME" \
+# --set kubeProxyReplacement=true \
+# --set ipv4.enabled=true \
+# --set ipv6.enabled=false \
+# --set k8sServiceHost="192.168.1.251" \
+# --set k8sServicePort=6443 \
+# --set ipam.mode=cluster-pool \
+# --set ipam.operator.clusterPoolIPv4PodCIDRList="10.42.0.0/16" \
+# --set ipam.operator.clusterPoolIPv4MaskSize=24 \
+# --set k8s.requireIPv4PodCIDR=true \
+# --set autoDirectNodeRoutes=false \
+# --set routingMode=tunnel \
+# --set endpointRoutes.enabled=true \
+# --set ipv4NativeRoutingCIDR="10.0.0.0/8" \
+# --set bpf.tproxy=true \
+# --set bpf.preallocateMaps=true \
+# --set bpf.hostLegacyRouting=false \
+# --set bpf.masquerade=true \
+# --set enableIPv4Masquerade=true \
+# --set encryption.enabled=true \
+# --set encryption.type=wireguard \
+# --set encryption.nodeEncryption=true \
+# --set encryption.strictMode.enabled=true \
+# --set encryption.strictMode.cidr="10.0.0.0/8" \
+# --set encryption.strictMode.allowRemoteNodeIdentities=true \
+# --set rollOutCiliumPods=true \
+# --set operator.rollOutPods=true \
+# --set operator.replicas=1 \
+# --set l2announcements.enabled=true \
+# --set externalIPs.enabled=true \
+# --set k8sClientRateLimit.qps=50 \
+# --set k8sClientRateLimit.burst=200 \
+# --set ingressController.enabled=true \
+# --set ingressController.default=true \
+# --set ingressController.loadBalancerMode=shared \
+# --set ingressController.service.annotations.io.cilium/lb-ipam-ips=192.168.1.240

@@ -1,0 +1,68 @@
+# ipv4NativeRoutingCIDR: "10.0.0.0/8"
+autoDirectNodeRoutes: false
+enableIPv4Masquerade: true
+k8sServiceHost: "192.168.1.251"
+k8sServicePort: 6443
+kubeProxyReplacement: true
+rollOutCiliumPods: true
+routingMode: tunnel
+
+cluster:
+  name: "default"
+
+ipv4:
+  enabled: true
+
+ipv6:
+  enabled: false
+
+ipam:
+  mode: kubernetes
+  operator:
+    clusterPoolIPv4PodCIDRList: "10.42.0.0/16"
+    # clusterPoolIPv4MaskSize: 24
+
+bpf:
+  hostLegacyRouting: false
+  datapathMode: netkit
+  masquerade: true
+  preallocateMaps: true
+  tproxy: true
+
+
+k8s:
+  requireIPv4PodCIDR: true
+
+endpointRoutes:
+  enabled: true
+
+# encryption:
+#   enabled: true
+#   type: wireguard
+#   nodeEncryption: true
+#   strictMode:
+#     enabled: true
+#     cidr: "10.0.0.0/8"
+#     allowRemoteNodeIdentities: true
+
+operator:
+  rollOutPods: true
+  replicas: 1
+
+l2announcements:
+  enabled: true
+
+externalIPs:
+  enabled: true
+
+k8sClientRateLimit:
+  qps: 50
+  burst: 200
+
+ingressController:
+  enabled: true
+  default: true
+  loadBalancerMode: shared
+  service:
+    annotations:
+      io.cilium/lb-ipam-ips: 192.168.1.240
