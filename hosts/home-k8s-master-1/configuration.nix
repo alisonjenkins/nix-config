@@ -63,6 +63,7 @@
       tokenFile = "/run/secrets/k8s-token";
       extraFlags = toString [
         "--cluster-init"
+        "--disable-kube-proxy"
         "--disable servicelb"
         "--disable traefik"
         "--disable-network-policy"
