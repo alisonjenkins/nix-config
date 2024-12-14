@@ -191,17 +191,6 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
-              environment.systemPackages = [
-                # inputs.ghostty.packages.x86_64-linux.default
-              ];
-            }
-            {
-              nix.settings = {
-                substituters = [ "https://cosmic.cachix.org/" ];
-                trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
-              };
-            }
-            {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home.nix;
