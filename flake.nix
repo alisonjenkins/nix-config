@@ -561,6 +561,7 @@
           just
           libsecret
           nix-fast-build
+          nixos-anywhere
         ];
 
         shellHook = ''
