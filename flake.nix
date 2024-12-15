@@ -4,6 +4,7 @@
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
@@ -20,10 +21,6 @@
     stylix.url = "github:danth/stylix/release-24.11";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
 
-    chaotic = {
-      url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     darwin = {
       url = "github:lnl7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
