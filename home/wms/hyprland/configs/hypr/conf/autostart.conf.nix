@@ -3,6 +3,9 @@
   # Autostart
   # -----------------------------------------------------
 
+  # Allow hyprshade to adjust filters
+  exec-once = dbus-update-activation-environment --systemd HYPRLAND_INSTANCE_SIGNATURE
+
   # Setup XDG for screen sharing
   # exec-once = ~/.config/hypr/scripts/xdg.sh
 
@@ -31,4 +34,7 @@
   # Restore wallpaper
   exec-once = ${pkgs.swww}/bin/swww img ~/git/alijenkins-wallpapers/static/5440x1440/sakura-mountains.png
   exec-once = ${pkgs.eww}/bin/eww open bar
+
+  # Blue light filter
+  exec = ${pkgs.hyprshade}/bin/hyprshade auto
 ''
