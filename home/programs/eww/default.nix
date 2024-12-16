@@ -6,11 +6,11 @@
   #   };
   # };
 
-  home.packages = with pkgs; [
+  home.packages = with pkgs; if pkgs.stdenv.isLinux then [
     bc
     coreutils
     eww
     gnugrep
     wireplumber
-  ];
+  ] else [ ];
 }

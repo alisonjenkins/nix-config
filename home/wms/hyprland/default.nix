@@ -4,12 +4,12 @@
   services.hypridle.enable = true;
   wayland.windowManager.hyprland.systemd.enable = false;
 
-  home.packages = with pkgs; [
+  home.packages = with pkgs; if pkgs.stdenv.isLinux then [
     blueman
     hyprlock
     hyprpolkitagent
     waypaper
-  ];
+  ] else [ ];
 
   home.file =
     if pkgs.stdenv.isLinux then {
