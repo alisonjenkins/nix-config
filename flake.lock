@@ -11,11 +11,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1734304509,
-        "narHash": "sha256-DApGUUXdWN/HKbZ9t+qsruq0ssFOysAAJVUazSJCQzE=",
+        "lastModified": 1734338902,
+        "narHash": "sha256-JovH4GQxebnJEXK83rA2u26Ey1u3dm30HMpJFTieIVo=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "95065a54c8c58385d13f98bd70578f24a813b9fa",
+        "rev": "3843c8fc4548adf2a5ad017f6f2fd015985f37da",
         "type": "github"
       },
       "original": {
@@ -554,11 +554,11 @@
         "zig": "zig"
       },
       "locked": {
-        "lastModified": 1734300570,
-        "narHash": "sha256-SSY5LfPLhRVgUiI8eLOQAfQN5wTMI20WSjtKAQe47oU=",
+        "lastModified": 1734327066,
+        "narHash": "sha256-RCMc9HVd34I4FW9eDgAQC4hShztMgrNdSRjzbpcEvIM=",
         "ref": "refs/heads/main",
-        "rev": "f50e8a5fdb6f74b168942922c123d0b2bb71816a",
-        "revCount": 8281,
+        "rev": "50cee999887c1c1f9ad32caf7e705c05db3efc18",
+        "revCount": 8294,
         "type": "git",
         "url": "ssh://git@github.com/ghostty-org/ghostty"
       },
@@ -1031,11 +1031,11 @@
         "umu": "umu"
       },
       "locked": {
-        "lastModified": 1734227443,
-        "narHash": "sha256-uGHvI5ZAyyFHWivClGk3Ohzn2Re94o/o2yGbFwxQGBk=",
+        "lastModified": 1734313951,
+        "narHash": "sha256-DCjhmX5dVn11J8Ss+5Py4yMh8k7a63HakMENccGZBr4=",
         "owner": "fufexan",
         "repo": "nix-gaming",
-        "rev": "ea1ee2aec319b1262d067ffb539d94e010af9ca2",
+        "rev": "a5f8dee3f7e6864da0d69a227bc8a90a3cbf9d0f",
         "type": "github"
       },
       "original": {
@@ -1536,11 +1536,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1734303123,
-        "narHash": "sha256-R6KtZLZnep6k3d7yJg42DkVbXySEFLGDrhmu/B364t8=",
+        "lastModified": 1734338290,
+        "narHash": "sha256-KtssPyOkg2EGiKddPWCzY7tRLvW7YKLKeZCZJSjfIms=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "639295b1f6dc159631e7dec5a0b926ec2a2fdf9c",
+        "rev": "a9a3e341c6bc326e5a3de9324c33ba283f7ce242",
         "type": "github"
       },
       "original": {
@@ -1614,11 +1614,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1734294458,
-        "narHash": "sha256-fyVoO/uviNMKgNRRYwx+pu72vSATYEdyFpg/sNDqqzo=",
+        "lastModified": 1734339121,
+        "narHash": "sha256-BddvM60FtL/S4vQGCSUAKBxbawI5IvUASn73OOFBjnM=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "6c6346ecf69b32fc020784314a074b60dd1a2fd6",
+        "rev": "48d6835f1b7869ccbb18035b697c9263fd02a452",
         "type": "github"
       },
       "original": {
@@ -1732,11 +1732,11 @@
         "nixpkgs": "nixpkgs_13"
       },
       "locked": {
-        "lastModified": 1734230139,
-        "narHash": "sha256-zsp0Mz8VgyIAnU8UhP/YT1g+zlsl+NIJTBMAbY+RifQ=",
+        "lastModified": 1734316514,
+        "narHash": "sha256-0aLx44yMblcOGpfFXKCzp2GhU5JaE6OTvdU+JYrXiUc=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "150fbc8aa2bc501041810bbc1dbfe73694a861be",
+        "rev": "83ee8ff74d6294a7657320f16814754c4594127b",
         "type": "github"
       },
       "original": {
