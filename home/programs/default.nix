@@ -6,6 +6,7 @@
     ./alacritty
     ./aws
     ./bat
+    ./batsignal
     ./broot
     ./carapace
     ./comodoro
