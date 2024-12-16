@@ -17,7 +17,7 @@
       ".config/hypr/hypridle.conf".text = import ./configs/hypr/hypridle.conf.nix;
       ".config/hypr/hyprlock.conf".text = import ./configs/hypr/hyprlock.conf.nix;
       ".config/hypr/keybinds.conf".text = import ./configs/hypr/keybinds.conf.nix { inherit pkgs; };
-      ".config/hypr/conf/windowrules.conf".text = import ./configs/hypr/conf/windowrules.conf.nix;
+      ".config/hypr/windowrules.conf".text = import ./configs/hypr/windowrules.conf.nix;
       ".config/hypr/wleave-layout.conf".text = import ./configs/hypr/wleave-layout.conf.nix { inherit pkgs; };
       ".config/hypr/hyprland.conf".text = builtins.readFile ./configs/hypr/hyprland.conf;
       ".config/hypr/hyprshade.toml".text = import ./configs/hypr/hyprshade.toml.nix;
