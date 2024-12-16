@@ -47,7 +47,7 @@
   bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper                                                             
 
   # Start wleave
-  bind = $mainMod, DELETE, exec, ${pkgs.wleave}/bin/wleave --show-keybinds --layout ~/.config/hypr/conf/wleave-layout.conf
+  bind = $mainMod, DELETE, exec, ${pkgs.wleave}/bin/wleave --show-keybinds --layout ~/.config/hypr/wleave-layout.conf
 
   # Change the wallpaper
   bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random
