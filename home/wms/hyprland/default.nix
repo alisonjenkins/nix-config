@@ -15,7 +15,7 @@
     if pkgs.stdenv.isLinux then {
       ".config/hypr/autostart.conf".text = import ./configs/hypr/autostart.conf.nix { inherit pkgs; };
       ".config/hypr/hypridle.conf".text = import ./configs/hypr/hypridle.conf.nix;
-      ".config/hypr/hyprlock.conf".text = import ./configs/hypr/conf/hyprlock.conf.nix;
+      ".config/hypr/hyprlock.conf".text = import ./configs/hypr/hyprlock.conf.nix;
       ".config/hypr/conf/keybinds.conf".text = import ./configs/hypr/conf/keybinds.conf.nix { inherit pkgs; };
       ".config/hypr/conf/windowrules.conf".text = import ./configs/hypr/conf/windowrules.conf.nix;
       ".config/hypr/wleave-layout.conf".text = import ./configs/hypr/wleave-layout.conf.nix { inherit pkgs; };
