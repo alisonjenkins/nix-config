@@ -562,8 +562,10 @@
         ];
 
         shellHook = ''
-          export NIX_CONFIG;
-          NIX_CONFIG="access-tokens = github.com=$(secret-tool lookup github.com pat)"
+          if [ -z ''${NIX_CONFIG+x} ]; then
+            export NIX_CONFIG;
+            NIX_CONFIG="access-tokens = github.com=$(secret-tool lookup github.com pat)"
+          fi
         '';
       };
     };
