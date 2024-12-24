@@ -564,7 +564,7 @@
         shellHook = ''
           if [ -z ''${NIX_CONFIG+x} ]; then
             export NIX_CONFIG;
-            NIX_CONFIG="access-tokens = github.com=''$(${pkgs._1password-cli}/bin/op item get "Github PAT" --fields label=password --reveal)"
+            NIX_CONFIG="access-tokens = github.com=''$(op item get "Github PAT" --fields label=password --reveal)"
           fi
         '';
       };
