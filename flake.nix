@@ -306,6 +306,7 @@
             ./hosts/ali-work-laptop/disko-config.nix
             disko.nixosModules.disko
             inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
@@ -341,8 +342,9 @@
             ./app-profiles/desktop/local-k8s
             ./hosts/ali-steam-deck/configuration.nix
             chaotic.nixosModules.default
-            inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.jovian-nixos.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
+            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
@@ -396,20 +398,20 @@
             ./hosts/home-kvm-hypervisor-1/disko-config.nix
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
-              home-manager.extraSpecialArgs =
-                specialArgs
-                // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                  gitGPGSigningKey = "";
-                  extraImports = [ ./home/wms/hyprland ];
-                };
-            }
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs =
+            #     specialArgs
+            #     // {
+            #       gitUserName = "Alison Jenkins";
+            #       gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            #       gitGPGSigningKey = "";
+            #       extraImports = [ ./home/wms/hyprland ];
+            #     };
+            # }
           ];
         };
 
@@ -425,20 +427,20 @@
             disko.nixosModules.disko
             ./hosts/home-storage-server-1/disko-config.nix
             ./hosts/home-storage-server-1/configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
-              home-manager.extraSpecialArgs =
-                specialArgs
-                // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                  gitGPGSigningKey = "";
-                  extraImports = [ ./home/wms/hyprland ];
-                };
-            }
+            # home-manager.nixosModules.home-manager
+            # {
+            #   home-manager.useGlobalPkgs = true;
+            #   home-manager.useUserPackages = true;
+            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.extraSpecialArgs =
+            #     specialArgs
+            #     // {
+            #       gitUserName = "Alison Jenkins";
+            #       gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            #       gitGPGSigningKey = "";
+            #       extraImports = [ ./home/wms/hyprland ];
+            #     };
+            # }
           ];
         };
 

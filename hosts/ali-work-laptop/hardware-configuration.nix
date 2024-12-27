@@ -23,14 +23,15 @@
     };
   };
 
-  fileSystems."/" = {
-    device = "/dev/osvg/root";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-partlabel/esp";
-    fsType = "vfat";
+  fileSystems = {
+    "/".neededForBoot = true;
+    "/nix".neededForBoot = true;
+    "/persistence".neededForBoot = true;
+    "/media/storage" = {
+      label = "storage";
+      fsType = "ext4";
+      neededForBoot = false;
+    };
   };
 
   swapDevices = [
