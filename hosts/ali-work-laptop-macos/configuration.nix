@@ -172,19 +172,6 @@
     distributedBuilds = true;
     package = pkgs.nixVersions.nix_2_18;
 
-    buildMachines =
-      let
-        linuxSystem = builtins.replaceStrings [ "darwin" ] [ "linux" ] system;
-      in
-      [{
-        hostName = "localhost";
-        sshUser = "builder";
-        sshKey = "/etc/nix/builder_ed25519";
-        system = linuxSystem;
-        maxJobs = 4;
-        supportedFeatures = [ "kvm" "benchmark" "big-parallel" ];
-      }];
-
     channel = {
       enable = true;
     };
@@ -272,7 +259,7 @@
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
-      outputs.overlays.stable-packages
+      outputs.overlays.unstable-packages
     ];
   };
 
