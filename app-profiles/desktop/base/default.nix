@@ -109,6 +109,7 @@
     stow
     tig
     tmux
+    unstable.ghostty
     usbutils
     virt-manager
     vmtouch
