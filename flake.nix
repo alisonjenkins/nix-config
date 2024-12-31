@@ -568,17 +568,18 @@
         '';
       };
 
-      nixConfig = {
-        sandbox = true;
-        experimental-features = [
-          "flakes"
-          "nix-command"
-        ];
-        extra-platforms = [
-          "aarch64-linux"
-          "x86_64-linux"
-        ];
-        builders = "@local";
-      };
     };
+
+  nixConfig = {
+    sandbox = true;
+    experimental-features = [
+      "flakes"
+      "nix-command"
+    ];
+    extra-platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    builders = "@local";
+  };
 }
