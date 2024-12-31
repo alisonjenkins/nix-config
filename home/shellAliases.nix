@@ -22,6 +22,10 @@
   "ll" = "${pkgs.eza}/bin/eza -l --grid --git";
   "ls" = "${pkgs.eza}/bin/eza";
   "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
+  "nfu" = "nix flake update";
+  "nsg" = "nix store gc";
+  "nsgo" = "nix store gc && nix store optimise";
+  "nso" = "nix store optimise";
   "pwhash" = "python -c \"import crypt,getpass; print(crypt.crypt(getpass.getpass(), crypt.mksalt(crypt.METHOD_SHA512)))\"";
   "vi" = "nvim";
   "vim" = "nvim";
