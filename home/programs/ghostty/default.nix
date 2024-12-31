@@ -23,6 +23,7 @@
         selection-background = 1d3c3b
         selection-foreground = eeeeee
         theme = GruvboxDarkHard
+        title = Ghostty
         unfocused-split-opacity = 1.0
         window-decoration = false
         window-height = 45
