@@ -21,6 +21,9 @@ jobs:
           - .#nixosConfigurations.home-storage-server-1.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
           - .#nixosConfigurations.dev-vm.config.system.build.toplevel
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: nixbuild/nix-quick-install-action@v29
@@ -34,6 +37,7 @@ jobs:
       #     purge-prefixes: cache-${{ runner.os }}-
       #     purge-created: 0
       #     purge-primary-key: never
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: cachix/cachix-action@v14
         with:
           name: ajenkins-public
