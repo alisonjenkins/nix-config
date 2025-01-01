@@ -1,53 +1,53 @@
-name: Build and Cache Nix Flake
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        configuration:
-          - .#nixosConfigurations.ali-desktop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-work-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-steam-deck.config.system.build.toplevel
-          - .#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.home-k8s-master-1.config.system.build.toplevel
-          - .#nixosConfigurations.home-kvm-hypervisor-1.config.system.build.toplevel
-          - .#nixosConfigurations.home-storage-server-1.config.system.build.toplevel
-          - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
-          - .#nixosConfigurations.dev-vm.config.system.build.toplevel
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: nixbuild/nix-quick-install-action@v29
-      # - name: Restore and cache Nix store
-      #   uses: nix-community/cache-nix-action@v5
-      #   with:
-      #     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
-      #     restore-prefixes-first-match: nix-${{ runner.os }}-
-      #     gc-max-store-size-linux: 1073741824
-      #     purge: true
-      #     purge-prefixes: cache-${{ runner.os }}-
-      #     purge-created: 0
-      #     purge-primary-key: never
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: cachix/cachix-action@v14
-        with:
-          name: ajenkins-public
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - uses: DeterminateSystems/flake-checker-action@main
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
-      - name: Run nix build for ${{ matrix.configuration }}
-        run: |
-          nix build --print-out-paths --no-link '${{ matrix.configuration }}'
-      - name: Push to cache
-        run: cachix push ajenkins-public $(nix path-info --all)
+# name: Build and Cache Nix Flake
+#
+# on:
+#   push:
+#     branches:
+#       - main
+#
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         configuration:
+#           - .#nixosConfigurations.ali-desktop.config.system.build.toplevel
+#           - .#nixosConfigurations.ali-laptop.config.system.build.toplevel
+#           - .#nixosConfigurations.ali-work-laptop.config.system.build.toplevel
+#           - .#nixosConfigurations.ali-steam-deck.config.system.build.toplevel
+#           - .#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
+#           - .#nixosConfigurations.home-k8s-master-1.config.system.build.toplevel
+#           - .#nixosConfigurations.home-kvm-hypervisor-1.config.system.build.toplevel
+#           - .#nixosConfigurations.home-storage-server-1.config.system.build.toplevel
+#           - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
+#           - .#nixosConfigurations.dev-vm.config.system.build.toplevel
+#     permissions:
+#       contents: read
+#       id-token: write
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: nixbuild/nix-quick-install-action@v29
+#       # - name: Restore and cache Nix store
+#       #   uses: nix-community/cache-nix-action@v5
+#       #   with:
+#       #     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+#       #     restore-prefixes-first-match: nix-${{ runner.os }}-
+#       #     gc-max-store-size-linux: 1073741824
+#       #     purge: true
+#       #     purge-prefixes: cache-${{ runner.os }}-
+#       #     purge-created: 0
+#       #     purge-primary-key: never
+#       - uses: DeterminateSystems/magic-nix-cache-action@main
+#       - uses: cachix/cachix-action@v14
+#         with:
+#           name: ajenkins-public
+#           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+#       - uses: DeterminateSystems/flake-checker-action@main
+#       - uses: docker/setup-qemu-action@v3
+#         with:
+#           platforms: all
+#       - name: Run nix build for ${{ matrix.configuration }}
+#         run: |
+#           nix build --print-out-paths --no-link '${{ matrix.configuration }}'
+#       - name: Push to cache
+#         run: cachix push ajenkins-public $(nix path-info --all)
