@@ -2,27 +2,27 @@
 , lib
 , ...
 }: {
-  home.file =
-    if pkgs.stdenv.isLinux
-    then {
-      ".local/share/applications/OBS - Autostart Webcam.desktop".text = ''
-        [Desktop Entry]
-        Comment=
-        Exec=obs --startvirtualcam
-        GenericName=
-        Icon=${pkgs.obs-studio}/share/icons/hicolor/512x512/apps/com.obsproject.Studio.png
-        MimeType=
-        Name=OBS Studio - Autostart Webcam
-        Path=
-        StartupNotify=true
-        Terminal=false
-        TerminalOptions=
-        Type=Application
-        X-KDE-SubstituteUID=false
-        X-KDE-Username=
-      '';
-    }
-    else { };
+  # home.file =
+  #   if pkgs.stdenv.isLinux
+  #   then {
+  #     ".local/share/applications/OBS - Autostart Webcam.desktop".text = ''
+  #       [Desktop Entry]
+  #       Comment=
+  #       Exec=obs --startvirtualcam
+  #       GenericName=
+  #       Icon=${pkgs.obs-studio}/share/icons/hicolor/512x512/apps/com.obsproject.Studio.png
+  #       MimeType=
+  #       Name=OBS Studio - Autostart Webcam
+  #       Path=
+  #       StartupNotify=true
+  #       Terminal=false
+  #       TerminalOptions=
+  #       Type=Application
+  #       X-KDE-SubstituteUID=false
+  #       X-KDE-Username=
+  #     '';
+  #   }
+  #   else { };
 
   programs.obs-studio = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
