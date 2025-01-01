@@ -565,6 +565,7 @@
             export NIX_CONFIG;
             NIX_CONFIG="access-tokens = github.com=''$(op item get "Github PAT" --fields label=password --reveal)"
           fi
+          alias diskom='sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode mount'
         '';
       };
 
