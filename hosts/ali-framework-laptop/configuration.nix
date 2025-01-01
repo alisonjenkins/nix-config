@@ -23,6 +23,11 @@
     # kernelPackages = pkgs.linuxPackages_zen;
     kernelPackages = pkgs.linuxPackages_cachyos-lto;
 
+    kernelParams = [
+      # "mem_sleep_default=deep"
+      "tc_cmos.use_acpi_alarm=1"
+    ];
+
     loader = {
       efi.efiSysMountPoint = "/boot";
       grub = {
@@ -213,6 +218,10 @@
       enable = true;
     };
 
+    logind = {
+      lidSwitch = "suspend-then-hibernate";
+    };
+
     pipewire = {
       enable = true;
       alsa.enable = true;
@@ -224,6 +233,13 @@
 
     thermald = {
       enable = true;
+    };
+
+    udev = {
+      extraRules = ''
+        SUBSYSTEM=="usb", DRIVERS=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0012", ATTR{power/wakeup}="disabled", ATTR{driver/1-1.1.1.4/power/wakeup}="disabled"
+        SUBSYSTEM=="usb", DRIVERS=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0014", ATTR{power/wakeup}="disabled", ATTR{driver/1-1.1.1.4/power/wakeup}="disabled"
+      '';
     };
 
     xserver = {
@@ -320,6 +336,15 @@
 
   system = {
     stateVersion = "24.11";
+  };
+
+  systemd = {
+    sleep = {
+      extraConfig = ''
+        HibernateDelaySec=30m
+        SuspendState=mem
+      '';
+    };
   };
 
   time.timeZone = "Europe/London";
