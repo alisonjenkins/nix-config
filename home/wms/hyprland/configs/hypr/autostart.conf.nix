@@ -27,7 +27,6 @@
   exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.swww}/bin/swww-daemon
   exec-once = ${pkgs.blueman}/bin/blueman-applet
-  exec-once = ${pkgs.discord-canary}/bin/discordcanary
   exec-once = ${pkgs.eww}/bin/eww daemon
   exec-once = ${pkgs.swww}/bin/swww-daemon
 
