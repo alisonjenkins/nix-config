@@ -14,7 +14,6 @@
       };
     in
     {
-      ".config/autostart/alacritty.desktop".source = "${pkgs.alacritty}/share/applications/Alacritty.desktop";
       ".config/autostart/discord.desktop".source = "${pkgs.discord-canary}/share/applications/discord-canary.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
