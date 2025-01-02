@@ -14,6 +14,7 @@
   ];
 
   boot = {
+    bootspec.enableValidation = true;
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
     # kernelPackages = pkgs.linuxPackages_cachyos;
@@ -28,26 +29,32 @@
       "tc_cmos.use_acpi_alarm=1"
     ];
 
+    lanzaboote = {
+      enable = true;
+      pkiBundle = "/etc/secureboot";
+    };
+
     loader = {
       efi.efiSysMountPoint = "/boot";
-      grub = {
-        enable = true;
-        devices = [ "nodev" ];
-        efiInstallAsRemovable = true;
-        efiSupport = true;
-        useOSProber = true;
-        # theme = pkgs.stdenv.mkDerivation {
-        #   pname = "distro-grub-themes";
-        #   version = "3.1";
-        #   src = pkgs.fetchFromGitHub {
-        #     owner = "AdisonCavani";
-        #     repo = "distro-grub-themes";
-        #     rev = "v3.1";
-        #     hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
-        #   };
-        #   installPhase = "cp -r customize/nixos $out";
-        # };
-      };
+      # grub = {
+      #   enable = true;
+      #   devices = [ "nodev" ];
+      #   efiInstallAsRemovable = true;
+      #   efiSupport = true;
+      #   useOSProber = true;
+      #   # theme = pkgs.stdenv.mkDerivation {
+      #   #   pname = "distro-grub-themes";
+      #   #   version = "3.1";
+      #   #   src = pkgs.fetchFromGitHub {
+      #   #     owner = "AdisonCavani";
+      #   #     repo = "distro-grub-themes";
+      #   #     rev = "v3.1";
+      #   #     hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
+      #   #   };
+      #   #   installPhase = "cp -r customize/nixos $out";
+      #   # };
+      # };
+      systemd-boot.enable = lib.mkForce false;
     };
   };
 
@@ -69,12 +76,14 @@
         directories = [
           "/etc/NetworkManager/system-connections"
           "/etc/luks"
+          "/etc/secureboot"
           "/etc/ssh"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
           "/var/lib/fprint"
           "/var/lib/nixos"
           "/var/lib/power-profiles-daemon"
+          "/var/lib/sbctl"
           "/var/lib/sddm"
           "/var/lib/systemd/coredump"
           "/var/log"
@@ -107,6 +116,8 @@
       qmk
       qmk-udev-rules
       qmk_hid
+      sbctl
+      tpm2-tss
     ];
 
     variables = {

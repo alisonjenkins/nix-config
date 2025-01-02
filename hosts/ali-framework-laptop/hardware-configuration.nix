@@ -38,6 +38,7 @@
         "virtio_pci"
       ];
       kernelModules = [ "dm-snapshot" ];
+      systemd.enable = true;
     };
   };
 
