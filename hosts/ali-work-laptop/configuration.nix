@@ -145,7 +145,6 @@
     xserver = {
       videoDrivers = [
         "fbdev"
-        "intel"
         "modesetting"
       ];
       xkb = {

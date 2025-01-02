@@ -157,7 +157,6 @@
     xserver = {
       videoDrivers = [
         "fbdev"
-        "intel"
         "modesetting"
       ];
       xkb = {
@@ -248,7 +247,6 @@
       ];
       services.xserver.videoDrivers = [
         "fbdev"
-        "intel"
         "modesetting"
         "nvidia"
       ];
