@@ -111,6 +111,7 @@
     };
 
     systemPackages = with pkgs; [
+      deepfilternet
       easyeffects
       framework-tool
       ldacbt
