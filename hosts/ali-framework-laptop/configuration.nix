@@ -111,6 +111,7 @@
     };
 
     systemPackages = with pkgs; [
+      easyeffects
       framework-tool
       ldacbt
       qmk
