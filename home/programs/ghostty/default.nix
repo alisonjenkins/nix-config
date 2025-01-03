@@ -1,6 +1,20 @@
 { pkgs, ... }: {
   home.file =
     let
+      ghostty-shaders = pkgs.stdenv.mkDerivation {
+        name = "ghostty-shaders";
+        src = pkgs.fetchFromGitHub {
+          owner = "m-ahdal";
+          repo = "ghostty-shaders";
+          rev = "ec29c83d81ebe7e9ca9250b3c799a2d700c1cca8";
+          sha256 = "sha256-8D0H13JzCTzgzjzjERQG8ruayeHn1CPcRsd+KtC6nj4=";
+        };
+
+        installPhase = ''
+          mkdir -p $out
+          mv *.glsl $out
+        '';
+      };
       font-family = "FiraCode Nerd Font Mono";
       zsh = "${pkgs.zsh}/bin/zsh";
     in
@@ -14,6 +28,7 @@
         confirm-close-surface = false
         cursor-style = block
         cursor-style-blink = false
+        custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
         font-family = ${font-family}
         font-size = 13
         font-style = Regular
