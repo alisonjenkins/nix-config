@@ -183,6 +183,7 @@
       kdePackages.korganizer
       lact
       libaacs
+      openrct2
       polkit
       protontricks
       qbittorrent
