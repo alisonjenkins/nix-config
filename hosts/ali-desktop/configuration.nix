@@ -184,6 +184,8 @@
       kdePackages.korganizer
       lact
       libaacs
+      openttd
+      openttd-ttf
       openrct2
       polkit
       protontricks
