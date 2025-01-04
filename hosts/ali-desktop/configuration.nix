@@ -170,15 +170,15 @@
     };
 
     systemPackages = with pkgs; [
+      # handbrake
       # libsForQt5.polonium
       # makemkv
+      # stable.ananicy-cpp-rules
       alsa-scarlett-gui
       amdgpu_top
-      # stable.ananicy-cpp-rules
       cpu-x
       deadd-notification-center
       geekbench
-      # handbrake
       i2pd
       kdePackages.korganizer
       lact
