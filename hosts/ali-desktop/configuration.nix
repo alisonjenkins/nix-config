@@ -180,6 +180,7 @@
       deadd-notification-center
       geekbench
       i2pd
+      innoextract
       kdePackages.korganizer
       lact
       libaacs
