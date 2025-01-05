@@ -83,7 +83,7 @@
 
   chaotic = {
     mesa-git = {
-      enable = true;
+      enable = false;
     };
   };
 
