@@ -475,6 +475,15 @@
               };
             };
           };
+          ali-steam-deck = {
+            hostname = "aliju-steam-deck.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-steam-deck;
+              };
+            };
+          };
           home-kvm-hypervisor-1 = {
             hostname = "home-kvm-hypervisor.lan";
             profiles = {
