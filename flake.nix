@@ -466,6 +466,15 @@
 
       deploy = {
         nodes = {
+          ali-framework-laptop = {
+            hostname = "ali-framework-laptop-wifi.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-framework-laptop;
+              };
+            };
+          };
           home-kvm-hypervisor-1 = {
             hostname = "home-kvm-hypervisor.lan";
             profiles = {
@@ -499,15 +508,6 @@
               system = {
                 user = "root";
                 path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
-              };
-            };
-          };
-          ali-framework-laptop = {
-            hostname = "ali-framework-laptop-wifi.lan";
-            profiles = {
-              system = {
-                user = "root";
-                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-framework-laptop;
               };
             };
           };
