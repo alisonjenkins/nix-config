@@ -190,7 +190,7 @@
       config = {
         virtualisation = {
           darwin-builder = {
-            diskSize = 128 * 1024;
+            diskSize = 140 * 1024;
             memorySize = 8 * 1024;
           };
           cores = 8;
