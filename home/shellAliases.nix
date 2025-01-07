@@ -6,7 +6,6 @@
   "....." = "cd ../../../..";
   "cdd" = "cd ~/Downloads/";
   "cdg" = "cd ~/git/";
-  "cdgo" = "cd \$GOPATH";
   "cdot" = "cd ~/.local/share/chezmoi";
   "gc" = "${pkgs.callPackage ../pkgs/git-clean { inherit pkgs; }}/bin/git-clean";
   "j" = "just";
