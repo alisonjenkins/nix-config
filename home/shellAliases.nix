@@ -8,6 +8,7 @@
   "cdg" = "cd ~/git/";
   "gb" = "go build";
   "gbw" = "watchexec -ce go -- go build";
+  "gtw" = "watchexec -ce go -- go test";
   "cdot" = "cd ~/.local/share/chezmoi";
   "gc" = "${pkgs.callPackage ../pkgs/git-clean { inherit pkgs; }}/bin/git-clean";
   "j" = "just";
