@@ -76,6 +76,7 @@
       statix
       tealdeer
       tektoncd-cli
+      terragrunt
       tig
       tigervnc
       tilt
