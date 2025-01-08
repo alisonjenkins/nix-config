@@ -114,6 +114,7 @@
     # https://medium.com/rahasak/switching-from-docker-desktop-to-podman-on-macos-m1-m2-arm64-cpu-7752c02453ec
     casks = [
       "1password"
+      "1password-cli"
       "aerospace"
       "alacritty"
       "alfred"
