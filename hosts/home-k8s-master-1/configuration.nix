@@ -61,6 +61,7 @@
       enable = true;
       role = "server";
       tokenFile = "/run/secrets/k8s-token";
+
       extraFlags = toString [
         "--cluster-cidr=10.42.0.0/16"
         "--cluster-init"
@@ -72,6 +73,22 @@
         "--service-cidr=10.43.0.0/16"
         "--write-kubeconfig-mode \"0400\""
       ];
+
+
+      manifests =
+        let
+          manifest = builtins.fetchurl {
+            url = "https://raw.githubusercontent.com/alisonjenkins/home-cluster/refs/heads/main/clusters/home-cluster-1/flux-system/helmreleases/cilium.yaml?token=GHSAT0AAAAAACZKJ4XS44F6A7E3XT6UQ2S2Z4AH7IQ";
+            hash = "";
+          };
+        in
+        {
+          cilium = {
+            content = [
+              manifest
+            ];
+          };
+        };
     };
   };
 

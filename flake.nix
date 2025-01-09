@@ -332,44 +332,44 @@
           ];
         };
 
-        ali-steam-deck = lib.nixosSystem rec {
-          inherit system;
-          specialArgs = {
-            username = "ali";
-            inherit inputs;
-            inherit outputs;
-            inherit system;
-          };
-          modules = [
-            # ./app-profiles/desktop/display-managers/greetd
-            # ./app-profiles/desktop/wms/sway
-            ./app-profiles/desktop/aws
-            ./app-profiles/desktop/wms/plasma6
-            ./app-profiles/desktop/wms/hyprland
-            ./app-profiles/desktop/local-k8s
-            ./hosts/ali-steam-deck/configuration.nix
-            chaotic.nixosModules.default
-            inputs.jovian-nixos.nixosModules.default
-            inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.stylix.nixosModules.stylix
-            nur.modules.nixos.default
-            sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home.nix;
-              home-manager.extraSpecialArgs =
-                specialArgs
-                // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                  gitGPGSigningKey = "";
-                  extraImports = [ ./home/wms/hyprland ];
-                };
-            }
-          ];
-        };
+        # ali-steam-deck = lib.nixosSystem rec {
+        #   inherit system;
+        #   specialArgs = {
+        #     username = "ali";
+        #     inherit inputs;
+        #     inherit outputs;
+        #     inherit system;
+        #   };
+        #   modules = [
+        #     # ./app-profiles/desktop/display-managers/greetd
+        #     # ./app-profiles/desktop/wms/sway
+        #     ./app-profiles/desktop/aws
+        #     ./app-profiles/desktop/wms/plasma6
+        #     ./app-profiles/desktop/wms/hyprland
+        #     ./app-profiles/desktop/local-k8s
+        #     ./hosts/ali-steam-deck/configuration.nix
+        #     chaotic.nixosModules.default
+        #     inputs.jovian-nixos.nixosModules.default
+        #     inputs.nix-flatpak.nixosModules.nix-flatpak
+        #     inputs.stylix.nixosModules.stylix
+        #     nur.modules.nixos.default
+        #     sops-nix.nixosModules.sops
+        #     home-manager.nixosModules.home-manager
+        #     {
+        #       home-manager.useGlobalPkgs = true;
+        #       home-manager.useUserPackages = true;
+        #       home-manager.users.${specialArgs.username} = import ./home/home.nix;
+        #       home-manager.extraSpecialArgs =
+        #         specialArgs
+        #         // {
+        #           gitUserName = "Alison Jenkins";
+        #           gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+        #           gitGPGSigningKey = "";
+        #           extraImports = [ ./home/wms/hyprland ];
+        #         };
+        #     }
+        #   ];
+        # };
 
         home-k8s-master-1 = lib.nixosSystem rec {
           inherit system;
@@ -475,15 +475,15 @@
               };
             };
           };
-          ali-steam-deck = {
-            hostname = "aliju-steam-deck.lan";
-            profiles = {
-              system = {
-                user = "root";
-                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-steam-deck;
-              };
-            };
-          };
+          # ali-steam-deck = {
+          #   hostname = "aliju-steam-deck.lan";
+          #   profiles = {
+          #     system = {
+          #       user = "root";
+          #       path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-steam-deck;
+          #     };
+          #   };
+          # };
           home-kvm-hypervisor-1 = {
             hostname = "home-kvm-hypervisor.lan";
             profiles = {
