@@ -24,11 +24,11 @@
     pkgs.htop
   ];
 
-  networking = {
-    firewall.allowedTCPPorts = [
-      6443
-    ];
-  };
+  # networking = {
+  #   firewall.allowedTCPPorts = [
+  #     6443
+  #   ];
+  # };
 
   nix = {
     package = pkgs.nixVersions.stable;
@@ -76,17 +76,9 @@
 
 
       manifests =
-        let
-          manifest = builtins.fetchurl {
-            url = "https://raw.githubusercontent.com/alisonjenkins/home-cluster/refs/heads/main/clusters/home-cluster-1/flux-system/helmreleases/cilium.yaml?token=GHSAT0AAAAAACZKJ4XS44F6A7E3XT6UQ2S2Z4AH7IQ";
-            hash = "";
-          };
-        in
         {
           cilium = {
-            content = [
-              manifest
-            ];
+            source = ../../k8s-setup/cilium-hr.yaml;
           };
         };
     };
