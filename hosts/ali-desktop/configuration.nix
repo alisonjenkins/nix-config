@@ -203,6 +203,7 @@
       webcamoid
       wireguard-tools
       xd
+      yt-dlp
     ];
 
     variables = {
