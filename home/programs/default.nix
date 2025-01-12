@@ -38,6 +38,7 @@
     ./noti
     ./nushell
     ./obs
+    ./opencomposite
     ./rofi
     ./rust
     ./ssh
