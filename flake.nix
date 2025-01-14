@@ -565,24 +565,42 @@
         inherit lib;
       };
 
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          deploy-rs
-          just
-          libsecret
-          nix-fast-build
-          nixos-anywhere
-        ];
+      devShells =
+        let
+          buildInputs = with pkgs; [
+            deploy-rs
+            just
+            libsecret
+            nix-fast-build
+            nixos-anywhere
+          ];
 
-        shellHook = ''
-          if [ -z ''${NIX_CONFIG+x} ]; then
-            export NIX_CONFIG;
-            NIX_CONFIG="access-tokens = github.com=''$(op item get "Github PAT" --fields label=password --reveal)"
-          fi
-          alias diskom='sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode mount'
-        '';
-      };
-
+          shellHook = ''
+            alias diskom='sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode mount'
+            echo "Hook ran"
+            alias nfuc='NIX_CONFIG="access-tokens = github.com=\$(op item get "Github PAT" --fields label=password --reveal)"'
+            echo "alias should be set"
+          '';
+        in
+        {
+          x86_64-linux.default = pkgs.mkShell {
+            buildInputs = buildInputs;
+            shellHook = shellHook;
+          };
+          aarch64-darwin.default =
+            let
+              pkgs = import inputs.nixpkgs {
+                system = "aarch64-darwin";
+                config = {
+                  allowUnfree = true;
+                };
+              };
+            in
+            pkgs.mkShell {
+              buildInputs = buildInputs;
+              shellHook = shellHook;
+            };
+        };
     };
 
   nixConfig = {
