@@ -140,7 +140,6 @@
                   gitGPGSigningKey = "~/.ssh/id_brambles.pub";
                 };
               }
-              inputs.nix-rosetta-builder.darwinModules.default
             ];
             specialArgs = specialArgs;
           };
