@@ -130,6 +130,14 @@
 
     power-profiles-daemon.enable = lib.mkForce false;
 
+    openssh = {
+      enable = true;
+      settings = {
+        UseDns = true;
+        PasswordAuthentication = false;
+      };
+    };
+
     thermald = {
       enable = true;
     };
