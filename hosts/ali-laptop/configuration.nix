@@ -294,11 +294,6 @@
         description = "Alison Jenkins";
         initialPassword = "initPw!";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
-        packages = with pkgs; [
-          firefox
-          lolcat
-          neofetch
-        ];
       };
     };
   };
