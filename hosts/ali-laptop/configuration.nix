@@ -60,9 +60,6 @@
 
   networking = {
     hostName = "ali-laptop";
-    extraHosts = ''
-      192.168.1.202 home-kvm-hypervisor-1
-    '';
     networkmanager.enable = true;
   };
 
