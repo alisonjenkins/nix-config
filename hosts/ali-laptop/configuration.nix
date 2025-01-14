@@ -295,6 +295,12 @@
         initialPassword = "initPw!";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
       };
+      kal = {
+        isNormalUser = true;
+        description = "Kal Zafar";
+        initialPassword = "initPw!";
+        extraGroups = [ "networkmanager" "wheel" "docker" ];
+      };
     };
   };
 
