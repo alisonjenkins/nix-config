@@ -7,6 +7,7 @@
 }:
 {
   imports = [
+    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
     (modulesPath + "/installer/scan/not-detected.nix")
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
