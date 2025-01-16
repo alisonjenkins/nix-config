@@ -465,6 +465,15 @@
 
       deploy = {
         nodes = {
+          ali-laptop = {
+            hostname = "ali-laptop-wifi.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-laptop;
+              };
+            };
+          };
           ali-framework-laptop = {
             hostname = "ali-framework-laptop-wifi.lan";
             profiles = {
