@@ -6,11 +6,11 @@
   "....." = "cd ../../../..";
   "cdd" = "cd ~/Downloads/";
   "cdg" = "cd ~/git/";
+  "cdot" = "cd ~/.local/share/chezmoi";
   "gb" = "go build";
   "gbw" = "watchexec --clear --exts go -- go build";
-  "gtw" = "watchexec --clear --exts go -- go test";
-  "cdot" = "cd ~/.local/share/chezmoi";
   "gc" = "${pkgs.callPackage ../pkgs/git-clean { inherit pkgs; }}/bin/git-clean";
+  "gtw" = "watchexec --clear --exts go -- go test";
   "j" = "just";
   "key" = "ssh-add ~/.ssh/ssh_keys/id_bashton_alan";
   "keyaur" = "ssh-add ~/.ssh/ssh_keys/id_aur";
