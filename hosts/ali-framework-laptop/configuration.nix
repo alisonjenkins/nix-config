@@ -5,7 +5,7 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
+    (import ../../modules/locale { })
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
     ../../app-profiles/hardware/fingerprint-reader

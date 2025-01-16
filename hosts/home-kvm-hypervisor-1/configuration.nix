@@ -5,7 +5,7 @@
 }: {
   imports = [
     # ../../app-profiles/server-base/luks-tor-unlock
-    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
+    (import ../../modules/locale { })
     ../../app-profiles/kvm-server
     ../../app-profiles/server-base
     ./hardware-configuration.nix

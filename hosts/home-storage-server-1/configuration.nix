@@ -4,7 +4,7 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
+    (import ../../modules/locale { })
     ../../app-profiles/server-base
     ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server

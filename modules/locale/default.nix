@@ -1,23 +1,23 @@
-{ default_locale, ... }: {
+{ locale ? "en_GB.UTF-8", ... }: {
   i18n = {
-    defaultLocale = default_locale;
+    defaultLocale = locale;
     supportedLocales = [ "all" ];
     extraLocaleSettings = {
-      LANG = default_locale;
-      LANGUAGE = default_locale;
-      LC_ADDRESS = default_locale;
-      LC_ALL = default_locale;
-      LC_COLLATE = default_locale;
-      LC_CTYPE = default_locale;
-      LC_IDENTIFICATION = default_locale;
-      LC_MEASUREMENT = default_locale;
-      LC_MESSAGES = default_locale;
-      LC_MONETARY = default_locale;
-      LC_NAME = default_locale;
-      LC_NUMERIC = default_locale;
-      LC_PAPER = default_locale;
-      LC_TELEPHONE = default_locale;
-      LC_TIME = default_locale;
+      LANG = locale;
+      LANGUAGE = locale;
+      LC_ADDRESS = locale;
+      LC_ALL = locale;
+      LC_COLLATE = locale;
+      LC_CTYPE = locale;
+      LC_IDENTIFICATION = locale;
+      LC_MEASUREMENT = locale;
+      LC_MESSAGES = locale;
+      LC_MONETARY = locale;
+      LC_NAME = locale;
+      LC_NUMERIC = locale;
+      LC_PAPER = locale;
+      LC_TELEPHONE = locale;
+      LC_TIME = locale;
     };
   };
 }

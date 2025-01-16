@@ -4,7 +4,7 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
+    (import ../../modules/locale { })
     ./disko-config.nix
     ./hardware-configuration.nix
   ];

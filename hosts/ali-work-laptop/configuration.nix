@@ -7,7 +7,7 @@
 }: {
   imports = [
     # ../../app-profiles/desktop
-    (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
+    (import ../../modules/locale { })
     ../../app-profiles/hardware/touchpad
     ./hardware-configuration.nix
   ];
