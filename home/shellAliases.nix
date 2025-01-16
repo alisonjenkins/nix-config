@@ -30,6 +30,7 @@
   "nsgo" = "nix store gc && nix store optimise";
   "nso" = "nix store optimise";
   "pwhash" = "python -c \"import crypt,getpass; print(crypt.crypt(getpass.getpass(), crypt.mksalt(crypt.METHOD_SHA512)))\"";
+  "tg" = "terragrunt --terragrunt-forward-tf-stdout --terragrunt-non-interactive";
   "tgr" = "terragrunt run-all --terragrunt-forward-tf-stdout --terragrunt-non-interactive";
   "vi" = "nvim";
   "vim" = "nvim";
