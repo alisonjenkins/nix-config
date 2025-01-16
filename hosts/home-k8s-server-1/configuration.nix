@@ -1,10 +1,10 @@
 { pkgs, ... }: {
   imports = [
-    ./hardware-configuration.nix
-    ../../app-profiles/server-base
     # ../../app-profiles/server-base/luks-tor-unlock
     (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
     ../../app-profiles/k8s-master
+    ../../app-profiles/server-base
+    ./hardware-configuration.nix
   ];
 
   console.keyMap = "us";

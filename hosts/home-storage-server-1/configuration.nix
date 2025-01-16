@@ -4,11 +4,11 @@
 , ...
 }: {
   imports = [
-    ./hardware-configuration.nix
     (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
     ../../app-profiles/server-base
     ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
+    ./hardware-configuration.nix
   ];
 
   console.keyMap = "us";

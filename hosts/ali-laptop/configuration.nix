@@ -6,10 +6,10 @@
 , ...
 }: {
   imports = [
-    ./hardware-configuration.nix
     (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
     ../../app-profiles/desktop
     ../../app-profiles/hardware/touchpad
+    ./hardware-configuration.nix
   ];
 
   boot = {

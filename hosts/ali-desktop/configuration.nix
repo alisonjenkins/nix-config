@@ -6,10 +6,10 @@
 , ...
 }: {
   imports = [
+    # inputs.nix-gaming.nixosModules.pipewireLowLatency
     (import ../../modules/locale { default_locale = "en_GB.UTF-8"; })
     ../../app-profiles/desktop
     ./hardware-configuration.nix
-    # inputs.nix-gaming.nixosModules.pipewireLowLatency
   ];
 
   console.keyMap = "us";
