@@ -131,6 +131,7 @@
               ./hosts/ali-work-laptop-macos/configuration.nix
               home-manager.darwinModules.home-manager
               {
+                home-manager.backupFileExtension = ".bak";
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
                 home-manager.users.${username} = import ./home/home.nix;
@@ -193,6 +194,7 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
+              home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home.nix;
@@ -231,6 +233,7 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
+              home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home.nix;
@@ -274,6 +277,7 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
+              home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home.nix;
@@ -317,6 +321,7 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
+              home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home.nix;
