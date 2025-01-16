@@ -184,8 +184,6 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-desktop/configuration.nix
-            chaotic.nixosModules.default
-            inputs.impermanence.nixosModules.impermanence
             inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default

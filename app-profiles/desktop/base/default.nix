@@ -13,7 +13,6 @@
         "aarch64-linux"
       ];
     };
-    initrd.systemd.enable = true;
     plymouth = {
       enable = true;
       # theme = "breeze";
