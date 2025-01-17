@@ -6,6 +6,11 @@
 }: {
   imports = [
     (import ../../modules/locale { })
+    (import ../../modules/base {
+      enableImpermanence = true;
+      impermanencePersistencePath = builtins.toPath "/persistence";
+      inherit inputs lib;
+    })
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
     ../../app-profiles/hardware/fingerprint-reader
@@ -112,57 +117,8 @@
     };
   };
 
-  console.keyMap = "us";
-
-  chaotic = {
-    mesa-git = {
-      enable = false;
-      # method = "GBM_BACKENDS_PATH";
-    };
-  };
-
   environment = {
     pathsToLink = [ "/share/zsh" ];
-
-    persistence = {
-      "/persistence" = {
-        hideMounts = true;
-        directories = [
-          "/etc/NetworkManager/system-connections"
-          "/etc/luks"
-          "/etc/secureboot"
-          "/etc/ssh"
-          "/var/lib/bluetooth"
-          "/var/lib/flatpak"
-          "/var/lib/fprint"
-          "/var/lib/nixos"
-          "/var/lib/power-profiles-daemon"
-          "/var/lib/sbctl"
-          "/var/lib/sddm"
-          "/var/lib/systemd/coredump"
-          "/var/log"
-          {
-            directory = "/var/lib/colord";
-            user = "colord";
-            group = "colord";
-            mode = "u=rwx,g=rx,o=";
-          }
-          {
-            directory = "/var/cache/tuigreet";
-            user = "greetd";
-            group = "greetd";
-            mode = "u=rwx,g=rx,o=";
-          }
-        ];
-        files = [
-          "/etc/machine-id"
-          {
-            file = "/var/keys/secret_file";
-            parentDirectory = { mode = "u=rwx,g=,o="; };
-          }
-        ];
-      };
-    };
 
     systemPackages = with pkgs; [
       deepfilternet
