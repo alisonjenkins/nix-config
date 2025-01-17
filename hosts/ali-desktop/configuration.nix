@@ -366,15 +366,15 @@
       #   path = "/a/secret/path.yaml";
       #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
       # };
-      home_enc_key = {
-        format = "binary";
-        group = config.users.users.nobody.group;
-        mode = "0400";
-        neededForUsers = true;
-        owner = config.users.users.root.name;
-        path = "/etc/luks/home.key";
-        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
-      };
+      # home_enc_key = {
+      #   format = "binary";
+      #   group = config.users.users.nobody.group;
+      #   mode = "0400";
+      #   neededForUsers = true;
+      #   owner = config.users.users.root.name;
+      #   path = "/etc/luks/home.key";
+      #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
+      # };
     };
   };
 
