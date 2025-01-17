@@ -367,13 +367,13 @@
       #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
       # };
       home_enc_key = {
+        format = "binary";
+        group = config.users.users.nobody.group;
         mode = "0400";
-        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
         neededForUsers = true;
         owner = config.users.users.root.name;
-        group = config.users.users.nobody.group;
         path = "/etc/luks/home.key";
-        format = "binary";
+        sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
       };
     };
   };
