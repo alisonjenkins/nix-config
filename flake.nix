@@ -262,11 +262,8 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-framework-laptop/configuration.nix
-            chaotic.nixosModules.default
             disko.nixosModules.disko
-            inputs.impermanence.nixosModules.impermanence
             inputs.lanzaboote.nixosModules.lanzaboote
-            inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
