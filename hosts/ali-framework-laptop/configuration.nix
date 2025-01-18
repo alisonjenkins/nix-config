@@ -14,6 +14,7 @@
     (import ../../modules/desktop {
       inherit inputs pkgs lib;
     })
+    (import ../../modules/vr { enableOpenSourceVR = false; })
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
     ../../app-profiles/hardware/fingerprint-reader

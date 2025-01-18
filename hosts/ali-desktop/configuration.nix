@@ -13,6 +13,7 @@
       inherit inputs lib;
     })
     (import ../../modules/locale { })
+    (import ../../modules/vr { enableOpenSourceVR = false; })
     ../../app-profiles/desktop
     ./hardware-configuration.nix
   ];
@@ -120,14 +121,6 @@
         updateMicrocode = true;
       };
     };
-
-    graphics = {
-      enable = true;
-    };
-  };
-
-  musnix = {
-    enable = true;
   };
 
   networking = {
@@ -197,11 +190,6 @@
   };
 
   programs = {
-    envision = {
-      enable = true;
-      openFirewall = true;
-    };
-
     java = {
       enable = true;
       package = pkgs.jdk17;
@@ -329,34 +317,6 @@
       };
     };
 
-    wivrn = {
-      enable = true;
-      openFirewall = true;
-      defaultRuntime = true;
-      autoStart = true;
-      config = {
-        enable = true;
-
-        json = {
-          # 1.0x foveation scaling
-          scale = 1.0;
-          # 100 Mb/s
-          bitrate = 100000000;
-          encoders = [
-            {
-              encoder = "vaapi";
-              codec = "h265";
-              # 1.0 x 1.0 scaling
-              width = 1.0;
-              height = 1.0;
-              offset_x = 0.0;
-              offset_y = 0.0;
-            }
-          ];
-        };
-      };
-    };
-
     xserver = {
       videoDrivers = [ "amdgpu" ];
       xkb.layout = "us";
@@ -388,62 +348,6 @@
       # };
     };
   };
-
-  stylix =
-    let
-      wallpaper = pkgs.fetchurl
-        {
-          url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
-          hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
-        };
-    in
-    {
-      base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
-      enable = true;
-      image = wallpaper;
-      polarity = "dark";
-
-      cursor = {
-        package = pkgs.material-cursors;
-        name = "material_light_cursors";
-      };
-
-      fonts = {
-        serif = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        sansSerif = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        monospace = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        emoji = {
-          package = pkgs.noto-fonts-emoji;
-          name = "Noto Color Emoji";
-        };
-      };
-
-      opacity = {
-        desktop = 0.0;
-        terminal = 0.9;
-      };
-
-      targets = {
-        nixvim = {
-          transparentBackground = {
-            main = true;
-            signColumn = true;
-          };
-        };
-      };
-    };
 
   system = {
     stateVersion = "24.05";
