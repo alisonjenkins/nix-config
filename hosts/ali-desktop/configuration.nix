@@ -12,6 +12,9 @@
       impermanencePersistencePath = builtins.toPath "/persistence";
       inherit inputs lib;
     })
+    (import ../../modules/desktop {
+      inherit inputs pkgs lib;
+    })
     (import ../../modules/locale { })
     (import ../../modules/vr { enableOpenSourceVR = false; })
     ../../app-profiles/desktop
@@ -109,9 +112,7 @@
     ];
 
     variables = {
-      NIXOS_OZONE_WL = "1";
       PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
-      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
   };
 
@@ -198,36 +199,6 @@
     river = {
       enable = true;
     };
-
-    steam = {
-      enable = true;
-      remotePlay.openFirewall = true;
-      dedicatedServer.openFirewall = true;
-      package = pkgs.steam.override {
-        extraEnv = { };
-        extraLibraries = pkgs:
-          with pkgs; [
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXinerama
-            xorg.libXScrnSaver
-            libpng
-            libpulseaudio
-            libvorbis
-            stdenv.cc.cc.lib
-            libkrb5
-            keyutils
-          ];
-      };
-      gamescopeSession = {
-        enable = false;
-        args = [
-          "--rt"
-          "-f"
-          "-o 10"
-        ];
-      };
-    };
   };
 
   services = {
@@ -255,21 +226,6 @@
       cosmic = {
         enable = true;
       };
-    };
-
-    pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      jack.enable = true;
-      pulse.enable = true;
-      systemWide = false;
-
-      # lowLatency = {
-      #   enable = true;
-      #   quantum = 4;
-      #   rate = 48000;
-      # };
     };
 
     udev = {
@@ -399,10 +355,5 @@
         packages = [ pkgs.OVMFFull.fd ];
       };
     };
-  };
-
-  xdg.portal = {
-    enable = true;
-    xdgOpenUsePortal = true;
   };
 }

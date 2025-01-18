@@ -5,6 +5,7 @@
 }: {
   imports = [
     inputs.musnix.nixosModules.musnix
+    inputs.stylix.nixosModules.stylix
   ];
 
   environment = {
@@ -43,9 +44,10 @@
 
   services = {
     pipewire = {
-      enable = true;
       alsa.enable = true;
       alsa.support32Bit = true;
+      enable = true;
+      jack.enable = true;
       pulse.enable = true;
     };
 

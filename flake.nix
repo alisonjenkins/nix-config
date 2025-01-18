@@ -172,10 +172,8 @@
             ./app-profiles/hardware/vr
             ./home-manager-users/ali
             ./hosts/ali-desktop/configuration.nix
-            inputs.musnix.nixosModules.musnix
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
-            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
           ];
@@ -227,7 +225,6 @@
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
-            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             inputs.home-manager.nixosModules.home-manager
