@@ -39,7 +39,7 @@
       gnupg
       go
       goreleaser
-      gradle
+      # gradle
       htop
       hurl
       inputs.ali-neovim.packages.${system}.nvim
