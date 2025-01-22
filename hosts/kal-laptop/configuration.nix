@@ -240,6 +240,7 @@
       environment.systemPackages = [
         pkgs.delve
         pkgs.go
+        pkgs.golines
         pkgs.gwe
         pkgs.python3
         pkgs.vesktop
