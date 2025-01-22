@@ -238,8 +238,8 @@
     nvidia-graphics-enabled.configuration = {
       environment.systemPackages = [
         pkgs.gwe
-        pkgs.playonlinux
         pkgs.python3
+        pkgs.vesktop
       ];
       services.xserver.videoDrivers = [
         "fbdev"
