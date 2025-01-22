@@ -238,6 +238,7 @@
     nvidia-graphics-enabled.configuration = {
       environment.systemPackages = [
         pkgs.gwe
+        pkgs.playonlinux
       ];
       services.xserver.videoDrivers = [
         "fbdev"
