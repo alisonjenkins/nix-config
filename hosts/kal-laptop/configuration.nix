@@ -243,6 +243,7 @@
         pkgs.golines
         pkgs.gwe
         pkgs.python3
+        pkgs.sublime
         pkgs.vesktop
       ];
       services.xserver.videoDrivers = [
