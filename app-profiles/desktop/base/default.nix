@@ -108,6 +108,7 @@
     stow
     tig
     tmux
+    unrar
     unstable.ghostty
     usbutils
     virt-manager
