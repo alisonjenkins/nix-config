@@ -114,7 +114,7 @@
     ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
     gpg-agent = {
       enable = lib.mkIf pkgs.stdenv.isLinux true;
-      pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
+      pinentryPackage = builtins.mkForce pkgs.kwalletcli.overrideAttrs (_: prev: {
         meta =
           prev.meta
           // {
