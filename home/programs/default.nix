@@ -34,7 +34,7 @@
     ./mimetypes
     ./neovim
     ./newsboat
-    ./nix-index
+    # ./nix-index
     ./noti
     ./nushell
     ./obs
