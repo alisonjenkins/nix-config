@@ -207,7 +207,7 @@
           ];
         };
 
-        ali-laptop = lib.nixosSystem rec {
+        kal-laptop = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
             username = "ali";
@@ -223,7 +223,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/local-k8s
-            ./hosts/ali-laptop/configuration.nix
+            ./hosts/kal-laptop/configuration.nix
             chaotic.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.stylix.nixosModules.stylix
