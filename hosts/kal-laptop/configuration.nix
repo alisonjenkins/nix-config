@@ -238,6 +238,7 @@
 
     nvidia-graphics-enabled.configuration = {
       environment.systemPackages = [
+        pkgs.delve
         pkgs.go
         pkgs.gwe
         pkgs.python3
