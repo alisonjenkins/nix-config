@@ -112,7 +112,7 @@
     {
       darwinConfigurations =
         let
-          username = "ajenkins";
+          username = builtins.mkOverride "ajenkins";
           system = "aarch64-darwin";
           hostname = "ali-work-laptop";
           specialArgs = {
@@ -147,7 +147,7 @@
           extraSpecialArgs = {
             inherit inputs;
             inherit system;
-            username = "deck";
+            username = builtins.mkOverride "deck";
             gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
@@ -159,7 +159,6 @@
         ali-desktop = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -185,7 +184,6 @@
         kal-laptop = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -212,7 +210,6 @@
         ali-framework-laptop = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -259,7 +256,6 @@
         ali-work-laptop = lib.nixosSystem rec {
           system = "aarch64-linux";
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -336,7 +332,6 @@
         home-k8s-master-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -352,7 +347,6 @@
         home-kvm-hypervisor-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -382,7 +376,6 @@
         home-storage-server-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -411,7 +404,6 @@
         home-k8s-server-1 = lib.nixosSystem rec {
           inherit system;
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
@@ -503,7 +495,6 @@
           inherit system;
 
           specialArgs = {
-            username = "ali";
             inherit inputs;
             inherit outputs;
             inherit system;
