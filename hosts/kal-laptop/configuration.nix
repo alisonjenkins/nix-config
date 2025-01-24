@@ -33,6 +33,15 @@
   environment = {
     pathsToLink = [ "/share/zsh" ];
 
+    systemPackages = [
+      pkgs.delve
+      pkgs.go
+      pkgs.golines
+      pkgs.python3
+      pkgs.sublime
+      pkgs.vesktop
+    ];
+
     variables = {
       NIXOS_OZONE_WL = "1";
       PATH = [
@@ -238,13 +247,7 @@
 
     nvidia-graphics-enabled.configuration = {
       environment.systemPackages = [
-        pkgs.delve
-        pkgs.go
-        pkgs.golines
         pkgs.gwe
-        pkgs.python3
-        pkgs.sublime
-        pkgs.vesktop
       ];
       services.xserver.videoDrivers = [
         "fbdev"
