@@ -1,9 +1,9 @@
-{
+{ pkgs, inputs, lib, username, user_configs, system, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
     ./aerospace
-    ./alacritty
+    (import ./alacritty { inherit username system inputs lib pkgs; })
     ./aws
     ./bat
     ./batsignal
@@ -12,20 +12,20 @@
     ./comodoro
     ./direnv
     ./eww
-    ./firefox
+    (import ./firefox { inherit username lib pkgs; })
     ./fzf
-    ./gcc
+    (import ./gcc { inherit pkgs username; })
     ./gh
     ./gh-dash
     ./ghostty
-    ./git
+    (import ./git { inherit pkgs inputs lib username user_configs; })
     ./gitui
     ./go
     ./granted
     ./hyfetch
     ./info
     ./jq
-    ./k9s
+    (import ./k9s { inherit username pkgs; })
     ./kitty
     ./kwalletd
     ./lsd
@@ -42,7 +42,7 @@
     ./rust
     ./ssh
     ./starship
-    ./tmux
+    (import ./tmux { inherit username pkgs; })
     ./waybar
     ./yambar
     ./yazi

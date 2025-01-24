@@ -5,7 +5,11 @@ fi
 # SSH agent
 if uname -a | grep 'Linux' &> /dev/null; then
   if [ -z "$SSH_AUTH_SOCK" ]; then
-    export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+    if [ -S "$HOME/.1password/agent.sock" ]; then
+      export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
+    else
+      export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+    fi
   fi
 fi
 

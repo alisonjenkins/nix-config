@@ -2,11 +2,13 @@
 , inputs
 , lib
 , username
+, user_configs
+, system
 , ...
 }: {
   imports = [
+    (import ./programs { inherit username inputs lib pkgs user_configs system; })
     ./autostart
-    ./programs
     ./scripts
     ./themes
     ./wms/hyprland
