@@ -339,6 +339,12 @@
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
       };
+      kal = {
+        isNormalUser = true;
+        description = "Kal Zafar";
+        initialPassword = "initPw!";
+        extraGroups = [ "networkmanager" "wheel" "docker" ];
+      };
     };
   };
 
