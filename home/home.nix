@@ -114,13 +114,13 @@
     ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
     gpg-agent = {
       enable = lib.mkIf pkgs.stdenv.isLinux true;
-      pinentryPackage = (lib.mkForce pkgs.kwalletcli.overrideAttrs (_: prev: {
+      pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
         meta =
           prev.meta
           // {
             mainProgram = "pinentry-qt";
           };
-      }));
+      });
       enableBashIntegration = true;
       enableZshIntegration = true;
       extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
