@@ -2,12 +2,12 @@
 , inputs
 , lib
 , username
-, user_configs
+, program_configs
 , system
 , ...
 }: {
   imports = [
-    (import ./programs { inherit username inputs lib pkgs user_configs system; })
+    (import ./programs { inherit username inputs lib pkgs program_configs system; })
     ./autostart
     ./scripts
     ./themes

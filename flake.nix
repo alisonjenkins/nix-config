@@ -195,40 +195,22 @@
                 ali = import ./home/home.nix {
                   username = "ali";
                   inherit inputs lib pkgs system;
-                  user_configs = {
-                    ali = {
-                      git = {
-                        userName = "Alison Jenkins";
-                        email = "1176328+alisonjenkins@users.noreply.github.com";
-                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
-                      };
-                    };
-                    kal = {
-                      git = {
-                        userName = "Kal Zaffar";
-                        email = "zkalaam@gmail.com";
-                        GPGSigningKey = "";
-                      };
+                  program_configs = {
+                    git = {
+                      userName = "Alison Jenkins";
+                      email = "1176328+alisonjenkins@users.noreply.github.com";
+                      GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
                     };
                   };
                 };
                 kal = import ./home/home.nix {
                   username = "kal";
                   inherit inputs lib pkgs system;
-                  user_configs = {
-                    ali = {
-                      git = {
-                        userName = "Alison Jenkins";
-                        email = "1176328+alisonjenkins@users.noreply.github.com";
-                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
-                      };
-                    };
-                    kal = {
-                      git = {
-                        userName = "Kal Zaffar";
-                        email = "zkalaam@gmail.com";
-                        GPGSigningKey = "";
-                      };
+                  program_configs = {
+                    git = {
+                      userName = "Kal Zaffar";
+                      email = "zkalaam@gmail.com";
+                      GPGSigningKey = "";
                     };
                   };
                 };
