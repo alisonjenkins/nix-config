@@ -497,12 +497,12 @@
 
       deploy = {
         nodes = {
-          ali-laptop = {
+          kal-laptop = {
             hostname = "ali-laptop-wifi.lan";
             profiles = {
               system = {
                 user = "root";
-                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-laptop;
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.kal-laptop;
               };
             };
           };
