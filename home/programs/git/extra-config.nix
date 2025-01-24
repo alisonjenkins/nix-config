@@ -1,7 +1,8 @@
-{ pkgs
+{ username
+, user_configs
+, gpgSigningProgram
 , gpgSign
 , gitGPGSigningKey
-, gpgSigningProgram
 , ...
 }: ''
   [branch]

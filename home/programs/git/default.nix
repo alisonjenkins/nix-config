@@ -1,11 +1,11 @@
-{ gitUserName
-, gitEmail
-, gitGPGSigningKey ? "~/.ssh/id_personal.pub"
+{ user_configs
+, username
 , pkgs
 , ...
 }:
 let
-  gpgSign = gitGPGSigningKey != "";
+  # gpgSign = user_configs.${username}."git"."GPGSigningKey" != "";
+  gpgSign = false;
   gpgSigningProgram = (
     if pkgs.stdenv.isLinux then
       "${pkgs._1password-gui}/bin/op-ssh-sign"
@@ -14,14 +14,15 @@ let
     else
       ""
   );
+  gitGPGSigningKey = user_configs.${username}."git"."GPGSigningKey";
 in
 {
   programs.git =
     {
       enable = true;
       lfs.enable = true;
-      userEmail = gitEmail;
-      userName = gitUserName;
+      userEmail = user_configs.${username}."git"."email";
+      userName = user_configs.${username}."git"."userName";
 
       aliases = {
         # branch
@@ -136,7 +137,7 @@ in
       if gpgSign
       then {
         signing = {
-          key = gitGPGSigningKey;
+          key = user_configs.${username}."git"."GPGSigningKey";
           signByDefault = true;
         };
       }
@@ -152,6 +153,7 @@ in
     ];
 
   home.file = {
-    ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey gpgSigningProgram pkgs; };
+    " .config/git/includes/extra-config ".text = import ./extra-config.nix { inherit username user_configs pkgs gpgSigningProgram gpgSign gitGPGSigningKey; };
   };
 }
+

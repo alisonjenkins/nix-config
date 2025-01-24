@@ -1,15 +1,13 @@
-{ config
-, pkgs
-, lib
+{ pkgs
 , username
 , inputs
 , system
 , ...
 }: {
-  home.packages = lib.optionals config.programs.alacritty.enable [ (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; }) ];
+  home.packages = [ (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; }) ];
 
   home.file =
-    if config.programs.alacritty.enable && pkgs.stdenv.isLinux && username == "deck"
+    if pkgs.stdenv.isLinux && username == "deck"
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
         [Desktop Entry]
@@ -31,7 +29,7 @@
         X-KDE-Username=
       '';
     }
-    else if config.programs.alacritty.enable && pkgs.stdenv.isLinux
+    else if pkgs.stdenv.isLinux
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
         [Desktop Entry]
