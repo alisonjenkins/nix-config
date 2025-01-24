@@ -1,4 +1,4 @@
-{ pkgs, inputs, lib, username, user_configs, system, ... }: {
+{ pkgs, inputs, lib, username, program_configs, system, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
@@ -18,7 +18,7 @@
     ./gh
     ./gh-dash
     ./ghostty
-    (import ./git { inherit pkgs inputs lib username user_configs; })
+    (import ./git { inherit pkgs inputs lib username program_configs; })
     ./gitui
     ./go
     ./granted

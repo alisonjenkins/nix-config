@@ -195,40 +195,22 @@
                 ali = import ./home/home.nix {
                   username = "ali";
                   inherit inputs lib pkgs system;
-                  user_configs = {
-                    ali = {
-                      git = {
-                        userName = "Alison Jenkins";
-                        email = "1176328+alisonjenkins@users.noreply.github.com";
-                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
-                      };
-                    };
-                    kal = {
-                      git = {
-                        userName = "Kal Zaffar";
-                        email = "zkalaam@gmail.com";
-                        GPGSigningKey = "";
-                      };
+                  program_configs = {
+                    git = {
+                      userName = "Alison Jenkins";
+                      email = "1176328+alisonjenkins@users.noreply.github.com";
+                      GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
                     };
                   };
                 };
                 kal = import ./home/home.nix {
                   username = "kal";
                   inherit inputs lib pkgs system;
-                  user_configs = {
-                    ali = {
-                      git = {
-                        userName = "Alison Jenkins";
-                        email = "1176328+alisonjenkins@users.noreply.github.com";
-                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
-                      };
-                    };
-                    kal = {
-                      git = {
-                        userName = "Kal Zaffar";
-                        email = "zkalaam@gmail.com";
-                        GPGSigningKey = "";
-                      };
+                  program_configs = {
+                    git = {
+                      userName = "Kal Zaffar";
+                      email = "zkalaam@gmail.com";
+                      GPGSigningKey = "";
                     };
                   };
                 };
@@ -260,6 +242,37 @@
               inputs.stylix.nixosModules.stylix
               nur.modules.nixos.default
               sops-nix.nixosModules.sops
+              inputs.home-manager.nixosModules.home-manager
+              {
+                home-manager.backupFileExtension = ".bak";
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.users = {
+                  ali = import ./home/home.nix {
+                    username = "ali";
+                    inherit inputs lib pkgs system;
+                    program_configs = {
+                      git = {
+                        userName = "Alison Jenkins";
+                        email = "1176328+alisonjenkins@users.noreply.github.com";
+                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                      };
+                    };
+                  };
+                  kal = import ./home/home.nix {
+                    username = "kal";
+                    inherit inputs lib pkgs system;
+                    program_configs = {
+                      git = {
+                        userName = "Kal Zaffar";
+                        email = "zkalaam@gmail.com";
+                        GPGSigningKey = "";
+                      };
+                    };
+                  };
+                };
+                home-manager.extraSpecialArgs = specialArgs;
+              }
             ];
           };
 
@@ -484,12 +497,12 @@
 
       deploy = {
         nodes = {
-          ali-laptop = {
+          kal-laptop = {
             hostname = "ali-laptop-wifi.lan";
             profiles = {
               system = {
                 user = "root";
-                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-laptop;
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.kal-laptop;
               };
             };
           };
