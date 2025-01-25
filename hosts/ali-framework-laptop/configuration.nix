@@ -6,6 +6,7 @@
 }: {
   imports = [
     (import ../../modules/locale { })
+    (import ../../modules/libvirtd { inherit pkgs; })
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
@@ -194,7 +195,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" ];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
       root = {
