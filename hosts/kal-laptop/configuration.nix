@@ -35,6 +35,7 @@
     pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
+      bottles
       delve
       go
       golines
