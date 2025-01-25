@@ -135,10 +135,6 @@
       };
     };
 
-    thermald = {
-      enable = true;
-    };
-
     tlp = {
       enable = false;
       settings = {
