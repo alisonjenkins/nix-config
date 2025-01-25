@@ -17,7 +17,7 @@
     (import ../../modules/vr { enableOpenSourceVR = false; })
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
-    ../../app-profiles/hardware/fingerprint-reader
+    (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
     ../../app-profiles/hardware/touchpad
     ./disk-config.nix
     ./hardware-configuration.nix
