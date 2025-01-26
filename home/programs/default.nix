@@ -1,9 +1,10 @@
-{ pkgs, inputs, lib, username, program_configs, system, ... }: {
+{ pkgs, inputs, lib, username, program_configs, system, gpuType, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
     ./aerospace
     (import ./alacritty { inherit username system inputs lib pkgs; })
+    (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     ./aws
     ./bat
