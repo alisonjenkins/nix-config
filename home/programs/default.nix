@@ -2,10 +2,16 @@
   imports = [
     # ./dunst
     # ./kubecolor
-    ./aerospace
+    # ./nix-index
     (import ./alacritty { inherit username system inputs lib pkgs; })
+    (import ./firefox { inherit username lib pkgs; })
+    (import ./gcc { inherit pkgs username; })
+    (import ./git { inherit pkgs inputs lib username program_configs; })
+    (import ./k9s { inherit username pkgs; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
+    (import ./tmux { inherit username pkgs; })
+    ./aerospace
     ./aws
     ./bat
     ./batsignal
@@ -14,20 +20,16 @@
     ./comodoro
     ./direnv
     ./eww
-    (import ./firefox { inherit username lib pkgs; })
     ./fzf
-    (import ./gcc { inherit pkgs username; })
     ./gh
     ./gh-dash
     ./ghostty
-    (import ./git { inherit pkgs inputs lib username program_configs; })
     ./gitui
     ./go
     ./granted
     ./hyfetch
     ./info
     ./jq
-    (import ./k9s { inherit username pkgs; })
     ./kitty
     ./kwalletd
     ./lsd
@@ -36,16 +38,13 @@
     ./mimetypes
     ./neovim
     ./newsboat
-    # ./nix-index
     ./noti
     ./nushell
     ./obs
-    (import ./opencommit { inherit pkgs; })
     ./rofi
     ./rust
     ./ssh
     ./starship
-    (import ./tmux { inherit username pkgs; })
     ./waybar
     ./yambar
     ./yazi
