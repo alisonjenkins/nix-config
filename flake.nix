@@ -204,17 +204,6 @@
                     };
                   };
                 };
-                kal = import ./home/home.nix {
-                  username = "kal";
-                  inherit inputs lib pkgs system;
-                  program_configs = {
-                    git = {
-                      userName = "Kal Zaffar";
-                      email = "zkalaam@gmail.com";
-                      GPGSigningKey = "";
-                    };
-                  };
-                };
               };
               home-manager.extraSpecialArgs = specialArgs;
             }
