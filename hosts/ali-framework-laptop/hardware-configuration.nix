@@ -37,7 +37,7 @@
         "cryptd"
         "virtio_pci"
       ];
-      kernelModules = [ "dm-snapshot" ];
+      kernelModules = [ "amdgpu" "dm-snapshot" ];
       systemd.enable = true;
     };
   };
