@@ -193,6 +193,7 @@
               home-manager.useUserPackages = true;
               home-manager.users = {
                 ali = import ./home/home.nix {
+                  gpuType = "amd";
                   username = "ali";
                   inherit inputs lib pkgs system;
                   program_configs = {
@@ -307,6 +308,7 @@
                 home-manager.users = {
                   ali = import ./home/home.nix {
                     username = "ali";
+                    gpuType = "amd";
                     inherit inputs lib pkgs system;
                     program_configs = {
                       git = {
