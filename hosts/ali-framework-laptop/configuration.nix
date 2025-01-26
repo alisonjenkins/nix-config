@@ -169,6 +169,18 @@
     logind = {
       lidSwitch = "suspend-then-hibernate";
     };
+
+    ollama = {
+      enable = true;
+      acceleration = "rocm";
+      rocmOverrideGfx = "11.0.2";
+      user = "ollama";
+      group = "ollama";
+    };
+
+    xserver = {
+      videoDrivers = [ "amdgpu" ];
+    };
   };
 
   sops = {
@@ -214,7 +226,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" ];
+        extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" "video" ];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
       root = {
