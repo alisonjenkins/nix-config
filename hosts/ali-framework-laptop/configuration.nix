@@ -73,6 +73,7 @@
     pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
+      clinfo
       framework-tool
       ldacbt
       qmk
