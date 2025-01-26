@@ -201,6 +201,12 @@
             mode = "u=rwx,g=rx,o=";
           }
           {
+            directory = "/var/lib/private/ollama";
+            user = "ollama";
+            group = "ollama";
+            mode = "u=rwx,g=,o=";
+          }
+          {
             directory = "/var/cache/tuigreet";
             user = "greetd";
             group = "greetd";
