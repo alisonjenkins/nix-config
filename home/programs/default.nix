@@ -38,6 +38,7 @@
     ./noti
     ./nushell
     ./obs
+    (import ./opencommit { inherit pkgs; })
     ./rofi
     ./rust
     ./ssh
