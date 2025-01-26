@@ -4,6 +4,7 @@
     # ./kubecolor
     ./aerospace
     (import ./alacritty { inherit username system inputs lib pkgs; })
+    (import ./opencommit { inherit pkgs; })
     ./aws
     ./bat
     ./batsignal

@@ -3,7 +3,7 @@
     opencommit
   ];
 
-  home.files = {
-    ".opencommit".source = ./opencommit-config;
-  };
+  # home.file = {
+  #   ".opencommit".source = ./opencommit-config;
+  # };
 }
