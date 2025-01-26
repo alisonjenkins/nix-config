@@ -79,6 +79,7 @@
       qmk
       qmk-udev-rules
       qmk_hid
+      rocmPackages.rocminfo
       sbctl
       tpm2-tss
     ];
