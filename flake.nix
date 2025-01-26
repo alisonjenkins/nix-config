@@ -307,9 +307,9 @@
                 home-manager.useUserPackages = true;
                 home-manager.users = {
                   ali = import ./home/home.nix {
-                    username = "ali";
                     gpuType = "amd";
                     inherit inputs lib pkgs system;
+                    username = "ali";
                     program_configs = {
                       git = {
                         userName = "Alison Jenkins";
