@@ -1,12 +1,11 @@
-{ pkgs, inputs, lib, username, user_configs, system, gpuType, ... }: {
+{ pkgs, inputs, lib, username, system, gpuType, config, gitUserName, gitEmail, gitGPGSigningKey, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
-    (import ./alacritty { inherit username system inputs lib pkgs; })
+    (import ./alacritty { inherit username system inputs lib pkgs config; })
     (import ./firefox { inherit username lib pkgs; })
     (import ./gcc { inherit pkgs username; })
-    (import ./git { inherit pkgs inputs lib username user_configs; })
-    (import ./k9s { inherit username pkgs; })
+    (import ./git { inherit pkgs inputs lib username gitUserName gitEmail gitGPGSigningKey; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./tmux { inherit username pkgs; })
@@ -28,7 +27,6 @@
     ./gh
     ./gh-dash
     ./ghostty
-    ./git
     ./gitui
     ./go
     ./granted
