@@ -1,8 +1,4 @@
-{ specialArgs, inputs, ... }: {
-  imports = [
-    inputs.home-manager.nixosModules.home-manager
-  ];
-
+{ specialArgs }: {
   home-manager.backupFileExtension = ".bak";
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
