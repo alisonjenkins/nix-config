@@ -10,7 +10,6 @@
   home-manager.extraSpecialArgs =
     specialArgs
     // {
-      username = "kal";
       gitUserName = "Kal Zaffar";
       gitEmail = "";
       gitGPGSigningKey = "";
