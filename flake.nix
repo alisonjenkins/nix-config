@@ -112,7 +112,7 @@
     {
       darwinConfigurations =
         let
-          username = builtins.mkForce "ajenkins";
+          username = builtins.mkOverride "ajenkins";
           system = "aarch64-darwin";
           hostname = "ali-work-laptop";
           specialArgs = {
@@ -147,7 +147,7 @@
           extraSpecialArgs = {
             inherit inputs;
             inherit system;
-            username = builtins.mkForce "deck";
+            username = builtins.mkOverride "deck";
             gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
