@@ -50,7 +50,7 @@
   };
 
   networking = {
-    hostName = "kal-laptop";
+    hostName = "ali-laptop";
     networkmanager.enable = true;
   };
 
