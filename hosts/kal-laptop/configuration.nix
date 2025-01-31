@@ -1263,7 +1263,6 @@
         description = "Kal Zafar";
         initialPassword = "initPw!";
         extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" ];
-        openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
       };
     };
   };
