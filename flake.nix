@@ -275,7 +275,7 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.ali = import ./home/home.nix;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
