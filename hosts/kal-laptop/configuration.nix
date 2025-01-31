@@ -56,29 +56,6 @@
   hardware = {
     graphics.enable = true;
     pulseaudio.enable = false;
-
-    nvidia = {
-      modesetting.enable = true;
-      nvidiaSettings = true;
-      open = false;
-      package = config.boot.kernelPackages.nvidiaPackages.latest;
-      # package = config.boot.kernelPackages.nvidiaPackages.beta;
-
-      powerManagement = {
-        enable = true;
-        finegrained = true;
-      };
-
-      prime = {
-        intelBusId = "PCI:0:2:0";
-        nvidiaBusId = "PCI:1:0:0";
-
-        offload = {
-          enable = true;
-          enableOffloadCmd = true;
-        };
-      };
-    };
   };
 
   networking = {
@@ -180,9 +157,8 @@
 
     xserver = {
       videoDrivers = [
-        # "fbdev"
-        # "modesetting"
-        "nvidia"
+        "fbdev"
+        "modesetting"
       ];
       xkb = {
         layout = "us";
