@@ -237,7 +237,6 @@
       environment.systemPackages = [
         pkgs.gwe
         pkgs.playonlinux
-        pkgs.python3
       ];
       services.xserver.videoDrivers = [
         "fbdev"
