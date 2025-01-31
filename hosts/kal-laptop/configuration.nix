@@ -235,7 +235,6 @@
 
     nvidia-graphics-enabled.configuration = {
       environment.systemPackages = [
-        pkgs.go
         pkgs.gwe
         pkgs.python3
         pkgs.sublime
