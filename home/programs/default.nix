@@ -12,6 +12,7 @@
     (import ./opencommit { inherit pkgs; })
     (import ./tmux { inherit username pkgs; })
     ./aerospace
+    ./alacritty
     ./aws
     ./bat
     ./batsignal
@@ -20,16 +21,22 @@
     ./comodoro
     ./direnv
     ./eww
+    ./firefox
     ./fzf
+    ./fzf
+    ./gcc
+    ./gh
     ./gh
     ./gh-dash
     ./ghostty
+    ./git
     ./gitui
     ./go
     ./granted
     ./hyfetch
     ./info
     ./jq
+    ./k9s
     ./kitty
     ./kwalletd
     ./lsd
@@ -45,6 +52,7 @@
     ./rust
     ./ssh
     ./starship
+    ./tmux
     ./waybar
     ./yambar
     ./yazi
