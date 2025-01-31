@@ -2,7 +2,6 @@
   imports = [
     # ./dunst
     # ./kubecolor
-    # ./nix-index
     (import ./alacritty { inherit username system inputs lib pkgs; })
     (import ./firefox { inherit username lib pkgs; })
     (import ./gcc { inherit pkgs username; })
@@ -45,6 +44,7 @@
     ./mimetypes
     ./neovim
     ./newsboat
+    ./nix-index
     ./noti
     ./nushell
     ./obs
