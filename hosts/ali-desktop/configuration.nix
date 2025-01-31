@@ -17,6 +17,7 @@
     })
     (import ../../modules/locale { })
     (import ../../modules/vr { enableOpenSourceVR = false; })
+    (import ../../modules/ollama)
     ../../app-profiles/desktop
     ./hardware-configuration.nix
   ];

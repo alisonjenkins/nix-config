@@ -16,6 +16,7 @@
       inherit inputs pkgs lib;
     })
     (import ../../modules/vr { enableOpenSourceVR = false; })
+    (import ../../modules/ollama)
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
     (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
@@ -168,14 +169,6 @@
 
     logind = {
       lidSwitch = "suspend-then-hibernate";
-    };
-
-    ollama = {
-      enable = true;
-      acceleration = "rocm";
-      rocmOverrideGfx = "11.0.2";
-      user = "ollama";
-      group = "ollama";
     };
 
     xserver = {
