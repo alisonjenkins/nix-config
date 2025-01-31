@@ -78,6 +78,7 @@
     { self
     , chaotic
     , disko
+    , home-manager
     , nixpkgs
     , nur
     , sops-nix
@@ -128,7 +129,18 @@
             system = system;
             modules = [
               ./hosts/ali-work-laptop-macos/configuration.nix
-              ./home-manager-users/ali
+              home-manager.darwinModules.home-manager
+              {
+                home-manager.backupFileExtension = ".bak";
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.users.${username} = import ./home/home.nix;
+                home-manager.extraSpecialArgs = specialArgs // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "alison.jenkins@brambles.com";
+                  gitGPGSigningKey = "~/.ssh/id_brambles.pub";
+                };
+              }
             ];
             specialArgs = specialArgs;
           };
@@ -171,12 +183,25 @@
             ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
-            ./home-manager-users/ali
             ./hosts/ali-desktop/configuration.nix
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.backupFileExtension = ".bak";
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs =
+                specialArgs
+                // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                };
+            }
           ];
         };
 
@@ -193,17 +218,29 @@
             # ./app-profiles/desktop/wms/sway
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/display-managers/sddm
-            ./app-profiles/desktop/local-k8s
-            ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/wms/plasma6
-            ./home-manager-users/ali
-            ./home-manager-users/kal
+            ./app-profiles/desktop/wms/hyprland
+            ./app-profiles/desktop/local-k8s
             ./hosts/kal-laptop/configuration.nix
             chaotic.nixosModules.default
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.backupFileExtension = ".bak";
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs =
+                specialArgs
+                // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "AD723B26";
+                };
+            }
           ];
         };
 
@@ -230,7 +267,7 @@
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            inputs.home-manager.nixosModules.home-manager
+            home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
@@ -274,7 +311,7 @@
             inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            inputs.home-manager.nixosModules.home-manager
+            home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
