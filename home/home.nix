@@ -2,13 +2,13 @@
 , inputs
 , lib
 , username
-, program_configs
+, user_configs
 , system
 , gpuType ? ""
 , ...
 }: {
   imports = [
-    (import ./programs { inherit username inputs lib pkgs program_configs system gpuType; })
+    (import ./programs { inherit username inputs lib pkgs user_configs system; })
     ./autostart
     ./scripts
     ./themes

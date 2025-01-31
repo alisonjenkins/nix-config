@@ -196,11 +196,20 @@
                   gpuType = "amd";
                   username = "ali";
                   inherit inputs lib pkgs system;
-                  program_configs = {
-                    git = {
-                      userName = "Alison Jenkins";
-                      email = "1176328+alisonjenkins@users.noreply.github.com";
-                      GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                  user_configs = {
+                    ali = {
+                      git = {
+                        userName = "Alison Jenkins";
+                        email = "1176328+alisonjenkins@users.noreply.github.com";
+                        GPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                      };
+                    };
+                    kal = {
+                      git = {
+                        userName = "Kal Zaffar";
+                        email = "zkalaam@gmail.com";
+                        GPGSigningKey = "";
+                      };
                     };
                   };
                 };

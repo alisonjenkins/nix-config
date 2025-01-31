@@ -1,4 +1,4 @@
-{ pkgs, inputs, lib, username, program_configs, system, gpuType, ... }: {
+{ pkgs, inputs, lib, username, user_configs, system, gpuType, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
@@ -6,7 +6,7 @@
     (import ./alacritty { inherit username system inputs lib pkgs; })
     (import ./firefox { inherit username lib pkgs; })
     (import ./gcc { inherit pkgs username; })
-    (import ./git { inherit pkgs inputs lib username program_configs; })
+    (import ./git { inherit pkgs inputs lib username user_configs; })
     (import ./k9s { inherit username pkgs; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })

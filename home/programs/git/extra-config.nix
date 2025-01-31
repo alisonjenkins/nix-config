@@ -1,4 +1,6 @@
-{ gpgSigningProgram
+{ username
+, user_configs
+, gpgSigningProgram
 , gpgSign
 , gitGPGSigningKey
 , ...
