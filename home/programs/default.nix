@@ -1,17 +1,16 @@
-{ pkgs, inputs, lib, username, program_configs, system, gpuType, ... }: {
+{ pkgs, inputs, lib, username, system, gpuType, config, gitUserName, gitEmail, gitGPGSigningKey, ... }: {
   imports = [
     # ./dunst
     # ./kubecolor
-    # ./nix-index
-    (import ./alacritty { inherit username system inputs lib pkgs; })
+    (import ./alacritty { inherit username system inputs lib pkgs config; })
     (import ./firefox { inherit username lib pkgs; })
     (import ./gcc { inherit pkgs username; })
-    (import ./git { inherit pkgs inputs lib username program_configs; })
-    (import ./k9s { inherit username pkgs; })
+    (import ./git { inherit pkgs inputs lib username gitUserName gitEmail gitGPGSigningKey; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./tmux { inherit username pkgs; })
     ./aerospace
+    ./alacritty
     ./aws
     ./bat
     ./batsignal
@@ -20,7 +19,11 @@
     ./comodoro
     ./direnv
     ./eww
+    ./firefox
     ./fzf
+    ./fzf
+    ./gcc
+    ./gh
     ./gh
     ./gh-dash
     ./ghostty
@@ -30,6 +33,7 @@
     ./hyfetch
     ./info
     ./jq
+    ./k9s
     ./kitty
     ./kwalletd
     ./lsd
@@ -38,6 +42,7 @@
     ./mimetypes
     ./neovim
     ./newsboat
+    ./nix-index
     ./noti
     ./nushell
     ./obs
@@ -45,6 +50,7 @@
     ./rust
     ./ssh
     ./starship
+    ./tmux
     ./waybar
     ./yambar
     ./yazi

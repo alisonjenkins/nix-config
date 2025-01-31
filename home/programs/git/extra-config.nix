@@ -1,6 +1,7 @@
-{ gpgSigningProgram
+{ pkgs
 , gpgSign
 , gitGPGSigningKey
+, gpgSigningProgram
 , ...
 }: ''
   [branch]

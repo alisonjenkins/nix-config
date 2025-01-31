@@ -2,19 +2,17 @@
 , inputs
 , lib
 , username
-, program_configs
-, system
-, gpuType ? ""
 , ...
 }: {
   imports = [
-    (import ./programs { inherit username inputs lib pkgs program_configs system gpuType; })
     ./autostart
+    ./programs
     ./scripts
     ./themes
     ./wms/hyprland
     ./wms/river
     inputs.plasma-manager.homeManagerModules.plasma-manager
+    inputs.nix-index-database.hmModules.nix-index
   ];
 
   home = {
@@ -115,19 +113,19 @@
 
   services = {
     ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
-    # gpg-agent = {
-    #   enable = lib.mkIf pkgs.stdenv.isLinux true;
-    #   pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
-    #     meta =
-    #       prev.meta
-    #       // {
-    #         mainProgram = "pinentry-qt";
-    #       };
-    #   });
-    #   enableBashIntegration = true;
-    #   enableZshIntegration = true;
-    #   extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
-    # };
+    gpg-agent = {
+      enable = lib.mkIf pkgs.stdenv.isLinux true;
+      pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
+        meta =
+          prev.meta
+          // {
+            mainProgram = "pinentry-qt";
+          };
+      });
+      enableBashIntegration = true;
+      enableZshIntegration = true;
+      extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
+    };
   };
 
   home.stateVersion = "24.05";
