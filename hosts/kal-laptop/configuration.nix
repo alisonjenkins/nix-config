@@ -34,13 +34,13 @@
   environment = {
     pathsToLink = [ "/share/zsh" ];
 
-    systemPackages = with pkgs; [
-      delve
-      go
-      golines
-      python3
-      sublime
-      vesktop
+    systemPackages = [
+      pkgs.delve
+      pkgs.go
+      pkgs.golines
+      pkgs.python3
+      pkgs.sublime
+      pkgs.vesktop
     ];
 
     variables = {
