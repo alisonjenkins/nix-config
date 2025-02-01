@@ -333,7 +333,7 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "networkmanager" "pipewire" "wheel" ];
+        extraGroups = [ "audio" "docker" "networkmanager" "pipewire" "wheel" "video" ];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
