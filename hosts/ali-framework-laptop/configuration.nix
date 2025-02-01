@@ -7,6 +7,7 @@
   imports = [
     (import ../../modules/locale { })
     (import ../../modules/libvirtd { inherit pkgs; })
+    (import ../../modules/rocm { inherit pkgs; })
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
@@ -74,13 +75,11 @@
     pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
-      clinfo
       framework-tool
       ldacbt
       qmk
       qmk-udev-rules
       qmk_hid
-      rocmPackages.rocminfo
       sbctl
       tpm2-tss
     ];
@@ -94,18 +93,6 @@
     graphics = {
       enable = true;
       enable32Bit = true;
-
-      extraPackages = with pkgs; [ rocmPackages.clr.icd ];
-    };
-
-    amdgpu = {
-      initrd = {
-        enable = true;
-      };
-
-      opencl = {
-        enable = true;
-      };
     };
   };
 

@@ -18,6 +18,7 @@
     (import ../../modules/locale { })
     (import ../../modules/vr { enableOpenSourceVR = false; })
     (import ../../modules/ollama)
+    (import ../../modules/rocm { inherit pkgs; })
     ../../app-profiles/desktop
     ./hardware-configuration.nix
   ];
