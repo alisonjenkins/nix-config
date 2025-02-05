@@ -14,9 +14,9 @@
       };
     in
     {
-      ".config/autostart/discord.desktop".source = "${pkgs.discord-canary}/share/applications/discord-canary.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
       ".config/autostart/ghostty.desktop".source = "${pkgs.unstable.ghostty}/share/applications/com.mitchellh.ghostty.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
+      ".config/autostart/vesktop.desktop".source = "${pkgs.vesktop}/share/applications/vesktop.desktop";
     } else { });
 }
