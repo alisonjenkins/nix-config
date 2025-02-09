@@ -21,7 +21,6 @@
     ./eww
     ./firefox
     ./fzf
-    ./fzf
     ./gcc
     ./gh
     ./gh
@@ -54,6 +53,7 @@
     ./waybar
     ./yambar
     ./yazi
+    ./zk
     ./zoxide
     ./zq
     ./zsh
