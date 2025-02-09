@@ -10,6 +10,7 @@
   environment = {
     systemPackages = with pkgs; [
       # cargo-lambda
+      # gradle
       # stable.azure-cli
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
       aws-vault
@@ -39,7 +40,6 @@
       gnupg
       go
       goreleaser
-      # gradle
       htop
       hurl
       inputs.ali-neovim.packages.${system}.nvim
