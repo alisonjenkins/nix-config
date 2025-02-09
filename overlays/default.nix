@@ -117,4 +117,19 @@
       buildInputs = oldAttrs.buildInputs ++ [ pkgs.zlib ];
     });
   };
+
+  zk = final: prev: {
+    zk = prev.zk.overrideAttrs
+      (oldAttrs: rec {
+        version = "v0.14.2";
+        vendorHash = "sha256-2PlaIw7NaW4pAVIituSVWhssSBKjowLOLuBV/wz829I=";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "zk-org";
+          repo = "zk";
+          rev = version;
+          hash = "sha256-h6qQcaAgxWeBzMjxGk7b8vrVu5NO/V6b/ZvZMWtZTpg=";
+        };
+      });
+  };
 }
