@@ -58,6 +58,7 @@
       libiconv
       lolcat
       luajitPackages.lpeg
+      mustache-go
       nix-fast-build
       nodejs
       nushell
