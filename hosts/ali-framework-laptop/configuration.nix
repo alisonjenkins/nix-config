@@ -143,6 +143,7 @@
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionizer
       outputs.overlays.unstable-packages
+      outputs.overlays.zk
     ];
     config = {
       allowUnfree = true;

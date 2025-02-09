@@ -100,6 +100,7 @@
             (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
             (import ./overlays { inherit inputs system pkgs lib; }).master-packages
             (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
+            (import ./overlays { inherit inputs system pkgs lib; }).zk
             inputs.nur.overlays.default
             inputs.rust-overlay.overlays.default
           ]
@@ -118,10 +119,29 @@
           hostname = "ali-work-laptop";
           specialArgs = {
             inherit hostname;
-            inherit username;
             inherit inputs;
-            inherit system;
             inherit outputs;
+            inherit pkgs;
+            inherit system;
+            inherit username;
+          };
+
+          pkgs = import nixpkgs {
+            inherit system;
+
+            config = {
+              allowUnfree = true;
+            };
+
+            overlays =
+              [
+                (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
+                (import ./overlays { inherit inputs system pkgs lib; }).master-packages
+                (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
+                (import ./overlays { inherit inputs system pkgs lib; }).zk
+                inputs.nur.overlays.default
+                inputs.rust-overlay.overlays.default
+              ];
           };
         in
         {
