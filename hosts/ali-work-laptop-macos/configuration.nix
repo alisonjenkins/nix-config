@@ -40,6 +40,7 @@
       gnupg
       go
       goreleaser
+      graphviz
       htop
       hurl
       inputs.ali-neovim.packages.${system}.nvim
