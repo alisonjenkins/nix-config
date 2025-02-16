@@ -91,6 +91,7 @@
       kdePackages.korganizer
       lact
       libaacs
+      moonlight-qt
       openrct2
       openttd
       openttd-ttf
@@ -101,6 +102,7 @@
       s-tui
       stable.ananicy-cpp
       stress
+      sunshine
       sweethome3d.application
       sweethome3d.furniture-editor
       sweethome3d.textures-editor
@@ -203,7 +205,25 @@
     };
   };
 
+  # security = {
+  #   wrappers = {
+  #     sunshine = {
+  #       owner = "root";
+  #       group = "root";
+  #       capabilities = "cap_sys_admin+p";
+  #       source = "${pkgs.sunshine}/bin/sunshine";
+  #     };
+  #   };
+  # };
+
   services = {
+    avahi = {
+      publish = {
+        enable = true;
+        userServices = true;
+      };
+    };
+
     # beesd = {
     #   filesystems = {
     #     persistence = {
@@ -273,6 +293,13 @@
           };
         };
       };
+    };
+
+    sunshine = {
+      enable = true;
+      autoStart = true;
+      capSysAdmin = true;
+      package = pkgs.unstable.sunshine;
     };
 
     xserver = {
