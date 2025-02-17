@@ -1,9 +1,9 @@
 {
   home.file = {
-    ".zk/config.toml".text = ''
+    ".config/zk/config.toml".text = ''
       # NOTEBOOK SETTINGS
-      # [notebook]
-      # dir = "~/git/zettelkasten"
+      [notebook]
+      dir = "~/git/zettelkasten"
 
       # NOTE SETTINGS
       [note]
@@ -37,15 +37,15 @@
       id-case = "lower"
 
       # GROUP OVERRIDES
-      [group."journal/daily".note]
+      [group.daily.note]
       extension = "md"
-      filename = "{{format-date now}}"
-      template = "~/.zk/templates/daily.md"
+      filename = "{{format-date now 'journal/daily/%Y/%m-%B/%Y-%m-%d'}}"
+      template = "daily.md"
 
-      [group."journal/weekly".note]
+      [group.weekly.note]
       extension = "md"
-      filename = "{{format-date now}}"
-      template = "~/.zk/templates/weekly.md"
+      filename = "{{format-date now 'journal/weekly/%Y/%m-%B/%Y-%m-%d'}}"
+      template = "weekly.md"
 
       # MARKDOWN SETTINGS
       [format.markdown]
@@ -59,9 +59,6 @@
 
       # Default editor used to open notes.
       editor = "nvim"
-
-      # Default shell used by aliases and commands.
-      shell = "/bin/bash"
 
       # Pager used to scroll through long output.
       pager = "less -FIRX"
@@ -77,10 +74,10 @@
       [alias]
 
       # Edit daily note
-      daily = 'zk new --no-input "$ZK_NOTEBOOK_DIR/journal/daily"'
+      daily = 'zk new --group daily'
 
       # Edit weekly note
-      weekly = 'zk new --no-input "$ZK_NOTEBOOK_DIR/journal/weekly"'
+      weekly = 'zk new --group weekly'
 
       # Edit the last modified note.
       edlast = "zk edit --limit 1 --sort modified- $@"
@@ -101,12 +98,17 @@
       dead-link = "error"
     '';
 
-    ".zk/templates/default.md".text = ''
+    ".config/zk/templates/default.md".text = ''
       # {{title}}
       {{content}}
     '';
 
-    ".zk/templates/daily.md".text = ''
+    ".config/zk/templates/daily.md".text = ''
+      # {{format-date now}}
+      {{content}}
+    '';
+
+    ".config/zk/templates/weekly.md".text = ''
       # {{format-date now}}
       {{content}}
     '';
