@@ -37,16 +37,15 @@
       id-case = "lower"
 
       # GROUP OVERRIDES
-      [group.journal]
-      paths = ["journal/weekly", "journal/daily"]
-
-      [group.journal.note]
-      filename = "{{format-date now}}"
-
-      [group.daily.note]
+      [group."journal/daily".note]
       extension = "md"
       filename = "{{format-date now}}"
-      template = "templates/daily.md"
+      template = "~/.zk/templates/daily.md"
+
+      [group."journal/weekly".note]
+      extension = "md"
+      filename = "{{format-date now}}"
+      template = "~/.zk/templates/weekly.md"
 
       # MARKDOWN SETTINGS
       [format.markdown]
@@ -80,6 +79,9 @@
       # Edit daily note
       daily = 'zk new --no-input "$ZK_NOTEBOOK_DIR/journal/daily"'
 
+      # Edit weekly note
+      weekly = 'zk new --no-input "$ZK_NOTEBOOK_DIR/journal/weekly"'
+
       # Edit the last modified note.
       edlast = "zk edit --limit 1 --sort modified- $@"
 
@@ -98,5 +100,17 @@
       # Warn for dead links between notes.
       dead-link = "error"
     '';
+
+    ".zk/templates/default.md".text = ''
+      # {{title}}
+      {{content}}
+    '';
+
+    ".zk/templates/daily.md".text = ''
+      # {{format-date now}}
+      {{content}}
+    '';
   };
 }
+
+
