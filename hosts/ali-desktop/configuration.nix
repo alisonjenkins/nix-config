@@ -113,6 +113,7 @@
       wireguard-tools
       xd
       yt-dlp
+      zk
     ];
 
     variables = {
