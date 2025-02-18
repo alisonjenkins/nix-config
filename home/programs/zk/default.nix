@@ -44,7 +44,7 @@
 
       [group.weekly.note]
       extension = "md"
-      filename = "{{format-date now 'journal/weekly/%Y/%m-%B/%Y-%m-%d'}}"
+      filename = "{{format-date now 'journal/weekly/%Y/%U'}}"
       template = "weekly.md"
 
       # MARKDOWN SETTINGS
@@ -109,7 +109,7 @@
     '';
 
     ".config/zk/templates/weekly.md".text = ''
-      # {{format-date now}}
+      # {{sh 'date +%Y' }} week {{sh 'date +%U'}}
       {{content}}
     '';
   };
