@@ -74,10 +74,10 @@
       [alias]
 
       # Edit daily note
-      daily = 'zk new --group daily --no-input --working-dir ~/git/zettelkasten'
+      daily = 'zk new --group daily --no-input --notebook-dir ~/git/zettelkasten --working-dir ~/git/zettelkasten'
 
       # Edit weekly note
-      weekly = 'zk new --group weekly --no-input --working-dir ~/git/zettelkasten'
+      weekly = 'zk new --group weekly --no-input --notebook-dir ~/git/zettelkasten --working-dir ~/git/zettelkasten'
 
       # Edit the last modified note.
       edlast = "zk edit --limit 1 --sort modified- $@"
