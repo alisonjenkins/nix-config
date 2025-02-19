@@ -75,6 +75,7 @@
     pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
+      calibre
       framework-tool
       ldacbt
       qmk
