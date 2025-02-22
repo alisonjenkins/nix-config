@@ -107,6 +107,7 @@
       sweethome3d.furniture-editor
       sweethome3d.textures-editor
       sysbench
+      # system-bridge
       uhk-agent
       upscayl
       webcamoid

@@ -46,6 +46,7 @@
     };
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixos-24.11";
+      # url = "path:/home/ali/git/nixpkgs";
     };
     # nix-gaming = {
     #   url = "github:fufexan/nix-gaming";
