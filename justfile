@@ -10,14 +10,14 @@ boot:
         sudo nixos-rebuild boot --flake ".#$HOST"
     fi
 
-test:
+test *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
         nh os test .;
     elif [ "$(uname)" == "Darwin" ]; then
-        darwin-rebuild test --option sandbox false --flake .
+        darwin-rebuild test --option sandbox false {{extraargs}} --flake .
     else
-        sudo nixos-rebuild test --flake ".#$HOST"
+        sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
     fi
 
 switch *extraargs:
