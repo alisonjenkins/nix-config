@@ -126,6 +126,7 @@
       "apache-directory-studio"
       "audacity"
       "cyberduck"
+      "dbeaver-community"
       "discord"
       "docker"
       "drawio"
