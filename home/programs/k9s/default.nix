@@ -4,10 +4,7 @@
 }: {
   programs.k9s = {
     enable = true;
-    package =
-      if username == "deck"
-      then pkgs.k9s
-      else pkgs.master.k9s;
+    package = pkgs.k9s;
     settings = {
       refreshRate = 2;
       maxConnRetry = 5;
