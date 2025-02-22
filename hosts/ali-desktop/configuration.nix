@@ -136,6 +136,14 @@
       "9.9.9.9"
       "149.112.112.112"
     ];
+
+    interfaces = {
+      "enp16s0" = {
+        wakeOnLan = {
+          enable = true;
+        };
+      };
+    };
   };
 
   nixpkgs = {
