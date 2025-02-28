@@ -14,6 +14,7 @@
       };
     in
     {
+      ".config/autostart/1password.desktop".source = "${pkgs._1password-gui}/share/applications/1password.desktop";
       ".config/autostart/alacritty.desktop".source = "${pkgs.alacritty}/share/applications/Alacritty.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
