@@ -81,6 +81,7 @@
       # libsForQt5.polonium
       # makemkv
       # stable.ananicy-cpp-rules
+      # system-bridge
       alsa-scarlett-gui
       amdgpu_top
       cpu-x
@@ -91,6 +92,7 @@
       kdePackages.korganizer
       lact
       libaacs
+      lsscsi
       moonlight-qt
       openrct2
       openttd
@@ -107,7 +109,6 @@
       sweethome3d.furniture-editor
       sweethome3d.textures-editor
       sysbench
-      # system-bridge
       uhk-agent
       upscayl
       webcamoid
