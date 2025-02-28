@@ -45,6 +45,7 @@
       htop
       hurl
       inputs.ali-neovim.packages.${system}.nvim
+      inputs.eks-creds.packages.${system}.eks-creds
       ipcalc
       isort
       jdk11
@@ -187,22 +188,22 @@
     };
 
     # run: "nix run 'nixpkgs#darwin.linux-builder'" before enabling
-    linux-builder = {
-      enable = true;
-      ephemeral = false;
-      maxJobs = 4;
-      package = pkgs.darwin.linux-builder;
-
-      config = {
-        virtualisation = {
-          darwin-builder = {
-            diskSize = 200 * 1024;
-            memorySize = 8 * 1024;
-          };
-          cores = 8;
-        };
-      };
-    };
+    # linux-builder = {
+    #   enable = true;
+    #   ephemeral = false;
+    #   maxJobs = 4;
+    #   package = pkgs.darwin.linux-builder;
+    #
+    #   config = {
+    #     virtualisation = {
+    #       darwin-builder = {
+    #         diskSize = 200 * 1024;
+    #         memorySize = 8 * 1024;
+    #       };
+    #       cores = 8;
+    #     };
+    #   };
+    # };
 
     # optimise = {
     #   enable = true;

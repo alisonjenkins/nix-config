@@ -6,6 +6,7 @@
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
+    eks-creds.url = "github:alisonjenkins/eks-creds";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     musnix = { url = "github:musnix/musnix"; };
