@@ -92,6 +92,7 @@
       lact
       libaacs
       lsscsi
+      mkvtoolnix
       moonlight-qt
       openrct2
       openttd
