@@ -77,7 +77,6 @@
     };
 
     systemPackages = with pkgs; [
-      # handbrake
       # libsForQt5.polonium
       # stable.ananicy-cpp-rules
       # system-bridge
@@ -86,6 +85,7 @@
       cpu-x
       deadd-notification-center
       geekbench
+      handbrake
       i2pd
       innoextract
       kdePackages.korganizer
