@@ -136,6 +136,12 @@
   networking = {
     hostName = "ali-desktop";
 
+    firewall = {
+      allowedTCPPorts = [
+        29087
+      ];
+    };
+
     nameservers = [
       "9.9.9.9"
       "149.112.112.112"
@@ -369,6 +375,12 @@
     defaultUserShell = pkgs.zsh;
     mutableUsers = false;
 
+    groups = {
+      jellyfin = {
+        gid = 1000;
+      };
+    };
+
     users = {
       ali = {
         autoSubUidGidRange = true;
@@ -377,6 +389,13 @@
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
+      jellyfin = {
+        isNormalUser = false;
+        isSystemUser = true;
+        uid = 1001;
+        group = "jellyfin";
+        home = "/home/jellyfin";
+        createHome = true;
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
@@ -402,6 +421,37 @@
       qemu.ovmf = {
         enable = true;
         packages = [ pkgs.OVMFFull.fd ];
+      };
+    };
+
+    oci-containers = {
+      containers = {
+        jellyfin = {
+          autoStart = true;
+          # pull = "always";
+          image = "docker.io/jellyfin/jellyfin:latest";
+          serviceName = "jellyfin";
+          user = "1001:1000";
+
+          extraOptions = [
+            # "--device /dev/dri:/dev/dri"
+            "--network=host"
+          ];
+
+          labels = {
+            "io.containers.autoupdate" = "registry";
+          };
+
+          ports = [
+            "0.0.0.0:29087:29087"
+          ];
+
+          volumes = [
+            "/var/cache/jellyfin:/cache"
+            "/home/jellyfin/config:/config"
+            "/media/storage1/Media:/media"
+          ];
+        };
       };
     };
   };
