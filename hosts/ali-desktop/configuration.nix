@@ -79,7 +79,6 @@
     systemPackages = with pkgs; [
       # handbrake
       # libsForQt5.polonium
-      # makemkv
       # stable.ananicy-cpp-rules
       # system-bridge
       alsa-scarlett-gui
@@ -110,6 +109,7 @@
       sweethome3d.textures-editor
       sysbench
       uhk-agent
+      unstable.makemkv
       upscayl
       webcamoid
       wireguard-tools
