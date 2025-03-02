@@ -97,6 +97,7 @@
       openrct2
       openttd
       openttd-ttf
+      podman
       polkit
       protontricks
       qbittorrent
@@ -384,7 +385,14 @@
   };
 
   virtualisation = {
-    docker = {
+    # docker = {
+    #   enable = true;
+    # };
+
+    podman = {
+      autoPrune.enable = true;
+      dockerCompat = true;
+      dockerSocket.enable = true;
       enable = true;
     };
 
