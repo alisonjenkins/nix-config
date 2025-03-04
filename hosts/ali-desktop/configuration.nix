@@ -468,6 +468,10 @@
           serviceName = "jellyfin";
           user = "1001:1000";
 
+          environment = {
+            HEALTHCHECK_URL = "http://localhost:29087/health";
+          };
+
           extraOptions = [
             # "--device /dev/dri:/dev/dri"
             "--network=host"
