@@ -118,6 +118,30 @@
       xd
       yt-dlp
       zk
+
+      (kodi.withPackages (pkgs: with pkgs; [
+        kodiPackages.a4ksubtitles
+        kodiPackages.inputstream-rtmp
+        kodiPackages.inputstreamhelper
+        kodiPackages.invidious
+        kodiPackages.jellyfin
+        kodiPackages.joystick
+        kodiPackages.netflix
+        kodiPackages.plugin-cache
+        kodiPackages.requests-cache
+        kodiPackages.sendtokodi
+        kodiPackages.sponsorblock
+        kodiPackages.upnext
+        kodiPackages.visualization-fishbmc
+        kodiPackages.visualization-goom
+        kodiPackages.visualization-matrix
+        kodiPackages.visualization-pictureit
+        kodiPackages.visualization-projectm
+        kodiPackages.visualization-shadertoy
+        kodiPackages.visualization-spectrum
+        kodiPackages.visualization-starburst
+        kodiPackages.visualization-waveform
+      ]))
     ];
 
     variables = {
