@@ -409,10 +409,21 @@
       ali = {
         autoSubUidGidRange = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "networkmanager" "pipewire" "wheel" "video" ];
         isNormalUser = true;
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
+
+        extraGroups = [
+          "audio"
+          "cdrom"
+          "docker"
+          "jellyfin"
+          "networkmanager"
+          "pipewire"
+          "video"
+          "wheel"
+        ];
+      };
       jellyfin = {
         isNormalUser = false;
         isSystemUser = true;
