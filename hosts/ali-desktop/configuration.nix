@@ -393,6 +393,9 @@
         enable = true;
       };
     };
+    tmpfiles = {
+      rules = [ "d /var/cache/jellyfin 1770 jellyfin jellyfin -" ];
+    };
   };
 
   users = {
