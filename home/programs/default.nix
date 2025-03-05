@@ -6,6 +6,7 @@
     (import ./firefox { inherit username lib pkgs; })
     (import ./gcc { inherit pkgs username; })
     (import ./git { inherit pkgs inputs lib username gitUserName gitEmail gitGPGSigningKey; })
+    (import ./librewolf { inherit lib username pkgs; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./tmux { inherit username pkgs; })
