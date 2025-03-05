@@ -1,5 +1,10 @@
 set export
 
+# List justfile targets
+list:
+    @just --list
+
+# Build the config this system and switch on next boot
 boot:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
@@ -10,6 +15,7 @@ boot:
         sudo nixos-rebuild boot --flake ".#$HOST"
     fi
 
+# Build the config for this system and activate it but only temporarily
 test *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
@@ -20,6 +26,7 @@ test *extraargs:
         sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
     fi
 
+# Build the config for this system and activate it
 switch *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
@@ -30,14 +37,17 @@ switch *extraargs:
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
     fi
 
+# Update the flake and commit the new lock file
 update:
-    @nix flake update .
+    @nix flake update . --commit-lock-file
 
+# Build the specified system as a VM
 test-build hostname:
   #!/usr/bin/env bash
   CORES=$(nproc)
   nix build ".#nixosConfigurations.${hostname}.config.system.build.vm" --cores $CORES
 
+# Run a built VM for the system
 test-run hostname:
   #!/usr/bin/env bash
   CORES=$(nproc)
