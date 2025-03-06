@@ -67,6 +67,7 @@
       openssl
       parallel
       pcre2
+      pgcli
       pinentry_mac
       pkg-config
       pwgen
