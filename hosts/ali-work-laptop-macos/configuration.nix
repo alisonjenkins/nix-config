@@ -18,6 +18,7 @@
       awscli2
       bacon
       bat
+      btop
       cacert
       cachix
       cargo-machete
