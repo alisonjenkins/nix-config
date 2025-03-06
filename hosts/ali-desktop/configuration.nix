@@ -497,4 +497,16 @@
       };
     };
   };
+
+  xdg = {
+    portal = {
+      config = {
+        common = {
+          default = [
+            "cosmic"
+          ];
+        };
+      };
+    };
+  };
 }
