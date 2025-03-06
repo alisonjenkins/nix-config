@@ -6,6 +6,8 @@
   programs.librewolf = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
+    package = pkgs.unstable.librewolf;
+
     settings = {
       "webgl.disabled" = false;
       "privacy.resistFingerprinting" = false;
