@@ -208,8 +208,14 @@
           }
           {
             directory = "/var/cache/tuigreet";
-            user = "greetd";
-            group = "greetd";
+            user = "greeter";
+            group = "greeter";
+            mode = "u=rwx,g=rx,o=";
+          }
+          {
+            directory = "/var/lib/regreet";
+            user = "greeter";
+            group = "greeter";
             mode = "u=rwx,g=rx,o=";
           }
         ];

@@ -5,24 +5,25 @@
   services = {
     greetd = {
       enable = true;
-      # settings = {
-      #   default_session = {
-      #     command = "${pkgs.cage}/bin/cage -s -- ${pkgs.greetd.regreet}/bin/regreet";
-      #   };
-      # };
     };
   };
 
   programs = {
     regreet = {
       enable = true;
+
+      settings = {
+        env = {
+          STATE_DIR = "/var/lib/regreet";
+        };
+      };
     };
   };
 
   security.pam.services.greetd.enableKwallet = true;
-  # system.activationScripts.makeRegreetLogDir = lib.stringAfter [ "var" ] ''
-  #   mkdir -p /var/log/regreet
-  #   chown greeter:greeter -R /var/log/regreet
+  # system.activationScripts.makeRegreetLibDir = lib.stringAfter [ "var" ] ''
+  #   mkdir -p /var/lib/regreet
+  #   chown greeter:greeter -R /var/lib/regreet
   # '';
 
   # environment.systemPackages = with pkgs; [
