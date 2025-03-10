@@ -94,6 +94,7 @@
       lsscsi
       mkvtoolnix
       moonlight-qt
+      openra
       openrct2
       openttd
       openttd-ttf
