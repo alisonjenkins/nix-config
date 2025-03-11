@@ -601,13 +601,6 @@
             nix-fast-build
             nixos-anywhere
           ];
-
-          shellHook = ''
-            alias diskom='sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode mount'
-            echo "Hook ran"
-            alias nfuc='NIX_CONFIG="access-tokens = github.com=\$(op item get "Github PAT" --fields label=password --reveal)"'
-            echo "alias should be set"
-          '';
         in
         {
           x86_64-linux.default = pkgs.mkShell {
