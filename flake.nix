@@ -605,7 +605,6 @@
         {
           x86_64-linux.default = pkgs.mkShell {
             buildInputs = buildInputs;
-            shellHook = shellHook;
           };
           aarch64-darwin.default =
             let
@@ -618,7 +617,6 @@
             in
             pkgs.mkShell {
               buildInputs = buildInputs;
-              shellHook = shellHook;
             };
         };
     };
