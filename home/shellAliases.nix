@@ -26,6 +26,7 @@
   "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
   "nfr" = "nix run .";
   "nfu" = "nix flake update";
+  "nfuc" = "nix flake update --commit-lock-file";
   "nsg" = "nix store gc";
   "nsgo" = "nix store gc && nix store optimise";
   "nso" = "nix store optimise";
