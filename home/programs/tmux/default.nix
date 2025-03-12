@@ -24,21 +24,19 @@
       shell = if pkgs.stdenv.isDarwin then "/etc/profiles/per-user/${username}/bin/zsh" else "${pkgs.zsh}/bin/zsh";
     in
     {
+      baseIndex = 1;
       enable = true;
+      escapeTime = 0;
+      extraConfig = import ./tmux.conf.nix { inherit shell; };
+      keyMode = "vi";
       newSession = true;
       prefix = "C-a";
       shell = shell;
-      baseIndex = 1;
-      terminal = "tmux-256color";
-      escapeTime = 0;
 
-      extraConfig = import ./tmux.conf.nix { inherit shell; };
-      keyMode = "vi";
       plugins = with pkgs; [
-        tmuxPlugins.cpu
+        # tmuxPlugins.sensible
         tmuxPlugins.pain-control
         tmuxPlugins.prefix-highlight
-        tmuxPlugins.sensible
         tmuxPlugins.sessionist
         {
           plugin = tmuxPlugins.catppuccin;
@@ -59,14 +57,6 @@
           '';
         }
         {
-          plugin = tmuxPlugins.continuum;
-          extraConfig = ''
-            set -g @continuum-restore 'on'
-            set -g @continuum-boot 'on'
-            set -g @continuum-save-interval '5' # minutes
-          '';
-        }
-        {
           plugin = tmuxPlugins.resurrect;
           extraConfig = ''
             set -g @resurrect-strategy-nvim 'session'
@@ -78,13 +68,6 @@
           extraConfig = ''
             set -g @thumbs-key F
             set -g @thumbs-osc52 1
-
-            # if-shell -b '[ -z "$WAYLAND_DISPLAY" ] && ! uname | grep -q Darwin' \
-            #   "set -g @thumbs-command 'echo -n {} | xclip -selection clipboard'
-            # if-shell 'uname | grep -q Darwin' \
-            #   "set -g @thumbs-command 'echo -n {} | pbcopy'
-            # if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
-            #   "set -g @thumbs-command 'echo -n {} | wl-copy'
           '';
         }
         {

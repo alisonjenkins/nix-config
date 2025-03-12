@@ -1,19 +1,38 @@
 { shell }: ''
-  set -g @shell_mode 'vi'
-  set -g @prefix_highlight_show_copy_mode 'on'
-  set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold' # default is 'fg=default,bg=yellow'
   set-option -g default-command ${shell}
-  set -g allow-passthrough on
-  set -s set-clipboard off
-  setw -g monitor-activity on
-  set -g visual-activity off
-  set -g history-limit 100000
-  set-window-option -g automatic-rename on
+  set-option -g display-time 4000
   set-option -g focus-events on
+  set-option -g focus-events on
+  set-option -g history-limit 50000
   set-option -g set-titles on
   set-option -g set-titles-string '[#S:#I #h] #W'
-  setw -g mode-keys vi
+  set-option -g status-keys emacs
+  set-option -s escape-time 0
   set-option -sa terminal-features ",''${TERM}*:RGB"
+  set-option status-interval 5
+
+  # required (only) on OS X
+  if is_osx && command_exists "reattach-to-user-namespace" && option_value_not_changed "default-command" ""; then
+    tmux set-option -g default-command "reattach-to-user-namespace -l {shell}"
+  fi
+
+  set-window-option -g aggressive-resize on
+
+  # set -g status-right '#{prefix_highlight} | %a %Y-%m-%d %H:%M'
+  set -g mouse on
+  set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold' # default is 'fg=default,bg=yellow'
+  set -g @prefix_highlight_show_copy_mode 'on'
+  set -g @shell_mode 'vi'
+  set -g default-terminal "tmux-256color"
+  set -g allow-passthrough on
+  set -g history-limit 100000
+  set -g visual-activity off
+  set -g visual-bell off
+  set -g visual-silence on
+  set -s set-clipboard off
+  set-window-option -g automatic-rename on
+  setw -g mode-keys vi
+  setw -g monitor-activity on
 
   is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
   bind-key -T copy-mode-vi 'v' send -X begin-selection
