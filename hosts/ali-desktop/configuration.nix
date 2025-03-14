@@ -500,13 +500,8 @@
 
   xdg = {
     portal = {
-      config = {
-        common = {
-          default = [
-            "cosmic"
-          ];
-        };
-      };
+      xdgOpenUsePortal = true;
+      enable = true;
     };
   };
 }
