@@ -23,6 +23,11 @@
           )
           }
 
+        Host 192.168.1.187
+          user ali
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host home-kvm-hypervisor-1
           user ali
           IdentityFile ~/.ssh/id_personal.pub
