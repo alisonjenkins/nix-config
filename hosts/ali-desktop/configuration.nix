@@ -88,6 +88,7 @@
       handbrake
       i2pd
       innoextract
+      inkscape
       kdePackages.korganizer
       lact
       libaacs
