@@ -111,7 +111,7 @@
       sweethome3d.textures-editor
       sysbench
       uhk-agent
-      unstable.makemkv
+      makemkv
       upscayl
       webcamoid
       wireguard-tools
