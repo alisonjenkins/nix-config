@@ -8,10 +8,12 @@ list:
 boot:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
+        rm -f ~/.gtkrc-2.0
         nh os boot .;
     elif [ "$(uname)" == "Darwin" ]; then
         darwin-rebuild boot --option sandbox false --flake .
     else
+        rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild boot --flake ".#$HOST"
     fi
 
@@ -19,10 +21,12 @@ boot:
 test *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
+        rm -f ~/.gtkrc-2.0
         nh os test .;
     elif [ "$(uname)" == "Darwin" ]; then
         darwin-rebuild test --option sandbox false {{extraargs}} --flake .
     else
+        rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
     fi
 
@@ -30,10 +34,12 @@ test *extraargs:
 switch *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
+        rm -f ~/.gtkrc-2.0
         nh os switch .;
     elif [ "$(uname)" == "Darwin" ]; then
         darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
     else
+        rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
     fi
 
