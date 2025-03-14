@@ -17,6 +17,7 @@
     ./batsignal
     ./broot
     ./carapace
+    ./chromium
     ./comodoro
     ./direnv
     ./eww

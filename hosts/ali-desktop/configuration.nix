@@ -506,6 +506,10 @@
     portal = {
       xdgOpenUsePortal = true;
       enable = true;
+
+      configPackages = [
+        pkgs.kdePackages.plasma-workspace
+      ];
     };
   };
 }
