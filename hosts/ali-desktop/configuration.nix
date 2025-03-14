@@ -93,6 +93,7 @@
       lact
       libaacs
       lsscsi
+      makemkv
       mkvtoolnix
       moonlight-qt
       openrct2
@@ -112,7 +113,6 @@
       sweethome3d.textures-editor
       sysbench
       uhk-agent
-      makemkv
       upscayl
       webcamoid
       wireguard-tools
