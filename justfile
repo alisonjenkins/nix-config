@@ -43,10 +43,6 @@ switch *extraargs:
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
     fi
 
-# Update the flake and commit the new lock file
-update:
-    @nix flake update . --commit-lock-file
-
 # Build the specified system as a VM
 test-build hostname:
   #!/usr/bin/env bash
@@ -66,4 +62,3 @@ test-run hostname:
 alias b := boot
 alias s := switch
 alias t := test
-alias u := update
