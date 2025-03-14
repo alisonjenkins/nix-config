@@ -148,6 +148,7 @@
       "microsoft-auto-update"
       "microsoft-outlook"
       "microsoft-teams"
+      "neovide"
       "obs"
       "obsidian"
       "ollama"
