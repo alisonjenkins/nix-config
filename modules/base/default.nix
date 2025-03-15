@@ -43,6 +43,9 @@
 
     kernel = {
       sysctl = {
+        "dev.hpet.max-user-freq" = 1000;
+        "fs.dentry-negative" = 1;
+
         # Network Perf Tuning
         "net.core.default_qdisc" = "cake";
         "net.core.netdev_max_backlog" = 16384;
