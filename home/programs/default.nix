@@ -14,7 +14,7 @@
     ./alacritty
     ./aws
     ./bat
-    ./batsignal
+    # ./batsignal
     ./broot
     ./carapace
     ./chromium
