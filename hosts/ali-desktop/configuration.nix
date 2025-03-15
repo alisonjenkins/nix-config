@@ -350,6 +350,14 @@
       videoDrivers = [ "amdgpu" ];
       xkb.layout = "us";
       xkb.variant = "";
+
+      displayManager = {
+        importedVariables = [
+          "XDG_SESSION_TYPE"
+          "XDG_CURRENT_DESKTOP"
+          "XDG_SESSION_DESKTOP"
+        ];
+      };
     };
   };
 
