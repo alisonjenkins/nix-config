@@ -157,6 +157,7 @@
       "soundsource"
       "uhk-agent"
       "utm"
+      "yed"
       "yubico-authenticator"
       "zoom"
       # "podman-desktop"
