@@ -21,6 +21,7 @@
       btop
       cacert
       cachix
+      cargo-chef
       cargo-machete
       cargo-make
       cargo-tarpaulin
