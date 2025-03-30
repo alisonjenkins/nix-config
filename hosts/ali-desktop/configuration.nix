@@ -63,6 +63,12 @@
       "sg"
       "v4l2loopback"
     ];
+
+    loader = {
+      grub = {
+        memtest86.enable = true;
+      };
+    };
   };
 
   environment = {
