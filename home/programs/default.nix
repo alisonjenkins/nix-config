@@ -47,6 +47,7 @@
     ./noti
     ./nushell
     ./obs
+    ./rio
     ./rofi
     ./rust
     ./ssh
