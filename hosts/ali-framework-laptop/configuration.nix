@@ -81,6 +81,7 @@
       qmk
       qmk-udev-rules
       qmk_hid
+      rio
       sbctl
       tpm2-tss
     ];

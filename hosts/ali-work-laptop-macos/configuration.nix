@@ -155,6 +155,7 @@
       "obsidian"
       "ollama"
       "rectangle"
+      "rio"
       "slack"
       "soundsource"
       "uhk-agent"

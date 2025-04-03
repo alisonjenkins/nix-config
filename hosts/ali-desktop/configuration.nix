@@ -93,8 +93,8 @@
       geekbench
       handbrake
       i2pd
-      innoextract
       inkscape
+      innoextract
       kdePackages.korganizer
       lact
       libaacs
@@ -110,6 +110,7 @@
       protontricks
       qbittorrent
       radeontop
+      rio
       s-tui
       stable.ananicy-cpp
       stress
