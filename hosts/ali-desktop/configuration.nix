@@ -451,7 +451,7 @@
       jellyfin = {
         isNormalUser = false;
         isSystemUser = true;
-        uid = 1001;
+        uid = 302;
         group = "jellyfin";
         home = "/home/jellyfin";
         createHome = true;
