@@ -90,6 +90,7 @@
       amdgpu_top
       cpu-x
       deadd-notification-center
+      freeplane
       geekbench
       handbrake
       i2pd
