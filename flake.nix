@@ -350,6 +350,33 @@
           ];
         };
 
+        aws-server-1 = nixpkgs.lib.nixosSystem {
+          modules = [
+            "${nixpkgs}/nixos/maintainers/scripts/ec2/amazon-image.nix"
+            "${nixpkgs}/nixos/lib/make-disk-image.nix"
+            {
+              ec2.hvm = true;
+              nixpkgs.hostPlatform = "aarch64-linux";
+              services.nginx.enable = true;
+
+              environment = {
+                systemPackages = [
+                ];
+              };
+
+              virtualisation = {
+                diskSizeAutoSupported = false;
+                diskSize = 4096;
+                # memorySize = 4096;
+
+                amazon-init = {
+                  enable = true;
+                };
+              };
+            }
+          ];
+        };
+
         # ali-steam-deck = lib.nixosSystem rec {
         #   inherit system;
         #   specialArgs = {
