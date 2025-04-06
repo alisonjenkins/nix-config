@@ -24,6 +24,12 @@
           }
 
         Host 192.168.1.187
+          User root
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+          Port 2222
+
+        Host ali-desktop.lan
           user ali
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
