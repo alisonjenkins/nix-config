@@ -64,6 +64,23 @@
       "v4l2loopback"
     ];
 
+    initrd = {
+      network = {
+        enable = true;
+
+        ssh = {
+          enable = true;
+          authorizedKeys = [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
+          ];
+          hostKeys = [
+            "/etc/ssh/initrd/ssh_host_key_ed25519"
+            "/etc/ssh/initrd/ssh_host_key_rsa"
+          ];
+        };
+      };
+    };
+
     loader = {
       grub = {
         memtest86.enable = true;
