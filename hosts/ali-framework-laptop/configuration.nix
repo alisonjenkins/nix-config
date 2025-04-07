@@ -85,6 +85,7 @@
       rio
       sbctl
       tpm2-tss
+      wireguard-tools
     ];
   };
 
