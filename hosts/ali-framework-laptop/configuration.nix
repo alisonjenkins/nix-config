@@ -77,6 +77,7 @@
     systemPackages = with pkgs; [
       calibre
       framework-tool
+      freeplane
       ldacbt
       qmk
       qmk-udev-rules
