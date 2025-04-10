@@ -56,9 +56,6 @@ in
       keyp = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_personal";
       keypa = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_alan-aws";
       keyk = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_krystal";
-      vim = "${inputs.ali-neovim.packages.${system}.nvim}/bin/nvim";
-      vi = "${inputs.ali-neovim.packages.${system}.nvim}/bin/nvim";
-      v = "${inputs.ali-neovim.packages.${system}.nvim}/bin/nvim";
       j = "${pkgs.just}/bin/just";
       ".." = "cd ..";
       "..." = "cd ../..";
