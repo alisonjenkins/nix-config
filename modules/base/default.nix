@@ -221,6 +221,12 @@
             group = "greeter";
             mode = "u=rwx,g=rx,o=";
           }
+          {
+            directory = "/etc/wireguard";
+            user = "root";
+            group = "root";
+            mode = "u=rwx,g=rx,o=";
+          }
         ];
         files = [
           "/etc/machine-id"
