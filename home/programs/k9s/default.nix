@@ -4,7 +4,7 @@
 }: {
   programs.k9s = {
     enable = true;
-    package = pkgs.k9s;
+    package = pkgs.unstable.k9s;
     settings = {
       refreshRate = 2;
       maxConnRetry = 5;
