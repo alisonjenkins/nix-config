@@ -53,6 +53,7 @@
     ./rust
     ./ssh
     ./starship
+    ./terraform
     ./tmux
     ./waybar
     ./yambar
