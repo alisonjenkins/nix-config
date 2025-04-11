@@ -10,11 +10,11 @@
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./tmux { inherit username pkgs; })
+    # ./batsignal
     ./aerospace
     ./alacritty
     ./aws
     ./bat
-    # ./batsignal
     ./broot
     ./carapace
     ./chromium
