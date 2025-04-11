@@ -47,6 +47,7 @@
     ./noti
     ./nushell
     ./obs
+    ./opentofu
     ./rio
     ./rofi
     ./rust
