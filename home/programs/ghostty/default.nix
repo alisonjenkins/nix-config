@@ -28,7 +28,7 @@
         confirm-close-surface = false
         cursor-style = block
         cursor-style-blink = false
-        custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
+        # custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
         font-family = ${font-family}
         font-size = 13
         font-style = Regular
