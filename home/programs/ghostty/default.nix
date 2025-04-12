@@ -30,7 +30,7 @@
         cursor-style-blink = false
         # custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
         font-family = ${font-family}
-        font-size = 13
+        font-size = 11
         font-style = Regular
         font-thicken = true
         palette = 12=#344CFF
