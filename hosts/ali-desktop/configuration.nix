@@ -65,14 +65,94 @@
     ];
 
     initrd = {
+      availableKernelModules = [ "r8169" ];
+
+      systemd = {
+        enable = true;
+
+        initrdBin = with pkgs; [
+          cryptsetup
+        ];
+
+        users = {
+          root = {
+            shell = "/bin/cryptsetup-askpass";
+          };
+        };
+
+        network = {
+          networks = {
+            "enp16s0" = {
+              matchConfig = {
+                Name = "enp16s0"; # Matches the network interface by name
+              };
+              networkConfig = {
+                DHCP = "yes"; # Enable DHCP to automatically get an IP address
+              };
+            };
+          };
+        };
+
+        # Define the service that will handle LUKS unlocking
+        # services = {
+        #   unlock-luks = {
+        #     description = "Unlock LUKS encrypted root device";
+        #     # Make sure this service runs during boot
+        #     wantedBy = [ "initrd.target" ];
+        #     # Wait for network to be ready before trying to unlock
+        #     after = [ "network-online.target" ];
+        #     # Must unlock before trying to mount the root filesystem
+        #     before = [ "sysroot.mount" ];
+        #     # Ensure necessary tools are available
+        #     path = [ "/bin" ];
+        #
+        #     # Configure how the service behaves
+        #     serviceConfig = {
+        #       Type = "oneshot"; # Service runs once and exits
+        #       RemainAfterExit = true; # Consider service active even after it exits
+        #       SuccessExitStatus = [ 0 1 ]; # Both 0 and 1 are considered success
+        #     };
+        #
+        #     # The actual commands to unlock the drive
+        #     script = ''
+        #       echo "Waiting for LUKS unlock..."
+        #       # Try to unlock the encrypted drive
+        #       # The || true ensures the script doesn't fail if first attempt fails
+        #       cryptsetup open /dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246 root --type luks || true
+        #     '';
+        #   };
+        # };
+      };
+
       network = {
         enable = true;
 
+        # postCommands =
+        #   let
+        #     # Replace this with your LUKS device path !!!
+        #     # See previous step
+        #     disk = "/dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246";
+        #   in
+        #   ''
+        #     echo 'cryptsetup open ${disk} root --type luks && echo > /tmp/unlocked' >> /root/.profile
+        #     echo 'Starting SSH server for remote LUKS decryption...'
+        #   '';
+        #
+        # # Block boot until the LUKS device is unlocked
+        # postDeviceCommands = ''
+        #   echo 'Waiting for root device to be unlocked...'
+        #   mkfifo /tmp/unlocked
+        #   cat /tmp/unlocked
+        # '';
+
         ssh = {
           enable = true;
+          port = 2222;
+
           authorizedKeys = [
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
           ];
+
           hostKeys = [
             "/etc/ssh/initrd/ssh_host_key_ed25519"
             "/etc/ssh/initrd/ssh_host_key_rsa"
@@ -463,6 +543,7 @@
 
         openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK2wZMFO69SYvoIIs6Atx/22PVy8wHtYy0MKpYtUMsez phone-ssh-key"
         ];
       };
       jellyfin = {
