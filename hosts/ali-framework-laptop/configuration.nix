@@ -32,7 +32,6 @@
     # kernelPackages = pkgs.linuxPackages;
     # kernelPackages = pkgs.linuxPackages_cachyos-lto;
     # kernelPackages = pkgs.linuxPackages_latest;
-    # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
     # kernelPackages = pkgs.linuxPackages_zen;
     kernelPackages = pkgs.linuxPackages_cachyos;
