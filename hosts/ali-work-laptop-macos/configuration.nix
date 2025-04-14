@@ -150,6 +150,7 @@
       "microsoft-auto-update"
       "microsoft-outlook"
       "microsoft-teams"
+      "mitmproxy"
       "neovide"
       "obs"
       "obsidian"
