@@ -63,6 +63,7 @@
       libiconv
       lolcat
       luajitPackages.lpeg
+      mitmproxy2swagger
       mustache-go
       nix-fast-build
       nodejs
