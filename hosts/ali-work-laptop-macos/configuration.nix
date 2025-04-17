@@ -77,6 +77,7 @@
       pwgen
       qview
       ripgrep
+      rlwrap
       ruff-lsp
       rust-bin.stable.latest.default
       selene
