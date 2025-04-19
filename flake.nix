@@ -26,21 +26,30 @@
       url = "github:lnl7/nix-darwin/nix-darwin-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     home-manager = {
       url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     lanzaboote = {
       url = "github:nix-community/lanzaboote/v0.4.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     nh = {
       url = "github:viperML/nh";
       inputs.nixpkgs.follows = "nixpkgs"; # override this repo's nixpkgs snapshot
+    };
+
+    nix-on-droid = {
+      url = "github:nix-community/nix-on-droid/release-24.05";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     nur = {
       url = "github:nix-community/nur";
@@ -503,6 +512,39 @@
             disko.nixosModules.disko
             ./hosts/home-k8s-server-1/disko-config.nix
             ./hosts/home-k8s-server-1/configuration.nix
+          ];
+        };
+      };
+
+      nixOnDroidConfigurations = let
+        pkgs = import nixpkgs {
+          system = "aarch64-linux";
+
+          config = {
+            allowUnfree = true;
+          };
+
+          overlays = [
+              (import ./overlays { inherit inputs system pkgs lib; }).master-packages
+              (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
+              inputs.nur.overlays.default
+              inputs.rust-overlay.overlays.default
+          ];
+        };
+      in
+      {
+        default = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+          modules = [
+            {
+              environment = {
+                systemPackages = with pkgs; [
+                  dua
+                  git
+                  inputs.ali-neovim.packages.${system}.nvim
+                  just
+                ];
+              };
+            }
           ];
         };
       };
