@@ -187,6 +187,7 @@
       amdgpu_top
       cpu-x
       deadd-notification-center
+      drawio
       freeplane
       geekbench
       handbrake
