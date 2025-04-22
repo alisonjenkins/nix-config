@@ -158,6 +158,7 @@
       "obs"
       "obsidian"
       "ollama"
+      "podman-desktop"
       "rectangle"
       "rio"
       "slack"
@@ -167,7 +168,6 @@
       "yed"
       "yubico-authenticator"
       "zoom"
-      # "podman-desktop"
     ];
 
     onActivation = {
