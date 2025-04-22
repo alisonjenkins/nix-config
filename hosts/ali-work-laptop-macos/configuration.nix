@@ -135,7 +135,6 @@
       "cyberduck"
       "dbeaver-community"
       "discord"
-      "docker"
       "drawio"
       "element"
       "firefox"
