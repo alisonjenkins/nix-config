@@ -32,6 +32,7 @@
       direnv
       diskus
       dive
+      docker
       docker-credential-helpers
       dua
       fd
@@ -119,6 +120,7 @@
 
     brews = [
       "choose-gui"
+      "lima"
       "openconnect"
     ];
 
