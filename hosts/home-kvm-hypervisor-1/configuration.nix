@@ -107,4 +107,11 @@
       wheelNeedsPassword = false;
     };
   };
+
+  services = {
+    cockpit = {
+      enable = true;
+      openFirewall = true;
+    };
+  };
 }
