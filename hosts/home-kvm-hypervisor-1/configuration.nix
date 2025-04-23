@@ -132,7 +132,10 @@
   system.stateVersion = "24.05";
 
   systemd = {
+
     network = {
+      enable = true;
+
       netdevs = {
         "20-br0" = {
           netdevConfig = {
