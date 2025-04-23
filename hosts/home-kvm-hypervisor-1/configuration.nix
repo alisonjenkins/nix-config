@@ -19,6 +19,13 @@
       "systemd.gpt_auto=no"
     ];
 
+    kernel = {
+      sysctl = {
+        "net.ipv4.conf.all.forwarding" = true;
+        "net.ipv6.conf.all.forwarding" = true;
+      };
+    };
+
     initrd = {
       availableKernelModules = [
         "ixgbe"
@@ -68,18 +75,6 @@
     hostName = "home-kvm-hypervisor-1";
     networkmanager.enable = false;
     useDHCP = false;
-
-    bridges = {
-      "br0" = {
-        interfaces = ["enp16s0"];
-      };
-    };
-
-    interfaces = {
-      "br0" = {
-        useDHCP = true;
-      };
-    };
   };
 
   programs = {
@@ -135,6 +130,38 @@
   };
 
   system.stateVersion = "24.05";
+
+  systemd = {
+    network = {
+      netdevs = {
+        "20-br0" = {
+          netdevConfig = {
+            Kind = "bridge";
+            Name = "br0";
+          };
+        };
+      };
+      networks = {
+        "30-enp16s0" = {
+          matchConfig.Name = "enp16s0";
+          networkConfig = {
+            Bridge = "br0";
+          };
+          linkConfig = {
+            RequiredForOnline = "enslaved";
+          };
+        };
+        "40-br0" = {
+          matchConfig.Name = "br0";
+          bridgeConfig = {};
+          dhcpV4Config = { UseDNS = true; UseRoutes = true; };
+          linkConfig = {
+            RequiredForOnline = "routable";
+          };
+        };
+      };
+    };
+  };
 
   virtualisation = {
     libvirtd = {
