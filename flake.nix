@@ -583,7 +583,7 @@
           #   };
           # };
           home-kvm-hypervisor-1 = {
-            hostname = "home-kvm-hypervisor.lan";
+            hostname = "home-kvm-hypervisor-1.lan";
             profiles = {
               system = {
                 user = "root";
