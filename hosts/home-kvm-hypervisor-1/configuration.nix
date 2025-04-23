@@ -161,7 +161,7 @@
           bridgeConfig = {};
           dhcpV4Config = { UseDNS = true; UseRoutes = true; };
           linkConfig = {
-            RequiredForOnline = "carrier";
+            RequiredForOnline = "routable";
           };
         };
       };

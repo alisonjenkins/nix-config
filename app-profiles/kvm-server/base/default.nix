@@ -7,10 +7,4 @@
       swtpm.enable = true;
     };
   };
-  networking.interfaces.br0.useDHCP = true;
-  networking.bridges = {
-    "br0" = {
-      interfaces = [ "enp11s0" ];
-    };
-  };
 }
