@@ -13,10 +13,12 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
+
     kernelParams = [
       "vfio-pci.ids=1000:0072"
       "systemd.gpt_auto=no"
     ];
+
     initrd = {
       availableKernelModules = [
         "ixgbe"
@@ -24,8 +26,10 @@
         "r8169"
       ];
     };
+
     loader = {
       efi.efiSysMountPoint = "/boot";
+
       grub = {
         enable = true;
         devices = [ "nodev" ];
@@ -47,21 +51,31 @@
     };
   };
 
-  networking.hostName = "home-kvm-hypervisor-1";
-  networking.networkmanager.enable = true;
-
-  time.timeZone = "Europe/London";
-
   console.keyMap = "us";
-  environment.pathsToLink = [ "/share/zsh" ];
-  environment.variables = {
-    PATH = [
-      "\${HOME}/.local/bin"
-      "\${HOME}/.config/rofi/scripts"
-    ];
+
+  environment = {
+    pathsToLink = [ "/share/zsh" ];
+
+    variables = {
+      PATH = [
+        "\${HOME}/.local/bin"
+        "\${HOME}/.config/rofi/scripts"
+      ];
+    };
   };
 
-  programs.zsh.enable = true;
+  networking = {
+    hostName = "home-kvm-hypervisor-1";
+    networkmanager.enable = true;
+  };
+
+  programs = {
+    zsh.enable = true;
+  };
+
+  time = {
+    timeZone = "Europe/London";
+  };
 
   users.users.ali = {
     isNormalUser = true;
@@ -85,17 +99,16 @@
     ];
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 60d";
-  };
-
-  system.stateVersion = "24.05";
-
   nix = {
     extraOptions = "experimental-features = nix-command flakes";
     package = pkgs.nixVersions.stable;
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 60d";
+    };
+
     settings = {
       auto-optimise-store = false;
       trusted-users = [ "root" "@wheel" ];
@@ -108,10 +121,5 @@
     };
   };
 
-  services = {
-    cockpit = {
-      enable = true;
-      openFirewall = true;
-    };
-  };
+  system.stateVersion = "24.05";
 }

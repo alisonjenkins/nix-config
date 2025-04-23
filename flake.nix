@@ -18,6 +18,7 @@
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixvirt.url = "github:AshleyYakeley/NixVirt/v0.5.0";
     rust-overlay.url = "github:oxalica/rust-overlay";
     stylix.url = "github:danth/stylix/release-24.11";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
@@ -453,6 +454,7 @@
             ./hosts/home-kvm-hypervisor-1/configuration.nix
             ./hosts/home-kvm-hypervisor-1/disko-config.nix
             disko.nixosModules.disko
+            inputs.nixvirt.nixosModules.default
             sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
