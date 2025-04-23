@@ -144,6 +144,7 @@
           };
         };
       };
+
       networks = {
         "30-enp16s0" = {
           matchConfig.Name = "enp16s0";
@@ -154,12 +155,13 @@
             RequiredForOnline = "enslaved";
           };
         };
+
         "40-br0" = {
           matchConfig.Name = "br0";
           bridgeConfig = {};
           dhcpV4Config = { UseDNS = true; UseRoutes = true; };
           linkConfig = {
-            RequiredForOnline = "routable";
+            RequiredForOnline = "carrier";
           };
         };
       };
