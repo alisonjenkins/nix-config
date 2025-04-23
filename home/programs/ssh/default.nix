@@ -1,8 +1,12 @@
 { pkgs, ... }: {
   home.file = {
-    ".ssh/id_personal.pub".text = ''
-      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF
-    '';
+    ".ssh/id_personal.pub.source" = {
+      source = ./id_personal.pub;
+      onChange = ''
+      cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
+      chmod 600 ~/.ssh/id_personal.pub
+      '';
+    };
 
     ".ssh/config".text =
       let
@@ -18,7 +22,11 @@
         ${
             (
             if use1password
-            then "Host *\n  IdentityAgent ${identity_sock_path}"
+            then ''
+            Host *
+              AddKeysToAgent yes
+              IdentitiesOnly yes
+              IdentityAgent ${identity_sock_path}''
           else ""
           )
           }
@@ -34,14 +42,20 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
-        Host home-kvm-hypervisor-1
+        Host home-kvm-hypervisor-1.lan
           user ali
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host hkh1
           user ali
-          HostName home-kvm-hypervisor-1
+          HostName home-kvm-hypervisor-1.lan
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
+        Host hkh1-setup
+          user nixos
+          HostName home-kvm-hypervisor-1.lan
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
