@@ -66,7 +66,15 @@
 
   networking = {
     hostName = "home-kvm-hypervisor-1";
-    networkmanager.enable = true;
+    networkmanager.enable = false;
+    useDHCP = false;
+
+    bridges = {
+      "br0" = {
+        interfaces = ["enp16s0"];
+        useDHCP = true;
+      };
+    };
   };
 
   programs = {
@@ -122,4 +130,34 @@
   };
 
   system.stateVersion = "24.05";
+
+  virtualisation = {
+    libvirtd = {
+      enable = true;
+
+      # connections = {
+      #   "qemu:///system" = {
+      #     domains = [
+      #       {
+      #       }
+      #     ];
+      #
+      #     # networks = [
+      #     #   {
+      #     #
+      #     #   }
+      #     # ];
+      #
+      #     pools = [
+      #       {
+      #         definition = ./libvirtd/pools/default.xml;
+      #
+      #         # volumes = [
+      #         # ];
+      #       }
+      #     ];
+      #   };
+      # };
+    };
+  };
 }
