@@ -157,6 +157,7 @@
         };
 
         "40-br0" = {
+          DHCP = "yes";
           matchConfig.Name = "br0";
           bridgeConfig = {};
           dhcpV4Config = { UseDNS = true; UseRoutes = true; };
