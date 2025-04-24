@@ -25,11 +25,11 @@
     pkgs.htop
   ];
 
-  # networking = {
-  #   firewall.allowedTCPPorts = [
-  #     6443
-  #   ];
-  # };
+  networking = {
+    firewall = {
+      enable = false;
+    };
+  };
 
   nix = {
     package = pkgs.nixVersions.stable;
