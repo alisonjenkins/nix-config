@@ -59,6 +59,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host home-k8s-master-1.lan
+          user ali
+          HostName home-k8s-master-1.lan
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host hk8m1
           user ali
           HostName home-k8s-master-1.lan
