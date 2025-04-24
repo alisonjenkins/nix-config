@@ -2,7 +2,7 @@ keys:
   - &admin_ali age1rne0eqj5jfqahm5s5mmp3u0v97xm0lvwm2ghtjlv4p7m0l78tq5stgjtu4
   - &ali_personal age1efmxs2w78yw0knq7hvzxjsanphqgrx2mj5p5grkye590yq4rjexs5zvvzg
   - &server_ali-desktop age1enyaj2wdty5kpu8n2tfx2eswww7743ewxf7ykfmsdaqz0w5f4dqqx54eps
-  - &server_home-k8s-master-1 age163uz4pqcluavy7le7vj57km3ewh67rrzvma5u99r3qvfwyzqzgtqt4fk73
+  - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
