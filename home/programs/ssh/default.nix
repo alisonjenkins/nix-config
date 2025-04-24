@@ -59,6 +59,18 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host hss1
+          user ali
+          HostName home-storage-server-1.lan
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
+        Host hss1-setup
+          user nixos
+          HostName home-storage-server-1.lan
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host github.com
           User alisonjenkins
           IdentityFile ~/.ssh/id_personal.pub
