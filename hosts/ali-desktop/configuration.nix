@@ -185,6 +185,7 @@
       # system-bridge
       alsa-scarlett-gui
       amdgpu_top
+      cifs-utils
       cpu-x
       deadd-notification-center
       drawio
