@@ -26,8 +26,14 @@
   ];
 
   networking = {
+    hostName = "home-k8s-master-1";
+
     firewall = {
-      enable = false;
+      enable = true;
+
+      allowedTCPPorts = [
+        6443
+      ];
     };
   };
 
