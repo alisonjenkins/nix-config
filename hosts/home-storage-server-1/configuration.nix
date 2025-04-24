@@ -6,7 +6,7 @@
   imports = [
     (import ../../modules/locale { })
     ../../app-profiles/server-base
-    ../../app-profiles/server-base/luks-tor-unlock
+    # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./hardware-configuration.nix
   ];
