@@ -199,7 +199,7 @@
       lact
       libaacs
       lsscsi
-      makemkv
+      unstable.makemkv
       mkvtoolnix
       moonlight-qt
       openrct2
