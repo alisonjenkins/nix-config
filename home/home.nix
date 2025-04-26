@@ -57,7 +57,7 @@
         dive
         eog
         eza
-        fluxcd
+        unstable.fluxcd
         freeplane
         git
         gnumake
