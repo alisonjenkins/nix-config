@@ -25,7 +25,7 @@
         background-opacity = 0.9
         clipboard-paste-protection = false
         command = ${zsh} -l -c 'tmux attach ; tmux'
-        confirm-close-surface = false
+        # confirm-close-surface = false
         cursor-style = block
         cursor-style-blink = false
         # custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
@@ -33,11 +33,11 @@
         font-size = 11
         font-style = Regular
         font-thicken = true
-        palette = 12=#344CFF
-        palette = 4=#3D52E2
-        selection-background = 1d3c3b
-        selection-foreground = eeeeee
-        theme = GruvboxDarkHard
+        # palette = 12=#344CFF
+        # palette = 4=#3D52E2
+        # selection-background = 1d3c3b
+        # selection-foreground = eeeeee
+        # theme = GruvboxDarkHard
         title = Ghostty
         unfocused-split-opacity = 1.0
         window-decoration = false
