@@ -58,6 +58,7 @@
       just
       kind
       kubecm
+      kubectl
       kubectx
       kubernetes-helm
       libffi
