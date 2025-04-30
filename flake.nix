@@ -153,6 +153,9 @@
                 (import ./overlays { inherit inputs system pkgs lib; }).zk
                 inputs.nur.overlays.default
                 inputs.rust-overlay.overlays.default
+                (self: super: {
+                  nodejs = super.unstable.nodejs;
+                })
               ];
           };
         in
