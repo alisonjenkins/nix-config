@@ -6,7 +6,7 @@
   imports = [
     # ../../app-profiles/server-base/luks-tor-unlock
     (import ../../modules/locale { })
-    ../../app-profiles/kvm-server
+    (import ../../app-profiles/kvm-server {inherit pkgs;})
     ../../app-profiles/server-base
     ./hardware-configuration.nix
   ];

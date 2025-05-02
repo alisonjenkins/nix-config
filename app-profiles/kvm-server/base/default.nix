@@ -1,4 +1,6 @@
-{ ...
+{
+  pkgs,
+  ...
 }: {
   virtualisation.libvirtd = {
     enable = true;
@@ -6,5 +8,9 @@
     qemu = {
       swtpm.enable = true;
     };
+  };
+
+  environment = {
+    systemPackages = [ pkgs.OVMF pkgs.AAVMF ];
   };
 }
