@@ -27,6 +27,7 @@
       cargo-make
       cargo-tarpaulin
       cargo-watch
+      colima
       comma
       cowsay
       direnv
