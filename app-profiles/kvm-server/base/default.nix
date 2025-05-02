@@ -11,6 +11,8 @@
   };
 
   environment = {
-    systemPackages = [ pkgs.OVMF pkgs.AAVMF ];
+    systemPackages = [
+      pkgs.OVMF
+    ];
   };
 }
