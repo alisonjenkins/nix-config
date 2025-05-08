@@ -167,6 +167,26 @@
   security.rtkit.enable = true;
 
   services = {
+    duplicity = {
+      enable = true;
+      frequency = "daily";
+      secretFile = "/home/ali/.config/duplicity/secrets";
+      targetUrl = "b2://$B2_KEY_ID:$B2_APPLICATION_KEY@$B2_BACKUP_BUCKET";
+
+      cleanup = {
+        maxAge = "6M";
+      };
+
+      exclude = [
+        "/home/ali/.steam"
+        "/home/ali/.local/share/Steam"
+      ];
+
+      include = [
+        "/home/ali"
+      ];
+    };
+
     openssh = {
       enable = true;
       settings.PasswordAuthentication = false;
@@ -264,6 +284,7 @@
         extraGroups = [ "networkmanager" "wheel" "docker" ];
         openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
         packages = with pkgs; [
+          duplicity
           firefox
           neofetch
           lolcat
