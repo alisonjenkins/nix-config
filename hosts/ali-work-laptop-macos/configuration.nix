@@ -159,6 +159,7 @@
       "neovide"
       "obs"
       "obsidian"
+      "obsidian"
       "ollama"
       "podman-desktop"
       "rectangle"
