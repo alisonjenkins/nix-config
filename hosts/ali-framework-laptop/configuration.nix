@@ -78,6 +78,7 @@
       framework-tool
       freeplane
       ldacbt
+      obsidian
       qmk
       qmk-udev-rules
       qmk_hid
