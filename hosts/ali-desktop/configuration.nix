@@ -199,7 +199,6 @@
       lact
       libaacs
       lsscsi
-      unstable.makemkv
       mkvtoolnix
       moonlight-qt
       openrct2
@@ -219,7 +218,9 @@
       sweethome3d.furniture-editor
       sweethome3d.textures-editor
       sysbench
+      todoist-electron
       uhk-agent
+      unstable.makemkv
       upscayl
       webcamoid
       wireguard-tools
