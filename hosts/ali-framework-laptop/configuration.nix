@@ -84,6 +84,7 @@
       qmk_hid
       rio
       sbctl
+      todoist-electron
       tpm2-tss
       wireguard-tools
     ];
