@@ -215,6 +215,13 @@
         extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" "video" ];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
+      lace = {
+        autoSubUidGidRange = true;
+        isNormalUser = true;
+        description = "Lace Jones";
+        extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" "video" ];
+        hashedPasswordFile = "/persistence/passwords/lace";
+      };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
       };
