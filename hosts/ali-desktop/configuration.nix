@@ -220,11 +220,17 @@
       sysbench
       todoist-electron
       uhk-agent
+      unixtools.xxd
       unstable.makemkv
+      unzip
       upscayl
       webcamoid
       wireguard-tools
       xd
+      xdotool
+      xorg.xprop
+      xorg.xwininfo
+      yad
       yt-dlp
       zk
 
