@@ -318,7 +318,9 @@
 
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ ];
+      permittedInsecurePackages = [
+        "electron-33.4.11"
+      ];
     };
   };
 
