@@ -30,7 +30,7 @@
       colima
       comma
       cowsay
-      delve
+      unstable.delve
       direnv
       diskus
       dive
