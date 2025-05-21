@@ -30,6 +30,7 @@
       colima
       comma
       cowsay
+      delve
       direnv
       diskus
       dive
