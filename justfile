@@ -59,6 +59,13 @@ test-run hostname:
     #-display sdl,gl=on
   rm "${hostname}.qcow2"
 
+# Update flake
+update:
+    #!/usr/bin/env bash
+    export NIX_CONFIG="access-tokens = github.com=$(op item get "Github PAT" --fields label=password --reveal)"
+    nix flake update --commit-lock-file
+
 alias b := boot
 alias s := switch
 alias t := test
+alias u := update
