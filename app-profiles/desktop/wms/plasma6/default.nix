@@ -11,7 +11,7 @@
   environment.systemPackages = with pkgs; [
     # libsForQt5.polonium
     kdePackages.qtbase.out
-    plasma-browser-integration
+    kdePackages.plasma-browser-integration
   ];
 
   networking.firewall = {
