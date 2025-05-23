@@ -24,9 +24,6 @@
     graphics = {
       enable = true;
     };
-    pulseaudio = {
-      enable = false;
-    };
   };
 
   musnix = {
@@ -43,6 +40,10 @@
   };
 
   services = {
+    pulseaudio = {
+      enable = false;
+    };
+
     pipewire = {
       alsa.enable = true;
       alsa.support32Bit = true;
