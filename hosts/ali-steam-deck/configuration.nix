@@ -213,22 +213,22 @@
 
       fonts = {
         serif = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
+          package = pkgs.nerd-fonts.fira-code;
           name = "FiraCode Nerd Font Mono";
         };
 
         sansSerif = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
+          package = pkgs.nerd-fonts.fira-code;
           name = "FiraCode Nerd Font Mono";
         };
 
         monospace = {
-          package = (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; });
+          package = pkgs.nerd-fonts.fira-code;
           name = "FiraCode Nerd Font Mono";
         };
 
         emoji = {
-          package = pkgs.noto-fonts-emoji;
+          package = pkgs.noto-fonts-color-emoji;
           name = "Noto Color Emoji";
         };
       };

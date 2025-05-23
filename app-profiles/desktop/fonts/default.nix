@@ -5,16 +5,14 @@
   fonts = {
     packages = with pkgs; [
       dejavu_fonts
+      nerd-fonts.fira-code
+      nerd-fonts.hack
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.noto
       noto-fonts
       noto-fonts-cjk-sans
       noto-fonts-emoji
-      (nerdfonts.override {
-        fonts = [
-          "FiraCode"
-          "DroidSansMono"
-          "Hack"
-        ];
-      })
+      recursive
     ];
     fontconfig = {
       localConf = ''

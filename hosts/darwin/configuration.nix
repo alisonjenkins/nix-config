@@ -483,12 +483,15 @@
 
   fonts = {
     fontDir.enable = true;
-    fonts = with pkgs; [
-      recursive
-      (nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; })
-      hack-font
-      nerdfonts
-    ];
+
+    fonts = {
+      packages = with pkgs; [
+        nerd-fonts.fira-code
+        nerd-fonts.hack
+        nerd-fonts.jetbrains-mono
+        recursive
+      ];
+    };
   };
 
   security.pam.enableSudoTouchIdAuth = true;
