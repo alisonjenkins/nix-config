@@ -31,7 +31,6 @@
       colima
       comma
       cowsay
-      unstable.delve
       direnv
       diskus
       dive
@@ -99,6 +98,7 @@
       tmux
       typst
       typst-live
+      unstable.delve
       watch
       watchexec
       wget
