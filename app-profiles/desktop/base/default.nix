@@ -50,7 +50,6 @@
     colmena
     comma
     corectrl
-    crunchy-cli
     dig
     discord-canary
     droidcam
