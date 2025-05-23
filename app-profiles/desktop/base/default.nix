@@ -36,7 +36,6 @@
     # gamescope
     # inputs.jovian-nixos.legacyPackages.${system}.gamescope
     # mangohud32_git
-    mangohud_git
     # mpv-vapoursynth
     age
     arrpc
@@ -88,6 +87,7 @@
     libvorbis
     lshw
     luxtorpeda
+    mangohud_git
     ncdu
     nix-fast-build
     nix-tree
