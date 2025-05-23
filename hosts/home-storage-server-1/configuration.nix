@@ -87,7 +87,6 @@
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
       outputs.overlays.additions
-      outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications

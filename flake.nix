@@ -16,15 +16,15 @@
     nixos-cosmic.url = "github:lilyinstarlight/nixos-cosmic";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.05";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.5.0";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    stylix.url = "github:danth/stylix/release-24.11";
+    stylix.url = "github:danth/stylix/release-25.05";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
 
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-24.11";
+      url = "github:lnl7/nix-darwin/nix-darwin-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -34,12 +34,12 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     lanzaboote = {
-      url = "github:nix-community/lanzaboote/v0.4.1";
+      url = "github:nix-community/lanzaboote/v0.4.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -56,7 +56,7 @@
       url = "github:nix-community/nur";
     };
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-24.11";
+      url = "github:nixos/nixpkgs/nixos-25.05";
       # url = "path:/home/ali/git/nixpkgs";
     };
     # nix-gaming = {
@@ -109,7 +109,6 @@
 
         overlays =
           [
-            (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
             (import ./overlays { inherit inputs system pkgs lib; }).master-packages
             (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
             (import ./overlays { inherit inputs system pkgs lib; }).zk
@@ -147,7 +146,6 @@
 
             overlays =
               [
-                (import ./overlays { inherit inputs system pkgs lib; }).bacon-nextest
                 (import ./overlays { inherit inputs system pkgs lib; }).master-packages
                 (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
                 (import ./overlays { inherit inputs system pkgs lib; }).zk

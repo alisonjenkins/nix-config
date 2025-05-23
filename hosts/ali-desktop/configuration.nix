@@ -303,7 +303,6 @@
       inputs.rust-overlay.overlays.default
       outputs.overlays._7zz
       outputs.overlays.additions
-      outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications

@@ -52,27 +52,6 @@
     _7zz = inputs.nixpkgs_stable.legacyPackages.${final.system}._7zz;
   };
 
-  bacon-nextest = final: prev: {
-    bacon = prev.bacon.overrideAttrs (oldAttrs: rec {
-      version = "nextest";
-
-      src = pkgs.fetchFromGitHub {
-        owner = "Canop";
-        repo = "bacon";
-        rev = "31685793ba294faf7a8ed7e8317b3b2f405f71e0";
-        hash = "sha256-IJRCYjAyA5059mof1+D5vjxzsdCoQ08FIxq1DiwgBNU=";
-      };
-
-      # Overriding `cargoHash` has no effect; we must override the resultant
-      # `cargoDeps` and set the hash in its `outputHash` attribute.
-      cargoDeps = oldAttrs.cargoDeps.overrideAttrs (lib.const {
-        name = "bacon-vendor.tar.gz";
-        inherit src;
-        outputHash = "sha256-msQaeunfeWzbeDGA4Vay/tbxvhcLrS9Rs3lHFyUhOKo=";
-      });
-    });
-  };
-
   bluray-playback = final: _prev: {
     libbluray = _prev.libbluray.override {
       withAACS = true;

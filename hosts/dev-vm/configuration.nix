@@ -56,7 +56,7 @@
 
   console.keyMap = "us";
 
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -90,7 +90,6 @@
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
       outputs.overlays.additions
-      outputs.overlays.bacon-nextest
       outputs.overlays.bluray-playback
       outputs.overlays.master-packages
       outputs.overlays.modifications
