@@ -30,30 +30,32 @@
       };
       search.force = true;
 
-      extensions = (
-        if pkgs.stdenv.isLinux
-        then with pkgs.nur.repos.rycee.firefox-addons; [
-          auto-tab-discard
-          darkreader
-          firenvim
-          libredirect
-          link-cleaner
-          multi-account-containers
-          offline-qr-code-generator
-          onepassword-password-manager
-          plasma-integration
-          privacy-badger
-          surfingkeys
-          switchyomega
-          tab-session-manager
-          tree-style-tab
-          tst-fade-old-tabs
-          tst-indent-line
-          tst-tab-search
-          ublock-origin
-        ]
-        else [ ]
-      );
+      extensions = {
+        packages = (
+          if pkgs.stdenv.isLinux
+          then with pkgs.nur.repos.rycee.firefox-addons; [
+            auto-tab-discard
+            darkreader
+            firenvim
+            libredirect
+            link-cleaner
+            multi-account-containers
+            offline-qr-code-generator
+            onepassword-password-manager
+            plasma-integration
+            privacy-badger
+            surfingkeys
+            switchyomega
+            tab-session-manager
+            tree-style-tab
+            tst-fade-old-tabs
+            tst-indent-line
+            tst-tab-search
+            ublock-origin
+          ]
+          else [ ]
+        );
+      };
     };
   };
 
