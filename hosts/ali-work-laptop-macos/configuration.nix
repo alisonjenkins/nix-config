@@ -22,6 +22,7 @@
       cacert
       cachix
       cargo-chef
+      cargo-component
       cargo-lambda
       cargo-machete
       cargo-make
