@@ -57,7 +57,6 @@
     element-desktop
     ethtool
     fd
-    filelight
     freeplane
     fzf
     gamemode
@@ -77,6 +76,7 @@
     jdk17
     just
     kbfs
+    kdePackages.filelight
     keybase
     keybase-gui
     keyutils
