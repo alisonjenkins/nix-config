@@ -109,6 +109,10 @@
         };
       };
 
+      homeManagerIntegration = {
+        followSystem = true;
+      };
+
       opacity = {
         desktop = 0.0;
         terminal = 0.9;
@@ -120,6 +124,10 @@
             main = true;
             signColumn = true;
           };
+        };
+
+        qt = {
+          enable = true;
         };
       };
     };
