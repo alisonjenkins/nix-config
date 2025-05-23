@@ -112,18 +112,19 @@
 
   services = {
     ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
+
     gpg-agent = {
       enable = lib.mkIf pkgs.stdenv.isLinux true;
-      pinentryPackage = pkgs.kwalletcli.overrideAttrs (_: prev: {
+      enableBashIntegration = true;
+      enableZshIntegration = true;
+      extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
+      pinentry.package = pkgs.kwalletcli.overrideAttrs (_: prev: {
         meta =
           prev.meta
           // {
             mainProgram = "pinentry-qt";
           };
       });
-      enableBashIntegration = true;
-      enableZshIntegration = true;
-      extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
     };
   };
 
