@@ -44,7 +44,6 @@
 
   hardware = {
     graphics.enable = true;
-    pulseaudio.enable = false;
   };
 
   networking = {
@@ -95,6 +94,10 @@
           turbo = "auto";
         };
       };
+    };
+
+    pulseaudio = {
+      enable = false;
     };
 
     pipewire = {

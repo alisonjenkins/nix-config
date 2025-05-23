@@ -15,7 +15,7 @@
     inputs.impermanence.nixosModules.impermanence
   ];
   console.keyMap = consoleKeyMap;
-  hardware.pulseaudio.enable = false;
+
   time.timeZone = timezone;
 
   boot = {
@@ -145,6 +145,7 @@
   services = {
     fstrim.enable = true;
     irqbalance.enable = true;
+    pulseaudio.enable = false;
     resolved.enable = true;
 
     earlyoom = {
