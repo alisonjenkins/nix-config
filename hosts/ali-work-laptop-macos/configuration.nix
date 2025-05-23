@@ -161,7 +161,6 @@
       "obs"
       "obsidian"
       "ollama"
-      "podman-desktop"
       "rectangle"
       "rio"
       "slack"

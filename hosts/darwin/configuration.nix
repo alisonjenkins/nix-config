@@ -469,7 +469,6 @@
       # "loopback"
       # "neovide"
       # "obs"
-      # "podman-desktop"
       # "postbird"
       # "session-manager-plugin"
       # "steam"
