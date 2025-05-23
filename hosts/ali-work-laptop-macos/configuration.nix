@@ -64,6 +64,7 @@
       kubectl
       kubectx
       kubernetes-helm
+      lazydocker
       libffi
       libiconv
       lolcat
