@@ -9,7 +9,6 @@
   "cdot" = "cd ~/.local/share/chezmoi";
   "gb" = "go build";
   "gbw" = "watchexec --clear --exts go -- go build";
-  "gc" = "${pkgs.callPackage ../pkgs/git-clean { inherit pkgs; }}/bin/git-clean";
   "gtw" = "watchexec --clear --exts go -- go test";
   "j" = "just";
   "key" = "ssh-add ~/.ssh/ssh_keys/id_bashton_alan";
@@ -21,9 +20,9 @@
   "keypa" = "ssh-add ~/.ssh/ssh_keys/id_alan-aws";
   "keypo" = "ssh-add ~/.ssh/ssh_keys/id_personal_old";
   "kmse" = "export EYAML_CONFIG=$PWD/.kms-eyaml.yaml";
-  "ll" = "${pkgs.eza}/bin/eza -l --grid --git";
-  "ls" = "${pkgs.eza}/bin/eza";
-  "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
+  # "ll" = "${pkgs.eza}/bin/eza -l --grid --git";
+  # "ls" = "${pkgs.eza}/bin/eza";
+  # "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
   "nfr" = "nix run .";
   "nfu" = "nix flake update";
   "nfuc" = "nix flake update --commit-lock-file";

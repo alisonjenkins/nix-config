@@ -39,7 +39,6 @@
         # cava
         # mission-center
         # neovide
-        (pkgs.callPackage ../pkgs/git-clean { inherit pkgs; })
         appimage-run
         audacity
         aws-vault
