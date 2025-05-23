@@ -48,22 +48,8 @@ in
         }
       }
     '';
+
     shellAliases = {
-      ll = "${pkgs.eza}/bin/eza -l --grid --git";
-      ls = "${pkgs.eza}/bin/eza";
-      lt = "${pkgs.eza}/bin/eza --tree --git --long";
-      key = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_bashton_alan";
-      keyp = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_personal";
-      keypa = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_alan-aws";
-      keyk = "${pkgs.openssh}/bin/ssh-add ~/.ssh/ssh_keys/id_krystal";
-      j = "${pkgs.just}/bin/just";
-      ".." = "cd ..";
-      "..." = "cd ../..";
-      "...." = "cd ../../../";
-      "......" = "cd ../../../../";
-      "--" = "cd -";
-      "cdd" = "cd ~/Downloads";
-      "cdg" = "cd ~/git";
     };
 
     environmentVariables = {
