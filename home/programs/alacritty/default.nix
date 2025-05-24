@@ -91,11 +91,6 @@
         decorations = "None";
         # opacity = 0.9;
         # startup_mode = "Maximized";
-
-        padding = {
-          x = 12;
-          y = 12;
-        };
       };
     };
   };
