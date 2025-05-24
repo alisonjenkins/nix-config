@@ -497,7 +497,6 @@
   security.pam.enableSudoTouchIdAuth = true;
 
   services = {
-    nix-daemon.enable = true;
     sketchybar.enable = false;
     skhd = {
       enable = false;
