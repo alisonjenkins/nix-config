@@ -13,7 +13,7 @@ let
   zshViModeEnabled = true;
 in
 {
-  programs.zsh.initExtra =
+  programs.zsh.initContent =
     if zshViModeEnabled
     then ''
       function mcfly_init() {

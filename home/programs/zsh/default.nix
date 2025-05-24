@@ -20,11 +20,6 @@
         defaultKeymap = "viins";
         dotDir = ".config/zsh";
         enable = true;
-        initExtraFirst = ghostty_shell_integration + (builtins.readFile ./zshrc-first.zsh);
-        initExtraBeforeCompInit = lib.strings.concatStringsSep "\n" [
-          (builtins.readFile ./zshrc.d/zsh_settings.zsh)
-          (builtins.readFile ./zshrc.d/environment_vars.zsh)
-        ];
 
         autosuggestion = {
           enable = true;
@@ -36,6 +31,13 @@
           path = "$HOME/.local/share/zsh/history";
           extended = true;
         };
+
+        initContent = lib.strings.concatStringsSep "\n" [
+          ghostty_shell_integration
+          (builtins.readFile ./zshrc-first.zsh)
+          (builtins.readFile ./zshrc.d/zsh_settings.zsh)
+          (builtins.readFile ./zshrc.d/environment_vars.zsh)
+        ];
 
         plugins = [
           {
