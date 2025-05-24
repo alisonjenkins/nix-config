@@ -250,6 +250,8 @@
   system = {
     stateVersion = 4;
 
+    primaryUser = "ajenkins";
+
     defaults = {
       dock = {
         autohide = true;
