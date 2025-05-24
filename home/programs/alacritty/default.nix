@@ -5,18 +5,8 @@
 , inputs
 , system
 , ...
-}:
-let
-  alacritty_config = {
-    ".config/alacritty/alacritty.toml" = (import ./alacritty.toml.nix {inherit pkgs;});
-  };
-in {
-  home.packages = lib.optionals config.programs.alacritty.enable [
-        pkgs.nerd-fonts.fira-code
-        pkgs.nerd-fonts.hack
-        pkgs.nerd-fonts.jetbrains-mono
-        pkgs.recursive
-  ];
+}: {
+  home.packages = lib.optionals config.programs.alacritty.enable [ (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; }) ];
 
   home.file =
     if config.programs.alacritty.enable && pkgs.stdenv.isLinux && username == "deck"
@@ -40,7 +30,7 @@ in {
         X-KDE-SubstituteUID=false
         X-KDE-Username=
       '';
-    } // alacritty_config
+    }
     else if config.programs.alacritty.enable && pkgs.stdenv.isLinux
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
@@ -62,6 +52,47 @@ in {
         X-KDE-SubstituteUID=false
         X-KDE-Username=
       '';
-    } // alacritty_config
+    }
     else { };
+
+  programs.alacritty = {
+    enable = true;
+
+    settings = {
+      # font = {
+      #   normal = {
+      #     family = "FiraCode Nerd Font Mono";
+      #     style = "Regular";
+      #   };
+      #   size = 12;
+      # };
+
+      terminal = {
+        osc52 = "CopyPaste";
+        shell = {
+          program = "${pkgs.zsh}/bin/zsh";
+          args = [
+            "-l"
+            "-c"
+            "tmux attach ; tmux"
+          ];
+        };
+      };
+
+      mouse = {
+        hide_when_typing = true;
+      };
+
+      window = {
+        decorations = "None";
+        # opacity = 0.9;
+        # startup_mode = "Maximized";
+
+        padding = {
+          x = 12;
+          y = 12;
+        };
+      };
+    };
+  };
 }
