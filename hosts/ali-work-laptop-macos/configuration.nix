@@ -92,7 +92,6 @@
       tektoncd-cli
       terragrunt
       tig
-      tigervnc
       tilt
       tmux
       typst
