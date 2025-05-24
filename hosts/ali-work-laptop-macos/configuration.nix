@@ -193,16 +193,17 @@
   };
 
   nix = {
+    enable = false;
     distributedBuilds = true;
-    package = pkgs.nixVersions.stable;
+    #package = pkgs.nixVersions.stable;
 
-    channel = {
-      enable = true;
-    };
+    #channel = {
+      #enable = true;
+    #};
 
-    gc = {
-      automatic = true;
-    };
+    #gc = {
+      #automatic = true;
+    #};
 
     # run: "nix run 'nixpkgs#darwin.linux-builder'" before enabling
     # linux-builder = {
