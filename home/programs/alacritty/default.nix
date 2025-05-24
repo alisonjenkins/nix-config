@@ -6,7 +6,11 @@
 , system
 , ...
 }: {
-  home.packages = lib.optionals config.programs.alacritty.enable [ (pkgs.nerdfonts.override { fonts = [ "FiraCode" "Hack" "JetBrainsMono" ]; }) ];
+  home.packages = lib.optionals config.programs.alacritty.enable [
+    pkgs.nerd-fonts.fira-code
+    pkgs.nerd-fonts.hack
+    pkgs.nerd-fonts.jetbrains-mono
+  ];
 
   home.file =
     if config.programs.alacritty.enable && pkgs.stdenv.isLinux && username == "deck"
