@@ -11,8 +11,7 @@ let
     ".config/alacritty/alacritty.toml" = (import ./alacritty.toml.nix {inherit pkgs;});
   };
 in {
-  home.packages = [
-        pkgs.alacritty
+  home.packages = lib.optionals config.programs.alacritty.enable [
         pkgs.nerd-fonts.fira-code
         pkgs.nerd-fonts.hack
         pkgs.nerd-fonts.jetbrains-mono
