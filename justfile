@@ -37,7 +37,7 @@ switch *extraargs:
         rm -f ~/.gtkrc-2.0
         nh os switch .;
     elif [ "$(uname)" == "Darwin" ]; then
-        darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
+        sudo darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
