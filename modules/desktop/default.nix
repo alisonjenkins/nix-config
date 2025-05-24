@@ -127,7 +127,7 @@
         };
 
         qt = {
-          enable = true;
+          enable = false;
         };
       };
     };
