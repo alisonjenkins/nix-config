@@ -3,10 +3,10 @@
   # Window rules
   # -----------------------------------------------------
 
-  windowrule = float,^(pavucontrol)$
-  windowrule = float,^(blueman-manager)$
-  windowrule = float,^(nm-connection-editor)$
-  windowrule = float,^(nm-connection-editor)$
+  # windowrulev2 = float,^(pavucontrol)$
+  # windowrulev2 = float,^(blueman-manager)$
+  # windowrulev2 = float,^(nm-connection-editor)$
+  # windowrulev2 = float,^(nm-connection-editor)$
 
   # windowrulev2 = workspace 4, class:steam
   windowrulev2 = fullscreenstate:* 2, class:Alacritty
