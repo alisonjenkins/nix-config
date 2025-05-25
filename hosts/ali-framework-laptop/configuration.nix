@@ -86,6 +86,7 @@
       sbctl
       todoist-electron
       tpm2-tss
+      whatsie
       wireguard-tools
     ];
   };
