@@ -7,6 +7,11 @@
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
     eks-creds.url = "github:alisonjenkins/eks-creds";
+    hyprland-git.url = "github:hyprwm/hyprland";
+    hyprland-nix.url = "github:hyprland-community/hyprland-nix";
+    hyprland-protocols-git.url = "github:hyprwm/xdg-desktop-portal-hyprland";
+    hyprland-xdph-git.url = "github:hyprwm/xdg-desktop-portal-hyprland";
+    hyprlang-git.url = "github:hyprwm/hyprlang";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     musnix = { url = "github:musnix/musnix"; };
@@ -36,6 +41,13 @@
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprland-nix.inputs = {
+      hyprland-protocols.follows = "hyprland-protocols-git";
+      hyprland-xdph.follows = "hyprland-xdph-git";
+      hyprland.follows = "hyprland-git";
+      hyprlang.follows = "hyprlang-git";
     };
 
     lanzaboote = {
