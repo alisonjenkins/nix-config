@@ -4,6 +4,7 @@
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
+    bird-nix-lib.url = "github:spikespaz/bird-nix-lib";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
     eks-creds.url = "github:alisonjenkins/eks-creds";
@@ -111,7 +112,14 @@
     let
       inherit (self) outputs;
       system = "x86_64-linux";
-      lib = nixpkgs.lib;
+
+      lib = builtins.foldl' (lib: overlay: lib.extend overlay) nixpkgs.lib [
+        (inputs.bird-nix-lib.lib.overlay)
+        (import ./lib)
+      ];
+
+      tree = lib.bird.importDirRecursive ./. "flake.nix";
+
       pkgs = import nixpkgs {
         inherit system;
 
@@ -191,26 +199,11 @@
           };
         };
 
-      homeConfigurations = {
-        "deck" = inputs.home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-
-          modules = [
-            ./home/home.nix
-            ./hosts/steam-deck/configuration.nix
-            inputs.nix-index-database.hmModules.nix-index
-          ];
-
-          extraSpecialArgs = {
-            inherit inputs;
-            inherit system;
-            username = "deck";
-            gitUserName = "Alison Jenkins";
-            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-            gitGPGSigningKey = "";
-          };
-        };
-      };
+      homeConfigurations = lib.mapAttrs (_userAtHost: fn:
+        lib.applyAutoArgs fn { inherit self lib tree inputs nixpkgs; })
+        (lib.importDir' ./users
+          ({ isNix, isHidden, hasNixFiles, hasDefault, ... }:
+            isNix && !isHidden && !(hasNixFiles && !hasDefault)));
 
       nixosConfigurations = {
         ali-desktop = lib.nixosSystem rec {
