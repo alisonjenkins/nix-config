@@ -630,7 +630,7 @@
   xdg =
     let
       browser = [
-        "brave.desktop"
+        "firefox.desktop"
       ];
       editor = [ "nvim.desktop" ];
       excel = [ "libreoffice-calc.desktop" ];
