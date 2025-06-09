@@ -1,5 +1,7 @@
-{ pkgs,
-  lib,
+{
+  inputs,
+  pkgs,
+  system,
   ...
 }: let
   hyprevent = pkgs.writeShellScriptBin "hyprevent" ''
@@ -26,6 +28,11 @@
       # reload waybar
       ${pkgs.procps}/bin/pkill -SIGUSR2 waybar;
     ;;
+    *)
+      echo "Unknown event: ''$1 ''$2"
+      exit 1
+    ;;
+  esac
   '';
 in {
   services.hypridle.enable = true;
