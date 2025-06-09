@@ -1,11 +1,24 @@
-{ pkgs
-, ...
-}: {
+{ pkgs,
+  lib,
+  ...
+}: let
+  hyprlid = pkgs.writeShellScriptBin "hyprlid" ''
+    if ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -E "DP-[0-9]+" &>/dev/null; then
+      if [[ "''$1" == "open" ]]; then
+        ${pkgs.hyprland}/bin/hyprctl keyword monitor "eDP-2,2560x1440@165,0x0,auto"
+      else
+        ${pkgs.hyprland}/bin/hyprctl keyword monitor "eDP-2,disable"
+      fi
+      ${pkgs.procps}/bin/pkill waybar; ${pkgs.hyprland}/bin/hyprctl dispatch exec ${pkgs.waybar}/bin/waybar
+    fi
+  '';
+in {
   services.hypridle.enable = true;
   wayland.windowManager.hyprland.systemd.enable = false;
 
   home.packages = with pkgs; if pkgs.stdenv.isLinux then [
     blueman
+    hyprlid
     hyprlock
     hyprpolkitagent
     waypaper
