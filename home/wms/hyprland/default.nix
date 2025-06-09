@@ -9,7 +9,7 @@
       else
         ${pkgs.hyprland}/bin/hyprctl keyword monitor "eDP-2,disable"
       fi
-      ${pkgs.procps}/bin/pkill waybar; ${pkgs.hyprland}/bin/hyprctl dispatch exec ${pkgs.waybar}/bin/waybar
+      ${pkgs.procps}/bin/pkill -SIGUSR2 waybar;
     fi
   '';
 in {
