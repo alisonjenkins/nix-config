@@ -74,6 +74,7 @@
     pathsToLink = [ "/share/zsh" ];
 
     systemPackages = with pkgs; [
+      amdgpu_top
       calibre
       framework-tool
       freeplane
