@@ -42,13 +42,19 @@
     bat
     bc
     beancount
+    bluez
+    bluez-tools
+    brightnessctl
     cachix
     cargo
     cargo-nextest
+    cava
     chromium
     colmena
     comma
     corectrl
+    curl
+    ddcutil
     dig
     discord-canary
     droidcam
@@ -56,6 +62,7 @@
     element-desktop
     ethtool
     fd
+    fish
     freeplane
     fzf
     gamemode
@@ -68,11 +75,13 @@
     gtk3
     haveged
     htop
+    imagemagick
     inputs.ali-neovim.packages.${system}.nvim
     inputs.jovian-nixos.legacyPackages.${system}.mangohud
     inputs.nh.packages.${system}.default
     iotop
     jdk17
+    jq
     just
     kbfs
     kdePackages.filelight
@@ -85,6 +94,7 @@
     libpulseaudio
     libreoffice
     libvorbis
+    lm_sensors
     lshw
     luxtorpeda
     mangohud_git
