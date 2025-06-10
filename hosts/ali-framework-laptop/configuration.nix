@@ -8,6 +8,7 @@
     (import ../../modules/locale { })
     (import ../../modules/libvirtd { inherit pkgs; })
     (import ../../modules/rocm { inherit pkgs; })
+    (import ../../modules/printing { inherit pkgs; })
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
