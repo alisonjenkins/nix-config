@@ -37,54 +37,56 @@
       };
       search.force = true;
 
-      extensions = (
-        if pkgs.stdenv.isLinux
-        then with pkgs.nur.repos.rycee.firefox-addons; [
-          auto-tab-discard
-          darkreader
-          firenvim
-          libredirect
-          link-cleaner
-          multi-account-containers
-          offline-qr-code-generator
-          onepassword-password-manager
-          plasma-integration
-          privacy-badger
-          surfingkeys
-          switchyomega
-          tab-session-manager
-          tree-style-tab
-          tst-fade-old-tabs
-          tst-indent-line
-          tst-tab-search
-          ublock-origin
-        ]
-        else [ ]
-      );
+      extensions = {
+        packages = (
+          if pkgs.stdenv.isLinux
+          then with pkgs.nur.repos.rycee.firefox-addons; [
+            auto-tab-discard
+            darkreader
+            firenvim
+            libredirect
+            link-cleaner
+            multi-account-containers
+            offline-qr-code-generator
+            onepassword-password-manager
+            plasma-integration
+            privacy-badger
+            surfingkeys
+            switchyomega
+            tab-session-manager
+            tree-style-tab
+            tst-fade-old-tabs
+            tst-indent-line
+            tst-tab-search
+            ublock-origin
+          ]
+          else [ ]
+        );
+      };
     };
   };
 
-  # home.file =
-  #   if pkgs.stdenv.isLinux then {
-  #     ".local/share/applications/Firefox.desktop".text = ''
-  #       [Desktop Entry]
-  #       Comment[en_US]=
-  #       Comment=
-  #       Exec=${pkgs.firefox}/bin/firefox
-  #       GenericName[en_US]=
-  #       GenericName=
-  #       Icon=${pkgs.firefox}/share/icons/hicolor/128x128/apps/firefox.png
-  #       MimeType=
-  #       Name[en_US]=Firefox
-  #       Name=Firefox
-  #       Path=
-  #       StartupNotify=true
-  #       Terminal=false
-  #       TerminalOptions=
-  #       Type=Application
-  #       X-KDE-SubstituteUID=false
-  #       X-KDE-Username=
-  #     '';
-  #   } else { };
+  home.file =
+    if pkgs.stdenv.isLinux then {
+      ".local/share/applications/Librewolf.desktop".text = ''
+        [Desktop Entry]
+        Comment[en_US]=
+        Comment=
+        Exec=${pkgs.librewolf}/bin/librewolf
+        GenericName[en_US]=
+        GenericName=
+        Icon=${pkgs.librewolf}/share/icons/hicolor/128x128/apps/librewolf.png
+        MimeType=
+        Name[en_US]=Librewolf
+        Name=Librewolf
+        Path=
+        StartupNotify=true
+        Terminal=false
+        TerminalOptions=
+        Type=Application
+        X-KDE-SubstituteUID=false
+        X-KDE-Username=
+      '';
+    } else { };
 }
 
