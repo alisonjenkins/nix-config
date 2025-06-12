@@ -161,6 +161,10 @@
     };
   };
 
+  powerManagement = {
+    cpuFreqGovernor = "performance";
+  };
+
   services = {
     fwupd = {
       enable = true;
