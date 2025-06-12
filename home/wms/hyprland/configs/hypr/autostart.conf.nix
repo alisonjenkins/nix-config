@@ -15,6 +15,8 @@
   # Load Sway Notification Centre Notification Manager
   # exec-once = ${pkgs.swaynotificationcenter}/bin/swaync
 
+  # Load shell
+  exec-once = ${pkgs.quickshell}/bin/quickshell -c caelestia
 
   # Load GTK settings
   # exec-once = ~/.config/hypr/scripts/gtk.sh
