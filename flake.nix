@@ -140,7 +140,7 @@
         let
           username = "ajenkins";
           system = "aarch64-darwin";
-          hostname = "ali-work-laptop";
+          hostname = "JVKLHFPJ65";
           specialArgs = {
             inherit hostname;
             inherit inputs;
