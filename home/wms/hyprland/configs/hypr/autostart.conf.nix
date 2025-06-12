@@ -13,7 +13,7 @@
   # exec-once=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
   # Load Sway Notification Centre Notification Manager
-  exec-once = ${pkgs.swaynotificationcenter}/bin/swaync
+  # exec-once = ${pkgs.swaynotificationcenter}/bin/swaync
 
 
   # Load GTK settings
