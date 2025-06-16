@@ -1,4 +1,4 @@
-{ pkgs }: ''
+{ pkgs, inputs, system}: ''
   # -----------------------------------------------------
   # Autostart
   # -----------------------------------------------------
@@ -16,7 +16,7 @@
   # exec-once = ${pkgs.swaynotificationcenter}/bin/swaync
 
   # Load shell
-  exec-once = ${pkgs.quickshell}/bin/quickshell -c caelestia
+  exec-once = ${inputs.quickshell.packages.${system}.default}/bin/quickshell -c caelestia
 
   # Load GTK settings
   # exec-once = ~/.config/hypr/scripts/gtk.sh
