@@ -193,6 +193,24 @@
         };
 
       homeConfigurations = {
+        "ali" = inputs.home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+
+          modules = [
+            ./home/home.nix
+            ./hosts/ali-desktop-arch/configuration.nix
+            # inputs.stylix.homeModules.stylix
+          ];
+
+          extraSpecialArgs = {
+            inherit inputs;
+            inherit system;
+            username = "ali";
+            gitUserName = "Alison Jenkins";
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "";
+          };
+	};
         "deck" = inputs.home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
