@@ -149,6 +149,7 @@
       "flameshot"
       "freeplane"
       "gephi"
+      "ghostty"
       "gimp"
       "github"
       "google-chrome"
