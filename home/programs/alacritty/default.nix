@@ -1,7 +1,6 @@
 { config
 , pkgs
 , lib
-, username
 , inputs
 , system
 , ...
@@ -13,7 +12,7 @@
   ];
 
   home.file =
-    if config.programs.alacritty.enable && pkgs.stdenv.isLinux && username == "deck"
+    if config.programs.alacritty.enable && pkgs.stdenv.isLinux && !builtins.pathExists /etc/NIXOS
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
         [Desktop Entry]
