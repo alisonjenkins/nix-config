@@ -7,6 +7,7 @@
     (import ./gcc { inherit pkgs username; })
     (import ./git { inherit pkgs inputs lib username gitUserName gitEmail gitGPGSigningKey; })
     (import ./librewolf { inherit lib username pkgs; })
+    (import ./obsidian { inherit username system inputs lib pkgs config; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./quickshell { inherit config pkgs system inputs; })
