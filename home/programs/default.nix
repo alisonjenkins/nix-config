@@ -9,8 +9,8 @@
     (import ./librewolf { inherit lib username pkgs; })
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
-    (import ./tmux { inherit username pkgs; })
     (import ./quickshell { inherit config pkgs system inputs; })
+    (import ./tmux { inherit username pkgs; })
     # ./batsignal
     ./aerospace
     ./alacritty
