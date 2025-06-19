@@ -56,11 +56,11 @@
         dive
         eog
         eza
-        unstable.fluxcd
         freeplane
         git
         gnumake
         grim
+        just
         kubecm
         kubectl
         kubectx
@@ -79,6 +79,7 @@
         teams-for-linux
         tig
         tty-clock
+        unstable.fluxcd
         vesktop
         webcord
         wget
