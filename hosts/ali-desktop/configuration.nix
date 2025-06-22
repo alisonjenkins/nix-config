@@ -115,7 +115,7 @@
         # '';
 
         ssh = {
-          enable = true;
+          enable = false;
           port = 2222;
 
           authorizedKeys = [
