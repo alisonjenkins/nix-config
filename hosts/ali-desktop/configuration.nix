@@ -355,10 +355,6 @@
     };
 
     udev = {
-      extraRules = ''
-        SUBSYSTEM=="pci", DRIVER=="amdgpu", ATTR{power_dpm_force_performance_level}="low"
-      '';
-
       packages = [
         pkgs.uhk-udev-rules
       ];
