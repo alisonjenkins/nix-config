@@ -165,18 +165,18 @@
       inkscape
       innoextract
       kdePackages.korganizer
-      lact
-      libaacs
-      lsscsi
-      mkvtoolnix
-      moonlight-qt
-      openrct2
-      openttd
-      openttd-ttf
-      podman
-      polkit
-      protontricks
-      qbittorrent
+      # lact
+      # libaacs
+      # lsscsi
+      # mkvtoolnix
+      # moonlight-qt
+      # openrct2
+      # openttd
+      # openttd-ttf
+      # podman
+      # polkit
+      # protontricks
+      # qbittorrent
       # radeontop
       # rio
       # s-tui
