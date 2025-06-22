@@ -300,6 +300,10 @@
       package = pkgs.jdk17;
     };
 
+    niri = {
+      enable = true;
+    };
+
     river = {
       enable = true;
     };
