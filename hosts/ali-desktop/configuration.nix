@@ -255,7 +255,7 @@
       # outputs.overlays.qtwebengine
       # outputs.overlays.quirc
       # outputs.overlays.snapper
-      # outputs.overlays.stable-packages
+      outputs.overlays.stable-packages
       # outputs.overlays.tmux-sessionizer
       # outputs.overlays.unstable-packages
     ];
