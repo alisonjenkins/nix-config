@@ -193,6 +193,22 @@
       lidSwitch = "suspend-then-hibernate";
     };
 
+    udev = {
+      extraRules = ''
+        # Framework Laptop 16 Keyboard Module - ANSI
+        ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0012", ATTR{power/wakeup}="disabled"
+
+        # Framework Laptop 16 RGB Macropad
+        ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0013", ATTR{power/wakeup}="disabled"
+
+        # Framework Laptop 16 Numpad Module
+        ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0014", ATTR{power/wakeup}="disabled"
+
+        # Framework Laptop 16 Keyboard Module - ISO
+        ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0018", ATTR{power/wakeup}="disabled"
+      '';
+    };
+
     xserver = {
       videoDrivers = [ "amdgpu" ];
     };
