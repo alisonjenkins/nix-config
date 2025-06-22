@@ -368,6 +368,7 @@
             ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/desktop/wms/hyprland
+            ./app-profiles/desktop/wms/sway
             ./app-profiles/desktop/local-k8s
             ./hosts/ali-work-laptop/configuration.nix
             ./hosts/ali-work-laptop/disko-config.nix
