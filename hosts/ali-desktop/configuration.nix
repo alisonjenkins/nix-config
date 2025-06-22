@@ -246,18 +246,18 @@
       # outputs.overlays.ffmpeg
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
-      outputs.overlays._7zz
-      outputs.overlays.additions
-      outputs.overlays.bluray-playback
+      # outputs.overlays._7zz
+      # outputs.overlays.additions
+      # outputs.overlays.bluray-playback
       outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.python3PackagesOverlay
-      outputs.overlays.qtwebengine
-      outputs.overlays.quirc
-      outputs.overlays.snapper
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-      outputs.overlays.unstable-packages
+      # outputs.overlays.modifications
+      # outputs.overlays.python3PackagesOverlay
+      # outputs.overlays.qtwebengine
+      # outputs.overlays.quirc
+      # outputs.overlays.snapper
+      # outputs.overlays.stable-packages
+      # outputs.overlays.tmux-sessionizer
+      # outputs.overlays.unstable-packages
     ];
 
     config = {
