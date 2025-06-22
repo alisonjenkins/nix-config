@@ -396,7 +396,7 @@
     };
 
     sunshine = {
-      enable = true;
+      enable = false;
       autoStart = true;
       capSysAdmin = true;
       package = pkgs.unstable.sunshine;
