@@ -494,7 +494,7 @@
     # };
 
     libvirtd = {
-      enable = true;
+      enable = false;
       qemu.swtpm.enable = true;
       qemu.ovmf = {
         enable = true;
