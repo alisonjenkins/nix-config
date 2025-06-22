@@ -149,7 +149,6 @@
     };
 
     systemPackages = with pkgs; [
-      stable.ananicy-cpp-rules
       system-bridge
       alsa-scarlett-gui
       amdgpu_top
