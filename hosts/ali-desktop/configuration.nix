@@ -33,38 +33,6 @@
     # kernelPackages = pkgs.linuxPackages_xanmod;
     kernelPackages = pkgs.linuxPackages_cachyos-lto;
 
-    kernelPatches = [
-      {
-        name = "amdgpu-ignore-ctx-privileges";
-        patch = pkgs.fetchpatch {
-          name = "cap_sys_nice_begone.patch";
-          url = "https://github.com/Frogging-Family/community-patches/raw/master/linux61-tkg/cap_sys_nice_begone.mypatch";
-          hash = "sha256-Y3a0+x2xvHsfLax/uwycdJf3xLxvVfkfDVqjkxNaYEo=";
-        };
-      }
-    ];
-
-    binfmt = {
-      emulatedSystems = [ "aarch64-linux" ];
-    };
-
-    extraModprobeConfig = ''
-      options v4l2loopback exclusive_caps=1,1,1 video_nr=1,2,3 card_label="Virtual Video Output 1","Virtual Video Output 2","Virtual Video Output 3"
-    '';
-
-    kernelParams = [
-      "amdgpu.ppfeaturemask=0xfff7ffff"
-      "quiet"
-      "rd.systemd.show_status=false"
-      "rd.udev.log_level=3"
-      "udev.log_priority=3"
-    ];
-
-    kernelModules = [
-      "sg"
-      "v4l2loopback"
-    ];
-
     initrd = {
       availableKernelModules = [ "r8169" ];
 
