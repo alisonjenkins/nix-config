@@ -439,7 +439,7 @@
   #     #   path = "/etc/luks/home.key";
   #     #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
   #     # };
-  #   };
+    };
   };
 
   system = {
