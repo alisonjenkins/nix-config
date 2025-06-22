@@ -149,7 +149,6 @@
     };
 
     systemPackages = with pkgs; [
-      libsForQt5.polonium
       stable.ananicy-cpp-rules
       system-bridge
       alsa-scarlett-gui
