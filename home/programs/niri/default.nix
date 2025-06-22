@@ -1,6 +1,5 @@
 { pkgs, inputs, system, ... }: {
   home.packages = with pkgs; [
-    alacritty
     fuzzel
     swaylock
     xwayland-satellite
