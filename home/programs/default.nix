@@ -46,6 +46,7 @@
     ./mimetypes
     ./neovim
     ./newsboat
+    ./niri
     ./nix-index
     ./noti
     ./nushell
