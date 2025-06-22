@@ -177,31 +177,31 @@
       polkit
       protontricks
       qbittorrent
-      radeontop
-      rio
-      s-tui
-      stable.ananicy-cpp
-      stress
-      sunshine
-      sweethome3d.application
-      sweethome3d.furniture-editor
-      sweethome3d.textures-editor
-      sysbench
-      todoist-electron
-      uhk-agent
-      unixtools.xxd
-      unstable.makemkv
-      unzip
-      upscayl
-      webcamoid
-      wireguard-tools
-      xd
-      xdotool
-      xorg.xprop
-      xorg.xwininfo
-      yad
-      yt-dlp
-      zk
+      # radeontop
+      # rio
+      # s-tui
+      # stable.ananicy-cpp
+      # stress
+      # sunshine
+      # sweethome3d.application
+      # sweethome3d.furniture-editor
+      # sweethome3d.textures-editor
+      # sysbench
+      # todoist-electron
+      # uhk-agent
+      # unixtools.xxd
+      # unstable.makemkv
+      # unzip
+      # upscayl
+      # webcamoid
+      # wireguard-tools
+      # xd
+      # xdotool
+      # xorg.xprop
+      # xorg.xwininfo
+      # yad
+      # yt-dlp
+      # zk
     ];
 
     variables = {
