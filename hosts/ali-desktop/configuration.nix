@@ -376,7 +376,7 @@
     };
 
     system76-scheduler = {
-      enable = false;
+      enable = true;
       settings = {
         processScheduler = {
           pipewireBoost = {
