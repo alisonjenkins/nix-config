@@ -149,7 +149,6 @@
     };
 
     systemPackages = with pkgs; [
-      system-bridge
       alsa-scarlett-gui
       amdgpu_top
       cifs-utils
