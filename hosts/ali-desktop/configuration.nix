@@ -152,13 +152,13 @@
       # libsForQt5.polonium
       # stable.ananicy-cpp-rules
       # system-bridge
-      alsa-scarlett-gui
-      amdgpu_top
-      cifs-utils
-      cpu-x
-      deadd-notification-center
-      drawio
-      freeplane
+      # alsa-scarlett-gui
+      # amdgpu_top
+      # cifs-utils
+      # cpu-x
+      # deadd-notification-center
+      # drawio
+      # freeplane
       geekbench
       handbrake
       i2pd
