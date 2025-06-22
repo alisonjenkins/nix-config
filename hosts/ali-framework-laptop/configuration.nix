@@ -179,6 +179,12 @@
   };
 
   services = {
+    desktopManager = {
+      cosmic = {
+        enable = true;
+      };
+    };
+
     fwupd = {
       enable = true;
     };
