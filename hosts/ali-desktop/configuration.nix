@@ -149,59 +149,59 @@
     };
 
     systemPackages = with pkgs; [
-      # # libsForQt5.polonium
-      # # stable.ananicy-cpp-rules
-      # # system-bridge
-      # alsa-scarlett-gui
-      # amdgpu_top
-      # cifs-utils
-      # cpu-x
-      # deadd-notification-center
-      # drawio
-      # freeplane
-      # geekbench
-      # handbrake
-      # i2pd
-      # inkscape
-      # innoextract
-      # kdePackages.korganizer
-      # lact
-      # libaacs
-      # lsscsi
-      # mkvtoolnix
-      # moonlight-qt
-      # openrct2
-      # openttd
-      # openttd-ttf
-      # podman
-      # polkit
-      # protontricks
-      # qbittorrent
-      # radeontop
-      # rio
-      # s-tui
-      # stable.ananicy-cpp
-      # stress
-      # sunshine
-      # sweethome3d.application
-      # sweethome3d.furniture-editor
-      # sweethome3d.textures-editor
-      # sysbench
-      # todoist-electron
-      # uhk-agent
-      # unixtools.xxd
-      # unstable.makemkv
-      # unzip
-      # upscayl
-      # webcamoid
-      # wireguard-tools
-      # xd
-      # xdotool
-      # xorg.xprop
-      # xorg.xwininfo
-      # yad
-      # yt-dlp
-      # zk
+      # libsForQt5.polonium
+      # stable.ananicy-cpp-rules
+      # system-bridge
+      alsa-scarlett-gui
+      amdgpu_top
+      cifs-utils
+      cpu-x
+      deadd-notification-center
+      drawio
+      freeplane
+      geekbench
+      handbrake
+      i2pd
+      inkscape
+      innoextract
+      kdePackages.korganizer
+      lact
+      libaacs
+      lsscsi
+      mkvtoolnix
+      moonlight-qt
+      openrct2
+      openttd
+      openttd-ttf
+      podman
+      polkit
+      protontricks
+      qbittorrent
+      radeontop
+      rio
+      s-tui
+      stable.ananicy-cpp
+      stress
+      sunshine
+      sweethome3d.application
+      sweethome3d.furniture-editor
+      sweethome3d.textures-editor
+      sysbench
+      todoist-electron
+      uhk-agent
+      unixtools.xxd
+      unstable.makemkv
+      unzip
+      upscayl
+      webcamoid
+      wireguard-tools
+      xd
+      xdotool
+      xorg.xprop
+      xorg.xwininfo
+      yad
+      yt-dlp
+      zk
     ];
 
     variables = {
