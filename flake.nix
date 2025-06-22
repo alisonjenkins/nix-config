@@ -291,20 +291,20 @@
             inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            # home-manager.nixosModules.home-manager
-            # {
-            #   home-manager.backupFileExtension = ".bak";
-            #   home-manager.useGlobalPkgs = true;
-            #   home-manager.useUserPackages = true;
-            #   home-manager.users.${specialArgs.username} = import ./home/home.nix;
-            #   home-manager.extraSpecialArgs =
-            #     specialArgs
-            #     // {
-            #       gitUserName = "Alison Jenkins";
-            #       gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-            #       gitGPGSigningKey = "AD723B26";
-            #     };
-            # }
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.backupFileExtension = ".bak";
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.extraSpecialArgs =
+                specialArgs
+                // {
+                  gitUserName = "Alison Jenkins";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+                  gitGPGSigningKey = "AD723B26";
+                };
+            }
           ];
         };
 
