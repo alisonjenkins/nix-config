@@ -222,7 +222,7 @@
 
     firewall = {
       allowedTCPPorts = [
-        29087
+        # 29087
       ];
     };
 
