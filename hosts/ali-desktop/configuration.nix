@@ -429,17 +429,17 @@
       #   restartUnits = ["example.service"];
       #   path = "/a/secret/path.yaml";
       #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
-      # };
-      # home_enc_key = {
-      #   format = "binary";
-      #   group = config.users.users.nobody.group;
-      #   mode = "0400";
-      #   neededForUsers = true;
-      #   owner = config.users.users.root.name;
-      #   path = "/etc/luks/home.key";
-      #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
-      # };
-    };
+  #     # };
+  #     # home_enc_key = {
+  #     #   format = "binary";
+  #     #   group = config.users.users.nobody.group;
+  #     #   mode = "0400";
+  #     #   neededForUsers = true;
+  #     #   owner = config.users.users.root.name;
+  #     #   path = "/etc/luks/home.key";
+  #     #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
+  #     # };
+  #   };
   };
 
   system = {
@@ -461,40 +461,19 @@
   };
 
   users = {
-    defaultUserShell = pkgs.zsh;
-    mutableUsers = false;
-
     users = {
       ali = {
         autoSubUidGidRange = true;
-        description = "Alison Jenkins";
         isNormalUser = true;
+        description = "Alison Jenkins";
+        extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" "video" ];
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
-
-        extraGroups = [
-          "audio"
-          "cdrom"
-          "docker"
-          "jellyfin"
-          "networkmanager"
-          "pipewire"
-          "video"
-          "wheel"
-        ];
 
         openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK2wZMFO69SYvoIIs6Atx/22PVy8wHtYy0MKpYtUMsez phone-ssh-key"
         ];
-      };
-      jellyfin = {
-        isNormalUser = false;
-        isSystemUser = true;
-        uid = 302;
-        group = "jellyfin";
-        home = "/home/jellyfin";
-        createHome = true;
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
@@ -507,12 +486,12 @@
     #   enable = true;
     # };
 
-    podman = {
-      autoPrune.enable = true;
-      dockerCompat = true;
-      dockerSocket.enable = true;
-      enable = true;
-    };
+    # podman = {
+    #   autoPrune.enable = true;
+    #   dockerCompat = true;
+    #   dockerSocket.enable = true;
+    #   enable = true;
+    # };
 
     libvirtd = {
       enable = true;
