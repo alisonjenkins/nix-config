@@ -275,9 +275,7 @@ layout {
 // See the binds section below for more spawn examples.
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
-spawn-at-startup "/etc/profiles/per-user/ali/bin/swww-daemon"
-spawn-at-startup "swww" "restore"
-// spawn-at-startup "quickshell" "-c" "caelestia"
+spawn-at-startup "quickshell" "-c" "caelestia"
 spawn-at-startup "xwayland-satellite"
 
 switch-events {
