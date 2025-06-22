@@ -455,7 +455,7 @@
         serviceConfig = {
           ExecStart = "${pkgs.lact}/bin/lact daemon";
         };
-        enable = true;
+        enable = false;
       };
     };
   };
