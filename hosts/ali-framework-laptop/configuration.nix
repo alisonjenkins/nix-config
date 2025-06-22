@@ -79,6 +79,9 @@
       calibre
       framework-tool
       freeplane
+      fuzzel
+      gnome-keyring
+      kdePackages.polkit-kde-agent-1
       lact
       ldacbt
       obsidian
@@ -87,10 +90,14 @@
       qmk_hid
       rio
       sbctl
+      swaylock
       todoist-electron
       tpm2-tss
       whatsie
       wireguard-tools
+      xdg-desktop-portal-gnome
+      xdg-desktop-portal-gtk
+      xwayland-satellite
     ];
   };
 
@@ -163,6 +170,12 @@
 
   powerManagement = {
     cpuFreqGovernor = "performance";
+  };
+
+  programs = {
+    niri = {
+      enable = true;
+    };
   };
 
   services = {
