@@ -443,7 +443,7 @@
   };
 
   system = {
-    stateVersion = "24.05";
+    stateVersion = "25.05";
   };
 
   systemd = {
