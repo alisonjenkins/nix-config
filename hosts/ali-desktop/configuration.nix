@@ -458,20 +458,11 @@
         enable = true;
       };
     };
-    tmpfiles = {
-      rules = [ "d /var/cache/jellyfin 1770 jellyfin jellyfin -" ];
-    };
   };
 
   users = {
     defaultUserShell = pkgs.zsh;
     mutableUsers = false;
-
-    groups = {
-      jellyfin = {
-        gid = 1000;
-      };
-    };
 
     users = {
       ali = {
@@ -534,36 +525,36 @@
 
     oci-containers = {
       containers = {
-        jellyfin = {
-          autoStart = true;
-          # pull = "always";
-          image = "docker.io/jellyfin/jellyfin:latest";
-          serviceName = "jellyfin";
-          user = "1001:1000";
-
-          environment = {
-            HEALTHCHECK_URL = "http://localhost:29087/health";
-          };
-
-          extraOptions = [
-            # "--device /dev/dri:/dev/dri"
-            "--network=host"
-          ];
-
-          labels = {
-            "io.containers.autoupdate" = "registry";
-          };
-
-          ports = [
-            "0.0.0.0:29087:29087"
-          ];
-
-          volumes = [
-            "/var/cache/jellyfin:/cache"
-            "/home/jellyfin/config:/config"
-            "/media/storage1/Media:/media"
-          ];
-        };
+        # jellyfin = {
+        #   autoStart = true;
+        #   # pull = "always";
+        #   image = "docker.io/jellyfin/jellyfin:latest";
+        #   serviceName = "jellyfin";
+        #   user = "1001:1000";
+        #
+        #   environment = {
+        #     HEALTHCHECK_URL = "http://localhost:29087/health";
+        #   };
+        #
+        #   extraOptions = [
+        #     # "--device /dev/dri:/dev/dri"
+        #     "--network=host"
+        #   ];
+        #
+        #   labels = {
+        #     "io.containers.autoupdate" = "registry";
+        #   };
+        #
+        #   ports = [
+        #     "0.0.0.0:29087:29087"
+        #   ];
+        #
+        #   volumes = [
+        #     "/var/cache/jellyfin:/cache"
+        #     "/home/jellyfin/config:/config"
+        #     "/media/storage1/Media:/media"
+        #   ];
+        # };
       };
     };
   };
