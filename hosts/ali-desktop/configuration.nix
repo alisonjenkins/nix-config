@@ -700,11 +700,19 @@
               "kde"
             ];
           };
+          niri = {
+            default = [
+              "gtk"
+              "gnome"
+            ];
+          };
         };
 
         extraPortals = with pkgs; [
           kdePackages.xdg-desktop-portal-kde
           xdg-desktop-portal-cosmic
+          xdg-desktop-portal-gnome
+          xdg-desktop-portal-gtk
           xdg-desktop-portal-wlr
         ];
       };
