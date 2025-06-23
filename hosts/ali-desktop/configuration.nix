@@ -302,6 +302,7 @@
 
     niri = {
       enable = true;
+      package = inputs.niri.packages.${system}.default;
     };
 
     river = {

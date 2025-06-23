@@ -2,6 +2,7 @@
 , inputs
 , outputs
 , pkgs
+, system
 , ...
 }: {
   imports = [
@@ -175,6 +176,7 @@
   programs = {
     niri = {
       enable = true;
+      package = inputs.niri.packages.${system}.default;
     };
   };
 
