@@ -35,7 +35,7 @@
   esac
   '';
 in {
-  services.hypridle.enable = true;
+  services.hypridle.enable = false;
   wayland.windowManager.hyprland.systemd.enable = false;
 
   home.packages = with pkgs; if pkgs.stdenv.isLinux then [
