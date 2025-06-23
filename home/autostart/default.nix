@@ -8,6 +8,7 @@
         installPhase = ''
           cp "${pkgs.steam}/share/applications/steam.desktop" steam.desktop
           ${pkgs.gnused}/bin/sed -i 's#Exec=steam %U#Exec=steam -silent %U#' steam.desktop
+          ${pkgs.gnused}/bin/sed -i 's#^$#NotShowIn=niri\n#' steam.desktop
           mkdir -p "$out/share/applications"
           cp steam.desktop "$out/share/applications/steam-autostart-silent.desktop"
         '';
