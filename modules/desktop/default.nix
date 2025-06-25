@@ -12,6 +12,7 @@
     systemPackages = with pkgs; [
       deepfilternet
       easyeffects
+      file-roller
     ];
 
     variables = {
