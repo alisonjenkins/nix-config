@@ -171,7 +171,7 @@
       "rio"
       "slack"
       "soundsource"
-      "todoist"
+      # "todoist"
       "uhk-agent"
       "utm"
       "yed"
