@@ -5,6 +5,7 @@
 }: ''
 
 set-option -g default-command "${pkgs.zsh}/bin/zsh"
+set -g allow-passthrough on
 run-shell ${pkgs.tmuxPlugins.sensible}/share/tmux-plugins/sensible/sensible.tmux
 
 run-shell ${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux
@@ -85,7 +86,6 @@ set  -g history-limit     2000
 set -g @shell_mode 'vi'
 set -g @prefix_highlight_show_copy_mode 'on'
 set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold' # default is 'fg=default,bg=yellow'
-set -g allow-passthrough on
 set -s set-clipboard off
 setw -g monitor-activity on
 set -g visual-activity off
