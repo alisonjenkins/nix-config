@@ -157,6 +157,7 @@
       cpu-x
       drawio
       freeplane
+      gcc
       geekbench
       handbrake
       i2pd
