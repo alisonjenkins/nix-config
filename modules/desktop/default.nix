@@ -14,6 +14,7 @@
       easyeffects
       file-roller
       playerctl
+      wleave
     ];
 
     variables = {
