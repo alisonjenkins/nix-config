@@ -319,7 +319,7 @@
           };
           modules = [
             ./app-profiles/desktop/aws
-            ./app-profiles/desktop/display-managers/sddm
+            ./app-profiles/desktop/display-managers/greetd-regreet
             ./app-profiles/desktop/local-k8s
             ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/wms/plasma6
