@@ -254,22 +254,26 @@ window-rule {
 
 window-rule {
     match app-id=r#"^vesktop$"#
+    open-maximized true
     open-on-workspace "chat"
 }
 
 window-rule {
     match app-id="Alacritty"
     match app-id="com.mitchellh.ghostty"
+    open-fullscreen true
     open-on-workspace "terminal"
 }
 
 window-rule {
     match app-id="firefox"
     open-on-workspace "browser"
+    open-maximized true
 }
 
 window-rule {
     match app-id=r#"^obsidian$"#
+    open-maximized true
     open-on-workspace "obsidian"
 }
 
@@ -287,5 +291,6 @@ window-rule {
 
 window-rule {
     match app-id=r#"^1Password$"#
+    open-maximized true
     open-on-workspace "1password"
 }
