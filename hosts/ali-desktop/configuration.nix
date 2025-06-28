@@ -485,9 +485,14 @@
   };
 
   virtualisation = {
-    # docker = {
-    #   enable = true;
-    # };
+    docker = {
+      enable = true;
+      enableOnBoot = false;
+
+      autoPrune = {
+        enable = true;
+      };
+    };
 
     # podman = {
     #   autoPrune.enable = true;
