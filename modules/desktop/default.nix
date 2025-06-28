@@ -13,6 +13,7 @@
       deepfilternet
       easyeffects
       file-roller
+      playerctl
     ];
 
     variables = {
