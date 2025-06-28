@@ -193,7 +193,7 @@
     };
 
     flatpak = {
-      enable = true;
+      enable = false;
       packages = [
         "org.prismlauncher.PrismLauncher"
       ];
