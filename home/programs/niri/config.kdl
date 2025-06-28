@@ -279,6 +279,12 @@ window-rule {
 }
 
 window-rule {
+    match app-id=r#"^gamescope$"#
+    open-fullscreen true
+    open-on-workspace "game"
+}
+
+window-rule {
     match app-id=r#"^1Password$"#
     open-on-workspace "1password"
 }
