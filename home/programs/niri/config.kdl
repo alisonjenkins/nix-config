@@ -257,13 +257,13 @@ window-rule {
 }
 
 window-rule {
-    match app-id=r#"Alacritty^$"#
-    match app-id=r#"com\.mitchellh\.ghostty$"#
+    match app-id="Alacritty"
+    match app-id="com.mitchellh.ghostty"
     open-on-workspace "terminal"
 }
 
 window-rule {
-    match app-id=r#"^firefox$"#
+    match app-id="firefox"
     open-on-workspace "browser"
 }
 
