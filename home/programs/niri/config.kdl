@@ -85,18 +85,6 @@ switch-events {
 prefer-no-csd
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
-window-rule {
-    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
-    open-floating true
-}
-
-window-rule {
-    block-out-from "screen-capture"
-    match app-id=r#"^1Password$"#
-    match app-id=r#"^org\.gnome\.World\.Secrets$"#
-    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
-}
-
 binds {
     // shows a list of important hotkeys.
     Mod+Shift+Slash { show-hotkey-overlay; }
@@ -198,20 +186,20 @@ binds {
 
     Mod+1 { focus-workspace "chat"; }
     Mod+2 { focus-workspace "terminal"; }
-    Mod+3 { focus-workspace 3; }
-    Mod+4 { focus-workspace 4; }
-    Mod+5 { focus-workspace 5; }
-    Mod+6 { focus-workspace 6; }
-    Mod+7 { focus-workspace 7; }
+    Mod+3 { focus-workspace "browser"; }
+    Mod+4 { focus-workspace "game"; }
+    Mod+5 { focus-workspace "gaming"; }
+    Mod+6 { focus-workspace "obsidian"; }
+    Mod+7 { focus-workspace "1password"; }
     Mod+8 { focus-workspace 8; }
     Mod+9 { focus-workspace 9; }
-    Mod+Ctrl+1 { move-column-to-workspace 1; }
-    Mod+Ctrl+2 { move-column-to-workspace 2; }
-    Mod+Ctrl+3 { move-column-to-workspace 3; }
-    Mod+Ctrl+4 { move-column-to-workspace 4; }
-    Mod+Ctrl+5 { move-column-to-workspace 5; }
-    Mod+Ctrl+6 { move-column-to-workspace 6; }
-    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+1 { move-column-to-workspace "chat"; }
+    Mod+Ctrl+2 { move-column-to-workspace "terminal"; }
+    Mod+Ctrl+3 { move-column-to-workspace "browser"; }
+    Mod+Ctrl+4 { move-column-to-workspace "game"; }
+    Mod+Ctrl+5 { move-column-to-workspace "gaming"; }
+    Mod+Ctrl+6 { move-column-to-workspace "obsidian"; }
+    Mod+Ctrl+7 { move-column-to-workspace "1password"; }
     Mod+Ctrl+8 { move-column-to-workspace 8; }
     Mod+Ctrl+9 { move-column-to-workspace 9; }
 
@@ -249,4 +237,48 @@ binds {
 window-rule {
     match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
     default-floating-position x=10 y=10 relative-to="bottom-right"
+}
+
+window-rule {
+    block-out-from "screen-capture"
+    match app-id=r#"^1Password$"#
+    match app-id=r#"^org\.gnome\.World\.Secrets$"#
+    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+}
+
+window-rule {
+    match app-id=r#"^firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+window-rule {
+    match app-id=r#"^vesktop$"#
+    open-on-workspace "chat"
+}
+
+window-rule {
+    match app-id=r#"Alacritty^$"#
+    match app-id=r#"com\.mitchellh\.ghostty$"#
+    open-on-workspace "terminal"
+}
+
+window-rule {
+    match app-id=r#"^firefox$"#
+    open-on-workspace "browser"
+}
+
+window-rule {
+    match app-id=r#"^obsidian$"#
+    open-on-workspace "obsidian"
+}
+
+window-rule {
+    match app-id=r#"^org.prismlauncher.PrismLauncher$"#
+    match app-id=r#"^steam$"#
+    open-on-workspace "gaming"
+}
+
+window-rule {
+    match app-id=r#"^1Password$"#
+    open-on-workspace "1password"
 }
