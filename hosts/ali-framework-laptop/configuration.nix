@@ -457,6 +457,8 @@
 
         extraPortals = with pkgs; [
           kdePackages.xdg-desktop-portal-kde
+          xdg-desktop-portal-cosmic
+          xdg-desktop-portal-wlr
         ];
       };
     };
