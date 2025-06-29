@@ -275,8 +275,11 @@ window-rule {
 }
 
 window-rule {
+    match app-id=r#"^Keybase$"#
     match app-id=r#"^vesktop$"#
+    match app-id=r#"^com\.ktechpit\.whatsie$"#
     open-maximized true
+    default-column-display "tabbed"
     open-on-workspace "chat"
 }
 
