@@ -23,6 +23,22 @@ margin_top: 0
 inhibit_compositor_keyboard_shortcuts: true
 
 menu:
+  - key: "b"
+    desc: Bluetooth
+    submenu:
+      - key: "h"
+        desc: Headphones
+        submenu:
+          - key: h
+            desc: Headset
+            submenu:
+              - key: c
+                desc: Connect
+                cmd: bluetoothctl connect '88:C9:E8:06:5E:9C'
+              - key: d
+                desc: Disconnect
+                cmd: bluetoothctl disconnect '88:C9:E8:06:5E:9C'
+
   - key: "p"
     desc: Power
     submenu:
