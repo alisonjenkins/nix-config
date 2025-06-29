@@ -75,10 +75,11 @@ layout {
     }
 }
 
-spawn-at-startup "1password"
+// order matters here
 spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"
-spawn-at-startup "quickshell" "-c" "caelestia"
 spawn-at-startup "xwayland-satellite"
+spawn-at-startup "quickshell" "-c" "caelestia"
+spawn-at-startup "1password"
 
 switch-events {
     lid-close { spawn "niri" "msg" "output" "eDP-2" "off"; }
