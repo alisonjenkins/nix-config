@@ -6,10 +6,10 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/libvirtd { inherit pkgs; })
-    (import ../../modules/locale { })
     ../../app-profiles/desktop
     ../../app-profiles/hardware/touchpad
+    ../../modules/libvirtd
+    ../../modules/locale
     ./hardware-configuration.nix
   ];
 
