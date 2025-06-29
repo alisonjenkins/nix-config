@@ -42,6 +42,16 @@
     zsh.enable = true;
   };
 
+  security = {
+    polkit = {
+      enable = true;
+    };
+
+    soteria = {
+      enable = true;
+    };
+  };
+
   services = {
     pulseaudio = {
       enable = false;

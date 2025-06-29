@@ -82,7 +82,6 @@
       freeplane
       fuzzel
       gnome-keyring
-      kdePackages.polkit-kde-agent-1
       lact
       ldacbt
       obsidian

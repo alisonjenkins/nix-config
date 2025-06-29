@@ -173,7 +173,6 @@
       openttd
       openttd-ttf
       podman
-      polkit
       protontricks
       qbittorrent
       radeontop
