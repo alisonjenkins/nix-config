@@ -245,12 +245,27 @@ window-rule {
 }
 
 window-rule {
-    block-out-from "screen-capture"
     match app-id="1Password"
+    // match app-id="1Password" title=r#"^Lock Screen — 1Password$"#
     match app-id=r#"^org\.gnome\.World\.Secrets$"#
     match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+
+    block-out-from "screen-capture"
     open-maximized true
+    open-focused true
     open-on-workspace "passwordmanager"
+}
+
+window-rule {
+    exclude app-id="1Password" title="^Lock Screen — 1Password$"
+    match app-id="org.kde.ksecretd" title=r#"^KDE Wallet Service$"#
+    match app-id="1Password" title="^1Password$"
+    match app-id=r#"gay\.vaskel\.Soteria"#
+
+    baba-is-float true
+    block-out-from "screen-capture"
+    open-floating true
+    open-focused true
 }
 
 window-rule {
