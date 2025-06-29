@@ -270,14 +270,14 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "docker" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" ];
+        extraGroups = [ "audio" "docker" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" ];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
       lace = {
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Lace Jones";
-        extraGroups = [ "docker" "libvirtd" "networkmanager" "video" "wheel" ];
+        extraGroups = [ "audio" "docker" "libvirtd" "networkmanager" "video" "wheel" ];
         hashedPasswordFile = "/persistence/passwords/lace";
       };
       root = {
