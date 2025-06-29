@@ -1,9 +1,14 @@
 { lib
+, config
 , pkgs
 , username
 , ...
 }: {
-  programs.firefox = {
+  config.stylix.targets.firefox.profileNames = [
+   username
+  ];
+
+  config.programs.firefox = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
     profiles.${username} = {
@@ -59,7 +64,7 @@
     };
   };
 
-  home.file =
+  config.home.file =
     if pkgs.stdenv.isLinux then {
       ".local/share/applications/Firefox.desktop".text = ''
         [Desktop Entry]

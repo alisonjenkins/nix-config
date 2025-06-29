@@ -1,9 +1,14 @@
 { lib
+, config
 , pkgs
 , username
 , ...
 }: {
-  programs.librewolf = {
+  config.stylix.targets.librewolf.profileNames = [
+   username
+  ];
+
+  config.programs.librewolf = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
     package = pkgs.unstable.librewolf;
@@ -66,7 +71,7 @@
     };
   };
 
-  home.file =
+  config.home.file =
     if pkgs.stdenv.isLinux then {
       ".local/share/applications/Librewolf.desktop".text = ''
         [Desktop Entry]
