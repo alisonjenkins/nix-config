@@ -49,7 +49,13 @@ menu:
         cmd: steam steam://rungameid/1086940
       - key: "m"
         desc: Minecraft
-        cmd: prismlauncher
+        submenu:
+          - key: "c"
+            desc: "Create Chronicles: Bosses and Beyond"
+            cmd: "prismlauncher '--launch' 'Create Chronicles- Bosses and Beyond'"
+          - key: "p"
+            desc: Prismlauncher
+            cmd: prismlauncher
       - key: "p"
         desc: Payday 2
         cmd: steam steam://rungameid/218620
