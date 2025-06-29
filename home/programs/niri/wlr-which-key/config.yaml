@@ -41,3 +41,18 @@ menu:
   - key: "l"
     desc: Lock
     cmd: "hyprlock"
+  - key: "g"
+    desc: Games
+    submenu:
+      - key: "b"
+        desc: Balder's Gate 3
+        cmd: steam steam://rungameid/1086940
+      - key: "m"
+        desc: Minecraft
+        cmd: prismlauncher
+      - key: "p"
+        desc: Payday 2
+        cmd: steam steam://rungameid/218620
+      - key: "r"
+        desc: Risk of Rain 2
+        cmd: steam steam://rungameid/632360
