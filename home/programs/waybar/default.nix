@@ -11,8 +11,6 @@
       ]
     else [ ];
 
-  stylix.targets.waybar.enable = false;
-
   programs.waybar = {
     enable =
       if pkgs.stdenv.isLinux
@@ -261,4 +259,6 @@
       }
     ];
   };
-}
+} // (if pkgs.stdenv.isLinux then {
+  stylix.targets.waybar.enable = false;
+} else {})

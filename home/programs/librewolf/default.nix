@@ -4,9 +4,6 @@
 , username
 , ...
 }: {
-  config.stylix.targets.librewolf.profileNames = [
-   username
-  ];
 
   config.programs.librewolf = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
@@ -93,5 +90,10 @@
         X-KDE-Username=
       '';
     } else { };
-}
+  } // (if pkgs.stdenv.isLinux then {
+    config.stylix.targets.librewolf.profileNames = [
+     username
+    ];
+  } else {
+  })
 
