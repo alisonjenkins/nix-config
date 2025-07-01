@@ -13,6 +13,7 @@
       deepfilternet
       easyeffects
       file-roller
+      inputs.caelestia-cli.packages.${system}.default
       playerctl
       wleave
     ];

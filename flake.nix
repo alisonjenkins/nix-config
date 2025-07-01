@@ -4,6 +4,7 @@
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
+    caelestia-cli.url = "github:alisonjenkins/cli";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
     eks-creds.url = "github:alisonjenkins/eks-creds";
