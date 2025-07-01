@@ -38,6 +38,15 @@ menu:
               - key: d
                 desc: Disconnect
                 cmd: bluetoothctl disconnect '88:C9:E8:06:5E:9C'
+          - key: p
+            desc: Headphones
+            submenu:
+              - key: c
+                desc: Connect
+                cmd: bluetoothctl connect 'AC:80:0A:29:8F:E6'
+              - key: d
+                desc: Disconnect
+                cmd: bluetoothctl disconnect 'AC:80:0A:29:8F:E6'
 
   - key: "p"
     desc: Power
