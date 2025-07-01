@@ -4,6 +4,10 @@
 , username
 , ...
 }: {
+  config.stylix.targets.firefox.profileNames = [
+   username
+  ];
+
   config.programs.firefox = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
@@ -82,11 +86,4 @@
         X-KDE-Username=
       '';
     } else { };
-  } // (
-    if pkgs.stdenv.isLinux then {
-      config.stylix.targets.firefox.profileNames = [
-        username
-      ];
-
-    } else { }
-  )
+}
