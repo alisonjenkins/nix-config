@@ -326,6 +326,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-framework-laptop/configuration.nix
+            ./modules/development/web
             disko.nixosModules.disko
             inputs.lanzaboote.nixosModules.lanzaboote
             inputs.nix-flatpak.nixosModules.nix-flatpak
