@@ -182,7 +182,7 @@
                 home-manager.backupFileExtension = ".bak";
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
-                home-manager.users.${username} = import ./home/home.nix;
+                home-manager.users.${username} = import ./home/home-macos.nix;
                 home-manager.extraSpecialArgs = specialArgs // {
                   gitUserName = "Alison Jenkins";
                   gitEmail = "alison.jenkins@brambles.com";

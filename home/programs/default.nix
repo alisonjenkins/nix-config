@@ -22,7 +22,6 @@
     ./comodoro
     ./direnv
     ./eww
-    ./firefox
     ./fzf
     ./gcc
     ./gh
@@ -38,14 +37,12 @@
     ./k9s
     ./kitty
     ./kwalletd
-    ./librewolf
     ./lsd
     ./man
     ./mcfly
     ./mimetypes
     ./neovim
     ./newsboat
-    ./niri
     ./nix-index
     ./noti
     ./nushell
@@ -58,7 +55,6 @@
     ./starship
     ./terraform
     ./tmux
-    ./waybar
     ./yambar
     ./yazi
     ./zk
