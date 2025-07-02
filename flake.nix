@@ -199,7 +199,7 @@
           inherit pkgs;
 
           modules = [
-            ./home/home.nix
+            ./home/home-linux.nix
             ./hosts/ali-desktop-arch/configuration.nix
             # inputs.stylix.homeModules.stylix
           ];
@@ -217,7 +217,7 @@
           inherit pkgs;
 
           modules = [
-            ./home/home.nix
+            ./home/home-linux.nix
             ./hosts/steam-deck/configuration.nix
             inputs.nix-index-database.hmModules.nix-index
           ];
@@ -259,7 +259,7 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
@@ -298,7 +298,7 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
@@ -339,7 +339,7 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
@@ -386,7 +386,7 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home.nix;
+              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
@@ -451,7 +451,7 @@
         #     {
         #       home-manager.useGlobalPkgs = true;
         #       home-manager.useUserPackages = true;
-        #       home-manager.users.${specialArgs.username} = import ./home/home.nix;
+        #       home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
         #       home-manager.extraSpecialArgs =
         #         specialArgs
         #         // {
@@ -498,7 +498,7 @@
             # {
             #   home-manager.useGlobalPkgs = true;
             #   home-manager.useUserPackages = true;
-            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.users.ali = import ./home/home-linux.nix;
             #   home-manager.extraSpecialArgs =
             #     specialArgs
             #     // {
@@ -527,7 +527,7 @@
             # {
             #   home-manager.useGlobalPkgs = true;
             #   home-manager.useUserPackages = true;
-            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.users.ali = import ./home/home-linux.nix;
             #   home-manager.extraSpecialArgs =
             #     specialArgs
             #     // {
@@ -684,7 +684,7 @@
             # {
             #   home-manager.useGlobalPkgs = true;
             #   home-manager.useUserPackages = true;
-            #   home-manager.users.ali = import ./home/home.nix;
+            #   home-manager.users.ali = import ./home/home-linux.nix;
             #   home-manager.extraSpecialArgs =
             #     specialArgs
             #     // {
