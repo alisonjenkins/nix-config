@@ -48,6 +48,19 @@ menu:
                 desc: Disconnect
                 cmd: bluetoothctl disconnect 'AC:80:0A:29:8F:E6'
 
+  - key: "c"
+    desc: Casting
+    submenu:
+      - key: "w"
+        desc: Set Niri dynamic cast Window
+        cmd: niri msg action set-dynamic-cast-window
+      - key: "m"
+        desc: Set Niri dynamic cast Monitor
+        cmd: niri msg action set-dynamic-cast-monitor
+      - key: "c"
+        desc: Clear Niri dynamic cast target
+        cmd: niri msg action clear-dynamic-cast-target
+
   - key: "p"
     desc: Power
     submenu:
@@ -63,9 +76,11 @@ menu:
       - key: "m"
         desc: Turn monitors off
         cmd: niri msg action power-off-monitors
+
   - key: "l"
     desc: Lock
     cmd: "hyprlock"
+
   - key: "g"
     desc: Games
     submenu:
