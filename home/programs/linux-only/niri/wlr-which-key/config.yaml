@@ -93,6 +93,9 @@ menu:
           - key: "c"
             desc: "Create Chronicles: Bosses and Beyond"
             cmd: "prismlauncher '--launch' 'Create Chronicles- Bosses and Beyond'"
+          - key: "e"
+            desc: "Enigmatica 9: Expert - E9E"
+            cmd: prismlauncher" '--launch' 'Enigmatica 9- Expert - E9E'
           - key: "p"
             desc: Prismlauncher
             cmd: prismlauncher
