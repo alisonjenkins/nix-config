@@ -1,4 +1,10 @@
 { pkgs, ... }: {
+  home = {
+    packages = with pkgs; [
+      whatsie
+    ];
+  };
+
   home.file = (if pkgs.stdenv.isLinux then
     let
       steam-autostart-silent = pkgs.stdenvNoCC.mkDerivation {
