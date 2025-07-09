@@ -251,7 +251,7 @@
             ./app-profiles/hardware/vr
             ./hosts/ali-desktop/configuration.nix
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.nixos-cosmic.nixosModules.default
+            # inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager

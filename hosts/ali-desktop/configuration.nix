@@ -351,9 +351,9 @@
     };
 
     desktopManager = {
-      cosmic = {
-        enable = true;
-      };
+      # cosmic = {
+      #   enable = true;
+      # };
     };
 
     udev = {
