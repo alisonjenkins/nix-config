@@ -35,7 +35,6 @@
   esac
   '';
 in {
-  services.hypridle.enable = false;
   wayland.windowManager.hyprland.systemd.enable = false;
 
   home.packages = with pkgs; if pkgs.stdenv.isLinux then [
@@ -49,7 +48,6 @@ in {
   home.file =
     if pkgs.stdenv.isLinux then {
       ".config/hypr/autostart.conf".text = import ./configs/hypr/autostart.conf.nix { inherit pkgs inputs system; };
-      ".config/hypr/hypridle.conf".text = import ./configs/hypr/hypridle.conf.nix;
       ".config/hypr/hyprlock.conf".text = import ./configs/hypr/hyprlock.conf.nix;
       ".config/hypr/keybinds.conf".text = import ./configs/hypr/keybinds.conf.nix { inherit pkgs; };
       ".config/hypr/windowrules.conf".text = import ./configs/hypr/windowrules.conf.nix;
