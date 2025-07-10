@@ -1,4 +1,4 @@
-name: Build and Cache Nix Flake
+name: Update and push flake lock
 
 on:
   schedule:
