@@ -9,15 +9,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: nixbuild/nix-quick-install-action@v29
       - uses: DeterminateSystems/flake-checker-action@main
-      - uses: EndBug/add-and-commit@v9
-        with:
-          default_author: github_actions
+      - name: Setup git
+        run: |
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'alisonjenkins-gha@users.noreply.github.com'
       - name: Update flake
         run: |
           nix flake update --commit-lock-file && \
