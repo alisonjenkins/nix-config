@@ -167,16 +167,17 @@
       "obs"
       "obsidian"
       "ollama"
+      "parallels"
       "rectangle"
       "rio"
       "slack"
       "soundsource"
-      # "todoist"
       "uhk-agent"
       "utm"
       "yed"
       "yubico-authenticator"
       "zoom"
+      # "todoist"
     ];
 
     onActivation = {
