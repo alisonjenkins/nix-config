@@ -1,8 +1,8 @@
 { pkgs, ... }: {
   home = {
-    packages = with pkgs; [
+    packages = if pkgs.stdenv.isLinux then with pkgs; [
       whatsie
-    ];
+    ] else [];
   };
 
   home.file = (if pkgs.stdenv.isLinux then
