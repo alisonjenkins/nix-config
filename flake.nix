@@ -219,7 +219,7 @@
           modules = [
             ./home/home-linux.nix
             ./hosts/steam-deck/configuration.nix
-            inputs.nix-index-database.hmModules.nix-index
+            inputs.nix-index-database.homeModules.nix-index
           ];
 
           extraSpecialArgs = {
