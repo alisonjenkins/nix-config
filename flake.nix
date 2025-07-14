@@ -11,7 +11,7 @@
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     musnix = { url = "github:musnix/musnix"; };
-    niri.url = "github:YaLTeR/niri";
+    niri.url = "github:YaLTeR/niri/bb40a35ccf6edbe2c838686562cbdad1ef98ce72";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
     nixgl.url = "github:nix-community/nixGL";
