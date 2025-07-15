@@ -167,7 +167,7 @@
       "obs"
       "obsidian"
       "ollama"
-      "parallels"
+      # "parallels"
       "rectangle"
       "rio"
       "slack"
