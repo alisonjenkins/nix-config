@@ -19,6 +19,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.05-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.5.0";
     rust-overlay.url = "github:oxalica/rust-overlay";
@@ -152,7 +153,7 @@
             inherit username;
           };
 
-          pkgs = import nixpkgs {
+          pkgs = import inputs.nixpkgs_stable_darwin {
             inherit system;
 
             config = {
