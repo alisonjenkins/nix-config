@@ -8,6 +8,14 @@
       '';
     };
 
+    ".ssh/id_civica.pub.source" = {
+      source = ./id_civica.pub;
+      onChange = ''
+      cp ~/.ssh/id_civica.pub.source ~/.ssh/id_civica.pub
+      chmod 600 ~/.ssh/id_civica.pub
+      '';
+    };
+
     ".ssh/config".text =
       let
         use1password = true;
