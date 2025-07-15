@@ -74,6 +74,7 @@
       nodejs
       nushell
       openssl
+      packer
       parallel
       pcre2
       pgcli
