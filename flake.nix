@@ -143,9 +143,7 @@
         let
           username = "ajenkins";
           system = "aarch64-darwin";
-          hostname = "JVKLHFPJ65";
-          specialArgs = {
-            inherit hostname;
+          commonArgs = {
             inherit inputs;
             inherit outputs;
             inherit pkgs;
@@ -172,9 +170,14 @@
                 })
               ];
           };
+
+          hostnames = {
+            brambles = "JVKLHFPJ65";
+            civica = "Alisons-MacBook-Pro";
+          };
         in
         {
-          "${hostname}" = inputs.darwin.lib.darwinSystem {
+          "${hostnames.civica}" = inputs.darwin.lib.darwinSystem {
             system = system;
             modules = [
               ./hosts/ali-work-laptop-macos/configuration.nix
@@ -184,14 +187,39 @@
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
                 home-manager.users.${username} = import ./home/home-macos.nix;
-                home-manager.extraSpecialArgs = specialArgs // {
+                home-manager.extraSpecialArgs = commonArgs // {
+                  gitEmail = "alison.jenkins@civica.com";
+                  gitGPGSigningKey = "~/.ssh/id_civica.pub";
                   gitUserName = "Alison Jenkins";
-                  gitEmail = "alison.jenkins@brambles.com";
-                  gitGPGSigningKey = "~/.ssh/id_brambles.pub";
+                  hostname = "${hostnames.civica}";
                 };
               }
             ];
-            specialArgs = specialArgs;
+            specialArgs = commonArgs // {
+              hostname = "${hostnames.civica}";
+            };
+          };
+          "${hostnames.brambles}" = inputs.darwin.lib.darwinSystem {
+            system = system;
+            modules = [
+              ./hosts/ali-work-laptop-macos/configuration.nix
+              home-manager.darwinModules.home-manager
+              {
+                home-manager.backupFileExtension = ".bak";
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.users.${username} = import ./home/home-macos.nix;
+                home-manager.extraSpecialArgs = commonArgs // {
+                  gitEmail = "alison.jenkins@brambles.com";
+                  gitGPGSigningKey = "~/.ssh/id_brambles.pub";
+                  gitUserName = "Alison Jenkins";
+                  hostname = "${hostnames.brambles}";
+                };
+              }
+            ];
+            specialArgs = commonArgs // {
+              hostname = "${hostnames.brambles}";
+            };
           };
         };
 
