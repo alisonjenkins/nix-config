@@ -46,6 +46,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    lsfg-vk-flake = {
+      url = "github:pabloaul/lsfg-vk-flake/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nh = {
       url = "github:viperML/nh";
       inputs.nixpkgs.follows = "nixpkgs"; # override this repo's nixpkgs snapshot
@@ -283,6 +288,7 @@
             # inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
+            inputs.lsfg-vk-flake.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = ".bak";

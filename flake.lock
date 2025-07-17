@@ -975,6 +975,27 @@
         "type": "github"
       }
     },
+    "lsfg-vk-flake": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1752540214,
+        "narHash": "sha256-7YXGVb3+VmRO001H3x0ljTUj0AWaOj47jVA9D8lyVQU=",
+        "owner": "pabloaul",
+        "repo": "lsfg-vk-flake",
+        "rev": "0e4a10cb682203494c1c7fde54124d76c5c91b9b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pabloaul",
+        "ref": "main",
+        "repo": "lsfg-vk-flake",
+        "type": "github"
+      }
+    },
     "musnix": {
       "inputs": {
         "nixpkgs": "nixpkgs_12"
@@ -2118,6 +2139,7 @@
         "impermanence": "impermanence",
         "jovian-nixos": "jovian-nixos",
         "lanzaboote": "lanzaboote",
+        "lsfg-vk-flake": "lsfg-vk-flake",
         "musnix": "musnix",
         "nh": "nh",
         "niri": "niri",
