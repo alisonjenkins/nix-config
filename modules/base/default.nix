@@ -206,10 +206,16 @@
             mode = "u=rwx,g=rx,o=";
           }
           {
+            directory = "/var/lib/private";
+            user = "root";
+            group = "root";
+            mode = "0700";
+          }
+          {
             directory = "/var/lib/private/ollama";
             user = "ollama";
             group = "ollama";
-            mode = "u=rwx,g=,o=";
+            mode = "0700";
           }
           {
             directory = "/var/cache/tuigreet";
