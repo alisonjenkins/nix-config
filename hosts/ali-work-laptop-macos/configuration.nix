@@ -161,6 +161,7 @@
       "jordanbaird-ice"
       "karabiner-elements"
       "keybase"
+      "krita"
       "librewolf"
       "microsoft-auto-update"
       "microsoft-outlook"
