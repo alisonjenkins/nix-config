@@ -174,6 +174,7 @@
       # "parallels"
       "rectangle"
       "rio"
+      "scribus"
       "slack"
       "soundsource"
       "uhk-agent"
