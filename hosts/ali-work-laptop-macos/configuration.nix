@@ -98,6 +98,8 @@
       typst
       typst-live
       unstable.delve
+      unstable.opentofu
+      unstable.terraform
       watch
       watchexec
       wget
