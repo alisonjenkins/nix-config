@@ -39,7 +39,7 @@
       enable = enablePlymouth;
     };
 
-    kernelParams = [ "quiet" ];
+    kernelParams = [ "quiet" "preempt=full" ];
 
     kernel = {
       sysctl = {
