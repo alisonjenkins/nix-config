@@ -1,0 +1,20 @@
+version = 1
+
+[global]
+experimental_fps_limit = 120
+experimental_present_mode = fifo
+flow_scale = 1
+multiplier = 3
+performance_mode = true
+
+# [[game]] # example entry
+# exe = "Game.exe"
+# env = "SteamDeck=0"
+#
+# multiplier = 3
+# flow_scale = 0.7
+# performance_mode = true
+# hdr_mode = false
+#
+# experimental_present_mode = fifo
+# experimental_fps_limit = 48

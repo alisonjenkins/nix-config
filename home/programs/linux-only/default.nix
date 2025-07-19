@@ -4,6 +4,7 @@
     ./gtk
     ./hypridle
     ./librewolf
+    ./lsfg-vk
     ./niri
     ./waybar
   ];
