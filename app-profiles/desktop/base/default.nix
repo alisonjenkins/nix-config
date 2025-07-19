@@ -195,7 +195,7 @@
     flatpak = {
       enable = true;
       packages = [
-        "org.prismlauncher.PrismLauncher"
+        "org.vinegarhq.Sober"
       ];
       remotes = [
         {
