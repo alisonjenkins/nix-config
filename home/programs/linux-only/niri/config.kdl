@@ -24,7 +24,7 @@ hotkey-overlay {
 }
 
 input {
-    focus-follows-mouse max-scroll-amount="0%"
+    // focus-follows-mouse max-scroll-amount="0%"
     warp-mouse-to-focus mode="center-xy"
 
     keyboard {
