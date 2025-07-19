@@ -2,9 +2,25 @@ version = 1
 
 [global]
 experimental_fps_limit = 120
-experimental_present_mode = fifo
+experimental_present_mode = true
 flow_scale = 1
 multiplier = 3
+performance_mode = true
+
+[[game]]
+exe = "vkcube"
+experimental_fps_limit = 120
+experimental_present_mode = true
+flow_scale = 1
+multiplier = 3
+performance_mode = true
+
+[[game]]
+exe = "Subnautica.exe"
+experimental_fps_limit = 120
+experimental_present_mode = true
+flow_scale = 1
+multiplier = 2
 performance_mode = true
 
 # [[game]] # example entry
