@@ -105,7 +105,6 @@
     obsidian
     parted
     pinentry
-    protonup-qt
     psmisc
     pwgen
     ripgrep
@@ -119,6 +118,7 @@
     tmux
     unrar
     unstable.ghostty
+    unstable.protonplus
     usbutils
     virt-manager
     vmtouch
