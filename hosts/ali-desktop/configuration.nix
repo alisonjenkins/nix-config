@@ -203,7 +203,6 @@
     ];
 
     variables = {
-      LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       PATH = [ "\${HOME}/.local/bin" "\${HOME}/.config/rofi/scripts" ];
     };
   };
@@ -355,10 +354,6 @@
       # cosmic = {
       #   enable = true;
       # };
-    };
-
-    lsfg-vk = {
-      enable = true;
     };
 
     udev = {

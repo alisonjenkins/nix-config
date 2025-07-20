@@ -4,6 +4,7 @@
 , ...
 }: {
   imports = [
+    inputs.lsfg-vk-flake.nixosModules.default
     inputs.musnix.nixosModules.musnix
     inputs.stylix.nixosModules.stylix
   ];
@@ -20,6 +21,7 @@
     ];
 
     variables = {
+      LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       NIXOS_OZONE_WL = "1";
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
@@ -59,6 +61,10 @@
       enable = true;
       package = pkgs.ananicy-cpp;
       rulesProvider = pkgs.ananicy-rules-cachyos;
+    };
+
+    lsfg-vk = {
+      enable = true;
     };
 
     pulseaudio = {

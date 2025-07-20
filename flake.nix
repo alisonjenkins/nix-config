@@ -288,7 +288,6 @@
             # inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            inputs.lsfg-vk-flake.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = "bak";
