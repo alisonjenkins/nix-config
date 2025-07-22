@@ -97,14 +97,16 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
-        Host github.com
+        Host cgithub.com
+          Host github.com
           User alisonjenkins
-          IdentityFile ~/.ssh/id_personal.pub
+          IdentityFile ~/.ssh/id_civica.pub
           IdentitiesOnly yes
 
-        Host bitbucket.org
-          User git
-          IdentityFile ~/.ssh/id_brambles.pub
+        Host pgithub.com
+          Host github.com
+          User alisonjenkins
+          IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
       '';
   };
