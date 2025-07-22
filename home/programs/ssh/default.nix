@@ -98,13 +98,13 @@
           IdentitiesOnly yes
 
         Host cgithub.com
-          Host github.com
+          Hostname github.com
           User alisonjenkins
           IdentityFile ~/.ssh/id_civica.pub
           IdentitiesOnly yes
 
         Host pgithub.com
-          Host github.com
+          Hostname github.com
           User alisonjenkins
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
