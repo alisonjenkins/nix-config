@@ -3,16 +3,24 @@
     ".ssh/id_personal.pub.source" = {
       source = ./id_personal.pub;
       onChange = ''
-      cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
-      chmod 600 ~/.ssh/id_personal.pub
+        cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
+        chmod 600 ~/.ssh/id_personal.pub
       '';
     };
 
     ".ssh/id_civica.pub.source" = {
       source = ./id_civica.pub;
       onChange = ''
-      cp ~/.ssh/id_civica.pub.source ~/.ssh/id_civica.pub
-      chmod 600 ~/.ssh/id_civica.pub
+        cp ~/.ssh/id_civica.pub.source ~/.ssh/id_civica.pub
+        chmod 600 ~/.ssh/id_civica.pub
+      '';
+    };
+
+    ".ssh/id_civica_rsa.pub.source" = {
+      source = ./id_civica.pub;
+      onChange = ''
+        cp ~/.ssh/id_civica_rsa.pub.source ~/.ssh/id_civica_rsa.pub
+        chmod 600 ~/.ssh/id_civica_rsa.pub
       '';
     };
 
@@ -107,6 +115,11 @@
           Hostname github.com
           User alisonjenkins
           IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
+        Host ssh.dev.azure.com
+          User git
+          IdentityFile ~/.ssh/id_civica_rsa.pub
           IdentitiesOnly yes
       '';
   };
