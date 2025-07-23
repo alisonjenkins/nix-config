@@ -17,7 +17,7 @@
     };
 
     ".ssh/id_civica_rsa.pub.source" = {
-      source = ./id_civica.pub;
+      source = ./id_civica_rsa.pub;
       onChange = ''
         cp ~/.ssh/id_civica_rsa.pub.source ~/.ssh/id_civica_rsa.pub
         chmod 600 ~/.ssh/id_civica_rsa.pub
