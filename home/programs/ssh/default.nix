@@ -105,6 +105,11 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host github.com
+          User alisonjenkins
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host cgithub.com
           Hostname github.com
           User alisonjenkins
