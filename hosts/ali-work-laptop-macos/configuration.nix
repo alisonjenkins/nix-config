@@ -164,6 +164,7 @@
       "krita"
       "librewolf"
       "microsoft-auto-update"
+      "microsoft-azure-storage-explorer"
       "microsoft-outlook"
       "microsoft-teams"
       "mitmproxy"
@@ -171,7 +172,6 @@
       "obs"
       "obsidian"
       "ollama"
-      # "parallels"
       "rectangle"
       "rio"
       "scribus"
@@ -182,6 +182,7 @@
       "yed"
       "yubico-authenticator"
       "zoom"
+      # "parallels"
       # "todoist"
     ];
 
