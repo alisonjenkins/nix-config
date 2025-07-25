@@ -131,7 +131,7 @@
           interval = 1;
           format = "󰌢 {load}";
           tooltip = false;
-          on-click = "${pkgs.mission-center}/bin/missioncenter";
+          on-click = "${pkgs.unstable.mission-center}/bin/missioncenter";
           on-click-right = "${pkgs.kitty}/bin/kitty --class wm-floating --title all_is_kitty --hold --detach sh -c 'htop'";
         };
 

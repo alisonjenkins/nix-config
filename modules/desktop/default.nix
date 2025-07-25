@@ -11,11 +11,12 @@
   environment = {
     systemPackages = with pkgs; [
       deepfilternet
-      unstable.easyeffects
       file-roller
       hicolor-icon-theme
       inputs.caelestia-cli.packages.${system}.default
       playerctl
+      unstable.easyeffects
+      unstable.mission-center
       wleave
     ];
 
