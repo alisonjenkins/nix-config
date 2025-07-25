@@ -51,6 +51,10 @@
       enable = true;
     };
 
+    rtkit = {
+      enable = true;
+    };
+
     soteria = {
       enable = true;
     };
