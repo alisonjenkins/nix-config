@@ -2,8 +2,11 @@
   home.packages =  if pkgs.stdenv.isLinux then [
     inputs.quickshell.packages.${system}.default
     pkgs.fuzzel
+    pkgs.mako
     pkgs.swaylock
+    pkgs.swww
     pkgs.unstable.wlr-which-key
+    pkgs.waybar
     pkgs.xwayland-satellite
   ] else [];
 
