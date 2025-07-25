@@ -32,6 +32,14 @@ multiplier = 2
 performance_mode = true
 
 [[game]]
+exe = "Risk of Rain 2."
+experimental_fps_limit = 120
+experimental_present_mode = true
+flow_scale = 1
+multiplier = 3
+performance_mode = true
+
+[[game]]
 exe = "OblivionRemastered.exe"
 experimental_fps_limit = 120
 experimental_present_mode = true
