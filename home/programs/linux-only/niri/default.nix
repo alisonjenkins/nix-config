@@ -3,6 +3,7 @@
     inputs.quickshell.packages.${system}.default
     pkgs.fuzzel
     pkgs.mako
+    pkgs.swaybg
     pkgs.swaylock
     pkgs.swww
     pkgs.unstable.wlr-which-key
