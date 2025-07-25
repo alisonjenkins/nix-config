@@ -58,6 +58,11 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host gitlab.com
+          User git
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host home-kvm-hypervisor-1.lan
           user ali
           IdentityFile ~/.ssh/id_personal.pub
