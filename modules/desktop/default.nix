@@ -5,7 +5,6 @@
 }: {
   imports = [
     inputs.lsfg-vk-flake.nixosModules.default
-    inputs.musnix.nixosModules.musnix
     inputs.stylix.nixosModules.stylix
   ];
 
@@ -31,10 +30,6 @@
     graphics = {
       enable = true;
     };
-  };
-
-  musnix = {
-    enable = true;
   };
 
   programs = {
@@ -81,6 +76,24 @@
       enable = true;
       jack.enable = true;
       pulse.enable = true;
+
+      audio = {
+        enable = true;
+      };
+
+      extraConfig = {
+        pipewire = {
+          "10-clock-rate" = {
+            "context.properties" = {
+              "default.clock.allowed-rates" = [44100 48000 88200 96000];
+            };
+          };
+        };
+      };
+
+      wireplumber = {
+        enable = true;
+      };
     };
 
     power-profiles-daemon = {

@@ -10,7 +10,6 @@
     eks-creds.url = "github:alisonjenkins/eks-creds";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
-    musnix = { url = "github:musnix/musnix"; };
     niri.url = "github:YaLTeR/niri";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
