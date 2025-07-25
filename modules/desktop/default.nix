@@ -17,6 +17,7 @@
       playerctl
       unstable.easyeffects
       unstable.mission-center
+      unstable.nvtop
       wleave
     ];
 
