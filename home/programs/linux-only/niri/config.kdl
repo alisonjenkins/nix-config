@@ -43,7 +43,7 @@ input {
 }
 
 layer-rule {
-    match namespace="^swww-daemon$"
+    match namespace="^wallpaper$"
     place-within-backdrop true
 }
 
@@ -88,6 +88,7 @@ spawn-at-startup "1password"
 spawn-at-startup "mako"
 spawn-at-startup "swww-daemon"
 spawn-at-startup "waybar"
+spawn-at-startup "swaybg"
 
 // spawn-at-startup "quickshell" "-c" "caelestia"
 
