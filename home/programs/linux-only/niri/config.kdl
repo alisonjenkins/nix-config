@@ -42,6 +42,11 @@ input {
     }
 }
 
+layer-rule {
+    match namespace="^swww-daemon$"
+    place-within-backdrop true
+}
+
 layout {
     center-focused-column "never"
     default-column-width { proportion 0.5; }
