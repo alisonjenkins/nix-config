@@ -36,7 +36,7 @@ exe = "Risk of Rain 2."
 experimental_fps_limit = 120
 experimental_present_mode = true
 flow_scale = 1
-multiplier = 3
+multiplier = 4
 performance_mode = true
 
 [[game]]
