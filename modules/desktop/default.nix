@@ -15,6 +15,7 @@
       hicolor-icon-theme
       inputs.caelestia-cli.packages.${system}.default
       playerctl
+      powertop
       unstable.easyeffects
       unstable.mission-center
       unstable.nvtopPackages.amd
