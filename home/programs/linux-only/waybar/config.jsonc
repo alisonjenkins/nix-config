@@ -1,0 +1,94 @@
+{
+    "layer": "top",
+    "spacing": 0,
+    "height": 0,
+
+    "margin-top": 0,
+    "margin-right": 0,
+    "margin-bottom": 0,
+    "margin-left": 0,
+
+    "modules-left": [
+        "niri/workspaces",
+        "tray",
+    ],
+
+    "modules-center": [
+        "clock#secondary",
+        "clock",
+    ],
+
+    "modules-right": [
+        "cpu",
+        "custom/temp",
+        "memory",
+        "network",
+        "pulseaudio",
+    ],
+
+    "sway/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "tooltip": false
+    },
+
+    "tray": {
+        "show-passive-items": true,
+        "spacing": 10,
+        "tooltip": false
+    },
+
+    "clock": {
+        "format": "  {:%I:%M:%S %p}",
+        "interval": 1,
+        "tooltip": false
+    },
+
+    "clock#secondary": {
+        "format": "  {:%a, %d %b %Y}",
+        "interval": 1,
+        "tooltip": false
+    },
+
+    "cpu": {
+        "format": "  {usage}%",
+        "interval": 1,
+
+        "states": {
+            "critical": 90
+        }
+    },
+
+    "memory": {
+        "format": "  {percentage}%",
+        "interval": 2,
+
+        "states": {
+            "critical": 80
+        }
+    },
+
+    "network": {
+        "format-wifi" : "  {bandwidthDownBytes} {bandwidthUpBytes}",
+        "format-ethernet": "  {bandwidthDownBytes} {bandwidthUpBytes}",
+        "format-disconnected" : "󱚼  no network",
+        "interval": 1,
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "scroll-step": 5,
+        "max-volume": 150,
+        "format": "  {volume}%",
+        "format-bluetooth": "  {volume}%",
+        "nospacing": 1,
+        "on-click": "pavucontrol",
+        "tooltip": false
+    },
+
+    "custom/temp": {
+         "exec": "~/.config/waybar/temp",
+         "format": " {}°C",
+         "interval": 1
+    }
+}

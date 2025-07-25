@@ -32,35 +32,44 @@
       {
         layer = "top";
         position = "top";
-        height = 46;
+        height = 0;
         spacing = 0;
         margin-top = 0;
-        margin-left = 10;
-        margin-right = 10;
+        margin-left = 0;
+        margin-right = 0;
 
         modules-left = [
-          "custom/launcher"
+          # "custom/launcher"
+          # "cpu"
+          # "custom/gpu"
+          # "memory"
+          # "temperature"
+          # "disk"
+          # "network"
+          "niri/workspaces"
           "cpu"
-          "custom/gpu"
+          "custom/temp"
           "memory"
-          "temperature"
-          "disk"
           "network"
         ];
 
         modules-center = [
-          "hyprland/workspaces"
-          "hyprland/window"
+          # "hyprland/workspaces"
+          # "hyprland/window"
+          "clock"
         ];
 
         modules-right = [
+          # "pulseaudio"
+          # "backlight"
+          # "upower"
+          # "custom/notifications"
+          # "tray"
+          # "clock"
+          # "custom/power"
+          "battery"
           "pulseaudio"
-          "backlight"
-          "upower"
-          "custom/notifications"
           "tray"
-          "clock"
-          "custom/power"
         ];
 
         backlight = {
@@ -77,6 +86,18 @@
           on-scroll-down = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%-";
           on-scroll-up = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%+";
           tooltip = false;
+        };
+
+        battery = {
+          states = {
+            warning = 30;
+            critical = 15;
+          };
+          format = "{icon} {capacity}%";
+          format-charging = "󰂄 {capacity}%";
+          format-plugged = "󰚥 {capacity}%";
+          format-alt = "{time} {icon}";
+          format-icons = ["󰂃" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂁" "󰂂" "󰁹"];
         };
 
         clock = {
@@ -246,8 +267,10 @@
         };
 
         tray = {
-          icon-size = 15;
-          spacing = 15;
+          # icon-size = 15;
+          show-passive-items = true;
+          spacing = 10;
+          tooltip = false;
         };
 
         upower = {
