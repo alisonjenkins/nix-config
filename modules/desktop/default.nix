@@ -21,6 +21,7 @@
       unstable.mission-center
       unstable.nvtopPackages.amd
       wleave
+      zoom-us
     ];
 
     variables = {
