@@ -14,6 +14,7 @@
       file-roller
       hicolor-icon-theme
       inputs.caelestia-cli.packages.${system}.default
+      pciutils
       playerctl
       powertop
       unstable.easyeffects
