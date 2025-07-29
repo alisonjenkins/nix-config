@@ -172,6 +172,7 @@
       "obs"
       "obsidian"
       "ollama"
+      "parallels"
       "rectangle"
       "rio"
       "scribus"
@@ -182,7 +183,6 @@
       "yed"
       "yubico-authenticator"
       "zoom"
-      # "parallels"
       # "todoist"
     ];
 
