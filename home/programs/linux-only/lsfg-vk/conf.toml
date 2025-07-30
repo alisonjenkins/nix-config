@@ -17,7 +17,7 @@ performance_mode = true
 
 [[game]]
 exe = "Subnautica.exe"
-experimental_fps_limit = 120
+# experimental_fps_limit = 160
 experimental_present_mode = true
 flow_scale = 1
 multiplier = 2
