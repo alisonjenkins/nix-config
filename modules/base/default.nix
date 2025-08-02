@@ -39,7 +39,11 @@
       enable = enablePlymouth;
     };
 
-    kernelParams = [ "quiet" "preempt=full" ];
+    kernelParams = [
+      "amdgpu.ppfeaturemask=0xfff7ffff"
+      "preempt=full"
+      "quiet"
+    ];
 
     kernel = {
       sysctl = {
