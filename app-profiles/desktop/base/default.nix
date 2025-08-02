@@ -195,6 +195,7 @@
     flatpak = {
       enable = true;
       packages = [
+        "codes.merritt.Nyrna"
         "org.vinegarhq.Sober"
       ];
       remotes = [
