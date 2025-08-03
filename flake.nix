@@ -12,7 +12,7 @@
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     niri.url = "github:YaLTeR/niri";
     nix-colors.url = "github:misterio77/nix-colors";
-    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.1.0";
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixgl.url = "github:nix-community/nixGL";
     nixos-cosmic.url = "github:lilyinstarlight/nixos-cosmic";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
