@@ -3,6 +3,7 @@
 
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
+    # niri.url = "github:YaLTeR/niri";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     caelestia-cli.url = "github:alisonjenkins/cli";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
@@ -10,7 +11,7 @@
     eks-creds.url = "github:alisonjenkins/eks-creds";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
-    niri.url = "github:YaLTeR/niri";
+    niri-flake.url = "github:sodiboo/niri-flake";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixgl.url = "github:nix-community/nixGL";
@@ -283,6 +284,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-desktop/configuration.nix
+            inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             # inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
@@ -322,6 +324,7 @@
             ./app-profiles/desktop/local-k8s
             ./hosts/ali-laptop/configuration.nix
             chaotic.nixosModules.default
+            inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default

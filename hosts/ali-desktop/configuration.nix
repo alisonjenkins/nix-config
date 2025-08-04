@@ -252,6 +252,7 @@
       # outputs.overlays.python3PackagesOverlay
       # outputs.overlays.qtwebengine
       # outputs.overlays.quirc
+      inputs.niri-flake.overlays.niri
       outputs.overlays.snapper
       outputs.overlays.stable-packages
       # outputs.overlays.tmux-sessionizer
