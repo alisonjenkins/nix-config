@@ -80,6 +80,7 @@
       pgcli
       pinentry_mac
       pkg-config
+      pre-commit
       pwgen
       qview
       ripgrep
