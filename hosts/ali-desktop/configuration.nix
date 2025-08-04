@@ -240,22 +240,22 @@
 
   nixpkgs = {
     overlays = [
-      # outputs.overlays.alvr
-      # outputs.overlays.ffmpeg
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
       # outputs.overlays._7zz
       # outputs.overlays.additions
+      # outputs.overlays.alvr
       # outputs.overlays.bluray-playback
-      outputs.overlays.master-packages
+      # outputs.overlays.ffmpeg
       # outputs.overlays.modifications
       # outputs.overlays.python3PackagesOverlay
       # outputs.overlays.qtwebengine
       # outputs.overlays.quirc
+      # outputs.overlays.tmux-sessionizer
       inputs.niri-flake.overlays.niri
+      inputs.nur.overlays.default
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.master-packages
       outputs.overlays.snapper
       outputs.overlays.stable-packages
-      # outputs.overlays.tmux-sessionizer
       outputs.overlays.unstable-packages
     ];
 

@@ -278,6 +278,7 @@
           };
           modules = [
             # ./app-profiles/desktop/wms/sway
+            # inputs.nixos-cosmic.nixosModules.default
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/display-managers/greetd
             ./app-profiles/desktop/wms/hyprland
@@ -286,7 +287,6 @@
             ./hosts/ali-desktop/configuration.nix
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            # inputs.nixos-cosmic.nixosModules.default
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
@@ -319,17 +319,17 @@
             # ./app-profiles/desktop/wms/sway
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/display-managers/sddm
-            ./app-profiles/desktop/wms/plasma6
-            ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/local-k8s
+            ./app-profiles/desktop/wms/hyprland
+            ./app-profiles/desktop/wms/plasma6
             ./hosts/ali-laptop/configuration.nix
             chaotic.nixosModules.default
+            home-manager.nixosModules.home-manager
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
