@@ -240,6 +240,14 @@
       };
     };
 
+    udev = {
+      enable = true;
+
+      extraRules = ''
+        ACTION=="add", SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="low"
+      '';
+    };
+
     xserver = {
       videoDrivers = [
         "fbdev"
