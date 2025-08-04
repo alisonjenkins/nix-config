@@ -28,6 +28,7 @@
       cargo-make
       cargo-tarpaulin
       cargo-watch
+      checkov
       colima
       comma
       cowsay
