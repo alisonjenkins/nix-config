@@ -92,6 +92,7 @@
       statix
       tealdeer
       tektoncd-cli
+      terraform-docs
       terragrunt
       tig
       tilt
