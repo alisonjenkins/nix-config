@@ -95,6 +95,7 @@
       tektoncd-cli
       terraform-docs
       terragrunt
+      tflint
       tig
       tilt
       tmux
