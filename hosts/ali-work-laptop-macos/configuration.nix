@@ -77,6 +77,7 @@
       openssl
       packer
       parallel
+      pass
       pcre2
       pgcli
       pinentry_mac
