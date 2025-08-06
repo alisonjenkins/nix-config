@@ -501,13 +501,13 @@
     ];
 
     workspaces = {
-      "chat" = {};
-      "terminal" = {};
-      "browser" = {};
-      "game" = {};
-      "gaming" = {};
-      "obsidian" = {};
-      "passwordmanager" = {};
+      "01-chat".name = "chat";
+      "02-terminal".name = "terminal";
+      "03-browser".name = "browser";
+      "04-game".name = "game";
+      "05-gaming".name = "gaming";
+      "06-obsidian".name = "obsidian";
+      "07-passwordmanager".name = "passwordmanager";
     };
   };
 
