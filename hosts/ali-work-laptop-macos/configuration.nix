@@ -11,11 +11,11 @@
     systemPackages = with pkgs; [
       # cargo-lambda
       # gradle
+      (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
       aws-sam-cli
       aws-vault
       awscli2
-      azure-cli
       bacon
       bat
       btop
