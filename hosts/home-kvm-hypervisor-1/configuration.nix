@@ -1,6 +1,7 @@
 { pkgs
 , inputs
 , outputs
+, lib
 , ...
 }: {
   imports = [
@@ -169,32 +170,43 @@
   };
 
   virtualisation = {
-    libvirtd = {
+    libvirt = {
       enable = true;
 
-      # connections = {
-      #   "qemu:///system" = {
-      #     domains = [
-      #       {
-      #       }
-      #     ];
-      #
-      #     # networks = [
-      #     #   {
-      #     #
-      #     #   }
-      #     # ];
-      #
-      #     pools = [
-      #       {
-      #         definition = ./libvirtd/pools/default.xml;
-      #
-      #         # volumes = [
-      #         # ];
-      #       }
-      #     ];
-      #   };
-      # };
+      connections = {
+        "qemu:///system" = {
+          domains = [
+            {
+              active = true;
+              definition = pkgs.writeText "home-k8s-master-1.xml" (import ./libvirtd/domains/home-k8s-master-1.xml.nix{inherit pkgs;});
+            }
+            {
+              active = true;
+              definition = pkgs.writeText "home-storage-server-1.xml" (import ./libvirtd/domains/home-storage-server-1.xml.nix {inherit pkgs;});
+            }
+            {
+              active = true;
+              definition = pkgs.writeText "Unraid.xml" (import ./libvirtd/domains/Unraid.xml.nix {inherit pkgs;});
+            }
+          ];
+
+          networks = [
+            {
+              active = true;
+              definition = pkgs.writeText "kvm-networks.xml" (import ./libvirtd/networks/default.xml.nix);
+            }
+          ];
+
+          pools = [
+            {
+              definition = ./libvirtd/pools/default.xml;
+
+              # volumes = [
+              # ];
+            }
+          ];
+        };
+      };
     };
   };
 }

@@ -21,7 +21,7 @@
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.05";
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.05-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixvirt.url = "github:AshleyYakeley/NixVirt/v0.5.0";
+    nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
     rust-overlay.url = "github:oxalica/rust-overlay";
     stylix.url = "github:danth/stylix/release-25.05";
     tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";

@@ -1401,22 +1401,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-ovmf": {
-      "locked": {
-        "lastModified": 1708984720,
-        "narHash": "sha256-gJctErLbXx4QZBBbGp78PxtOOzsDaQ+yw1ylNQBuSUY=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "13aff9b34cc32e59d35c62ac9356e4a41198a538",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1751274312,
@@ -1610,16 +1594,16 @@
     },
     "nixpkgs_16": {
       "locked": {
-        "lastModified": 1708979614,
-        "narHash": "sha256-FWLWmYojIg6TeqxSnHkKpHu5SGnFP5um1uUjH+wRV6g=",
+        "lastModified": 1751274312,
+        "narHash": "sha256-/bVBlRpECLVzjV19t5KMdMFWSwKLtb5RyXdjz3LJT+g=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b7ee09cf5614b02d289cd86fcfa6f24d4e078c2a",
+        "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-23.11",
+        "ref": "nixos-24.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -1900,20 +1884,19 @@
     },
     "nixvirt": {
       "inputs": {
-        "nixpkgs": "nixpkgs_16",
-        "nixpkgs-ovmf": "nixpkgs-ovmf"
+        "nixpkgs": "nixpkgs_16"
       },
       "locked": {
-        "lastModified": 1712439808,
-        "narHash": "sha256-QoONoZPBpNTw5cia05QSvDlaxXo3moKAJQOw7c5hMXA=",
+        "lastModified": 1748140003,
+        "narHash": "sha256-DNBZmuk1YRM2PmwbHzVdXumRjCUzQkMarg4iI/37rOQ=",
         "owner": "AshleyYakeley",
         "repo": "NixVirt",
-        "rev": "9f1cdca730d92461075709e867c1e9ad93d58a8d",
+        "rev": "5dfe108fd859b122f9a96981cb6bc12297653d6c",
         "type": "github"
       },
       "original": {
         "owner": "AshleyYakeley",
-        "ref": "v0.5.0",
+        "ref": "v0.6.0",
         "repo": "NixVirt",
         "type": "github"
       }
