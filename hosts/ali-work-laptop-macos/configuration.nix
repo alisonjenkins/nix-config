@@ -185,6 +185,7 @@
       "soundsource"
       "uhk-agent"
       "utm"
+      "vagrant"
       "yed"
       "yubico-authenticator"
       "zoom"
