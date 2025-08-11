@@ -13,7 +13,6 @@
       # gradle
       (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
-      aws-sam-cli
       aws-vault
       awscli2
       bacon
@@ -102,6 +101,7 @@
       tmux
       typst
       typst-live
+      unstable.aws-sam-cli
       unstable.delve
       unstable.opentofu
       unstable.terraform
