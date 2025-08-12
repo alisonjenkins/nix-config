@@ -177,7 +177,6 @@
       "obs"
       "obsidian"
       "ollama"
-      "parallels"
       "rectangle"
       "rio"
       "scribus"
