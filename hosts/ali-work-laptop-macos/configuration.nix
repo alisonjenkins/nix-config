@@ -186,6 +186,7 @@
       "uhk-agent"
       "utm"
       "vagrant"
+      "windows-app"
       "yed"
       "yubico-authenticator"
       "zoom"
