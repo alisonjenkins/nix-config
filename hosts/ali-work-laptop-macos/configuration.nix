@@ -177,6 +177,7 @@
       "obs"
       "obsidian"
       "ollama"
+      "powershell"
       "rectangle"
       "rio"
       "scribus"
