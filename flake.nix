@@ -367,7 +367,6 @@
             inputs.lanzaboote.nixosModules.lanzaboote
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.nixos-cosmic.nixosModules.default
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
@@ -385,12 +384,6 @@
                   # gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
                   gitGPGSigningKey = "";
                 };
-            }
-            {
-              nix.settings = {
-                substituters = [ "https://cosmic.cachix.org/" ];
-                trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
-              };
             }
           ];
         };
