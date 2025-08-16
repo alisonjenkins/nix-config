@@ -365,6 +365,7 @@
             ./modules/development/web
             disko.nixosModules.disko
             inputs.lanzaboote.nixosModules.lanzaboote
+            inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-cosmic.nixosModules.default
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
