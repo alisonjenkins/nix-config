@@ -364,13 +364,13 @@
             ./hosts/ali-framework-laptop/configuration.nix
             ./modules/development/web
             disko.nixosModules.disko
+            home-manager.nixosModules.home-manager
             inputs.lanzaboote.nixosModules.lanzaboote
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
             {
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
