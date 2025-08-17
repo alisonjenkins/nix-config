@@ -306,45 +306,45 @@
           ];
         };
 
-        ali-laptop = lib.nixosSystem rec {
-          inherit system;
-          specialArgs = {
-            username = "ali";
-            inherit inputs;
-            inherit outputs;
-            inherit system;
-          };
-          modules = [
-            # ./app-profiles/desktop/display-managers/greetd
-            # ./app-profiles/desktop/wms/sway
-            ./app-profiles/desktop/aws
-            ./app-profiles/desktop/display-managers/sddm
-            ./app-profiles/desktop/local-k8s
-            ./app-profiles/desktop/wms/hyprland
-            ./app-profiles/desktop/wms/plasma6
-            ./hosts/ali-laptop/configuration.nix
-            chaotic.nixosModules.default
-            home-manager.nixosModules.home-manager
-            inputs.niri-flake.nixosModules.niri
-            inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.stylix.nixosModules.stylix
-            nur.modules.nixos.default
-            sops-nix.nixosModules.sops
-            {
-              home-manager.backupFileExtension = ".bak";
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
-              home-manager.extraSpecialArgs =
-                specialArgs
-                // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-                  gitGPGSigningKey = "AD723B26";
-                };
-            }
-          ];
-        };
+        # ali-laptop = lib.nixosSystem rec {
+        #   inherit system;
+        #   specialArgs = {
+        #     username = "ali";
+        #     inherit inputs;
+        #     inherit outputs;
+        #     inherit system;
+        #   };
+        #   modules = [
+        #     # ./app-profiles/desktop/display-managers/greetd
+        #     # ./app-profiles/desktop/wms/sway
+        #     ./app-profiles/desktop/aws
+        #     ./app-profiles/desktop/display-managers/sddm
+        #     ./app-profiles/desktop/local-k8s
+        #     ./app-profiles/desktop/wms/hyprland
+        #     ./app-profiles/desktop/wms/plasma6
+        #     ./hosts/ali-laptop/configuration.nix
+        #     chaotic.nixosModules.default
+        #     home-manager.nixosModules.home-manager
+        #     inputs.niri-flake.nixosModules.niri
+        #     inputs.nix-flatpak.nixosModules.nix-flatpak
+        #     inputs.stylix.nixosModules.stylix
+        #     nur.modules.nixos.default
+        #     sops-nix.nixosModules.sops
+        #     {
+        #       home-manager.backupFileExtension = ".bak";
+        #       home-manager.useGlobalPkgs = true;
+        #       home-manager.useUserPackages = true;
+        #       home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
+        #       home-manager.extraSpecialArgs =
+        #         specialArgs
+        #         // {
+        #           gitUserName = "Alison Jenkins";
+        #           gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+        #           gitGPGSigningKey = "AD723B26";
+        #         };
+        #     }
+        #   ];
+        # };
 
         ali-framework-laptop = lib.nixosSystem rec {
           inherit system;
