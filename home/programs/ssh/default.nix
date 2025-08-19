@@ -1,4 +1,8 @@
-{ pkgs, ... }: {
+{
+  primarySSHKey,
+  pkgs,
+  ...
+}: {
   home.file = {
     ".ssh/id_personal.pub.source" = {
       source = ./id_personal.pub;
@@ -60,7 +64,7 @@
 
         Host gitlab.com
           User git
-          IdentityFile ~/.ssh/id_personal.pub
+          IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
 
         Host home-kvm-hypervisor-1.lan
@@ -112,7 +116,7 @@
 
         Host github.com
           User alisonjenkins
-          IdentityFile ~/.ssh/id_personal.pub
+          IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
 
         Host cgithub.com
@@ -129,7 +133,7 @@
 
         Host ssh.dev.azure.com
           User git
-          IdentityFile ~/.ssh/id_civica_rsa.pub
+          IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
       '';
   };

@@ -197,6 +197,7 @@
                   gitGPGSigningKey = "~/.ssh/id_civica.pub";
                   gitUserName = "Alison Jenkins";
                   hostname = "${hostnames.civica}";
+                  primarySSHKey = "~/.ssh/id_civica.pub";
                 };
               }
             ];
@@ -244,6 +245,7 @@
             username = "ali";
             gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            primarySSHKey = "~/.ssh/id_personal.pub";
             gitGPGSigningKey = "";
           };
 	};
@@ -257,12 +259,13 @@
           ];
 
           extraSpecialArgs = {
-            inherit inputs;
-            inherit system;
-            username = "deck";
-            gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
+            gitUserName = "Alison Jenkins";
+            inherit inputs;
+            inherit system;
+            primarySSHKey = "~/.ssh/id_personal.pub";
+            username = "deck";
           };
         };
       };
@@ -298,9 +301,10 @@
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
-                  gitUserName = "Alison Jenkins";
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                  gitUserName = "Alison Jenkins";
+                  primarySSHKey = "~/.ssh/id_personal.pub";
                 };
             }
           ];
@@ -379,10 +383,11 @@
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
-                  gitUserName = "Alison Jenkins";
-                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   # gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                  gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "";
+                  gitUserName = "Alison Jenkins";
+                  primarySSHKey = "~/.ssh/id_personal.pub";
                 };
             }
           ];
@@ -420,9 +425,10 @@
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
-                  gitUserName = "Alison Jenkins";
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                  gitUserName = "Alison Jenkins";
+                  primarySSHKey = "~/.ssh/id_civica.pub";
                 };
             }
           ];
