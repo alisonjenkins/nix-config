@@ -39,7 +39,7 @@ jobs:
       #     purge-prefixes: cache-${{ runner.os }}-
       #     purge-created: 0
       #     purge-primary-key: never
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: cachix/cachix-action@v14
         with:
           name: ajenkins-public
