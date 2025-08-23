@@ -129,7 +129,6 @@
 
   nix = {
     package = pkgs.nixVersions.nix_2_22;
-    extraOptions = "experimental-features = nix-command flakes";
 
     gc = {
       automatic = true;
