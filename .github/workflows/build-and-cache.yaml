@@ -13,15 +13,14 @@ jobs:
       matrix:
         configuration:
           - .#nixosConfigurations.ali-desktop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-work-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-steam-deck.config.system.build.toplevel
           - .#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
+          - .#nixosConfigurations.ali-laptop.config.system.build.toplevel
+          - .#nixosConfigurations.ali-steam-deck.config.system.build.toplevel
+          - .#nixosConfigurations.dev-vm.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-master-1.config.system.build.toplevel
+          - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
           - .#nixosConfigurations.home-kvm-hypervisor-1.config.system.build.toplevel
           - .#nixosConfigurations.home-storage-server-1.config.system.build.toplevel
-          - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
-          - .#nixosConfigurations.dev-vm.config.system.build.toplevel
     permissions:
       contents: read
       id-token: write
