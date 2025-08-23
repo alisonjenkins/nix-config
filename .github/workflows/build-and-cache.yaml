@@ -27,7 +27,7 @@ jobs:
       id-token: write
     steps:
       - name: Set USER env variable
-        run: echo "USER=$USER" >> $GITHUB_ENV
+        run: echo "USER=runner" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: nixbuild/nix-quick-install-action@v29
       # - name: Restore and cache Nix store
