@@ -28,11 +28,10 @@
     bootspec.enableValidation = true;
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
+    # kernelPackages = pkgs.linuxPackages_cachyos-lto;
     # kernelPackages = pkgs.linuxPackages_cachyos;
-    # kernelPackages = pkgs.linuxPackages_latest;
-    # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
-    kernelPackages = pkgs.linuxPackages_cachyos-lto;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     initrd = {
       availableKernelModules = [ "r8169" ];
