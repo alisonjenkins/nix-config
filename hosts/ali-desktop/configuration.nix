@@ -11,7 +11,7 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
-      inherit inputs lib;
+      inherit inputs lib pkgs;
     })
     (import ../../modules/desktop {
       inherit inputs pkgs lib;

@@ -1,13 +1,14 @@
 { consoleKeyMap ? "us"
-, timezone ? "Europe/London"
-, enableMesaGit ? false
-, enablePlymouth ? true
-, enableOpenSSH ? true
 , enableIPv6 ? false
 , enableImpermanence ? false
+, enableMesaGit ? false
+, enableOpenSSH ? true
+, enablePlymouth ? true
 , imperpmanencePersistencePath ? builtins.toPath "/persistence"
 , inputs
 , lib
+, pkgs
+, timezone ? "Europe/London"
 , ...
 }: {
   imports = [
@@ -269,5 +270,11 @@
         ];
       };
     };
+
+    systemPackages = with pkgs; [
+      btop
+      htop
+      pciutils
+    ];
   };
 } else { })
