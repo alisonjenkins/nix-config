@@ -1,4 +1,5 @@
 { inputs
+, lib
 , outputs
 , pkgs
 , ...
@@ -6,7 +7,10 @@
   imports = [
     (import ../../modules/locale { })
     ../../app-profiles/server-base
-    (import ../../modules/base {enableImpermanence = true;})
+    (import ../../modules/base {
+      enableImpermanence = true;
+      inherit inputs lib;
+    })
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./hardware-configuration.nix
