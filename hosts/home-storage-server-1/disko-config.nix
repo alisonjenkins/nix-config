@@ -46,13 +46,40 @@
             content = {
               type = "filesystem";
               format = "ext4";
-              mountpoint = "/";
+              mountpoint = "/nix";
               mountOptions = [
                 "defaults"
               ];
             };
+            swap = {
+              size = "32G";
+              content = {
+                type = "swap";
+                discardPolicy = "both";
+                resumeDevice = true;
+              };
+            };
+            persistence = {
+              size = "32G";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/persistence";
+                mountOptions = [
+                  "defaults"
+                ];
+              };
+            };
           };
         };
+      };
+    };
+    nodev = {
+      "/" = {
+        fsType = "tmpfs";
+        mountOptions = [
+          "size=16G"
+        ];
       };
     };
   };

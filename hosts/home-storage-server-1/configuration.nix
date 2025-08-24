@@ -6,6 +6,7 @@
   imports = [
     (import ../../modules/locale { })
     ../../app-profiles/server-base
+    (import ../../modules/base {enableImpermanence = true;})
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./hardware-configuration.nix
