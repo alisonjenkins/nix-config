@@ -102,6 +102,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host home-storage-server-1.lan
+          user ali
+          HostName 192.168.1.97
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host hss1
           user ali
           HostName 192.168.1.97
