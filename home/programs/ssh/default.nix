@@ -104,13 +104,13 @@
 
         Host hss1
           user ali
-          HostName home-storage-server-1.lan
+          HostName 192.168.1.97
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host hss1-setup
           user nixos
-          HostName home-storage-server-1.lan
+          HostName 192.168.1.97
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
