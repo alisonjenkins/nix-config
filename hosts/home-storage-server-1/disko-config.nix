@@ -51,24 +51,24 @@
                 "defaults"
               ];
             };
-            swap = {
-              size = "32G";
-              content = {
-                type = "swap";
-                discardPolicy = "both";
-                resumeDevice = true;
-              };
+          };
+          swap = {
+            size = "32G";
+            content = {
+              type = "swap";
+              discardPolicy = "both";
+              resumeDevice = true;
             };
-            persistence = {
-              size = "32G";
-              content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = "/persistence";
-                mountOptions = [
-                  "defaults"
-                ];
-              };
+          };
+          persistence = {
+            size = "32G";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/persistence";
+              mountOptions = [
+                "defaults"
+              ];
             };
           };
         };

@@ -184,11 +184,11 @@
       hostKeys = [
         {
           bits = 4096;
-          path = "/etc/ssh/ssh_host_rsa_key";
+          path = "/etc/ssh/keys/ssh_host_rsa_key";
           type = "rsa";
         }
         {
-          path = "/etc/ssh/ssh_host_ed25519_key";
+          path = "/etc/ssh/keys/ssh_host_ed25519_key";
           type = "ed25519";
         }
       ];
@@ -213,7 +213,7 @@
           "/etc/NetworkManager/system-connections"
           "/etc/luks"
           "/etc/secureboot"
-          "/etc/ssh"
+          "/etc/ssh/keys"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
           "/var/lib/fprint"

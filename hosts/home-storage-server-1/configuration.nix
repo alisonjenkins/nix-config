@@ -1,4 +1,5 @@
-{ inputs
+{ config
+, inputs
 , lib
 , outputs
 , pkgs
@@ -28,31 +29,6 @@
     kernelParams = [
       "irqpoll"
     ];
-    loader = {
-      efi = {
-        efiSysMountPoint = "/boot";
-        canTouchEfiVariables = true;
-      };
-
-      grub = {
-        enable = true;
-        devices = [ "nodev" ];
-        efiInstallAsRemovable = false;
-        efiSupport = true;
-        useOSProber = true;
-        theme = pkgs.stdenv.mkDerivation {
-          pname = "distro-grub-themes";
-          version = "3.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "AdisonCavani";
-            repo = "distro-grub-themes";
-            rev = "v3.1";
-            hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
-          };
-          installPhase = "cp -r customize/nixos $out";
-        };
-      };
-    };
   };
 
   environment = {
@@ -103,21 +79,54 @@
     config.allowUnfree = true;
   };
 
+  # sops = {
+  #   defaultSopsFile = ../../secrets/main.enc.yaml;
+  #   defaultSopsFormat = "yaml";
+  #   age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+  #   secrets = {
+  #     # "myservice/my_subdir/my_secret" = {
+  #     #   mode = "0400";
+  #     #   owner = config.users.users.nobody.name;
+  #     #   group = config.users.users.nobody.group;
+  #     #   restartUnits = ["example.service"];
+  #     #   path = "/a/secret/path.yaml";
+  #     #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
+  # #     # };
+  # #     # home_enc_key = {
+  # #     #   format = "binary";
+  # #     #   group = config.users.users.nobody.group;
+  # #     #   mode = "0400";
+  # #     #   neededForUsers = true;
+  # #     #   owner = config.users.users.root.name;
+  # #     #   path = "/etc/luks/home.key";
+  # #     #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
+  # #     # };
+  #   };
+  # };
+
   system = {
     stateVersion = "24.05";
   };
 
   security = {
-    sudo = {
-      wheelNeedsPassword = false;
+    sudo-rs = {
+      wheelNeedsPassword = lib.mkForce false;
     };
   };
 
-  users.users.ali = {
-    isNormalUser = true;
-    description = "Alison Jenkins";
-    initialPassword = "initPw!";
-    extraGroups = [ "docker" "networkmanager" "wheel" ];
-    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+  users = {
+    users = {
+      ali = {
+        description = "Alison Jenkins";
+        extraGroups = [ "docker" "networkmanager" "wheel" ];
+        # hashedPasswordFile = config.sops.secrets.ali.path;
+        initialPassword = "initPw!";
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+      };
+      root = {
+        hashedPasswordFile = "/persistence/passwords/root";
+      };
+    };
   };
 }
