@@ -557,9 +557,10 @@
             inherit system;
           };
           modules = [
-            disko.nixosModules.disko
-            ./hosts/home-storage-server-1/disko-config.nix
             ./hosts/home-storage-server-1/configuration.nix
+            ./hosts/home-storage-server-1/disko-config.nix
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
             # home-manager.nixosModules.home-manager
             # {
             #   home-manager.useGlobalPkgs = true;
