@@ -33,11 +33,11 @@
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
     # kernelPackages = pkgs.linuxPackages_cachyos-lto;
-    # kernelPackages = pkgs.linuxPackages_latest;
+    # kernelPackages = pkgs.linuxPackages_cachyos;
+    # kernelPackages = pkgs.linuxPackages_testing;
     # kernelPackages = pkgs.linuxPackages_xanmod;
     # kernelPackages = pkgs.linuxPackages_zen;
-    # kernelPackages = pkgs.linuxPackages_cachyos;
-    kernelPackages = pkgs.linuxPackages_testing;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     kernelParams = [
       # "mem_sleep_default=deep"
