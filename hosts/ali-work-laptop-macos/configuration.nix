@@ -74,6 +74,7 @@
       nodejs
       nushell
       openssl
+      oxker
       packer
       parallel
       pass
