@@ -42,7 +42,6 @@
     "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1";
     "/media/disks/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1";
     "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1".device = "/dev/disk/by-id/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1";
-    "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part2".device = "/dev/disk/by-id/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part2";
     "/media/disks/ata-ST3000DM008-2DM166_Z5057TK6-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057TK6-part1";
     "/media/disks/ata-ST3000DM008-2DM166_Z5057WSB-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057WSB-part1";
     "/media/disks/ata-ST31500341AS_9VS21EM9-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21EM9-part1";
