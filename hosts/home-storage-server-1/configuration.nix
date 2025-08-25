@@ -18,10 +18,7 @@
   ];
 
   console.keyMap = "us";
-  networking.hostName = "home-storage-server-1";
-  networking.networkmanager.enable = true;
   programs.zsh.enable = true;
-  services.logrotate.checkConfig = false;
   time.timeZone = "Europe/London";
 
   boot = {
@@ -44,6 +41,21 @@
         "\${HOME}/.local/bin"
         "\${HOME}/.config/rofi/scripts"
       ];
+    };
+  };
+
+  networking = {
+    hostName = "home-storage-server-1";
+    networkmanager.enable = true;
+
+    firewall = {
+      enable = true;
+      allowPing = true;
+
+      allowedTCPPorts = [
+        22
+      ];
+      allowedUDPPorts = [];
     };
   };
 
@@ -78,6 +90,29 @@
     ];
 
     config.allowUnfree = true;
+  };
+
+  services = {
+    logrotate.checkConfig = false;
+    samba = {
+      enable = true;
+      openFirewall = true;
+
+      settings = {
+        "storage" = {
+          path = "/media/storage";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "ali";
+        };
+      };
+    };
+
+    samba-wsdd = {
+      enable = true;
+      openFirewall = true;
+    };
   };
 
   # sops = {
