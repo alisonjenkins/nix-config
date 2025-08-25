@@ -275,6 +275,7 @@
       btop
       htop
       pciutils
+      yazi
     ];
   };
 } else { })
