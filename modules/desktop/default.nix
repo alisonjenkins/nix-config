@@ -145,6 +145,7 @@
       oxker
       pciutils
       playerctl
+      posting
       powertop
       unstable.easyeffects
       unstable.mission-center
