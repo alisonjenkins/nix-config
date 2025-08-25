@@ -36,6 +36,7 @@
 
     systemPackages = with pkgs; [
       parted
+      xfsprogs
     ];
 
     variables = {
