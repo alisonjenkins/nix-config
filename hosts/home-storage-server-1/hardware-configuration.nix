@@ -57,6 +57,22 @@
     "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
     # ata-TOSHIBA_MG08ACA16TE_7190A01VFVGG-part1 -> ../../sds # need to encrypt
     # ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1 -> ../../sdq # need to encrypt
+
+    "/media/storage" = {
+      device = "/media/disks/*";
+      fsType = "fuse.mergerfs";
+      options = [
+        "allow_other"
+        "cache.files=off"
+        "defaults"
+        "dropcacheonclose=true"
+        "fsname=mergerf"
+        "minfreespace=200G"
+        "moveonenospc=true"
+        "nonempty"
+        "use_ino"
+      ];
+    };
   };
 
   swapDevices = [
