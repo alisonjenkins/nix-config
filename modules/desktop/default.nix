@@ -142,6 +142,7 @@
       gamescopeConfig
       hicolor-icon-theme
       inputs.caelestia-cli.packages.${system}.default
+      oxker
       pciutils
       playerctl
       powertop
