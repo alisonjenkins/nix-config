@@ -237,6 +237,12 @@
             mode = "0700";
           }
           {
+            directory = "/var/lib/samba";
+            user = "root";
+            group = "root";
+            mode = "0700";
+          }
+          {
             directory = "/var/lib/private/ollama";
             user = "ollama";
             group = "ollama";
