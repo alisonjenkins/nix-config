@@ -94,6 +94,7 @@
 
   services = {
     logrotate.checkConfig = false;
+
     samba = {
       enable = true;
       openFirewall = true;
