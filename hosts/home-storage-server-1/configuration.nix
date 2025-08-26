@@ -113,6 +113,35 @@
       enable = true;
       openFirewall = true;
     };
+
+    snapraid = let
+      dataDisks = lib.attrsets.filterAttrs (mountPoint: diskOptions:
+        lib.strings.hasPrefix "/media/disks" mountPoint
+      ) config.fileSystems;
+
+      parityDisks = lib.attrsets.filterAttrs (mountPoint: diskOptions:
+        lib.strings.hasPrefix "/media/parity" mountPoint
+      ) config.fileSystems;
+
+      contentFilesOpt = lib.lists.map (item: "${item}/snapraid.content") ((builtins.attrNames dataDisks) ++ (builtins.attrNames parityDisks));
+      parityFilesOpt = lib.lists.map (item: "${item}/snapraid.parity") (builtins.attrNames parityDisks);
+
+      dataDisksOpt = builtins.map (mountPoint:
+        let
+          diskName = lib.strings.replaceStrings ["/media/disks/"] [""] mountPoint;
+        in
+        {
+          name = diskName;
+          value = mountPoint;
+        }
+      ) (builtins.attrNames dataDisks);
+    in {
+      enable = true;
+
+      contentFiles = contentFilesOpt;
+      dataDisks = (builtins.listToAttrs dataDisksOpt);
+      parityFiles = parityFilesOpt;
+    };
   };
 
   # sops = {
