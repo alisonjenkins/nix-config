@@ -100,6 +100,17 @@
       openFirewall = true;
 
       settings = {
+        global = {
+          "aio read size" = "16384";
+          "aio write size" = "16384";
+          "getwd cache" = "yes";
+          "oplocks" = "yes";
+          "read raw" = "yes";
+          "socket options" = "TCP_NODELAY IPTOS_LOWDELAY SO_RCVBUF=131072 SO_SNDBUF=131072";
+          "use sendfile" = "yes";
+          "write raw" = "yes";
+        };
+
         "storage" = {
           path = "/media/storage";
           browseable = "yes";
