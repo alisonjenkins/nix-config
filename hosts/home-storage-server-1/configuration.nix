@@ -114,6 +114,13 @@
           "guest ok" = "no";
           "valid users" = "privoxy";
         };
+        "media" = {
+          path = "/media/storage/media";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "ali jellyfin";
+        };
       };
     };
 
