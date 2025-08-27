@@ -195,6 +195,11 @@
   };
 
   users = {
+    groups = {
+      jellyfin = {};
+      privoxy = {};
+    };
+
     users = {
       ali = {
         description = "Alison Jenkins";
@@ -203,6 +208,18 @@
         initialPassword = "initPw!";
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+      };
+      jellyfin = {
+        description = "Jellyfin user";
+        group = "jellyfin";
+        hashedPasswordFile = "/persistence/passwords/jellyfin";
+        isNormalUser = true;
+      };
+      privoxy = {
+        description = "Privoxy user";
+        group = "privoxy";
+        hashedPasswordFile = "/persistence/passwords/privoxy";
+        isNormalUser = true;
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
