@@ -107,6 +107,13 @@
           "guest ok" = "no";
           "valid users" = "ali";
         };
+        "k8s-storage" = {
+          path = "/media/storage/k8s-storage";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "privoxy";
+        };
       };
     };
 
