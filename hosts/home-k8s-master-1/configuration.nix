@@ -50,6 +50,12 @@
     };
   };
 
+  security = {
+    sudo-rs = {
+      wheelNeedsPassword = lib.mkForce false;
+    };
+  };
+
   services = {
     openssh = {
       enable = true;
