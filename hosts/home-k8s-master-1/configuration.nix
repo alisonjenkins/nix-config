@@ -10,19 +10,16 @@
     (import ../../modules/locale { })
     (modulesPath + "/installer/scan/not-detected.nix")
     (modulesPath + "/profiles/qemu-guest.nix")
+    (import ../../modules/base {
+      enableImpermanence = false;
+      inherit inputs lib pkgs;
+    })
     ./disk-config.nix
   ];
 
-  boot.loader.grub = {
-    efiSupport = true;
-    efiInstallAsRemovable = true;
-  };
-
   environment.systemPackages = map lib.lowPrio [
-    inputs.ali-neovim.packages.${system}.nvim
     pkgs.curl
     pkgs.gitMinimal
-    pkgs.htop
   ];
 
   networking = {
@@ -50,12 +47,6 @@
     settings = {
       auto-optimise-store = false;
       trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
-  security = {
-    sudo = {
-      wheelNeedsPassword = false;
     };
   };
 
