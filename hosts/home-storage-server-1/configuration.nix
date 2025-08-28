@@ -168,10 +168,6 @@
       dataDisks = (builtins.listToAttrs dataDisksOpt);
       parityFiles = parityFilesOpt;
     };
-
-    tailscale = {
-      enable = true;
-    };
   };
 
   # sops = {

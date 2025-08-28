@@ -88,10 +88,6 @@
           # };
         };
     };
-
-    tailscale = {
-      enable = true;
-    };
   };
 
   sops = {

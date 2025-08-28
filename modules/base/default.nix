@@ -200,6 +200,10 @@
         PermitRootLogin = "no";
       };
     };
+
+    tailscale = {
+      enable = true;
+    };
   };
 
   zramSwap = {
@@ -243,6 +247,12 @@
             mode = "0700";
           }
           {
+            directory = "/var/lib/tailscale";
+            user = "root";
+            group = "root";
+            mode = "0700";
+          }
+          {
             directory = "/var/lib/private/ollama";
             user = "ollama";
             group = "ollama";
@@ -281,6 +291,7 @@
       btop
       htop
       pciutils
+      tailscale
       yazi
     ];
   };
