@@ -125,6 +125,16 @@
     };
   };
 
+  environment = {
+    systemPackages = with pkgs; [
+      btop
+      htop
+      pciutils
+      tailscale
+      yazi
+    ];
+  };
+
   networking = {
     enableIPv6 = enableIPv6;
 
@@ -209,6 +219,7 @@
   zramSwap = {
     enable = true;
   };
+
 } // (if enableImpermanence then {
   environment = {
     persistence = {
@@ -286,13 +297,5 @@
         ];
       };
     };
-
-    systemPackages = with pkgs; [
-      btop
-      htop
-      pciutils
-      tailscale
-      yazi
-    ];
   };
 } else { })
