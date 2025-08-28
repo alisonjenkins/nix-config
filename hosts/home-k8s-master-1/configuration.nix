@@ -81,13 +81,16 @@
         "--write-kubeconfig-mode \"0400\""
       ];
 
-
       manifests =
         {
           # cilium = {
           #   source = ../../k8s-setup/cilium-hr.yaml;
           # };
         };
+    };
+
+    tailscale = {
+      enable = true;
     };
   };
 
