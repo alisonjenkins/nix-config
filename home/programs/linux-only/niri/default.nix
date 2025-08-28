@@ -264,6 +264,7 @@
 
       touchpad = {
         middle-emulation = true;
+        natural-scroll = false;
         tap = true;
       };
     };
