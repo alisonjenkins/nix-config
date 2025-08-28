@@ -247,6 +247,8 @@
     };
 
     input = {
+      workspace-auto-back-and-forth = true;
+
       warp-mouse-to-focus = {
         enable = true;
       };
