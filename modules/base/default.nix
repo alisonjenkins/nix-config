@@ -287,6 +287,12 @@
             group = "root";
             mode = "u=rwx,g=rx,o=";
           }
+          {
+            directory = "/etc/cachix";
+            user = "root";
+            group = "root";
+            mode = "u=rwx,g=,o=";
+          }
         ];
         files = [
           "/etc/machine-id"
