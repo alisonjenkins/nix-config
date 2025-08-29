@@ -8,6 +8,10 @@
     # ../../app-profiles/server-base/luks-tor-unlock
     (import ../../modules/locale { })
     (import ../../app-profiles/kvm-server {inherit pkgs;})
+    (import ../../modules/base {
+      enableImpermanence = false;
+      inherit inputs lib pkgs;
+    })
     ../../app-profiles/server-base
     ./hardware-configuration.nix
   ];
@@ -37,25 +41,6 @@
 
     loader = {
       efi.efiSysMountPoint = "/boot";
-
-      grub = {
-        enable = true;
-        devices = [ "nodev" ];
-        efiInstallAsRemovable = true;
-        efiSupport = true;
-        useOSProber = true;
-        theme = pkgs.stdenv.mkDerivation {
-          pname = "distro-grub-themes";
-          version = "3.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "AdisonCavani";
-            repo = "distro-grub-themes";
-            rev = "v3.1";
-            hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
-          };
-          installPhase = "cp -r customize/nixos $out";
-        };
-      };
     };
   };
 
@@ -74,7 +59,7 @@
 
   networking = {
     hostName = "home-kvm-hypervisor-1";
-    networkmanager.enable = false;
+    networkmanager.enable = lib.mkForce false;
     useDHCP = false;
   };
 
@@ -123,8 +108,8 @@
   };
 
   security = {
-    sudo = {
-      wheelNeedsPassword = false;
+    sudo-rs = {
+      wheelNeedsPassword = lib.mkForce false;
     };
   };
 
