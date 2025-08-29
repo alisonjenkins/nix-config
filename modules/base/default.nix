@@ -14,7 +14,7 @@
   imports = [
     inputs.chaotic.nixosModules.default
     inputs.impermanence.nixosModules.impermanence
-  ] ++ lib.optional (builtins.fileExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
+  ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
   console.keyMap = consoleKeyMap;
 
