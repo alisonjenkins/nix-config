@@ -288,7 +288,7 @@
             mode = "u=rwx,g=rx,o=";
           }
           {
-            directory = "/etc/cachix";
+            directory = "/etc/nixos/cachix";
             user = "root";
             group = "root";
             mode = "u=rwx,g=,o=";
