@@ -120,6 +120,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ts-hss1
+          user ali
+          HostName home-storage-server-1.tail476348.ts.net
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host hss1-setup
           user nixos
           HostName 192.168.1.97
