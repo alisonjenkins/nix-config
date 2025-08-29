@@ -96,6 +96,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ts-hk8m1
+          user ali
+          HostName home-k8s-master-1.tail476348.ts.net
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host hk8m1-setup
           user nixos
           HostName home-k8s-master-1.lan
