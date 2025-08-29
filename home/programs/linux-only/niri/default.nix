@@ -242,7 +242,6 @@
     };
 
     environment = {
-      DISPLAY  = ":0";
       ELECTRON_OZONE_PLATFORM_HINT = "auto";
     };
 
@@ -316,8 +315,7 @@
     ];
 
     spawn-at-startup = [
-      { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"]; }
-      { command = ["xwayland-satellite"]; }
+      { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY"]; }
       { command = ["1password"]; }
       { command = ["mako"]; }
       { command = ["swww-daemon"]; }
