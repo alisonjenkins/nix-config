@@ -78,6 +78,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ts-hkh1
+          user ali
+          HostName home-kvm-hypervisor-1.tail476348.ts.net
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host hkh1-setup
           user nixos
           HostName home-kvm-hypervisor-1.lan
