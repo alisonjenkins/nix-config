@@ -10,6 +10,8 @@
     (import ../../app-profiles/kvm-server {inherit pkgs;})
     (import ../../modules/base {
       enableImpermanence = false;
+      useGrub = true;
+      useSystemdBoot = false;
       inherit inputs lib pkgs;
     })
     ../../app-profiles/server-base
@@ -37,10 +39,6 @@
         "mt7921e"
         "r8169"
       ];
-    };
-
-    loader = {
-      efi.efiSysMountPoint = "/boot";
     };
   };
 

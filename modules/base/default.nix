@@ -4,6 +4,8 @@
 , enableMesaGit ? false
 , enableOpenSSH ? true
 , enablePlymouth ? true
+, useSystemdBoot ? true
+, useGrub ? false
 , imperpmanencePersistencePath ? builtins.toPath "/persistence"
 , inputs
 , lib
@@ -111,13 +113,35 @@
         efiSysMountPoint = "/boot";
       };
 
-      systemd-boot = {
+    } // (if useGrub then {
+      grub = {
+        devices = [ "nodev" ];
+        efiInstallAsRemovable = false;
+        efiSupport = true;
         enable = true;
+        useOSProber = true;
+
+        theme = pkgs.stdenv.mkDerivation {
+          pname = "distro-grub-themes";
+          version = "3.1";
+          src = pkgs.fetchFromGitHub {
+            owner = "AdisonCavani";
+            repo = "distro-grub-themes";
+            rev = "v3.1";
+            hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
+          };
+          installPhase = "cp -r customize/nixos $out";
+        };
+      };
+    } else {})
+    // (if useSystemdBoot then {
+      systemd-boot = {
         consoleMode = "auto";
+        enable = true;
         memtest86.enable = true;
         netbootxyz.enable = true;
       };
-    };
+    } else {});
   };
 
   chaotic = {
