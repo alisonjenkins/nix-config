@@ -132,6 +132,7 @@
       cachix
       htop
       pciutils
+      rush-parallel
       tailscale
       yazi
     ];
