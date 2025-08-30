@@ -145,6 +145,7 @@
       oxker
       pciutils
       playerctl
+      popsicle
       posting
       powertop
       unstable.easyeffects
