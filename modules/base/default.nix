@@ -157,7 +157,7 @@
       htop
       pciutils
       rush-parallel
-      tailscale
+      unstable.tailscale
       yazi
     ];
   };
@@ -240,6 +240,7 @@
 
     tailscale = {
       enable = true;
+      package = pkgs.unstable.tailscale;
     };
   };
 
