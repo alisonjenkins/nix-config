@@ -649,6 +649,15 @@
               };
             };
           };
+          ali-work-laptop = {
+            hostname = "ali-work-laptop.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-work-laptop;
+              };
+            };
+          };
           # ali-steam-deck = {
           #   hostname = "aliju-steam-deck.lan";
           #   profiles = {
