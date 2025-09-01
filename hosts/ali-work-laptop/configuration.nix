@@ -13,18 +13,51 @@
   ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_zen;
-
-    loader = {
-      efi.efiSysMountPoint = "/boot";
-      grub = {
-        enable = true;
-        devices = [ "nodev" ];
-        efiInstallAsRemovable = true;
-        efiSupport = true;
-        useOSProber = true;
-      };
-    };
+    kernelPackages = pkgs.linuxPackages_testing;
+    kernelPatches = [
+      {
+        name = "amd-isp-capture";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/990-amd-isp-capture.patch";
+          hash = "sha256-hzvVdSbcYCzXNXvItins4inOL44ukMhSDgw6Pea1Dlw=";
+        });
+      }
+      {
+        name = "amd-ll-isp4";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/991-amd-ll-isp4.patch";
+          hash = "sha256-DPBtLkjuQdjT3gfL96gsIs2+jt6y6OZ2TWgv3DQ8u7A=";
+        });
+      }
+      {
+        name = "isp4-fw-hw-interface";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/992-isp4-fw-hw-interface.patch";
+          hash = "sha256-9mIW23NQ4qOpl1HZ7JESHZiDqCNSZY1QwbAlW0I5XNs=";
+        });
+      }
+      {
+        name = "isp4-firmware-loading";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/993-isp4-firmware-loading.patch";
+          hash = "sha256-VTRYyCQDhfB3iCWNp04w8NX7dTnJel2mDbxBBWGQ54k=";
+        });
+      }
+      {
+        name = "isp4-video-node";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/994-isp4-video-node.patch";
+          hash = "sha256-+K+9uIRMlo58xEyIBmyfNDdKYDPOTTxH7WaWoS7lVVo=";
+        });
+      }
+      {
+        name = "isp4-debug";
+        patch = (pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/nekinie/linux-g1a/refs/heads/main/995-isp4-debug.patch";
+          hash = "sha256-EQpkyNWDu+ghWKebmENgRwCjM8tB4pHuX4msmUna5Io=";
+        });
+      }
+    ];
   };
 
   console.keyMap = "us";
