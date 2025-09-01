@@ -89,6 +89,10 @@
       ];
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     };
+
+    systemPackages = with pkgs; [
+      slack
+    ];
   };
 
   hardware = {
