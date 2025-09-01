@@ -64,6 +64,19 @@
   #   ffmpeg = inputs.nixpkgs_stable.legacyPackages.${final.system}.ffmpeg;
   # };
 
+  linux-firmware = final: _prev: {
+    linux-firmware = _prev.linux-firmware.overrideAttrs (oldAttrs: {
+      version = "20250829";
+
+      src = pkgs.fetchFromGitLab {
+        owner = "kernel-firmware";
+        repo = "linux-firmware";
+        rev = "993ff19b553cd4d252fdf99f07c28825ef57b862";
+        hash = "sha256-hGCD4TleyJB+uPuyDI8vAx1gRI9sL9LWnQuH+FyOad8=";
+      };
+    });
+  };
+
   tmux-sessionizer = final: _prev: {
     tmux-sessionizer = inputs.tmux-sessionizer.packages.${system}.default;
   };
