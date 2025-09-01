@@ -6,10 +6,26 @@
 , ...
 }: {
   imports = [
-    # ../../app-profiles/desktop
-    (import ../../modules/locale { })
+    ../../app-profiles/desktop
+    ../../app-profiles/desktop/kwallet
     ../../app-profiles/hardware/touchpad
+    ./disko-config.nix
     ./hardware-configuration.nix
+
+    (import ../../modules/ollama)
+    (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
+    (import ../../modules/locale { })
+    (import ../../modules/libvirtd { inherit pkgs; })
+    (import ../../modules/printing { inherit pkgs; })
+
+    (import ../../modules/desktop {
+      inherit inputs pkgs lib;
+    })
+    (import ../../modules/base {
+      enableImpermanence = true;
+      impermanencePersistencePath = builtins.toPath "/persistence";
+      inherit inputs lib pkgs;
+    })
   ];
 
   boot = {
@@ -145,26 +161,6 @@
       enable = true;
     };
 
-    tlp = {
-      enable = false;
-      settings = {
-        CPU_SCALING_GOVERNOR_ON_AC = "performance";
-        CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-
-        CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-        CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
-
-        CPU_MIN_PERF_ON_AC = 0;
-        CPU_MAX_PERF_ON_AC = 100;
-        CPU_MIN_PERF_ON_BAT = 0;
-        CPU_MAX_PERF_ON_BAT = 20;
-
-        #Optional helps save long term battery health
-        START_CHARGE_THRESH_BAT0 = 40; # below this percentage it starts to charge
-        STOP_CHARGE_THRESH_BAT0 = 95; # above this percentage it stops charging
-      };
-    };
-
     xserver = {
       videoDrivers = [
         "fbdev"
@@ -176,61 +172,6 @@
       };
     };
   };
-
-  stylix =
-    let
-      wallpaper = pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
-        hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
-      };
-    in
-    {
-      base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
-      enable = true;
-      image = wallpaper;
-      polarity = "dark";
-
-      cursor = {
-        package = pkgs.material-cursors;
-        name = "material_light_cursors";
-      };
-
-      fonts = {
-        serif = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        sansSerif = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        monospace = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        emoji = {
-          package = pkgs.noto-fonts-color-emoji;
-          name = "Noto Color Emoji";
-        };
-      };
-
-      opacity = {
-        desktop = 0.0;
-        terminal = 0.9;
-      };
-
-      targets = {
-        nixvim = {
-          transparentBackground = {
-            main = true;
-            signColumn = true;
-          };
-        };
-      };
-    };
 
   system = {
     stateVersion = "24.05";
