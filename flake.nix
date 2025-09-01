@@ -394,7 +394,7 @@
         };
 
         ali-work-laptop = lib.nixosSystem rec {
-          system = "aarch64-linux";
+          inherit system;
           specialArgs = {
             username = "ali";
             inherit inputs;
@@ -402,20 +402,18 @@
             inherit system;
           };
           modules = [
-            # ./app-profiles/desktop/display-managers/sddm
             ./app-profiles/desktop/aws
             ./app-profiles/desktop/display-managers/greetd-regreet
             ./app-profiles/desktop/local-k8s
             ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/wms/plasma6
-            ./app-profiles/desktop/wms/sway
             ./hosts/ali-work-laptop/configuration.nix
             ./hosts/ali-work-laptop/disko-config.nix
+            ./modules/development/web
             disko.nixosModules.disko
             home-manager.nixosModules.home-manager
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.stylix.nixosModules.stylix
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
