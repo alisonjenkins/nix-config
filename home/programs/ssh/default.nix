@@ -138,6 +138,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ali-worklaptop-setup
+          user nixos
+          HostName 192.168.0.70
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host github.com
           User alisonjenkins
           IdentityFile ${primarySSHKey}
