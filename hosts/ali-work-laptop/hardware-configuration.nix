@@ -22,15 +22,15 @@
     "/".neededForBoot = true;
     "/nix".neededForBoot = true;
     "/persistence".neededForBoot = true;
-    "/media/storage" = {
-      label = "storage";
-      fsType = "ext4";
-      neededForBoot = false;
-    };
+    # "/media/storage" = {
+    #   label = "storage";
+    #   fsType = "ext4";
+    #   neededForBoot = false;
+    # };
   };
 
   swapDevices = [
-    { device = "/dev/osvg/swap"; }
+    { device = "/dev/pool/swap"; }
   ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
