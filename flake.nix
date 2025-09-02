@@ -684,6 +684,15 @@
           #     };
           #   };
           # };
+          download-server-1 = {
+            hostname = "download-server-1.lan";
+            profiles = {
+              system = {
+                user = "root";
+                path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.download-server-1;
+              };
+            };
+          };
           home-kvm-hypervisor-1 = {
             hostname = "home-kvm-hypervisor-1.lan";
             profiles = {
