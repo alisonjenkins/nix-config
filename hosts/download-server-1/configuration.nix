@@ -14,6 +14,7 @@
     })
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
+    ./disko-config.nix
     ./hardware-configuration.nix
   ];
 
