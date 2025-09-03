@@ -94,6 +94,7 @@
       outputs.overlays.snapper
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionizer
+      outputs.overlays.unstable-packages
     ];
 
     config.allowUnfree = true;
