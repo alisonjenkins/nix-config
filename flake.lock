@@ -1955,6 +1955,28 @@
         "type": "gitlab"
       }
     },
+    "noctalia": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs_unstable"
+        ],
+        "quickshell": "quickshell",
+        "systems": "systems_10"
+      },
+      "locked": {
+        "lastModified": 1756936262,
+        "narHash": "sha256-cYRAG8XDXwbXVkc++Uq5rkOW5saUXvlltegxvys+N3k=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia-shell",
+        "rev": "3ba6899e695730b2c0726da95298488d67cabe10",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "repo": "noctalia-shell",
+        "type": "github"
+      }
+    },
     "nur": {
       "inputs": {
         "flake-parts": "flake-parts_5",
@@ -2111,6 +2133,27 @@
     "quickshell": {
       "inputs": {
         "nixpkgs": [
+          "noctalia",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1753595452,
+        "narHash": "sha256-vqkSDvh7hWhPvNjMjEDV4KbSCv2jyl2Arh73ZXe274k=",
+        "ref": "refs/heads/master",
+        "rev": "a5431dd02dc23d9ef1680e67777fed00fe5f7cda",
+        "revCount": 665,
+        "type": "git",
+        "url": "https://git.outfoxxed.me/outfoxxed/quickshell"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.outfoxxed.me/outfoxxed/quickshell"
+      }
+    },
+    "quickshell_2": {
+      "inputs": {
+        "nixpkgs": [
           "nixpkgs"
         ]
       },
@@ -2157,9 +2200,10 @@
         "nixpkgs_stable_darwin": "nixpkgs_stable_darwin",
         "nixpkgs_unstable": "nixpkgs_unstable",
         "nixvirt": "nixvirt",
+        "noctalia": "noctalia",
         "nur": "nur",
         "plasma-manager": "plasma-manager",
-        "quickshell": "quickshell",
+        "quickshell": "quickshell_2",
         "rust-overlay": "rust-overlay_5",
         "sops-nix": "sops-nix",
         "stylix": "stylix",
@@ -2333,7 +2377,7 @@
         "gnome-shell": "gnome-shell",
         "nixpkgs": "nixpkgs_19",
         "nur": "nur_2",
-        "systems": "systems_10",
+        "systems": "systems_11",
         "tinted-foot": "tinted-foot",
         "tinted-kitty": "tinted-kitty",
         "tinted-schemes": "tinted-schemes",
@@ -2371,6 +2415,21 @@
       }
     },
     "systems_10": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_11": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

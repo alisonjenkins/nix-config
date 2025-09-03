@@ -1,15 +1,17 @@
 { pkgs, inputs, system, config, ... }: {
-  home.packages =  if pkgs.stdenv.isLinux then [
+  home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
+    # mako
+    # swaybg
+    # swww
+    # waybar
+    fuzzel
+    inputs.noctalia.packages.${system}.default
     inputs.quickshell.packages.${system}.default
-    pkgs.fuzzel
-    pkgs.mako
-    pkgs.nautilus
-    pkgs.swaybg
-    pkgs.swaylock
-    pkgs.swww
-    pkgs.unstable.wlr-which-key
-    pkgs.waybar
-    pkgs.xwayland-satellite
+    nautilus
+    swaylock
+    unstable.wlr-which-key
+    wlsunset
+    xwayland-satellite
   ] else [];
 
   programs.niri.settings = {
@@ -316,11 +318,12 @@
 
     spawn-at-startup = [
       { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY"]; }
+      { command = ["noctalia-shell"]; }
       { command = ["1password"]; }
-      { command = ["mako"]; }
-      { command = ["swww-daemon"]; }
-      { command = ["waybar"]; }
-      { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
+      # { command = ["mako"]; }
+      # { command = ["swww-daemon"]; }
+      # { command = ["waybar"]; }
+      # { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
     ];
 
     switch-events = {
