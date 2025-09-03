@@ -48,6 +48,14 @@
     };
   };
 
+  _1password-gui = final: prev: {
+    _1password-gui = prev._1password-gui.overrideAttrs (_old: {
+      postFixup = ''
+      wrapProgram $out/bin/1password --set ELECTRON_OZONE_PLATFORM_HINT x11
+      '';
+    });
+  };
+
   _7zz = final: _prev: {
     _7zz = inputs.nixpkgs_stable.legacyPackages.${final.system}._7zz;
   };
