@@ -142,21 +142,6 @@
   security.rtkit.enable = true;
 
   services = {
-    auto-cpufreq = {
-      enable = true;
-
-      settings = {
-        battery = {
-          governor = "powersave";
-          turbo = "never";
-        };
-        charger = {
-          governor = "performance";
-          turbo = "auto";
-        };
-      };
-    };
-
     pulseaudio = {
       enable = false;
     };
@@ -168,7 +153,13 @@
       pulse.enable = true;
     };
 
-    power-profiles-daemon.enable = lib.mkForce false;
+    power-profiles-daemon = {
+      enable = lib.mkForce true;
+    };
+
+    tlp = {
+      enable = lib.mkForce false;
+    };
 
     thermald = {
       enable = true;
