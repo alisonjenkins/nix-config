@@ -5,6 +5,7 @@
 , enableOpenSSH ? true
 , enablePlymouth ? true
 , useSystemdBoot ? true
+, useSecureBoot ? false
 , useGrub ? false
 , imperpmanencePersistencePath ? builtins.toPath "/persistence"
 , inputs
@@ -16,6 +17,7 @@
   imports = [
     inputs.chaotic.nixosModules.default
     inputs.impermanence.nixosModules.impermanence
+    inputs.lanzaboote.nixosModules.lanzaboote
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
   console.keyMap = consoleKeyMap;
@@ -142,7 +144,14 @@
         netbootxyz.enable = true;
       };
     } else {});
-  };
+  } // (if useSecureBoot then {
+    loader.systemd-boot.enable = lib.mkForce false;
+
+    lanzaboote = {
+      enable = true;
+      pkiBundle = "/var/lib/sbctl";
+    };
+  } else {});
 
   chaotic = {
     mesa-git = {
@@ -159,7 +168,7 @@
       rush-parallel
       unstable.tailscale
       yazi
-    ];
+    ] ++ (if useSecureBoot then [sbctl] else []);
   };
 
   networking = {

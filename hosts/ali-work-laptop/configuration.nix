@@ -24,6 +24,8 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
+      useSecureBoot = true;
+      useSystemdBoot = false;
       inherit inputs lib pkgs;
     })
   ];
@@ -91,6 +93,7 @@
     };
 
     systemPackages = with pkgs; [
+      sbctl
       slack
     ];
   };
