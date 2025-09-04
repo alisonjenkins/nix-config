@@ -192,7 +192,8 @@
       ali = {
         isNormalUser = true;
         description = "Alison Jenkins";
-        initialPassword = "initPw!";
+        # initialPassword = "initPw!";
+        hashedPasswordFile = "/persistence/passwords/ali";
         extraGroups = [ "networkmanager" "wheel" "docker" ];
       };
     };
