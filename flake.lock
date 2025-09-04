@@ -2154,7 +2154,7 @@
     "quickshell_2": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs_unstable"
         ]
       },
       "locked": {
