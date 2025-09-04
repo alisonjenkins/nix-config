@@ -47,6 +47,14 @@ flow_scale = 1
 multiplier = 2
 performance_mode = true
 
+[[game]]
+exe = "Shipbreaker.exe"
+experimental_fps_limit = 120
+experimental_present_mode = true
+flow_scale = 1
+multiplier = 2
+performance_mode = true
+
 # [[game]] # example entry
 # exe = "Game.exe"
 # env = "SteamDeck=0"
