@@ -374,7 +374,6 @@
             ./modules/development/web
             disko.nixosModules.disko
             home-manager.nixosModules.home-manager
-            inputs.lanzaboote.nixosModules.lanzaboote
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.nixos-hardware.nixosModules.framework-16-7040-amd

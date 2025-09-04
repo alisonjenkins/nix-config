@@ -14,6 +14,8 @@
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
       inherit inputs lib pkgs;
+      useSecureBoot = true;
+      useSystemdBoot = false;
     })
     (import ../../modules/desktop {
       inherit inputs pkgs lib;
@@ -43,11 +45,6 @@
       # "mem_sleep_default=deep"
       "tc_cmos.use_acpi_alarm=1"
     ];
-
-    lanzaboote = {
-      enable = true;
-      pkiBundle = "/var/lib/sbctl";
-    };
 
     loader = {
       efi.efiSysMountPoint = "/boot";
