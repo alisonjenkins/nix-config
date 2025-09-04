@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Set USER env variable
         run: echo "USER=runner" >> $GITHUB_ENV
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: nixbuild/nix-quick-install-action@v33
       - uses: cachix/install-nix-action@v31
         with:
