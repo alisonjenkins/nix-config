@@ -1983,11 +1983,11 @@
         "nixpkgs": "nixpkgs_17"
       },
       "locked": {
-        "lastModified": 1757040439,
-        "narHash": "sha256-yhLRFQ0mKiA1BSUU9R7WVxCgTKCeNp/rPhEl742liDc=",
+        "lastModified": 1757041072,
+        "narHash": "sha256-c7nOf9tEHtvaFnt1wVJCGFZBitMLqmMBPMLIAzuzIJ8=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "182d262c4a447407c7fe18b8c28f709d683471ce",
+        "rev": "c4abd9cafa0f3dce77d52024cf89525fde114bd7",
         "type": "github"
       },
       "original": {
