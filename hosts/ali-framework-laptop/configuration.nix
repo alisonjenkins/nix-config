@@ -140,6 +140,7 @@
       inputs.rust-overlay.overlays.default
       outputs.overlays.additions
       outputs.overlays.master-packages
+      outputs.overlays.material-symbols
       outputs.overlays.modifications
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionizer
@@ -250,7 +251,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" ];
+        extraGroups = [ "audio" "docker" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
         hashedPasswordFile = "/persistence/passwords/ali";
       };
       lace = {

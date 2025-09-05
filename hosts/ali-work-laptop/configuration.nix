@@ -193,7 +193,7 @@
         description = "Alison Jenkins";
         # initialPassword = "initPw!";
         hashedPasswordFile = "/persistence/passwords/ali";
-        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
       };
     };
   };

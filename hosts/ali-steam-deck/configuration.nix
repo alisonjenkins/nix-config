@@ -259,7 +259,7 @@
         isNormalUser = true;
         description = "Alison Jenkins";
         initialPassword = "initPw!";
-        extraGroups = [ "networkmanager" "wheel" "docker" ];
+        extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
         openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
         packages = with pkgs; [
           firefox

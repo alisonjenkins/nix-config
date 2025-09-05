@@ -458,7 +458,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "libvirtd" "networkmanager" "video" "wheel" ];
+        extraGroups = [ "audio" "docker" "libvirtd" "networkmanager" "video" "wheel" "realtime" ];
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
 
