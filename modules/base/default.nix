@@ -208,6 +208,29 @@
   security = {
     rtkit.enable = true;
 
+    pam = {
+      loginLimits = [
+        {
+          domain = "@realtime";
+          type = "-";
+          item = "rtprio";
+          value = 98;
+        }
+        {
+          domain = "@realtime";
+          type = "-";
+          item = "memlock";
+          value = "unlimited";
+        }
+        {
+          domain = "@realtime";
+          type = "-";
+          item = "nice";
+          value = -11;
+        }
+      ];
+    };
+
     sudo-rs = {
       enable = true;
       wheelNeedsPassword = true;
@@ -250,6 +273,18 @@
     tailscale = {
       enable = true;
       package = pkgs.unstable.tailscale;
+    };
+
+    udev = {
+      extraRules = ''
+        KERNEL=="cpu_dma_latency", GROUP="realtime"
+      '';
+    };
+  };
+
+  users = {
+    groups = {
+      realtime = {};
     };
   };
 
