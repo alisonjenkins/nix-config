@@ -1,5 +1,6 @@
 { pkgs
 , inputs
+, pipeWireQuantum ? 128
   # , lib
 , ...
 }: {
@@ -222,6 +223,27 @@
           "10-clock-rate" = {
             "context.properties" = {
               "default.clock.allowed-rates" = [44100 48000 88200 96000];
+            };
+          };
+          "10-quantum" = let
+            quantum = pipeWireQuantum;
+            quantumStr = builtins.toString pipeWireQuantum;
+          in {
+            "context.properties" = {
+              "default.clock.quantum" = quantum;
+              "default.clock.min-quantum" = quantum;
+              "default.clock.max-quantum" = quantum;
+            };
+            "pulse.properties" = {
+              "pulse.min.req" = "${quantumStr}/48000";
+              "pulse.default.req" = "${quantumStr}/48000";
+              "pulse.max.req" = "${quantumStr}/48000";
+              "pulse.min.quantum" = "${quantumStr}/48000";
+              "pulse.max.quantum" = "${quantumStr}/48000";
+            };
+            "stream.properties" = {
+              "node.latency" = "${quantumStr}/48000";
+              "resample.quality" = 1;
             };
           };
         };
