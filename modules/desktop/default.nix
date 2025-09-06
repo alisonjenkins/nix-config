@@ -1,6 +1,7 @@
 { pkgs
 , inputs
 , pipeWireQuantum ? 128
+, enableLSFG ? true
   # , lib
 , ...
 }: {
@@ -154,13 +155,16 @@
       unstable.nvtopPackages.amd
       wleave
       zoom-us
-    ];
+    ] ++ (if enableLSFG then [
+      inputs.lsfg-vk-flake.packages.${system}.lsfg-vk-ui
+    ] else []);
 
     variables = {
-      LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       NIXOS_OZONE_WL = "1";
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
-    };
+    } // (if enableLSFG then {
+      LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
+    } else {});
   };
 
   hardware = {
@@ -200,7 +204,7 @@
     };
 
     lsfg-vk = {
-      enable = true;
+      enable = enableLSFG;
     };
 
     pulseaudio = {
