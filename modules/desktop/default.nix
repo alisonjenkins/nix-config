@@ -1,6 +1,6 @@
 { pkgs
 , inputs
-, pipeWireQuantum ? 128
+, pipeWireQuantum ? 256
 , enableLSFG ? true
   # , lib
 , ...
