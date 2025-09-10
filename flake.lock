@@ -11,10 +11,10 @@
       },
       "locked": {
         "lastModified": 1757467853,
-        "narHash": "sha256-J4D+iJOixed/NQ63kuCBNKlWGJk31IvhC8uqbk6b0Es=",
+        "narHash": "sha256-XbdwXxC34ZUzATuWLW5fJi8eRS34AnRxCI+ET9G2WcI=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "51c09ea8217841224ded670743a99d8b2addc29b",
+        "rev": "e6c5bb67b5900daab106da9b80185d482f3581b6",
         "type": "github"
       },
       "original": {
