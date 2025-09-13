@@ -78,7 +78,6 @@
     imagemagick
     inputs.ali-neovim.packages.${system}.nvim
     inputs.jovian-nixos.legacyPackages.${system}.mangohud
-    inputs.nh.packages.${system}.default
     iotop
     jdk17
     jq
@@ -99,6 +98,7 @@
     luxtorpeda
     mangohud_git
     ncdu
+    nh
     nix-fast-build
     nix-tree
     nushell

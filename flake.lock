@@ -996,26 +996,6 @@
         "type": "github"
       }
     },
-    "nh": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1757656889,
-        "narHash": "sha256-WtmW6PeMEemuUSMEw7fnmsqRkFXkYALe5N2HaeV3hLg=",
-        "owner": "viperML",
-        "repo": "nh",
-        "rev": "a8182189f854597652e2acfe5363876241af3511",
-        "type": "github"
-      },
-      "original": {
-        "owner": "viperML",
-        "repo": "nh",
-        "type": "github"
-      }
-    },
     "niri-flake": {
       "inputs": {
         "niri-stable": "niri-stable",
@@ -2185,7 +2165,6 @@
         "jovian-nixos": "jovian-nixos",
         "lanzaboote": "lanzaboote",
         "lsfg-vk-flake": "lsfg-vk-flake",
-        "nh": "nh",
         "niri-flake": "niri-flake",
         "nix-colors": "nix-colors",
         "nix-flatpak": "nix-flatpak",
