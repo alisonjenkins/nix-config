@@ -19,6 +19,7 @@
 
     (import ../../modules/desktop {
       inherit inputs pkgs lib;
+      pipeWireQuantum = 512;
     })
     (import ../../modules/base {
       enableImpermanence = true;
