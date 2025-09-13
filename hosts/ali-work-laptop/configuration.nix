@@ -32,6 +32,11 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_testing;
+
+    extraModprobeConfig = ''
+      options snd-hda-intel index=1,0
+    '';
+
     kernelPatches = [
       {
         name = "amd-isp-capture";
