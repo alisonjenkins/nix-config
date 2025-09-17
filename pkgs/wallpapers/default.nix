@@ -33,7 +33,7 @@ let
     stdenv.mkDerivation {
       name = "${repo}-wallpapers";
       inherit src;
-      
+
       installPhase = ''
         mkdir -p $out
         cd $src/${directory}
@@ -54,10 +54,10 @@ let
   wallhavenSearch = writeShellScriptBin "wallhaven-search" ''
     #!/usr/bin/env bash
     # Usage: wallhaven-search "query" [page]
-    
+
     QUERY="$1"
     PAGE="''${2:-1}"
-    
+
     ${curl}/bin/curl -s "https://wallhaven.cc/api/v1/search?q=$QUERY&page=$PAGE" | \
       ${jq}/bin/jq -r '.data[] | "ID: \(.id) - Resolution: \(.resolution) - URL: \(.path)"'
   '';
@@ -106,11 +106,11 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/share/wallpapers
-    
+
     # You can add specific wallpapers here or use the helper functions
     # For example:
     # cp ${fetchWallpaper { name = "example.jpg"; url = "https://example.com/image.jpg"; sha256 = "sha256-xxxx"; }} $out/share/wallpapers/
-    
+
     # Install the wallhaven search utility
     mkdir -p $out/bin
     ln -s ${wallhavenSearch}/bin/wallhaven-search $out/bin/
