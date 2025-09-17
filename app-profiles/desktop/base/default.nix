@@ -226,12 +226,12 @@
 
     cachix-agent = {
       enable = true;
-      name = "ali-desktop-cache";
+      name = "ajenkins-public";
       verbose = true;
     };
   };
 
   nix.settings = {
-    post-build-hook = "${pkgs.cachix}/bin/cachix push ali-desktop-cache";
+    post-build-hook = "${pkgs.cachix}/bin/cachix push ajenkins-public";
   };
 }
