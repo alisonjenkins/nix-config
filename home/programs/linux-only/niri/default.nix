@@ -1,7 +1,14 @@
-{ pkgs, inputs, system, config, ... }: {
+{ pkgs, inputs, system, config, lib, ... }:
+
+let
+  cfg = {
+    # Default wallpaper path that can be overridden per machine
+    wallpaper = lib.mkDefault "~/Pictures/Wallpapers/default.jpg";
+  };
+in {
   home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
     # mako
-    # swaybg
+    swaybg
     # swww
     # waybar
     fuzzel
@@ -322,7 +329,7 @@
       # { command = ["mako"]; }
       # { command = ["swww-daemon"]; }
       # { command = ["waybar"]; }
-      # { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
+      { command = ["swaybg" "-i" "${cfg.wallpaper}"]; }
     ];
 
     switch-events = {
