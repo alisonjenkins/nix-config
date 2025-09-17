@@ -223,5 +223,15 @@
         pkgs.brlaser
       ];
     };
+
+    cachix-agent = {
+      enable = true;
+      name = "ali-desktop-cache";
+      verbose = true;
+    };
+  };
+
+  nix.settings = {
+    post-build-hook = "${pkgs.cachix}/bin/cachix push ali-desktop-cache";
   };
 }
