@@ -109,7 +109,7 @@ stdenv.mkDerivation {
     
     # You can add specific wallpapers here or use the helper functions
     # For example:
-    # cp ${fetchWallpaper {...}} $out/share/wallpapers/
+    # cp ${fetchWallpaper { name = "example.jpg"; url = "https://example.com/image.jpg"; sha256 = "sha256-xxxx"; }} $out/share/wallpapers/
     
     # Install the wallhaven search utility
     mkdir -p $out/bin
