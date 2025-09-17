@@ -3,16 +3,18 @@
 with lib;
 
 let
-  cfg = config.home.programs.niri;
+  cfg = config.programs.niri;
 in {
-  options.home.programs.niri = {
+  options.programs.niri = {
     wallpaper = mkOption {
       type = types.str;
       default = "~/Pictures/Wallpapers/default.jpg";
       description = "Path to wallpaper image to use with swaybg";
     };
   };
-  home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
+  
+  config = {
+    packages = if pkgs.stdenv.isLinux then with pkgs; [
     # mako
     swaybg
     # swww
@@ -527,7 +529,8 @@ in {
     };
   };
 
-  home.file = {
+  file = {
     ".config/wlr-which-key/config.yaml".source = ./wlr-which-key/config.yaml;
+  };
   };
 }
