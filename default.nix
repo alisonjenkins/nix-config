@@ -118,7 +118,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "A collection of wallpapers from various sources";
-    license = licenses.unfree; # Adjust based on the actual license of the wallpapers
+    license = licenses.cc0; # Creative Commons Zero - public domain equivalent
     platforms = platforms.all;
     maintainers = [];
   };
