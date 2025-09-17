@@ -1,17 +1,11 @@
 { pkgs, inputs, system, config, lib, ... }:
 
-with lib;
-
 let
-  cfg = config.programs.niri;
-in {
-  options.programs.niri = {
-    wallpaper = mkOption {
-      type = types.str;
-      default = "~/Pictures/Wallpapers/default.jpg";
-      description = "Path to wallpaper image to use with swaybg";
-    };
+  cfg = {
+    # Default wallpaper path that can be overridden per machine
+    wallpaper = lib.mkDefault "~/Pictures/Wallpapers/default.jpg";
   };
+in {
   home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
     # mako
     swaybg
