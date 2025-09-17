@@ -515,7 +515,6 @@
   };
 
   home.file = {
-    # ".config/niri/config.kdl".source = ./config.kdl;
     ".config/wlr-which-key/config.yaml".source = ./wlr-which-key/config.yaml;
   };
 }
