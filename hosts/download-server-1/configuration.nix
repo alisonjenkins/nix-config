@@ -63,6 +63,55 @@
         8118
       ];
       allowedUDPPorts = [];
+
+      # VPN leak protection - only allow Wireguard and internal network traffic
+      extraCommands = ''
+        # Allow loopback
+        iptables -A OUTPUT -o lo -j ACCEPT
+        
+        # Allow internal network traffic (adjust ranges as needed)
+        iptables -A OUTPUT -d 192.168.0.0/16 -j ACCEPT
+        iptables -A OUTPUT -d 10.0.0.0/8 -j ACCEPT
+        iptables -A OUTPUT -d 172.16.0.0/12 -j ACCEPT
+        
+        # Allow Wireguard traffic (port 51820 is default, adjust if different)
+        iptables -A OUTPUT -p udp --dport 51820 -j ACCEPT
+        
+        # Allow traffic through VPN tunnel interfaces (common VPN interface names)
+        iptables -A OUTPUT -o wg+ -j ACCEPT
+        iptables -A OUTPUT -o tun+ -j ACCEPT
+        iptables -A OUTPUT -o tap+ -j ACCEPT
+        
+        # Allow DNS through VPN interfaces only
+        iptables -A OUTPUT -o wg+ -p udp --dport 53 -j ACCEPT
+        iptables -A OUTPUT -o tun+ -p udp --dport 53 -j ACCEPT
+        iptables -A OUTPUT -o wg+ -p tcp --dport 53 -j ACCEPT
+        iptables -A OUTPUT -o tun+ -p tcp --dport 53 -j ACCEPT
+        
+        # Allow established and related connections
+        iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        
+        # Block all other outbound traffic to internet
+        iptables -A OUTPUT -j DROP
+      '';
+
+      extraStopCommands = ''
+        # Clean up custom rules when firewall stops
+        iptables -D OUTPUT -o lo -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -d 192.168.0.0/16 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -d 10.0.0.0/8 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -d 172.16.0.0/12 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -p udp --dport 51820 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o wg+ -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o tun+ -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o tap+ -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o wg+ -p udp --dport 53 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o tun+ -p udp --dport 53 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o wg+ -p tcp --dport 53 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -o tun+ -p tcp --dport 53 -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+        iptables -D OUTPUT -j DROP 2>/dev/null || true
+      '';
     };
   };
 
