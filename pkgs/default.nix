@@ -3,4 +3,5 @@
 pkgs: {
   # example = pkgs.callPackage ./example { };
   git-clean = pkgs.callPackage ./git-clean { inherit pkgs; };
+  wallpapers = pkgs.callPackage ./wallpapers { };
 }
