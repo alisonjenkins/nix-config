@@ -301,10 +301,6 @@
     };
   };
 
-  home-manager.users.ali = { ... }: {
-    home.programs.niri.wallpaper = "/home/ali/Pictures/Wallpapers/desktop-wallpaper.jpg";
-  };
-
   # security = {
   #   wrappers = {
   #     sunshine = {
