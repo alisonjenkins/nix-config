@@ -1,6 +1,7 @@
 **/*.dec.*
 **/*.qcow2
 **/result
+.aider*
 .direnv/
-result-*
 k8s-setup/charts
+result-*
