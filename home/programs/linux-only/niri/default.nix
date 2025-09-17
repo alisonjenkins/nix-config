@@ -319,7 +319,6 @@
     spawn-at-startup = [
       { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY"]; }
       { command = ["noctalia-shell"]; }
-      { command = ["1password"]; }
       # { command = ["mako"]; }
       # { command = ["swww-daemon"]; }
       # { command = ["waybar"]; }
