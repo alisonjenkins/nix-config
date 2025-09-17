@@ -3,9 +3,9 @@
 with lib;
 
 let
-  cfg = config.programs.niri;
+  cfg = config.home.programs.niri;
 in {
-  options.programs.niri = {
+  options.home.programs.niri = {
     wallpaper = mkOption {
       type = types.str;
       default = "~/Pictures/Wallpapers/default.jpg";
