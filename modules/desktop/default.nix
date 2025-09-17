@@ -139,6 +139,7 @@
     };
   in {
     systemPackages = with pkgs; [
+      aider-chat-full
       deepfilternet
       file-roller
       gamescopeConfig
