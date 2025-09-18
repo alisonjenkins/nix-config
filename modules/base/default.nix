@@ -181,7 +181,10 @@
   };
 
   nixpkgs = {
-    config.allowUnfree = true;
+    config = {
+      allowUnfree = true;
+    };
+
     overlays = [
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
