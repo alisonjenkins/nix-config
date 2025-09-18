@@ -268,11 +268,11 @@
     };
 
     power-profiles-daemon = {
-      enable = false;
+      enable = true;
     };
 
     tlp = {
-      enable = true;
+      enable = false;
 
       settings = {
       };
