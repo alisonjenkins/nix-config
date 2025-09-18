@@ -133,27 +133,6 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      inputs.niri-flake.overlays.niri
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-      outputs.overlays.unstable-packages
-      outputs.overlays.zk
-    ];
-    config = {
-      allowUnfree = true;
-      permittedInsecurePackages = [
-        "electron-33.4.11"
-      ];
-    };
-  };
-
   powerManagement = {
     cpuFreqGovernor = "performance";
   };

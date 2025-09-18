@@ -68,29 +68,29 @@
       extraCommands = ''
         # Allow loopback
         iptables -A OUTPUT -o lo -j ACCEPT
-        
+
         # Allow internal network traffic (adjust ranges as needed)
         iptables -A OUTPUT -d 192.168.0.0/16 -j ACCEPT
         iptables -A OUTPUT -d 10.0.0.0/8 -j ACCEPT
         iptables -A OUTPUT -d 172.16.0.0/12 -j ACCEPT
-        
+
         # Allow Wireguard traffic (port 51820 is default, adjust if different)
         iptables -A OUTPUT -p udp --dport 51820 -j ACCEPT
-        
+
         # Allow traffic through VPN tunnel interfaces (common VPN interface names)
         iptables -A OUTPUT -o wg+ -j ACCEPT
         iptables -A OUTPUT -o tun+ -j ACCEPT
         iptables -A OUTPUT -o tap+ -j ACCEPT
-        
+
         # Allow DNS through VPN interfaces only
         iptables -A OUTPUT -o wg+ -p udp --dport 53 -j ACCEPT
         iptables -A OUTPUT -o tun+ -p udp --dport 53 -j ACCEPT
         iptables -A OUTPUT -o wg+ -p tcp --dport 53 -j ACCEPT
         iptables -A OUTPUT -o tun+ -p tcp --dport 53 -j ACCEPT
-        
+
         # Allow established and related connections
         iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-        
+
         # Block all other outbound traffic to internet
         iptables -A OUTPUT -j DROP
       '';
@@ -128,25 +128,6 @@
       auto-optimise-store = false;
       trusted-users = [ "root" "@wheel" ];
     };
-  };
-
-  nixpkgs = {
-    overlays = [
-      # outputs.overlays.alvr
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.bluray-playback
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.quirc
-      outputs.overlays.snapper
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-      outputs.overlays.unstable-packages
-    ];
-
-    config.allowUnfree = true;
   };
 
   services = {

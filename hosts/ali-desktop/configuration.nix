@@ -237,34 +237,6 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      # outputs.overlays._7zz
-      # outputs.overlays.additions
-      # outputs.overlays.alvr
-      # outputs.overlays.bluray-playback
-      # outputs.overlays.ffmpeg
-      # outputs.overlays.modifications
-      # outputs.overlays.python3PackagesOverlay
-      # outputs.overlays.qtwebengine
-      # outputs.overlays.quirc
-      # outputs.overlays.tmux-sessionizer
-      inputs.niri-flake.overlays.niri
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.master-packages
-      outputs.overlays.snapper
-      outputs.overlays.stable-packages
-      outputs.overlays.unstable-packages
-    ];
-
-    config = {
-      allowUnfree = true;
-      permittedInsecurePackages = [
-      ];
-    };
-  };
-
   nix = {
     package = pkgs.nix;
     nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];

@@ -77,19 +77,6 @@
     openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
   };
 
-  nixpkgs = {
-    config.allowUnfree = true;
-    overlays = [
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-    ];
-  };
-
   nix = {
     package = pkgs.nixVersions.stable;
 

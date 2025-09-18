@@ -129,18 +129,4 @@
     useDHCP = lib.mkDefault true;
     interfaces.enp16s0.useDHCP = lib.mkDefault true;
   };
-
-  nixpkgs = {
-    config.allowUnfree = true;
-
-    overlays = [
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-    ];
-  };
 }

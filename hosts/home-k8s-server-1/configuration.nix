@@ -1,16 +1,24 @@
-{ pkgs, ... }: {
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     # ../../app-profiles/server-base/luks-tor-unlock
     (import ../../modules/locale { })
     ../../app-profiles/k8s-master
     ../../app-profiles/server-base
     ./hardware-configuration.nix
+    (import ../../modules/base {
+      enableImpermanence = false;
+      inherit inputs lib pkgs;
+    })
   ];
 
   console.keyMap = "us";
   networking.hostName = "home-k8s-server-1";
   networking.networkmanager.enable = true;
-  nixpkgs.config.allowUnfree = true;
   programs.zsh.enable = true;
   services.logrotate.checkConfig = false;
   time.timeZone = "Europe/London";

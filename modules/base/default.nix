@@ -4,14 +4,15 @@
 , enableMesaGit ? false
 , enableOpenSSH ? true
 , enablePlymouth ? true
-, useSystemdBoot ? true
-, useSecureBoot ? false
-, useGrub ? false
 , imperpmanencePersistencePath ? builtins.toPath "/persistence"
 , inputs
 , lib
+, outputs
 , pkgs
 , timezone ? "Europe/London"
+, useGrub ? false
+, useSecureBoot ? false
+, useSystemdBoot ? true
 , ...
 }: {
   imports = [
@@ -177,6 +178,20 @@
     networkmanager = {
       enable = true;
     };
+  };
+
+  nixpkgs = {
+    config.allowUnfree = true;
+    overlays = [
+      inputs.nur.overlays.default
+      inputs.rust-overlay.overlays.default
+      outputs.overlays.additions
+      outputs.overlays.master-packages
+      outputs.overlays.modifications
+      outputs.overlays.stable-packages
+      outputs.overlays.tmux-sessionizer
+      outputs.overlays.unstable-packages
+    ];
   };
 
   nix = {

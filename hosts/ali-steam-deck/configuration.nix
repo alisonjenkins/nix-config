@@ -137,22 +137,6 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-      outputs.overlays.unstable-packages
-    ];
-    config = {
-      allowUnfree = true;
-    };
-  };
-
   programs = {
     steam = {
       enable = true;

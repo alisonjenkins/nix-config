@@ -74,24 +74,6 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      # outputs.overlays.alvr
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.bluray-playback
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.quirc
-      outputs.overlays.snapper
-      outputs.overlays.stable-packages
-      outputs.overlays.tmux-sessionizer
-    ];
-
-    config.allowUnfree = true;
-  };
-
   services = {
     logrotate.checkConfig = false;
 
