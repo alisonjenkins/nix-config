@@ -245,6 +245,10 @@
 
     environment = {
       ELECTRON_OZONE_PLATFORM_HINT = "auto";
+      QT_QPA_PLATFORMTHEME = "gtk3";
+      GTK_THEME = "Adwaita:dark";
+      XCURSOR_THEME = "Adwaita";
+      XCURSOR_SIZE = "24";
     };
 
     input = {
@@ -317,7 +321,7 @@
     ];
 
     spawn-at-startup = [
-      { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY"]; }
+      { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY" "QT_QPA_PLATFORMTHEME" "GTK_THEME" "XCURSOR_THEME" "XCURSOR_SIZE"]; }
       { command = ["noctalia-shell"]; }
       # { command = ["mako"]; }
       # { command = ["swww-daemon"]; }
@@ -498,6 +502,20 @@
         matches = [
           {
             app-id= "^gamescope$";
+          }
+        ];
+      }
+
+      {
+        open-floating = true;
+        open-focused = false;
+
+        matches = [
+          {
+            app-id = "^xwaylandvideobridge$";
+          }
+          {
+            title = "^Xwayland Video Bridge";
           }
         ];
       }
