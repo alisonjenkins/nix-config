@@ -151,6 +151,10 @@
   security.rtkit.enable = true;
 
   services = {
+    logind = {
+      lidSwitch = "suspend-then-hibernate";
+    };
+
     pulseaudio = {
       enable = false;
     };
@@ -188,6 +192,15 @@
 
   system = {
     stateVersion = "24.05";
+  };
+
+  systemd = {
+    sleep = {
+      extraConfig = ''
+        HibernateDelaySec=30m
+        SuspendState=mem
+      '';
+    };
   };
 
   time.timeZone = "Europe/London";
