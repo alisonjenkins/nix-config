@@ -510,12 +510,12 @@
         open-floating = true;
         open-focused = false;
         opacity = 0.0;
-        
+
         # Position the window off-screen
-        default-floating-position = {
-          x = -10000;
-          y = -10000;
-        };
+        # default-floating-position = {
+        #   x = -10000;
+        #   y = -10000;
+        # };
 
         matches = [
           {
