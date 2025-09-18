@@ -223,15 +223,5 @@
         pkgs.brlaser
       ];
     };
-
-    cachix-agent = {
-      enable = true;
-      name = "ajenkins-public";
-      verbose = true;
-    };
-  };
-
-  nix.settings = {
-    post-build-hook = "${pkgs.cachix}/bin/cachix push ajenkins-public";
   };
 }
