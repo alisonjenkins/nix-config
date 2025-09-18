@@ -437,10 +437,11 @@
       }
 
       {
-        open-fullscreen = true;
-        open-on-workspace = "terminal";
         draw-border-with-background = false;
         opacity = 0.9;
+        open-fullscreen = false;
+        open-maximized = true;
+        open-on-workspace = "terminal";
 
         border = {
           enable = false;
