@@ -13,7 +13,7 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
       useSecureBoot = true;
       useSystemdBoot = false;
     })
@@ -116,6 +116,12 @@
       192.168.1.202 home-kvm-hypervisor-1
     '';
     networkmanager.enable = true;
+  };
+
+  nixpkgs = {
+    overlays = [
+      inputs.niri-flake.overlays.niri
+    ];
   };
 
   nix = {

@@ -26,7 +26,7 @@
       impermanencePersistencePath = builtins.toPath "/persistence";
       useSecureBoot = true;
       useSystemdBoot = false;
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
     })
   ];
 

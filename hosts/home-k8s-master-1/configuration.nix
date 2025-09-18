@@ -3,6 +3,7 @@
 , pkgs
 , inputs
 , system
+, outputs
 , ...
 }:
 {
@@ -12,7 +13,7 @@
     (modulesPath + "/profiles/qemu-guest.nix")
     (import ../../modules/base {
       enableImpermanence = false;
-      inherit inputs lib pkgs;
+      inherit inputs lib pkgs outputs;
     })
     ./disk-config.nix
   ];

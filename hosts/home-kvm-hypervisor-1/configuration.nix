@@ -12,7 +12,7 @@
       enableImpermanence = false;
       useGrub = true;
       useSystemdBoot = false;
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
     })
     ../../app-profiles/server-base
     ./hardware-configuration.nix

@@ -10,7 +10,7 @@
     ../../app-profiles/server-base
     (import ../../modules/base {
       enableImpermanence = true;
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
     })
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server

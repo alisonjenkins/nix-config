@@ -2,6 +2,7 @@
   inputs,
   lib,
   pkgs,
+  outputs,
   ...
 }: {
   imports = [
@@ -12,7 +13,7 @@
     ./hardware-configuration.nix
     (import ../../modules/base {
       enableImpermanence = false;
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
     })
   ];
 

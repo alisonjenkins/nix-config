@@ -11,7 +11,7 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
-      inherit inputs lib pkgs;
+      inherit inputs lib outputs pkgs;
     })
     (import ../../modules/desktop {
       inherit inputs pkgs lib;
@@ -235,6 +235,12 @@
         };
       };
     };
+  };
+
+  nixpkgs = {
+    overlays = [
+      inputs.niri-flake.overlays.niri
+    ];
   };
 
   nix = {

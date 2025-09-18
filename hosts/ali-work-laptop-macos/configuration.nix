@@ -211,6 +211,12 @@
     localHostName = hostname;
   };
 
+  nixpkgs = {
+    overlays = [
+      inputs.niri-flake.overlays.niri
+    ];
+  };
+
   nix = {
     enable = false;
     distributedBuilds = true;
@@ -296,20 +302,6 @@
         "com.apple.keyboard.fnState" = true;
       };
     };
-  };
-
-  nixpkgs = {
-    config = { allowUnfree = true; };
-    hostPlatform = system;
-
-    overlays = [
-      inputs.nur.overlays.default
-      inputs.rust-overlay.overlays.default
-      outputs.overlays.additions
-      outputs.overlays.master-packages
-      outputs.overlays.modifications
-      outputs.overlays.unstable-packages
-    ];
   };
 
   users.users.${username} = {
