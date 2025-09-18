@@ -74,6 +74,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ds-1-setup
+          Host download-server-1.lan
+          User nixos
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host gitlab.com
           User git
           IdentityFile ${primarySSHKey}
