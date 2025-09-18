@@ -204,6 +204,14 @@
       rulesProvider = pkgs.ananicy-rules-cachyos;
     };
 
+    cachix-watch-store = {
+      cacheName = "ajenkins-public";
+      cachixTokenFile = "/home/ali/.config/cachix/cachix.dhall";
+      compressionLevel = 5;
+      enable = true;
+      jobs = 4;
+    };
+
     lsfg-vk = {
       enable = enableLSFG;
     };
