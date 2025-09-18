@@ -62,6 +62,18 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host download-server-1
+          Host download-server-1.lan
+          IdentitiesOnly yes
+          IdentityFile ~/.ssh/id_personal.pub
+          User ali
+
+        Host download-server-1.lan
+          Host download-server-1.lan
+          User ali
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host gitlab.com
           User git
           IdentityFile ${primarySSHKey}
