@@ -1,11 +1,18 @@
 { ... }: {
   security.pam.services = {
-    login = {
+    greetd = {
       kwallet = {
         enable = true;
       };
     };
+
     kde = {
+      kwallet = {
+        enable = true;
+      };
+    };
+
+    login = {
       kwallet = {
         enable = true;
       };
