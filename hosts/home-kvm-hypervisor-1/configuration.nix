@@ -153,6 +153,10 @@
               active = true;
               definition = pkgs.writeText "home-storage-server-1.xml" (import ./libvirtd/domains/home-storage-server-1.xml.nix {inherit pkgs;});
             }
+            {
+              active = true;
+              definition = pkgs.writeText "download-server-1.xml" (import ./libvirtd/domains/download-server-1.xml.nix {inherit pkgs;});
+            }
             # {
             #   active = true;
             #   definition = pkgs.writeText "Unraid.xml" (import ./libvirtd/domains/Unraid.xml.nix {inherit pkgs;});
