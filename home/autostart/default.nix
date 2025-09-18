@@ -26,7 +26,7 @@
       ".config/autostart/discord.desktop".source = "${pkgs.discord-canary}/share/applications/discord-canary.desktop";
       ".config/autostart/element-desktop.desktop".source = "${pkgs.element}/share/applications/element-desktop.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
-      ".config/autostart/ghostty.desktop".source = "${pkgs.ghostty}/share/applications/Ghostty.desktop";
+      ".config/autostart/ghostty.desktop".source = "${pkgs.ghostty}/share/applications/com.mitchellh.ghostty.desktop";
       ".config/autostart/keybase.desktop".source = "${pkgs.keybase-gui}/share/applications/keybase.desktop";
       ".config/autostart/obsidian.desktop".source = "${pkgs.obsidian}/share/applications/obsidian.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
