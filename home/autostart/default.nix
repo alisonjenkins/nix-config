@@ -22,7 +22,6 @@
     in
     {
       ".config/autostart/1password.desktop".source = "${pkgs._1password-gui}/share/applications/1password.desktop";
-      # ".config/autostart/alacritty.desktop".source = "${pkgs.alacritty}/share/applications/Alacritty.desktop";
       ".config/autostart/discord.desktop".source = "${pkgs.discord-canary}/share/applications/discord-canary.desktop";
       ".config/autostart/element-desktop.desktop".source = "${pkgs.element}/share/applications/element-desktop.desktop";
       ".config/autostart/firefox.desktop".source = "${pkgs.firefox}/share/applications/firefox.desktop";
