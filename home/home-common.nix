@@ -11,7 +11,7 @@
     ./themes
     ./wms/hyprland
     ./wms/river
-    inputs.plasma-manager.homeManagerModules.plasma-manager
+    inputs.plasma-manager.homeModules.plasma-manager
     inputs.nix-index-database.homeModules.nix-index
   ];
 
