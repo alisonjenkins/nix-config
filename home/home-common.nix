@@ -80,7 +80,7 @@
         tig
         tty-clock
         unstable.fluxcd
-        vesktop
+        # vesktop
         webcord
         wget
         wl-clipboard

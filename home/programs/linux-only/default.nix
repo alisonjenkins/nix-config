@@ -6,6 +6,7 @@
     ./librewolf
     ./lsfg-vk
     ./niri
+    ./nixcord
     ./waybar
   ];
 }

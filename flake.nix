@@ -51,6 +51,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixcord = {
+      url = "github:kaylorben/nixcord";
+    };
+
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
