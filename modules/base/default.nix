@@ -10,6 +10,7 @@
 , outputs
 , pkgs
 , timezone ? "Europe/London"
+, useAliNeovim ? false
 , useGrub ? false
 , useSecureBoot ? false
 , useSystemdBoot ? true
@@ -164,12 +165,22 @@
     systemPackages = with pkgs; [
       btop
       cachix
+      git
       htop
+      htop
+      just
+      lshw
+      pciutils
       pciutils
       rush-parallel
+      tmux
       unstable.tailscale
       yazi
-    ] ++ (if useSecureBoot then [sbctl] else []);
+      yazi
+    ] ++ (if useSecureBoot then [sbctl] else [])
+    ++ (if useAliNeovim then [
+      inputs.ali-neovim.packages.${system}.nvim
+    ] else [neovim]);
   };
 
   networking = {
