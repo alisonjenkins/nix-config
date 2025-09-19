@@ -206,7 +206,7 @@
 
     cachix-watch-store = {
       cacheName = "ajenkins-public";
-      cachixTokenFile = "/home/ali/.config/cachix/cachix.dhall";
+      cachixTokenFile = "/persistence/cachix/authToken";
       compressionLevel = 5;
       enable = true;
       jobs = 4;
