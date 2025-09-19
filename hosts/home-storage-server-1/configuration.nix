@@ -7,7 +7,6 @@
 }: {
   imports = [
     (import ../../modules/locale { })
-    ../../app-profiles/server-base
     (import ../../modules/base {
       enableImpermanence = true;
       inherit inputs lib outputs pkgs;

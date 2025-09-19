@@ -14,7 +14,6 @@
       useSystemdBoot = false;
       inherit inputs lib outputs pkgs;
     })
-    ../../app-profiles/server-base
     ./hardware-configuration.nix
   ];
 
