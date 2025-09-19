@@ -13,6 +13,7 @@
         alwaysAnimate.enable = true;
         alwaysExpandRoles.enable = true;
         anonymiseFileNames.enable = true;
+        betterFolders.enable = true;
         betterGifPicker.enable = true;
         betterSessions.enable = true;
         betterSettings.enable = true;
@@ -35,6 +36,8 @@
         fullSearchContext.enable = true;
         gameActivityToggle.enable = true;
         gifPaste.enable = true;
+        imageZoom.enable = true;
+        ircColors.enable = true;
         loadingQuotes.enable = true;
         memberCount.enable = true;
         messageClickActions.enable = true;
@@ -43,7 +46,6 @@
         noF1.enable = true;
         pictureInPicture.enable = true;
         pinDMs.enable = true;
-        plainFolderIcon.enable = true;
         platformIndicators.enable = true;
         previewMessage.enable = true;
         quickReply.enable = true;
@@ -68,6 +70,8 @@
         validUser.enable = true;
         vcNarrator.enable = false;
         viewIcons.enable = true;
+        volumeBooster.enable = true;
+        webScreenShareFixes.enable = true;
         whoReacted.enable = true;
         youtubeAdblock.enable = true;
 
