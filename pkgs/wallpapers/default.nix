@@ -81,26 +81,26 @@ stdenv.mkDerivation {
     singleWallpaper = fetchWallpaper {
       name = "example.jpg";
       url = "https://example.com/wallpaper.jpg";
-      sha256 = "0000000000000000000000000000000000000000000000000000";
+      sha256 = "";
     };
 
     unsplashWallpaper = fetchFromUnsplash {
       photoId = "abcdef123456";
       width = 3840;
       height = 2160;
-      sha256 = "0000000000000000000000000000000000000000000000000000";
+      sha256 = "";
     };
 
     githubWallpapers = fetchWallpapersFromGitHub {
       owner = "username";
       repo = "wallpapers";
       rev = "main";
-      sha256 = "0000000000000000000000000000000000000000000000000000";
+      sha256 = "";
     };
 
     wallhavenWallpaper = fetchFromWallhaven {
       id = "abcdef";
-      sha256 = "0000000000000000000000000000000000000000000000000000";
+      sha256 = "";
     };
   };
 
@@ -109,7 +109,7 @@ stdenv.mkDerivation {
 
     # You can add specific wallpapers here or use the helper functions
     # For example:
-    # cp ${fetchWallpaper { name = "example.jpg"; url = "https://example.com/image.jpg"; sha256 = "sha256-xxxx"; }} $out/share/wallpapers/
+    cp ${fetchWallpaper { name = "ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; url = "https://images.hdqwalls.com/download/ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; sha256 = "sha256-W/ZzQOCbxdGd4Xgq6Kpkqkdm9SpaxywP1aiFU+8lZBE="; }} $out/share/wallpapers/
 
     # Install the wallhaven search utility
     mkdir -p $out/bin
