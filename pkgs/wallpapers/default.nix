@@ -3,6 +3,7 @@
 , fetchurl
 , fetchFromGitHub
 , fetchzip
+, fetchgit
 , curl
 , jq
 , writeShellScriptBin
@@ -26,8 +27,14 @@ let
   # Helper function to fetch wallpapers from a GitHub repository
   fetchWallpapersFromGitHub = { owner, repo, rev, directory ? "", sha256, fileExtensions ? [ "jpg" "jpeg" "png" "gif" ] }:
     let
-      src = fetchFromGitHub {
-        inherit owner repo rev sha256;
+      src = fetchgit {
+        inherit rev;
+        url = "https://github.com/${owner}/${repo}.git";
+        fetchLFS = true;
+        sparseCheckout = [
+          directory
+        ];
+        hash = sha256;
       };
     in
     stdenv.mkDerivation {
@@ -111,7 +118,7 @@ stdenv.mkDerivation {
     # For example:
     cp ${fetchWallpaper { name = "ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; url = "https://images.hdqwalls.com/download/ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; sha256 = "sha256-W/ZzQOCbxdGd4Xgq6Kpkqkdm9SpaxywP1aiFU+8lZBE="; }} $out/share/wallpapers/
 
-    cd ${fetchWallpapersFromGitHub { owner = "alisonjenkins"; repo = "nix-config"; rev = "a10afe019a830f1f2db9abc6842a498eace939cd"; directory = "pkgs/wallpapers/wallpapers"; sha256 = "sha256-olOfYbbA+lxKf9mOm3cGOqXjDJjZXqujR38fk8SOP4M="; } }; && cp -R . $out/share/wallpapers/
+    cd "${fetchWallpapersFromGitHub { owner = "alisonjenkins"; repo = "nix-config"; rev = "a10afe019a830f1f2db9abc6842a498eace939cd"; directory = "pkgs/wallpapers/wallpapers"; sha256 = "sha256-E1PJBSUcn2C/6Nn6UUkaLX0OPUmWtmcxC8VorkMlx0Y="; }}" && cp -R . $out/share/wallpapers/
 
     # Install the wallhaven search utility
     mkdir -p $out/bin
