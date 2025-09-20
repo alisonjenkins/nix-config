@@ -63,19 +63,19 @@
           IdentitiesOnly yes
 
         Host download-server-1
-          Host download-server-1.lan
+          HostName download-server-1.lan
           IdentitiesOnly yes
           IdentityFile ~/.ssh/id_personal.pub
           User ali
 
         Host download-server-1.lan
-          Host download-server-1.lan
+          HostName download-server-1.lan
           User ali
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
-        Host ds-1-setup
-          Host download-server-1.lan
+        Host ds1-setup
+          HostName download-server-1.lan
           User nixos
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
