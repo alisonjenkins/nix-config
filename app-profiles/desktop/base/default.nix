@@ -65,7 +65,6 @@
     fish
     freeplane
     fzf
-    gamemode
     gcc-unwrapped
     gimp
     git
@@ -77,7 +76,6 @@
     htop
     imagemagick
     inputs.ali-neovim.packages.${system}.nvim
-    inputs.jovian-nixos.legacyPackages.${system}.mangohud
     iotop
     jdk17
     jq
@@ -95,8 +93,6 @@
     libvorbis
     lm_sensors
     lshw
-    luxtorpeda
-    mangohud_git
     ncdu
     nh
     nix-fast-build
@@ -112,13 +108,11 @@
     rustc
     sops
     stdenv.cc.cc.lib
-    steamtinkerlaunch
     stow
     tig
     tmux
     unrar
     unstable.ghostty
-    unstable.protonplus
     usbutils
     virt-manager
     vmtouch
@@ -138,24 +132,6 @@
 
   programs = {
     partition-manager.enable = true;
-
-    gamemode = {
-      enable = true;
-      settings = {
-        general = {
-          defaultgov = "powersave";
-          desiredgov = "performance";
-          softrealtime = "auto";
-          ioprio = 0;
-          renice = 10;
-        };
-
-        custom = {
-          start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
-          end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
-        };
-      };
-    };
   };
 
   hardware = {
@@ -169,15 +145,6 @@
       };
     };
   };
-
-  # security.wrappers = {
-  #   gamescope = {
-  #     owner = "root";
-  #     group = "root";
-  #     source = "${pkgs.gamescope}/bin/gamescope";
-  #     capabilities = "cap_sys_nice+ep";
-  #   };
-  # };
 
   services = {
     atd.enable = true;

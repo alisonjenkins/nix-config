@@ -2,6 +2,7 @@
 , inputs
 , pipeWireQuantum ? 256
 , enableLSFG ? true
+, enableGamingPackages ? true
   # , lib
 , ...
 }: {
@@ -156,7 +157,13 @@
       unstable.nvtopPackages.amd
       wleave
       zoom-us
-    ] ++ (if enableLSFG then [
+    ] ++ (if enableGamingPackages then with pkgs; [
+      gamemode
+      mangohud
+      steamtinkerlaunch
+      unstable.protonplus
+    ] else [])
+    ++ (if enableLSFG then [
       inputs.lsfg-vk-flake.packages.${system}.lsfg-vk-ui
     ] else []);
 
@@ -175,13 +182,33 @@
   };
 
   programs = {
+    zsh.enable = true;
+
+  } // (if enableGamingPackages then {
+    gamemode = {
+      enable = true;
+      settings = {
+        general = {
+          defaultgov = "powersave";
+          desiredgov = "performance";
+          softrealtime = "auto";
+          ioprio = 0;
+          renice = 10;
+        };
+
+        custom = {
+          start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
+          end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
+        };
+      };
+    };
+
     steam = {
       enable = true;
       remotePlay.openFirewall = true;
       dedicatedServer.openFirewall = true;
     };
-    zsh.enable = true;
-  };
+  } else {});
 
   security = {
     polkit = {
