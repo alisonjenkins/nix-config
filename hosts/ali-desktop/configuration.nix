@@ -31,7 +31,8 @@
     # kernelPackages = pkgs.linuxPackages_cachyos;
     # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
-    kernelPackages = pkgs.linuxPackages_latest;
+    # kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_testing;
 
     initrd = {
       availableKernelModules = [ "r8169" ];
