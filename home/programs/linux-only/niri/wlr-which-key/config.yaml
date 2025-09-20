@@ -76,6 +76,18 @@ menu:
       - key: "m"
         desc: Turn monitors off
         cmd: niri msg action power-off-monitors
+      - key: "p"
+        desc: Power Profiles
+        submenu:
+          - key: "b"
+            desc: Set Balanced Power Profile
+            cmd: powerprofilesctl set balanced
+          - key: "p"
+            desc: "Set Performance Power Profile"
+            cmd: powerprofilesctl set performance
+          - key: "s"
+            desc: "Set Power Saver Power Profile"
+            cmd: powerprofilesctl set power-saver
 
   - key: "l"
     desc: Lock
