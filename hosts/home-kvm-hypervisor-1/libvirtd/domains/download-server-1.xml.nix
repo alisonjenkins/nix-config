@@ -1,7 +1,7 @@
 {pkgs}: ''
   <domain type='kvm'>
     <name>download-server-1</name>
-    <uuid>7723ed51-gd64-54d1-c33b-c19b1c749898</uuid>
+    <uuid>1b73a5ac-c737-41c2-b0c9-b8dfea3cc70a</uuid>
     <metadata>
       <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
         <libosinfo:os id="http://libosinfo.org/linux/2022"/>
