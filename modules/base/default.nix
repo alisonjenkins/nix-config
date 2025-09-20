@@ -335,7 +335,7 @@
           "/etc/NetworkManager/system-connections"
           "/etc/luks"
           "/etc/secureboot"
-          "/etc/ssh/keys"
+          "/etc/ssh"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
           "/var/lib/fprint"
