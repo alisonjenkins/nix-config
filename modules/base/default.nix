@@ -17,7 +17,6 @@
 , ...
 }: {
   imports = [
-    inputs.chaotic.nixosModules.default
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
@@ -166,12 +165,6 @@
       pkiBundle = "/var/lib/sbctl";
     };
   } else {});
-
-  chaotic = {
-    mesa-git = {
-      enable = enableMesaGit;
-    };
-  };
 
   environment = {
     systemPackages = with pkgs; [

@@ -6,7 +6,6 @@
     # niri.url = "github:YaLTeR/niri";
     ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
     caelestia-cli.url = "github:alisonjenkins/cli";
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     deploy-rs.url = "github:serokell/deploy-rs";
     eks-creds.url = "github:alisonjenkins/eks-creds";
     impermanence.url = "github:nix-community/impermanence";
@@ -113,7 +112,6 @@
 
   outputs =
     { self
-    , chaotic
     , disko
     , home-manager
     , nixpkgs
@@ -331,7 +329,6 @@
         #     ./app-profiles/desktop/wms/hyprland
         #     ./app-profiles/desktop/wms/plasma6
         #     ./hosts/ali-laptop/configuration.nix
-        #     chaotic.nixosModules.default
         #     home-manager.nixosModules.home-manager
         #     inputs.niri-flake.nixosModules.niri
         #     inputs.nix-flatpak.nixosModules.nix-flatpak
@@ -479,7 +476,6 @@
         #     ./app-profiles/desktop/wms/hyprland
         #     ./app-profiles/desktop/local-k8s
         #     ./hosts/ali-steam-deck/configuration.nix
-        #     chaotic.nixosModules.default
         #     inputs.jovian-nixos.nixosModules.default
         #     inputs.nix-flatpak.nixosModules.nix-flatpak
         #     inputs.stylix.nixosModules.stylix
