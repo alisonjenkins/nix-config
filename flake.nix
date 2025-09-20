@@ -656,6 +656,7 @@
               };
             };
           };
+
           ali-work-laptop = {
             hostname = "ali-work-laptop.lan";
             profiles = {
@@ -665,6 +666,7 @@
               };
             };
           };
+
           # ali-steam-deck = {
           #   hostname = "aliju-steam-deck.lan";
           #   profiles = {
@@ -674,6 +676,7 @@
           #     };
           #   };
           # };
+
           download-server-1 = {
             hostname = "download-server-1.lan";
             profiles = {
@@ -683,6 +686,7 @@
               };
             };
           };
+
           home-kvm-hypervisor-1 = {
             hostname = "home-kvm-hypervisor-1.lan";
             profiles = {
@@ -692,6 +696,7 @@
               };
             };
           };
+
           home-storage-server-1 = {
             hostname = "home-storage-server-1.lan";
             profiles = {
@@ -701,6 +706,7 @@
               };
             };
           };
+
           home-k8s-master-1 = {
             hostname = "home-k8s-master-1.lan";
             profiles = {
@@ -710,6 +716,7 @@
               };
             };
           };
+
           home-k8s-server-1 = {
             hostname = "home-k8s-server-1.lan";
             profiles = {
