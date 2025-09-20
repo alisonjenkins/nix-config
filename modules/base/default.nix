@@ -176,11 +176,9 @@
       just
       lshw
       pciutils
-      pciutils
       rush-parallel
       tmux
       unstable.tailscale
-      yazi
       yazi
     ] ++ (if useSecureBoot then [sbctl] else [])
     ++ (if useAliNeovim then [
