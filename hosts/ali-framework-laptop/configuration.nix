@@ -18,6 +18,7 @@
       useSystemdBoot = false;
     })
     (import ../../modules/desktop {
+      pipeWireQuantum = 512;
       inherit inputs pkgs lib;
     })
     (import ../../modules/vr { enableOpenSourceVR = false; })
