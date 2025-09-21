@@ -1,5 +1,5 @@
 {...}: {
-  stylix.targets.nixcord.enable = true;
+  stylix.targets.nixcord.enable = false;
 
   programs.nixcord = {
     enable = true;
