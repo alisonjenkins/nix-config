@@ -1,29 +1,94 @@
-{ consoleKeyMap ? "us"
-, enableIPv6 ? false
-, enableImpermanence ? false
-, enableMesaGit ? false
-, enableOpenSSH ? true
-, enablePlymouth ? true
-, imperpmanencePersistencePath ? builtins.toPath "/persistence"
-, inputs
-, lib
-, outputs
-, pkgs
-, timezone ? "Europe/London"
-, useAliNeovim ? false
-, useGrub ? false
-, useSecureBoot ? false
-, useSystemdBoot ? true
-, ...
-}: {
+{ config, lib, pkgs, inputs, outputs, ... }:
+
+with lib;
+
+let
+  cfg = config.modules.base;
+in
+{
+  options.modules.base = {
+    consoleKeyMap = mkOption {
+      type = types.str;
+      default = "us";
+      description = "Console keymap to use";
+    };
+
+    enableIPv6 = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to enable IPv6 networking";
+    };
+
+    enableImpermanence = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to enable impermanence for the system";
+    };
+
+    enableMesaGit = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to enable Mesa Git";
+    };
+
+    enableOpenSSH = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to enable OpenSSH server";
+    };
+
+    enablePlymouth = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to enable Plymouth boot splash";
+    };
+
+    impermanencePersistencePath = mkOption {
+      type = types.path;
+      default = "/persistence";
+      description = "Path to the persistence directory for impermanence";
+    };
+
+    timezone = mkOption {
+      type = types.str;
+      default = "Europe/London";
+      description = "Timezone to use";
+    };
+
+    useAliNeovim = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to use Ali's Neovim configuration";
+    };
+
+    useGrub = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to use GRUB bootloader";
+    };
+
+    useSecureBoot = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to enable secure boot with lanzaboote";
+    };
+
+    useSystemdBoot = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to use systemd-boot bootloader";
+    };
+  };
+
+  config = mkIf true {
   imports = [
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
-  console.keyMap = consoleKeyMap;
+  console.keyMap = cfg.consoleKeyMap;
 
-  time.timeZone = timezone;
+  time.timeZone = cfg.timezone;
 
   boot = {
     consoleLogLevel = 0;
@@ -55,7 +120,7 @@
     };
 
     plymouth = {
-      enable = enablePlymouth;
+      enable = cfg.enablePlymouth;
     };
 
     kernelParams = [
@@ -128,7 +193,7 @@
         efiSysMountPoint = "/boot";
       };
 
-    } // (if useGrub then {
+    } // (if cfg.useGrub then {
       grub = {
         devices = [ "nodev" ];
         efiInstallAsRemovable = false;
@@ -149,7 +214,7 @@
         };
       };
     } else {})
-    // (if useSystemdBoot then {
+    // (if cfg.useSystemdBoot then {
       systemd-boot = {
         consoleMode = "auto";
         enable = true;
@@ -157,7 +222,7 @@
         netbootxyz.enable = true;
       };
     } else {});
-  } // (if useSecureBoot then {
+  } // (if cfg.useSecureBoot then {
     loader.systemd-boot.enable = lib.mkForce false;
 
     lanzaboote = {
@@ -180,14 +245,14 @@
       tmux
       unstable.tailscale
       yazi
-    ] ++ (if useSecureBoot then [sbctl] else [])
-    ++ (if useAliNeovim then [
-      inputs.ali-neovim.packages.${system}.nvim
+    ] ++ (if cfg.useSecureBoot then [sbctl] else [])
+    ++ (if cfg.useAliNeovim then [
+      inputs.ali-neovim.packages.${pkgs.system}.nvim
     ] else [neovim]);
   };
 
   networking = {
-    enableIPv6 = enableIPv6;
+    enableIPv6 = cfg.enableIPv6;
 
     networkmanager = {
       enable = true;
@@ -281,7 +346,7 @@
     };
 
     openssh = {
-      enable = enableOpenSSH;
+      enable = cfg.enableOpenSSH;
 
       hostKeys = [
         {
@@ -324,10 +389,8 @@
     enable = true;
   };
 
-} // (if enableImpermanence then {
-  environment = {
-    persistence = {
-      "${imperpmanencePersistencePath}" = {
+    environment.persistence = mkIf cfg.enableImpermanence {
+      "${cfg.impermanencePersistencePath}" = {
         hideMounts = true;
         directories = [
           "/etc/NetworkManager/system-connections"
@@ -407,4 +470,4 @@
       };
     };
   };
-} else { })
+}
