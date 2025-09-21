@@ -4,6 +4,7 @@
     awscli2
     ec2-metadata-mock
     git-remote-codecommit
+    localstack
     packer
   ];
 }
