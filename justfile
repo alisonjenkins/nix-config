@@ -33,6 +33,16 @@ test *extraargs:
 # Build the config for this system and activate it
 switch *extraargs:
     #!/usr/bin/env bash
+    reset_power_profile() {
+        powerprofilesctl $PRE_POWER_PROFILE
+    }
+
+    if command -v powerprofilesctl &>/dev/null; then
+        export PRE_POWER_PROFILE=$(powerprofilesctl get)
+        powerprofilesctl set performance
+        trap reset_power_profile EXIT
+    fi
+
     if command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os switch --hostname "$(hostname)" . -- {{extraargs}} ;
