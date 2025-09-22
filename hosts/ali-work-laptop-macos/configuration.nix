@@ -84,7 +84,7 @@
       pinentry_mac
       pkg-config
       posting
-      pre-commit
+      unstable.pre-commit
       pwgen
       qview
       ripgrep
