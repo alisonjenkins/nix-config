@@ -34,7 +34,7 @@ test *extraargs:
 switch *extraargs:
     #!/usr/bin/env bash
     reset_power_profile() {
-        powerprofilesctl $PRE_POWER_PROFILE
+        powerprofilesctl set "$PRE_POWER_PROFILE"
     }
 
     if command -v powerprofilesctl &>/dev/null; then
