@@ -44,6 +44,7 @@
 
     kernelParams = [
       # "mem_sleep_default=deep"
+      "amdgpu.dcdebugmask=0x410"
       "tc_cmos.use_acpi_alarm=1"
     ];
 
