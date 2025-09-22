@@ -53,6 +53,21 @@ switch *extraargs:
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
     fi
 
+# Use Deploy-RS to build and deploy to other machines
+deploy *extraargs:
+    #!/usr/bin/env bash
+    reset_power_profile() {
+        powerprofilesctl set "$PRE_POWER_PROFILE"
+    }
+
+    if command -v powerprofilesctl &>/dev/null; then
+        export PRE_POWER_PROFILE=$(powerprofilesctl get)
+        powerprofilesctl set performance
+        trap reset_power_profile EXIT
+    fi
+
+    deploy {{extraargs}}
+
 # Build the specified system as a VM
 test-build hostname:
   #!/usr/bin/env bash
