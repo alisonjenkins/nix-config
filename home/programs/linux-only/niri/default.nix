@@ -9,6 +9,7 @@
     inputs.quickshell.packages.${system}.default
     nautilus
     swaylock
+    syshud
     unstable.wlr-which-key
     wlsunset
     xwayland-satellite
@@ -322,6 +323,7 @@
 
     spawn-at-startup = [
       { command = ["dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "DISPLAY" "QT_QPA_PLATFORMTHEME" "GTK_THEME" "XCURSOR_THEME" "XCURSOR_SIZE"]; }
+      { command = ["syshud" "-p" "top"]; }
       { command = ["noctalia-shell"]; }
       # { command = ["mako"]; }
       # { command = ["swww-daemon"]; }
