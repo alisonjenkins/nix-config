@@ -322,9 +322,9 @@
     ];
 
     spawn-at-startup = [
-      { command = ["syshud" "-p" "top"]; }
       { command = [ "systemctl" "--user" "import-environment" "DISPLAY" "GTK_THEME" "QT_QPA_PLATFORMTHEME" "WAYLAND_DISPLAY" "XCURSOR_SIZE" "XCURSOR_THEME" "XDG_CURRENT_DESKTOP" ]; }
       { command = [ "dbus-update-activation-environment" "--all" "--systemd" ]; }
+      { command = [ "syshud" "-p" "top" ]; }
       { command = [ "noctalia-shell" ]; }
       # { command = ["mako"]; }
       # { command = ["swww-daemon"]; }
