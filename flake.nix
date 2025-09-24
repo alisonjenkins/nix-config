@@ -51,7 +51,7 @@
     };
 
     nixcord = {
-      url = "github:kaylorben/nixcord";
+      url = "github:kaylorben/nixcord/a8802dc23e112f98196a7daa68f0e246c7a0ea64";
     };
 
     nix-on-droid = {
