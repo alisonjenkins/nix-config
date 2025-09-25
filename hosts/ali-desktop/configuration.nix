@@ -198,7 +198,7 @@
       xorg.xprop
       xorg.xwininfo
       yad
-      yt-dlp
+      master.yt-dlp
       zk
     ];
 
