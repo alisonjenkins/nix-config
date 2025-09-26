@@ -42,6 +42,7 @@
       figlet
       fluxcd
       fzf
+      gama-tui
       gh
       gitui
       glow
