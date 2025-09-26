@@ -85,7 +85,6 @@
       pinentry_mac
       pkg-config
       posting
-      unstable.pre-commit
       pwgen
       qview
       ripgrep
@@ -107,6 +106,7 @@
       typst-live
       unstable.delve
       unstable.opentofu
+      unstable.pre-commit
       unstable.terraform
       watch
       watchexec
