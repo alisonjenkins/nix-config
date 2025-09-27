@@ -1928,11 +1928,11 @@
         "nixpkgs": "nixpkgs_17"
       },
       "locked": {
-        "lastModified": 1758940159,
-        "narHash": "sha256-MuQWyDyB9K3bgnkaDkIhMkUq1FCW/ZdaoAmUicAXZsE=",
+        "lastModified": 1758941504,
+        "narHash": "sha256-ZVCc3upzXeoFlefPaMjH6h/0o0WFDpY+NRXcllA/9Ds=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "61abf365408b00b3306b7d9691df4fb957b250eb",
+        "rev": "c9973236cf98b0cb1e0eadade782e967224e8cea",
         "type": "github"
       },
       "original": {
