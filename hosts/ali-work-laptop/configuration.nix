@@ -130,6 +130,7 @@
       inputs.rust-overlay.overlays.default
       outputs.overlays._1password-gui
       outputs.overlays.additions
+      outputs.overlays.linux-firmware
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.stable-packages
