@@ -315,7 +315,14 @@
   };
 
   users = {
+    users = {
+      colord = {
+        isSystemUser = true;
+        group = "colord";
+      };
+    };
     groups = {
+      colord = {};
       realtime = {};
     };
   };
