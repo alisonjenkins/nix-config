@@ -100,6 +100,7 @@
     systemPackages = with pkgs; [
       sbctl
       slack
+      wallpapers
     ];
   };
 
