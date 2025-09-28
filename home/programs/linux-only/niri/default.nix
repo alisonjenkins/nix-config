@@ -3,13 +3,13 @@
     # mako
     # swaybg
     # swww
+    # syshud
     # waybar
     fuzzel
     inputs.noctalia.packages.${system}.default
     inputs.quickshell.packages.${system}.default
     nautilus
     swaylock
-    syshud
     unstable.wlr-which-key
     wlsunset
     xwayland-satellite
@@ -324,12 +324,12 @@
     spawn-at-startup = [
       { command = [ "systemctl" "--user" "import-environment" "DISPLAY" "GTK_THEME" "QT_QPA_PLATFORMTHEME" "WAYLAND_DISPLAY" "XCURSOR_SIZE" "XCURSOR_THEME" "XDG_CURRENT_DESKTOP" ]; }
       { command = [ "dbus-update-activation-environment" "--all" "--systemd" ]; }
-      { command = [ "syshud" "-p" "top" ]; }
       { command = [ "noctalia-shell" ]; }
+      # { command = [ "syshud" "-p" "top" ]; }
       # { command = ["mako"]; }
+      # { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
       # { command = ["swww-daemon"]; }
       # { command = ["waybar"]; }
-      # { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
     ];
 
     switch-events = {
