@@ -118,7 +118,7 @@ stdenv.mkDerivation {
     # For example:
     cp ${fetchWallpaper { name = "ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; url = "https://images.hdqwalls.com/download/ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; sha256 = "sha256-W/ZzQOCbxdGd4Xgq6Kpkqkdm9SpaxywP1aiFU+8lZBE="; }} $out/share/wallpapers/
 
-    cd "${fetchWallpapersFromGitHub { owner = "alisonjenkins"; repo = "nix-config"; rev = "a10afe019a830f1f2db9abc6842a498eace939cd"; directory = "pkgs/wallpapers/wallpapers"; sha256 = "sha256-E1PJBSUcn2C/6Nn6UUkaLX0OPUmWtmcxC8VorkMlx0Y="; }}" && cp -R . $out/share/wallpapers/
+    cd "${fetchWallpapersFromGitHub { owner = "alisonjenkins"; repo = "nix-config"; rev = "aba1d527cb98e3aed5c11d374e3879fa691c55c9"; directory = "pkgs/wallpapers/wallpapers"; sha256 = "sha256-2Zu2R27UygPa96wWZDjJPBvjEmvbRq1DzwAWB6NT5RM="; }}" && cp -R . $out/share/wallpapers/
 
     # Install the wallhaven search utility
     mkdir -p $out/bin
