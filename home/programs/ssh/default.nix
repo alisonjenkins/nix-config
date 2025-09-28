@@ -156,6 +156,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ali-work-laptop.lan
+          user ali
+          HostName ali-work-laptop.lan
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host ali-worklaptop-setup
           user nixos
           HostName 192.168.0.70
