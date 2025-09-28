@@ -98,6 +98,7 @@
     };
 
     systemPackages = with pkgs; [
+      powershell
       sbctl
       slack
       wallpapers
