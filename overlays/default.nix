@@ -79,8 +79,8 @@
       src = pkgs.fetchFromGitLab {
         owner = "kernel-firmware";
         repo = "linux-firmware";
-        rev = "993ff19b553cd4d252fdf99f07c28825ef57b862";
-        hash = "sha256-hGCD4TleyJB+uPuyDI8vAx1gRI9sL9LWnQuH+FyOad8=";
+        rev = "b611a67511d127842b097f57f02445d94e635b91";
+        hash = "sha256-9fc444ljM2kJ9hFOF2gKuMrZO3UjMJ2peqal//qT2pY=";
       };
     });
   };
