@@ -25,9 +25,8 @@ let
     };
 
   # Helper function to fetch wallpapers from a GitHub repository
-  fetchWallpapersFromGitHub = { owner, repo, rev, directory ? "", sha256, fileExtensions ? [ "jpg" "jpeg" "png" "gif" ] }:
-    let
-      src = fetchgit {
+  fetchWallpapersFromGitHub = { owner, repo, rev, directory ? "", sha256 }:
+     fetchgit {
         inherit rev;
         url = "https://github.com/${owner}/${repo}.git";
         fetchLFS = true;
@@ -36,19 +35,6 @@ let
         ];
         hash = sha256;
       };
-    in
-    stdenv.mkDerivation {
-      name = "${repo}-wallpapers";
-      inherit src;
-
-      installPhase = ''
-        mkdir -p $out
-        cd $src/${directory}
-        find . -type f ${lib.concatMapStringsSep " -o " (ext: "-name \"*.${ext}\"") fileExtensions} | while read -r file; do
-          install -Dm644 "$file" "$out/$(basename "$file")"
-        done
-      '';
-    };
 
   # Helper function to fetch wallpapers from wallhaven.cc
   fetchFromWallhaven = { id, name ? "wallhaven-${id}.jpg", sha256 }:
@@ -72,7 +58,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "wallpapers";
-  version = "1.0.0";
+  version = "2.0.0";
 
   # This is just a builder package - no source needed
   src = ./.;
@@ -114,11 +100,23 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/share/wallpapers
 
-    # You can add specific wallpapers here or use the helper functions
-    # For example:
-    cp ${fetchWallpaper { name = "ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; url = "https://images.hdqwalls.com/download/ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg"; sha256 = "sha256-W/ZzQOCbxdGd4Xgq6Kpkqkdm9SpaxywP1aiFU+8lZBE="; }} $out/share/wallpapers/
+    ALI_WALLPAPERS=${fetchWallpapersFromGitHub {
+      owner = "alisonjenkins";
+      repo = "nix-config";
+      rev = "aba1d527cb98e3aed5c11d374e3879fa691c55c9";
+      directory = "pkgs/wallpapers/wallpapers";
+      sha256 = "sha256-2Zu2R27UygPa96wWZDjJPBvjEmvbRq1DzwAWB6NT5RM=";
+    }}
 
-    cd "${fetchWallpapersFromGitHub { owner = "alisonjenkins"; repo = "nix-config"; rev = "aba1d527cb98e3aed5c11d374e3879fa691c55c9"; directory = "pkgs/wallpapers/wallpapers"; sha256 = "sha256-2Zu2R27UygPa96wWZDjJPBvjEmvbRq1DzwAWB6NT5RM="; }}" && cp -R . $out/share/wallpapers/
+    cd "$ALI_WALLPAPERS/pkgs/wallpapers/wallpapers" && cp -R . $out/share/wallpapers/
+
+    ETHAN_FREEDOM_GUNDAM_CALL_OF_DUTY_MOBILE=${fetchWallpaper {
+      name = "ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg";
+      url = "https://images.hdqwalls.com/download/ethan-freedom-gundam-call-of-duty-mobile-xf-2560x1600.jpg";
+      sha256 = "sha256-W/ZzQOCbxdGd4Xgq6Kpkqkdm9SpaxywP1aiFU+8lZBE=";
+    }}
+
+    cp "$ETHAN_FREEDOM_GUNDAM_CALL_OF_DUTY_MOBILE" $out/share/wallpapers/
 
     # Install the wallhaven search utility
     mkdir -p $out/bin
