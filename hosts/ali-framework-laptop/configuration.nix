@@ -40,7 +40,7 @@
     # kernelPackages = pkgs.linuxPackages_testing;
     # kernelPackages = pkgs.linuxPackages_xanmod;
     # kernelPackages = pkgs.linuxPackages_zen;
-    kernelPackages = pkgs.linuxPackages_testing;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     kernelParams = [
       # "mem_sleep_default=deep"
