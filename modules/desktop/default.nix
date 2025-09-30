@@ -155,6 +155,7 @@
       unstable.easyeffects
       unstable.mission-center
       unstable.nvtopPackages.amd
+      wallpapers
       wleave
       zoom-us
     ] ++ (if enableGamingPackages then with pkgs; [
