@@ -132,9 +132,9 @@
 
         overlays =
           [
-            (import ./overlays { inherit inputs system pkgs lib; }).master-packages
-            (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
-            (import ./overlays { inherit inputs system pkgs lib; }).zk
+            (import ./overlays { inherit inputs system lib; }).master-packages
+            (import ./overlays { inherit inputs system lib; }).unstable-packages
+            (import ./overlays { inherit inputs system lib; }).zk
             inputs.nur.overlays.default
             inputs.rust-overlay.overlays.default
           ]
@@ -167,9 +167,9 @@
 
             overlays =
               [
-                (import ./overlays { inherit inputs system pkgs lib; }).master-packages
-                (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
-                (import ./overlays { inherit inputs system pkgs lib; }).zk
+                (import ./overlays { inherit inputs system lib; }).master-packages
+                (import ./overlays { inherit inputs system lib; }).unstable-packages
+                (import ./overlays { inherit inputs system lib; }).zk
                 inputs.nur.overlays.default
                 inputs.rust-overlay.overlays.default
                 (self: super: {
@@ -652,8 +652,8 @@
       #     };
       #
       #     overlays = [
-      #         (import ./overlays { inherit inputs system pkgs lib; }).master-packages
-      #         (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
+      #         (import ./overlays { inherit inputs system lib; }).master-packages
+      #         (import ./overlays { inherit inputs system lib; }).unstable-packages
       #         inputs.nur.overlays.default
       #         inputs.rust-overlay.overlays.default
       #     ];
@@ -767,7 +767,6 @@
       overlays = import ./overlays {
         inherit inputs;
         inherit system;
-        inherit pkgs;
         inherit lib;
       };
 

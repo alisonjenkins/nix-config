@@ -1,7 +1,5 @@
 { inputs
 , system
-, pkgs
-, lib
 , ...
 }: {
   # This one brings our custom packages from the 'pkgs' directory
@@ -56,10 +54,6 @@
     });
   };
 
-  _7zz = final: _prev: {
-    _7zz = inputs.nixpkgs_stable.legacyPackages.${final.system}._7zz;
-  };
-
   bluray-playback = final: _prev: {
     libbluray = _prev.libbluray.override {
       withAACS = true;
@@ -68,15 +62,11 @@
     };
   };
 
-  # ffmpeg = final: _prev: {
-  #   ffmpeg = inputs.nixpkgs_stable.legacyPackages.${final.system}.ffmpeg;
-  # };
-
   linux-firmware = final: _prev: {
     linux-firmware = _prev.linux-firmware.overrideAttrs (oldAttrs: {
       version = "20250829";
 
-      src = pkgs.fetchFromGitLab {
+      src = _prev.fetchFromGitLab {
         owner = "kernel-firmware";
         repo = "linux-firmware";
         rev = "b611a67511d127842b097f57f02445d94e635b91";
@@ -114,7 +104,7 @@
 
   snapper = final: _prev: {
     snapper = _prev.snapper.overrideAttrs (oldAttrs: {
-      buildInputs = oldAttrs.buildInputs ++ [ pkgs.zlib ];
+      buildInputs = oldAttrs.buildInputs ++ [ _prev.zlib ];
     });
   };
 
@@ -124,7 +114,7 @@
         version = "v0.14.2";
         vendorHash = "sha256-2PlaIw7NaW4pAVIituSVWhssSBKjowLOLuBV/wz829I=";
 
-        src = pkgs.fetchFromGitHub {
+        src = prev.fetchFromGitHub {
           owner = "zk-org";
           repo = "zk";
           rev = version;
