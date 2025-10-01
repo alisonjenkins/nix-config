@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { inputs, ... }:
+  outputs = { ... }@inputs:
   inputs.flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = (import inputs.nixpkgs) {
