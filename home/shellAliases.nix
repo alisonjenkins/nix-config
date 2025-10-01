@@ -24,6 +24,7 @@
   # "ls" = "${pkgs.eza}/bin/eza";
   # "lt" = "${pkgs.eza}/bin/eza --tree --git --long";
   "nfr" = "nix run .";
+  "nfti" = "nix-flake-template-init";
   "nfu" = "nix flake update";
   "nfuc" = "nix flake update --commit-lock-file";
   "nsg" = "nix store gc";

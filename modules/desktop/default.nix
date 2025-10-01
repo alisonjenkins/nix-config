@@ -146,6 +146,7 @@
       gamescopeConfig
       hicolor-icon-theme
       inputs.caelestia-cli.packages.${system}.default
+      nix-flake-template-init
       oxker
       pciutils
       playerctl
