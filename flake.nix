@@ -643,40 +643,40 @@
         };
       };
 
-      nixOnDroidConfigurations = let
-        pkgs = import nixpkgs {
-          system = "aarch64-linux";
-
-          config = {
-            allowUnfree = true;
-          };
-
-          overlays = [
-              (import ./overlays { inherit inputs system pkgs lib; }).master-packages
-              (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
-              inputs.nur.overlays.default
-              inputs.rust-overlay.overlays.default
-          ];
-        };
-      in
-      {
-        default = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-          pkgs = pkgs;
-
-          modules = [
-            {
-              environment = {
-                systemPackages = with pkgs; [
-                  dua
-                  git
-                  inputs.ali-neovim.packages.${system}.nvim
-                  just
-                ];
-              };
-            }
-          ];
-        };
-      };
+      # nixOnDroidConfigurations = let
+      #   pkgs = import nixpkgs {
+      #     system = "aarch64-linux";
+      #
+      #     config = {
+      #       allowUnfree = true;
+      #     };
+      #
+      #     overlays = [
+      #         (import ./overlays { inherit inputs system pkgs lib; }).master-packages
+      #         (import ./overlays { inherit inputs system pkgs lib; }).unstable-packages
+      #         inputs.nur.overlays.default
+      #         inputs.rust-overlay.overlays.default
+      #     ];
+      #   };
+      # in
+      # {
+      #   default = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+      #     pkgs = pkgs;
+      #
+      #     modules = [
+      #       {
+      #         environment = {
+      #           systemPackages = with pkgs; [
+      #             dua
+      #             git
+      #             inputs.ali-neovim.packages.${system}.nvim
+      #             just
+      #           ];
+      #         };
+      #       }
+      #     ];
+      #   };
+      # };
 
       checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
 
