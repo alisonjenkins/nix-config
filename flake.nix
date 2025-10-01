@@ -150,13 +150,6 @@
         let
           username = "ajenkins";
           system = "aarch64-darwin";
-          commonArgs = {
-            inherit inputs;
-            inherit outputs;
-            inherit pkgs;
-            inherit system;
-            inherit username;
-          };
 
           pkgs = import inputs.nixpkgs_stable_darwin {
             inherit system;
@@ -176,6 +169,14 @@
                   nodejs = super.unstable.nodejs;
                 })
               ];
+          };
+
+          commonArgs = {
+            inherit inputs;
+            inherit outputs;
+            inherit pkgs;
+            inherit system;
+            inherit username;
           };
 
           hostnames = {
