@@ -180,7 +180,6 @@
           };
 
           hostnames = {
-            brambles = "JVKLHFPJ65";
             civica = "Alisons-MacBook-Pro";
           };
         in
@@ -206,28 +205,6 @@
             ];
             specialArgs = commonArgs // {
               hostname = "${hostnames.civica}";
-            };
-          };
-          "${hostnames.brambles}" = inputs.darwin.lib.darwinSystem {
-            system = system;
-            modules = [
-              ./hosts/ali-work-laptop-macos/configuration.nix
-              home-manager.darwinModules.home-manager
-              {
-                home-manager.backupFileExtension = ".bak";
-                home-manager.useGlobalPkgs = true;
-                home-manager.useUserPackages = true;
-                home-manager.users.${username} = import ./home/home-macos.nix;
-                home-manager.extraSpecialArgs = commonArgs // {
-                  gitEmail = "alison.jenkins@brambles.com";
-                  gitGPGSigningKey = "~/.ssh/id_brambles.pub";
-                  gitUserName = "Alison Jenkins";
-                  hostname = "${hostnames.brambles}";
-                };
-              }
-            ];
-            specialArgs = commonArgs // {
-              hostname = "${hostnames.brambles}";
             };
           };
         };
