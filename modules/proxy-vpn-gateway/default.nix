@@ -28,16 +28,16 @@ in
       };
     };
 
-    lanInterface = mkOption {
-      type = types.str;
-      description = "The physical network interface connected to the LAN.";
-      example = "enp3s0";
+    lanInterfaces = mkOption {
+      type = types.listOf types.str;
+      description = "The network interfaces connected to LANs.";
+      example = ["enp3s0"];
     };
 
-    lanSubnet = mkOption {
-      type = types.str;
-      description = "The IP subnet for your local LAN.";
-      example = "192.168.1.0/24";
+    lanSubnets = mkOption {
+      type = types.listOf types.str;
+      description = "The IP subnets for your LANs.";
+      example = ["192.168.1.0/24"];
     };
 
     proxy = {
@@ -200,21 +200,21 @@ in
                   type filter hook input priority 0; policy drop;
                   ct state established,related accept
                   iifname "lo" accept
-                  iifname ${cfg.lanInterface} tcp dport 22 accept
-                  iifname ${cfg.lanInterface} ip saddr ${cfg.lanSubnet} tcp dport ${toString cfg.proxy.port} accept
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  iifname ${lanInterface} tcp dport 22 accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  iifname ${lanInterface} ip saddr ${cfg.lanSubnet} tcp dport ${toString cfg.proxy.port} accept") cfg.lanInterfaces)}
               }
 
               chain output {
                   type filter hook output priority 0; policy drop;
                   ct state established,related accept
                   oifname "lo" accept
-                  oifname ${cfg.lanInterface} ip daddr ${cfg.lanSubnet} accept
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr ${cfg.lanSubnet} accept") cfg.lanInterfaces)}
                   oifname ${cfg.vpnInterface} accept
 
                   # == EXCEPTIONS FOR THE GATEWAY ITSELF ==
-                  oifname ${cfg.lanInterface} udp dport 53 ip daddr { ${concatStringsSep ", " cfg.exceptions.dnsServers} } accept
-                  oifname ${cfg.lanInterface} ip daddr @nix_caches accept
-                  oifname ${cfg.lanInterface} ip daddr @github_ips accept
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} udp dport 53 ip daddr { ${concatStringsSep ", " cfg.exceptions.dnsServers} } accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr @nix_caches accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr @github_ips accept") cfg.lanInterfaces)}
               }
           }
         '';
