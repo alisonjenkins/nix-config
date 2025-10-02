@@ -11,6 +11,7 @@
       enableImpermanence = true;
       inherit inputs lib outputs pkgs;
     })
+    ../../modules/proxy-vpn-gateway
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./disko-config.nix
@@ -165,6 +166,17 @@
       settings = {
         listen-address = "0.0.0.0:8118";
         forward-socks5 = ".onion localhost:9050 .";
+      };
+    };
+
+    proxyVpnGateway = {
+      enable = true;
+
+      exceptions = {
+        dnsServers = [
+          "149.112.112.112"
+          "9.9.9.9"
+        ];
       };
     };
   };
