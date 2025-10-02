@@ -74,6 +74,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ts-ds1
+          user ali
+          HostName download-server-1.tail476348.ts.net
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host ds1-setup
           HostName download-server-1.lan
           User nixos
