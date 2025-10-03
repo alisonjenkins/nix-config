@@ -105,6 +105,7 @@
       typst
       typst-live
       unstable.delve
+      unstable.ethersync
       unstable.opentofu
       unstable.pre-commit
       unstable.terraform
