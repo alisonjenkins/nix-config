@@ -154,6 +154,7 @@
       posting
       powertop
       unstable.easyeffects
+      unstable.ethersync
       unstable.mission-center
       unstable.nvtopPackages.amd
       wallpapers
