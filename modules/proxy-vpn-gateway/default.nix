@@ -60,6 +60,13 @@ in
       description = "How often to update the IP sets for exception domains. Uses systemd time format.";
     };
 
+    vpnEndpoints = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      description = "List of VPN endpoint hostnames that should be allowed through the firewall.";
+      example = [ "vpn.example.com" "backup-vpn.example.org" ];
+    };
+
     vpnInterface = mkOption {
       type = types.str;
       description = "The virtual network interface for your VPN tunnel.";
@@ -67,10 +74,10 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    let
+  config = mkIf cfg.enable (let
       githubDomains = concatStringsSep " " cfg.exceptions.domains.github;
       nixDomains = concatStringsSep " " cfg.exceptions.domains.nix;
+      vpnEndpoints = concatStringsSep " " cfg.vpnEndpoints;
 
       updateScript = pkgs.writeShellApplication {
         name = "update-nft-sets-proxy";
@@ -85,6 +92,7 @@ in
           declare -A DOMAINS
           DOMAINS["nix_caches"]="${nixDomains}"
           DOMAINS["github_ips"]="${githubDomains}"
+          ${if (builtins.length cfg.vpnEndpoints) > 0 then ''DOMAINS["vpn_endpoints"]="${vpnEndpoints}"'' else ""}
 
           get_ips() {
               local domains=$1
@@ -111,46 +119,9 @@ in
           echo "All sets updated."
         '';
       };
-
-      microsocksLauncher = pkgs.writeShellApplication {
-        name = "microsocks-launcher";
-
-        runtimeInputs = with pkgs; [
-          iproute2
-          microsocks
-        ];
-
-        text = ''
-          #!/bin/sh
-          set -e
-
-          LAN_IF="''${1?LAN interface argument is missing}"
-          PROXY_PORT="''${2?Proxy port argument is missing}"
-          PROXY_AUTH="$3"
-
-          echo "microsocks-launcher: Attempting to find IP for interface ''${LAN_IF}..."
-
-          LISTEN_IP=$(ip -4 addr show dev "''${LAN_IF}" | grep -oP "inet \\K[\\d.]+")
-
-          if [ -z "$LISTEN_IP" ]; then
-            echo "FATAL: Could not find IPv4 address for ''${LAN_IF}. Cannot start proxy." >&2
-            exit 1
-          fi
-
-          echo "microsocks-launcher: Starting proxy, listening on ''${LISTEN_IP}:''${PROXY_PORT}"
-
-          # Build the authentication argument conditionally.
-          AUTH_ARG=""
-          if [ "''${PROXY_AUTH}" != "none" ] && [ -n "''${PROXY_AUTH}" ]; then
-              AUTH_ARG="-u ''${PROXY_AUTH}"
-          fi
-
-          # Use 'exec' to replace the shell process with microsocks.
-          # 'microsocks' is in the PATH thanks to runtimeInputs.
-          exec microsocks -i "$LISTEN_IP" -p "$PROXY_PORT" $AUTH_ARG
-        '';
     in
     {
+      # Create a microsocks service for the first LAN interface
       systemd.services."microsocks-proxy" = {
         after = [ "network-online.target" ];
         description = "SOCKS5 Proxy with dynamic IP binding";
@@ -164,25 +135,24 @@ in
           ExecStart = ''
             ${pkgs.bash}/bin/bash -c '
               set -e
-              echo "Attempting to find IP for interface ${cfg.lanInterface}..."
+              LAN_IF="${builtins.head cfg.lanInterfaces}"
+              echo "Attempting to find IP for interface $LAN_IF..."
 
               # This command finds the IPv4 address for the specified interface.
-              LISTEN_IP=$(ip -4 addr show dev ${cfg.lanInterface} | grep -oP "inet \\K[\\d.]+")
+              LISTEN_IP=$(${pkgs.iproute2}/bin/ip -4 addr show dev "$LAN_IF" | ${pkgs.gnugrep}/bin/grep -oP "inet \\K[\\d.]+")
 
               if [ -z "$LISTEN_IP" ]; then
-                echo "FATAL: Could not find IPv4 address for ${cfg.lanInterface}. Cannot start proxy." >&2
+                echo "FATAL: Could not find IPv4 address for $LAN_IF. Cannot start proxy." >&2
                 exit 1
               fi
 
               echo "microsocks starting, listening on $LISTEN_IP:${toString cfg.proxy.port}"
 
-              # The 'exec' command replaces the shell process with microsocks.
+              # The exec command replaces the shell process with microsocks.
               exec ${pkgs.microsocks}/bin/microsocks \
                 -i "$LISTEN_IP" \
                 -p ${toString cfg.proxy.port} \
-                ${# Nix's 'if' to conditionally add the authentication argument.
-                  if cfg.proxy.auth == "none" then "" else "-u ${cfg.proxy.auth}"
-                }
+                ${if cfg.proxy.auth == "none" then "" else "-u ${cfg.proxy.auth}"}
             '
           '';
         };
@@ -195,26 +165,40 @@ in
           table inet filter {
               set github_ips { type ipv4_addr; flags dynamic; }
               set nix_caches { type ipv4_addr; flags dynamic; }
+              ${if (builtins.length cfg.vpnEndpoints) > 0 then "set vpn_endpoints { type ipv4_addr; flags dynamic; }" else ""}
 
               chain input {
                   type filter hook input priority 0; policy drop;
                   ct state established,related accept
                   iifname "lo" accept
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  iifname ${lanInterface} tcp dport 22 accept") cfg.lanInterfaces)}
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  iifname ${lanInterface} ip saddr ${cfg.lanSubnet} tcp dport ${toString cfg.proxy.port} accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  iifname \"${lanInterface}\" tcp dport 22 accept") cfg.lanInterfaces)}
+                  ${lib.concatMapStringsSep "\n" (lanInterface:
+                    lib.concatMapStringsSep "\n" (lanSubnet:
+                      "  iifname \"${lanInterface}\" ip saddr ${lanSubnet} tcp dport ${toString cfg.proxy.port} accept"
+                    ) cfg.lanSubnets
+                  ) cfg.lanInterfaces}
               }
 
               chain output {
                   type filter hook output priority 0; policy drop;
                   ct state established,related accept
                   oifname "lo" accept
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr ${cfg.lanSubnet} accept") cfg.lanInterfaces)}
-                  oifname ${cfg.vpnInterface} accept
+                  ${lib.concatMapStringsSep "\n" (lanInterface:
+                    lib.concatMapStringsSep "\n" (lanSubnet:
+                      "  oifname \"${lanInterface}\" ip daddr ${lanSubnet} accept"
+                    ) cfg.lanSubnets
+                  ) cfg.lanInterfaces}
+                  oifname "${cfg.vpnInterface}" accept
 
                   # == EXCEPTIONS FOR THE GATEWAY ITSELF ==
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} udp dport 53 ip daddr { ${concatStringsSep ", " cfg.exceptions.dnsServers} } accept") cfg.lanInterfaces)}
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr @nix_caches accept") cfg.lanInterfaces)}
-                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname ${lanInterface} ip daddr @github_ips accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" udp dport 53 ip daddr { ${concatStringsSep ", " cfg.exceptions.dnsServers} } accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @nix_caches accept") cfg.lanInterfaces)}
+                  ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @github_ips accept") cfg.lanInterfaces)}
+                  
+                  # == VPN ENDPOINT ACCESS ==
+                  ${if (builtins.length cfg.vpnEndpoints) > 0 then
+                    lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @vpn_endpoints accept") cfg.lanInterfaces)
+                  else ""}
               }
           }
         '';
@@ -241,5 +225,5 @@ in
           Type = "oneshot";
         };
       };
-    };
+    });
 }
