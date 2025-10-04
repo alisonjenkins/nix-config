@@ -196,9 +196,8 @@ in
                   ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @github_ips accept") cfg.lanInterfaces)}
                   
                   # == VPN ENDPOINT ACCESS ==
-                  ${if (builtins.length cfg.vpnEndpoints) > 0 then
-                    lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @vpn_endpoints accept") cfg.lanInterfaces)
-                  else ""}
+                  # Allow VPN endpoint connections on any interface (needed for VPN to connect)
+                  ${if (builtins.length cfg.vpnEndpoints) > 0 then "ip daddr @vpn_endpoints accept" else ""}
               }
           }
         '';
