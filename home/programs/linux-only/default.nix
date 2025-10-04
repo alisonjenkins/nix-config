@@ -1,6 +1,7 @@
 { ... }: {
   imports = [
     ./firefox
+    ./fuzzel
     ./gtk
     ./hypridle
     ./librewolf
