@@ -34,9 +34,10 @@ The module allows certain domains to bypass the VPN:
 
 ### VPN Endpoints
 
-- `vpnEndpoints`: List of VPN endpoint hostnames that should be allowed through the firewall
+- `vpnEndpoints`: List of VPN endpoint hostnames or IP addresses that should be allowed through the firewall
   - This is essential for allowing the VPN connection itself to be established
-  - Example: `["vpn.example.com", "backup-vpn.example.org"]`
+  - Supports both hostnames and IP addresses
+  - Example: `["vpn.example.com", "backup-vpn.example.org", "192.0.2.1", "198.51.100.42"]`
 
 ### Update Configuration
 
@@ -68,10 +69,11 @@ services.proxyVpnGateway = {
     };
   };
 
-  # VPN endpoints that should be accessible
+  # VPN endpoints that should be accessible (hostnames or IP addresses)
   vpnEndpoints = [
     "vpn.example.com"
     "backup-vpn.example.org"
+    "192.0.2.1"
   ];
 
   updateFrequency = "30min";
@@ -112,7 +114,7 @@ This prevents accidental leaks if the VPN connection drops.
 ### VPN Cannot Connect
 
 If your VPN fails to connect, ensure that:
-1. The `vpnEndpoints` option includes all VPN server hostnames
+1. The `vpnEndpoints` option includes all VPN server hostnames or IP addresses
 2. The VPN endpoint IPs are being resolved correctly (check logs with `journalctl -u update-nft-sets`)
 3. The firewall allows outbound traffic to VPN endpoints
 
