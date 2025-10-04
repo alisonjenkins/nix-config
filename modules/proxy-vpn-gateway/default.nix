@@ -63,8 +63,8 @@ in
     vpnEndpoints = mkOption {
       type = types.listOf types.str;
       default = [];
-      description = "List of VPN endpoint hostnames that should be allowed through the firewall.";
-      example = [ "vpn.example.com" "backup-vpn.example.org" ];
+      description = "List of VPN endpoint hostnames or IP addresses that should be allowed through the firewall.";
+      example = [ "vpn.example.com" "backup-vpn.example.org" "192.0.2.1" "198.51.100.42" ];
     };
 
     vpnInterface = mkOption {
@@ -95,9 +95,16 @@ in
           ${if (builtins.length cfg.vpnEndpoints) > 0 then ''DOMAINS["vpn_endpoints"]="${vpnEndpoints}"'' else ""}
 
           get_ips() {
-              local domains=$1
-              for domain in $domains; do
-                  dig +short A "$domain"
+              local entries=$1
+              for entry in $entries; do
+                  # Check if entry is already an IP address
+                  if echo "$entry" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+                      # It's already an IP, output it directly
+                      echo "$entry"
+                  else
+                      # It's a hostname, resolve it
+                      dig +short A "$entry"
+                  fi
               done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -u
           }
 
