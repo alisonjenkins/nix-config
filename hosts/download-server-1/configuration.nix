@@ -171,6 +171,16 @@
 
     proxyVpnGateway = {
       enable = true;
+      vpnInterface = "wg0";
+
+      lanInterfaces = [
+        "enp1s0"
+        "tailscale0"
+      ];
+
+      vpnEndpoints = [
+        "10.102.192.77"
+      ];
 
       exceptions = {
         dnsServers = [
