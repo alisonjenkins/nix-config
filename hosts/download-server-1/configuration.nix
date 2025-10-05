@@ -115,6 +115,31 @@
       #   iptables -D OUTPUT -j DROP 2>/dev/null || true
       # '';
     };
+
+    wg-quick = {
+      wg0 = {
+        dns = [ "127.0.0.1" ];
+        # privateKeyFile = config.age.secrets.wg-key-laptop.path;
+        privateKeyFile = /persistence/etc/wireguard/wg0-private-key.conf;
+
+        address = [
+          "10.102.192.77/32"
+        ];
+
+        peers = [
+          {
+            endpoint = "62.210.188.244:255";
+            persistentKeepAlive = 25;
+            publicKey = "J68iV1X8gaCz+0gkNFm1Bv6uy6VNYhuMA/V7OOD0IlI=";
+            PresharedKeyFile = /persistence/etc/wireguard/wg0-pre-shared-key-file.conf;
+
+            allowedIPs = [
+              "0.0.0.0/0"
+            ];
+          }
+        ];
+      };
+    };
   };
 
   nix = {
@@ -179,7 +204,7 @@
       ];
 
       vpnEndpoints = [
-        "10.102.192.77"
+        "62.210.188.244"
       ];
 
       exceptions = {
