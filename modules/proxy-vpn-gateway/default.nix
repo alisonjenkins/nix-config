@@ -128,6 +128,12 @@ in
       };
     in
     {
+      environment.systemPackages = with pkgs; [
+        iproute2
+        microsocks
+        nftables
+      ];
+
       # Create a microsocks service for the first LAN interface
       systemd.services."microsocks-proxy" = {
         after = [ "network-online.target" ];
