@@ -170,6 +170,7 @@
     systemPackages = with pkgs; [
       btop
       cachix
+      dig
       git
       htop
       htop
