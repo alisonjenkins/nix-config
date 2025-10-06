@@ -218,6 +218,13 @@
           "192.168.1.1"
           "9.9.9.9"
         ];
+
+        domains = {
+          nix = [
+            "cache.nixos.org"
+            "channels.nixos.org"
+          ];
+        };
       };
     };
   };
