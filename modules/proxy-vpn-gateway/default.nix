@@ -116,10 +116,10 @@ in
                   continue
               fi
               # Atomically update the set
-              nft add set inet filter "''${set_name}_temp" { type ipv4_addr\; flags timeout\; }
-              nft add element inet filter "''${set_name}_temp" { $(echo $NEW_IPS | tr '\n' ',') }
+              nft add set inet filter "''${set_name}_temp" "{ type ipv4_addr\; flags timeout\; }"
+              nft add element inet filter "''${set_name}_temp" "{ $(echo "$NEW_IPS" | tr '\n' ',') }"
               nft flush set inet filter "$set_name"
-              nft add element inet filter "$set_name" { @''${set_name}_temp }
+              nft add element inet filter "$set_name" "{ @''${set_name}_temp }"
               nft delete set inet filter "''${set_name}_temp"
               echo "Successfully updated set $set_name."
           done
@@ -201,7 +201,7 @@ in
                   ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" udp dport 53 ip daddr { ${concatStringsSep ", " cfg.exceptions.dnsServers} } accept") cfg.lanInterfaces)}
                   ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @nix_caches accept") cfg.lanInterfaces)}
                   ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @github_ips accept") cfg.lanInterfaces)}
-                  
+
                   # == VPN ENDPOINT ACCESS ==
                   # Allow VPN endpoint connections on any interface (needed for VPN to connect)
                   ${if (builtins.length cfg.vpnEndpoints) > 0 then "ip daddr @vpn_endpoints accept" else ""}
