@@ -199,6 +199,10 @@
       enable = true;
       vpnInterface = "wg0";
 
+      lanSubnets = [
+        "192.168.1.0/24"
+      ];
+
       lanInterfaces = [
         "enp1s0"
         "tailscale0"
