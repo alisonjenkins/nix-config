@@ -107,7 +107,7 @@
       unstable.delve
       unstable.ethersync
       unstable.opentofu
-      unstable.pre-commit
+      unstable.prek
       unstable.terraform
       watch
       watchexec
