@@ -163,6 +163,7 @@
     ] ++ (if enableGamingPackages then with pkgs; [
       boilr
       gamemode
+      heroic
       mangohud
       steamtinkerlaunch
       unstable.protonplus
