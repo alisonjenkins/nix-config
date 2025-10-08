@@ -161,6 +161,7 @@
       wleave
       zoom-us
     ] ++ (if enableGamingPackages then with pkgs; [
+      boilr
       gamemode
       mangohud
       steamtinkerlaunch
