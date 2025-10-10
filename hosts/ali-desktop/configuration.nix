@@ -176,6 +176,7 @@
       podman
       protontricks
       qbittorrent
+      qemu_full
       radeontop
       rio
       s-tui
