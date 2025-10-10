@@ -162,6 +162,7 @@
       "ghostty"
       "gimp"
       "github"
+      "gitify"
       "google-chrome"
       "hammerspoon"
       "inkscape"
