@@ -179,7 +179,7 @@
       "neovide-app"
       "obs"
       "obsidian"
-      "ollama"
+      "ollama-app"
       "powershell"
       "rectangle"
       "rio"
