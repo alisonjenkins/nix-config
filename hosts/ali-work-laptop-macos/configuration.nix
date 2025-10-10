@@ -176,7 +176,7 @@
       "microsoft-outlook"
       "microsoft-teams"
       "mitmproxy"
-      "neovide"
+      "neovide-app"
       "obs"
       "obsidian"
       "ollama"
