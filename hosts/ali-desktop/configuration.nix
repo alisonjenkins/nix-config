@@ -167,6 +167,7 @@
       lact
       libaacs
       lsscsi
+      master.yt-dlp
       mkvtoolnix
       moonlight-qt
       openrct2
@@ -198,7 +199,6 @@
       xorg.xprop
       xorg.xwininfo
       yad
-      master.yt-dlp
       zk
     ];
 
