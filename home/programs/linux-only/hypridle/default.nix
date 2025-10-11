@@ -1,12 +1,31 @@
-{...}: {
+{pkgs, ...}: {
+  home.packages = with pkgs; [
+    bluez
+    brightnessctl
+    hypridle
+    playerctl
+  ];
+
   services.hypridle = {
     enable = true;
+    package = pkgs.unstable.hypridle;
 
     settings = {
-      general = {
-        lock_cmd = "pidof hyprlock || hyprlock";
-        before_sleep_cmd = "loginctl lock-session";
-        after_sleep_cmd = "hyprctl dispatch dpms on";
+      general = let
+        suspendScript = pkgs.writeShellScriptBin "hypridle-suspend" ''
+          playerctl pause
+        '';
+
+        resumeScript = pkgs.writeShellScriptBin "hypridle-resume" ''
+          niri msg action power-on-monitors
+          bluetoothctl connect '88:C9:E8:06:5E:9C' && playerctl play
+        '';
+
+      in {
+        after_sleep_cmd = "${resumeScript}/bin/hypridle-resume";
+        before_sleep_cmd = "${suspendScript}/bin/hypridle-suspend";
+        inhibit_sleep = 3;
+        lock_cmd = "${pkgs.lock-session}/bin/lock-session";
       };
 
       listener = [
