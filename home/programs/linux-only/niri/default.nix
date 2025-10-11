@@ -9,7 +9,6 @@
     inputs.noctalia.packages.${system}.default
     inputs.quickshell.packages.${system}.default
     nautilus
-    swaylock
     unstable.wlr-which-key
     wlsunset
     xwayland-satellite
@@ -128,8 +127,8 @@
       };
 
       "Super+Alt+L" = {
-        action.spawn = "swaylock";
-        hotkey-overlay.title="Lock the Screen: swaylock";
+        action.spawn = "lock-session";
+        hotkey-overlay.title="Lock the Screen";
       };
 
       "XF86AudioRaiseVolume" = {

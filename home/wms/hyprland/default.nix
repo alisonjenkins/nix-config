@@ -40,7 +40,6 @@ in {
   home.packages = with pkgs; if pkgs.stdenv.isLinux then [
     blueman
     hyprevent
-    hyprlock
     hyprpolkitagent
     waypaper
   ] else [ ];

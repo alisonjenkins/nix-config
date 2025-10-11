@@ -1,7 +1,7 @@
 { pkgs }: ''
   {
       "label" : "lock",
-      "action" : "${pkgs.hyprlock}/bin/hyprlock",
+      "action" : "lock-session",
       "text" : "Lock",
       "keybind" : "l"
   }

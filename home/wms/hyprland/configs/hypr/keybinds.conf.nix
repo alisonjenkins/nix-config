@@ -113,7 +113,7 @@
   bind = , XF86AudioNext, exec, ${pkgs.playerctl}/bin/playerctl next # Audio next
   bind = , XF86AudioPrev, exec, ${pkgs.playerctl}/bin/playerctl previous # Audio previous
   bind = , XF86AudioMicMute, exec, ${pkgs.wireplumber}/bin/wpctl set-mute @DEFAULT_SOURCE@ toggle # Toggle microphone
-  bind = , XF86Lock, exec, ${pkgs.hyprlock}/bin/hyprlock --config ~/.config/hypr/conf/hyprlock.conf # Open screenlock
+  bind = , XF86Lock, exec, lock-session # Open screenlock
   bind = , code:238, exec, ${pkgs.brightnessctl}/bin/brightnessctl -d smc::kbd_backlight s +10
   bind = , code:237, exec, ${pkgs.brightnessctl}/bin/brightnessctl -d smc::kbd_backlight s 10-
 

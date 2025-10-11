@@ -90,7 +90,6 @@
       qmk_hid
       rio
       sbctl
-      swaylock
       todoist-electron
       tpm2-tss
       whatsie

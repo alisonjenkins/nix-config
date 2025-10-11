@@ -91,7 +91,7 @@ menu:
 
   - key: "l"
     desc: Lock
-    cmd: "hyprlock"
+    cmd: "lock-session"
 
   - key: "g"
     desc: Games
