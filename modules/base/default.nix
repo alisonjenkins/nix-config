@@ -1,7 +1,6 @@
 { consoleKeyMap ? "us"
 , enableIPv6 ? false
 , enableImpermanence ? false
-, enableMesaGit ? false
 , enableOpenSSH ? true
 , enablePlymouth ? true
 , imperpmanencePersistencePath ? builtins.toPath "/persistence"
