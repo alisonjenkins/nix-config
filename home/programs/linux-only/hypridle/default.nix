@@ -20,12 +20,11 @@
           niri msg action power-on-monitors
           bluetoothctl connect '88:C9:E8:06:5E:9C' && playerctl play
         '';
-
       in {
         after_sleep_cmd = "${resumeScript}/bin/hypridle-resume";
         before_sleep_cmd = "${suspendScript}/bin/hypridle-suspend";
         inhibit_sleep = 3;
-        lock_cmd = "${pkgs.lock-session}/bin/lock-session";
+        lock_cmd = "lock-session";
       };
 
       listener = [
@@ -51,5 +50,4 @@
       ];
     };
   };
-
 }
