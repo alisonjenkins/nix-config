@@ -1,13 +1,14 @@
 { ... }: {
   imports = [
+    # ./hypridle
     ./firefox
     ./fuzzel
     ./gtk
-    ./hypridle
     ./librewolf
     ./lsfg-vk
     ./niri
     ./nixcord
+    ./swayidle
     ./waybar
   ];
 }

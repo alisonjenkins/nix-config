@@ -44,7 +44,7 @@
   # bind = $mainMod CTRL, B, exec, ${pkgs.psmisc}/bin/killall -SIGUSR1 .waybar-wrapped
 
   # Open wallpaper selector bind = $mainMod ALT, W, exec, $HYPRSCRIPTS/wallpaper-automation.sh # Start random wallpaper script
-  bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper                                                             
+  bind = $mainMod CTRL, W, exec, ${pkgs.waypaper}/bin/waypaper
 
   # Start wleave
   bind = $mainMod, DELETE, exec, ${pkgs.wleave}/bin/wleave --show-keybinds --layout ~/.config/hypr/wleave-layout.conf
@@ -53,7 +53,7 @@
   bind = $mainMod SHIFT, W, exec, ${pkgs.waypaper}/bin/waypaper --random
 
   # Open application launcher-
-  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi --show drun 
+  bind = $mainMod, D, exec, ${pkgs.wofi}/bin/wofi --show drun
 
   # Workspaces
   bind = $mainMod, 1, workspace, 1 # Open workspace 1
