@@ -9,8 +9,12 @@ let
   '';
 
   resumeScript = pkgs.writeShellScriptBin "suspend-resume" ''
+    RECONNECT_BLUETOOTH_MAC="''${1:}"
     niri msg action power-on-monitors
-    bluetoothctl connect '88:C9:E8:06:5E:9C' && playerctl play
+
+    if [[ "$RECONNECT_BLUETOOTH_MAC" ]]; then
+      bluetoothctl connect "$RECONNECT_BLUETOOTH_MAC" && playerctl play
+    fi
   '';
 in
 pkgs.stdenv.mkDerivation {
