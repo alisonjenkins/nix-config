@@ -12,13 +12,20 @@
       "-w" # Wait for the before-sleep commands to complete before sleeping
     ];
 
-    events = [
-      { event = "before-sleep"; command = lockCommand; }
-      { event = "lock"; command = lockCommand; }
+    events = let
+      lockGracePeriodSeconds = 0;
+      lockFadeInSeconds = 1;
+    in [
+      { event = "after-resume"; command = "suspend-resume '${bluetoothHeadsetMac}'"; }
+      { event = "before-sleep"; command = "suspend-pre"; }
+      { event = "lock"; command = "lock-session ${lockGracePeriodSeconds} ${lockFadeInSeconds}"; }
     ];
 
-    timeouts = [
-      { timeout = 900; command = lockCommand; }
+    timeouts = let
+      lockFadeInSeconds = 1;
+      lockGracePeriodSeconds = 30;
+    in [
+      { timeout = 900; command = "lock-session ${lockGracePeriodSeconds} ${lockFadeInSeconds}"; }
     ];
   };
 }
