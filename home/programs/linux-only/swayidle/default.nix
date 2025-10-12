@@ -7,9 +7,7 @@
     brightnessctl
   ];
 
-  services.swayidle = let
-    lockCommand = "lock-session";
-  in {
+  services.swayidle = {
     enable = true;
 
     extraArgs = [
