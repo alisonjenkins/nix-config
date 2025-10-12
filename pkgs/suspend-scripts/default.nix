@@ -23,8 +23,8 @@ pkgs.stdenv.mkDerivation {
   version = "1.0";
 
   installPhase = ''
-    mkdir -p $out/bin
-    cp ${suspendScript}/bin/suspend-pre $out/bin/
-    cp ${resumeScript}/bin/suspend-resume $out/bin/
+    mkdir -p "$out/bin"
+    cp "${suspendScript}/bin/suspend-pre" "$out/bin/"
+    cp "${resumeScript}/bin/suspend-resume" "$out/bin/"
   '';
 }
