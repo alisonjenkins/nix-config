@@ -91,7 +91,7 @@ menu:
 
   - key: "l"
     desc: Lock
-    cmd: "lock-session"
+    cmd: "lock-session 0 1"
 
   - key: "g"
     desc: Games
