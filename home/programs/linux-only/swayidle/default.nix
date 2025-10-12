@@ -20,13 +20,13 @@
     ];
 
     events = [
-      { event = "after-resume"; command = "suspend-resume '${bluetoothHeadsetMac}'"; }
-      { event = "before-sleep"; command = "suspend-pre"; }
-      { event = "lock"; command = "lock-session ${toString lockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
+      { event = "after-resume"; command = "${pkgs.suspendScripts}/bin/suspend-resume '${bluetoothHeadsetMac}'"; }
+      { event = "before-sleep"; command = "${pkgs.suspendScripts}/bin/suspend-pre"; }
+      { event = "lock"; command = "${pkgs.lock-session}/bin/lock-session ${toString lockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
     ];
 
     timeouts = [
-      { timeout = 900; command = "lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
+      { timeout = 900; command = "${pkgs.lock-session}/bin/lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
     ];
   };
 }
