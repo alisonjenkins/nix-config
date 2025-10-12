@@ -9,7 +9,7 @@ let
   '';
 
   resumeScript = pkgs.writeShellScriptBin "suspend-resume" ''
-    RECONNECT_BLUETOOTH_MAC="''${1:}"
+    RECONNECT_BLUETOOTH_MAC="''${1:-}"
     niri msg action power-on-monitors
 
     if [[ "$RECONNECT_BLUETOOTH_MAC" ]]; then
