@@ -4,7 +4,7 @@
   ];
 
   services.swayidle = let
-    lockCommand = "/run/current-system/sw/bin/lock-session";
+    lockCommand = "lock-session";
   in {
     enable = true;
 
