@@ -20,8 +20,8 @@
     ];
 
     events = [
-      { event = "after-resume"; command = "suspend-resume '${bluetoothHeadsetMac}'"; }
-      { event = "before-sleep"; command = "suspend-pre"; }
+      { event = "after-resume"; command = "${pkgs.suspendScripts}/bin/suspend-resume '${bluetoothHeadsetMac}'"; }
+      { event = "before-sleep"; command = "${pkgs.suspendScripts}/bin/suspend-pre"; }
       { event = "lock"; command = "lock-session ${toString lockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
     ];
 
