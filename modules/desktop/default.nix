@@ -3,12 +3,14 @@
 , pipeWireQuantum ? 256
 , enableLSFG ? true
 , enableGamingPackages ? true
+, enableFxCast ? true
   # , lib
 , ...
 }: {
   imports = [
     inputs.lsfg-vk-flake.nixosModules.default
     inputs.stylix.nixosModules.stylix
+    ../fx-cast-bridge
   ];
 
   environment = let
@@ -191,6 +193,11 @@
   programs = {
     zsh.enable = true;
 
+    firefox = {
+      nativeMessagingHosts = {
+        fxCast = enableFxCast;
+      };
+    };
   } // (if enableGamingPackages then {
     gamemode = {
       enable = true;
@@ -244,6 +251,11 @@
       compressionLevel = 5;
       enable = true;
       jobs = 4;
+    };
+
+    fx-cast = {
+      enable = enableFxCast;
+      user = "fx-cast";
     };
 
     lsfg-vk = {
@@ -400,4 +412,17 @@
     enable = true;
     xdgOpenUsePortal = true;
   };
+
+  users = (if enableFxCast then {
+    users = {
+      fx-cast = {
+        description = "User that the fx-cast-bridge runs as";
+        group = "fx-cast";
+        isSystemUser = true;
+      };
+    };
+    groups = {
+      fx-cast = {};
+    };
+  } else {});
 }

@@ -273,7 +273,6 @@
     fstrim.enable = true;
     irqbalance.enable = true;
     pulseaudio.enable = false;
-    resolved.enable = true;
 
     earlyoom = {
       enable = true;
@@ -300,6 +299,14 @@
         KbdInteractiveAuthentication = false;
         PermitRootLogin = "no";
       };
+    };
+
+    resolved = {
+      enable = true;
+
+      extraConfig = ''
+        MulticastDNS=no
+      '';
     };
 
     tailscale = {
