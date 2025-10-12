@@ -144,6 +144,10 @@
             else [ ]
           );
       };
+
+      bluetoothMacs = {
+        sonyHeadset = "88:C9:E8:06:5E:9C";
+      };
     in
     {
       darwinConfigurations =
@@ -223,6 +227,7 @@
             inherit inputs;
             inherit system;
             username = "ali";
+            bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
             gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             primarySSHKey = "~/.ssh/id_personal.pub";
@@ -323,6 +328,7 @@
                 specialArgs
                 // {
                   # gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+                  bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "";
                   gitUserName = "Alison Jenkins";
@@ -363,6 +369,7 @@
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
+                  bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
                   gitUserName = "Alison Jenkins";

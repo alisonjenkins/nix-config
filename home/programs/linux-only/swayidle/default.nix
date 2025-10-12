@@ -1,4 +1,8 @@
-{ pkgs, ... }: {
+{
+  bluetoothHeadsetMac ? "",
+  pkgs,
+  ...
+}: {
   home.packages = with pkgs; [
     brightnessctl
   ];
