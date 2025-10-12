@@ -154,6 +154,7 @@
       popsicle
       posting
       powertop
+      suspendScripts
       unstable.easyeffects
       unstable.ethersync
       unstable.mission-center
