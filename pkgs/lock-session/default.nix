@@ -9,6 +9,7 @@ writeShellScriptBin "lock-session" ''
   GRACE_SECONDS="''${1:-}"
 
   SWAYLOCK_ARGS=(
+    "--clock"
     "--daemonize"
     "--effect-blur"
     "5x4"
