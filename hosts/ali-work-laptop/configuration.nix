@@ -31,7 +31,7 @@
   ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_testing;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     extraModprobeConfig = ''
       options snd-hda-intel index=1,0
