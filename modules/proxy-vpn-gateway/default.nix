@@ -171,6 +171,8 @@ in
         };
       };
 
+      networking.firewall.enable = lib.mkForce false;
+
       networking.nftables = {
         enable = true;
 
