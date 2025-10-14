@@ -119,7 +119,6 @@
     wireguard = {
       interfaces = {
         wg0 = {
-          dns = [ "127.0.0.1" ];
           privateKeyFile = "/persistence/etc/wireguard/wg0-private-key.conf";
 
           ips = [
