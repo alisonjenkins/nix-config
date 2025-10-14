@@ -122,7 +122,7 @@
           dns = [ "127.0.0.1" ];
           privateKeyFile = "/persistence/etc/wireguard/wg0-private-key.conf";
 
-          address = [
+          ips = [
             "10.102.192.77/32"
           ];
 
