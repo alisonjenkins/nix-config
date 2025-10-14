@@ -116,7 +116,7 @@
       # '';
     };
 
-    wg-quick = {
+    wireguard = {
       interfaces = {
         wg0 = {
           dns = [ "127.0.0.1" ];
