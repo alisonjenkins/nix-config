@@ -57,6 +57,7 @@
       jdk11
       jq
       json2hcl
+      jujutsu
       just
       kind
       kubecm
