@@ -26,7 +26,6 @@
       cargo-make
       cargo-tarpaulin
       cargo-watch
-      checkov
       colima
       comma
       cowsay
@@ -103,6 +102,7 @@
       tmux
       typst
       typst-live
+      unstable.checkov
       unstable.delve
       unstable.ethersync
       unstable.opentofu
