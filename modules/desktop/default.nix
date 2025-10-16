@@ -142,6 +142,7 @@
     systemPackages = with pkgs; [
       aider-chat-full
       deepfilternet
+      devenv
       file-roller
       gamescopeConfig
       hicolor-icon-theme

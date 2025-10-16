@@ -29,6 +29,7 @@
       colima
       comma
       cowsay
+      devenv
       direnv
       diskus
       dive
