@@ -26,16 +26,16 @@ in
       aliases = {
         # branch
         b = "branch";
-        bc = "checkout -b";
-        bl = "branch -v";
         bC = "!git checkout main && git fetch -p && git branch --merged | grep -v -E '^\*|main|master|develop$' | xargs git branch -d";
         bL = "branch -av";
-        bx = "branch -d";
-        bX = "branch -D";
-        bm = "branch -m";
         bM = "branch -M";
-        bs = "show-branch";
         bS = "show-branch -a";
+        bX = "branch -D";
+        bc = "checkout -b";
+        bl = "branch -v";
+        bm = "branch -m";
+        bs = "show-branch";
+        bx = "branch -d";
         go = "!f() { git checkout -b \"$1\" 2> /dev/null || git checkout \"$1\"; }; f";
 
         # checkout/fetch/merge/push/rebase
