@@ -26,6 +26,9 @@
 
   boot = {
     consoleLogLevel = 0;
+    kernelModules = [
+      "sch_dualpi2"
+    ];
 
     binfmt = {
       emulatedSystems = [
@@ -69,7 +72,7 @@
         "fs.dentry-negative" = 1;
 
         # Network Perf Tuning
-        "net.core.default_qdisc" = "cake";
+        "net.core.default_qdisc" = "dualpi2";
         "net.core.netdev_max_backlog" = 16384;
         "net.core.optmem_max" = 65536;
         "net.core.rmem_default" = 1048576;
