@@ -28,6 +28,7 @@ in
         b = "branch";
         bc = "checkout -b";
         bl = "branch -v";
+        bC = "!git checkout main && git fetch -p && git branch --merged | grep -v -E '^\*|main|master|develop$' | xargs git branch -d";
         bL = "branch -av";
         bx = "branch -d";
         bX = "branch -D";
