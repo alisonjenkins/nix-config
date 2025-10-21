@@ -1,6 +1,7 @@
 { ... }: {
   imports = [
     # ./hypridle
+    ./anyrun
     ./firefox
     ./fuzzel
     ./gtk

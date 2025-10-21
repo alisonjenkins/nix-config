@@ -122,8 +122,8 @@
       };
 
       "Mod+D" = {
-        action.spawn = ["fuzzel"];
-        hotkey-overlay.title="Run an Application: fuzzel";
+        action.spawn = ["anyrun"];
+        hotkey-overlay.title="Run an Application: anyrun";
       };
 
       "Super+Alt+L" = {
