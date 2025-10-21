@@ -15,7 +15,7 @@ Config(
 
   // The minimum height of the runner, the runner will expand to fit all the entries
   // NOTE: If this is set to 0, the window will never shrink after being expanded
-  height: Absolute(40),
+  height: Absolute(60),
 
   // Hide match and plugin info icons
   hide_icons: false,
