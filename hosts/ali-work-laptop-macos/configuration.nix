@@ -475,6 +475,7 @@
       "microsoft-teams"
       "mitmproxy"
       "neovide-app"
+      "notion"
       "obs"
       "obsidian"
       "ollama-app"
