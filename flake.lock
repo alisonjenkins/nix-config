@@ -2152,6 +2152,7 @@
         "quickshell": "quickshell_2",
         "rust-overlay": "rust-overlay_4",
         "sops-nix": "sops-nix",
+        "stasis": "stasis",
         "stylix": "stylix",
         "tmux-sessionizer": "tmux-sessionizer"
       }
@@ -2288,6 +2289,22 @@
       "original": {
         "owner": "Mic92",
         "repo": "sops-nix",
+        "type": "github"
+      }
+    },
+    "stasis": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1761023391,
+        "narHash": "sha256-o/E0YoIWlw772s34mBSPAG5FCHbSQYPX7ccXpXoEc6k=",
+        "owner": "saltnpepper97",
+        "repo": "stasis",
+        "rev": "24438f34048e70740ecbd996af729a4197316879",
+        "type": "github"
+      },
+      "original": {
+        "owner": "saltnpepper97",
+        "repo": "stasis",
         "type": "github"
       }
     },

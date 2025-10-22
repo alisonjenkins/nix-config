@@ -9,6 +9,7 @@
     ./lsfg-vk
     ./niri
     ./nixcord
+    ./statis
     ./swayidle
     ./waybar
   ];
