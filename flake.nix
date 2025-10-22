@@ -104,6 +104,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    stasis = {
+      flake = false;
+      url = "github:saltnpepper97/stasis";
+    };
+
     # umu = {
     #   url = "git+https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging\/nix&submodules=1";
     #   inputs.nixpkgs.follows = "nixpkgs";
