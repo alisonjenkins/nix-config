@@ -61,7 +61,10 @@
 
     noctalia = {
       url = "github:noctalia-dev/noctalia-shell";
-      inputs.nixpkgs.follows = "nixpkgs_unstable";
+      inputs = {
+        nixpkgs.follows = "nixpkgs_unstable";
+        quickshell.follows = "quickshell";
+      };
     };
 
     nur = {
@@ -95,7 +98,7 @@
     };
 
     quickshell = {
-      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+      url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
