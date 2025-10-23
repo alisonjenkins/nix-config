@@ -95,7 +95,7 @@
         then [
           heroic
           # inputs.umu.packages.${pkgs.system}.umu
-          lutris
+          unstable.lutris
           unigine-heaven
         ]
         else [ ]
