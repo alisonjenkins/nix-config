@@ -5,6 +5,7 @@
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     # niri.url = "github:YaLTeR/niri";
     eks-creds.url = "github:alisonjenkins/eks-creds";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     niri-flake.url = "github:sodiboo/niri-flake/27e012b4cd49e9ac438573ec7a6db3e5835828c3";
