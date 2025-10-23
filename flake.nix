@@ -4,9 +4,6 @@
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
     # niri.url = "github:YaLTeR/niri";
-    ali-neovim.url = "github:alisonjenkins/neovim-nix-flake";
-    caelestia-cli.url = "github:alisonjenkins/cli";
-    deploy-rs.url = "github:serokell/deploy-rs";
     eks-creds.url = "github:alisonjenkins/eks-creds";
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
@@ -21,13 +18,28 @@
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.05-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
-    rust-overlay.url = "github:oxalica/rust-overlay";
     stylix.url = "github:danth/stylix/release-25.05";
-    tmux-sessionizer.url = "github:jrmoulton/tmux-sessionizer";
+
+    ali-neovim = {
+      url = "github:alisonjenkins/neovim-nix-flake";
+      inputs = {
+        nixpkgs.follows = "nixpkgs_unstable";
+        nixpkgs-master.follows = "nixpkgs_master";
+        nixpkgs-stable.follows = "nixpkgs_stable";
+      };
+    };
 
     darwin = {
       url = "github:lnl7/nix-darwin/nix-darwin-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+
+      inputs = {
+        nixpkgs.follows = "nixpkgs_unstable";
+      };
     };
 
     disko = {
@@ -102,9 +114,24 @@
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+
+      inputs = {
+        nixpkgs.follows = "nixpkgs_unstable";
+      };
+    };
+
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    tmux-sessionizer = {
+      url = "github:jrmoulton/tmux-sessionizer";
+      inputs = {
+        nixpkgs.follows = "nixpkgs_unstable";
+      };
     };
 
     # umu = {
