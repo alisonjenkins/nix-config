@@ -129,7 +129,7 @@
     };
 
     tmux-sessionizer = {
-      url = "github:alisonjenkins/tmux-sessionizer/afe12fbd2faad182e2a3c1f536f4aba9bbdea5b4";
+      url = "github:alisonjenkins/tmux-sessionizer/f946917d7bd5d9e96fed5ffb85368bb9e7a5404f";
       inputs = {
         nixpkgs.follows = "nixpkgs_unstable";
       };
