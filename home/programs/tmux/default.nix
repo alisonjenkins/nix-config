@@ -33,6 +33,18 @@
         [[search_dirs]]
         path = "${home}/git"
         depth = 10
+
+        [[github_profiles]]
+        name = "personal"
+        credentials_command = "op item get \"tmux-sessionizer - personal repos FAT\" --fields label=password --reveal --cache"
+        clone_root_path = "~/git/personal"
+        clone_method = "SSH"
+
+        [[github_profiles]]
+        name = "work"
+        credentials_command = "op item get \"tmux-sessionizer - work repos FAT\" --fields label=password --reveal --cache"
+        clone_root_path = "~/git/work"
+        clone_method = "SSH"
       '';
       ".config/tmux/tmux.conf".text = import ./tmux.conf.nix {inherit pkgs; inherit tmux-catpuccin;};
     };
