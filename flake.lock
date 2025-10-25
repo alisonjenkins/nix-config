@@ -2424,17 +2424,17 @@
         "rust-overlay": "rust-overlay_5"
       },
       "locked": {
-        "lastModified": 1761347883,
-        "narHash": "sha256-ukpF6zOp2KfH+Kh7k+f7lDPggVwtgwsF0XR9oQoPmr0=",
+        "lastModified": 1761351414,
+        "narHash": "sha256-PAfgcnYk3rd2wSEtRVgR0JSpwU2MCUmuBWDFpD/aQl4=",
         "owner": "alisonjenkins",
         "repo": "tmux-sessionizer",
-        "rev": "1d481c918e53d303eda779ef12ac24fa92aca8e5",
+        "rev": "91c4ae8a29c5c281d5bdba1873630924a00ea841",
         "type": "github"
       },
       "original": {
         "owner": "alisonjenkins",
         "repo": "tmux-sessionizer",
-        "rev": "1d481c918e53d303eda779ef12ac24fa92aca8e5",
+        "rev": "91c4ae8a29c5c281d5bdba1873630924a00ea841",
         "type": "github"
       }
     },
