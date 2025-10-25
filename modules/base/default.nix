@@ -12,13 +12,17 @@
 , useAliNeovim ? false
 , useGrub ? false
 , useSecureBoot ? false
+, pcr15Value ? null
 , useSystemdBoot ? true
 , ...
 }: {
   imports = [
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
-  ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
+  ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ]
+  ++ (if useSecureBoot then [
+    ../luksPCR15
+  ] else []);
 
   console.keyMap = consoleKeyMap;
 
@@ -424,3 +428,10 @@
     };
   };
 } else { })
+// (if useSecureBoot then {
+  systemIdentity = {
+    enable = true;
+    pcr15 = pcr15Value;
+  };
+
+} else {})
