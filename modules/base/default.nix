@@ -342,13 +342,11 @@
         directories = [
           "/etc/NetworkManager/system-connections"
           "/etc/luks"
-          "/etc/secureboot"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
           "/var/lib/fprint"
           "/var/lib/nixos"
           "/var/lib/power-profiles-daemon"
-          "/var/lib/sbctl"
           "/var/lib/sddm"
           "/var/lib/systemd/coredump"
           "/var/log"
@@ -406,7 +404,15 @@
             group = "root";
             mode = "u=rwx,g=,o=";
           }
-        ];
+        ] ++ (if useSecureBoot then [
+          {
+            directory = "/var/lib/sbctl";
+            group = "root";
+            mode = "u=rwx,g=,o=";
+            user = "root";
+          }
+        ] else []
+        );
         files = [
           "/etc/machine-id"
           {
