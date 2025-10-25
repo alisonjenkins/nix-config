@@ -24,6 +24,7 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
+      # pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
       useSecureBoot = true;
       useSystemdBoot = false;
       inherit inputs lib outputs pkgs;
