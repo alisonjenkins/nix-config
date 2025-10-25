@@ -24,7 +24,7 @@
         adjust-underline-thickness = -60%
         background-opacity = 0.9
         clipboard-paste-protection = false
-        command = ${zsh} -l -c 'tmux attach ; tmux'
+        command = ${zsh} -l -c 'tmux attach || tmux new-session -s shell'
         # confirm-close-surface = false
         cursor-style = block
         cursor-style-blink = false
