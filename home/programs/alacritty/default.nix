@@ -77,7 +77,7 @@
           args = [
             "-l"
             "-c"
-            "tmux attach ; tmux"
+            "tmux attach || tmux new-session -s shell"
           ];
         };
       };
