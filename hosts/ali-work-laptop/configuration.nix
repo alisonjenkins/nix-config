@@ -37,6 +37,10 @@
       options snd-hda-intel index=1,0
     '';
 
+    kernelParams = [
+      "amd_iommu=off"
+    ];
+
     kernelPatches = [
       {
         name = "amd-isp-capture";
