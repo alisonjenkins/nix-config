@@ -1,4 +1,18 @@
-{ pkgs, inputs, lib, username, system, gpuType, config, gitUserName, gitEmail, gitGPGSigningKey, ... }: {
+{
+  config,
+  gitEmail,
+  gitGPGSigningKey,
+  gitUserName,
+  github_clone_ssh_host_personal,
+  github_clone_ssh_host_work,
+  gpuType,
+  inputs,
+  lib,
+  pkgs,
+  system,
+  username,
+  ...
+}: {
   imports = [
     # ./batsignal
     # ./dunst
@@ -11,7 +25,7 @@
     (import ./ollama { inherit gpuType pkgs; })
     (import ./opencommit { inherit pkgs; })
     (import ./quickshell { inherit config pkgs system inputs; })
-    (import ./tmux { inherit username pkgs; })
+    (import ./tmux { inherit username pkgs github_clone_ssh_host_personal github_clone_ssh_host_work; })
     ./aerospace
     ./alacritty
     ./aws
