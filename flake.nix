@@ -323,6 +323,8 @@
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
                   gitUserName = "Alison Jenkins";
+                  github_clone_ssh_host_personal = "github.com";
+                  github_clone_ssh_host_work = "github.com";
                   primarySSHKey = "~/.ssh/id_personal.pub";
                 };
             }
@@ -366,6 +368,8 @@
                   gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
                   gitGPGSigningKey = "";
                   gitUserName = "Alison Jenkins";
+                  github_clone_ssh_host_personal = "github.com";
+                  github_clone_ssh_host_work = "github.com";
                   primarySSHKey = "~/.ssh/id_personal.pub";
                 };
             }
