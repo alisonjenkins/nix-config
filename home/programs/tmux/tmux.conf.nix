@@ -157,6 +157,4 @@ if-shell 'uname | grep -q Darwin' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"pbcopy\""
 if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"wl-copy\""
-
-new-session
 ''
