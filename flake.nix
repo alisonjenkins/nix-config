@@ -233,6 +233,8 @@
                   gitEmail = "alison.jenkins@civica.com";
                   gitGPGSigningKey = "~/.ssh/id_civica.pub";
                   gitUserName = "Alison Jenkins";
+                  github_clone_ssh_host_personal = "pgithub.com";
+                  github_clone_ssh_host_work = "github.com";
                   hostname = "${hostnames.civica}";
                   primarySSHKey = "~/.ssh/id_civica.pub";
                 };
