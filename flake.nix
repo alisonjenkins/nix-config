@@ -130,9 +130,9 @@
 
     tmux-sessionizer = {
       url = "github:alisonjenkins/tmux-sessionizer/b9965259166c588479c01328e34f0fbc98fa03a2";
-      inputs = {
-        nixpkgs.follows = "nixpkgs_unstable";
-      };
+      # inputs = {
+      #   nixpkgs.follows = "nixpkgs_unstable";
+      # };
     };
 
     # umu = {
