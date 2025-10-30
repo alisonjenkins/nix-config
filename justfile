@@ -30,6 +30,34 @@ test *extraargs:
         sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
     fi
 
+# Build the config for this system without activating it
+build hostname="" *extraargs:
+    #!/usr/bin/env bash
+    reset_power_profile() {
+        powerprofilesctl set "$PRE_POWER_PROFILE"
+    }
+
+    if command -v powerprofilesctl &>/dev/null; then
+        export PRE_POWER_PROFILE=$(powerprofilesctl get)
+        powerprofilesctl set performance
+        trap reset_power_profile EXIT
+    fi
+
+    TARGET_HOST="{{hostname}}"
+    if [ -z "$TARGET_HOST" ]; then
+        TARGET_HOST="$(hostname)"
+    fi
+
+    if command -v nh &>/dev/null; then
+        rm -f ~/.gtkrc-2.0
+        nh os build --hostname "$TARGET_HOST" . -- {{extraargs}} ;
+    elif [ "$(uname)" == "Darwin" ]; then
+        darwin-rebuild build --option sandbox false --flake ".#$TARGET_HOST" {{extraargs}}
+    else
+        rm -f ~/.gtkrc-2.0
+        sudo nixos-rebuild build --flake ".#$TARGET_HOST" {{extraargs}}
+    fi
+
 # Build the config for this system and activate it
 switch *extraargs:
     #!/usr/bin/env bash
@@ -91,6 +119,7 @@ update:
     nix flake update --commit-lock-file
 
 alias b := boot
+alias B := build
 alias s := switch
 alias t := test
 alias u := update
