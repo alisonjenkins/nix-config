@@ -151,6 +151,13 @@ bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l' 'select-pane -R'
 bind-key Space choose-session
 bind C-o display-popup -E "tms"
 
+# Override default session killing keybindings to use smart kill
+# Default tmux binding: prefix + & kills session
+bind-key & run-shell 'tmux-smart-kill-session'
+
+# Add a separate keybinding for killing other sessions (prefix + X)
+bind-key X command-prompt -p "Kill session:" "run-shell 'tmux-smart-kill-session \"%%\"'"
+
 if-shell -b '[ -z "$WAYLAND_DISPLAY" ] && ! uname | grep -q Darwin' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"xclip -selection clipboard\""
 if-shell 'uname | grep -q Darwin' \
