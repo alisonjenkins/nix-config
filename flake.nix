@@ -373,18 +373,23 @@
                       enable = true;
                       package = inputs.framework-inputmodule-rs-flake.packages.x86_64-linux.inputmodule-control;
 
-                      ledMatrix.left = {
+                      ledMatrix.both = {
                         brightness = 5;
                         clock = true;
-                        serialDevice = "/dev/ttyACM1";
                       };
 
-                      ledMatrix.right = {
-                        brightness = 5;
-                        serialDevice = "/dev/ttyACM0";
-                        startGame = "game-of-life";
-                        gameParam = "glider";
-                      };
+                      # ledMatrix.left = {
+                      #   brightness = 5;
+                      #   clock = true;
+                      #   serialDevice = "/dev/ttyACM1";
+                      # };
+                      #
+                      # ledMatrix.right = {
+                      #   brightness = 5;
+                      #   serialDevice = "/dev/ttyACM0";
+                      #   startGame = "game-of-life";
+                      #   gameParam = "glider";
+                      # };
                     };
                   }
                 ];
