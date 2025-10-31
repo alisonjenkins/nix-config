@@ -364,7 +364,31 @@
               home-manager.backupFileExtension = ".bak";
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
+              home-manager.users.${specialArgs.username} = {
+                imports = [
+                  (import ./home/home-linux.nix)
+                  inputs.framework-inputmodule-rs-flake.homeManagerModules.default
+                  {
+                    services.inputmodule-control = {
+                      enable = true;
+                      package = inputs.framework-inputmodule-rs-flake.packages.x86_64-linux.inputmodule-control;
+
+                      ledMatrix.left = {
+                        brightness = 5;
+                        clock = true;
+                        serialDevice = "/dev/ttyACM1";
+                      };
+
+                      ledMatrix.right = {
+                        brightness = 5;
+                        serialDevice = "/dev/ttyACM0";
+                        startGame = "game-of-life";
+                        gameParam = "glider";
+                      };
+                    };
+                  }
+                ];
+              };
               home-manager.extraSpecialArgs =
                 specialArgs
                 // {
