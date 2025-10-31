@@ -48,6 +48,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    framework-inputmodule-rs-flake = {
+      url = "github:alisonjenkins/framework-inputmodule-rs-flake";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";

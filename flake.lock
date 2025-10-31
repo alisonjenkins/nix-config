@@ -706,6 +706,26 @@
         "type": "github"
       }
     },
+    "framework-inputmodule-rs-flake": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs_unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1761905091,
+        "narHash": "sha256-0oVO3HjlPlT7lBxb2Eor+2VJrOywd3TLDHvI8WvWrSk=",
+        "owner": "alisonjenkins",
+        "repo": "framework-inputmodule-rs-flake",
+        "rev": "815f9591890de6ecc9cd0723d65731c8fcb5f391",
+        "type": "github"
+      },
+      "original": {
+        "owner": "alisonjenkins",
+        "repo": "framework-inputmodule-rs-flake",
+        "type": "github"
+      }
+    },
     "fromYaml": {
       "flake": false,
       "locked": {
@@ -1999,6 +2019,7 @@
         "disko": "disko",
         "eks-creds": "eks-creds",
         "flake-parts": "flake-parts_4",
+        "framework-inputmodule-rs-flake": "framework-inputmodule-rs-flake",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "jovian-nixos": "jovian-nixos",

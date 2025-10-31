@@ -82,6 +82,7 @@
       freeplane
       fuzzel
       gnome-keyring
+      inputs.framework-inputmodule-rs-flake.packages.${system}.inputmodule-control
       lact
       ldacbt
       obsidian
@@ -161,6 +162,10 @@
     };
 
     udev = {
+      packages = [
+        inputs.framework-inputmodule-rs-flake.packages.${system}.udev
+      ];
+
       extraRules = ''
         # Framework Laptop 16 Keyboard Module - ANSI
         ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0012", ATTR{power/wakeup}="disabled"
