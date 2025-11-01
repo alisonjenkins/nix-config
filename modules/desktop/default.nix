@@ -169,6 +169,7 @@
       steamtinkerlaunch
       unstable.heroic
       unstable.protonplus
+      unstable.umu-launcher
     ] else [])
     ++ (if enableLSFG then [
       inputs.lsfg-vk-flake.packages.${system}.lsfg-vk-ui
