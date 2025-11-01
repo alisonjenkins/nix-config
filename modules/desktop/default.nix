@@ -158,6 +158,7 @@
       suspendScripts
       unstable.easyeffects
       unstable.ethersync
+      unstable.jellycli
       unstable.mission-center
       unstable.nvtopPackages.amd
       wallpapers
