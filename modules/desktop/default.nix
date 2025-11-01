@@ -165,9 +165,9 @@
     ] ++ (if enableGamingPackages then with pkgs; [
       boilr
       gamemode
-      heroic
       mangohud
       steamtinkerlaunch
+      unstable.heroic
       unstable.protonplus
     ] else [])
     ++ (if enableLSFG then [
