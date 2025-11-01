@@ -141,6 +141,7 @@
   in {
     systemPackages = with pkgs; [
       aider-chat-full
+      copilot-cli
       deepfilternet
       devenv
       file-roller
