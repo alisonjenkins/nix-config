@@ -495,6 +495,9 @@
           {
             app-id = "^steam$";
           }
+          {
+            app-id = "^heroic$";
+          }
         ];
       }
 
