@@ -408,6 +408,12 @@
             group = "root";
             mode = "u=rwx,g=,o=";
           }
+          {
+            directory = "/var/lib/iwd";
+            user = "root";
+            group = "root";
+            mode = "u=rwx,g=,o=";
+          }
         ] ++ (if useSecureBoot then [
           {
             directory = "/var/lib/sbctl";

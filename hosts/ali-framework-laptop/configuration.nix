@@ -114,10 +114,20 @@
 
   networking = {
     hostName = "ali-framework-laptop";
-    extraHosts = ''
-      192.168.1.202 home-kvm-hypervisor-1
-    '';
-    networkmanager.enable = true;
+
+    networkmanager = {
+      enable = true;
+
+      wifi = {
+        backend = "iwd";
+      };
+    };
+
+    wireless = {
+      iwd = {
+        enable = true;
+      };
+    };
   };
 
   nixpkgs = {
