@@ -250,6 +250,10 @@
       enable = enableLSFG;
     };
 
+    preload = {
+      enable = true;
+    };
+
     pulseaudio = {
       enable = false;
     };
