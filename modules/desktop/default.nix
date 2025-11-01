@@ -168,7 +168,7 @@
       gamemode
       mangohud
       steamtinkerlaunch
-      unstable.heroic
+      unstable.heroic-unwrapped
       unstable.protonplus
       unstable.umu-launcher
     ] else [])
