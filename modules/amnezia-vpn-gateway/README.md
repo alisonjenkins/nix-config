@@ -277,8 +277,8 @@ dig @192.168.1.1 google.com
 journalctl -u amnezia-wg -f
 
 # DNS logs
-journalctl -u dnscrypt-proxy-local -f
-journalctl -u dnscrypt-proxy-vpn -f
+journalctl -u unbound-system -f
+journalctl -u unbound-vpn -f
 
 # Kill switch monitoring
 journalctl -u vpn-killswitch -f
