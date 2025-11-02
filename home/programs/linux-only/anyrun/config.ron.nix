@@ -44,6 +44,7 @@ Config(
   // The order of plugins here specifies the order in which they appear
   // in the results. As in it works as a priority for the plugins.
   plugins: [
+    "libniri_focus.so",
     "libapplications.so",
     "libsymbols.so",
     "libshell.so",
