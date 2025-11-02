@@ -11,7 +11,6 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
-      useSecureBoot = true;
       inherit inputs lib outputs pkgs;
     })
     (import ../../modules/desktop {
@@ -181,7 +180,6 @@
       radeontop
       rio
       s-tui
-      sbctl
       stable.ananicy-cpp
       stress
       sunshine
