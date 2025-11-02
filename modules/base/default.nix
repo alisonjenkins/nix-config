@@ -415,7 +415,7 @@
             mode = "u=rwx,g=,o=";
           }
           {
-            directory = "/var/lib/preload";
+            directory = "/var/lib/private/preload";
             user = "root";
             group = "root";
             mode = "u=rwx,g=,o=";
