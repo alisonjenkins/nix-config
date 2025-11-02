@@ -241,8 +241,8 @@ sudo nixos-rebuild switch
 
 # Verify services are running
 systemctl status amnezia-wg
-systemctl status dnscrypt-proxy-local
-systemctl status dnscrypt-proxy-vpn
+systemctl status unbound-system
+systemctl status unbound-vpn
 ```
 
 ## Monitoring and Troubleshooting
