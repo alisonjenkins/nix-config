@@ -284,9 +284,9 @@ let
     
     # 1. Check if we can reach the internet without VPN (should fail)
     echo "Testing direct internet access bypass (should fail)..."
-    if timeout 5 ${pkgs.curl}/bin/curl -s --interface ${head cfg.network.lanInterfaces} http://checkip.amazonaws.com/ >/dev/null 2>&1; then
-        echo "🚨 CRITICAL: Internet accessible without VPN on interface ${head cfg.network.lanInterfaces}!"
-        logger -p daemon.crit "VPN Gateway: CRITICAL Internet leak detected on ${head cfg.network.lanInterfaces}"
+    if timeout 5 ${pkgs.curl}/bin/curl -s --interface ${lib.head cfg.network.lanInterfaces} http://checkip.amazonaws.com/ >/dev/null 2>&1; then
+        echo "🚨 CRITICAL: Internet accessible without VPN on interface ${lib.head cfg.network.lanInterfaces}!"
+        logger -p daemon.crit "VPN Gateway: CRITICAL Internet leak detected on ${lib.head cfg.network.lanInterfaces}"
         
         # Immediately activate kill switch
         ${killSwitchScript}
