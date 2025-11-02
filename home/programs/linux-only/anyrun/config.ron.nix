@@ -46,6 +46,7 @@ Config(
   plugins: [
     "libniri_focus.so",
     "libapplications.so",
+    "libnix_run.so",
     "libsymbols.so",
     "libshell.so",
     "libtranslate.so",
