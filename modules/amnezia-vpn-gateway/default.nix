@@ -1098,10 +1098,7 @@ EOF
         "unbound-system.service"
         "unbound-vpn.service"
         "update-vpn-endpoints.service"
-      ] ++ optional cfg.monitoring.enable "vpn-killswitch-immediate.service"
-        ++ optional cfg.monitoring.enable "vpn-killswitch-backup.service"
-        ++ optional cfg.monitoring.enable "vpn-interface-monitor.path"
-        ++ optional cfg.monitoring.enable "vpn-networkd-monitor.service"
+      ] ++ optional cfg.monitoring.enable "vpn-networkd-monitor.service"
         ++ optional cfg.monitoring.enable "vpn-leak-detection.service";
 
       after = [
