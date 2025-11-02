@@ -155,6 +155,7 @@
       popsicle
       posting
       powertop
+      signal-desktop
       suspendScripts
       unstable.easyeffects
       unstable.ethersync
