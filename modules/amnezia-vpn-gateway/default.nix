@@ -577,6 +577,12 @@ in {
         default = "5min";
         description = "Interval for VPN connectivity health checks";
       };
+
+      killSwitchTimeout = mkOption {
+        type = types.str;
+        default = "30s";
+        description = "Timeout before activating VPN kill switch after connectivity loss";
+      };
     };
   };
 
