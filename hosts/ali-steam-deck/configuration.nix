@@ -88,7 +88,7 @@
     pathsToLink = [ "/share/zsh" ];
 
     variables = {
-      NIXOS_OZONE_WL = "1";
+      # NIXOS_OZONE_WL = "1";
       PATH = [
         "\${HOME}/.local/bin"
         "\${HOME}/.config/rofi/scripts"

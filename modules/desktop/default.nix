@@ -179,7 +179,7 @@
     ] else []);
 
     variables = {
-      NIXOS_OZONE_WL = "1";
+      # NIXOS_OZONE_WL = "1";
       ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
     } // (if enableLSFG then {
       LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
