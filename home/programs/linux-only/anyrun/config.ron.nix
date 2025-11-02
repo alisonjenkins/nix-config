@@ -49,7 +49,7 @@ Config(
     "libnix_run.so",
     "libsymbols.so",
     "libshell.so",
-    "libtranslate.so",
+    "libtranslate.so"
   ],
 
   keybinds: [
