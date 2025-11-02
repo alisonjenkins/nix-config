@@ -284,7 +284,6 @@
 
     earlyoom = {
       enable = true;
-      enableNotifications = true;
     };
 
     openssh = {

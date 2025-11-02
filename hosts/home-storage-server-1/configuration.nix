@@ -82,7 +82,6 @@
       notifications = {
         mail.enable = true;
         wall.enable = true;
-        x11.enable = false;
       };
       defaults.monitored = "-a -o on -s (S/../.././02|L/../../6/03)";
     };
