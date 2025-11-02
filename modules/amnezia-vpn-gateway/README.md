@@ -366,7 +366,7 @@ sudo systemctl start amnezia-wg
 
 1. **Check local DNS service**:
    ```bash
-   systemctl status dnscrypt-proxy-local
+   systemctl status unbound-system
    dig @127.0.0.1 -p 5353 google.com
    ```
 
