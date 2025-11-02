@@ -6,9 +6,13 @@
       in
       {
         enable = true;
+        package = pkgs.unstable._1password-gui;
         polkitPolicyOwners = op_polkit_owners;
       } else {
       enable = false;
     };
-  programs._1password.enable = if pkgs.stdenv.isLinux then true else false;
+    programs._1password = {
+      enable = if pkgs.stdenv.isLinux then true else false;
+      package = pkgs.unstable._1password-cli;
+    };
 }
