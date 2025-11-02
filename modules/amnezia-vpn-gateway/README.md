@@ -372,7 +372,7 @@ sudo systemctl start amnezia-wg
 
 2. **Check VPN DNS service**:
    ```bash
-   systemctl status dnscrypt-proxy-vpn
+   systemctl status unbound-vpn
    dig @192.168.1.1 google.com
    ```
 
