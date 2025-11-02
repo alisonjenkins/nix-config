@@ -632,6 +632,11 @@ in {
           elements = { ${concatStringsSep ", " cfg.network.lanSubnets} }
         }
 
+        set vpn_interface_ips {
+          type ipv4_addr
+          flags dynamic, timeout
+          timeout 24h
+        }
         # INPUT chain - strict rules for incoming traffic
         chain input {
           type filter hook input priority filter; policy drop;
