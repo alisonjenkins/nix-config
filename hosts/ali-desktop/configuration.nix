@@ -188,9 +188,9 @@
       sweethome3d.textures-editor
       sysbench
       todoist-electron
-      uhk-agent
       unixtools.xxd
       unstable.makemkv
+      unstable.uhk-agent
       unzip
       upscayl
       webcamoid
