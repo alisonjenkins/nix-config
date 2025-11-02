@@ -579,9 +579,9 @@ in {
       };
 
       killSwitchTimeout = mkOption {
-        type = types.str;
-        default = "30s";
-        description = "Timeout before activating VPN kill switch after connectivity loss";
+        type = types.int;
+        default = 30;
+        description = "Timeout in seconds before activating VPN kill switch after connectivity loss";
       };
     };
   };
