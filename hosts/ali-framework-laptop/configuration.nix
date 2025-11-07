@@ -17,10 +17,7 @@
       useSecureBoot = true;
       useSystemdBoot = false;
     })
-    (import ../../modules/desktop {
-      pipeWireQuantum = 512;
-      inherit inputs pkgs lib;
-    })
+    ../../modules/desktop
     (import ../../modules/vr { enableOpenSourceVR = false; })
     (import ../../modules/ollama)
     ../../app-profiles/desktop
@@ -30,6 +27,11 @@
     ./disk-config.nix
     ./hardware-configuration.nix
   ];
+
+  modules.desktop = {
+    enable = true;
+    pipewire.quantum = 512;
+  };
 
   boot = {
     bootspec.enableValidation = true;
