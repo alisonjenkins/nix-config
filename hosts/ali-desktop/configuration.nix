@@ -154,6 +154,7 @@
       alsa-scarlett-gui
       amdgpu_top
       cifs-utils
+      claude-code
       cpu-x
       drawio
       freeplane
