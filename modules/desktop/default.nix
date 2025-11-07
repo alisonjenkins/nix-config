@@ -1,22 +1,50 @@
-{ pkgs
-, inputs
-, pipeWireQuantum ? 256
-, enableLSFG ? true
-, enableGamingPackages ? true
-  # , lib
-, ...
-}: {
+{ config, lib, pkgs, inputs, ... }:
+
+with lib;
+
+let
+  cfg = config.modules.desktop;
+in
+{
   imports = [
     inputs.lsfg-vk-flake.nixosModules.default
     inputs.stylix.nixosModules.stylix
   ];
 
-  environment = let
-    gamescopeConfig = pkgs.writeTextFile {
-      name = "gamescope-config";
-      destination = "/usr/share/gamemode/gamescope.ini";
+  options.modules.desktop = {
+    enable = mkEnableOption "desktop environment configuration";
 
-      text = ''
+    pipewire.quantum = mkOption {
+      type = types.int;
+      default = 256;
+      description = "PipeWire quantum size for audio latency configuration";
+    };
+
+    gaming = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable gaming packages and configurations (Steam, GameMode, etc.)";
+      };
+    };
+
+    lsfg = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Lossless Scaling Frame Generation support";
+      };
+    };
+  };
+
+  config = mkIf cfg.enable {
+
+    environment = let
+      gamescopeConfig = pkgs.writeTextFile {
+        name = "gamescope-config";
+        destination = "/usr/share/gamemode/gamescope.ini";
+
+        text = ''
         [general]
         ; The reaper thread will check every 5 seconds for exited clients, for config file changes, and for the CPU/iGPU power balance
         reaper_freq=5
@@ -136,276 +164,276 @@
 
         ; Timeout for scripts (seconds). Scripts will be killed if they do not complete within this time.
         ;script_timeout=10
-      '';
-    };
-  in {
-    systemPackages = with pkgs; [
-      aider-chat-full
-      copilot-cli
-      deepfilternet
-      devenv
-      file-roller
-      gamescopeConfig
-      hicolor-icon-theme
-      lock-session
-      nix-flake-template-init
-      oxker
-      pciutils
-      playerctl
-      popsicle
-      posting
-      powertop
-      signal-desktop
-      suspendScripts
-      unstable.easyeffects
-      unstable.ethersync
-      unstable.jellycli
-      unstable.mission-center
-      unstable.nvtopPackages.amd
-      wallpapers
-      wleave
-      zoom-us
-    ] ++ (if enableGamingPackages then with pkgs; [
-      boilr
-      gamemode
-      mangohud
-      steamtinkerlaunch
-      unstable.heroic-unwrapped
-      unstable.protonplus
-      unstable.umu-launcher
-    ] else [])
-    ++ (if enableLSFG then [
-      inputs.lsfg-vk-flake.packages.${system}.lsfg-vk-ui
-    ] else []);
-
-    variables = {
-      # NIXOS_OZONE_WL = "1";
-      ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
-    } // (if enableLSFG then {
-      LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
-    } else {});
-  };
-
-  hardware = {
-    graphics = {
-      enable = true;
-    };
-  };
-
-  programs = {
-    zsh.enable = true;
-
-  } // (if enableGamingPackages then {
-    gamemode = {
-      enable = true;
-      settings = {
-        general = {
-          defaultgov = "powersave";
-          desiredgov = "performance";
-          softrealtime = "auto";
-          ioprio = 0;
-          renice = 10;
-        };
-
-        custom = {
-          start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
-          end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
-        };
+        '';
       };
+    in {
+      systemPackages = with pkgs; [
+        aider-chat-full
+        copilot-cli
+        deepfilternet
+        devenv
+        file-roller
+        gamescopeConfig
+        hicolor-icon-theme
+        lock-session
+        nix-flake-template-init
+        oxker
+        pciutils
+        playerctl
+        popsicle
+        posting
+        powertop
+        signal-desktop
+        suspendScripts
+        unstable.easyeffects
+        unstable.ethersync
+        unstable.jellycli
+        unstable.mission-center
+        unstable.nvtopPackages.amd
+        wallpapers
+        wleave
+        zoom-us
+      ] ++ (optionals cfg.gaming.enable (with pkgs; [
+        boilr
+        gamemode
+        mangohud
+        steamtinkerlaunch
+        unstable.heroic-unwrapped
+        unstable.protonplus
+        unstable.umu-launcher
+      ]))
+      ++ (optionals cfg.lsfg.enable [
+        inputs.lsfg-vk-flake.packages.${pkgs.system}.lsfg-vk-ui
+      ]);
+
+      variables = {
+        # NIXOS_OZONE_WL = "1";
+        ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+      } // (optionalAttrs cfg.lsfg.enable {
+        LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
+      });
     };
 
-    steam = {
-      enable = true;
-      remotePlay.openFirewall = true;
-      dedicatedServer.openFirewall = true;
-    };
-  } else {});
-
-  security = {
-    polkit = {
-      enable = true;
-    };
-
-    rtkit = {
-      enable = true;
-    };
-
-    soteria = {
-      enable = true;
-    };
-  };
-
-  services = {
-    ananicy = {
-      enable = true;
-      package = pkgs.ananicy-cpp;
-      rulesProvider = pkgs.ananicy-rules-cachyos;
-    };
-
-    cachix-watch-store = {
-      cacheName = "ajenkins-public";
-      cachixTokenFile = "/persistence/cachix/authToken";
-      compressionLevel = 5;
-      enable = true;
-      jobs = 4;
-    };
-
-    lsfg-vk = {
-      enable = enableLSFG;
-    };
-
-    preload = {
-      enable = true;
-    };
-
-    pulseaudio = {
-      enable = false;
-    };
-
-    pipewire = {
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      enable = true;
-      jack.enable = true;
-      pulse.enable = true;
-
-      audio = {
-        enable = true;
-      };
-
-      extraConfig = {
-        pipewire = {
-          "10-clock-rate" = {
-            "context.properties" = {
-              "default.clock.allowed-rates" = [44100 48000 88200 96000];
-            };
-          };
-          "10-quantum" = let
-            quantum = pipeWireQuantum;
-            quantumStr = builtins.toString pipeWireQuantum;
-          in {
-            "context.properties" = {
-              "default.clock.quantum" = quantum;
-              "default.clock.min-quantum" = quantum;
-              "default.clock.max-quantum" = quantum;
-            };
-            "pulse.properties" = {
-              "pulse.min.req" = "${quantumStr}/48000";
-              "pulse.default.req" = "${quantumStr}/48000";
-              "pulse.max.req" = "${quantumStr}/48000";
-              "pulse.min.quantum" = "${quantumStr}/48000";
-              "pulse.max.quantum" = "${quantumStr}/48000";
-            };
-            "stream.properties" = {
-              "node.latency" = "${quantumStr}/48000";
-              "resample.quality" = 1;
-            };
-          };
-        };
-      };
-
-      wireplumber = {
+    hardware = {
+      graphics = {
         enable = true;
       };
     };
 
-    power-profiles-daemon = {
-      enable = true;
-    };
+    programs = {
+      zsh.enable = true;
 
-    tlp = {
-      enable = false;
+      gamemode = mkIf cfg.gaming.enable {
+        enable = true;
+        settings = {
+          general = {
+            defaultgov = "powersave";
+            desiredgov = "performance";
+            softrealtime = "auto";
+            ioprio = 0;
+            renice = 10;
+          };
 
-      settings = {
-      };
-    };
-
-    udev = {
-      enable = true;
-
-      extraRules = ''
-        ACTION=="add", SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="low"
-      '';
-    };
-
-    xserver = {
-      videoDrivers = [
-        "fbdev"
-        "modesetting"
-      ];
-      xkb = {
-        layout = "us";
-        variant = "";
-      };
-    };
-  };
-
-  stylix =
-    let
-      wallpaper = pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
-        hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
-      };
-    in
-    {
-      base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
-      enable = true;
-      image = wallpaper;
-      polarity = "dark";
-
-      cursor = {
-        package = pkgs.material-cursors;
-        name = "material_light_cursors";
-        size = 30;
-      };
-
-      fonts = {
-        serif = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        sansSerif = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        monospace = {
-          package = pkgs.nerd-fonts.fira-code;
-          name = "FiraCode Nerd Font Mono";
-        };
-
-        emoji = {
-          package = pkgs.noto-fonts-color-emoji;
-          name = "Noto Color Emoji";
+          custom = {
+            start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
+            end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
+          };
         };
       };
 
-      homeManagerIntegration = {
-        followSystem = true;
+      steam = mkIf cfg.gaming.enable {
+        enable = true;
+        remotePlay.openFirewall = true;
+        dedicatedServer.openFirewall = true;
+      };
+    };
+
+    security = {
+      polkit = {
+        enable = true;
       };
 
-      opacity = {
-        desktop = 0.0;
-        terminal = 0.9;
+      rtkit = {
+        enable = true;
       };
 
-      targets = {
-        nixvim = {
-          transparentBackground = {
-            main = true;
-            signColumn = true;
+      soteria = {
+        enable = true;
+      };
+    };
+
+    services = {
+      ananicy = {
+        enable = true;
+        package = pkgs.ananicy-cpp;
+        rulesProvider = pkgs.ananicy-rules-cachyos;
+      };
+
+      cachix-watch-store = {
+        cacheName = "ajenkins-public";
+        cachixTokenFile = "/persistence/cachix/authToken";
+        compressionLevel = 5;
+        enable = true;
+        jobs = 4;
+      };
+
+      lsfg-vk = {
+        enable = cfg.lsfg.enable;
+      };
+
+      preload = {
+        enable = true;
+      };
+
+      pulseaudio = {
+        enable = false;
+      };
+
+      pipewire = {
+        alsa.enable = true;
+        alsa.support32Bit = true;
+        enable = true;
+        jack.enable = true;
+        pulse.enable = true;
+
+        audio = {
+          enable = true;
+        };
+
+        extraConfig = {
+          pipewire = {
+            "10-clock-rate" = {
+              "context.properties" = {
+                "default.clock.allowed-rates" = [44100 48000 88200 96000];
+              };
+            };
+            "10-quantum" = let
+              quantum = cfg.pipewire.quantum;
+              quantumStr = builtins.toString cfg.pipewire.quantum;
+            in {
+              "context.properties" = {
+                "default.clock.quantum" = quantum;
+                "default.clock.min-quantum" = quantum;
+                "default.clock.max-quantum" = quantum;
+              };
+              "pulse.properties" = {
+                "pulse.min.req" = "${quantumStr}/48000";
+                "pulse.default.req" = "${quantumStr}/48000";
+                "pulse.max.req" = "${quantumStr}/48000";
+                "pulse.min.quantum" = "${quantumStr}/48000";
+                "pulse.max.quantum" = "${quantumStr}/48000";
+              };
+              "stream.properties" = {
+                "node.latency" = "${quantumStr}/48000";
+                "resample.quality" = 1;
+              };
+            };
           };
         };
 
-        qt = {
-          enable = false;
+        wireplumber = {
+          enable = true;
+        };
+      };
+
+      power-profiles-daemon = {
+        enable = true;
+      };
+
+      tlp = {
+        enable = false;
+
+        settings = {
+        };
+      };
+
+      udev = {
+        enable = true;
+
+        extraRules = ''
+          ACTION=="add", SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="low"
+        '';
+      };
+
+      xserver = {
+        videoDrivers = [
+          "fbdev"
+          "modesetting"
+        ];
+        xkb = {
+          layout = "us";
+          variant = "";
         };
       };
     };
 
-  xdg.portal = {
-    enable = true;
-    xdgOpenUsePortal = true;
+    stylix =
+      let
+        wallpaper = pkgs.fetchurl {
+          url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
+          hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
+        };
+      in
+      {
+        base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
+        enable = true;
+        image = wallpaper;
+        polarity = "dark";
+
+        cursor = {
+          package = pkgs.material-cursors;
+          name = "material_light_cursors";
+          size = 30;
+        };
+
+        fonts = {
+          serif = {
+            package = pkgs.nerd-fonts.fira-code;
+            name = "FiraCode Nerd Font Mono";
+          };
+
+          sansSerif = {
+            package = pkgs.nerd-fonts.fira-code;
+            name = "FiraCode Nerd Font Mono";
+          };
+
+          monospace = {
+            package = pkgs.nerd-fonts.fira-code;
+            name = "FiraCode Nerd Font Mono";
+          };
+
+          emoji = {
+            package = pkgs.noto-fonts-color-emoji;
+            name = "Noto Color Emoji";
+          };
+        };
+
+        homeManagerIntegration = {
+          followSystem = true;
+        };
+
+        opacity = {
+          desktop = 0.0;
+          terminal = 0.9;
+        };
+
+        targets = {
+          nixvim = {
+            transparentBackground = {
+              main = true;
+              signColumn = true;
+            };
+          };
+
+          qt = {
+            enable = false;
+          };
+        };
+      };
+
+    xdg.portal = {
+      enable = true;
+      xdgOpenUsePortal = true;
+    };
   };
 }

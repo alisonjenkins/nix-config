@@ -13,9 +13,7 @@
       impermanencePersistencePath = builtins.toPath "/persistence";
       inherit inputs lib outputs pkgs;
     })
-    (import ../../modules/desktop {
-      inherit inputs pkgs lib;
-    })
+    ../../modules/desktop
     (import ../../modules/locale { })
     (import ../../modules/vr { enableOpenSourceVR = false; })
     (import ../../modules/ollama)
@@ -23,6 +21,10 @@
     ../../app-profiles/desktop
     ./hardware-configuration.nix
   ];
+
+  modules.desktop = {
+    enable = true;
+  };
 
   boot = {
     bootspec.enableValidation = true;

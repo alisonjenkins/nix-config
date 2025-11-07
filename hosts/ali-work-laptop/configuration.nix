@@ -17,10 +17,7 @@
     (import ../../modules/libvirtd { inherit pkgs; })
     (import ../../modules/printing { inherit pkgs; })
 
-    (import ../../modules/desktop {
-      inherit inputs pkgs lib;
-      pipeWireQuantum = 512;
-    })
+    ../../modules/desktop
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
@@ -30,6 +27,11 @@
       inherit inputs lib outputs pkgs;
     })
   ];
+
+  modules.desktop = {
+    enable = true;
+    pipewire.quantum = 512;
+  };
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
