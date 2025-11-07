@@ -67,6 +67,7 @@
       lazydocker
       libffi
       libiconv
+      lnav
       lolcat
       luajitPackages.lpeg
       mitmproxy2swagger
