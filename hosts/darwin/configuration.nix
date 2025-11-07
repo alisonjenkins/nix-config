@@ -77,7 +77,7 @@
       qview
       ripgrep
       ruff-lsp
-      rust-bin.nightly."2024-03-02".default
+      rust-bin.stable.latest.default
       selene
       skopeo
       ssm-session-manager-plugin
