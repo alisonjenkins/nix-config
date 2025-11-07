@@ -4,7 +4,7 @@
     ...
 }: ''
 
-set-option -g default-command "${pkgs.zsh}/bin/zsh"
+set-option -g default-command "${pkgs.fish}/bin/fish"
 set -g allow-passthrough on
 run-shell ${pkgs.tmuxPlugins.sensible}/share/tmux-plugins/sensible/sensible.tmux
 

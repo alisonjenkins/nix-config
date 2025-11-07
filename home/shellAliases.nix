@@ -1,5 +1,6 @@
 { pkgs }: {
-  "-- -" = "cd -";
+  # Note: "-- -" = "cd -" removed as it doesn't work in Fish shell
+  # Use 'prevd' in Fish or 'cd -' in ZSH/Bash instead
   ".." = "cd ..";
   "..." = "cd ../..";
   "...." = "cd ../../..";

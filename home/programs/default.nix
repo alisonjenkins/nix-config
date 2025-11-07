@@ -36,6 +36,7 @@
     ./comodoro
     ./direnv
     ./eww
+    ./fish
     ./fzf
     ./gcc
     ./gh

@@ -812,32 +812,39 @@
         };
       };
 
-      devShells =
-        let
-          buildInputs = with pkgs; [
-            deploy-rs
-            just
-            libsecret
-            nix-fast-build
-            nixos-anywhere
-          ];
-        in
-        {
-          x86_64-linux.default = pkgs.mkShell {
-            buildInputs = buildInputs;
+      devShells = {
+        x86_64-linux.default =
+          let
+            buildInputs = with pkgs; [
+              deploy-rs
+              just
+              libsecret
+              nix-fast-build
+              nixos-anywhere
+            ];
+          in
+          pkgs.mkShell {
+            inherit buildInputs;
           };
-          aarch64-darwin.default =
-            let
-              pkgs = import inputs.nixpkgs {
-                system = "aarch64-darwin";
-                config = {
-                  allowUnfree = true;
-                };
+        aarch64-darwin.default =
+          let
+            pkgs = import inputs.nixpkgs {
+              system = "aarch64-darwin";
+              config = {
+                allowUnfree = true;
               };
-            in
-            pkgs.mkShell {
-              buildInputs = buildInputs;
             };
-        };
+            buildInputs = with pkgs; [
+              deploy-rs
+              just
+              libsecret
+              nix-fast-build
+              nixos-anywhere
+            ];
+          in
+          pkgs.mkShell {
+            inherit buildInputs;
+          };
+      };
     };
 }
