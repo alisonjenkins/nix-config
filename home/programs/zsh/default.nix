@@ -3,8 +3,8 @@
 , ...
 }: {
   home.packages = [
-    pkgs.exercism
-    pkgs.fzf
+    # pkgs.exercism
+    # pkgs.fzf
   ];
 
   programs = {
@@ -50,45 +50,45 @@
               sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
             };
           }
-          {
-            name = "exercism";
-            file = "exercism.plugin.zsh";
-            src = pkgs.fetchFromGitHub {
-              owner = "fabiokiatkowski";
-              repo = "exercism.plugin.zsh";
-              rev = "37f15229070a5f5073eb0fddc9fc86efa4d56cbc";
-              sha256 = "/h7ZkPnep1aq9oTEh3mgHZ8OiC01tZ0Ktq1zhvQ098Y=";
-            };
-          }
-          {
-            name = "fzf";
-            file = "plugins/fzf/fzf.plugin.zsh";
-            src = pkgs.fetchFromGitHub {
-              owner = "ohmyzsh";
-              repo = "ohmyzsh";
-              rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
-              sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
-            };
-          }
-          {
-            name = "fzf-tab";
-            file = "fzf-tab.plugin.zsh";
-            src = pkgs.fetchFromGitHub {
-              owner = "Aloxaf";
-              repo = "fzf-tab";
-              rev = "f045ed050dbdd27a95feea187c41f75336b2480a";
-              sha256 = "gvZp8P3quOtcy1Xtt1LAW1cfZ/zCtnAmnWqcwrKel6w=";
-            };
-          }
-          {
-            name = "gitstatus";
-            src = pkgs.fetchFromGitHub {
-              owner = "romkatv";
-              repo = "gitstatus";
-              rev = "215063d4703b944f66cc7cc92543205586a35485";
-              sha256 = "3prHeI7PoNq4tzPQ+vzNLt+7EytNJzRcTqOnZ+da4EU=";
-            };
-          }
+          # {
+          #   name = "exercism";
+          #   file = "exercism.plugin.zsh";
+          #   src = pkgs.fetchFromGitHub {
+          #     owner = "fabiokiatkowski";
+          #     repo = "exercism.plugin.zsh";
+          #     rev = "37f15229070a5f5073eb0fddc9fc86efa4d56cbc";
+          #     sha256 = "/h7ZkPnep1aq9oTEh3mgHZ8OiC01tZ0Ktq1zhvQ098Y=";
+          #   };
+          # }
+          # {
+          #   name = "fzf";
+          #   file = "plugins/fzf/fzf.plugin.zsh";
+          #   src = pkgs.fetchFromGitHub {
+          #     owner = "ohmyzsh";
+          #     repo = "ohmyzsh";
+          #     rev = "40ff950fcd081078a8cd3de0eaab784f85c681d5";
+          #     sha256 = "EJ/QGmfgav0DVQFSwT+1FjOwl0S28wvJAghxzVAeJbs=";
+          #   };
+          # }
+          # {
+          #   name = "fzf-tab";
+          #   file = "fzf-tab.plugin.zsh";
+          #   src = pkgs.fetchFromGitHub {
+          #     owner = "Aloxaf";
+          #     repo = "fzf-tab";
+          #     rev = "f045ed050dbdd27a95feea187c41f75336b2480a";
+          #     sha256 = "gvZp8P3quOtcy1Xtt1LAW1cfZ/zCtnAmnWqcwrKel6w=";
+          #   };
+          # }
+          # {
+          #   name = "gitstatus";
+          #   src = pkgs.fetchFromGitHub {
+          #     owner = "romkatv";
+          #     repo = "gitstatus";
+          #     rev = "215063d4703b944f66cc7cc92543205586a35485";
+          #     sha256 = "3prHeI7PoNq4tzPQ+vzNLt+7EytNJzRcTqOnZ+da4EU=";
+          #   };
+          # }
           {
             name = "kube-aliases";
             file = "kube-aliases.plugin.zsh";
