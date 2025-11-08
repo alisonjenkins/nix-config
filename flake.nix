@@ -202,6 +202,7 @@
               [
                 (import ./overlays { inherit inputs system lib; }).master-packages
                 (import ./overlays { inherit inputs system lib; }).unstable-packages
+                (import ./overlays { inherit inputs system lib; }).tmux-sessionizer
                 (import ./overlays { inherit inputs system lib; }).zk
                 inputs.nur.overlays.default
                 inputs.rust-overlay.overlays.default
