@@ -16,11 +16,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1762591180,
-        "narHash": "sha256-WRuqpL56waShAjJGwj3bBEQwaJn4KHWmnMurG5iWwbo=",
+        "lastModified": 1762591385,
+        "narHash": "sha256-AFQgUarFsomDozJMPGrd1EvXRYTZzSBspkynTWoAlnI=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "581bd4f127b67585b46db9951bc1480842122ced",
+        "rev": "25499ef0841c8231c2b193e3777a6320d7cf1bb0",
         "type": "github"
       },
       "original": {
