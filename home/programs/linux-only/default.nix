@@ -10,6 +10,7 @@
     ./niri
     ./nixcord
     ./swayidle
+    ./tofi
     ./waybar
   ];
 }
