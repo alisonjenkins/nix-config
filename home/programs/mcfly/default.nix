@@ -13,6 +13,13 @@ let
   zshViModeEnabled = true;
 in
 {
+  programs.mcfly = {
+    enable = true;
+    enableFishIntegration = true;
+    enableZshIntegration = false; # Handled manually below for zsh-vi-mode compatibility
+    keyScheme = "emacs";
+  };
+
   programs.zsh.initContent =
     if zshViModeEnabled
     then ''

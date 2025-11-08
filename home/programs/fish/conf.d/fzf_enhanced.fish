@@ -31,8 +31,11 @@ else if type -q batcat
     set -U fzf_preview_file_cmd batcat --color=always
 end
 
+# Disable Ctrl+R for fzf.fish (using McFly instead)
+set -U fzf_history_key_binding ""
+
 # Key bindings for fzf.fish (these will be set by the plugin)
-# Ctrl+R - Search command history
+# Ctrl+R - Disabled (handled by McFly)
 # Ctrl+Alt+F - Search files
 # Ctrl+Alt+S - Search git status files
 # Ctrl+Alt+L - Search git log
