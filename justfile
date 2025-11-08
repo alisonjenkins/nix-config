@@ -24,7 +24,7 @@ test *extraargs:
         rm -f ~/.gtkrc-2.0
         nh os test --hostname "$(hostname)" . -- {{extraargs}} ;
     elif [ "$(uname)" == "Darwin" ]; then
-        darwin-rebuild test --option sandbox false {{extraargs}} --flake .
+        sudo darwin-rebuild test --option sandbox false {{extraargs}} --flake .
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
