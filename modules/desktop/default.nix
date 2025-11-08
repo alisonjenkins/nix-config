@@ -190,6 +190,7 @@ in
         unstable.jellycli
         unstable.mission-center
         unstable.nvtopPackages.amd
+        unstable.winboat
         wallpapers
         wleave
         zoom-us
