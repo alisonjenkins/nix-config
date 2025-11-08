@@ -16,6 +16,5 @@
     }
   ];
 
-  # Tide configuration (Rainbow style with custom settings)
   home.file.".config/fish/conf.d/tide_config.fish".source = ./tide_config.fish;
 }
