@@ -171,7 +171,6 @@ in
         aider-chat-full
         copilot-cli
         deepfilternet
-        devenv
         file-roller
         gamescopeConfig
         hicolor-icon-theme
@@ -185,6 +184,7 @@ in
         powertop
         signal-desktop
         suspendScripts
+        unstable.devenv
         unstable.easyeffects
         unstable.ethersync
         unstable.jellycli
