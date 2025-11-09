@@ -606,14 +606,14 @@ in {
       unbound  # High-performance DNS caching server with DoH support
     ];
 
-    # Enable IP forwarding
+    # Enable IP forwarding - using mkForce to ensure consistent behavior in VMs
     boot.kernel.sysctl = {
-      "net.ipv4.ip_forward" = 1;
-      "net.ipv6.conf.all.forwarding" = 0; # Disable IPv6 forwarding for security
-      "net.ipv4.conf.all.log_martians" = 1;
-      "net.ipv4.conf.all.send_redirects" = 0;
-      "net.ipv4.conf.all.accept_redirects" = 0;
-      "net.ipv4.conf.all.accept_source_route" = 0;
+      "net.ipv4.ip_forward" = lib.mkForce 1;
+      "net.ipv6.conf.all.forwarding" = lib.mkForce 0; # Disable IPv6 forwarding for security
+      "net.ipv4.conf.all.log_martians" = lib.mkForce 1;
+      "net.ipv4.conf.all.send_redirects" = lib.mkForce 0;
+      "net.ipv4.conf.all.accept_redirects" = lib.mkForce 0;
+      "net.ipv4.conf.all.accept_source_route" = lib.mkForce 0;
     };
 
     # Disable traditional iptables and enable modern nftables
@@ -635,6 +635,7 @@ in {
 
         set allowed_lan_ips {
           type ipv4_addr
+          flags interval
           elements = { ${concatStringsSep ", " cfg.network.lanSubnets} }
         }
 
