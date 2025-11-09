@@ -9,6 +9,14 @@
       (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
+  # VM variant configuration is now handled by the base module
+  # See modules/base/vm-variant.nix
+  vmVariantSettings = {
+    memorySize = 4096;
+    cores = 4;
+    diskSize = 32768; # 32GB
+  };
+
   boot.extraModulePackages = [ ];
   boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "usbhid" "usb_storage" "sd_mod" "sdhci_pci" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];

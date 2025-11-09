@@ -48,10 +48,12 @@
     };
   };
 
-  virtualisation.vmVariant = {
-    diskSize = 65536;
+  # VM variant configuration is now handled by the base module
+  # See modules/base/vm-variant.nix
+  vmVariantSettings = {
+    memorySize = 8192; # 8GB for desktop
     cores = 8;
-    memorySize = 4096;
+    diskSize = 65536; # 64GB
   };
 
   fileSystems = {

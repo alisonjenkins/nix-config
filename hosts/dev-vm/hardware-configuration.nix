@@ -12,6 +12,15 @@
     # (modulesPath + "/virtualisation/qemu-vm.nix")
   ];
 
+  # Note: dev-vm doesn't use the base module, so VM variant is configured manually
+  virtualisation.vmVariant = {
+    virtualisation = {
+      memorySize = 2048;
+      cores = 4;
+      diskSize = 20480; # 20GB
+    };
+  };
+
   boot = {
     kernelModules = [ "virtio_gpu" ];
     extraModulePackages = [ ];

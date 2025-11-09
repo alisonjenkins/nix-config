@@ -83,7 +83,7 @@
 
       settings = {
         listen-address = "0.0.0.0:8118";
-        forward-socks5 = ".onion localhost:9050 .";
+        forward-socks5 = lib.mkForce ".onion localhost:9050 .";
       };
     };
 

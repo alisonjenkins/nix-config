@@ -12,10 +12,14 @@
     # (modulesPath + "/virtualisation/qemu-vm.nix")
   ];
 
-  virtualisation.vmVariant = {
-    diskSize = 65536;
-    cores = 8;
+  # VM variant configuration is now handled by the base module
+  # See modules/base/vm-variant.nix
+  vmVariantSettings = {
     memorySize = 4096;
+    cores = 8;
+    diskSize = 65536; # 64GB
+    # This host uses GRUB, so don't auto-configure systemd-boot
+    configureBootLoader = false;
   };
 
   boot = {

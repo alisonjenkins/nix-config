@@ -153,7 +153,8 @@
         }
       ) (builtins.attrNames dataDisks);
     in {
-      enable = true;
+      # Disable SnapRAID in VM since we don't have the complex disk setup
+      enable = !config.system.isVM;
 
       contentFiles = contentFilesOpt;
       dataDisks = (builtins.listToAttrs dataDisksOpt);

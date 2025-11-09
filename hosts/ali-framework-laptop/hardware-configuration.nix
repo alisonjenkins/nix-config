@@ -12,11 +12,13 @@
     # (modulesPath + "/virtualisation/qemu-vm.nix")
   ];
 
-  # virtualisation = {
-  #   diskSize = 64000;
-  #   cores = 32;
-  #   memorySize = 4096;
-  # };
+  # VM variant configuration is now handled by the base module
+  # See modules/base/vm-variant.nix
+  vmVariantSettings = {
+    memorySize = 4096;
+    cores = 8;
+    diskSize = 32768; # 32GB
+  };
 
   boot = {
     kernelModules = [ "kvm-amd" ];

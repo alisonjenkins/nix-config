@@ -11,6 +11,14 @@
     (modulesPath + "/profiles/qemu-guest.nix")
   ];
 
+  # VM variant configuration is now handled by the base module
+  # See modules/base/vm-variant.nix
+  vmVariantSettings = {
+    memorySize = 4096;
+    cores = 4;
+    diskSize = 32768; # 32GB
+  };
+
   boot = {
     kernelModules = [ "kvm-amd" ];
     extraModulePackages = [ ];
