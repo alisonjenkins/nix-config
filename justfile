@@ -106,8 +106,17 @@ test-build hostname:
 test-run hostname:
   #!/usr/bin/env bash
   CORES=$(nproc)
-  ./result/bin/run-${hostname}-vm
-  rm "${hostname}.qcow2"
+  # Handle VM variants that have different binary names
+  if [ -f "./result/bin/run-${hostname}-vm" ]; then
+    ./result/bin/run-${hostname}-vm
+  elif [ -f "./result/bin/run-${hostname}" ]; then
+    ./result/bin/run-${hostname}
+  else
+    echo "Error: Could not find VM binary for ${hostname}"
+    ls -la ./result/bin/
+    exit 1
+  fi
+  rm "${hostname}.qcow2" 2>/dev/null || true
 
 # Update flake
 update:
