@@ -169,6 +169,7 @@ in
     in {
       systemPackages = with pkgs; [
         aider-chat-full
+        claude-code
         copilot-cli
         deepfilternet
         file-roller
