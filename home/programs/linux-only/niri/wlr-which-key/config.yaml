@@ -64,6 +64,9 @@ menu:
   - key: "p"
     desc: Power
     submenu:
+      - key: "h"
+        desc: Hibernate
+        cmd: systemctl hibernate
       - key: "s"
         desc: Sleep
         cmd: systemctl suspend
