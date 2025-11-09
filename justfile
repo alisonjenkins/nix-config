@@ -106,10 +106,7 @@ test-build hostname:
 test-run hostname:
   #!/usr/bin/env bash
   CORES=$(nproc)
-  ./result/bin/run-${hostname}-vm \
-    -accel kvm
-    #-vga virtio
-    #-display sdl,gl=on
+  ./result/bin/run-${hostname}-vm
   rm "${hostname}.qcow2"
 
 # Update flake
