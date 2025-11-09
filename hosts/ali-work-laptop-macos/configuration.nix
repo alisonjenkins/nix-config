@@ -50,8 +50,8 @@
       graphviz
       htop
       hurl
-      inputs.ali-neovim.packages.${system}.nvim
-      inputs.eks-creds.packages.${system}.eks-creds
+      inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
+      inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
       ipcalc
       isort
       jdk11
