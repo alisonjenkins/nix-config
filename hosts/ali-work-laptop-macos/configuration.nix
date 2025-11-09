@@ -29,7 +29,6 @@
       colima
       comma
       cowsay
-      devenv
       direnv
       diskus
       dive
@@ -105,9 +104,10 @@
       typst-live
       unstable.checkov
       unstable.delve
-      unstable.teamtype
+      unstable.devenv
       unstable.opentofu
       unstable.prek
+      unstable.teamtype
       unstable.terraform
       watch
       watchexec
