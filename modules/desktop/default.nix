@@ -169,7 +169,6 @@ in
     in {
       systemPackages = with pkgs; [
         aider-chat-full
-        copilot-cli
         deepfilternet
         file-roller
         gamescopeConfig
@@ -185,6 +184,7 @@ in
         signal-desktop
         suspendScripts
         unstable.claude-code
+        unstable.copilot-cli
         unstable.devenv
         unstable.easyeffects
         unstable.ethersync
