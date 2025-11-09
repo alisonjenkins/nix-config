@@ -105,7 +105,7 @@
       typst-live
       unstable.checkov
       unstable.delve
-      unstable.ethersync
+      unstable.teamtype
       unstable.opentofu
       unstable.prek
       unstable.terraform
