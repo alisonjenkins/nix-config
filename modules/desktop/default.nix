@@ -191,6 +191,7 @@ in
         unstable.jellycli
         unstable.mission-center
         unstable.nvtopPackages.amd
+        unstable.opencode
         unstable.winboat
         wallpapers
         wleave
