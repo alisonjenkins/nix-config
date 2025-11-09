@@ -19,6 +19,7 @@
   imports = [
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
+    ./vm-variant.nix
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ]
   ++ (if useSecureBoot then [
     ../luksPCR15
