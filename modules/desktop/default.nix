@@ -169,7 +169,6 @@ in
     in {
       systemPackages = with pkgs; [
         aider-chat-full
-        claude-code
         copilot-cli
         deepfilternet
         file-roller
@@ -185,6 +184,7 @@ in
         powertop
         signal-desktop
         suspendScripts
+        unstable.claude-code
         unstable.devenv
         unstable.easyeffects
         unstable.ethersync
