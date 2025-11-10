@@ -38,15 +38,31 @@ if test (uname -s) = "Darwin"
 end
 
 # PATH setup
-# Prepend system paths first to avoid wrong architecture binaries
-fish_add_path -gP /run/current-system/sw/bin
-fish_add_path -g "$HOME/.cargo/bin"
-fish_add_path -g /opt/homebrew/bin
-fish_add_path -g "$HOME/.local/bin"
-fish_add_path -g "$HOME/bin"
-fish_add_path -g "$HOME/go/bin"
-fish_add_path -g /usr/local/sbin
-fish_add_path -g "$HOME/.krew/bin"
+# On macOS, ensure Nix paths come before Homebrew to avoid conflicts
+if test (uname -s) = "Darwin"
+    # Nix paths (prepend with -P to ensure priority)
+    fish_add_path -gP /run/current-system/sw/bin
+    fish_add_path -gP "$HOME/.nix-profile/bin"
+    fish_add_path -gP /nix/var/nix/profiles/default/bin
+    # User paths
+    fish_add_path -g "$HOME/.cargo/bin"
+    fish_add_path -g "$HOME/.local/bin"
+    fish_add_path -g "$HOME/bin"
+    fish_add_path -g "$HOME/go/bin"
+    # Homebrew (after Nix)
+    fish_add_path -g /opt/homebrew/bin
+    fish_add_path -g /usr/local/sbin
+    fish_add_path -g "$HOME/.krew/bin"
+else
+    # Linux/NixOS: system paths first
+    fish_add_path -gP /run/current-system/sw/bin
+    fish_add_path -g "$HOME/.cargo/bin"
+    fish_add_path -g "$HOME/.local/bin"
+    fish_add_path -g "$HOME/bin"
+    fish_add_path -g "$HOME/go/bin"
+    fish_add_path -g /usr/local/sbin
+    fish_add_path -g "$HOME/.krew/bin"
+end
 
 # nnn Environment variables
 set -gx NNN_OPTS "aedF"
