@@ -435,6 +435,9 @@
           {
             app-id = "^com\.ktechpit\.whatsie$";
           }
+          {
+            app-id = "^signal$";
+          }
         ];
       }
 
