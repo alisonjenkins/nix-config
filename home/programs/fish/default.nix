@@ -118,5 +118,6 @@
     ".config/fish/functions/terraform.fish".source = ./functions/terraform.fish;
     ".config/fish/functions/kubectl.fish".source = ./functions/kubectl.fish;
     ".config/fish/completions/asp.fish".source = ./completions/asp.fish;
+    ".config/fish/completions/asr.fish".source = ./completions/asr.fish;
   };
 }
