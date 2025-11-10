@@ -117,5 +117,6 @@
     ".config/fish/functions/aws.fish".source = ./functions/aws.fish;
     ".config/fish/functions/terraform.fish".source = ./functions/terraform.fish;
     ".config/fish/functions/kubectl.fish".source = ./functions/kubectl.fish;
+    ".config/fish/completions/asp.fish".source = ./completions/asp.fish;
   };
 }
