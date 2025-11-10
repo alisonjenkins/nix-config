@@ -119,5 +119,6 @@
     ".config/fish/functions/kubectl.fish".source = ./functions/kubectl.fish;
     ".config/fish/completions/asp.fish".source = ./completions/asp.fish;
     ".config/fish/completions/asr.fish".source = ./completions/asr.fish;
+    ".config/fish/completions/just.fish".source = ./completions/just.fish;
   };
 }
