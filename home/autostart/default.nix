@@ -27,6 +27,7 @@
       ".config/autostart/ghostty.desktop".source = "${pkgs.ghostty}/share/applications/com.mitchellh.ghostty.desktop";
       ".config/autostart/keybase.desktop".source = "${pkgs.keybase-gui}/share/applications/keybase.desktop";
       ".config/autostart/obsidian.desktop".source = "${pkgs.obsidian}/share/applications/obsidian.desktop";
+      ".config/autostart/signal-desktop.desktop".source = "${pkgs.signal-desktop}/share/applications/signal.desktop";
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
       ".config/autostart/vesktop.desktop".source = "${pkgs.vesktop}/share/applications/vesktop.desktop";
       ".config/autostart/whatsie.desktop".source = "${pkgs.whatsie}/share/applications/whatsie.desktop";
