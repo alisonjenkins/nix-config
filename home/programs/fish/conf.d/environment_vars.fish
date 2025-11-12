@@ -42,7 +42,7 @@ end
 if test (uname -s) = "Darwin"
     # Nix paths (prepend with -P to ensure priority)
     fish_add_path -gP /run/current-system/sw/bin
-    fish_add_path -gP "$HOME/.nix-profile/bin"
+    fish_add_path -gP "/etc/profiles/per-user/$USER/bin"
     fish_add_path -gP /nix/var/nix/profiles/default/bin
     # User paths
     fish_add_path -g "$HOME/.cargo/bin"
