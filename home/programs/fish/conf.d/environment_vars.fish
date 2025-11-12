@@ -38,30 +38,31 @@ if test (uname -s) = "Darwin"
 end
 
 # PATH setup
-# On macOS, ensure Nix paths come before Homebrew to avoid conflicts
+# Set fish_user_paths as a universal variable in the correct order
+# This will persist across sessions and override any stale cached values
 if test (uname -s) = "Darwin"
-    # Nix paths (prepend with -P to ensure priority)
-    fish_add_path -gP /run/current-system/sw/bin
-    fish_add_path -gP "/etc/profiles/per-user/$USER/bin"
-    fish_add_path -gP /nix/var/nix/profiles/default/bin
-    # User paths
-    fish_add_path -g "$HOME/.cargo/bin"
-    fish_add_path -g "$HOME/.local/bin"
-    fish_add_path -g "$HOME/bin"
-    fish_add_path -g "$HOME/go/bin"
-    # Homebrew (after Nix)
-    fish_add_path -g /opt/homebrew/bin
-    fish_add_path -g /usr/local/sbin
-    fish_add_path -g "$HOME/.krew/bin"
+    # macOS: Nix paths come before Homebrew to avoid conflicts
+    set -Ux fish_user_paths \
+        "/etc/profiles/per-user/$USER/bin" \
+        /run/current-system/sw/bin \
+        /nix/var/nix/profiles/default/bin \
+        "$HOME/.cargo/bin" \
+        "$HOME/.local/bin" \
+        "$HOME/bin" \
+        "$HOME/go/bin" \
+        /opt/homebrew/bin \
+        /usr/local/sbin \
+        "$HOME/.krew/bin"
 else
     # Linux/NixOS: system paths first
-    fish_add_path -gP /run/current-system/sw/bin
-    fish_add_path -g "$HOME/.cargo/bin"
-    fish_add_path -g "$HOME/.local/bin"
-    fish_add_path -g "$HOME/bin"
-    fish_add_path -g "$HOME/go/bin"
-    fish_add_path -g /usr/local/sbin
-    fish_add_path -g "$HOME/.krew/bin"
+    set -Ux fish_user_paths \
+        /run/current-system/sw/bin \
+        "$HOME/.cargo/bin" \
+        "$HOME/.local/bin" \
+        "$HOME/bin" \
+        "$HOME/go/bin" \
+        /usr/local/sbin \
+        "$HOME/.krew/bin"
 end
 
 # nnn Environment variables
