@@ -64,7 +64,6 @@
       "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
       "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
       "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
-      # ata-TOSHIBA_MG08ACA16TE_7190A01VFVGG-part1 -> ../../sds # need to encrypt
     };
     media_disk_mount_points = builtins.attrNames media_disks;
   in {
