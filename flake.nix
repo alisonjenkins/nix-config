@@ -715,7 +715,7 @@
               services.getty.autologinUser = lib.mkForce "ali";
 
               # Enable passwordless sudo for ali user in VM
-              security.sudo.wheelNeedsPassword = lib.mkForce false;
+              security.sudo-rs.wheelNeedsPassword = lib.mkForce false;
 
               # Also enable root SSH access
               services.openssh.settings.PermitRootLogin = lib.mkForce "yes";
