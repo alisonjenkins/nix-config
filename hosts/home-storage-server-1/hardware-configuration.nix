@@ -61,6 +61,7 @@
       "/media/disks/ata-ST5000LM000-2AN170_WCJ7DQKA-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ7DQKA-part1";
       # "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1"; # Failing - critical - 2TB
       "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"; # Failing - critical - 2TB
+      "/media/disks/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1";
       "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
       "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
       "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
