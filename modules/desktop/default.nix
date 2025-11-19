@@ -192,7 +192,7 @@ in
         unstable.mission-center
         unstable.nvtopPackages.amd
         unstable.opencode
-        unstable.winboat
+        # unstable.winboat
         wallpapers
         wleave
         zoom-us
