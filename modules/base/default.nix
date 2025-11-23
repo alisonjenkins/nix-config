@@ -271,7 +271,7 @@
       ];
     };
 
-    sudo-rs = {
+    sudo = {
       enable = true;
       wheelNeedsPassword = true;
     };
