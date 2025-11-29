@@ -284,6 +284,10 @@
     river = {
       enable = true;
     };
+
+    sway = {
+      enable = true;
+    };
   };
 
   # security = {
