@@ -54,14 +54,12 @@ if test (uname -s) = "Darwin"
         /usr/local/sbin \
         "$HOME/.krew/bin"
 else
-    # Linux/NixOS: system paths first
+    # Linux/NixOS: Only add user-specific paths, let NixOS manage system paths
     set -Ux fish_user_paths \
-        /run/current-system/sw/bin \
         "$HOME/.cargo/bin" \
         "$HOME/.local/bin" \
         "$HOME/bin" \
         "$HOME/go/bin" \
-        /usr/local/sbin \
         "$HOME/.krew/bin"
 end
 
