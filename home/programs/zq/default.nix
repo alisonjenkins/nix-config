@@ -1,5 +1,5 @@
 { pkgs, ... }: {
   home.packages = [
-    pkgs.zq
+    pkgs.zed
   ];
 }
