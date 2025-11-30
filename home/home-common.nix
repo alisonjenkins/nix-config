@@ -40,6 +40,7 @@
         # mission-center
         # neovide
         # unigine-heaven  # commented out due to hash mismatch
+        # vesktop
         appimage-run
         audacity
         aws-vault
@@ -81,7 +82,6 @@
         tig
         tty-clock
         unstable.fluxcd
-        # vesktop
         webcord
         wget
         wl-clipboard
