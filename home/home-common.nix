@@ -39,6 +39,7 @@
         # cava
         # mission-center
         # neovide
+        # unigine-heaven  # commented out due to hash mismatch
         appimage-run
         audacity
         aws-vault
@@ -95,7 +96,6 @@
         then [
           # inputs.umu.packages.${pkgs.system}.umu
           unstable.lutris
-          unigine-heaven
         ]
         else [ ]
       ))
