@@ -95,7 +95,7 @@
       sbctl
       todoist-electron
       tpm2-tss
-      whatsie
+      zapzap  # WhatsApp client (replaced whatsie due to insecure qtwebengine-5 dependency)
       wireguard-tools
       xdg-desktop-portal-gnome
       xdg-desktop-portal-gtk
