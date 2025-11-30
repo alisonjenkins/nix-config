@@ -68,7 +68,6 @@
     gcc-unwrapped
     gimp
     git
-    glxinfo
     gnupg
     google-chrome
     gtk3
@@ -93,6 +92,7 @@
     libvorbis
     lm_sensors
     lshw
+    mesa-demos
     ncdu
     nh
     nix-fast-build
