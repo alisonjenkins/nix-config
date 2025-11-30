@@ -91,9 +91,9 @@
         zoxide
       ]
       ++ (
-        if pkgs.system == "x86_64-linux"
+        if pkgs.stdenv.hostPlatform.system == "x86_64-linux"
         then [
-          # inputs.umu.packages.${pkgs.system}.umu
+          # inputs.umu.packages.${pkgs.stdenv.hostPlatform.system}.umu
           unstable.lutris
         ]
         else [ ]

@@ -206,7 +206,7 @@ in
         unstable.umu-launcher
       ]))
       ++ (optionals cfg.lsfg.enable [
-        inputs.lsfg-vk-flake.packages.${pkgs.system}.lsfg-vk-ui
+        inputs.lsfg-vk-flake.packages.${pkgs.stdenv.hostPlatform.system}.lsfg-vk-ui
       ]);
 
       variables = {

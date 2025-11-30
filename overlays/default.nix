@@ -25,14 +25,14 @@
 
   stable-packages = final: _prev: {
     stable = import inputs.nixpkgs_stable {
-      system = final.system;
+      system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
     };
   };
 
   unstable-packages = final: _prev: {
     unstable = import inputs.nixpkgs_unstable {
-      system = final.system;
+      system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
     };
   };
@@ -41,7 +41,7 @@
   # be accessible through 'pkgs.master'
   master-packages = final: _prev: {
     master = import inputs.nixpkgs_master {
-      system = final.system;
+      system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
     };
   };
@@ -81,14 +81,14 @@
 
   python3PackagesOverlay = final: prev: {
     python312Packages = prev.python312Packages // {
-      s3transfer = inputs.nixpkgs_stable.legacyPackages.${final.system}.python312Packages.s3transfer;
+      s3transfer = inputs.nixpkgs_stable.legacyPackages.${final.stdenv.hostPlatform.system}.python312Packages.s3transfer;
     };
   };
 
   qtwebengine = final: prev: {
     libsForQt5 = prev.libsForQt5 // {
       qt5 = prev.libsForQt5.qt5 // {
-        qtwebengine = inputs.nixpkgs_stable.legacyPackages.${final.system}.qtwebengine;
+        qtwebengine = inputs.nixpkgs_stable.legacyPackages.${final.stdenv.hostPlatform.system}.qtwebengine;
       };
     };
   };
