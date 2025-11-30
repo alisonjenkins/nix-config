@@ -100,7 +100,7 @@
     nushell
     obsidian
     parted
-    pinentry
+    pinentry-gnome3
     psmisc
     pwgen
     ripgrep
