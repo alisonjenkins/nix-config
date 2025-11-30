@@ -66,7 +66,7 @@
         kubectx
         kubernetes-helm
         kustomize
-        mpc-cli
+        mpc
         networkmanagerapplet
         nurl
         pamixer
