@@ -433,7 +433,7 @@
             app-id = "^vesktop$";
           }
           {
-            app-id = "^com\.ktechpit\.whatsie$";
+            app-id = "^com\.rtosta\.zapzap$";
           }
           {
             app-id = "^signal$";
