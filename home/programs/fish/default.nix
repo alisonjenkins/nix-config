@@ -15,6 +15,7 @@
   programs = {
     fish = {
       enable = true;
+      generateCompletions = true;
 
       # Shell integrations
       interactiveShellInit = ''
