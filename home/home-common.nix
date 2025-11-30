@@ -86,7 +86,6 @@
         wget
         wl-clipboard
         wlr-randr
-        xflux
         zenity
         zola
         zoxide
