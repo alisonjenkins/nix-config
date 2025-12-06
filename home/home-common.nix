@@ -82,7 +82,6 @@
         tig
         tty-clock
         unstable.fluxcd
-        webcord
         wget
         wl-clipboard
         wlr-randr
