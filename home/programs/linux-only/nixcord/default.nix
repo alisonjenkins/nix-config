@@ -2,9 +2,9 @@
   stylix.targets.nixcord.enable = false;
 
   programs.nixcord = {
-    enable = true;
+    enable = false;
     discord.enable = false;
-    vesktop.enable = true;
+    vesktop.enable = false;
 
     config = {
       frameless = true;
