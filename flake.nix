@@ -15,7 +15,7 @@
     nixos-cosmic.url = "github:lilyinstarlight/nixos-cosmic";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.05-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
@@ -90,7 +90,7 @@
     };
 
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-25.05";
+      url = "github:nixos/nixpkgs/nixos-25.11";
       # url = "path:/home/ali/git/nixpkgs";
     };
 
