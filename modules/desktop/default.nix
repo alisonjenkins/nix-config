@@ -284,10 +284,6 @@ in
         enable = cfg.lsfg.enable;
       };
 
-      preload = {
-        enable = true;
-      };
-
       pulseaudio = {
         enable = false;
       };
