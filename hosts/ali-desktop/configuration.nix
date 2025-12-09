@@ -178,7 +178,6 @@
       openttd-ttf
       podman
       protontricks
-      protonvpn-cli
       protonvpn-gui
       qbittorrent
       qemu_full
