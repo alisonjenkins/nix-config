@@ -168,6 +168,7 @@ in
       };
     in {
       systemPackages = with pkgs; [
+        # unstable.winboat
         aider-chat-full
         deepfilternet
         file-roller
@@ -192,7 +193,6 @@ in
         unstable.mission-center
         unstable.nvtopPackages.amd
         unstable.opencode
-        # unstable.winboat
         wallpapers
         wleave
         zoom-us
