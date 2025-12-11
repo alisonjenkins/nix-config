@@ -16,10 +16,10 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
-    nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.05-darwin";
+    nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.11-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
-    stylix.url = "github:danth/stylix/release-25.05";
+    stylix.url = "github:danth/stylix/release-25.11";
 
     ali-neovim = {
       url = "github:alisonjenkins/neovim-nix-flake";
@@ -31,7 +31,7 @@
     };
 
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-25.05";
+      url = "github:lnl7/nix-darwin/nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -54,7 +54,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

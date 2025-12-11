@@ -1,3 +1,9 @@
+---
+id: CLAUDE
+aliases:
+  - CLAUDE.md
+tags: []
+---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -106,7 +112,7 @@ The `modules/base` module accepts important parameters:
 ### Key Systems
 
 **Overlays**: The flake provides multiple overlays for accessing different nixpkgs channels:
-- `pkgs.stable`: nixpkgs 25.05 stable
+- `pkgs.stable`: nixpkgs 25.11 stable
 - `pkgs.unstable`: nixos-unstable
 - `pkgs.master`: nixpkgs master branch
 
