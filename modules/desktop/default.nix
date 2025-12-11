@@ -184,6 +184,7 @@ in
         powertop
         signal-desktop
         suspendScripts
+        television
         unstable.claude-code
         unstable.copilot-cli
         unstable.devenv
