@@ -188,11 +188,11 @@ in
         unstable.copilot-cli
         unstable.devenv
         unstable.easyeffects
-        unstable.ethersync
         unstable.jellycli
         unstable.mission-center
         unstable.nvtopPackages.amd
         unstable.opencode
+        unstable.teamtype
         wallpapers
         wleave
         zoom-us
