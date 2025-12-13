@@ -186,6 +186,7 @@ in
         suspendScripts
         television
         unstable.claude-code
+        unstable.cobang
         unstable.copilot-cli
         unstable.devenv
         unstable.easyeffects
