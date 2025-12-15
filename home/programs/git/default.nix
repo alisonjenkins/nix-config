@@ -20,10 +20,13 @@ in
     {
       enable = true;
       lfs.enable = true;
-      userEmail = gitEmail;
-      userName = gitUserName;
+      settings = {
+        user = {
+          email = gitEmail;
+          name = gitUserName;
+        };
 
-      aliases = {
+        alias = {
         # branch
         b = "branch";
         bC = "!git checkout main && git fetch -p && git branch --merged | grep -v -E '^\*|main|master|develop$' | xargs git branch -d";
@@ -120,11 +123,7 @@ in
 
         # Git work
         work = "!sh -c 'git fetch && git checkout @{upstream} -tb \\\"$@\\\"' _";
-      };
-
-      difftastic = {
-        enable = true;
-        background = "dark";
+        };
       };
 
       includes = [
@@ -151,6 +150,14 @@ in
     [
       git-wc
     ];
+
+  programs.difftastic = {
+    enable = true;
+    git.enable = true;
+    options = {
+      background = "dark";
+    };
+  };
 
   home.file = {
     ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey gpgSigningProgram pkgs; };
