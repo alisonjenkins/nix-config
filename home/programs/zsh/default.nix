@@ -1,5 +1,6 @@
 { pkgs
 , lib
+, config
 , ...
 }: {
   home.packages = [
@@ -18,7 +19,7 @@
       {
         autocd = true;
         defaultKeymap = "viins";
-        dotDir = ".config/zsh";
+        dotDir = "${config.xdg.configHome}/zsh";
         enable = true;
 
         autosuggestion = {
