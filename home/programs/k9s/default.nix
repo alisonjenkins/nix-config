@@ -37,8 +37,7 @@
       };
     };
 
-    plugin = {
-      plugins = {
+    plugins = {
         debug = {
           shortCut = "Shift-D";
           description = "Add debug container";
@@ -198,7 +197,6 @@
         #   args:
         #     - -c
         #     - "kubectl get all --context $CONTEXT -n $NAMESPACE | less"
-      };
     };
   };
 }
