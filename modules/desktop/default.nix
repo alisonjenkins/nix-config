@@ -35,6 +35,14 @@ in
         description = "Enable Lossless Scaling Frame Generation support";
       };
     };
+
+    cosmic = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable COSMIC desktop environment";
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -281,6 +289,10 @@ in
         compressionLevel = 5;
         enable = true;
         jobs = 4;
+      };
+
+      desktopManager.cosmic = mkIf cfg.cosmic.enable {
+        enable = true;
       };
 
       lsfg-vk = {
