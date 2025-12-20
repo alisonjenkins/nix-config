@@ -175,6 +175,7 @@ in
         gamescopeConfig
         hicolor-icon-theme
         lock-session
+        millisecond
         nix-flake-template-init
         oxker
         pciutils
