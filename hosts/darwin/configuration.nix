@@ -567,6 +567,7 @@
     settings = {
       auto-optimise-store = pkgs.stdenv.isLinux;
       cores = 10;
+      eval-cache = true;
       experimental-features = "nix-command flakes auto-allocate-uids";
       extra-experimental-features = "repl-flake";
       extra-nix-path = "nixpkgs=flake:nixpkgs";
