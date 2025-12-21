@@ -192,7 +192,7 @@
   };
 
   security = {
-    sudo-rs = {
+    sudo = {
       wheelNeedsPassword = lib.mkForce false;
     };
   };
