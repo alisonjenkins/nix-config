@@ -224,6 +224,7 @@
 
     settings = {
       cores = 0;
+      download-buffer-size = 268435456; # 256 MiB
       eval-cache = true;
       max-jobs = "auto";
 
