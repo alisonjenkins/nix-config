@@ -309,7 +309,7 @@
           type = "rsa";
         }
         {
-          path = "/persistence/etc/ssh/ssh_host_ed25519_key";
+          path = "/persistence/etc/ssh/keys/ssh_host_ed25519_key";
           type = "ed25519";
         }
       ];
