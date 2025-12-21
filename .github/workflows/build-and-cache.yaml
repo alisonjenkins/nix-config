@@ -16,6 +16,7 @@ jobs:
           # - .#nixosConfigurations.dev-vm.config.system.build.toplevel
           - .#nixosConfigurations.ali-desktop.config.system.build.toplevel
           - .#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
+          - .#nixosConfigurations.download-server-1.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-master-1.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
           - .#nixosConfigurations.home-kvm-hypervisor-1.config.system.build.toplevel
