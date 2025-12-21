@@ -16,8 +16,8 @@
         <feature enabled='no' name='enrolled-keys'/>
         <feature enabled='yes' name='secure-boot'/>
       </firmware>
-      <loader readonly='yes' secure='yes' type='pflash' format='raw'>${pkgs.qemu}/share/qemu/edk2-x86_64-secure-code.fd</loader>
-      <nvram template='${pkgs.qemu}/share/qemu/edk2-i386-vars.fd'>/var/lib/libvirt/qemu/nvram/home-k8s-master-1_VARS.fd</nvram>
+      <loader readonly='yes' secure='yes' type='pflash' format='raw'>/run/libvirt/nix-ovmf/edk2-x86_64-secure-code.fd</loader>
+      <nvram template='/run/libvirt/nix-ovmf/edk2-i386-vars.fd'>/var/lib/libvirt/qemu/nvram/home-k8s-master-1_VARS.fd</nvram>
     </os>
     <features>
       <acpi/>
