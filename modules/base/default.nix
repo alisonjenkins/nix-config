@@ -225,6 +225,8 @@
     settings = {
       cores = 0;
       eval-cache = true;
+      max-jobs = "auto";
+
       substituters = [
         "https://cache.nixos.org"
         "https://ajenkins-public.cachix.org"
