@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: wimpysworld/nothing-but-nix@main
         with:
-          hatchet-protocol: 'rampage'
+          hatchet-protocol: 'cleave'
       # - uses: nixbuild/nix-quick-install-action@v34
       - uses: cachix/install-nix-action@v31
         with:
