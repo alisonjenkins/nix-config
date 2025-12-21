@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         configuration:
@@ -25,9 +25,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Set USER env variable
-        run: echo "USER=runner" >> $GITHUB_ENV
       - uses: actions/checkout@v5
+      - uses: wimpysworld/nothing-but-nix@main
+        with:
+          hatchet-protocol: 'rampage'
       - uses: nixbuild/nix-quick-install-action@v34
       - uses: cachix/install-nix-action@v31
         with:
