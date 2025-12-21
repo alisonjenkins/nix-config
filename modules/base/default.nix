@@ -223,6 +223,7 @@
     extraOptions = "experimental-features = nix-command flakes";
 
     settings = {
+      cores = 0;
       substituters = [
         "https://cache.nixos.org"
         "https://ajenkins-public.cachix.org"
