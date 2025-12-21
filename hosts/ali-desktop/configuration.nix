@@ -280,10 +280,6 @@
       package = pkgs.niri-unstable;
     };
 
-    river = {
-      enable = true;
-    };
-
     sway = {
       enable = true;
     };
