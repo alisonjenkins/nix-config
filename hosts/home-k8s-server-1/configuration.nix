@@ -73,7 +73,7 @@
 
   security = {
     sudo = {
-      wheelNeedsPassword = false;
+      wheelNeedsPassword = lib.mkForce false;
     };
   };
 
