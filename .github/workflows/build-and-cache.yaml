@@ -53,8 +53,6 @@ jobs:
           name: ajenkins-public
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: DeterminateSystems/flake-checker-action@main
-      - name: Run nix build for ${{ matrix.configuration }}
+      - name: Build and push to cache
         run: |
-          nix build --print-out-paths --no-link '${{ matrix.configuration }}'
-      - name: Push to cache
-        run: cachix push ajenkins-public $(nix path-info --all)
+          cachix watch-exec ajenkins-public -- nix build --print-out-paths --no-link '${{ matrix.configuration }}'
