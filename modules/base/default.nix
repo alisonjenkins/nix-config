@@ -224,6 +224,7 @@
 
     settings = {
       cores = 0;
+      eval-cache = true;
       substituters = [
         "https://cache.nixos.org"
         "https://ajenkins-public.cachix.org"
