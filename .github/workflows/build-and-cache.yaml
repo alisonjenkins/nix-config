@@ -29,7 +29,7 @@ jobs:
       - uses: wimpysworld/nothing-but-nix@main
         with:
           hatchet-protocol: 'rampage'
-      - uses: nixbuild/nix-quick-install-action@v34
+      # - uses: nixbuild/nix-quick-install-action@v34
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
