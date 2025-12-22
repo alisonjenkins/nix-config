@@ -1,7 +1,7 @@
 { ... }: {
   imports = [
     # ./hypridle
-    # ./swayidle
+    # ./stasis
     ./anyrun
     ./firefox
     ./fuzzel
@@ -10,7 +10,7 @@
     ./lsfg-vk
     ./niri
     ./nixcord
-    ./stasis
+    ./swayidle
     ./tofi
     ./waybar
   ];
