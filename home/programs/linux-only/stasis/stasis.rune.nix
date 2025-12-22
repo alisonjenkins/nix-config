@@ -5,10 +5,15 @@
   lockGracePeriodSeconds ? 0,
   pkgs,
 }: ''
-  # https://github.com/saltnpepper97/stasis/wiki/Configuration
-  idle:
+  @author "Alison Jenkins"
+  @description "Stasis configuration file"
+
+  # https://saltnpepper97.github.io/stasis/configuration
+  stasis:
     debounce_seconds 4
-    ignore_remote_media
+    ignore_remote_media true
+    lid_close_action "suspend"
+    lid_open_action "wake"
     monitor_media true
     pre_suspend_command "${pkgs.suspendScripts}/bin/suspend-pre"
     respect_idle_inhibitors true
@@ -32,7 +37,7 @@
     lock_screen:
       command "${pkgs.lock-session}/bin/lock-session ${toString lockGracePeriodSeconds} ${toString lockFadeInSeconds}"
       lock_command "${pkgs.lock-session}/bin/lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}"
-      resume_command "notify-send 'Welcome back!'"
+      resume-command "notify-send 'Welcome Back $env.USER!'"
       timeout = 900
     end
   end
