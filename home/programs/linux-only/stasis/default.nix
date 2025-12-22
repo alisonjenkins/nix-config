@@ -20,7 +20,7 @@
 
     Service = {
       Type = "simple";
-      ExecStart = "${pkgs.stasis}/bin/stasis";
+      ExecStart = "${pkgs.stasis}/bin/stasis -c %h/.config/stasis/stasis.rune";
       Restart = "always";
       RestartSec = 5;
     };
