@@ -15,7 +15,7 @@
     Unit = {
       Description = "Stasis Wayland Idle Manager";
       After = [ "graphical-session.target" ];
-      Wants = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
     };
 
     Service = {
@@ -23,11 +23,10 @@
       ExecStart = "${pkgs.stasis}/bin/stasis";
       Restart = "always";
       RestartSec = 5;
-      Environment = "WAYLAND_DISPLAY=wayland-0";
     };
 
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 }
