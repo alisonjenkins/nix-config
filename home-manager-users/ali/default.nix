@@ -1,9 +1,12 @@
-{ specialArgs, inputs, ... }: {
+{ specialArgs, inputs, pkgs, ... }: {
   imports = [
     inputs.home-manager.nixosModules.home-manager
   ];
 
-  home-manager.backupFileExtension = ".bak";
+  # Use timestamp-based backups to prevent conflicts with existing backup files
+  home-manager.backupCommand = ''
+    ${pkgs.coreutils}/bin/mv -v "$1" "$1.backup-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+  '';
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
   home-manager.users.${specialArgs.username} = import ../../home/home-linux.nix;

@@ -229,7 +229,10 @@
               ./hosts/ali-work-laptop-macos/configuration.nix
               home-manager.darwinModules.home-manager
               {
-                home-manager.backupFileExtension = ".bak";
+                # Use timestamp-based backups to prevent conflicts
+                home-manager.backupCommand = ''
+                  mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+                '';
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
                 home-manager.users.${username} = import ./home/home-macos.nix;
@@ -316,7 +319,10 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
-              home-manager.backupFileExtension = "bak";
+              # Use timestamp-based backups to prevent conflicts
+              home-manager.backupCommand = ''
+                mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+              '';
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
@@ -360,7 +366,10 @@
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
-              home-manager.backupFileExtension = ".bak";
+              # Use timestamp-based backups to prevent conflicts
+              home-manager.backupCommand = ''
+                mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+              '';
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = {
@@ -433,7 +442,10 @@
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
-              home-manager.backupFileExtension = ".bak";
+              # Use timestamp-based backups to prevent conflicts
+              home-manager.backupCommand = ''
+                mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+              '';
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.${specialArgs.username} = import ./home/home-linux.nix;
