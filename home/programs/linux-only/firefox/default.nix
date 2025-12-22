@@ -38,7 +38,7 @@
       extensions = {
         packages = (
           if pkgs.stdenv.isLinux
-          then with pkgs.nur.repos.rycee.firefox-addons; [
+          then (with pkgs.nur.repos.rycee.firefox-addons; [
             auto-tab-discard
             darkreader
             firenvim
@@ -57,6 +57,8 @@
             tst-indent-line
             tst-tab-search
             ublock-origin
+          ]) ++ [
+            pkgs.firefox-addons.media-bridge
           ]
           else [ ]
         );

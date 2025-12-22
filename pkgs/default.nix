@@ -7,4 +7,5 @@
   nix-flake-template-init = pkgs.callPackage ./nix-flake-template-init {} ;
   suspendScripts = pkgs.callPackage ./suspend-scripts {};
   wallpapers = pkgs.callPackage ./wallpapers {};
+  firefox-addons = pkgs.callPackage ./firefox-addons {};
 }
