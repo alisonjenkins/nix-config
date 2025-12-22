@@ -7,8 +7,8 @@
 }: ''
   # https://github.com/saltnpepper97/stasis/wiki/Configuration
   idle:
-    debounce_seconds 4                              # ✅ Now configurable (optional, default is 3)
-    ignore_remote_media                             # ✅ This stops KDEConnect and other apps who play connected media from triggering timer pauses
+    debounce_seconds 4
+    ignore_remote_media
     monitor_media true
     pre_suspend_command "${pkgs.suspendScripts}/bin/suspend-pre"
     respect_idle_inhibitors true
@@ -23,14 +23,14 @@
     ]
     lock_screen:
       command "${pkgs.lock-session}/bin/lock-session ${toString lockGracePeriodSeconds} ${toString lockFadeInSeconds}"
-      lock_command "${pkgs.lock-session}/bin/lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}" # ✅ Required for lock detection
-      resume_command "notify-send 'Welcome back!'"         # ✅ Per-action resume
+      lock_command "${pkgs.lock-session}/bin/lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}"
+      resume_command "notify-send 'Welcome back!'"
       timeout = 900
     end
     dpms:
       timeout = 330
       command "niri msg action power-off-monitors"
-      resume_command "niri msg action power-on-monitors"  # ✅ Per-action resume
+      resume_command "niri msg action power-on-monitors"
     end
   end
 ''
