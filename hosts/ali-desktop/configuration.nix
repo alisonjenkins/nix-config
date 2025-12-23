@@ -37,11 +37,17 @@
     kernelPackages = pkgs.linuxPackages_latest;
 
     kernelParams = [
-      # AMD GPU performance optimizations
+      # AMD GPU stability parameters for RDNA 4 (GFX1201)
       "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
-      "amdgpu.gpu_recovery=1"            # Enable GPU recovery
-      "amdgpu.dc=1"                      # Enable Display Core (DC) for better performance
+      "amdgpu.gpu_recovery=1"            # Enable GPU recovery (required for stability)
+      "amdgpu.dc=1"                      # Enable Display Core (DC)
       "amdgpu.dpm=1"                     # Enable Dynamic Power Management
+
+      # Stability workarounds for new GPU
+      "amdgpu.lockup_timeout=10000"      # Increase timeout before reset (10s)
+      "amdgpu.noretry=0"                 # Allow retries on errors
+      "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (more stable)
+      "amdgpu.vm_update_mode=3"          # Use compute shader for VM updates
     ];
 
     initrd = {

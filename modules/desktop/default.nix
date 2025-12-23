@@ -227,9 +227,15 @@ in
         # AMD GPU performance optimizations
         AMD_VULKAN_ICD = "RADV";                    # Use RADV (Mesa) Vulkan driver
 
-        # RDNA 4 (GFX1201) specific workarounds
-        RADV_PERFTEST = "nggc";                     # Enable NGG culling (stable features only for now)
-        RADV_DEBUG = "zerovram,nodcc";              # Zero VRAM + disable DCC for stability on new GPUs
+        # RDNA 4 (GFX1201) specific workarounds - aggressive stability settings
+        # These disable newer features that aren't stable on RDNA 4 yet
+        RADV_PERFTEST = "";                         # Disable all experimental features for stability
+        RADV_DEBUG = "zerovram,nodcc,nohiz,nohtile,nodccmsaa";  # Comprehensive workarounds:
+                                                     # - zerovram: Zero VRAM for determinism
+                                                     # - nodcc: Disable Delta Color Compression
+                                                     # - nohiz: Disable HiZ (hierarchical Z-buffer)
+                                                     # - nohtile: Disable HTile (hierarchical tile buffer)
+                                                     # - nodccmsaa: Disable DCC for MSAA surfaces
 
         # Mesa optimizations
         mesa_glthread = "true";                     # Enable Mesa GL threading
