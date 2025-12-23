@@ -47,7 +47,7 @@
       "amdgpu.lockup_timeout=10000"      # Increase timeout before reset (10s)
       "amdgpu.noretry=0"                 # Allow retries on errors
       "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (more stable)
-      "amdgpu.vm_update_mode=3"          # Use compute shader for VM updates
+      "amdgpu.vm_update_mode=1"          # Use SDMA for VM updates (compute is unstable on RDNA4)
     ];
 
     initrd = {
