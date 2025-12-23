@@ -230,7 +230,8 @@ in
         # RDNA 4 (GFX1201) specific workarounds - aggressive stability settings
         # These disable newer features that aren't stable on RDNA 4 yet
         RADV_PERFTEST = "";                         # Disable all experimental features for stability
-        RADV_DEBUG = "zerovram,nodcc,nohiz,nohtile,nodccmsaa";  # Comprehensive workarounds:
+        # RADV_DEBUG = "zerovram,nodcc,nohiz,nohtile,nodccmsaa";  # Comprehensive workarounds:
+        RADV_DEBUG = "";
                                                      # - zerovram: Zero VRAM for determinism
                                                      # - nodcc: Disable Delta Color Compression
                                                      # - nohiz: Disable HiZ (hierarchical Z-buffer)
