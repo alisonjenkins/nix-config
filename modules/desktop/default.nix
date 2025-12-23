@@ -226,10 +226,20 @@ in
 
         # AMD GPU performance optimizations
         AMD_VULKAN_ICD = "RADV";                    # Use RADV (Mesa) Vulkan driver
-        RADV_PERFTEST = "sam,nggc,rt";              # Enable Smart Access Memory, NGG culling, ray tracing
-        RADV_DEBUG = "zerovram";                    # Zero VRAM for determinism
+
+        # RDNA 4 (GFX1201) specific workarounds
+        RADV_PERFTEST = "nggc";                     # Enable NGG culling (stable features only for now)
+        RADV_DEBUG = "zerovram,nodcc";              # Zero VRAM + disable DCC for stability on new GPUs
+
+        # Mesa optimizations
         mesa_glthread = "true";                     # Enable Mesa GL threading
         vblank_mode = "0";                          # Disable VSync at driver level
+
+        # ACO compiler optimizations (recommended for RDNA)
+        RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
+
+        # Gamescope optimizations
+        ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
       } // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
@@ -238,6 +248,9 @@ in
     hardware = {
       graphics = {
         enable = true;
+        # Use unstable Mesa for better RDNA 4 support
+        package = pkgs.unstable.mesa;
+        package32 = pkgs.unstable.pkgsi686Linux.mesa;
       };
     };
 
