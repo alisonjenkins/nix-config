@@ -36,6 +36,14 @@
     # kernelPackages = pkgs.linuxPackages_latest;
     kernelPackages = pkgs.linuxPackages_latest;
 
+    kernelParams = [
+      # AMD GPU performance optimizations
+      "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
+      "amdgpu.gpu_recovery=1"            # Enable GPU recovery
+      "amdgpu.dc=1"                      # Enable Display Core (DC) for better performance
+      "amdgpu.dpm=1"                     # Enable Dynamic Power Management
+    ];
+
     initrd = {
       availableKernelModules = [ "r8169" ];
 
