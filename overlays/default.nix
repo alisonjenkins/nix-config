@@ -64,13 +64,13 @@
 
   linux-firmware = final: _prev: {
     linux-firmware = _prev.linux-firmware.overrideAttrs (oldAttrs: {
-      version = "20250829";
+      version = "20251223";
 
       src = _prev.fetchFromGitLab {
         owner = "kernel-firmware";
         repo = "linux-firmware";
-        rev = "b611a67511d127842b097f57f02445d94e635b91";
-        hash = "sha256-9fc444ljM2kJ9hFOF2gKuMrZO3UjMJ2peqal//qT2pY=";
+        rev = "a6a6ff914b4b2814ffd074f1d0a9e43949ac44ad";
+        hash = "sha256-O3QyEV5cYknk+1QHLLMpZjmLCdyb4MbLTHewmubleLA=";
       };
     });
   };
