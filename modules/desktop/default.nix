@@ -223,6 +223,13 @@ in
       variables = {
         # NIXOS_OZONE_WL = "1";
         ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+
+        # AMD GPU performance optimizations
+        AMD_VULKAN_ICD = "RADV";                    # Use RADV (Mesa) Vulkan driver
+        RADV_PERFTEST = "sam,nggc,rt";              # Enable Smart Access Memory, NGG culling, ray tracing
+        RADV_DEBUG = "zerovram";                    # Zero VRAM for determinism
+        mesa_glthread = "true";                     # Enable Mesa GL threading
+        vblank_mode = "0";                          # Disable VSync at driver level
       } // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
