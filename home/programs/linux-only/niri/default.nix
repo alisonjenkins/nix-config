@@ -323,6 +323,8 @@
     spawn-at-startup = [
       { command = [ "systemctl" "--user" "import-environment" "DISPLAY" "GTK_THEME" "QT_QPA_PLATFORMTHEME" "WAYLAND_DISPLAY" "XCURSOR_SIZE" "XCURSOR_THEME" "XDG_CURRENT_DESKTOP" ]; }
       { command = [ "dbus-update-activation-environment" "--all" "--systemd" ]; }
+      # Restart portal services to pick up environment variables
+      { command = [ "systemctl" "--user" "restart" "xdg-desktop-portal.service" ]; }
       { command = [ "noctalia-shell" ]; }
       # { command = [ "syshud" "-p" "top" ]; }
       # { command = ["mako"]; }
