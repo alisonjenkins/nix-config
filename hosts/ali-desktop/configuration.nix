@@ -34,17 +34,15 @@
     kernelPackages = pkgs.linuxPackages_lqx;
 
     kernelParams = [
-      # AMD GPU stability parameters for RDNA 4 (GFX1201)
+      # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
       "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
-      "amdgpu.gpu_recovery=1"            # Enable GPU recovery (required for stability)
+      "amdgpu.gpu_recovery=1"            # Enable GPU recovery
       "amdgpu.dc=1"                      # Enable Display Core (DC)
       "amdgpu.dpm=1"                     # Enable Dynamic Power Management
 
-      # Stability workarounds for new GPU
-      "amdgpu.lockup_timeout=10000"      # Increase timeout before reset (10s)
-      "amdgpu.noretry=0"                 # Allow retries on errors
-      "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (more stable)
-      "amdgpu.vm_update_mode=1"          # Use SDMA for VM updates (compute is unstable on RDNA4)
+      # Performance optimizations (stability issues resolved with BIOS/kernel fix)
+      "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (optimal for RDNA)
+      "amdgpu.vm_update_mode=0"          # Use default (auto) VM update mode for best performance
     ];
 
     initrd = {
