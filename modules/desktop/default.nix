@@ -224,29 +224,12 @@ in
         # NIXOS_OZONE_WL = "1";
         ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
 
-        # AMD GPU performance optimizations
-        AMD_VULKAN_ICD = "RADV";                    # Use RADV (Mesa) Vulkan driver
-
-        # RDNA 4 (GFX1201) specific workarounds - aggressive stability settings
-        # These disable newer features that aren't stable on RDNA 4 yet
-        RADV_PERFTEST = "";                         # Disable all experimental features for stability
-        # RADV_DEBUG = "zerovram,nodcc,nohiz,nohtile,nodccmsaa";  # Comprehensive workarounds:
-        RADV_DEBUG = "";
-                                                     # - zerovram: Zero VRAM for determinism
-                                                     # - nodcc: Disable Delta Color Compression
-                                                     # - nohiz: Disable HiZ (hierarchical Z-buffer)
-                                                     # - nohtile: Disable HTile (hierarchical tile buffer)
-                                                     # - nodccmsaa: Disable DCC for MSAA surfaces
-
-        # Mesa optimizations
+        AMD_VULKAN_ICD = "RADV";
+        ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
+        RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
+        RADV_PERFTEST = "sam,dccmsaa,nircache,nggc,pswave32";
         mesa_glthread = "true";                     # Enable Mesa GL threading
         vblank_mode = "0";                          # Disable VSync at driver level
-
-        # ACO compiler optimizations (recommended for RDNA)
-        RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
-
-        # Gamescope optimizations
-        ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
       } // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
