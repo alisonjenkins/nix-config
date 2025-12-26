@@ -358,6 +358,7 @@
         hideMounts = true;
         directories = [
           "/etc/NetworkManager/system-connections"
+          "/etc/lact"
           "/etc/luks"
           "/var/lib/bluetooth"
           "/var/lib/flatpak"
