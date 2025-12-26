@@ -345,6 +345,10 @@
       ];
     };
 
+    lact = {
+      enable = true;
+    };
+
     snapper = {
       persistentTimer = true;
       configs = {
@@ -429,20 +433,6 @@
 
   system = {
     stateVersion = "25.05";
-  };
-
-  systemd = {
-    services = {
-      lact = {
-        description = "AMDGPU Control Daemon";
-        after = [ "multi-user.target" ];
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          ExecStart = "${pkgs.lact}/bin/lact daemon";
-        };
-        enable = false;
-      };
-    };
   };
 
   users = {
