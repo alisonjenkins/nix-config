@@ -347,6 +347,31 @@
 
     lact = {
       enable = true;
+
+      # settings = {
+      #   apply_settings_timer = 5;
+      #
+      #   daemon = {
+      #     admin_group = "wheel";
+      #     disable_clocks_cleanup = false;
+      #     log_level = "info";
+      #     tcp_listen_address = "127.0.0.1:12853";
+      #
+      #     metrics = {
+      #       collector_address = "http://localhost:9090/api/v1/otlp/v1/metrics";
+      #       interval = 30;
+      #     };
+      #   };
+      #
+      #   gpus = {
+      #     "1002:7550-1DA2:E489-0000:03:00.0" = {
+      #       fan_control_enabled = false;
+      #       power_cap = 374.0;
+      #       performance_level = "auto";
+      #       voltage_offset = -130;
+      #     };
+      #   };
+      # };
     };
 
     snapper = {
