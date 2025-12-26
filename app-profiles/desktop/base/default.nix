@@ -148,7 +148,7 @@
 
   services = {
     atd.enable = true;
-    cpupower-gui.enable = true;
+    cpupower-gui.enable = false;
     haveged.enable = true;
     kbfs.enable = true;
     keybase.enable = true;
