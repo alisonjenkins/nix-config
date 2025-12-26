@@ -227,7 +227,7 @@ in
         AMD_VULKAN_ICD = "RADV";
         ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
         RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
-        RADV_PERFTEST = "sam,dccmsaa,nircache,nggc,pswave32";
+        RADV_PERFTEST = "sam,dccmsaa,nircache,nggc";
         mesa_glthread = "true";                     # Enable Mesa GL threading
         vblank_mode = "0";                          # Disable VSync at driver level
       } // (optionalAttrs cfg.lsfg.enable {
@@ -297,7 +297,7 @@ in
         cacheName = "ajenkins-public";
         cachixTokenFile = "/persistence/cachix/authToken";
         compressionLevel = 5;
-        enable = true;
+        enable = false;
         jobs = 4;
       };
 
