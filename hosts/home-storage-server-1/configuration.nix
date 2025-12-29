@@ -109,6 +109,7 @@
           "guest ok" = "no";
           "valid users" = "ali";
         };
+
         "k8s-storage" = {
           path = "/media/storage/k8s-storage";
           browseable = "yes";
@@ -116,12 +117,21 @@
           "guest ok" = "no";
           "valid users" = "privoxy";
         };
+
         "media" = {
           path = "/media/storage/media";
           browseable = "yes";
           "read only" = "no";
           "guest ok" = "no";
           "valid users" = "ali jellyfin";
+        };
+
+        "downloads" = {
+          path = "/media/storage/downloads";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "download-server";
         };
       };
     };
@@ -199,6 +209,7 @@
 
   users = {
     groups = {
+      download-server = {};
       jellyfin = {};
       privoxy = {};
     };
@@ -212,6 +223,12 @@
         # initialPassword = "initPw!";
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+      };
+      download-server = {
+        description = "Download Server user";
+        group = "download-server";
+        hashedPasswordFile = "/persistence/passwords/download-server";
+        isNormalUser = true;
       };
       jellyfin = {
         description = "Jellyfin user";
