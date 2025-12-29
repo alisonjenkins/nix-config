@@ -214,6 +214,7 @@
     qbittorrent = {
       enable = true;
       openFirewall = true;
+      torrentingPort = 15234;
     };
 
     privoxy = {
@@ -250,6 +251,11 @@
           sources = [ "192.168.1.187" ];
         }
       ];
+
+      vpnIncomingPorts = {
+        tcp = [ "15000-20000" ];
+        udp = [ "15000-20000" ];
+      };
 
       exceptions = {
         dnsServers = [

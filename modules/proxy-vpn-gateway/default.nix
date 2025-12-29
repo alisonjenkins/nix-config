@@ -104,6 +104,35 @@ in
         { port = 9091; sources = [ "192.168.1.0/24" ]; }
       ];
     };
+
+    vpnIncomingPorts = mkOption {
+      type = types.submodule {
+        options = {
+          tcp = mkOption {
+            type = types.listOf (types.either types.port types.str);
+            default = [];
+            description = "TCP ports or port ranges to allow incoming on VPN interface";
+            example = [ 6881 "6881-6889" 8080 ];
+          };
+          udp = mkOption {
+            type = types.listOf (types.either types.port types.str);
+            default = [];
+            description = "UDP ports or port ranges to allow incoming on VPN interface";
+            example = [ 6881 "6881-6889" ];
+          };
+        };
+      };
+      default = { tcp = []; udp = []; };
+      description = ''
+        Ports to allow for incoming connections through the VPN interface.
+        Useful for services like torrenting that need to accept connections from the internet.
+        Supports both individual ports and port ranges (e.g., "6881-6889").
+      '';
+      example = {
+        tcp = [ 6881 "8000-9000" ];
+        udp = [ 6881 ];
+      };
+    };
   };
 
   config = mkIf cfg.enable (let
@@ -334,6 +363,16 @@ in
                   ) uniquePorts}
                   # Accept incoming responses from generic VPN endpoints
                   ${if (builtins.length endpointsWithoutPorts) > 0 then "ip saddr @vpn_endpoints accept" else ""}
+
+                  # == VPN INCOMING PORTS ==
+                  # Accept incoming TCP connections on VPN interface
+                  ${lib.concatMapStringsSep "\n" (port:
+                    "  iifname \"${cfg.vpnInterface}\" tcp dport ${toString port} accept"
+                  ) cfg.vpnIncomingPorts.tcp}
+                  # Accept incoming UDP connections on VPN interface
+                  ${lib.concatMapStringsSep "\n" (port:
+                    "  iifname \"${cfg.vpnInterface}\" udp dport ${toString port} accept"
+                  ) cfg.vpnIncomingPorts.udp}
               }
 
               chain output {
