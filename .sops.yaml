@@ -2,6 +2,7 @@ keys:
   - &admin_ali age1rne0eqj5jfqahm5s5mmp3u0v97xm0lvwm2ghtjlv4p7m0l78tq5stgjtu4
   - &ali_personal age1efmxs2w78yw0knq7hvzxjsanphqgrx2mj5p5grkye590yq4rjexs5zvvzg
   - &server_ali-desktop age1enyaj2wdty5kpu8n2tfx2eswww7743ewxf7ykfmsdaqz0w5f4dqqx54eps
+  - &server_download-server-1 age1dket3z3j325e0vt3ynwaxxzume9sv0qcphvumaqk2ew7htmd93us4tncsw
   - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
@@ -21,3 +22,9 @@ creation_rules:
       - *admin_ali
       - *ali_personal
       - *server_home-k8s-master-1
+  - path_regex: hosts/download-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+    - age:
+      - *admin_ali
+      - *ali_personal
+      - *server_download-server-1
