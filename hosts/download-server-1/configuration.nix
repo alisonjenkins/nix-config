@@ -174,6 +174,108 @@
     };
   };
 
+  # Create script to merge qbittorrent config with sops secret
+  environment.etc."qbittorrent/config-merger.sh" = {
+    user = "qbittorrent";
+    group = "qbittorrent";
+    mode = "0500";
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      CONFIG_DIR="${config.services.qbittorrent.profileDir}/qBittorrent/config"
+      CONFIG_FILE="$CONFIG_DIR/qBittorrent.conf"
+      CONFIG_BACKUP="$CONFIG_DIR/qBittorrent.conf.backup"
+      SECRET_FILE="${config.sops.secrets."qbittorrent/webui/password".path}"
+
+      # Ensure config directory exists
+      mkdir -p "$CONFIG_DIR"
+
+      # If config exists as a regular file (from previous run), use it as the base
+      # Otherwise, use the Nix-generated config
+      if [ -f "$CONFIG_FILE" ] && [ ! -L "$CONFIG_FILE" ]; then
+        # Existing config from previous run - back it up
+        ${pkgs.coreutils}/bin/cp "$CONFIG_FILE" "$CONFIG_BACKUP"
+        BASE_CONFIG="$CONFIG_BACKUP"
+      elif [ -L "$CONFIG_FILE" ]; then
+        # Symlink to Nix store - read the target
+        BASE_CONFIG=$(${pkgs.coreutils}/bin/readlink "$CONFIG_FILE")
+        rm -f "$CONFIG_FILE"
+      else
+        # No config exists - will create new one
+        BASE_CONFIG=""
+      fi
+
+      # Start with base config or create empty file
+      if [ -n "$BASE_CONFIG" ] && [ -f "$BASE_CONFIG" ]; then
+        ${pkgs.coreutils}/bin/cat "$BASE_CONFIG" > "$CONFIG_FILE"
+      else
+        # Create minimal config
+        echo "[Meta]" > "$CONFIG_FILE"
+        echo "MigrationVersion=8" >> "$CONFIG_FILE"
+        echo "" >> "$CONFIG_FILE"
+      fi
+
+      # Inject/update the password in the [Preferences] section
+      if [ -f "$SECRET_FILE" ]; then
+        PASSWORD=$(${pkgs.coreutils}/bin/cat "$SECRET_FILE")
+
+        # Remove any existing password line and inject new one
+        ${pkgs.gawk}/bin/awk -v pwd="$PASSWORD" '
+          BEGIN { prefs_found=0; username_found=0; password_injected=0 }
+
+          # Track if we are in the [Preferences] section
+          /^\[Preferences\]/ { prefs_found=1; in_prefs=1; print; next }
+          /^\[/ { in_prefs=0 }
+
+          # Skip existing password lines
+          /^WebUI\\Password_PBKDF2=/ && in_prefs { next }
+
+          # Insert password after username
+          in_prefs && /^WebUI\\Username=/ {
+            print
+            print "WebUI\\Password_PBKDF2=" pwd
+            password_injected=1
+            next
+          }
+
+          # If we are leaving [Preferences] and password not yet injected, add it
+          /^\[/ && in_prefs && !password_injected {
+            print "WebUI\\Password_PBKDF2=" pwd
+            password_injected=1
+          }
+
+          { print }
+
+          END {
+            # If no [Preferences] section exists, create it
+            if (!prefs_found) {
+              print ""
+              print "[Preferences]"
+              print "WebUI\\Password_PBKDF2=" pwd
+            }
+          }
+        ' "$CONFIG_FILE" > "$CONFIG_FILE.tmp"
+
+        ${pkgs.coreutils}/bin/mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+      fi
+
+      # Set proper permissions
+      ${pkgs.coreutils}/bin/chmod 0640 "$CONFIG_FILE"
+      ${pkgs.coreutils}/bin/chown qbittorrent:qbittorrent "$CONFIG_FILE"
+
+      # Clean up backup
+      rm -f "$CONFIG_BACKUP"
+    '';
+  };
+
+  # Override qbittorrent service to inject secrets
+  systemd.services.qbittorrent = {
+    serviceConfig = {
+      ExecStartPre = "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
+    };
+  };
+
   nix = {
     package = pkgs.nixVersions.stable;
 
@@ -215,6 +317,74 @@
       enable = true;
       openFirewall = true;
       torrentingPort = 15234;
+
+      serverConfig = {
+        Application = {
+          "FileLogger\\Age" = 1;
+          "FileLogger\\AgeType" = 1;
+          "FileLogger\\Backup" = true;
+          "FileLogger\\DeleteOld" = true;
+          "FileLogger\\Enabled" = true;
+          "FileLogger\\MaxSizeBytes" = 66560;
+          "FileLogger\\Path" = "/var/lib/qBittorrent/qBittorrent/data/logs";
+        };
+
+        BitTorrent = {
+          MergeTrackersEnabled = true;
+          "Session\\AddExtensionToIncompleteFiles" = true;
+          "Session\\AddTorrentToTopOfQueue" = true;
+          "Session\\AnonymousModeEnabled" = true;
+          "Session\\DisableAutoTMMByDefault" = false;
+          "Session\\DisableAutoTMMTriggers\\CategorySavePathChanged" = false;
+          "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
+          "Session\\ExcludedFileNames" = "";
+          "Session\\GlobalMaxRatio" = 2;
+          "Session\\IgnoreSlowTorrentsForQueueing" = true;
+          "Session\\IncludeOverheadInLimits" = true;
+          "Session\\Interface" = "primary-vpn";
+          "Session\\InterfaceName" = "primary-vpn";
+          "Session\\MaxActiveCheckingTorrents" = 2;
+          "Session\\MaxActiveDownloads" = 20;
+          "Session\\MaxActiveTorrents" = 20;
+          "Session\\MaxActiveUploads" = 10;
+          "Session\\Port" = 15234;
+          "Session\\Preallocation" = true;
+          "Session\\QueueingSystemEnabled" = true;
+          "Session\\SSL\\Port" = 51603;
+          "Session\\SlowTorrentsDownloadRate" = 100;
+          "Session\\SlowTorrentsUploadRate" = 5;
+          "Session\\SubcategoriesEnabled" = true;
+          "Session\\Tags" = "arch, linux, nixos";
+          "Session\\UseCategoryPathsInManualMode" = true;
+          "Session\\UseUnwantedFolder" = true;
+        };
+
+        Core = {
+          AutoDeleteAddedTorrentFile = "Never";
+        };
+
+        LegalNotice = {
+          Accepted = true;
+        };
+
+        Meta = {
+          MigrationVersion = 8;
+        };
+
+        Preferences = {
+          "Advanced\\RecheckOnCompletion" = true;
+          "General\\Locale" = "en";
+          "MailNotification\\req_auth" = true;
+          "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
+          "WebUI\\Port" = 8080;
+          "WebUI\\Username" = "admin";
+        };
+
+        RSS = {
+          "AutoDownloader\\DownloadRepacks" = true;
+          "AutoDownloader\\SmartEpisodeFilter" = "s(\\d+)e(\\d+), (\\d+)x(\\d+), \"(\\d{4}[.\\-]\\d{1,2}[.\\-]\\d{1,2})\", \"(\\d{1,2}[.\\-]\\d{1,2}[.\\-]\\d{4})\"";
+        };
+      };
     };
 
     privoxy = {
@@ -296,6 +466,15 @@
         owner = config.users.users.root.name;
         path = "/etc/wireguard/primary-vpn.conf";
         sopsFile = ./secrets/vpn.yaml;
+      };
+
+      "qbittorrent/webui/password" = {
+        format = "yaml";
+        group = config.users.users.qbittorrent.group;
+        mode = "0400";
+        owner = config.users.users.qbittorrent.name;
+        restartUnits = ["qbittorrent.service"];
+        sopsFile = ./secrets/qbittorrent.yaml;
       };
     };
   };
