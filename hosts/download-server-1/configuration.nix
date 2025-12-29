@@ -244,6 +244,13 @@
         "62.169.136.223:51820"
       ];
 
+      allowedServices = [
+        {
+          port = 8080;
+          sources = [ "192.168.1.187" ];
+        }
+      ];
+
       exceptions = {
         dnsServers = [
           "149.112.112.112"

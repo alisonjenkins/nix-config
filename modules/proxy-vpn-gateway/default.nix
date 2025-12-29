@@ -79,6 +79,31 @@ in
       description = "The virtual network interface for your VPN tunnel.";
       example = "wg0";
     };
+
+    allowedServices = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          port = mkOption {
+            type = types.port;
+            description = "TCP port to allow";
+          };
+          sources = mkOption {
+            type = types.listOf types.str;
+            description = "List of source IP addresses or subnets allowed to access this port";
+            example = [ "192.168.1.100" "192.168.1.0/24" ];
+          };
+        };
+      });
+      default = [];
+      description = ''
+        Additional services to allow through the firewall from specific sources.
+        Each service specifies a TCP port and a list of allowed source IPs/subnets.
+      '';
+      example = [
+        { port = 8080; sources = [ "192.168.1.100" "192.168.1.50" ]; }
+        { port = 9091; sources = [ "192.168.1.0/24" ]; }
+      ];
+    };
   };
 
   config = mkIf cfg.enable (let
@@ -292,6 +317,15 @@ in
                       "  iifname \"${lanInterface}\" ip saddr ${lanSubnet} tcp dport ${toString cfg.proxy.port} accept"
                     ) cfg.lanSubnets
                   ) cfg.lanInterfaces}
+
+                  # == ADDITIONAL ALLOWED SERVICES ==
+                  ${lib.concatMapStringsSep "\n" (service:
+                    lib.concatMapStringsSep "\n" (source:
+                      lib.concatStringsSep "\n" (lib.map (lanInterface:
+                        "  iifname \"${lanInterface}\" ip saddr ${source} tcp dport ${toString service.port} accept"
+                      ) cfg.lanInterfaces)
+                    ) service.sources
+                  ) cfg.allowedServices}
 
                   # == VPN ENDPOINT RESPONSES ==
                   # Accept incoming UDP responses from VPN endpoints on specific ports
