@@ -242,13 +242,13 @@
       #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
       # };
 
-      "vpn" = {
+      "primary-vpn" = {
+        # restartUnits = ["example.service"];
+        format = "yaml";
+        group = config.users.users.nobody.group;
         mode = "0400";
         owner = config.users.users.nobody.name;
-        group = config.users.users.nobody.group;
-        # restartUnits = ["example.service"];
-        path = "./secrets/vpn.yaml";
-        format = "yaml";
+        sopsFile = ./secrets/vpn.yaml;
       };
     };
   };
