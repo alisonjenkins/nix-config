@@ -63,8 +63,15 @@ in
     vpnEndpoints = mkOption {
       type = types.listOf types.str;
       default = [];
-      description = "List of VPN endpoint hostnames or IP addresses that should be allowed through the firewall.";
-      example = [ "vpn.example.com" "backup-vpn.example.org" "192.0.2.1" "198.51.100.42" ];
+      description = ''
+        List of VPN endpoint hostnames or IP addresses that should be allowed through the firewall.
+        Supports port specification in the format "host:port" for UDP traffic.
+        Examples:
+          - "vpn.example.com" - allows all traffic to this host
+          - "192.0.2.1:51820" - allows UDP traffic to port 51820
+          - "vpn.example.com:443" - allows UDP traffic to port 443
+      '';
+      example = [ "vpn.example.com:51820" "backup-vpn.example.org" "192.0.2.1:443" ];
     };
 
     vpnInterface = mkOption {
@@ -77,7 +84,22 @@ in
   config = mkIf cfg.enable (let
       githubDomains = concatStringsSep " " cfg.exceptions.domains.github;
       nixDomains = concatStringsSep " " cfg.exceptions.domains.nix;
-      vpnEndpoints = concatStringsSep " " cfg.vpnEndpoints;
+
+      # Parse VPN endpoints to extract hosts (without ports) for DNS resolution
+      parseEndpoint = endpoint:
+        let
+          parts = lib.splitString ":" endpoint;
+          host = builtins.head parts;
+          port = if builtins.length parts > 1 then builtins.elemAt parts 1 else null;
+        in
+        { inherit host port; };
+
+      parsedEndpoints = map parseEndpoint cfg.vpnEndpoints;
+      vpnEndpointHosts = concatStringsSep " " (map (e: e.host) parsedEndpoints);
+
+      # Separate endpoints with and without ports for different nftables rules
+      endpointsWithPorts = builtins.filter (e: e.port != null) parsedEndpoints;
+      endpointsWithoutPorts = builtins.filter (e: e.port == null) parsedEndpoints;
 
       updateScript = pkgs.writeShellApplication {
         name = "update-nft-sets-proxy";
@@ -87,12 +109,24 @@ in
           nftables
         ];
 
-        text = ''
+        text = let
+          # Build endpoint-to-port mappings for the script
+          endpointsWithPortsStr = lib.concatMapStringsSep "\n" (e:
+            ''ENDPOINTS_PORT_${e.port}="''${ENDPOINTS_PORT_${e.port}:-} ${e.host}"''
+          ) endpointsWithPorts;
+
+          endpointsWithoutPortsStr = if (builtins.length endpointsWithoutPorts) > 0
+            then ''ENDPOINTS_NO_PORT="${concatStringsSep " " (map (e: e.host) endpointsWithoutPorts)}"''
+            else "";
+        in ''
           set -euo pipefail
           declare -A DOMAINS
           DOMAINS["nix_caches"]="${nixDomains}"
           DOMAINS["github_ips"]="${githubDomains}"
-          ${if (builtins.length cfg.vpnEndpoints) > 0 then ''DOMAINS["vpn_endpoints"]="${vpnEndpoints}"'' else ""}
+
+          # VPN endpoints organized by port
+          ${endpointsWithPortsStr}
+          ${endpointsWithoutPortsStr}
 
           get_ips() {
               local entries=$1
@@ -102,12 +136,13 @@ in
                       # It's already an IP, output it directly
                       echo "$entry"
                   else
-                      # It's a hostname, resolve it
-                      dig +short A "$entry"
+                      # It's a hostname, resolve it with timeout
+                      dig +short +time=5 +tries=2 A "$entry" 2>/dev/null || true
                   fi
               done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -u
           }
 
+          # Update standard sets (nix_caches, github_ips)
           for set_name in "''${!DOMAINS[@]}"; do
               echo "Updating set: $set_name"
               NEW_IPS=$(get_ips "''${DOMAINS[$set_name]}")
@@ -120,6 +155,37 @@ in
               nft add element inet filter "$set_name" "{ $(echo "$NEW_IPS" | tr '\n' ',' | sed 's/,$//' ) }"
               echo "Successfully updated set $set_name."
           done
+
+          # Update port-specific VPN endpoint sets
+          ${lib.concatMapStringsSep "\n" (port: ''
+          if [ -n "''${ENDPOINTS_PORT_${port}:-}" ]; then
+              echo "Updating set: vpn_endpoints_port_${port}"
+              NEW_IPS=$(get_ips "$ENDPOINTS_PORT_${port}")
+              if [ -n "$NEW_IPS" ]; then
+                  nft flush set inet filter "vpn_endpoints_port_${port}"
+                  nft add element inet filter "vpn_endpoints_port_${port}" "{ $(echo "$NEW_IPS" | tr '\n' ',' | sed 's/,$//' ) }"
+                  echo "Successfully updated set vpn_endpoints_port_${port}."
+              else
+                  echo "Warning: Could not resolve any IPs for vpn_endpoints_port_${port}. Skipping."
+              fi
+          fi
+          '') (lib.unique (map (e: e.port) endpointsWithPorts))}
+
+          # Update generic VPN endpoints (no port specified)
+          ${if (builtins.length endpointsWithoutPorts) > 0 then ''
+          if [ -n "''${ENDPOINTS_NO_PORT:-}" ]; then
+              echo "Updating set: vpn_endpoints"
+              NEW_IPS=$(get_ips "$ENDPOINTS_NO_PORT")
+              if [ -n "$NEW_IPS" ]; then
+                  nft flush set inet filter "vpn_endpoints"
+                  nft add element inet filter "vpn_endpoints" "{ $(echo "$NEW_IPS" | tr '\n' ',' | sed 's/,$//' ) }"
+                  echo "Successfully updated set vpn_endpoints."
+              else
+                  echo "Warning: Could not resolve any IPs for vpn_endpoints. Skipping."
+              fi
+          fi
+          '' else ""}
+
           echo "All sets updated."
         '';
       };
@@ -173,11 +239,48 @@ in
       networking.nftables = {
         enable = true;
 
-        ruleset = ''
+        ruleset = let
+          # Get unique ports from endpoints with ports
+          uniquePorts = lib.unique (map (e: e.port) endpointsWithPorts);
+
+          # Group endpoints by port for initial population
+          endpointsByPort = lib.listToAttrs (map (port:
+            {
+              name = port;
+              value = lib.filter (e: e.port == port) endpointsWithPorts;
+            }
+          ) uniquePorts);
+
+          # Generate set definitions with initial IPs for endpoints that are already IPs
+          portSetDefinitions = lib.concatMapStringsSep "\n" (port:
+            let
+              endpoints = endpointsByPort.${port};
+              # Filter for hosts that are already IP addresses
+              initialIPs = lib.filter (e: builtins.match "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$" e.host != null) endpoints;
+              ipList = lib.concatMapStringsSep ", " (e: e.host) initialIPs;
+              elements = if (builtins.length initialIPs) > 0 then " elements = { ${ipList} };" else "";
+            in
+            "              set vpn_endpoints_port_${port} { type ipv4_addr; flags dynamic;${elements} }"
+          ) uniquePorts;
+
+          # Generate rules for each port
+          portRules = lib.concatMapStringsSep "\n" (port:
+            "                  ip daddr @vpn_endpoints_port_${port} udp dport ${port} accept"
+          ) uniquePorts;
+        in ''
           table inet filter {
               set github_ips { type ipv4_addr; flags dynamic; }
               set nix_caches { type ipv4_addr; flags dynamic; }
-              ${if (builtins.length cfg.vpnEndpoints) > 0 then "set vpn_endpoints { type ipv4_addr; flags dynamic; }" else ""}
+              ${if (builtins.length endpointsWithoutPorts) > 0 then
+                let
+                  # Filter for hosts that are already IP addresses
+                  initialIPs = lib.filter (e: builtins.match "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$" e.host != null) endpointsWithoutPorts;
+                  ipList = lib.concatMapStringsSep ", " (e: e.host) initialIPs;
+                  elements = if (builtins.length initialIPs) > 0 then " elements = { ${ipList} };" else "";
+                in
+                "set vpn_endpoints { type ipv4_addr; flags dynamic;${elements} }"
+              else ""}
+              ${portSetDefinitions}
 
               chain input {
                   type filter hook input priority 0; policy drop;
@@ -189,6 +292,14 @@ in
                       "  iifname \"${lanInterface}\" ip saddr ${lanSubnet} tcp dport ${toString cfg.proxy.port} accept"
                     ) cfg.lanSubnets
                   ) cfg.lanInterfaces}
+
+                  # == VPN ENDPOINT RESPONSES ==
+                  # Accept incoming UDP responses from VPN endpoints on specific ports
+                  ${lib.concatMapStringsSep "\n" (port:
+                    "  ip saddr @vpn_endpoints_port_${port} udp sport ${port} accept"
+                  ) uniquePorts}
+                  # Accept incoming responses from generic VPN endpoints
+                  ${if (builtins.length endpointsWithoutPorts) > 0 then "ip saddr @vpn_endpoints accept" else ""}
               }
 
               chain output {
@@ -208,8 +319,10 @@ in
                   ${lib.concatStringsSep "\n" (lib.map (lanInterface: "  oifname \"${lanInterface}\" ip daddr @github_ips accept") cfg.lanInterfaces)}
 
                   # == VPN ENDPOINT ACCESS ==
-                  # Allow VPN endpoint connections on any interface (needed for VPN to connect)
-                  ${if (builtins.length cfg.vpnEndpoints) > 0 then "ip daddr @vpn_endpoints accept" else ""}
+                  # Port-specific VPN endpoints (UDP only)
+                  ${portRules}
+                  # Generic VPN endpoints (all traffic)
+                  ${if (builtins.length endpointsWithoutPorts) > 0 then "ip daddr @vpn_endpoints accept" else ""}
               }
           }
         '';
@@ -227,13 +340,16 @@ in
       };
 
       systemd.services."update-nft-sets" = {
-        after = [ "network-online.target" ];
+        # Prefer to run after VPN is up for DNS resolution, but don't require it
+        after = [ "network-online.target" "wg-quick-${cfg.vpnInterface}.service" ];
         description = "Update nftables IP sets for VPN exceptions";
         wants = [ "network-online.target" ];
 
         serviceConfig = {
           ExecStart = "${updateScript}/bin/update-nft-sets-proxy";
           Type = "oneshot";
+          # Add timeout for DNS resolution in case VPN isn't up yet
+          TimeoutStartSec = "2min";
         };
       };
     });

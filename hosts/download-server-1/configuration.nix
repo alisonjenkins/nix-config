@@ -9,6 +9,7 @@
     (import ../../modules/locale { })
     (import ../../modules/base {
       enableImpermanence = true;
+      enableIPv6 = true;
       inherit inputs lib outputs pkgs;
     })
     ../../modules/proxy-vpn-gateway
@@ -116,51 +117,61 @@
       # '';
     };
 
-    wireguard = {
+    wg-quick = {
       interfaces = {
-        wg0 = {
-          privateKeyFile = "/persistence/etc/wireguard/wg0-private-key.conf";
-
-          ips = [
-            "10.102.192.77/32"
-          ];
-
-          peers = [
-            {
-              endpoint = "62.210.188.244:255";
-              persistentKeepalive = 25;
-              publicKey = "J68iV1X8gaCz+0gkNFm1Bv6uy6VNYhuMA/V7OOD0IlI=";
-              presharedKeyFile = "/persistence/etc/wireguard/wg0-pre-shared-key-file.conf";
-
-              allowedIPs = [
-                "0.0.0.0/0"
-              ];
-            }
-          ];
-
-          # Ensure VPN endpoint is reachable via physical interface before tunnel comes up
-          postSetup = ''
-            # Retry route addition to handle network timing issues
-            for i in {1..5}; do
-              if ${pkgs.iproute2}/bin/ip route add 62.210.188.244/32 via 192.168.1.1 dev enp1s0 2>/dev/null; then
-                break
-              fi
-              sleep 1
-            done
-          '';
-
-          postShutdown = ''
-            ${pkgs.iproute2}/bin/ip route del 62.210.188.244/32 via 192.168.1.1 dev enp1s0 || true
-          '';
+        primary-vpn = {
+          configFile = config.sops.secrets.primary-vpn.path;
         };
       };
     };
+
+    # wireguard = {
+    #   interfaces = {
+    #     wg0 = {
+    #       privateKeyFile = "/persistence/etc/wireguard/wg0-private-key.conf";
+    #
+    #       ips = [
+    #         "10.102.192.77/32"
+    #       ];
+    #
+    #       peers = [
+    #         {
+    #           endpoint = "62.210.188.244:255";
+    #           persistentKeepalive = 25;
+    #           publicKey = "J68iV1X8gaCz+0gkNFm1Bv6uy6VNYhuMA/V7OOD0IlI=";
+    #           presharedKeyFile = "/persistence/etc/wireguard/wg0-pre-shared-key-file.conf";
+    #
+    #           allowedIPs = [
+    #             "0.0.0.0/0"
+    #           ];
+    #         }
+    #       ];
+    #
+    #       # Ensure VPN endpoint is reachable via physical interface before tunnel comes up
+    #       postSetup = ''
+    #         # Retry route addition to handle network timing issues
+    #         for i in {1..5}; do
+    #           if ${pkgs.iproute2}/bin/ip route add 62.210.188.244/32 via 192.168.1.1 dev enp1s0 2>/dev/null; then
+    #             break
+    #           fi
+    #           sleep 1
+    #         done
+    #       '';
+    #
+    #       postShutdown = ''
+    #         ${pkgs.iproute2}/bin/ip route del 62.210.188.244/32 via 192.168.1.1 dev enp1s0 || true
+    #       '';
+    #     };
+    #   };
+    # };
   };
 
-  # Ensure WireGuard starts after network is fully up
-  systemd.services.wireguard-wg0 = {
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+  # Add route for VPN endpoint via physical interface BEFORE wg-quick starts
+  systemd.services.wg-quick-primary-vpn = {
+    serviceConfig = {
+      ExecStartPre = "-${pkgs.iproute2}/bin/ip route add 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
+      ExecStopPost = "-${pkgs.iproute2}/bin/ip route del 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
+    };
   };
 
   nix = {
@@ -217,7 +228,7 @@
 
     proxyVpnGateway = {
       enable = true;
-      vpnInterface = "wg0";
+      vpnInterface = "primary-vpn";
 
       lanSubnets = [
         "192.168.1.0/24"
@@ -229,7 +240,8 @@
       ];
 
       vpnEndpoints = [
-        "62.210.188.244"
+        "62.210.188.244:51820"
+        "62.169.136.223:51820"
       ];
 
       exceptions = {
