@@ -231,7 +231,7 @@
   sops = {
     defaultSopsFile = ../../secrets/main.enc.yaml;
     defaultSopsFormat = "yaml";
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = [ "/persistence/etc/ssh/keys/ssh_host_ed25519_key" ];
     secrets = {
       # "myservice/my_subdir/my_secret" = {
       #   mode = "0400";
@@ -247,7 +247,7 @@
         owner = config.users.users.nobody.name;
         group = config.users.users.nobody.group;
         # restartUnits = ["example.service"];
-        path = "secrets/vpn.yaml";
+        path = "./secrets/vpn.yaml";
         format = "yaml";
       };
     };
