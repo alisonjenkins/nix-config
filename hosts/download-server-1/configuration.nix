@@ -137,9 +137,30 @@
               ];
             }
           ];
+
+          # Ensure VPN endpoint is reachable via physical interface before tunnel comes up
+          postSetup = ''
+            # Retry route addition to handle network timing issues
+            for i in {1..5}; do
+              if ${pkgs.iproute2}/bin/ip route add 62.210.188.244/32 via 192.168.1.1 dev enp1s0 2>/dev/null; then
+                break
+              fi
+              sleep 1
+            done
+          '';
+
+          postShutdown = ''
+            ${pkgs.iproute2}/bin/ip route del 62.210.188.244/32 via 192.168.1.1 dev enp1s0 || true
+          '';
         };
       };
     };
+  };
+
+  # Ensure WireGuard starts after network is fully up
+  systemd.services.wireguard-wg0 = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
   nix = {

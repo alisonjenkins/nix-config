@@ -115,12 +115,9 @@ in
                   echo "Warning: Could not resolve any IPs for domains in set $set_name. Skipping."
                   continue
               fi
-              # Atomically update the set
-              nft add set inet filter "''${set_name}_temp" "{ type ipv4_addr\; flags timeout\; }"
-              nft add element inet filter "''${set_name}_temp" "{ $(echo "$NEW_IPS" | tr '\n' ',') }"
+              # Update the set: flush and add new IPs
               nft flush set inet filter "$set_name"
-              nft add element inet filter "$set_name" "{ @''${set_name}_temp }"
-              nft delete set inet filter "''${set_name}_temp"
+              nft add element inet filter "$set_name" "{ $(echo "$NEW_IPS" | tr '\n' ',' | sed 's/,$//' ) }"
               echo "Successfully updated set $set_name."
           done
           echo "All sets updated."
