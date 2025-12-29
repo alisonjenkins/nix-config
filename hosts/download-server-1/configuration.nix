@@ -228,30 +228,30 @@
     };
   };
 
-  # sops = {
-  #   defaultSopsFile = ../../secrets/main.enc.yaml;
-  #   defaultSopsFormat = "yaml";
-  #   age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-  #   secrets = {
-  #     # "myservice/my_subdir/my_secret" = {
-  #     #   mode = "0400";
-  #     #   owner = config.users.users.nobody.name;
-  #     #   group = config.users.users.nobody.group;
-  #     #   restartUnits = ["example.service"];
-  #     #   path = "/a/secret/path.yaml";
-  #     #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
-  # #     # };
-  # #     # home_enc_key = {
-  # #     #   format = "binary";
-  # #     #   group = config.users.users.nobody.group;
-  # #     #   mode = "0400";
-  # #     #   neededForUsers = true;
-  # #     #   owner = config.users.users.root.name;
-  # #     #   path = "/etc/luks/home.key";
-  # #     #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
-  # #     # };
-  #   };
-  # };
+  sops = {
+    defaultSopsFile = ../../secrets/main.enc.yaml;
+    defaultSopsFormat = "yaml";
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets = {
+      # "myservice/my_subdir/my_secret" = {
+      #   mode = "0400";
+      #   owner = config.users.users.nobody.name;
+      #   group = config.users.users.nobody.group;
+      #   restartUnits = ["example.service"];
+      #   path = "/a/secret/path.yaml";
+      #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
+      # };
+
+      "vpn" = {
+        mode = "0400";
+        owner = config.users.users.nobody.name;
+        group = config.users.users.nobody.group;
+        # restartUnits = ["example.service"];
+        path = "secrets/vpn.yaml";
+        format = "yaml";
+      };
+    };
+  };
 
   system = {
     stateVersion = "24.05";
