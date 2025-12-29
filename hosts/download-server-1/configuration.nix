@@ -245,9 +245,10 @@
       "primary-vpn" = {
         # restartUnits = ["example.service"];
         format = "yaml";
-        group = config.users.users.nobody.group;
+        group = config.users.users.root.group;
         mode = "0400";
-        owner = config.users.users.nobody.name;
+        owner = config.users.users.root.name;
+        path = "/etc/wireguard/primary-vpn.conf";
         sopsFile = ./secrets/vpn.yaml;
       };
     };
