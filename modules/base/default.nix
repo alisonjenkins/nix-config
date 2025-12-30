@@ -405,6 +405,12 @@
             mode = "0755";
           }
           {
+            directory = "/var/lib/bazarr";
+            user = "root";
+            group = "root";
+            mode = "0755";
+          }
+          {
             directory = "/var/lib/samba";
             user = "root";
             group = "root";
