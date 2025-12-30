@@ -35,12 +35,15 @@
 
     systemPackages = with pkgs; [
       cifs-utils
+      dua
+      fd
       privoxy
       qbittorrent
       qbittorrent-cli
       radarr
       sonarr
       wireguard-tools
+      yazi
     ];
 
     variables = {
