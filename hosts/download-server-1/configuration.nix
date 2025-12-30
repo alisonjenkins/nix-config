@@ -358,6 +358,7 @@
           "Session\\AddExtensionToIncompleteFiles" = true;
           "Session\\AddTorrentToTopOfQueue" = true;
           "Session\\AnonymousModeEnabled" = true;
+          "Session\\DefaultSavePath" = "/media/downloads/complete";
           "Session\\DisableAutoTMMByDefault" = false;
           "Session\\DisableAutoTMMTriggers\\CategorySavePathChanged" = false;
           "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
@@ -379,6 +380,8 @@
           "Session\\SlowTorrentsUploadRate" = 5;
           "Session\\SubcategoriesEnabled" = true;
           "Session\\Tags" = "arch, linux, nixos";
+          "Session\\TempPath" = "/media/downloads/downloading";
+          "Session\\TempPathEnabled" = true;
           "Session\\UseCategoryPathsInManualMode" = true;
           "Session\\UseUnwantedFolder" = true;
         };
@@ -397,10 +400,6 @@
 
         Preferences = {
           "Advanced\\RecheckOnCompletion" = true;
-          "Downloads\\SavePath" = "/media/downloads/complete";
-          "Downloads\\TempPath" = "/media/downloads/downloading";
-          "Downloads\\TempPathEnabled" = true;
-          "Downloads\\UseIncompleteExtension" = true;
           "General\\Locale" = "en";
           "MailNotification\\req_auth" = true;
           "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
