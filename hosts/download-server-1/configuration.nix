@@ -357,6 +357,12 @@
       openFirewall = true;
     };
 
+    flaresolverr = {
+      enable = true;
+      package = pkgs.unstable.flaresolverr;
+      openFirewall = true;
+    };
+
     jellyseerr = {
       enable = false;
     };
