@@ -37,6 +37,7 @@
       cifs-utils
       dua
       fd
+      htop
       privoxy
       qbittorrent
       qbittorrent-cli
