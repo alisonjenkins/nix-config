@@ -294,29 +294,22 @@
     };
   };
 
-  # Ensure mount point exists
-  systemd.tmpfiles.rules = [
-    "d /media/downloads 0755 root root -"
-  ];
-
-  # Configure systemd mount for downloads share
-  systemd.mounts = [
-    {
-      what = "//192.168.1.97/downloads";
-      where = "/media/downloads";
-      type = "cifs";
-      options = "credentials=${config.sops.secrets."samba/downloads-credentials".path},uid=qbittorrent,gid=qbittorrent,file_mode=0664,dir_mode=0775";
-      after = [ "network-online.target" ];
-    }
-  ];
-
-  # Configure systemd automount
-  systemd.automounts = [
-    {
-      where = "/media/downloads";
-      wantedBy = [ "multi-user.target" ];
-    }
-  ];
+  # Configure CIFS mount for downloads share
+  fileSystems."/media/downloads" = {
+    device = "//192.168.1.97/downloads";
+    fsType = "cifs";
+    options = [
+      "credentials=${config.sops.secrets."samba/downloads-credentials".path}"
+      "uid=qbittorrent"
+      "gid=qbittorrent"
+      "file_mode=0664"
+      "dir_mode=0775"
+      "x-systemd.automount"
+      "x-systemd.idle-timeout=60"
+      "x-systemd.requires=network-online.target"
+      "noauto"
+    ];
+  };
 
   services = {
     logrotate.checkConfig = false;
