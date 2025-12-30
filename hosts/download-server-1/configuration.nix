@@ -353,7 +353,7 @@
     logrotate.checkConfig = false;
 
     bazarr = {
-      enable = false;
+      enable = true;
       openFirewall = true;
     };
 
