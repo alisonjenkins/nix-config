@@ -126,6 +126,22 @@
           "valid users" = "ali jellyfin";
         };
 
+        "movies" = {
+          path = "/media/storage/media/Movies";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "ali radarr";
+        };
+
+        "tv" = {
+          path = "/media/storage/media/TV";
+          browseable = "yes";
+          "read only" = "no";
+          "guest ok" = "no";
+          "valid users" = "ali sonarr";
+        };
+
         "downloads" = {
           path = "/media/storage/downloads";
           browseable = "yes";
@@ -212,6 +228,8 @@
       download-server = {};
       jellyfin = {};
       privoxy = {};
+      radarr = {};
+      sonarr = {};
     };
 
     users = {
@@ -228,6 +246,18 @@
         description = "Download Server user";
         group = "download-server";
         hashedPasswordFile = "/persistence/passwords/download-server";
+        isNormalUser = true;
+      };
+      radarr = {
+        description = "Radarr user";
+        group = "radarr";
+        hashedPasswordFile = "/persistence/passwords/radarr";
+        isNormalUser = true;
+      };
+      sonarr = {
+        description = "Sonarr user";
+        group = "sonarr";
+        hashedPasswordFile = "/persistence/passwords/sonarr";
         isNormalUser = true;
       };
       jellyfin = {
