@@ -291,6 +291,30 @@
     };
   };
 
+  # Ensure mount point exists
+  systemd.tmpfiles.rules = [
+    "d /media/downloads 0755 root root -"
+  ];
+
+  # Configure systemd mount for downloads share
+  systemd.mounts = [
+    {
+      what = "//192.168.1.97/downloads";
+      where = "/media/downloads";
+      type = "cifs";
+      options = "credentials=${config.sops.secrets."samba/downloads-credentials".path},uid=qbittorrent,gid=qbittorrent,file_mode=0664,dir_mode=0775";
+      after = [ "network-online.target" ];
+    }
+  ];
+
+  # Configure systemd automount
+  systemd.automounts = [
+    {
+      where = "/media/downloads";
+      wantedBy = [ "multi-user.target" ];
+    }
+  ];
+
   services = {
     logrotate.checkConfig = false;
 
@@ -475,6 +499,14 @@
         owner = config.users.users.qbittorrent.name;
         restartUnits = ["qbittorrent.service"];
         sopsFile = ./secrets/qbittorrent.yaml;
+      };
+
+      "samba/downloads-credentials" = {
+        format = "yaml";
+        group = config.users.users.root.group;
+        mode = "0400";
+        owner = config.users.users.root.name;
+        sopsFile = ./secrets/samba.yaml;
       };
     };
   };
