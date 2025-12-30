@@ -367,6 +367,11 @@
       enable = false;
     };
 
+    overseerr = {
+      enable = true;
+      openFirewall = true;
+    };
+
     radarr = {
       enable = true;
       openFirewall = true;
