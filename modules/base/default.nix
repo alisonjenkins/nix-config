@@ -399,6 +399,12 @@
             mode = "0755";
           }
           {
+            directory = "/var/lib/overseerr";
+            user = "root";
+            group = "root";
+            mode = "0755";
+          }
+          {
             directory = "/var/lib/private/prowlarr";
             user = "root";
             group = "root";
