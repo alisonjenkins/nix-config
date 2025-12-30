@@ -399,7 +399,7 @@
             mode = "0755";
           }
           {
-            directory = "/var/lib/private/overseerr";
+            directory = "/var/lib/private/jellyseerr";
             user = "root";
             group = "root";
             mode = "0755";

@@ -364,10 +364,6 @@
     };
 
     jellyseerr = {
-      enable = false;
-    };
-
-    overseerr = {
       enable = true;
       openFirewall = true;
     };
