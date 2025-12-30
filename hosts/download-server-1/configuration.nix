@@ -367,7 +367,7 @@
     };
 
     sonarr = {
-      enable = false;
+      enable = true;
       openFirewall = true;
     };
 
