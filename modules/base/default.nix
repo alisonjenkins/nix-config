@@ -387,6 +387,12 @@
             mode = "0755";
           }
           {
+            directory = "/var/lib/radarr";
+            user = "root";
+            group = "root";
+            mode = "0755";
+          }
+          {
             directory = "/var/lib/samba";
             user = "root";
             group = "root";
