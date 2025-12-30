@@ -38,6 +38,7 @@
       dua
       fd
       htop
+      iotop
       privoxy
       qbittorrent
       qbittorrent-cli
