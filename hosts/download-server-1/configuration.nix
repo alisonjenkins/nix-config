@@ -371,6 +371,11 @@
       openFirewall = true;
     };
 
+    prowlarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
     qbittorrent = {
       enable = true;
       openFirewall = true;
@@ -493,6 +498,13 @@
         }
         {
           port = 8989;
+          sources = [
+            "192.168.1.187"
+            "192.168.1.39"
+          ];
+        }
+        {
+          port = 9696;
           sources = [
             "192.168.1.187"
             "192.168.1.39"
