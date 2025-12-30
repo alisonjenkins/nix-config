@@ -519,6 +519,22 @@
         owner = config.users.users.root.name;
         sopsFile = ./secrets/samba.yaml;
       };
+
+      "samba/tv-credentials" = {
+        format = "yaml";
+        group = config.users.users.root.group;
+        mode = "0400";
+        owner = config.users.users.root.name;
+        sopsFile = ./secrets/samba.yaml;
+      };
+
+      "samba/movies-credentials" = {
+        format = "yaml";
+        group = config.users.users.root.group;
+        mode = "0400";
+        owner = config.users.users.root.name;
+        sopsFile = ./secrets/samba.yaml;
+      };
     };
   };
 
