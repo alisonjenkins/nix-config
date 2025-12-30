@@ -397,6 +397,10 @@
 
         Preferences = {
           "Advanced\\RecheckOnCompletion" = true;
+          "Downloads\\SavePath" = "/media/downloads/complete";
+          "Downloads\\TempPath" = "/media/downloads/downloading";
+          "Downloads\\TempPathEnabled" = true;
+          "Downloads\\UseIncompleteExtension" = true;
           "General\\Locale" = "en";
           "MailNotification\\req_auth" = true;
           "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
