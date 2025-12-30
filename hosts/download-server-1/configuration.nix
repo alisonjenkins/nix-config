@@ -385,6 +385,7 @@
     qbittorrent = {
       enable = true;
       openFirewall = true;
+      package = pkgs.unstable.qbittorrent;
       torrentingPort = 15234;
 
       serverConfig = {
