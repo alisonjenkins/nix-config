@@ -296,22 +296,58 @@
     };
   };
 
-  # Configure CIFS mount for downloads share
-  fileSystems."/media/downloads" = {
-    device = "//192.168.1.97/downloads";
-    fsType = "cifs";
-    options = [
-      "credentials=${config.sops.secrets."samba/downloads-credentials".path}"
-      "uid=qbittorrent"
-      "gid=qbittorrent"
-      "file_mode=0664"
-      "dir_mode=0775"
-      "x-systemd.automount"
-      "x-systemd.idle-timeout=60"
-      "x-systemd.requires=network-online.target"
-      "noauto"
-    ];
-  };
+  # Ensure mount points exist
+  systemd.tmpfiles.rules = [
+    "d /media/downloads 0755 root root -"
+    "d /media/movies 0755 root root -"
+    "d /media/tv 0755 root root -"
+  ];
+
+  # Configure CIFS mounts with automount
+  systemd.mounts = [
+    {
+      what = "//192.168.1.97/downloads";
+      where = "/media/downloads";
+      type = "cifs";
+      options = "credentials=${config.sops.secrets."samba/downloads-credentials".path},uid=qbittorrent,gid=qbittorrent,file_mode=0664,dir_mode=0775";
+      wantedBy = [ ];
+      requires = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+    }
+    {
+      what = "//192.168.1.97/movies";
+      where = "/media/movies";
+      type = "cifs";
+      options = "credentials=${config.sops.secrets."samba/movies-credentials".path},uid=radarr,gid=radarr,file_mode=0664,dir_mode=0775";
+      wantedBy = [ ];
+      requires = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+    }
+    {
+      what = "//192.168.1.97/tv";
+      where = "/media/tv";
+      type = "cifs";
+      options = "credentials=${config.sops.secrets."samba/tv-credentials".path},uid=sonarr,gid=sonarr,file_mode=0664,dir_mode=0775";
+      wantedBy = [ ];
+      requires = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+    }
+  ];
+
+  systemd.automounts = [
+    {
+      where = "/media/downloads";
+      wantedBy = [ "multi-user.target" ];
+    }
+    {
+      where = "/media/movies";
+      wantedBy = [ "multi-user.target" ];
+    }
+    {
+      where = "/media/tv";
+      wantedBy = [ "multi-user.target" ];
+    }
+  ];
 
   services = {
     logrotate.checkConfig = false;
