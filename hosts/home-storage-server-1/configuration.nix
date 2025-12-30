@@ -226,16 +226,28 @@
   users = {
     groups = {
       download-server = {};
+      games = {};
       jellyfin = {};
+      movies = {};
+      music = {};
       privoxy = {};
       radarr = {};
       sonarr = {};
+      tv = {};
     };
 
     users = {
       ali = {
         description = "Alison Jenkins";
-        extraGroups = [ "docker" "networkmanager" "wheel" ];
+        extraGroups = [
+          "docker"
+          "games"
+          "movies"
+          "music"
+          "networkmanager"
+          "tv"
+          "wheel"
+        ];
         # hashedPasswordFile = config.sops.secrets.ali.path;
         hashedPasswordFile = "/persistence/passwords/ali";
         # initialPassword = "initPw!";
@@ -251,18 +263,21 @@
       radarr = {
         description = "Radarr user";
         group = "radarr";
+        extraGroups = ["movies"];
         hashedPasswordFile = "/persistence/passwords/radarr";
         isNormalUser = true;
       };
       sonarr = {
         description = "Sonarr user";
         group = "sonarr";
+        extraGroups = ["tv"];
         hashedPasswordFile = "/persistence/passwords/sonarr";
         isNormalUser = true;
       };
       jellyfin = {
         description = "Jellyfin user";
         group = "jellyfin";
+        extraGroups = ["movies" "tv" "music"];
         hashedPasswordFile = "/persistence/passwords/jellyfin";
         isNormalUser = true;
       };
