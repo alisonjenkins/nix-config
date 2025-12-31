@@ -274,10 +274,13 @@
     '';
   };
 
-  # Override qbittorrent service to inject secrets
+  # Override qbittorrent service to inject secrets and configure aggressive restarts
   systemd.services.qbittorrent = {
     serviceConfig = {
       ExecStartPre = "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
+      Restart = "always";
+      RestartSec = "5s";
+      StartLimitBurst = 0; # Unlimited restart attempts
     };
   };
 
