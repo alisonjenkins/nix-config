@@ -368,6 +368,12 @@
 
     i2pd = {
       enable = true;
+
+      proto = {
+        sam = {
+          enable = true;
+        };
+      };
     };
 
     jellyseerr = {
