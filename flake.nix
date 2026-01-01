@@ -15,6 +15,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs_lqx_pin.url = "github:nixos/nixpkgs/82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41";
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.11-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
@@ -166,6 +167,7 @@
 
         overlays =
           [
+            (import ./overlays { inherit inputs system lib; }).lqx-pin-packages
             (import ./overlays { inherit inputs system lib; }).master-packages
             (import ./overlays { inherit inputs system lib; }).unstable-packages
             (import ./overlays { inherit inputs system lib; }).zk
@@ -198,6 +200,7 @@
 
             overlays =
               [
+                (import ./overlays { inherit inputs system lib; }).lqx-pin-packages
                 (import ./overlays { inherit inputs system lib; }).master-packages
                 (import ./overlays { inherit inputs system lib; }).unstable-packages
                 (import ./overlays { inherit inputs system lib; }).tmux-sessionizer

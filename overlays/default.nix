@@ -46,6 +46,13 @@
     };
   };
 
+  lqx-pin-packages = final: _prev: {
+    lqx_pin = import inputs.nixpkgs_lqx_pin {
+      system = final.stdenv.hostPlatform.system;
+      config.allowUnfree = true;
+    };
+  };
+
   _1password-gui = final: prev: {
     _1password-gui = prev._1password-gui.overrideAttrs (_old: {
       postFixup = ''

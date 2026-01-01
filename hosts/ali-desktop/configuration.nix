@@ -31,7 +31,8 @@
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages_latest;
     # kernelPackages = pkgs.linuxPackages_xanmod;
-    kernelPackages = pkgs.linuxPackages_lqx;
+    # kernelPackages = pkgs.linuxPackages_lqx;
+    kernelPackages = pkgs.lqx_pin.linuxKernel.packages.linux_lqx;
 
     kernelParams = [
       # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
@@ -254,6 +255,7 @@
 
   nixpkgs = {
     overlays = [
+      (import ../../overlays { inherit inputs lib; system = "x86_64-linux"; }).lqx-pin-packages
       inputs.niri-flake.overlays.niri
     ];
   };
