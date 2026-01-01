@@ -366,6 +366,10 @@
       openFirewall = true;
     };
 
+    i2pd = {
+      enable = true;
+    };
+
     jellyseerr = {
       enable = true;
       openFirewall = true;
