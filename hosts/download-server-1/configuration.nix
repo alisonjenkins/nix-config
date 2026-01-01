@@ -424,6 +424,8 @@
           "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
           "Session\\ExcludedFileNames" = "";
           "Session\\GlobalMaxRatio" = 2;
+          "Session\\I2P\\Enabled" = true;
+          "Session\\I2P\\MixedMode" = true;
           "Session\\IgnoreSlowTorrentsForQueueing" = true;
           "Session\\IncludeOverheadInLimits" = true;
           "Session\\Interface" = "primary-vpn";
