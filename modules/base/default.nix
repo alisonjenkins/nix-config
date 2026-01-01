@@ -381,42 +381,6 @@
             mode = "0700";
           }
           {
-            directory = "/var/lib/qBittorrent";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
-            directory = "/var/lib/radarr";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
-            directory = "/var/lib/sonarr";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
-            directory = "/var/lib/private/jellyseerr";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
-            directory = "/var/lib/private/prowlarr";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
-            directory = "/var/lib/bazarr";
-            user = "root";
-            group = "root";
-            mode = "0755";
-          }
-          {
             directory = "/var/lib/samba";
             user = "root";
             group = "root";
