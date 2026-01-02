@@ -22,12 +22,12 @@
     stylix.url = "github:danth/stylix/release-25.11";
 
     ali-neovim = {
-      url = "github:alisonjenkins/neovim-nix-flake";
-      inputs = {
-        nixpkgs.follows = "nixpkgs_unstable";
-        nixpkgs-master.follows = "nixpkgs_master";
-        nixpkgs-stable.follows = "nixpkgs_stable";
-      };
+      url = "github:alisonjenkins/neovim-nix-flake/84e744a69a4cea296d98f71fb5d18a2cecc599c5";
+      # inputs = {
+      #   nixpkgs.follows = "nixpkgs_unstable";
+      #   nixpkgs-master.follows = "nixpkgs_master";
+      #   nixpkgs-stable.follows = "nixpkgs_stable";
+      # };
     };
 
     darwin = {
