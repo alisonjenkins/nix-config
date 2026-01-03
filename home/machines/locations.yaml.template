@@ -15,7 +15,9 @@
 # To get your monitor EDIDs: detect-location --show-monitors
 # To get visible WiFi networks: detect-location --show-wifi
 
-locations:
+# Root config key required for SOPS
+config:
+  locations:
   # Home location example
   - name: home
     # List of WiFi network SSIDs visible at this location

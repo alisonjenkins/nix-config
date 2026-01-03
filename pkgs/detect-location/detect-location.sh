@@ -208,26 +208,26 @@ detect_location() {
 
     # Get number of locations in config
     local location_count
-    location_count=$(yq '.locations | length' "$config_path")
+    location_count=$(yq '.config.locations | length' "$config_path" 2>/dev/null || yq '.locations | length' "$config_path")
 
     log "Found $location_count location(s) in config"
 
     # Iterate through locations
     for ((i = 0; i < location_count; i++)); do
         local location_name
-        location_name=$(yq ".locations[$i].name" "$config_path")
+        location_name=$(yq ".config.locations[$i].name // .locations[$i].name" "$config_path")
 
         log "Checking location: $location_name"
 
         # Check WiFi networks
         local wifi_match=false
         local wifi_network_count
-        wifi_network_count=$(yq ".locations[$i].wifi_networks | length" "$config_path" 2>/dev/null || echo "0")
+        wifi_network_count=$(yq ".config.locations[$i].wifi_networks // .locations[$i].wifi_networks | length" "$config_path" 2>/dev/null || echo "0")
 
         if [[ "$wifi_network_count" != "0" && "$wifi_network_count" != "null" ]]; then
             for ((j = 0; j < wifi_network_count; j++)); do
                 local config_ssid
-                config_ssid=$(yq ".locations[$i].wifi_networks[$j]" "$config_path")
+                config_ssid=$(yq ".config.locations[$i].wifi_networks[$j] // .locations[$i].wifi_networks[$j]" "$config_path")
 
                 # Check if this SSID is in our detected networks
                 for detected_ssid in "${wifi_networks[@]}"; do
@@ -243,12 +243,12 @@ detect_location() {
         # Check monitor EDIDs
         local monitor_match=false
         local monitor_edid_count
-        monitor_edid_count=$(yq ".locations[$i].monitor_edids | length" "$config_path" 2>/dev/null || echo "0")
+        monitor_edid_count=$(yq ".config.locations[$i].monitor_edids // .locations[$i].monitor_edids | length" "$config_path" 2>/dev/null || echo "0")
 
         if [[ "$monitor_edid_count" != "0" && "$monitor_edid_count" != "null" ]]; then
             for ((k = 0; k < monitor_edid_count; k++)); do
                 local config_edid
-                config_edid=$(yq ".locations[$i].monitor_edids[$k]" "$config_path")
+                config_edid=$(yq ".config.locations[$i].monitor_edids[$k] // .locations[$i].monitor_edids[$k]" "$config_path")
 
                 # Check if this EDID is in our detected monitors
                 for detected_edid in "${monitor_edids[@]}"; do
