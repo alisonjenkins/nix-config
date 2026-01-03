@@ -10,7 +10,7 @@
   # Deploy volume rules configuration
   home.file.".config/audio-context/rules.yaml".text = ''
     # Default microphone volume when location is unknown or no rule matches
-    default_mic_volume: 20
+    default_mic_volume: 30
 
     # Exclude these audio sinks from automatic volume adjustment
     # (headphones, bluetooth devices, etc.)
@@ -22,6 +22,10 @@
     # Per-location volume rules (customize for your locations)
     rules:
       - location: home
+        output_volume: 50
+        # mic_volume: 20
+
+      - location: gff
         output_volume: 50
         # mic_volume: 20
 
