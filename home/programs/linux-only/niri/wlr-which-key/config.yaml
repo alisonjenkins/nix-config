@@ -34,7 +34,7 @@ menu:
             submenu:
               - key: c
                 desc: Connect
-                cmd: bluetoothctl connect '88:C9:E8:06:5E:9C'
+                cmd: sh -c 'bluetoothctl show | grep -q "Powered: no" && bluetoothctl power on && sleep 1; bluetoothctl connect 88:C9:E8:06:5E:9C'
               - key: d
                 desc: Disconnect
                 cmd: bluetoothctl disconnect '88:C9:E8:06:5E:9C'
@@ -43,7 +43,7 @@ menu:
             submenu:
               - key: c
                 desc: Connect
-                cmd: bluetoothctl connect 'AC:80:0A:29:8F:E6'
+                cmd: sh -c 'bluetoothctl show | grep -q "Powered: no" && bluetoothctl power on && sleep 1; bluetoothctl connect AC:80:0A:29:8F:E6'
               - key: d
                 desc: Disconnect
                 cmd: bluetoothctl disconnect 'AC:80:0A:29:8F:E6'
