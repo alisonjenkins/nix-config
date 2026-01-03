@@ -11,7 +11,7 @@ in {
 
   sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
-  sops.secrets."location-detection-config" = {
+  sops.secrets."locations-config" = {
     path = "${config.home.homeDirectory}/.config/location-detection/locations.yaml";
     sopsFile = secretsFile;
     format = "yaml";
