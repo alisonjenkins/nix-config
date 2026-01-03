@@ -50,10 +50,10 @@
       Service = {
         Type = "oneshot";
         ExecStartPre = "${pkgs.coreutils}/bin/sleep 3";
-        ExecStart = lib.getExe (pkgs.writeShellScript "audio-context-boot" ''
+        ExecStart = lib.getExe' (pkgs.writeShellScript "audio-context-boot" ''
           LOCATION=$(${pkgs.detect-location}/bin/detect-location)
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
-        '');
+        '') "audio-context-boot";
         RemainAfterExit = true;
       };
       Install = {
@@ -87,10 +87,10 @@
         Type = "oneshot";
         # Wait for WiFi to be ready, then detect location and set volume
         ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
-        ExecStart = lib.getExe (pkgs.writeShellScript "audio-context-resume" ''
+        ExecStart = lib.getExe' (pkgs.writeShellScript "audio-context-resume" ''
           LOCATION=$(${pkgs.detect-location}/bin/detect-location)
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
-        '');
+        '') "audio-context-resume";
       };
       Install = {
         WantedBy = ["suspend.target"];
