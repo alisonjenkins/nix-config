@@ -1,0 +1,98 @@
+# Location Detection Configuration Template
+#
+# This file defines locations based on WiFi networks and monitor EDIDs.
+# Copy this template and customize it for your setup.
+#
+# IMPORTANT: This file MUST be encrypted with SOPS before committing!
+# WiFi network combinations can reveal your physical location.
+#
+# Usage:
+#   1. Copy this template: cp locations.yaml.template /tmp/locations-HOSTNAME.yaml
+#   2. Edit the file with your WiFi networks and monitor EDIDs
+#   3. Encrypt it: sops -e -i secrets/HOSTNAME/locations.yaml
+#   4. Test it: detect-location --config ~/.config/location-detection/locations.yaml
+#
+# To get your monitor EDIDs: detect-location --show-monitors
+# To get visible WiFi networks: detect-location --show-wifi
+
+locations:
+  # Home location example
+  - name: home
+    # List of WiFi network SSIDs visible at this location
+    # If ANY network from this list is visible, location matches
+    wifi_networks:
+      - "HomeNetwork5G"
+      - "HomeNetwork2.4G"
+      - "MyRouter-Guest"
+
+    # List of monitor EDID SHA1 hashes at this location
+    # If ANY monitor EDID matches, location matches
+    # Get these with: detect-location --show-monitors
+    monitor_edids:
+      - "a8f3e2d1c9b5a7f6e4d2c1b9a8f7e6d5"  # Main 4K Monitor
+      - "b9e4f3d2c1a8b7e6f5d4c3b2a1e9f8d7"  # Secondary Monitor
+
+  # Work location example
+  - name: work
+    wifi_networks:
+      - "OfficeWiFi"
+      - "OfficeWiFi-5G"
+      - "Corp-Guest"
+    monitor_edids:
+      - "c1f4e5d6a7b8c9d1e2f3a4b5c6d7e8f9"  # Work Monitor
+
+  # Laptop-only location (no external monitors)
+  - name: library
+    wifi_networks:
+      - "LibraryPublic"
+      - "PublicLibraryGuest"
+    # monitor_edids can be omitted if location has no monitors
+
+  # Cafe location example
+  - name: cafe
+    wifi_networks:
+      - "CoffeeShopGuest"
+      - "Starbucks WiFi"
+      - "CafePublic"
+
+  # Add more locations as needed
+  # - name: parents-house
+  #   wifi_networks:
+  #     - "ParentsRouter"
+  #   monitor_edids:
+  #     - "..."
+
+# Notes:
+#
+# 1. Location Matching Logic:
+#    - Location matches if (WiFi matches) OR (Monitor matches)
+#    - WiFi matches if ANY network from wifi_networks list is visible
+#    - Monitor matches if ANY EDID from monitor_edids list matches
+#    - First matching location wins (check order matters)
+#
+# 2. Unknown Location:
+#    - If no location matches, returns "unknown"
+#    - Speakers will be MUTED for safety
+#    - Microphone will be set to default volume
+#
+# 3. Monitor EDIDs:
+#    - EDIDs are hashed with SHA1 for faster comparison
+#    - Empty EDIDs (unplugged monitors) are automatically filtered
+#    - Use: detect-location --show-monitors to get current hashes
+#
+# 4. WiFi Networks:
+#    - Network names are matched exactly (case-sensitive)
+#    - Hidden networks won't be detected
+#    - Works with visible networks even if not connected
+#    - Use: detect-location --show-wifi to see available networks
+#
+# 5. Security:
+#    - ALWAYS encrypt this file with SOPS before committing
+#    - WiFi network combinations can identify your location
+#    - This is sensitive information - treat it like a password
+#
+# 6. Testing:
+#    - Test detection: detect-location --verbose
+#    - Show current monitors: detect-location --show-monitors
+#    - Show visible WiFi: detect-location --show-wifi
+#    - Test with custom config: detect-location --config /path/to/locations.yaml

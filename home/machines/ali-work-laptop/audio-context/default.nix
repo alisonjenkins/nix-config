@@ -42,50 +42,14 @@
       Service = {
         Type = "oneshot";
         ExecStartPre = "${pkgs.coreutils}/bin/sleep 3";
-        ExecStart = lib.getExe' (pkgs.writeShellScript "audio-context-boot" ''
+        ExecStart = "${pkgs.writeShellScript "audio-context-boot" ''
           LOCATION=$(${pkgs.detect-location}/bin/detect-location)
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
-        '') "audio-context-boot";
+        ''}";
         RemainAfterExit = true;
       };
       Install = {
         WantedBy = ["graphical-session.target"];
-      };
-    };
-
-    # Mute speakers before suspend
-    audio-context-pre-suspend = {
-      Unit = {
-        Description = "Mute speakers before suspend";
-        Before = ["sleep.target"];
-      };
-      Service = {
-        Type = "oneshot";
-        # Mute speakers to prevent loud audio on resume in unknown location
-        ExecStart = "${pkgs.pamixer}/bin/pamixer --set-volume 0";
-      };
-      Install = {
-        WantedBy = ["sleep.target"];
-      };
-    };
-
-    # Apply volume on resume from suspend
-    audio-context-resume = {
-      Unit = {
-        Description = "Apply context-aware volume on resume from suspend";
-        After = ["suspend.target"];
-      };
-      Service = {
-        Type = "oneshot";
-        # Wait for WiFi to be ready, then detect location and set volume
-        ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
-        ExecStart = lib.getExe' (pkgs.writeShellScript "audio-context-resume" ''
-          LOCATION=$(${pkgs.detect-location}/bin/detect-location)
-          ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
-        '') "audio-context-resume";
-      };
-      Install = {
-        WantedBy = ["suspend.target"];
       };
     };
   };

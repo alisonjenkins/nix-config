@@ -33,6 +33,11 @@
     pipewire.quantum = 512;
   };
 
+  services.audio-context-suspend = {
+    enable = true;
+    user = "ali";
+  };
+
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 

@@ -316,6 +316,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-desktop/configuration.nix
+            ./modules/audio-context-suspend.nix
             inputs.niri-flake.nixosModules.niri
             inputs.nix-flatpak.nixosModules.nix-flatpak
             nur.modules.nixos.default
@@ -361,6 +362,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
             ./hosts/ali-framework-laptop/configuration.nix
+            ./modules/audio-context-suspend.nix
             ./modules/development/web
             disko.nixosModules.disko
             home-manager.nixosModules.home-manager
@@ -439,6 +441,7 @@
             ./app-profiles/desktop/wms/plasma6
             ./hosts/ali-work-laptop/configuration.nix
             ./hosts/ali-work-laptop/disko-config.nix
+            ./modules/audio-context-suspend.nix
             ./modules/development/web
             disko.nixosModules.disko
             home-manager.nixosModules.home-manager

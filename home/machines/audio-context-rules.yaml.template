@@ -1,0 +1,104 @@
+# Audio Context Rules Template
+#
+# This file defines volume rules for different locations.
+# Edit home/machines/<hostname>/audio-context/default.nix to customize.
+#
+# The audio-context-volume script uses this configuration to set
+# speaker and microphone volumes based on detected location.
+
+# Default microphone volume when location is unknown or no matching rule
+# Set to 100 for full volume, or lower for privacy
+# This does NOT affect speakers (speakers are muted in unknown locations)
+default_mic_volume: 100
+
+# Exclude these audio sink patterns from automatic volume adjustment
+# These are regex patterns matched against sink names
+# Use to prevent adjusting headphones, bluetooth devices, etc.
+exclude_sink_patterns:
+  - bluez.*              # All Bluetooth devices
+  - .*headphone.*        # Any device with "headphone" in name
+  - .*headset.*          # Any device with "headset" in name
+  - .*usb.*headset.*     # USB headsets
+
+# Per-location volume rules
+# Volumes are 0-100 (0 = muted, 100 = maximum)
+rules:
+  # Home - comfortable volumes
+  - location: home
+    output_volume: 50    # Speaker volume
+    mic_volume: 75       # Microphone volume
+
+  # Work - lower speaker volume, higher mic for calls
+  - location: work
+    output_volume: 40
+    mic_volume: 85
+
+  # Library - silent mode
+  - location: library
+    output_volume: 0     # Muted
+    mic_volume: 0        # Muted
+
+  # Cafe - low volume, muted mic for privacy
+  - location: cafe
+    output_volume: 20
+    mic_volume: 0        # Muted for privacy
+
+  # Parents house - medium volumes
+  - location: parents-house
+    output_volume: 45
+    mic_volume: 70
+
+  # Add more location rules as needed
+  # - location: your-location-name
+  #   output_volume: 50
+  #   mic_volume: 75
+
+# Notes:
+#
+# 1. Volume Behavior:
+#    - output_volume: Controls built-in speakers only
+#    - mic_volume: Controls built-in microphone
+#    - Headphones are NEVER adjusted (excluded via patterns)
+#    - Bluetooth devices are NEVER adjusted (excluded via patterns)
+#
+# 2. Unknown Location Behavior:
+#    - Speakers: MUTED (0) for safety
+#    - Microphone: Set to default_mic_volume
+#    - Prevents loud audio when booting/resuming in public
+#
+# 3. Location Matching:
+#    - Location names must match those in locations.yaml
+#    - First matching rule is used
+#    - If no rule matches, uses "unknown location" behavior
+#
+# 4. Exclude Patterns:
+#    - Uses regex matching (grep -E style)
+#    - Matched against sink name from wpctl/PipeWire
+#    - Case-sensitive by default
+#    - Examples:
+#      - "bluez.*" matches "bluez_sink.11_22_33_44_55_66"
+#      - ".*headphone.*" matches "alsa_output.usb-headphone"
+#      - ".*USB.*" matches anything with USB in the name
+#
+# 5. Testing:
+#    - Get current sink: wpctl status | grep Sinks -A 5
+#    - Test manually: audio-context-volume --location home --verbose
+#    - Check service logs: journalctl --user -u audio-context-boot.service -f
+#
+# 6. Integration with Systemd:
+#    - audio-context-boot: Runs on login (user service)
+#    - audio-context-pre-suspend: Mutes speakers before suspend (system service)
+#    - audio-context-resume: Sets volumes after resume (system service)
+#
+# 7. Omitting Values:
+#    - You can omit output_volume to not change speaker volume
+#    - You can omit mic_volume to not change microphone volume
+#    - Example (only set mic, leave speakers unchanged):
+#      - location: quiet-work
+#        mic_volume: 90
+#
+# 8. Volume Range:
+#    - 0 = Muted / Minimum
+#    - 50 = Half volume
+#    - 100 = Maximum volume
+#    - Values outside 0-100 may cause errors
