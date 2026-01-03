@@ -35,8 +35,8 @@ in {
 
     systemd.services.audio-context-resume = {
       description = "Apply context-aware volume on resume from suspend";
-      after = ["suspend.target" "NetworkManager.service"];
-      wantedBy = ["suspend.target"];
+      after = ["suspend.target" "hibernate.target" "hybrid-sleep.target" "suspend-then-hibernate.target" "NetworkManager.service"];
+      wantedBy = ["suspend.target" "hibernate.target" "hybrid-sleep.target" "suspend-then-hibernate.target"];
 
       serviceConfig = {
         Type = "oneshot";
