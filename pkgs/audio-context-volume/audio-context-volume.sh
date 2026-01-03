@@ -89,9 +89,9 @@ parse_args() {
 
 # Get current audio sink (output device)
 get_current_sink() {
-    # Get default sink using wpctl
+    # Get default sink using wpctl (parse all sinks between "Sinks:" and "Sources:" sections)
     local sink_id
-    sink_id=$(wpctl status | grep -A 1 "Sinks:" | grep '\*' | awk '{print $3}' | tr -d '*.' || echo "")
+    sink_id=$(wpctl status | awk '/^ ├─ Sinks:/,/^ ├─ Sources:/' | grep '\*' | awk '{print $3}' | tr -d '*.' || echo "")
 
     if [[ -z "$sink_id" ]]; then
         verbose_log "No default sink found"
@@ -199,10 +199,13 @@ apply_volumes() {
         return 1
     fi
 
+    verbose_log "Detected current audio sink: $current_sink"
+
     # Check if sink is excluded (headphones, bluetooth, etc.)
     local sink_excluded=false
     if is_sink_excluded "$current_sink"; then
-        log "Skipping volume adjustment for excluded sink: $current_sink"
+        log "Current sink detected: $current_sink"
+        log "Skipping volume adjustment (sink matches excluded pattern - likely headphones or bluetooth device)"
         sink_excluded=true
     fi
 
