@@ -169,7 +169,11 @@
     };
 
     logind = {
-      lidSwitch = "suspend-then-hibernate";
+      settings = {
+        Login = {
+          HandleLidSwitch = "suspend-then-hibernate";
+        };
+      };
     };
 
     udev = {
