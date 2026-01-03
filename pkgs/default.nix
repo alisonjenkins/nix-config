@@ -8,4 +8,6 @@
   suspendScripts = pkgs.callPackage ./suspend-scripts {};
   wallpapers = pkgs.callPackage ./wallpapers {};
   firefox-addons = pkgs.callPackage ./firefox-addons {};
+  detect-location = pkgs.callPackage ./detect-location { inherit pkgs; };
+  audio-context-volume = pkgs.callPackage ./audio-context-volume { inherit pkgs; };
 }
