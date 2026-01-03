@@ -10,4 +10,5 @@
   firefox-addons = pkgs.callPackage ./firefox-addons {};
   detect-location = pkgs.callPackage ./detect-location { inherit pkgs; };
   audio-context-volume = pkgs.callPackage ./audio-context-volume { inherit pkgs; };
+  bluetooth-connect = pkgs.callPackage ./bluetooth-connect { inherit pkgs; };
 }

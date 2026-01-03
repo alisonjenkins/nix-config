@@ -91,7 +91,7 @@ parse_args() {
 get_current_sink() {
     # Get default sink using wpctl
     local sink_id
-    sink_id=$(wpctl status | grep -A 1 "Sinks:" | grep '*' | awk '{print $2}' | tr -d '*.' || echo "")
+    sink_id=$(wpctl status | grep -A 1 "Sinks:" | grep '\*' | awk '{print $2}' | tr -d '*.' || echo "")
 
     if [[ -z "$sink_id" ]]; then
         verbose_log "No default sink found"

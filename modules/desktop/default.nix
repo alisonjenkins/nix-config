@@ -178,6 +178,7 @@ in
       systemPackages = with pkgs; [
         # unstable.winboat
         aider-chat-full
+        bluetooth-connect
         deepfilternet
         file-roller
         gamescopeConfig
