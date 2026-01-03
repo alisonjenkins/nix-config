@@ -10,6 +10,8 @@ writeShellScriptBin "lock-session" ''
   FADE_IN_SECONDS="''${2:-}"
 
   SWAYLOCK_ARGS=(
+    "--color"
+    "050505"
     "--clock"
     "--daemonize"
     "--effect-blur"
