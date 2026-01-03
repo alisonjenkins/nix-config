@@ -16,6 +16,11 @@ creation_rules:
       - *admin_ali
       - *ali_personal
       - *server_ali-desktop
+  - path_regex: secrets/ali-framework-laptop/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+    - age:
+      - *admin_ali
+      - *ali_personal
   - path_regex: secrets/home-k8s-master-1/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
     - age:
