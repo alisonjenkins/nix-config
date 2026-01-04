@@ -454,6 +454,7 @@ in
         unstable.goverlay
         unstable.heroic-unwrapped
         unstable.protonplus
+        unstable.scx.full
         unstable.umu-launcher
       ]))
       ++ (optionals cfg.lsfg.enable [
