@@ -129,4 +129,45 @@
         };
       });
   };
+
+  lsfg-vk = final: prev: {
+    lsfg-vk-ui = final.stdenv.mkDerivation rec {
+      pname = "lsfg-vk";
+      version = "2.0-dev";
+
+      src = final.fetchFromGitHub {
+        owner = "PancakeTAS";
+        repo = "lsfg-vk";
+        rev = "develop";
+        hash = "sha256-O4p4FIONpUVO7OqIwXJK6xEBVEANKRIEv1siBdTQHF8=";
+      };
+
+      nativeBuildInputs = with final; [
+        cmake
+        pkg-config
+        qt6.wrapQtAppsHook
+      ];
+
+      buildInputs = with final; [
+        vulkan-headers
+        vulkan-loader
+        qt6.qtbase
+        qt6.qtdeclarative
+      ];
+
+      cmakeFlags = [
+        "-DLSFGVK_BUILD_UI=ON"
+        "-DLSFGVK_BUILD_VK_LAYER=ON"
+        "-DLSFGVK_BUILD_CLI=ON"
+        "-DLSFGVK_INSTALL_XDG_FILES=ON"
+      ];
+
+      meta = with final.lib; {
+        description = "Linux Shader Function Generator for Vulkan - Version 2.0";
+        homepage = "https://github.com/PancakeTAS/lsfg-vk";
+        license = licenses.unfree; # Update if you know the actual license
+        platforms = platforms.linux;
+      };
+    };
+  };
 }

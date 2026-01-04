@@ -457,7 +457,7 @@ in
         unstable.umu-launcher
       ]))
       ++ (optionals cfg.lsfg.enable [
-        inputs.lsfg-vk-flake.packages.${pkgs.stdenv.hostPlatform.system}.lsfg-vk-ui
+        pkgs.lsfg-vk-ui
       ]);
 
       variables = {
@@ -698,6 +698,7 @@ in
 
       lsfg-vk = {
         enable = cfg.lsfg.enable;
+        package = pkgs.lsfg-vk-ui;
       };
 
       pulseaudio = {
