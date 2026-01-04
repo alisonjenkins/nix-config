@@ -242,6 +242,18 @@ in
         # Use unstable Mesa for better RDNA 4 support
         package = pkgs.unstable.mesa;
         package32 = pkgs.unstable.pkgsi686Linux.mesa;
+
+        # VA-API hardware video acceleration
+        extraPackages = with pkgs; [
+          libva
+          libva-utils
+          libva-vdpau-driver
+        ];
+
+        extraPackages32 = with pkgs.pkgsi686Linux; [
+          libva
+          libva-vdpau-driver
+        ];
       };
     };
 
