@@ -510,6 +510,8 @@ in
     };
 
     hardware = {
+      ksm.enable = true;
+
       bluetooth.settings = mkMerge [
         # Base Bluetooth settings - always enabled when desktop module is active
         {
