@@ -52,6 +52,11 @@
       # "mem_sleep_default=deep"
       "amdgpu.dcdebugmask=0x410"
       "tc_cmos.use_acpi_alarm=1"
+
+      # RX 7600M XT (Navi 33/RDNA 3) optimizations
+      "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
+      "amdgpu.gpu_recovery=1"            # Enable GPU recovery
+      "amdgpu.deep_color=1"              # Enable deep color support
     ];
 
     loader = {
