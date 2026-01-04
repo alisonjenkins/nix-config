@@ -51,7 +51,8 @@
               format = "ext4";
               mountpoint = "/nix";
               mountOptions = [
-                "defaults"
+                "noatime"
+                "discard"
               ];
             };
           };
@@ -62,7 +63,8 @@
               format = "ext4";
               mountpoint = "/persistence";
               mountOptions = [
-                "defaults"
+                "noatime"
+                "discard"
               ];
             };
           };
@@ -73,7 +75,8 @@
               format = "ext4";
               mountpoint = "/home";
               mountOptions = [
-                "defaults"
+                "noatime"
+                "discard"
               ];
             };
           };
