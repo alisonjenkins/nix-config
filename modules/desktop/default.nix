@@ -32,6 +32,20 @@ in
         default = null;
         description = "PipeWire maximum quantum size. If null, uses quantum value for fixed quantum.";
       };
+
+      resampleQuality = mkOption {
+        type = types.int;
+        default = 4;
+        description = ''
+          PipeWire resample quality (0-15):
+          - 0-3: speex-fixed (low quality, fast)
+          - 4-7: speex (medium quality, balanced)
+          - 8-14: soxr (high quality, slower)
+          - 15: soxr-vhq (very high quality, slowest)
+
+          Default is 4 (speex-fixed-3) for balanced quality/performance.
+        '';
+      };
     };
 
     gaming = {
@@ -380,7 +394,7 @@ in
               };
               "stream.properties" = {
                 "node.latency" = "${quantumStr}/48000";
-                "resample.quality" = 1;
+                "resample.quality" = cfg.pipewire.resampleQuality;
               };
             };
           };

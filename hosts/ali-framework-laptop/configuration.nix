@@ -31,9 +31,10 @@
   modules.desktop = {
     enable = true;
     pipewire = {
-      quantum = 256;        # Default quantum (balanced latency)
-      minQuantum = 128;     # Allow lower latency when needed
-      maxQuantum = 2048;    # Allow higher latency for power saving
+      quantum = 256;          # Default quantum (balanced latency)
+      minQuantum = 128;       # Allow lower latency when needed
+      maxQuantum = 2048;      # Allow higher latency for power saving
+      resampleQuality = 10;   # soxr-hq (high quality resampling)
     };
   };
 
