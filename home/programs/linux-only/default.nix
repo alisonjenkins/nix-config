@@ -8,6 +8,7 @@
     ./gtk
     ./librewolf
     ./lsfg-vk
+    ./mangohud
     ./niri
     ./nixcord
     ./swayidle
