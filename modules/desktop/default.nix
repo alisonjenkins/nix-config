@@ -46,6 +46,16 @@ in
           Default is 4 (speex-fixed-3) for balanced quality/performance.
         '';
       };
+
+      suspendTimeoutSeconds = mkOption {
+        type = types.int;
+        default = 5;
+        description = ''
+          Seconds of idle time before suspending audio nodes for power saving.
+          Set to 0 to disable suspend-on-idle.
+          Default is 5 seconds.
+        '';
+      };
     };
 
     gaming = {
@@ -402,6 +412,28 @@ in
 
         wireplumber = {
           enable = true;
+
+          configPackages = mkIf (cfg.pipewire.suspendTimeoutSeconds > 0) [
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-suspend-on-idle.conf" ''
+              monitor.alsa.rules = [
+                {
+                  matches = [
+                    {
+                      node.name = "~alsa_output.*"
+                    }
+                    {
+                      node.name = "~alsa_input.*"
+                    }
+                  ]
+                  actions = {
+                    update-props = {
+                      session.suspend-timeout-seconds = ${toString cfg.pipewire.suspendTimeoutSeconds}
+                    }
+                  }
+                }
+              ]
+            '')
+          ];
         };
       };
 
