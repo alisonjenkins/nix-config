@@ -30,12 +30,21 @@
 
   modules.desktop = {
     enable = true;
+
+    power = {
+      hibernateDelaySec = "1h";  # Hibernate after 1 hour of suspend
+      handleLidSwitch = "suspend-then-hibernate";
+      handleLidSwitchExternalPower = "lock";
+      handleLidSwitchDocked = "ignore";
+    };
+
     pipewire = {
       quantum = 256;          # Default quantum (balanced latency)
       minQuantum = 128;       # Allow lower latency when needed
       maxQuantum = 2048;      # Allow higher latency for power saving
       resampleQuality = 10;   # soxr-hq (high quality resampling)
     };
+
     wifi = {
       optimizeForLowLatency = true;  # Enable low-latency WiFi for gaming/Discord/media
       roamThreshold = -75;           # More aggressive roaming on 2.4GHz (-75 dBm)
@@ -43,6 +52,7 @@
       bandModifier5GHz = 1.3;        # Prefer 5GHz band (30% bonus)
       bandModifier6GHz = 1.5;        # Strongly prefer 6GHz if available (50% bonus)
     };
+
     bluetooth = {
       optimizeForLowLatency = true;  # Enable low-latency Bluetooth for gaming/Discord/media
       enableFastConnectable = true;  # Faster connections (higher power use)
@@ -207,14 +217,6 @@
       enable = true;
     };
 
-    logind = {
-      settings = {
-        Login = {
-          HandleLidSwitch = "suspend-then-hibernate";
-        };
-      };
-    };
-
     udev = {
       packages = [
         inputs.framework-inputmodule-rs-flake.packages.${system}.udev
@@ -276,13 +278,6 @@
   };
 
   systemd = {
-    sleep = {
-      extraConfig = ''
-        HibernateDelaySec=30m
-        SuspendState=mem
-      '';
-    };
-
     services = {
       lact = {
         description = "AMDGPU Control Daemon";

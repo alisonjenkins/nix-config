@@ -30,6 +30,14 @@
 
   modules.desktop = {
     enable = true;
+
+    power = {
+      hibernateDelaySec = "1h";  # Hibernate after 1 hour of suspend
+      handleLidSwitch = "suspend-then-hibernate";
+      handleLidSwitchExternalPower = "lock";
+      handleLidSwitchDocked = "ignore";
+    };
+
     pipewire.quantum = 512;
   };
 
@@ -165,14 +173,6 @@
   security.rtkit.enable = true;
 
   services = {
-    logind = {
-      settings = {
-        Login = {
-          HandleLidSwitch = "suspend-then-hibernate";
-        };
-      };
-    };
-
     pulseaudio = {
       enable = false;
     };
@@ -210,15 +210,6 @@
 
   system = {
     stateVersion = "24.05";
-  };
-
-  systemd = {
-    sleep = {
-      extraConfig = ''
-        HibernateDelaySec=30m
-        SuspendState=mem
-      '';
-    };
   };
 
   time.timeZone = "Europe/London";

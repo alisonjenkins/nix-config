@@ -14,6 +14,62 @@ in
   options.modules.desktop = {
     enable = mkEnableOption "desktop environment configuration";
 
+    power = {
+      hibernateDelaySec = mkOption {
+        type = types.str;
+        default = "2h";
+        description = ''
+          Time to wait after suspend before hibernating when using suspend-then-hibernate.
+          This establishes a balance between speed (stay in suspend for quick resume)
+          and safety (hibernate to prevent data loss if battery dies).
+
+          Examples: "30m" (30 minutes), "2h" (2 hours), "4h" (4 hours)
+          Default: "2h" - good balance for most laptops
+        '';
+      };
+
+      suspendEstimationSec = mkOption {
+        type = types.int;
+        default = 3600;
+        description = ''
+          Fallback time in seconds for estimating when to hibernate if battery detection fails.
+          Only used when suspend-then-hibernate is active and battery monitoring is unavailable.
+          Default: 3600 (1 hour)
+        '';
+      };
+
+      handleLidSwitch = mkOption {
+        type = types.enum [ "ignore" "poweroff" "reboot" "halt" "suspend" "hibernate" "hybrid-sleep" "suspend-then-hibernate" "lock" ];
+        default = "suspend-then-hibernate";
+        description = ''
+          Action to take when laptop lid is closed.
+          - suspend: Fast, uses RAM (battery drain if left too long)
+          - hibernate: Slow to enter/exit, saves to disk (no battery drain, safe)
+          - suspend-then-hibernate: Suspends first, then hibernates after HibernateDelaySec
+          - lock: Just lock the screen
+          Default: "suspend-then-hibernate" for best balance
+        '';
+      };
+
+      handleLidSwitchExternalPower = mkOption {
+        type = types.enum [ "ignore" "poweroff" "reboot" "halt" "suspend" "hibernate" "hybrid-sleep" "suspend-then-hibernate" "lock" ];
+        default = "lock";
+        description = ''
+          Action to take when laptop lid is closed while on external power.
+          Default: "lock" - don't suspend when plugged in (useful for docked setups)
+        '';
+      };
+
+      handleLidSwitchDocked = mkOption {
+        type = types.enum [ "ignore" "poweroff" "reboot" "halt" "suspend" "hibernate" "hybrid-sleep" "suspend-then-hibernate" "lock" ];
+        default = "ignore";
+        description = ''
+          Action to take when laptop lid is closed while docked (external display connected).
+          Default: "ignore" - allow using laptop closed with external display
+        '';
+      };
+    };
+
     pipewire = {
       quantum = mkOption {
         type = types.int;
@@ -225,6 +281,42 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Desktop-specific suspend and hibernate configuration
+    systemd.sleep = {
+      extraConfig = ''
+        # Desktop/laptop specific hibernate timing
+        # Delay before hibernating when using suspend-then-hibernate mode
+        HibernateDelaySec=${cfg.power.hibernateDelaySec}
+
+        # Fallback estimation if battery monitoring unavailable
+        SuspendEstimationSec=${toString cfg.power.suspendEstimationSec}
+      '';
+    };
+
+    services.logind = {
+      settings = {
+        Login = {
+          # Lid switch behavior configuration for laptops
+          HandleLidSwitch = cfg.power.handleLidSwitch;
+          HandleLidSwitchExternalPower = cfg.power.handleLidSwitchExternalPower;
+          HandleLidSwitchDocked = cfg.power.handleLidSwitchDocked;
+
+          # Reduce time before considering idle for better responsiveness
+          IdleAction = "ignore";
+          IdleActionSec = "30min";
+
+          # Handle power key press (short press = suspend-then-hibernate, long press = poweroff)
+          HandlePowerKey = "suspend-then-hibernate";
+          HandlePowerKeyLongPress = "poweroff";
+
+          # Handle suspend key
+          HandleSuspendKey = "suspend";
+
+          # Handle hibernate key
+          HandleHibernateKey = "hibernate";
+        };
+      };
+    };
 
     environment = let
       gamescopeConfig = pkgs.writeTextFile {

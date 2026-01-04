@@ -351,6 +351,30 @@
     enable = true;
   };
 
+  # Optimal suspend and hibernate settings
+  systemd.sleep = {
+    extraConfig = ''
+      # Hibernate settings - optimized for speed and SSD wear reduction
+      # Use 'platform' mode for faster and more reliable hibernation on modern systems
+      HibernateMode=platform
+
+      # Suspend settings - use 'mem' (S3) for deeper sleep with better power savings
+      # 'mem' is better than 's2idle' for battery life on most systems
+      SuspendState=mem
+
+      # Hybrid sleep settings - combines suspend and hibernate
+      HybridSleepMode=platform
+      HybridSleepState=disk
+
+      # Allow up to 10 minutes for hibernation to complete (useful for large RAM)
+      # Default is 3 minutes which may be too short for systems with 32GB+ RAM
+      AllowHibernation=yes
+      AllowSuspend=yes
+      AllowHybridSleep=yes
+      AllowSuspendThenHibernate=yes
+    '';
+  };
+
 } // (if enableImpermanence then {
   environment = {
     persistence = {
