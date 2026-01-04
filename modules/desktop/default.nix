@@ -484,6 +484,7 @@ in
         gamemode
         mangohud
         steamtinkerlaunch
+        unstable.goverlay
         unstable.heroic-unwrapped
         unstable.protonplus
         unstable.umu-launcher
