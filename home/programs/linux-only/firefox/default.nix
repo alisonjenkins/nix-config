@@ -12,6 +12,81 @@
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
     profiles.${username} = {
+      settings = {
+        # === Hardware Video Acceleration (VA-API for AMD RX 7600M XT) ===
+        "media.ffmpeg.vaapi.enabled" = true;
+        "media.ffvpx.enabled" = false;
+        "media.navigator.mediadatadecoder_vpx_enabled" = true;
+        "media.rdd-vpx.enabled" = false;
+        "media.hardware-video-decoding.enabled" = true;
+        "media.hardware-video-decoding.force-enabled" = true;
+        "media.eme.enabled" = true;
+
+        # === GPU-Accelerated Rendering ===
+        "gfx.webrender.all" = true;
+        "gfx.webrender.enabled" = true;
+        "gfx.canvas.accelerated" = true;
+        "gfx.canvas.accelerated.cache-items" = 4096;
+        "gfx.canvas.accelerated.cache-size" = 512;
+        "gfx.x11-egl.force-enabled" = true;
+        "image.mem.decode_bytes_at_a_time" = 65536;
+
+        # === Compositor Optimizations ===
+        "layers.acceleration.force-enabled" = true;
+        "layers.gpu-process.enabled" = true;
+        "layers.gpu-process.force-enabled" = true;
+        "layers.mlgpu.enabled" = true;
+
+        # === Wayland Optimizations (Zero-Copy via DMA-BUF) ===
+        "widget.wayland-dmabuf-vaapi.enabled" = true;
+        "widget.wayland-dmabuf-webgl.enabled" = true;
+
+        # === WebGL ===
+        "webgl.force-enabled" = true;
+        "webgl.msaa-force" = true;
+
+        # === Cache Settings ===
+        "browser.cache.disk.enable" = false;
+        "browser.cache.memory.enable" = true;
+        "browser.cache.memory.capacity" = 2147483647;
+
+        # === Multi-Process & Content Optimization ===
+        "dom.ipc.processCount" = 8;
+        "browser.preferences.defaultPerformanceSettings.enabled" = false;
+        "dom.ipc.processPrelaunch.enabled" = true;
+        "browser.tabs.remote.autostart" = true;
+        "browser.tabs.remote.force-enable" = true;
+
+        # === Network Settings ===
+        "network.dns.disablePrefetch" = true;
+        "network.http.speculative-parallel-limit" = 0;
+        "network.prefetch-next" = false;
+        "network.tcp.fastopen.enable" = true;
+        "network.http.max-connections" = 1800;
+        "network.http.max-persistent-connections-per-server" = 10;
+        "network.http.pacing.requests.enabled" = false;
+        "network.dnsCacheExpiration" = 3600;
+
+        # === DNS over HTTPS (Quad9) ===
+        "network.trr.mode" = 2;
+        "network.trr.uri" = "https://dns11.quad9.net/dns-query";
+        "network.trr.custom_uri" = "https://dns11.quad9.net/dns-query";
+        "network.trr.excluded-domains" = ", pivkm.lan, tower.lan, pikvm.lan, family.google.com";
+
+        # === Privacy Settings ===
+        "dom.security.https_only_mode" = true;
+        "privacy.donottrackheader.enabled" = true;
+        "privacy.globalprivacycontrol.enabled" = true;
+
+        # === Performance Tuning ===
+        "browser.sessionstore.interval" = 60000;
+        "accessibility.force_disabled" = 1;
+        "accessibility.typeaheadfind.flashBar" = 0;
+
+        # === Developer Tools ===
+        "devtools.cache.disabled" = true;
+      };
+
       search.engines = {
         "Nix Packages" = {
           urls = [
