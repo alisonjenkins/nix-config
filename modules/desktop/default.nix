@@ -503,6 +503,10 @@ in
         RADV_PERFTEST = "sam,dccmsaa,nircache,nggc";
         mesa_glthread = "true";                     # Enable Mesa GL threading
         vblank_mode = "0";                          # Disable VSync at driver level
+
+        # ntsync - NT synchronization primitives for improved Wine/Proton performance
+        # Requires kernel 6.10+ with CONFIG_NTSYNC=y and /dev/ntsync device
+        WINEFSYNC = "1";                            # Enable ntsync for Wine/Proton
       } // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
@@ -803,6 +807,9 @@ in
         extraRules = ''
           # AMD GPU performance - let gamemode handle performance levels
           ACTION=="add", SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="auto"
+
+          # ntsync device permissions for Wine/Proton performance
+          KERNEL=="ntsync", MODE="0666"
         '';
       };
 
