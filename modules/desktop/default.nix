@@ -91,6 +91,60 @@ in
         description = "Enable COSMIC desktop environment";
       };
     };
+
+    wifi = {
+      optimizeForLowLatency = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Optimize WiFi settings for low latency use cases (gaming, VoIP, real-time communication).
+          This disables power save, enables aggressive roaming, and prefers 5GHz/6GHz bands.
+        '';
+      };
+
+      roamThreshold = mkOption {
+        type = types.int;
+        default = -70;
+        description = ''
+          RSSI threshold (in dBm) for roaming on 2.4GHz networks.
+          Lower values (e.g., -80) = more aggressive roaming.
+          Higher values (e.g., -60) = less aggressive roaming.
+          Range: -100 to 1
+        '';
+      };
+
+      roamThreshold5G = mkOption {
+        type = types.int;
+        default = -76;
+        description = ''
+          RSSI threshold (in dBm) for roaming on 5GHz networks.
+          Lower values (e.g., -85) = more aggressive roaming.
+          Higher values (e.g., -70) = less aggressive roaming.
+          Range: -100 to 1
+        '';
+      };
+
+      bandModifier5GHz = mkOption {
+        type = types.float;
+        default = 1.0;
+        description = ''
+          Modifier for 5GHz band preference in network ranking.
+          Values > 1.0 prefer 5GHz over 2.4GHz (e.g., 1.5 gives 50% bonus).
+          Values < 1.0 penalize 5GHz.
+          Set to 0.0 to disable 5GHz entirely.
+        '';
+      };
+
+      bandModifier6GHz = mkOption {
+        type = types.float;
+        default = 1.0;
+        description = ''
+          Modifier for 6GHz band preference in network ranking.
+          Values > 1.0 prefer 6GHz (e.g., 1.5 gives 50% bonus).
+          Set to 0.0 to disable 6GHz entirely.
+        '';
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -331,6 +385,45 @@ in
         remotePlay.openFirewall = true;
         dedicatedServer.openFirewall = true;
       };
+    };
+
+    networking = {
+      wireless.iwd.settings = mkMerge [
+        # Base iwd settings - always enabled when desktop module is active
+        {
+          General = {
+            EnableNetworkConfiguration = true;
+          };
+
+          DriverQuirks = {
+            DefaultInterface = true;
+          };
+
+          Scan = {
+            DisablePeriodicScan = false;
+          };
+        }
+
+        # Low-latency optimizations for gaming, VoIP, and real-time communication
+        (mkIf cfg.wifi.optimizeForLowLatency {
+          General = {
+            # More aggressive roaming for better connection quality
+            RoamThreshold = cfg.wifi.roamThreshold;
+            RoamThreshold5G = cfg.wifi.roamThreshold5G;
+          };
+
+          DriverQuirks = {
+            # Disable power save to reduce latency
+            PowerSaveDisable = "*";
+          };
+
+          Rank = {
+            # Prefer 5GHz and 6GHz bands for lower latency
+            BandModifier5GHz = cfg.wifi.bandModifier5GHz;
+            BandModifier6GHz = cfg.wifi.bandModifier6GHz;
+          };
+        })
+      ];
     };
 
     security = {
