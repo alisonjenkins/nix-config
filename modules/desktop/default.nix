@@ -176,6 +176,19 @@ in
         default = true;
         description = "Enable large address aware for 32-bit Windows games (allows >2GB RAM usage)";
       };
+
+      shaderCacheBasePath = mkOption {
+        type = types.str;
+        default = "\${HOME}/.cache";
+        description = ''
+          Base directory for shader caches (DXVK, VKD3D, etc.).
+          Default: "\${HOME}/.cache" (stored in user home directory)
+
+          For better performance on expendable storage, you can set this to a mount
+          with aggressive options like barrier=0 and data=writeback, since shader
+          caches can be safely rebuilt if corrupted.
+        '';
+      };
     };
 
     lsfg = {
@@ -354,6 +367,15 @@ in
         SuspendEstimationSec=${toString cfg.power.suspendEstimationSec}
       '';
     };
+
+    # Create shader cache directories automatically
+    systemd.tmpfiles.rules = mkIf cfg.gaming.enable [
+      "d ${cfg.gaming.shaderCacheBasePath} 0755 - - -"
+      "d ${cfg.gaming.shaderCacheBasePath}/dxvk 0755 - - -"
+      "d ${cfg.gaming.shaderCacheBasePath}/vkd3d 0755 - - -"
+      "d ${cfg.gaming.shaderCacheBasePath}/nvidia 0755 - - -"
+      "d ${cfg.gaming.shaderCacheBasePath}/steam 0755 - - -"
+    ];
 
     services.logind = {
       settings = {
@@ -577,12 +599,12 @@ in
       }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableDxvkStateCache) {
         # DXVK optimizations for Vulkan-based D3D9/10/11 translation
         DXVK_HUD = cfg.gaming.dxvkHud;
-        DXVK_STATE_CACHE_PATH = "\${HOME}/.cache/dxvk";
+        DXVK_STATE_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/dxvk";
         DXVK_LOG_LEVEL = "warn";
       }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableVkd3dShaderCache) {
         # VKD3D-Proton optimizations for D3D12 -> Vulkan translation
         VKD3D_CONFIG = "dxr11,dxr";                 # Enable DXR (DirectX Raytracing)
-        VKD3D_SHADER_CACHE_PATH = "\${HOME}/.cache/vkd3d";
+        VKD3D_SHADER_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/vkd3d";
       }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.cpuTopology != null) {
         # Override Wine CPU topology detection
         WINE_CPU_TOPOLOGY = cfg.gaming.cpuTopology;
@@ -597,7 +619,7 @@ in
         # NVIDIA-specific optimizations
         PROTON_ENABLE_NVAPI = "1";                  # Enable NVIDIA API
         __GL_SHADER_DISK_CACHE = "1";               # Enable NVIDIA shader cache
-        __GL_SHADER_DISK_CACHE_PATH = "\${HOME}/.cache/nvidia";
+        __GL_SHADER_DISK_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/nvidia";
       }) // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
