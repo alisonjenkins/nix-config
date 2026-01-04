@@ -62,6 +62,15 @@
       ldacQuality = "sq";            # Standard Quality LDAC (660 kbps, balanced quality/latency)
       defaultSampleRate = 48000;     # 48 kHz sample rate
     };
+
+    gaming = {
+      gpuVendor = "amd";
+      cpuTopology = "8:16";  # Framework 16 with Ryzen 7 7840HS: 8 cores, 16 threads
+      enableDxvkStateCache = true;
+      enableVkd3dShaderCache = true;
+      dxvkHud = "0";  # Disable HUD for performance
+      enableLargeAddressAware = true;
+    };
   };
 
   services.audio-context-suspend = {

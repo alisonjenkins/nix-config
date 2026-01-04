@@ -24,6 +24,15 @@
 
   modules.desktop = {
     enable = true;
+
+    gaming = {
+      gpuVendor = "amd";
+      cpuTopology = "16:32";  # Ryzen 9 7950X: 16 cores, 32 threads
+      enableDxvkStateCache = true;
+      enableVkd3dShaderCache = true;
+      dxvkHud = "0";  # Disable HUD for performance (use "fps" or "compiler" for debugging)
+      enableLargeAddressAware = true;
+    };
   };
 
   services.audio-context-suspend = {

@@ -130,6 +130,52 @@ in
         default = true;
         description = "Enable gaming packages and configurations (Steam, GameMode, etc.)";
       };
+
+      gpuVendor = mkOption {
+        type = types.enum [ "amd" "nvidia" "intel" "auto" ];
+        default = "auto";
+        description = ''
+          Primary GPU vendor for gaming optimizations.
+          Set to "auto" to auto-detect, or specify "amd", "nvidia", or "intel" for vendor-specific optimizations.
+        '';
+      };
+
+      cpuTopology = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          Override Wine CPU topology detection in format "physical:logical".
+          Examples: "8:16" for 8 cores/16 threads, "6:12" for 6 cores/12 threads.
+          Set to null to let Wine auto-detect.
+        '';
+      };
+
+      enableDxvkStateCache = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable DXVK state cache for faster shader compilation";
+      };
+
+      enableVkd3dShaderCache = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable VKD3D-Proton shader cache for D3D12 games";
+      };
+
+      dxvkHud = mkOption {
+        type = types.str;
+        default = "0";
+        description = ''
+          DXVK HUD overlay settings.
+          "0" = disabled, "fps" = show FPS, "compiler" = show shader compilation, "full" = all info.
+        '';
+      };
+
+      enableLargeAddressAware = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable large address aware for 32-bit Windows games (allows >2GB RAM usage)";
+      };
     };
 
     lsfg = {
@@ -281,6 +327,22 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Gaming-specific kernel and system optimizations
+    boot.kernel.sysctl = mkMerge [
+      (mkIf cfg.gaming.enable {
+        # Memory management optimizations for gaming
+        "vm.compaction_proactiveness" = 0;          # Disable proactive compaction (reduce background CPU usage)
+        "vm.page-cluster" = 0;                      # Disable page clustering for swap (reduce latency)
+        "vm.watermark_boost_factor" = 0;            # Disable watermark boosting (reduce memory fragmentation overhead)
+        "vm.watermark_scale_factor" = 125;          # Adjust watermark scaling for better memory availability
+
+        # Scheduler optimizations for gaming
+        "kernel.sched_child_runs_first" = 0;        # Parent process runs first (better for game launchers)
+        "kernel.sched_autogroup_enabled" = 1;       # Enable automatic process grouping for better desktop responsiveness
+        "kernel.sched_cfs_bandwidth_slice_us" = 500; # Reduce CFS bandwidth slice for lower latency
+      })
+    ];
+
     # Desktop-specific suspend and hibernate configuration
     systemd.sleep = {
       extraConfig = ''
@@ -507,7 +569,36 @@ in
         # ntsync - NT synchronization primitives for improved Wine/Proton performance
         # Requires kernel 6.10+ with CONFIG_NTSYNC=y and /dev/ntsync device
         WINEFSYNC = "1";                            # Enable ntsync for Wine/Proton
-      } // (optionalAttrs cfg.lsfg.enable {
+      } // (optionalAttrs cfg.gaming.enable {
+        # Esync/Fsync optimizations (work alongside ntsync)
+        WINEESYNC = "1";                            # Enable esync as fallback
+        PROTON_NO_ESYNC = "0";                      # Ensure esync is not disabled
+        PROTON_NO_FSYNC = "0";                      # Ensure fsync is not disabled
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableDxvkStateCache) {
+        # DXVK optimizations for Vulkan-based D3D9/10/11 translation
+        DXVK_HUD = cfg.gaming.dxvkHud;
+        DXVK_STATE_CACHE_PATH = "\${HOME}/.cache/dxvk";
+        DXVK_LOG_LEVEL = "warn";
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableVkd3dShaderCache) {
+        # VKD3D-Proton optimizations for D3D12 -> Vulkan translation
+        VKD3D_CONFIG = "dxr11,dxr";                 # Enable DXR (DirectX Raytracing)
+        VKD3D_SHADER_CACHE_PATH = "\${HOME}/.cache/vkd3d";
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.cpuTopology != null) {
+        # Override Wine CPU topology detection
+        WINE_CPU_TOPOLOGY = cfg.gaming.cpuTopology;
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableLargeAddressAware) {
+        # Enable large address aware for 32-bit games
+        PROTON_FORCE_LARGE_ADDRESS_AWARE = "1";
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.gpuVendor == "amd") {
+        # AMD-specific optimizations
+        PROTON_ENABLE_NVAPI = "0";                  # Disable NVIDIA API
+        PROTON_HIDE_NVIDIA_GPU = "1";               # Hide NVIDIA GPU detection
+      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.gpuVendor == "nvidia") {
+        # NVIDIA-specific optimizations
+        PROTON_ENABLE_NVAPI = "1";                  # Enable NVIDIA API
+        __GL_SHADER_DISK_CACHE = "1";               # Enable NVIDIA shader cache
+        __GL_SHADER_DISK_CACHE_PATH = "\${HOME}/.cache/nvidia";
+      }) // (optionalAttrs cfg.lsfg.enable {
         LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
       });
     };
