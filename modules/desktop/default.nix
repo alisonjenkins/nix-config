@@ -14,10 +14,24 @@ in
   options.modules.desktop = {
     enable = mkEnableOption "desktop environment configuration";
 
-    pipewire.quantum = mkOption {
-      type = types.int;
-      default = 256;
-      description = "PipeWire quantum size for audio latency configuration";
+    pipewire = {
+      quantum = mkOption {
+        type = types.int;
+        default = 256;
+        description = "PipeWire default quantum size for audio latency configuration";
+      };
+
+      minQuantum = mkOption {
+        type = types.nullOr types.int;
+        default = null;
+        description = "PipeWire minimum quantum size. If null, uses quantum value for fixed quantum.";
+      };
+
+      maxQuantum = mkOption {
+        type = types.nullOr types.int;
+        default = null;
+        description = "PipeWire maximum quantum size. If null, uses quantum value for fixed quantum.";
+      };
     };
 
     gaming = {
@@ -346,19 +360,23 @@ in
             };
             "10-quantum" = let
               quantum = cfg.pipewire.quantum;
-              quantumStr = builtins.toString cfg.pipewire.quantum;
+              minQuantum = if cfg.pipewire.minQuantum != null then cfg.pipewire.minQuantum else quantum;
+              maxQuantum = if cfg.pipewire.maxQuantum != null then cfg.pipewire.maxQuantum else quantum;
+              quantumStr = builtins.toString quantum;
+              minQuantumStr = builtins.toString minQuantum;
+              maxQuantumStr = builtins.toString maxQuantum;
             in {
               "context.properties" = {
                 "default.clock.quantum" = quantum;
-                "default.clock.min-quantum" = quantum;
-                "default.clock.max-quantum" = quantum;
+                "default.clock.min-quantum" = minQuantum;
+                "default.clock.max-quantum" = maxQuantum;
               };
               "pulse.properties" = {
-                "pulse.min.req" = "${quantumStr}/48000";
+                "pulse.min.req" = "${minQuantumStr}/48000";
                 "pulse.default.req" = "${quantumStr}/48000";
-                "pulse.max.req" = "${quantumStr}/48000";
-                "pulse.min.quantum" = "${quantumStr}/48000";
-                "pulse.max.quantum" = "${quantumStr}/48000";
+                "pulse.max.req" = "${maxQuantumStr}/48000";
+                "pulse.min.quantum" = "${minQuantumStr}/48000";
+                "pulse.max.quantum" = "${maxQuantumStr}/48000";
               };
               "stream.properties" = {
                 "node.latency" = "${quantumStr}/48000";

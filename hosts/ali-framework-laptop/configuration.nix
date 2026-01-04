@@ -30,7 +30,11 @@
 
   modules.desktop = {
     enable = true;
-    pipewire.quantum = 512;
+    pipewire = {
+      quantum = 256;        # Default quantum (balanced latency)
+      minQuantum = 128;     # Allow lower latency when needed
+      maxQuantum = 2048;    # Allow higher latency for power saving
+    };
   };
 
   services.audio-context-suspend = {
