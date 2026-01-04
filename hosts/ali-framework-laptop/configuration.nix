@@ -209,6 +209,13 @@
 
         # Framework Laptop 16 Keyboard Module - ISO
         ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0018", ATTR{power/wakeup}="disabled"
+
+        # RX 7600M XT (Navi 33) discrete GPU - PCI ID 1002:7480
+        # Set performance level to auto (allows dynamic performance scaling)
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x1002", ATTR{device}=="0x7480", ATTR{power_dpm_force_performance_level}="auto"
+
+        # Enable runtime power management for discrete GPU when idle
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x1002", ATTR{device}=="0x7480", ATTR{power/control}="auto"
       '';
     };
 
