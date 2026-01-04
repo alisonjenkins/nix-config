@@ -70,6 +70,7 @@
       enableVkd3dShaderCache = true;
       dxvkHud = "0";  # Disable HUD for performance
       enableLargeAddressAware = true;
+      shaderCacheBasePath = "/media/storage/shader-cache";  # Use fast storage with aggressive mount options
     };
   };
 
