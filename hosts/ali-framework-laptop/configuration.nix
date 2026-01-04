@@ -57,6 +57,7 @@
       "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
       "amdgpu.gpu_recovery=1"            # Enable GPU recovery
       "amdgpu.deep_color=1"              # Enable deep color support
+      "amdgpu.freesync_video=1"          # Enable FreeSync for video playback
     ];
 
     loader = {
