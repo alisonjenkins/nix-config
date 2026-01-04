@@ -56,6 +56,16 @@ in
           Default is 5 seconds.
         '';
       };
+
+      alsaHeadroom = mkOption {
+        type = types.int;
+        default = 1024;
+        description = ''
+          ALSA headroom in samples to prevent audio clipping.
+          Larger values provide more protection against clipping but add latency.
+          Default is 1024 samples (~21ms at 48kHz).
+        '';
+      };
     };
 
     gaming = {
@@ -405,6 +415,11 @@ in
               "stream.properties" = {
                 "node.latency" = "${quantumStr}/48000";
                 "resample.quality" = cfg.pipewire.resampleQuality;
+              };
+            };
+            "10-alsa-headroom" = {
+              "context.properties" = {
+                "api.alsa.headroom" = cfg.pipewire.alsaHeadroom;
               };
             };
           };
