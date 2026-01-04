@@ -86,6 +86,12 @@
   environment = {
     pathsToLink = [ "/share/zsh" ];
 
+    # RX 7600M XT (RDNA 3) performance optimizations
+    variables = {
+      # Optimize shader compilation for RDNA 3
+      RADV_DEBUG = "zerovram";  # Zero VRAM allocations for better performance
+    };
+
     systemPackages = with pkgs; [
       amdgpu_top
       calibre
