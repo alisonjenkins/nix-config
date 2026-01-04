@@ -71,6 +71,7 @@
       dxvkHud = "0";  # Disable HUD for performance
       enableLargeAddressAware = true;
       shaderCacheBasePath = "/media/storage/shader-cache";  # Use fast storage with aggressive mount options
+      gpuDevice = 1;  # RX 7600M XT is discrete GPU on card1, card0 is iGPU
     };
   };
 
