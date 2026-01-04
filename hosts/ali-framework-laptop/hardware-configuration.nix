@@ -51,6 +51,7 @@
     "/media/storage" = {
       label = "storage";
       fsType = "ext4";
+      options = [ "noatime" "barrier=0" "data=writeback" "discard" ];
       neededForBoot = false;
     };
   };
