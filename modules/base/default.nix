@@ -354,6 +354,8 @@
 
   zramSwap = {
     enable = true;
+    algorithm = "zstd";
+    memoryPercent = 100;
   };
 
   # Optimal suspend and hibernate settings
