@@ -43,6 +43,15 @@
       bandModifier5GHz = 1.3;        # Prefer 5GHz band (30% bonus)
       bandModifier6GHz = 1.5;        # Strongly prefer 6GHz if available (50% bonus)
     };
+    bluetooth = {
+      optimizeForLowLatency = true;  # Enable low-latency Bluetooth for gaming/Discord/media
+      enableFastConnectable = true;  # Faster connections (higher power use)
+      reconnectAttempts = 7;         # Number of reconnection attempts
+      reconnectIntervals = [ 1 2 4 8 16 32 64 ];  # Exponential backoff for reconnects
+      audioCodecPriority = [ "ldac" "aptx_hd" "aptx" "aac" "sbc_xq" "sbc" ];  # Prefer high-quality codecs
+      ldacQuality = "sq";            # Standard Quality LDAC (660 kbps, balanced quality/latency)
+      defaultSampleRate = 48000;     # 48 kHz sample rate
+    };
   };
 
   services.audio-context-suspend = {

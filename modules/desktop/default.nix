@@ -145,6 +145,83 @@ in
         '';
       };
     };
+
+    bluetooth = {
+      optimizeForLowLatency = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Optimize Bluetooth settings for low latency use cases (gaming, VoIP, real-time communication).
+          This enables fast connectable mode, optimizes connection intervals, and configures
+          high-quality audio codecs.
+        '';
+      };
+
+      enableFastConnectable = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Enable Fast Connectable mode for adapters that support it.
+          Allows other devices to connect faster at the cost of increased power consumption.
+          Requires kernel 4.1+. Default: true.
+        '';
+      };
+
+      reconnectAttempts = mkOption {
+        type = types.int;
+        default = 7;
+        description = ''
+          Number of attempts to reconnect after a link is lost.
+          Set to 0 to disable reconnection feature.
+          Default: 7.
+        '';
+      };
+
+      reconnectIntervals = mkOption {
+        type = types.listOf types.int;
+        default = [ 1 2 4 8 16 32 64 ];
+        description = ''
+          Intervals in seconds between reconnection attempts.
+          If reconnectAttempts is larger than this list, the last interval is repeated.
+          Default: [ 1 2 4 8 16 32 64 ] (exponential backoff).
+        '';
+      };
+
+      audioCodecPriority = mkOption {
+        type = types.listOf types.str;
+        default = [ "ldac" "aptx_hd" "aptx" "aac" "sbc_xq" "sbc" ];
+        description = ''
+          Priority order for Bluetooth audio codecs.
+          Higher quality codecs should be listed first.
+          Available codecs: ldac, aptx_hd, aptx, aac, sbc_xq, sbc, faststream, lc3.
+          Default: [ "ldac" "aptx_hd" "aptx" "aac" "sbc_xq" "sbc" ].
+        '';
+      };
+
+      ldacQuality = mkOption {
+        type = types.enum [ "auto" "hq" "sq" "mq" ];
+        default = "auto";
+        description = ''
+          LDAC codec quality setting:
+          - auto: Automatic quality selection based on connection quality
+          - hq: High Quality (990 kbps, best quality, highest latency)
+          - sq: Standard Quality (660 kbps, balanced)
+          - mq: Mobile Quality (330 kbps, lower latency)
+          Default: auto.
+        '';
+      };
+
+      defaultSampleRate = mkOption {
+        type = types.int;
+        default = 48000;
+        description = ''
+          Default sample rate for Bluetooth audio in Hz.
+          Common values: 44100, 48000, 96000.
+          Higher values may improve quality but increase latency.
+          Default: 48000.
+        '';
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -339,6 +416,46 @@ in
     };
 
     hardware = {
+      bluetooth.settings = mkMerge [
+        # Base Bluetooth settings - always enabled when desktop module is active
+        {
+          General = {
+            ControllerMode = "dual";  # Both BR/EDR and LE
+            FastConnectable = cfg.bluetooth.enableFastConnectable;
+            JustWorksRepairing = "always";  # Allow re-pairing without user confirmation
+            MultiProfile = "multiple";  # Support multiple profiles and devices
+          };
+
+          Policy = {
+            ReconnectAttempts = cfg.bluetooth.reconnectAttempts;
+            ReconnectIntervals = builtins.concatStringsSep "," (map toString cfg.bluetooth.reconnectIntervals);
+            AutoEnable = true;  # Auto-enable Bluetooth adapters
+          };
+        }
+
+        # Low-latency optimizations for gaming, VoIP, and real-time communication
+        (mkIf cfg.bluetooth.optimizeForLowLatency {
+          General = {
+            # Reduce discoverable timeout for security
+            DiscoverableTimeout = 120;  # 2 minutes instead of default 3
+          };
+
+          LE = {
+            # Optimize Low Energy connection parameters for lower latency
+            MinConnectionInterval = 6;   # 7.5ms (6 * 1.25ms)
+            MaxConnectionInterval = 12;  # 15ms (12 * 1.25ms)
+            ConnectionLatency = 0;       # No latency tolerance
+            ConnectionSupervisionTimeout = 200;  # 2 seconds
+          };
+
+          GATT = {
+            # Optimize GATT for better performance
+            Cache = "always";  # Enable attribute caching
+            ExchangeMTU = 517;  # Maximum MTU for better throughput
+          };
+        })
+      ];
+
       graphics = {
         enable = true;
         # Use unstable Mesa for better RDNA 4 support
@@ -521,7 +638,38 @@ in
         wireplumber = {
           enable = true;
 
-          configPackages = mkIf (cfg.pipewire.suspendTimeoutSeconds > 0) [
+          configPackages = [
+            # Bluetooth codec configuration
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-bluez-config.conf" ''
+              monitor.bluez.properties = {
+                bluez5.roles = [ a2dp_sink a2dp_source bap_sink bap_source hsp_hs hsp_ag hfp_hf hfp_ag ]
+                bluez5.codecs = [ ${builtins.concatStringsSep " " cfg.bluetooth.audioCodecPriority} ]
+                bluez5.default.rate = ${toString cfg.bluetooth.defaultSampleRate}
+                bluez5.default.channels = 2
+                bluez5.a2dp.ldac.quality = "${cfg.bluetooth.ldacQuality}"
+                bluez5.enable-sbc-xq = true
+                bluez5.enable-msbc = true
+                bluez5.enable-hw-volume = true
+                bluez5.hw-volume = [ hfp_hf hsp_hs a2dp_sink ]
+              }
+
+              monitor.bluez.rules = [
+                {
+                  matches = [
+                    {
+                      device.name = "~bluez_card.*"
+                    }
+                  ]
+                  actions = {
+                    update-props = {
+                      api.bluez5.auto-connect = [ hfp_hf hsp_hs a2dp_sink ]
+                      bluez5.auto-connect = true
+                    }
+                  }
+                }
+              ]
+            '')
+          ] ++ (optionals (cfg.pipewire.suspendTimeoutSeconds > 0) [
             (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-suspend-on-idle.conf" ''
               monitor.alsa.rules = [
                 {
@@ -541,7 +689,7 @@ in
                 }
               ]
             '')
-          ];
+          ]);
         };
       };
 
