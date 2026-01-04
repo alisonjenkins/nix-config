@@ -492,6 +492,7 @@
 
       {
         open-on-workspace = "gaming";
+        open-maximized = true;
 
         matches = [
           {
