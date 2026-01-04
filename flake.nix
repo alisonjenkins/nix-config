@@ -9,13 +9,14 @@
     impermanence.url = "github:nix-community/impermanence";
     jovian-nixos.url = "github:Jovian-Experiments/Jovian-NixOS";
     niri-flake.url = "github:sodiboo/niri-flake/27e012b4cd49e9ac438573ec7a6db3e5835828c3";
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixgl.url = "github:nix-community/nixGL";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixpkgs_lqx_pin.url = "github:nixos/nixpkgs/82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41";
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
-    nixpkgs_lqx_pin.url = "github:nixos/nixpkgs/82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41";
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.11-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt.url = "github:AshleyYakeley/NixVirt/v0.6.0";
