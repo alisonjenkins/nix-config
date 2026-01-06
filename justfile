@@ -22,7 +22,7 @@ test *extraargs:
     #!/usr/bin/env bash
     if command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
-        nh os test --hostname "$(hostname)" . -- {{extraargs}} ;
+        nh os test . -- {{extraargs}} ;
     elif [ "$(uname)" == "Darwin" ]; then
         sudo darwin-rebuild test --option sandbox false {{extraargs}} --flake .
     else
@@ -73,7 +73,7 @@ switch *extraargs:
 
     if command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
-        nh os switch --hostname "$(hostname)" . -- {{extraargs}} ;
+        nh os switch . -- {{extraargs}} ;
     elif [ "$(uname)" == "Darwin" ]; then
         sudo darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
     else
