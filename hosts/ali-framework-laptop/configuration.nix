@@ -34,8 +34,8 @@
     power = {
       hibernateDelaySec = "1h";  # Hibernate after 1 hour of suspend
       handleLidSwitch = "suspend-then-hibernate";
-      handleLidSwitchExternalPower = "lock";
-      handleLidSwitchDocked = "ignore";
+      handleLidSwitchExternalPower = "suspend-then-hibernate";
+      handleLidSwitchDocked = "suspend-then-hibernate";
     };
 
     pipewire = {
