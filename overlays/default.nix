@@ -133,13 +133,13 @@
   lsfg-vk = final: prev: {
     lsfg-vk-ui = final.stdenv.mkDerivation rec {
       pname = "lsfg-vk";
-      version = "2.0-dev";
+      version = "2.0-dev-unstable-2025-01-06";
 
       src = final.fetchFromGitHub {
         owner = "PancakeTAS";
         repo = "lsfg-vk";
-        rev = "develop";
-        hash = "sha256-O4p4FIONpUVO7OqIwXJK6xEBVEANKRIEv1siBdTQHF8=";
+        rev = "d0cec20d8a9029d9d290e088388ca2187c32ea10";
+        hash = "sha256-/deQxj8KDGuKrRtf/ogoNnJXVACgaskBRiG53MxDfKg=";
       };
 
       nativeBuildInputs = with final; [
