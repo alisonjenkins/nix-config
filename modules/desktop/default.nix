@@ -856,7 +856,7 @@ in
       let
         wallpaper = pkgs.fetchurl {
           url = "https://media.githubusercontent.com/media/alisonjenkins/nix-config/8a0e3f667dcc5fe0f2e461ca4cb17c74028d92f8/home/wallpapers/5120x1440/Static/sakura.jpg";
-          hash = "sha256-0yvvjwpbzx8rh4sqj5gm1xcd1ih58xys8sxw6zqk6swy31ahi2xf";
+          hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
         };
       in
       {
