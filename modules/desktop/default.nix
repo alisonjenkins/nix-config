@@ -707,6 +707,10 @@ in
         enable = true;
       };
 
+      tumbler = {
+        enable = true;
+      };
+
       lsfg-vk = {
         enable = cfg.lsfg.enable;
         package = pkgs.lsfg-vk-ui;
