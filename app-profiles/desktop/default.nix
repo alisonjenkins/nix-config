@@ -3,7 +3,6 @@
   imports = [
     ./aws
     ./base
-    ./fonts
     ./kubernetes
     ./media
   ];
