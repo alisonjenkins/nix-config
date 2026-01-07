@@ -3,7 +3,7 @@
 , enableImpermanence ? false
 , enableOpenSSH ? true
 , enablePlymouth ? true
-, imperpmanencePersistencePath ? builtins.toPath "/persistence"
+, impermanencePersistencePath ? builtins.toPath "/persistence"
 , inputs
 , lib
 , outputs
@@ -385,7 +385,7 @@
 } // (if enableImpermanence then {
   environment = {
     persistence = {
-      "${imperpmanencePersistencePath}" = {
+      "${impermanencePersistencePath}" = {
         hideMounts = true;
         directories = [
           "/etc/NetworkManager/system-connections"
