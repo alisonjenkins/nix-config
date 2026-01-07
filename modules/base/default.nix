@@ -332,6 +332,10 @@
       package = pkgs.unstable.tailscale;
     };
 
+    timesyncd = {
+      enable = lib.mkDefault true;
+    };
+
     udev = {
       extraRules = ''
         KERNEL=="cpu_dma_latency", GROUP="realtime"
