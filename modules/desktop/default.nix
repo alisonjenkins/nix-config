@@ -218,6 +218,14 @@ in
       };
     };
 
+    printing = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable printing support with CUPS and HP printer drivers";
+      };
+    };
+
     wifi = {
       optimizeForLowLatency = mkOption {
         type = types.bool;
@@ -459,6 +467,9 @@ in
       ]))
       ++ (optionals cfg.lsfg.enable [
         pkgs.lsfg-vk-ui
+      ])
+      ++ (optionals cfg.printing.enable [
+        pkgs.hplipWithPlugin
       ]);
 
       variables = {
@@ -834,6 +845,10 @@ in
       };
 
       power-profiles-daemon = {
+        enable = true;
+      };
+
+      printing = mkIf cfg.printing.enable {
         enable = true;
       };
 

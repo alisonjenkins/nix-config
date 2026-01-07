@@ -15,7 +15,6 @@
     (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
     (import ../../modules/locale { })
     (import ../../modules/libvirtd { inherit pkgs; })
-    (import ../../modules/printing { inherit pkgs; })
 
     ../../modules/desktop
     (import ../../modules/base {
