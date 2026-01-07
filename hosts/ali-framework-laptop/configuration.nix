@@ -39,10 +39,12 @@
     };
 
     pipewire = {
-      quantum = 256;          # Default quantum (balanced latency)
-      minQuantum = 128;       # Allow lower latency when needed
+      quantum = 512;          # Increased for Framework laptop to prevent crackling
+      minQuantum = 256;       # Higher minimum to prevent buffer underruns
       maxQuantum = 2048;      # Allow higher latency for power saving
       resampleQuality = 10;   # soxr-hq (high quality resampling)
+      suspendTimeoutSeconds = 0;  # Disable suspend-on-idle to prevent crackling
+      alsaHeadroom = 2048;    # Increased headroom to prevent audio clipping/crackling
     };
 
     wifi = {
@@ -102,6 +104,9 @@
       "amdgpu.deep_color=1"              # Enable deep color support
       "amdgpu.freesync_video=1"          # Enable FreeSync for video playback
       "amdgpu.aspm=1"                    # Enable ASPM for power savings
+
+      # Bluetooth: Disable power saving to prevent audio crackling
+      "btusb.enable_autosuspend=0"
     ];
 
     loader = {
@@ -167,6 +172,18 @@
     enableRedistributableFirmware = true;
     keyboard.qmk.enable = true;
     wirelessRegulatoryDatabase = true;
+
+    # Enable Bluetooth with experimental features for better audio performance
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+      settings = {
+        General = {
+          # Enable kernel experimental features (improves audio packet handling)
+          Experimental = true;
+        };
+      };
+    };
 
     graphics = {
       enable = true;
@@ -246,6 +263,10 @@
 
         # Framework Laptop 16 Keyboard Module - ISO
         ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0018", ATTR{power/wakeup}="disabled"
+
+        # Bluetooth: Disable autosuspend for all Bluetooth USB devices to prevent audio crackling
+        ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0032", ATTR{power/control}="on"
+        ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="btusb", ATTR{power/control}="on"
 
         # RX 7600M XT (Navi 33) discrete GPU - PCI ID 1002:7480
         # Set performance level to auto (allows dynamic performance scaling)
