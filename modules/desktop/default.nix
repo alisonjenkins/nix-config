@@ -711,6 +711,10 @@ in
         enable = true;
       };
 
+      udisks2 = {
+        enable = true;
+      };
+
       lsfg-vk = {
         enable = cfg.lsfg.enable;
         package = pkgs.lsfg-vk-ui;
