@@ -695,6 +695,10 @@ in
         jobs = 4;
       };
 
+      colord = {
+        enable = true;
+      };
+
       desktopManager.cosmic = mkIf cfg.cosmic.enable {
         enable = true;
       };
