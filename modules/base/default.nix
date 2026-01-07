@@ -305,6 +305,10 @@
       enable = true;
     };
 
+    fwupd = {
+      enable = lib.mkDefault true;
+    };
+
     openssh = {
       enable = enableOpenSSH;
 

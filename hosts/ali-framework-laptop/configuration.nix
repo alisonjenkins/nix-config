@@ -242,10 +242,6 @@
   };
 
   services = {
-    fwupd = {
-      enable = true;
-    };
-
     udev = {
       packages = [
         inputs.framework-inputmodule-rs-flake.packages.${system}.udev
