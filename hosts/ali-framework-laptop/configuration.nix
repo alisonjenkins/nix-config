@@ -38,9 +38,24 @@
     };
 
     pipewire = {
-      quantum = 512;          # Increased for Framework laptop to prevent crackling
-      minQuantum = 256;       # Higher minimum to prevent buffer underruns
-      maxQuantum = 2048;      # Allow higher latency for power saving
+      # Aggressive low-latency configuration with per-device overrides
+      allowedSampleRates = [ 44100 48000 ];  # 48kHz for stable Bluetooth
+
+      # Default quantum - will be overridden per device type by WirePlumber rules:
+      # - ALSA (wired): uses minQuantum (256) for ~5.33ms latency
+      # - Bluetooth: uses quantum (512) for ~10.67ms latency and stability
+      quantum = 512;          # Default for Bluetooth and fallback
+      minQuantum = 256;       # Aggressive low-latency for wired ALSA devices
+      maxQuantum = 1024;      # Safety limit to prevent excessive buffering/desync
+
+      # Alternative configs:
+      # For even lower latency on wired (may cause crackling on some hardware):
+      #   minQuantum = 128;  # ~2.67ms latency
+      # For 96kHz support (adds latency, may cause video desync):
+      #   allowedSampleRates = [ 44100 48000 96000 ];
+      #   quantum = 1024;
+      #   maxQuantum = 2048;
+
       resampleQuality = 10;   # soxr-hq (high quality resampling)
       suspendTimeoutSeconds = 0;  # Disable suspend-on-idle to prevent crackling
       alsaHeadroom = 2048;    # Increased headroom to prevent audio clipping/crackling

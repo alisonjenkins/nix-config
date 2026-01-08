@@ -89,6 +89,20 @@ in
         description = "PipeWire maximum quantum size. If null, uses quantum value for fixed quantum.";
       };
 
+      allowedSampleRates = mkOption {
+        type = types.listOf types.int;
+        default = [44100 48000];
+        description = ''
+          List of allowed sample rates for PipeWire audio devices.
+          Common rates: 44100 (CD quality), 48000 (professional), 88200, 96000 (high-res).
+
+          Note: Higher sample rates (88200, 96000) require larger quantum values for stability,
+          especially with Bluetooth devices. For 96kHz Bluetooth, use quantum >= 1024.
+
+          Default: [44100 48000] for best compatibility and stability.
+        '';
+      };
+
       resampleQuality = mkOption {
         type = types.int;
         default = 4;
@@ -750,7 +764,7 @@ in
           pipewire = {
             "10-clock-rate" = {
               "context.properties" = {
-                "default.clock.allowed-rates" = [44100 48000 88200 96000];
+                "default.clock.allowed-rates" = cfg.pipewire.allowedSampleRates;
               };
             };
             "10-quantum" = let
@@ -840,7 +854,44 @@ in
                 }
               ]
             '')
-          ]);
+          ]) ++ [
+            # Per-device quantum/latency rules for optimal performance
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-device-latency.conf" ''
+              # Low-latency settings for wired ALSA audio devices
+              monitor.alsa.rules = [
+                {
+                  matches = [
+                    { node.name = "~alsa_output.*" }
+                  ]
+                  actions = {
+                    update-props = {
+                      # Aggressively seek lower quantum for wired audio
+                      api.alsa.period-size = ${toString cfg.pipewire.minQuantum}
+                      api.alsa.headroom = ${toString cfg.pipewire.alsaHeadroom}
+                      node.latency = "${toString cfg.pipewire.minQuantum}/48000"
+                    }
+                  }
+                }
+              ]
+
+              # Higher latency for Bluetooth to prevent dropouts
+              monitor.bluez.rules = [
+                {
+                  matches = [
+                    { node.name = "~bluez_output.*" }
+                    { node.name = "~bluez_input.*" }
+                  ]
+                  actions = {
+                    update-props = {
+                      # Use higher quantum for Bluetooth stability
+                      node.latency = "${toString cfg.pipewire.quantum}/48000"
+                      api.bluez5.a2dp.ldac.quality = "${cfg.bluetooth.ldacQuality}"
+                    }
+                  }
+                }
+              ]
+            '')
+          ];
         };
       };
 
