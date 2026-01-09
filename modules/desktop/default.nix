@@ -450,6 +450,7 @@ in
         pciutils
         playerctl
         popsicle
+        portaudio
         posting
         powertop
         signal-desktop
