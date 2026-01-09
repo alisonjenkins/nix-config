@@ -470,6 +470,13 @@ in
         wallpapers
         wleave
         zoom-us
+
+        (python3.withPackages (python-pkgs: [
+          python-pkgs.pandas
+          python-pkgs.requests
+          python-pkgs.sounddevice
+          python-pkgs.soundfile
+        ]))
       ] ++ (optionals cfg.gaming.enable (with pkgs; [
         boilr
         gamemode
