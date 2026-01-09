@@ -472,6 +472,7 @@ in
         zoom-us
 
         (python3.withPackages (python-pkgs: [
+          python-pkgs.boto3
           python-pkgs.pandas
           python-pkgs.requests
           python-pkgs.sounddevice
