@@ -466,6 +466,7 @@ in
         unstable.nvtopPackages.amd
         unstable.opencode
         unstable.teamtype
+        unzip
         wallpapers
         wleave
         zoom-us
