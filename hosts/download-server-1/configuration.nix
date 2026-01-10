@@ -596,7 +596,7 @@
           MergeTrackersEnabled = true;
           "Session\\AddExtensionToIncompleteFiles" = true;
           "Session\\AddTorrentToTopOfQueue" = true;
-          "Session\\AnonymousModeEnabled" = true;
+          "Session\\AnonymousModeEnabled" = false;  # Disabled - was causing stalled torrents
           "Session\\DefaultSavePath" = "/media/downloads/complete";
           "Session\\DisableAutoTMMByDefault" = false;
           "Session\\DisableAutoTMMTriggers\\CategorySavePathChanged" = false;
@@ -610,15 +610,15 @@
           "Session\\Interface" = "primary-vpn";
           "Session\\InterfaceName" = "primary-vpn";
           "Session\\MaxActiveCheckingTorrents" = 2;
-          "Session\\MaxActiveDownloads" = 5;
-          "Session\\MaxActiveTorrents" = 10;
-          "Session\\MaxActiveUploads" = 15;
+          "Session\\MaxActiveDownloads" = 10;  # Increased from 5
+          "Session\\MaxActiveTorrents" = 20;   # Increased from 10
+          "Session\\MaxActiveUploads" = 20;    # Increased from 15
           "Session\\Port" = 15234;
           "Session\\Preallocation" = false;
           "Session\\QueueingSystemEnabled" = true;
           "Session\\SSL\\Port" = 51603;
-          "Session\\SlowTorrentsDownloadRate" = 100;
-          "Session\\SlowTorrentsUploadRate" = 5;
+          "Session\\SlowTorrentsDownloadRate" = 10;   # Lowered from 100 (KB/s) - less aggressive
+          "Session\\SlowTorrentsUploadRate" = 1;    # Lowered from 5 (KB/s) - less aggressive
           "Session\\SubcategoriesEnabled" = true;
           "Session\\Tags" = "arch, linux, nixos";
           "Session\\TempPath" = "/media/downloads/downloading";
@@ -626,10 +626,10 @@
           "Session\\UseCategoryPathsInManualMode" = true;
           "Session\\UseUnwantedFolder" = true;
 
-          # Disk cache settings (critical for network share performance)
-          "Session\\DiskCacheSize" = 256;                    # 256 MB cache
-          "Session\\DiskCacheTTL" = 600;                     # Keep in cache for 10 minutes
-          "Session\\UseOSCache" = false;                     # Use qBittorrent's cache instead of OS cache
+          # Disk cache settings (optimized for NFS performance)
+          "Session\\DiskCacheSize" = 512;                    # 512 MB cache (can increase with NFS)
+          "Session\\DiskCacheTTL" = 300;                     # Keep in cache for 5 minutes
+          "Session\\UseOSCache" = true;                      # Use OS cache with NFS (better performance)
 
           # File handling optimizations
           "Session\\FilePoolSize" = 500;                     # Keep more files open for better performance
@@ -653,7 +653,7 @@
           "Session\\uTP_mix_mode" = 0;                       # Prefer TCP over uTP (better for VPN)
           "Session\\DHTEnabled" = true;                      # Enable DHT for peer discovery
           "Session\\PeXEnabled" = true;                      # Enable Peer Exchange
-          "Session\\LSDEnabled" = true;                      # Enable Local Service Discovery
+          "Session\\LSDEnabled" = false;                     # Disable LSD (doesn't work over VPN)
 
           # Reliability settings
           "Session\\SaveResumeDataInterval" = 5;             # Save resume data every 5 minutes
@@ -661,6 +661,12 @@
 
           # Encryption settings (for privacy)
           "Session\\Encryption" = 1;                         # Prefer encrypted connections
+
+          # Additional connectivity settings to prevent stalls
+          "Session\\OutgoingPortsMin" = 0;                   # Use random ports for outgoing connections
+          "Session\\OutgoingPortsMax" = 0;                   # Use random ports for outgoing connections
+          "Session\\RefreshInterval" = 1500;                 # Refresh interval in ms (default)
+          "Session\\ResumeDataStorageType" = "SQLite";       # Use SQLite for better reliability
         };
 
         Core = {
