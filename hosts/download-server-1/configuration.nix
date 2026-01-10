@@ -28,6 +28,8 @@
     kernelParams = [
       "irqpoll"
     ];
+    # Enable NFS client support
+    supportedFilesystems = [ "nfs" "nfs4" ];
   };
 
   environment = {
@@ -350,30 +352,41 @@
   ];
 
   # Configure CIFS mounts with automount
+  # Configure NFS mounts with automount (optimized for torrenting performance)
+  # Storage server (192.168.1.97) exports from /media/storage/* paths
   systemd.mounts = [
     {
-      what = "//192.168.1.97/downloads";
+      what = "192.168.1.97:/media/storage/downloads";
       where = "/media/downloads";
-      type = "cifs";
-      options = "credentials=${config.sops.secrets."samba/downloads-credentials".path},uid=qbittorrent,gid=qbittorrent,file_mode=0664,dir_mode=0775";
+      type = "nfs";
+      # Performance-optimized NFS options for qBittorrent:
+      # - rsize/wsize=1MB for maximum throughput
+      # - async on downloads (faster writes, safe since qBittorrent verifies data)
+      # - noatime/nodiratime (no access time updates = less metadata writes)
+      # - actimeo=600 (cache attributes for 10 min = fewer stat calls)
+      # - lookupcache=all (aggressive file lookup caching)
+      # - hard,intr (reliable, but interruptible on hung operations)
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=600";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
     }
     {
-      what = "//192.168.1.97/movies";
+      what = "192.168.1.97:/media/storage/media/Movies";
       where = "/media/movies";
-      type = "cifs";
-      options = "credentials=${config.sops.secrets."samba/movies-credentials".path},uid=radarr,gid=radarr,file_mode=0664,dir_mode=0775";
+      type = "nfs";
+      # No async for movies/tv (Radarr/Sonarr move completed files here)
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=600";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
     }
     {
-      what = "//192.168.1.97/tv";
+      what = "192.168.1.97:/media/storage/media/TV";
       where = "/media/tv";
-      type = "cifs";
-      options = "credentials=${config.sops.secrets."samba/tv-credentials".path},uid=sonarr,gid=sonarr,file_mode=0664,dir_mode=0775";
+      type = "nfs";
+      # No async for movies/tv (Radarr/Sonarr move completed files here)
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=600";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
@@ -397,6 +410,9 @@
 
   services = {
     logrotate.checkConfig = false;
+
+    # NFS client support - required for NFS mounts to work
+    rpcbind.enable = true;  # Required for NFS
 
     bazarr = {
       enable = true;

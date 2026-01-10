@@ -53,8 +53,13 @@
 
       allowedTCPPorts = [
         22
+        2049  # NFS
+        111   # RPC
       ];
-      allowedUDPPorts = [];
+      allowedUDPPorts = [
+        2049  # NFS
+        111   # RPC
+      ];
     };
   };
 
@@ -84,6 +89,29 @@
         wall.enable = true;
       };
       defaults.monitored = "-a -o on -s (S/../.././02|L/../../6/03)";
+    };
+
+    # NFS Server - runs alongside Samba for performance comparison
+    nfs.server = {
+      enable = true;
+      # Lock to NFSv4 only for better performance and security
+      lockdPort = 4001;
+      mountdPort = 4002;
+      statdPort = 4000;
+
+      exports = ''
+        # Downloads share - optimized for qBittorrent on download-server
+        # no_root_squash: Allow root access from client
+        # no_subtree_check: Better performance, safe for dedicated exports
+        # sync: Ensure data integrity on server (client uses async for speed)
+        /media/storage/downloads    192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=1)
+
+        # Movies share - for Radarr
+        /media/storage/media/Movies 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=2)
+
+        # TV share - for Sonarr
+        /media/storage/media/TV     192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=3)
+      '';
     };
 
     samba = {
