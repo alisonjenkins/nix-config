@@ -41,6 +41,8 @@
       fd
       htop
       iotop
+      jq
+      libnatpmp  # For ProtonVPN port forwarding
       privoxy
       qbittorrent
       qbittorrent-cli
@@ -319,6 +321,65 @@
     '';
   };
 
+  # ProtonVPN port forwarding script
+  environment.etc."protonvpn-portforward.sh" = {
+    mode = "0755";
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      VPN_INTERFACE="primary-vpn"
+      VPN_GATEWAY="10.2.0.1"  # ProtonVPN gateway (usually 10.2.0.1)
+      PORT_FILE="/var/lib/protonvpn-port"
+      QBITTORRENT_CONFIG="/var/lib/qBittorrent/qBittorrent/config/qBittorrent.conf"
+
+      # Request port forwarding via NAT-PMP
+      echo "[$(date)] Requesting port forward from ProtonVPN..."
+
+      # Use natpmpc to request port forwarding
+      # -a 1 0 tcp = map external port (assigned) to internal port 0 (same as external) for TCP
+      # -g specifies the gateway
+      OUTPUT=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
+
+      if echo "$OUTPUT" | grep -q "Mapped public port"; then
+        # Extract the port number
+        FORWARDED_PORT=$(echo "$OUTPUT" | grep "Mapped public port" | grep -oP '\d+' | head -1)
+
+        if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
+          echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
+
+          # Save the port
+          echo "$FORWARDED_PORT" > "$PORT_FILE"
+          chmod 644 "$PORT_FILE"
+
+          # Update qBittorrent config if port changed
+          if [ -f "$QBITTORRENT_CONFIG" ]; then
+            CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
+
+            if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
+              echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
+
+              # Update the port in config
+              sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
+
+              # Restart qBittorrent to apply new port
+              systemctl restart qbittorrent
+            else
+              echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
+            fi
+          fi
+        else
+          echo "[$(date)] ERROR: Failed to parse forwarded port from output"
+          exit 1
+        fi
+      else
+        echo "[$(date)] ERROR: Port forwarding request failed"
+        echo "$OUTPUT"
+        exit 1
+      fi
+    '';
+  };
+
   # Override qbittorrent service to inject secrets and configure aggressive restarts
   systemd.services.qbittorrent = {
     serviceConfig = {
@@ -326,6 +387,30 @@
       Restart = "always";
       RestartSec = "5s";
       StartLimitBurst = 0; # Unlimited restart attempts
+
+  # ProtonVPN port forwarding service
+  systemd.services.protonvpn-portforward = {
+    description = "ProtonVPN Port Forwarding";
+    after = [ "network-online.target" "wg-quick-primary-vpn.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/protonvpn-portforward.sh";
+      RemainAfterExit = false;
+    };
+  };
+
+  # Timer to refresh port forwarding every 45 seconds (expires after 60s)
+  systemd.timers.protonvpn-portforward = {
+    description = "ProtonVPN Port Forwarding Refresh Timer";
+    wantedBy = [ "timers.target" ];
+
+    timerConfig = {
+      OnBootSec = "10s";       # Start 10 seconds after boot
+      OnUnitActiveSec = "45s"; # Refresh every 45 seconds
+      Unit = "protonvpn-portforward.service";
     };
   };
 
