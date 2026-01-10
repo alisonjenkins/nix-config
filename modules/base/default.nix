@@ -187,6 +187,7 @@
       rush-parallel
       tmux
       unstable.tailscale
+      vim
       yazi
     ] ++ (if useSecureBoot then [sbctl] else [])
     ++ (if useAliNeovim then [
