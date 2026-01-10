@@ -78,6 +78,20 @@
     };
   };
 
+  # Set proper ownership and permissions on media directories
+  systemd.tmpfiles.rules = [
+    # Downloads directory: owner=qbittorrent, group=media, setgid bit
+    "d /media/storage/downloads 2775 qbittorrent media -"
+    "d /media/storage/downloads/downloading 2775 qbittorrent media -"
+    "d /media/storage/downloads/complete 2775 qbittorrent media -"
+
+    # Movies directory: owner=radarr, group=movies
+    "d /media/storage/media/Movies 2775 radarr movies -"
+
+    # TV directory: owner=sonarr, group=tv
+    "d /media/storage/media/TV 2775 sonarr tv -"
+  ];
+
   services = {
     logrotate.checkConfig = false;
 
@@ -253,15 +267,18 @@
 
   users = {
     groups = {
-      download-server = {};
-      games = {};
-      jellyfin = {};
-      movies = {};
-      music = {};
-      privoxy = {};
-      radarr = {};
-      sonarr = {};
-      tv = {};
+      # Fixed GIDs to match download-server-1
+      download-server = { gid = 5004; };
+      games = { gid = 5010; };
+      jellyfin = { gid = 5005; };
+      media = { gid = 5000; };  # Shared group for all media services
+      movies = { gid = 5011; };
+      music = { gid = 5012; };
+      privoxy = { gid = 5006; };
+      qbittorrent = { gid = 5001; };  # Add qbittorrent group to match download server
+      radarr = { gid = 5002; };
+      sonarr = { gid = 5003; };
+      tv = { gid = 5013; };
     };
 
     users = {
@@ -285,33 +302,48 @@
       download-server = {
         description = "Download Server user";
         group = "download-server";
+        uid = 5004;
         hashedPasswordFile = "/persistence/passwords/download-server";
         isNormalUser = true;
+      };
+      # Add qbittorrent user to match download server
+      qbittorrent = {
+        description = "qBittorrent user";
+        group = "qbittorrent";
+        uid = 5001;
+        extraGroups = ["media"];  # Add to shared media group
+        home = "/var/lib/qBittorrent";
+        createHome = false;
+        isSystemUser = true;
       };
       radarr = {
         description = "Radarr user";
         group = "radarr";
-        extraGroups = ["movies"];
+        uid = 5002;
+        extraGroups = ["media" "movies"];  # Add to shared media group
         hashedPasswordFile = "/persistence/passwords/radarr";
         isNormalUser = true;
       };
       sonarr = {
         description = "Sonarr user";
         group = "sonarr";
-        extraGroups = ["tv"];
+        uid = 5003;
+        extraGroups = ["media" "tv"];  # Add to shared media group
         hashedPasswordFile = "/persistence/passwords/sonarr";
         isNormalUser = true;
       };
       jellyfin = {
         description = "Jellyfin user";
         group = "jellyfin";
-        extraGroups = ["movies" "tv" "music"];
+        uid = 5005;
+        extraGroups = ["media" "movies" "tv" "music"];  # Add to shared media group
         hashedPasswordFile = "/persistence/passwords/jellyfin";
         isNormalUser = true;
       };
       privoxy = {
         description = "Privoxy user";
         group = "privoxy";
+        uid = 5006;
         hashedPasswordFile = "/persistence/passwords/privoxy";
         isNormalUser = true;
       };

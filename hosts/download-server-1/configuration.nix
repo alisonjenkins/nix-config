@@ -388,6 +388,15 @@
       RestartSec = "5s";
       StartLimitBurst = 0; # Unlimited restart attempts
 
+      # Set umask to 002 so files are created with group write permissions (664)
+      # and directories with 775. This allows radarr/sonarr to modify files.
+      UMask = "0002";
+
+      # Ensure qbittorrent runs with supplementary groups (including media group)
+      SupplementaryGroups = [ "media" ];
+    };
+  };
+
   # ProtonVPN port forwarding service
   systemd.services.protonvpn-portforward = {
     description = "ProtonVPN Port Forwarding";
@@ -412,6 +421,32 @@
       OnUnitActiveSec = "45s"; # Refresh every 45 seconds
       Unit = "protonvpn-portforward.service";
     };
+  };
+
+  # Configure umask for all media services to create files with group write permissions
+  systemd.services.radarr.serviceConfig = {
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
+  };
+
+  systemd.services.sonarr.serviceConfig = {
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
+  };
+
+  systemd.services.bazarr.serviceConfig = {
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
+  };
+
+  systemd.services.prowlarr.serviceConfig = {
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
+  };
+
+  systemd.services.jellyseerr.serviceConfig = {
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
   };
 
   nix = {
@@ -829,6 +864,17 @@
   };
 
   users = {
+    # Fixed GIDs to match home-storage-server-1
+    groups = {
+      media = { gid = 5000; };  # Shared group for all media services
+      qbittorrent = { gid = lib.mkForce 5001; };
+      radarr = { gid = lib.mkForce 5002; };
+      sonarr = { gid = lib.mkForce 5003; };
+      bazarr = { gid = lib.mkForce 5007; };
+      prowlarr = { gid = lib.mkForce 5008; };
+      jellyseerr = { gid = lib.mkForce 5009; };
+    };
+
     users = {
       ali = {
         description = "Alison Jenkins";
@@ -841,6 +887,44 @@
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
+      };
+
+      # Override service users with fixed UIDs/GIDs to match storage server
+      qbittorrent = {
+        uid = lib.mkForce 5001;
+        group = lib.mkForce "qbittorrent";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      radarr = {
+        uid = lib.mkForce 5002;
+        group = lib.mkForce "radarr";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      sonarr = {
+        uid = lib.mkForce 5003;
+        group = lib.mkForce "sonarr";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      bazarr = {
+        uid = lib.mkForce 5007;
+        group = lib.mkForce "bazarr";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      prowlarr = {
+        uid = lib.mkForce 5008;
+        group = lib.mkForce "prowlarr";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      jellyseerr = {
+        uid = lib.mkForce 5009;
+        group = lib.mkForce "jellyseerr";
+        extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
       };
     };
   };
