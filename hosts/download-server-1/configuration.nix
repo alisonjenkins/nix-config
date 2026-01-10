@@ -471,7 +471,6 @@
     "d /media/tv 0755 root root -"
   ];
 
-  # Configure CIFS mounts with automount
   # Configure NFS mounts with automount (optimized for torrenting performance)
   # Storage server (192.168.1.97) exports from /media/storage/* paths
   systemd.mounts = [
