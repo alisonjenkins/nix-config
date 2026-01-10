@@ -269,7 +269,7 @@
     groups = {
       # Fixed GIDs to match download-server-1
       download-server = { gid = 5004; };
-      games = { gid = 5010; };
+      games = { gid = 5014; };
       jellyfin = { gid = 5005; };
       media = { gid = 5000; };  # Shared group for all media services
       movies = { gid = 5011; };
