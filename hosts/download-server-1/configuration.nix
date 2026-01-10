@@ -474,11 +474,11 @@
           "Session\\Interface" = "primary-vpn";
           "Session\\InterfaceName" = "primary-vpn";
           "Session\\MaxActiveCheckingTorrents" = 2;
-          "Session\\MaxActiveDownloads" = 20;
-          "Session\\MaxActiveTorrents" = 20;
-          "Session\\MaxActiveUploads" = 10;
+          "Session\\MaxActiveDownloads" = 5;
+          "Session\\MaxActiveTorrents" = 10;
+          "Session\\MaxActiveUploads" = 15;
           "Session\\Port" = 15234;
-          "Session\\Preallocation" = true;
+          "Session\\Preallocation" = false;
           "Session\\QueueingSystemEnabled" = true;
           "Session\\SSL\\Port" = 51603;
           "Session\\SlowTorrentsDownloadRate" = 100;
@@ -489,6 +489,42 @@
           "Session\\TempPathEnabled" = true;
           "Session\\UseCategoryPathsInManualMode" = true;
           "Session\\UseUnwantedFolder" = true;
+
+          # Disk cache settings (critical for network share performance)
+          "Session\\DiskCacheSize" = 256;                    # 256 MB cache
+          "Session\\DiskCacheTTL" = 600;                     # Keep in cache for 10 minutes
+          "Session\\UseOSCache" = false;                     # Use qBittorrent's cache instead of OS cache
+
+          # File handling optimizations
+          "Session\\FilePoolSize" = 500;                     # Keep more files open for better performance
+
+          # Connection limits (prevent overwhelming the system)
+          "Session\\MaxConnections" = 500;                   # Global connection limit
+          "Session\\MaxConnectionsPerTorrent" = 100;         # Per-torrent connection limit
+          "Session\\MaxUploads" = 50;                        # Global upload slots
+          "Session\\MaxUploadsPerTorrent" = 4;               # Per-torrent upload slots
+
+          # Performance settings
+          "Session\\AnnounceToAllTiers" = true;              # Better peer discovery
+          "Session\\AnnounceToAllTrackers" = true;           # Announce to all trackers
+          "Session\\AsyncIOThreadsCount" = 8;                # More async I/O threads for network storage
+          "Session\\SendBufferWatermark" = 5120;             # 5 MB send buffer
+          "Session\\SendBufferLowWatermark" = 512;           # 512 KB low watermark
+          "Session\\SocketBacklogSize" = 30;                 # Connection queue size
+
+          # Protocol settings
+          "Session\\uTPRateLimited" = true;                  # Rate limit uTP protocol
+          "Session\\uTP_mix_mode" = 0;                       # Prefer TCP over uTP (better for VPN)
+          "Session\\DHTEnabled" = true;                      # Enable DHT for peer discovery
+          "Session\\PeXEnabled" = true;                      # Enable Peer Exchange
+          "Session\\LSDEnabled" = true;                      # Enable Local Service Discovery
+
+          # Reliability settings
+          "Session\\SaveResumeDataInterval" = 5;             # Save resume data every 5 minutes
+          "Session\\StopTrackerTimeout" = 2;                 # Don't wait long when stopping torrents
+
+          # Encryption settings (for privacy)
+          "Session\\Encryption" = 1;                         # Prefer encrypted connections
         };
 
         Core = {
@@ -504,7 +540,9 @@
         };
 
         Preferences = {
-          "Advanced\\RecheckOnCompletion" = true;
+          "Advanced\\RecheckOnCompletion" = false;           # Disabled to reduce I/O load on network shares
+          "Advanced\\SaveResumeDataInterval" = 5;            # Save resume data every 5 minutes
+          "Advanced\\RecheckAfterFileMove" = false;          # Don't recheck after moving files
           "General\\Locale" = "en";
           "MailNotification\\req_auth" = true;
           "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
