@@ -98,6 +98,12 @@
             group = "root";
             mode = "0755";
           }
+          {
+            directory = "/var/lib/deluge";
+            user = "root";
+            group = "root";
+            mode = "0755";
+          }
         ];
       };
     };
@@ -321,52 +327,59 @@
     '';
   };
 
-  # ProtonVPN port forwarding script
+  # ProtonVPN port forwarding script (auto-detects qBittorrent or Deluge)
   environment.etc."protonvpn-portforward.sh" = {
     mode = "0755";
     text = ''
       #!/usr/bin/env bash
       set -euo pipefail
 
-      VPN_INTERFACE="primary-vpn"
-      VPN_GATEWAY="10.2.0.1"  # ProtonVPN gateway (usually 10.2.0.1)
+      VPN_GATEWAY="10.2.0.1"
       PORT_FILE="/var/lib/protonvpn-port"
       QBITTORRENT_CONFIG="/var/lib/qBittorrent/qBittorrent/config/qBittorrent.conf"
+      DELUGE_CONFIG="/var/lib/deluge/.config/deluge/core.conf"
 
       # Request port forwarding via NAT-PMP
       echo "[$(date)] Requesting port forward from ProtonVPN..."
 
-      # Use natpmpc to request port forwarding
-      # -a 1 0 tcp = map external port (assigned) to internal port 0 (same as external) for TCP
-      # -g specifies the gateway
       OUTPUT=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
 
       if echo "$OUTPUT" | grep -q "Mapped public port"; then
-        # Extract the port number
         FORWARDED_PORT=$(echo "$OUTPUT" | grep "Mapped public port" | grep -oP '\d+' | head -1)
 
         if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
           echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
 
-          # Save the port
           echo "$FORWARDED_PORT" > "$PORT_FILE"
           chmod 644 "$PORT_FILE"
 
-          # Update qBittorrent config if port changed
-          if [ -f "$QBITTORRENT_CONFIG" ]; then
-            CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
+          # Auto-detect which torrent client is running and update it
+          if systemctl is-active --quiet qbittorrent; then
+            echo "[$(date)] qBittorrent is active, updating port..."
+            if [ -f "$QBITTORRENT_CONFIG" ]; then
+              CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
 
-            if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
-              echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
-
-              # Update the port in config
-              sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
-
-              # Restart qBittorrent to apply new port
-              systemctl restart qbittorrent
-            else
-              echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
+              if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
+                echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
+                sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
+                systemctl restart qbittorrent
+              else
+                echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
+              fi
             fi
+          elif systemctl is-active --quiet deluged; then
+            echo "[$(date)] Deluge is active, updating port..."
+            if [ -f "$DELUGE_CONFIG" ]; then
+              # Update Deluge's core.conf using jq to modify the JSON
+              ${pkgs.jq}/bin/jq ".listen_ports = [$FORWARDED_PORT, $FORWARDED_PORT]" "$DELUGE_CONFIG" > "$DELUGE_CONFIG.tmp"
+              mv "$DELUGE_CONFIG.tmp" "$DELUGE_CONFIG"
+              chown deluge:deluge "$DELUGE_CONFIG"
+              chmod 600 "$DELUGE_CONFIG"
+              systemctl restart deluged
+              echo "[$(date)] Updated Deluge port to $FORWARDED_PORT and restarted service"
+            fi
+          else
+            echo "[$(date)] No active torrent client found (qBittorrent or Deluge)"
           fi
         else
           echo "[$(date)] ERROR: Failed to parse forwarded port from output"
@@ -447,6 +460,153 @@
   systemd.services.jellyseerr.serviceConfig = {
     UMask = "0002";
     SupplementaryGroups = [ "media" ];
+  };
+
+  # Deluge configuration initialization script
+  environment.etc."deluge/init-config.sh" = {
+    mode = "0755";
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      CONFIG_DIR="/var/lib/deluge/.config/deluge"
+      CORE_CONF="$CONFIG_DIR/core.conf"
+      WEB_CONF="$CONFIG_DIR/web.conf"
+      AUTH_FILE="$CONFIG_DIR/auth"
+
+      # Ensure config directory exists
+      mkdir -p "$CONFIG_DIR"
+      chown -R deluge:deluge "$CONFIG_DIR"
+
+      # Initialize core.conf if it doesn't exist
+      if [ ! -f "$CORE_CONF" ]; then
+        cat > "$CORE_CONF" <<'EOF'
+{
+  "file": 1,
+  "format": 1,
+  "download_location": "/media/downloads/complete",
+  "move_completed": true,
+  "move_completed_path": "/media/downloads/complete",
+  "torrentfiles_location": "/media/downloads/downloading",
+  "copy_torrent_file": true,
+  "listen_interface": "primary-vpn",
+  "outgoing_interface": "primary-vpn",
+  "listen_ports": [15234, 15234],
+  "random_port": false,
+  "max_connections_global": 500,
+  "max_connections_per_torrent": 100,
+  "max_upload_slots_global": 50,
+  "max_upload_slots_per_torrent": 4,
+  "max_active_downloading": 10,
+  "max_active_seeding": 20,
+  "max_active_limit": 20,
+  "dont_count_slow_torrents": true,
+  "queue_new_to_top": true,
+  "stop_seed_at_ratio": true,
+  "stop_seed_ratio": 2.0,
+  "remove_seed_at_ratio": false,
+  "cache_size": 512,
+  "cache_expiry": 300,
+  "dht": true,
+  "upnp": false,
+  "natpmp": false,
+  "utpex": true,
+  "lsd": false,
+  "enc_prefer_rc4": true,
+  "enc_level": 1,
+  "enc_in_policy": 1,
+  "enc_out_policy": 1,
+  "max_download_speed": -1.0,
+  "max_upload_speed": -1.0,
+  "max_half_open_connections": 50,
+  "max_connections_per_second": 20,
+  "prioritize_first_last_pieces": true,
+  "sequential_download": false,
+  "pre_allocate_storage": false,
+  "add_paused": false,
+  "auto_managed": true,
+  "compact_allocation": false,
+  "enabled_plugins": [],
+  "allow_remote": true,
+  "daemon_port": 58846
+}
+EOF
+        chown deluge:deluge "$CORE_CONF"
+        chmod 600 "$CORE_CONF"
+        echo "Created initial core.conf"
+      fi
+
+      # Initialize web.conf if it doesn't exist
+      if [ ! -f "$WEB_CONF" ]; then
+        cat > "$WEB_CONF" <<'EOF'
+{
+  "file": 1,
+  "format": 1,
+  "port": 8112,
+  "enabled_plugins": [],
+  "pwd_salt": "deluge",
+  "pwd_sha1": "67b183a3025b68ac0f8edf8f3157f67b7814721e",
+  "session_timeout": 3600,
+  "sessions": {},
+  "sidebar_show_zero": false,
+  "sidebar_multiple_filters": true,
+  "show_session_speed": true,
+  "show_sidebar": true,
+  "theme": "gray",
+  "default_daemon": "127.0.0.1:58846",
+  "https": false,
+  "interface": "0.0.0.0",
+  "base": "/",
+  "first_login": true
+}
+EOF
+        chown deluge:deluge "$WEB_CONF"
+        chmod 600 "$WEB_CONF"
+        echo "Created initial web.conf"
+      fi
+
+      # Initialize auth file if it doesn't exist (username: admin, password: deluge)
+      if [ ! -f "$AUTH_FILE" ]; then
+        echo "admin:deluge:10" > "$AUTH_FILE"
+        chown deluge:deluge "$AUTH_FILE"
+        chmod 600 "$AUTH_FILE"
+        echo "Created initial auth file"
+      fi
+
+      # Initialize hostlist.conf if it doesn't exist
+      HOSTLIST_CONF="$CONFIG_DIR/hostlist.conf"
+      if [ ! -f "$HOSTLIST_CONF" ]; then
+        cat > "$HOSTLIST_CONF" <<'EOF'
+{
+  "file": 1,
+  "format": 1,
+  "hosts": [
+    [
+      "localclient",
+      "127.0.0.1",
+      58846,
+      "admin",
+      "deluge"
+    ]
+  ]
+}
+EOF
+        chown deluge:deluge "$HOSTLIST_CONF"
+        chmod 600 "$HOSTLIST_CONF"
+        echo "Created initial hostlist.conf"
+      fi
+    '';
+  };
+
+  # Configure Deluge services
+  systemd.services.deluged.serviceConfig = {
+    ExecStartPre = "+${pkgs.bash}/bin/bash /etc/deluge/init-config.sh";
+    UMask = "0002";
+    SupplementaryGroups = [ "media" ];
+  };
+
+  systemd.services.delugeweb.serviceConfig = {
+    UMask = "0002";
   };
 
   nix = {
@@ -575,9 +735,9 @@
     };
 
     qbittorrent = {
-      enable = true;
+      enable = false;
       openFirewall = true;
-      # package = pkgs.unstable.qbittorrent;
+      package = pkgs.qbittorrent;  # Uses overlayed version with libtorrent 1.2.x
       torrentingPort = 15234;
 
       serverConfig = {
@@ -602,7 +762,7 @@
           "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
           "Session\\ExcludedFileNames" = "";
           "Session\\GlobalMaxRatio" = 2;
-          "Session\\I2P\\Enabled" = true;
+          "Session\\I2P\\Enabled" = false;  # Temporarily disabled to debug crashes
           "Session\\I2P\\MixedMode" = true;
           "Session\\IgnoreSlowTorrentsForQueueing" = true;
           "Session\\IncludeOverheadInLimits" = true;
@@ -684,6 +844,7 @@
           "Advanced\\RecheckOnCompletion" = false;           # Disabled to reduce I/O load on network shares
           "Advanced\\SaveResumeDataInterval" = 5;            # Save resume data every 5 minutes
           "Advanced\\RecheckAfterFileMove" = false;          # Don't recheck after moving files
+          "Advanced\\MaxMemoryWorkingSetLimit" = 4096;       # Limit RAM usage to 4GB to prevent crashes
           "General\\Locale" = "en";
           "MailNotification\\req_auth" = true;
           "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
@@ -696,6 +857,14 @@
           "AutoDownloader\\SmartEpisodeFilter" = "s(\\d+)e(\\d+), (\\d+)x(\\d+), \"(\\d{4}[.\\-]\\d{1,2}[.\\-]\\d{1,2})\", \"(\\d{1,2}[.\\-]\\d{1,2}[.\\-]\\d{4})\"";
         };
       };
+    };
+
+    deluge = {
+      enable = true;
+      openFirewall = true;
+      web.enable = true;
+      web.port = 8112;
+      dataDir = "/var/lib/deluge";
     };
 
     privoxy = {
@@ -737,6 +906,14 @@
         }
         {
           port = 8080;
+          sources = [
+            "192.168.1.187"
+            "192.168.1.39"
+            "192.168.1.66"
+          ];
+        }
+        {
+          port = 8112;
           sources = [
             "192.168.1.187"
             "192.168.1.39"
@@ -878,6 +1055,7 @@
       bazarr = { gid = lib.mkForce 5007; };
       prowlarr = { gid = lib.mkForce 5008; };
       jellyseerr = { gid = lib.mkForce 5009; };
+      deluge = { gid = lib.mkForce 5010; };
     };
 
     users = {
@@ -929,6 +1107,12 @@
         uid = lib.mkForce 5009;
         group = lib.mkForce "jellyseerr";
         extraGroups = [ "media" ];  # Add to shared media group
+        isSystemUser = lib.mkForce true;
+      };
+      deluge = {
+        uid = lib.mkForce 5010;
+        group = lib.mkForce "deluge";
+        extraGroups = [ "media" ];
         isSystemUser = lib.mkForce true;
       };
     };

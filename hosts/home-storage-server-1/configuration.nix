@@ -275,10 +275,11 @@
       movies = { gid = 5011; };
       music = { gid = 5012; };
       privoxy = { gid = 5006; };
-      qbittorrent = { gid = 5001; };  # Add qbittorrent group to match download server
+      qbittorrent = { gid = 5001; };
       radarr = { gid = 5002; };
       sonarr = { gid = 5003; };
       tv = { gid = 5013; };
+      deluge = { gid = 5010; };
     };
 
     users = {
@@ -346,6 +347,15 @@
         uid = 5006;
         hashedPasswordFile = "/persistence/passwords/privoxy";
         isNormalUser = true;
+      };
+      deluge = {
+        description = "Deluge user";
+        group = "deluge";
+        uid = 5010;
+        extraGroups = ["media"];
+        home = "/var/lib/deluge";
+        createHome = false;
+        isSystemUser = true;
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
