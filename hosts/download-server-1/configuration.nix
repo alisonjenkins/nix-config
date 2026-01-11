@@ -1234,6 +1234,8 @@ EOF
       prowlarr = { gid = lib.mkForce 5008; };
       jellyseerr = { gid = lib.mkForce 5009; };
       deluge = { gid = lib.mkForce 5010; };
+      movies = { gid = 5011; };
+      tv = { gid = 5013; };
     };
 
     users = {
