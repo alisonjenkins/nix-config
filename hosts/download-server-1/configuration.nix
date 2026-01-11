@@ -896,7 +896,7 @@ EOF
     };
 
     qbittorrent = {
-      enable = false;
+      enable = true;
       openFirewall = true;
       package = pkgs.qbittorrent;  # Uses overlayed version with libtorrent 1.2.x
       torrentingPort = 15234;
@@ -1021,7 +1021,7 @@ EOF
     };
 
     deluge = {
-      enable = true;
+      enable = false;
       openFirewall = true;
       web.enable = true;
       web.port = 8112;
