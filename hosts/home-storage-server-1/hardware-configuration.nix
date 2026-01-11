@@ -87,6 +87,7 @@
         "moveonenospc=true"
         "nonempty"
         "use_ino"
+        "security_capability=false"
       ];
     };
   } // media_disks;
