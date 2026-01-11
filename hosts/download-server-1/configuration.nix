@@ -480,7 +480,7 @@
   systemd.services.bazarr = {
     serviceConfig = {
       UMask = "0002";
-      SupplementaryGroups = [ "media" ];
+      SupplementaryGroups = [ "media" "tv" "movies" ];
     };
     preStart = ''
       CONFIG_FILE="/var/lib/bazarr/config/config.ini"
