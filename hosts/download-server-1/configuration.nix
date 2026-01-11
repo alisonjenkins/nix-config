@@ -104,6 +104,12 @@
             group = "root";
             mode = "0755";
           }
+          {
+            directory = "/var/lib/nginx-certs";
+            user = "nginx";
+            group = "nginx";
+            mode = "0755";
+          }
         ];
       };
     };
@@ -119,6 +125,8 @@
 
       allowedTCPPorts = [
         22
+        80
+        443
         8118
       ];
       allowedUDPPorts = [];
@@ -437,24 +445,67 @@
   };
 
   # Configure umask for all media services to create files with group write permissions
-  systemd.services.radarr.serviceConfig = {
-    UMask = "0002";
-    SupplementaryGroups = [ "media" ];
+  systemd.services.radarr = {
+    serviceConfig = {
+      UMask = "0002";
+      SupplementaryGroups = [ "media" ];
+    };
+    preStart = ''
+      CONFIG_FILE="/var/lib/radarr/config.xml"
+      if [ -f "$CONFIG_FILE" ]; then
+        if ! grep -q "<UrlBase>/radarr</UrlBase>" "$CONFIG_FILE"; then
+          ${pkgs.gnused}/bin/sed -i 's|<UrlBase></UrlBase>|<UrlBase>/radarr</UrlBase>|g' "$CONFIG_FILE"
+          ${pkgs.gnused}/bin/sed -i '/<Config>/a\  <UrlBase>/radarr</UrlBase>' "$CONFIG_FILE" 2>/dev/null || true
+        fi
+      fi
+    '';
   };
 
-  systemd.services.sonarr.serviceConfig = {
-    UMask = "0002";
-    SupplementaryGroups = [ "media" ];
+  systemd.services.sonarr = {
+    serviceConfig = {
+      UMask = "0002";
+      SupplementaryGroups = [ "media" ];
+    };
+    preStart = ''
+      CONFIG_FILE="/var/lib/sonarr/config.xml"
+      if [ -f "$CONFIG_FILE" ]; then
+        if ! grep -q "<UrlBase>/sonarr</UrlBase>" "$CONFIG_FILE"; then
+          ${pkgs.gnused}/bin/sed -i 's|<UrlBase></UrlBase>|<UrlBase>/sonarr</UrlBase>|g' "$CONFIG_FILE"
+          ${pkgs.gnused}/bin/sed -i '/<Config>/a\  <UrlBase>/sonarr</UrlBase>' "$CONFIG_FILE" 2>/dev/null || true
+        fi
+      fi
+    '';
   };
 
-  systemd.services.bazarr.serviceConfig = {
-    UMask = "0002";
-    SupplementaryGroups = [ "media" ];
+  systemd.services.bazarr = {
+    serviceConfig = {
+      UMask = "0002";
+      SupplementaryGroups = [ "media" ];
+    };
+    preStart = ''
+      CONFIG_FILE="/var/lib/bazarr/config/config.ini"
+      if [ -f "$CONFIG_FILE" ]; then
+        if ! grep -q "^base_url = /bazarr" "$CONFIG_FILE"; then
+          ${pkgs.gnused}/bin/sed -i 's|^base_url =.*|base_url = /bazarr|g' "$CONFIG_FILE"
+        fi
+      fi
+    '';
   };
 
-  systemd.services.prowlarr.serviceConfig = {
-    UMask = "0002";
-    SupplementaryGroups = [ "media" ];
+  systemd.services.prowlarr = {
+    serviceConfig = {
+      UMask = "0002";
+      SupplementaryGroups = [ "media" ];
+    };
+    preStart = ''
+      CONFIG_FILE="/var/lib/private/prowlarr/config.xml"
+      if [ -f "$CONFIG_FILE" ]; then
+        if ! grep -q "<UrlBase>/prowlarr</UrlBase>" "$CONFIG_FILE"; then
+          ${pkgs.gnused}/bin/sed -i 's|<UrlBase></UrlBase>|<UrlBase>/prowlarr</UrlBase>|g' "$CONFIG_FILE"
+          ${pkgs.gnused}/bin/sed -i '/<Config>/a\  <UrlBase>/prowlarr</UrlBase>' "$CONFIG_FILE" 2>/dev/null || true
+        fi
+      fi
+    '';
   };
 
   systemd.services.jellyseerr.serviceConfig = {
@@ -687,11 +738,121 @@ EOF
     }
   ];
 
+  # Generate self-signed certificate for nginx
+  systemd.services.nginx-self-signed-cert = {
+    description = "Generate self-signed certificate for nginx";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "nginx.service" ];
+    script = ''
+      CERT_DIR="/var/lib/nginx-certs"
+      mkdir -p "$CERT_DIR"
+
+      if [ ! -f "$CERT_DIR/cert.pem" ] || [ ! -f "$CERT_DIR/key.pem" ]; then
+        ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 \
+          -keyout "$CERT_DIR/key.pem" \
+          -out "$CERT_DIR/cert.pem" \
+          -days 3650 -nodes \
+          -subj "/CN=download-server-1.lan"
+        chown nginx:nginx "$CERT_DIR/key.pem"
+        chown nginx:nginx "$CERT_DIR/cert.pem"
+        chmod 600 "$CERT_DIR/key.pem"
+        chmod 644 "$CERT_DIR/cert.pem"
+      fi
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+  };
+
   services = {
     logrotate.checkConfig = false;
 
     # NFS client support - required for NFS mounts to work
     rpcbind.enable = true;  # Required for NFS
+
+    nginx = {
+      enable = true;
+      recommendedProxySettings = true;
+      recommendedTlsSettings = true;
+      recommendedOptimisation = true;
+      recommendedGzipSettings = true;
+
+      virtualHosts."download-server-1.lan" = {
+        forceSSL = true;
+        sslCertificate = "/var/lib/nginx-certs/cert.pem";
+        sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+
+        locations = {
+          "/qbittorrent/" = {
+            proxyPass = "http://127.0.0.1:8080/qbittorrent/";
+            extraConfig = ''
+              proxy_set_header X-Frame-Options SAMEORIGIN;
+            '';
+          };
+
+          "/radarr/" = {
+            proxyPass = "http://127.0.0.1:7878/radarr/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+
+          "/sonarr/" = {
+            proxyPass = "http://127.0.0.1:8989/sonarr/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+
+          "/bazarr/" = {
+            proxyPass = "http://127.0.0.1:6767/bazarr/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+
+          "/prowlarr/" = {
+            proxyPass = "http://127.0.0.1:9696/prowlarr/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+
+          "/jellyseerr/" = {
+            proxyPass = "http://127.0.0.1:5055/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+
+          "/flaresolverr/" = {
+            proxyPass = "http://127.0.0.1:8191/";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            '';
+          };
+        };
+      };
+    };
 
     bazarr = {
       enable = true;
@@ -896,6 +1057,14 @@ EOF
       ];
 
       allowedServices = [
+        {
+          port = 443;
+          sources = [
+            "192.168.1.187"
+            "192.168.1.39"
+            "192.168.1.66"
+          ];
+        }
         {
           port = 6767;
           sources = [
