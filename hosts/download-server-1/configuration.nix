@@ -1260,7 +1260,7 @@ EOF
       radarr = {
         uid = lib.mkForce 5002;
         group = lib.mkForce "radarr";
-        extraGroups = [ "media" ];  # Add to shared media group
+        extraGroups = [ "media" "movies" ];  # Add to shared media group
         isSystemUser = lib.mkForce true;
       };
       sonarr = {
