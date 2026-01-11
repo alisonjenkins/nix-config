@@ -1266,7 +1266,7 @@ EOF
       sonarr = {
         uid = lib.mkForce 5003;
         group = lib.mkForce "sonarr";
-        extraGroups = [ "media" ];  # Add to shared media group
+        extraGroups = [ "media" "tv" ];  # Add to shared media group
         isSystemUser = lib.mkForce true;
       };
       bazarr = {
