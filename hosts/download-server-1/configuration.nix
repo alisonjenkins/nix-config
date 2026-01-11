@@ -336,74 +336,76 @@
   };
 
   # ProtonVPN port forwarding script (auto-detects qBittorrent or Deluge)
-  # environment.etc."protonvpn-portforward.sh" = {
-  #   mode = "0755";
-  #   text = ''
-  #     #!/usr/bin/env bash
-  #     set -euo pipefail
-  #
-  #     VPN_GATEWAY="10.2.0.1"
-  #     PORT_FILE="/var/lib/protonvpn-port"
-  #     QBITTORRENT_CONFIG="/var/lib/qBittorrent/qBittorrent/config/qBittorrent.conf"
-  #     DELUGE_CONFIG="/var/lib/deluge/.config/deluge/core.conf"
-  #
-  #     # Request port forwarding via NAT-PMP
-  #     echo "[$(date)] Requesting port forward from ProtonVPN..."
-  #
-  #     OUTPUT=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
-  #
-  #     if echo "$OUTPUT" | grep -q "Mapped public port"; then
-  #       FORWARDED_PORT=$(echo "$OUTPUT" | grep "Mapped public port" | grep -oP '\d+' | head -1)
-  #
-  #       if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
-  #         echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
-  #
-  #         echo "$FORWARDED_PORT" > "$PORT_FILE"
-  #         chmod 644 "$PORT_FILE"
-  #
-  #         # Auto-detect which torrent client is running and update it
-  #         if systemctl is-active --quiet qbittorrent; then
-  #           echo "[$(date)] qBittorrent is active, updating port..."
-  #           if [ -f "$QBITTORRENT_CONFIG" ]; then
-  #             CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
-  #
-  #             if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
-  #               echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
-  #               sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
-  #               systemctl restart qbittorrent
-  #             else
-  #               echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
-  #             fi
-  #           fi
-  #         elif systemctl is-active --quiet deluged; then
-  #           echo "[$(date)] Deluge is active, updating port..."
-  #           if [ -f "$DELUGE_CONFIG" ]; then
-  #             # Update Deluge's core.conf using jq to modify the JSON
-  #             ${pkgs.jq}/bin/jq ".listen_ports = [$FORWARDED_PORT, $FORWARDED_PORT]" "$DELUGE_CONFIG" > "$DELUGE_CONFIG.tmp"
-  #             mv "$DELUGE_CONFIG.tmp" "$DELUGE_CONFIG"
-  #             chown deluge:deluge "$DELUGE_CONFIG"
-  #             chmod 600 "$DELUGE_CONFIG"
-  #             systemctl restart deluged
-  #             echo "[$(date)] Updated Deluge port to $FORWARDED_PORT and restarted service"
-  #           fi
-  #         else
-  #           echo "[$(date)] No active torrent client found (qBittorrent or Deluge)"
-  #         fi
-  #       else
-  #         echo "[$(date)] ERROR: Failed to parse forwarded port from output"
-  #         exit 1
-  #       fi
-  #     else
-  #       echo "[$(date)] ERROR: Port forwarding request failed"
-  #       echo "$OUTPUT"
-  #       exit 1
-  #     fi
-  #   '';
-  # };
+  environment.etc."protonvpn-portforward.sh" = {
+    mode = "0755";
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      VPN_GATEWAY="10.2.0.1"
+      PORT_FILE="/var/lib/protonvpn-port"
+      QBITTORRENT_CONFIG="/var/lib/qBittorrent/qBittorrent/config/qBittorrent.conf"
+      DELUGE_CONFIG="/var/lib/deluge/.config/deluge/core.conf"
+
+      # Request port forwarding via NAT-PMP
+      echo "[$(date)] Requesting port forward from ProtonVPN..."
+
+      OUTPUT=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
+
+      if echo "$OUTPUT" | grep -q "Mapped public port"; then
+        FORWARDED_PORT=$(echo "$OUTPUT" | grep "Mapped public port" | grep -oP '\d+' | head -1)
+
+        if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
+          echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
+
+          echo "$FORWARDED_PORT" > "$PORT_FILE"
+          chmod 644 "$PORT_FILE"
+
+          # Auto-detect which torrent client is running and update it
+          if systemctl is-active --quiet qbittorrent; then
+            echo "[$(date)] qBittorrent is active, updating port..."
+            if [ -f "$QBITTORRENT_CONFIG" ]; then
+              CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
+
+              if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
+                echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
+                systemctl stop qbittorrent
+                sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
+                systemctl start qbittorrent
+              else
+                echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
+              fi
+            fi
+          elif systemctl is-active --quiet deluged; then
+            echo "[$(date)] Deluge is active, updating port..."
+            if [ -f "$DELUGE_CONFIG" ]; then
+              # Update Deluge's core.conf using jq to modify the JSON
+              ${pkgs.jq}/bin/jq ".listen_ports = [$FORWARDED_PORT, $FORWARDED_PORT]" "$DELUGE_CONFIG" > "$DELUGE_CONFIG.tmp"
+              mv "$DELUGE_CONFIG.tmp" "$DELUGE_CONFIG"
+              chown deluge:deluge "$DELUGE_CONFIG"
+              chmod 600 "$DELUGE_CONFIG"
+              systemctl restart deluged
+              echo "[$(date)] Updated Deluge port to $FORWARDED_PORT and restarted service"
+            fi
+          else
+            echo "[$(date)] No active torrent client found (qBittorrent or Deluge)"
+          fi
+        else
+          echo "[$(date)] ERROR: Failed to parse forwarded port from output"
+          exit 1
+        fi
+      else
+        echo "[$(date)] ERROR: Port forwarding request failed"
+        echo "$OUTPUT"
+        exit 1
+      fi
+    '';
+  };
 
   # Override qbittorrent service to inject secrets and configure aggressive restarts
   systemd.services.qbittorrent = {
     serviceConfig = {
+      ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
       ExecStartPre = "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
       Restart = "always";
       RestartSec = "5s";
@@ -419,30 +421,30 @@
   };
 
   # ProtonVPN port forwarding service
-  # systemd.services.protonvpn-portforward = {
-  #   description = "ProtonVPN Port Forwarding";
-  #   after = [ "network-online.target" "wg-quick-primary-vpn.service" ];
-  #   wants = [ "network-online.target" ];
-  #   wantedBy = [ "multi-user.target" ];
-  #
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #     ExecStart = "${pkgs.bash}/bin/bash /etc/protonvpn-portforward.sh";
-  #     RemainAfterExit = false;
-  #   };
-  # };
+  systemd.services.protonvpn-portforward = {
+    description = "ProtonVPN Port Forwarding";
+    after = [ "network-online.target" "wg-quick-primary-vpn.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/protonvpn-portforward.sh";
+      RemainAfterExit = false;
+    };
+  };
 
   # Timer to refresh port forwarding every 45 seconds (expires after 60s)
-  # systemd.timers.protonvpn-portforward = {
-  #   description = "ProtonVPN Port Forwarding Refresh Timer";
-  #   wantedBy = [ "timers.target" ];
-  #
-  #   timerConfig = {
-  #     OnBootSec = "10s";       # Start 10 seconds after boot
-  #     OnUnitActiveSec = "45s"; # Refresh every 45 seconds
-  #     Unit = "protonvpn-portforward.service";
-  #   };
-  # };
+  systemd.timers.protonvpn-portforward = {
+    description = "ProtonVPN Port Forwarding Refresh Timer";
+    wantedBy = [ "timers.target" ];
+
+    timerConfig = {
+      OnBootSec = "10s";       # Start 10 seconds after boot
+      OnUnitActiveSec = "45s"; # Refresh every 45 seconds
+      Unit = "protonvpn-portforward.service";
+    };
+  };
 
   # Configure umask for all media services to create files with group write permissions
   systemd.services.radarr = {
