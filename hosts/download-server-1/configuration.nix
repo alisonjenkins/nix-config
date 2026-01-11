@@ -785,8 +785,15 @@ EOF
 
         locations = {
           "/qbittorrent/" = {
-            proxyPass = "http://127.0.0.1:8080/qbittorrent/";
+            proxyPass = "http://127.0.0.1:8080/";
             extraConfig = ''
+              proxy_set_header Host 127.0.0.1:8080;
+              proxy_set_header X-Forwarded-Host $http_host;
+              proxy_set_header X-Forwarded-For $remote_addr;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header Referer "";
+              proxy_cookie_path / /qbittorrent;
+              proxy_redirect / /qbittorrent/;
               proxy_set_header X-Frame-Options SAMEORIGIN;
             '';
           };
@@ -1011,6 +1018,8 @@ EOF
           "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
           "WebUI\\Port" = 8080;
           "WebUI\\Username" = "admin";
+          "WebUI\\HostHeaderValidation" = false;
+          "WebUI\\CSRFProtection" = false;
         };
 
         RSS = {
