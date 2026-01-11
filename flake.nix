@@ -173,6 +173,7 @@
             (import ./overlays { inherit inputs system lib; }).unstable-packages
             (import ./overlays { inherit inputs system lib; }).zk
             (import ./overlays { inherit inputs system lib; }).lsfg-vk
+            (import ./overlays { inherit inputs system lib; }).qbittorrent
             inputs.nur.overlays.default
             inputs.rust-overlay.overlays.default
           ]
@@ -328,6 +329,7 @@
               # Override lsfg-vk to use version 2 from develop branch
               nixpkgs.overlays = [
                 (import ./overlays { inherit inputs system lib; }).lsfg-vk
+                (import ./overlays { inherit inputs system lib; }).qbittorrent
               ];
 
               # Use timestamp-based backups to prevent conflicts
@@ -382,6 +384,7 @@
               # Override lsfg-vk to use version 2 from develop branch
               nixpkgs.overlays = [
                 (import ./overlays { inherit inputs system lib; }).lsfg-vk
+                (import ./overlays { inherit inputs system lib; }).qbittorrent
               ];
 
               # Use timestamp-based backups to prevent conflicts
@@ -598,6 +601,11 @@
             ./hosts/download-server-1/hardware-configuration.nix
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
+            {
+              nixpkgs.overlays = [
+                self.overlays.qbittorrent
+              ];
+            }
           ];
         };
 

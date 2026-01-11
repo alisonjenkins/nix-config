@@ -170,4 +170,22 @@
       };
     };
   };
+
+  qbittorrent = final: prev: {
+    qbittorrent = (prev.callPackage (prev.path + "/pkgs/by-name/qb/qbittorrent/package.nix") {
+      guiSupport = false;
+    }).overrideAttrs (oldAttrs: {
+      version = "5.1.4";
+      name = "qbittorrent-nox-5.1.4";
+
+      src = prev.fetchFromGitHub {
+        owner = "qbittorrent";
+        repo = "qBittorrent";
+        rev = "release-5.1.4";
+        sha256 = "1zja55b97cnij3vffmfa5p65dasybbm1gd3xjspw5yyypy5cl5zm";
+      };
+
+      patches = [];
+    });
+  };
 }
