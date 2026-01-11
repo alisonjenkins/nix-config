@@ -1272,7 +1272,7 @@ EOF
       bazarr = {
         uid = lib.mkForce 5007;
         group = lib.mkForce "bazarr";
-        extraGroups = [ "media" ];  # Add to shared media group
+        extraGroups = [ "media" "movies" "tv" ];  # Add to shared media group
         isSystemUser = lib.mkForce true;
       };
       prowlarr = {
