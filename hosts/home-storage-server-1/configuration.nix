@@ -268,6 +268,7 @@
   users = {
     groups = {
       # Fixed GIDs to match download-server-1
+      bazarr = { gid = 5007; };
       download-server = { gid = 5004; };
       games = { gid = 5014; };
       jellyfin = { gid = 5005; };
@@ -299,6 +300,15 @@
         # initialPassword = "initPw!";
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+      };
+      bazarr = {
+        description = "Bazarr user";
+        group = "bazarr";
+        uid = 5007;
+        extraGroups = ["media" "movies" "tv"];  # Add to shared media group
+        home = "/var/lib/bazarr";
+        createHome = false;
+        isSystemUser = true;
       };
       download-server = {
         description = "Download Server user";
