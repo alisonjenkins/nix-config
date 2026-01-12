@@ -44,9 +44,10 @@
     bootspec.enableValidation = true;
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages_latest;
-    # kernelPackages = pkgs.linuxPackages_xanmod;
     # kernelPackages = pkgs.linuxPackages_lqx;
-    kernelPackages = pkgs.lqx_pin.linuxKernel.packages.linux_lqx;
+    # kernelPackages = pkgs.linuxPackages_xanmod;
+    # kernelPackages = pkgs.lqx_pin.linuxKernel.packages.linux_lqx;
+    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
 
     kernelParams = [
       # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
