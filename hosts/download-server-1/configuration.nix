@@ -404,6 +404,10 @@
 
   # Override qbittorrent service to inject secrets and configure aggressive restarts
   systemd.services.qbittorrent = {
+    # Restart qBittorrent if NFS mounts are remounted (prevents stale file handles)
+    bindsTo = [ "media-downloads.mount" ];
+    after = [ "media-downloads.mount" "media-movies.mount" "media-tv.mount" ];
+
     serviceConfig = {
       ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
       ExecStartPre = "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
@@ -695,10 +699,10 @@ EOF
       # - rsize/wsize=1MB for maximum throughput
       # - async on downloads (faster writes, safe since qBittorrent verifies data)
       # - noatime/nodiratime (no access time updates = less metadata writes)
-      # - actimeo=600 (cache attributes for 10 min = fewer stat calls)
+      # - actimeo=30 (cache attributes for 30 sec = faster stale handle detection)
       # - lookupcache=all (aggressive file lookup caching)
       # - hard,intr (reliable, but interruptible on hung operations)
-      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=600";
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=30";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
@@ -708,7 +712,8 @@ EOF
       where = "/media/movies";
       type = "nfs";
       # No async for movies/tv (Radarr/Sonarr move completed files here)
-      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=600";
+      # actimeo=30 for faster stale handle detection after server reboots
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
@@ -718,7 +723,8 @@ EOF
       where = "/media/tv";
       type = "nfs";
       # No async for movies/tv (Radarr/Sonarr move completed files here)
-      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=600";
+      # actimeo=30 for faster stale handle detection after server reboots
+      options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30";
       wantedBy = [ ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
