@@ -514,9 +514,11 @@
     '';
   };
 
-  systemd.services.jellyseerr.serviceConfig = {
-    UMask = "0002";
-    SupplementaryGroups = [ "media" ];
+  systemd.services.jellyseerr = {
+    serviceConfig = {
+      UMask = "0002";
+      SupplementaryGroups = [ "media" "tv" "movies" ];
+    };
   };
 
   # Deluge configuration initialization script
@@ -846,8 +848,22 @@ EOF
             '';
           };
 
-          "/jellyseerr/" = {
-            proxyPass = "http://127.0.0.1:5055/";
+          "/jellyseerr" = {
+            proxyPass = "http://127.0.0.1:5055";
+            extraConfig = ''
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $host;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_redirect ~^/(.*)$ /jellyseerr/$1;
+              rewrite ^/jellyseerr(/.*)$ $1 break;
+              rewrite ^/jellyseerr$ / break;
+            '';
+          };
+
+          # Jellyseerr static assets and API (Next.js at root paths)
+          "~ ^/(api/v1/|_next/|apple-touch-icon|favicon|logo)" = {
+            proxyPass = "http://127.0.0.1:5055";
             extraConfig = ''
               proxy_set_header X-Forwarded-Host $host;
               proxy_set_header X-Forwarded-Server $host;
