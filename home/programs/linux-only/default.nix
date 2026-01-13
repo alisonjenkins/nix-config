@@ -14,5 +14,6 @@
     ./swayidle
     ./tofi
     ./waybar
+    ./zen-browser
   ];
 }

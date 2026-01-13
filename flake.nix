@@ -144,6 +144,11 @@
     #   url = "git+https://github.com/Open-Wine-Components/umu-launcher/?dir=packaging\/nix&submodules=1";
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
+
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -273,6 +278,7 @@
             inherit inputs;
             inherit system;
             username = "ali";
+            hostname = "ali-desktop-arch";
             bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
             gitUserName = "Alison Jenkins";
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
@@ -293,6 +299,7 @@
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
             gitUserName = "Alison Jenkins";
+            hostname = "steam-deck";
             inherit inputs;
             inherit system;
             primarySSHKey = "~/.ssh/id_personal.pub";
