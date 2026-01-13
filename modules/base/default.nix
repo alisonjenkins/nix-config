@@ -4,6 +4,7 @@
 , enableOpenSSH ? true
 , enablePlymouth ? true
 , impermanencePersistencePath ? builtins.toPath "/persistence"
+, beesdFilesystems ? {}
 , inputs
 , lib
 , outputs
@@ -301,6 +302,10 @@
     irqbalance.enable = true;
     pulseaudio.enable = false;
     resolved.enable = true;
+
+    beesd = {
+      filesystems = beesdFilesystems;
+    };
 
     earlyoom = {
       enable = true;
