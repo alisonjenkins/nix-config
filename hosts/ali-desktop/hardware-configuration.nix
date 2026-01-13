@@ -93,7 +93,15 @@
     "/media/steam-games-1" = {
       device = "/dev/osvg/steam-games-1";
       fsType = "ext4";
-      options = [ "defaults" "noatime" "barrier=0" "data=writeback" "discard" ];
+      options = [
+        "rw"                   # Read-write
+        "noatime"              # Don't update access times (performance)
+        "nodiratime"           # Don't update directory access times
+        "data=writeback"       # Metadata-only journaling (acceptable for games)
+        "commit=30"            # Journal commits every 30s (balanced without UPS)
+        "lazytime"             # Defer inode timestamp updates (performance)
+        # Using weekly fstrim instead of inline discard for better performance
+      ];
     };
 
     "/nix" = {
