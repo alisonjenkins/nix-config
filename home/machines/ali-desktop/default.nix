@@ -1,7 +1,8 @@
 {...}: {
   imports = [
     ./easyeffects
-    ./location-detection
-    ./audio-context
+    # Disabled location-based audio settings (desktop doesn't move)
+    # ./location-detection
+    # ./audio-context
   ];
 }
