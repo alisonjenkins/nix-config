@@ -40,8 +40,14 @@
       enableVkd3dShaderCache = true;
       dxvkHud = "0";  # Disable HUD for performance (use "fps" or "compiler" for debugging)
       enableLargeAddressAware = true;
+      shaderCacheBasePath = "/media/steam-games-1/.shader-cache";  # Use high-performance volume
     };
   };
+
+  # Create shader cache directory on steam-games volume
+  systemd.tmpfiles.rules = [
+    "d /media/steam-games-1/.shader-cache 0755 ali users -"
+  ];
 
   services.audio-context-suspend = {
     enable = true;
