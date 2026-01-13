@@ -99,14 +99,28 @@
     "/nix" = {
       device = "/dev/osvg/persistence";
       fsType = "btrfs";
-      options = [ "subvol=nix" "compress=zstd" "noatime" ];
+      options = [
+        "subvol=nix"
+        "compress=zstd:3"      # Balanced compression (level 3 is optimal)
+        "noatime"              # Don't update access times (performance)
+        "space_cache=v2"       # Modern free space cache (performance)
+        "discard=async"        # Async TRIM for SSD health (performance)
+        "ssd"                  # Enable SSD optimizations
+      ];
       neededForBoot = true;
     };
 
     "/persistence" = {
       device = "/dev/osvg/persistence";
       fsType = "btrfs";
-      options = [ "subvol=persistence" "compress=zstd" "noatime" ];
+      options = [
+        "subvol=persistence"
+        "compress=zstd:3"      # Balanced compression (level 3 is optimal)
+        "noatime"              # Don't update access times (performance)
+        "space_cache=v2"       # Modern free space cache (performance)
+        "discard=async"        # Async TRIM for SSD health (performance)
+        "ssd"                  # Enable SSD optimizations
+      ];
       neededForBoot = true;
     };
   };
