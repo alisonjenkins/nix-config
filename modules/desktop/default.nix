@@ -380,7 +380,7 @@ in
         "vm.compaction_proactiveness" = 0;          # Disable proactive compaction (reduce background CPU usage)
         "vm.page-cluster" = 0;                      # Disable page clustering for swap (reduce latency)
         "vm.watermark_boost_factor" = 0;            # Disable watermark boosting (reduce memory fragmentation overhead)
-        "vm.watermark_scale_factor" = 125;          # Adjust watermark scaling for better memory availability
+        "vm.watermark_scale_factor" = 50;           # Balance between memory availability and disk caching (was 125, default is 10)
 
         # Scheduler optimizations for gaming
         "kernel.sched_child_runs_first" = 0;        # Parent process runs first (better for game launchers)
