@@ -124,9 +124,9 @@
 
         # Virtual memory tuning
         "vm.swappiness" = lib.mkDefault 10;
-        "vm.dirty_ratio" = 10;
-        "vm.dirty_background_ratio" = 3;
-        "vm.vfs_cache_pressure" = 50;
+        "vm.dirty_ratio" = 20;              # Increased for better write caching (was 10)
+        "vm.dirty_background_ratio" = 5;    # Increased for better background write caching (was 3)
+        "vm.vfs_cache_pressure" = 25;       # Lower value = more aggressive disk caching (was 50)
       };
     };
 
