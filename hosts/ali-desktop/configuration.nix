@@ -11,6 +11,14 @@
     (import ../../modules/base {
       enableImpermanence = true;
       impermanencePersistencePath = builtins.toPath "/persistence";
+      beesdFilesystems = {
+        persistence = {
+          spec = "LABEL=persistence";
+          hashTableSizeMB = 2048;
+          verbosity = "crit";
+          extraOptions = [ "--loadavg-target" "5.0" ];
+        };
+      };
       inherit inputs lib outputs pkgs;
     })
     ../../modules/desktop
@@ -329,17 +337,6 @@
         userServices = true;
       };
     };
-
-    # beesd = {
-    #   filesystems = {
-    #     persistence = {
-    #       extraOptions = ["--loadavg-target" "5.0"];
-    #       hashTableSizeMB = 2048;
-    #       spec = "LABEL=persistence";
-    #       verbosity = "crit";
-    #     };
-    #   };
-    # };
 
     btrfs = {
       autoScrub = {
