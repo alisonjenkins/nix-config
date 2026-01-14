@@ -201,6 +201,7 @@
       freeplane
       gcc
       geekbench
+      gemini-cli
       handbrake
       i2pd
       inkscape
