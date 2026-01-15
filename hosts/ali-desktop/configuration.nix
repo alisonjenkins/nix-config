@@ -231,6 +231,7 @@
       sweethome3d.furniture-editor
       sweethome3d.textures-editor
       sysbench
+      tiny4linux
       todoist-electron
       unixtools.xxd
       unstable.makemkv

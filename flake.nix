@@ -173,6 +173,7 @@
 
         overlays =
           [
+            (import ./overlays { inherit inputs system lib; }).additions
             (import ./overlays { inherit inputs system lib; }).lqx-pin-packages
             (import ./overlays { inherit inputs system lib; }).master-packages
             (import ./overlays { inherit inputs system lib; }).unstable-packages
@@ -208,6 +209,7 @@
 
             overlays =
               [
+                (import ./overlays { inherit inputs system lib; }).additions
                 (import ./overlays { inherit inputs system lib; }).lqx-pin-packages
                 (import ./overlays { inherit inputs system lib; }).master-packages
                 (import ./overlays { inherit inputs system lib; }).unstable-packages
