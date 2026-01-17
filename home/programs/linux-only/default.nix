@@ -11,6 +11,7 @@
     ./mangohud
     ./niri
     ./nixcord
+    ./steam
     ./swayidle
     ./tofi
     ./waybar
