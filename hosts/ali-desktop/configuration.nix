@@ -328,6 +328,23 @@
       package = pkgs.niri-unstable;
     };
 
+    steam = let
+      patchedBwrap = pkgs.bubblewrap.overrideAttrs (old: {
+        patches = (old.patches or []) ++ [
+          ../../patches/bubblewrap-allow-caps.patch
+        ];
+      });
+    in {
+      enable = true;
+      package = pkgs.steam.override {
+        buildFHSEnv = args: (pkgs.buildFHSEnv.override {
+          bubblewrap = patchedBwrap;
+        }) (args // {
+          extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
+        });
+      };
+    };
+
     sway = {
       enable = true;
     };
@@ -443,6 +460,67 @@
       capSysAdmin = true;
       openFirewall = true;
       package = pkgs.unstable.sunshine;
+
+      applications = {
+        env = {
+          PATH = "$(PATH):$(HOME)/.local/bin";
+        };
+        apps = [
+          {
+            name = "Desktop";
+            image-path = "desktop.png";
+          }
+          {
+            name = "Steam Big Picture";
+            detached = [
+              "sunshine-steam-bp"
+            ];
+            prep-cmd = [
+              {
+                undo = "setsid steam steam://close/bigpicture";
+              }
+            ];
+            image-path = "steam.png";
+          }
+          {
+            name = "Steam Big Picture (TV 1080p)";
+            detached = [
+              "sunshine-steam-bp"
+            ];
+            prep-cmd = [
+              {
+                do = "niri msg output DP-2 mode 1920x1080@120.000";
+                undo = "niri msg output DP-2 mode 5120x1440@119.999";
+              }
+              {
+                undo = "setsid steam steam://close/bigpicture";
+              }
+            ];
+            image-path = "steam.png";
+            auto-detach = "true";
+          }
+          {
+            name = "TV Desktop (1080p)";
+            prep-cmd = [
+              {
+                do = "niri msg output DP-2 mode 1920x1080@120.000";
+                undo = "niri msg output DP-2 mode 5120x1440@119.999";
+              }
+            ];
+            image-path = "desktop.png";
+          }
+          {
+            name = "TV Desktop (1440p)";
+            prep-cmd = [
+              {
+                do = "niri msg output DP-2 mode 2560x1440@119.998";
+                undo = "niri msg output DP-2 mode 5120x1440@119.999";
+              }
+            ];
+            image-path = "desktop.png";
+          }
+        ];
+      };
     };
 
     xserver = {
