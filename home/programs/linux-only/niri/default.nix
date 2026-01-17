@@ -494,6 +494,13 @@
         open-on-workspace = "gaming";
         open-maximized = true;
 
+        excludes = [
+          {
+            app-id = "^steam$";
+            title = "^Steam Big Picture Mode$";
+          }
+        ];
+
         matches = [
           {
             app-id = "^org.prismlauncher.PrismLauncher$";
@@ -509,11 +516,23 @@
 
       {
         open-fullscreen = true;
+        open-focused = true;
         open-on-workspace = "game";
+        open-maximized = true;
 
         matches = [
           {
             app-id= "^gamescope$";
+          }
+          {
+            app-id = "^steam$";
+            title = "^Steam Big Picture Mode$";
+          }
+          {
+            app-id = "^steam_app_.*$";
+          }
+          {
+            app-id = "^steam_proton$";
           }
         ];
       }
