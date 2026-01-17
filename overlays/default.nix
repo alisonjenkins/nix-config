@@ -174,6 +174,8 @@
   qbittorrent = final: prev: {
     qbittorrent = (prev.callPackage (prev.path + "/pkgs/by-name/qb/qbittorrent/package.nix") {
       guiSupport = false;
+      boost = final.boost186;
+      libtorrent-rasterbar = prev.libtorrent-rasterbar-2_0_x;
     }).overrideAttrs (oldAttrs: {
       version = "5.1.4";
       name = "qbittorrent-nox-5.1.4";

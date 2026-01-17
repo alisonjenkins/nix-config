@@ -350,17 +350,53 @@
       # Request port forwarding via NAT-PMP
       echo "[$(date)] Requesting port forward from ProtonVPN..."
 
-      OUTPUT=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
+      # Request TCP port
+      OUTPUT_TCP=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 tcp 60 2>&1 || true)
+      # Request UDP port (ProtonVPN typically assigns the same port for both)
+      OUTPUT_UDP=$(${pkgs.libnatpmp}/bin/natpmpc -g "$VPN_GATEWAY" -a 1 0 udp 60 2>&1 || true)
 
-      if echo "$OUTPUT" | grep -q "Mapped public port"; then
-        FORWARDED_PORT=$(echo "$OUTPUT" | grep "Mapped public port" | grep -oP '\d+' | head -1)
+      if echo "$OUTPUT_TCP" | grep -q "Mapped public port"; then
+        FORWARDED_PORT=$(echo "$OUTPUT_TCP" | grep "Mapped public port" | grep -oP '\d+' | head -1)
 
         if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
           echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
 
+          # Update Firewall Rules
+          # ---------------------
+          OLD_PORT="0"
+          if [ -f "$PORT_FILE" ]; then
+            OLD_PORT=$(cat "$PORT_FILE")
+          fi
+
+          if [ "$OLD_PORT" != "$FORWARDED_PORT" ]; then
+            echo "[$(date)] Port changed from $OLD_PORT to $FORWARDED_PORT. Updating firewall (nftables)..."
+            
+            # Remove old rules (loop to handle duplicates)
+            if [ "$OLD_PORT" != "0" ] && [ "$OLD_PORT" != "" ]; then
+              while ${pkgs.nftables}/bin/nft delete rule inet filter input tcp dport "$OLD_PORT" accept 2>/dev/null; do :; done
+              while ${pkgs.nftables}/bin/nft delete rule inet filter input udp dport "$OLD_PORT" accept 2>/dev/null; do :; done
+            fi
+            
+            # Remove existing rules for the NEW port (to avoid duplicates if script runs again)
+            while ${pkgs.nftables}/bin/nft delete rule inet filter input tcp dport "$FORWARDED_PORT" accept 2>/dev/null; do :; done
+            while ${pkgs.nftables}/bin/nft delete rule inet filter input udp dport "$FORWARDED_PORT" accept 2>/dev/null; do :; done
+
+            # Insert new rules at the TOP of the chain
+            ${pkgs.nftables}/bin/nft insert rule inet filter input tcp dport "$FORWARDED_PORT" accept
+            ${pkgs.nftables}/bin/nft insert rule inet filter input udp dport "$FORWARDED_PORT" accept
+          else
+             # Ensure rules exist (check if ANY rule exists, if not insert)
+             if ! ${pkgs.nftables}/bin/nft list ruleset | grep -q "tcp dport $FORWARDED_PORT accept"; then
+                 ${pkgs.nftables}/bin/nft insert rule inet filter input tcp dport "$FORWARDED_PORT" accept
+             fi
+             if ! ${pkgs.nftables}/bin/nft list ruleset | grep -q "udp dport $FORWARDED_PORT" | grep -q "accept"; then
+                 ${pkgs.nftables}/bin/nft insert rule inet filter input udp dport "$FORWARDED_PORT" accept
+             fi
+          fi
+
           echo "$FORWARDED_PORT" > "$PORT_FILE"
           chmod 644 "$PORT_FILE"
-
+          
           # Auto-detect which torrent client is running and update it
           if systemctl is-active --quiet qbittorrent; then
             echo "[$(date)] qBittorrent is active, updating port..."
@@ -369,9 +405,8 @@
 
               if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
                 echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
-                systemctl stop qbittorrent
                 sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
-                systemctl start qbittorrent
+                systemctl start qbittorrent # This restarts the service as it's already running
               else
                 echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
               fi
@@ -396,7 +431,7 @@
         fi
       else
         echo "[$(date)] ERROR: Port forwarding request failed"
-        echo "$OUTPUT"
+        echo "$OUTPUT_TCP"
         exit 1
       fi
     '';
@@ -1157,8 +1192,8 @@ EOF
       ];
 
       vpnIncomingPorts = {
-        tcp = [ "15000-20000" ];
-        udp = [ "15000-20000" ];
+        tcp = [ "10000-65535" ];
+        udp = [ "10000-65535" ];
       };
 
       exceptions = {
