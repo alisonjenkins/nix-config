@@ -92,16 +92,15 @@
 
     "/media/steam-games-1" = {
       device = "/dev/osvg/steam-games-1";
-      fsType = "ext4";
+      fsType = "btrfs";
       options = [
-        "rw"                   # Read-write
+        "compress=zstd:-10"      # Slight compression so we get good performance
         "noatime"              # Don't update access times (performance)
-        "nodiratime"           # Don't update directory access times
-        "data=writeback"       # Metadata-only journaling (acceptable for games)
-        "commit=30"            # Journal commits every 30s (balanced without UPS)
-        "lazytime"             # Defer inode timestamp updates (performance)
-        # Using weekly fstrim instead of inline discard for better performance
+        "space_cache=v2"       # Modern free space cache (performance)
+        "discard=async"        # Async TRIM for SSD health (performance)
+        "ssd"                  # Enable SSD optimizations
       ];
+      neededForBoot = true;
     };
 
     "/nix" = {
