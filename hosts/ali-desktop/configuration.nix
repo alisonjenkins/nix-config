@@ -18,6 +18,12 @@
           verbosity = "crit";
           extraOptions = [ "--loadavg-target" "15.0" ];
         };
+        steam-storage-1 = {
+          spec = "LABEL=steam-games-1";
+          hashTableSizeMB = 2048;
+          verbosity = "crit";
+          extraOptions = [ "--loadavg-target" "15.0" ];
+        };
       };
       inherit inputs lib outputs pkgs;
     })
