@@ -519,6 +519,30 @@
             ];
             image-path = "desktop.png";
           }
+          {
+            name = "Gamescope 1080p";
+            detached = [
+              "sunshine-gamescope 1080p"
+            ];
+            prep-cmd = [
+              {
+                undo = "pkill -f 'gamescope.*steam'";
+              }
+            ];
+            image-path = "steam.png";
+          }
+          {
+            name = "Gamescope 1440p";
+            detached = [
+              "sunshine-gamescope 1440p"
+            ];
+            prep-cmd = [
+              {
+                undo = "pkill -f 'gamescope.*steam'";
+              }
+            ];
+            image-path = "steam.png";
+          }
         ];
       };
     };
