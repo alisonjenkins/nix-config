@@ -913,6 +913,11 @@ in
         enable = true;
       };
 
+      scx = {
+        enable = true;
+        scheduler = "scx_lavd";
+      };
+
       tlp = {
         enable = false;
 
