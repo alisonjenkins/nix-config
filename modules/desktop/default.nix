@@ -483,6 +483,7 @@ in
         gamemode
         mangohud
         steamtinkerlaunch
+        unstable.gamescope-wsi
         unstable.goverlay
         unstable.heroic-unwrapped
         unstable.protonplus
