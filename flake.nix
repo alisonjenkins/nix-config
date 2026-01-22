@@ -178,7 +178,6 @@
             (import ./overlays { inherit inputs system lib; }).master-packages
             (import ./overlays { inherit inputs system lib; }).unstable-packages
             (import ./overlays { inherit inputs system lib; }).zk
-            (import ./overlays { inherit inputs system lib; }).lsfg-vk
             (import ./overlays { inherit inputs system lib; }).qbittorrent
             inputs.nur.overlays.default
             inputs.rust-overlay.overlays.default
@@ -335,9 +334,7 @@
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
-              # Override lsfg-vk to use version 2 from develop branch
               nixpkgs.overlays = [
-                (import ./overlays { inherit inputs system lib; }).lsfg-vk
                 (import ./overlays { inherit inputs system lib; }).qbittorrent
               ];
 
@@ -390,9 +387,7 @@
             nur.modules.nixos.default
             sops-nix.nixosModules.sops
             {
-              # Override lsfg-vk to use version 2 from develop branch
               nixpkgs.overlays = [
-                (import ./overlays { inherit inputs system lib; }).lsfg-vk
                 (import ./overlays { inherit inputs system lib; }).qbittorrent
               ];
 
