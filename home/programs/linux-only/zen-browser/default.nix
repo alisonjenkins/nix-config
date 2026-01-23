@@ -4,6 +4,10 @@
 , username
 , ...
 }: {
+  config.stylix.targets.zen-browser.profileNames = [
+    username
+  ];
+
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
