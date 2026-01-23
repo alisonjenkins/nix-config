@@ -502,7 +502,7 @@ in
         ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
 
         AMD_VULKAN_ICD = "RADV";
-        ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
+        # ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
         RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
         RADV_PERFTEST = "sam,dccmsaa,nircache,nggc";
         mesa_glthread = "true";                     # Enable Mesa GL threading
