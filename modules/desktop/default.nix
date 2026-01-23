@@ -389,6 +389,9 @@ in
       })
     ];
 
+    # Load ntsync kernel module for Wine/Proton NT synchronization primitives
+    boot.kernelModules = mkIf cfg.gaming.enable [ "ntsync" ];
+
     # Desktop-specific suspend and hibernate configuration
     systemd.sleep = {
       extraConfig = ''
