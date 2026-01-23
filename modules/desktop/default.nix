@@ -721,6 +721,61 @@ in
         enable = true;
         package = pkgs.ananicy-cpp;
         rulesProvider = pkgs.ananicy-rules-cachyos;
+
+        # Custom rules for compilers and build tools to prevent stuttering during compilation
+        extraRules = [
+          # C/C++ compilers
+          { name = "cc1"; type = "BG_CPUIO"; }
+          { name = "cc1plus"; type = "BG_CPUIO"; }
+          { name = "gcc"; type = "BG_CPUIO"; }
+          { name = "g++"; type = "BG_CPUIO"; }
+          { name = "clang"; type = "BG_CPUIO"; }
+          { name = "clang++"; type = "BG_CPUIO"; }
+          { name = "cpp"; type = "BG_CPUIO"; }
+
+          # Rust
+          { name = "rustc"; type = "BG_CPUIO"; }
+          { name = "cargo"; type = "BG_CPUIO"; }
+          { name = ".cargo-wrapped"; type = "BG_CPUIO"; }
+          { name = "rust-analyzer"; type = "BG_CPUIO"; }
+          { name = "rustfmt"; type = "BG_CPUIO"; }
+          { name = "clippy-driver"; type = "BG_CPUIO"; }
+
+          # Linkers
+          { name = "ld"; type = "BG_CPUIO"; }
+          { name = "ld.lld"; type = "BG_CPUIO"; }
+          { name = "ld.gold"; type = "BG_CPUIO"; }
+          { name = "ld.bfd"; type = "BG_CPUIO"; }
+          { name = "lld"; type = "BG_CPUIO"; }
+          { name = "mold"; type = "BG_CPUIO"; }
+          { name = "collect2"; type = "BG_CPUIO"; }
+
+          # Build tools
+          { name = "make"; type = "BG_CPUIO"; }
+          { name = "gmake"; type = "BG_CPUIO"; }
+          { name = "ninja"; type = "BG_CPUIO"; }
+          { name = "cmake"; type = "BG_CPUIO"; }
+          { name = "meson"; type = "BG_CPUIO"; }
+
+          # Assemblers and other tools
+          { name = "as"; type = "BG_CPUIO"; }
+          { name = "ar"; type = "BG_CPUIO"; }
+          { name = "ranlib"; type = "BG_CPUIO"; }
+          { name = "strip"; type = "BG_CPUIO"; }
+          { name = "objcopy"; type = "BG_CPUIO"; }
+          { name = "objdump"; type = "BG_CPUIO"; }
+
+          # Go
+          { name = "go"; type = "BG_CPUIO"; }
+          { name = "gofmt"; type = "BG_CPUIO"; }
+
+          # Other compilers/interpreters used in builds
+          { name = "ghc"; type = "BG_CPUIO"; }
+          { name = "javac"; type = "BG_CPUIO"; }
+          { name = "kotlinc"; type = "BG_CPUIO"; }
+          { name = "scalac"; type = "BG_CPUIO"; }
+          { name = "zig"; type = "BG_CPUIO"; }
+        ];
       };
 
       cachix-watch-store = {
