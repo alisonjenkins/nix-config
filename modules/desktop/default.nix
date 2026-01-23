@@ -73,13 +73,13 @@ in
     pipewire = {
       quantum = mkOption {
         type = types.int;
-        default = 256;
+        default = 512;
         description = "PipeWire default quantum size for audio latency configuration";
       };
 
       minQuantum = mkOption {
         type = types.nullOr types.int;
-        default = null;
+        default = 256;
         description = "PipeWire minimum quantum size. If null, uses quantum value for fixed quantum.";
       };
 
@@ -778,7 +778,7 @@ in
                 "default.clock.allowed-rates" = cfg.pipewire.allowedSampleRates;
               };
             };
-            "10-quantum" = let
+            "99-quantum" = let
               quantum = cfg.pipewire.quantum;
               minQuantum = if cfg.pipewire.minQuantum != null then cfg.pipewire.minQuantum else quantum;
               maxQuantum = if cfg.pipewire.maxQuantum != null then cfg.pipewire.maxQuantum else quantum;
@@ -814,7 +814,10 @@ in
         wireplumber = {
           enable = true;
 
-          configPackages = [
+          configPackages = let
+            quantum = cfg.pipewire.quantum;
+            minQuantum = if cfg.pipewire.minQuantum != null then cfg.pipewire.minQuantum else quantum;
+          in [
             # Bluetooth codec configuration
             (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-bluez-config.conf" ''
               monitor.bluez.properties = {
@@ -877,9 +880,9 @@ in
                   actions = {
                     update-props = {
                       # Aggressively seek lower quantum for wired audio
-                      api.alsa.period-size = ${toString cfg.pipewire.minQuantum}
+                      api.alsa.period-size = ${toString minQuantum}
                       api.alsa.headroom = ${toString cfg.pipewire.alsaHeadroom}
-                      node.latency = "${toString cfg.pipewire.minQuantum}/48000"
+                      node.latency = "${toString minQuantum}/48000"
                     }
                   }
                 }
@@ -895,7 +898,7 @@ in
                   actions = {
                     update-props = {
                       # Use higher quantum for Bluetooth stability
-                      node.latency = "${toString cfg.pipewire.quantum}/48000"
+                      node.latency = "${toString quantum}/48000"
                       api.bluez5.a2dp.ldac.quality = "${cfg.bluetooth.ldacQuality}"
                     }
                   }
