@@ -342,6 +342,12 @@
         }) (args // {
           extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
         });
+        # Add patched bubblewrap inside FHS environment and tell pressure-vessel to use it
+        extraPkgs = pkgs: [ patchedBwrap ];
+        extraEnv = {
+          # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
+          BWRAP = "${patchedBwrap}/bin/bwrap";
+        };
       };
     };
 
@@ -522,7 +528,7 @@
           {
             name = "Gamescope 1080p";
             detached = [
-              "sunshine-gamescope 1080p"
+              "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1080p"
             ];
             prep-cmd = [
               {
@@ -534,7 +540,7 @@
           {
             name = "Gamescope 1440p";
             detached = [
-              "sunshine-gamescope 1440p"
+              "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1440p"
             ];
             prep-cmd = [
               {
