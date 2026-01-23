@@ -40,7 +40,7 @@ in {
     // {
       ".config/easyeffects/output/.keep".text = "";
       ".local/share/easyeffects/output/Gracefu's Edits.json" = {
-        text = builtins.readFile frameworkDspProfile;
+        source = frameworkDspProfile;
       };
       ".local/share/easyeffects/irs/IR_22ms_27dB_5t_15s_0c.irs" = {
         source = frameworkDspImpulseResponse;
