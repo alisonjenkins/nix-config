@@ -1,4 +1,12 @@
 { pkgs, inputs, system, config, ... }: {
+  # Give niri realtime scheduling priority for smooth rendering under load
+  systemd.user.services.niri = {
+    Service = {
+      CPUSchedulingPolicy = "fifo";
+      CPUSchedulingPriority = 50;
+      Nice = -15;
+    };
+  };
   home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
     # mako
     # swaybg
