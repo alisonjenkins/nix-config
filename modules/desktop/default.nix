@@ -712,6 +712,10 @@ in
 
       rtkit = {
         enable = true;
+        args = [
+          "--our-realtime-priority=89"
+          "--max-realtime-priority=88"
+        ];
       };
 
       soteria = {
@@ -835,6 +839,22 @@ in
               "context.properties" = {
                 "default.clock.allowed-rates" = cfg.pipewire.allowedSampleRates;
               };
+            };
+            # Ensure realtime scheduling is enabled with proper priority
+            "10-rt-prio" = {
+              "context.modules" = [
+                {
+                  name = "libpipewire-module-rt";
+                  args = {
+                    "nice.level" = -15;
+                    "rt.prio" = 88;
+                    "rlimits.enabled" = true;
+                    "rtkit.enabled" = true;
+                    "rtportal.enabled" = false;
+                  };
+                  flags = [ "ifexists" "nofail" ];
+                }
+              ];
             };
             "99-quantum" = let
               quantum = cfg.pipewire.quantum;
