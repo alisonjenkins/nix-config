@@ -782,6 +782,9 @@ in
           { name = "kotlinc"; type = "BG_CPUIO"; }
           { name = "scalac"; type = "BG_CPUIO"; }
           { name = "zig"; type = "BG_CPUIO"; }
+
+          # Compositor - give realtime priority for smooth rendering under load
+          { name = "niri"; nice = -20; sched = "fifo"; rtprio = 50; }
         ];
       };
 
