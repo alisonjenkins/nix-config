@@ -186,12 +186,6 @@
         <backend model='random'>/dev/urandom</backend>
         <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
       </rng>
-      <hostdev mode='subsystem' type='pci' managed='yes'>
-        <source>
-          <address domain='0x0000' bus='0x15' slot='0x00' function='0x0'/>
-        </source>
-        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0'/>
-      </hostdev>
     </devices>
   </domain>
 ''
