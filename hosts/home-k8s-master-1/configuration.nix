@@ -18,6 +18,10 @@
     ./disk-config.nix
   ];
 
+  boot.initrd.kernelModules = [ "amdgpu" ];
+
+  hardware.graphics.enable = true;
+
   environment.systemPackages = map lib.lowPrio [
     pkgs.curl
     pkgs.gitMinimal
