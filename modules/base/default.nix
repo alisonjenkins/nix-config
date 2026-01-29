@@ -186,7 +186,6 @@
       dig
       git
       htop
-      htop
       just
       lshw
       pciutils
