@@ -26,6 +26,7 @@
         };
       };
       inherit inputs lib outputs pkgs;
+      useSecureBoot = true;
     })
     ../../modules/desktop
     (import ../../modules/locale { })
