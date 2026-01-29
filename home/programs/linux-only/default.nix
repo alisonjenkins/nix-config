@@ -14,6 +14,7 @@
     ./steam
     ./swayidle
     ./tofi
+    ./thunderbird
     ./waybar
     ./zen-browser
   ];
