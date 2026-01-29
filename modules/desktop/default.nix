@@ -461,6 +461,7 @@ in
         signal-desktop
         suspendScripts
         television
+        thunderbird
         unstable.claude-code
         unstable.cobang
         unstable.copilot-cli
