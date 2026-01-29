@@ -29,7 +29,7 @@
     })
     ../../modules/desktop
     (import ../../modules/locale { })
-    (import ../../modules/vr { enableOpenSourceVR = false; })
+    (import ../../modules/vr { enableOpenSourceVR = false; inherit lib; })
     (import ../../modules/ollama)
     (import ../../modules/rocm { inherit pkgs; })
     ../../app-profiles/desktop

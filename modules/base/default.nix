@@ -26,6 +26,7 @@
     ../luksPCR15
   ] else []);
 
+  config = lib.mkMerge [ {
   console.keyMap = consoleKeyMap;
 
   time.timeZone = timezone;
@@ -190,10 +191,10 @@
       unstable.tailscale
       vim
       yazi
-    ] ++ (if useSecureBoot then [sbctl] else [])
+    ] ++ (if useSecureBoot then [pkgs.sbctl] else [])
     ++ (if useAliNeovim then [
       inputs.ali-neovim.packages.${system}.nvim
-    ] else [neovim]);
+    ] else [pkgs.neovim]);
   };
 
   networking = {
@@ -396,7 +397,7 @@
     '';
   };
 
-} // (if enableImpermanence then {
+} (lib.mkIf enableImpermanence {
   environment = {
     persistence = {
       "${impermanencePersistencePath}" = {
@@ -492,11 +493,11 @@
       };
     };
   };
-} else { })
-// (if useSecureBoot then {
+})
+(lib.mkIf useSecureBoot {
   systemIdentity = {
     enable = true;
     pcr15 = pcr15Value;
   };
 
-} else {})
+}) ]; }

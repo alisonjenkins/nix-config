@@ -1,5 +1,5 @@
-{ enableOpenSourceVR ? false }:
-{ } // (if enableOpenSourceVR then {
+{ enableOpenSourceVR ? false, lib, ... }:
+{ config = lib.mkMerge [ { } (lib.mkIf enableOpenSourceVR {
   programs = {
     envision = {
       enable = true;
@@ -36,4 +36,4 @@
       };
     };
   };
-} else { })
+}) ]; }

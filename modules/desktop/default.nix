@@ -502,52 +502,62 @@ in
         pkgs.hplipWithPlugin
       ]);
 
-      variables = {
-        # NIXOS_OZONE_WL = "1";
-        ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
+      variables = mkMerge [
+        {
+          # NIXOS_OZONE_WL = "1";
+          ZK_NOTEBOOK_DIR = "\${HOME}/git/zettelkasten";
 
-        AMD_VULKAN_ICD = "RADV";
-        # ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
-        RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
-        RADV_PERFTEST = "sam,dccmsaa,nircache,nggc";
-        mesa_glthread = "true";                     # Enable Mesa GL threading
-        vblank_mode = "0";                          # Disable VSync at driver level
+          AMD_VULKAN_ICD = "RADV";
+          # ENABLE_GAMESCOPE_WSI = "1";                 # Enable Gamescope WSI layer
+          RADV_BUILD_ID_OVERRIDE = "0";               # Disable build ID for shader cache
+          RADV_PERFTEST = "sam,dccmsaa,nircache,nggc";
+          mesa_glthread = "true";                     # Enable Mesa GL threading
+          vblank_mode = "0";                          # Disable VSync at driver level
 
-        # ntsync - NT synchronization primitives for improved Wine/Proton performance
-        # Requires kernel 6.10+ with CONFIG_NTSYNC=y and /dev/ntsync device
-        WINEFSYNC = "1";                            # Enable ntsync for Wine/Proton
-      } // (optionalAttrs cfg.gaming.enable {
-        # Esync/Fsync optimizations (work alongside ntsync)
-        WINEESYNC = "1";                            # Enable esync as fallback
-        PROTON_NO_ESYNC = "0";                      # Ensure esync is not disabled
-        PROTON_NO_FSYNC = "0";                      # Ensure fsync is not disabled
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableDxvkStateCache) {
-        # DXVK optimizations for Vulkan-based D3D9/10/11 translation
-        DXVK_HUD = cfg.gaming.dxvkHud;
-        DXVK_STATE_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/dxvk";
-        DXVK_LOG_LEVEL = "warn";
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableVkd3dShaderCache) {
-        # VKD3D-Proton optimizations for D3D12 -> Vulkan translation
-        VKD3D_CONFIG = "dxr11,dxr";                 # Enable DXR (DirectX Raytracing)
-        VKD3D_SHADER_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/vkd3d";
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.cpuTopology != null) {
-        # Override Wine CPU topology detection
-        WINE_CPU_TOPOLOGY = cfg.gaming.cpuTopology;
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.enableLargeAddressAware) {
-        # Enable large address aware for 32-bit games
-        PROTON_FORCE_LARGE_ADDRESS_AWARE = "1";
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.gpuVendor == "amd") {
-        # AMD-specific optimizations
-        PROTON_ENABLE_NVAPI = "0";                  # Disable NVIDIA API
-        PROTON_HIDE_NVIDIA_GPU = "1";               # Hide NVIDIA GPU detection
-      }) // (optionalAttrs (cfg.gaming.enable && cfg.gaming.gpuVendor == "nvidia") {
-        # NVIDIA-specific optimizations
-        PROTON_ENABLE_NVAPI = "1";                  # Enable NVIDIA API
-        __GL_SHADER_DISK_CACHE = "1";               # Enable NVIDIA shader cache
-        __GL_SHADER_DISK_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/nvidia";
-      }) // (optionalAttrs cfg.lsfg.enable {
-        LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
-      });
+          # ntsync - NT synchronization primitives for improved Wine/Proton performance
+          # Requires kernel 6.10+ with CONFIG_NTSYNC=y and /dev/ntsync device
+          WINEFSYNC = "1";                            # Enable ntsync for Wine/Proton
+        }
+        (mkIf cfg.gaming.enable {
+          # Esync/Fsync optimizations (work alongside ntsync)
+          WINEESYNC = "1";                            # Enable esync as fallback
+          PROTON_NO_ESYNC = "0";                      # Ensure esync is not disabled
+          PROTON_NO_FSYNC = "0";                      # Ensure fsync is not disabled
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.enableDxvkStateCache) {
+          # DXVK optimizations for Vulkan-based D3D9/10/11 translation
+          DXVK_HUD = cfg.gaming.dxvkHud;
+          DXVK_STATE_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/dxvk";
+          DXVK_LOG_LEVEL = "warn";
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.enableVkd3dShaderCache) {
+          # VKD3D-Proton optimizations for D3D12 -> Vulkan translation
+          VKD3D_CONFIG = "dxr11,dxr";                 # Enable DXR (DirectX Raytracing)
+          VKD3D_SHADER_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/vkd3d";
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.cpuTopology != null) {
+          # Override Wine CPU topology detection
+          WINE_CPU_TOPOLOGY = cfg.gaming.cpuTopology;
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.enableLargeAddressAware) {
+          # Enable large address aware for 32-bit games
+          PROTON_FORCE_LARGE_ADDRESS_AWARE = "1";
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.gpuVendor == "amd") {
+          # AMD-specific optimizations
+          PROTON_ENABLE_NVAPI = "0";                  # Disable NVIDIA API
+          PROTON_HIDE_NVIDIA_GPU = "1";               # Hide NVIDIA GPU detection
+        })
+        (mkIf (cfg.gaming.enable && cfg.gaming.gpuVendor == "nvidia") {
+          # NVIDIA-specific optimizations
+          PROTON_ENABLE_NVAPI = "1";                  # Enable NVIDIA API
+          __GL_SHADER_DISK_CACHE = "1";               # Enable NVIDIA shader cache
+          __GL_SHADER_DISK_CACHE_PATH = "${cfg.gaming.shaderCacheBasePath}/nvidia";
+        })
+        (mkIf cfg.lsfg.enable {
+          LSFG_DLL_PATH = "\${HOME}/.local/share/Steam/steamapps/common/Lossless\ Scaling/Lossless.dll";
+        })
+      ];
     };
 
     hardware = {
