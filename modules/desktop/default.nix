@@ -1019,7 +1019,7 @@ in
 
         extraRules = ''
           # AMD GPU performance - let gamemode handle performance levels
-          ACTION=="add", SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="auto"
+          ACTION=="add", SUBSYSTEM=="pci", DRIVER=="amdgpu", ATTR{power_dpm_force_performance_level}="auto"
 
           # ntsync device permissions for Wine/Proton performance
           KERNEL=="ntsync", MODE="0666"
