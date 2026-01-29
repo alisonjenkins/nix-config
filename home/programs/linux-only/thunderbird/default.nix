@@ -8,34 +8,54 @@ let
       preferLocalBuild = true;
       allowSubstitutes = true;
       buildCommand = ''
-        dst="$out/share/mozilla/extensions/{3550f703-e582-4d05-9a08-453d09bdfdc6}/${addonId}.xpi"
+        dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/${addonId}.xpi"
         mkdir -p "$(dirname "$dst")"
         cp "$src" "$dst"
       '';
     };
 
-  tbsync = addon {
-    pname = "tbsync";
-    version = "latest";
-    addonId = "tbsync@jobisoft.de";
-    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/tbsync/latest.xpi";
-    sha256 = "1fxwbf1azlby5p59vm7z2apqv7vsnmybd3gvxpf4jnhffw9a7av0";
+  tbkeys = pkgs.stdenv.mkDerivation {
+    name = "tbkeys-lite-custom";
+    src = pkgs.fetchFromGitHub {
+      owner = "wshanks";
+      repo = "tbkeys";
+      rev = "main";
+      sha256 = "0f02pyqvw8326rqaa38v3cjhl5jlqvq33v90ygay0sfs2kw0gmnl";
+    };
+    nativeBuildInputs = [ pkgs.zip pkgs.jq ];
+    installPhase = ''
+      mkdir -p $out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+      
+      # Copy addon source
+      cp -r addon src
+      cd src
+      
+      # Transform to Lite (remove eval)
+      sed -i 's#^.*eval(.*#// Do nothing#' implementation.js
+      
+      # Update Manifest ID to lite
+      jq '.browser_specific_settings.gecko.id = "tbkeys-lite@addons.thunderbird.net"' manifest.json > manifest.json.tmp
+      mv manifest.json.tmp manifest.json
+      
+      # Zip it
+      zip -r $out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/tbkeys-lite@addons.thunderbird.net.xpi .
+    '';
   };
 
-  eas = addon {
-    pname = "eas-4-tbsync";
+  quickfolders = addon {
+    pname = "quickfolders";
     version = "latest";
-    addonId = "eas-4-tbsync@jobisoft.de"; 
-    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/eas-4-tbsync/latest.xpi";
-    sha256 = "0rh4lx3xfbq2fg60hlm1g5hr9yrj6kx5vzx03k407xjb7q3c8r7m";
+    addonId = "quickfolders@curious.be";
+    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/quickfolders-tabbed-folders/latest.xpi";
+    sha256 = "0c1b41mrhlkfhh1zqdvv7ifnd6m6zgsnsff4pg130r8yqbqxp434";
   };
 
-  tbkeys = addon {
-    pname = "tbkeys-lite";
+  cardbook = addon {
+    pname = "cardbook";
     version = "latest";
-    addonId = "tbkeys-lite@addons.thunderbird.net";
-    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/tbkeys-lite/latest.xpi";
-    sha256 = "1v6p3smhhvks8ml6d7jihvpj1ngqkw2khsa2g7vhx74sxbn0ggc3";
+    addonId = "cardbook@vigneau.philippe";
+    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/cardbook/latest.xpi";
+    sha256 = "1d2bb3x17q8zbh6rxfplw0w4a1xqc3siqd9kcc8wdnk6xbgrsm1w";
   };
 in
 {
@@ -43,7 +63,12 @@ in
     enable = true;
     profiles.ali = {
       isDefault = true;
-      extensions = [ tbsync eas tbkeys ];
+      settings = {
+        "extensions.strictCompatibility" = false;
+        "extensions.checkCompatibility.146.0" = false;
+        "extensions.checkCompatibility.nightly" = false;
+      };
+      extensions = [ tbkeys quickfolders cardbook ];
     };
   };
 }
