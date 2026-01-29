@@ -27,6 +27,7 @@
       };
       inherit inputs lib outputs pkgs;
       useSecureBoot = true;
+      pcr15Value = "7e6a73c51abc879e3b85cdfdd116192e4b4a1fd4ea810b180bfab548054858a4";
     })
     ../../modules/desktop
     (import ../../modules/locale { })
