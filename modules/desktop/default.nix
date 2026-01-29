@@ -444,6 +444,7 @@ in
         aider-chat-full
         bluetooth-connect
         deepfilternet
+        dmidecode
         file-roller
         hicolor-icon-theme
         lock-session
