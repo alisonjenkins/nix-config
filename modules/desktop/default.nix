@@ -998,6 +998,7 @@ in
 
       printing = mkIf cfg.printing.enable {
         enable = true;
+        listenAddresses = [ "127.0.0.1:631" ];
       };
 
       scx = {
