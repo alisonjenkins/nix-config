@@ -71,6 +71,7 @@
     "/boot" = {
       device = "/dev/disk/by-uuid/12AE-8C8B";
       fsType = "vfat";
+      options = [ "fmask=0077" "dmask=0077" "defaults" ];
     };
 
     "/home" = {
