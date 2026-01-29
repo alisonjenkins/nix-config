@@ -323,7 +323,7 @@
             # ./app-profiles/desktop/wms/sway
             # inputs.nixos-cosmic.nixosModules.default
             ./app-profiles/desktop/aws
-            ./app-profiles/desktop/display-managers/greetd
+            ./app-profiles/desktop/display-managers/greetd-regreet
             ./app-profiles/desktop/wms/hyprland
             ./app-profiles/desktop/wms/plasma6
             ./app-profiles/hardware/vr
