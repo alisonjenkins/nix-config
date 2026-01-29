@@ -3,6 +3,7 @@
     # ./hypridle
     # ./stasis
     ./anyrun
+    ./davmail
     ./firefox
     ./fuzzel
     ./gtk
