@@ -76,6 +76,11 @@
     "/home" = {
       device = "/dev/home/home";
       fsType = "ext4";
+      options = [
+        "defaults"
+        "x-systemd.requires=systemd-cryptsetup@home1.service"
+        "x-systemd.requires=systemd-cryptsetup@home2.service"
+      ];
     };
 
     "/media/archroot" = {
