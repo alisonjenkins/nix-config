@@ -29,13 +29,21 @@ let
     url = "https://addons.thunderbird.net/thunderbird/downloads/latest/eas-4-tbsync/latest.xpi";
     sha256 = "0rh4lx3xfbq2fg60hlm1g5hr9yrj6kx5vzx03k407xjb7q3c8r7m";
   };
+
+  tbkeys = addon {
+    pname = "tbkeys-lite";
+    version = "latest";
+    addonId = "tbkeys-lite@addons.thunderbird.net";
+    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/tbkeys-lite/latest.xpi";
+    sha256 = "1v6p3smhhvks8ml6d7jihvpj1ngqkw2khsa2g7vhx74sxbn0ggc3";
+  };
 in
 {
   programs.thunderbird = {
     enable = true;
     profiles.ali = {
       isDefault = true;
-      extensions = [ tbsync eas ];
+      extensions = [ tbsync eas tbkeys ];
     };
   };
 }
