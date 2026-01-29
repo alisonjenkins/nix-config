@@ -191,6 +191,7 @@
       pciutils
       rush-parallel
       tmux
+      trash-cli
       unstable.tailscale
       vim
       yazi
