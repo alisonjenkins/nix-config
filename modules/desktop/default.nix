@@ -449,6 +449,7 @@ in
         hicolor-icon-theme
         lock-session
         millisecond
+        nethogs
         nix-flake-template-init
         oxker
         pciutils
