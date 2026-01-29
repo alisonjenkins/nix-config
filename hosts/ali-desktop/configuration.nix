@@ -200,6 +200,7 @@
       # deadd-notification-center
       alsa-scarlett-gui
       amdgpu_top
+      antigravity
       cifs-utils
       claude-code
       cpu-x
