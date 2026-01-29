@@ -394,6 +394,10 @@
       packages = [
         pkgs.uhk-udev-rules
       ];
+      extraRules = ''
+        # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend)
+        ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", ATTR{idProduct}=="3106", ATTR{power/control}="on"
+      '';
     };
 
     lact = {
