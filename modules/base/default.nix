@@ -71,6 +71,10 @@
       "amdgpu.ppfeaturemask=0xfff7ffff"
       "preempt=full"
       "quiet"
+      "splash"
+      "rd.systemd.show_status=false"
+      "rd.udev.log_level=3"
+      "udev.log_priority=3"
     ];
 
     kernel = {
@@ -160,7 +164,7 @@
     } else {})
     // (if useSystemdBoot then {
       systemd-boot = {
-        consoleMode = "auto";
+        consoleMode = "max";
         enable = true;
         memtest86.enable = true;
         netbootxyz.enable = true;
