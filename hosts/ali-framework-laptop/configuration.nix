@@ -17,7 +17,7 @@
       useSystemdBoot = false;
     })
     ../../modules/desktop
-    (import ../../modules/vr { enableOpenSourceVR = false; })
+    (import ../../modules/vr { enableOpenSourceVR = false; inherit lib; })
     (import ../../modules/ollama)
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
