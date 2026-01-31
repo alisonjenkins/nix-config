@@ -158,6 +158,7 @@
 
     systemPackages = with pkgs; [
       amdgpu_top
+      antigravity
       calibre
       framework-tool
       freeplane
