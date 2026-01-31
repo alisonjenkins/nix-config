@@ -81,8 +81,6 @@
       # Performance optimizations (stability issues resolved with BIOS/kernel fix)
       "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (optimal for RDNA)
       "amdgpu.vm_update_mode=0"          # Use default (auto) VM update mode for best performance
-
-      "amd_pstate=active"
     ];
 
     initrd = {
