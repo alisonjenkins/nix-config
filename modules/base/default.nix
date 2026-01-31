@@ -26,7 +26,7 @@
     ../luksPCR15
   ] else []);
 
-  config = lib.mkMerge [ {
+  config = lib.mkMerge ([ {
   console.keyMap = consoleKeyMap;
 
   time.timeZone = timezone;
@@ -497,11 +497,9 @@
       };
     };
   };
-})
-(lib.mkIf useSecureBoot {
+})] ++ (if useSecureBoot then [{
   systemIdentity = {
     enable = true;
     pcr15 = pcr15Value;
   };
-
-}) ]; }
+}] else [])); }
