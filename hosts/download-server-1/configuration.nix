@@ -370,13 +370,13 @@
 
           if [ "$OLD_PORT" != "$FORWARDED_PORT" ]; then
             echo "[$(date)] Port changed from $OLD_PORT to $FORWARDED_PORT. Updating firewall (nftables)..."
-            
+
             # Remove old rules (loop to handle duplicates)
             if [ "$OLD_PORT" != "0" ] && [ "$OLD_PORT" != "" ]; then
               while ${pkgs.nftables}/bin/nft delete rule inet filter input tcp dport "$OLD_PORT" accept 2>/dev/null; do :; done
               while ${pkgs.nftables}/bin/nft delete rule inet filter input udp dport "$OLD_PORT" accept 2>/dev/null; do :; done
             fi
-            
+
             # Remove existing rules for the NEW port (to avoid duplicates if script runs again)
             while ${pkgs.nftables}/bin/nft delete rule inet filter input tcp dport "$FORWARDED_PORT" accept 2>/dev/null; do :; done
             while ${pkgs.nftables}/bin/nft delete rule inet filter input udp dport "$FORWARDED_PORT" accept 2>/dev/null; do :; done
@@ -396,7 +396,7 @@
 
           echo "$FORWARDED_PORT" > "$PORT_FILE"
           chmod 644 "$PORT_FILE"
-          
+
           # Auto-detect which torrent client is running and update it
           if systemctl is-active --quiet qbittorrent; then
             echo "[$(date)] qBittorrent is active, updating port..."
