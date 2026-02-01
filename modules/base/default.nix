@@ -189,6 +189,7 @@
       iotop
       just
       lshw
+      nethogs
       pciutils
       rush-parallel
       tmux
