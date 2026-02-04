@@ -13,6 +13,7 @@
     (modulesPath + "/profiles/qemu-guest.nix")
     (import ../../modules/base {
       enableImpermanence = false;
+      enablePlymouth = false;
       inherit inputs lib pkgs outputs;
     })
     ./disk-config.nix

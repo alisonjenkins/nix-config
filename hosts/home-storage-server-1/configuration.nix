@@ -9,6 +9,7 @@
     (import ../../modules/locale { })
     (import ../../modules/base {
       enableImpermanence = true;
+      enablePlymouth = false;
       inherit inputs lib outputs pkgs;
     })
     (import ../../modules/servers {

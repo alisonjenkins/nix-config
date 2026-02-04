@@ -12,6 +12,7 @@
     ./hardware-configuration.nix
     (import ../../modules/base {
       enableImpermanence = false;
+      enablePlymouth = false;
       inherit inputs lib outputs pkgs;
     })
     (import ../../modules/servers { })

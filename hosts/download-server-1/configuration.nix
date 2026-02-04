@@ -10,6 +10,7 @@
     (import ../../modules/base {
       enableImpermanence = true;
       enableIPv6 = true;
+      enablePlymouth = false;
       inherit inputs lib outputs pkgs;
     })
     (import ../../modules/servers {
