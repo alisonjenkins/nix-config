@@ -12,6 +12,25 @@
       enableIPv6 = true;
       inherit inputs lib outputs pkgs;
     })
+    (import ../../modules/servers {
+      # Nginx metrics
+      enablePrometheusNginxExporter = true;
+      # WireGuard VPN metrics
+      enablePrometheusWireguardExporter = true;
+      # Exportarr - media management metrics
+      enablePrometheusExportarrRadarr = true;
+      exportarrRadarrUrl = "http://localhost:7878";
+      exportarrRadarrApiKeyFile = config.sops.secrets."exportarr/radarr-api-key".path;
+      enablePrometheusExportarrSonarr = true;
+      exportarrSonarrUrl = "http://localhost:8989";
+      exportarrSonarrApiKeyFile = config.sops.secrets."exportarr/sonarr-api-key".path;
+      enablePrometheusExportarrBazarr = true;
+      exportarrBazarrUrl = "http://localhost:6767";
+      exportarrBazarrApiKeyFile = config.sops.secrets."exportarr/bazarr-api-key".path;
+      enablePrometheusExportarrProwlarr = true;
+      exportarrProwlarrUrl = "http://localhost:9696";
+      exportarrProwlarrApiKeyFile = config.sops.secrets."exportarr/prowlarr-api-key".path;
+    })
     ../../modules/proxy-vpn-gateway
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
@@ -237,6 +256,69 @@
     serviceConfig = {
       ExecStartPre = "-${pkgs.iproute2}/bin/ip route add 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
       ExecStopPost = "-${pkgs.iproute2}/bin/ip route del 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
+    };
+  };
+
+  # WireGuard VPN watchdog script - restarts VPN if handshake is stale
+  environment.etc."wireguard-watchdog.sh" = {
+    mode = "0755";
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      INTERFACE="primary-vpn"
+      # Maximum age in seconds before considering the tunnel stale (5 minutes)
+      MAX_HANDSHAKE_AGE=300
+
+      # Check if the interface exists
+      if ! ${pkgs.wireguard-tools}/bin/wg show "$INTERFACE" 2>/dev/null | grep -q "interface"; then
+        echo "[$(date)] Interface $INTERFACE does not exist, restarting..."
+        systemctl restart "wg-quick-$INTERFACE"
+        exit 0
+      fi
+
+      # Get the latest handshake timestamp (epoch seconds)
+      HANDSHAKE_TIME=$(${pkgs.wireguard-tools}/bin/wg show "$INTERFACE" latest-handshakes | ${pkgs.gawk}/bin/awk '{print $2}')
+
+      if [ -z "$HANDSHAKE_TIME" ] || [ "$HANDSHAKE_TIME" = "0" ]; then
+        echo "[$(date)] No handshake recorded for $INTERFACE, restarting..."
+        systemctl restart "wg-quick-$INTERFACE"
+        exit 0
+      fi
+
+      CURRENT_TIME=$(date +%s)
+      HANDSHAKE_AGE=$((CURRENT_TIME - HANDSHAKE_TIME))
+
+      if [ "$HANDSHAKE_AGE" -gt "$MAX_HANDSHAKE_AGE" ]; then
+        echo "[$(date)] Handshake for $INTERFACE is $HANDSHAKE_AGE seconds old (max: $MAX_HANDSHAKE_AGE), restarting..."
+        systemctl restart "wg-quick-$INTERFACE"
+      else
+        echo "[$(date)] Handshake for $INTERFACE is $HANDSHAKE_AGE seconds old, tunnel is healthy"
+      fi
+    '';
+  };
+
+  # WireGuard watchdog service
+  systemd.services.wireguard-watchdog = {
+    description = "WireGuard VPN Watchdog";
+    after = [ "network-online.target" "wg-quick-primary-vpn.service" ];
+    wants = [ "network-online.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/wireguard-watchdog.sh";
+    };
+  };
+
+  # Timer to run watchdog every 2 minutes
+  systemd.timers.wireguard-watchdog = {
+    description = "WireGuard VPN Watchdog Timer";
+    wantedBy = [ "timers.target" ];
+
+    timerConfig = {
+      OnBootSec = "2min";
+      OnUnitActiveSec = "2min";
+      Unit = "wireguard-watchdog.service";
     };
   };
 
@@ -916,6 +998,16 @@ EOF
               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             '';
           };
+
+          # Nginx stub_status for prometheus-nginx-exporter
+          "/nginx_status" = {
+            extraConfig = ''
+              stub_status on;
+              access_log off;
+              allow 127.0.0.1;
+              deny all;
+            '';
+          };
         };
       };
     };
@@ -1269,6 +1361,28 @@ EOF
         mode = "0400";
         owner = config.users.users.root.name;
         sopsFile = ./secrets/samba.yaml;
+      };
+
+      # Exportarr API keys for Prometheus exporters
+      "exportarr/radarr-api-key" = {
+        format = "yaml";
+        mode = "0400";
+        sopsFile = ./secrets/exportarr.yaml;
+      };
+      "exportarr/sonarr-api-key" = {
+        format = "yaml";
+        mode = "0400";
+        sopsFile = ./secrets/exportarr.yaml;
+      };
+      "exportarr/bazarr-api-key" = {
+        format = "yaml";
+        mode = "0400";
+        sopsFile = ./secrets/exportarr.yaml;
+      };
+      "exportarr/prowlarr-api-key" = {
+        format = "yaml";
+        mode = "0400";
+        sopsFile = ./secrets/exportarr.yaml;
       };
     };
   };

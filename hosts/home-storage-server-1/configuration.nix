@@ -11,6 +11,9 @@
       enableImpermanence = true;
       inherit inputs lib outputs pkgs;
     })
+    (import ../../modules/servers {
+      enablePrometheusSmartctlExporter = true;
+    })
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./hardware-configuration.nix

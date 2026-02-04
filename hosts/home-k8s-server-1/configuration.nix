@@ -14,6 +14,7 @@
       enableImpermanence = false;
       inherit inputs lib outputs pkgs;
     })
+    (import ../../modules/servers { })
   ];
 
   console.keyMap = "us";

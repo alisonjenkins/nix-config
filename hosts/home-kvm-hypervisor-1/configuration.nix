@@ -14,6 +14,10 @@
       useSystemdBoot = false;
       inherit inputs lib outputs pkgs;
     })
+    (import ../../modules/servers {
+      enablePrometheusSmartctlExporter = true;
+      enablePrometheusLibvirtExporter = true;
+    })
     ./hardware-configuration.nix
   ];
 
