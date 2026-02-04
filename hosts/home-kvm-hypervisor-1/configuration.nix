@@ -26,7 +26,9 @@
     kernelPackages = pkgs.linuxPackages_latest;
 
     kernelParams = [
-      "vfio-pci.ids=1000:0072,1002:164e"
+      # Only SAS controller (1000:0072) bound early - GPU (1002:164e) stays on amdgpu for LUKS prompt
+      # Libvirt will rebind GPU to vfio-pci when VM starts (managed='yes')
+      "vfio-pci.ids=1000:0072"
       "systemd.gpt_auto=no"
     ];
 

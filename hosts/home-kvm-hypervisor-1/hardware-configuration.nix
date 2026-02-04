@@ -27,11 +27,12 @@
     extraModulePackages = [ ];
     extraModprobeConfig = ''
       softdep drm pre: vfio-pci
+      softdep mpt3sas pre: vfio-pci
     '';
 
     initrd = {
       availableKernelModules = [ "xhci_pci" "nvme" "ahci" "uas" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" "ehci_pci" "cryptd" "virtio_pci" ];
-      kernelModules = [ "dm-snapshot" ];
+      kernelModules = [ "dm-snapshot" "vfio-pci" "vfio" "vfio_iommu_type1" ];
     };
   };
 
