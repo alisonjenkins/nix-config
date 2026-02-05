@@ -169,7 +169,7 @@ in
           browseable = "yes";
           "read only" = "no";
           "guest ok" = "no";
-          "valid users" = "privoxy";
+          "valid users" = "privoxy monitoring";
         };
 
         "media" = {
@@ -299,6 +299,7 @@ in
       sonarr = { gid = 5003; };
       tv = { gid = 5013; };
       deluge = { gid = 5010; };
+      monitoring = { gid = 5015; };
     };
 
     users = {
@@ -374,6 +375,13 @@ in
         group = "privoxy";
         uid = 5006;
         hashedPasswordFile = "/persistence/passwords/privoxy";
+        isNormalUser = true;
+      };
+      monitoring = {
+        description = "Monitoring user";
+        group = "monitoring";
+        uid = 5015;
+        hashedPasswordFile = "/persistence/passwords/monitoring";
         isNormalUser = true;
       };
       deluge = {
