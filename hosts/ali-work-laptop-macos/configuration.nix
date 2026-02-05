@@ -85,7 +85,6 @@
       pkg-config
       posting
       pwgen
-      qview
       ripgrep
       rlwrap
       selene
