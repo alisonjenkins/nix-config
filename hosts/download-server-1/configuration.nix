@@ -1082,6 +1082,7 @@ EOF
           "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
           "Session\\ExcludedFileNames" = "";
           "Session\\GlobalMaxRatio" = 2;
+          "Session\\MaxRatioAction" = 1;  # Remove torrent and files after hitting ratio
           "Session\\I2P\\Enabled" = false;  # Temporarily disabled to debug crashes
           "Session\\I2P\\MixedMode" = true;
           "Session\\IgnoreSlowTorrentsForQueueing" = true;
