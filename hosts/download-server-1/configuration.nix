@@ -1368,22 +1368,22 @@ EOF
       "exportarr/radarr-api-key" = {
         format = "yaml";
         mode = "0400";
-        sopsFile = ./secrets/exportarr.yaml;
+        sopsFile = ./secrets/exportarr.enc.yaml;
       };
       "exportarr/sonarr-api-key" = {
         format = "yaml";
         mode = "0400";
-        sopsFile = ./secrets/exportarr.yaml;
+        sopsFile = ./secrets/exportarr.enc.yaml;
       };
       "exportarr/bazarr-api-key" = {
         format = "yaml";
         mode = "0400";
-        sopsFile = ./secrets/exportarr.yaml;
+        sopsFile = ./secrets/exportarr.enc.yaml;
       };
       "exportarr/prowlarr-api-key" = {
         format = "yaml";
         mode = "0400";
-        sopsFile = ./secrets/exportarr.yaml;
+        sopsFile = ./secrets/exportarr.enc.yaml;
       };
     };
   };
