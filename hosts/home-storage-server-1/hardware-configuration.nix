@@ -80,6 +80,7 @@
       options = [
         "allow_other"
         "cache.files=off"
+        "category.create=mfs"  # Use most-free-space policy to spread data across disks
         "defaults"
         "dropcacheonclose=true"
         "fsname=mergerf"
