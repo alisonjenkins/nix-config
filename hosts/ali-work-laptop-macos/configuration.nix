@@ -11,7 +11,7 @@
     systemPackages = with pkgs; [
       (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
       (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
-      aws-sam-cli
+      unstable.aws-sam-cli
       aws-vault
       awscli2
       bacon
