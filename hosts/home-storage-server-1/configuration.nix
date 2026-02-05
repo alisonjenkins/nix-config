@@ -4,7 +4,15 @@
 , outputs
 , pkgs
 , ...
-}: {
+}:
+let
+  sambaSettings = config.services.samba.settings;
+  shareNames = builtins.filter (name: name != "global") (builtins.attrNames sambaSettings);
+  sambaUsers = lib.unique (lib.flatten (map (share:
+    builtins.filter (u: u != "") (lib.splitString " " (lib.attrByPath [ "valid users" ] "" sambaSettings.${share}))
+  ) shareNames));
+in
+{
   imports = [
     (import ../../modules/locale { })
     (import ../../modules/base {
@@ -234,30 +242,36 @@
     };
   };
 
-  # sops = {
-  #   defaultSopsFile = ../../secrets/main.enc.yaml;
-  #   defaultSopsFormat = "yaml";
-  #   age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-  #   secrets = {
-  #     # "myservice/my_subdir/my_secret" = {
-  #     #   mode = "0400";
-  #     #   owner = config.users.users.nobody.name;
-  #     #   group = config.users.users.nobody.group;
-  #     #   restartUnits = ["example.service"];
-  #     #   path = "/a/secret/path.yaml";
-  #     #   format = "yaml"; # can be yaml, json, ini, dotenv, binary
-  # #     # };
-  # #     # home_enc_key = {
-  # #     #   format = "binary";
-  # #     #   group = config.users.users.nobody.group;
-  # #     #   mode = "0400";
-  # #     #   neededForUsers = true;
-  # #     #   owner = config.users.users.root.name;
-  # #     #   path = "/etc/luks/home.key";
-  # #     #   sopsFile = ../../secrets/ali-desktop/home-enc-key.enc.bin;
-  # #     # };
-  #   };
-  # };
+  sops = {
+    defaultSopsFile = ../../secrets/main.enc.yaml;
+    defaultSopsFormat = "yaml";
+    age.sshKeyPaths = [ "/persistence/etc/ssh/keys/ssh_host_ed25519_key" ];
+
+    secrets = builtins.listToAttrs (map (user: {
+      name = "samba/${user}";
+      value = {
+        format = "yaml";
+        group = config.users.users.root.group;
+        mode = "0400";
+        owner = config.users.users.root.name;
+        sopsFile = ./secrets/samba-passwords.enc.yaml;
+      };
+    }) sambaUsers);
+  };
+
+  systemd.services.samba-setup-passwords = {
+    description = "Set Samba user passwords from sops secrets";
+    after = [ "samba-smbd.service" ];
+    requiredBy = [ "samba-smbd.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = lib.concatMapStringsSep "\n" (user: ''
+      password=$(cat "${config.sops.secrets."samba/${user}".path}")
+      printf '%s\n%s\n' "$password" "$password" | ${pkgs.samba}/bin/smbpasswd -s -a "${user}"
+    '') sambaUsers;
+  };
 
   system = {
     stateVersion = "24.05";
