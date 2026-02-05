@@ -168,5 +168,6 @@ When adding new hosts:
 When adding secrets:
 1. Add age keys to `.sops.yaml` if needed
 2. Create secret files in `secrets/` or `secrets/<hostname>/`
-3. Encrypt with `sops` command
-4. Reference in host configuration via `sops.secrets.<name>`
+3. Unencrypted Secrets should be named using the pattern `<name>.dec.yaml` so that they are gitignored. Encrypted secrets get saved with the name pattern `<name>.enc.yaml`
+4. Encrypt with `sops` command
+5. Reference in host configuration via `sops.secrets.<name>`
