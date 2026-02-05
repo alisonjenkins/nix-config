@@ -5,7 +5,7 @@
 , system
 , ...
 }: {
-  home.packages = [
+  home.packages = lib.optionals pkgs.stdenv.isLinux [
     pkgs.obsidian
   ];
 
