@@ -11,8 +11,9 @@
     ./themes
     ./wms/hyprland
     ./wms/river
-    inputs.plasma-manager.homeModules.plasma-manager
     inputs.nix-index-database.homeModules.nix-index
+  ] ++ lib.optionals pkgs.stdenv.isLinux [
+    inputs.plasma-manager.homeModules.plasma-manager
   ];
 
   home = {
