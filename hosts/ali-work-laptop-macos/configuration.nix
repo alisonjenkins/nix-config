@@ -492,6 +492,7 @@
       "windows-app"
       "yed"
       "yubico-authenticator"
+      "zen"
       "zoom"
       # "todoist"
     ];
