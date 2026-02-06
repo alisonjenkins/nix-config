@@ -32,7 +32,7 @@
     hostName = "home-k8s-master-1";
 
     firewall = {
-      enable = true;
+      enable = false;
 
       allowedTCPPorts = [
         6443
