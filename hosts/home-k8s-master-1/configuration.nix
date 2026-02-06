@@ -79,14 +79,14 @@
       extraFlags = toString [
         "--cluster-cidr=10.42.0.0/16"
         "--cluster-init"
+        "--disable-network-policy"
         "--disable=servicelb"
+        "--flannel-backend=none"
         "--service-cidr=10.43.0.0/16"
         "--write-kubeconfig-mode \"0400\""
         # "--disable servicelb"
         # "--disable traefik"
         # "--disable-kube-proxy"
-        # "--disable-network-policy"
-        # "--flannel-backend=none"
       ];
 
       manifests =
