@@ -1,6 +1,6 @@
 { pkgs, ... }: {
   home.packages = with pkgs; [
-    opencommit
+    # opencommit  # Commented out due to nodejs memory constraints on macOS
   ];
 
   # home.file = {

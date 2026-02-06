@@ -1,5 +1,9 @@
 { pkgs, ... }: {
-  home.packages = [
+  home.packages = if pkgs.stdenv.isDarwin then [
+    # Minimal Rust setup for macOS to avoid rust-docs OOM issues
+    pkgs.rust-bin.stable.latest.minimal
+    pkgs.bacon
+  ] else [
       (pkgs.rust-bin.stable.latest.default.override {
         extensions = [ "rust-src" ];
         targets = [
@@ -296,6 +300,6 @@
           # "xtensa-esp32s3-none-elf"
         ];
       })
-    pkgs.bacon
-  ];
+      pkgs.bacon
+    ];
 }
