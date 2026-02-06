@@ -75,6 +75,7 @@
       extraFlags = toString [
         "--cluster-cidr=10.42.0.0/16"
         "--cluster-init"
+        "--disable=servicelb"
         # "--disable servicelb"
         # "--disable traefik"
         # "--disable-kube-proxy"
