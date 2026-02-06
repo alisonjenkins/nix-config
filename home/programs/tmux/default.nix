@@ -6,7 +6,8 @@
 , ...
 }: {
   home.packages = [
-    pkgs.tmux-sessionizer
+    # Disabled on macOS due to rust-docs OOM when building tmux-sessionizer
+  ] ++ (if pkgs.stdenv.isLinux then [ pkgs.tmux-sessionizer ] else [ ]) ++ [
     (pkgs.writeShellScriptBin "tmux-smart-kill-session" ''
       #!/bin/bash
       
@@ -72,6 +73,8 @@
       };
     in
     {
+      ".config/tmux/tmux.conf".text = import ./tmux.conf.nix {inherit pkgs; inherit tmux-catpuccin;};
+    } // (if pkgs.stdenv.isLinux then {
       ".config/tms/config.toml".text = ''
         [[search_dirs]]
         path = "${home}/git"
@@ -91,6 +94,5 @@
         clone_root_path = "~/git/work"
         clone_method = "SSH"
       '';
-      ".config/tmux/tmux.conf".text = import ./tmux.conf.nix {inherit pkgs; inherit tmux-catpuccin;};
-    };
+    } else {});
 }
