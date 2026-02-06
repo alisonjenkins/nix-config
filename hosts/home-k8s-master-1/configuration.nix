@@ -37,6 +37,10 @@
       allowedTCPPorts = [
         6443
       ];
+
+      extraCommands = ''
+        iptables -I INPUT -d 192.168.1.240/28 -p tcp -m multiport --dports 80,443 -j ACCEPT
+      '';
     };
   };
 
