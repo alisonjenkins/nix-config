@@ -116,22 +116,20 @@
       zk
       zoxide
 
-      (rust-bin.stable.latest.default.override {
+      # Use rust-overlay for cross-compilation targets (without docs to avoid memory issues)
+      # rustc
+      # cargo
+      # rust-analyzer
+      # Note: Using rust-overlay with binary cache (rust-overlay.cachix.org)
+      (rust-bin.stable.latest.minimal.override {
         extensions = [ "rust-src" ];
         targets = [
-          "aarch64-apple-darwin"
           "aarch64-unknown-linux-gnu"
           "aarch64-unknown-linux-musl"
-          "arm-unknown-linux-gnueabihf"
-          "wasm32-unknown-emscripten"
           "wasm32-unknown-unknown"
-          "x86_64-pc-windows-gnu"
-          "x86_64-pc-windows-gnullvm"
           "x86_64-pc-windows-msvc"
           "x86_64-unknown-linux-gnu"
-          "x86_64-unknown-linux-gnux32"
           "x86_64-unknown-linux-musl"
-          "x86_64-unknown-linux-ohos"
           # "aarch64-apple-ios"
           # "aarch64-apple-ios-macabi"
           # "aarch64-apple-ios-sim"
@@ -403,13 +401,13 @@
           # "x86_64-win7-windows-gnu"
           # "x86_64-win7-windows-msvc"
           # "x86_64-wrs-vxworks"
-          # "x86_64h-apple-darwin"
-          # "xtensa-esp32-espidf"
-          # "xtensa-esp32-none-elf"
-          # "xtensa-esp32s2-espidf"
-          # "xtensa-esp32s2-none-elf"
-          # "xtensa-esp32s3-espidf"
-          # "xtensa-esp32s3-none-elf"
+      #       # "x86_64h-apple-darwin"
+      #       # "xtensa-esp32-espidf"
+      #       # "xtensa-esp32-none-elf"
+      #       # "xtensa-esp32s2-espidf"
+      #       # "xtensa-esp32s2-none-elf"
+      #       # "xtensa-esp32s3-espidf"
+      #       # "xtensa-esp32s3-none-elf"
         ];
       })
     ];
@@ -565,12 +563,26 @@
         "https://ajenkins-public.cachix.org"
         "https://nix-community.cachix.org"
         "https://rust-overlay.cachix.org"
+        "https://cache.flox.dev"  # Additional macOS/Darwin binaries
+        "https://nix-darwin.cachix.org"  # nix-darwin builds
+        "https://devenv.cachix.org"  # devenv (used in your config)
+        "https://deploy-rs.cachix.org"  # deploy-rs (used for remote deployments)
+        "https://crane.cachix.org"  # Rust builds (you have 7 cargo- packages)
+        "https://numtide.cachix.org"  # devshell, treefmt, and other dev tools
+        "https://hercules-ci.cachix.org"  # flake-parts and CI tools
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk="
+        "flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="
+        "nix-darwin.cachix.org-1:n7gkud0jAyzI+nqLlfCq6tpMGpz3Q8L4wQsz14b2cDo="
+        "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+        "deploy-rs.cachix.org-1:xfNobmiwF/vzvK1gpfediPwpdIP0rpDFikKp5dGG7NA="
+        "crane.cachix.org-1:8Sw/sLmpKfTpXEd/ZEAxGHH2g6p5g+xOYnlz8+3nNQY="
+        "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
+        "hercules-ci.cachix.org-1:ZZeDl9Va+xe9j+KqdzoBZMFJHVQ42Uu/c/1/KMC5Lw0="
       ];
     };
   };
