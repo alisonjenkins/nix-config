@@ -47,7 +47,7 @@
   fileSystems = let
     media_disks = {
       # "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML0220F31JAXAN-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML0220F31JAXAN-part1"; # DEAD - XFS shutdown, bay 23
-      "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1"; # Cable 1
+      # "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1"; # Cable 1 # Dead
       "/media/disks/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1";
       "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1".device = "/dev/disk/by-id/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1";
       "/media/disks/ata-ST3000DM008-2DM166_Z5057TK6-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057TK6-part1";
