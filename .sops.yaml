@@ -4,7 +4,7 @@ keys:
   - &server_ali-desktop age1enyaj2wdty5kpu8n2tfx2eswww7743ewxf7ykfmsdaqz0w5f4dqqx54eps
   - &server_download-server-1 age1dket3z3j325e0vt3ynwaxxzume9sv0qcphvumaqk2ew7htmd93us4tncsw
   - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
-  - &server_home-storage-server-1 age1gk0jmyhyu99nfjl88lkg6yuesprn6r920462we6n2a5uh0maw50smzqqga
+  - &server_home-storage-server-1 age1qs58x4rqva0s5mkwx0dul2akfnrwvarjkt2x75qtaz0g3mhzpezssj0wmx
 creation_rules:
   - path_regex: ^secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
