@@ -336,9 +336,21 @@
       CONFIG_FILE="$CONFIG_DIR/qBittorrent.conf"
       CONFIG_BACKUP="$CONFIG_DIR/qBittorrent.conf.backup"
       SECRET_FILE="${config.sops.secrets."qbittorrent/webui/password".path}"
+      PORT_FILE="/var/lib/qBittorrent/saved-port"
 
       # Ensure config directory exists
       mkdir -p "$CONFIG_DIR"
+
+      # Get the port to use - prefer the saved-port file (from port forwarding)
+      # over the config file (which qBittorrent may have saved with a random port)
+      SAVED_PORT=""
+      if [ -f "$PORT_FILE" ]; then
+        SAVED_PORT=$(${pkgs.coreutils}/bin/cat "$PORT_FILE")
+        echo "Using port $SAVED_PORT from saved-port file"
+      elif [ -f "$CONFIG_FILE" ] && [ ! -L "$CONFIG_FILE" ]; then
+        SAVED_PORT=$(grep "Session\\\\Port=" "$CONFIG_FILE" | cut -d= -f2 || true)
+        echo "Using port $SAVED_PORT from config file"
+      fi
 
       # If config exists as a regular file (from previous run), use it as the base
       # Otherwise, use the Nix-generated config
@@ -363,6 +375,17 @@
         echo "[Meta]" > "$CONFIG_FILE"
         echo "MigrationVersion=8" >> "$CONFIG_FILE"
         echo "" >> "$CONFIG_FILE"
+      fi
+
+      # Inject the saved port if we have one and it's not already in the config
+      if [ -n "$SAVED_PORT" ]; then
+        if grep -q "Session\\\\Port=" "$CONFIG_FILE"; then
+          # Update existing port line
+          sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$SAVED_PORT/" "$CONFIG_FILE"
+        elif grep -q "^\[BitTorrent\]" "$CONFIG_FILE"; then
+          # Add port after [BitTorrent] section
+          sed -i "/^\[BitTorrent\]/a Session\\\\Port=$SAVED_PORT" "$CONFIG_FILE"
+        fi
       fi
 
       # Inject/update the password in the [Preferences] section
@@ -481,18 +504,46 @@
           chmod 644 "$PORT_FILE"
 
           # Auto-detect which torrent client is running and update it
+          SAVED_PORT_FILE="/var/lib/qBittorrent/saved-port"
+
           if systemctl is-active --quiet qbittorrent; then
             echo "[$(date)] qBittorrent is active, updating port..."
-            if [ -f "$QBITTORRENT_CONFIG" ]; then
-              CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "0")
 
-              if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
-                echo "[$(date)] Updating qBittorrent port from $CURRENT_PORT to $FORWARDED_PORT"
-                sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
-                systemctl start qbittorrent # This restarts the service as it's already running
-              else
-                echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
+            # Read current port from config file (more reliable than API which requires auth)
+            if [ -f "$QBITTORRENT_CONFIG" ]; then
+              CURRENT_PORT=$(grep "Session\\\\Port=" "$QBITTORRENT_CONFIG" | cut -d= -f2 || echo "")
+            else
+              CURRENT_PORT=""
+            fi
+
+            if [ "$CURRENT_PORT" != "$FORWARDED_PORT" ]; then
+              echo "[$(date)] Updating qBittorrent port from '$CURRENT_PORT' to $FORWARDED_PORT"
+
+              # Save port to persistent file (survives restarts)
+              echo "$FORWARDED_PORT" > "$SAVED_PORT_FILE"
+
+              # Update config file
+              if [ -f "$QBITTORRENT_CONFIG" ]; then
+                if grep -q "Session\\\\Port=" "$QBITTORRENT_CONFIG"; then
+                  sed -i "s/^Session\\\\Port=.*/Session\\\\Port=$FORWARDED_PORT/" "$QBITTORRENT_CONFIG"
+                else
+                  sed -i "/^\[BitTorrent\]/a Session\\\\Port=$FORWARDED_PORT" "$QBITTORRENT_CONFIG"
+                fi
               fi
+
+              # Try to update via WebUI API first (avoids restart if it works)
+              API_RESULT=$(${pkgs.curl}/bin/curl -s -X POST "http://localhost:8080/api/v2/app/setPreferences" \
+                -d "json={\"listen_port\": $FORWARDED_PORT}" 2>&1 || true)
+
+              if [ -z "$API_RESULT" ] || [ "$API_RESULT" = "Ok." ]; then
+                echo "[$(date)] Successfully updated qBittorrent port to $FORWARDED_PORT via API (no restart needed)"
+              else
+                echo "[$(date)] API requires auth, restarting qBittorrent to apply port change"
+                systemctl restart qbittorrent
+                echo "[$(date)] Restarted qBittorrent with new port"
+              fi
+            else
+              echo "[$(date)] qBittorrent already using correct port $FORWARDED_PORT"
             fi
           elif systemctl is-active --quiet deluged; then
             echo "[$(date)] Deluge is active, updating port..."
@@ -1058,7 +1109,8 @@ EOF
       enable = true;
       openFirewall = true;
       package = pkgs.qbittorrent;  # Uses overlayed version with libtorrent 1.2.x
-      torrentingPort = 15234;
+      # NOTE: Don't set torrentingPort - it overrides config file via command line
+      # The port is dynamically set by protonvpn-portforward.service
 
       serverConfig = {
         Application = {
@@ -1093,7 +1145,8 @@ EOF
           "Session\\MaxActiveDownloads" = 10;  # Increased from 5
           "Session\\MaxActiveTorrents" = 20;   # Increased from 10
           "Session\\MaxActiveUploads" = 20;    # Increased from 15
-          "Session\\Port" = 15234;
+          # NOTE: Session\Port is NOT set here - it's dynamically configured by
+          # protonvpn-portforward.service based on the NAT-PMP assigned port
           "Session\\Preallocation" = false;
           "Session\\QueueingSystemEnabled" = true;
           "Session\\SSL\\Port" = 51603;
