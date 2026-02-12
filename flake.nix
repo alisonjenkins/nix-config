@@ -900,6 +900,11 @@
           description = "A Rust flake template with Rust Overlay and devshell setup.";
           path = ./templates/rust;
         };
+
+        rust-parts = {
+          description = "A Rust flake parts template with Rust Overlay and devshell setup.";
+          path = ./templates/rust-parts;
+        };
       };
 
       devShells = {
