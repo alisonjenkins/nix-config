@@ -804,6 +804,22 @@ in
           { name = "scalac"; type = "BG_CPUIO"; }
           { name = "zig"; type = "BG_CPUIO"; }
 
+          # Nix daemon - keep builds deprioritized
+          { name = "nix-daemon"; type = "BG_CPUIO"; }
+          { name = "nix-build"; type = "BG_CPUIO"; }
+          { name = "nix"; type = "BG_CPUIO"; }
+
+          # Games and Wine/Proton - high priority
+          { name = "wine-preloader"; nice = -5; ioclass = "realtime"; }
+          { name = "wine64-preloader"; nice = -5; ioclass = "realtime"; }
+          { name = "wineserver"; nice = -10; ioclass = "realtime"; }
+          { name = "proton"; nice = -5; ioclass = "realtime"; }
+          { name = "pressure-vessel"; nice = -5; }
+          { name = "reaper"; nice = -5; }
+          { name = "gamescope"; nice = -15; ioclass = "realtime"; }
+          { name = "gamescope-wl"; nice = -15; ioclass = "realtime"; }
+          { name = "steam"; nice = -5; }
+
           # Compositor - give realtime priority for smooth rendering under load
           { name = "niri"; nice = -20; sched = "fifo"; rtprio = 50; }
         ];
