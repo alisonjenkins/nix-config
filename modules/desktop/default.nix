@@ -732,6 +732,13 @@ in
         ];
       };
 
+      # Direct RT privileges for audio group - bypasses RTKit for more reliable RT scheduling
+      pam.loginLimits = [
+        { domain = "@audio"; type = "-"; item = "rtprio"; value = "95"; }
+        { domain = "@audio"; type = "-"; item = "nice"; value = "-20"; }
+        { domain = "@audio"; type = "-"; item = "memlock"; value = "unlimited"; }
+      ];
+
       soteria = {
         enable = true;
       };
