@@ -144,9 +144,7 @@
             tst-indent-line
             tst-tab-search
             ublock-origin
-          ]) ++ [
-            pkgs.firefox-addons.media-bridge
-          ]
+          ])
           else [ ]
         );
       };
