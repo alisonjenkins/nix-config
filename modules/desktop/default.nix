@@ -1413,5 +1413,13 @@ in
         };
       };
     };
+
+    # Give nix-daemon lower CPU weight so games always win CPU contention
+    systemd.services.nix-daemon.serviceConfig = {
+      CPUWeight = 50;        # Default is 100, lower means less priority
+      IOWeight = 50;         # Lower IO priority as well
+      CPUSchedulingPolicy = lib.mkForce "batch";  # Batch scheduling for throughput, not latency
+      Nice = 10;             # Positive nice = lower priority
+    };
   };
 }
