@@ -650,8 +650,9 @@ in
             };
 
             custom = {
-              start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'";
-              end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'";
+              # Throttle nix-daemon to 80% CPU when gaming, restore when done
+              start = "${pkgs.libnotify}/bin/notify-send 'GameMode started'; ${pkgs.systemd}/bin/systemctl set-property nix-daemon.service CPUQuota=80%";
+              end = "${pkgs.libnotify}/bin/notify-send 'GameMode ended'; ${pkgs.systemd}/bin/systemctl set-property nix-daemon.service CPUQuota=";
             };
           }
 
