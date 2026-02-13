@@ -865,15 +865,16 @@ in
               };
             };
             # Ensure realtime scheduling is enabled with proper priority
+            # Using direct rlimits (via PAM @audio group) instead of RTKit for more reliable RT scheduling
             "10-rt-prio" = {
               "context.modules" = [
                 {
                   name = "libpipewire-module-rt";
                   args = {
-                    "nice.level" = -15;
+                    "nice.level" = -20;
                     "rt.prio" = 88;
                     "rlimits.enabled" = true;
-                    "rtkit.enabled" = true;
+                    "rtkit.enabled" = false;
                     "rtportal.enabled" = false;
                   };
                   flags = [ "ifexists" "nofail" ];
