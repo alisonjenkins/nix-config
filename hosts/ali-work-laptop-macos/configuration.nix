@@ -20,7 +20,6 @@
       cacert
       cachix
       cargo-chef
-      unstable.claude-code-bin  # Binary version to avoid memory-intensive nodejs build
       cargo-component
       cargo-lambda
       cargo-machete

@@ -32,6 +32,7 @@
     ./bat
     ./broot
     ./carapace
+    ./claude-code
     ./chromium
     ./comodoro
     ./direnv

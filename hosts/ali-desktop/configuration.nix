@@ -204,7 +204,6 @@
       amdgpu_top
       antigravity
       cifs-utils
-      claude-code
       cpu-x
       drawio
       freeplane
