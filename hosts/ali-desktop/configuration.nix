@@ -685,13 +685,13 @@
   xdg =
     let
       browser = [
-        "firefox.desktop"
+        "zen-browser.desktop"
       ];
       editor = [ "nvim.desktop" ];
       excel = [ "libreoffice-calc.desktop" ];
       fileManager = [ "thunar.desktop" ];
       image = [ "feh.desktop" ];
-      mail = [ "firefox.desktop" ];
+      mail = [ "zen-browser.desktop" ];
       powerpoint = [ "libreoffice-impress.desktop" ];
       terminal = [
         "alacritty.desktop"
