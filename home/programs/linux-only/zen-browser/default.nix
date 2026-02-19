@@ -10,6 +10,7 @@
 
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
+    suppressXdgMigrationWarning = true;
 
     profiles.${username} = {
       settings = {
