@@ -331,6 +331,7 @@
       # { command = ["swaybg" "-i" "~/Pictures/Wallpapers/1325118.png"]; }
       # { command = ["swww-daemon"]; }
       # { command = ["waybar"]; }
+      { command = [ "zen-beta" ]; }
     ];
 
     switch-events = {
