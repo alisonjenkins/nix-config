@@ -8,16 +8,18 @@
 }:
 {
   imports = [
-    (import ../../modules/locale { })
+    ../../modules/locale
     (modulesPath + "/installer/scan/not-detected.nix")
     (modulesPath + "/profiles/qemu-guest.nix")
-    (import ../../modules/base {
-      enableImpermanence = false;
-      enablePlymouth = false;
-      inherit inputs lib pkgs outputs;
-    })
+    ../../modules/base
     ./disk-config.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enablePlymouth = false;
+  };
+  modules.locale.enable = true;
 
   boot.initrd.kernelModules = [ "amdgpu" ];
 

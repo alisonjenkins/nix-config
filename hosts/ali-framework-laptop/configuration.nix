@@ -6,26 +6,32 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { })
-    (import ../../modules/libvirtd { inherit pkgs; })
-    (import ../../modules/rocm { inherit pkgs; })
-    (import ../../modules/base {
-      enableImpermanence = true;
-      impermanencePersistencePath = builtins.toPath "/persistence";
-      inherit inputs lib outputs pkgs;
-      useSecureBoot = true;
-      useSystemdBoot = false;
-    })
+    ../../modules/locale
+    ../../modules/libvirtd
+    ../../modules/rocm
+    ../../modules/base
     ../../modules/desktop
-    (import ../../modules/vr { enableOpenSourceVR = false; inherit lib; })
-    (import ../../modules/ollama)
+    ../../modules/vr
+    ../../modules/ollama
     ../../app-profiles/desktop
     ../../app-profiles/desktop/kwallet
-    (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
+    ../../app-profiles/hardware/fingerprint-reader
     ../../app-profiles/hardware/touchpad
     ./disk-config.nix
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    useSecureBoot = true;
+    useSystemdBoot = false;
+  };
+  modules.locale.enable = true;
+  modules.libvirtd.enable = true;
+  modules.rocm.enable = true;
+  modules.vr.enable = true;
+  modules.ollama.enable = true;
 
   modules.desktop = {
     enable = true;

@@ -6,16 +6,19 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { })
-    (import ../../modules/base {
-      enableImpermanence = true;
-      enablePlymouth = false;
-      inherit inputs lib outputs pkgs;
-    })
+    ../../modules/locale
+    ../../modules/base
     ../../modules/amnezia-vpn-gateway
     ./disko-config.nix
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    enablePlymouth = false;
+  };
+  modules.locale.enable = true;
 
   console.keyMap = "us";
   programs.zsh.enable = true;

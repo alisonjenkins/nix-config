@@ -11,21 +11,25 @@
     ./disko-config.nix
     ./hardware-configuration.nix
 
-    (import ../../modules/ollama)
-    (import ../../app-profiles/hardware/fingerprint-reader { username = "ali"; })
-    (import ../../modules/locale { })
-    (import ../../modules/libvirtd { inherit pkgs; })
+    ../../modules/ollama
+    ../../app-profiles/hardware/fingerprint-reader
+    ../../modules/locale
+    ../../modules/libvirtd
 
     ../../modules/desktop
-    (import ../../modules/base {
-      enableImpermanence = true;
-      impermanencePersistencePath = builtins.toPath "/persistence";
-      pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
-      useSecureBoot = true;
-      useSystemdBoot = false;
-      inherit inputs lib outputs pkgs;
-    })
+    ../../modules/base
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    useSecureBoot = true;
+    useSystemdBoot = false;
+    pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
+  };
+  modules.locale.enable = true;
+  modules.ollama.enable = true;
+  modules.libvirtd.enable = true;
 
   modules.desktop = {
     enable = true;

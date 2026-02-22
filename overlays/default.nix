@@ -1,5 +1,4 @@
 { inputs
-, system
 , ...
 }: {
   # This one brings our custom packages from the 'pkgs' directory
@@ -83,7 +82,7 @@
   };
 
   tmux-sessionizer = final: _prev: {
-    tmux-sessionizer = inputs.tmux-sessionizer.packages.${system}.default;
+    tmux-sessionizer = inputs.tmux-sessionizer.packages.${final.stdenv.hostPlatform.system}.default;
   };
 
   python3PackagesOverlay = final: prev: {

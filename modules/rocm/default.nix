@@ -1,24 +1,34 @@
-{ pkgs }: {
-  environment = {
-    systemPackages = with pkgs; [
-      clinfo
-      rocmPackages.rocminfo
-    ];
+{ config, lib, pkgs, ... }:
+let
+  cfg = config.modules.rocm;
+in
+{
+  options.modules.rocm = {
+    enable = lib.mkEnableOption "ROCm GPU computing support";
   };
 
-  hardware = {
-    amdgpu = {
-      initrd = {
-        enable = true;
-      };
-
-      opencl = {
-        enable = true;
-      };
+  config = lib.mkIf cfg.enable {
+    environment = {
+      systemPackages = with pkgs; [
+        clinfo
+        rocmPackages.rocminfo
+      ];
     };
 
-    graphics = {
-      extraPackages = with pkgs; [ rocmPackages.clr.icd ];
+    hardware = {
+      amdgpu = {
+        initrd = {
+          enable = true;
+        };
+
+        opencl = {
+          enable = true;
+        };
+      };
+
+      graphics = {
+        extraPackages = with pkgs; [ rocmPackages.clr.icd ];
+      };
     };
   };
 }

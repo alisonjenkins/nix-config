@@ -6,21 +6,25 @@
 }: {
   imports = [
     # ../../app-profiles/server-base/luks-tor-unlock
-    (import ../../modules/locale { })
-    (import ../../app-profiles/kvm-server {inherit pkgs;})
-    (import ../../modules/base {
-      enableImpermanence = false;
-      enablePlymouth = false;
-      useGrub = true;
-      useSystemdBoot = false;
-      inherit inputs lib outputs pkgs;
-    })
-    (import ../../modules/servers {
-      enablePrometheusSmartctlExporter = true;
-      enablePrometheusLibvirtExporter = true;
-    })
+    ../../modules/locale
+    ../../app-profiles/kvm-server
+    ../../modules/base
+    ../../modules/servers
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enablePlymouth = false;
+    useGrub = true;
+    useSystemdBoot = false;
+  };
+  modules.locale.enable = true;
+  modules.servers = {
+    enable = true;
+    prometheus.smartctlExporter.enable = true;
+    prometheus.libvirtExporter.enable = true;
+  };
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;

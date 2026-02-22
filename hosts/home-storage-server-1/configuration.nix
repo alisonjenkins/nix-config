@@ -14,19 +14,24 @@ let
 in
 {
   imports = [
-    (import ../../modules/locale { })
-    (import ../../modules/base {
-      enableImpermanence = true;
-      enablePlymouth = false;
-      inherit inputs lib outputs pkgs;
-    })
-    (import ../../modules/servers {
-      enablePrometheusSmartctlExporter = true;
-    })
+    ../../modules/locale
+    ../../modules/base
+    ../../modules/servers
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    enablePlymouth = false;
+  };
+  modules.locale.enable = true;
+  modules.servers = {
+    enable = true;
+    prometheus.smartctlExporter.enable = true;
+  };
 
   console.keyMap = "us";
   programs.zsh.enable = true;

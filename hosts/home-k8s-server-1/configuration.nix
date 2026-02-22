@@ -7,16 +7,19 @@
 }: {
   imports = [
     # ../../app-profiles/server-base/luks-tor-unlock
-    (import ../../modules/locale { })
+    ../../modules/locale
     ../../app-profiles/k8s-master
     ./hardware-configuration.nix
-    (import ../../modules/base {
-      enableImpermanence = false;
-      enablePlymouth = false;
-      inherit inputs lib outputs pkgs;
-    })
-    (import ../../modules/servers { })
+    ../../modules/base
+    ../../modules/servers
   ];
+
+  modules.base = {
+    enable = true;
+    enablePlymouth = false;
+  };
+  modules.locale.enable = true;
+  modules.servers.enable = true;
 
   console.keyMap = "us";
   networking.hostName = "home-k8s-server-1";

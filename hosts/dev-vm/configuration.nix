@@ -4,10 +4,12 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { })
+    ../../modules/locale
     ./disko-config.nix
     ./hardware-configuration.nix
   ];
+
+  modules.locale.enable = true;
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;

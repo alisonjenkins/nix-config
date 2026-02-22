@@ -8,35 +8,40 @@
 }: {
   imports = [
     # inputs.nix-gaming.nixosModules.pipewireLowLatency
-    (import ../../modules/base {
-      enableImpermanence = true;
-      impermanencePersistencePath = builtins.toPath "/persistence";
-      beesdFilesystems = {
-        persistence = {
-          spec = "LABEL=persistence";
-          hashTableSizeMB = 2048;
-          verbosity = "crit";
-          extraOptions = [ "--loadavg-target" "15.0" ];
-        };
-        steam-storage-1 = {
-          spec = "LABEL=steam-games-1";
-          hashTableSizeMB = 2048;
-          verbosity = "crit";
-          extraOptions = [ "--loadavg-target" "15.0" ];
-        };
-      };
-      inherit inputs lib outputs pkgs;
-      useSecureBoot = true;
-      pcr15Value = "7e6a73c51abc879e3b85cdfdd116192e4b4a1fd4ea810b180bfab548054858a4";
-    })
+    ../../modules/base
     ../../modules/desktop
-    (import ../../modules/locale { })
-    (import ../../modules/vr { enableOpenSourceVR = false; inherit lib; })
-    (import ../../modules/ollama)
-    (import ../../modules/rocm { inherit pkgs; })
+    ../../modules/locale
+    ../../modules/vr
+    ../../modules/ollama
+    ../../modules/rocm
     ../../app-profiles/desktop
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    useSecureBoot = true;
+    pcr15Value = "7e6a73c51abc879e3b85cdfdd116192e4b4a1fd4ea810b180bfab548054858a4";
+    beesdFilesystems = {
+      persistence = {
+        spec = "LABEL=persistence";
+        hashTableSizeMB = 2048;
+        verbosity = "crit";
+        extraOptions = [ "--loadavg-target" "15.0" ];
+      };
+      steam-storage-1 = {
+        spec = "LABEL=steam-games-1";
+        hashTableSizeMB = 2048;
+        verbosity = "crit";
+        extraOptions = [ "--loadavg-target" "15.0" ];
+      };
+    };
+  };
+  modules.locale.enable = true;
+  modules.vr.enable = true;
+  modules.ollama.enable = true;
+  modules.rocm.enable = true;
 
   modules.desktop = {
     enable = true;

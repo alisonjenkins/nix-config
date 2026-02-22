@@ -6,38 +6,46 @@
 , ...
 }: {
   imports = [
-    (import ../../modules/locale { })
-    (import ../../modules/base {
-      enableImpermanence = true;
-      enableIPv6 = true;
-      enablePlymouth = false;
-      inherit inputs lib outputs pkgs;
-    })
-    (import ../../modules/servers {
-      # Nginx metrics
-      enablePrometheusNginxExporter = true;
-      # WireGuard VPN metrics
-      enablePrometheusWireguardExporter = true;
-      # Exportarr - media management metrics
-      enablePrometheusExportarrRadarr = true;
-      exportarrRadarrUrl = "http://localhost:7878";
-      exportarrRadarrApiKeyFile = config.sops.secrets."exportarr/radarr-api-key".path;
-      enablePrometheusExportarrSonarr = true;
-      exportarrSonarrUrl = "http://localhost:8989";
-      exportarrSonarrApiKeyFile = config.sops.secrets."exportarr/sonarr-api-key".path;
-      enablePrometheusExportarrBazarr = true;
-      exportarrBazarrUrl = "http://localhost:6767";
-      exportarrBazarrApiKeyFile = config.sops.secrets."exportarr/bazarr-api-key".path;
-      enablePrometheusExportarrProwlarr = true;
-      exportarrProwlarrUrl = "http://localhost:9696";
-      exportarrProwlarrApiKeyFile = config.sops.secrets."exportarr/prowlarr-api-key".path;
-    })
+    ../../modules/locale
+    ../../modules/base
+    ../../modules/servers
     ../../modules/proxy-vpn-gateway
     # ../../app-profiles/server-base/luks-tor-unlock
     ../../app-profiles/storage-server
     ./disko-config.nix
     ./hardware-configuration.nix
   ];
+
+  modules.base = {
+    enable = true;
+    enableImpermanence = true;
+    enableIPv6 = true;
+    enablePlymouth = false;
+  };
+  modules.locale.enable = true;
+  modules.servers = {
+    enable = true;
+    prometheus = {
+      nginxExporter.enable = true;
+      wireguardExporter.enable = true;
+      exportarrRadarr = {
+        enable = true;
+        apiKeyFile = config.sops.secrets."exportarr/radarr-api-key".path;
+      };
+      exportarrSonarr = {
+        enable = true;
+        apiKeyFile = config.sops.secrets."exportarr/sonarr-api-key".path;
+      };
+      exportarrBazarr = {
+        enable = true;
+        apiKeyFile = config.sops.secrets."exportarr/bazarr-api-key".path;
+      };
+      exportarrProwlarr = {
+        enable = true;
+        apiKeyFile = config.sops.secrets."exportarr/prowlarr-api-key".path;
+      };
+    };
+  };
 
   console.keyMap = "us";
   programs.zsh.enable = true;

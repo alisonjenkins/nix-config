@@ -67,40 +67,51 @@ nix flake lock --update-input <input-name>
 
 ## Architecture
 
+This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea** for modular, auto-discovered configuration.
+
 ### Directory Structure
 
-- **`flake.nix`**: Main entry point defining all system configurations (NixOS, Darwin, home-manager), inputs, and outputs
-- **`hosts/`**: Per-machine configurations including hardware-configuration.nix and machine-specific settings
-- **`modules/`**: Reusable NixOS modules organized by category:
-  - `base/`: Core system configuration (networking, boot, nix settings, impermanence support)
+- **`flake.nix`**: Minimal entry point (~50 lines of outputs logic). Defines inputs, uses haumea to auto-discover all flake-parts modules from `flake-modules/`.
+- **`flake-modules/`**: All flake output definitions, auto-discovered by haumea:
+  - `overlays.nix`: Exports `flake.overlays` from `overlays/`
+  - `deploy.nix`: deploy-rs node definitions and checks
+  - `dev-shells.nix`: Development shell (`perSystem.devShells.default`)
+  - `templates.nix`: Flake templates
+  - `nixos-modules.nix`: Exports all NixOS modules and app-profiles as `flake.nixosModules.*`
+  - `home-modules.nix`: Exports home-manager modules as `flake.homeModules.*`
+  - `hosts/`: One file per host configuration (NixOS, Darwin, standalone home-manager)
+- **`hosts/`**: Per-machine configurations (hardware-configuration.nix, host-specific settings, module option values)
+- **`modules/`**: Reusable NixOS modules using the **options system** (`options.*` / `config = mkIf cfg.enable`):
+  - `base/`: Core system configuration (networking, boot, nix settings, impermanence, secure boot)
   - `desktop/`: Desktop environment configurations
   - `development/`: Development tools and environments (e.g., web development)
   - `locale/`: Localization settings
-  - `libvirtd/`, `vr/`, `rocm/`, `ollama/`, etc.: Specialized functionality modules
-- **`app-profiles/`**: Composable application bundles that can be imported into hosts:
+  - `libvirtd/`, `vr/`, `rocm/`, `ollama/`, `servers/`: Specialized functionality modules
+- **`app-profiles/`**: Composable application bundles imported into hosts:
   - `desktop/`: Desktop-related profiles (AWS tools, display managers, window managers, local K8s, VR hardware)
   - `k8s-master/`, `kvm-server/`, `storage-server/`: Server role profiles
 - **`home/`**: Home-manager configurations:
-  - `home-linux.nix`: Linux user environment (imports home-common.nix + linux-specific programs)
-  - `home-macos.nix`: macOS user environment (imports home-common.nix + macos-specific programs)
-  - `home-common.nix`: Shared home-manager configuration
+  - `home-linux.nix`, `home-macos.nix`, `home-common.nix`: Platform-specific and shared configs
   - `programs/`: Per-program home-manager configurations (zsh, neovim, tmux, git, etc.)
   - `wms/`: Window manager configurations (hyprland, plasma, etc.)
-- **`pkgs/`**: Custom packages and overrides (wallpapers, scripts like git-clean, lock-session, suspend-scripts)
-- **`overlays/`**: Nixpkgs overlays providing stable/unstable/master package sets and package modifications
+- **`pkgs/`**: Custom packages and overrides
+- **`overlays/`**: System-independent nixpkgs overlays (accepts only `{ inputs }`, uses `final.stdenv.hostPlatform.system` internally)
 - **`secrets/`**: SOPS-encrypted secrets (managed by sops-nix, configured in .sops.yaml)
 - **`templates/`**: Flake templates (e.g., Rust development environment)
 
 ### Configuration Pattern
 
-Hosts are defined in `flake.nix` under `nixosConfigurations`, `darwinConfigurations`, or `homeConfigurations`. Each host configuration:
+Each host is defined in its own flake-parts module at `flake-modules/hosts/<hostname>.nix`. These modules:
 
-1. Imports base modules from `modules/base` with configuration options (impermanence, secure boot, etc.)
-2. Imports relevant app-profiles from `app-profiles/`
-3. Imports host-specific configuration from `hosts/<hostname>/configuration.nix`
-4. Configures home-manager as a NixOS/Darwin module, pointing to home configurations in `home/`
+1. Import NixOS/app-profile modules via path imports from `../../modules/` and `../../app-profiles/`
+2. Import host-specific configuration from `../../hosts/<hostname>/configuration.nix`
+3. Configure module options in the host's `configuration.nix` (e.g., `modules.base.enable = true;`)
+4. Configure home-manager as a NixOS/Darwin module
 
-The `modules/base` module accepts important parameters:
+New flake-modules files are **auto-discovered** by haumea - just create a `.nix` file in `flake-modules/` and it will be imported automatically.
+
+The `modules/base` module uses NixOS options under `modules.base`:
+- `enable`: Enable the base module
 - `enableImpermanence`: Enable tmpfs root with persistence
 - `impermanencePersistencePath`: Where to persist data (default: `/persistence`)
 - `useSecureBoot`: Enable Lanzaboote secure boot with TPM
@@ -108,21 +119,22 @@ The `modules/base` module accepts important parameters:
 - `useSystemdBoot`/`useGrub`: Boot loader selection
 - `enableOpenSSH`, `enablePlymouth`, `enableIPv6`: Feature toggles
 - `timezone`, `consoleKeyMap`: Locale settings
+- `beesdFilesystems`: Btrfs dedup filesystem configuration
 
 ### Key Systems
 
-**Overlays**: The flake provides multiple overlays for accessing different nixpkgs channels:
+**Overlays**: The flake provides system-independent overlays for accessing different nixpkgs channels:
 - `pkgs.stable`: nixpkgs 25.11 stable
 - `pkgs.unstable`: nixos-unstable
 - `pkgs.master`: nixpkgs master branch
 
-These are configured in `overlays/default.nix` and applied in `flake.nix`.
+Configured in `overlays/default.nix` and exported via `flake-modules/overlays.nix`. Applied per-host in their flake-parts module files.
 
 **Impermanence**: Several hosts use tmpfs root filesystems with selective persistence via the impermanence module. Persistence paths are configured per-host.
 
 **Secrets Management**: Uses sops-nix with age encryption. Age keys are defined in `.sops.yaml` with path-based rules for different hosts/secrets.
 
-**Remote Deployment**: The flake exports a `deploy` attribute using deploy-rs for remote system deployments. Target hosts and their configurations are defined in `flake.nix` under the `deploy.nodes` attribute.
+**Remote Deployment**: The flake exports a `deploy` attribute using deploy-rs for remote system deployments, defined in `flake-modules/deploy.nix`.
 
 ### Active Hosts
 
@@ -159,11 +171,16 @@ When modifying configurations:
 5. For remote hosts, use `just deploy .#<hostname>` after testing locally
 
 When adding new hosts:
-1. Create directory in `hosts/<hostname>/`
-2. Add `configuration.nix` and `hardware-configuration.nix`
-3. Import appropriate modules and app-profiles
-4. Add to `nixosConfigurations` in `flake.nix`
-5. Configure home-manager for the user
+1. Create directory in `hosts/<hostname>/` with `configuration.nix` and `hardware-configuration.nix`
+2. Create a flake-parts module at `flake-modules/hosts/<hostname>.nix` (auto-discovered by haumea)
+3. In the flake-parts module, import NixOS/app-profile modules and the host configuration
+4. In the host's `configuration.nix`, set module options (e.g., `modules.base.enable = true;`)
+5. Configure home-manager in the flake-parts module if needed
+
+When adding new flake-modules:
+1. Create a `.nix` file in `flake-modules/` or `flake-modules/hosts/`
+2. The file will be auto-discovered by haumea - no need to update `flake.nix`
+3. Use the flake-parts module signature: `{ inputs, self, ... }: { flake = { ... }; }`
 
 When adding secrets:
 1. Add age keys to `.sops.yaml` if needed
