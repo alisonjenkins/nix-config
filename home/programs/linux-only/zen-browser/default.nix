@@ -11,8 +11,12 @@
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
     suppressXdgMigrationWarning = true;
+    nativeMessagingHosts = lib.mkIf pkgs.stdenv.isLinux [
+      pkgs.unstable._1password-gui
+    ];
 
     profiles.${username} = {
+      isDefault = true;
       settings = {
         # === Hardware Video Acceleration (VA-API for AMD RX 7600M XT) ===
         "media.ffmpeg.vaapi.enabled" = true;
@@ -127,23 +131,23 @@
         packages = (
           if pkgs.stdenv.isLinux
           then (with pkgs.nur.repos.rycee.firefox-addons; [
-            auto-tab-discard
+            # auto-tab-discard
+            # firenvim
+            # plasma-integration
+            # switchyomega
+            # tree-style-tab
+            # tst-fade-old-tabs
+            # tst-indent-line
+            # tst-tab-search
             darkreader
-            firenvim
             libredirect
             link-cleaner
             multi-account-containers
             offline-qr-code-generator
             onepassword-password-manager
-            plasma-integration
             privacy-badger
             surfingkeys
-            switchyomega
             tab-session-manager
-            tree-style-tab
-            tst-fade-old-tabs
-            tst-indent-line
-            tst-tab-search
             ublock-origin
           ])
           else [ ]
