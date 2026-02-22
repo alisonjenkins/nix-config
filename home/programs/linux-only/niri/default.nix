@@ -477,6 +477,9 @@
           {
             app-id = "firefox";
           }
+          {
+            app-id = "zen";
+          }
         ];
       }
 
