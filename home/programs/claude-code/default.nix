@@ -20,5 +20,11 @@ in
     };
 
     skillsDir = "${anthropicSkills}/skills";
+
+    mcpServers = {
+      playwright = {
+        command = "${pkgs.playwright-mcp}/bin/mcp-server-playwright";
+      };
+    };
   };
 }
