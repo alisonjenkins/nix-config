@@ -307,17 +307,6 @@
   nix = {
     package = pkgs.nix;
     nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
   };
 
   powerManagement = {

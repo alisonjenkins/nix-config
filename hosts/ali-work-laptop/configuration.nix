@@ -137,16 +137,6 @@
     networkmanager.enable = true;
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-  };
-
   nixpkgs = {
     overlays = [
       inputs.niri-flake.overlays.niri

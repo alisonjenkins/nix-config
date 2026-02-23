@@ -46,22 +46,6 @@
     };
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-    extraOptions = "experimental-features = nix-command flakes";
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
   security = {
     sudo = {
       wheelNeedsPassword = lib.mkForce false;

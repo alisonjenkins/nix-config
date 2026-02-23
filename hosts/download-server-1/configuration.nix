@@ -845,21 +845,6 @@ EOF
     UMask = "0002";
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
   # Ensure mount points exist
   systemd.tmpfiles.rules = [
     "d /media/downloads 0755 root root -"

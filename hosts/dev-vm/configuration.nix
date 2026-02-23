@@ -102,16 +102,7 @@
     ];
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 7d";
-  };
+  nix.gc.options = "--delete-older-than 7d";
 
   system.stateVersion = "24.05";
-
-  nix = {
-    package = pkgs.nixVersions.stable;
-    extraOptions = "experimental-features = nix-command flakes";
-  };
 }

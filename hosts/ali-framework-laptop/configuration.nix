@@ -236,20 +236,7 @@
     ];
   };
 
-  nix = {
-    package = pkgs.nix;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
+  nix.package = pkgs.nix;
 
   powerManagement = {
     cpuFreqGovernor = "performance";

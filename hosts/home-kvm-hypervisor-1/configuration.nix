@@ -87,21 +87,6 @@
     openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
   security = {
     sudo = {
       wheelNeedsPassword = lib.mkForce false;

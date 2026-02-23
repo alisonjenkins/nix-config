@@ -63,21 +63,6 @@
     };
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
   services = {
     logrotate.checkConfig = false;
 

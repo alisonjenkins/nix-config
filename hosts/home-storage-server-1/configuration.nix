@@ -80,21 +80,6 @@ in
     };
   };
 
-  nix = {
-    package = pkgs.nixVersions.stable;
-
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
-
-    settings = {
-      auto-optimise-store = false;
-      trusted-users = [ "root" "@wheel" ];
-    };
-  };
-
   # Set proper ownership and permissions on media directories
   systemd.tmpfiles.rules = [
     # Downloads directory: owner=qbittorrent, group=media, setgid bit
