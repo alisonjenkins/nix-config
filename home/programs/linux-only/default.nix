@@ -9,6 +9,7 @@
     ./gtk
     ./librewolf
     ./lsfg-vk
+    ./lucien
     ./mangohud
     ./niri
     ./nixcord
