@@ -22,14 +22,14 @@ rustPlatform.buildRustPackage rec {
   version = "0-unstable-2025-05-22";
 
   src = fetchFromGitHub {
-    owner = "Wachamuli";
+    owner = "alisonjenkins";
     repo = "lucien";
-    rev = "072e24556188c2a434e513d7437354ceffeb1cc9";
-    hash = "sha256-Zvr653Ymu8Fkr2pXSDCfx084gfI+mEqBV8UhwZhs5nU=";
+    rev = "7213bb5a6999c533c9f06f865535c635bce0fc0d";
+    hash = "sha256-+FEIACxl/qYQT7A1c0yEZ5Bvuyzgsfc6Spcair52zsw=";
   };
 
   useFetchCargoVendor = true;
-  cargoHash = "sha256-XEEokIcbNE1TCloJpzKzO4pqS7c0XTra1676RFH0gao=";
+  cargoHash = "sha256-issqRwT3hNGIQBzs3aBkGhMhrfGuNKW+IgRkHKo5WSw=";
 
   nativeBuildInputs = [
     pkg-config
