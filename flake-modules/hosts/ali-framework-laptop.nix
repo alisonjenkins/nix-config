@@ -53,6 +53,7 @@ in {
                 ledMatrix.both = {
                   brightness = 5;
                   clock = true;
+                  waitForDevice = true;
                 };
               };
             }
