@@ -24,8 +24,8 @@ rustPlatform.buildRustPackage rec {
   src = fetchFromGitHub {
     owner = "alisonjenkins";
     repo = "lucien";
-    rev = "5e73de090a8e6e1ba1156a488bf211fec48849e4";
-    hash = "sha256-RWjrEY9LpLm4Kd/GJ710B/CwYryzUDzV+d50FKhppnE=";
+    rev = "576194c90ec21c09afecaf2724e4c47465d42e0b";
+    hash = "sha256-AZmlwQ+NVXhiQ7so4cdJxX6o+9HDxQi7Oj+XqZOY9tY=";
   };
 
   useFetchCargoVendor = true;
