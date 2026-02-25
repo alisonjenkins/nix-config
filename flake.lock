@@ -726,11 +726,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772005333,
-        "narHash": "sha256-jjKAERfCtScLE/3QDf7NSujY/0GlvIdyqBGcAiBLYZ8=",
+        "lastModified": 1772007296,
+        "narHash": "sha256-Z3fL4wvOsc2Pv+eSJY9IEBe1eaBtxbzbvhclr2gpuAg=",
         "owner": "alisonjenkins",
         "repo": "framework-inputmodule-rs-flake",
-        "rev": "3be160cb5ffb45c53ec76d1d20e47d188b1acfcd",
+        "rev": "99f249104f5fb455abdaffd846cd51e7e2955bec",
         "type": "github"
       },
       "original": {
