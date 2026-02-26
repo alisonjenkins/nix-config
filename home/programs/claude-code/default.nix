@@ -21,6 +21,8 @@ in
 
     skillsDir = "${anthropicSkills}/skills";
 
+    agentsDir = ./agents;
+
     mcpServers = {
       playwright = {
         command = "${pkgs.playwright-mcp}/bin/mcp-server-playwright";
