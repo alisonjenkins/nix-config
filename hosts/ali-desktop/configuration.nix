@@ -39,9 +39,13 @@
     };
   };
   modules.locale.enable = true;
-  modules.vr.enable = true;
   modules.ollama.enable = true;
   modules.rocm.enable = true;
+
+  modules.vr = {
+    enable = true;
+    enableOpenSourceVR = true;
+  };
 
   modules.desktop = {
     enable = true;
