@@ -875,27 +875,15 @@ in
 
         extraConfig = {
           pipewire = {
+            "10-mlock" = {
+              "context.properties" = {
+                "mem.mlock-all" = true;
+              };
+            };
             "10-clock-rate" = {
               "context.properties" = {
                 "default.clock.allowed-rates" = cfg.pipewire.allowedSampleRates;
               };
-            };
-            # Ensure realtime scheduling is enabled with proper priority
-            # Using direct rlimits (via PAM @audio group) instead of RTKit for more reliable RT scheduling
-            "10-rt-prio" = {
-              "context.modules" = [
-                {
-                  name = "libpipewire-module-rt";
-                  args = {
-                    "nice.level" = -20;
-                    "rt.prio" = 88;
-                    "rlimits.enabled" = true;
-                    "rtkit.enabled" = false;
-                    "rtportal.enabled" = false;
-                  };
-                  flags = [ "ifexists" "nofail" ];
-                }
-              ];
             };
             "99-quantum" = let
               quantum = cfg.pipewire.quantum;
@@ -1420,5 +1408,6 @@ in
       CPUSchedulingPolicy = lib.mkForce "batch";  # Batch scheduling for throughput, not latency
       Nice = 10;             # Positive nice = lower priority
     };
+
   };
 }
