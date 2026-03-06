@@ -72,10 +72,10 @@ menu:
         cmd: systemctl suspend
       - key: "r"
         desc: Reboot
-        cmd: reboot
+        cmd: systemctl reboot
       - key: "o"
         desc: Off
-        cmd: poweroff
+        cmd: systemctl poweroff
       - key: "m"
         desc: Turn monitors off
         cmd: niri msg action power-off-monitors
