@@ -522,7 +522,6 @@
         open-fullscreen = true;
         open-focused = true;
         open-on-workspace = "game";
-        open-maximized = true;
 
         matches = [
           {
