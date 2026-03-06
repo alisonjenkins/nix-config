@@ -389,6 +389,9 @@ in
       })
     ];
 
+    # Set transparent hugepages to madvise to prevent khugepaged latency spikes during gaming
+    boot.kernelParams = mkIf cfg.gaming.enable [ "transparent_hugepage=madvise" ];
+
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
     boot.kernelModules = mkIf cfg.gaming.enable [ "ntsync" ];
 
