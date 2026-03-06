@@ -122,8 +122,8 @@
       };
 
       "Mod+D" = {
-        action.spawn = ["lucien"];
-        hotkey-overlay.title="Run an Application: lucien";
+        action.spawn = ["tofi-drun"];
+        hotkey-overlay.title="Run an Application: tofi-drun";
       };
 
       "Super+Alt+L" = {
