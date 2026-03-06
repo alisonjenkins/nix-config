@@ -85,7 +85,7 @@ in
 
       maxQuantum = mkOption {
         type = types.nullOr types.int;
-        default = null;
+        default = 2048;
         description = "PipeWire maximum quantum size. If null, uses quantum value for fixed quantum.";
       };
 
