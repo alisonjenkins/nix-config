@@ -1,6 +1,7 @@
 { pkgs, ... }: {
   programs.chromium = {
     enable = if pkgs.stdenv.isLinux then true else false;
+    commandLineArgs = [ "--enable-features=PipeWireCamera" ];
 
     extensions = [
       {

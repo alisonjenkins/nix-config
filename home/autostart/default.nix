@@ -26,7 +26,7 @@
         dontUnpack = true;
         installPhase = ''
           cp "${pkgs.signal-desktop}/share/applications/signal.desktop" signal.desktop
-          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --enable-gpu#' signal.desktop
+          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --enable-gpu --enable-features=PipeWireCamera#' signal.desktop
           mkdir -p "$out/share/applications"
           cp signal.desktop "$out/share/applications/signal.desktop"
         '';

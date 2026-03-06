@@ -97,6 +97,9 @@
 
         # === Developer Tools ===
         "devtools.cache.disabled" = true;
+
+        # === PipeWire Camera Portal ===
+        "media.webrtc.camera.allow-pipewire" = true;
       };
 
       search.engines = {
