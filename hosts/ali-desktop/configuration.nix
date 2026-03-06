@@ -448,21 +448,11 @@
       };
     };
 
-    system76-scheduler = {
-      enable = true;
-      settings = {
-        processScheduler = {
-          pipewireBoost = {
-            enable = true;
-            profile = {
-              ioClass = "realtime";
-              class = "fifo";
-              prio = "80";
-            };
-          };
-        };
-      };
-    };
+    # system76-scheduler disabled: its session-services cgroup rule uses sched_setattr()
+    # to set nice values, which clobbers PipeWire's SCHED_FIFO|SCHED_RESET_ON_FORK.
+    # Its CFS latency profiles are also redundant with scx_lavd.
+    # Process scheduling is handled by ananicy-cpp with ananicy-rules-cachyos.
+    system76-scheduler.enable = false;
 
     sunshine = {
       enable = true;
