@@ -393,7 +393,15 @@ in
     boot.kernelParams = mkIf cfg.gaming.enable [ "transparent_hugepage=madvise" ];
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
-    boot.kernelModules = mkIf cfg.gaming.enable [ "ntsync" ];
+    boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ]) ++ [
+      "v4l2loopback"
+    ];
+
+    # v4l2loopback virtual webcam devices for multi-app camera sharing
+    boot.extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
+    boot.extraModprobeConfig = ''
+      options v4l2loopback devices=2 video_nr=10,11 card_label="Virtual_Camera_1","Virtual_Camera_2" exclusive_caps=1
+    '';
 
     # Desktop-specific suspend and hibernate configuration
     systemd.sleep = {
