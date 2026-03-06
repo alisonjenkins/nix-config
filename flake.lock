@@ -1790,6 +1790,26 @@
         "type": "github"
       }
     },
+    "pipewire-screenaudio": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771859705,
+        "narHash": "sha256-5kT9Xa3E98HBOf7AetlJQvlhicuHRZbgG0XSbVUbugU=",
+        "owner": "IceDBorn",
+        "repo": "pipewire-screenaudio",
+        "rev": "230d266eb00cecf0fbe42d0c388ac5a7369b6c67",
+        "type": "github"
+      },
+      "original": {
+        "owner": "IceDBorn",
+        "repo": "pipewire-screenaudio",
+        "type": "github"
+      }
+    },
     "plasma-manager": {
       "inputs": {
         "home-manager": [
@@ -1924,6 +1944,7 @@
         "nixvirt": "nixvirt",
         "noctalia": "noctalia",
         "nur": "nur",
+        "pipewire-screenaudio": "pipewire-screenaudio",
         "plasma-manager": "plasma-manager",
         "quickshell": "quickshell",
         "rust-overlay": "rust-overlay_3",
