@@ -253,16 +253,14 @@
         defaultStrategy = "agile";
         strategies = {
           "agile" = {
-            fanSpeedUpdateFrequency = 5;
-            movingAverageInterval = 30;
+            fanSpeedUpdateFrequency = 3;
+            movingAverageInterval = 10;
             speedCurve = [
-              { temp = 0;  speed = 15; }
-              { temp = 50; speed = 15; }
-              { temp = 65; speed = 25; }
-              { temp = 70; speed = 35; }
-              { temp = 75; speed = 50; }
-              { temp = 80; speed = 80; }
-              { temp = 85; speed = 100; }
+              { temp = 0;  speed = 70; }
+              { temp = 40; speed = 80; }
+              { temp = 50; speed = 90; }
+              { temp = 55; speed = 95; }
+              { temp = 60; speed = 100; }
             ];
           };
         };
