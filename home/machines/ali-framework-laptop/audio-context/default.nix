@@ -23,23 +23,23 @@
     rules:
       - location: home
         output_volume: 50
-        # mic_volume: 20
+        mic_volume: 30
 
       - location: gff
         output_volume: 50
-        # mic_volume: 20
+        mic_volume: 30
 
       - location: work
         output_volume: 0
-        # mic_volume: 20
+        mic_volume: 30
 
       - location: library
         output_volume: 0
-        # mic_volume: 20
+        mic_volume: 30
 
       - location: cafe
         output_volume: 0
-        # mic_volume: 20
+        mic_volume: 30
   '';
 
   # Systemd user services
