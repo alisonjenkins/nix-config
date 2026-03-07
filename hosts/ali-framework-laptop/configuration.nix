@@ -167,7 +167,9 @@
       amdgpu_top
       antigravity
       calibre
+      fw-ectool
       framework-tool
+      framework-tool-tui
       freeplane
       fuzzel
       gnome-keyring
