@@ -375,6 +375,10 @@ in
   config = mkIf cfg.enable {
     # Gaming-specific kernel and system optimizations
     boot.kernel.sysctl = mkMerge [
+      {
+        # CAKE qdisc for per-flow fairness and DSCP-based traffic prioritisation
+        "net.core.default_qdisc" = mkForce "cake";
+      }
       (mkIf cfg.gaming.enable {
         # Memory management optimizations for gaming
         "vm.compaction_proactiveness" = 0;          # Disable proactive compaction (reduce background CPU usage)
@@ -394,6 +398,7 @@ in
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
     boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ]) ++ [
+      "sch_cake"
       "v4l2loopback"
     ];
 
@@ -692,6 +697,21 @@ in
     };
 
     networking = {
+      # CAKE qdisc with diffserv4 for per-flow fairness and DSCP-based
+      # traffic prioritisation (voice > video > best-effort > bulk).
+      # Prevents bulk downloads (e.g. Steam) from starving latency-sensitive
+      # traffic (e.g. video/voice calls).
+      networkmanager.dispatcherScripts = [
+        {
+          source = pkgs.writeText "cake-diffserv4" ''
+            if [ "$2" = "up" ]; then
+              ${pkgs.iproute2}/bin/tc qdisc replace dev "$1" root cake diffserv4
+            fi
+          '';
+          type = "basic";
+        }
+      ];
+
       wireless.iwd.settings = mkMerge [
         # Base iwd settings - always enabled when desktop module is active
         {

@@ -104,6 +104,7 @@
 
   boot = {
     bootspec.enableValidation = true;
+
     # kernelPackages = pkgs.linuxPackages-rt_latest;
     # kernelPackages = pkgs.linuxPackages;
     # kernelPackages = pkgs.linuxPackages_latest;
@@ -221,6 +222,7 @@
       wifi = {
         backend = "iwd";
       };
+
     };
 
     wireless = {
