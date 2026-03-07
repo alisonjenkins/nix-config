@@ -243,7 +243,7 @@
   nix.package = pkgs.nix;
 
   powerManagement = {
-    cpuFreqGovernor = "performance";
+    cpuFreqGovernor = "powersave";
   };
 
   programs = {
