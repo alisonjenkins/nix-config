@@ -2,6 +2,7 @@
   flake.nixosModules = {
     # Core modules
     audio-context-suspend = import ../modules/audio-context-suspend.nix;
+    aws = import ../modules/aws;
     base = import ../modules/base;
     desktop = import ../modules/desktop;
     libvirtd = import ../modules/libvirtd;
