@@ -40,7 +40,11 @@ in
         kernelModules = [ "nvme" ];
       };
 
-      kernelParams = [ "quiet" ];
+      kernelParams = [
+        "quiet"
+        "rd.systemd.show_status=false"
+        "systemd.show_status=false"
+      ];
 
       # Network performance tuning
       kernel.sysctl = {
@@ -63,6 +67,9 @@ in
 
     # Disable amazon-init (pre-baked AMIs don't need nixos-rebuild on boot)
     virtualisation.amazon-init.enable = false;
+
+    # Strip documentation from closure — servers don't need man/info/manual
+    documentation.enable = false;
 
     # Network: use systemd-networkd for faster DHCP
     networking = {
@@ -98,9 +105,9 @@ in
       };
     };
 
-    # Minimal packages
+    # Minimal packages — awscli2 excluded to save ~400 MiB of closure;
+    # install on-demand via `nix run nixpkgs#awscli2` or user profile.
     environment.systemPackages = with pkgs; [
-      awscli2
       curl
       htop
       jq
@@ -131,7 +138,13 @@ in
       servers = [ "169.254.169.123" ];
     };
 
+    # Cap journal size to reduce I/O from rotation
+    services.journald.extraConfig = "SystemMaxUse=50M";
+
     # Disable unnecessary services
     services.fwupd.enable = false;
+
+    systemd.services.systemd-journal-catalog-update.enable = false;
+    systemd.services.systemd-update-utmp.enable = false;
   };
 }
