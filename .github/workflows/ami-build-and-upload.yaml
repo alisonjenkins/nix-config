@@ -15,7 +15,7 @@
 #   3. vmimport service role (required by ec2:ImportSnapshot):
 #      - Trusts vmie.amazonaws.com
 #      - S3 read on the bucket + EC2 snapshot permissions
-#   4. S3 bucket "ajj-ami-builds" in eu-west-2
+#   4. S3 bucket "ajj-ami-builds" in eu-west-1
 #   5. IAM role ARN is hardcoded in the workflow
 
 name: Build and Upload AMIs
@@ -49,7 +49,7 @@ on:
       region:
         description: 'AWS region'
         required: true
-        default: 'eu-west-2'
+        default: 'eu-west-1'
         type: string
       retention_count:
         description: 'Number of AMIs to keep per hostname'
@@ -81,7 +81,7 @@ jobs:
       - name: Set parameters
         id: params
         run: |
-          echo "region=${{ inputs.region || 'eu-west-2' }}" >> "$GITHUB_OUTPUT"
+          echo "region=${{ inputs.region || 'eu-west-1' }}" >> "$GITHUB_OUTPUT"
           echo "retention_count=${{ inputs.retention_count || '3' }}" >> "$GITHUB_OUTPUT"
 
   build-and-upload:
