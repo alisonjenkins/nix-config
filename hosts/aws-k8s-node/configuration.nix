@@ -8,10 +8,7 @@
     ../../app-profiles/k8s-master
   ];
 
-  modules.aws = {
-    enable = true;
-    rootVolumeSize = 20;
-  };
+  modules.aws.enable = true;
 
   modules.locale.enable = true;
 

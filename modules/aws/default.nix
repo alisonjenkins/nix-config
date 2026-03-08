@@ -16,15 +16,17 @@ in
     };
 
     rootVolumeSize = lib.mkOption {
-      type = lib.types.int;
-      default = 8;
-      description = "Root volume size in GiB";
+      type = lib.types.either (lib.types.enum [ "auto" ]) lib.types.int;
+      default = "auto";
+      description = "Root volume size in GiB, or \"auto\" to fit the closure with minimal headroom. The partition auto-grows to the EBS volume size at boot.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # Image size — applied to the amazon image builder via extendModules
-    image.modules.amazon = {
+    # Image size — applied to the amazon image builder via extendModules.
+    # "auto" lets make-disk-image size the image to fit the closure;
+    # the partition grows to the EBS volume at boot via growPartition.
+    image.modules.amazon = lib.mkIf (cfg.rootVolumeSize != "auto") {
       virtualisation.diskSize = cfg.rootVolumeSize * 1024;
     };
 
