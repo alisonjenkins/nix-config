@@ -9,13 +9,13 @@
 #   2. IAM Role with trust policy allowing:
 #      - Federated principal: the OIDC provider ARN
 #      - Condition: token.actions.githubusercontent.com:sub like repo:alisonjenkins/nix-config:*
-#      - Permissions: s3:{PutObject,ListBucket,DeleteObject} on ajj-ami-builds bucket;
+#      - Permissions: s3:{PutObject,ListBucket,DeleteObject} on ajj-ami-builds-eu-west-1 bucket;
 #        ec2:{ImportSnapshot,DescribeImportSnapshotTasks,RegisterImage,DeregisterImage,
 #             DescribeImages,DescribeSnapshots,DeleteSnapshot,CreateTags}
 #   3. vmimport service role (required by ec2:ImportSnapshot):
 #      - Trusts vmie.amazonaws.com
 #      - S3 read on the bucket + EC2 snapshot permissions
-#   4. S3 bucket "ajj-ami-builds" in eu-west-1
+#   4. S3 bucket "ajj-ami-builds-eu-west-1" in eu-west-1
 #   5. IAM role ARN is hardcoded in the workflow
 
 name: Build and Upload AMIs
@@ -95,7 +95,7 @@ jobs:
     env:
       AWS_REGION: ${{ needs.prepare.outputs.region }}
       RETENTION_COUNT: ${{ needs.prepare.outputs.retention_count }}
-      S3_BUCKET: ajj-ami-builds
+      S3_BUCKET: ajj-ami-builds-eu-west-1
 
     steps:
       - uses: actions/checkout@v6
