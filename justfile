@@ -194,11 +194,13 @@ ami-upload hostname region="eu-west-2" bucket="nixos-amis":
 
     echo "Snapshot: $SNAPSHOT_ID"
 
-    # Determine architecture from image-info.json
-    SYSTEM=$(cat "$RESULT/nix-support/image-info.json" | jq -r '.system // "x86_64-linux"')
+    # Read architecture and boot mode from image-info.json
+    IMAGE_INFO="$RESULT/nix-support/image-info.json"
+    SYSTEM=$(jq -r '.system // "x86_64-linux"' "$IMAGE_INFO")
+    BOOT_MODE=$(jq -r '.boot_mode // "uefi"' "$IMAGE_INFO")
     case "$SYSTEM" in
-        aarch64-*) ARCH="arm64"; BOOT_MODE="uefi" ;;
-        *)         ARCH="x86_64"; BOOT_MODE="uefi-preferred" ;;
+        aarch64-*) ARCH="arm64" ;;
+        *)         ARCH="x86_64" ;;
     esac
 
     AMI_NAME="nixos-{{hostname}}-${TIMESTAMP}"

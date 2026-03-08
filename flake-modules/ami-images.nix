@@ -3,6 +3,10 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 
+  # Common module for all AMIs — UEFI boot for NitroTPM, Secure Boot, and
+  # forward-compatibility with newer instance families.
+  commonAmiModule = { ec2.efi = true; };
+
   # Central registry of AMI configurations
   amiConfigs = {
     aws-base-server = {
@@ -15,7 +19,6 @@ let
       system = "aarch64-linux";
       hostConfig = ../hosts/aws-base-server/configuration.nix;
       extraModules = [{
-        ec2.efi = true;
         networking.hostName = lib.mkForce "aws-base-server-arm";
       }];
     };
@@ -30,7 +33,6 @@ let
       system = "aarch64-linux";
       hostConfig = ../hosts/aws-k8s-node/configuration.nix;
       extraModules = [{
-        ec2.efi = true;
         networking.hostName = lib.mkForce "aws-k8s-node-arm";
       }];
     };
@@ -48,6 +50,7 @@ let
 
       modules = [
         cfg.hostConfig
+        commonAmiModule
       ] ++ cfg.extraModules;
     };
 
