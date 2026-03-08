@@ -71,6 +71,17 @@ in
     # Strip documentation from closure — servers don't need man/info/manual
     documentation.enable = false;
 
+    # Strip desktop packages from closure
+    xdg.icons.enable = false;
+    xdg.mime.enable = false;
+    xdg.sounds.enable = false;
+    fonts.fontconfig.enable = false;
+    programs.command-not-found.enable = false;
+    environment.defaultPackages = lib.mkForce [];
+
+    # Use tmpfs for /tmp to avoid disk I/O for temp files
+    boot.tmp.useTmpfs = true;
+
     # Network: use systemd-networkd for faster DHCP
     networking = {
       useNetworkd = true;
