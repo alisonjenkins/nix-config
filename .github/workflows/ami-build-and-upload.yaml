@@ -145,6 +145,9 @@ jobs:
           echo "boot_mode=$BOOT_MODE" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
 
+      - name: Install AWS CLI
+        run: nix profile install nixpkgs#awscli2
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
