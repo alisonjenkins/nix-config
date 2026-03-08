@@ -16,7 +16,7 @@
 #      - Trusts vmie.amazonaws.com
 #      - S3 read on the bucket + EC2 snapshot permissions
 #   4. S3 bucket "ajj-ami-builds" in eu-west-2
-#   5. GitHub secret AWS_IAM_ROLE_ARN set to the role ARN
+#   5. IAM role ARN is hardcoded in the workflow
 
 name: Build and Upload AMIs
 
@@ -148,7 +148,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::918821718107:role/gha-nix-config-ami
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload VHD to S3
