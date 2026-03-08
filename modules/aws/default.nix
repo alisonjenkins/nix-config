@@ -65,8 +65,44 @@ in
       options = [ "noatime" "lazytime" "commit=60" "data=writeback" ];
     };
 
-    # Disable amazon-init (pre-baked AMIs don't need nixos-rebuild on boot)
+    # Disable amazon-init (pre-baked AMIs don't need nixos-rebuild on boot);
+    # cloud-init handles instance provisioning instead.
     virtualisation.amazon-init.enable = false;
+
+    # Cloud-init for EC2 instance provisioning (SSH keys, hostname, user-data scripts)
+    services.cloud-init = {
+      enable = true;
+      network.enable = false; # We manage networking via systemd-networkd above
+
+      settings = {
+        datasource_list = [ "Ec2" ];
+        datasource.Ec2.metadata_urls = [ "http://169.254.169.254" ];
+
+        # Only run modules relevant to pre-baked AMIs
+        cloud_init_modules = [
+          "seed_random"
+          "growpart"
+          "resizefs"
+          "update_hostname"
+          "users-groups"
+          "ssh"
+        ];
+
+        cloud_config_modules = [
+          "ssh-import-id"
+          "set-passwords"
+          "runcmd"
+        ];
+
+        cloud_final_modules = [
+          "scripts-per-once"
+          "scripts-per-boot"
+          "scripts-per-instance"
+          "scripts-user"
+          "final-message"
+        ];
+      };
+    };
 
     # Strip documentation from closure — servers don't need man/info/manual
     documentation.enable = false;
