@@ -50,6 +50,11 @@
   modules.desktop = {
     enable = true;
 
+    pipewire = {
+      suspendTimeoutSeconds = 0;  # Never suspend audio devices — prevents crackle on resume
+      alsaHeadroom = 2048;        # Extra headroom to absorb scheduling jitter under CPU load
+    };
+
     gaming = {
       gpuVendor = "amd";
       cpuTopology = "16:32";  # Ryzen 9 7950X: 16 cores, 32 threads
