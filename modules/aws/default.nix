@@ -54,6 +54,13 @@ in
       };
     };
 
+    # Root filesystem tuning — reduce write I/O during boot when NixOS
+    # reads hundreds of store paths. Safe for immutable infrastructure
+    # where runtime state lives in EBS snapshots / S3 / external DBs.
+    fileSystems."/" = lib.mkDefault {
+      options = [ "noatime" "lazytime" "commit=60" "data=writeback" ];
+    };
+
     # Disable amazon-init (pre-baked AMIs don't need nixos-rebuild on boot)
     virtualisation.amazon-init.enable = false;
 
