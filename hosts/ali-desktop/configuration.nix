@@ -318,6 +318,12 @@
     nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
   };
 
+  # Hard-cap nix-daemon to 75% of CPU (24 of 32 threads) to prevent memory bandwidth
+  # saturation that causes audio crackling during gaming. The existing CPUWeight=50 +
+  # batch scheduling in the desktop module handles soft priority, but CPUQuota provides
+  # a hard kernel-enforced ceiling that guarantees headroom for PipeWire and games.
+  systemd.services.nix-daemon.serviceConfig.CPUQuota = "2880%";
+
   powerManagement = {
     cpuFreqGovernor = "performance";
   };
