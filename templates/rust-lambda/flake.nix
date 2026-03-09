@@ -1,5 +1,5 @@
 {
-  description = "A Rust project";
+  description = "An AWS Lambda function in Rust";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -61,7 +61,7 @@
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-        my-crate = craneLib.buildPackage (
+        my-lambda = craneLib.buildPackage (
           commonArgs
           // {
             inherit cargoArtifacts;
@@ -69,30 +69,15 @@
           }
         );
 
-        my-crate-container = pkgs.dockerTools.buildLayeredImage {
-          name = "my-crate";
+        my-lambda-container = pkgs.dockerTools.buildLayeredImage {
+          name = "my-lambda";
           tag = "latest";
           contents = [
-            my-crate
+            my-lambda
             pkgs.cacert
           ];
           config = {
-            Cmd = [ "${my-crate}/bin/my-crate" ];
-            Env = [
-              "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-            ];
-          };
-        };
-
-        my-crate-container-stream = pkgs.dockerTools.streamLayeredImage {
-          name = "my-crate";
-          tag = "latest";
-          contents = [
-            my-crate
-            pkgs.cacert
-          ];
-          config = {
-            Cmd = [ "${my-crate}/bin/my-crate" ];
+            Cmd = [ "${my-lambda}/bin/my-lambda" ];
             Env = [
               "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             ];
@@ -101,9 +86,9 @@
       in
       {
         checks = {
-          inherit my-crate;
+          inherit my-lambda;
 
-          my-crate-clippy = craneLib.cargoClippy (
+          my-lambda-clippy = craneLib.cargoClippy (
             commonArgs
             // {
               inherit cargoArtifacts;
@@ -111,18 +96,18 @@
             }
           );
 
-          my-crate-doc = craneLib.cargoDoc (
+          my-lambda-doc = craneLib.cargoDoc (
             commonArgs
             // {
               inherit cargoArtifacts;
             }
           );
 
-          my-crate-fmt = craneLib.cargoFmt {
+          my-lambda-fmt = craneLib.cargoFmt {
             inherit src;
           };
 
-          my-crate-nextest = craneLib.cargoNextest (
+          my-lambda-nextest = craneLib.cargoNextest (
             commonArgs
             // {
               inherit cargoArtifacts;
@@ -135,24 +120,21 @@
 
         packages =
           {
-            default = my-crate;
+            default = my-lambda;
           }
           // lib.optionalAttrs pkgs.stdenv.isLinux {
-            container = my-crate-container;
-            container-stream = my-crate-container-stream;
+            container = my-lambda-container;
           };
-
-        apps.default = flake-utils.lib.mkApp {
-          drv = my-crate;
-        };
 
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
 
           packages = with pkgs; [
+            awscli2
             bacon
             cargo-edit
             cargo-expand
+            cargo-lambda
             cargo-nextest
             cargo-watch
             just
