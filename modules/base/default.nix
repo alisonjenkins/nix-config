@@ -264,7 +264,7 @@ in
           download-buffer-size = 268435456; # 256 MiB
           eval-cache = true;
           max-jobs = "auto";
-          trusted-users = lib.mkDefault [ "root" "@wheel" ];
+          trusted-users = [ "root" "@wheel" ];
 
           substituters = [
             "https://ajenkins-public.cachix.org"
