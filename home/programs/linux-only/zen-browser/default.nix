@@ -11,7 +11,6 @@
 
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
-    suppressXdgMigrationWarning = true;
     nativeMessagingHosts = lib.mkIf pkgs.stdenv.isLinux [
       inputs.pipewire-screenaudio.packages.${pkgs.system}.default
       pkgs.unstable._1password-gui
