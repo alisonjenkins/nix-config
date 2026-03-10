@@ -27,7 +27,6 @@ in {
       inputs.home-manager.nixosModules.home-manager
       inputs.niri-flake.nixosModules.niri
       inputs.nix-flatpak.nixosModules.nix-flatpak
-      inputs.fw-fanctrl.nixosModules.default
       inputs.nixos-hardware.nixosModules.framework-16-7040-amd
       inputs.nur.modules.nixos.default
       inputs.sops-nix.nixosModules.sops

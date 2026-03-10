@@ -209,6 +209,26 @@
       };
     };
 
+    fw-fanctrl = {
+      enable = true;
+      config = {
+        defaultStrategy = "agile";
+        strategies = {
+          "agile" = {
+            fanSpeedUpdateFrequency = 3;
+            movingAverageInterval = 10;
+            speedCurve = [
+              { temp = 0;  speed = 70; }
+              { temp = 40; speed = 80; }
+              { temp = 50; speed = 90; }
+              { temp = 55; speed = 95; }
+              { temp = 60; speed = 100; }
+            ];
+          };
+        };
+      };
+    };
+
     graphics = {
       enable = true;
       enable32Bit = true;
@@ -247,25 +267,6 @@
   };
 
   programs = {
-    fw-fanctrl = {
-      enable = true;
-      config = {
-        defaultStrategy = "agile";
-        strategies = {
-          "agile" = {
-            fanSpeedUpdateFrequency = 3;
-            movingAverageInterval = 10;
-            speedCurve = [
-              { temp = 0;  speed = 70; }
-              { temp = 40; speed = 80; }
-              { temp = 50; speed = 90; }
-              { temp = 55; speed = 95; }
-              { temp = 60; speed = 100; }
-            ];
-          };
-        };
-      };
-    };
 
     niri = {
       enable = true;
