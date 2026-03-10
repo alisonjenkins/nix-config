@@ -20,7 +20,7 @@ let
       owner = "wshanks";
       repo = "tbkeys";
       rev = "main";
-      sha256 = "0f02pyqvw8326rqaa38v3cjhl5jlqvq33v90ygay0sfs2kw0gmnl";
+      sha256 = "1ph3d8x0v3rmmj1b5s63b70civ2pcad3widvbinsf8glayqy6b3c";
     };
     nativeBuildInputs = [ pkgs.zip pkgs.jq ];
     installPhase = ''
@@ -55,7 +55,7 @@ let
     version = "latest";
     addonId = "cardbook@vigneau.philippe";
     url = "https://addons.thunderbird.net/thunderbird/downloads/latest/cardbook/latest.xpi";
-    sha256 = "1d2bb3x17q8zbh6rxfplw0w4a1xqc3siqd9kcc8wdnk6xbgrsm1w";
+    sha256 = "1kbskn70496y26dgiw4ip8wv28zwk8m1hfjxa055d1zvag0y2xck";
   };
 in
 {
