@@ -20,6 +20,7 @@
 rustPlatform.buildRustPackage rec {
   pname = "lucien";
   version = "0-unstable-2025-05-22";
+  cargoHash = "sha256-issqRwT3hNGIQBzs3aBkGhMhrfGuNKW+IgRkHKo5WSw=";
 
   src = fetchFromGitHub {
     owner = "alisonjenkins";
@@ -27,9 +28,6 @@ rustPlatform.buildRustPackage rec {
     rev = "576194c90ec21c09afecaf2724e4c47465d42e0b";
     hash = "sha256-AZmlwQ+NVXhiQ7so4cdJxX6o+9HDxQi7Oj+XqZOY9tY=";
   };
-
-  useFetchCargoVendor = true;
-  cargoHash = "sha256-issqRwT3hNGIQBzs3aBkGhMhrfGuNKW+IgRkHKo5WSw=";
 
   nativeBuildInputs = [
     pkg-config
