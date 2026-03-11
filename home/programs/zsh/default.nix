@@ -38,6 +38,7 @@
           (builtins.readFile ./zshrc-first.zsh)
           (builtins.readFile ./zshrc.d/zsh_settings.zsh)
           (builtins.readFile ./zshrc.d/environment_vars.zsh)
+          (builtins.readFile ./zshrc.d/nfti.zsh)
         ];
 
         plugins = [

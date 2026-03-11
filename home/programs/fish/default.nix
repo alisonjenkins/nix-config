@@ -121,5 +121,6 @@
     ".config/fish/completions/asp.fish".source = ./completions/asp.fish;
     ".config/fish/completions/asr.fish".source = ./completions/asr.fish;
     ".config/fish/completions/just.fish".source = ./completions/just.fish;
+    ".config/fish/completions/nfti.fish".source = ./completions/nfti.fish;
   };
 }
