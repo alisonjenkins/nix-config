@@ -1,0 +1,10 @@
+{
+  "name": "my-lambda",
+  "version": "0.1.0",
+  "description": "An AWS Lambda Node.js function",
+  "main": "src/handler.js",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}
