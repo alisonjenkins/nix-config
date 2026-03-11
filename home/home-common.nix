@@ -32,7 +32,10 @@
   home.shellAliases = import ./shellAliases.nix { inherit pkgs; };
 
   home.packages =
-    if pkgs.stdenv.isLinux
+    [
+      pkgs.nix-flake-template-init
+    ]
+    ++ (if pkgs.stdenv.isLinux
     then
       (with pkgs;
       [
@@ -97,7 +100,7 @@
         ]
         else [ ]
       ))
-    else [ ];
+    else [ ]);
 
   programs.home-manager.enable =
     if pkgs.stdenv.isLinux

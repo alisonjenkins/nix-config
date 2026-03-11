@@ -467,7 +467,7 @@ in
         lock-session
         millisecond
         nethogs
-        nix-flake-template-init
+
         oxker
         pciutils
         playerctl
