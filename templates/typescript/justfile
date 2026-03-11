@@ -1,0 +1,27 @@
+# List available recipes
+default:
+    @just --list
+
+# Build the package with Nix
+build:
+    nix build
+
+# Build the container image
+container:
+    nix build .#container
+
+# Run checks (build, typecheck, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    npx tsx --test test/
+
+# Run the application
+run *args:
+    npx tsx src/index.ts {{args}}
+
+# Type-check without emitting
+typecheck:
+    npx tsc --noEmit

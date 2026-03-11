@@ -1,0 +1,23 @@
+# List available recipes
+default:
+    @just --list
+
+# Build the package with Nix
+build:
+    nix build
+
+# Build the container image
+container:
+    nix build .#container
+
+# Run checks (build, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    node --test test/
+
+# Run the application
+run *args:
+    node src/index.js {{args}}

@@ -1,0 +1,27 @@
+# List available recipes
+default:
+    @just --list
+
+# Build the package with Nix
+build:
+    nix build
+
+# Build the container image
+container:
+    nix build .#container
+
+# Run checks (build, fmt)
+check:
+    nix flake check
+
+# Run tests
+test:
+    mvn test
+
+# Run the application
+run *args:
+    mvn -q exec:java -Dexec.mainClass=com.example.Main {{args}}
+
+# Format code
+fmt:
+    google-java-format -i $(find src -name "*.java")

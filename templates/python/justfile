@@ -1,0 +1,35 @@
+# List available recipes
+default:
+    @just --list
+
+# Build the package with Nix
+build:
+    nix build
+
+# Build the container image
+container:
+    nix build .#container
+
+# Run checks (build, ruff)
+check:
+    nix flake check
+
+# Run tests
+test:
+    pytest
+
+# Run the application
+run *args:
+    python -m my_app.main {{args}}
+
+# Format code
+fmt:
+    ruff format .
+
+# Run linter
+lint:
+    ruff check .
+
+# Run linter and fix auto-fixable issues
+lint-fix:
+    ruff check --fix .

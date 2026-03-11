@@ -1,0 +1,31 @@
+# List available recipes
+default:
+    @just --list
+
+# Build the binary with Nix
+build:
+    nix build
+
+# Build the container image
+container:
+    nix build .#container
+
+# Run checks (build, fmt)
+check:
+    nix flake check
+
+# Run tests
+test:
+    go test ./...
+
+# Run the application
+run *args:
+    go run . {{args}}
+
+# Format code
+fmt:
+    gofumpt -w .
+
+# Run linter
+lint:
+    golangci-lint run
