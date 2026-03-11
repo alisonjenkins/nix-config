@@ -1,0 +1,79 @@
+# CI Pipeline
+#
+# Runs checks (typecheck, tests) on all pushes and PRs.
+# Builds and pushes a container image to ECR on main branch merges.
+#
+# AWS Pre-requisites:
+#   1. GitHub OIDC Provider: https://token.actions.githubusercontent.com
+#      - Audience: sts.amazonaws.com
+#   2. IAM Role with trust policy allowing:
+#      - Federated principal: the OIDC provider ARN
+#      - Condition: token.actions.githubusercontent.com:sub matches your repo
+#      - Permissions: ecr:GetAuthorizationToken, ecr:BatchCheckLayerAvailability,
+#        ecr:GetDownloadUrlForLayer, ecr:BatchGetImage, ecr:PutImage,
+#        ecr:InitiateLayerUpload, ecr:UploadLayerPart, ecr:CompleteLayerUpload
+#   3. ECR repository created in the target region
+#   4. Repository variables configured:
+#      - AWS_ROLE_ARN: IAM role ARN for OIDC
+#      - AWS_REGION: AWS region (e.g., eu-west-1)
+#      - ECR_REPO: ECR repository name
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run checks
+        run: nix flake check
+
+  build-and-push:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build container image
+        run: nix build .#container
+
+      - name: Push to ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ vars.ECR_REPO }}
+        run: |
+          docker load < result
+          docker tag my-app:latest "$REGISTRY/$ECR_REPO:${{ github.sha }}"
+          docker tag my-app:latest "$REGISTRY/$ECR_REPO:latest"
+          docker push "$REGISTRY/$ECR_REPO:${{ github.sha }}"
+          docker push "$REGISTRY/$ECR_REPO:latest"
