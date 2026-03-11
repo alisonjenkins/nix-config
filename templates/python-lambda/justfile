@@ -1,0 +1,34 @@
+lambda_name := "my-lambda"
+region := "eu-west-1"
+ecr_repo := "my-lambda"
+
+# Build the Lambda package with Nix
+build:
+    nix build
+
+# Build the Lambda container image
+container:
+    nix build .#container
+
+# Run checks (ruff, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    pytest
+
+# Invoke the Lambda handler locally for testing
+invoke payload='{"name": "world"}':
+    python -c "import json; from my_lambda.handler import handler; print(json.dumps(handler(json.loads('{{ payload }}'), None)))"
+
+# Push container image to ECR
+push: container
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    REGISTRY="${ACCOUNT_ID}.dkr.ecr.{{ region }}.amazonaws.com"
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin "$REGISTRY"
+    docker load < result
+    docker tag {{ lambda_name }}:latest "$REGISTRY/{{ ecr_repo }}:latest"
+    docker push "$REGISTRY/{{ ecr_repo }}:latest"
