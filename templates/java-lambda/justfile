@@ -1,0 +1,40 @@
+lambda_name := "my-lambda"
+region := "eu-west-1"
+ecr_repo := "my-lambda"
+
+# Build the Lambda JAR with Nix
+build:
+    nix build
+
+# Build the Lambda container image
+container:
+    nix build .#container
+
+# Run checks (fmt, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    mvn test
+
+# Deploy fat JAR to Lambda
+deploy-zip:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mvn package -DskipTests
+    aws lambda update-function-code \
+      --function-name {{ lambda_name }} \
+      --zip-file fileb://target/my-lambda-0.1.0-jar-with-dependencies.jar \
+      --region {{ region }}
+
+# Push container image to ECR
+push: container
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    REGISTRY="${ACCOUNT_ID}.dkr.ecr.{{ region }}.amazonaws.com"
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin "$REGISTRY"
+    docker load < result
+    docker tag {{ lambda_name }}:latest "$REGISTRY/{{ ecr_repo }}:latest"
+    docker push "$REGISTRY/{{ ecr_repo }}:latest"
