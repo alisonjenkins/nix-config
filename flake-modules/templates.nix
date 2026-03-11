@@ -40,5 +40,13 @@
       description = "AWS Lambda TypeScript project with container image";
       path = ../templates/typescript-lambda;
     };
+    java = {
+      description = "Java project with Maven, JUnit 5, and container image";
+      path = ../templates/java;
+    };
+    java-lambda = {
+      description = "AWS Lambda Java project with Maven and container image";
+      path = ../templates/java-lambda;
+    };
   };
 }
