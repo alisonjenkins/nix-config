@@ -1,0 +1,68 @@
+# CI Pipeline
+#
+# Runs checks (typecheck, tests) on all pushes and PRs.
+# Deploys Lambda function on main branch merges.
+#
+# AWS Pre-requisites:
+#   1. GitHub OIDC Provider: https://token.actions.githubusercontent.com
+#      - Audience: sts.amazonaws.com
+#   2. IAM Role with trust policy allowing:
+#      - Federated principal: the OIDC provider ARN
+#      - Condition: token.actions.githubusercontent.com:sub matches your repo
+#      - Permissions: lambda:UpdateFunctionCode
+#   3. Lambda function created in the target region
+#   4. Repository variables configured:
+#      - AWS_ROLE_ARN: IAM role ARN for OIDC
+#      - AWS_REGION: AWS region (e.g., eu-west-1)
+#      - LAMBDA_FUNCTION_NAME: Lambda function name
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run checks
+        run: nix flake check
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build deployment zip
+        run: nix build .#zip
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ vars.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://result/my-lambda.zip

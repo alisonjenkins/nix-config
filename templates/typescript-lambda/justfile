@@ -1,0 +1,29 @@
+lambda_name := "my-lambda"
+region := "eu-west-1"
+
+# Build the Lambda package with Nix
+build:
+    nix build
+
+# Build the Lambda deployment zip
+zip:
+    nix build .#zip
+
+# Run checks (typecheck, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    npx tsx --test test/
+
+# Invoke the Lambda handler locally for testing
+invoke payload='{"name": "world"}':
+    npx tsx -e "import { handler } from './src/handler'; handler({{ payload }} as any, {} as any, () => {}).then(r => console.log(JSON.stringify(r)))"
+
+# Deploy compiled JS as zip to Lambda
+deploy-zip: zip
+    aws lambda update-function-code \
+      --function-name {{ lambda_name }} \
+      --zip-file fileb://result/my-lambda.zip \
+      --region {{ region }}
