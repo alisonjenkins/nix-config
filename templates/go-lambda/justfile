@@ -1,0 +1,46 @@
+lambda_name := "my-lambda"
+region := "eu-west-1"
+ecr_repo := "my-lambda"
+
+# Build the Lambda binary with Nix
+build:
+    nix build
+
+# Build the distroless Lambda container image
+container:
+    nix build .#container
+
+# Run checks (vet, fmt, tests)
+check:
+    nix flake check
+
+# Run tests
+test:
+    go test ./...
+
+# Invoke the Lambda handler locally for testing
+invoke payload='{"name": "world"}':
+    go run -tags invoke . '{{ payload }}'
+
+# Deploy as zip to Lambda
+deploy-zip:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o bootstrap .
+    zip bootstrap.zip bootstrap
+    aws lambda update-function-code \
+      --function-name {{ lambda_name }} \
+      --zip-file fileb://bootstrap.zip \
+      --region {{ region }}
+    rm bootstrap bootstrap.zip
+
+# Push container image to ECR
+push: container
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    REGISTRY="${ACCOUNT_ID}.dkr.ecr.{{ region }}.amazonaws.com"
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin "$REGISTRY"
+    docker load < result
+    docker tag {{ lambda_name }}:latest "$REGISTRY/{{ ecr_repo }}:latest"
+    docker push "$REGISTRY/{{ ecr_repo }}:latest"
