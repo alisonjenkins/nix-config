@@ -33,16 +33,20 @@ lint:
 watch:
     cargo watch -x run
 
+# Clean cached ops images (Linux only)
+ops-clean:
+    rm -f ~/.ops/images/my-crate.img
+
 # Build unikernel image locally (Linux only)
-ops-build:
+ops-build: ops-clean
     ops build result/bin/my-crate -c ops-config.json
 
 # Run unikernel in QEMU locally (Linux only)
-ops-run:
+ops-run: ops-clean
     ops run result/bin/my-crate -c ops-config.json
 
 # Run unikernel with debug output (Linux only)
-ops-run-debug:
+ops-run-debug: ops-clean
     ops run result/bin/my-crate -c ops-config.json --trace
 
 # Create AWS AMI from binary
