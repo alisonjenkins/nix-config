@@ -1,0 +1,74 @@
+# Default AWS region for ops commands
+AWS_REGION := env("AWS_REGION", "eu-west-2")
+
+# List available recipes
+default:
+    @just --list
+
+# Build the static binary with Nix
+build:
+    nix build
+
+# Run checks (clippy, fmt, tests, doc)
+check:
+    nix flake check
+
+# Run tests
+test:
+    cargo nextest run
+
+# Run the application locally
+run *args:
+    cargo run -- {{args}}
+
+# Format code
+fmt:
+    cargo fmt
+
+# Run clippy lints
+lint:
+    cargo clippy --all-targets -- --deny warnings
+
+# Watch for changes and rebuild
+watch:
+    cargo watch -x run
+
+# Build unikernel image locally (Linux only)
+ops-build:
+    ops build result/bin/my-crate -c ops-config.json
+
+# Run unikernel in QEMU locally (Linux only)
+ops-run:
+    ops run result/bin/my-crate -c ops-config.json
+
+# Run unikernel with debug output (Linux only)
+ops-run-debug:
+    ops run result/bin/my-crate -c ops-config.json --trace
+
+# Create AWS AMI from binary
+ami-create name="my-crate":
+    ops image create result/bin/my-crate -c ops-config.json -i {{name}} -t aws
+
+# List AMIs in region
+ami-list:
+    ops image list -t aws
+
+# Delete an AMI
+ami-delete name:
+    ops image delete {{name}} -t aws
+
+# Launch EC2 instance from image
+instance-create image:
+    ops instance create {{image}} -t aws
+
+# List running instances
+instance-list:
+    ops instance list -t aws
+
+# Get instance logs
+instance-logs name:
+    ops instance logs {{name}} -t aws
+
+# Terminate an instance
+instance-delete name:
+    ops instance delete {{name}} -t aws

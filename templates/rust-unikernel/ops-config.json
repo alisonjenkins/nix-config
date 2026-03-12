@@ -1,0 +1,15 @@
+{
+  "CloudConfig": {
+    "Platform": "aws",
+    "Zone": "eu-west-2a",
+    "BucketName": "my-unikernel-images",
+    "Flavor": "t3.micro"
+  },
+  "RunConfig": {
+    "Ports": ["8080"],
+    "Memory": "512m"
+  },
+  "Env": {
+    "RUST_LOG": "info"
+  }
+}

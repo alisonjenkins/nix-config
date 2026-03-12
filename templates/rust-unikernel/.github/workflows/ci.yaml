@@ -1,0 +1,160 @@
+# CI Pipeline
+#
+# Runs checks (clippy, fmt, tests) on all pushes and PRs.
+# Builds and creates AWS AMI on main branch merges.
+#
+# AWS Pre-requisites:
+#   1. GitHub OIDC Provider: https://token.actions.githubusercontent.com
+#      - Audience: sts.amazonaws.com
+#   2. IAM Role with trust policy allowing:
+#      - Federated principal: the OIDC provider ARN
+#      - Condition: token.actions.githubusercontent.com:sub matches your repo
+#      - Permissions: ec2:*, s3:* (for the unikernel bucket)
+#   3. S3 bucket for temporary image uploads
+#   4. Repository variables configured:
+#      - AWS_ROLE_ARN: IAM role ARN for OIDC
+#      - AWS_REGION: AWS region (e.g., eu-west-2)
+#      - S3_BUCKET: S3 bucket name for image uploads
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy_instance:
+        description: 'Deploy EC2 instance after AMI creation'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run checks
+        run: nix flake check
+
+  build-ami:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      ami_name: ${{ steps.create-ami.outputs.ami_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build static binary
+        run: nix build
+
+      - name: Install ops
+        run: |
+          curl https://ops.city/get.sh -sSfL | sh
+
+      - name: Create AMI
+        id: create-ami
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          AMI_NAME="my-crate-${{ github.sha }}"
+
+          # Create ops config with correct bucket
+          cat > /tmp/ops-config.json <<EOF
+          {
+            "CloudConfig": {
+              "Platform": "aws",
+              "Zone": "${AWS_REGION}a",
+              "BucketName": "${S3_BUCKET}",
+              "Flavor": "t3.micro"
+            },
+            "RunConfig": {
+              "Ports": ["8080"],
+              "Memory": "512m"
+            },
+            "Env": {
+              "RUST_LOG": "info"
+            }
+          }
+          EOF
+
+          # Create the AMI
+          ops image create result/bin/my-crate -c /tmp/ops-config.json -i "$AMI_NAME" -t aws
+
+          echo "ami_name=$AMI_NAME" >> "$GITHUB_OUTPUT"
+
+          # Output to job summary
+          echo "## AMI Created" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Name:** \`$AMI_NAME\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Region:** \`$AWS_REGION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-instance:
+    needs: build-ami
+    if: github.event.inputs.deploy_instance == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Install ops
+        run: |
+          curl https://ops.city/get.sh -sSfL | sh
+
+      - name: Deploy instance
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AMI_NAME: ${{ needs.build-ami.outputs.ami_name }}
+        run: |
+          # Create ops config
+          cat > /tmp/ops-config.json <<EOF
+          {
+            "CloudConfig": {
+              "Platform": "aws",
+              "Zone": "${AWS_REGION}a",
+              "BucketName": "${S3_BUCKET}",
+              "Flavor": "t3.micro"
+            },
+            "RunConfig": {
+              "Ports": ["8080"],
+              "Memory": "512m"
+            }
+          }
+          EOF
+
+          ops instance create "$AMI_NAME" -c /tmp/ops-config.json -t aws
+
+          echo "## Instance Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image:** \`$AMI_NAME\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Run \`ops instance list -t aws\` to see instance details." >> "$GITHUB_STEP_SUMMARY"

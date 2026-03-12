@@ -16,6 +16,10 @@
       description = "AWS Lambda Rust project with musl static linking and minimal container image";
       path = ../templates/rust-lambda-musl;
     };
+    rust-unikernel = {
+      description = "Rust unikernel project with NanoVMs/ops, musl static linking, and AWS AMI deployment";
+      path = ../templates/rust-unikernel;
+    };
     go = {
       description = "Go project with CI checks and distroless container image";
       path = ../templates/go;
