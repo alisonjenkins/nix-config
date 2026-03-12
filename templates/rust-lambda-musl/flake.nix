@@ -160,6 +160,7 @@
             cargo-nextest
             cargo-watch
             just
+            stdenv.cc
           ];
         };
       }

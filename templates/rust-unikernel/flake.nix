@@ -145,6 +145,7 @@
               cargo-watch
               just
               awscli2
+              stdenv.cc
             ]
             ++ lib.optionals pkgs.stdenv.isLinux [
               ops
