@@ -11,6 +11,8 @@ _nix_flake_template_init() {
     'python-lambda:AWS Lambda Python project'
     'rust:Rust project with crane'
     'rust-lambda:AWS Lambda Rust project'
+    'rust-musl:Rust project with musl static linking'
+    'rust-lambda-musl:AWS Lambda Rust project with musl'
     'typescript:TypeScript project'
     'typescript-lambda:AWS Lambda TypeScript project'
   )

@@ -8,6 +8,14 @@
       description = "AWS Lambda Rust project with crane, cargo-lambda, and distroless container image";
       path = ../templates/rust-lambda;
     };
+    rust-musl = {
+      description = "Rust project with musl static linking, crane, and minimal container image";
+      path = ../templates/rust-musl;
+    };
+    rust-lambda-musl = {
+      description = "AWS Lambda Rust project with musl static linking and minimal container image";
+      path = ../templates/rust-lambda-musl;
+    };
     go = {
       description = "Go project with CI checks and distroless container image";
       path = ../templates/go;
