@@ -33,6 +33,53 @@
 
         inherit (pkgs) lib;
 
+        # Build latest ops from source (nixpkgs version is outdated)
+        ops-latest = pkgs.buildGoModule rec {
+          pname = "ops";
+          version = "0.1.45";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "nanovms";
+            repo = "ops";
+            rev = version;
+            hash = "sha256-gqBcJ4gXm48zfxGe7rRoFvRKe8jCeaNUjlc+IoGU3v4=";
+          };
+
+          vendorHash = "sha256-LHpj3FR4skOn5Z6SQJHMdkWlVGntOK2Y+8gBaHKjBOE=";
+          proxyVendor = true;
+
+          nativeBuildInputs = with pkgs; [
+            buf
+            protobuf
+            protoc-gen-go
+            protoc-gen-go-grpc
+            grpc-gateway
+          ];
+
+          preBuild = ''
+            export HOME=$(mktemp -d)
+            buf generate --path ./protos/imageservice/imageservice.proto
+            buf generate --path ./protos/instanceservice/instanceservice.proto
+            buf generate --path ./protos/volumeservice/volumeservice.proto
+          '';
+
+          ldflags = [
+            "-s"
+            "-w"
+            "-X github.com/nanovms/ops/lepton.Version=${version}"
+          ];
+
+          doCheck = false;
+
+          meta = {
+            description = "Build and run nanos unikernels";
+            homepage = "https://github.com/nanovms/ops";
+            license = lib.licenses.mit;
+            platforms = lib.platforms.linux;
+            mainProgram = "ops";
+          };
+        };
+
         # Musl target mapping for static Linux builds
         muslTargets = {
           "x86_64-linux" = {
@@ -148,7 +195,7 @@
               stdenv.cc
             ]
             ++ lib.optionals pkgs.stdenv.isLinux [
-              ops
+              ops-latest
               qemu
             ];
         };
