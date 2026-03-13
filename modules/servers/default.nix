@@ -153,17 +153,14 @@ in
       apiKeyFile = cfg.prometheus.exportarrProwlarr.apiKeyFile;
     };
 
-    # Firewall rules
-    networking.firewall.allowedTCPPorts =
-      (lib.optional (cfg.prometheus.nodeExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.nodeExporter.port)
-      ++ (lib.optional (cfg.prometheus.systemdExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.systemdExporter.port)
-      ++ (lib.optional (cfg.prometheus.smartctlExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.smartctlExporter.port)
-      ++ (lib.optional (cfg.prometheus.libvirtExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.libvirtExporter.port)
-      ++ (lib.optional (cfg.prometheus.nginxExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.nginxExporter.port)
-      ++ (lib.optional (cfg.prometheus.wireguardExporter.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.wireguardExporter.port)
-      ++ (lib.optional (cfg.prometheus.exportarrRadarr.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.exportarrRadarr.port)
-      ++ (lib.optional (cfg.prometheus.exportarrSonarr.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.exportarrSonarr.port)
-      ++ (lib.optional (cfg.prometheus.exportarrBazarr.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.exportarrBazarr.port)
-      ++ (lib.optional (cfg.prometheus.exportarrProwlarr.enable && cfg.openPrometheusFirewallPort) cfg.prometheus.exportarrProwlarr.port);
+    # Firewall rules - open ports for all enabled exporters
+    networking.firewall.allowedTCPPorts = let
+      exporters = with cfg.prometheus; [
+        nodeExporter systemdExporter smartctlExporter libvirtExporter
+        nginxExporter wireguardExporter exportarrRadarr exportarrSonarr
+        exportarrBazarr exportarrProwlarr
+      ];
+    in lib.optionals cfg.openPrometheusFirewallPort
+      (map (e: e.port) (builtins.filter (e: e.enable) exporters));
   };
 }
