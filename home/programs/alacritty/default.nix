@@ -2,7 +2,6 @@
 , pkgs
 , lib
 , inputs
-, system
 , ...
 }: {
   home.packages = lib.optionals config.programs.alacritty.enable [
@@ -18,7 +17,7 @@
         [Desktop Entry]
         Comment[en_US]=
         Comment=
-        Exec=${inputs.nixgl.packages.${system}.nixGLIntel}/bin/nixGLIntel alacritty
+        Exec=${inputs.nixgl.packages.${pkgs.stdenv.hostPlatform.system}.nixGLIntel}/bin/nixGLIntel alacritty
         GenericName[en_US]=
         GenericName=
         Icon=${pkgs.alacritty}/share/icons/hicolor/scalable/apps/Alacritty.svg

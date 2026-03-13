@@ -134,9 +134,9 @@
 
   virtualisation = {
     libvirtd = {
-      package = inputs.nixpkgs_old.legacyPackages.${pkgs.system}.libvirt;
+      package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libvirt;
       qemu = {
-        package = inputs.nixpkgs_old.legacyPackages.${pkgs.system}.qemu;
+        package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.qemu;
         runAsRoot = true;
         swtpm.enable = true;
       };
@@ -144,7 +144,7 @@
 
     libvirt = {
       enable = true;
-      package = inputs.nixpkgs_old.legacyPackages.${pkgs.system}.libvirt;
+      package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libvirt;
 
       connections = {
         "qemu:///system" = {

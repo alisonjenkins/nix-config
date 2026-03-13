@@ -2,7 +2,6 @@
 , pkgs
 , lib
 , inputs
-, system
 , ...
 }: {
   home.packages = lib.optionals pkgs.stdenv.isLinux [
@@ -16,7 +15,7 @@
         [Desktop Entry]
         Comment[en_US]=
         Comment=
-        Exec=${inputs.nixgl.packages.${system}.nixGLIntel}/bin/nixGLIntel ${pkgs.obsidian}/bin/obsidian
+        Exec=${inputs.nixgl.packages.${pkgs.stdenv.hostPlatform.system}.nixGLIntel}/bin/nixGLIntel ${pkgs.obsidian}/bin/obsidian
         GenericName[en_US]=
         GenericName=
         Icon=${pkgs.obsidian}/share/icons/hicolor/512x512/obsidian.png

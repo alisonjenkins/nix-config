@@ -2,7 +2,6 @@
 , outputs
 , pkgs
 , specialArgs
-, system
 ,
 }: {
   # List packages installed in system profile. To search by name, run:
@@ -45,9 +44,9 @@
       goreleaser
       gradle
       htop
-      inputs.ali-neovim.packages.${system}.nvim
-      inputs.ecrrepos.packages.${system}.default
-      inputs.maven.legacyPackages.${system}.maven
+      inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
+      inputs.ecrrepos.packages.${pkgs.stdenv.hostPlatform.system}.default
+      inputs.maven.legacyPackages.${pkgs.stdenv.hostPlatform.system}.maven
       ipcalc
       isort
       jdk11
@@ -98,7 +97,7 @@
       zoxide
     ]
     ++ [
-      inputs.attic.packages.${system}.attic-client
+      inputs.attic.packages.${pkgs.stdenv.hostPlatform.system}.attic-client
       buildah
     ];
 

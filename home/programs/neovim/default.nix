@@ -1,8 +1,8 @@
 { inputs
-, system
+, pkgs
 , ...
 }: {
   home.packages = [
-    inputs.ali-neovim.packages.${system}.nvim
+    inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
   ];
 }

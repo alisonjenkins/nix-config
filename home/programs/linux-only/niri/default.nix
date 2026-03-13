@@ -1,4 +1,4 @@
-{ pkgs, inputs, system, config, ... }: {
+{ pkgs, inputs, config, ... }: {
   home.packages =  if pkgs.stdenv.isLinux then with pkgs; [
     # mako
     # swaybg
@@ -6,8 +6,8 @@
     # syshud
     # waybar
     fuzzel
-    inputs.noctalia.packages.${system}.default
-    inputs.quickshell.packages.${system}.default
+    inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
     nautilus
     unstable.wlr-which-key
     wlsunset

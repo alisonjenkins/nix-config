@@ -1,7 +1,6 @@
 { lib
 , pkgs
 , inputs
-, system
 , ...
 }: {
   imports = [
@@ -75,7 +74,7 @@
     haveged
     htop
     imagemagick
-    inputs.ali-neovim.packages.${system}.nvim
+    inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
     iotop
     jdk17
     jq

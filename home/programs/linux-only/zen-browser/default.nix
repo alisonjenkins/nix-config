@@ -12,7 +12,7 @@
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
     nativeMessagingHosts = lib.mkIf pkgs.stdenv.isLinux [
-      inputs.pipewire-screenaudio.packages.${pkgs.system}.default
+      inputs.pipewire-screenaudio.packages.${pkgs.stdenv.hostPlatform.system}.default
       pkgs.unstable._1password-gui
     ];
 

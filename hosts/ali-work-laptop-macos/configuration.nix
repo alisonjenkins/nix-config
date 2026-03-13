@@ -1,7 +1,6 @@
 { pkgs
 , outputs
 , inputs
-, system
 , username
 , hostname
 , ...

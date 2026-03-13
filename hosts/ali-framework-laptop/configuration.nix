@@ -2,7 +2,6 @@
 , inputs
 , outputs
 , pkgs
-, system
 , ...
 }: {
   imports = [
@@ -173,7 +172,7 @@
       freeplane
       fuzzel
       gnome-keyring
-      inputs.framework-inputmodule-rs-flake.packages.${system}.inputmodule-control
+      inputs.framework-inputmodule-rs-flake.packages.${pkgs.stdenv.hostPlatform.system}.inputmodule-control
       lact
       ldacbt
       obsidian
@@ -279,7 +278,7 @@
   services = {
     udev = {
       packages = [
-        inputs.framework-inputmodule-rs-flake.packages.${system}.udev
+        inputs.framework-inputmodule-rs-flake.packages.${pkgs.stdenv.hostPlatform.system}.udev
       ];
 
       extraRules = ''
