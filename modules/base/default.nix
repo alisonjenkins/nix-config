@@ -162,6 +162,7 @@ in
             "net.ipv4.conf.default.send_redirects" = 0;
             "net.ipv4.icmp_echo_ignore_all" = 1;
             "net.ipv4.tcp_congestion_control" = "bbr";
+            "net.ipv4.tcp_ecn" = 1;
             "net.ipv4.tcp_fastopen" = 3;
             "net.ipv4.tcp_fin_timeout" = 10;
             "net.ipv4.tcp_keepalive_intvl" = 10;
@@ -175,7 +176,7 @@ in
             "net.ipv4.tcp_sack" = 1;
             "net.ipv4.tcp_slow_start_after_idle" = 0;
             "net.ipv4.tcp_syncookies" = 1;
-            "net.ipv4.tcp_timestamps" = 0;
+            "net.ipv4.tcp_timestamps" = 1;
             "net.ipv4.tcp_tw_reuse" = 1;
             "net.ipv4.tcp_wmem" = "4096 65536 16777216";
             "net.ipv4.udp_rmem_min" = 8192;
