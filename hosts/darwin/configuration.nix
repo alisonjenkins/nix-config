@@ -483,14 +483,12 @@
   fonts = {
     fontDir.enable = true;
 
-    fonts = {
-      packages = with pkgs; [
-        nerd-fonts.fira-code
-        nerd-fonts.hack
-        nerd-fonts.jetbrains-mono
-        recursive
-      ];
-    };
+    packages = with pkgs; [
+      nerd-fonts.fira-code
+      nerd-fonts.hack
+      nerd-fonts.jetbrains-mono
+      recursive
+    ];
   };
 
   security.pam.enableSudoTouchIdAuth = true;
@@ -599,7 +597,7 @@
       outputs.overlays.modifications
       outputs.overlays.stable-packages
     ];
-    hostPlatform = system;
+    hostPlatform = pkgs.stdenv.hostPlatform.system;
   };
 
   programs.zsh.enable = true; # default shell on catalina
