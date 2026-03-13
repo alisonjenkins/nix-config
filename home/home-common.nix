@@ -118,7 +118,6 @@
       enable = lib.mkIf pkgs.stdenv.isLinux true;
       enableBashIntegration = true;
       enableZshIntegration = true;
-      extraConfig = "pinentry-program ${pkgs.kwalletcli}/bin/pinentry-kwallet";
       pinentry.package = pkgs.kwalletcli.overrideAttrs (_: prev: {
         meta =
           prev.meta
