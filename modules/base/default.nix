@@ -20,6 +20,12 @@ in
       description = "Console keymap";
     };
 
+    enableICMPPing = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Allow incoming ICMP echo requests (ping). Disabled by default for security.";
+    };
+
     enableIPv6 = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -36,6 +42,12 @@ in
       type = lib.types.bool;
       default = true;
       description = "Enable OpenSSH";
+    };
+
+    enableTailscale = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable Tailscale VPN";
     };
 
     enablePlymouth = lib.mkOption {
@@ -72,6 +84,12 @@ in
       type = lib.types.enum [ "systemd-boot" "grub" "secure-boot" ];
       default = "systemd-boot";
       description = "Boot loader to use. 'secure-boot' uses Lanzaboote with TPM support.";
+    };
+
+    enableCachyOSKernel = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable CachyOS kernel overlay. Only needed on hosts using CachyOS kernel packages.";
     };
 
     pcr15Value = lib.mkOption {
@@ -128,7 +146,7 @@ in
             "fs.dentry-negative" = 1;
 
             # Network Perf Tuning
-            "net.core.default_qdisc" = "dualpi2";
+            "net.core.default_qdisc" = lib.mkDefault "dualpi2";
             "net.core.netdev_budget" = 600;
             "net.core.netdev_budget_usecs" = 8000;
             "net.core.netdev_max_backlog" = 16384;
@@ -148,7 +166,7 @@ in
             "net.ipv4.conf.default.rp_filter" = 1;
             "net.ipv4.conf.default.secure_redirects" = 0;
             "net.ipv4.conf.default.send_redirects" = 0;
-            "net.ipv4.icmp_echo_ignore_all" = 1;
+            "net.ipv4.icmp_echo_ignore_all" = if cfg.enableICMPPing then 0 else 1;
             "net.ipv4.tcp_congestion_control" = "bbr";
             "net.ipv4.tcp_ecn" = 1;
             "net.ipv4.tcp_fastopen" = 3;
@@ -204,7 +222,6 @@ in
           rush-parallel
           tmux
           trash-cli
-          unstable.tailscale
           vim
           yazi
         ] ++ (if (cfg.bootLoader == "secure-boot") then [pkgs.sbctl] else [])
@@ -227,7 +244,6 @@ in
         };
 
         overlays = [
-          inputs.nix-cachyos-kernel.overlays.pinned
           inputs.nur.overlays.default
           inputs.rust-overlay.overlays.default
           outputs.overlays.additions
@@ -236,7 +252,7 @@ in
           outputs.overlays.stable-packages
           outputs.overlays.tmux-sessionizer
           outputs.overlays.unstable-packages
-        ];
+        ] ++ lib.optional cfg.enableCachyOSKernel inputs.nix-cachyos-kernel.overlays.pinned;
       };
 
       nix = {
@@ -368,7 +384,7 @@ in
         };
 
         tailscale = {
-          enable = true;
+          enable = cfg.enableTailscale;
           package = pkgs.unstable.tailscale;
         };
 
@@ -519,12 +535,6 @@ in
                 mode = "0700";
               }
               {
-                directory = "/var/lib/tailscale";
-                user = "root";
-                group = "root";
-                mode = "0700";
-              }
-              {
                 directory = "/var/lib/private/ollama";
                 user = "ollama";
                 group = "ollama";
@@ -560,7 +570,15 @@ in
                 group = "root";
                 mode = "u=rwx,g=,o=";
               }
-            ] ++ (if (cfg.bootLoader == "secure-boot") then [
+            ] ++ (if cfg.enableTailscale then [
+              {
+                directory = "/var/lib/tailscale";
+                user = "root";
+                group = "root";
+                mode = "0700";
+              }
+            ] else [])
+            ++ (if (cfg.bootLoader == "secure-boot") then [
               {
                 directory = "/var/lib/sbctl";
                 group = "root";
