@@ -356,14 +356,18 @@ in
         openssh = {
           enable = cfg.enableOpenSSH;
 
-          hostKeys = [
+          hostKeys = let
+            keyDir = if cfg.enableImpermanence
+              then "${cfg.impermanencePersistencePath}/etc/ssh/keys"
+              else "/etc/ssh";
+          in [
             {
               bits = 4096;
-              path = "/persistence/etc/ssh/keys/ssh_host_rsa_key";
+              path = "${keyDir}/ssh_host_rsa_key";
               type = "rsa";
             }
             {
-              path = "/persistence/etc/ssh/keys/ssh_host_ed25519_key";
+              path = "${keyDir}/ssh_host_ed25519_key";
               type = "ed25519";
             }
           ];
