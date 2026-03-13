@@ -25,6 +25,7 @@
     enable = true;
     enableImpermanence = true;
     bootLoader = "secure-boot";
+    enableCachyOSKernel = true;
   };
   modules.locale.enable = true;
   modules.libvirtd.enable = true;
