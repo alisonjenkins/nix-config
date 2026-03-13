@@ -23,8 +23,7 @@
   modules.base = {
     enable = true;
     enableImpermanence = true;
-    useSecureBoot = true;
-    useSystemdBoot = false;
+    bootLoader = "secure-boot";
     pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
   };
   modules.locale.enable = true;

@@ -68,28 +68,16 @@ in
       description = "Use ali-neovim flake package";
     };
 
-    useGrub = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Use GRUB bootloader";
-    };
-
-    useSecureBoot = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Enable Lanzaboote secure boot with TPM";
+    bootLoader = lib.mkOption {
+      type = lib.types.enum [ "systemd-boot" "grub" "secure-boot" ];
+      default = "systemd-boot";
+      description = "Boot loader to use. 'secure-boot' uses Lanzaboote with TPM support.";
     };
 
     pcr15Value = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "TPM PCR15 value for LUKS unlocking";
-    };
-
-    useSystemdBoot = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Use systemd-boot bootloader";
+      description = "TPM PCR15 value for LUKS unlocking (only used with secure-boot)";
     };
   };
 
@@ -219,7 +207,7 @@ in
           unstable.tailscale
           vim
           yazi
-        ] ++ (if cfg.useSecureBoot then [pkgs.sbctl] else [])
+        ] ++ (if (cfg.bootLoader == "secure-boot") then [pkgs.sbctl] else [])
         ++ (if cfg.useAliNeovim then [
           inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
         ] else [pkgs.neovim]);
@@ -440,7 +428,7 @@ in
     }
 
     # GRUB bootloader
-    (lib.mkIf cfg.useGrub {
+    (lib.mkIf (cfg.bootLoader == "grub") {
       boot.loader.grub = {
         devices = [ "nodev" ];
         efiInstallAsRemovable = false;
@@ -463,7 +451,7 @@ in
     })
 
     # systemd-boot bootloader
-    (lib.mkIf cfg.useSystemdBoot {
+    (lib.mkIf (cfg.bootLoader == "systemd-boot") {
       boot.loader.systemd-boot = {
         consoleMode = "max";
         enable = true;
@@ -472,10 +460,15 @@ in
       };
     })
 
-    # Secure boot (Lanzaboote)
-    (lib.mkIf cfg.useSecureBoot {
+    # Secure boot (Lanzaboote) - inherits systemd-boot config but replaces it with Lanzaboote
+    (lib.mkIf (cfg.bootLoader == "secure-boot") {
       boot = {
-        loader.systemd-boot.enable = lib.mkForce false;
+        loader.systemd-boot = {
+          consoleMode = "max";
+          enable = lib.mkForce false;
+          memtest86.enable = true;
+          netbootxyz.enable = true;
+        };
 
         lanzaboote = {
           enable = true;
@@ -567,7 +560,7 @@ in
                 group = "root";
                 mode = "u=rwx,g=,o=";
               }
-            ] ++ (if cfg.useSecureBoot then [
+            ] ++ (if (cfg.bootLoader == "secure-boot") then [
               {
                 directory = "/var/lib/sbctl";
                 group = "root";

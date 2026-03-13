@@ -24,8 +24,7 @@
   modules.base = {
     enable = true;
     enableImpermanence = true;
-    useSecureBoot = true;
-    useSystemdBoot = false;
+    bootLoader = "secure-boot";
   };
   modules.locale.enable = true;
   modules.libvirtd.enable = true;
