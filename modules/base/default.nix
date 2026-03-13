@@ -385,7 +385,7 @@ in
 
         tailscale = {
           enable = cfg.enableTailscale;
-          package = pkgs.unstable.tailscale;
+          package = lib.mkDefault pkgs.unstable.tailscale;
         };
 
         timesyncd = {
