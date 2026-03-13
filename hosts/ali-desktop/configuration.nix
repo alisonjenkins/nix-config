@@ -221,6 +221,9 @@
     };
   };
 
+  # Disable NetworkManager-wait-online — desktop doesn't need network up before login
+  systemd.services.NetworkManager-wait-online.enable = false;
+
   networking = {
     hostName = "ali-desktop";
 
