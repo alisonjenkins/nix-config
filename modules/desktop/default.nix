@@ -815,7 +815,7 @@ in
 
     services = {
       ananicy = {
-        enable = true;
+        enable = mkDefault true;
         package = pkgs.ananicy-cpp;
         rulesProvider = pkgs.ananicy-rules-cachyos;
 
@@ -896,14 +896,14 @@ in
 
       cachix-watch-store = {
         cacheName = "ajenkins-public";
-        cachixTokenFile = "/persistence/cachix/authToken";
+        cachixTokenFile = "${config.modules.base.impermanencePersistencePath}/cachix/authToken";
         compressionLevel = 5;
         enable = false;
         jobs = 4;
       };
 
       colord = {
-        enable = true;
+        enable = mkDefault true;
       };
 
       desktopManager.cosmic = mkIf cfg.cosmic.enable {
@@ -911,15 +911,15 @@ in
       };
 
       gvfs = {
-        enable = true;
+        enable = mkDefault true;
       };
 
       tumbler = {
-        enable = true;
+        enable = mkDefault true;
       };
 
       udisks2 = {
-        enable = true;
+        enable = mkDefault true;
       };
 
       lsfg-vk = {
@@ -1086,7 +1086,7 @@ in
       };
 
       power-profiles-daemon = {
-        enable = true;
+        enable = mkDefault true;
       };
 
       printing = mkIf cfg.printing.enable {
@@ -1095,9 +1095,9 @@ in
       };
 
       scx = {
-        enable = true;
-        scheduler = "scx_lavd";
-        extraArgs = ["--performance"];
+        enable = mkDefault true;
+        scheduler = mkDefault "scx_lavd";
+        extraArgs = mkDefault ["--performance"];
       };
 
       tlp = {
