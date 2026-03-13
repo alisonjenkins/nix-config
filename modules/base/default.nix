@@ -141,6 +141,8 @@ in
 
             # Network Perf Tuning
             "net.core.default_qdisc" = "dualpi2";
+            "net.core.netdev_budget" = 600;
+            "net.core.netdev_budget_usecs" = 8000;
             "net.core.netdev_max_backlog" = 16384;
             "net.core.optmem_max" = 65536;
             "net.core.rmem_default" = 1048576;
@@ -169,7 +171,7 @@ in
             "net.ipv4.tcp_max_tw_buckets" = 2000000;
             "net.ipv4.tcp_mtu_probing" = 1;
             "net.ipv4.tcp_rfc1337" = 1;
-            "net.ipv4.tcp_rmem" = "4096 1048576 2097152";
+            "net.ipv4.tcp_rmem" = "4096 1048576 16777216";
             "net.ipv4.tcp_sack" = 1;
             "net.ipv4.tcp_slow_start_after_idle" = 0;
             "net.ipv4.tcp_syncookies" = 1;
@@ -180,7 +182,7 @@ in
             "net.ipv4.udp_wmem_min" = 8192;
             "net.ipv6.conf.all.accept_redirects" = 0;
             "net.ipv6.conf.default.accept_redirects" = 0;
-            "net.net.ipv4.tcp_window_scaling" = 1;
+            "net.ipv4.tcp_window_scaling" = 1;
 
             # Virtual memory tuning
             "vm.swappiness" = lib.mkDefault 10;
