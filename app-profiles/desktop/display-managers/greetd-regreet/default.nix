@@ -21,7 +21,7 @@
     };
   };
 
-  security.pam.services.greetd.enableKwallet = true;
+  security.pam.services.greetd.kwallet.enable = true;
   # system.activationScripts.makeRegreetLibDir = lib.stringAfter [ "var" ] ''
   #   mkdir -p /var/lib/regreet
   #   chown greeter:greeter -R /var/lib/regreet

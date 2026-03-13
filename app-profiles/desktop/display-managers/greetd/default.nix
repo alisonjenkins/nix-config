@@ -14,7 +14,7 @@
     };
   };
 
-  security.pam.services.greetd.enableKwallet = true;
+  security.pam.services.greetd.kwallet.enable = true;
   system.activationScripts.makeTuigreetCacheDir = lib.stringAfter [ "var" ] ''
     mkdir -p /var/cache/tuigreet
     chown greeter:greeter -R /var/cache/tuigreet
