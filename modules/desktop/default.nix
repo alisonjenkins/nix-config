@@ -16,7 +16,7 @@ in
 
     enableVirtualCamera = mkOption {
       type = types.bool;
-      default = false;
+      default = true;
       description = "Enable v4l2loopback virtual camera devices for multi-app camera sharing.";
     };
 
