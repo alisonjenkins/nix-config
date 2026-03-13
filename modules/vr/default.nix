@@ -12,7 +12,7 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [ { } (lib.mkIf cfg.enableOpenSourceVR {
+  config = lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
     programs = {
       envision = {
         enable = true;
@@ -49,5 +49,5 @@ in
         };
       };
     };
-  }) ]);
+  };
 }
