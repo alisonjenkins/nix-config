@@ -103,8 +103,8 @@
     ];
 
   environment.variables = {
-    JAVA_HOME = ''${pkgs.jdk11}'';
-    PATH = ''${pkgs.jdk11}/bin:$PATH'';
+    JAVA_HOME = ''${pkgs.jdk}'';
+    PATH = ''${pkgs.jdk}/bin:$PATH'';
     ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten";
   };
 
