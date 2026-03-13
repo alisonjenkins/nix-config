@@ -34,7 +34,6 @@
     app-desktop-sddm = import ../app-profiles/desktop/display-managers/sddm;
     app-desktop-wm-hyprland = import ../app-profiles/desktop/wms/hyprland;
     app-desktop-wm-plasma6 = import ../app-profiles/desktop/wms/plasma6;
-    app-desktop-wm-river = import ../app-profiles/desktop/wms/river;
     app-desktop-wm-sway = import ../app-profiles/desktop/wms/sway;
     app-hardware-fingerprint-reader = import ../app-profiles/hardware/fingerprint-reader;
     app-hardware-touchpad = import ../app-profiles/hardware/touchpad;
