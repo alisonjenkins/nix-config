@@ -102,7 +102,6 @@
         "discard=async"        # Async TRIM for SSD health (performance)
         "ssd"                  # Enable SSD optimizations
       ];
-      neededForBoot = true;
     };
 
     "/nix" = {
