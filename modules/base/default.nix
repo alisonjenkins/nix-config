@@ -234,7 +234,7 @@ in
         enableIPv6 = cfg.enableIPv6;
 
         networkmanager = {
-          enable = true;
+          enable = lib.mkDefault true;
         };
       };
 
@@ -257,7 +257,6 @@ in
 
       nix = {
         package = lib.mkDefault pkgs.nixVersions.stable;
-        extraOptions = "experimental-features = nix-command flakes";
 
         gc = {
           automatic = lib.mkDefault true;
@@ -268,6 +267,7 @@ in
         settings = {
           auto-optimise-store = lib.mkDefault false;
           cores = 0;
+          experimental-features = [ "nix-command" "flakes" ];
           download-buffer-size = 268435456; # 256 MiB
           eval-cache = true;
           max-jobs = "auto";
