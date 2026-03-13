@@ -20,6 +20,12 @@ in
       description = "Enable v4l2loopback virtual camera devices for multi-app camera sharing.";
     };
 
+    wallpaper = mkOption {
+      type = types.path;
+      default = ../../home/wallpapers/5120x1440/Static/sakura.jpg;
+      description = "Wallpaper image path for stylix theming.";
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -1381,7 +1387,7 @@ in
     stylix = {
         base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
         enable = true;
-        image = ../../home/wallpapers/5120x1440/Static/sakura.jpg;
+        image = cfg.wallpaper;
         polarity = "dark";
 
         cursor = {
