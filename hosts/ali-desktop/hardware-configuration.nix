@@ -10,7 +10,6 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    (modulesPath + "/profiles/qemu-guest.nix")
   ];
 
   boot = {
@@ -20,7 +19,6 @@
 
     initrd = {
       availableKernelModules = [
-        "aesni_intel"
         "ahci"
         "cryptd"
         "dm-raid"
@@ -31,8 +29,6 @@
         "uas"
         "usb_storage"
         "usbhid"
-        "virtio_blk"
-        "virtio_pci"
         "xhci_pci"
       ];
       kernelModules = [
