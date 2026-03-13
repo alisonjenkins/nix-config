@@ -517,7 +517,7 @@
   };
 
   nix = {
-    enable = false;
+    enable = true;
     distributedBuilds = true;
     #package = pkgs.nixVersions.stable;
 
