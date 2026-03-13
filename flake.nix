@@ -35,7 +35,6 @@
       url = "github:xddxdd/nix-cachyos-kernel/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixgl = {
       url = "github:nix-community/nixGL";
@@ -106,11 +105,6 @@
 
     nixcord = {
       url = "github:kaylorben/nixcord/a8802dc23e112f98196a7daa68f0e246c7a0ea64";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nix-on-droid = {
-      url = "github:nix-community/nix-on-droid/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
