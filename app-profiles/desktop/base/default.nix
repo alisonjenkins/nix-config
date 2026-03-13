@@ -1,4 +1,5 @@
-{ pkgs
+{ lib
+, pkgs
 , inputs
 , system
 , ...
@@ -142,20 +143,20 @@
   };
 
   services = {
-    atd.enable = true;
+    atd.enable = lib.mkDefault true;
     cpupower-gui.enable = false;
-    haveged.enable = true;
-    kbfs.enable = true;
-    keybase.enable = true;
+    haveged.enable = lib.mkDefault true;
+    kbfs.enable = lib.mkDefault true;
+    keybase.enable = lib.mkDefault true;
 
     avahi = {
-      enable = true;
+      enable = lib.mkDefault true;
       nssmdns4 = true;
       openFirewall = true;
     };
 
     flatpak = {
-      enable = true;
+      enable = lib.mkDefault true;
       packages = [
         "codes.merritt.Nyrna"
         "org.vinegarhq.Sober"
@@ -180,7 +181,7 @@
     };
 
     printing = {
-      enable = true;
+      enable = lib.mkDefault true;
       drivers = [
         pkgs.brlaser
       ];
