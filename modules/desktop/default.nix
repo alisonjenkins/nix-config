@@ -240,6 +240,21 @@ in
       };
     };
 
+    network = {
+      cakeMode = mkOption {
+        type = types.enum [ "diffserv4" "besteffort" "plain" ];
+        default = "diffserv4";
+        description = ''
+          CAKE qdisc scheduling mode applied on interface bring-up.
+          - "diffserv4": DSCP-based 4-tin prioritisation (voice > video > best-effort > bulk).
+            Good for laptops where latency-sensitive traffic (calls) must coexist with bulk downloads.
+          - "besteffort": Single-tin per-flow fairness without priority classification.
+            Good for desktops where maximum bulk throughput is preferred.
+          - "plain": Bare CAKE with no extra keyword — equivalent to besteffort but explicitly minimal.
+        '';
+      };
+    };
+
     wifi = {
       optimizeForLowLatency = mkOption {
         type = types.bool;
@@ -697,15 +712,15 @@ in
     };
 
     networking = {
-      # CAKE qdisc with diffserv4 for per-flow fairness and DSCP-based
-      # traffic prioritisation (voice > video > best-effort > bulk).
-      # Prevents bulk downloads (e.g. Steam) from starving latency-sensitive
-      # traffic (e.g. video/voice calls).
-      networkmanager.dispatcherScripts = [
+      # CAKE qdisc for per-flow fairness, applied on interface bring-up.
+      # Mode is configurable via modules.desktop.network.cakeMode.
+      networkmanager.dispatcherScripts = let
+        cakeArgs = if cfg.network.cakeMode == "plain" then "" else " ${cfg.network.cakeMode}";
+      in [
         {
-          source = pkgs.writeText "cake-diffserv4" ''
+          source = pkgs.writeText "cake-qdisc" ''
             if [ "$2" = "up" ]; then
-              ${pkgs.iproute2}/bin/tc qdisc replace dev "$1" root cake diffserv4
+              ${pkgs.iproute2}/bin/tc qdisc replace dev "$1" root cake${cakeArgs}
             fi
           '';
           type = "basic";

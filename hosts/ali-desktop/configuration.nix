@@ -50,6 +50,8 @@
   modules.desktop = {
     enable = true;
 
+    network.cakeMode = "besteffort";
+
     pipewire = {
       suspendTimeoutSeconds = 0;  # Never suspend audio devices — prevents crackle on resume
       alsaHeadroom = 2048;        # Extra headroom to absorb scheduling jitter under CPU load
