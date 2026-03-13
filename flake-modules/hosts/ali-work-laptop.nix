@@ -8,12 +8,12 @@ let
   };
 in {
   flake.nixosConfigurations.ali-work-laptop = lib.nixosSystem rec {
-    inherit system;
     specialArgs = {
       username = "ali";
-      inherit inputs outputs system;
+      inherit inputs outputs;
     };
     modules = [
+      { nixpkgs.hostPlatform = system; }
       ../../app-profiles/desktop/aws
       ../../app-profiles/desktop/display-managers/greetd-regreet
       ../../app-profiles/desktop/local-k8s

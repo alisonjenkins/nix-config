@@ -4,13 +4,13 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 in {
-  flake.nixosConfigurations.dev-vm = lib.nixosSystem rec {
-    inherit system;
+  flake.nixosConfigurations.dev-vm = lib.nixosSystem {
     specialArgs = {
       username = "ali";
-      inherit inputs outputs system;
+      inherit inputs outputs;
     };
     modules = [
+      { nixpkgs.hostPlatform = system; }
       ../../hosts/dev-vm/configuration.nix
       inputs.disko.nixosModules.disko
       inputs.sops-nix.nixosModules.sops

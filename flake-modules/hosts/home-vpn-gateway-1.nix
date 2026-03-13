@@ -5,13 +5,13 @@ let
   inherit (self) outputs;
 in {
   flake.nixosConfigurations = {
-    home-vpn-gateway-1 = nixLib.nixosSystem rec {
-      inherit system;
+    home-vpn-gateway-1 = nixLib.nixosSystem {
       specialArgs = {
         username = "ali";
-        inherit inputs outputs system;
+        inherit inputs outputs;
       };
       modules = [
+        { nixpkgs.hostPlatform = system; }
         ../../hosts/home-vpn-gateway-1/configuration.nix
         ../../hosts/home-vpn-gateway-1/hardware-configuration.nix
         inputs.disko.nixosModules.disko
@@ -19,13 +19,13 @@ in {
       ];
     };
 
-    home-vpn-gateway-1-vm = nixLib.nixosSystem rec {
-      inherit system;
+    home-vpn-gateway-1-vm = nixLib.nixosSystem {
       specialArgs = {
         username = "ali";
-        inherit inputs outputs system;
+        inherit inputs outputs;
       };
       modules = [
+        { nixpkgs.hostPlatform = system; }
         ../../hosts/home-vpn-gateway-1/configuration.nix
         ../../hosts/home-vpn-gateway-1/hardware-configuration.nix
         inputs.disko.nixosModules.disko

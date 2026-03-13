@@ -4,13 +4,13 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 in {
-  flake.nixosConfigurations.home-kvm-hypervisor-1 = lib.nixosSystem rec {
-    inherit system;
+  flake.nixosConfigurations.home-kvm-hypervisor-1 = lib.nixosSystem {
     specialArgs = {
       username = "ali";
-      inherit inputs outputs system;
+      inherit inputs outputs;
     };
     modules = [
+      { nixpkgs.hostPlatform = system; }
       ../../hosts/home-kvm-hypervisor-1/configuration.nix
       ../../hosts/home-kvm-hypervisor-1/disko-config.nix
       inputs.disko.nixosModules.disko

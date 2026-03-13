@@ -8,12 +8,12 @@ let
   };
 in {
   flake.nixosConfigurations.ali-framework-laptop = lib.nixosSystem rec {
-    inherit system;
     specialArgs = {
       username = "ali";
-      inherit inputs outputs system;
+      inherit inputs outputs;
     };
     modules = [
+      { nixpkgs.hostPlatform = system; }
       ../../app-profiles/desktop/aws
       ../../app-profiles/desktop/display-managers/greetd-regreet
       ../../app-profiles/desktop/local-k8s
@@ -48,7 +48,7 @@ in {
             {
               services.inputmodule-control = {
                 enable = true;
-                package = inputs.framework-inputmodule-rs-flake.packages.x86_64-linux.inputmodule-control;
+                package = inputs.framework-inputmodule-rs-flake.packages.${system}.inputmodule-control;
 
                 ledMatrix.both = {
                   brightness = 5;

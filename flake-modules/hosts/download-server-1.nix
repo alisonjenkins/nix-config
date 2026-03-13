@@ -4,13 +4,13 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 in {
-  flake.nixosConfigurations.download-server-1 = lib.nixosSystem rec {
-    inherit system;
+  flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
       username = "ali";
-      inherit inputs outputs system;
+      inherit inputs outputs;
     };
     modules = [
+      { nixpkgs.hostPlatform = system; }
       ../../hosts/download-server-1/configuration.nix
       ../../hosts/download-server-1/hardware-configuration.nix
       inputs.disko.nixosModules.disko
