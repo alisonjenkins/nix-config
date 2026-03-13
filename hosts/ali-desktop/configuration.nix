@@ -87,6 +87,11 @@
     # kernelPackages = pkgs.lqx_pin.linuxKernel.packages.linux_lqx;
     kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
 
+    # Use vendor r8125 driver instead of in-kernel r8169 for RTL8125 2.5GbE
+    # The vendor driver has better throughput on 1GbE links (~880 Mbps vs ~815 Mbps)
+    extraModulePackages = [ config.boot.kernelPackages.r8125 ];
+    blacklistedKernelModules = [ "r8169" ];
+
     kernelParams = [
       # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
       "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
@@ -100,7 +105,7 @@
     ];
 
     initrd = {
-      availableKernelModules = [ "r8169" ];
+      availableKernelModules = [ "r8125" ];
 
       systemd = {
         enable = true;
