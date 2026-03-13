@@ -1394,13 +1394,13 @@ in
 
         fonts = {
           serif = {
-            package = pkgs.nerd-fonts.fira-code;
-            name = "FiraCode Nerd Font Mono";
+            package = pkgs.noto-fonts;
+            name = "Noto Serif";
           };
 
           sansSerif = {
-            package = pkgs.nerd-fonts.fira-code;
-            name = "FiraCode Nerd Font Mono";
+            package = pkgs.noto-fonts;
+            name = "Noto Sans";
           };
 
           monospace = {
