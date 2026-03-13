@@ -60,7 +60,7 @@
         "net.ipv4.udp_wmem_min" = 8192;
         "net.ipv6.conf.all.accept_redirects" = 0;
         "net.ipv6.conf.default.accept_redirects" = 0;
-        "net.net.ipv4.tcp_window_scaling" = 1;
+        "net.ipv4.tcp_window_scaling" = 1;
 
         # Virtual memory tuning
         "vm.swappiness" = lib.mkForce 10;
