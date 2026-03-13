@@ -8,7 +8,7 @@
       source = ./id_personal.pub;
       onChange = ''
         cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
-        chmod 600 ~/.ssh/id_personal.pub
+        chmod 644 ~/.ssh/id_personal.pub
       '';
     };
 
@@ -16,7 +16,7 @@
       source = ./id_civica.pub;
       onChange = ''
         cp ~/.ssh/id_civica.pub.source ~/.ssh/id_civica.pub
-        chmod 600 ~/.ssh/id_civica.pub
+        chmod 644 ~/.ssh/id_civica.pub
       '';
     };
 
@@ -24,7 +24,7 @@
       source = ./id_civica_rsa.pub;
       onChange = ''
         cp ~/.ssh/id_civica_rsa.pub.source ~/.ssh/id_civica_rsa.pub
-        chmod 600 ~/.ssh/id_civica_rsa.pub
+        chmod 644 ~/.ssh/id_civica_rsa.pub
       '';
     };
 
