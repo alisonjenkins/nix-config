@@ -42,7 +42,7 @@ in {
       ];
 
       extraSpecialArgs = {
-        inherit inputs system;
+        inherit inputs;
         username = "ali";
         hostname = "ali-desktop-arch";
         bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
@@ -67,7 +67,7 @@ in {
         gitGPGSigningKey = "";
         gitUserName = "Alison Jenkins";
         hostname = "steam-deck";
-        inherit inputs system;
+        inherit inputs;
         primarySSHKey = "~/.ssh/id_personal.pub";
         username = "deck";
       };

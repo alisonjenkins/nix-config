@@ -32,7 +32,6 @@ let
   commonArgs = {
     inherit inputs outputs;
     pkgs = darwinPkgs;
-    system = darwinSystem;
     inherit username;
   };
 
