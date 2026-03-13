@@ -1,18 +1,12 @@
-{ pkgs, config, ... }: {
-  programs._1password-gui =
-    if pkgs.stdenv.isLinux then
-      let
-        op_polkit_owners = builtins.attrNames config.users;
-      in
-      {
-        enable = true;
-        package = pkgs.unstable._1password-gui;
-        polkitPolicyOwners = op_polkit_owners;
-      } else {
-      enable = false;
-    };
-    programs._1password = {
-      enable = if pkgs.stdenv.isLinux then true else false;
-      package = pkgs.unstable._1password-cli;
-    };
+{ pkgs, config, lib, ... }: {
+  programs._1password-gui = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    package = pkgs.unstable._1password-gui;
+    polkitPolicyOwners = builtins.attrNames config.users;
+  };
+
+  programs._1password = {
+    enable = pkgs.stdenv.isLinux;
+    package = pkgs.unstable._1password-cli;
+  };
 }
