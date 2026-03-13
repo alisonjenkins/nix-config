@@ -14,6 +14,12 @@ in
   options.modules.desktop = {
     enable = mkEnableOption "desktop environment configuration";
 
+    enableVirtualCamera = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable v4l2loopback virtual camera devices for multi-app camera sharing.";
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -412,14 +418,13 @@ in
     boot.kernelParams = mkIf cfg.gaming.enable [ "transparent_hugepage=madvise" ];
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
-    boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ]) ++ [
-      "sch_cake"
-      "v4l2loopback"
-    ];
+    boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ])
+      ++ [ "sch_cake" ]
+      ++ optional cfg.enableVirtualCamera "v4l2loopback";
 
     # v4l2loopback virtual webcam devices for multi-app camera sharing
-    boot.extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
-    boot.extraModprobeConfig = ''
+    boot.extraModulePackages = optionals cfg.enableVirtualCamera [ config.boot.kernelPackages.v4l2loopback ];
+    boot.extraModprobeConfig = mkIf cfg.enableVirtualCamera ''
       options v4l2loopback devices=2 video_nr=10,11 card_label="Virtual_Camera_1","Virtual_Camera_2" exclusive_caps=1
     '';
 
@@ -1373,17 +1378,10 @@ in
       };
     };
 
-    stylix =
-      let
-        wallpaper = pkgs.fetchurl {
-          url = "https://media.githubusercontent.com/media/alisonjenkins/nix-config/8a0e3f667dcc5fe0f2e461ca4cb17c74028d92f8/home/wallpapers/5120x1440/Static/sakura.jpg";
-          hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
-        };
-      in
-      {
+    stylix = {
         base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
         enable = true;
-        image = wallpaper;
+        image = ../../home/wallpapers/5120x1440/Static/sakura.jpg;
         polarity = "dark";
 
         cursor = {
