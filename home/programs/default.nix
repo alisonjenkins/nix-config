@@ -1,16 +1,4 @@
 {
-  config,
-  gitEmail,
-  gitGPGSigningKey,
-  gitUserName,
-  github_clone_ssh_host_personal ? "github.com",
-  github_clone_ssh_host_work ? "github.com",
-  gpuType ? "",
-  inputs,
-  lib,
-  pkgs,
-  system,
-  username,
   ...
 }: {
   imports = [
