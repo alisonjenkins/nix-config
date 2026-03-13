@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  system,
   ...
 }: let
   hyprevent = pkgs.writeShellScriptBin "hyprevent" ''
@@ -46,7 +45,7 @@ in {
 
   home.file =
     if pkgs.stdenv.isLinux then {
-      ".config/hypr/autostart.conf".text = import ./configs/hypr/autostart.conf.nix { inherit pkgs inputs system; };
+      ".config/hypr/autostart.conf".text = import ./configs/hypr/autostart.conf.nix { inherit pkgs; };
       ".config/hypr/hyprlock.conf".text = import ./configs/hypr/hyprlock.conf.nix;
       ".config/hypr/keybinds.conf".text = import ./configs/hypr/keybinds.conf.nix { inherit pkgs; };
       ".config/hypr/windowrules.conf".text = import ./configs/hypr/windowrules.conf.nix;
