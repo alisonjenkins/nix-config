@@ -21,5 +21,15 @@ in
         group = "ollama";
       };
     };
+
+    environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+      lib.mkIf config.modules.base.enableImpermanence [
+        {
+          directory = "/var/lib/private/ollama";
+          user = "ollama";
+          group = "ollama";
+          mode = "0700";
+        }
+      ];
   };
 }

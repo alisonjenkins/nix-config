@@ -506,22 +506,10 @@ in
             hideMounts = true;
             directories = [
               "/etc/NetworkManager/system-connections"
-              "/etc/lact"
               "/etc/luks"
-              "/var/lib/bluetooth"
-              "/var/lib/flatpak"
-              "/var/lib/fprint"
               "/var/lib/nixos"
-              "/var/lib/power-profiles-daemon"
-              "/var/lib/sddm"
               "/var/lib/systemd/coredump"
               "/var/log"
-              {
-                directory = "/var/lib/colord";
-                user = "colord";
-                group = "colord";
-                mode = "u=rwx,g=rx,o=";
-              }
               {
                 directory = "/var/lib/private";
                 user = "root";
@@ -533,24 +521,6 @@ in
                 user = "root";
                 group = "root";
                 mode = "0700";
-              }
-              {
-                directory = "/var/lib/private/ollama";
-                user = "ollama";
-                group = "ollama";
-                mode = "0700";
-              }
-              {
-                directory = "/var/cache/tuigreet";
-                user = "greeter";
-                group = "greeter";
-                mode = "u=rwx,g=rx,o=";
-              }
-              {
-                directory = "/var/lib/regreet";
-                user = "greeter";
-                group = "greeter";
-                mode = "u=rwx,g=rx,o=";
               }
               {
                 directory = "/etc/wireguard";

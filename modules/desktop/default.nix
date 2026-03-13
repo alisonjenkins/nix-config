@@ -1463,6 +1463,21 @@ in
       };
     };
 
+    # Persist desktop-specific state directories on impermanence systems
+    environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+      lib.mkIf config.modules.base.enableImpermanence ([
+        "/etc/lact"
+        "/var/lib/bluetooth"
+        "/var/lib/flatpak"
+        "/var/lib/power-profiles-daemon"
+        {
+          directory = "/var/lib/colord";
+          user = "colord";
+          group = "colord";
+          mode = "u=rwx,g=rx,o=";
+        }
+      ]);
+
     # Give nix-daemon lower CPU weight so games always win CPU contention
     systemd.services.nix-daemon.serviceConfig = {
       CPUWeight = 50;        # Default is 100, lower means less priority

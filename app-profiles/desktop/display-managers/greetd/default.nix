@@ -1,4 +1,5 @@
-{ pkgs
+{ config
+, pkgs
 , lib
 , ...
 }: {
@@ -22,4 +23,14 @@
   environment.systemPackages = with pkgs; [
     tuigreet
   ];
+
+  environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+    lib.mkIf config.modules.base.enableImpermanence [
+      {
+        directory = "/var/cache/tuigreet";
+        user = "greeter";
+        group = "greeter";
+        mode = "u=rwx,g=rx,o=";
+      }
+    ];
 }

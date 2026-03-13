@@ -1,4 +1,5 @@
-{ pkgs
+{ config
+, pkgs
 , lib
 , ...
 }: {
@@ -29,4 +30,14 @@
   # environment.systemPackages = with pkgs; [
   #   greetd.regreet
   # ];
+
+  environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+    lib.mkIf config.modules.base.enableImpermanence [
+      {
+        directory = "/var/lib/regreet";
+        user = "greeter";
+        group = "greeter";
+        mode = "u=rwx,g=rx,o=";
+      }
+    ];
 }

@@ -1,5 +1,4 @@
-{ ...
-}: {
+{ config, lib, ... }: {
   services = {
     displayManager = {
       autoLogin.enable = false;
@@ -44,4 +43,9 @@
     };
     sddm = { after = [ "sddm-avatar.service" ]; };
   };
+
+  environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+    lib.mkIf config.modules.base.enableImpermanence [
+      "/var/lib/sddm"
+    ];
 }
