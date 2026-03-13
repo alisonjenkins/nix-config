@@ -392,7 +392,7 @@ in
     boot.kernel.sysctl = mkMerge [
       {
         # CAKE qdisc for per-flow fairness and DSCP-based traffic prioritisation
-        "net.core.default_qdisc" = mkForce "cake";
+        "net.core.default_qdisc" = "cake";
       }
       (mkIf cfg.gaming.enable {
         # Memory management optimizations for gaming
