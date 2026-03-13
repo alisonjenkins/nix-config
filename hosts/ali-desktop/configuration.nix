@@ -714,13 +714,13 @@
   xdg =
     let
       browser = [
-        "zen-browser.desktop"
+        "zen-beta.desktop"
       ];
       editor = [ "nvim.desktop" ];
       excel = [ "libreoffice-calc.desktop" ];
       fileManager = [ "thunar.desktop" ];
       image = [ "feh.desktop" ];
-      mail = [ "zen-browser.desktop" ];
+      mail = [ "zen-beta.desktop" ];
       powerpoint = [ "libreoffice-impress.desktop" ];
       terminal = [
         "alacritty.desktop"
