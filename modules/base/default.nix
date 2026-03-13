@@ -100,6 +100,15 @@ in
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      assertions = [
+        {
+          assertion = (cfg.bootLoader == "secure-boot") -> (cfg.pcr15Value != null);
+          message = "modules.base.pcr15Value must be set when using secure-boot boot loader";
+        }
+      ];
+    }
+
     # Core base configuration
     {
       console.keyMap = cfg.consoleKeyMap;

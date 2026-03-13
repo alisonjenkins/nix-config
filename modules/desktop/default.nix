@@ -400,6 +400,25 @@ in
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.pipewire.minQuantum == null || cfg.pipewire.minQuantum <= cfg.pipewire.quantum;
+        message = "modules.desktop.pipewire.minQuantum (${toString cfg.pipewire.minQuantum}) must be <= quantum (${toString cfg.pipewire.quantum})";
+      }
+      {
+        assertion = cfg.pipewire.maxQuantum == null || cfg.pipewire.maxQuantum >= cfg.pipewire.quantum;
+        message = "modules.desktop.pipewire.maxQuantum (${toString cfg.pipewire.maxQuantum}) must be >= quantum (${toString cfg.pipewire.quantum})";
+      }
+      {
+        assertion = cfg.wifi.roamThreshold >= -100 && cfg.wifi.roamThreshold <= 1;
+        message = "modules.desktop.wifi.roamThreshold (${toString cfg.wifi.roamThreshold}) must be between -100 and 1 dBm";
+      }
+      {
+        assertion = cfg.wifi.roamThreshold5G >= -100 && cfg.wifi.roamThreshold5G <= 1;
+        message = "modules.desktop.wifi.roamThreshold5G (${toString cfg.wifi.roamThreshold5G}) must be between -100 and 1 dBm";
+      }
+    ];
+
     # Gaming-specific kernel and system optimizations
     boot.kernel.sysctl = mkMerge [
       {
