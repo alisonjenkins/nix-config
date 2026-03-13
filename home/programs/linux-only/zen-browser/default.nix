@@ -180,26 +180,6 @@
     };
   };
 
-  config.home.file =
-    if pkgs.stdenv.isLinux then {
-      ".local/share/applications/zen-browser.desktop".text = ''
-        [Desktop Entry]
-        Comment[en_US]=
-        Comment=
-        Exec=zen
-        GenericName[en_US]=
-        GenericName=
-        Icon=zen
-        MimeType=
-        Name[en_US]=Zen Browser
-        Name=Zen Browser
-        Path=
-        StartupNotify=true
-        Terminal=false
-        TerminalOptions=
-        Type=Application
-        X-KDE-SubstituteUID=false
-        X-KDE-Username=
-      '';
-    } else { };
+  # The zen-browser package provides its own zen-beta.desktop file
+  # with correct Exec=zen-beta, StartupWMClass, MIME types, and actions.
 }
