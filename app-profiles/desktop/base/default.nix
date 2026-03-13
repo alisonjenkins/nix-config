@@ -8,11 +8,7 @@
   ];
 
   boot = {
-    binfmt = {
-      emulatedSystems = [
-        "aarch64-linux"
-      ];
-    };
+    # binfmt aarch64-linux emulation is already declared in modules/base
     plymouth = {
       enable = true;
       # theme = "breeze";
