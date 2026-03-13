@@ -73,6 +73,29 @@
     "d /media/steam-games-1/.shader-cache 0755 ali users -"
   ];
 
+  # RPS/RFS: the vendor r8125 driver only exposes a single RX queue, so all
+  # packets hit one CPU core which can't drain the ring buffer fast enough at
+  # 1GbE (~rx_mac_missed drops).  RPS distributes softirq processing across
+  # cores and RFS keeps flows cache-local.
+  boot.kernel.sysctl."net.core.rps_sock_flow_entries" = 32768;
+
+  systemd.services.nic-rps-tuning = {
+    description = "Enable RPS/RFS on enp16s0";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    # Spread RX softirqs across all 32 logical CPUs (ffffffff)
+    # and set per-queue flow count for RFS
+    script = ''
+      echo ffffffff > /sys/class/net/enp16s0/queues/rx-0/rps_cpus
+      echo 32768 > /sys/class/net/enp16s0/queues/rx-0/rps_flow_cnt
+    '';
+  };
+
   services.audio-context-suspend = {
     enable = true;
     user = "ali";
