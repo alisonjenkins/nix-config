@@ -197,10 +197,7 @@
     };
 
     xserver = {
-      videoDrivers = [
-        "fbdev"
-        "modesetting"
-      ];
+      videoDrivers = [ "amdgpu" ];
       xkb = {
         layout = "us";
         variant = "";
