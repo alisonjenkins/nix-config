@@ -9,6 +9,7 @@
     locale = import ../modules/locale;
     luksPCR15 = import ../modules/luksPCR15;
     ollama = import ../modules/ollama;
+    podman = import ../modules/podman;
     rocm = import ../modules/rocm;
     servers = import ../modules/servers;
     vr = import ../modules/vr;
