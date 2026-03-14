@@ -83,13 +83,13 @@
     "/media/archroot" = {
       device = "/dev/osvg/root";
       fsType = "ext4";
-      options = [ "defaults" "noatime" "discard" ];
+      options = [ "defaults" "noatime" "discard" "nofail" ];
     };
 
     "/media/storage1" = {
       device = "/dev/disk/by-label/storage";
       fsType = "xfs";
-      options = [ "defaults" "noatime" "discard" ];
+      options = [ "defaults" "noatime" "discard" "nofail" ];
     };
 
     "/media/steam-games-1" = {
@@ -101,6 +101,7 @@
         "space_cache=v2"       # Modern free space cache (performance)
         "discard=async"        # Async TRIM for SSD health (performance)
         "ssd"                  # Enable SSD optimizations
+        "nofail"               # Don't block boot if unavailable
       ];
     };
 
