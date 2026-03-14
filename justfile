@@ -229,6 +229,29 @@ ami hostname region="eu-west-2" bucket="nixos-amis":
     just ami-build {{hostname}}
     just ami-upload {{hostname}} {{region}} {{bucket}}
 
+# Build the lemonade-npu container image
+lemonade-build:
+    podman build -t lemonade-npu -f containers/lemonade-npu/Containerfile containers/lemonade-npu/
+
+# Start the lemonade-npu container
+lemonade-start:
+    podman run -d --name lemonade-npu \
+        --device=/dev/accel/accel0 \
+        --device=/dev/dri \
+        --ulimit memlock=-1:-1 \
+        -p 8000:8000 \
+        -v lemonade-cache:/root/.cache \
+        -v flm-config:/root/.config/flm \
+        lemonade-npu
+
+# Stop the lemonade-npu container
+lemonade-stop:
+    podman stop lemonade-npu && podman rm lemonade-npu
+
+# Show lemonade-npu container logs
+lemonade-logs:
+    podman logs -f lemonade-npu
+
 alias b := boot
 alias B := build
 alias s := switch
