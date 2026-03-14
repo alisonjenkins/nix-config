@@ -80,6 +80,15 @@ in
           Default: "ignore" - allow using laptop closed with external display
         '';
       };
+
+      cleanWifiOnSuspend = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Cleanly disconnect WiFi before suspend/hibernate and reconnect after resume.
+          Prevents slow reconnection caused by stale AP sessions after resume.
+        '';
+      };
     };
 
     pipewire = {
@@ -452,6 +461,16 @@ in
     boot.extraModprobeConfig = mkIf cfg.enableVirtualCamera ''
       options v4l2loopback devices=2 video_nr=10,11 card_label="Virtual_Camera_1","Virtual_Camera_2" exclusive_caps=1
     '';
+
+    # Cleanly disconnect WiFi before suspend to avoid stale AP sessions on resume
+    powerManagement = mkIf cfg.power.cleanWifiOnSuspend {
+      powerDownCommands = ''
+        ${pkgs.networkmanager}/bin/nmcli networking off
+      '';
+      resumeCommands = ''
+        ${pkgs.networkmanager}/bin/nmcli networking on
+      '';
+    };
 
     # Desktop-specific suspend and hibernate configuration
     systemd.sleep = {
