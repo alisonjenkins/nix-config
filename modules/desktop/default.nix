@@ -933,6 +933,11 @@ in
           { name = "gamescope-wl"; nice = -15; ioclass = "realtime"; }
           { name = "steam"; nice = -5; }
 
+          # VR runtime — latency-sensitive compositor-level processes
+          { name = "wivrn-server"; nice = -15; ioclass = "realtime"; }
+          { name = "monado-service"; nice = -15; ioclass = "realtime"; }
+          { name = "wivrn-dashboard"; nice = -5; }
+
           # Compositor - high priority but not RT FIFO, as child processes
           # inherit SCHED_FIFO and browsers crash with SIGXCPU
           { name = "niri"; nice = -20; ioclass = "realtime"; }
