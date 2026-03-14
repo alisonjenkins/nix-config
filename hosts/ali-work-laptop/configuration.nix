@@ -25,7 +25,7 @@
     enableImpermanence = true;
     bootLoader = "secure-boot";
     pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
-    suspendState = null;  # Auto-detect (uses s2idle on this hardware)
+    suspendState = "mem";
   };
   modules.locale.enable = true;
   modules.ollama.enable = true;
