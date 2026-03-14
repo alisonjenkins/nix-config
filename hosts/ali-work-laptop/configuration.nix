@@ -63,7 +63,6 @@
     '';
 
     kernelParams = [
-      "amd_iommu=off"
       "amdgpu.runpm=0"  # Disable GPU runtime power management to prevent SMU race after suspend
     ];
 
