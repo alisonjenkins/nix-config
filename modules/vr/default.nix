@@ -11,9 +11,15 @@ let
   #             source to headset mic.
   # On disconnect: removes links, restores default source.
   wivrnAudioScript = pkgs.writeShellScript "wivrn-audio-monitor" ''
-    set -euo pipefail
-
     LINKED=false
+
+    has_wivrn_sink() {
+      ${pactl} list short sinks 2>/dev/null | grep -q 'wivrn\.sink'
+    }
+
+    has_wivrn_source() {
+      ${pactl} list short sources 2>/dev/null | grep -q 'wivrn\.source'
+    }
 
     cleanup() {
       if $LINKED; then
@@ -21,10 +27,9 @@ let
         ${pw-link} -d "easyeffects_sink:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
         LINKED=false
       fi
-      # Restore default source
       local alsa_source
-      alsa_source="$(${pactl} list short sources | grep -m1 'alsa_input\.' | cut -f2)" || true
-      if [ -n "$alsa_source" ]; then
+      alsa_source="$(${pactl} list short sources 2>/dev/null | grep -m1 'alsa_input\.' | cut -f2)" || true
+      if [ -n "''${alsa_source:-}" ]; then
         ${pactl} set-default-source "$alsa_source" 2>/dev/null || true
       fi
     }
@@ -33,16 +38,13 @@ let
 
     setup_vr_audio() {
       echo "Linking easyeffects_sink monitor -> wivrn.sink"
-
       ${pw-link} "easyeffects_sink:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
       ${pw-link} "easyeffects_sink:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
       LINKED=true
-
       echo "Links created"
 
-      # Switch default source to headset mic if available
-      if ${pactl} list short sources | grep -q 'wivrn\.source'; then
-        ${pactl} set-default-source wivrn.source
+      if has_wivrn_source; then
+        ${pactl} set-default-source wivrn.source 2>/dev/null || true
         echo "Set wivrn.source as default microphone"
       fi
     }
@@ -54,59 +56,55 @@ let
         LINKED=false
         echo "Links removed"
       fi
-      # Restore default source
       local alsa_source
-      alsa_source="$(${pactl} list short sources | grep -m1 'alsa_input\.' | cut -f2)" || true
-      if [ -n "$alsa_source" ]; then
+      alsa_source="$(${pactl} list short sources 2>/dev/null | grep -m1 'alsa_input\.' | cut -f2)" || true
+      if [ -n "''${alsa_source:-}" ]; then
         ${pactl} set-default-source "$alsa_source" 2>/dev/null || true
       fi
     }
 
     # Check if wivrn.sink already exists at startup
-    if ${pactl} list short sinks | grep -q 'wivrn\.sink'; then
+    if has_wivrn_sink; then
       echo "WiVRn sink already present, setting up audio"
       sleep 1
       setup_vr_audio
     fi
 
-    # Watch for sink add/remove events
-    ${pactl} subscribe | while read -r line; do
+    # Read events from pactl subscribe using process substitution
+    # so the while loop runs in the main shell (preserving LINKED state)
+    while read -r line; do
       case "$line" in
         *"'new'"*sink*)
-          if ${pactl} list short sinks | grep -q 'wivrn\.sink'; then
-            if ! $LINKED; then
-              echo "WiVRn sink appeared"
-              sleep 1
-              setup_vr_audio
-            fi
+          if has_wivrn_sink && ! $LINKED; then
+            echo "WiVRn sink appeared"
+            sleep 1
+            setup_vr_audio
           fi
           ;;
         *"'remove'"*sink*)
-          if $LINKED; then
-            if ! ${pactl} list short sinks | grep -q 'wivrn\.sink'; then
-              echo "WiVRn sink disappeared"
-              teardown_vr_audio
-            fi
+          if $LINKED && ! has_wivrn_sink; then
+            echo "WiVRn sink disappeared"
+            teardown_vr_audio
           fi
           ;;
         *"'new'"*source*)
-          if ${pactl} list short sources | grep -q 'wivrn\.source'; then
+          if has_wivrn_source; then
             echo "WiVRn source appeared — switching default mic"
-            ${pactl} set-default-source wivrn.source
+            ${pactl} set-default-source wivrn.source 2>/dev/null || true
           fi
           ;;
         *"'remove'"*source*)
-          if ! ${pactl} list short sources | grep -q 'wivrn\.source'; then
+          if ! has_wivrn_source; then
             local alsa_source
-            alsa_source="$(${pactl} list short sources | grep -m1 'alsa_input\.' | cut -f2)" || true
-            if [ -n "$alsa_source" ]; then
+            alsa_source="$(${pactl} list short sources 2>/dev/null | grep -m1 'alsa_input\.' | cut -f2)" || true
+            if [ -n "''${alsa_source:-}" ]; then
               echo "WiVRn source disappeared — restoring default mic"
               ${pactl} set-default-source "$alsa_source" 2>/dev/null || true
             fi
           fi
           ;;
       esac
-    done
+    done < <(${pactl} subscribe 2>/dev/null)
   '';
 in
 {
