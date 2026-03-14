@@ -28,6 +28,7 @@
   };
   modules.locale.enable = true;
   modules.libvirtd.enable = true;
+  modules.podman.enable = true;
   modules.rocm.enable = true;
   modules.vr.enable = true;
   modules.ollama.enable = true;

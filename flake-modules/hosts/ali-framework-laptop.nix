@@ -22,6 +22,7 @@ in {
       ../../app-profiles/hardware/vr
       ../../hosts/ali-framework-laptop/configuration.nix
       ../../modules/audio-context-suspend.nix
+      ../../modules/podman
       ../../modules/development/web
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager

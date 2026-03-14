@@ -23,6 +23,7 @@ in {
       ../../hosts/ali-work-laptop/disko-config.nix
       ../../modules/audio-context-suspend.nix
       ../../modules/development/web
+      ../../modules/podman
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
       inputs.niri-flake.nixosModules.niri

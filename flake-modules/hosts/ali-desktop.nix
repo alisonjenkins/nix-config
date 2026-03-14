@@ -23,6 +23,7 @@ in {
       ../../app-profiles/hardware/vr
       ../../hosts/ali-desktop/configuration.nix
       ../../modules/audio-context-suspend.nix
+      ../../modules/podman
       inputs.niri-flake.nixosModules.niri
       inputs.nix-flatpak.nixosModules.nix-flatpak
       inputs.nur.modules.nixos.default

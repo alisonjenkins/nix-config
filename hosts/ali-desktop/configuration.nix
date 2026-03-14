@@ -40,6 +40,7 @@
   };
   modules.locale.enable = true;
   modules.ollama.enable = true;
+  modules.podman.enable = true;
   modules.rocm.enable = true;
 
   modules.vr = {

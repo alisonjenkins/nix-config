@@ -30,6 +30,7 @@
   modules.locale.enable = true;
   modules.ollama.enable = true;
   modules.libvirtd.enable = true;
+  modules.podman.enable = true;
 
   modules.desktop = {
     enable = true;
