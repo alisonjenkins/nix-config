@@ -1,0 +1,217 @@
+# =============================================================================
+# Lemonade Server + FastFlowLM on AMD Ryzen AI NPU — Ubuntu 24.04
+# =============================================================================
+# Provides an OpenAI-compatible API server with NPU-accelerated LLM inference.
+#
+# Prerequisites (on the HOST):
+#   - AMD Ryzen AI processor with NPU (Strix Point / Kraken Point / etc.)
+#   - Linux kernel 6.11+ with amdxdna driver (in-tree from 6.14+)
+#   - NPU device visible at /dev/accel/accel0
+#   - NPU firmware in /lib/firmware/amdnpu/
+#
+# Build:
+#   podman build -t lemonade-npu -f Containerfile .
+#
+# Run:
+#   podman run -d --name lemonade-npu \
+#     --device=/dev/accel/accel0 \
+#     --ulimit memlock=-1:-1 \
+#     -p 8000:8000 \
+#     -v lemonade-cache:/root/.cache \
+#     -v flm-config:/root/.config/flm \
+#     lemonade-npu
+#
+# =============================================================================
+
+# ---------------------
+# Stage 1: Build XRT from source
+# ---------------------
+FROM ubuntu:24.04 AS xrt-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    curl \
+    file \
+    git \
+    ca-certificates \
+    pkg-config \
+    jq \
+    wget \
+    libboost-dev \
+    libboost-filesystem-dev \
+    libboost-program-options-dev \
+    libcurl4-openssl-dev \
+    libdrm-dev \
+    libdw-dev \
+    libelf-dev \
+    libffi-dev \
+    libgtest-dev \
+    libjson-glib-dev \
+    libncurses5-dev \
+    libprotoc-dev \
+    libssl-dev \
+    libsystemd-dev \
+    libudev-dev \
+    libyaml-dev \
+    lsb-release \
+    ocl-icd-dev \
+    ocl-icd-opencl-dev \
+    opencl-headers \
+    pciutils \
+    protobuf-compiler \
+    python3 \
+    libpython3-dev \
+    python3-pybind11 \
+    pybind11-dev \
+    rapidjson-dev \
+    systemtap-sdt-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --recurse-submodules https://github.com/amd/xdna-driver.git
+
+# Build XRT base
+WORKDIR /build/xdna-driver/xrt/build
+RUN ./build.sh -npu -opt
+
+# Install XRT base
+RUN apt-get update && apt install -y ./Release/xrt_*.deb && rm -rf /var/lib/apt/lists/*
+
+# Build XRT NPU plugin (no kernel module)
+WORKDIR /build/xdna-driver/build
+RUN ./build.sh -release -nokmod
+
+# Install XRT plugin
+RUN apt install -y ./Release/xrt_plugin*.deb
+
+# ---------------------
+# Stage 2: Build FastFlowLM
+# ---------------------
+FROM ubuntu:24.04 AS flm-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    ca-certificates \
+    curl \
+    pkg-config \
+    libboost-program-options-dev \
+    libcurl4-openssl-dev \
+    libfftw3-dev \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libreadline-dev \
+    uuid-dev \
+    libdrm-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Rust for tokenizers-cpp
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+COPY --from=xrt-builder /opt/xilinx/xrt /opt/xilinx/xrt
+
+WORKDIR /build
+RUN git clone --recurse-submodules https://github.com/FastFlowLM/FastFlowLM.git
+
+WORKDIR /build/FastFlowLM/src
+RUN cmake --preset linux-default \
+      -DXRT_INCLUDE_DIR=/opt/xilinx/xrt/include \
+      -DXRT_LIB_DIR=/opt/xilinx/xrt/lib \
+    && cmake --build build -j$(nproc)
+
+RUN cmake --install build
+
+# ---------------------
+# Stage 3: Build Lemonade Server
+# ---------------------
+FROM ubuntu:24.04 AS lemonade-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    ca-certificates \
+    pkg-config \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libsystemd-dev \
+    libdrm-dev \
+    libcap-dev \
+    libzstd-dev \
+    nlohmann-json3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --recurse-submodules https://github.com/lemonade-sdk/lemonade.git
+
+WORKDIR /build/lemonade
+RUN cmake --preset default -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build -j$(nproc)
+
+RUN cmake --install build --prefix /opt/lemonade
+
+# ---------------------
+# Stage 4: Runtime
+# ---------------------
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libboost-program-options1.83.0 \
+    libcurl4 \
+    libfftw3-single3 \
+    libfftw3-double3 \
+    libfftw3-long3 \
+    libavformat60 \
+    libavcodec60 \
+    libavutil58 \
+    libswscale7 \
+    libswresample4 \
+    libreadline8t64 \
+    libdrm2 \
+    libssl3 \
+    libsystemd0 \
+    libcap2 \
+    libzstd1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# XRT runtime
+COPY --from=xrt-builder /opt/xilinx/xrt/lib /opt/xilinx/xrt/lib
+ENV LD_LIBRARY_PATH="/opt/xilinx/xrt/lib:${LD_LIBRARY_PATH}"
+
+# FastFlowLM
+COPY --from=flm-builder /opt/fastflowlm /opt/fastflowlm
+RUN ln -sf /opt/fastflowlm/bin/flm /usr/local/bin/flm \
+    && ln -sf /opt/xilinx/xrt/lib/libxrt_driver_xdna.so.2 /opt/fastflowlm/bin/libxrt_driver_xdna.so.2
+ENV FLM_XCLBIN_PATH=/opt/fastflowlm/share/flm/xclbins
+
+# Lemonade Server
+COPY --from=lemonade-builder /opt/lemonade /opt/lemonade
+RUN ln -sf /opt/lemonade/bin/lemonade-router /usr/local/bin/lemonade-router \
+    && ln -sf /opt/lemonade/bin/lemonade-server /usr/local/bin/lemonade-server \
+    && ln -sf /opt/lemonade/share/lemonade-server/resources /opt/lemonade/bin/resources
+
+# Cache directories
+RUN mkdir -p /root/.cache/huggingface /root/.cache/lemonade /root/.config/flm
+
+EXPOSE 8000
+
+ENTRYPOINT ["lemonade-server"]
+CMD ["serve", "--no-tray", "--host", "0.0.0.0"]
