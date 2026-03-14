@@ -150,7 +150,8 @@
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking = {
     hostId = "77f0d408";
-    useDHCP = lib.mkDefault true;
-    interfaces.enp16s0.useDHCP = lib.mkDefault true;
+    # Disable dhcpcd — NetworkManager handles DHCP on this desktop.
+    # dhcpcd was adding ~15s to boot sitting on the critical chain.
+    useDHCP = lib.mkForce false;
   };
 }
