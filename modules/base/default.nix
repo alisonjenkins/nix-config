@@ -508,6 +508,9 @@ in
           netbootxyz.enable = true;
         };
 
+        # Systemd initrd is required for PCR15 verification (luksPCR15 module)
+        initrd.systemd.enable = true;
+
         lanzaboote = {
           enable = true;
           pkiBundle = "/var/lib/sbctl";
