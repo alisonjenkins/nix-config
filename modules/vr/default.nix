@@ -30,19 +30,29 @@ in
           enable = true;
 
           json = {
-            # 1.0x foveation scaling
-            scale = 1.0;
-            # 100 Mb/s
-            bitrate = 100000000;
+            # Foveated rendering: render periphery at lower resolution to reduce
+            # encoding load and bandwidth while keeping the center sharp
+            scale = 0.8;
+            # 50 Mb/s — H.265 is efficient enough; lower bitrate reduces Wi-Fi
+            # congestion and improves frame consistency
+            bitrate = 50000000;
+            # Split frame into two slices encoded in parallel to halve encode latency
             encoders = [
               {
                 encoder = "vaapi";
                 codec = "h265";
-                # 1.0 x 1.0 scaling
                 width = 1.0;
-                height = 1.0;
+                height = 0.5;
                 offset_x = 0.0;
                 offset_y = 0.0;
+              }
+              {
+                encoder = "vaapi";
+                codec = "h265";
+                width = 1.0;
+                height = 0.5;
+                offset_x = 0.0;
+                offset_y = 0.5;
               }
             ];
           };
