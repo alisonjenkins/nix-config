@@ -206,35 +206,34 @@
   # on NVMe behind a different root port), so it's safe to remove the entire
   # root port subtree and rescan. pci=realloc allows bridge windows to be
   # reassigned during the rescan.
-  boot.initrd.systemd.services.pci-rescan-nic = {
+  # PCIe link training workaround moved to userspace (was in initrd).
+  # Root filesystem is on NVMe behind a different root port, so the NIC rescan
+  # doesn't need to block initrd. Running in userspace before NetworkManager
+  # saves ~9s from initrd while still ensuring the NIC is available for networking.
+  systemd.services.pci-rescan-nic = {
     description = "Rescan PCI bus for late-training RTL8125 NIC";
     unitConfig = {
-      DefaultDependencies = "no";
       ConditionPathExists = "!/sys/bus/pci/devices/0000:10:00.0";
     };
-    after = [ "systemd-udevd.service" ];
-    before = [ "network-pre.target" ];
-    wantedBy = [ "sysinit.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    before = [ "NetworkManager.service" "network-pre.target" ];
+    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
     };
+    path = [ pkgs.coreutils ];
     script = ''
       echo "RTL8125 not detected at 10:00.0, removing root port 00:02.1 subtree and rescanning..."
       if [ -e /sys/bus/pci/devices/0000:00:02.1/remove ]; then
         echo 1 > /sys/bus/pci/devices/0000:00:02.1/remove
       fi
-      # Wait for the NIC's PCIe link to train through 6 switch levels BEFORE
-      # rescanning. The NIC must be present during the first rescan so all
-      # intermediate bridge memory windows are sized to include it. Previous
-      # attempts showed the NIC appears ~6s after remove; we wait 8s for margin.
       sleep 8
       echo 1 > /sys/bus/pci/rescan
       sleep 1
       if [ -e /sys/bus/pci/devices/0000:10:00.0 ]; then
         echo "RTL8125 detected at 10:00.0 after rescan"
       else
-        # Second attempt with more time
         echo "RTL8125 not found, waiting and rescanning again..."
         sleep 4
         echo 1 > /sys/bus/pci/devices/0000:00:02.1/remove 2>/dev/null || true
