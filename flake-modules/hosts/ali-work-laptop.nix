@@ -37,7 +37,16 @@ in {
         '';
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
-        home-manager.users.${specialArgs.username} = import ../../home/home-linux.nix;
+        home-manager.users.${specialArgs.username} = {
+          imports = [ (import ../../home/home-linux.nix) ];
+
+          # Sync mic mute LED with PipeWire state by also toggling the ALSA
+          # Capture Switch, which drives the audio-micmute LED trigger.
+          programs.niri.settings.binds."XF86AudioMicMute" = lib.mkForce {
+            allow-when-locked = true;
+            action.spawn = ["sh" "-c" ''wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED; then amixer -q -c 0 sset Capture nocap; else amixer -q -c 0 sset Capture cap; fi''];
+          };
+        };
         home-manager.extraSpecialArgs =
           specialArgs
           // {
