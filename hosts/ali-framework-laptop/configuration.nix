@@ -102,6 +102,9 @@
     user = "ali";
   };
 
+  # Nullify the disko-generated keyFile so systemd-cryptsetup uses the TPM2 token
+  boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
+
   boot = {
     bootspec.enableValidation = true;
 
