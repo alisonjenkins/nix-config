@@ -80,10 +80,6 @@ in
             echo "=== PCR 15 Validation Starting ==="
             echo "Expected PCR15: ${config.systemIdentity.pcr15}"
 
-            # Wait a moment for PCR measurements to stabilize after cryptsetup
-            echo "Waiting for PCR measurements to stabilize..."
-            sleep 2
-
             # Retry logic for reading PCR15 (in case of transient issues)
             max_attempts="3"
             attempt="1"
