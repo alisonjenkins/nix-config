@@ -51,6 +51,10 @@
     user = "ali";
   };
 
+  # Override disko's keyFile (only used during initial install) so it doesn't
+  # interfere with TPM2 auto-unlock in the initrd crypttab
+  boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
+
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 
