@@ -370,7 +370,7 @@
 
         matches = [
           {
-            app-id = "1Password";
+            app-id = "1password";
           }
           {
             app-id = "^org\.gnome\.World\.Secrets$";
@@ -378,10 +378,6 @@
           {
             app-id = "^org\.keepassxc\.KeePassXC$";
           }
-          # {
-          #   app-id = "1Password";
-          #   title = "^Lock Screen — 1Password$";
-          # }
         ];
       }
 
@@ -391,21 +387,10 @@
         open-floating = true;
         open-focused = true;
 
-        excludes = [
-          {
-            app-id = "1Password";
-            title = "^Lock Screen — 1Password$";
-          }
-        ];
-
         matches = [
           {
             app-id="org.kde.ksecretd";
             title="^KDE Wallet Service$";
-          }
-          {
-            app-id="1Password";
-            title="^1Password$";
           }
           {
             app-id="gay\.vaskel\.Soteria";
@@ -426,6 +411,7 @@
 
       {
         default-column-display = "tabbed";
+        open-focused = false;
         open-maximized = true;
         open-on-workspace = "chat";
 
@@ -434,10 +420,13 @@
             app-id = "^Keybase$";
           }
           {
+            app-id = "^discord-canary$";
+          }
+          {
             app-id = "^vesktop$";
           }
           {
-            app-id = "^com\.rtosta\.zapzap$";
+            app-id = "^ZapZap$";
           }
           {
             app-id = "^signal$";
