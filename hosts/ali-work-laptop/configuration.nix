@@ -25,6 +25,7 @@
     enableImpermanence = true;
     bootLoader = "secure-boot";
     pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
+    suspendState = null;  # Auto-detect (uses s2idle on this hardware)
   };
   modules.locale.enable = true;
   modules.ollama.enable = true;
@@ -38,6 +39,7 @@
       handleLidSwitch = "suspend-then-hibernate";
       handleLidSwitchExternalPower = "lock";
       handleLidSwitchDocked = "ignore";
+      cleanWifiOnSuspend = true;
     };
 
     pipewire.quantum = 512;
@@ -51,12 +53,17 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 
+    # Blacklist amd_pmf to prevent TEE errors after hibernate resume
+    # The driver causes system instability with constant "TEE enact cmd failed" errors
+    blacklistedKernelModules = [ "amd_pmf" ];
+
     extraModprobeConfig = ''
       options snd-hda-intel index=1,0
     '';
 
     kernelParams = [
       "amd_iommu=off"
+      "amdgpu.runpm=0"  # Disable GPU runtime power management to prevent SMU race after suspend
     ];
 
     kernelPatches = [
@@ -143,12 +150,12 @@
       inputs.rust-overlay.overlays.default
       outputs.overlays._1password-gui
       outputs.overlays.additions
-      outputs.overlays.linux-firmware
       outputs.overlays.master-packages
       outputs.overlays.modifications
       outputs.overlays.stable-packages
       outputs.overlays.tmux-sessionizer
       outputs.overlays.unstable-packages
+      outputs.overlays.linux-firmware
     ];
     config = {
       allowUnfree = true;
