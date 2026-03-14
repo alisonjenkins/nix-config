@@ -97,6 +97,16 @@ in
       default = null;
       description = "TPM PCR15 value for LUKS unlocking (only used with secure-boot)";
     };
+
+    suspendState = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum [ "mem" "standby" "freeze" ]);
+      default = "mem";
+      description = ''
+        Suspend state to use. Set to null to auto-detect.
+        'mem' is S3 deep sleep, 'standby' is S1, 'freeze' is s2idle.
+        Some hardware only supports s2idle (freeze), in which case set to null or "freeze".
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -434,9 +444,10 @@ in
           # Use 'platform' mode for faster and more reliable hibernation on modern systems
           HibernateMode=platform
 
-          # Suspend settings - use 'mem' (S3) for deeper sleep with better power savings
-          # 'mem' is better than 's2idle' for battery life on most systems
-          SuspendState=mem
+          # Suspend settings - configurable per-host
+          # 'mem' is S3 deep sleep, 'freeze' is s2idle (for hardware that doesn't support S3)
+          # Set to null to let the system auto-detect
+          ${lib.optionalString (cfg.suspendState != null) "SuspendState=${cfg.suspendState}"}
 
           # Hybrid sleep settings - combines suspend and hibernate
           HybridSleepMode=platform
