@@ -6,6 +6,16 @@
   services = {
     greetd = {
       enable = true;
+
+      # Don't use dbus-run-session (the NixOS module default). It creates a
+      # private session bus where xdg-desktop-portal auto-activates and
+      # blocks ~25s waiting for org.freedesktop.secrets. gnome-keyring can't
+      # start because the greeter's home (/var/empty) is read-only, so D-Bus
+      # waits the full timeout before the greeter appears.
+      settings.default_session.command = let
+        cage = lib.getExe pkgs.cage;
+        regreet = lib.getExe pkgs.regreet;
+      in lib.mkForce "${cage} -s -- ${regreet}";
     };
   };
 
