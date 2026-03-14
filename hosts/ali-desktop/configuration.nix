@@ -105,6 +105,8 @@
     ];
 
     loader = {
+      # Skip boot menu unless a key is held (systemd-boot shows menu on Space)
+      timeout = 0;
       grub = {
         memtest86.enable = true;
       };
