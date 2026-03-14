@@ -52,6 +52,11 @@
     };
   };
 
+  _1password = final: _prev: {
+    _1password-gui = final.unstable._1password-gui;
+    _1password-cli = final.unstable._1password-cli;
+  };
+
   bluray-playback = final: _prev: {
     libbluray = _prev.libbluray.override {
       withAACS = true;

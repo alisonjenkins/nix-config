@@ -33,6 +33,7 @@ in {
       inputs.sops-nix.nixosModules.sops
       {
         nixpkgs.overlays = [
+          self.overlays._1password
           self.overlays.qbittorrent
         ];
 

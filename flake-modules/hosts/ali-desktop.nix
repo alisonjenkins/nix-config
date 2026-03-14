@@ -31,6 +31,7 @@ in {
       inputs.home-manager.nixosModules.home-manager
       {
         nixpkgs.overlays = [
+          self.overlays._1password
           self.overlays.qbittorrent
         ];
 
