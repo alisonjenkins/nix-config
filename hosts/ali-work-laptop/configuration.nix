@@ -153,7 +153,6 @@
       inputs.niri-flake.overlays.niri
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
-      outputs.overlays._1password-gui
       outputs.overlays.additions
       outputs.overlays.master-packages
       outputs.overlays.modifications
