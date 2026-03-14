@@ -358,6 +358,8 @@ in
         };
       };
 
+      systemd.services.NetworkManager-wait-online.enable = false;
+
       services = {
         fstrim.enable = true;
         irqbalance.enable = true;
