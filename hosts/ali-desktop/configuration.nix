@@ -549,7 +549,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "libvirtd" "networkmanager" "video" "wheel" "realtime" ];
+        extraGroups = [ "audio" "libvirtd" "networkmanager" "podman" "video" "wheel" "realtime" ];
         hashedPasswordFile = "/persistence/passwords/ali";
         useDefaultShell = true;
 
@@ -565,22 +565,6 @@
   };
 
   virtualisation = {
-    docker = {
-      enable = true;
-      enableOnBoot = false;
-
-      autoPrune = {
-        enable = true;
-      };
-    };
-
-    # podman = {
-    #   autoPrune.enable = true;
-    #   dockerCompat = true;
-    #   dockerSocket.enable = true;
-    #   enable = true;
-    # };
-
     libvirtd = {
       enable = false;
       qemu.swtpm.enable = true;
