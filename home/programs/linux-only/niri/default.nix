@@ -333,6 +333,7 @@
       # { command = ["waybar"]; }
       { command = [ "1password" "--silent" ]; }
       { command = [ "zen-beta" ]; }
+      { command = [ "niri" "msg" "action" "focus-workspace" "terminal" ]; }
     ];
 
     switch-events = {
