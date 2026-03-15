@@ -14,6 +14,12 @@ in {
       type = types.str;
       description = "User to run audio commands as";
     };
+
+    syncMicMuteLed = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Sync mic mute LED with PipeWire mute state on resume";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -42,13 +48,21 @@ in {
         Type = "oneshot";
         User = cfg.user;
         ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
-        ExecStart = pkgs.writeShellScript "audio-context-resume-system" ''
+        ExecStart = pkgs.writeShellScript "audio-context-resume-system" (''
           export XDG_RUNTIME_DIR=/run/user/$(id -u)
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
 
           LOCATION=$(${pkgs.detect-location}/bin/detect-location)
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
-        '';
+        '' + lib.optionalString cfg.syncMicMuteLed ''
+
+          # Sync mic mute LED with PipeWire state
+          if ${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED; then
+            ${pkgs.alsa-utils}/bin/amixer -q -c 0 sset Capture nocap
+          else
+            ${pkgs.alsa-utils}/bin/amixer -q -c 0 sset Capture cap
+          fi
+        '');
       };
     };
   };
