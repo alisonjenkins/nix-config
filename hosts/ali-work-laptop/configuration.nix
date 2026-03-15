@@ -40,7 +40,7 @@
     power = {
       hibernateDelaySec = "1h";  # Hibernate after 1 hour of suspend
       handleLidSwitch = "suspend-then-hibernate";
-      handleLidSwitchExternalPower = "lock";
+      handleLidSwitchExternalPower = "suspend-then-hibernate";
       handleLidSwitchDocked = "ignore";
       cleanWifiOnSuspend = true;
     };
