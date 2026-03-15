@@ -97,8 +97,8 @@
 
     wifi = {
       optimizeForLowLatency = true;  # Enable low-latency WiFi for gaming/Discord/media
-      roamThreshold = -75;           # More aggressive roaming on 2.4GHz (-75 dBm)
-      roamThreshold5G = -80;         # More aggressive roaming on 5GHz (-80 dBm)
+      roamThreshold = -70;           # Aggressive roaming on 2.4GHz (-70 dBm)
+      roamThreshold5G = -72;         # Aggressive roaming on 5GHz (-72 dBm)
       bandModifier5GHz = 1.3;        # Prefer 5GHz band (30% bonus)
       bandModifier6GHz = 1.5;        # Strongly prefer 6GHz if available (50% bonus)
     };
