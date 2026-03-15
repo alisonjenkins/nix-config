@@ -38,7 +38,7 @@
     enable = true;
     enableOpenSourceVR = true;
     codec = "av1";
-    bitrate = 40000000;
+    bitrate = 30000000;
     scale = 0.7;
     encoders = [
       {
