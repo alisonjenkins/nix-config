@@ -34,7 +34,31 @@
   modules.libvirtd.enable = true;
   modules.podman.enable = true;
   modules.rocm.enable = true;
-  modules.vr.enable = true;
+  modules.vr = {
+    enable = true;
+    enableOpenSourceVR = true;
+    codec = "av1";
+    bitrate = 40000000;
+    scale = 0.7;
+    encoders = [
+      {
+        encoder = "vaapi";
+        codec = "av1";
+        width = 1.0;
+        height = 0.5;
+        offset_x = 0.0;
+        offset_y = 0.0;
+      }
+      {
+        encoder = "vaapi";
+        codec = "av1";
+        width = 1.0;
+        height = 0.5;
+        offset_x = 0.0;
+        offset_y = 0.5;
+      }
+    ];
+  };
   modules.ollama.enable = true;
 
   modules.desktop = {
