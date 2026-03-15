@@ -219,6 +219,7 @@ in
         };
 
         loader = {
+          timeout = lib.mkDefault 0;
           efi = {
             canTouchEfiVariables = true;
             efiSysMountPoint = "/boot";
