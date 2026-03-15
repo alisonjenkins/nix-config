@@ -56,7 +56,7 @@
         encoder = "vaapi";
         codec = "av1";
         width = 1.0;
-        height = 0.5;
+        height = 0.25;
         offset_x = 0.0;
         offset_y = 0.0;
       }
@@ -64,9 +64,25 @@
         encoder = "vaapi";
         codec = "av1";
         width = 1.0;
-        height = 0.5;
+        height = 0.25;
+        offset_x = 0.0;
+        offset_y = 0.25;
+      }
+      {
+        encoder = "vaapi";
+        codec = "av1";
+        width = 1.0;
+        height = 0.25;
         offset_x = 0.0;
         offset_y = 0.5;
+      }
+      {
+        encoder = "vaapi";
+        codec = "av1";
+        width = 1.0;
+        height = 0.25;
+        offset_x = 0.0;
+        offset_y = 0.75;
       }
     ];
   };
