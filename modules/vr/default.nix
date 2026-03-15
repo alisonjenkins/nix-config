@@ -6,12 +6,14 @@ let
   pw-link = "${pkgs.pipewire}/bin/pw-link";
 
   # Script that watches PipeWire for wivrn.sink appearing/disappearing.
-  # On connect: links easyeffects_sink monitor to wivrn.sink so audio plays
+  # On connect: links the audio sink's monitor to wivrn.sink so audio plays
   #             on both local output and VR headset, and switches default
   #             source to headset mic.
+  #             Prefers easyeffects_sink if available, otherwise uses default sink.
   # On disconnect: removes links, restores default source.
   wivrnAudioScript = pkgs.writeShellScript "wivrn-audio-monitor" ''
     LINKED=false
+    AUDIO_SINK=""
 
     has_wivrn_sink() {
       ${pactl} list short sinks 2>/dev/null | grep -q 'wivrn\.sink'
@@ -21,10 +23,19 @@ let
       ${pactl} list short sources 2>/dev/null | grep -q 'wivrn\.source'
     }
 
+    # Find the best sink to link: prefer easyeffects_sink, fall back to default
+    find_audio_sink() {
+      if ${pw-link} -o 2>/dev/null | grep -q '^easyeffects_sink:monitor_'; then
+        echo "easyeffects_sink"
+      else
+        ${pactl} get-default-sink 2>/dev/null
+      fi
+    }
+
     cleanup() {
-      if $LINKED; then
-        ${pw-link} -d "easyeffects_sink:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
-        ${pw-link} -d "easyeffects_sink:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
+      if $LINKED && [ -n "$AUDIO_SINK" ]; then
+        ${pw-link} -d "$AUDIO_SINK:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
+        ${pw-link} -d "$AUDIO_SINK:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
         LINKED=false
       fi
       local alsa_source
@@ -37,9 +48,14 @@ let
     trap cleanup EXIT
 
     setup_vr_audio() {
-      echo "Linking easyeffects_sink monitor -> wivrn.sink"
-      ${pw-link} "easyeffects_sink:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
-      ${pw-link} "easyeffects_sink:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
+      AUDIO_SINK="$(find_audio_sink)"
+      if [ -z "$AUDIO_SINK" ]; then
+        echo "No audio sink found, skipping link setup"
+        return
+      fi
+      echo "Linking $AUDIO_SINK monitor -> wivrn.sink"
+      ${pw-link} "$AUDIO_SINK:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
+      ${pw-link} "$AUDIO_SINK:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
       LINKED=true
       echo "Links created"
 
@@ -50,10 +66,11 @@ let
     }
 
     teardown_vr_audio() {
-      if $LINKED; then
-        ${pw-link} -d "easyeffects_sink:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
-        ${pw-link} -d "easyeffects_sink:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
+      if $LINKED && [ -n "$AUDIO_SINK" ]; then
+        ${pw-link} -d "$AUDIO_SINK:monitor_FL" "wivrn.sink:playback_FL" 2>/dev/null || true
+        ${pw-link} -d "$AUDIO_SINK:monitor_FR" "wivrn.sink:playback_FR" 2>/dev/null || true
         LINKED=false
+        AUDIO_SINK=""
         echo "Links removed"
       fi
       local alsa_source
