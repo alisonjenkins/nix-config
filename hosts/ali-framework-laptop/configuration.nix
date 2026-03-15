@@ -370,7 +370,7 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Alison Jenkins";
-        extraGroups = [ "audio" "docker" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
+        extraGroups = [ "audio" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
         hashedPasswordFile = "/persistence/passwords/ali";
 
         openssh.authorizedKeys.keys = [
@@ -382,18 +382,12 @@
         autoSubUidGidRange = true;
         isNormalUser = true;
         description = "Lace Jones";
-        extraGroups = [ "audio" "docker" "libvirtd" "networkmanager" "video" "wheel" ];
+        extraGroups = [ "audio" "libvirtd" "networkmanager" "video" "wheel" ];
         hashedPasswordFile = "/persistence/passwords/lace";
       };
       root = {
         hashedPasswordFile = "/persistence/passwords/root";
       };
-    };
-  };
-
-  virtualisation = {
-    docker = {
-      enable = true;
     };
   };
 
