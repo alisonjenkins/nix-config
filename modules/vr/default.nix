@@ -179,7 +179,7 @@ in
       };
     };
 
-    environment.systemPackages = [ pkgs.unstable.wlx-overlay-s ];
+    environment.systemPackages = [ pkgs.unstable.wayvr ];
 
     # User service that monitors for WiVRn sink and manages audio routing
     systemd.user.services.wivrn-audio = {
