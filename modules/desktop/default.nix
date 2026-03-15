@@ -1513,6 +1513,19 @@ in
       };
     };
 
+    # Only show COSMIC initial setup inside COSMIC sessions
+    environment.etc."xdg/autostart/com.system76.CosmicInitialSetup.desktop" = mkIf cfg.cosmic.enable {
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=COSMIC Initial Setup
+        Exec=cosmic-initial-setup
+        NoDisplay=true
+        Terminal=false
+        OnlyShowIn=COSMIC;
+      '';
+    };
+
     # Persist desktop-specific state directories on impermanence systems
     environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
       lib.mkIf config.modules.base.enableImpermanence ([
