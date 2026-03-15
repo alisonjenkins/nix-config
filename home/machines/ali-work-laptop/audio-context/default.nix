@@ -66,6 +66,13 @@
           ${pkgs.wireplumber}/bin/wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0%
           sleep 0.5
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
+
+          # Sync mic mute LED with PipeWire state
+          if ${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED; then
+            ${pkgs.alsa-utils}/bin/amixer -q -c 0 sset Capture nocap
+          else
+            ${pkgs.alsa-utils}/bin/amixer -q -c 0 sset Capture cap
+          fi
         ''}";
         RemainAfterExit = true;
       };

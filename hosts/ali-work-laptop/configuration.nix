@@ -51,6 +51,7 @@
   services.audio-context-suspend = {
     enable = true;
     user = "ali";
+    syncMicMuteLed = true;
   };
 
   # Override disko's keyFile (only used during initial install) so it doesn't
