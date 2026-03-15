@@ -134,6 +134,8 @@ in
         initrd = {
           verbose = false;
 
+          availableKernelModules = [ "lz4" "lz4_compress" ];
+
           systemd = {
             enable = true;
           };
@@ -141,6 +143,8 @@ in
 
         kernelParams = [
           "amdgpu.ppfeaturemask=0xfff7ffff"
+          "hibernate=lz4"
+          "no_console_suspend=1"
           "preempt=full"
           "quiet"
           "rd.systemd.show_status=false"
@@ -428,6 +432,12 @@ in
         algorithm = "zstd";
         memoryPercent = 100;
       };
+
+      # Reduce hibernate image size target to 8GB (default is ~2/5 of RAM)
+      # Smaller image = less data to write/read = faster hibernate and resume
+      systemd.tmpfiles.rules = [
+        "w /sys/power/image_size - - - - 8589934592"
+      ];
 
       # Optimal suspend and hibernate settings
       systemd.sleep = {
