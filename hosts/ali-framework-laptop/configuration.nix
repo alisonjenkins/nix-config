@@ -273,6 +273,9 @@
     cpuFreqGovernor = "powersave";
   };
 
+  # Reduce ZRAM for faster hibernation (less data to serialize)
+  zramSwap.memoryPercent = lib.mkForce 50;
+
   programs = {
 
     niri = {
