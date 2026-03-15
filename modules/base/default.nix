@@ -50,12 +50,6 @@ in
       description = "Enable Tailscale VPN";
     };
 
-    enablePlymouth = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Enable Plymouth boot splash";
-    };
-
     impermanencePersistencePath = lib.mkOption {
       type = lib.types.str;
       default = "/persistence";
@@ -145,15 +139,10 @@ in
           };
         };
 
-        plymouth = {
-          enable = cfg.enablePlymouth;
-        };
-
         kernelParams = [
           "amdgpu.ppfeaturemask=0xfff7ffff"
           "preempt=full"
           "quiet"
-          "splash"
           "rd.systemd.show_status=false"
           "rd.udev.log_level=3"
           "udev.log_priority=3"

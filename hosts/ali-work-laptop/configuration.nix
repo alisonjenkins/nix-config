@@ -18,8 +18,10 @@
 
     ../../modules/desktop
     ../../modules/base
+    ../../modules/plymouth
   ];
 
+  modules.plymouth.enable = true;
   modules.base = {
     enable = true;
     enableImpermanence = true;

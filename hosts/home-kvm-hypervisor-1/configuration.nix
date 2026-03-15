@@ -15,7 +15,6 @@
 
   modules.base = {
     enable = true;
-    enablePlymouth = false;
     bootLoader = "grub";
   };
   modules.locale.enable = true;

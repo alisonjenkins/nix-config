@@ -9,6 +9,7 @@
     # inputs.nix-gaming.nixosModules.pipewireLowLatency
     ../../modules/base
     ../../modules/desktop
+    ../../modules/plymouth
     ../../modules/locale
     ../../modules/vr
     ../../modules/ollama
@@ -17,6 +18,7 @@
     ./hardware-configuration.nix
   ];
 
+  modules.plymouth.enable = true;
   modules.base = {
     enable = true;
     enableImpermanence = true;

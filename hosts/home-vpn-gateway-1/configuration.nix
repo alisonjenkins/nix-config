@@ -16,7 +16,6 @@
   modules.base = {
     enable = true;
     enableImpermanence = true;
-    enablePlymouth = false;
   };
   modules.locale.enable = true;
 

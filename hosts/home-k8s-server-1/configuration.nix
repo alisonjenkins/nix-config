@@ -16,7 +16,6 @@
 
   modules.base = {
     enable = true;
-    enablePlymouth = false;
   };
   modules.locale.enable = true;
   modules.servers.enable = true;

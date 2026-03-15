@@ -10,6 +10,7 @@
     ../../modules/rocm
     ../../modules/base
     ../../modules/desktop
+    ../../modules/plymouth
     ../../modules/vr
     ../../modules/ollama
     ../../app-profiles/desktop
@@ -20,6 +21,7 @@
     ./hardware-configuration.nix
   ];
 
+  modules.plymouth.enable = true;
   modules.base = {
     enable = true;
     enableImpermanence = true;

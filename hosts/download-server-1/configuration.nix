@@ -20,7 +20,6 @@
     enable = true;
     enableImpermanence = true;
     enableIPv6 = true;
-    enablePlymouth = false;
   };
   modules.locale.enable = true;
   modules.servers = {

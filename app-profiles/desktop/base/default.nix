@@ -7,15 +7,6 @@
     ../1password
   ];
 
-  boot = {
-    # binfmt aarch64-linux emulation is already declared in modules/base
-    plymouth = {
-      enable = true;
-      # theme = "breeze";
-    };
-    kernelParams = [ "quiet" ];
-  };
-
   programs.gamescope = {
     enable = true;
     capSysNice = true;
