@@ -179,6 +179,8 @@ in
       };
     };
 
+    environment.systemPackages = [ pkgs.unstable.wlx-overlay-s ];
+
     # User service that monitors for WiVRn sink and manages audio routing
     systemd.user.services.wivrn-audio = {
       description = "WiVRn audio routing (combine-sink + mic switching)";
