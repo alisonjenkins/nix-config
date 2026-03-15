@@ -115,6 +115,43 @@ in
       default = false;
       description = "Enable open source VR stack (Envision + WiVRn)";
     };
+    scale = lib.mkOption {
+      type = lib.types.float;
+      default = 0.8;
+      description = "Foveated rendering scale (lower = less GPU load, reduced peripheral clarity)";
+    };
+    bitrate = lib.mkOption {
+      type = lib.types.int;
+      default = 50000000;
+      description = "Streaming bitrate in bits per second";
+    };
+    codec = lib.mkOption {
+      type = lib.types.enum [ "h264" "h265" "av1" ];
+      default = "h265";
+      description = "Video codec for streaming (av1 is more efficient but requires RDNA 3+)";
+    };
+    encoders = lib.mkOption {
+      type = lib.types.listOf (lib.types.attrsOf lib.types.anything);
+      default = [
+        {
+          encoder = "vaapi";
+          codec = "h265";
+          width = 1.0;
+          height = 0.5;
+          offset_x = 0.0;
+          offset_y = 0.0;
+        }
+        {
+          encoder = "vaapi";
+          codec = "h265";
+          width = 1.0;
+          height = 0.5;
+          offset_x = 0.0;
+          offset_y = 0.5;
+        }
+      ];
+      description = "Encoder configuration (split into slices for parallel encoding)";
+    };
   };
 
   config = lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
@@ -148,31 +185,9 @@ in
           enable = true;
 
           json = {
-            # Foveated rendering: render periphery at lower resolution to reduce
-            # encoding load and bandwidth while keeping the center sharp
-            scale = 0.8;
-            # 50 Mb/s — H.265 is efficient enough; lower bitrate reduces Wi-Fi
-            # congestion and improves frame consistency
-            bitrate = 50000000;
-            # Split frame into two slices encoded in parallel to halve encode latency
-            encoders = [
-              {
-                encoder = "vaapi";
-                codec = "h265";
-                width = 1.0;
-                height = 0.5;
-                offset_x = 0.0;
-                offset_y = 0.0;
-              }
-              {
-                encoder = "vaapi";
-                codec = "h265";
-                width = 1.0;
-                height = 0.5;
-                offset_x = 0.0;
-                offset_y = 0.5;
-              }
-            ];
+            scale = cfg.scale;
+            bitrate = cfg.bitrate;
+            encoders = cfg.encoders;
           };
         };
       };
