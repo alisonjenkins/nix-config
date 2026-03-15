@@ -26,6 +26,7 @@
     enable = true;
     enableImpermanence = true;
     bootLoader = "secure-boot";
+    pcr15Value = "b538ad748a4d175bd234bf369e138b225bd9cfd55d6345763733578cd29700de";
     enableCachyOSKernel = true;
     hibernateMode = "shutdown";
   };
