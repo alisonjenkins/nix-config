@@ -101,6 +101,15 @@ in
         Some hardware only supports s2idle (freeze), in which case set to null or "freeze".
       '';
     };
+
+    hibernateMode = lib.mkOption {
+      type = lib.types.enum [ "platform" "shutdown" ];
+      default = "platform";
+      description = ''
+        Hibernate mode. 'platform' calls ACPI S4 firmware hooks (safer, slower).
+        'shutdown' powers off immediately after writing the image (faster, skips firmware hooks).
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -442,21 +451,14 @@ in
       # Optimal suspend and hibernate settings
       systemd.sleep = {
         extraConfig = ''
-          # Hibernate settings - optimized for speed and SSD wear reduction
-          # Use 'platform' mode for faster and more reliable hibernation on modern systems
-          HibernateMode=platform
+          # Hibernate mode - configurable per-host
+          HibernateMode=${cfg.hibernateMode}
 
           # Suspend settings - configurable per-host
           # 'mem' is S3 deep sleep, 'freeze' is s2idle (for hardware that doesn't support S3)
           # Set to null to let the system auto-detect
           ${lib.optionalString (cfg.suspendState != null) "SuspendState=${cfg.suspendState}"}
 
-          # Hybrid sleep settings - combines suspend and hibernate
-          HybridSleepMode=platform
-          HybridSleepState=disk
-
-          # Allow up to 10 minutes for hibernation to complete (useful for large RAM)
-          # Default is 3 minutes which may be too short for systems with 32GB+ RAM
           AllowHibernation=yes
           AllowSuspend=yes
           AllowHybridSleep=yes
