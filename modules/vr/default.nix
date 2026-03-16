@@ -172,6 +172,8 @@ in
   };
 
   config = lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
+    environment.systemPackages = [ pkgs.unstable.bs-manager ];
+
     programs = {
       envision = {
         enable = true;
