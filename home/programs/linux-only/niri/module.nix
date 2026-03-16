@@ -1,15 +1,14 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.custom.niri;
-  micMuteSpawn = lib.concatMapStringsSep " " (s: ''"${s}"'') cfg.micMuteCommand;
 in {
   options.custom.niri = {
     enable = lib.mkEnableOption "niri window manager configuration";
 
-    micMuteCommand = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle" ];
-      description = "Command to run when XF86AudioMicMute is pressed.";
+    micMuteShellCommand = lib.mkOption {
+      type = lib.types.str;
+      default = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
+      description = "Shell command to run when XF86AudioMicMute is pressed (uses spawn-sh).";
     };
 
     extraBinds = lib.mkOption {
@@ -39,11 +38,34 @@ in {
 
       cursor {
           hide-when-typing
+          hide-after-inactive-ms 3000
       }
 
       hotkey-overlay {
           skip-at-startup
+          hide-not-bound
       }
+
+      overview {
+          zoom 0.5
+          backdrop-color "#00000066"
+          workspace-shadow {
+              softness 40
+              color "#00000080"
+              spread 5
+              offset x=0 y=5
+          }
+      }
+
+      recent-windows {
+          binds {
+              Alt+Tab { next-window; }
+              Alt+Shift+Tab { previous-window; }
+              Alt+Grave { next-window filter="app-id"; }
+          }
+      }
+
+      xwayland-satellite {}
 
       prefer-no-csd
 
@@ -71,6 +93,7 @@ in {
           }
 
           touchpad {
+              dwt
               middle-emulation
               tap
           }
@@ -90,8 +113,16 @@ in {
               proportion 0.66667
           }
 
+          preset-window-heights {
+              proportion 0.33333
+              proportion 0.5
+              proportion 0.66667
+              proportion 1.0
+          }
+
           focus-ring {
               width 4
+              urgent-color "#eb6f92"
           }
 
           border {
@@ -100,9 +131,25 @@ in {
 
           shadow {
               color "#0007"
+              inactive-color "#0004"
               softness 30
               spread 5
               offset x=0 y=5
+          }
+
+          tab-indicator {
+              hide-when-single-tab
+              place-within-column
+              gap 4
+              width 4
+              length total-proportion=0.3
+              corner-radius 2
+              active-color "#c4a7e7"
+              inactive-color "#6e6a86"
+          }
+
+          insert-hint {
+              color "#c4a7e780"
           }
       }
 
@@ -128,7 +175,11 @@ in {
       workspace "chat"
       workspace "terminal"
       workspace "browser"
-      workspace "game"
+      workspace "game" {
+          layout {
+              gaps 0
+          }
+      }
       workspace "gaming"
       workspace "obsidian"
       workspace "passwordmanager"
@@ -180,6 +231,7 @@ in {
           match app-id="Alacritty"
           match app-id="com.mitchellh.ghostty"
           draw-border-with-background false
+          geometry-corner-radius 12
           opacity 0.9
           open-fullscreen false
           open-maximized true
@@ -222,6 +274,7 @@ in {
           open-fullscreen true
           open-focused true
           open-on-workspace "game"
+          variable-refresh-rate true
       }
 
       window-rule {
@@ -232,6 +285,12 @@ in {
           opacity 0.0
       }
 
+      // Floating windows get rounded corners
+      window-rule {
+          match is-floating=true
+          geometry-corner-radius 12
+      }
+
       ${cfg.extraWindowRules}
 
       binds {
@@ -240,6 +299,7 @@ in {
           Ctrl+Alt+Delete { quit; }
           Ctrl+Print { screenshot; }
           Print { screenshot; }
+          Shift+Print { screenshot-screen; }
 
           // Workspace focus
           Mod+1 { focus-workspace "chat"; }
@@ -279,15 +339,15 @@ in {
           Mod+Ctrl+R { reset-window-height; }
           Mod+Ctrl+Shift+F { toggle-windowed-fullscreen; }
 
-          // Move column/window directional
+          // Move column/window directional (cross-boundary)
           Mod+Ctrl+Down { move-window-down; }
           Mod+Ctrl+Up { move-window-up; }
-          Mod+Ctrl+H { move-column-left; }
+          Mod+Ctrl+H { move-column-left-or-to-monitor-left; }
           Mod+Ctrl+J { move-window-down; }
           Mod+Ctrl+K { move-window-up; }
-          Mod+Ctrl+L { move-column-right; }
-          Mod+Ctrl+Left { move-column-left; }
-          Mod+Ctrl+Right { move-column-right; }
+          Mod+Ctrl+L { move-column-right-or-to-monitor-right; }
+          Mod+Ctrl+Left { move-column-left-or-to-monitor-left; }
+          Mod+Ctrl+Right { move-column-right-or-to-monitor-right; }
           Mod+Ctrl+Home { move-column-to-first; }
           Mod+Ctrl+End { move-column-to-last; }
 
@@ -303,13 +363,15 @@ in {
           Mod+Ctrl+WheelScrollLeft { move-column-left; }
           Mod+Ctrl+WheelScrollRight { move-column-right; }
 
-          // Focus navigation
+          // Focus navigation (cross-boundary)
           Mod+Home { focus-column-first; }
           Mod+End { focus-column-last; }
           Mod+I { focus-workspace-up; }
           Mod+U { focus-workspace-down; }
           Mod+Page_Down { focus-workspace-down; }
           Mod+Page_Up { focus-workspace-up; }
+          Mod+Tab { focus-window-previous; }
+          Mod+Grave { focus-workspace-previous; }
 
           // Resize
           Mod+Equal { set-column-width "+10%"; }
@@ -358,15 +420,16 @@ in {
           Mod+WheelScrollRight { focus-column-right; }
 
           // Spawn commands
-          Mod+T { spawn "ghostty"; }
-          Mod+D { spawn "tofi-drun"; }
-          Super+Alt+L { spawn "lock-session"; }
+          Mod+T hotkey-overlay-title="Terminal" { spawn "ghostty"; }
+          Mod+D hotkey-overlay-title="App Launcher" { spawn "tofi-drun"; }
+          Super+Alt+L hotkey-overlay-title="Lock Session" { spawn "lock-session"; }
+          Mod+Space hotkey-overlay-title="Which Key" { spawn "wlr-which-key"; }
 
           // Audio
           XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+"; }
           XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
           XF86AudioMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
-          XF86AudioMicMute allow-when-locked=true { spawn ${micMuteSpawn}; }
+          XF86AudioMicMute allow-when-locked=true { spawn-sh "${cfg.micMuteShellCommand}"; }
 
           // Media
           XF86AudioPlay { spawn "playerctl" "play-pause"; }
@@ -381,24 +444,21 @@ in {
           // Close window
           Mod+Q { close-window; }
 
-          // Directional focus
-          Mod+Left { focus-column-left; }
-          Mod+Right { focus-column-right; }
-          Mod+Up { focus-window-up; }
-          Mod+Down { focus-window-down; }
-          Mod+H { focus-column-left; }
-          Mod+L { focus-column-right; }
-          Mod+J { focus-window-down; }
-          Mod+K { focus-window-up; }
+          // Directional focus (cross-boundary)
+          Mod+Left { focus-column-or-monitor-left; }
+          Mod+Right { focus-column-or-monitor-right; }
+          Mod+Up { focus-window-or-workspace-up; }
+          Mod+Down { focus-window-or-workspace-down; }
+          Mod+H { focus-column-or-monitor-left; }
+          Mod+L { focus-column-or-monitor-right; }
+          Mod+J { focus-window-or-workspace-down; }
+          Mod+K { focus-window-or-workspace-up; }
 
           // Cooldown scroll
           Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
           Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
           Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
           Mod+Ctrl+WheelScrollUp cooldown-ms=150 { move-column-to-workspace-up; }
-
-          // Which-key
-          Mod+Space { spawn "wlr-which-key"; }
 
           // Escape inhibit
           Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
