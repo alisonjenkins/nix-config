@@ -26,7 +26,6 @@ in {
       ../../modules/development/web
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
-      inputs.niri-flake.nixosModules.niri
       inputs.nix-flatpak.nixosModules.nix-flatpak
       inputs.nixos-hardware.nixosModules.framework-16-7040-amd
       inputs.nur.modules.nixos.default
