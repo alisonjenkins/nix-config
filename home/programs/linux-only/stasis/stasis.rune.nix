@@ -30,8 +30,8 @@
 
     dpms:
       timeout = 330
-      command "niri msg action power-off-monitors"
-      resume_command "niri msg action power-on-monitors"
+      command "${pkgs.niri}/bin/niri msg action power-off-monitors"
+      resume_command "${pkgs.niri}/bin/niri msg action power-on-monitors"
     end
 
     lock_screen:

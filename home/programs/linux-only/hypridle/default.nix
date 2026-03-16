@@ -17,7 +17,7 @@
         '';
 
         resumeScript = pkgs.writeShellScriptBin "hypridle-resume" ''
-          niri msg action power-on-monitors
+          ${pkgs.niri}/bin/niri msg action power-on-monitors
           bluetoothctl connect '88:C9:E8:06:5E:9C' && playerctl play
         '';
       in {
