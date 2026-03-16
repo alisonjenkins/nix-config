@@ -172,7 +172,10 @@ in
   };
 
   config = lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
-    environment.systemPackages = [ pkgs.unstable.bs-manager ];
+    environment.systemPackages = [
+      pkgs.unstable.bs-manager
+      pkgs.unstable.wayvr
+    ];
 
     programs = {
       envision = {
@@ -180,8 +183,6 @@ in
         openFirewall = true;
       };
     };
-
-    environment.systemPackages = [ pkgs.unstable.wayvr ];
 
     # User service that monitors for WiVRn sink and manages audio routing
     systemd.user.services.wivrn-audio = {
