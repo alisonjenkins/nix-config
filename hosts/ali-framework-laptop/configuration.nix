@@ -287,11 +287,6 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      inputs.niri-flake.overlays.niri
-    ];
-  };
 
   nix.package = pkgs.nix;
 
@@ -306,7 +301,7 @@
 
     niri = {
       enable = true;
-      package = pkgs.niri-unstable;
+      package = pkgs.niri;
     };
   };
 

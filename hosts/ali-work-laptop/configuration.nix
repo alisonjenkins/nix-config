@@ -154,7 +154,6 @@
 
   nixpkgs = {
     overlays = [
-      inputs.niri-flake.overlays.niri
       inputs.nur.overlays.default
       inputs.rust-overlay.overlays.default
       outputs.overlays._1password
@@ -174,7 +173,7 @@
   programs = {
     niri = {
       enable = true;
-      package = pkgs.niri-unstable;
+      package = pkgs.niri;
     };
   };
 

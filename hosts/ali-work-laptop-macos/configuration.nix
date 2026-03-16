@@ -509,11 +509,6 @@
     localHostName = hostname;
   };
 
-  nixpkgs = {
-    overlays = [
-      inputs.niri-flake.overlays.niri
-    ];
-  };
 
   nix = {
     enable = true;

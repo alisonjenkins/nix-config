@@ -314,7 +314,6 @@
   nixpkgs = {
     overlays = [
       (import ../../overlays { inherit inputs lib; system = "x86_64-linux"; }).lqx-pin-packages
-      inputs.niri-flake.overlays.niri
     ];
   };
 
@@ -341,7 +340,7 @@
 
     niri = {
       enable = true;
-      package = pkgs.niri-unstable;
+      package = pkgs.niri;
     };
 
     steam = let
