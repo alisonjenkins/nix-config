@@ -121,6 +121,7 @@ in {
 
           focus-ring {
               width 4
+              active-color "#f2a8c7"
               urgent-color "#eb6f92"
           }
 
