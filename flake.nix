@@ -3,7 +3,10 @@
 
   inputs = {
     # ali-neovim.url = "git+file:///home/ali/git/neovim-nix-flake";
-    # niri.url = "github:YaLTeR/niri";
+    niri = {
+      url = "github:YaLTeR/niri";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
     eks-creds = {
       url = "github:alisonjenkins/eks-creds";
       inputs.nixpkgs.follows = "nixpkgs";
