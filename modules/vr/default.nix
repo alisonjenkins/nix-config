@@ -176,6 +176,7 @@ in
       environment.systemPackages = [
         pkgs.unstable.bs-manager
         pkgs.unstable.wayvr
+        pkgs.xr-video-player
       ];
     })
 

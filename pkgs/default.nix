@@ -15,4 +15,5 @@
   tiny4linux-gui = pkgs.callPackage ./tiny4linux { inherit pkgs; withCli = false; };
   tiny4linux-cli = pkgs.callPackage ./tiny4linux { inherit pkgs; withGui = false; };
   lucien = pkgs.callPackage ./lucien {};
+  xr-video-player = pkgs.callPackage ./xr-video-player {};
 }
