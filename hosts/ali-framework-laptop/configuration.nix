@@ -148,6 +148,7 @@
 
     kernelParams = [
       # "mem_sleep_default=deep"
+      "amdgpu.dcdebugmask=0x410"  # Disable PSR + stutter mode (prevents display corruption on RDNA 3 mobile)
       "tc_cmos.use_acpi_alarm=1"
 
       # RX 7600M XT (Navi 33/RDNA 3) optimizations
