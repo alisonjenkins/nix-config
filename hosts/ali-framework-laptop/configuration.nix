@@ -218,7 +218,6 @@
       wireguard-tools
       xdg-desktop-portal-gnome
       xdg-desktop-portal-gtk
-      xwayland-satellite
       zapzap  # WhatsApp client (replaced whatsie due to insecure qtwebengine-5 dependency)
     ];
   };
@@ -301,7 +300,7 @@
 
     niri = {
       enable = true;
-      package = pkgs.niri;
+      package = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
     };
   };
 
