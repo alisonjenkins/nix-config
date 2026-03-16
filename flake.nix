@@ -24,13 +24,6 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    niri-flake = {
-      url = "github:sodiboo/niri-flake/27e012b4cd49e9ac438573ec7a6db3e5835828c3";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        nixpkgs-stable.follows = "nixpkgs_stable";
-      };
-    };
     nix-cachyos-kernel = {
       url = "github:xddxdd/nix-cachyos-kernel/master";
       inputs.nixpkgs.follows = "nixpkgs";
