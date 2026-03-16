@@ -171,12 +171,15 @@ in
     };
   };
 
-  config = lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
-    environment.systemPackages = [
-      pkgs.unstable.bs-manager
-      pkgs.unstable.wayvr
-    ];
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      environment.systemPackages = [
+        pkgs.unstable.bs-manager
+        pkgs.unstable.wayvr
+      ];
+    })
 
+    (lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
     programs = {
       envision = {
         enable = true;
@@ -214,5 +217,6 @@ in
         };
       };
     };
-  };
+  })
+  ];
 }
