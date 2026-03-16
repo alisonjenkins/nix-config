@@ -85,9 +85,9 @@ in {
           }
 
           preset-column-widths {
-              proportion 0.333
+              proportion 0.33333
               proportion 0.5
-              proportion 0.667
+              proportion 0.66667
           }
 
           focus-ring {
@@ -108,7 +108,7 @@ in {
 
       layer-rule {
           match namespace="^wallpaper$"
-          place-within-backdrop
+          place-within-backdrop true
       }
 
       spawn-at-startup "systemctl" "--user" "import-environment" "DISPLAY" "GTK_THEME" "QT_QPA_PLATFORMTHEME" "WAYLAND_DISPLAY" "XCURSOR_SIZE" "XCURSOR_THEME" "XDG_CURRENT_DESKTOP"
@@ -153,7 +153,7 @@ in {
       window-rule {
           match app-id="org.kde.ksecretd" title="^KDE Wallet Service$"
           match app-id="gay\\.vaskel\\.Soteria"
-          baba-is-float
+          baba-is-float true
           block-out-from "screen-capture"
           open-floating true
           open-focused true
@@ -186,6 +186,9 @@ in {
           open-on-workspace "terminal"
           border {
               off
+          }
+          focus-ring {
+              on
           }
       }
 
