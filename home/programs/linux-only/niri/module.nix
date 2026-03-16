@@ -93,7 +93,6 @@ in {
           }
 
           touchpad {
-              dwt
               middle-emulation
               tap
           }
