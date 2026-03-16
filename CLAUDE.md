@@ -157,7 +157,7 @@ Key configurations defined in the flake:
 - `impermanence`: Tmpfs root persistence
 - `deploy-rs`: Remote deployment tool
 - `nixos-hardware`: Hardware-specific configurations (e.g., Framework 16)
-- `niri-flake`, `nixos-cosmic`: Alternative desktop environments
+- `nixos-cosmic`: Alternative desktop environment
 - `rust-overlay`: Rust toolchain management
 - `jovian-nixos`: Steam Deck specific configurations
 
