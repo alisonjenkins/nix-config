@@ -135,6 +135,13 @@ set-option -g set-titles-string '[#S:#I #h] #W'
 setw -g mode-keys vi
 set-option -sa terminal-features ",''${TERM}*:RGB"
 
+# Claude Code session monitoring - bell detection
+set -g monitor-bell on
+set -g bell-action other
+set -g visual-bell off
+set -g window-status-bell-style 'fg=#fab387,bg=default,bold'
+bind-key n next-window -a
+
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
 bind-key -T copy-mode-vi 'v' send -X begin-selection
 bind-key -T copy-mode-vi Escape send -X cancel
