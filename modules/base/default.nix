@@ -153,7 +153,6 @@ in
         kernelParams = [
           "amdgpu.ppfeaturemask=0xfff7ffff"
           "hibernate=lz4"
-          "no_console_suspend=1"
           "preempt=full"
           "quiet"
           "rd.systemd.show_status=false"
