@@ -15,7 +15,7 @@ in {
   config.programs.zen-browser = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
     nativeMessagingHosts = lib.mkIf pkgs.stdenv.isLinux [
-      inputs.pipewire-screenaudio.packages.${pkgs.stdenv.hostPlatform.system}.default
+      # inputs.pipewire-screenaudio.packages.${pkgs.stdenv.hostPlatform.system}.default # broken upstream: firefox.json renamed
       pkgs._1password-gui
     ];
 
@@ -48,23 +48,7 @@ in {
             surfingkeys
             tab-session-manager
             ublock-origin
-          ]) ++ [
-            (let
-              extid = "pipewire-screenaudio@icenjim";
-              xpi = pkgs.fetchurl {
-                url = "https://addons.mozilla.org/firefox/downloads/file/4186504/pipewire_screenaudio-0.3.4.xpi";
-                hash = "sha256-p0cUUU9JC21cNuMriFEK4+Xn8a/cspwgQag206pITL4=";
-              };
-            in pkgs.stdenvNoCC.mkDerivation {
-              name = "pipewire-screenaudio-${extid}";
-              dontUnpack = true;
-              installPhase = ''
-                mkdir -p "$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
-                cp "${xpi}" "$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/${extid}.xpi"
-              '';
-              passthru.addonId = extid;
-            })
-          ]
+          ])
           else [ ]
         );
       };
