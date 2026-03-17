@@ -571,7 +571,7 @@ in
         steamtinkerlaunch
         unstable.gamescope-wsi
         unstable.goverlay
-        unstable.heroic-unwrapped
+        stable.heroic-unwrapped
         unstable.protonplus
         unstable.scx.full
         unstable.umu-launcher
