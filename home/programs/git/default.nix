@@ -123,6 +123,13 @@ in
 
         # Git work
         work = "!sh -c 'git fetch && git checkout @{upstream} -tb \\\"$@\\\"' _";
+
+        # Worktree management
+        wt = "worktree";
+        wta = "!f() { git worktree add .claude/worktrees/$1 -b $1; }; f";
+        wtl = "worktree list";
+        wtr = "worktree remove";
+        wtp = "worktree prune";
         };
       };
 
@@ -146,9 +153,17 @@ in
   home.packages =
     let
       git-wc = import ./git-wc.nix { inherit pkgs; };
+      claude-wt = import ./claude-wt.nix { inherit pkgs; };
+      claude-wt-existing = import ./claude-wt-existing.nix { inherit pkgs; };
+      claude-wt-clean = import ./claude-wt-clean.nix { inherit pkgs; };
+      claude-wt-list = import ./claude-wt-list.nix { inherit pkgs; };
     in
     [
       git-wc
+      claude-wt
+      claude-wt-existing
+      claude-wt-clean
+      claude-wt-list
     ];
 
   programs.difftastic = {
@@ -161,5 +176,11 @@ in
 
   home.file = {
     ".config/git/includes/extra-config".text = import ./extra-config.nix { inherit gpgSign gitGPGSigningKey gpgSigningProgram pkgs; };
+
+    ".config/git/ignore".text = ''
+      # Git worktrees
+      .claude/worktrees/
+      **/worktrees/
+    '';
   };
 }

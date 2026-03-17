@@ -7,6 +7,9 @@
   [branch]
     autosetuprebase = always
 
+  [core]
+    excludesfile = ~/.config/git/ignore
+
   [branch "master"]
     remote = origin
     merge = refs/heads/master
