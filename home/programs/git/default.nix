@@ -181,6 +181,9 @@ in
       # Git worktrees
       .claude/worktrees/
       **/worktrees/
+
+      # Claude Code local settings (keep other .claude/ files for sharing)
+      .claude/settings.local.json
     '';
   };
 }
