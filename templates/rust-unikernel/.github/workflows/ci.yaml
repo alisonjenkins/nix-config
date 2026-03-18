@@ -38,7 +38,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -54,7 +54,7 @@ jobs:
     outputs:
       ami_name: ${{ steps.create-ami.outputs.ami_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -117,7 +117,7 @@ jobs:
     if: github.event.inputs.deploy_instance == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
