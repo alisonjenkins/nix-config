@@ -40,6 +40,7 @@
       };
     };
   };
+  nix.settings.cores = 16;
   nix.settings.max-jobs = 8;
 
   modules.locale.enable = true;
