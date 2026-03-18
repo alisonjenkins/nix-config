@@ -624,6 +624,8 @@
     };
   };
 
+  ids.gids.nixbld = 350;
+
   users.users.${username} = {
     name = username;
     home = "/Users/${username}";
