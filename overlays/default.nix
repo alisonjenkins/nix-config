@@ -18,6 +18,9 @@
         aiohttp = python-prev.aiohttp.overridePythonAttrs (oldAttrs: {
           doCheck = false;
         });
+        django_4 = python-prev.django_4.overridePythonAttrs (oldAttrs: {
+          doCheck = false;
+        });
       })
     ];
   };
