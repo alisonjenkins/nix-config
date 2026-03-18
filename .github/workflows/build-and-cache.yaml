@@ -54,7 +54,7 @@ jobs:
       - uses: DeterminateSystems/flake-checker-action@main
       - name: Build and push to cache
         run: |
-          cachix watch-exec ajenkins-public -- nix build --print-out-paths --no-link '${{ matrix.configuration }}'
+          cachix watch-exec ajenkins-public -- nix build --keep-going --print-out-paths --no-link '${{ matrix.configuration }}'
 
   # build-macos:
   #   runs-on: macos-15  # macOS 15 (Sequoia) on Apple Silicon
