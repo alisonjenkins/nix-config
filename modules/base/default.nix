@@ -291,7 +291,7 @@ in
           experimental-features = [ "nix-command" "flakes" ];
           download-buffer-size = 268435456; # 256 MiB
           eval-cache = true;
-          max-jobs = 8;
+          max-jobs = "auto";
           trusted-users = [ "root" "@wheel" ];
 
           substituters = [

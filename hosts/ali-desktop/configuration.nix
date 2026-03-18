@@ -40,6 +40,8 @@
       };
     };
   };
+  nix.settings.max-jobs = 8;
+
   modules.locale.enable = true;
   modules.ollama.enable = true;
   modules.podman.enable = true;
