@@ -49,7 +49,7 @@
       htop
       hurl
       inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
-      inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
+      # inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
       ipcalc
       isort
       jdk11
@@ -125,7 +125,7 @@
           "aarch64-unknown-linux-gnu"
           "aarch64-unknown-linux-musl"
           "wasm32-unknown-unknown"
-          "x86_64-pc-windows-msvc"
+          # "x86_64-pc-windows-msvc"  # Removed: requires old Apple SDK that's been removed from nixpkgs
           "x86_64-unknown-linux-gnu"
           "x86_64-unknown-linux-musl"
           # "aarch64-apple-ios"
