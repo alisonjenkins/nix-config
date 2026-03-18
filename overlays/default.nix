@@ -11,6 +11,15 @@
     # example = prev.example.overrideAttrs (oldAttrs: rec {
     # ...
     # });
+
+    # Disable aiohttp tests to work around sandbox test failures
+    pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+      (python-final: python-prev: {
+        aiohttp = python-prev.aiohttp.overridePythonAttrs (oldAttrs: {
+          doCheck = false;
+        });
+      })
+    ];
   };
 
   # When applied, the stable nixpkgs set (declared in the flake inputs) will
