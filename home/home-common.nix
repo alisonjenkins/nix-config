@@ -60,7 +60,7 @@
         direnv
         dive
         eog
-        eza
+        # eza
         freeplane
         git
         gnumake
