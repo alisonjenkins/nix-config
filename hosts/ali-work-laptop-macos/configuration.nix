@@ -52,7 +52,7 @@
       # inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
       ipcalc
       isort
-      jdk11
+      jdk
       jq
       json2hcl
       jujutsu
