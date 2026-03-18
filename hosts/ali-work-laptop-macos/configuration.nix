@@ -25,7 +25,7 @@
       cargo-make
       cargo-tarpaulin
       cargo-watch
-      colima
+      # colima  # Moved to homebrew to avoid EOL lima dependency
       comma
       cowsay
       direnv
@@ -431,6 +431,7 @@
 
     brews = [
       "choose-gui"
+      "colima"  # Container runtime using lima
       "lima"
       "openconnect"
     ];
