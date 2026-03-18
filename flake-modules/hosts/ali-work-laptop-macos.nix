@@ -16,6 +16,7 @@ let
       let overlays = import ../../overlays { inherit inputs; };
       in [
         overlays.additions
+        overlays.modifications
         overlays.lqx-pin-packages
         overlays.master-packages
         overlays.unstable-packages
