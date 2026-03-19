@@ -521,7 +521,6 @@ in
     environment = {
       systemPackages = with pkgs; [
         # unstable.winboat
-        aider-chat-full
         birdtray
         bluetooth-connect
         deepfilternet
