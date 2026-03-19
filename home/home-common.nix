@@ -6,6 +6,7 @@
 }: {
   imports = [
     ./autostart
+    ./modules/dedup.nix
     ./programs
     ./scripts
     ./themes
@@ -29,7 +30,7 @@
   home.sessionVariables = import ./environmentVariables.nix { inherit pkgs; };
   home.shellAliases = import ./shellAliases.nix { inherit pkgs; };
 
-  home.packages =
+  custom.homePackages =
     [
       pkgs.nix-flake-template-init
     ]

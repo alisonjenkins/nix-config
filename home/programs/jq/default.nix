@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  home.packages = [
+  custom.homePackages = [
     pkgs.jq
   ];
 }

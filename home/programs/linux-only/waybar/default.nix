@@ -1,5 +1,5 @@
 { config, pkgs, ... }: {
-  home.packages =
+  custom.homePackages =
     if pkgs.stdenv.isLinux
     then
       with pkgs; [

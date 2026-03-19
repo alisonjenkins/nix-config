@@ -1,7 +1,7 @@
 { pkgs
 , ...
 }: {
-  home.packages = if pkgs.stdenv.isLinux then with pkgs; [
+  custom.homePackages = if pkgs.stdenv.isLinux then with pkgs; [
     keybase
     keybase-gui
   ] else [];
