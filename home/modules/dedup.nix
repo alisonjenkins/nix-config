@@ -1,7 +1,9 @@
 { osConfig ? null, lib, config, ... }:
 let
+  hasSysConfig = osConfig != null;
+
   sysPackageNames =
-    if osConfig != null
+    if hasSysConfig
     then lib.genAttrs
       (map (p: p.pname or p.name or "") osConfig.environment.systemPackages)
       (_: true)
@@ -9,16 +11,14 @@ let
 
   isInSystem = p: sysPackageNames ? ${p.pname or p.name or ""};
 in {
-  options.custom.homePackages = lib.mkOption {
-    type = lib.types.listOf lib.types.package;
-    default = [];
-    description = ''
-      Packages to install via home-manager that are automatically
-      deduplicated against system packages on NixOS. Use this instead
-      of home.packages for any package that might also appear in
-      environment.systemPackages.
-    '';
+  # Apply a dedup filter to the home.packages option. The `apply` function
+  # runs after all module definitions are merged, so it catches packages
+  # added by programs.* modules too. On non-NixOS (standalone HM, Darwin),
+  # the filter is a no-op.
+  options.home.packages = lib.mkOption {
+    apply = pkgs:
+      if hasSysConfig
+      then builtins.filter (p: !isInSystem p) pkgs
+      else pkgs;
   };
-
-  config.home.packages = builtins.filter (p: !isInSystem p) config.custom.homePackages;
 }
