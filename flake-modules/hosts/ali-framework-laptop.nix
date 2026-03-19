@@ -17,8 +17,8 @@ in {
       ../../app-profiles/desktop/aws
       ../../app-profiles/desktop/display-managers/greetd-regreet
       ../../app-profiles/desktop/local-k8s
+      ../../app-profiles/desktop/kde-connect
       ../../app-profiles/desktop/wms/hyprland
-      ../../app-profiles/desktop/wms/plasma6
       ../../app-profiles/hardware/vr
       ../../hosts/ali-framework-laptop/configuration.nix
       ../../modules/audio-context-suspend.nix
