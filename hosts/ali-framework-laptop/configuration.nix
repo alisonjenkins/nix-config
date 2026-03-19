@@ -214,7 +214,6 @@
       qmk_hid
       rio
       sbctl
-      todoist-electron
       tpm2-tss
       wireguard-tools
       xdg-desktop-portal-gnome
@@ -567,15 +566,9 @@
         xdgOpenUsePortal = true;
 
         config = {
-          KDE = {
-            default = [
-              "kde"
-            ];
-          };
         };
 
         extraPortals = with pkgs; [
-          kdePackages.xdg-desktop-portal-kde
           xdg-desktop-portal-cosmic
           xdg-desktop-portal-wlr
         ];

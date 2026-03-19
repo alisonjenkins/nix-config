@@ -180,7 +180,6 @@
       i2pd
       inkscape
       innoextract
-      kdePackages.korganizer
       lact
       libaacs
       lsscsi
@@ -206,7 +205,6 @@
       sweethome3d.textures-editor
       sysbench
       tiny4linux
-      todoist-electron
       unixtools.xxd
       unstable.makemkv
       unstable.uhk-agent
@@ -828,11 +826,6 @@
         xdgOpenUsePortal = true;
 
         config = {
-          KDE = {
-            default = [
-              "kde"
-            ];
-          };
           niri = {
             default = [
               "gtk"
@@ -842,7 +835,6 @@
         };
 
         extraPortals = with pkgs; [
-          kdePackages.xdg-desktop-portal-kde
           xdg-desktop-portal-cosmic
           xdg-desktop-portal-gnome
           xdg-desktop-portal-gtk
