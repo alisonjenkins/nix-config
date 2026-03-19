@@ -9,7 +9,6 @@
     ./programs
     ./scripts
     ./themes
-    ./wms/river
     inputs.nix-index-database.homeModules.nix-index
     inputs.plasma-manager.homeModules.plasma-manager
   ];
