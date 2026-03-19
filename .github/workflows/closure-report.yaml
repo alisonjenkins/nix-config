@@ -23,6 +23,7 @@ jobs:
         host:
           - ali-desktop
           - ali-framework-laptop
+          - ali-work-laptop
     permissions:
       contents: read
       id-token: write
