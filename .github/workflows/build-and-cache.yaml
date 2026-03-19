@@ -39,6 +39,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          lfs: true
       - uses: wimpysworld/nothing-but-nix@main
         with:
           hatchet-protocol: 'rampage'
