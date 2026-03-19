@@ -288,13 +288,13 @@ in
         settings = {
           auto-optimise-store = lib.mkDefault false;
           cores = lib.mkDefault 0;
-          experimental-features = [ "nix-command" "flakes" ];
-          download-buffer-size = 268435456; # 256 MiB
-          eval-cache = true;
+          experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
+          download-buffer-size = lib.mkDefault 268435456; # 256 MiB
+          eval-cache = lib.mkDefault true;
           max-jobs = lib.mkDefault "auto";
-          trusted-users = [ "root" "@wheel" ];
+          trusted-users = lib.mkDefault [ "root" "@wheel" ];
 
-          substituters = [
+          substituters = lib.mkDefault [
             "https://ajenkins-public.cachix.org"
             "https://attic.xuyh0120.win/lantian"
             "https://cache.garnix.io"
@@ -306,7 +306,7 @@ in
             "https://nixpkgs-wayland.cachix.org"
           ];
 
-          trusted-public-keys = [
+          trusted-public-keys = lib.mkDefault [
             "ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA="
             "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
