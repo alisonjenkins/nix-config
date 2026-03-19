@@ -4,4 +4,5 @@
 .aider*
 .direnv/
 k8s-setup/charts
+reports/
 result-*
