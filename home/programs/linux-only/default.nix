@@ -7,7 +7,6 @@
     ./firefox
     ./fuzzel
     ./gtk
-    ./librewolf
     ./lsfg-vk
     ./lucien
     ./mangohud
