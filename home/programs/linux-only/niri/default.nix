@@ -1,7 +1,7 @@
 { pkgs, inputs, ... }: {
   imports = [ ./module.nix ];
 
-  custom.homePackages = if pkgs.stdenv.isLinux then with pkgs; [
+  home.packages = if pkgs.stdenv.isLinux then with pkgs; [
     fuzzel
     inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default

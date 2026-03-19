@@ -30,7 +30,7 @@
   home.sessionVariables = import ./environmentVariables.nix { inherit pkgs; };
   home.shellAliases = import ./shellAliases.nix { inherit pkgs; };
 
-  custom.homePackages =
+  home.packages =
     [
       pkgs.nix-flake-template-init
     ]

@@ -33,7 +33,7 @@
     sha256 = "sha256-IxDXNhnTg/NrhPxA5+6u/meEnlX720eoQPyoJfbuge0=";
   };
 in {
-  custom.homePackages = [pkgs.easyeffects];
+  home.packages = [pkgs.easyeffects];
 
   home.file =
     profileFileAttrs

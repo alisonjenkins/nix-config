@@ -4,7 +4,7 @@
 , inputs
 , ...
 }: {
-  custom.homePackages = lib.optionals pkgs.stdenv.isLinux [
+  home.packages = lib.optionals pkgs.stdenv.isLinux [
     pkgs.obsidian
   ];
 

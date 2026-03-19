@@ -21,7 +21,7 @@
       {source = profilesDir + "/${filename}";}
   ) profileFiles;
 in {
-  custom.homePackages = [pkgs.easyeffects];
+  home.packages = [pkgs.easyeffects];
 
   home.file =
     profileFileAttrs
