@@ -287,7 +287,7 @@ in
 
         settings = {
           auto-optimise-store = lib.mkDefault false;
-          cores = 0;
+          cores = lib.mkDefault 0;
           experimental-features = [ "nix-command" "flakes" ];
           download-buffer-size = 268435456; # 256 MiB
           eval-cache = true;
