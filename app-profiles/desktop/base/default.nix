@@ -36,7 +36,6 @@
     cargo
     cargo-nextest
     cava
-    chromium
     colmena
     comma
     corectrl
@@ -67,7 +66,6 @@
     jq
     just
     kbfs
-    kdePackages.filelight
     keybase
     keybase-gui
     keyutils
