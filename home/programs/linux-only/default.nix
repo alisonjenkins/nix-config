@@ -2,7 +2,6 @@
   imports = [
     # ./hypridle
     # ./stasis
-    ./anyrun
     ./davmail
     ./firefox
     ./fuzzel
