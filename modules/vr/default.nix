@@ -132,6 +132,11 @@ in
       default = false;
       description = "Enable open source VR stack (Envision + WiVRn)";
     };
+    enableEnvision = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable Envision GUI for managing OpenXR/Monado (large closure, not required for WiVRn)";
+    };
     scale = lib.mkOption {
       type = lib.types.float;
       default = 0.8;
@@ -181,7 +186,7 @@ in
     })
 
     (lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
-    programs = {
+    programs = lib.mkIf cfg.enableEnvision {
       envision = {
         enable = true;
         openFirewall = true;
