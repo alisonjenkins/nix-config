@@ -12,6 +12,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -51,8 +55,27 @@ jobs:
         with:
           name: ajenkins-public
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Cache Nix evaluation
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/nix
+          key: nix-eval-${{ hashFiles('flake.lock') }}-${{ matrix.configuration }}
+          restore-keys: |
+            nix-eval-${{ hashFiles('flake.lock') }}-
       - uses: DeterminateSystems/flake-checker-action@main
+      - name: Check if build is needed
+        id: dry-run
+        run: |
+          dry_output=$(nix build --dry-run '${{ matrix.configuration }}' 2>&1)
+          echo "$dry_output"
+          if echo "$dry_output" | grep -q 'will be built:'; then
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_build=false" >> "$GITHUB_OUTPUT"
+            echo "All derivations are cached — skipping build"
+          fi
       - name: Build and push to cache
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           cachix watch-exec ajenkins-public -- nix build --keep-going --print-out-paths --no-link '${{ matrix.configuration }}'
 
