@@ -248,7 +248,7 @@ in
     cosmic = {
       enable = mkOption {
         type = types.bool;
-        default = true;
+        default = false;
         description = "Enable COSMIC desktop environment";
       };
     };
@@ -1490,6 +1490,8 @@ in
       extraPortals = mkDefault (with pkgs; [
         xdg-desktop-portal-gtk
         xdg-desktop-portal-gnome
+      ] ++ lib.optionals cfg.cosmic.enable [
+        xdg-desktop-portal-cosmic
       ]);
 
       config = mkDefault {
