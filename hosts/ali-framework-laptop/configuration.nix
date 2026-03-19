@@ -569,7 +569,6 @@
         };
 
         extraPortals = with pkgs; [
-          xdg-desktop-portal-cosmic
           xdg-desktop-portal-wlr
         ];
       };
