@@ -545,7 +545,6 @@ in
         unstable.cobang
         unstable.copilot-cli
         unstable.devenv
-        unstable.easyeffects
         unstable.jellycli
         unstable.mission-center
         unstable.nvtopPackages.amd
