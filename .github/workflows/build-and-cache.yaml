@@ -56,7 +56,7 @@ jobs:
           name: ajenkins-public
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Cache Nix evaluation
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/nix
           key: nix-eval-${{ hashFiles('flake.lock') }}-${{ matrix.configuration }}
