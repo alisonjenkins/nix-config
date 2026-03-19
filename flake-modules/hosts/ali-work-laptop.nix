@@ -18,7 +18,6 @@ in {
       ../../app-profiles/desktop/display-managers/greetd-regreet
       ../../app-profiles/desktop/local-k8s
       ../../app-profiles/desktop/kde-connect
-      ../../app-profiles/desktop/wms/hyprland
       ../../hosts/ali-work-laptop/configuration.nix
       ../../hosts/ali-work-laptop/disko-config.nix
       ../../modules/audio-context-suspend.nix

@@ -1505,8 +1505,7 @@ in
         };
 
         hyprland = {
-          default = [ "hyprland" "gtk" ];
-          "org.freedesktop.impl.portal.FileChooser" = [ "kde" ];
+          default = [ "gtk" ];
           "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
         };
       };
