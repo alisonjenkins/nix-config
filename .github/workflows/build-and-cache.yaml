@@ -52,12 +52,8 @@ jobs:
             max-jobs = auto
             cores = 0
             eval-cache = true
-            extra-substituters = https://cache.nixcache.org https://ajenkins-public.cachix.org https://nix-community.cachix.org https://nix-gaming.cachix.org
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4=
-      - uses: cachix/cachix-action@v16
-        with:
-          name: ajenkins-public
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://nix-gaming.cachix.org
+            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4=
       - name: Cache Nix evaluation
         uses: actions/cache@v4
         with:
@@ -77,17 +73,13 @@ jobs:
             echo "needs_build=false" >> "$GITHUB_OUTPUT"
             echo "All derivations are cached — skipping build"
           fi
-      - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true'
-        run: |
-          cachix watch-exec ajenkins-public -- nix build --keep-going --print-out-paths --no-link '${{ matrix.configuration }}'
       - name: Install niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         run: nix profile install github:Mic92/niks3
-      - name: Push to niks3
+      - name: Build and push to cache
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          nix build --print-out-paths --no-link '${{ matrix.configuration }}' | \
+          nix build --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
