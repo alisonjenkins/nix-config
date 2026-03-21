@@ -182,7 +182,6 @@ in {
       }
       workspace "gaming"
       workspace "obsidian"
-      workspace "passwordmanager"
 
       // Window rules
       window-rule {
@@ -202,8 +201,7 @@ in {
           match app-id="^org\\.keepassxc\\.KeePassXC$"
           block-out-from "screen-capture"
           open-focused true
-          open-maximized true
-          open-on-workspace "passwordmanager"
+          open-floating true
       }
 
       window-rule {
@@ -313,7 +311,7 @@ in {
           Mod+4 { focus-workspace "game"; }
           Mod+5 { focus-workspace "gaming"; }
           Mod+6 { focus-workspace "obsidian"; }
-          Mod+7 { focus-workspace "passwordmanager"; }
+          Mod+7 { focus-workspace 7; }
           Mod+8 { focus-workspace 8; }
           Mod+9 { focus-workspace 9; }
 
@@ -335,7 +333,7 @@ in {
           Mod+Ctrl+4 { move-column-to-workspace "game"; }
           Mod+Ctrl+5 { move-column-to-workspace "gaming"; }
           Mod+Ctrl+6 { move-column-to-workspace "obsidian"; }
-          Mod+Ctrl+7 { move-column-to-workspace "passwordmanager"; }
+          Mod+Ctrl+7 { move-column-to-workspace 7; }
           Mod+Ctrl+8 { move-column-to-workspace 8; }
           Mod+Ctrl+9 { move-column-to-workspace 9; }
 
