@@ -574,12 +574,14 @@
       sandbox-fallback = false;
       trusted-users = [ "root" specialArgs.username "@admin" "@staff" ];
       substituters = [
+        "https://cache.nixcache.org"
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
         "https://nixpkgs-cross-overlay.cachix.org"
       ];
       trusted-substituters = [ "https://hydra.nixos.org/" ];
       trusted-public-keys = [
+        "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

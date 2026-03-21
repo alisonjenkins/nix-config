@@ -296,6 +296,7 @@ in
           trusted-users = lib.mkDefault [ "root" "@wheel" ];
 
           substituters = lib.mkDefault [
+            "https://cache.nixcache.org"
             "https://ajenkins-public.cachix.org"
             "https://attic.xuyh0120.win/lantian"
             "https://cache.garnix.io"
@@ -306,6 +307,7 @@ in
           ];
 
           trusted-public-keys = lib.mkDefault [
+            "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
             "ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA="
             "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="

@@ -553,6 +553,7 @@
       extra-trusted-users = "${username}";
       extra-platforms = "x86_64-linux";
       substituters = [
+        "https://cache.nixcache.org"
         "https://cache.nixos.org"
         "https://ajenkins-public.cachix.org"
         "https://nix-community.cachix.org"
@@ -566,6 +567,7 @@
         "https://hercules-ci.cachix.org"  # flake-parts and CI tools
       ];
       trusted-public-keys = [
+        "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
