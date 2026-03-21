@@ -7,6 +7,8 @@
     ../1password
   ];
 
+  modules.base.useAliNeovim = true;
+
   programs.gamescope = {
     enable = true;
     capSysNice = true;
