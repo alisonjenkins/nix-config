@@ -519,6 +519,7 @@ in
     };
 
     environment = {
+      pathsToLink = [ "/share/wallpapers" ];
       systemPackages = with pkgs; [
         # unstable.winboat
         birdtray
