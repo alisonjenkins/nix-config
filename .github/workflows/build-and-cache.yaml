@@ -82,6 +82,7 @@ jobs:
           nix build --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
+              --max-concurrent-uploads 10 \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
 
   # build-macos:
