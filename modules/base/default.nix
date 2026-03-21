@@ -272,6 +272,7 @@ in
           outputs.overlays.modifications
           outputs.overlays.stable-packages
           outputs.overlays.tmux-sessionizer
+          outputs.overlays.systemd
           outputs.overlays.unstable-packages
         ] ++ lib.optional cfg.enableCachyOSKernel inputs.nix-cachyos-kernel.overlays.pinned;
       };

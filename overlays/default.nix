@@ -110,6 +110,48 @@
     });
   };
 
+  systemd = final: prev:
+    let
+      # Detect PR #40954 (birthDate field) at eval time to avoid unnecessary rebuilds.
+      # Extract the version and hash from the nixpkgs systemd definition, then fetch
+      # the source independently to check for birthDate without triggering recursion.
+      nixpkgsSystemdDef = builtins.readFile (prev.path + "/pkgs/os-specific/linux/systemd/default.nix");
+      versionMatch = builtins.match ''.*version = "([^"]+)".*'' nixpkgsSystemdDef;
+      hashMatch = builtins.match ".*fetchFromGitHub [^}]*hash = \"([^\"]+)\".*" nixpkgsSystemdDef;
+      systemdVersion = if versionMatch != null then builtins.elemAt versionMatch 0 else null;
+      systemdHash = if hashMatch != null then builtins.elemAt hashMatch 0 else null;
+      # Fetch the source using builtins only (no prev.* packages) to avoid recursion.
+      # The SRI hash from fetchFromGitHub is compatible with builtins.fetchTarball.
+      systemdSrc = if systemdVersion != null && systemdHash != null then
+        builtins.fetchTarball {
+          url = "https://github.com/systemd/systemd/archive/v${systemdVersion}.tar.gz";
+          sha256 = systemdHash;
+        }
+      else null;
+      srcHasBirthDate = systemdSrc != null
+        && builtins.pathExists "${systemdSrc}/src/shared/user-record.c"
+        && builtins.match ".*birthDate.*" (builtins.readFile "${systemdSrc}/src/shared/user-record.c") != null;
+    in prev.lib.optionalAttrs srcHasBirthDate {
+    systemd = prev.systemd.overrideAttrs (oldAttrs:
+      let
+        # Revert PR #40954: "userdb: add birthDate field to JSON user records"
+        revertPatch1 = final.fetchpatch {
+          url = "https://github.com/systemd/systemd/commit/7a858878a03966d2a65ef9e8f79b5caff352ac53.patch";
+          hash = "sha256-JeJ+swYQx4WoYK/VBlRzu8xZH9R/9Py0qyp5RAXQJZQ=";
+        };
+        revertPatch2 = final.fetchpatch {
+          url = "https://github.com/systemd/systemd/commit/770958e24a2ee59593aa6833a4a825db0a6abbbc.patch";
+          hash = "sha256-GJjc4k7+r3A68lohnOjRRr800fIEpUdWXVjFpjmgXZA=";
+        };
+      in {
+      prePatch = (oldAttrs.prePatch or "") + ''
+        echo "Reverting PR #40954 (birthDate field)..."
+        patch -R -p1 < ${revertPatch1}
+        patch -R -p1 < ${revertPatch2}
+      '';
+    });
+  };
+
   snapper = final: _prev: {
     snapper = _prev.snapper.overrideAttrs (oldAttrs: {
       buildInputs = oldAttrs.buildInputs ++ [ _prev.zlib ];
