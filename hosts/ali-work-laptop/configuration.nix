@@ -1,4 +1,5 @@
-{ lib
+{ config
+, lib
 , inputs
 , outputs
 , pkgs
@@ -22,6 +23,17 @@
   ];
 
   modules.plymouth.enable = true;
+  # TODO: Enable once secrets/niks3-token.enc.yaml is created with sops
+  # modules.niks3CachePush = {
+  #   enable = true;
+  #   authTokenFile = config.sops.secrets.niks3-token.path;
+  # };
+  #
+  # sops.secrets.niks3-token = {
+  #   sopsFile = ../../secrets/niks3-token.enc.yaml;
+  #   key = "niks3_token";
+  # };
+
   modules.base = {
     enable = true;
     enableImpermanence = true;

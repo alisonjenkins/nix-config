@@ -161,6 +161,17 @@ Key configurations defined in the flake:
 - `rust-overlay`: Rust toolchain management
 - `jovian-nixos`: Steam Deck specific configurations
 
+### Pending: niks3 cache push on desktops/laptops
+
+The `modules/niks3-cache-push` module and GHA parallel push workflow are implemented but **not yet enabled** on hosts. To finish:
+
+1. Create `secrets/niks3-token.enc.yaml` via `sops secrets/niks3-token.enc.yaml` with key `niks3_token`
+2. Add ali-framework-laptop's server age key to `.sops.yaml` (keys section + niks3-token creation rule)
+3. Uncomment the `modules.niks3CachePush` and `sops.secrets.niks3-token` blocks in:
+   - `hosts/ali-desktop/configuration.nix`
+   - `hosts/ali-framework-laptop/configuration.nix`
+   - `hosts/ali-work-laptop/configuration.nix`
+
 ## Development Workflow
 
 When modifying configurations:

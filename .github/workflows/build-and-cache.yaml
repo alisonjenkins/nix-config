@@ -80,15 +80,46 @@ jobs:
         run: |
           curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_x86_64.tar.gz | sudo tar xz -C /usr/local/bin niks3
           sudo chmod +x /usr/local/bin/niks3
-      - name: Build and push to cache
+      - name: Build and push to cache in parallel
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
+          QUEUE=/tmp/niks3-queue
+          touch "$QUEUE"
+
+          # Background drainer: watches queue and pushes paths as they appear
+          (
+            while true; do
+              if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
+                touch "$QUEUE"
+                cat /tmp/niks3-processing | xargs -r niks3 push \
+                  --server-url https://api.nixcache.org \
+                  --max-concurrent-uploads 10 \
+                  --auth-token "$NIKS3_TOKEN" || true
+                rm -f /tmp/niks3-processing
+              fi
+              sleep 2
+            done
+          ) &
+          DRAINER_PID=$!
+
+          # Build, appending output paths to queue
           nix build -L --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' \
-            2> >(grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) | \
-            xargs niks3 push \
+            2> >(grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$QUEUE"
+
+          # Stop drainer and do final push of any remaining paths
+          kill $DRAINER_PID 2>/dev/null || true
+          wait $DRAINER_PID 2>/dev/null || true
+
+          # Merge any leftover queue + in-progress paths for final push
+          cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
+          if [ -s /tmp/niks3-final ]; then
+            cat /tmp/niks3-final | xargs -r niks3 push \
               --server-url https://api.nixcache.org \
               --max-concurrent-uploads 10 \
-              --auth-token "${{ secrets.NIKS3_TOKEN }}"
+              --auth-token "$NIKS3_TOKEN"
+          fi
 
   # build-macos:
   #   runs-on: macos-15  # macOS 15 (Sequoia) on Apple Silicon

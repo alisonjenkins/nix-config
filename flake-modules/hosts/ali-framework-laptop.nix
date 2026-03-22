@@ -21,6 +21,7 @@ in {
       ../../app-profiles/hardware/vr
       ../../hosts/ali-framework-laptop/configuration.nix
       ../../modules/audio-context-suspend.nix
+      ../../modules/niks3-cache-push
       ../../modules/podman
       ../../modules/development/web
       inputs.disko.nixosModules.disko

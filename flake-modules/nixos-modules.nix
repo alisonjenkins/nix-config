@@ -8,6 +8,7 @@
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
     luksPCR15 = import ../modules/luksPCR15;
+    niks3-cache-push = import ../modules/niks3-cache-push;
     ollama = import ../modules/ollama;
     plymouth = import ../modules/plymouth;
     podman = import ../modules/podman;

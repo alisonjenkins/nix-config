@@ -22,6 +22,7 @@ in {
       ../../app-profiles/hardware/vr
       ../../hosts/ali-desktop/configuration.nix
       ../../modules/audio-context-suspend.nix
+      ../../modules/niks3-cache-push
       ../../modules/podman
       inputs.nix-flatpak.nixosModules.nix-flatpak
       inputs.nur.modules.nixos.default

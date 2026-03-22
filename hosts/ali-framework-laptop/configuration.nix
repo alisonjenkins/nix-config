@@ -1,4 +1,5 @@
-{ lib
+{ config
+, lib
 , inputs
 , outputs
 , pkgs
@@ -20,6 +21,17 @@
     ./disk-config.nix
     ./hardware-configuration.nix
   ];
+
+  # TODO: Enable once secrets/niks3-token.enc.yaml is created with sops
+  # modules.niks3CachePush = {
+  #   enable = true;
+  #   authTokenFile = config.sops.secrets.niks3-token.path;
+  # };
+  #
+  # sops.secrets.niks3-token = {
+  #   sopsFile = ../../secrets/niks3-token.enc.yaml;
+  #   key = "niks3_token";
+  # };
 
   modules.plymouth.enable = true;
   modules.base = {

@@ -22,6 +22,7 @@ in {
       ../../hosts/ali-work-laptop/disko-config.nix
       ../../modules/audio-context-suspend.nix
       ../../modules/development/web
+      ../../modules/niks3-cache-push
       ../../modules/podman
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
