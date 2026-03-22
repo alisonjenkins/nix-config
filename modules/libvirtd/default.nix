@@ -11,7 +11,7 @@ in
     virtualisation.libvirtd = {
       enable = true;
       qemu = {
-        package = pkgs.qemu_kvm;
+        package = pkgs.qemu_kvm.override { cephSupport = false; };
         runAsRoot = true;
         swtpm.enable = true;
         vhostUserPackages = [ pkgs.virtiofsd ];
