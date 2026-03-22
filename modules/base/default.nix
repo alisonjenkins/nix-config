@@ -293,7 +293,7 @@ in
           download-buffer-size = lib.mkDefault 268435456; # 256 MiB
           eval-cache = lib.mkDefault true;
           max-jobs = lib.mkDefault "auto";
-          trusted-users = lib.mkDefault [ "root" "@wheel" ];
+          trusted-users = [ "root" "@wheel" ];
 
           substituters = lib.mkDefault [
             "https://cache.nixcache.org"
