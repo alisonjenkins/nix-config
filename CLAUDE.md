@@ -47,6 +47,15 @@ just test-build <hostname>
 
 # Run built VM
 just test-run <hostname>
+
+# Build NixOS AMI image
+just ami-build <hostname>
+
+# Upload built AMI to AWS
+just ami-upload <hostname> [region] [bucket]
+
+# Build + upload AMI in one step
+just ami <hostname> [region] [bucket]
 ```
 
 ### Common NixOS Operations
@@ -112,12 +121,14 @@ New flake-modules files are **auto-discovered** by haumea - just create a `.nix`
 
 The `modules/base` module uses NixOS options under `modules.base`:
 - `enable`: Enable the base module
+- `bootLoader`: Boot loader selection — enum of `"systemd-boot"`, `"grub"`, or `"secure-boot"` (Lanzaboote with TPM)
+- `pcr15Value`: TPM PCR15 value for LUKS unlocking (required when `bootLoader = "secure-boot"`)
 - `enableImpermanence`: Enable tmpfs root with persistence
 - `impermanencePersistencePath`: Where to persist data (default: `/persistence`)
-- `useSecureBoot`: Enable Lanzaboote secure boot with TPM
-- `pcr15Value`: TPM PCR15 value for LUKS unlocking
-- `useSystemdBoot`/`useGrub`: Boot loader selection
-- `enableOpenSSH`, `enablePlymouth`, `enableIPv6`: Feature toggles
+- `enableCachyOSKernel`: Enable CachyOS kernel overlay (for hosts using CachyOS kernel packages)
+- `enableOpenSSH`, `enableTailscale`, `enableIPv6`, `enableICMPPing`: Feature toggles
+- `suspendState`: Suspend state (`"mem"`, `"standby"`, `"freeze"`, or `null` for auto-detect)
+- `hibernateMode`: Hibernate mode (`"platform"` or `"shutdown"`)
 - `timezone`, `consoleKeyMap`: Locale settings
 - `beesdFilesystems`: Btrfs dedup filesystem configuration
 
@@ -160,6 +171,14 @@ Key configurations defined in the flake:
 - `nixos-cosmic`: Alternative desktop environment
 - `rust-overlay`: Rust toolchain management
 - `jovian-nixos`: Steam Deck specific configurations
+- `niks3`: Self-hosted binary cache push tool
+
+### CI/CD Workflows
+
+- **`build-and-cache.yaml`**: Builds all nixosConfigurations on push to main and pushes to niks3 binary cache. Includes dry-run check to skip cached builds and parallel build+push via queue drain.
+- **`update.yaml`**: Automated daily flake lock updates (2 AM UTC)
+- **`ami-build-and-upload.yaml`**: Builds and uploads NixOS AMIs to AWS with retention cleanup
+- **`closure-report.yaml`**: Generates closure size reports for desktop/laptop configurations
 
 ### Pending: niks3 cache push on desktops/laptops
 
@@ -187,6 +206,12 @@ When adding new hosts:
 3. In the flake-parts module, import NixOS/app-profile modules and the host configuration
 4. In the host's `configuration.nix`, set module options (e.g., `modules.base.enable = true;`)
 5. Configure home-manager in the flake-parts module if needed
+
+When adding new NixOS modules (two-step process):
+1. Create the module in `modules/<name>/default.nix` using the options pattern
+2. Export it in `flake-modules/nixos-modules.nix` (add an entry to `flake.nixosModules`)
+3. Import it in each host's flake-parts file at `flake-modules/hosts/<hostname>.nix` (path import like `../../modules/<name>`)
+4. New files in `modules/` must be `git add`ed before `nix eval`/`nix build` will see them (flake git tracking)
 
 When adding new flake-modules:
 1. Create a `.nix` file in `flake-modules/` or `flake-modules/hosts/`
