@@ -57,13 +57,13 @@ jobs:
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://nix-gaming.cachix.org https://rust-overlay.cachix.org
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4= rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk=
       - name: Cache Nix evaluation
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/nix
           key: nix-eval-${{ hashFiles('flake.lock') }}-${{ matrix.configuration }}
           restore-keys: |
             nix-eval-${{ hashFiles('flake.lock') }}-
-      - uses: DeterminateSystems/flake-checker-action@main
+      - uses: DeterminateSystems/flake-checker-action@v12
       - name: Check if build is needed
         id: dry-run
         run: |
