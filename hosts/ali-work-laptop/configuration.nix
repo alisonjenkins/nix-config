@@ -25,6 +25,7 @@
   modules.base = {
     enable = true;
     enableImpermanence = true;
+    enableCachyOSKernel = true;
     bootLoader = "secure-boot";
     pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
     suspendState = "mem";
@@ -60,7 +61,7 @@
   boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
 
     # Blacklist amd_pmf to prevent TEE errors after hibernate resume
     # The driver causes system instability with constant "TEE enact cmd failed" errors
