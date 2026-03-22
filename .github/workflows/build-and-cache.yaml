@@ -83,7 +83,8 @@ jobs:
       - name: Build and push to cache
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          nix build -v --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' | \
+          nix build -L --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' \
+            2> >(grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
               --max-concurrent-uploads 10 \
