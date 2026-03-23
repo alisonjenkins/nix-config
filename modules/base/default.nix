@@ -63,9 +63,9 @@ in
     };
 
     timezone = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.nullOr lib.types.str;
       default = "Europe/London";
-      description = "System timezone";
+      description = "System timezone. Set to null for automatic timezone detection.";
     };
 
     useAliNeovim = lib.mkOption {
@@ -126,7 +126,7 @@ in
     {
       console.keyMap = cfg.consoleKeyMap;
 
-      time.timeZone = cfg.timezone;
+      time.timeZone = lib.mkIf (cfg.timezone != null) cfg.timezone;
 
       boot = {
         consoleLogLevel = 0;
