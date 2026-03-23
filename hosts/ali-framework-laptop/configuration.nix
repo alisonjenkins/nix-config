@@ -42,7 +42,10 @@
     enableCachyOSKernel = true;
     hibernateMode = "shutdown";
     suspendState = "freeze";
+    timezone = null;  # Use automatic-timezoned for VPN-proof timezone detection
   };
+
+  services.automatic-timezoned.enable = true;
   modules.locale.enable = true;
   modules.libvirtd.enable = true;
   modules.podman.enable = true;

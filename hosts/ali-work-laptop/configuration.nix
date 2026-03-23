@@ -42,7 +42,10 @@
     pcr15Value = "2ed3e75741c65cda190d143376c463c88557e8d7ab53f8dfe788a263aaec50b7";
     suspendState = "mem";
     hibernateMode = "shutdown";
+    timezone = null;  # Use automatic-timezoned for VPN-proof timezone detection
   };
+
+  services.automatic-timezoned.enable = true;
   modules.locale.enable = true;
   modules.ollama.enable = true;
   modules.libvirtd.enable = true;
@@ -232,7 +235,7 @@
     stateVersion = "24.05";
   };
 
-  time.timeZone = "Europe/London";
+
 
   users = {
     users = {
