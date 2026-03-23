@@ -49,8 +49,8 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: |
-            max-jobs = 2
-            cores = 2
+            max-jobs = auto
+            cores = 0
             eval-cache = true
             http-connections = 128
             max-substitution-jobs = 128
@@ -90,13 +90,21 @@ jobs:
 
           # Background drainer: watches queue and pushes paths as they appear
           (
+            BATCH=0
             while true; do
               if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
                 touch "$QUEUE"
-                cat /tmp/niks3-processing | xargs -r niks3 push \
+                PATHS=$(wc -l < /tmp/niks3-processing)
+                BATCH=$((BATCH + 1))
+                echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
+                if cat /tmp/niks3-processing | xargs -r niks3 push \
                   --server-url https://api.nixcache.org \
                   --max-concurrent-uploads 10 \
-                  --auth-token "$NIKS3_TOKEN" || true
+                  --auth-token "$NIKS3_TOKEN" 2>&1; then
+                  echo "[drainer] Batch $BATCH: done"
+                else
+                  echo "::warning::[drainer] Batch $BATCH: push failed with exit code $?"
+                fi
                 rm -f /tmp/niks3-processing
               fi
               sleep 2
@@ -105,8 +113,17 @@ jobs:
           DRAINER_PID=$!
 
           # Build, appending output paths to queue
+          set +e
           nix build -L --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' \
-            2> >(grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$QUEUE"
+            2> >(tee /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$QUEUE"
+          BUILD_EXIT=$?
+          set -e
+
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "::error::Build failed with exit code $BUILD_EXIT"
+            echo "--- Full build stderr (last 100 lines) ---"
+            tail -100 /tmp/nix-build-stderr.log
+          fi
 
           # Stop drainer and do final push of any remaining paths
           kill $DRAINER_PID 2>/dev/null || true
@@ -115,11 +132,21 @@ jobs:
           # Merge any leftover queue + in-progress paths for final push
           cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
           if [ -s /tmp/niks3-final ]; then
-            cat /tmp/niks3-final | xargs -r niks3 push \
+            FINAL_PATHS=$(wc -l < /tmp/niks3-final)
+            echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
+            if cat /tmp/niks3-final | xargs -r niks3 push \
               --server-url https://api.nixcache.org \
               --max-concurrent-uploads 10 \
-              --auth-token "$NIKS3_TOKEN"
+              --auth-token "$NIKS3_TOKEN" 2>&1; then
+              echo "[final push] Done"
+            else
+              echo "::error::[final push] Failed with exit code $?"
+            fi
+          else
+            echo "[final push] No remaining paths to push"
           fi
+
+          exit $BUILD_EXIT
 
   # build-macos:
   #   runs-on: macos-15  # macOS 15 (Sequoia) on Apple Silicon
