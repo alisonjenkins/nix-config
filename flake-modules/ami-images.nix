@@ -36,6 +36,20 @@ let
         networking.hostName = lib.mkForce "aws-k8s-node-arm";
       }];
     };
+
+    aws-nix-builder = {
+      system = "x86_64-linux";
+      hostConfig = ../hosts/aws-nix-builder/configuration.nix;
+      extraModules = [];
+    };
+
+    aws-nix-builder-arm = {
+      system = "aarch64-linux";
+      hostConfig = ../hosts/aws-nix-builder/configuration.nix;
+      extraModules = [{
+        networking.hostName = lib.mkForce "aws-nix-builder-arm";
+      }];
+    };
   };
 
   mkAmiSystem = _name: cfg:
