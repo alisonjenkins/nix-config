@@ -17,18 +17,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-linux:
+  # Lightweight server builds — run on free GHA runners (fully cached, ~2 min each)
+  build-servers:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       fail-fast: false
       matrix:
         configuration:
-          # - .#nixosConfigurations.ali-steam-deck.config.system.build.toplevel
-          # - .#nixosConfigurations.dev-vm.config.system.build.toplevel
-          - .#nixosConfigurations.ali-desktop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
-          - .#nixosConfigurations.ali-work-laptop.config.system.build.toplevel
           - .#nixosConfigurations.download-server-1.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-master-1.config.system.build.toplevel
           - .#nixosConfigurations.home-k8s-server-1.config.system.build.toplevel
@@ -148,33 +144,422 @@ jobs:
 
           exit $BUILD_EXIT
 
-  # build-macos:
-  #   runs-on: macos-15  # macOS 15 (Sequoia) on Apple Silicon
-  #   if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       configuration:
-  #         - .#darwinConfigurations.Alisons-MacBook-Pro.system
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: cachix/install-nix-action@v31
-  #       with:
-  #         nix_path: nixpkgs=channel:nixos-unstable
-  #         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-  #         extra_nix_config: |
-  #           max-jobs = auto
-  #           cores = 0
-  #           eval-cache = true
-  #           extra-substituters = https://ajenkins-public.cachix.org https://cosmic.cachix.org/ https://hyprland.cachix.org https://nix-community.cachix.org https://nix-gaming.cachix.org https://rust-overlay.cachix.org
-  #           extra-trusted-public-keys = ajenkins-public.cachix.org-1:w/uYRGLft8KxQhPtQI1KPBy6j2eZRR8vLZjgLIKntzA= cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4= rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk=
-  #     - uses: cachix/cachix-action@v17
-  #       with:
-  #         name: ajenkins-public
-  #         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-  #     - name: Build and push to cache
-  #       run: |
-  #         cachix watch-exec ajenkins-public -- nix build --print-out-paths --no-link '${{ matrix.configuration }}'
+  # Heavy x86_64 desktop/laptop builds — run on EC2 spot instances
+  build-desktops:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: eu-west-1
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            eval-cache = true
+            extra-substituters = https://cache.nixcache.org
+            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak=
+
+      - name: Check if any desktop build is needed
+        id: dry-run
+        run: |
+          needs_build=false
+          for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
+            dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1)
+            if echo "$dry_output" | grep -q 'will be built:'; then
+              needs_build=true
+              echo "$cfg needs building"
+            else
+              echo "$cfg is fully cached"
+            fi
+          done
+          echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
+
+      - name: Install AWS CLI
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: nix profile install nixpkgs#awscli2
+
+      - name: Configure AWS credentials
+        if: steps.dry-run.outputs.needs_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_BUILDER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Find latest builder AMI
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ami
+        run: |
+          AMI_ID=$(aws ec2 describe-images \
+            --owners self \
+            --filters \
+              "Name=name,Values=nixos-aws-nix-builder-*" \
+              "Name=state,Values=available" \
+            --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
+            --output text)
+
+          if [ "$AMI_ID" = "None" ] || [ -z "$AMI_ID" ]; then
+            echo "::error::No builder AMI found. Run the AMI build workflow first."
+            exit 1
+          fi
+          echo "ami_id=$AMI_ID" >> "$GITHUB_OUTPUT"
+          echo "Using builder AMI: $AMI_ID"
+
+      - name: Fetch SSH key from SSM
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ssh
+        run: |
+          aws ssm get-parameter \
+            --name /nix-builder/ssh-private-key \
+            --with-decryption \
+            --query 'Parameter.Value' \
+            --output text > /tmp/builder_key
+          chmod 600 /tmp/builder_key
+          PUBKEY=$(aws ssm get-parameter \
+            --name /nix-builder/ssh-public-key \
+            --query 'Parameter.Value' \
+            --output text)
+          echo "pubkey=$PUBKEY" >> "$GITHUB_OUTPUT"
+
+      - name: Launch EC2 spot instance
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ec2
+        run: |
+          # User-data: inject niks3 token and SSH public key at boot
+          cat > /tmp/user-data.sh <<'USERDATA'
+          #!/bin/bash
+          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+          chmod 600 /etc/niks3-token
+          mkdir -p /home/builder/.ssh
+          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
+          chmod 700 /home/builder/.ssh
+          chmod 600 /home/builder/.ssh/authorized_keys
+          chown -R builder:users /home/builder/.ssh
+          USERDATA
+
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id "${{ steps.ami.outputs.ami_id }}" \
+            --instance-type c7a.4xlarge \
+            --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
+            --subnet-id "${{ secrets.AWS_BUILDER_SUBNET_ID }}" \
+            --instance-initiated-shutdown-behavior terminate \
+            --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
+            --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
+            --user-data file:///tmp/user-data.sh \
+            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-x86_64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> "$GITHUB_ENV"
+          echo "Launched instance: $INSTANCE_ID"
+
+          # Wait for running state
+          echo "Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+
+          # Get public IP
+          BUILDER_IP=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "builder_ip=$BUILDER_IP" >> "$GITHUB_OUTPUT"
+          echo "BUILDER_IP=$BUILDER_IP" >> "$GITHUB_ENV"
+          echo "Instance IP: $BUILDER_IP"
+
+      - name: Wait for SSH
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          echo "Waiting for SSH to become available..."
+          for i in $(seq 1 60); do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+                   -i /tmp/builder_key builder@"$BUILDER_IP" true 2>/dev/null; then
+              echo "SSH ready after ~$((i * 5))s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SSH timeout after 5 minutes"
+          exit 1
+
+      - name: Build desktop configs on EC2
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+            set -euo pipefail
+
+            # Clone or update repo
+            if [ -d ~/nix-config ]; then
+              cd ~/nix-config
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
+              cd ~/nix-config
+            fi
+
+            # Build each desktop config sequentially
+            for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
+              echo "=== Building $cfg ==="
+              nix build -L --keep-going --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1
+              echo "=== $cfg complete ==="
+            done
+          REMOTE
+
+      - name: Push results to niks3 cache
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+            set -euo pipefail
+            cd ~/nix-config
+            NIKS3_TOKEN=$(cat /etc/niks3-token)
+
+            for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
+              echo "[niks3] Pushing $cfg..."
+              OUT=$(nix build --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel")
+              echo "$OUT" | xargs niks3 push \
+                --server-url https://api.nixcache.org \
+                --max-concurrent-uploads 10 \
+                --auth-token "$NIKS3_TOKEN"
+              echo "[niks3] $cfg pushed"
+            done
+          REMOTE
+
+      - name: Terminate builder instance
+        if: always()
+        run: |
+          if [ -n "${INSTANCE_ID:-}" ]; then
+            echo "Terminating instance $INSTANCE_ID..."
+            aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
+            echo "Terminate request sent"
+          fi
+          rm -f /tmp/builder_key /tmp/user-data.sh
+
+  # aarch64-linux + aarch64-darwin builds — run on EC2 Graviton spot instances
+  build-arm64:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: eu-west-1
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            eval-cache = true
+            extra-substituters = https://cache.nixcache.org
+            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak=
+
+      - name: Check if any arm64 build is needed
+        id: dry-run
+        run: |
+          needs_build=false
+          for cfg in dev-vm; do
+            dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1)
+            if echo "$dry_output" | grep -q 'will be built:'; then
+              needs_build=true
+              echo "$cfg needs building"
+            fi
+          done
+          # Check darwin cross-compile
+          dry_output=$(nix build --dry-run ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1) || true
+          if echo "$dry_output" | grep -q 'will be built:'; then
+            needs_build=true
+            echo "Alisons-MacBook-Pro (darwin) needs building"
+          fi
+          echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
+
+      - name: Install AWS CLI
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: nix profile install nixpkgs#awscli2
+
+      - name: Configure AWS credentials
+        if: steps.dry-run.outputs.needs_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_BUILDER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Find latest ARM builder AMI
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ami
+        run: |
+          AMI_ID=$(aws ec2 describe-images \
+            --owners self \
+            --filters \
+              "Name=name,Values=nixos-aws-nix-builder-arm-*" \
+              "Name=state,Values=available" \
+            --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
+            --output text)
+
+          if [ "$AMI_ID" = "None" ] || [ -z "$AMI_ID" ]; then
+            echo "::error::No ARM builder AMI found. Run the AMI build workflow first."
+            exit 1
+          fi
+          echo "ami_id=$AMI_ID" >> "$GITHUB_OUTPUT"
+          echo "Using ARM builder AMI: $AMI_ID"
+
+      - name: Fetch SSH key from SSM
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ssh
+        run: |
+          aws ssm get-parameter \
+            --name /nix-builder/ssh-private-key \
+            --with-decryption \
+            --query 'Parameter.Value' \
+            --output text > /tmp/builder_key
+          chmod 600 /tmp/builder_key
+          PUBKEY=$(aws ssm get-parameter \
+            --name /nix-builder/ssh-public-key \
+            --query 'Parameter.Value' \
+            --output text)
+          echo "pubkey=$PUBKEY" >> "$GITHUB_OUTPUT"
+
+      - name: Launch EC2 Graviton spot instance
+        if: steps.dry-run.outputs.needs_build == 'true'
+        id: ec2
+        run: |
+          cat > /tmp/user-data.sh <<'USERDATA'
+          #!/bin/bash
+          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+          chmod 600 /etc/niks3-token
+          mkdir -p /home/builder/.ssh
+          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
+          chmod 700 /home/builder/.ssh
+          chmod 600 /home/builder/.ssh/authorized_keys
+          chown -R builder:users /home/builder/.ssh
+          USERDATA
+
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id "${{ steps.ami.outputs.ami_id }}" \
+            --instance-type c7g.2xlarge \
+            --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
+            --subnet-id "${{ secrets.AWS_BUILDER_SUBNET_ID }}" \
+            --instance-initiated-shutdown-behavior terminate \
+            --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
+            --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
+            --user-data file:///tmp/user-data.sh \
+            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-arm64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> "$GITHUB_ENV"
+          echo "Launched Graviton instance: $INSTANCE_ID"
+
+          echo "Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+
+          BUILDER_IP=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "builder_ip=$BUILDER_IP" >> "$GITHUB_OUTPUT"
+          echo "BUILDER_IP=$BUILDER_IP" >> "$GITHUB_ENV"
+          echo "Instance IP: $BUILDER_IP"
+
+      - name: Wait for SSH
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          echo "Waiting for SSH to become available..."
+          for i in $(seq 1 60); do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+                   -i /tmp/builder_key builder@"$BUILDER_IP" true 2>/dev/null; then
+              echo "SSH ready after ~$((i * 5))s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SSH timeout after 5 minutes"
+          exit 1
+
+      - name: Build arm64 configs on EC2
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+            set -euo pipefail
+
+            if [ -d ~/nix-config ]; then
+              cd ~/nix-config
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
+              cd ~/nix-config
+            fi
+
+            # Build aarch64-linux configs sequentially
+            for cfg in dev-vm; do
+              echo "=== Building $cfg ==="
+              nix build -L --keep-going --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1
+              echo "=== $cfg complete ==="
+            done
+
+            # Cross-compile aarch64-darwin config
+            echo "=== Cross-compiling Alisons-MacBook-Pro (aarch64-darwin) ==="
+            nix build -L --keep-going --print-out-paths --no-link \
+              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1 || {
+              echo "::warning::Darwin cross-compile failed (may need darwin-specific build tools)"
+            }
+            echo "=== Darwin cross-compile complete ==="
+          REMOTE
+
+      - name: Push results to niks3 cache
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+            set -euo pipefail
+            cd ~/nix-config
+            NIKS3_TOKEN=$(cat /etc/niks3-token)
+
+            for cfg in dev-vm; do
+              echo "[niks3] Pushing $cfg..."
+              OUT=$(nix build --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel")
+              echo "$OUT" | xargs niks3 push \
+                --server-url https://api.nixcache.org \
+                --max-concurrent-uploads 10 \
+                --auth-token "$NIKS3_TOKEN"
+              echo "[niks3] $cfg pushed"
+            done
+
+            # Push darwin if it was built
+            DARWIN_OUT=$(nix build --print-out-paths --no-link \
+              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>/dev/null) || true
+            if [ -n "$DARWIN_OUT" ]; then
+              echo "[niks3] Pushing Alisons-MacBook-Pro (darwin)..."
+              echo "$DARWIN_OUT" | xargs niks3 push \
+                --server-url https://api.nixcache.org \
+                --max-concurrent-uploads 10 \
+                --auth-token "$NIKS3_TOKEN" || true
+              echo "[niks3] Darwin pushed"
+            fi
+          REMOTE
+
+      - name: Terminate builder instance
+        if: always()
+        run: |
+          if [ -n "${INSTANCE_ID:-}" ]; then
+            echo "Terminating instance $INSTANCE_ID..."
+            aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
+            echo "Terminate request sent"
+          fi
+          rm -f /tmp/builder_key /tmp/user-data.sh
