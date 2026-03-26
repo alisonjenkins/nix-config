@@ -358,6 +358,35 @@ jobs:
             #!/bin/bash
             set -uo pipefail
 
+            NIKS3_TOKEN=$(cat /etc/niks3-token)
+            QUEUE=/tmp/niks3-queue
+            touch "$QUEUE"
+
+            # Background drainer: watches queue and pushes paths as they appear
+            (
+              BATCH=0
+              while true; do
+                if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
+                  touch "$QUEUE"
+                  PATHS=$(wc -l < /tmp/niks3-processing)
+                  BATCH=$((BATCH + 1))
+                  echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
+                  if cat /tmp/niks3-processing | xargs -r niks3 push \
+                    --server-url https://api.nixcache.org \
+                    --max-concurrent-uploads 10 \
+                    --auth-token "$NIKS3_TOKEN" 2>&1; then
+                    echo "[drainer] Batch $BATCH: done"
+                  else
+                    echo "[drainer] Batch $BATCH: push failed (exit $?), will retry remaining paths later"
+                  fi
+                  rm -f /tmp/niks3-processing
+                fi
+                sleep 5
+              done
+            ) &
+            DRAINER_PID=$!
+            echo "$DRAINER_PID" > /tmp/drainer.pid
+
             sudo mkdir -p /var/tmp/nix-build
             sudo chown builder:users /var/tmp/nix-build
             export TMPDIR=/var/tmp/nix-build
@@ -376,13 +405,31 @@ jobs:
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
               echo "=== Building $cfg ==="
               if nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1; then
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
+                2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
                 echo "=== $cfg complete ==="
               else
                 echo "::warning::$cfg build failed"
                 any_failed=true
               fi
             done
+
+            # Stop drainer and do final push of any remaining paths
+            kill $DRAINER_PID 2>/dev/null || true
+            wait $DRAINER_PID 2>/dev/null || true
+
+            cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
+            if [ -s /tmp/niks3-final ]; then
+              FINAL_PATHS=$(wc -l < /tmp/niks3-final)
+              echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
+              cat /tmp/niks3-final | xargs -r niks3 push \
+                --server-url https://api.nixcache.org \
+                --max-concurrent-uploads 10 \
+                --auth-token "$NIKS3_TOKEN" 2>&1 || echo "[final push] Failed (exit $?)"
+              echo "[final push] Done"
+            else
+              echo "[final push] No remaining paths to push"
+            fi
 
             if [ "$any_failed" = true ]; then
               echo 1 > /tmp/build-exit
@@ -428,34 +475,6 @@ jobs:
               exit "${EXIT_CODE:-1}"
             fi
           done
-
-      - name: Push results to niks3 cache
-        if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
-        env:
-          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
-        run: |
-          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -uo pipefail
-            cd ~/nix-config
-            NIKS3_TOKEN=$(cat /etc/niks3-token)
-
-            for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
-              echo "[niks3] Pushing $cfg..."
-              OUT=$(nix build --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>/dev/null) || {
-                echo "[niks3] $cfg not built successfully, skipping push"
-                continue
-              }
-              echo "$OUT" | xargs niks3 push \
-                --server-url https://api.nixcache.org \
-                --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" || {
-                echo "::warning::[niks3] $cfg push failed"
-                continue
-              }
-              echo "[niks3] $cfg pushed"
-            done
-          REMOTE
 
       - name: Terminate builder instance
         if: always()
@@ -675,6 +694,35 @@ jobs:
             #!/bin/bash
             set -uo pipefail
 
+            NIKS3_TOKEN=$(cat /etc/niks3-token)
+            QUEUE=/tmp/niks3-queue
+            touch "$QUEUE"
+
+            # Background drainer: watches queue and pushes paths as they appear
+            (
+              BATCH=0
+              while true; do
+                if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
+                  touch "$QUEUE"
+                  PATHS=$(wc -l < /tmp/niks3-processing)
+                  BATCH=$((BATCH + 1))
+                  echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
+                  if cat /tmp/niks3-processing | xargs -r niks3 push \
+                    --server-url https://api.nixcache.org \
+                    --max-concurrent-uploads 10 \
+                    --auth-token "$NIKS3_TOKEN" 2>&1; then
+                    echo "[drainer] Batch $BATCH: done"
+                  else
+                    echo "[drainer] Batch $BATCH: push failed (exit $?), will retry remaining paths later"
+                  fi
+                  rm -f /tmp/niks3-processing
+                fi
+                sleep 5
+              done
+            ) &
+            DRAINER_PID=$!
+            echo "$DRAINER_PID" > /tmp/drainer.pid
+
             sudo mkdir -p /var/tmp/nix-build
             sudo chown builder:users /var/tmp/nix-build
             export TMPDIR=/var/tmp/nix-build
@@ -693,7 +741,8 @@ jobs:
             for cfg in dev-vm; do
               echo "=== Building $cfg ==="
               if nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1; then
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
+                2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
                 echo "=== $cfg complete ==="
               else
                 echo "::warning::$cfg build failed"
@@ -703,11 +752,29 @@ jobs:
 
             echo "=== Cross-compiling Alisons-MacBook-Pro (aarch64-darwin) ==="
             if nix build -L --keep-going --print-out-paths --no-link \
-              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1; then
+              ".#darwinConfigurations.Alisons-MacBook-Pro.system" \
+              2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
               echo "=== Darwin cross-compile complete ==="
             else
               echo "::warning::Darwin cross-compile failed"
               any_failed=true
+            fi
+
+            # Stop drainer and do final push of any remaining paths
+            kill $DRAINER_PID 2>/dev/null || true
+            wait $DRAINER_PID 2>/dev/null || true
+
+            cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
+            if [ -s /tmp/niks3-final ]; then
+              FINAL_PATHS=$(wc -l < /tmp/niks3-final)
+              echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
+              cat /tmp/niks3-final | xargs -r niks3 push \
+                --server-url https://api.nixcache.org \
+                --max-concurrent-uploads 10 \
+                --auth-token "$NIKS3_TOKEN" 2>&1 || echo "[final push] Failed (exit $?)"
+              echo "[final push] Done"
+            else
+              echo "[final push] No remaining paths to push"
             fi
 
             if [ "$any_failed" = true ]; then
@@ -750,48 +817,6 @@ jobs:
               exit "${EXIT_CODE:-1}"
             fi
           done
-
-      - name: Push results to niks3 cache
-        if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
-        env:
-          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
-        run: |
-          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -uo pipefail
-            cd ~/nix-config
-            NIKS3_TOKEN=$(cat /etc/niks3-token)
-
-            for cfg in dev-vm; do
-              echo "[niks3] Pushing $cfg..."
-              OUT=$(nix build --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>/dev/null) || {
-                echo "[niks3] $cfg not built successfully, skipping push"
-                continue
-              }
-              echo "$OUT" | xargs niks3 push \
-                --server-url https://api.nixcache.org \
-                --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" || {
-                echo "::warning::[niks3] $cfg push failed"
-                continue
-              }
-              echo "[niks3] $cfg pushed"
-            done
-
-            # Push darwin if it was built
-            DARWIN_OUT=$(nix build --print-out-paths --no-link \
-              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>/dev/null) || true
-            if [ -n "$DARWIN_OUT" ]; then
-              echo "[niks3] Pushing Alisons-MacBook-Pro (darwin)..."
-              echo "$DARWIN_OUT" | xargs niks3 push \
-                --server-url https://api.nixcache.org \
-                --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" || {
-                echo "::warning::[niks3] Darwin push failed"
-              }
-              echo "[niks3] Darwin pushed"
-            fi
-          REMOTE
 
       - name: Terminate builder instance
         if: always()
