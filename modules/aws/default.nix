@@ -185,6 +185,14 @@ in
       servers = [ "169.254.169.123" ];
     };
 
+    # zram swap — compressed swap in RAM to handle memory spikes during
+    # heavy builds (kernel LTO linking, rocblas, etc.) without disk I/O
+    zramSwap = {
+      enable = true;
+      algorithm = "zstd";
+      memoryPercent = 100;
+    };
+
     # Cap journal size to reduce I/O from rotation
     services.journald.extraConfig = "SystemMaxUse=50M";
 
