@@ -41,7 +41,7 @@
     pcr15Value = "b538ad748a4d175bd234bf369e138b225bd9cfd55d6345763733578cd29700de";
     enableCachyOSKernel = true;
     hibernateMode = "shutdown";
-    suspendState = "freeze";
+    suspendState = "mem";
     timezone = null;  # Use automatic-timezoned for VPN-proof timezone detection
   };
 
