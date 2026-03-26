@@ -344,10 +344,11 @@ jobs:
           exit 1
 
       - name: Build desktop configs on EC2
+        id: desktop-build
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -euo pipefail
+            set -uo pipefail
 
             # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
             sudo mkdir -p /var/tmp/nix-build
@@ -365,31 +366,46 @@ jobs:
             fi
             git lfs pull
 
-            # Build each desktop config sequentially
+            # Build each desktop config, continuing on failure
+            any_failed=false
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
               echo "=== Building $cfg ==="
-              nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1
-              echo "=== $cfg complete ==="
+              if nix build -L --keep-going --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1; then
+                echo "=== $cfg complete ==="
+              else
+                echo "::warning::$cfg build failed"
+                any_failed=true
+              fi
             done
+
+            if [ "$any_failed" = true ]; then
+              exit 1
+            fi
           REMOTE
 
       - name: Push results to niks3 cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -euo pipefail
+            set -uo pipefail
             cd ~/nix-config
             NIKS3_TOKEN=$(cat /etc/niks3-token)
 
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
               echo "[niks3] Pushing $cfg..."
               OUT=$(nix build --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel")
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>/dev/null) || {
+                echo "[niks3] $cfg not built successfully, skipping push"
+                continue
+              }
               echo "$OUT" | xargs niks3 push \
                 --server-url https://api.nixcache.org \
                 --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN"
+                --auth-token "$NIKS3_TOKEN" || {
+                echo "::warning::[niks3] $cfg push failed"
+                continue
+              }
               echo "[niks3] $cfg pushed"
             done
           REMOTE
@@ -599,10 +615,11 @@ jobs:
           exit 1
 
       - name: Build arm64 configs on EC2
+        id: arm64-build
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -euo pipefail
+            set -uo pipefail
 
             # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
             sudo mkdir -p /var/tmp/nix-build
@@ -619,39 +636,56 @@ jobs:
             fi
             git lfs pull
 
-            # Build aarch64-linux configs sequentially
+            # Build aarch64-linux configs, continuing on failure
+            any_failed=false
             for cfg in dev-vm; do
               echo "=== Building $cfg ==="
-              nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1
-              echo "=== $cfg complete ==="
+              if nix build -L --keep-going --print-out-paths --no-link \
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1; then
+                echo "=== $cfg complete ==="
+              else
+                echo "::warning::$cfg build failed"
+                any_failed=true
+              fi
             done
 
             # Cross-compile aarch64-darwin config
             echo "=== Cross-compiling Alisons-MacBook-Pro (aarch64-darwin) ==="
-            nix build -L --keep-going --print-out-paths --no-link \
-              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1 || {
-              echo "::warning::Darwin cross-compile failed (may need darwin-specific build tools)"
-            }
-            echo "=== Darwin cross-compile complete ==="
+            if nix build -L --keep-going --print-out-paths --no-link \
+              ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1; then
+              echo "=== Darwin cross-compile complete ==="
+            else
+              echo "::warning::Darwin cross-compile failed"
+              any_failed=true
+            fi
+
+            if [ "$any_failed" = true ]; then
+              exit 1
+            fi
           REMOTE
 
       - name: Push results to niks3 cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
-            set -euo pipefail
+            set -uo pipefail
             cd ~/nix-config
             NIKS3_TOKEN=$(cat /etc/niks3-token)
 
             for cfg in dev-vm; do
               echo "[niks3] Pushing $cfg..."
               OUT=$(nix build --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel")
+                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>/dev/null) || {
+                echo "[niks3] $cfg not built successfully, skipping push"
+                continue
+              }
               echo "$OUT" | xargs niks3 push \
                 --server-url https://api.nixcache.org \
                 --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN"
+                --auth-token "$NIKS3_TOKEN" || {
+                echo "::warning::[niks3] $cfg push failed"
+                continue
+              }
               echo "[niks3] $cfg pushed"
             done
 
@@ -663,7 +697,9 @@ jobs:
               echo "$DARWIN_OUT" | xargs niks3 push \
                 --server-url https://api.nixcache.org \
                 --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" || true
+                --auth-token "$NIKS3_TOKEN" || {
+                echo "::warning::[niks3] Darwin push failed"
+              }
               echo "[niks3] Darwin pushed"
             fi
           REMOTE
