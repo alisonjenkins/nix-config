@@ -267,7 +267,8 @@ jobs:
 
           # Build overrides: each instance type × each subnet
           OVERRIDES="[]"
-          for itype in c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge m7a.4xlarge m7i.4xlarge; do
+          # m-types (64GB RAM) first — kernel LTO + rocblas need more memory than c-types (32GB)
+          for itype in m7a.4xlarge m7i.4xlarge c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge; do
             for subnet in "${SUBNETS[@]}"; do
               OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" --arg ami "${{ steps.ami.outputs.ami_id }}" \
                 '. + [{"InstanceType": $it, "SubnetId": $sn, "ImageId": $ami}]')
@@ -323,13 +324,15 @@ jobs:
 
       - name: Wait for SSH
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
           echo "Waiting for SSH to become available on $BUILDER_IP..."
           for i in $(seq 1 60); do
             echo "Attempt $i: trying SSH to builder@$BUILDER_IP..."
-            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+            ssh $SSH_OPTS -o ConnectTimeout=5 -o BatchMode=yes \
                 -v -i /tmp/builder_key builder@"$BUILDER_IP" true 2>&1 | tail -5 || true
-            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+            if ssh $SSH_OPTS -o ConnectTimeout=5 -o BatchMode=yes \
                    -i /tmp/builder_key builder@"$BUILDER_IP" true 2>/dev/null; then
               echo "SSH ready after ~$((i * 5))s"
               exit 0
@@ -338,7 +341,7 @@ jobs:
           done
           echo "::error::SSH timeout after 5 minutes"
           echo "Final diagnostic:"
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -vvv \
+          ssh $SSH_OPTS -o ConnectTimeout=10 -vvv \
               -i /tmp/builder_key builder@"$BUILDER_IP" true 2>&1 | tail -30 || true
           nc -zv "$BUILDER_IP" 22 2>&1 || echo "Port 22 not reachable"
           exit 1
@@ -346,16 +349,19 @@ jobs:
       - name: Build desktop configs on EC2
         id: desktop-build
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+          # Upload and start build in detached session so it survives SSH drops
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'SETUP'
+            cat > /tmp/build-desktops.sh <<'SCRIPT'
+            #!/bin/bash
             set -uo pipefail
 
-            # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
             sudo mkdir -p /var/tmp/nix-build
             sudo chown builder:users /var/tmp/nix-build
             export TMPDIR=/var/tmp/nix-build
 
-            # Clone or update repo
             if [ -d ~/nix-config ]; then
               cd ~/nix-config
               git fetch origin main
@@ -364,9 +370,8 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
-            git lfs pull
+            git lfs pull || true
 
-            # Build each desktop config, continuing on failure
             any_failed=false
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
               echo "=== Building $cfg ==="
@@ -380,14 +385,56 @@ jobs:
             done
 
             if [ "$any_failed" = true ]; then
-              exit 1
+              echo 1 > /tmp/build-exit
+            else
+              echo 0 > /tmp/build-exit
             fi
-          REMOTE
+          SCRIPT
+            chmod +x /tmp/build-desktops.sh
+            nohup /tmp/build-desktops.sh > /tmp/build.log 2>&1 &
+            echo $! > /tmp/build.pid
+            echo "Build started with PID $(cat /tmp/build.pid)"
+          SETUP
+
+          # Poll for completion — survives temporary SSH drops
+          echo "Build running in background on $BUILDER_IP, polling for completion..."
+          CONSECUTIVE_FAILURES=0
+          while true; do
+            sleep 30
+            # Check if process is still running
+            if ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+              "kill -0 \$(cat /tmp/build.pid) 2>/dev/null" 2>/dev/null; then
+              CONSECUTIVE_FAILURES=0
+              # Show recent build output
+              ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "tail -5 /tmp/build.log" 2>/dev/null || true
+            else
+              # Process ended or SSH failed — try to get exit code
+              EXIT_CODE=$(ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "cat /tmp/build-exit 2>/dev/null || echo 255" 2>/dev/null) || {
+                CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
+                if [ $CONSECUTIVE_FAILURES -ge 6 ]; then
+                  echo "::error::Lost connection to builder instance after 6 retries (possible spot interruption or OOM)"
+                  exit 1
+                fi
+                echo "SSH failed (attempt $CONSECUTIVE_FAILURES/6), retrying in 30s..."
+                continue
+              }
+
+              # Print final log output
+              echo "=== Build finished (exit code: $EXIT_CODE) ==="
+              ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "tail -100 /tmp/build.log" 2>/dev/null || true
+              exit "${EXIT_CODE:-1}"
+            fi
+          done
 
       - name: Push results to niks3 cache
         if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
             set -uo pipefail
             cd ~/nix-config
             NIKS3_TOKEN=$(cat /etc/niks3-token)
@@ -601,10 +648,12 @@ jobs:
 
       - name: Wait for SSH
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
           echo "Waiting for SSH to become available..."
           for i in $(seq 1 60); do
-            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+            if ssh $SSH_OPTS -o ConnectTimeout=5 -o BatchMode=yes \
                    -i /tmp/builder_key builder@"$BUILDER_IP" true 2>/dev/null; then
               echo "SSH ready after ~$((i * 5))s"
               exit 0
@@ -617,11 +666,15 @@ jobs:
       - name: Build arm64 configs on EC2
         id: arm64-build
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+          # Upload and start build in detached session so it survives SSH drops
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'SETUP'
+            cat > /tmp/build-arm64.sh <<'SCRIPT'
+            #!/bin/bash
             set -uo pipefail
 
-            # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
             sudo mkdir -p /var/tmp/nix-build
             sudo chown builder:users /var/tmp/nix-build
             export TMPDIR=/var/tmp/nix-build
@@ -634,9 +687,8 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
-            git lfs pull
+            git lfs pull || true
 
-            # Build aarch64-linux configs, continuing on failure
             any_failed=false
             for cfg in dev-vm; do
               echo "=== Building $cfg ==="
@@ -649,7 +701,6 @@ jobs:
               fi
             done
 
-            # Cross-compile aarch64-darwin config
             echo "=== Cross-compiling Alisons-MacBook-Pro (aarch64-darwin) ==="
             if nix build -L --keep-going --print-out-paths --no-link \
               ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1; then
@@ -660,14 +711,52 @@ jobs:
             fi
 
             if [ "$any_failed" = true ]; then
-              exit 1
+              echo 1 > /tmp/build-exit
+            else
+              echo 0 > /tmp/build-exit
             fi
-          REMOTE
+          SCRIPT
+            chmod +x /tmp/build-arm64.sh
+            nohup /tmp/build-arm64.sh > /tmp/build.log 2>&1 &
+            echo $! > /tmp/build.pid
+            echo "Build started with PID $(cat /tmp/build.pid)"
+          SETUP
+
+          # Poll for completion — survives temporary SSH drops
+          echo "Build running in background on $BUILDER_IP, polling for completion..."
+          CONSECUTIVE_FAILURES=0
+          while true; do
+            sleep 30
+            if ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+              "kill -0 \$(cat /tmp/build.pid) 2>/dev/null" 2>/dev/null; then
+              CONSECUTIVE_FAILURES=0
+              ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "tail -5 /tmp/build.log" 2>/dev/null || true
+            else
+              EXIT_CODE=$(ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "cat /tmp/build-exit 2>/dev/null || echo 255" 2>/dev/null) || {
+                CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
+                if [ $CONSECUTIVE_FAILURES -ge 6 ]; then
+                  echo "::error::Lost connection to builder instance after 6 retries (possible spot interruption or OOM)"
+                  exit 1
+                fi
+                echo "SSH failed (attempt $CONSECUTIVE_FAILURES/6), retrying in 30s..."
+                continue
+              }
+
+              echo "=== Build finished (exit code: $EXIT_CODE) ==="
+              ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" \
+                "tail -100 /tmp/build.log" 2>/dev/null || true
+              exit "${EXIT_CODE:-1}"
+            fi
+          done
 
       - name: Push results to niks3 cache
         if: steps.dry-run.outputs.needs_build == 'true' && !cancelled()
+        env:
+          SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
             set -uo pipefail
             cd ~/nix-config
             NIKS3_TOKEN=$(cat /etc/niks3-token)
