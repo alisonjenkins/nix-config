@@ -107,10 +107,12 @@ jobs:
         with:
           hatchet-protocol: 'rampage'
 
-      - name: Set up QEMU for aarch64
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+      - name: Set up QEMU binfmt for aarch64
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-user-static binfmt-support
+          # Verify registration
+          update-binfmts --display qemu-aarch64 || true
+          ls /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null && echo "binfmt registered" || echo "binfmt NOT registered"
 
       - uses: cachix/install-nix-action@v31
         with:
