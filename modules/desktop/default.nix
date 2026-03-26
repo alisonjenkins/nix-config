@@ -1138,6 +1138,8 @@ in
         enable = mkDefault true;
       };
 
+      upower.enable = true;
+
       printing = mkIf cfg.printing.enable {
         enable = true;
         listenAddresses = [ "127.0.0.1:631" ];
