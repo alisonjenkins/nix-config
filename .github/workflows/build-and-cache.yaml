@@ -363,6 +363,7 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
+            git lfs pull
 
             # Build each desktop config sequentially
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
@@ -616,6 +617,7 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
+            git lfs pull
 
             # Build aarch64-linux configs sequentially
             for cfg in dev-vm; do

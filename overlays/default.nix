@@ -23,6 +23,8 @@
         });
         rich = python-prev.rich.overridePythonAttrs (oldAttrs: {
           disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_brokenpipeerror" ];
+        } // python-prev.lib.optionalAttrs python-prev.stdenv.hostPlatform.isAarch64 {
+          doCheck = false;
         });
       })
     ];

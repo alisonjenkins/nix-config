@@ -1,0 +1,353 @@
+# Power management module for automatic AC/battery switching
+{ config, lib, pkgs, ... }:
+
+let
+  cfg = config.modules.powerManagement;
+
+  # Script to apply battery power-saving settings
+  powerSwitchBattery = pkgs.writeShellApplication {
+    name = "power-switch-battery";
+    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps util-linux ];
+    text = ''
+      echo "Power management: switching to battery mode"
+
+      # 1. Switch power-profiles-daemon profile
+      ${lib.optionalString (cfg.onBattery.ppdProfile != null) ''
+        powerprofilesctl set ${cfg.onBattery.ppdProfile} || true
+      ''}
+
+      # 2. Enable WiFi power save via iwd
+      ${lib.optionalString cfg.onBattery.wifiPowerSave ''
+        iwctl station wlan0 set-property PowerSave on 2>/dev/null || true
+      ''}
+
+      # 3. PCI runtime PM - set all to auto
+      ${lib.optionalString cfg.onBattery.pciRuntimePM ''
+        for dev in /sys/bus/pci/devices/*/power/control; do
+          echo auto > "$dev" 2>/dev/null || true
+        done
+      ''}
+
+      # 4. USB autosuspend (skip Bluetooth and HID devices)
+      ${lib.optionalString cfg.onBattery.usbAutosuspend ''
+        for dev in /sys/bus/usb/devices/*/; do
+          [ -f "$dev/power/control" ] || continue
+          # Skip Bluetooth devices (class e0)
+          if [ -f "$dev/bDeviceClass" ] && grep -q "e0" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
+          # Skip devices driven by btusb
+          if [ -f "$dev/driver" ] && readlink "$dev/driver" 2>/dev/null | grep -q "btusb"; then continue; fi
+          # Skip HID devices (class 03)
+          if [ -f "$dev/bDeviceClass" ] && grep -q "03" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
+          echo auto > "$dev/power/control" 2>/dev/null || true
+        done
+        echo 2 > /sys/module/usbcore/parameters/autosuspend 2>/dev/null || true
+      ''}
+
+      # 5. Kernel VM tuning - batch disk writes
+      echo ${toString cfg.onBattery.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs 2>/dev/null || true
+
+      # 6. Restart scx scheduler with battery args (uses SCX_FLAGS_OVERRIDE env var)
+      ${lib.optionalString (config.services.scx.enable) ''
+        mkdir -p /run/power-management
+        echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onBattery.scxArgs}" > /run/power-management/scx.env
+        systemctl restart scx.service 2>/dev/null || true
+      ''}
+
+      # 7. Enable noctalia performance mode (reduces shell animations/shadows)
+      ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
+        if command -v noctalia-shell &>/dev/null; then
+          sudo -u ${cfg.noctaliaUser} \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
+            XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
+            noctalia-shell ipc call powerProfile enableNoctaliaPerformance 2>/dev/null || true
+        fi
+      ''}
+
+      # 8. Start fossilize throttle timer
+      ${lib.optionalString cfg.onBattery.throttleFossilize ''
+        systemctl start fossilize-throttle.timer 2>/dev/null || true
+        # Immediately throttle any existing fossilize processes
+        systemctl start fossilize-throttle.service 2>/dev/null || true
+      ''}
+
+      echo "Power management: battery mode active"
+    '';
+  };
+
+  # Script to apply AC performance settings
+  powerSwitchAC = pkgs.writeShellApplication {
+    name = "power-switch-ac";
+    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps util-linux ];
+    text = ''
+      echo "Power management: switching to AC mode"
+
+      # 1. Switch power-profiles-daemon profile
+      ${lib.optionalString (cfg.onAC.ppdProfile != null) ''
+        powerprofilesctl set ${cfg.onAC.ppdProfile} || true
+      ''}
+
+      # 2. Disable WiFi power save for low latency
+      ${lib.optionalString cfg.onBattery.wifiPowerSave ''
+        iwctl station wlan0 set-property PowerSave off 2>/dev/null || true
+      ''}
+
+      # 3. Kernel VM tuning - restore default writeback
+      echo ${toString cfg.onAC.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs 2>/dev/null || true
+
+      # 4. Restart scx scheduler with AC args (uses SCX_FLAGS_OVERRIDE env var)
+      ${lib.optionalString (config.services.scx.enable) ''
+        mkdir -p /run/power-management
+        echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onAC.scxArgs}" > /run/power-management/scx.env
+        systemctl restart scx.service 2>/dev/null || true
+      ''}
+
+      # 5. Disable noctalia performance mode
+      ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
+        if command -v noctalia-shell &>/dev/null; then
+          sudo -u ${cfg.noctaliaUser} \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
+            XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
+            noctalia-shell ipc call powerProfile disableNoctaliaPerformance 2>/dev/null || true
+        fi
+      ''}
+
+      # 6. Stop fossilize throttle and unthrottle any frozen processes
+      ${lib.optionalString cfg.onBattery.throttleFossilize ''
+        systemctl stop fossilize-throttle.timer 2>/dev/null || true
+        # Resume any throttled fossilize processes
+        pkill -CONT -f fossilize_replay 2>/dev/null || true
+      ''}
+
+      echo "Power management: AC mode active"
+    '';
+  };
+
+  # Script to temporarily unthrottle fossilize (for game launches on battery)
+  fossilizeUnthrottle = pkgs.writeShellApplication {
+    name = "fossilize-unthrottle";
+    runtimeInputs = with pkgs; [ coreutils procps systemd ];
+    text = ''
+      echo "Unthrottling fossilize_replay processes..."
+
+      # Stop the throttle timer
+      sudo systemctl stop fossilize-throttle.timer 2>/dev/null || true
+
+      # Resume any stopped fossilize processes
+      pkill -CONT -f fossilize_replay 2>/dev/null || true
+
+      DURATION="''${1:-}"
+      if [ -n "$DURATION" ]; then
+        echo "Will re-enable throttling in $DURATION"
+        systemd-run --on-active="$DURATION" --unit=fossilize-rethrottle \
+          /bin/sh -c 'systemctl start fossilize-throttle.timer && systemctl start fossilize-throttle.service' 2>/dev/null || true
+      else
+        echo "Fossilize unthrottled until next AC/battery switch"
+        echo "Usage: fossilize-unthrottle [duration] (e.g., 30m, 1h)"
+      fi
+    '';
+  };
+in
+{
+  options.modules.powerManagement = {
+    enable = lib.mkEnableOption "automatic AC/battery power management switching";
+
+    onBattery = {
+      ppdProfile = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "power-saver" "balanced" "performance" ]);
+        default = "power-saver";
+        description = "power-profiles-daemon profile to set when on battery.";
+      };
+
+      scxArgs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Arguments for scx_lavd scheduler on battery. Empty list uses default energy-aware mode.";
+      };
+
+      wifiPowerSave = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable iwd WiFi power save on battery (adds 10-50ms latency, saves ~0.5-1.5W).";
+      };
+
+      pciRuntimePM = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Set all PCI devices to auto power management on battery.";
+      };
+
+      usbAutosuspend = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable USB autosuspend on battery (excluding Bluetooth and HID devices).";
+      };
+
+      dirtyWritebackCentisecs = lib.mkOption {
+        type = lib.types.int;
+        default = 6000;
+        description = "vm.dirty_writeback_centisecs on battery (60s). Batches disk writes for power savings.";
+      };
+
+      noctaliaPerformanceMode = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable noctalia-shell performance mode on battery (disables shadows/animations).";
+      };
+
+      throttleFossilize = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Throttle Steam fossilize_replay shader pre-caching to 5% CPU on battery.";
+      };
+    };
+
+    onAC = {
+      ppdProfile = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "power-saver" "balanced" "performance" ]);
+        default = "balanced";
+        description = "power-profiles-daemon profile to set when on AC.";
+      };
+
+      scxArgs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "--performance" ];
+        description = "Arguments for scx_lavd scheduler on AC.";
+      };
+
+      dirtyWritebackCentisecs = lib.mkOption {
+        type = lib.types.int;
+        default = 500;
+        description = "vm.dirty_writeback_centisecs on AC (5s, kernel default).";
+      };
+    };
+
+    noctaliaUser = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Username to run noctalia IPC commands as. Required if noctaliaPerformanceMode is true.";
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    # Power-switch scripts available on PATH
+    environment.systemPackages = [
+      powerSwitchBattery
+      powerSwitchAC
+    ] ++ lib.optional cfg.onBattery.throttleFossilize fossilizeUnthrottle;
+
+    # Udev rule to detect AC/battery transitions
+    services.udev.extraRules = ''
+      # Power management: trigger systemd targets on AC/battery change
+      ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="0", TAG+="systemd", ENV{SYSTEMD_WANTS}="power-on-battery.target"
+      ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="1", TAG+="systemd", ENV{SYSTEMD_WANTS}="power-on-ac.target"
+    '';
+
+    systemd = {
+      # Targets triggered by udev
+      targets = {
+        power-on-battery = {
+          description = "Power source changed to battery";
+        };
+        power-on-ac = {
+          description = "Power source changed to AC";
+        };
+      };
+
+      # Fossilize throttle slice with CPU limit
+      slices = lib.mkIf cfg.onBattery.throttleFossilize {
+        fossilize-throttle = {
+          description = "CPU-throttled slice for fossilize shader pre-caching";
+          sliceConfig = {
+            CPUQuota = "5%";
+          };
+        };
+      };
+
+      services = {
+        # Battery mode switch service
+        power-switch-battery = {
+          description = "Apply battery power-saving settings";
+          wantedBy = [ "power-on-battery.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${powerSwitchBattery}/bin/power-switch-battery";
+          };
+        };
+
+        # AC mode switch service
+        power-switch-ac = {
+          description = "Apply AC performance settings";
+          wantedBy = [ "power-on-ac.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${powerSwitchAC}/bin/power-switch-ac";
+          };
+        };
+
+        # Boot-time detection of initial power state
+        power-detect-initial = {
+          description = "Detect initial power source and apply settings";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = pkgs.writeShellScript "power-detect-initial" ''
+              # Wait briefly for power supply sysfs to stabilize
+              sleep 2
+
+              # Check AC power status
+              ac_online=0
+              for ac in /sys/class/power_supply/AC* /sys/class/power_supply/ACAD*; do
+                if [ -f "$ac/online" ]; then
+                  ac_online=$(cat "$ac/online" 2>/dev/null || echo 0)
+                  break
+                fi
+              done
+
+              if [ "$ac_online" = "1" ]; then
+                echo "Boot: AC power detected, applying AC settings"
+                ${powerSwitchAC}/bin/power-switch-ac
+              else
+                echo "Boot: Battery power detected, applying battery settings"
+                ${powerSwitchBattery}/bin/power-switch-battery
+              fi
+            '';
+          };
+        };
+
+        # Fossilize throttle service (moves fossilize processes into throttled cgroup)
+        fossilize-throttle = lib.mkIf cfg.onBattery.throttleFossilize {
+          description = "Throttle fossilize_replay shader pre-caching processes";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = pkgs.writeShellScript "fossilize-throttle" ''
+              # Find all fossilize_replay processes and SIGSTOP them
+              # New ones spawned by Steam will be caught on the next timer tick
+              ${pkgs.procps}/bin/pkill -STOP -f fossilize_replay 2>/dev/null || true
+            '';
+          };
+        };
+      };
+
+      # Fossilize throttle timer (only active on battery)
+      timers = lib.mkIf cfg.onBattery.throttleFossilize {
+        fossilize-throttle = {
+          description = "Periodically throttle fossilize_replay processes";
+          # Not enabled by default - started/stopped by power-switch scripts
+          timerConfig = {
+            OnActiveSec = "0";
+            OnUnitActiveSec = "10s";
+            AccuracySec = "5s";
+          };
+        };
+      };
+    };
+
+    # Add EnvironmentFile drop-in to scx service so power-switch scripts
+    # can override SCX_FLAGS_OVERRIDE at runtime via /run/power-management/scx.env
+    systemd.services.scx.serviceConfig.EnvironmentFile = lib.mkIf (config.services.scx.enable) [
+      "-/run/power-management/scx.env"
+    ];
+  };
+}

@@ -20,7 +20,7 @@ let
       owner = "wshanks";
       repo = "tbkeys";
       rev = "main";
-      sha256 = "1ph3d8x0v3rmmj1b5s63b70civ2pcad3widvbinsf8glayqy6b3c";
+      sha256 = "0spyzp5dgjs228q03i85w74956axqx4zq7g1zlxgw2vaj013w6zc";
     };
     nativeBuildInputs = [ pkgs.zip pkgs.jq ];
     installPhase = ''
@@ -47,7 +47,7 @@ let
     version = "latest";
     addonId = "quickfolders@curious.be";
     url = "https://addons.thunderbird.net/thunderbird/downloads/latest/quickfolders-tabbed-folders/latest.xpi";
-    sha256 = "0c1b41mrhlkfhh1zqdvv7ifnd6m6zgsnsff4pg130r8yqbqxp434";
+    sha256 = "0hh0mm4r4rg70mdg2ysly0i7kr0vz7ih061q93hl8j5k3486gyfl";
   };
 
   cardbook = addon {
@@ -55,7 +55,7 @@ let
     version = "latest";
     addonId = "cardbook@vigneau.philippe";
     url = "https://addons.thunderbird.net/thunderbird/downloads/latest/cardbook/latest.xpi";
-    sha256 = "1kbskn70496y26dgiw4ip8wv28zwk8m1hfjxa055d1zvag0y2xck";
+    sha256 = "1cm1r5ygr4si4spdki72jafsjv97pknhgvxm085lpvwa5an74apb";
   };
 in
 {

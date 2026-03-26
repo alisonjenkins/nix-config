@@ -45,6 +45,7 @@
   environment.systemPackages = with pkgs; [
     curl
     git
+    git-lfs
     htop
     inputs.niks3.packages.${stdenv.hostPlatform.system}.default
     jq
