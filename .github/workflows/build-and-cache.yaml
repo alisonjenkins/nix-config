@@ -319,6 +319,11 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
             set -euo pipefail
 
+            # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
+            sudo mkdir -p /var/tmp/nix-build
+            sudo chown builder:users /var/tmp/nix-build
+            export TMPDIR=/var/tmp/nix-build
+
             # Clone or update repo
             if [ -d ~/nix-config ]; then
               cd ~/nix-config
@@ -536,6 +541,11 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'REMOTE'
             set -euo pipefail
+
+            # Use disk-backed tmpdir instead of tmpfs (which is limited to 50% RAM)
+            sudo mkdir -p /var/tmp/nix-build
+            sudo chown builder:users /var/tmp/nix-build
+            export TMPDIR=/var/tmp/nix-build
 
             if [ -d ~/nix-config ]; then
               cd ~/nix-config
