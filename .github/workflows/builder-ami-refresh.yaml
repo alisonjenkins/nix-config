@@ -86,7 +86,7 @@ jobs:
         id: ec2
         run: |
           cat > /tmp/user-data.sh <<'USERDATA'
-          #!/usr/bin/env bash
+          #!/bin/sh
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chmod 600 /etc/niks3-token
           mkdir -p /home/builder/.ssh
@@ -285,7 +285,7 @@ jobs:
         id: ec2
         run: |
           cat > /tmp/user-data.sh <<'USERDATA'
-          #!/usr/bin/env bash
+          #!/bin/sh
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chmod 600 /etc/niks3-token
           mkdir -p /home/builder/.ssh
