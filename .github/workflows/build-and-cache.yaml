@@ -245,18 +245,34 @@ jobs:
           chown -R builder:users /home/builder/.ssh
           USERDATA
 
-          INSTANCE_ID=$(aws ec2 run-instances \
-            --image-id "${{ steps.ami.outputs.ami_id }}" \
-            --instance-type c7a.4xlarge \
-            --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
-            --subnet-id "${{ secrets.AWS_BUILDER_SUBNET_ID }}" \
-            --instance-initiated-shutdown-behavior terminate \
-            --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
-            --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
-            --user-data file:///tmp/user-data.sh \
-            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-x86_64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
-            --query 'Instances[0].InstanceId' \
-            --output text)
+          INSTANCE_TYPES=(c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge m7a.4xlarge m7i.4xlarge)
+          IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
+
+          INSTANCE_ID=""
+          for itype in "${INSTANCE_TYPES[@]}"; do
+            for subnet in "${SUBNETS[@]}"; do
+              echo "Trying $itype in $subnet..."
+              INSTANCE_ID=$(aws ec2 run-instances \
+                --image-id "${{ steps.ami.outputs.ami_id }}" \
+                --instance-type "$itype" \
+                --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
+                --subnet-id "$subnet" \
+                --instance-initiated-shutdown-behavior terminate \
+                --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
+                --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
+                --user-data file:///tmp/user-data.sh \
+                --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-x86_64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
+                --query 'Instances[0].InstanceId' \
+                --output text 2>&1) && break 2
+              echo "  Failed: $INSTANCE_ID"
+              INSTANCE_ID=""
+            done
+          done
+
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "::error::Failed to launch spot instance with any instance type or subnet"
+            exit 1
+          fi
 
           echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
           echo "INSTANCE_ID=$INSTANCE_ID" >> "$GITHUB_ENV"
@@ -456,18 +472,34 @@ jobs:
           chown -R builder:users /home/builder/.ssh
           USERDATA
 
-          INSTANCE_ID=$(aws ec2 run-instances \
-            --image-id "${{ steps.ami.outputs.ami_id }}" \
-            --instance-type c7g.2xlarge \
-            --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
-            --subnet-id "${{ secrets.AWS_BUILDER_SUBNET_ID }}" \
-            --instance-initiated-shutdown-behavior terminate \
-            --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
-            --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
-            --user-data file:///tmp/user-data.sh \
-            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-arm64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
-            --query 'Instances[0].InstanceId' \
-            --output text)
+          INSTANCE_TYPES=(c7g.2xlarge c7g.4xlarge c6g.2xlarge c6g.4xlarge m7g.2xlarge m6g.2xlarge)
+          IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
+
+          INSTANCE_ID=""
+          for itype in "${INSTANCE_TYPES[@]}"; do
+            for subnet in "${SUBNETS[@]}"; do
+              echo "Trying $itype in $subnet..."
+              INSTANCE_ID=$(aws ec2 run-instances \
+                --image-id "${{ steps.ami.outputs.ami_id }}" \
+                --instance-type "$itype" \
+                --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
+                --subnet-id "$subnet" \
+                --instance-initiated-shutdown-behavior terminate \
+                --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time}' \
+                --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=200,VolumeType=gp3}' \
+                --user-data file:///tmp/user-data.sh \
+                --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=nix-builder-arm64},{Key=ManagedBy,Value=gha-nix-builder},{Key=GitCommit,Value=${{ github.sha }}}]" \
+                --query 'Instances[0].InstanceId' \
+                --output text 2>&1) && break 2
+              echo "  Failed: $INSTANCE_ID"
+              INSTANCE_ID=""
+            done
+          done
+
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "::error::Failed to launch Graviton spot instance with any instance type or subnet"
+            exit 1
+          fi
 
           echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
           echo "INSTANCE_ID=$INSTANCE_ID" >> "$GITHUB_ENV"
