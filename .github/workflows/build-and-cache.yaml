@@ -256,6 +256,15 @@ jobs:
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
 
+          # Create a new launch template version with the real user-data
+          LT_VERSION=$(aws ec2 create-launch-template-version \
+            --launch-template-id "${{ secrets.AWS_BUILDER_LT_X86_ID }}" \
+            --source-version '$Default' \
+            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\"}" \
+            --query 'LaunchTemplateVersion.VersionNumber' \
+            --output text)
+          echo "Created launch template version: $LT_VERSION"
+
           # Build overrides: each instance type × each subnet
           OVERRIDES="[]"
           for itype in c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge m7a.4xlarge m7i.4xlarge; do
@@ -268,7 +277,7 @@ jobs:
           # Write fleet config to file for clean CLI invocation
           jq -n \
             --arg lt "${{ secrets.AWS_BUILDER_LT_X86_ID }}" \
-            --arg ud "$USER_DATA_B64" \
+            --arg ltv "$LT_VERSION" \
             --arg sha "${{ github.sha }}" \
             --argjson overrides "$OVERRIDES" \
             '{
@@ -276,7 +285,7 @@ jobs:
               TargetCapacitySpecification: {TotalTargetCapacity: 1, DefaultTargetCapacityType: "spot"},
               SpotOptions: {AllocationStrategy: "capacity-optimized", InstanceInterruptionBehavior: "terminate"},
               LaunchTemplateConfigs: [{
-                LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: "$Default"},
+                LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: $ltv},
                 Overrides: $overrides
               }],
               TagSpecifications: [{
@@ -509,6 +518,15 @@ jobs:
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
 
+          # Create a new launch template version with the real user-data
+          LT_VERSION=$(aws ec2 create-launch-template-version \
+            --launch-template-id "${{ secrets.AWS_BUILDER_LT_ARM64_ID }}" \
+            --source-version '$Default' \
+            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\"}" \
+            --query 'LaunchTemplateVersion.VersionNumber' \
+            --output text)
+          echo "Created launch template version: $LT_VERSION"
+
           # Build overrides: each instance type × each subnet
           OVERRIDES="[]"
           for itype in c7g.2xlarge c7g.4xlarge c6g.2xlarge c6g.4xlarge m7g.2xlarge m6g.2xlarge; do
@@ -520,6 +538,7 @@ jobs:
 
           jq -n \
             --arg lt "${{ secrets.AWS_BUILDER_LT_ARM64_ID }}" \
+            --arg ltv "$LT_VERSION" \
             --arg sha "${{ github.sha }}" \
             --argjson overrides "$OVERRIDES" \
             '{
@@ -527,7 +546,7 @@ jobs:
               TargetCapacitySpecification: {TotalTargetCapacity: 1, DefaultTargetCapacityType: "spot"},
               SpotOptions: {AllocationStrategy: "capacity-optimized", InstanceInterruptionBehavior: "terminate"},
               LaunchTemplateConfigs: [{
-                LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: "$Default"},
+                LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: $ltv},
                 Overrides: $overrides
               }],
               TagSpecifications: [{
