@@ -364,6 +364,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: |
             eval-cache = true
+            extra-platforms = aarch64-linux
             extra-substituters = https://cache.nixcache.org
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak=
 
