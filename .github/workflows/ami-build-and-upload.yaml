@@ -46,9 +46,9 @@ on:
           - aws-base-server
           - aws-k8s-node
           - aws-nix-builder
-          # - aws-base-server-arm  # Uncomment when ARM runners are available
-          # - aws-k8s-node-arm
-          # - aws-nix-builder-arm
+          - aws-base-server-arm
+          - aws-k8s-node-arm
+          - aws-nix-builder-arm
       region:
         description: 'AWS region'
         required: true
@@ -78,7 +78,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.ami_name }}" != "all" ]]; then
             echo "matrix=[\"${{ inputs.ami_name }}\"]" >> "$GITHUB_OUTPUT"
           else
-            echo 'matrix=["aws-base-server","aws-k8s-node","aws-nix-builder"]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=["aws-base-server","aws-k8s-node","aws-nix-builder","aws-base-server-arm","aws-k8s-node-arm","aws-nix-builder-arm"]' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set parameters
