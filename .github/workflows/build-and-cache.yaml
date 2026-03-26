@@ -360,6 +360,11 @@ jobs:
             #!/bin/bash
             set -uo pipefail
 
+            # Free disk space from previous AMI refresh builds
+            echo "Disk before GC: $(df -h / | tail -1)"
+            sudo nix-collect-garbage -d 2>&1 | tail -3
+            echo "Disk after GC: $(df -h / | tail -1)"
+
             # Add swap to prevent OOM killing sshd during heavy builds
             if [ ! -f /var/tmp/swapfile ]; then
               sudo fallocate -l 16G /var/tmp/swapfile
@@ -705,6 +710,11 @@ jobs:
             cat > /tmp/build-arm64.sh <<'SCRIPT'
             #!/bin/bash
             set -uo pipefail
+
+            # Free disk space from previous AMI refresh builds
+            echo "Disk before GC: $(df -h / | tail -1)"
+            sudo nix-collect-garbage -d 2>&1 | tail -3
+            echo "Disk after GC: $(df -h / | tail -1)"
 
             # Add swap to prevent OOM killing sshd during heavy builds
             if [ ! -f /var/tmp/swapfile ]; then
