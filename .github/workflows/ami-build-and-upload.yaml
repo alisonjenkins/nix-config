@@ -126,7 +126,11 @@ jobs:
         id: build
         run: |
           echo "Building AMI for ${{ matrix.hostname }}..."
-          OUT=$(nix build ".#${{ matrix.hostname }}-ami" --print-out-paths --no-link)
+          case "${{ matrix.hostname }}" in
+            *-arm) NIX_SYSTEM="aarch64-linux" ;;
+            *)     NIX_SYSTEM="x86_64-linux" ;;
+          esac
+          OUT=$(nix build ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
 
           # Extract image info
@@ -149,7 +153,11 @@ jobs:
 
       - name: Push to niks3
         run: |
-          nix build --print-out-paths --no-link ".#${{ matrix.hostname }}-ami" | \
+          case "${{ matrix.hostname }}" in
+            *-arm) NIX_SYSTEM="aarch64-linux" ;;
+            *)     NIX_SYSTEM="x86_64-linux" ;;
+          esac
+          nix build --print-out-paths --no-link ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
