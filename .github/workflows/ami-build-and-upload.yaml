@@ -109,6 +109,11 @@ jobs:
 
       - name: Set up QEMU binfmt for aarch64
         run: |
+          # Wait for any background apt processes (e.g. from nothing-but-nix) to finish
+          while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+            echo "Waiting for dpkg lock to be released..."
+            sleep 2
+          done
           sudo apt-get update -qq && sudo apt-get install -y -qq qemu-user-static binfmt-support
           # Verify registration
           update-binfmts --display qemu-aarch64 || true
