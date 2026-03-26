@@ -21,6 +21,9 @@
         django_4 = python-prev.django_4.overridePythonAttrs (oldAttrs: {
           doCheck = false;
         });
+        rich = python-prev.rich.overridePythonAttrs (oldAttrs: {
+          disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_brokenpipeerror" ];
+        });
       })
     ];
   };
