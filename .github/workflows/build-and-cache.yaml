@@ -234,15 +234,15 @@ jobs:
         run: |
           # User-data: inject niks3 token and SSH public key at boot
           cat > /tmp/user-data.sh <<'USERDATA'
-          #!/bin/bash
-          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
-          chmod 600 /etc/niks3-token
-          mkdir -p /home/builder/.ssh
-          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
-          chmod 700 /home/builder/.ssh
-          chmod 600 /home/builder/.ssh/authorized_keys
-          chown -R builder:users /home/builder/.ssh
-          USERDATA
+#!/bin/bash
+echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+chmod 600 /etc/niks3-token
+mkdir -p /home/builder/.ssh
+echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
+chmod 700 /home/builder/.ssh
+chmod 600 /home/builder/.ssh/authorized_keys
+chown -R builder:users /home/builder/.ssh
+USERDATA
 
           INSTANCE_ID=$(aws ec2 run-instances \
             --image-id "${{ steps.ami.outputs.ami_id }}" \
@@ -277,8 +277,11 @@ jobs:
       - name: Wait for SSH
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          echo "Waiting for SSH to become available..."
+          echo "Waiting for SSH to become available on $BUILDER_IP..."
           for i in $(seq 1 60); do
+            echo "Attempt $i: trying SSH to builder@$BUILDER_IP..."
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
+                -v -i /tmp/builder_key builder@"$BUILDER_IP" true 2>&1 | tail -5 || true
             if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
                    -i /tmp/builder_key builder@"$BUILDER_IP" true 2>/dev/null; then
               echo "SSH ready after ~$((i * 5))s"
@@ -287,6 +290,10 @@ jobs:
             sleep 5
           done
           echo "::error::SSH timeout after 5 minutes"
+          echo "Final diagnostic:"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -vvv \
+              -i /tmp/builder_key builder@"$BUILDER_IP" true 2>&1 | tail -30 || true
+          nc -zv "$BUILDER_IP" 22 2>&1 || echo "Port 22 not reachable"
           exit 1
 
       - name: Build desktop configs on EC2
