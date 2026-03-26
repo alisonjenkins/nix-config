@@ -267,8 +267,9 @@ jobs:
 
           # Build overrides: each instance type × each subnet
           OVERRIDES="[]"
-          # m-types (64GB RAM) first — kernel LTO + rocblas need more memory than c-types (32GB)
-          for itype in m7a.4xlarge m7i.4xlarge c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge; do
+          # m-types (64GB) and r-types (128GB) first for memory-heavy builds (kernel LTO, rocblas)
+          # Wide instance diversity reduces spot interruption risk
+          for itype in m7a.4xlarge m7i.4xlarge m6a.4xlarge m6i.4xlarge r7a.4xlarge r7i.4xlarge c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge; do
             for subnet in "${SUBNETS[@]}"; do
               OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" --arg ami "${{ steps.ami.outputs.ami_id }}" \
                 '. + [{"InstanceType": $it, "SubnetId": $sn, "ImageId": $ami}]')
@@ -284,7 +285,7 @@ jobs:
             '{
               Type: "instant",
               TargetCapacitySpecification: {TotalTargetCapacity: 1, DefaultTargetCapacityType: "spot"},
-              SpotOptions: {AllocationStrategy: "capacity-optimized", InstanceInterruptionBehavior: "terminate"},
+              SpotOptions: {AllocationStrategy: "price-capacity-optimized", InstanceInterruptionBehavior: "terminate"},
               LaunchTemplateConfigs: [{
                 LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: $ltv},
                 Overrides: $overrides
@@ -295,7 +296,7 @@ jobs:
               }]
             }' > /tmp/fleet-config.json
 
-          echo "Launching x86_64 spot instance with capacity-optimized fleet..."
+          echo "Launching x86_64 spot instance with price-capacity-optimized fleet..."
           FLEET_RESULT=$(aws ec2 create-fleet --cli-input-json file:///tmp/fleet-config.json --output json)
           echo "$FLEET_RESULT" | jq .
 
@@ -612,7 +613,7 @@ jobs:
 
           # Build overrides: each instance type × each subnet
           OVERRIDES="[]"
-          for itype in c7g.2xlarge c7g.4xlarge c6g.2xlarge c6g.4xlarge m7g.2xlarge m6g.2xlarge; do
+          for itype in m7g.4xlarge m7g.2xlarge m6g.4xlarge m6g.2xlarge r7g.2xlarge c7g.4xlarge c7g.2xlarge c6g.4xlarge c6g.2xlarge; do
             for subnet in "${SUBNETS[@]}"; do
               OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" --arg ami "${{ steps.ami.outputs.ami_id }}" \
                 '. + [{"InstanceType": $it, "SubnetId": $sn, "ImageId": $ami}]')
@@ -627,7 +628,7 @@ jobs:
             '{
               Type: "instant",
               TargetCapacitySpecification: {TotalTargetCapacity: 1, DefaultTargetCapacityType: "spot"},
-              SpotOptions: {AllocationStrategy: "capacity-optimized", InstanceInterruptionBehavior: "terminate"},
+              SpotOptions: {AllocationStrategy: "price-capacity-optimized", InstanceInterruptionBehavior: "terminate"},
               LaunchTemplateConfigs: [{
                 LaunchTemplateSpecification: {LaunchTemplateId: $lt, Version: $ltv},
                 Overrides: $overrides
@@ -638,7 +639,7 @@ jobs:
               }]
             }' > /tmp/fleet-config.json
 
-          echo "Launching arm64 spot instance with capacity-optimized fleet..."
+          echo "Launching arm64 spot instance with price-capacity-optimized fleet..."
           FLEET_RESULT=$(aws ec2 create-fleet --cli-input-json file:///tmp/fleet-config.json --output json)
           echo "$FLEET_RESULT" | jq .
 
