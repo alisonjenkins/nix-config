@@ -22,6 +22,11 @@
     settings = {
       max-jobs = "auto";
       cores = 0;
+      # Download tuning — EC2 instances have high bandwidth, use it
+      http-connections = 128;
+      max-substitution-jobs = 128;
+      download-buffer-size = 134217728; # 128 MiB
+      narinfo-cache-negative-ttl = 0;
       extra-substituters = [
         "https://cache.nixcache.org"
         "https://nix-community.cachix.org"
