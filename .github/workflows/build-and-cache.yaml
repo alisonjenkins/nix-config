@@ -245,6 +245,7 @@ jobs:
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+          chown builder:users /etc/niks3-token
           chmod 600 /etc/niks3-token
           mkdir -p /home/builder/.ssh
           echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
@@ -591,6 +592,7 @@ jobs:
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+          chown builder:users /etc/niks3-token
           chmod 600 /etc/niks3-token
           mkdir -p /home/builder/.ssh
           echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
