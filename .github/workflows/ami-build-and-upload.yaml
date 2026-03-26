@@ -107,6 +107,11 @@ jobs:
         with:
           hatchet-protocol: 'rampage'
 
+      - name: Set up QEMU for aarch64
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
