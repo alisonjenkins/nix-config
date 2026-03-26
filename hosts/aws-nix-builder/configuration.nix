@@ -9,7 +9,10 @@
   modules.aws = {
     enable = true;
     enableSSH = true;
-    rootVolumeSize = 200;
+    # "auto" sizes the VHD to fit the closure (~few GB); the actual 200 GB
+    # disk is specified at EC2 launch via --block-device-mappings and
+    # auto-grows at boot via cloud-init growpart.
+    rootVolumeSize = "auto";
   };
   modules.locale.enable = true;
 

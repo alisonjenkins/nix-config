@@ -119,7 +119,9 @@ jobs:
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4=
 
       - name: Install niks3
-        run: nix profile install github:Mic92/niks3
+        run: |
+          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_x86_64.tar.gz | sudo tar xz -C /usr/local/bin niks3
+          sudo chmod +x /usr/local/bin/niks3
       - name: Build AMI
         id: build
         run: |
