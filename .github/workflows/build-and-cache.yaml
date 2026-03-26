@@ -234,15 +234,15 @@ jobs:
         run: |
           # User-data: inject niks3 token and SSH public key at boot
           cat > /tmp/user-data.sh <<'USERDATA'
-#!/bin/bash
-echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
-chmod 600 /etc/niks3-token
-mkdir -p /home/builder/.ssh
-echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
-chmod 700 /home/builder/.ssh
-chmod 600 /home/builder/.ssh/authorized_keys
-chown -R builder:users /home/builder/.ssh
-USERDATA
+          #!/bin/bash
+          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
+          chmod 600 /etc/niks3-token
+          mkdir -p /home/builder/.ssh
+          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
+          chmod 700 /home/builder/.ssh
+          chmod 600 /home/builder/.ssh/authorized_keys
+          chown -R builder:users /home/builder/.ssh
+          USERDATA
 
           INSTANCE_ID=$(aws ec2 run-instances \
             --image-id "${{ steps.ami.outputs.ami_id }}" \
