@@ -201,12 +201,13 @@ jobs:
             --owners self \
             --filters \
               "Name=name,Values=nixos-aws-nix-builder-*" \
+              "Name=architecture,Values=x86_64" \
               "Name=state,Values=available" \
             --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
             --output text)
 
           if [ "$AMI_ID" = "None" ] || [ -z "$AMI_ID" ]; then
-            echo "::error::No builder AMI found. Run the AMI build workflow first."
+            echo "::error::No x86_64 builder AMI found. Run the AMI build workflow first."
             exit 1
           fi
           echo "ami_id=$AMI_ID" >> "$GITHUB_OUTPUT"
