@@ -48,7 +48,9 @@
   };
 
   environment.systemPackages = with pkgs; [
+    cloud-utils    # growpart for expanding partitions at boot
     curl
+    e2fsprogs      # resize2fs
     git
     git-lfs
     htop

@@ -241,9 +241,13 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         id: ec2
         run: |
-          # User-data: inject niks3 token and SSH public key at boot
+          # User-data: grow partition, inject niks3 token and SSH public key
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
+          # Grow root partition to fill the EBS volume (cloud-init growpart
+          # may not have run yet when this executes)
+          growpart /dev/xvda 1 || true
+          resize2fs /dev/xvda1 || xfs_growfs / || true
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chown builder:users /etc/niks3-token
           chmod 600 /etc/niks3-token
@@ -357,6 +361,30 @@ jobs:
         env:
           SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
+          # Verify disk was grown and show diagnostics
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'DIAG'
+            echo "=== Disk layout ==="
+            lsblk
+            echo "=== Filesystem usage ==="
+            df -h /
+            echo "=== Partition table ==="
+            sudo fdisk -l /dev/xvda 2>/dev/null || sudo fdisk -l /dev/nvme0n1 2>/dev/null || true
+            ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
+            if [ "$ROOT_FREE" -lt 50 ]; then
+              echo "::error::Root filesystem has only ${ROOT_FREE}G free — growpart may have failed"
+              echo "Attempting manual growpart..."
+              sudo growpart /dev/xvda 1 || sudo growpart /dev/nvme0n1 1 || true
+              sudo resize2fs /dev/xvda1 || sudo resize2fs /dev/nvme0n1p1 || sudo xfs_growfs / || true
+              df -h /
+              ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
+              if [ "$ROOT_FREE" -lt 50 ]; then
+                echo "::error::Disk still too small after manual growpart (${ROOT_FREE}G free)"
+                exit 1
+              fi
+            fi
+            echo "Disk OK: ${ROOT_FREE}G free"
+          DIAG
+
           # Upload and start build in detached session so it survives SSH drops
           ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'SETUP'
             cat > /tmp/build-desktops.sh <<'SCRIPT'

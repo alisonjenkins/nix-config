@@ -1,0 +1,106 @@
+{ ... }: {
+  flake.nixosModules.home-storage-server-1-hardware = { config, lib, modulesPath, ... }: {
+    imports = [
+      (modulesPath + "/installer/scan/not-detected.nix")
+      (modulesPath + "/profiles/qemu-guest.nix")
+    ];
+
+    # VM variant configuration is now handled by the base module
+    # See modules/base/vm-variant.nix
+    vmVariantSettings = {
+      memorySize = 4096;
+      cores = 4;
+      diskSize = 32768; # 32GB
+      # Simplify filesystems - this storage server has complex mergerfs setup
+      simplifyFilesystems = true;
+    };
+
+    boot = {
+      kernelModules = [ "kvm-amd" ];
+      extraModulePackages = [ ];
+
+      initrd = {
+        availableKernelModules = [
+          "ahci"
+          "cryptd"
+          "ehci_pci"
+          "nvme"
+          "sd_mod"
+          "sr_mod"
+          "uas"
+          "usb_storage"
+          "usbhid"
+          "virtio_blk"
+          "virtio_pci"
+          "xhci_pci"
+        ];
+        kernelModules = [ "dm-snapshot" ];
+      };
+    };
+
+    fileSystems = let
+      media_disks = {
+        # "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML0220F31JAXAN-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML0220F31JAXAN-part1"; # DEAD - XFS shutdown, bay 23
+        # "/media/disks/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS5C3020ALA632_ML2220F31WJ4LH-part1"; # Cable 1 # Dead
+        "/media/disks/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1".device = "/dev/disk/by-id/ata-Hitachi_HDS722020ALA330_JK1174YAJ7MEVW-part1";
+        "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1".device = "/dev/disk/by-id/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1";
+        "/media/disks/ata-ST3000DM008-2DM166_Z5057TK6-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057TK6-part1";
+        "/media/disks/ata-ST3000DM008-2DM166_Z5057WSB-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057WSB-part1";
+        "/media/disks/ata-ST4000DM004-2CV104_ZFN195XV-part1".device = "/dev/disk/by-id/ata-ST4000DM004-2CV104_ZFN195XV-part1";
+        "/media/disks/ata-ST5000LM000-2AN170_WCJ53A54-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ53A54-part1";
+        # "/media/disks/ata-ST5000LM000-2AN170_WCJ7DQKA-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ7DQKA-part1"; # DEAD - I/O errors, bay 7
+        "/media/disks/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1";
+        "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
+        "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
+        "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
+        # "/media/disks/ata-ST31500341AS_9VS21EM9-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21EM9-part1"; # Failing - less severe - 4 - 1.5TB
+        # "/media/disks/ata-ST31500341AS_9VS21ESL-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21ESL-part1"; # Failing - less severe - 1 - 1.5TB
+        # "/media/disks/ata-ST31500341AS_9VS21WFH-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21WFH-part1"; # Failing - less severe - 2 (also cable) - 1.5TB
+        # "/media/disks/ata-ST31500341AS_9VS21WMQ-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21WMQ-part1"; # Failing - less severe - 3 - 1.5TB
+        # "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1"; # Failing - critical - 2TB
+        # "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"; # Failing - critical - 2TB
+      };
+      media_disk_mount_points = builtins.attrNames media_disks;
+    in {
+      "/".neededForBoot = true;
+      "/nix".neededForBoot = true;
+      "/persistence".neededForBoot = true;
+
+      "/media/storage" = {
+        device = "/media/disks/*";
+        depends = media_disk_mount_points;
+        fsType = "fuse.mergerfs";
+
+        options = [
+          "allow_other"
+          "cache.files=off"
+          "category.create=mfs"  # Use most-free-space policy to spread data across disks
+          "defaults"
+          "dropcacheonclose=true"
+          "fsname=mergerf"
+          "minfreespace=200G"
+          "moveonenospc=true"
+          "nonempty"
+          "use_ino"
+          "security_capability=false"
+        ];
+      };
+    } // media_disks;
+
+    swapDevices = [
+      {
+        device = "/dev/pool/swap";
+      }
+    ];
+
+    # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+    # (the default) this is the recommended approach. When using systemd-networkd it's
+    # still possible to use this option, but it's recommended to use it in conjunction
+    # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+    networking.useDHCP = lib.mkDefault true;
+    # networking.interfaces.enp16s0.useDHCP = lib.mkDefault true;
+
+    nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+    hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  };
+}
