@@ -109,7 +109,7 @@ in {
         # };
         #
         # sops.secrets.niks3-token = {
-        #   sopsFile = ../../secrets/niks3-token.enc.yaml;
+        #   sopsFile = self + "/secrets/niks3-token.enc.yaml";
         #   key = "niks3_token";
         # };
 
@@ -457,7 +457,7 @@ in {
         };
 
         sops = {
-          defaultSopsFile = ../../secrets/main.enc.yaml;
+          defaultSopsFile = self + "/secrets/main.enc.yaml";
           defaultSopsFormat = "yaml";
           age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
           secrets = {
@@ -471,7 +471,7 @@ in {
             # };
             # home_enc_key = {
             #   mode = "0400";
-            #   sopsFile = ../../secrets/ali-framework-laptop/home-enc-key.enc.bin;
+            #   sopsFile = self + "/secrets/ali-framework-laptop/home-enc-key.enc.bin";
             #   owner = config.users.users.root.name;
             #   group = config.users.users.nobody.group;
             #   path = "/etc/luks/home.key";

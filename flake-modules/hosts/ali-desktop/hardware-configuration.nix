@@ -1,0 +1,151 @@
+{ ... }: {
+  flake.nixosModules.ali-desktop-hardware = { config, lib, modulesPath, ... }: {
+    imports = [
+      (modulesPath + "/installer/scan/not-detected.nix")
+    ];
+
+    boot = {
+      extraModulePackages = [ ];
+      kernelModules = [ "kvm-amd" ];
+      supportedFilesystems = [ "btrfs" "ext4" "xfs" ];
+
+      initrd = {
+        availableKernelModules = [
+          "ahci"
+          "cryptd"
+          "dm-raid"
+          "ehci_pci"
+          "nvme"
+          "sd_mod"
+          "sr_mod"
+          "uas"
+          "usb_storage"
+          "usbhid"
+          "xhci_pci"
+        ];
+        kernelModules = [
+          "amdgpu"
+          "dm-raid"
+          "dm-snapshot"
+        ];
+        luks.devices.luksroot = {
+          device = "/dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246";
+          preLVM = true;
+          allowDiscards = true;
+        };
+      };
+    };
+
+    # VM variant configuration is now handled by the base module
+    # See modules/base/vm-variant.nix
+    vmVariantSettings = {
+      memorySize = 8192; # 8GB for desktop
+      cores = 8;
+      diskSize = 65536; # 64GB
+    };
+
+    fileSystems = {
+      "/" = lib.mkForce {
+        device = "tmpfs";
+        fsType = "tmpfs";
+        neededForBoot = true;
+        options = [
+          "defaults"
+          "size=32G"
+          "mode=755"
+        ];
+      };
+
+      "/boot" = {
+        device = "/dev/disk/by-uuid/12AE-8C8B";
+        fsType = "vfat";
+        options = [ "fmask=0077" "dmask=0077" "defaults" ];
+      };
+
+      "/home" = {
+        device = "/dev/home/home";
+        fsType = "ext4";
+        options = [
+          "defaults"
+          "x-systemd.requires=systemd-cryptsetup@home1.service"
+          "x-systemd.requires=systemd-cryptsetup@home2.service"
+        ];
+      };
+
+      "/media/archroot" = {
+        device = "/dev/osvg/root";
+        fsType = "ext4";
+        options = [ "defaults" "noatime" "discard" "nofail" ];
+      };
+
+      "/media/storage1" = {
+        device = "/dev/disk/by-label/storage";
+        fsType = "xfs";
+        options = [ "defaults" "noatime" "discard" "nofail" ];
+      };
+
+      "/media/steam-games-1" = {
+        device = "/dev/osvg/steam-games-1";
+        fsType = "btrfs";
+        options = [
+          "compress=zstd:-10"      # Slight compression so we get good performance
+          "noatime"              # Don't update access times (performance)
+          "space_cache=v2"       # Modern free space cache (performance)
+          "discard=async"        # Async TRIM for SSD health (performance)
+          "ssd"                  # Enable SSD optimizations
+          "nofail"               # Don't block boot if unavailable
+        ];
+      };
+
+      "/nix" = {
+        device = "/dev/osvg/persistence";
+        fsType = "btrfs";
+        options = [
+          "subvol=nix"
+          "compress=zstd:3"      # Balanced compression (level 3 is optimal)
+          "noatime"              # Don't update access times (performance)
+          "space_cache=v2"       # Modern free space cache (performance)
+          "discard=async"        # Async TRIM for SSD health (performance)
+          "ssd"                  # Enable SSD optimizations
+        ];
+        neededForBoot = true;
+      };
+
+      "/persistence" = {
+        device = "/dev/osvg/persistence";
+        fsType = "btrfs";
+        options = [
+          "subvol=persistence"
+          "compress=zstd:3"      # Balanced compression (level 3 is optimal)
+          "noatime"              # Don't update access times (performance)
+          "space_cache=v2"       # Modern free space cache (performance)
+          "discard=async"        # Async TRIM for SSD health (performance)
+          "ssd"                  # Enable SSD optimizations
+        ];
+        neededForBoot = true;
+      };
+    };
+
+    swapDevices = [{ device = "/dev/osvg/swap"; }];
+
+    hardware = {
+      cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+      bluetooth = {
+        enable = true;
+        powerOnBoot = true;
+      };
+    };
+
+    # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+    # (the default) this is the recommended approach. When using systemd-networkd it's
+    # still possible to use this option, but it's recommended to use it in conjunction
+    # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+    networking = {
+      hostId = "77f0d408";
+      # Disable dhcpcd — NetworkManager handles DHCP on this desktop.
+      # dhcpcd was adding ~15s to boot sitting on the critical chain.
+      useDHCP = lib.mkForce false;
+    };
+  };
+}

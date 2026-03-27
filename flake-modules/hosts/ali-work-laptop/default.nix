@@ -83,7 +83,7 @@ in {
         # };
         #
         # sops.secrets.niks3-token = {
-        #   sopsFile = ../../secrets/niks3-token.enc.yaml;
+        #   sopsFile = self + "/secrets/niks3-token.enc.yaml";
         #   key = "niks3_token";
         # };
 

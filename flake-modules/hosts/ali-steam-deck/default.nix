@@ -13,12 +13,15 @@ in {
       { nixpkgs.hostPlatform = system; }
 
       # Custom modules via flake outputs
+      self.nixosModules.base
+      self.nixosModules.desktop
       self.nixosModules.locale
       self.nixosModules.app-desktop
       self.nixosModules.ali-steam-deck-hardware
 
       # External flake modules
       inputs.jovian-nixos.nixosModules.default
+      inputs.nix-flatpak.nixosModules.nix-flatpak
       inputs.stylix.nixosModules.stylix
 
       # Host-specific configuration
