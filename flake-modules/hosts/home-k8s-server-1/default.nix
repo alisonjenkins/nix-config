@@ -1,0 +1,89 @@
+{ inputs, self, ... }:
+let
+  system = "x86_64-linux";
+  lib = inputs.nixpkgs.lib;
+in {
+  flake.nixosConfigurations.home-k8s-server-1 = lib.nixosSystem {
+    specialArgs = {
+      username = "ali";
+      inherit inputs;
+      inherit (self) outputs;
+    };
+    modules = [
+      { nixpkgs.hostPlatform = system; }
+
+      # Custom modules via flake outputs
+      self.nixosModules.locale
+      self.nixosModules.base
+      self.nixosModules.servers
+      self.nixosModules.app-k8s-master
+      self.nixosModules.home-k8s-server-1-hardware
+      self.nixosModules.home-k8s-server-1-disko-config
+
+      # External flake modules
+      inputs.disko.nixosModules.disko
+
+      # Host-specific configuration
+      ({ lib, pkgs, ... }: {
+        modules.base = {
+          enable = true;
+        };
+        modules.locale.enable = true;
+        modules.servers.enable = true;
+
+        console.keyMap = "us";
+        networking.hostName = "home-k8s-server-1";
+        networking.networkmanager.enable = true;
+        programs.zsh.enable = true;
+        services.logrotate.checkConfig = false;
+        time.timeZone = "Europe/London";
+
+        boot = {
+          kernelPackages = pkgs.linuxPackages;
+          kernelParams = [
+            "irqpoll"
+          ];
+          loader = {
+            efi = {
+              efiSysMountPoint = "/boot";
+              canTouchEfiVariables = true;
+            };
+          };
+        };
+
+        environment = {
+          pathsToLink = [ "/share/zsh" ];
+
+          systemPackages = with pkgs; [
+            parted
+          ];
+
+          variables = {
+            PATH = [
+              "\${HOME}/.local/bin"
+              "\${HOME}/.config/rofi/scripts"
+            ];
+          };
+        };
+
+        system = {
+          stateVersion = "24.05";
+        };
+
+        security = {
+          sudo = {
+            wheelNeedsPassword = lib.mkForce false;
+          };
+        };
+
+        users.users.ali = {
+          isNormalUser = true;
+          description = "Alison Jenkins";
+          initialPassword = "initPw!";
+          extraGroups = [ "docker" "networkmanager" "wheel" ];
+          openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+        };
+      })
+    ];
+  };
+}

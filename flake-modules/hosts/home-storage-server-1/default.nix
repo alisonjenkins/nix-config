@@ -244,7 +244,7 @@ in {
         };
 
         sops = {
-          defaultSopsFile = ../../secrets/main.enc.yaml;
+          defaultSopsFile = self + "/secrets/main.enc.yaml";
           defaultSopsFormat = "yaml";
           age.sshKeyPaths = [ "/persistence/etc/ssh/keys/ssh_host_ed25519_key" ];
 

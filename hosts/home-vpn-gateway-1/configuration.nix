@@ -6,11 +6,6 @@
 , ...
 }: {
   imports = [
-    ../../modules/locale
-    ../../modules/base
-    ../../modules/amnezia-vpn-gateway
-    ./disko-config.nix
-    ./hardware-configuration.nix
   ];
 
   modules.base = {
