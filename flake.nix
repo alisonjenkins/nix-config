@@ -29,7 +29,9 @@
     };
     nix-cachyos-kernel = {
       url = "github:xddxdd/nix-cachyos-kernel/master";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Don't override nixpkgs — upstream Hydra/Garnix caches build against
+      # their own nixpkgs rev, so following ours changes derivation hashes
+      # and forces a full LTO kernel rebuild from source every time.
     };
     niks3 = {
       url = "github:Mic92/niks3";
