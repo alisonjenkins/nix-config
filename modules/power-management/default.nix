@@ -229,6 +229,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Disable NMI watchdog — only needed for kernel debugging, saves ~1W
+    boot.kernel.sysctl."kernel.nmi_watchdog" = 0;
+
+    # Enable audio codec power management — codec sleeps after 1s of silence
+    boot.extraModprobeConfig = "options snd_hda_intel power_save=1";
+
     # Power-switch scripts available on PATH
     environment.systemPackages = [
       powerSwitchBattery
