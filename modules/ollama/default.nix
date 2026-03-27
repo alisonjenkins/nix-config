@@ -22,6 +22,9 @@ in
       };
     };
 
+    # Don't start ollama at boot — start manually or via other services when needed
+    systemd.services.ollama.wantedBy = lib.mkForce [ ];
+
     environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
       lib.mkIf config.modules.base.enableImpermanence [
         {
