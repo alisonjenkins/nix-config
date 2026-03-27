@@ -9,15 +9,13 @@ let
       allowUnfree = true;
     };
 
-    overlays =
-      let overlays = import ../../overlays { inherit inputs; };
-      in [
-        overlays.additions
-        overlays.lqx-pin-packages
-        overlays.master-packages
-        overlays.unstable-packages
-        overlays.zk
-        overlays.qbittorrent
+    overlays = [
+        self.overlays.additions
+        self.overlays.lqx-pin-packages
+        self.overlays.master-packages
+        self.overlays.unstable-packages
+        self.overlays.zk
+        self.overlays.qbittorrent
         inputs.nur.overlays.default
         inputs.rust-overlay.overlays.default
       ]
@@ -37,8 +35,8 @@ in {
       inherit pkgs;
 
       modules = [
-        ../../home/home-linux.nix
-        ../../hosts/ali-desktop-arch/configuration.nix
+        self.homeModules.home-linux
+        self.homeModules.ali-desktop-arch-config
       ];
 
       extraSpecialArgs = {
@@ -57,8 +55,8 @@ in {
       inherit pkgs;
 
       modules = [
-        ../../home/home-linux.nix
-        ../../hosts/steam-deck/configuration.nix
+        self.homeModules.home-linux
+        self.homeModules.steam-deck-config
         inputs.nix-index-database.homeModules.nix-index
       ];
 

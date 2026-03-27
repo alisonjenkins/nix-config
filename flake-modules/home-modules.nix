@@ -11,5 +11,24 @@
     autostart = import ../home/autostart;
     wm-hyprland = import ../home/wms/hyprland;
     wm-river = import ../home/wms/river;
+
+    # Host-specific home-manager configs
+    ali-desktop-arch-config = { pkgs, ... }: {
+      nix = {
+        package = pkgs.nix;
+        settings = {
+          trusted-users = [ "root" "@wheel" ];
+          experimental-features = "nix-command flakes";
+        };
+      };
+    };
+    steam-deck-config = { pkgs, ... }: {
+      nix = {
+        package = pkgs.nix;
+        settings = {
+          trusted-users = [ "root" "@wheel" ];
+        };
+      };
+    };
   };
 }
