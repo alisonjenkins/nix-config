@@ -88,8 +88,7 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
   - `templates.nix`: Flake templates
   - `nixos-modules.nix`: Exports all NixOS modules and app-profiles as `flake.nixosModules.*`
   - `home-modules.nix`: Exports home-manager modules as `flake.homeModules.*`
-  - `hosts/`: One file per host configuration (NixOS, Darwin, standalone home-manager)
-- **`hosts/`**: Per-machine configurations (hardware-configuration.nix, host-specific settings, module option values)
+  - `hosts/`: One **directory** per host configuration (NixOS, Darwin, standalone home-manager), each containing `default.nix` (the flake-parts module), `hardware-configuration.nix` (wrapped as `flake.nixosModules.<hostname>-hardware`), and `disko-config.nix` (wrapped as `flake.nixosModules.<hostname>-disko-config`)
 - **`modules/`**: Reusable NixOS modules using the **options system** (`options.*` / `config = mkIf cfg.enable`):
   - `base/`: Core system configuration (networking, boot, nix settings, impermanence, secure boot)
   - `desktop/`: Desktop environment configurations
@@ -110,14 +109,15 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
 
 ### Configuration Pattern
 
-Each host is defined in its own flake-parts module at `flake-modules/hosts/<hostname>.nix`. These modules:
+Each host is defined in its own flake-parts module directory at `flake-modules/hosts/<hostname>/`. These directories contain:
 
-1. Import NixOS/app-profile modules via path imports from `../../modules/` and `../../app-profiles/`
-2. Import host-specific configuration from `../../hosts/<hostname>/configuration.nix`
-3. Configure module options in the host's `configuration.nix` (e.g., `modules.base.enable = true;`)
-4. Configure home-manager as a NixOS/Darwin module
+1. `default.nix`: The flake-parts module defining `flake.nixosConfigurations.<hostname>` (or `darwinConfigurations`/`homeConfigurations`)
+2. `hardware-configuration.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-hardware`
+3. `disko-config.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-disko-config`
 
-New flake-modules files are **auto-discovered** by haumea - just create a `.nix` file in `flake-modules/` and it will be imported automatically.
+All custom modules and app-profiles are referenced via `self.nixosModules.*` (exported in `nixos-modules.nix`). Home-manager modules are referenced via `self.homeModules.*` (exported in `home-modules.nix`). File paths for secrets/patches use `self + "/path/to/file"`. No relative path imports (`../../`) are used — everything goes through flake outputs.
+
+New flake-modules files are **auto-discovered** by haumea - just create a `.nix` file or directory in `flake-modules/` and it will be imported automatically.
 
 The `modules/base` module uses NixOS options under `modules.base`:
 - `enable`: Enable the base module
@@ -187,30 +187,31 @@ The `modules/niks3-cache-push` module and GHA parallel push workflow are impleme
 1. Create `secrets/niks3-token.enc.yaml` via `sops secrets/niks3-token.enc.yaml` with key `niks3_token`
 2. Add ali-framework-laptop's server age key to `.sops.yaml` (keys section + niks3-token creation rule)
 3. Uncomment the `modules.niks3CachePush` and `sops.secrets.niks3-token` blocks in:
-   - `hosts/ali-desktop/configuration.nix`
-   - `hosts/ali-framework-laptop/configuration.nix`
-   - `hosts/ali-work-laptop/configuration.nix`
+   - `flake-modules/hosts/ali-desktop/default.nix`
+   - `flake-modules/hosts/ali-framework-laptop/default.nix`
+   - `flake-modules/hosts/ali-work-laptop/default.nix`
 
 ## Development Workflow
 
 When modifying configurations:
-1. Edit relevant files in `modules/`, `app-profiles/`, `home/`, or `hosts/`
+1. Edit relevant files in `modules/`, `app-profiles/`, `home/`, or `flake-modules/hosts/<hostname>/`
 2. Test changes with `just test` for temporary activation
 3. Use `just build` to build without activating (useful for checking for errors)
 4. Commit with `just switch` to activate and make permanent
 5. For remote hosts, use `just deploy .#<hostname>` after testing locally
 
 When adding new hosts:
-1. Create directory in `hosts/<hostname>/` with `configuration.nix` and `hardware-configuration.nix`
-2. Create a flake-parts module at `flake-modules/hosts/<hostname>.nix` (auto-discovered by haumea)
-3. In the flake-parts module, import NixOS/app-profile modules and the host configuration
-4. In the host's `configuration.nix`, set module options (e.g., `modules.base.enable = true;`)
-5. Configure home-manager in the flake-parts module if needed
+1. Create a directory at `flake-modules/hosts/<hostname>/` (auto-discovered by haumea)
+2. Create `default.nix` as a flake-parts module defining `flake.nixosConfigurations.<hostname>`
+3. Create `hardware-configuration.nix` wrapped as `{ ... }: { flake.nixosModules.<hostname>-hardware = { ... }; }`
+4. Create `disko-config.nix` wrapped as `{ ... }: { flake.nixosModules.<hostname>-disko-config = { ... }; }`
+5. Reference custom modules via `self.nixosModules.*`, home modules via `self.homeModules.*`, secrets via `self + "/secrets/..."`, and overlays via `self.overlays.*`
+6. New files must be `git add`ed before `nix eval`/`nix build` will see them (flake git tracking)
 
 When adding new NixOS modules (two-step process):
 1. Create the module in `modules/<name>/default.nix` using the options pattern
 2. Export it in `flake-modules/nixos-modules.nix` (add an entry to `flake.nixosModules`)
-3. Import it in each host's flake-parts file at `flake-modules/hosts/<hostname>.nix` (path import like `../../modules/<name>`)
+3. Reference it in host files via `self.nixosModules.<name>`
 4. New files in `modules/` must be `git add`ed before `nix eval`/`nix build` will see them (flake git tracking)
 
 When adding new flake-modules:
