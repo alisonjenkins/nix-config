@@ -257,11 +257,14 @@ jobs:
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
 
-          # Create a new launch template version with the real user-data
+          # Create a new launch template version with user-data and AMI ID
+          # AMI must be in the launch template (not overrides) so the launch
+          # template's block device mappings (200GB) take precedence over the
+          # AMI's default (auto-sized ~5GB).
           LT_VERSION=$(aws ec2 create-launch-template-version \
             --launch-template-id "${{ secrets.AWS_BUILDER_LT_X86_ID }}" \
             --source-version '$Default' \
-            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\"}" \
+            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\", \"ImageId\": \"${{ steps.ami.outputs.ami_id }}\"}" \
             --query 'LaunchTemplateVersion.VersionNumber' \
             --output text)
           echo "Created launch template version: $LT_VERSION"
@@ -272,8 +275,8 @@ jobs:
           # Wide instance diversity reduces spot interruption risk
           for itype in m7a.4xlarge m7i.4xlarge m6a.4xlarge m6i.4xlarge r7a.4xlarge r7i.4xlarge c7a.4xlarge c7i.4xlarge c6a.4xlarge c6i.4xlarge; do
             for subnet in "${SUBNETS[@]}"; do
-              OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" --arg ami "${{ steps.ami.outputs.ami_id }}" \
-                '. + [{"InstanceType": $it, "SubnetId": $sn, "ImageId": $ami}]')
+              OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" \
+                '. + [{"InstanceType": $it, "SubnetId": $sn}]')
             done
           done
 
@@ -613,11 +616,14 @@ jobs:
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
 
-          # Create a new launch template version with the real user-data
+          # Create a new launch template version with user-data and AMI ID
+          # AMI must be in the launch template (not overrides) so the launch
+          # template's block device mappings (200GB) take precedence over the
+          # AMI's default (auto-sized ~5GB).
           LT_VERSION=$(aws ec2 create-launch-template-version \
             --launch-template-id "${{ secrets.AWS_BUILDER_LT_ARM64_ID }}" \
             --source-version '$Default' \
-            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\"}" \
+            --launch-template-data "{\"UserData\": \"$USER_DATA_B64\", \"ImageId\": \"${{ steps.ami.outputs.ami_id }}\"}" \
             --query 'LaunchTemplateVersion.VersionNumber' \
             --output text)
           echo "Created launch template version: $LT_VERSION"
@@ -626,8 +632,8 @@ jobs:
           OVERRIDES="[]"
           for itype in m7g.4xlarge m7g.2xlarge m6g.4xlarge m6g.2xlarge r7g.2xlarge c7g.4xlarge c7g.2xlarge c6g.4xlarge c6g.2xlarge; do
             for subnet in "${SUBNETS[@]}"; do
-              OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" --arg ami "${{ steps.ami.outputs.ami_id }}" \
-                '. + [{"InstanceType": $it, "SubnetId": $sn, "ImageId": $ami}]')
+              OVERRIDES=$(echo "$OVERRIDES" | jq -c --arg it "$itype" --arg sn "$subnet" \
+                '. + [{"InstanceType": $it, "SubnetId": $sn}]')
             done
           done
 

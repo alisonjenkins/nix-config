@@ -12,6 +12,7 @@
     ollama = import ../modules/ollama;
     plymouth = import ../modules/plymouth;
     podman = import ../modules/podman;
+    power-management = import ../modules/power-management;
     rocm = import ../modules/rocm;
     servers = import ../modules/servers;
     vr = import ../modules/vr;
@@ -27,6 +28,7 @@
     app-desktop = import ../app-profiles/desktop;
     app-desktop-1password = import ../app-profiles/desktop/1password;
     app-desktop-aws = import ../app-profiles/desktop/aws;
+    app-desktop-kde-connect = import ../app-profiles/desktop/kde-connect;
     app-desktop-kwallet = import ../app-profiles/desktop/kwallet;
     app-desktop-local-k8s = import ../app-profiles/desktop/local-k8s;
     app-desktop-kubernetes = import ../app-profiles/desktop/kubernetes;
