@@ -7,7 +7,7 @@ let
   # Script to apply battery power-saving settings
   powerSwitchBattery = pkgs.writeShellApplication {
     name = "power-switch-battery";
-    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps util-linux ];
+    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps systemd util-linux ];
     text = ''
       echo "Power management: switching to battery mode"
 
@@ -70,6 +70,11 @@ let
         systemctl start fossilize-throttle.service 2>/dev/null || true
       ''}
 
+      # 9. Stop LACT GPU daemon (prevents dGPU polling keeping it awake)
+      ${lib.optionalString cfg.onBattery.stopLact ''
+        systemctl stop lact.service 2>/dev/null || true
+      ''}
+
       echo "Power management: battery mode active"
     '';
   };
@@ -116,6 +121,11 @@ let
         systemctl stop fossilize-throttle.timer 2>/dev/null || true
         # Resume any throttled fossilize processes
         pkill -CONT -f fossilize_replay 2>/dev/null || true
+      ''}
+
+      # 7. Restart LACT GPU daemon
+      ${lib.optionalString cfg.onBattery.stopLact ''
+        systemctl start lact.service 2>/dev/null || true
       ''}
 
       echo "Power management: AC mode active"
@@ -198,6 +208,12 @@ in
         type = lib.types.bool;
         default = true;
         description = "Throttle Steam fossilize_replay shader pre-caching to 5% CPU on battery.";
+      };
+
+      stopLact = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Stop LACT GPU daemon on battery to prevent dGPU polling.";
       };
     };
 

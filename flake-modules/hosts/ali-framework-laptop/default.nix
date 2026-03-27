@@ -168,6 +168,7 @@ in {
             dirtyWritebackCentisecs = 6000;
             noctaliaPerformanceMode = true;
             throttleFossilize = true;
+            stopLact = true;
           };
           onAC = {
             ppdProfile = "balanced";
