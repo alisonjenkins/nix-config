@@ -91,6 +91,32 @@ in
       };
     };
 
+    autoBrightness = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable wluma ALS-based automatic brightness adjustment.";
+      };
+
+      alsDevicePath = mkOption {
+        type = types.str;
+        default = "/sys/bus/iio/devices/iio:device0";
+        description = "Path to the ambient light sensor IIO device.";
+      };
+
+      backlightPath = mkOption {
+        type = types.str;
+        default = "/sys/class/backlight/amdgpu_bl2";
+        description = "Path to the backlight device.";
+      };
+
+      outputName = mkOption {
+        type = types.str;
+        default = "eDP-1";
+        description = "Wayland output name for the internal display.";
+      };
+    };
+
     pipewire = {
       quantum = mkOption {
         type = types.int;
