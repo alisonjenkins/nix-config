@@ -122,6 +122,18 @@ let
         run_step "display-mode" display_battery
       ''}
 
+      ${lib.optionalString (cfg.onBattery.kbdBacklightOff != null) ''
+        kbd_backlight_off() {
+          local current
+          current=$(${pkgs.qmk_hid}/bin/qmk_hid --vid 32ac --pid ${cfg.onBattery.kbdBacklightOff} via --rgb-brightness 2>&1 | grep -oP '\d+')
+          if [ -n "$current" ] && [ "$current" != "0" ]; then
+            echo "$current" > /run/power-management/kbd-brightness-saved
+          fi
+          ${pkgs.qmk_hid}/bin/qmk_hid --vid 32ac --pid ${cfg.onBattery.kbdBacklightOff} via --rgb-brightness 0
+        }
+        run_step "kbd-backlight-off" kbd_backlight_off
+      ''}
+
       ${lib.optionalString cfg.onBattery.bluetoothAutosuspend ''
         bt_autosuspend() {
           echo Y > /sys/module/btusb/parameters/enable_autosuspend
@@ -209,6 +221,17 @@ let
           ''}
         }
         run_step "display-mode" display_ac
+      ''}
+
+      ${lib.optionalString (cfg.onBattery.kbdBacklightOff != null) ''
+        kbd_backlight_restore() {
+          local saved="13"
+          if [ -f /run/power-management/kbd-brightness-saved ]; then
+            saved=$(cat /run/power-management/kbd-brightness-saved)
+          fi
+          ${pkgs.qmk_hid}/bin/qmk_hid --vid 32ac --pid ${cfg.onBattery.kbdBacklightOff} via --rgb-brightness "$saved"
+        }
+        run_step "kbd-backlight-restore" kbd_backlight_restore
       ''}
 
       ${lib.optionalString cfg.onBattery.bluetoothAutosuspend ''
@@ -329,6 +352,13 @@ in
         type = lib.types.bool;
         default = false;
         description = "Enable variable refresh rate on battery (panel can drop to lower Hz when idle).";
+      };
+
+      kbdBacklightOff = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "0012";
+        description = "USB PID of QMK keyboard to turn off RGB backlight on battery (e.g. '0012' for Framework 16 ANSI). Restores previous brightness on AC.";
       };
     };
 

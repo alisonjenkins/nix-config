@@ -172,6 +172,7 @@ in {
             bluetoothAutosuspend = true;
             displayMode = "2560x1600@60.000";
             enableVrr = true;
+            kbdBacklightOff = "0012";
           };
           onAC = {
             ppdProfile = "balanced";
