@@ -169,12 +169,18 @@ in {
             noctaliaPerformanceMode = true;
             throttleFossilize = true;
             stopLact = true;
+            bluetoothAutosuspend = true;
+            displayMode = "2560x1600@60.000";
+            enableVrr = true;
           };
           onAC = {
             ppdProfile = "balanced";
             scxArgs = [ "--performance" ];
             dirtyWritebackCentisecs = 500;
+            displayMode = "2560x1600@165.000";
           };
+          displayOutput = "eDP-2";
+          displayUser = "ali";
           noctaliaUser = "ali";
         };
 
@@ -274,8 +280,6 @@ in {
             "amdgpu.freesync_video=1"          # Enable FreeSync for video playback
             "amdgpu.aspm=1"                    # Enable ASPM for power savings
 
-            # Bluetooth: Disable power saving to prevent audio crackling
-            "btusb.enable_autosuspend=0"
           ];
 
           loader = {
@@ -439,10 +443,6 @@ in {
               # Framework Laptop 16 Keyboard Module - ISO
               ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="32ac", ATTRS{idProduct}=="0018", ATTR{power/wakeup}="disabled"
 
-              # Bluetooth: Disable autosuspend for all Bluetooth USB devices to prevent audio crackling
-              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0032", ATTR{power/control}="on"
-              ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="btusb", ATTR{power/control}="on"
-
               # RX 7600M XT (Navi 33) discrete GPU - PCI ID 1002:7480
               # Set performance level to auto (allows dynamic performance scaling)
               ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x1002", ATTR{device}=="0x7480", ATTR{power_dpm_force_performance_level}="auto"
@@ -495,6 +495,7 @@ in {
               after = [ "multi-user.target" ];
               wantedBy = [ "multi-user.target" ];
               serviceConfig = {
+                ExecStartPre = "${pkgs.coreutils}/bin/rm -f /run/lactd.sock";
                 ExecStart = "${pkgs.lact}/bin/lact daemon";
               };
               enable = true;

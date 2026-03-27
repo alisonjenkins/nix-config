@@ -4,77 +4,137 @@
 let
   cfg = config.modules.powerManagement;
 
+  # Helper function fragment for error-reporting scripts
+  # Each step logs its result and the script continues regardless
+  runStepPreamble = ''
+    FAILED_STEPS=()
+    run_step() {
+      local name="$1"
+      shift
+      if output=$("$@" 2>&1); then
+        echo "  [OK] $name"
+      else
+        local rc=$?
+        echo "  [FAIL] $name (exit $rc): $output" >&2
+        FAILED_STEPS+=("$name (exit $rc)")
+      fi
+    }
+    report_results() {
+      if [ ''${#FAILED_STEPS[@]} -gt 0 ]; then
+        echo "Power management: ''${#FAILED_STEPS[@]} step(s) failed:"
+        for step in "''${FAILED_STEPS[@]}"; do
+          echo "  - $step"
+        done
+      fi
+    }
+  '';
+
   # Script to apply battery power-saving settings
   powerSwitchBattery = pkgs.writeShellApplication {
     name = "power-switch-battery";
-    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps systemd util-linux ];
+    runtimeInputs = with pkgs; [ coreutils findutils gnugrep iw power-profiles-daemon procps systemd sudo util-linux ];
     text = ''
       echo "Power management: switching to battery mode"
+      ${runStepPreamble}
 
-      # 1. Switch power-profiles-daemon profile
       ${lib.optionalString (cfg.onBattery.ppdProfile != null) ''
-        powerprofilesctl set ${cfg.onBattery.ppdProfile} || true
+        run_step "power-profiles-daemon" powerprofilesctl set ${cfg.onBattery.ppdProfile}
       ''}
 
-      # 2. Enable WiFi power save via iwd
       ${lib.optionalString cfg.onBattery.wifiPowerSave ''
-        iwctl station wlan0 set-property PowerSave on 2>/dev/null || true
+        run_step "wifi-power-save" iw dev wlan0 set power_save on
       ''}
 
-      # 3. PCI runtime PM - set all to auto
       ${lib.optionalString cfg.onBattery.pciRuntimePM ''
-        for dev in /sys/bus/pci/devices/*/power/control; do
-          echo auto > "$dev" 2>/dev/null || true
-        done
+        pci_runtime_pm() {
+          for dev in /sys/bus/pci/devices/*/power/control; do
+            echo auto > "$dev" 2>/dev/null
+          done
+        }
+        run_step "pci-runtime-pm" pci_runtime_pm
       ''}
 
-      # 4. USB autosuspend (skip Bluetooth and HID devices)
       ${lib.optionalString cfg.onBattery.usbAutosuspend ''
-        for dev in /sys/bus/usb/devices/*/; do
-          [ -f "$dev/power/control" ] || continue
-          # Skip Bluetooth devices (class e0)
-          if [ -f "$dev/bDeviceClass" ] && grep -q "e0" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
-          # Skip devices driven by btusb
-          if [ -f "$dev/driver" ] && readlink "$dev/driver" 2>/dev/null | grep -q "btusb"; then continue; fi
-          # Skip HID devices (class 03)
-          if [ -f "$dev/bDeviceClass" ] && grep -q "03" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
-          echo auto > "$dev/power/control" 2>/dev/null || true
-        done
-        echo 2 > /sys/module/usbcore/parameters/autosuspend 2>/dev/null || true
+        usb_autosuspend() {
+          for dev in /sys/bus/usb/devices/*/; do
+            [ -f "$dev/power/control" ] || continue
+            if [ -f "$dev/bDeviceClass" ] && grep -q "03" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
+            echo auto > "$dev/power/control" 2>/dev/null
+          done
+          echo 2 > /sys/module/usbcore/parameters/autosuspend
+        }
+        run_step "usb-autosuspend" usb_autosuspend
       ''}
 
-      # 5. Kernel VM tuning - batch disk writes
-      echo ${toString cfg.onBattery.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs 2>/dev/null || true
+      dirty_writeback_battery() {
+        echo ${toString cfg.onBattery.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs
+      }
+      run_step "dirty-writeback" dirty_writeback_battery
 
-      # 6. Restart scx scheduler with battery args (uses SCX_FLAGS_OVERRIDE env var)
       ${lib.optionalString (config.services.scx.enable) ''
-        mkdir -p /run/power-management
-        echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onBattery.scxArgs}" > /run/power-management/scx.env
-        systemctl restart scx.service 2>/dev/null || true
+        scx_battery() {
+          mkdir -p /run/power-management
+          echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onBattery.scxArgs}" > /run/power-management/scx.env
+          systemctl restart scx.service
+        }
+        run_step "scx-scheduler" scx_battery
       ''}
 
-      # 7. Enable noctalia performance mode (reduces shell animations/shadows)
       ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
-        if command -v noctalia-shell &>/dev/null; then
-          sudo -u ${cfg.noctaliaUser} \
-            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
-            XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-            noctalia-shell ipc call powerProfile enableNoctaliaPerformance 2>/dev/null || true
-        fi
+        noctalia_battery() {
+          if command -v noctalia-shell &>/dev/null; then
+            sudo -u ${cfg.noctaliaUser} \
+              DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
+              XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
+              noctalia-shell ipc call powerProfile enableNoctaliaPerformance
+          fi
+        }
+        run_step "noctalia-performance" noctalia_battery
       ''}
 
-      # 8. Start fossilize throttle timer
       ${lib.optionalString cfg.onBattery.throttleFossilize ''
-        systemctl start fossilize-throttle.timer 2>/dev/null || true
-        # Immediately throttle any existing fossilize processes
-        systemctl start fossilize-throttle.service 2>/dev/null || true
+        fossilize_throttle() {
+          systemctl start fossilize-throttle.timer
+          systemctl start fossilize-throttle.service
+        }
+        run_step "fossilize-throttle" fossilize_throttle
       ''}
 
-      # 9. Stop LACT GPU daemon (prevents dGPU polling keeping it awake)
       ${lib.optionalString cfg.onBattery.stopLact ''
-        systemctl stop lact.service 2>/dev/null || true
+        run_step "stop-lact" systemctl stop lact.service
       ''}
 
+      ${lib.optionalString ((cfg.onBattery.displayMode != null || cfg.onBattery.enableVrr) && cfg.displayOutput != null && cfg.displayUser != null) ''
+        display_battery() {
+          local niri_sock
+          niri_sock="$(find "/run/user/$(id -u "${cfg.displayUser}")" -maxdepth 1 -name 'niri.*.sock' -print -quit 2>/dev/null)"
+          if [ -z "$niri_sock" ]; then
+            echo "niri socket not found"
+            return 1
+          fi
+          ${lib.optionalString (cfg.onBattery.displayMode != null) ''
+            sudo -u ${cfg.displayUser} NIRI_SOCKET="$niri_sock" /run/current-system/sw/bin/niri msg output ${cfg.displayOutput} mode ${cfg.onBattery.displayMode}
+          ''}
+          ${lib.optionalString cfg.onBattery.enableVrr ''
+            sudo -u ${cfg.displayUser} NIRI_SOCKET="$niri_sock" /run/current-system/sw/bin/niri msg output ${cfg.displayOutput} vrr on
+          ''}
+        }
+        run_step "display-mode" display_battery
+      ''}
+
+      ${lib.optionalString cfg.onBattery.bluetoothAutosuspend ''
+        bt_autosuspend() {
+          echo Y > /sys/module/btusb/parameters/enable_autosuspend
+          for iface in /sys/bus/usb/drivers/btusb/*/; do
+            [ -d "$iface/driver" ] || continue
+            dev="$(dirname "$(realpath "$iface")")"
+            echo auto > "$dev/power/control" 2>/dev/null
+          done
+        }
+        run_step "bluetooth-autosuspend" bt_autosuspend
+      ''}
+
+      report_results
       echo "Power management: battery mode active"
     '';
   };
@@ -82,52 +142,88 @@ let
   # Script to apply AC performance settings
   powerSwitchAC = pkgs.writeShellApplication {
     name = "power-switch-ac";
-    runtimeInputs = with pkgs; [ coreutils gnugrep iwd power-profiles-daemon procps util-linux ];
+    runtimeInputs = with pkgs; [ coreutils findutils gnugrep iw power-profiles-daemon procps systemd sudo util-linux ];
     text = ''
       echo "Power management: switching to AC mode"
+      ${runStepPreamble}
 
-      # 1. Switch power-profiles-daemon profile
       ${lib.optionalString (cfg.onAC.ppdProfile != null) ''
-        powerprofilesctl set ${cfg.onAC.ppdProfile} || true
+        run_step "power-profiles-daemon" powerprofilesctl set ${cfg.onAC.ppdProfile}
       ''}
 
-      # 2. Disable WiFi power save for low latency
       ${lib.optionalString cfg.onBattery.wifiPowerSave ''
-        iwctl station wlan0 set-property PowerSave off 2>/dev/null || true
+        run_step "wifi-power-save" iw dev wlan0 set power_save off
       ''}
 
-      # 3. Kernel VM tuning - restore default writeback
-      echo ${toString cfg.onAC.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs 2>/dev/null || true
+      dirty_writeback_ac() {
+        echo ${toString cfg.onAC.dirtyWritebackCentisecs} > /proc/sys/vm/dirty_writeback_centisecs
+      }
+      run_step "dirty-writeback" dirty_writeback_ac
 
-      # 4. Restart scx scheduler with AC args (uses SCX_FLAGS_OVERRIDE env var)
       ${lib.optionalString (config.services.scx.enable) ''
-        mkdir -p /run/power-management
-        echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onAC.scxArgs}" > /run/power-management/scx.env
-        systemctl restart scx.service 2>/dev/null || true
+        scx_ac() {
+          mkdir -p /run/power-management
+          echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onAC.scxArgs}" > /run/power-management/scx.env
+          systemctl restart scx.service
+        }
+        run_step "scx-scheduler" scx_ac
       ''}
 
-      # 5. Disable noctalia performance mode
       ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
-        if command -v noctalia-shell &>/dev/null; then
-          sudo -u ${cfg.noctaliaUser} \
-            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
-            XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-            noctalia-shell ipc call powerProfile disableNoctaliaPerformance 2>/dev/null || true
-        fi
+        noctalia_ac() {
+          if command -v noctalia-shell &>/dev/null; then
+            sudo -u ${cfg.noctaliaUser} \
+              DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
+              XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
+              noctalia-shell ipc call powerProfile disableNoctaliaPerformance
+          fi
+        }
+        run_step "noctalia-performance" noctalia_ac
       ''}
 
-      # 6. Stop fossilize throttle and unthrottle any frozen processes
       ${lib.optionalString cfg.onBattery.throttleFossilize ''
-        systemctl stop fossilize-throttle.timer 2>/dev/null || true
-        # Resume any throttled fossilize processes
-        pkill -CONT -f fossilize_replay 2>/dev/null || true
+        fossilize_unthrottle() {
+          systemctl stop fossilize-throttle.timer
+          pkill -CONT -f fossilize_replay 2>/dev/null || true
+        }
+        run_step "fossilize-unthrottle" fossilize_unthrottle
       ''}
 
-      # 7. Restart LACT GPU daemon
       ${lib.optionalString cfg.onBattery.stopLact ''
-        systemctl start lact.service 2>/dev/null || true
+        run_step "start-lact" systemctl start lact.service
       ''}
 
+      ${lib.optionalString ((cfg.onAC.displayMode != null || cfg.onBattery.enableVrr) && cfg.displayOutput != null && cfg.displayUser != null) ''
+        display_ac() {
+          local niri_sock
+          niri_sock="$(find "/run/user/$(id -u "${cfg.displayUser}")" -maxdepth 1 -name 'niri.*.sock' -print -quit 2>/dev/null)"
+          if [ -z "$niri_sock" ]; then
+            echo "niri socket not found"
+            return 1
+          fi
+          ${lib.optionalString (cfg.onAC.displayMode != null) ''
+            sudo -u ${cfg.displayUser} NIRI_SOCKET="$niri_sock" /run/current-system/sw/bin/niri msg output ${cfg.displayOutput} mode ${cfg.onAC.displayMode}
+          ''}
+          ${lib.optionalString cfg.onBattery.enableVrr ''
+            sudo -u ${cfg.displayUser} NIRI_SOCKET="$niri_sock" /run/current-system/sw/bin/niri msg output ${cfg.displayOutput} vrr off
+          ''}
+        }
+        run_step "display-mode" display_ac
+      ''}
+
+      ${lib.optionalString cfg.onBattery.bluetoothAutosuspend ''
+        bt_no_autosuspend() {
+          echo N > /sys/module/btusb/parameters/enable_autosuspend
+          for iface in /sys/bus/usb/drivers/btusb/*/; do
+            [ -d "$iface/driver" ] || continue
+            dev="$(dirname "$(realpath "$iface")")"
+            echo on > "$dev/power/control" 2>/dev/null
+          done
+        }
+        run_step "bluetooth-autosuspend-off" bt_no_autosuspend
+      ''}
+
+      report_results
       echo "Power management: AC mode active"
     '';
   };
@@ -189,7 +285,7 @@ in
       usbAutosuspend = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable USB autosuspend on battery (excluding Bluetooth and HID devices).";
+        description = "Enable USB autosuspend on battery (excluding HID devices).";
       };
 
       dirtyWritebackCentisecs = lib.mkOption {
@@ -215,6 +311,25 @@ in
         default = false;
         description = "Stop LACT GPU daemon on battery to prevent dGPU polling.";
       };
+
+      bluetoothAutosuspend = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable Bluetooth USB autosuspend on battery (may cause audio crackling). Disabled on AC.";
+      };
+
+      displayMode = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "2560x1600@60.000";
+        description = "Display mode to set on battery (e.g. lower refresh rate). Requires displayOutput and displayUser.";
+      };
+
+      enableVrr = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable variable refresh rate on battery (panel can drop to lower Hz when idle).";
+      };
     };
 
     onAC = {
@@ -235,6 +350,26 @@ in
         default = 500;
         description = "vm.dirty_writeback_centisecs on AC (5s, kernel default).";
       };
+
+      displayMode = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "2560x1600@165.000";
+        description = "Display mode to set on AC (e.g. restore high refresh rate). Requires displayOutput and displayUser.";
+      };
+    };
+
+    displayOutput = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "eDP-2";
+      description = "Wayland output name for display mode switching.";
+    };
+
+    displayUser = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Username to run niri display commands as.";
     };
 
     noctaliaUser = lib.mkOption {
