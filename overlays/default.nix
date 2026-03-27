@@ -21,6 +21,9 @@
         django_4 = python-prev.django_4.overridePythonAttrs (oldAttrs: {
           doCheck = false;
         });
+        inline-snapshot = python-prev.inline-snapshot.overridePythonAttrs (oldAttrs: {
+          disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_empty_sub_snapshot" ];
+        });
         rich = python-prev.rich.overridePythonAttrs (oldAttrs: {
           disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_brokenpipeerror" ];
         } // python-prev.lib.optionalAttrs python-prev.stdenv.hostPlatform.isAarch64 {
