@@ -93,7 +93,7 @@ in {
             primarySSHKey = "~/.ssh/id_personal.pub";
             autoBrightness = {
               enable = true;
-              alsDevicePath = "/sys/bus/iio/devices/iio:device0";
+              alsDevicePath = "/sys/bus/iio/devices";
               backlightPath = "/sys/class/backlight/amdgpu_bl2";
               outputName = "eDP-2";
             };
@@ -448,6 +448,9 @@ in {
 
               # Enable runtime power management for discrete GPU when idle
               ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x1002", ATTR{device}=="0x7480", ATTR{power/control}="auto"
+
+              # Grant video group access to IIO ambient light sensor for wluma
+              SUBSYSTEM=="iio", KERNEL=="iio:device*", ATTR{name}=="als", MODE="0660", GROUP="video"
             '';
           };
 
