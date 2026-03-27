@@ -77,6 +77,26 @@
   };
   modules.ollama.enable = true;
 
+  modules.powerManagement = {
+    enable = true;
+    onBattery = {
+      ppdProfile = "power-saver";
+      scxArgs = [ ];
+      wifiPowerSave = true;
+      pciRuntimePM = true;
+      usbAutosuspend = true;
+      dirtyWritebackCentisecs = 6000;
+      noctaliaPerformanceMode = true;
+      throttleFossilize = true;
+    };
+    onAC = {
+      ppdProfile = "balanced";
+      scxArgs = [ "--performance" ];
+      dirtyWritebackCentisecs = 500;
+    };
+    noctaliaUser = "ali";
+  };
+
   modules.desktop = {
     enable = true;
 
