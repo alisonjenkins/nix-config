@@ -209,7 +209,7 @@ in {
             powershell
             sbctl
             slack
-            wallpapers
+            # wallpapers # TODO: re-enable after wallpapers relocated from LFS
           ];
         };
 

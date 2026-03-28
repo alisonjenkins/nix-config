@@ -22,7 +22,10 @@ in
 
     wallpaper = mkOption {
       type = types.path;
-      default = ../../home/wallpapers/5120x1440/Static/sakura.jpg;
+      default = pkgs.fetchurl {
+        url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
+        hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
+      };
       description = "Wallpaper image path for stylix theming.";
     };
 
@@ -545,7 +548,7 @@ in
     };
 
     environment = {
-      pathsToLink = [ "/share/wallpapers" ];
+      # pathsToLink = [ "/share/wallpapers" ]; # TODO: re-enable after wallpapers relocated from LFS
       systemPackages = with pkgs; [
         # unstable.winboat
         birdtray
@@ -578,7 +581,7 @@ in
         unstable.opencode
         unstable.teamtype
         unzip
-        wallpapers
+        # wallpapers # TODO: re-enable after wallpapers relocated from LFS
         wleave
         zoom-us
 

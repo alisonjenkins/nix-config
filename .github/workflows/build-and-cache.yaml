@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
       - uses: wimpysworld/nothing-but-nix@main
         with:
           hatchet-protocol: 'rampage'
@@ -156,7 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -441,7 +441,7 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
-            git lfs pull || true
+            # git lfs pull || true # disabled: LFS budget exceeded, wallpapers relocated
 
             any_failed=false
             for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
@@ -540,7 +540,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -790,7 +790,7 @@ jobs:
               git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
               cd ~/nix-config
             fi
-            git lfs pull || true
+            # git lfs pull || true # disabled: LFS budget exceeded, wallpapers relocated
 
             any_failed=false
             for cfg in dev-vm; do
