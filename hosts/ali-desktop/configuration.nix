@@ -427,6 +427,9 @@
       extraRules = ''
         # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend)
         ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", ATTR{idProduct}=="3106", ATTR{power/control}="on"
+
+        # Allow kernel to suspend the unused Raphael iGPU (saves ~14W at idle)
+        ACTION=="add", KERNEL=="0000:1a:00.0", SUBSYSTEM=="pci", ATTR{power/control}="auto"
       '';
     };
 
