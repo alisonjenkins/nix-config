@@ -26,7 +26,7 @@
         dontUnpack = true;
         installPhase = ''
           cp "${pkgs.signal-desktop}/share/applications/signal.desktop" signal.desktop
-          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --enable-gpu --enable-features=PipeWireCamera#' signal.desktop
+          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --enable-gpu --ignore-gpu-blocklist --ozone-platform-hint=auto --enable-features=VaapiVideoDecoder,VaapiVideoEncoder,PipeWireCamera,WebRTCPipeWireCapturer#' signal.desktop
           mkdir -p "$out/share/applications"
           cp signal.desktop "$out/share/applications/signal.desktop"
         '';
@@ -39,6 +39,7 @@
       ".config/autostart/keybase.desktop".source = "${pkgs.keybase-gui}/share/applications/keybase.desktop";
       ".config/autostart/obsidian.desktop".source = "${pkgs.obsidian}/share/applications/obsidian.desktop";
       ".config/autostart/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
+      ".local/share/applications/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
       ".config/autostart/steam.desktop".source = "${pkgs.steam}/share/applications/steam.desktop";
       ".config/autostart/vesktop.desktop".source = "${pkgs.vesktop}/share/applications/vesktop.desktop";
       ".config/autostart/zapzap.desktop".source = "${pkgs.zapzap}/share/applications/com.rtosta.zapzap.desktop";
