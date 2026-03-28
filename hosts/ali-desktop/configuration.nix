@@ -344,7 +344,7 @@
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "2880%";
 
   powerManagement = {
-    cpuFreqGovernor = "performance";
+    cpuFreqGovernor = "powersave";
   };
 
   programs = {
