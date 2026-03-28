@@ -155,6 +155,9 @@
 
       # Allow PCI bridge window reallocation when devices appear after initial scan
       "pci=realloc"
+
+      # Enable deepest PCIe link power states for idle devices (NVMe, USB, NIC)
+      "pcie_aspm.policy=powersupersave"
     ];
 
     loader = {
