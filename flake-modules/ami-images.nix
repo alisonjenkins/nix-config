@@ -115,7 +115,9 @@ let
     };
 
     environment.systemPackages = with pkgs; [
+      cloud-utils.guest  # growpart for expanding partitions at boot
       curl
+      e2fsprogs          # resize2fs for expanding ext4 filesystems
       git
       git-lfs
       htop

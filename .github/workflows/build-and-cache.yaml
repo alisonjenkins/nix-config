@@ -244,15 +244,16 @@ jobs:
           # User-data: grow partition, inject niks3 token and SSH public key
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
-          # Grow root partition (partition 2; partition 1 is EFI) to fill the EBS volume
-          # Handle both xvda and nvme naming; growpart may not exist on NixOS AMIs
+          # Grow root filesystem (partition 2; partition 1 is EFI) to fill the EBS volume
+          # NixOS boot.growPartition + systemd-growfs should handle this, but may
+          # race with read-only mount — this is a belt-and-suspenders fallback.
           ROOT_PART=""
           if [ -b /dev/nvme0n1p2 ]; then ROOT_PART=/dev/nvme0n1p2; DISK=/dev/nvme0n1; PARTNUM=2;
           elif [ -b /dev/xvda2 ];    then ROOT_PART=/dev/xvda2;    DISK=/dev/xvda;    PARTNUM=2;
           fi
           if [ -n "$ROOT_PART" ]; then
             growpart "$DISK" "$PARTNUM" 2>/dev/null || true
-            resize2fs "$ROOT_PART" || xfs_growfs / || true
+            resize2fs "$ROOT_PART" 2>&1 || xfs_growfs / 2>&1 || true
           fi
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chown builder:users /etc/niks3-token
@@ -378,9 +379,16 @@ jobs:
             ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
             if [ "$ROOT_FREE" -lt 50 ]; then
               echo "::error::Root filesystem has only ${ROOT_FREE}G free — growpart may have failed"
-              echo "Attempting manual growpart on partition 2 (root)..."
-              sudo growpart /dev/nvme0n1 2 2>/dev/null || sudo growpart /dev/xvda 2 2>/dev/null || true
-              sudo resize2fs /dev/nvme0n1p2 2>/dev/null || sudo resize2fs /dev/xvda2 2>/dev/null || sudo xfs_growfs / || true
+              echo "=== Filesystem type ==="
+              sudo blkid /dev/nvme0n1p2 2>/dev/null || sudo blkid /dev/xvda2 2>/dev/null || true
+              echo "=== systemd-growfs status ==="
+              sudo systemctl status systemd-growfs-root.service 2>&1 || true
+              echo "=== cloud-init growpart log ==="
+              sudo grep -i 'growpart\|resizefs\|resize2fs\|growfs' /var/log/cloud-init.log 2>/dev/null | tail -20 || true
+              echo "=== Attempting manual resize on partition 2 (root) ==="
+              sudo growpart /dev/nvme0n1 2 || sudo growpart /dev/xvda 2 || echo "growpart failed (may already be full size)"
+              echo "--- resize2fs attempt ---"
+              sudo resize2fs /dev/nvme0n1p2 || sudo resize2fs /dev/xvda2 || echo "resize2fs failed"
               df -h /
               ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
               if [ "$ROOT_FREE" -lt 50 ]; then
