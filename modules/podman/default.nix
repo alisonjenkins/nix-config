@@ -30,6 +30,18 @@ in
       description = "Enable NVIDIA Container Toolkit (CDI) support.";
     };
 
+    enableQemuBinfmt = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable QEMU binfmt_misc emulation for cross-architecture container builds (e.g. building arm64 Docker images on x86_64).";
+    };
+
+    binfmtEmulatedSystems = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "aarch64-linux" ];
+      description = "List of systems to emulate via QEMU binfmt_misc.";
+    };
+
     defaultNetwork = lib.mkOption {
       type = lib.types.enum [ "netavark" "cni" ];
       default = "netavark";
@@ -76,6 +88,11 @@ in
     };
 
     hardware.nvidia-container-toolkit.enable = cfg.enableNvidia;
+
+    boot.binfmt = lib.mkIf cfg.enableQemuBinfmt {
+      emulatedSystems = cfg.binfmtEmulatedSystems;
+      preferStaticEmulators = true;
+    };
 
     environment.systemPackages = with pkgs; [
       podman-compose

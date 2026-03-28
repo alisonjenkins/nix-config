@@ -134,12 +134,6 @@ in
           "sch_dualpi2"
         ];
 
-        binfmt = {
-          emulatedSystems = [
-            "aarch64-linux"
-          ];
-        };
-
         initrd = {
           verbose = false;
 
