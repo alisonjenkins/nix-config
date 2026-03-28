@@ -244,10 +244,16 @@ jobs:
           # User-data: grow partition, inject niks3 token and SSH public key
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
-          # Grow root partition to fill the EBS volume (cloud-init growpart
-          # may not have run yet when this executes)
-          growpart /dev/xvda 1 || true
-          resize2fs /dev/xvda1 || xfs_growfs / || true
+          # Grow root partition (partition 2; partition 1 is EFI) to fill the EBS volume
+          # Handle both xvda and nvme naming; growpart may not exist on NixOS AMIs
+          ROOT_PART=""
+          if [ -b /dev/nvme0n1p2 ]; then ROOT_PART=/dev/nvme0n1p2; DISK=/dev/nvme0n1; PARTNUM=2;
+          elif [ -b /dev/xvda2 ];    then ROOT_PART=/dev/xvda2;    DISK=/dev/xvda;    PARTNUM=2;
+          fi
+          if [ -n "$ROOT_PART" ]; then
+            growpart "$DISK" "$PARTNUM" 2>/dev/null || true
+            resize2fs "$ROOT_PART" || xfs_growfs / || true
+          fi
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chown builder:users /etc/niks3-token
           chmod 600 /etc/niks3-token
@@ -372,9 +378,9 @@ jobs:
             ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
             if [ "$ROOT_FREE" -lt 50 ]; then
               echo "::error::Root filesystem has only ${ROOT_FREE}G free — growpart may have failed"
-              echo "Attempting manual growpart..."
-              sudo growpart /dev/xvda 1 || sudo growpart /dev/nvme0n1 1 || true
-              sudo resize2fs /dev/xvda1 || sudo resize2fs /dev/nvme0n1p1 || sudo xfs_growfs / || true
+              echo "Attempting manual growpart on partition 2 (root)..."
+              sudo growpart /dev/nvme0n1 2 2>/dev/null || sudo growpart /dev/xvda 2 2>/dev/null || true
+              sudo resize2fs /dev/nvme0n1p2 2>/dev/null || sudo resize2fs /dev/xvda2 2>/dev/null || sudo xfs_growfs / || true
               df -h /
               ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
               if [ "$ROOT_FREE" -lt 50 ]; then
