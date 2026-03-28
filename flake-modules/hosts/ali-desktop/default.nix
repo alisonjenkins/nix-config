@@ -54,6 +54,11 @@ in {
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
           imports = [ self.homeModules.home-linux ];
+          custom.niri.extraOutputs = ''
+            output "DP-2" {
+                variable-refresh-rate
+            }
+          '';
         };
         home-manager.extraSpecialArgs =
           specialArgs
