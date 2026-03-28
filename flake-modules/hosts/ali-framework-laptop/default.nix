@@ -329,7 +329,7 @@ in {
             fuzzel
             gnome-keyring
             inputs.framework-inputmodule-rs-flake.packages.${pkgs.stdenv.hostPlatform.system}.inputmodule-control
-            lact
+            unstable.lact
             ldacbt
             obsidian
             qmk
@@ -499,7 +499,7 @@ in {
               wantedBy = [ "multi-user.target" ];
               serviceConfig = {
                 ExecStartPre = "${pkgs.coreutils}/bin/rm -f /run/lactd.sock";
-                ExecStart = "${pkgs.lact}/bin/lact daemon";
+                ExecStart = "${pkgs.unstable.lact}/bin/lact daemon";
               };
               enable = true;
             };

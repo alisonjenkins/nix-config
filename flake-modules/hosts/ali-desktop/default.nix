@@ -245,7 +245,7 @@ in {
             i2pd
             inkscape
             innoextract
-            lact
+            unstable.lact
             libaacs
             lsscsi
             master.yt-dlp
@@ -498,6 +498,7 @@ in {
 
           lact = {
             enable = true;
+            package = pkgs.unstable.lact;
 
             settings = {
               config_version = 5;
