@@ -26,21 +26,19 @@
       http-connections = 128;
       max-substitution-jobs = 128;
       download-buffer-size = 134217728; # 128 MiB
-      narinfo-cache-negative-ttl = 0;
+      # Cache "not found" responses for 1h to avoid re-querying caches
+      narinfo-cache-negative-ttl = 3600;
+      connect-timeout = 5;
+      stalled-download-timeout = 10;
+      fallback = true;
       extra-substituters = [
         "https://cache.nixcache.org"
         "https://nix-community.cachix.org"
-        "https://nix-gaming.cachix.org"
-        "https://rust-overlay.cachix.org"
-        "https://attic.xuyh0120.win/lantian"
         "https://cache.garnix.io"
       ];
       extra-trusted-public-keys = [
         "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
-        "rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk="
-        "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
       ];
     };
