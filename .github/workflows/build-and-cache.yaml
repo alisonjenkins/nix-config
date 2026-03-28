@@ -244,18 +244,19 @@ jobs:
           # User-data: grow partition, inject niks3 token and SSH public key
           cat > /tmp/user-data.sh <<'USERDATA'
           #!/bin/sh
-          # Grow root filesystem (partition 2; partition 1 is EFI) to fill the EBS volume
-          # growpart updates the on-disk partition table but the kernel may not
-          # see the new size — poke sysfs to force a re-read before resize2fs.
-          ROOT_PART=""
-          if [ -b /dev/nvme0n1p2 ]; then ROOT_PART=/dev/nvme0n1p2; DISK=/dev/nvme0n1; PARTNAME=nvme0n1p2; PARTNUM=2;
-          elif [ -b /dev/xvda2 ];    then ROOT_PART=/dev/xvda2;    DISK=/dev/xvda;    PARTNAME=xvda2;     PARTNUM=2;
-          fi
+          # Grow root filesystem to fill the EBS volume.
+          # Detect root partition dynamically via findmnt/lsblk.
+          ROOT_PART=$(findmnt -no SOURCE /)
           if [ -n "$ROOT_PART" ]; then
-            growpart "$DISK" "$PARTNUM" 2>/dev/null || true
-            # Force kernel to re-read partition size from on-disk table
-            echo 1 > "/sys/class/block/${PARTNAME}/resize" 2>/dev/null || partx -u "$DISK" 2>/dev/null || true
-            resize2fs "$ROOT_PART" 2>&1 || xfs_growfs / 2>&1 || true
+            PARTNAME=$(basename "$ROOT_PART")
+            DISK="/dev/$(lsblk -no PKNAME "$ROOT_PART" | head -1)"
+            PARTNUM=$(cat "/sys/class/block/${PARTNAME}/partition" 2>/dev/null || echo "")
+            if [ -n "$PARTNUM" ] && [ -b "$DISK" ]; then
+              growpart "$DISK" "$PARTNUM" 2>/dev/null || true
+              # Force kernel to re-read partition size from on-disk table
+              echo 1 > "/sys/class/block/${PARTNAME}/resize" 2>/dev/null || partx -u "$DISK" 2>/dev/null || true
+              resize2fs "$ROOT_PART" 2>&1 || xfs_growfs / 2>&1 || true
+            fi
           fi
           echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
           chown builder:users /etc/niks3-token
@@ -381,22 +382,25 @@ jobs:
             ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
             if [ "$ROOT_FREE" -lt 50 ]; then
               echo "::error::Root filesystem has only ${ROOT_FREE}G free — growpart may have failed"
-              echo "=== Filesystem type ==="
-              sudo blkid /dev/nvme0n1p2 2>/dev/null || sudo blkid /dev/xvda2 2>/dev/null || true
+              ROOT_PART=$(findmnt -no SOURCE /)
+              PARTNAME=$(basename "$ROOT_PART")
+              DISK="/dev/$(lsblk -no PKNAME "$ROOT_PART" | head -1)"
+              PARTNUM=$(cat "/sys/class/block/${PARTNAME}/partition" 2>/dev/null || echo "")
+              echo "=== Detected root: $ROOT_PART (disk=$DISK partnum=$PARTNUM) ==="
+              sudo blkid "$ROOT_PART" || true
               echo "=== systemd-growfs status ==="
               sudo systemctl status systemd-growfs-root.service 2>&1 || true
               echo "=== cloud-init growpart log ==="
               sudo grep -i 'growpart\|resizefs\|resize2fs\|growfs' /var/log/cloud-init.log 2>/dev/null | tail -20 || true
-              echo "=== Attempting manual resize on partition 2 (root) ==="
-              sudo growpart /dev/nvme0n1 2 || sudo growpart /dev/xvda 2 || echo "growpart: partition already full size"
+              echo "=== Attempting manual resize ==="
+              sudo growpart "$DISK" "$PARTNUM" || echo "growpart: partition already full size"
               echo "--- forcing kernel partition re-read ---"
-              echo 1 | sudo tee /sys/class/block/nvme0n1p2/resize 2>/dev/null || \
-                echo 1 | sudo tee /sys/class/block/xvda2/resize 2>/dev/null || \
-                sudo partx -u /dev/nvme0n1 2>/dev/null || sudo partx -u /dev/xvda 2>/dev/null || true
+              echo 1 | sudo tee "/sys/class/block/${PARTNAME}/resize" 2>/dev/null || \
+                sudo partx -u "$DISK" 2>/dev/null || true
               echo "--- kernel partition size after re-read ---"
-              lsblk /dev/nvme0n1p2 2>/dev/null || lsblk /dev/xvda2 2>/dev/null || true
+              lsblk "$ROOT_PART"
               echo "--- resize2fs attempt ---"
-              sudo resize2fs /dev/nvme0n1p2 || sudo resize2fs /dev/xvda2 || echo "resize2fs failed"
+              sudo resize2fs "$ROOT_PART" || echo "resize2fs failed"
               df -h /
               ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
               if [ "$ROOT_FREE" -lt 50 ]; then
