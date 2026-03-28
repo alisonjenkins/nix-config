@@ -501,7 +501,7 @@ in {
             package = pkgs.unstable.lact;
 
             settings = {
-              config_version = 5;
+              version = 5;
               apply_settings_timer = 5;
 
               daemon = {
