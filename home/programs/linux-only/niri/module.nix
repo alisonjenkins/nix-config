@@ -28,6 +28,12 @@ in {
       default = "";
       description = "Additional spawn-at-startup lines.";
     };
+
+    extraOutputs = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Additional KDL output blocks prepended before the main config.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -40,6 +46,8 @@ in {
           hide-when-typing
           hide-after-inactive-ms 3000
       }
+
+      ${cfg.extraOutputs}
 
       hotkey-overlay {
           skip-at-startup
