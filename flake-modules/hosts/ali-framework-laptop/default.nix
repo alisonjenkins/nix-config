@@ -79,6 +79,13 @@ in {
               };
             }
           ];
+
+          programs.wluma = {
+            enable = true;
+            alsDevicePath = "/sys/bus/iio/devices";
+            backlightPath = "/sys/class/backlight/amdgpu_bl2";
+            outputName = "eDP-2";
+          };
         };
         home-manager.extraSpecialArgs =
           specialArgs
@@ -91,12 +98,6 @@ in {
             github_clone_ssh_host_personal = "github.com";
             github_clone_ssh_host_work = "github.com";
             primarySSHKey = "~/.ssh/id_personal.pub";
-            autoBrightness = {
-              enable = true;
-              alsDevicePath = "/sys/bus/iio/devices";
-              backlightPath = "/sys/class/backlight/amdgpu_bl2";
-              outputName = "eDP-2";
-            };
           };
       }
 
@@ -129,6 +130,7 @@ in {
         modules.locale.enable = true;
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
+        modules.podman.enableQemuBinfmt = true;
         modules.rocm.enable = true;
         modules.vr = {
           enable = true;
