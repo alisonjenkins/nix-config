@@ -398,6 +398,20 @@ in {
           cpuFreqGovernor = "performance";
         };
 
+        # Set PPD to balanced on boot — desktop is always on AC, no reason for power-saver.
+        # cpuFreqGovernor is overridden by PPD when active, but kept as fallback.
+        systemd.services.ppd-set-balanced = {
+          description = "Set power-profiles-daemon to balanced profile";
+          after = [ "power-profiles-daemon.service" ];
+          requires = [ "power-profiles-daemon.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced";
+          };
+        };
+
         programs = {
           java = {
             enable = true;
