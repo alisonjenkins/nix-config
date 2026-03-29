@@ -150,7 +150,8 @@ jobs:
 
   # Heavy x86_64 desktop/laptop builds — run on EC2 spot instances
   build-desktops:
-    runs-on: ubuntu-latest
+    runs-on: aws-nix-builder-amd64
+    timeout-minutes: 1440
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
@@ -200,10 +201,22 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_BUILDER_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+        run: |
+          # Fetch initial OIDC token
+          curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | jq -r '.value' > /tmp/gh-oidc-token
+
+          # Configure AWS CLI profile with OIDC-based automatic credential renewal
+          mkdir -p ~/.aws
+          printf '[profile builder]\nrole_arn = %s\nweb_identity_token_file = /tmp/gh-oidc-token\nrole_session_name = gha-nix-builder\n' \
+            "${{ secrets.AWS_BUILDER_ROLE_ARN }}" > ~/.aws/config
+
+          echo "AWS_PROFILE=builder" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}" >> "$GITHUB_ENV"
+
+          # Verify credentials work
+          aws sts get-caller-identity
 
       - name: Find latest builder AMI
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -372,15 +385,20 @@ jobs:
         if: always()
         run: |
           if [ -n "${INSTANCE_ID:-}" ]; then
+            # Refresh OIDC token for fresh credentials before terminating
+            curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+              | jq -r '.value' > /tmp/gh-oidc-token
             echo "Terminating instance $INSTANCE_ID..."
             aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
             echo "Terminate request sent"
           fi
-          rm -f /tmp/builder_key /tmp/user-data.sh
+          rm -f /tmp/builder_key /tmp/user-data.sh /tmp/gh-oidc-token
 
   # aarch64-linux + aarch64-darwin builds — run on EC2 Graviton spot instances
   build-arm64:
-    runs-on: ubuntu-latest
+    runs-on: aws-nix-builder-arm64
+    timeout-minutes: 1440
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
@@ -435,10 +453,22 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_BUILDER_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+        run: |
+          # Fetch initial OIDC token
+          curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | jq -r '.value' > /tmp/gh-oidc-token
+
+          # Configure AWS CLI profile with OIDC-based automatic credential renewal
+          mkdir -p ~/.aws
+          printf '[profile builder]\nrole_arn = %s\nweb_identity_token_file = /tmp/gh-oidc-token\nrole_session_name = gha-nix-builder\n' \
+            "${{ secrets.AWS_BUILDER_ROLE_ARN }}" > ~/.aws/config
+
+          echo "AWS_PROFILE=builder" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}" >> "$GITHUB_ENV"
+
+          # Verify credentials work
+          aws sts get-caller-identity
 
       - name: Find latest ARM builder AMI
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -595,8 +625,12 @@ jobs:
         if: always()
         run: |
           if [ -n "${INSTANCE_ID:-}" ]; then
+            # Refresh OIDC token for fresh credentials before terminating
+            curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+              | jq -r '.value' > /tmp/gh-oidc-token
             echo "Terminating instance $INSTANCE_ID..."
             aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
             echo "Terminate request sent"
           fi
-          rm -f /tmp/builder_key /tmp/user-data.sh
+          rm -f /tmp/builder_key /tmp/user-data.sh /tmp/gh-oidc-token
