@@ -12,8 +12,8 @@ in
     enable = true;
     package =
       if pkgs.stdenv.isDarwin
-      then pkgs.unstable.claude-code-bin
-      else pkgs.unstable.claude-code;
+      then pkgs.master.claude-code-bin
+      else pkgs.master.claude-code;
 
     settings = {
       alwaysThinkingEnabled = true;
