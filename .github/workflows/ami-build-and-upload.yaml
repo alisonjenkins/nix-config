@@ -307,53 +307,24 @@ jobs:
 
           # User-data smoke test script — cloud-init runs this via scripts-user module,
           # output goes to serial console which we retrieve via get-console-output
-          USERDATA=$(cat <<'SMOKE'
-#!/bin/bash
-set -x
-echo "===SMOKE_TEST_START==="
-
-FAILURES=0
-fail() { echo "FAIL: $1"; FAILURES=$((FAILURES + 1)); }
-pass() { echo "PASS: $1"; }
-
-# Check systemd reached multi-user.target
-systemctl is-active multi-user.target && pass "multi-user.target active" || fail "multi-user.target not active"
-
-# Check no failed units
-FAILED_UNITS=$(systemctl --failed --no-legend --no-pager | wc -l)
-[ "$FAILED_UNITS" -eq 0 ] && pass "no failed systemd units" || {
-  fail "$FAILED_UNITS failed systemd units"
-  systemctl --failed --no-pager
-}
-
-# Check cloud-init completed
-cloud-init status --wait --long 2>/dev/null && pass "cloud-init completed" || fail "cloud-init did not complete"
-
-# Check key packages from modules/aws
-for cmd in curl jq vim htop; do
-  command -v $cmd >/dev/null 2>&1 && pass "$cmd present" || fail "$cmd missing"
-done
-
-# Check networking
-ip addr show | grep -q 'inet ' && pass "has IPv4 address" || fail "no IPv4 address"
-
-# Check nix daemon
-systemctl is-active nix-daemon.socket && pass "nix-daemon running" || fail "nix-daemon not running"
-
-# Check timesyncd (Amazon Time Sync)
-systemctl is-active systemd-timesyncd.service && pass "timesyncd running" || fail "timesyncd not running"
-
-if [ "$FAILURES" -eq 0 ]; then
-  echo "===SMOKE_TEST_PASSED==="
-else
-  echo "===SMOKE_TEST_FAILED ($FAILURES failures)==="
-fi
-echo "===SMOKE_TEST_END==="
-SMOKE
-          )
-
-          # Write user-data to file for aws cli
-          echo "$USERDATA" > /tmp/smoke-test-userdata.sh
+          cat > /tmp/smoke-test-userdata.sh <<'SMOKE_EOF'
+          #!/bin/bash
+          set -x
+          echo "===SMOKE_TEST_START==="
+          FAILURES=0
+          fail() { echo "FAIL: $1"; FAILURES=$((FAILURES + 1)); }
+          pass() { echo "PASS: $1"; }
+          systemctl is-active multi-user.target && pass "multi-user.target active" || fail "multi-user.target not active"
+          FAILED_UNITS=$(systemctl --failed --no-legend --no-pager | wc -l)
+          [ "$FAILED_UNITS" -eq 0 ] && pass "no failed systemd units" || { fail "$FAILED_UNITS failed systemd units"; systemctl --failed --no-pager; }
+          cloud-init status --wait --long 2>/dev/null && pass "cloud-init completed" || fail "cloud-init did not complete"
+          for cmd in curl jq vim htop; do command -v $cmd >/dev/null 2>&1 && pass "$cmd present" || fail "$cmd missing"; done
+          ip addr show | grep -q 'inet ' && pass "has IPv4 address" || fail "no IPv4 address"
+          systemctl is-active nix-daemon.socket && pass "nix-daemon running" || fail "nix-daemon not running"
+          systemctl is-active systemd-timesyncd.service && pass "timesyncd running" || fail "timesyncd not running"
+          if [ "$FAILURES" -eq 0 ]; then echo "===SMOKE_TEST_PASSED==="; else echo "===SMOKE_TEST_FAILED ($FAILURES failures)==="; fi
+          echo "===SMOKE_TEST_END==="
+          SMOKE_EOF
 
           # Launch test instance in default VPC with no key pair or instance profile
           INSTANCE_ID=$(aws ec2 run-instances \
