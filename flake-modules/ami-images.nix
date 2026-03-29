@@ -89,7 +89,8 @@ let
     };
 
     # Enable live kernel patching (kpatch/livepatch) for patching without reboot
-    boot.kernelPatches = [{
+    # LIVEPATCH is only supported on x86_64 in mainline Linux
+    boot.kernelPatches = lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [{
       name = "livepatch";
       patch = null;
       structuredExtraConfig = with lib.kernel; {
@@ -108,10 +109,11 @@ let
     environment.systemPackages = with pkgs; [
       awscli2
       btrfs-progs
-      (callPackage (self + "/pkgs/kpatch") {})
       k3s
       nftables
       xfsprogs
+    ] ++ lib.optionals stdenv.hostPlatform.isx86_64 [
+      (callPackage (self + "/pkgs/kpatch") {})
     ];
 
     # NixOS-native k3s agent bootstrap service.

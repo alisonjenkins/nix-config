@@ -5,8 +5,9 @@ in
 {
   # NixOS VM tests for AMI configurations.
   # Run with: nix build .#checks.x86_64-linux.karpenter-node-ami
+  #       or: nix build .#checks.aarch64-linux.karpenter-node-ami
   perSystem = { system, pkgs, ... }:
-    lib.optionalAttrs (system == "x86_64-linux") {
+    lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
       checks.karpenter-node-ami = pkgs.testers.runNixOSTest {
         name = "karpenter-node-ami";
 
@@ -24,7 +25,8 @@ in
             firewall.enable = lib.mkForce false;
           };
 
-          boot.kernelPatches = [{
+          # LIVEPATCH is only supported on x86_64 in mainline Linux
+          boot.kernelPatches = lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [{
             name = "livepatch";
             patch = null;
             structuredExtraConfig = with lib.kernel; {
@@ -44,9 +46,10 @@ in
             curl
             jq
             k3s
-            kpatch
             nftables
             xfsprogs
+          ] ++ lib.optionals stdenv.hostPlatform.isx86_64 [
+            kpatch
           ];
 
           systemd.services.k3s-agent-bootstrap = {
@@ -322,16 +325,22 @@ in
               machine.succeed("test -d /lib/modules/$(uname -r)/build || "
                               "test -d /run/current-system/kernel-modules/lib/modules/$(uname -r)")
 
-          with subtest("livepatch: kernel live patching is available"):
-              # Verify CONFIG_LIVEPATCH is enabled and the interface exists
-              machine.succeed("test -d /sys/kernel/livepatch")
-              # Verify livepatch is reported in kernel config
-              machine.succeed("zgrep -q 'CONFIG_LIVEPATCH=y' /proc/config.gz")
+          with subtest("livepatch: kernel live patching is available (x86_64 only)"):
+              # LIVEPATCH is only supported on x86_64 in mainline Linux
+              arch = machine.succeed("uname -m").strip()
+              if arch == "x86_64":
+                  machine.succeed("test -d /sys/kernel/livepatch")
+                  machine.succeed("zgrep -q 'CONFIG_LIVEPATCH=y' /proc/config.gz")
+              else:
+                  machine.log(f"Skipping livepatch check on {arch}")
 
-          with subtest("kpatch: runtime utility is available"):
-              machine.succeed("kpatch version")
-              # List should work (empty on fresh boot)
-              machine.succeed("kpatch list")
+          with subtest("kpatch: runtime utility is available (x86_64 only)"):
+              arch = machine.succeed("uname -m").strip()
+              if arch == "x86_64":
+                  machine.succeed("kpatch version")
+                  machine.succeed("kpatch list")
+              else:
+                  machine.log(f"Skipping kpatch check on {arch}")
 
           # --- k3s agent configuration ---
           # Verify the bootstrap service passes the correct flags to the k3s agent.
