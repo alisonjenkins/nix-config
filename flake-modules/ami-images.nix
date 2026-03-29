@@ -108,7 +108,7 @@ let
     environment.systemPackages = with pkgs; [
       awscli2
       btrfs-progs
-      kpatch
+      (callPackage (self + "/pkgs/kpatch") {})
       k3s
       nftables
       xfsprogs
