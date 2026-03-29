@@ -245,32 +245,9 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         id: ec2
         run: |
-          # User-data: grow partition, inject niks3 token and SSH public key
-          cat > /tmp/user-data.sh <<'USERDATA'
-          #!/bin/sh
-          # Grow root filesystem to fill the EBS volume.
-          # Detect root partition dynamically via findmnt/lsblk.
-          ROOT_PART=$(findmnt -no SOURCE /)
-          if [ -n "$ROOT_PART" ]; then
-            PARTNAME=$(basename "$ROOT_PART")
-            DISK="/dev/$(lsblk -no PKNAME "$ROOT_PART" | head -1)"
-            PARTNUM=$(cat "/sys/class/block/${PARTNAME}/partition" 2>/dev/null || echo "")
-            if [ -n "$PARTNUM" ] && [ -b "$DISK" ]; then
-              growpart "$DISK" "$PARTNUM" 2>/dev/null || true
-              # Force kernel to re-read partition size from on-disk table
-              echo 1 > "/sys/class/block/${PARTNAME}/resize" 2>/dev/null || partx -u "$DISK" 2>/dev/null || true
-              resize2fs "$ROOT_PART" 2>&1 || xfs_growfs / 2>&1 || true
-            fi
-          fi
-          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
-          chown builder:users /etc/niks3-token
-          chmod 600 /etc/niks3-token
-          mkdir -p /home/builder/.ssh
-          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
-          chmod 700 /home/builder/.ssh
-          chmod 600 /home/builder/.ssh/authorized_keys
-          chown -R builder:users /home/builder/.ssh
-          USERDATA
+          sed -e 's|__NIKS3_TOKEN__|${{ secrets.NIKS3_TOKEN }}|' \
+              -e 's|__SSH_PUBKEY__|${{ steps.ssh.outputs.pubkey }}|' \
+              .github/scripts/builder-user-data.sh.tpl > /tmp/user-data.sh
 
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
@@ -375,178 +352,21 @@ jobs:
         env:
           SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          # Verify disk was grown and show diagnostics
-          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'DIAG'
-            echo "=== Disk layout ==="
-            lsblk
-            echo "=== Filesystem usage ==="
-            df -h /
-            echo "=== Partition table ==="
-            sudo fdisk -l /dev/xvda 2>/dev/null || sudo fdisk -l /dev/nvme0n1 2>/dev/null || true
-            ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
-            if [ "$ROOT_FREE" -lt 50 ]; then
-              echo "::error::Root filesystem has only ${ROOT_FREE}G free — growpart may have failed"
-              ROOT_PART=$(findmnt -no SOURCE /)
-              PARTNAME=$(basename "$ROOT_PART")
-              DISK="/dev/$(lsblk -no PKNAME "$ROOT_PART" | head -1)"
-              PARTNUM=$(cat "/sys/class/block/${PARTNAME}/partition" 2>/dev/null || echo "")
-              echo "=== Detected root: $ROOT_PART (disk=$DISK partnum=$PARTNUM) ==="
-              sudo blkid "$ROOT_PART" || true
-              echo "=== systemd-growfs status ==="
-              sudo systemctl status systemd-growfs-root.service 2>&1 || true
-              echo "=== cloud-init growpart log ==="
-              sudo grep -i 'growpart\|resizefs\|resize2fs\|growfs' /var/log/cloud-init.log 2>/dev/null | tail -20 || true
-              echo "=== Attempting manual resize ==="
-              sudo growpart "$DISK" "$PARTNUM" || echo "growpart: partition already full size"
-              echo "--- forcing kernel partition re-read ---"
-              echo 1 | sudo tee "/sys/class/block/${PARTNAME}/resize" 2>/dev/null || \
-                sudo partx -u "$DISK" 2>/dev/null || true
-              echo "--- kernel partition size after re-read ---"
-              lsblk "$ROOT_PART"
-              echo "--- resize2fs attempt ---"
-              sudo resize2fs "$ROOT_PART" || echo "resize2fs failed"
-              df -h /
-              ROOT_FREE=$(df / --output=avail -B1G | tail -1 | tr -d ' ')
-              if [ "$ROOT_FREE" -lt 50 ]; then
-                echo "::error::Disk still too small after manual growpart (${ROOT_FREE}G free)"
-                exit 1
-              fi
-            fi
-            echo "Disk OK: ${ROOT_FREE}G free"
-          DIAG
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash < .github/scripts/verify-disk.sh
 
-          # Upload and start build in detached session so it survives SSH drops
+          scp $SSH_OPTS -i /tmp/builder_key .github/scripts/ec2-build.sh builder@"$BUILDER_IP":/tmp/ec2-build.sh
           ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'SETUP'
-            cat > /tmp/build-desktops.sh <<'SCRIPT'
-            #!/bin/bash
-            set -uo pipefail
-
-            # Add swap to prevent OOM killing sshd during heavy builds
-            if [ ! -f /var/tmp/swapfile ]; then
-              sudo fallocate -l 16G /var/tmp/swapfile
-              sudo chmod 600 /var/tmp/swapfile
-              sudo mkswap /var/tmp/swapfile
-              sudo swapon /var/tmp/swapfile
-              echo "Swap enabled: $(swapon --show)"
-            fi
-
-            NIKS3_TOKEN=$(cat /etc/niks3-token)
-            QUEUE=/tmp/niks3-queue
-            touch "$QUEUE"
-
-            # Background drainer: watches queue and pushes paths as they appear
-            (
-              BATCH=0
-              while true; do
-                if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
-                  touch "$QUEUE"
-                  PATHS=$(wc -l < /tmp/niks3-processing)
-                  BATCH=$((BATCH + 1))
-                  echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
-                  if cat /tmp/niks3-processing | xargs -r niks3 push \
-                    --server-url https://api.nixcache.org \
-                    --max-concurrent-uploads 10 \
-                    --auth-token "$NIKS3_TOKEN" 2>&1; then
-                    echo "[drainer] Batch $BATCH: done"
-                  else
-                    echo "[drainer] Batch $BATCH: push failed (exit $?), will retry remaining paths later"
-                  fi
-                  rm -f /tmp/niks3-processing
-                fi
-                sleep 5
-              done
-            ) &
-            DRAINER_PID=$!
-            echo "$DRAINER_PID" > /tmp/drainer.pid
-
-            sudo mkdir -p /var/tmp/nix-build
-            sudo chown builder:users /var/tmp/nix-build
-            export TMPDIR=/var/tmp/nix-build
-
-            if [ -d ~/nix-config ]; then
-              cd ~/nix-config
-              git fetch origin main
-              git reset --hard origin/main
-            else
-              git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
-              cd ~/nix-config
-            fi
-            # git lfs pull || true # disabled: LFS budget exceeded, wallpapers relocated
-
-            any_failed=false
-            for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
-              echo "=== Building $cfg ==="
-              if nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
-                2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
-                echo "=== $cfg complete ==="
-              else
-                echo "::warning::$cfg build failed"
-                any_failed=true
-              fi
-            done
-
-            # Stop drainer and do final push of any remaining paths
-            kill $DRAINER_PID 2>/dev/null || true
-            wait $DRAINER_PID 2>/dev/null || true
-
-            cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
-            if [ -s /tmp/niks3-final ]; then
-              FINAL_PATHS=$(wc -l < /tmp/niks3-final)
-              echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
-              cat /tmp/niks3-final | xargs -r niks3 push \
-                --server-url https://api.nixcache.org \
-                --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" 2>&1 || echo "[final push] Failed (exit $?)"
-              echo "[final push] Done"
-            else
-              echo "[final push] No remaining paths to push"
-            fi
-
-            if [ "$any_failed" = true ]; then
-              echo 1 > /tmp/build-exit
-            else
-              echo 0 > /tmp/build-exit
-            fi
-          SCRIPT
-            chmod +x /tmp/build-desktops.sh
-            nohup /tmp/build-desktops.sh > /tmp/build.log 2>&1 &
+            chmod +x /tmp/ec2-build.sh
+            nohup /tmp/ec2-build.sh \
+              ".#nixosConfigurations.ali-desktop.config.system.build.toplevel" \
+              ".#nixosConfigurations.ali-framework-laptop.config.system.build.toplevel" \
+              ".#nixosConfigurations.ali-work-laptop.config.system.build.toplevel" \
+              > /tmp/build.log 2>&1 &
             echo $! > /tmp/build.pid
             echo "Build started with PID $(cat /tmp/build.pid)"
           SETUP
 
-          # Poll for completion — survives temporary SSH drops
-          echo "Build running in background on $BUILDER_IP, polling for completion..."
-          CONSECUTIVE_FAILURES=0
-          while true; do
-            sleep 30
-            # Check if process is still running
-            if ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-              "kill -0 \$(cat /tmp/build.pid) 2>/dev/null" 2>/dev/null; then
-              CONSECUTIVE_FAILURES=0
-              # Show recent build output
-              ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "tail -5 /tmp/build.log" 2>/dev/null || true
-            else
-              # Process ended or SSH failed — try to get exit code
-              EXIT_CODE=$(ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "cat /tmp/build-exit 2>/dev/null || echo 255" 2>/dev/null) || {
-                CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
-                if [ $CONSECUTIVE_FAILURES -ge 6 ]; then
-                  echo "::error::Lost connection to builder instance after 6 retries (possible spot interruption or OOM)"
-                  exit 1
-                fi
-                echo "SSH failed (attempt $CONSECUTIVE_FAILURES/6), retrying in 30s..."
-                continue
-              }
-
-              # Print final log output
-              echo "=== Build finished (exit code: $EXIT_CODE) ==="
-              ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "tail -100 /tmp/build.log" 2>/dev/null || true
-              exit "${EXIT_CODE:-1}"
-            fi
-          done
+          .github/scripts/poll-build.sh "$BUILDER_IP"
 
       - name: Terminate builder instance
         if: always()
@@ -659,17 +479,9 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         id: ec2
         run: |
-          cat > /tmp/user-data.sh <<'USERDATA'
-          #!/bin/sh
-          echo '${{ secrets.NIKS3_TOKEN }}' > /etc/niks3-token
-          chown builder:users /etc/niks3-token
-          chmod 600 /etc/niks3-token
-          mkdir -p /home/builder/.ssh
-          echo '${{ steps.ssh.outputs.pubkey }}' >> /home/builder/.ssh/authorized_keys
-          chmod 700 /home/builder/.ssh
-          chmod 600 /home/builder/.ssh/authorized_keys
-          chown -R builder:users /home/builder/.ssh
-          USERDATA
+          sed -e 's|__NIKS3_TOKEN__|${{ secrets.NIKS3_TOKEN }}|' \
+              -e 's|__SSH_PUBKEY__|${{ steps.ssh.outputs.pubkey }}|' \
+              .github/scripts/builder-user-data.sh.tpl > /tmp/user-data.sh
 
           USER_DATA_B64=$(base64 -w0 /tmp/user-data.sh)
           IFS=',' read -ra SUBNETS <<< "${{ secrets.AWS_BUILDER_SUBNET_IDS }}"
@@ -764,144 +576,20 @@ jobs:
         env:
           SSH_OPTS: -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes
         run: |
-          # Upload and start build in detached session so it survives SSH drops
+          ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash < .github/scripts/verify-disk.sh
+
+          scp $SSH_OPTS -i /tmp/builder_key .github/scripts/ec2-build.sh builder@"$BUILDER_IP":/tmp/ec2-build.sh
           ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" bash <<'SETUP'
-            cat > /tmp/build-arm64.sh <<'SCRIPT'
-            #!/bin/bash
-            set -uo pipefail
-
-            # Add swap to prevent OOM killing sshd during heavy builds
-            if [ ! -f /var/tmp/swapfile ]; then
-              sudo fallocate -l 16G /var/tmp/swapfile
-              sudo chmod 600 /var/tmp/swapfile
-              sudo mkswap /var/tmp/swapfile
-              sudo swapon /var/tmp/swapfile
-              echo "Swap enabled: $(swapon --show)"
-            fi
-
-            NIKS3_TOKEN=$(cat /etc/niks3-token)
-            QUEUE=/tmp/niks3-queue
-            touch "$QUEUE"
-
-            # Background drainer: watches queue and pushes paths as they appear
-            (
-              BATCH=0
-              while true; do
-                if [ -s "$QUEUE" ] && mv "$QUEUE" /tmp/niks3-processing 2>/dev/null; then
-                  touch "$QUEUE"
-                  PATHS=$(wc -l < /tmp/niks3-processing)
-                  BATCH=$((BATCH + 1))
-                  echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
-                  if cat /tmp/niks3-processing | xargs -r niks3 push \
-                    --server-url https://api.nixcache.org \
-                    --max-concurrent-uploads 10 \
-                    --auth-token "$NIKS3_TOKEN" 2>&1; then
-                    echo "[drainer] Batch $BATCH: done"
-                  else
-                    echo "[drainer] Batch $BATCH: push failed (exit $?), will retry remaining paths later"
-                  fi
-                  rm -f /tmp/niks3-processing
-                fi
-                sleep 5
-              done
-            ) &
-            DRAINER_PID=$!
-            echo "$DRAINER_PID" > /tmp/drainer.pid
-
-            sudo mkdir -p /var/tmp/nix-build
-            sudo chown builder:users /var/tmp/nix-build
-            export TMPDIR=/var/tmp/nix-build
-
-            if [ -d ~/nix-config ]; then
-              cd ~/nix-config
-              git fetch origin main
-              git reset --hard origin/main
-            else
-              git clone https://github.com/alisonjenkins/nix-config.git ~/nix-config
-              cd ~/nix-config
-            fi
-            # git lfs pull || true # disabled: LFS budget exceeded, wallpapers relocated
-
-            any_failed=false
-            for cfg in dev-vm; do
-              echo "=== Building $cfg ==="
-              if nix build -L --keep-going --print-out-paths --no-link \
-                ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
-                2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
-                echo "=== $cfg complete ==="
-              else
-                echo "::warning::$cfg build failed"
-                any_failed=true
-              fi
-            done
-
-            echo "=== Cross-compiling Alisons-MacBook-Pro (aarch64-darwin) ==="
-            if nix build -L --keep-going --print-out-paths --no-link \
+            chmod +x /tmp/ec2-build.sh
+            nohup /tmp/ec2-build.sh \
+              ".#nixosConfigurations.dev-vm.config.system.build.toplevel" \
               ".#darwinConfigurations.Alisons-MacBook-Pro.system" \
-              2> >(tee -a /tmp/nix-build-stderr.log >&2) >> "$QUEUE"; then
-              echo "=== Darwin cross-compile complete ==="
-            else
-              echo "::warning::Darwin cross-compile failed"
-              any_failed=true
-            fi
-
-            # Stop drainer and do final push of any remaining paths
-            kill $DRAINER_PID 2>/dev/null || true
-            wait $DRAINER_PID 2>/dev/null || true
-
-            cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || true
-            if [ -s /tmp/niks3-final ]; then
-              FINAL_PATHS=$(wc -l < /tmp/niks3-final)
-              echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
-              cat /tmp/niks3-final | xargs -r niks3 push \
-                --server-url https://api.nixcache.org \
-                --max-concurrent-uploads 10 \
-                --auth-token "$NIKS3_TOKEN" 2>&1 || echo "[final push] Failed (exit $?)"
-              echo "[final push] Done"
-            else
-              echo "[final push] No remaining paths to push"
-            fi
-
-            if [ "$any_failed" = true ]; then
-              echo 1 > /tmp/build-exit
-            else
-              echo 0 > /tmp/build-exit
-            fi
-          SCRIPT
-            chmod +x /tmp/build-arm64.sh
-            nohup /tmp/build-arm64.sh > /tmp/build.log 2>&1 &
+              > /tmp/build.log 2>&1 &
             echo $! > /tmp/build.pid
             echo "Build started with PID $(cat /tmp/build.pid)"
           SETUP
 
-          # Poll for completion — survives temporary SSH drops
-          echo "Build running in background on $BUILDER_IP, polling for completion..."
-          CONSECUTIVE_FAILURES=0
-          while true; do
-            sleep 30
-            if ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-              "kill -0 \$(cat /tmp/build.pid) 2>/dev/null" 2>/dev/null; then
-              CONSECUTIVE_FAILURES=0
-              ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "tail -5 /tmp/build.log" 2>/dev/null || true
-            else
-              EXIT_CODE=$(ssh $SSH_OPTS -o ConnectTimeout=10 -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "cat /tmp/build-exit 2>/dev/null || echo 255" 2>/dev/null) || {
-                CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
-                if [ $CONSECUTIVE_FAILURES -ge 6 ]; then
-                  echo "::error::Lost connection to builder instance after 6 retries (possible spot interruption or OOM)"
-                  exit 1
-                fi
-                echo "SSH failed (attempt $CONSECUTIVE_FAILURES/6), retrying in 30s..."
-                continue
-              }
-
-              echo "=== Build finished (exit code: $EXIT_CODE) ==="
-              ssh $SSH_OPTS -i /tmp/builder_key builder@"$BUILDER_IP" \
-                "tail -100 /tmp/build.log" 2>/dev/null || true
-              exit "${EXIT_CODE:-1}"
-            fi
-          done
+          .github/scripts/poll-build.sh "$BUILDER_IP"
 
       - name: Terminate builder instance
         if: always()
