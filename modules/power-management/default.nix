@@ -55,13 +55,24 @@ let
       ''}
 
       ${lib.optionalString cfg.onBattery.usbAutosuspend ''
+        is_hid_device() {
+          local dev="$1"
+          # Check device-level class
+          if [ -f "$dev/bDeviceClass" ] && grep -q "03" "$dev/bDeviceClass" 2>/dev/null; then return 0; fi
+          # Check interface-level class (composite devices report HID only on interfaces)
+          if grep -rq "03" "$dev"/*/bInterfaceClass 2>/dev/null; then return 0; fi
+          return 1
+        }
         usb_autosuspend() {
           for dev in /sys/bus/usb/devices/*/; do
             [ -f "$dev/power/control" ] || continue
-            if [ -f "$dev/bDeviceClass" ] && grep -q "03" "$dev/bDeviceClass" 2>/dev/null; then continue; fi
+            if is_hid_device "$dev"; then
+              # Force HID devices to stay on — prevent missed key release events
+              echo on > "$dev/power/control" 2>/dev/null
+              continue
+            fi
             echo auto > "$dev/power/control" 2>/dev/null
           done
-          echo 2 > /sys/module/usbcore/parameters/autosuspend
         }
         run_step "usb-autosuspend" usb_autosuspend
       ''}
