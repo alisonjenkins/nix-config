@@ -598,16 +598,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1774559029,
-        "narHash": "sha256-deix7yg3j6AhjMPnFDCmWB3f83LsajaaULP5HH2j34k=",
-        "owner": "nix-community",
+        "lastModified": 1774768698,
+        "narHash": "sha256-wCr2JR8VQY8njd1dMYm96oj8W7cMvrp+fBLC6UyBdaU=",
+        "owner": "alisonjenkins",
         "repo": "home-manager",
-        "rev": "a0bb0d11514f92b639514220114ac8063c72d0a3",
+        "rev": "be57550fa4b42578e35e8cb3eecc8ab9d0235e98",
         "type": "github"
       },
       "original": {
-        "owner": "nix-community",
-        "ref": "release-25.11",
+        "owner": "alisonjenkins",
+        "ref": "fix/claude-code-mcp-config-wrapper",
         "repo": "home-manager",
         "type": "github"
       }
@@ -1064,11 +1064,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1774753073,
-        "narHash": "sha256-miIpieisOHNa4zn10XLszSH/roqnakTGntfCAkr6eV8=",
+        "lastModified": 1774764848,
+        "narHash": "sha256-wvwQW/7KmNHlnh6YsnBUtiUAchE0CZZjvTlJEf9XBXk=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "5f6239483bad5e0428493ce24405b51ca6367219",
+        "rev": "25ac73a57c4dfdc2fb839dfca6ca07619e6769f4",
         "type": "github"
       },
       "original": {
