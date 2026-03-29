@@ -67,6 +67,135 @@ let
     };
   };
 
+  # Shared AWS Karpenter node config — pre-bakes k3s agent + awscli2 for fast boot.
+  # At boot, cloud-init writes /etc/karpenter-node.conf with runtime values
+  # (master endpoint, SSM token path, region). A NixOS systemd service reads
+  # this config and starts the k3s agent — no downloads, no curl-to-shell.
+  awsKarpenterNodeConfig = { modulesPath, lib, pkgs, ... }: {
+    imports = [
+      (modulesPath + "/virtualisation/amazon-image.nix")
+    ];
+
+    modules.aws = {
+      enable = true;
+      # enableSSH defaults to false — SSM agent (from amazon-image.nix) is primary access.
+      # Worker IAM role has ssm:UpdateInstanceInformation + Session Manager permissions.
+    };
+    modules.locale.enable = true;
+
+    networking = {
+      hostName = "aws-karpenter-node";
+      firewall.enable = lib.mkForce false; # Cilium eBPF is the firewall
+    };
+
+    # Enable live kernel patching (kpatch/livepatch) for patching without reboot
+    boot.kernelPatches = [{
+      name = "livepatch";
+      patch = null;
+      structuredExtraConfig = with lib.kernel; {
+        LIVEPATCH = yes;
+      };
+    }];
+
+    boot.kernel.sysctl = {
+      # Cilium Envoy: allow binding to privileged ports (80/443) for Gateway API hostNetwork mode
+      "net.ipv4.ip_unprivileged_port_start" = 0;
+      # LiveKit SFU (WebRTC media): increase UDP buffer sizes
+      "net.core.rmem_max" = 5000000;
+      "net.core.wmem_max" = 5000000;
+    };
+
+    environment.systemPackages = with pkgs; [
+      awscli2
+      btrfs-progs
+      kpatch
+      k3s
+      nftables
+      xfsprogs
+    ];
+
+    # NixOS-native k3s agent bootstrap service.
+    # Reads config from /etc/karpenter-node.conf (written by cloud-init userData).
+    # Avoids the upstream get.k3s.io install script which creates its own systemd units
+    # outside NixOS's declarative control.
+    systemd.services.k3s-agent-bootstrap = {
+      description = "K3s Agent Bootstrap (Karpenter node)";
+      after = [ "network-online.target" "cloud-init.service" ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Type = "exec";
+        Restart = "on-failure";
+        RestartSec = "10s";
+      };
+
+      script = ''
+        set -euo pipefail
+
+        # Wait for cloud-init to write the config file
+        for i in $(seq 1 60); do
+          [ -f /etc/karpenter-node.conf ] && break
+          sleep 2
+        done
+        source /etc/karpenter-node.conf
+
+        # IMDSv2 metadata
+        IMDS_TOKEN=$(${pkgs.curl}/bin/curl -s -X PUT \
+          "http://169.254.169.254/latest/api/token" \
+          -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+        INSTANCE_ID=$(${pkgs.curl}/bin/curl -s \
+          -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+          http://169.254.169.254/latest/meta-data/instance-id)
+        AVAILABILITY_ZONE=$(${pkgs.curl}/bin/curl -s \
+          -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+          http://169.254.169.254/latest/meta-data/placement/availability-zone)
+        PRIVATE_IP=$(${pkgs.curl}/bin/curl -s \
+          -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+          http://169.254.169.254/latest/meta-data/local-ipv4)
+
+        # Fetch K3s token from SSM
+        K3S_TOKEN=$(${pkgs.awscli2}/bin/aws ssm get-parameter \
+          --name "$SSM_TOKEN_PATH" \
+          --with-decryption --query 'Parameter.Value' --output text \
+          --region "$AWS_REGION")
+
+        # Wait for master reachability
+        for i in $(seq 1 60); do
+          ${pkgs.curl}/bin/curl -sk --max-time 3 \
+            "https://$SERVER_ENDPOINT:6443/ping" && break
+          sleep 2
+        done
+
+        # Run k3s agent (blocks — systemd manages the lifecycle)
+        exec ${pkgs.k3s}/bin/k3s agent \
+          --server "https://$SERVER_ENDPOINT:6443" \
+          --token "$K3S_TOKEN" \
+          --node-ip "$PRIVATE_IP" \
+          --kubelet-arg="provider-id=aws:///$AVAILABILITY_ZONE/$INSTANCE_ID" \
+          --node-label="topology.kubernetes.io/region=$AWS_REGION" \
+          --node-label="karpenter.sh/registered=true" \
+          --kubelet-arg="kube-api-qps=100" \
+          --kubelet-arg="kube-api-burst=200" \
+          --kubelet-arg="event-qps=50" \
+          --kubelet-arg="event-burst=100"
+      '';
+    };
+
+    security.sudo.wheelNeedsPassword = lib.mkForce false;
+
+    system.stateVersion = "25.11";
+
+    users.users.ali = {
+      isNormalUser = true;
+      description = "Alison Jenkins";
+      extraGroups = [ "wheel" ];
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
+      ];
+    };
+  };
+
   # Shared AWS nix builder config
   awsNixBuilderConfig = { modulesPath, lib, pkgs, inputs, ... }: {
     imports = [
@@ -192,6 +321,28 @@ let
       extraModules = [{
         networking.hostName = lib.mkForce "aws-k8s-node-arm";
       }];
+    };
+
+    aws-karpenter-node-amd64 = {
+      system = "x86_64-linux";
+      hostModules = [
+        self.nixosModules.aws
+        self.nixosModules.locale
+        awsKarpenterNodeConfig
+      ];
+      extraModules = [{
+        networking.hostName = lib.mkForce "aws-karpenter-node-amd64";
+      }];
+    };
+
+    aws-karpenter-node-arm = {
+      system = "aarch64-linux";
+      hostModules = [
+        self.nixosModules.aws
+        self.nixosModules.locale
+        awsKarpenterNodeConfig
+      ];
+      extraModules = [];
     };
 
     aws-nix-builder = {

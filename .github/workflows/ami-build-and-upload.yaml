@@ -45,9 +45,11 @@ on:
           - all
           - aws-base-server
           - aws-k8s-node
+          - aws-karpenter-node-amd64
           - aws-nix-builder
           - aws-base-server-arm
           - aws-k8s-node-arm
+          - aws-karpenter-node-arm
           - aws-nix-builder-arm
       region:
         description: 'AWS region'
@@ -78,7 +80,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.ami_name }}" != "all" ]]; then
             echo "matrix=[\"${{ inputs.ami_name }}\"]" >> "$GITHUB_OUTPUT"
           else
-            echo 'matrix=["aws-base-server","aws-k8s-node","aws-nix-builder","aws-base-server-arm","aws-k8s-node-arm","aws-nix-builder-arm"]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=["aws-base-server","aws-k8s-node","aws-karpenter-node-amd64","aws-nix-builder","aws-base-server-arm","aws-k8s-node-arm","aws-karpenter-node-arm","aws-nix-builder-arm"]' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set parameters
