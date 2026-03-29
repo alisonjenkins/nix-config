@@ -26,6 +26,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/workflows/ami-build-and-upload.yaml'
       - 'flake-modules/ami-images.nix'
       - 'hosts/aws-*/**'
       - 'modules/aws/**'
