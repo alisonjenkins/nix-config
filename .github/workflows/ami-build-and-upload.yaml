@@ -139,6 +139,16 @@ jobs:
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
+      - name: Enable unprivileged user namespaces for systemd-repart
+        run: |
+          # systemd-repart uses `unshare --map-root-user` to build filesystem images.
+          # Ubuntu 24.04 restricts this via AppArmor by default.
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+          unshare --map-root-user echo "User namespace test: OK"
+
       - name: Check if AMI build is needed
         id: dry-run
         run: |
@@ -486,6 +496,16 @@ jobs:
             fallback = true
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+
+      - name: Enable unprivileged user namespaces for systemd-repart
+        run: |
+          # systemd-repart uses `unshare --map-root-user` to build filesystem images.
+          # Ubuntu 24.04 restricts this via AppArmor by default.
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+          unshare --map-root-user echo "User namespace test: OK"
 
       - name: Check if AMI build is needed
         id: dry-run
