@@ -177,10 +177,14 @@ jobs:
       - name: Build AMI
         id: build
         if: steps.dry-run.outputs.needs_build == 'true'
-        env:
-          TMPDIR: /nix/tmp
         run: |
+          # Use /nix/tmp for build scratch space — root filesystem is nearly full
+          # after nothing-but-nix rampage. Must configure the nix daemon, not just
+          # the env var, since sandboxed builds use the daemon's build-dir.
           sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
+          sudo mkdir -p /etc/nix
+          echo "build-dir = /nix/tmp" | sudo tee -a /etc/nix/nix.conf
+          sudo systemctl restart nix-daemon || true
           NIX_SYSTEM="${{ steps.dry-run.outputs.nix_system }}"
           echo "Building AMI for ${{ matrix.hostname }}..."
           OUT=$(nix build ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
