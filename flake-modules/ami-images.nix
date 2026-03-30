@@ -116,57 +116,11 @@ let
       (callPackage (self + "/pkgs/kpatch") {})
     ];
 
-    # Pre-pull container images on boot to speed up daemonset scheduling.
-    # Fetches the image list from the home-cluster repo so it stays in sync
-    # with deployed chart versions. Runs after k3s agent starts containerd
-    # so images are pulled in parallel with node registration.
-    systemd.services.k3s-prepull-images = {
-      description = "Pre-pull container images for k3s daemonsets";
-      after = [ "k3s-agent-bootstrap.service" ];
-      wants = [ "k3s-agent-bootstrap.service" ];
-      wantedBy = [ "multi-user.target" ];
-
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        TimeoutStartSec = "10min";
-      };
-
-      script = ''
-        set -euo pipefail
-
-        IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
-
-        # Wait for containerd socket
-        for i in $(seq 1 60); do
-          [ -S /run/k3s/containerd/containerd.sock ] && break
-          sleep 2
-        done
-
-        if [ ! -S /run/k3s/containerd/containerd.sock ]; then
-          echo "containerd socket not found, skipping pre-pull"
-          exit 0
-        fi
-
-        export CONTAINERD_ADDRESS=/run/k3s/containerd/containerd.sock
-
-        IMAGES=$(${pkgs.curl}/bin/curl -sfL "$IMAGE_LIST_URL" \
-          | ${pkgs.gnugrep}/bin/grep -v '^\s*#' \
-          | ${pkgs.gnugrep}/bin/grep -v '^\s*$') || {
-          echo "Failed to fetch image list, skipping pre-pull"
-          exit 0
-        }
-
-        for img in $IMAGES; do
-          echo "Pre-pulling: $img"
-          ${pkgs.k3s}/bin/k3s ctr images pull "$img" &
-        done
-
-        echo "Waiting for all pulls to complete..."
-        wait
-        echo "Pre-pull complete"
-      '';
-    };
+    # Container images are pre-pulled into the AMI at build time by the
+    # ami-build-and-upload workflow. It downloads images listed in
+    # home-cluster/clusters/aws-k3s/karpenter-node-prepull-images.txt
+    # as tar files into /var/lib/rancher/k3s/agent/images/, which k3s
+    # automatically imports into containerd on first start.
 
     # NixOS-native k3s agent bootstrap service.
     # Reads config from /etc/karpenter-node.conf (written by cloud-init userData).

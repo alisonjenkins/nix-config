@@ -182,6 +182,61 @@ jobs:
           echo "boot_mode=$BOOT_MODE" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
 
+      - name: Pre-pull container images into AMI
+        if: contains(matrix.hostname, 'karpenter')
+        run: |
+          VHD="${{ steps.build.outputs.vhd }}"
+          ARCH="${{ steps.build.outputs.arch }}"
+
+          # Copy VHD to a writable location (nix store is read-only)
+          WORK_VHD="/tmp/ami-work.vhd"
+          cp "$VHD" "$WORK_VHD"
+
+          # Find and mount the root partition
+          LOOP=$(sudo losetup --find --show --partscan "$WORK_VHD")
+          ROOT_PART="${LOOP}p2"
+          sudo mkdir -p /mnt/ami
+          sudo mount "$ROOT_PART" /mnt/ami
+
+          # Create the directory where k3s containerd stores images
+          CONTENT_DIR="/mnt/ami/var/lib/rancher/k3s/agent/images"
+          sudo mkdir -p "$CONTENT_DIR"
+
+          # Fetch the image list from home-cluster repo
+          IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
+          IMAGES=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
+
+          # k3s supports pre-loaded images as tar files in /var/lib/rancher/k3s/agent/images/
+          # Use skopeo to download each image and ctr to export as a tar
+          nix profile install nixpkgs#skopeo nixpkgs#umoci
+
+          for img in $IMAGES; do
+            SAFE_NAME=$(echo "$img" | tr '/:@' '_')
+            echo "Downloading: $img"
+            skopeo copy --override-arch "$ARCH" \
+              "docker://$img" "oci:/tmp/oci-$SAFE_NAME:latest" || {
+              echo "Warning: failed to download $img"
+              continue
+            }
+            # Convert OCI layout to a docker-archive tar that k3s can import
+            skopeo copy "oci:/tmp/oci-$SAFE_NAME:latest" \
+              "docker-archive:/tmp/tar-$SAFE_NAME.tar:$img" || {
+              echo "Warning: failed to convert $img"
+              continue
+            }
+            sudo cp "/tmp/tar-$SAFE_NAME.tar" "$CONTENT_DIR/"
+            rm -rf "/tmp/oci-$SAFE_NAME" "/tmp/tar-$SAFE_NAME.tar"
+            echo "  Done: $img"
+          done
+
+          echo "Pre-pulled images:"
+          sudo ls -lh "$CONTENT_DIR/"
+
+          # Replace the original VHD path so subsequent steps use the modified copy
+          sudo umount /mnt/ami
+          sudo losetup -d "$LOOP"
+          echo "PREPULL_VHD=$WORK_VHD" >> "$GITHUB_ENV"
+
       - name: Push to niks3
         run: |
           case "${{ matrix.hostname }}" in
@@ -204,7 +259,7 @@ jobs:
 
       - name: Upload VHD to S3
         run: |
-          VHD="${{ steps.build.outputs.vhd }}"
+          VHD="${PREPULL_VHD:-${{ steps.build.outputs.vhd }}}"
           S3_KEY="${{ matrix.hostname }}/${{ steps.build.outputs.timestamp }}/$(basename "$VHD")"
           echo "s3_key=$S3_KEY" >> "$GITHUB_ENV"
 
