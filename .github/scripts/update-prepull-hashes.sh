@@ -8,10 +8,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT="$REPO_ROOT/flake-modules/karpenter-prepull-images.json"
-IMAGE_LIST_FILE="clusters/aws-k3s/karpenter-node-prepull-images.txt"
+IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
 
-# Fetch via GitHub API (more reliable than raw.githubusercontent.com CDN)
-IMAGES=$(gh api "repos/alisonjenkins/home-cluster/contents/$IMAGE_LIST_FILE" --jq '.content' | base64 -d | grep -v '^\s*#' | grep -v '^\s*$')
+IMAGES=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
 
 if [ -z "$IMAGES" ]; then
   echo "::error::Failed to fetch image list from home-cluster repo"
