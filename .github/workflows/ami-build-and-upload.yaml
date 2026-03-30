@@ -111,6 +111,27 @@ jobs:
         with:
           hatchet-protocol: 'rampage'
 
+      - name: Set up QEMU binfmt for aarch64
+        id: qemu
+        run: |
+          # Register aarch64 binfmt using static QEMU from Nix (installed by
+          # nothing-but-nix), matching NixOS boot.binfmt module defaults for
+          # emulatedSystems + preferStaticEmulators:
+          #   - Magic/mask from nixos/modules/system/boot/binfmt.nix
+          #   - Flags: P (preserveArgvZero — QEMU uses argv[0] for arch detection)
+          #            F (fixBinary — kernel pre-opens interpreter at registration,
+          #               works inside nix sandbox without extra path access)
+          # Must run BEFORE cachix/install-nix-action so extra-sandbox-paths
+          # is baked into the nix daemon config from the start.
+          QEMU_USER=$(nix build nixpkgs#pkgsStatic.qemu-user --print-out-paths --no-link)
+          QEMU_BIN="$QEMU_USER/bin/qemu-aarch64"
+          echo "qemu_store_path=$QEMU_USER" >> "$GITHUB_OUTPUT"
+          echo "Using QEMU from: $QEMU_BIN"
+          sudo mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+          echo ":qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff:${QEMU_BIN}:PF" | sudo tee /proc/sys/fs/binfmt_misc/register
+          ls /proc/sys/fs/binfmt_misc/qemu-aarch64 && echo "binfmt registered" || { echo "::error::binfmt NOT registered"; exit 1; }
+          cat /proc/sys/fs/binfmt_misc/qemu-aarch64
+
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
@@ -126,28 +147,9 @@ jobs:
             stalled-download-timeout = 10
             fallback = true
             extra-platforms = aarch64-linux
+            extra-sandbox-paths = ${{ steps.qemu.outputs.qemu_store_path }}
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
-
-      - name: Set up QEMU binfmt for aarch64
-        run: |
-          # Register aarch64 binfmt using static QEMU from Nix, matching the
-          # NixOS boot.binfmt module (emulatedSystems + preferStaticEmulators):
-          #   - Magic/mask from nixos/modules/system/boot/binfmt.nix
-          #   - Flags: P (preserveArgvZero — QEMU uses argv[0] for arch detection)
-          #            F (fixBinary — kernel pre-opens interpreter at registration,
-          #               works inside nix sandbox without extra path access)
-          QEMU_USER=$(nix build nixpkgs#pkgsStatic.qemu-user --print-out-paths --no-link)
-          QEMU_BIN="$QEMU_USER/bin/qemu-aarch64"
-          echo "Using QEMU from: $QEMU_BIN"
-          sudo mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
-          echo ":qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff:${QEMU_BIN}:PF" | sudo tee /proc/sys/fs/binfmt_misc/register
-          ls /proc/sys/fs/binfmt_misc/qemu-aarch64 && echo "binfmt registered" || { echo "::error::binfmt NOT registered"; exit 1; }
-          cat /proc/sys/fs/binfmt_misc/qemu-aarch64
-
-          # Expose QEMU store path inside nix sandbox and restart daemon
-          echo "extra-sandbox-paths = ${QEMU_USER}" | sudo tee -a /etc/nix/nix.conf
-          sudo systemctl restart nix-daemon || true
 
       - name: Check if AMI build is needed
         id: dry-run
