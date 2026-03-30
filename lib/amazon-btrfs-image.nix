@@ -1,29 +1,35 @@
-# Amazon AMI image module with btrfs root filesystem.
+# Btrfs overrides for the Amazon AMI image builder.
 #
-# Drop-in replacement for nixpkgs' amazon-image.nix that uses a btrfs builder
-# instead of ext4. Imports the upstream amazon-image.nix for EC2 config
-# (boot params, cloud-init, etc.) but overrides the image builder.
+# This module is used as `image.modules.amazon` to replace the default
+# amazon-image.nix. It includes the upstream module via disabledModules +
+# re-import to avoid path deduplication issues, then overrides the builder.
 {
   config,
   lib,
   pkgs,
+  modulesPath,
   ...
 }:
 
 let
   cfg = config.amazonImage;
   amiBootMode = if config.ec2.efi then "uefi" else "legacy-bios";
+  makeBtrfsAmiImage = ./make-btrfs-ami-image.nix;
+
+  # Canonical path to amazon-image.nix — must match what images.nix uses
+  # so NixOS deduplicates correctly
+  upstreamAmazonImage = modulesPath + "/../maintainers/scripts/ec2/amazon-image.nix";
 in
 {
   imports = [
-    # Upstream amazon-image.nix for EC2 config, options, and boot params.
-    # We override system.build.amazonImage below to use btrfs.
-    (pkgs.path + "/nixos/maintainers/scripts/ec2/amazon-image.nix")
+    upstreamAmazonImage
   ];
 
   # Override the root filesystem to btrfs with compression
   fileSystems."/" = {
+    device = lib.mkForce "/dev/disk/by-label/nixos";
     fsType = lib.mkForce "btrfs";
+    autoResize = lib.mkForce true;
     options = lib.mkForce [ "compress=zstd:3" "noatime" "ssd" "discard=async" ];
   };
 
@@ -42,7 +48,7 @@ in
         }
       '';
     in
-    import ./make-btrfs-ami-image.nix {
+    import makeBtrfsAmiImage {
       inherit lib config configFile pkgs;
       inherit (cfg) contents format;
       inherit (config.image) baseName;

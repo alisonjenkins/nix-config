@@ -11,8 +11,9 @@ let
     # Use btrfs root with zstd compression for smaller AMI images
     modules.aws.rootFsType = "btrfs";
 
-    # Override the amazon image builder to use btrfs instead of ext4
-    image.modules.amazon = self + "/lib/amazon-btrfs-image.nix";
+    # Override the amazon image builder to produce btrfs images.
+    # Our module imports the upstream amazon-image.nix internally.
+    image.modules.amazon = lib.mkForce (self + "/lib/amazon-btrfs-image.nix");
   };
 
   # Shared AWS base server config (used by aws-base-server and aws-base-server-arm)
