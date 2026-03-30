@@ -16,8 +16,11 @@ IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/mai
 IMAGES_DIR_REL="var/lib/rancher/k3s/agent/images"
 
 # --- Mount VHD ---
-WORK_VHD="/tmp/ami-work.vhd"
-cp "$VHD" "$WORK_VHD"
+# Use /mnt for the working copy — /tmp is on the root filesystem which
+# is too small after nothing-but-nix allocates most of it for btrfs.
+WORK_VHD="/mnt/ami-work.vhd"
+sudo cp "$VHD" "$WORK_VHD"
+sudo chown "$(id -u):$(id -g)" "$WORK_VHD"
 
 LOOP=$(sudo losetup --find --show --partscan "$WORK_VHD")
 echo "Loop device: $LOOP"
@@ -39,6 +42,11 @@ sudo mount "$ROOT_PART" /mnt/ami
 IMAGES_DIR="/mnt/ami/$IMAGES_DIR_REL"
 sudo mkdir -p "$IMAGES_DIR"
 
+# Use /mnt for temp files (skopeo downloads) to avoid filling root FS
+export TMPDIR=/mnt/prepull-tmp
+sudo mkdir -p "$TMPDIR"
+sudo chown "$(id -u):$(id -g)" "$TMPDIR"
+
 # --- Fetch image list ---
 IMAGES=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
 IMAGE_COUNT=$(echo "$IMAGES" | wc -l)
@@ -50,8 +58,8 @@ for img in $IMAGES; do
   SAFE_NAME=$(echo "$img" | tr '/:@' '_')
   echo "Downloading: $img"
   if skopeo copy --override-arch "$ARCH" \
-    "docker://$img" "docker-archive:/tmp/tar-$SAFE_NAME.tar:$img"; then
-    sudo mv "/tmp/tar-$SAFE_NAME.tar" "$IMAGES_DIR/"
+    "docker://$img" "docker-archive:$TMPDIR/tar-$SAFE_NAME.tar:$img"; then
+    sudo mv "$TMPDIR/tar-$SAFE_NAME.tar" "$IMAGES_DIR/"
     echo "  OK: $img"
   else
     echo "::error::Failed to download: $img"
