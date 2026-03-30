@@ -20,6 +20,12 @@ in
       default = "auto";
       description = "Root volume size in GiB, or \"auto\" to fit the closure with minimal headroom. The partition auto-grows to the EBS volume size at boot.";
     };
+
+    rootFsType = lib.mkOption {
+      type = lib.types.enum [ "ext4" "btrfs" ];
+      default = "ext4";
+      description = "Root filesystem type for the AMI image. btrfs enables zstd compression for smaller images.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -62,8 +68,13 @@ in
     # reads hundreds of store paths. Safe for immutable infrastructure
     # where runtime state lives in EBS snapshots / S3 / external DBs.
     fileSystems."/" = lib.mkDefault {
-      options = [ "noatime" "lazytime" "commit=60" "data=writeback" ];
+      options = if cfg.rootFsType == "btrfs"
+        then [ "compress=zstd:3" "noatime" "ssd" "discard=async" ]
+        else [ "noatime" "lazytime" "commit=60" "data=writeback" ];
     };
+
+    # Ensure btrfs is mountable in initrd when using btrfs root
+    boot.initrd.supportedFilesystems = lib.mkIf (cfg.rootFsType == "btrfs") [ "btrfs" ];
 
     # Disable amazon-init (pre-baked AMIs don't need nixos-rebuild on boot);
     # cloud-init handles instance provisioning instead.
