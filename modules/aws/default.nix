@@ -43,7 +43,8 @@ in
       initrd = {
         systemd.enable = true;
         includeDefaultModules = false;
-        kernelModules = [ "nvme" ];
+        kernelModules = [ "nvme" ]
+          ++ lib.optionals (cfg.rootFsType == "btrfs") [ "btrfs" ];
       };
 
       kernelParams = [
