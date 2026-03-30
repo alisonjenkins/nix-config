@@ -34,6 +34,13 @@ in
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.uki.tries = 0;
 
+  # Fix growpart: the NixOS-wrapped growpart creates temp files in /tmp but
+  # the service runs early in boot when /tmp may not be properly mounted.
+  # Use /run (tmpfs, always available) as TMPDIR instead.
+  systemd.services.growpart.environment.TMPDIR = "/run";
+  systemd.services.growpart.environment.TEMP = "/run";
+  systemd.services.growpart.environment.TMP = "/run";
+
   image.repart = {
     name = imageName;
     sectorSize = 512;
