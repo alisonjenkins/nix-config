@@ -52,6 +52,53 @@ in
             kpatch
           ];
 
+          systemd.services.k3s-prepull-images = {
+            description = "Pre-pull container images for k3s daemonsets";
+            after = [ "k3s-agent-bootstrap.service" ];
+            wants = [ "k3s-agent-bootstrap.service" ];
+            wantedBy = [ "multi-user.target" ];
+
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              TimeoutStartSec = "10min";
+            };
+
+            script = ''
+              set -euo pipefail
+
+              IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
+
+              for i in $(seq 1 60); do
+                [ -S /run/k3s/containerd/containerd.sock ] && break
+                sleep 2
+              done
+
+              if [ ! -S /run/k3s/containerd/containerd.sock ]; then
+                echo "containerd socket not found, skipping pre-pull"
+                exit 0
+              fi
+
+              export CONTAINERD_ADDRESS=/run/k3s/containerd/containerd.sock
+
+              IMAGES=$(${pkgs.curl}/bin/curl -sfL "$IMAGE_LIST_URL" \
+                | ${pkgs.gnugrep}/bin/grep -v '^\s*#' \
+                | ${pkgs.gnugrep}/bin/grep -v '^\s*$') || {
+                echo "Failed to fetch image list, skipping pre-pull"
+                exit 0
+              }
+
+              for img in $IMAGES; do
+                echo "Pre-pulling: $img"
+                ${pkgs.k3s}/bin/k3s ctr images pull "$img" &
+              done
+
+              echo "Waiting for all pulls to complete..."
+              wait
+              echo "Pre-pull complete"
+            '';
+          };
+
           systemd.services.k3s-agent-bootstrap = {
             description = "K3s Agent Bootstrap (Karpenter node)";
             after = [ "network-online.target" "cloud-init.service" ];
@@ -341,6 +388,47 @@ in
                   machine.succeed("kpatch list")
               else:
                   machine.log(f"Skipping kpatch check on {arch}")
+
+          # --- Container image pre-pull service ---
+          # Verify the pre-pull service is configured to fetch the image list
+          # from the home-cluster repo and pull images via k3s ctr.
+
+          with subtest("k3s-prepull-images: service unit exists and is enabled"):
+              machine.succeed("systemctl cat k3s-prepull-images.service")
+              unit = machine.succeed("systemctl is-enabled k3s-prepull-images.service").strip()
+              assert unit == "enabled", f"k3s-prepull-images not enabled: {unit}"
+
+          with subtest("k3s-prepull-images: runs after k3s-agent-bootstrap"):
+              unit = machine.succeed(
+                  "systemctl show k3s-prepull-images.service --property=After"
+              )
+              assert "k3s-agent-bootstrap.service" in unit, \
+                  f"Missing k3s-agent-bootstrap.service dependency: {unit}"
+
+          with subtest("k3s-prepull-images: script fetches image list from home-cluster repo"):
+              script = machine.succeed(
+                  "cat /etc/systemd/system/k3s-prepull-images.service"
+              )
+              import re
+              match = re.search(r'ExecStart=(/nix/store/\S+)', script)
+              assert match, f"No ExecStart found in service unit"
+              script_content = machine.succeed(f"cat {match.group(1)}")
+              assert "raw.githubusercontent.com/alisonjenkins/home-cluster" in script_content, \
+                  "Script does not reference home-cluster image list"
+              assert "karpenter-node-prepull-images.txt" in script_content, \
+                  "Script does not reference prepull images file"
+              assert "k3s ctr images pull" in script_content, \
+                  "Script does not use k3s ctr to pull images"
+
+          with subtest("k3s-prepull-images: service is oneshot with RemainAfterExit"):
+              svc_type = machine.succeed(
+                  "systemctl show k3s-prepull-images.service --property=Type"
+              ).strip()
+              assert "oneshot" in svc_type, f"Service type is not oneshot: {svc_type}"
+              remain = machine.succeed(
+                  "systemctl show k3s-prepull-images.service --property=RemainAfterExit"
+              ).strip()
+              assert "yes" in remain, f"RemainAfterExit not set: {remain}"
 
           # --- k3s agent configuration ---
           # Verify the bootstrap service passes the correct flags to the k3s agent.
