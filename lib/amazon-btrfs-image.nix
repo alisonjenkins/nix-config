@@ -58,7 +58,7 @@ in
       inherit (cfg) contents format;
       inherit (config.image) baseName;
       inherit (config.virtualisation) diskSize;
-      memSize = 2048;
+      memSize = 8192;
 
       postVM = ''
         mkdir -p $out/nix-support

@@ -7,12 +7,14 @@ let
   # forward-compatibility with newer instance families.
   commonAmiModule = {
     ec2.efi = true;
+  };
 
-    # Use btrfs root with zstd compression for smaller AMI images
+  # btrfs override — only for x86_64 AMIs. ARM AMIs use the upstream ext4
+  # builder because the btrfs builder's VM phase (vmTools.runInLinuxVM) can't
+  # run cross-arch under QEMU TCG. Once ARM Graviton runners are bootstrapped,
+  # ARM AMIs can switch to btrfs too (built natively, no cross-compilation).
+  btrfsAmiModule = {
     modules.aws.rootFsType = "btrfs";
-
-    # Override the amazon image builder to produce btrfs images.
-    # Our module imports the upstream amazon-image.nix internally.
     image.modules.amazon = lib.mkForce (self + "/lib/amazon-btrfs-image.nix");
   };
 
@@ -413,6 +415,8 @@ let
 
       modules = cfg.hostModules ++ [
         commonAmiModule
+      ] ++ lib.optionals (cfg.system == "x86_64-linux") [
+        btrfsAmiModule
       ] ++ cfg.extraModules;
     };
 
@@ -423,7 +427,20 @@ in
 
   perSystem = { system, ... }: {
     packages = lib.mapAttrs'
-      (name: _: lib.nameValuePair "${name}-ami" amiSystems.${name}.config.system.build.images.amazon)
+      (name: _:
+        let
+          image = amiSystems.${name}.config.system.build.images.amazon;
+          # The upstream make-disk-image.nix defaults to 1024 MiB VM RAM which
+          # is too small for large closures. Increase to 8192 MiB for all AMIs
+          # (karpenter has 5+ GB closure, and TCG cross-arch emulation adds overhead).
+          finalImage = lib.overrideDerivation image (old: {
+            memSize = 8192;
+            QEMU_OPTS = builtins.replaceStrings
+              [ "-m 1024" "size=1024M" "-m 2048" "size=2048M" "-m 4096" "size=4096M" ]
+              [ "-m 8192" "size=8192M" "-m 8192" "size=8192M" "-m 8192" "size=8192M" ]
+              old.QEMU_OPTS;
+          });
+        in lib.nameValuePair "${name}-ami" finalImage)
       (lib.filterAttrs (_: cfg: cfg.system == system) amiConfigs);
   };
 }
