@@ -8,12 +8,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT="$REPO_ROOT/flake-modules/karpenter-prepull-images.json"
-IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
+IMAGE_LIST="$REPO_ROOT/flake-modules/karpenter-prepull-images.txt"
 
-IMAGES=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
+if [ ! -f "$IMAGE_LIST" ]; then
+  echo "::error::Image list not found: $IMAGE_LIST"
+  exit 1
+fi
+
+IMAGES=$(grep -v '^\s*#' "$IMAGE_LIST" | grep -v '^\s*$')
 
 if [ -z "$IMAGES" ]; then
-  echo "::error::Failed to fetch image list from home-cluster repo"
+  echo "::error::No images found in $IMAGE_LIST"
   exit 1
 fi
 

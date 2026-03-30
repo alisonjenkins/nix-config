@@ -1,0 +1,23 @@
+# Container images to pre-pull into Karpenter worker node AMIs.
+# These are the daemonset and runner images that every node needs.
+# Update this list when chart versions change.
+#
+# Used by: alisonjenkins/nix-config AMI build (awsKarpenterNodeConfig)
+# Fetch with: curl -sL https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt
+
+# Cilium CNI
+quay.io/cilium/cilium:v1.17.1
+quay.io/cilium/cilium-envoy:v1.31.5-1739264036-958bef243c6c66fcfd73ca319f2eb49fff1eb2ae
+
+# EBS CSI driver
+public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.55.0
+public.ecr.aws/csi-components/csi-node-driver-registrar:v2.15.0-eksbuild.3
+public.ecr.aws/csi-components/livenessprobe:v2.17.0-eksbuild.3
+
+# EFS CSI driver
+public.ecr.aws/efs-csi-driver/amazon/aws-efs-csi-driver:v2.3.0
+public.ecr.aws/csi-components/csi-node-driver-registrar:v2.15.0-eksbuild.4
+public.ecr.aws/csi-components/livenessprobe:v2.17.0-eksbuild.4
+
+# GitHub Actions runner (ARC)
+ghcr.io/actions/actions-runner:latest
