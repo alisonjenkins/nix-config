@@ -131,9 +131,10 @@ jobs:
 
       - name: Set up QEMU binfmt for aarch64
         run: |
-          # Install qemu-user via Nix and register binfmt — avoids apt lock
-          # race with nothing-but-nix which holds dpkg lock during rampage cleanup
-          QEMU_USER=$(nix build nixpkgs#qemu-user --print-out-paths --no-link)
+          # Install statically-linked qemu-user via Nix — avoids apt lock race
+          # with nothing-but-nix AND works inside nix sandbox (dynamic qemu-user
+          # fails because sandbox can't resolve shared libraries)
+          QEMU_USER=$(nix build nixpkgs#pkgsStatic.qemu-user --print-out-paths --no-link)
           QEMU_BIN="$QEMU_USER/bin/qemu-aarch64"
           echo "Using QEMU from: $QEMU_BIN"
           sudo mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
@@ -350,6 +351,10 @@ jobs:
           ip addr show | grep -q 'inet ' && pass "has IPv4 address" || fail "no IPv4 address"
           systemctl is-active nix-daemon.socket && pass "nix-daemon running" || fail "nix-daemon not running"
           systemctl is-active systemd-timesyncd.service && pass "timesyncd running" || fail "timesyncd not running"
+          ROOT_FS=$(findmnt -n -o FSTYPE /)
+          [ "$ROOT_FS" = "btrfs" ] && pass "root filesystem is btrfs" || fail "root filesystem is $ROOT_FS, expected btrfs"
+          ROOT_SIZE=$(df --output=size / | tail -1 | tr -d ' ')
+          [ "$ROOT_SIZE" -gt 50000000 ] && pass "root partition expanded (${ROOT_SIZE}K)" || fail "root partition not expanded (${ROOT_SIZE}K)"
           if [ "$FAILURES" -eq 0 ]; then echo "===SMOKE_TEST_PASSED==="; else echo "===SMOKE_TEST_FAILED ($FAILURES failures)==="; fi
           echo "===SMOKE_TEST_END==="
           SMOKE_EOF

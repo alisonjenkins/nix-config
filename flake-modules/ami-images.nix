@@ -421,25 +421,9 @@ in
 {
   flake.nixosConfigurations = amiSystems;
 
-  perSystem = { system, pkgs, ... }: {
+  perSystem = { system, ... }: {
     packages = lib.mapAttrs'
-      (name: cfg:
-        let
-          image = amiSystems.${name}.config.system.build.images.amazon;
-          # Karpenter nodes have a large closure (k3s + awscli2 + pre-pulled
-          # container images) that needs more than the default 1024 MiB VM
-          # RAM to build the disk image. Rebuild the derivation with more memory.
-          finalImage =
-            if lib.hasPrefix "aws-karpenter" name
-            then lib.overrideDerivation image (old: {
-              memSize = 2048;
-              QEMU_OPTS = builtins.replaceStrings
-                [ "-m 1024" "size=1024M" ]
-                [ "-m 2048" "size=2048M" ]
-                old.QEMU_OPTS;
-            })
-            else image;
-        in lib.nameValuePair "${name}-ami" finalImage)
+      (name: _: lib.nameValuePair "${name}-ami" amiSystems.${name}.config.system.build.images.amazon)
       (lib.filterAttrs (_: cfg: cfg.system == system) amiConfigs);
   };
 }
