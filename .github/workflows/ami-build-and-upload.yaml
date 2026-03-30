@@ -155,6 +155,8 @@ jobs:
           sudo chmod +x /usr/local/bin/niks3
       - name: Update pre-pull image hashes
         if: contains(matrix.hostname, 'karpenter')
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: .github/scripts/update-prepull-hashes.sh
 
       - name: Build AMI
