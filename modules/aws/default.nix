@@ -155,7 +155,9 @@ in
     # Minimal packages — awscli2 excluded to save ~400 MiB of closure;
     # install on-demand via `nix run nixpkgs#awscli2` or user profile.
     environment.systemPackages = with pkgs; [
+      cloud-utils.guest  # growpart — required by cloud-init growpart module to expand partitions
       curl
+      e2fsprogs          # resize2fs — required by cloud-init resizefs module to grow ext4 filesystems
       htop
       jq
       vim
