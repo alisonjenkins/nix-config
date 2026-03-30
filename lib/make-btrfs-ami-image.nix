@@ -198,7 +198,16 @@ let
 
       truncate -s $totalDiskSize $diskImage
     '' else ''
-      truncate -s ${toString diskSize}M $diskImage
+      # Ensure the disk is at least large enough for the btrfs image + boot partition
+      requestedSize=$(( ${toString diskSize} * mebibyte ))
+      minDiskSize=$(( btrfsImageSize + bootSize + gptSpace ))
+      minDiskSize=$(round_to_nearest $minDiskSize $mebibyte)
+      if [ $requestedSize -lt $minDiskSize ]; then
+        echo "  Requested disk size ($requestedSize bytes) too small for btrfs image, using $minDiskSize bytes"
+        truncate -s $minDiskSize $diskImage
+      else
+        truncate -s ${toString diskSize}M $diskImage
+      fi
     ''}
 
     # Partition: ESP (FAT32) + root (Linux filesystem)
