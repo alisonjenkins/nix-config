@@ -36,6 +36,11 @@ in
   # Ensure btrfs is available in initrd for root mount
   boot.initrd.supportedFilesystems = [ "btrfs" ];
 
+  # GRUB must copy kernels to the ESP (FAT32) rather than referencing
+  # them on the btrfs root. GRUB's btrfs driver doesn't support all
+  # modern btrfs features, so reading /nix/store from btrfs can fail.
+  boot.loader.grub.copyKernels = lib.mkForce true;
+
   # Override the image builder to use our btrfs builder
   system.build.amazonImage = lib.mkForce (
     let
