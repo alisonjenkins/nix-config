@@ -31,7 +31,7 @@ touch "$QUEUE"
       PATHS=$(wc -l < /tmp/niks3-processing)
       BATCH=$((BATCH + 1))
       echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
-      if cat /tmp/niks3-processing | xargs -r niks3 push \
+      if cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
         --server-url https://api.nixcache.org \
         --max-concurrent-uploads 10 \
         --auth-token "$NIKS3_TOKEN" 2>&1; then
@@ -81,7 +81,7 @@ cat "$QUEUE" /tmp/niks3-processing 2>/dev/null | sort -u > /tmp/niks3-final || t
 if [ -s /tmp/niks3-final ]; then
   FINAL_PATHS=$(wc -l < /tmp/niks3-final)
   echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
-  cat /tmp/niks3-final | xargs -r niks3 push \
+  cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
     --server-url https://api.nixcache.org \
     --max-concurrent-uploads 10 \
     --auth-token "$NIKS3_TOKEN" 2>&1 || echo "[final push] Failed (exit $?)"
