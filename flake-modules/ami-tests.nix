@@ -52,6 +52,27 @@ in
             kpatch
           ];
 
+          # Pre-pulled container images (same logic as awsKarpenterNodeConfig)
+          systemd.tmpfiles.rules =
+            let
+              prepullImages = builtins.fromJSON (builtins.readFile ./karpenter-prepull-images.json);
+              arch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
+              archImages = builtins.filter (img: img.arch == arch) prepullImages;
+              pullImage = img: pkgs.dockerTools.pullImage {
+                imageName = img.imageName;
+                imageDigest = img.imageDigest;
+                sha256 = img.hash;
+                finalImageName = img.imageName;
+                finalImageTag = img.imageTag;
+              };
+            in
+              [ "d /var/lib/rancher/k3s/agent/images 0755 root root -" ]
+              ++ map (img:
+                let tar = pullImage img;
+                    safeName = builtins.replaceStrings ["/" ":" "@"] ["_" "_" "_"] "${img.imageName}:${img.imageTag}";
+                in "L /var/lib/rancher/k3s/agent/images/${safeName}.tar - - - - ${tar}"
+              ) archImages;
+
           systemd.services.k3s-agent-bootstrap = {
             description = "K3s Agent Bootstrap (Karpenter node)";
             after = [ "network-online.target" "cloud-init.service" ];
@@ -343,13 +364,24 @@ in
                   machine.log(f"Skipping kpatch check on {arch}")
 
           # --- Container image pre-pull ---
-          # Images are pre-pulled into the AMI at build time by the CI workflow.
-          # k3s auto-imports tar files from /var/lib/rancher/k3s/agent/images/ on start.
+          # Images are pre-pulled at nix build time via dockerTools.pullImage
+          # and symlinked into /var/lib/rancher/k3s/agent/images/ via tmpfiles.
 
-          with subtest("k3s auto-import images directory exists"):
-              machine.succeed("test -d /var/lib/rancher/k3s/agent/images || "
-                              "mkdir -p /var/lib/rancher/k3s/agent/images")
+          with subtest("k3s pre-pulled images directory exists with image tars"):
               machine.succeed("test -d /var/lib/rancher/k3s/agent/images")
+              count = machine.succeed("ls -1 /var/lib/rancher/k3s/agent/images/*.tar | wc -l").strip()
+              assert int(count) > 0, f"No pre-pulled image tars found, expected at least 1, got {count}"
+              machine.log(f"Found {count} pre-pulled image tar(s)")
+
+          with subtest("k3s pre-pulled image tars are valid symlinks to nix store"):
+              tars = machine.succeed("ls -1 /var/lib/rancher/k3s/agent/images/*.tar").strip().split("\n")
+              for tar in tars:
+                  # Verify symlink points to nix store
+                  target = machine.succeed(f"readlink -f {tar}").strip()
+                  assert target.startswith("/nix/store/"), \
+                      f"{tar} does not point to nix store: {target}"
+                  # Verify the target file is non-empty
+                  machine.succeed(f"test -s {tar}")
 
           # --- k3s agent configuration ---
           # Verify the bootstrap service passes the correct flags to the k3s agent.

@@ -1,0 +1,145 @@
+[
+  {
+    "imageName": "quay.io/cilium/cilium",
+    "imageTag": "v1.17.1",
+    "arch": "amd64",
+    "imageDigest": "sha256:8969bfd9c87cbea91e40665f8ebe327268c99d844ca26d7d12165de07f702866",
+    "hash": "sha256-Q0meSuQVYwxd4HCHWtRNyid5oYo7OF0+AdyRWYrvZQ4="
+  }
+,
+  {
+    "imageName": "quay.io/cilium/cilium",
+    "imageTag": "v1.17.1",
+    "arch": "arm64",
+    "imageDigest": "sha256:8969bfd9c87cbea91e40665f8ebe327268c99d844ca26d7d12165de07f702866",
+    "hash": "sha256-z106uYGSQDPVr6qJpicEOLGsQeqht+UQmskyFcQtl0A="
+  }
+,
+  {
+    "imageName": "quay.io/cilium/cilium-envoy",
+    "imageTag": "v1.31.5-1739264036-958bef243c6c66fcfd73ca319f2eb49fff1eb2ae",
+    "arch": "amd64",
+    "imageDigest": "sha256:fc708bd36973d306412b2e50c924cd8333de67e0167802c9b48506f9d772f521",
+    "hash": "sha256-4sJ4m4/FqD6ALaEakPYNBLU1CLKAPclULHWaeB1nK/0="
+  }
+,
+  {
+    "imageName": "quay.io/cilium/cilium-envoy",
+    "imageTag": "v1.31.5-1739264036-958bef243c6c66fcfd73ca319f2eb49fff1eb2ae",
+    "arch": "arm64",
+    "imageDigest": "sha256:fc708bd36973d306412b2e50c924cd8333de67e0167802c9b48506f9d772f521",
+    "hash": "sha256-4PwVGlbP/4N2uUxC1t7/Sr70zvHtra+il4zZ6UxjHWg="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver",
+    "imageTag": "v1.55.0",
+    "arch": "amd64",
+    "imageDigest": "sha256:d31cee256baa196292da41df7218b3d8394ab7f34d6c0c7518eefc2478829186",
+    "hash": "sha256-42m8LAAvu1k69XXR/rZc3hnVxsRrOVWBbOoCl6oATyc="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver",
+    "imageTag": "v1.55.0",
+    "arch": "arm64",
+    "imageDigest": "sha256:d31cee256baa196292da41df7218b3d8394ab7f34d6c0c7518eefc2478829186",
+    "hash": "sha256-sTOrf/dwsGhutryn9VZOcKzpZ70cRwG8CRed0o8MmTU="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/csi-node-driver-registrar",
+    "imageTag": "v2.15.0-eksbuild.3",
+    "arch": "amd64",
+    "imageDigest": "sha256:f3da14588f791123c69b25dd32d9a2aac6456123a6ef747fdec033ccd67f6a1d",
+    "hash": "sha256-7X6FF6KIDBYdgR50YdksmiaLmK7rg1BDE6GBtu7yFrw="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/csi-node-driver-registrar",
+    "imageTag": "v2.15.0-eksbuild.3",
+    "arch": "arm64",
+    "imageDigest": "sha256:f3da14588f791123c69b25dd32d9a2aac6456123a6ef747fdec033ccd67f6a1d",
+    "hash": "sha256-ht9HRnhHu0jkjk/7C/+KuuVJyDZ//pF2+W+0a7uM7Xk="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/livenessprobe",
+    "imageTag": "v2.17.0-eksbuild.3",
+    "arch": "amd64",
+    "imageDigest": "sha256:fd1cc767dc7ded68c7892cdd3489937e4476075e94c90c91841b2df275267110",
+    "hash": "sha256-6FtD7uecFMBV+j3CtzO00AFVMp6jIBZ54n1viKuFXwg="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/livenessprobe",
+    "imageTag": "v2.17.0-eksbuild.3",
+    "arch": "arm64",
+    "imageDigest": "sha256:fd1cc767dc7ded68c7892cdd3489937e4476075e94c90c91841b2df275267110",
+    "hash": "sha256-w8s3FXHqOOoAZwo6U51GWp9lYiLIpFzFevlg6wrCquo="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/efs-csi-driver/amazon/aws-efs-csi-driver",
+    "imageTag": "v2.3.0",
+    "arch": "amd64",
+    "imageDigest": "sha256:f51b02de968c6cc84336b2a4c7caed6c4f97a3006b78717f160d4817828813e8",
+    "hash": "sha256-TIF1fm0dUAPo5i9LBvpINFl99zoE24pb0bBav69bTC8="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/efs-csi-driver/amazon/aws-efs-csi-driver",
+    "imageTag": "v2.3.0",
+    "arch": "arm64",
+    "imageDigest": "sha256:f51b02de968c6cc84336b2a4c7caed6c4f97a3006b78717f160d4817828813e8",
+    "hash": "sha256-1aOghXMkSqYiN5vpCQAokgrklOcRG9vnEpZAC9w9kxQ="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/csi-node-driver-registrar",
+    "imageTag": "v2.15.0-eksbuild.4",
+    "arch": "amd64",
+    "imageDigest": "sha256:ebb62cb03bb8ab6ddaa64a228b62c9deabe4357afe05a20c803a470085edd110",
+    "hash": "sha256-07664SiplLfsAvbfzsUnLeEi3L2Hg6H0lAGgDzJW16U="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/csi-node-driver-registrar",
+    "imageTag": "v2.15.0-eksbuild.4",
+    "arch": "arm64",
+    "imageDigest": "sha256:ebb62cb03bb8ab6ddaa64a228b62c9deabe4357afe05a20c803a470085edd110",
+    "hash": "sha256-d/lWN+9aooH48HHH2HSFgTDqgaIznXpxIac/tk1/chk="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/livenessprobe",
+    "imageTag": "v2.17.0-eksbuild.4",
+    "arch": "amd64",
+    "imageDigest": "sha256:a911876a5d1f30e0087aa7458af668e1df8baae459d8bb38063213e9bf450ef2",
+    "hash": "sha256-8XM0zSUkx3e8TjPd4usG8CpBwUZ+sd5LXCyDoUS6Fac="
+  }
+,
+  {
+    "imageName": "public.ecr.aws/csi-components/livenessprobe",
+    "imageTag": "v2.17.0-eksbuild.4",
+    "arch": "arm64",
+    "imageDigest": "sha256:a911876a5d1f30e0087aa7458af668e1df8baae459d8bb38063213e9bf450ef2",
+    "hash": "sha256-nRd+L+svUYDZ1tIeFthfTh7SCsdAMk90aGQjZQf+0IA="
+  }
+,
+  {
+    "imageName": "ghcr.io/actions/actions-runner",
+    "imageTag": "latest",
+    "arch": "amd64",
+    "imageDigest": "sha256:b57864c9fcda15ea4a270446aa9cfb108b819a26f6e71fc515f6caf6c27989c6",
+    "hash": "sha256-37UACSvDX762vk7lbcDLknGjGNnlb0P9/mG6vmT1OOg="
+  }
+,
+  {
+    "imageName": "ghcr.io/actions/actions-runner",
+    "imageTag": "latest",
+    "arch": "arm64",
+    "imageDigest": "sha256:b57864c9fcda15ea4a270446aa9cfb108b819a26f6e71fc515f6caf6c27989c6",
+    "hash": "sha256-fUr3QRMXvltbR3CnwSh9tmsdcRCrmfq/kKFYKieIPKQ="
+  }
+]
