@@ -215,10 +215,12 @@ jobs:
       - name: Push to niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          NIX_SYSTEM="${{ steps.dry-run.outputs.nix_system }}"
-          nix build --print-out-paths --no-link ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" | \
+          # Push the full closure (all dependencies) so subsequent dry-runs
+          # find all intermediate derivations cached and skip unchanged AMIs.
+          nix path-info --recursive "${{ steps.build.outputs.result }}" | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
+              --max-concurrent-uploads 10 \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
 
       - name: Install AWS CLI
