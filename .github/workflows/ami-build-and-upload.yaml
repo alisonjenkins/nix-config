@@ -111,26 +111,6 @@ jobs:
         with:
           hatchet-protocol: 'rampage'
 
-      - name: Set up QEMU binfmt for aarch64
-        run: |
-          # Retry apt-get with lock waiting — nothing-but-nix runs background apt
-          # that can grab the lock after our fuser check passes
-          for attempt in $(seq 1 5); do
-            sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 && {
-              echo "Attempt $attempt: dpkg lock held, waiting 10s..."
-              sleep 10
-              continue
-            }
-            if sudo apt-get update -qq && sudo apt-get install -y -qq qemu-user-static binfmt-support; then
-              break
-            fi
-            echo "Attempt $attempt: apt-get failed, retrying in 10s..."
-            sleep 10
-          done
-          # Verify registration
-          update-binfmts --display qemu-aarch64 || true
-          ls /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null && echo "binfmt registered" || echo "binfmt NOT registered"
-
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
@@ -148,6 +128,17 @@ jobs:
             extra-platforms = aarch64-linux
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+
+      - name: Set up QEMU binfmt for aarch64
+        run: |
+          # Install qemu-user via Nix and register binfmt — avoids apt lock
+          # race with nothing-but-nix which holds dpkg lock during rampage cleanup
+          QEMU_USER=$(nix build nixpkgs#qemu-user --print-out-paths --no-link)
+          QEMU_BIN="$QEMU_USER/bin/qemu-aarch64"
+          echo "Using QEMU from: $QEMU_BIN"
+          sudo mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+          echo ":qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:${QEMU_BIN}:OCF" | sudo tee /proc/sys/fs/binfmt_misc/register
+          ls /proc/sys/fs/binfmt_misc/qemu-aarch64 && echo "binfmt registered" || { echo "::error::binfmt NOT registered"; exit 1; }
 
       - name: Check if AMI build is needed
         id: dry-run

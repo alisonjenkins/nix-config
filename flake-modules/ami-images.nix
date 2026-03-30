@@ -5,7 +5,15 @@ let
 
   # Common module for all AMIs — UEFI boot for NitroTPM, Secure Boot, and
   # forward-compatibility with newer instance families.
-  commonAmiModule = { ec2.efi = true; };
+  commonAmiModule = {
+    ec2.efi = true;
+
+    # Use btrfs root with zstd compression for smaller AMI images
+    modules.aws.rootFsType = "btrfs";
+
+    # Override the amazon image builder to use btrfs instead of ext4
+    image.modules.amazon = self + "/lib/amazon-btrfs-image.nix";
+  };
 
   # Shared AWS base server config (used by aws-base-server and aws-base-server-arm)
   awsBaseServerConfig = { modulesPath, lib, ... }: {
@@ -412,9 +420,25 @@ in
 {
   flake.nixosConfigurations = amiSystems;
 
-  perSystem = { system, ... }: {
+  perSystem = { system, pkgs, ... }: {
     packages = lib.mapAttrs'
-      (name: _: lib.nameValuePair "${name}-ami" amiSystems.${name}.config.system.build.images.amazon)
+      (name: cfg:
+        let
+          image = amiSystems.${name}.config.system.build.images.amazon;
+          # Karpenter nodes have a large closure (k3s + awscli2 + pre-pulled
+          # container images) that needs more than the default 1024 MiB VM
+          # RAM to build the disk image. Rebuild the derivation with more memory.
+          finalImage =
+            if lib.hasPrefix "aws-karpenter" name
+            then lib.overrideDerivation image (old: {
+              memSize = 2048;
+              QEMU_OPTS = builtins.replaceStrings
+                [ "-m 1024" "size=1024M" ]
+                [ "-m 2048" "size=2048M" ]
+                old.QEMU_OPTS;
+            })
+            else image;
+        in lib.nameValuePair "${name}-ami" finalImage)
       (lib.filterAttrs (_: cfg: cfg.system == system) amiConfigs);
   };
 }
