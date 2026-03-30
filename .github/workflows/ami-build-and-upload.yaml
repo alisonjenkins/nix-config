@@ -195,7 +195,20 @@ jobs:
 
           # Find and mount the root partition
           LOOP=$(sudo losetup --find --show --partscan "$WORK_VHD")
-          ROOT_PART="${LOOP}p2"
+          echo "Loop device: $LOOP"
+          echo "Partitions:"
+          lsblk "$LOOP" || true
+          sudo fdisk -l "$LOOP" || true
+
+          # Find the largest partition (root) — partition layout varies by arch
+          ROOT_PART=$(lsblk -lnpo NAME,SIZE "$LOOP" | grep -v "^${LOOP} " | sort -k2 -h | tail -1 | awk '{print $1}')
+          if [ -z "$ROOT_PART" ]; then
+            echo "::error::No partitions found in VHD"
+            sudo losetup -d "$LOOP"
+            exit 1
+          fi
+          echo "Root partition: $ROOT_PART"
+
           sudo mkdir -p /mnt/ami
           sudo mount "$ROOT_PART" /mnt/ami
 
@@ -238,7 +251,7 @@ jobs:
           set -euo pipefail
           WORK_VHD="${PREPULL_VHD}"
           LOOP=$(sudo losetup --find --show --partscan "$WORK_VHD")
-          ROOT_PART="${LOOP}p2"
+          ROOT_PART=$(lsblk -lnpo NAME,SIZE "$LOOP" | grep -v "^${LOOP} " | sort -k2 -h | tail -1 | awk '{print $1}')
           sudo mkdir -p /mnt/ami
           sudo mount -o ro "$ROOT_PART" /mnt/ami
 
