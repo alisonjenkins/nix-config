@@ -1,7 +1,8 @@
 #!/bin/bash
 # Generate nix hashes for container images to pre-pull into Karpenter node AMIs.
-# Reads the image list from the home-cluster repo and runs nix-prefetch-docker
-# for each image on both amd64 and arm64 architectures.
+# Reads the image list and runs nix-prefetch-docker for the specified architecture.
+# Usage: update-prepull-hashes.sh [amd64|arm64]
+#   If no arch specified, generates for both architectures.
 # Outputs: flake-modules/karpenter-prepull-images.json
 set -euo pipefail
 
@@ -9,6 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT="$REPO_ROOT/flake-modules/karpenter-prepull-images.json"
 IMAGE_LIST="$REPO_ROOT/flake-modules/karpenter-prepull-images.txt"
+
+if [ "${1:-}" = "amd64" ] || [ "${1:-}" = "arm64" ]; then
+  ARCHES=("$1")
+else
+  ARCHES=("amd64" "arm64")
+fi
 
 if [ ! -f "$IMAGE_LIST" ]; then
   echo "::error::Image list not found: $IMAGE_LIST"
@@ -30,7 +37,7 @@ for img in $IMAGES; do
   IMAGE_NAME="${img%%:*}"
   IMAGE_TAG="${img##*:}"
 
-  for arch in amd64 arm64; do
+  for arch in "${ARCHES[@]}"; do
     echo "  Prefetching: $img ($arch)"
     PREFETCH=$(nix run nixpkgs#nix-prefetch-docker -- \
       --image-name "$IMAGE_NAME" \

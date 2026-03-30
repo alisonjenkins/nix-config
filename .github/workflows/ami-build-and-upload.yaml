@@ -149,22 +149,45 @@ jobs:
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
-      - name: Install niks3
+      - name: Check if AMI build is needed
+        id: dry-run
         run: |
-          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_x86_64.tar.gz | sudo tar xz -C /usr/local/bin niks3
-          sudo chmod +x /usr/local/bin/niks3
-      - name: Update pre-pull image hashes
-        if: contains(matrix.hostname, 'karpenter')
-        run: .github/scripts/update-prepull-hashes.sh
-
-      - name: Build AMI
-        id: build
-        run: |
-          echo "Building AMI for ${{ matrix.hostname }}..."
           case "${{ matrix.hostname }}" in
             *-arm) NIX_SYSTEM="aarch64-linux" ;;
             *)     NIX_SYSTEM="x86_64-linux" ;;
           esac
+          echo "nix_system=$NIX_SYSTEM" >> "$GITHUB_OUTPUT"
+          dry_output=$(nix build --dry-run ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" 2>&1)
+          echo "$dry_output"
+          if echo "$dry_output" | grep -q 'will be built:'; then
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+            echo "AMI for ${{ matrix.hostname }} needs building"
+          else
+            echo "needs_build=false" >> "$GITHUB_OUTPUT"
+            echo "AMI for ${{ matrix.hostname }} is fully cached — skipping"
+          fi
+
+      - name: Install niks3
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_x86_64.tar.gz | sudo tar xz -C /usr/local/bin niks3
+          sudo chmod +x /usr/local/bin/niks3
+
+      - name: Update pre-pull image hashes
+        if: steps.dry-run.outputs.needs_build == 'true' && contains(matrix.hostname, 'karpenter')
+        run: |
+          case "${{ matrix.hostname }}" in
+            *-arm) ARCH="arm64" ;;
+            *)     ARCH="amd64" ;;
+          esac
+          .github/scripts/update-prepull-hashes.sh "$ARCH"
+
+      - name: Build AMI
+        id: build
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          NIX_SYSTEM="${{ steps.dry-run.outputs.nix_system }}"
+          echo "Building AMI for ${{ matrix.hostname }}..."
           OUT=$(nix build ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
 
@@ -187,26 +210,27 @@ jobs:
           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
 
       - name: Push to niks3
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          case "${{ matrix.hostname }}" in
-            *-arm) NIX_SYSTEM="aarch64-linux" ;;
-            *)     NIX_SYSTEM="x86_64-linux" ;;
-          esac
+          NIX_SYSTEM="${{ steps.dry-run.outputs.nix_system }}"
           nix build --print-out-paths --no-link ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" | \
             xargs niks3 push \
               --server-url https://api.nixcache.org \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
 
       - name: Install AWS CLI
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: nix profile install nixpkgs#awscli2
 
       - name: Configure AWS credentials
+        if: steps.dry-run.outputs.needs_build == 'true'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::918821718107:role/gha-nix-config-ami
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload VHD to S3
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           VHD="${{ steps.build.outputs.vhd }}"
           S3_KEY="${{ matrix.hostname }}/${{ steps.build.outputs.timestamp }}/$(basename "$VHD")"
@@ -217,6 +241,7 @@ jobs:
 
       - name: Import EBS snapshot
         id: import
+        if: steps.dry-run.outputs.needs_build == 'true'
         timeout-minutes: 45
         run: |
           echo "Importing EBS snapshot..."
@@ -256,6 +281,7 @@ jobs:
 
       - name: Register AMI
         id: register
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           SNAPSHOT_ID="${{ steps.import.outputs.snapshot_id }}"
           ARCH="${{ steps.build.outputs.arch }}"
@@ -298,6 +324,7 @@ jobs:
 
       - name: Smoke test AMI
         id: smoke_test
+        if: steps.dry-run.outputs.needs_build == 'true'
         timeout-minutes: 15
         run: |
           AMI_ID="${{ steps.register.outputs.ami_id }}"
@@ -390,6 +417,7 @@ jobs:
           fi
 
       - name: Cleanup old AMIs
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           HOSTNAME="${{ matrix.hostname }}"
           echo "Cleaning up old AMIs for $HOSTNAME (keeping $RETENTION_COUNT)..."
@@ -430,6 +458,7 @@ jobs:
           fi
 
       - name: Cleanup old S3 uploads
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           HOSTNAME="${{ matrix.hostname }}"
           echo "Cleaning up old S3 uploads for $HOSTNAME (keeping $RETENTION_COUNT)..."
@@ -456,6 +485,7 @@ jobs:
           fi
 
       - name: Summary
+        if: steps.dry-run.outputs.needs_build == 'true'
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## AMI Build: ${{ matrix.hostname }}
@@ -473,7 +503,7 @@ jobs:
           EOF
 
       - name: Terminate smoke test instance
-        if: always() && steps.smoke_test.outputs.instance_id
+        if: always() && steps.dry-run.outputs.needs_build == 'true' && steps.smoke_test.outputs.instance_id
         run: |
           INSTANCE_ID="${{ steps.smoke_test.outputs.instance_id }}"
           echo "Ensuring smoke test instance $INSTANCE_ID is terminated..."
