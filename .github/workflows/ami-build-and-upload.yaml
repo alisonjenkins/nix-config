@@ -131,15 +131,23 @@ jobs:
 
       - name: Set up QEMU binfmt for aarch64
         run: |
-          # Install statically-linked qemu-user via Nix — avoids apt lock race
-          # with nothing-but-nix AND works inside nix sandbox (dynamic qemu-user
-          # fails because sandbox can't resolve shared libraries)
+          # Register aarch64 binfmt using static QEMU from Nix, matching the
+          # NixOS boot.binfmt module (emulatedSystems + preferStaticEmulators):
+          #   - Magic/mask from nixos/modules/system/boot/binfmt.nix
+          #   - Flags: P (preserveArgvZero — QEMU uses argv[0] for arch detection)
+          #            F (fixBinary — kernel pre-opens interpreter at registration,
+          #               works inside nix sandbox without extra path access)
           QEMU_USER=$(nix build nixpkgs#pkgsStatic.qemu-user --print-out-paths --no-link)
           QEMU_BIN="$QEMU_USER/bin/qemu-aarch64"
           echo "Using QEMU from: $QEMU_BIN"
           sudo mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
-          echo ":qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:${QEMU_BIN}:OCF" | sudo tee /proc/sys/fs/binfmt_misc/register
+          echo ":qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff:${QEMU_BIN}:PF" | sudo tee /proc/sys/fs/binfmt_misc/register
           ls /proc/sys/fs/binfmt_misc/qemu-aarch64 && echo "binfmt registered" || { echo "::error::binfmt NOT registered"; exit 1; }
+          cat /proc/sys/fs/binfmt_misc/qemu-aarch64
+
+          # Expose QEMU store path inside nix sandbox and restart daemon
+          echo "extra-sandbox-paths = ${QEMU_USER}" | sudo tee -a /etc/nix/nix.conf
+          sudo systemctl restart nix-daemon || true
 
       - name: Check if AMI build is needed
         id: dry-run
