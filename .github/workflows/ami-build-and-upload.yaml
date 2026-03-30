@@ -475,3 +475,19 @@ jobs:
           | **Smoke Test** | \`${{ steps.smoke_test.outputs.smoke_status || 'skipped' }}\` |
           | **Commit** | \`${{ github.sha }}\` |
           EOF
+
+      - name: Terminate smoke test instance
+        if: always() && steps.smoke_test.outputs.instance_id
+        run: |
+          INSTANCE_ID="${{ steps.smoke_test.outputs.instance_id }}"
+          echo "Ensuring smoke test instance $INSTANCE_ID is terminated..."
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text 2>/dev/null || echo "unknown")
+          if [ "$STATE" != "terminated" ] && [ "$STATE" != "shutting-down" ] && [ "$STATE" != "unknown" ]; then
+            echo "Instance is $STATE — terminating..."
+            aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
+          else
+            echo "Instance already $STATE"
+          fi
