@@ -3,20 +3,12 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 
-  # Common module for all AMIs — UEFI boot for NitroTPM, Secure Boot, and
-  # forward-compatibility with newer instance families.
-  commonAmiModule = {
-    ec2.efi = true;
-  };
-
-  # btrfs override — only for x86_64 AMIs. ARM AMIs use the upstream ext4
-  # builder because the btrfs builder's VM phase (vmTools.runInLinuxVM) can't
-  # run cross-arch under QEMU TCG. Once ARM Graviton runners are bootstrapped,
-  # ARM AMIs can switch to btrfs too (built natively, no cross-compilation).
-  btrfsAmiModule = {
-    modules.aws.rootFsType = "btrfs";
-    image.modules.amazon = lib.mkForce (self + "/lib/amazon-btrfs-image.nix");
-  };
+  # VM-free AMI image builder using systemd-repart + UKI.
+  # Replaces make-disk-image.nix (requires KVM) with a fakeroot/unshare approach.
+  # Works on any host including cross-compilation and non-metal EC2 instances.
+  # Imported directly into the host config (not via image.modules.amazon) because
+  # the repart config references config.system.build.{toplevel,uki}.
+  commonAmiModule = self + "/lib/amazon-repart-image.nix";
 
   # Shared AWS base server config (used by aws-base-server and aws-base-server-arm)
   awsBaseServerConfig = { modulesPath, lib, ... }: {
@@ -415,8 +407,6 @@ let
 
       modules = cfg.hostModules ++ [
         commonAmiModule
-      ] ++ lib.optionals (cfg.system == "x86_64-linux") [
-        btrfsAmiModule
       ] ++ cfg.extraModules;
     };
 
@@ -427,20 +417,7 @@ in
 
   perSystem = { system, ... }: {
     packages = lib.mapAttrs'
-      (name: _:
-        let
-          image = amiSystems.${name}.config.system.build.images.amazon;
-          # The upstream make-disk-image.nix defaults to 1024 MiB VM RAM which
-          # is too small for large closures. Increase to 8192 MiB for all AMIs
-          # (karpenter has 5+ GB closure, and TCG cross-arch emulation adds overhead).
-          finalImage = lib.overrideDerivation image (old: {
-            memSize = 8192;
-            QEMU_OPTS = builtins.replaceStrings
-              [ "-m 1024" "size=1024M" "-m 2048" "size=2048M" "-m 4096" "size=4096M" ]
-              [ "-m 8192" "size=8192M" "-m 8192" "size=8192M" "-m 8192" "size=8192M" ]
-              old.QEMU_OPTS;
-          });
-        in lib.nameValuePair "${name}-ami" finalImage)
+      (name: _: lib.nameValuePair "${name}-ami" amiSystems.${name}.config.system.build.amazonImage)
       (lib.filterAttrs (_: cfg: cfg.system == system) amiConfigs);
   };
 }

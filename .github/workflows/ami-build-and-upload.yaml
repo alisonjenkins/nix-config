@@ -72,20 +72,26 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      x86_matrix: ${{ steps.set-matrix.outputs.x86_matrix }}
+      arm_matrix: ${{ steps.set-matrix.outputs.arm_matrix }}
       region: ${{ steps.params.outputs.region }}
       retention_count: ${{ steps.params.outputs.retention_count }}
     steps:
       - name: Set build matrix
         id: set-matrix
         run: |
-          # ARM AMIs are temporarily disabled — they need native Graviton runners
-          # which are launched via Karpenter, creating a chicken-and-egg dependency.
-          # TODO: bootstrap ARM AMIs via a one-off local build or dedicated EC2 instance
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.ami_name }}" != "all" ]]; then
-            echo "matrix=[\"${{ inputs.ami_name }}\"]" >> "$GITHUB_OUTPUT"
+            name="${{ inputs.ami_name }}"
+            if [[ "$name" == *-arm ]]; then
+              echo "x86_matrix=[]" >> "$GITHUB_OUTPUT"
+              echo "arm_matrix=[\"$name\"]" >> "$GITHUB_OUTPUT"
+            else
+              echo "x86_matrix=[\"$name\"]" >> "$GITHUB_OUTPUT"
+              echo "arm_matrix=[]" >> "$GITHUB_OUTPUT"
+            fi
           else
-            echo 'matrix=["aws-base-server","aws-k8s-node","aws-karpenter-node-amd64","aws-nix-builder"]' >> "$GITHUB_OUTPUT"
+            echo 'x86_matrix=["aws-base-server","aws-k8s-node","aws-karpenter-node-amd64","aws-nix-builder"]' >> "$GITHUB_OUTPUT"
+            echo 'arm_matrix=["aws-base-server-arm","aws-k8s-node-arm","aws-karpenter-node-arm","aws-nix-builder-arm"]' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set parameters
@@ -94,14 +100,16 @@ jobs:
           echo "region=${{ inputs.region || 'eu-west-1' }}" >> "$GITHUB_OUTPUT"
           echo "retention_count=${{ inputs.retention_count || '3' }}" >> "$GITHUB_OUTPUT"
 
-  build-and-upload:
+  # x86_64 AMI builds — GitHub-hosted ubuntu runners with nothing-but-nix for disk space
+  build-x86:
     needs: prepare
+    if: needs.prepare.outputs.x86_matrix != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
-        hostname: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        hostname: ${{ fromJson(needs.prepare.outputs.x86_matrix) }}
     env:
       AWS_REGION: ${{ needs.prepare.outputs.region }}
       RETENTION_COUNT: ${{ needs.prepare.outputs.retention_count }}
@@ -437,8 +445,332 @@ jobs:
           else
             echo "Instance already $STATE"
           fi
-  # ARM (aarch64) AMI builds are temporarily disabled.
-  # They need native Graviton runners launched via Karpenter, but Karpenter
-  # needs working ARM AMIs — chicken-and-egg. Bootstrap ARM AMIs via a
-  # one-off local build (just ami-build + just ami-upload), then re-enable
-  # this job with runs-on: aws-nix-builder-arm64.
+  # ARM (aarch64) AMI builds — native Graviton runners (no cross-compilation).
+  # Uses systemd-repart which doesn't need KVM, so standard (non-metal) instances work.
+  build-arm:
+    needs: prepare
+    if: needs.prepare.outputs.arm_matrix != '[]'
+    runs-on: aws-nix-builder-arm64
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        hostname: ${{ fromJson(needs.prepare.outputs.arm_matrix) }}
+    env:
+      AWS_REGION: ${{ needs.prepare.outputs.region }}
+      RETENTION_COUNT: ${{ needs.prepare.outputs.retention_count }}
+      S3_BUCKET: ajj-ami-builds-eu-west-1
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            max-jobs = auto
+            cores = 0
+            eval-cache = true
+            http-connections = 128
+            max-substitution-jobs = 128
+            narinfo-cache-negative-ttl = 3600
+            connect-timeout = 5
+            stalled-download-timeout = 10
+            fallback = true
+            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
+            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+
+      - name: Check if AMI build is needed
+        id: dry-run
+        run: |
+          echo "nix_system=aarch64-linux" >> "$GITHUB_OUTPUT"
+          dry_output=$(nix build --dry-run ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" 2>&1)
+          echo "$dry_output"
+          if echo "$dry_output" | grep -q 'will be built:'; then
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+            echo "AMI for ${{ matrix.hostname }} needs building"
+          else
+            echo "needs_build=false" >> "$GITHUB_OUTPUT"
+            echo "AMI for ${{ matrix.hostname }} is fully cached — skipping"
+          fi
+
+      - name: Install niks3
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_aarch64.tar.gz | sudo tar xz -C /usr/local/bin niks3
+          sudo chmod +x /usr/local/bin/niks3
+
+      - name: Update pre-pull image hashes
+        if: steps.dry-run.outputs.needs_build == 'true' && contains(matrix.hostname, 'karpenter')
+        run: .github/scripts/update-prepull-hashes.sh "arm64"
+
+      - name: Build AMI
+        id: build
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          echo "Building AMI for ${{ matrix.hostname }}..."
+          OUT=$(nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
+          echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          IMAGE_INFO="$OUT/nix-support/image-info.json"
+          echo "Image info:"
+          cat "$IMAGE_INFO" | jq .
+          VHD=$(find "$OUT" -name "*.vhd" | head -1)
+          echo "vhd=$VHD" >> "$GITHUB_OUTPUT"
+          BOOT_MODE=$(jq -r '.boot_mode // "uefi"' "$IMAGE_INFO")
+          echo "arch=arm64" >> "$GITHUB_OUTPUT"
+          echo "boot_mode=$BOOT_MODE" >> "$GITHUB_OUTPUT"
+          echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Push to niks3
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          nix path-info --recursive "${{ steps.build.outputs.result }}" | \
+            xargs niks3 push \
+              --server-url https://api.nixcache.org \
+              --max-concurrent-uploads 10 \
+              --auth-token "${{ secrets.NIKS3_TOKEN }}"
+
+      - name: Install AWS CLI
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: nix profile install nixpkgs#awscli2
+
+      - name: Configure AWS credentials
+        if: steps.dry-run.outputs.needs_build == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::918821718107:role/gha-nix-config-ami
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload VHD to S3
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          VHD="${{ steps.build.outputs.vhd }}"
+          S3_KEY="${{ matrix.hostname }}/${{ steps.build.outputs.timestamp }}/$(basename "$VHD")"
+          echo "s3_key=$S3_KEY" >> "$GITHUB_ENV"
+          echo "Uploading $VHD to s3://$S3_BUCKET/$S3_KEY..."
+          aws s3 cp "$VHD" "s3://$S3_BUCKET/$S3_KEY"
+
+      - name: Import EBS snapshot
+        id: import
+        if: steps.dry-run.outputs.needs_build == 'true'
+        timeout-minutes: 45
+        run: |
+          echo "Importing EBS snapshot..."
+          IMPORT_TASK=$(aws ec2 import-snapshot \
+            --description "NixOS AMI ${{ matrix.hostname }} ${{ steps.build.outputs.timestamp }}" \
+            --disk-container "Format=VHD,UserBucket={S3Bucket=$S3_BUCKET,S3Key=${{ env.s3_key }}}" \
+            --output json)
+          TASK_ID=$(echo "$IMPORT_TASK" | jq -r '.ImportTaskId')
+          echo "Import task: $TASK_ID"
+          echo "Waiting for snapshot import to complete..."
+          while true; do
+            STATUS=$(aws ec2 describe-import-snapshot-tasks --import-task-ids "$TASK_ID" --output json)
+            PROGRESS=$(echo "$STATUS" | jq -r '.ImportSnapshotTasks[0].SnapshotTaskDetail.Progress // "0"')
+            STATE=$(echo "$STATUS" | jq -r '.ImportSnapshotTasks[0].SnapshotTaskDetail.Status')
+            echo "  Status: $STATE ($PROGRESS%)"
+            if [ "$STATE" = "completed" ]; then
+              SNAPSHOT_ID=$(echo "$STATUS" | jq -r '.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId')
+              break
+            elif [ "$STATE" = "error" ]; then
+              echo "::error::Snapshot import failed"
+              echo "$STATUS" | jq '.ImportSnapshotTasks[0].SnapshotTaskDetail'
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "snapshot_id=$SNAPSHOT_ID" >> "$GITHUB_OUTPUT"
+          echo "Snapshot imported: $SNAPSHOT_ID"
+
+      - name: Register AMI
+        id: register
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          SNAPSHOT_ID="${{ steps.import.outputs.snapshot_id }}"
+          ARCH="${{ steps.build.outputs.arch }}"
+          BOOT_MODE="${{ steps.build.outputs.boot_mode }}"
+          TIMESTAMP="${{ steps.build.outputs.timestamp }}"
+          AMI_NAME="nixos-${{ matrix.hostname }}-${TIMESTAMP}"
+          echo "Registering AMI: $AMI_NAME (arch=$ARCH, boot=$BOOT_MODE)..."
+          AMI_ID=$(aws ec2 register-image \
+            --name "$AMI_NAME" \
+            --description "NixOS AMI ${{ matrix.hostname }}" \
+            --architecture "$ARCH" \
+            --root-device-name /dev/xvda \
+            --block-device-mappings "DeviceName=/dev/xvda,Ebs={SnapshotId=$SNAPSHOT_ID,VolumeType=gp3}" \
+            --virtualization-type hvm \
+            --boot-mode "$BOOT_MODE" \
+            --ena-support \
+            --output text --query 'ImageId')
+          echo "ami_id=$AMI_ID" >> "$GITHUB_OUTPUT"
+          echo "ami_name=$AMI_NAME" >> "$GITHUB_OUTPUT"
+          aws ec2 create-tags --resources "$AMI_ID" --tags \
+            "Key=Name,Value=$AMI_NAME" \
+            "Key=NixConfig,Value=${{ matrix.hostname }}" \
+            "Key=ManagedBy,Value=github-actions" \
+            "Key=GitCommit,Value=${{ github.sha }}" \
+            "Key=BuildTimestamp,Value=$TIMESTAMP"
+          aws ec2 create-tags --resources "$SNAPSHOT_ID" --tags \
+            "Key=Name,Value=$AMI_NAME" \
+            "Key=NixConfig,Value=${{ matrix.hostname }}" \
+            "Key=ManagedBy,Value=github-actions" \
+            "Key=GitCommit,Value=${{ github.sha }}" \
+            "Key=BuildTimestamp,Value=$TIMESTAMP"
+          echo "AMI registered: $AMI_ID ($AMI_NAME)"
+
+      - name: Smoke test AMI
+        id: smoke_test
+        if: steps.dry-run.outputs.needs_build == 'true'
+        timeout-minutes: 15
+        run: |
+          AMI_ID="${{ steps.register.outputs.ami_id }}"
+          INSTANCE_TYPE="t4g.micro"
+          cat > /tmp/smoke-test-userdata.sh <<'SMOKE_EOF'
+          #!/bin/bash
+          set -x
+          echo "===SMOKE_TEST_START==="
+          FAILURES=0
+          fail() { echo "FAIL: $1"; FAILURES=$((FAILURES + 1)); }
+          pass() { echo "PASS: $1"; }
+          systemctl is-active multi-user.target && pass "multi-user.target active" || fail "multi-user.target not active"
+          FAILED_UNITS=$(systemctl --failed --no-legend --no-pager | wc -l)
+          [ "$FAILED_UNITS" -eq 0 ] && pass "no failed systemd units" || { fail "$FAILED_UNITS failed systemd units"; systemctl --failed --no-pager; }
+          cloud-init status --wait --long 2>/dev/null && pass "cloud-init completed" || fail "cloud-init did not complete"
+          for cmd in curl jq vim htop; do command -v $cmd >/dev/null 2>&1 && pass "$cmd present" || fail "$cmd missing"; done
+          ip addr show | grep -q 'inet ' && pass "has IPv4 address" || fail "no IPv4 address"
+          systemctl is-active nix-daemon.socket && pass "nix-daemon running" || fail "nix-daemon not running"
+          systemctl is-active systemd-timesyncd.service && pass "timesyncd running" || fail "timesyncd not running"
+          if [ "$FAILURES" -eq 0 ]; then echo "===SMOKE_TEST_PASSED==="; else echo "===SMOKE_TEST_FAILED ($FAILURES failures)==="; fi
+          echo "===SMOKE_TEST_END==="
+          SMOKE_EOF
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id "$AMI_ID" \
+            --instance-type "$INSTANCE_TYPE" \
+            --instance-initiated-shutdown-behavior terminate \
+            --security-group-ids "${{ secrets.AWS_BUILDER_SG_ID }}" \
+            --subnet-id "${{ secrets.AWS_BUILDER_SUBNET_ID }}" \
+            --user-data file:///tmp/smoke-test-userdata.sh \
+            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=smoke-test-${{ matrix.hostname }}},{Key=ManagedBy,Value=gha-ami-smoke-test},{Key=GitCommit,Value=${{ github.sha }}}]" \
+            --metadata-options "HttpTokens=required,HttpPutResponseHopLimit=1,HttpEndpoint=enabled" \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+          echo "Launched smoke test instance: $INSTANCE_ID ($INSTANCE_TYPE)"
+          trap 'echo "Terminating test instance $INSTANCE_ID..."; aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true' EXIT
+          echo "Waiting for instance to start..."
+          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+          echo "Waiting for status checks (2/2)..."
+          aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+          echo "Instance passed 2/2 status checks"
+          echo "Polling console output for smoke test results..."
+          SMOKE_PASSED=false
+          for attempt in $(seq 1 30); do
+            CONSOLE=$(aws ec2 get-console-output --instance-id "$INSTANCE_ID" --output text --query 'Output' 2>/dev/null || echo "")
+            if echo "$CONSOLE" | grep -q "===SMOKE_TEST_PASSED==="; then
+              SMOKE_PASSED=true
+              echo "Smoke tests PASSED"
+              echo "$CONSOLE" | sed -n '/===SMOKE_TEST_START===/,/===SMOKE_TEST_END===/p'
+              break
+            elif echo "$CONSOLE" | grep -q "===SMOKE_TEST_FAILED"; then
+              echo "::error::Smoke tests FAILED"
+              echo "$CONSOLE" | sed -n '/===SMOKE_TEST_START===/,/===SMOKE_TEST_END===/p'
+              exit 1
+            fi
+            echo "  Attempt $attempt/30: smoke test output not yet available..."
+            sleep 10
+          done
+          if [ "$SMOKE_PASSED" != "true" ]; then
+            echo "::warning::Console output polling timed out. Status checks passed but could not verify smoke test output."
+            echo "smoke_status=status-checks-only" >> "$GITHUB_OUTPUT"
+          else
+            echo "smoke_status=full-pass" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cleanup old AMIs
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          HOSTNAME="${{ matrix.hostname }}"
+          echo "Cleaning up old AMIs for $HOSTNAME (keeping $RETENTION_COUNT)..."
+          AMIS=$(aws ec2 describe-images \
+            --owners self \
+            --filters \
+              "Name=tag:ManagedBy,Values=github-actions" \
+              "Name=tag:NixConfig,Values=$HOSTNAME" \
+            --query 'Images | sort_by(@, &CreationDate) | reverse(@) | [*].[ImageId,CreationDate]' \
+            --output json)
+          TOTAL=$(echo "$AMIS" | jq 'length')
+          echo "Found $TOTAL AMIs for $HOSTNAME"
+          if [ "$TOTAL" -le "$RETENTION_COUNT" ]; then
+            echo "Nothing to clean up"
+          else
+            TO_DELETE=$(echo "$AMIS" | jq -r ".[$RETENTION_COUNT:][] | .[0]")
+            for AMI_ID in $TO_DELETE; do
+              echo "Deregistering $AMI_ID..."
+              SNAP_IDS=$(aws ec2 describe-images \
+                --image-ids "$AMI_ID" \
+                --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' \
+                --output json | jq -r '.[] // empty')
+              aws ec2 deregister-image --image-id "$AMI_ID"
+              for SNAP_ID in $SNAP_IDS; do
+                echo "  Deleting snapshot $SNAP_ID..."
+                aws ec2 delete-snapshot --snapshot-id "$SNAP_ID"
+              done
+            done
+          fi
+
+      - name: Cleanup old S3 uploads
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          HOSTNAME="${{ matrix.hostname }}"
+          echo "Cleaning up old S3 uploads for $HOSTNAME (keeping $RETENTION_COUNT)..."
+          PREFIXES=$(aws s3api list-objects-v2 \
+            --bucket "$S3_BUCKET" \
+            --prefix "$HOSTNAME/" \
+            --delimiter "/" \
+            --query 'CommonPrefixes[*].Prefix' \
+            --output json | jq -r '.[] // empty' | sort -r)
+          COUNT=0
+          for PREFIX in $PREFIXES; do
+            COUNT=$((COUNT + 1))
+            if [ "$COUNT" -gt "$RETENTION_COUNT" ]; then
+              echo "Deleting s3://$S3_BUCKET/$PREFIX..."
+              aws s3 rm "s3://$S3_BUCKET/$PREFIX" --recursive
+            fi
+          done
+          if [ "$COUNT" -le "$RETENTION_COUNT" ]; then
+            echo "Nothing to clean up"
+          fi
+
+      - name: Summary
+        if: steps.dry-run.outputs.needs_build == 'true'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## AMI Build: ${{ matrix.hostname }}
+
+          | Field | Value |
+          |-------|-------|
+          | **AMI ID** | \`${{ steps.register.outputs.ami_id }}\` |
+          | **AMI Name** | \`${{ steps.register.outputs.ami_name }}\` |
+          | **Snapshot ID** | \`${{ steps.import.outputs.snapshot_id }}\` |
+          | **Region** | \`${{ env.AWS_REGION }}\` |
+          | **Architecture** | \`${{ steps.build.outputs.arch }}\` |
+          | **Boot Mode** | \`${{ steps.build.outputs.boot_mode }}\` |
+          | **Smoke Test** | \`${{ steps.smoke_test.outputs.smoke_status || 'skipped' }}\` |
+          | **Commit** | \`${{ github.sha }}\` |
+          EOF
+
+      - name: Terminate smoke test instance
+        if: always() && steps.dry-run.outputs.needs_build == 'true' && steps.smoke_test.outputs.instance_id
+        run: |
+          INSTANCE_ID="${{ steps.smoke_test.outputs.instance_id }}"
+          echo "Ensuring smoke test instance $INSTANCE_ID is terminated..."
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text 2>/dev/null || echo "unknown")
+          if [ "$STATE" != "terminated" ] && [ "$STATE" != "shutting-down" ] && [ "$STATE" != "unknown" ]; then
+            echo "Instance is $STATE — terminating..."
+            aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" || true
+          else
+            echo "Instance already $STATE"
+          fi
