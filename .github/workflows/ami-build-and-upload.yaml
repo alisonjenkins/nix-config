@@ -185,6 +185,7 @@ jobs:
       - name: Pre-pull container images into AMI
         if: contains(matrix.hostname, 'karpenter')
         run: |
+          set -euo pipefail
           VHD="${{ steps.build.outputs.vhd }}"
           ARCH="${{ steps.build.outputs.arch }}"
 
@@ -198,44 +199,79 @@ jobs:
           sudo mkdir -p /mnt/ami
           sudo mount "$ROOT_PART" /mnt/ami
 
-          # Create the directory where k3s containerd stores images
-          CONTENT_DIR="/mnt/ami/var/lib/rancher/k3s/agent/images"
-          sudo mkdir -p "$CONTENT_DIR"
+          # k3s auto-imports tar files from /var/lib/rancher/k3s/agent/images/ on start
+          IMAGES_DIR="/mnt/ami/var/lib/rancher/k3s/agent/images"
+          sudo mkdir -p "$IMAGES_DIR"
 
           # Fetch the image list from home-cluster repo
           IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
           IMAGES=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
 
-          # k3s supports pre-loaded images as tar files in /var/lib/rancher/k3s/agent/images/
-          # Use skopeo to download each image and ctr to export as a tar
-          nix profile install nixpkgs#skopeo nixpkgs#umoci
+          nix profile install nixpkgs#skopeo
 
+          FAILED=()
           for img in $IMAGES; do
             SAFE_NAME=$(echo "$img" | tr '/:@' '_')
             echo "Downloading: $img"
-            skopeo copy --override-arch "$ARCH" \
-              "docker://$img" "oci:/tmp/oci-$SAFE_NAME:latest" || {
-              echo "Warning: failed to download $img"
-              continue
-            }
-            # Convert OCI layout to a docker-archive tar that k3s can import
-            skopeo copy "oci:/tmp/oci-$SAFE_NAME:latest" \
-              "docker-archive:/tmp/tar-$SAFE_NAME.tar:$img" || {
-              echo "Warning: failed to convert $img"
-              continue
-            }
-            sudo cp "/tmp/tar-$SAFE_NAME.tar" "$CONTENT_DIR/"
-            rm -rf "/tmp/oci-$SAFE_NAME" "/tmp/tar-$SAFE_NAME.tar"
-            echo "  Done: $img"
+            if skopeo copy --override-arch "$ARCH" \
+              "docker://$img" "docker-archive:/tmp/tar-$SAFE_NAME.tar:$img"; then
+              sudo mv "/tmp/tar-$SAFE_NAME.tar" "$IMAGES_DIR/"
+              echo "  OK: $img"
+            else
+              echo "::error::Failed to download: $img"
+              FAILED+=("$img")
+            fi
           done
 
-          echo "Pre-pulled images:"
-          sudo ls -lh "$CONTENT_DIR/"
-
-          # Replace the original VHD path so subsequent steps use the modified copy
           sudo umount /mnt/ami
           sudo losetup -d "$LOOP"
           echo "PREPULL_VHD=$WORK_VHD" >> "$GITHUB_ENV"
+
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "::error::Failed to pre-pull ${#FAILED[@]} image(s): ${FAILED[*]}"
+            exit 1
+          fi
+
+      - name: Verify pre-pulled images
+        if: contains(matrix.hostname, 'karpenter')
+        run: |
+          set -euo pipefail
+          WORK_VHD="${PREPULL_VHD}"
+          LOOP=$(sudo losetup --find --show --partscan "$WORK_VHD")
+          ROOT_PART="${LOOP}p2"
+          sudo mkdir -p /mnt/ami
+          sudo mount -o ro "$ROOT_PART" /mnt/ami
+
+          IMAGES_DIR="/mnt/ami/var/lib/rancher/k3s/agent/images"
+          IMAGE_LIST_URL="https://raw.githubusercontent.com/alisonjenkins/home-cluster/main/clusters/aws-k3s/karpenter-node-prepull-images.txt"
+          EXPECTED=$(curl -sfL "$IMAGE_LIST_URL" | grep -v '^\s*#' | grep -v '^\s*$')
+
+          echo "=== Pre-pulled image tars ==="
+          ls -lh "$IMAGES_DIR/"
+
+          MISSING=()
+          for img in $EXPECTED; do
+            SAFE_NAME=$(echo "$img" | tr '/:@' '_')
+            TAR="$IMAGES_DIR/tar-${SAFE_NAME}.tar"
+            if [ -f "$TAR" ] && [ -s "$TAR" ]; then
+              SIZE=$(stat -c%s "$TAR")
+              echo "  OK: $img ($(numfmt --to=iec $SIZE))"
+            else
+              echo "  MISSING: $img"
+              MISSING+=("$img")
+            fi
+          done
+
+          sudo umount /mnt/ami
+          sudo losetup -d "$LOOP"
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "::error::${#MISSING[@]} image(s) missing from AMI: ${MISSING[*]}"
+            exit 1
+          fi
+
+          TOTAL=$(echo "$EXPECTED" | wc -l)
+          echo "All $TOTAL images verified present in AMI"
 
       - name: Push to niks3
         run: |
