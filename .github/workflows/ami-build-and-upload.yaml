@@ -185,7 +185,10 @@ jobs:
       - name: Build AMI
         id: build
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          TMPDIR: /nix/tmp
         run: |
+          sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
           NIX_SYSTEM="${{ steps.dry-run.outputs.nix_system }}"
           echo "Building AMI for ${{ matrix.hostname }}..."
           OUT=$(nix build ".#packages.${NIX_SYSTEM}.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
