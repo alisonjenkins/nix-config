@@ -155,6 +155,10 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
+    env:
+      # Use cluster-internal service URL — these runners are pods in the k3s cluster,
+      # so the external URL (api.nixcache.org → public IP) causes hairpin NAT timeouts.
+      NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
     steps:
       - uses: actions/checkout@v6
         with:
@@ -230,7 +234,7 @@ jobs:
                 BATCH=$((BATCH + 1))
                 echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
                 if cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-                  --server-url https://api.nixcache.org \
+                  --server-url "$NIKS3_SERVER_URL" \
                   --max-concurrent-uploads 10 \
                   --auth-token "$NIKS3_TOKEN" 2>&1; then
                   echo "[drainer] Batch $BATCH: done"
@@ -269,7 +273,7 @@ jobs:
             FINAL_PATHS=$(wc -l < /tmp/niks3-final)
             echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
             if cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-              --server-url https://api.nixcache.org \
+              --server-url "$NIKS3_SERVER_URL" \
               --max-concurrent-uploads 10 \
               --auth-token "$NIKS3_TOKEN" 2>&1; then
               echo "[final push] Done"
@@ -289,6 +293,8 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
+    env:
+      NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
     steps:
       - uses: actions/checkout@v6
         with:
@@ -368,7 +374,7 @@ jobs:
                 BATCH=$((BATCH + 1))
                 echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
                 if cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-                  --server-url https://api.nixcache.org \
+                  --server-url "$NIKS3_SERVER_URL" \
                   --max-concurrent-uploads 10 \
                   --auth-token "$NIKS3_TOKEN" 2>&1; then
                   echo "[drainer] Batch $BATCH: done"
@@ -417,7 +423,7 @@ jobs:
             FINAL_PATHS=$(wc -l < /tmp/niks3-final)
             echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
             if cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-              --server-url https://api.nixcache.org \
+              --server-url "$NIKS3_SERVER_URL" \
               --max-concurrent-uploads 10 \
               --auth-token "$NIKS3_TOKEN" 2>&1; then
               echo "[final push] Done"

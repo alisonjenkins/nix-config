@@ -553,9 +553,10 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         continue-on-error: true
         run: |
+          # Use cluster-internal URL — ARM runners are pods in the k3s cluster
           nix path-info --recursive "${{ steps.build.outputs.result }}" | \
             xargs niks3 push \
-              --server-url https://api.nixcache.org \
+              --server-url http://niks3.niks3.svc.cluster.local \
               --max-concurrent-uploads 10 \
               --auth-token "${{ secrets.NIKS3_TOKEN }}"
 
