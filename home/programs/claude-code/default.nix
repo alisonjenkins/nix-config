@@ -10,10 +10,13 @@ in
 {
   programs.claude-code = {
     enable = true;
+    # claude-code-bin uses __noChroot which requires sandbox = relaxed.
+    # Use claude-code (builds from source) on aarch64 where we build on
+    # sandboxed self-hosted runners.
     package =
-      if pkgs.stdenv.isDarwin
-      then pkgs.master.claude-code-bin
-      else pkgs.master.claude-code;
+      if pkgs.stdenv.hostPlatform.isAarch64
+      then pkgs.master.claude-code
+      else pkgs.master.claude-code-bin;
 
     settings = {
       alwaysThinkingEnabled = true;
