@@ -90,8 +90,8 @@ jobs:
               echo "arm_matrix=[]" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo 'x86_matrix=["aws-base-server","aws-k8s-node","aws-karpenter-node-amd64","aws-nix-builder"]' >> "$GITHUB_OUTPUT"
-            echo 'arm_matrix=["aws-base-server-arm","aws-k8s-node-arm","aws-karpenter-node-arm","aws-nix-builder-arm"]' >> "$GITHUB_OUTPUT"
+            echo 'x86_matrix=["aws-karpenter-node-amd64"]' >> "$GITHUB_OUTPUT"
+            echo 'arm_matrix=["aws-karpenter-node-arm"]' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set parameters
@@ -205,6 +205,7 @@ jobs:
 
       - name: Push to niks3
         if: steps.dry-run.outputs.needs_build == 'true'
+        continue-on-error: true
         run: |
           nix path-info --recursive "${{ steps.build.outputs.result }}" | \
             xargs niks3 push \
@@ -550,6 +551,7 @@ jobs:
 
       - name: Push to niks3
         if: steps.dry-run.outputs.needs_build == 'true'
+        continue-on-error: true
         run: |
           nix path-info --recursive "${{ steps.build.outputs.result }}" | \
             xargs niks3 push \
