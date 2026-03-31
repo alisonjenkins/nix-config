@@ -126,20 +126,5 @@
     "imageDigest": "sha256:a911876a5d1f30e0087aa7458af668e1df8baae459d8bb38063213e9bf450ef2",
     "hash": "sha256-nRd+L+svUYDZ1tIeFthfTh7SCsdAMk90aGQjZQf+0IA="
   }
-,
-  {
-    "imageName": "ghcr.io/actions/actions-runner",
-    "imageTag": "latest",
-    "arch": "amd64",
-    "imageDigest": "sha256:b57864c9fcda15ea4a270446aa9cfb108b819a26f6e71fc515f6caf6c27989c6",
-    "hash": "sha256-37UACSvDX762vk7lbcDLknGjGNnlb0P9/mG6vmT1OOg="
-  }
-,
-  {
-    "imageName": "ghcr.io/actions/actions-runner",
-    "imageTag": "latest",
-    "arch": "arm64",
-    "imageDigest": "sha256:b57864c9fcda15ea4a270446aa9cfb108b819a26f6e71fc515f6caf6c27989c6",
-    "hash": "sha256-fUr3QRMXvltbR3CnwSh9tmsdcRCrmfq/kKFYKieIPKQ="
-  }
+
 ]
