@@ -7,7 +7,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/log v0.1.0
 	github.com/opencontainers/image-spec v1.1.0
-	go.etcd.io/bbolt v1.4.0
+	go.etcd.io/bbolt v1.4.3
 )
 
 require (
