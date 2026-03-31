@@ -197,10 +197,7 @@ let
         done
 
         # Run k3s agent (blocks — systemd manages the lifecycle)
-        # --snapshotter=native: use plain directory snapshotter instead of overlayfs.
-        # This matches the pre-populated containerd store baked into the AMI.
         exec ${pkgs.k3s}/bin/k3s agent \
-          --snapshotter=native \
           --server "https://$SERVER_ENDPOINT:6443" \
           --token "$K3S_TOKEN" \
           --node-ip "$PRIVATE_IP" \
