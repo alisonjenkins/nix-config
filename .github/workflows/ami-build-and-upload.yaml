@@ -524,7 +524,7 @@ jobs:
       - name: Install niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_aarch64.tar.gz | sudo tar xz -C /usr/local/bin niks3
+          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_arm64.tar.gz | sudo tar xz -C /usr/local/bin niks3
           sudo chmod +x /usr/local/bin/niks3
 
       - name: Update pre-pull image hashes
