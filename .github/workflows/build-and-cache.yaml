@@ -284,7 +284,12 @@ jobs:
             echo "[final push] No remaining paths to push"
           fi
 
-          if [ "$any_failed" = true ]; then exit 1; fi
+          if [ "$any_failed" = true ]; then
+            echo "::group::Full nix build stderr log"
+            cat /tmp/nix-build-stderr.log 2>/dev/null || true
+            echo "::endgroup::"
+            exit 1
+          fi
 
   # aarch64-linux + aarch64-darwin builds — self-hosted ARM runner with nix
   build-arm64:
@@ -434,4 +439,9 @@ jobs:
             echo "[final push] No remaining paths to push"
           fi
 
-          if [ "$any_failed" = true ]; then exit 1; fi
+          if [ "$any_failed" = true ]; then
+            echo "::group::Full nix build stderr log"
+            cat /tmp/nix-build-stderr.log 2>/dev/null || true
+            echo "::endgroup::"
+            exit 1
+          fi
