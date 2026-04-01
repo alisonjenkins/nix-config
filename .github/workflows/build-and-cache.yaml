@@ -291,7 +291,7 @@ jobs:
             exit 1
           fi
 
-  # aarch64-linux + aarch64-darwin builds — self-hosted ARM runner with nix
+  # aarch64-linux builds — self-hosted ARM runner with nix
   build-arm64:
     runs-on: aws-nix-builder-arm64
     timeout-minutes: 1440
@@ -325,7 +325,6 @@ jobs:
             connect-timeout = 5
             stalled-download-timeout = 10
             fallback = true
-            extra-platforms = aarch64-darwin
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
@@ -348,12 +347,6 @@ jobs:
               echo "$cfg needs building"
             fi
           done
-          # Check darwin cross-compile
-          dry_output=$(nix build --dry-run ".#darwinConfigurations.Alisons-MacBook-Pro.system" 2>&1) || true
-          if echo "$dry_output" | grep -q 'will be built:'; then
-            needs_build=true
-            echo "Alisons-MacBook-Pro (darwin) needs building"
-          fi
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
 
       - name: Install niks3
@@ -408,16 +401,6 @@ jobs:
               any_failed=true
             fi
           done
-          # Darwin cross-compile
-          echo "=== Building Alisons-MacBook-Pro (darwin) ==="
-          if nix build -L --keep-going --print-out-paths --no-link \
-            ".#darwinConfigurations.Alisons-MacBook-Pro.system" \
-            2> >(tee -a /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$QUEUE"; then
-            echo "=== Alisons-MacBook-Pro complete ==="
-          else
-            echo "::warning::Alisons-MacBook-Pro build failed"
-            any_failed=true
-          fi
           set -e
 
           # Stop drainer and do final push of any remaining paths
