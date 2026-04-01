@@ -169,6 +169,13 @@ jobs:
           if ! command -v xz &>/dev/null; then
             sudo apt-get update -qq && sudo apt-get install -y -qq xz-utils
           fi
+          cat > /tmp/nix-post-build-hook.sh << 'HOOKEOF'
+          #!/bin/bash
+          set -eu; set -f
+          echo "$OUT_PATHS" | tr ' ' '\n' >> /tmp/niks3-queue
+          HOOKEOF
+          sed -i 's/^          //' /tmp/nix-post-build-hook.sh
+          chmod +x /tmp/nix-post-build-hook.sh
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -184,6 +191,7 @@ jobs:
             connect-timeout = 5
             stalled-download-timeout = 10
             fallback = true
+            post-build-hook = /tmp/nix-post-build-hook.sh
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
@@ -310,6 +318,13 @@ jobs:
           if ! command -v xz &>/dev/null; then
             sudo apt-get update -qq && sudo apt-get install -y -qq xz-utils
           fi
+          cat > /tmp/nix-post-build-hook.sh << 'HOOKEOF'
+          #!/bin/bash
+          set -eu; set -f
+          echo "$OUT_PATHS" | tr ' ' '\n' >> /tmp/niks3-queue
+          HOOKEOF
+          sed -i 's/^          //' /tmp/nix-post-build-hook.sh
+          chmod +x /tmp/nix-post-build-hook.sh
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -325,6 +340,7 @@ jobs:
             connect-timeout = 5
             stalled-download-timeout = 10
             fallback = true
+            post-build-hook = /tmp/nix-post-build-hook.sh
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
