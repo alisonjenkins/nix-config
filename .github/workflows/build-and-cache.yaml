@@ -252,13 +252,19 @@ jobs:
                 PATHS=$(wc -l < /tmp/niks3-processing)
                 BATCH=$((BATCH + 1))
                 echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
-                if cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-                  --server-url "$NIKS3_SERVER_URL" \
-                  --max-concurrent-uploads 10 \
-                  --auth-token "$NIKS3_TOKEN" 2>&1; then
-                  echo "[drainer] Batch $BATCH: done"
-                else
-                  echo "::warning::[drainer] Batch $BATCH: push failed with exit code $?"
+                PUSH_PATHS=$(cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u)
+                if [ -n "$PUSH_PATHS" ]; then
+                  for attempt in 1 2 3; do
+                    if echo "$PUSH_PATHS" | xargs -r niks3 push \
+                      --server-url "$NIKS3_SERVER_URL" \
+                      --max-concurrent-uploads 10 \
+                      --auth-token "$NIKS3_TOKEN" 2>&1; then
+                      echo "[drainer] Batch $BATCH: done"
+                      break
+                    fi
+                    echo "::warning::[drainer] Batch $BATCH: attempt $attempt failed, retrying in 5s..."
+                    sleep 5
+                  done
                 fi
                 rm -f /tmp/niks3-processing
               fi
@@ -291,13 +297,19 @@ jobs:
           if [ -s /tmp/niks3-final ]; then
             FINAL_PATHS=$(wc -l < /tmp/niks3-final)
             echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
-            if cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-              --server-url "$NIKS3_SERVER_URL" \
-              --max-concurrent-uploads 10 \
-              --auth-token "$NIKS3_TOKEN" 2>&1; then
-              echo "[final push] Done"
-            else
-              echo "::warning::[final push] Failed with exit code $?"
+            FINAL_PUSH_PATHS=$(cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u)
+            if [ -n "$FINAL_PUSH_PATHS" ]; then
+              for attempt in 1 2 3; do
+                if echo "$FINAL_PUSH_PATHS" | xargs -r niks3 push \
+                  --server-url "$NIKS3_SERVER_URL" \
+                  --max-concurrent-uploads 10 \
+                  --auth-token "$NIKS3_TOKEN" 2>&1; then
+                  echo "[final push] Done"
+                  break
+                fi
+                echo "::warning::[final push] Attempt $attempt failed, retrying in 5s..."
+                sleep 5
+              done
             fi
           else
             echo "[final push] No remaining paths to push"
@@ -410,13 +422,19 @@ jobs:
                 PATHS=$(wc -l < /tmp/niks3-processing)
                 BATCH=$((BATCH + 1))
                 echo "[drainer] Batch $BATCH: pushing $PATHS path(s) to cache..."
-                if cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-                  --server-url "$NIKS3_SERVER_URL" \
-                  --max-concurrent-uploads 10 \
-                  --auth-token "$NIKS3_TOKEN" 2>&1; then
-                  echo "[drainer] Batch $BATCH: done"
-                else
-                  echo "::warning::[drainer] Batch $BATCH: push failed with exit code $?"
+                PUSH_PATHS=$(cat /tmp/niks3-processing | xargs -r nix path-info --recursive 2>/dev/null | sort -u)
+                if [ -n "$PUSH_PATHS" ]; then
+                  for attempt in 1 2 3; do
+                    if echo "$PUSH_PATHS" | xargs -r niks3 push \
+                      --server-url "$NIKS3_SERVER_URL" \
+                      --max-concurrent-uploads 10 \
+                      --auth-token "$NIKS3_TOKEN" 2>&1; then
+                      echo "[drainer] Batch $BATCH: done"
+                      break
+                    fi
+                    echo "::warning::[drainer] Batch $BATCH: attempt $attempt failed, retrying in 5s..."
+                    sleep 5
+                  done
                 fi
                 rm -f /tmp/niks3-processing
               fi
@@ -449,13 +467,19 @@ jobs:
           if [ -s /tmp/niks3-final ]; then
             FINAL_PATHS=$(wc -l < /tmp/niks3-final)
             echo "[final push] Pushing $FINAL_PATHS remaining path(s) to cache..."
-            if cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u | xargs -r niks3 push \
-              --server-url "$NIKS3_SERVER_URL" \
-              --max-concurrent-uploads 10 \
-              --auth-token "$NIKS3_TOKEN" 2>&1; then
-              echo "[final push] Done"
-            else
-              echo "::warning::[final push] Failed with exit code $?"
+            FINAL_PUSH_PATHS=$(cat /tmp/niks3-final | xargs -r nix path-info --recursive 2>/dev/null | sort -u)
+            if [ -n "$FINAL_PUSH_PATHS" ]; then
+              for attempt in 1 2 3; do
+                if echo "$FINAL_PUSH_PATHS" | xargs -r niks3 push \
+                  --server-url "$NIKS3_SERVER_URL" \
+                  --max-concurrent-uploads 10 \
+                  --auth-token "$NIKS3_TOKEN" 2>&1; then
+                  echo "[final push] Done"
+                  break
+                fi
+                echo "::warning::[final push] Attempt $attempt failed, retrying in 5s..."
+                sleep 5
+              done
             fi
           else
             echo "[final push] No remaining paths to push"
