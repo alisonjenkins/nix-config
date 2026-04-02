@@ -219,12 +219,16 @@ jobs:
         run: |
           needs_build=false
           for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
-            dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1) || true
-            if echo "$dry_output" | grep -q 'will be built:'; then
-              needs_build=true
-              echo "$cfg needs building"
+            if dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1); then
+              if echo "$dry_output" | grep -q 'will be built:'; then
+                needs_build=true
+                echo "$cfg needs building"
+              else
+                echo "$cfg is fully cached"
+              fi
             else
-              echo "$cfg is fully cached"
+              needs_build=true
+              echo "$cfg dry-run failed (needs building)"
             fi
           done
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
@@ -391,10 +395,16 @@ jobs:
         run: |
           needs_build=false
           for cfg in dev-vm; do
-            dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1) || true
-            if echo "$dry_output" | grep -q 'will be built:'; then
+            if dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1); then
+              if echo "$dry_output" | grep -q 'will be built:'; then
+                needs_build=true
+                echo "$cfg needs building"
+              else
+                echo "$cfg is fully cached"
+              fi
+            else
               needs_build=true
-              echo "$cfg needs building"
+              echo "$cfg dry-run failed (needs building)"
             fi
           done
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
