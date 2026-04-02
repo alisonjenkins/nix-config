@@ -206,12 +206,11 @@ jobs:
       - name: Push to niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         continue-on-error: true
-        run: |
-          nix path-info --recursive "${{ steps.build.outputs.result }}" | \
-            xargs niks3 push \
-              --server-url https://api.nixcache.org \
-              --max-concurrent-uploads 10 \
-              --auth-token "${{ secrets.NIKS3_TOKEN }}"
+        uses: ./.github/actions/niks3-push
+        with:
+          paths: ${{ steps.build.outputs.result }}
+          server-url: https://api.nixcache.org
+          auth-token: ${{ secrets.NIKS3_TOKEN }}
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -552,13 +551,11 @@ jobs:
       - name: Push to niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         continue-on-error: true
-        run: |
-          # Use cluster-internal URL — ARM runners are pods in the k3s cluster
-          nix path-info --recursive "${{ steps.build.outputs.result }}" | \
-            xargs niks3 push \
-              --server-url http://niks3.niks3.svc.cluster.local \
-              --max-concurrent-uploads 10 \
-              --auth-token "${{ secrets.NIKS3_TOKEN }}"
+        uses: ./.github/actions/niks3-push
+        with:
+          paths: ${{ steps.build.outputs.result }}
+          server-url: http://niks3.niks3.svc.cluster.local
+          auth-token: ${{ secrets.NIKS3_TOKEN }}
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'

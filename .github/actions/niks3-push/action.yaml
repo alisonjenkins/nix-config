@@ -1,0 +1,62 @@
+name: Push to niks3 cache
+description: Push nix store paths to niks3 binary cache with retry logic
+
+inputs:
+  paths:
+    description: Store paths to push (newline-separated). If empty, reads from queue file.
+    required: false
+    default: ''
+  server-url:
+    description: niks3 server URL
+    required: true
+  auth-token:
+    description: niks3 auth token
+    required: true
+  max-concurrent-uploads:
+    description: Maximum concurrent uploads
+    required: false
+    default: '10'
+  max-retries:
+    description: Maximum retry attempts
+    required: false
+    default: '3'
+
+runs:
+  using: composite
+  steps:
+    - name: Push to niks3
+      shell: bash
+      env:
+        NIKS3_SERVER_URL: ${{ inputs.server-url }}
+        NIKS3_TOKEN: ${{ inputs.auth-token }}
+        MAX_UPLOADS: ${{ inputs.max-concurrent-uploads }}
+        MAX_RETRIES: ${{ inputs.max-retries }}
+        PUSH_PATHS: ${{ inputs.paths }}
+      run: |
+        if [ -z "$PUSH_PATHS" ]; then
+          echo "No paths to push"
+          exit 0
+        fi
+
+        RESOLVED=$(echo "$PUSH_PATHS" | xargs -r nix path-info --recursive 2>/dev/null | sort -u)
+        if [ -z "$RESOLVED" ]; then
+          echo "No resolved paths to push"
+          exit 0
+        fi
+
+        TOTAL=$(echo "$RESOLVED" | wc -l)
+        echo "Pushing $TOTAL path(s) to cache..."
+
+        for attempt in $(seq 1 "$MAX_RETRIES"); do
+          if echo "$RESOLVED" | xargs -r niks3 push \
+            --server-url "$NIKS3_SERVER_URL" \
+            --max-concurrent-uploads "$MAX_UPLOADS" \
+            --auth-token "$NIKS3_TOKEN" 2>&1; then
+            echo "Push complete"
+            exit 0
+          fi
+          echo "::warning::Push attempt $attempt/$MAX_RETRIES failed, retrying in 5s..."
+          sleep 5
+        done
+        echo "::warning::Push failed after $MAX_RETRIES attempts"
+        exit 1
