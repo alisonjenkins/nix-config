@@ -64,9 +64,14 @@ on:
         default: '3'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
+  actions: read
 
 jobs:
   prepare:
@@ -116,6 +121,16 @@ jobs:
       S3_BUCKET: ajj-ami-builds-eu-west-1
 
     steps:
+      - name: Skip if newer run is queued
+        run: |
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
+          if [ "$NEWER" -gt 0 ]; then
+            echo "::notice::Skipping this run — $NEWER newer run(s) queued"
+            exit 1
+          fi
+
       - uses: actions/checkout@v6
 
       - uses: wimpysworld/nothing-but-nix@main
@@ -473,6 +488,16 @@ jobs:
       S3_BUCKET: ajj-ami-builds-eu-west-1
 
     steps:
+      - name: Skip if newer run is queued
+        run: |
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
+          if [ "$NEWER" -gt 0 ]; then
+            echo "::notice::Skipping this run — $NEWER newer run(s) queued"
+            exit 1
+          fi
+
       - uses: actions/checkout@v6
 
       - name: Install nix dependencies
