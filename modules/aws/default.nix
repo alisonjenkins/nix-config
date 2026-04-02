@@ -60,7 +60,7 @@ in
         "net.core.rmem_max" = 16777216;
         "net.core.wmem_max" = 16777216;
         "net.ipv4.tcp_rmem" = "4096 1048576 16777216";
-        "net.ipv4.tcp_wmem" = "4096 65536 16777216";
+        "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
         "net.core.netdev_max_backlog" = 16384;
 
         # inotify limits for k8s/k3s workloads (watchers, SSM agent, etc.)
