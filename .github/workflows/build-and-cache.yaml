@@ -162,13 +162,10 @@ jobs:
       NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
     steps:
       - name: Skip if newer run is queued
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          NEWER=$(gh run list --workflow='${{ github.workflow }}' --branch='${{ github.ref_name }}' \
-            --status=queued --json databaseId,createdAt \
-            --jq "[.[] | select(.databaseId > ${{ github.run_id }})] | length" \
-            --repo '${{ github.repository }}')
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
           if [ "$NEWER" -gt 0 ]; then
             echo "::notice::Skipping this run — $NEWER newer run(s) queued"
             exit 1
@@ -325,13 +322,10 @@ jobs:
       NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
     steps:
       - name: Skip if newer run is queued
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          NEWER=$(gh run list --workflow='${{ github.workflow }}' --branch='${{ github.ref_name }}' \
-            --status=queued --json databaseId,createdAt \
-            --jq "[.[] | select(.databaseId > ${{ github.run_id }})] | length" \
-            --repo '${{ github.repository }}')
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
           if [ "$NEWER" -gt 0 ]; then
             echo "::notice::Skipping this run — $NEWER newer run(s) queued"
             exit 1
