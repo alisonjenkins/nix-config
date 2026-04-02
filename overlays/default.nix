@@ -9,6 +9,10 @@
   # https://nixos.wiki/wiki/Overlays
   modifications = final: prev: {
 
+    # Pin claude-code to nixpkgs-master — nixos-unstable often lags behind
+    # and yanked versions (e.g. 2.1.88) cause build failures.
+    inherit (final.master) claude-code claude-code-bin;
+
     # Disable aiohttp tests to work around sandbox test failures
     pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
       (python-final: python-prev: {
