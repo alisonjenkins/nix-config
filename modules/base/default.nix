@@ -120,6 +120,7 @@ in
           message = "modules.base.pcr15Value must be set when using secure-boot boot loader";
         }
       ];
+
     }
 
     # Core base configuration
