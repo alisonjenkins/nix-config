@@ -55,7 +55,7 @@
         "net.ipv4.tcp_syncookies" = 1;
         "net.ipv4.tcp_timestamps" = 0;
         "net.ipv4.tcp_tw_reuse" = 1;
-        "net.ipv4.tcp_wmem" = "4096 65536 16777216";
+        "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
         "net.ipv4.udp_rmem_min" = 8192;
         "net.ipv4.udp_wmem_min" = 8192;
         "net.ipv6.conf.all.accept_redirects" = 0;
