@@ -174,9 +174,12 @@ jobs:
         run: |
           .github/scripts/update-prepull-hashes.sh "amd64"
 
-      - name: Build AMI
+      - name: Build AMI and push to cache
         id: build
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
+          NIKS3_SERVER_URL: https://api.nixcache.org
         run: |
           # Use /nix/tmp for build scratch space — root filesystem is nearly full
           # after nothing-but-nix rampage. Must configure the nix daemon, not just
@@ -185,9 +188,16 @@ jobs:
           sudo mkdir -p /etc/nix
           echo "build-dir = /nix/tmp" | sudo tee -a /etc/nix/nix.conf
           sudo systemctl restart nix-daemon || true
+
+          source .github/scripts/niks3-background-push.sh
+          niks3_start_drainer
+
           echo "Building AMI for ${{ matrix.hostname }}..."
           OUT=$(nix build ".#packages.x86_64-linux.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          echo "$OUT" >> "$NIKS3_QUEUE"
+
+          niks3_stop_and_final_push
 
           # Extract image info
           IMAGE_INFO="$OUT/nix-support/image-info.json"
@@ -202,15 +212,6 @@ jobs:
           echo "arch=x86_64" >> "$GITHUB_OUTPUT"
           echo "boot_mode=$BOOT_MODE" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
-
-      - name: Push to niks3
-        if: steps.dry-run.outputs.needs_build == 'true'
-        continue-on-error: true
-        uses: ./.github/actions/niks3-push
-        with:
-          paths: ${{ steps.build.outputs.result }}
-          server-url: https://api.nixcache.org
-          auth-token: ${{ secrets.NIKS3_TOKEN }}
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -531,13 +532,23 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true' && contains(matrix.hostname, 'karpenter')
         run: .github/scripts/update-prepull-hashes.sh "arm64"
 
-      - name: Build AMI
+      - name: Build AMI and push to cache
         id: build
         if: steps.dry-run.outputs.needs_build == 'true'
+        env:
+          NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
+          NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
         run: |
+          source .github/scripts/niks3-background-push.sh
+          niks3_start_drainer
+
           echo "Building AMI for ${{ matrix.hostname }}..."
           OUT=$(nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          echo "$OUT" >> "$NIKS3_QUEUE"
+
+          niks3_stop_and_final_push
+
           IMAGE_INFO="$OUT/nix-support/image-info.json"
           echo "Image info:"
           cat "$IMAGE_INFO" | jq .
@@ -547,15 +558,6 @@ jobs:
           echo "arch=arm64" >> "$GITHUB_OUTPUT"
           echo "boot_mode=$BOOT_MODE" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
-
-      - name: Push to niks3
-        if: steps.dry-run.outputs.needs_build == 'true'
-        continue-on-error: true
-        uses: ./.github/actions/niks3-push
-        with:
-          paths: ${{ steps.build.outputs.result }}
-          server-url: http://niks3.niks3.svc.cluster.local
-          auth-token: ${{ secrets.NIKS3_TOKEN }}
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
