@@ -4,6 +4,14 @@
   piper-voice ? pkgs.piper-voice-jenny-dioco,
   ...
 }:
+let
+  viInputrc = pkgs.writeText "tts-talk-inputrc" ''
+    set editing-mode vi
+    set show-mode-in-prompt on
+    set vi-cmd-mode-string "(cmd) "
+    set vi-ins-mode-string "(ins) "
+  '';
+in
 pkgs.writeShellApplication {
   name = "tts-talk";
 
@@ -31,7 +39,8 @@ pkgs.writeShellApplication {
       # Re-exec under rlwrap for readline vi-mode support if not already wrapped
       if [ -z "''${RLWRAP_RUNNING:-}" ]; then
         export RLWRAP_RUNNING=1
-        exec rlwrap -a -pGreen -S "> " -vi "$0"
+        export INPUTRC="${viInputrc}"
+        exec rlwrap -a -pGreen -S "> " "$0"
       fi
 
       echo "Type what you want to say, press Enter to speak. Ctrl+C to quit."
