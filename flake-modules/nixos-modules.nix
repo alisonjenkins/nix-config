@@ -15,6 +15,7 @@
     power-management = import ../modules/power-management;
     rocm = import ../modules/rocm;
     servers = import ../modules/servers;
+    tts = import ../modules/tts;
     vr = import ../modules/vr;
 
     # Network/VPN modules
