@@ -23,9 +23,13 @@ pkgs.writeShellApplication {
 
   text = ''
     MODEL="${piper-voice}/share/piper-voices/en_GB-jenny_dioco-medium.onnx"
+    TTS_TMPDIR=$(mktemp -d)
+    trap 'rm -rf "$TTS_TMPDIR"' EXIT
 
     speak() {
-      echo "$1" | piper --model "$MODEL" --output-raw 2>/dev/null | play -q -r 22050 -e signed -b 16 -c 1 -t raw - 2>/dev/null
+      local wavfile="$TTS_TMPDIR/tts.wav"
+      echo "$1" | piper --model "$MODEL" --output_file "$wavfile" 2>/dev/null
+      play -q "$wavfile" 2>/dev/null
     }
 
     if [ -n "''${1:-}" ]; then
