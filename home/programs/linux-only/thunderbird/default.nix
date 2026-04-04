@@ -42,21 +42,8 @@ let
     '';
   };
 
-  quickfolders = addon {
-    pname = "quickfolders";
-    version = "latest";
-    addonId = "quickfolders@curious.be";
-    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/quickfolders-tabbed-folders/latest.xpi";
-    sha256 = "0hh0mm4r4rg70mdg2ysly0i7kr0vz7ih061q93hl8j5k3486gyfl";
-  };
-
-  cardbook = addon {
-    pname = "cardbook";
-    version = "latest";
-    addonId = "cardbook@vigneau.philippe";
-    url = "https://addons.thunderbird.net/thunderbird/downloads/latest/cardbook/latest.xpi";
-    sha256 = "1cm1r5ygr4si4spdki72jafsjv97pknhgvxm085lpvwa5an74apb";
-  };
+  # quickfolders and cardbook disabled: /latest.xpi URLs are unstable
+  # and break CI builds when upstream publishes new versions.
 in
 {
   programs.thunderbird = {
@@ -68,7 +55,7 @@ in
         "extensions.checkCompatibility.146.0" = false;
         "extensions.checkCompatibility.nightly" = false;
       };
-      extensions = [ tbkeys quickfolders cardbook ];
+      extensions = [ tbkeys ];
     };
   };
 }
