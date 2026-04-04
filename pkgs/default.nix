@@ -1,6 +1,6 @@
 # Custom packages, that can be defined similarly to ones from nixpkgs
 # You can build them using 'nix build .#example'
-{pkgs, ...}: {
+{pkgs, ...}: rec {
   # example = pkgs.callPackage ./example { };
   git-clean = pkgs.callPackage ./git-clean { inherit pkgs; };
   kpatch = pkgs.callPackage ./kpatch {};
@@ -17,4 +17,6 @@
   tiny4linux-cli = pkgs.callPackage ./tiny4linux { inherit pkgs; withGui = false; };
   lucien = pkgs.callPackage ./lucien {};
   xr-video-player = pkgs.callPackage ./xr-video-player {};
+  piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
+  piper-tts-talk = pkgs.callPackage ./piper-tts-talk { inherit pkgs; piper-voice = piper-voice-jenny-dioco; };
 }
