@@ -207,7 +207,7 @@
       protontricks
       protonvpn-gui
       qbittorrent
-      qemu_full
+      (qemu_full.override { cephSupport = false; })
       radeontop
       rio
       s-tui
