@@ -9,6 +9,7 @@ pkgs.writeShellApplication {
 
   runtimeInputs = with pkgs; [
     piper-tts
+    rlwrap
     sox
   ];
 
@@ -27,11 +28,16 @@ pkgs.writeShellApplication {
         speak "$line"
       done
     else
-      bind 'set editing-mode vi'
+      # Re-exec under rlwrap for readline vi-mode support if not already wrapped
+      if [ -z "''${RLWRAP_RUNNING:-}" ]; then
+        export RLWRAP_RUNNING=1
+        exec rlwrap -a -pGreen -S "> " -vi "$0"
+      fi
+
       echo "Type what you want to say, press Enter to speak. Ctrl+C to quit."
       echo "(readline vi mode enabled)"
       echo ""
-      while IFS= read -erp "> " line; do
+      while IFS= read -r line; do
         [ -z "$line" ] && continue
         speak "$line"
       done
