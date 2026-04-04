@@ -21,11 +21,8 @@ in
     };
 
     wallpaper = mkOption {
-      type = types.path;
-      default = pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/alisonjenkins/nix-config/refs/heads/main/home/wallpapers/5120x1440/Static/sakura.jpg";
-        hash = "sha256-rosIVRieazPxN7xrpH1HBcbQWA/1FYk1gRn1vy6Xe3s=";
-      };
+      type = types.nullOr types.path;
+      default = null;
       description = "Wallpaper image path for stylix theming.";
     };
 
@@ -1461,7 +1458,7 @@ in
     stylix = {
         base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
         enable = true;
-        image = cfg.wallpaper;
+        image = lib.mkIf (cfg.wallpaper != null) cfg.wallpaper;
         polarity = "dark";
 
         cursor = {
