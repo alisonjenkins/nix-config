@@ -39,6 +39,7 @@ in {
       self.nixosModules.podman
       self.nixosModules.power-management
       self.nixosModules.rocm
+      self.nixosModules.tts
       self.nixosModules.vr
 
       # External flake modules
@@ -158,6 +159,7 @@ in {
           ];
         };
         modules.ollama.enable = true;
+        modules.tts.enable = true;
 
         modules.powerManagement = {
           enable = true;
