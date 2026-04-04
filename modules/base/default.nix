@@ -290,7 +290,7 @@ in
           max-jobs = lib.mkDefault "auto";
           trusted-users = [ "root" "@wheel" ];
 
-          substituters = lib.mkDefault [
+          substituters = lib.mkBefore [
             "https://cache.nixcache.org"
             "https://attic.xuyh0120.win/lantian"
             "https://cache.garnix.io"
@@ -302,7 +302,7 @@ in
             "https://rust-overlay.cachix.org"
           ];
 
-          trusted-public-keys = lib.mkDefault [
+          trusted-public-keys = [
             "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
             "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
