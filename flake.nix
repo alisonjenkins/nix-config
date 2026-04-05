@@ -91,8 +91,7 @@
     };
 
     home-manager = {
-      # TODO: revert to upstream once nix-community/home-manager#8996 is merged
-      url = "github:alisonjenkins/home-manager/fix/claude-code-mcp-config-wrapper";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
