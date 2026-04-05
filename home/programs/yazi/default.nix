@@ -4,5 +4,6 @@
     enableBashIntegration = true;
     enableNushellIntegration = true;
     enableZshIntegration = true;
+    shellWrapperName = "y";
   };
 }
