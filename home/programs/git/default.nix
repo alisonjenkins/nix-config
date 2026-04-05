@@ -139,17 +139,13 @@ in
         }
       ];
     }
-    // (
-      if gpgSign
-      then {
-        signing = {
-          format = "ssh";
-          key = gitGPGSigningKey;
-          signByDefault = true;
-        };
-      }
-      else { }
-    );
+    // {
+      signing = {
+        format = if gpgSign then "ssh" else null;
+        key = if gpgSign then gitGPGSigningKey else null;
+        signByDefault = gpgSign;
+      };
+    };
 
   home.packages =
     let
