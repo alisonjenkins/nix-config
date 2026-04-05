@@ -9,6 +9,10 @@
   # https://nixos.wiki/wiki/Overlays
   modifications = final: prev: {
 
+    # Restore xrdb alias removed from nixpkgs — home-manager's xresources module
+    # still references pkgs.xrdb (via lib.getExe)
+    xrdb = prev.xorg.xrdb;
+
     # Pin claude-code to nixpkgs-master — nixos-unstable often lags behind
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code claude-code-bin;
