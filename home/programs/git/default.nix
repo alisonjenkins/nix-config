@@ -143,6 +143,7 @@ in
       if gpgSign
       then {
         signing = {
+          format = "ssh";
           key = gitGPGSigningKey;
           signByDefault = true;
         };
