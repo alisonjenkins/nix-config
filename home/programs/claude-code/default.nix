@@ -29,6 +29,12 @@ in
           "WebFetch(*)"
           "WebSearch(*)"
           "mcp__playwright__*"
+          "mcp__nix-lsp__*"
+          "mcp__context7__*"
+          "mcp__github__*"
+          "mcp__nixos__*"
+          "mcp__k8s__*"
+"mcp__terraform__*"
           "Bash(git:*)"
           "Bash(GIT_PAGER=cat git:*)"
           "Bash(GIT_DIFF_OPTS= git:*)"
@@ -65,6 +71,11 @@ in
           "Bash(mkdir:*)"
           "Bash(cargo:*)"
           "Bash(bash -n:*)"
+          "Bash(sops:*)"
+          "Bash(kubectl:*)"
+          "Bash(k3s:*)"
+          "Bash(ssh-keygen:*)"
+          "Bash(nix-env:*)"
         ];
         deny = [ ];
       };
@@ -156,6 +167,41 @@ in
     mcpServers = {
       playwright = {
         command = "${pkgs.playwright-mcp}/bin/mcp-server-playwright";
+      };
+
+      # LSP integration — gives Claude access to diagnostics, hover, go-to-definition, etc.
+      # Uses bash wrapper to pass $PWD as workspace at launch time
+      nix-lsp = {
+        command = "bash";
+        args = [ "-c" "exec ${pkgs.master.mcp-language-server}/bin/mcp-language-server -workspace \"$PWD\" -lsp ${pkgs.master.nil}/bin/nil" ];
+      };
+
+      # Up-to-date library documentation
+      context7 = {
+        command = "${pkgs.master.context7-mcp}/bin/context7-mcp";
+      };
+
+      # GitHub API integration (issues, PRs, code search)
+      # Wraps with gh auth token to pull the token from gh's keyring
+      github = {
+        command = "bash";
+        args = [ "-c" "GITHUB_PERSONAL_ACCESS_TOKEN=$(${pkgs.gh}/bin/gh auth token) exec ${pkgs.master.github-mcp-server}/bin/github-mcp-server stdio" ];
+      };
+
+      # NixOS/Home Manager options and package search
+      nixos = {
+        command = "${pkgs.master.mcp-nixos}/bin/mcp-nixos";
+      };
+
+      # Kubernetes cluster interaction
+      k8s = {
+        command = "${pkgs.master.mcp-k8s-go}/bin/mcp-k8s-go";
+      };
+
+# Terraform registry and provider documentation
+      terraform = {
+        command = "${pkgs.master.terraform-mcp-server}/bin/terraform-mcp-server";
+        args = [ "stdio" ];
       };
     };
   };

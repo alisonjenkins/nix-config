@@ -119,7 +119,7 @@ When presented with code changes, analyze them carefully, ensure they meet the a
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `/Users/ajenkins/.claude/agent-memory/git-commit-generator/`. Its contents persist across conversations.
+You have a persistent Persistent Agent Memory directory at `~/.claude/agent-memory/git-commit-generator/`. Its contents persist across conversations.
 
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 
