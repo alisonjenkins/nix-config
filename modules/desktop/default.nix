@@ -1458,6 +1458,8 @@ in
     stylix = {
         base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
         enable = true;
+        # Stylix and HM are on different release tracks — expected mismatch
+        enableReleaseChecks = false;
         image = lib.mkIf (cfg.wallpaper != null) cfg.wallpaper;
         polarity = "dark";
 
