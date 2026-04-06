@@ -242,8 +242,11 @@ jobs:
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          nix profile install nixpkgs#awscli2
-          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+          # Install aws CLI and make it available via /tmp/nix-bin (already on PATH)
+          AWS_STORE_PATH=$(nix build nixpkgs#awscli2 --print-out-paths --no-link)
+          ln -sf "$AWS_STORE_PATH/bin/aws" /tmp/nix-bin/aws 2>/dev/null \
+            || echo "$AWS_STORE_PATH/bin" >> "$GITHUB_PATH"
+          aws --version
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -588,8 +591,11 @@ jobs:
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          nix profile install nixpkgs#awscli2
-          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+          # Install aws CLI and make it available via /tmp/nix-bin (already on PATH)
+          AWS_STORE_PATH=$(nix build nixpkgs#awscli2 --print-out-paths --no-link)
+          ln -sf "$AWS_STORE_PATH/bin/aws" /tmp/nix-bin/aws 2>/dev/null \
+            || echo "$AWS_STORE_PATH/bin" >> "$GITHUB_PATH"
+          aws --version
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
