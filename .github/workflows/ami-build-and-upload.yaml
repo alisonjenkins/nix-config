@@ -204,11 +204,16 @@ jobs:
           # the env var, since sandboxed builds use the daemon's build-dir.
           sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
 
-          # Post-build-hook: stream each built derivation to the queue
+          # Post-build-hook: stream each built derivation to the queue.
+          # Uses -e but not -u since OUT_PATHS comes from the daemon environment.
+          # The queue file is created world-writable so both the daemon (root)
+          # and the drainer (runner) can access it.
+          touch /tmp/niks3-queue && chmod 666 /tmp/niks3-queue
           cat > /tmp/nix-post-build-hook.sh << 'HOOKEOF'
           #!/bin/bash
-          set -eu; set -f
-          echo "$OUT_PATHS" | tr ' ' '\n' >> /tmp/niks3-queue
+          set -ef
+          [ -n "${OUT_PATHS:-}" ] && echo "$OUT_PATHS" | tr ' ' '\n' >> /tmp/niks3-queue
+          exit 0
           HOOKEOF
           sed -i 's/^          //' /tmp/nix-post-build-hook.sh
           chmod +x /tmp/nix-post-build-hook.sh
