@@ -68,11 +68,15 @@ echo "OIDC_TOKEN_FILE=${tokenFile}" >> "$GITHUB_ENV"
 echo "OIDC_REFRESHER_PID=$REFRESHER_PID" >> "$GITHUB_STATE"
 echo "OIDC_TOKEN_FILE=${tokenFile}" >> "$GITHUB_STATE"
 
-# Verify credentials work
-CALLER=$(aws sts get-caller-identity --query 'Arn' --output text 2>&1) || {
-  echo "::error::AWS credential verification failed: $CALLER"
-  kill "$REFRESHER_PID" 2>/dev/null || true
-  exit 1
-}
-echo "Authenticated as: $CALLER"
+# Verify credentials work (skip if aws CLI not yet installed)
+if command -v aws &>/dev/null; then
+  CALLER=$(aws sts get-caller-identity --query 'Arn' --output text 2>&1) || {
+    echo "::error::AWS credential verification failed: $CALLER"
+    kill "$REFRESHER_PID" 2>/dev/null || true
+    exit 1
+  }
+  echo "Authenticated as: $CALLER"
+else
+  echo "AWS CLI not in PATH — skipping credential verification (will be verified on first use)"
+fi
 `);
