@@ -48,12 +48,10 @@ on:
           - aws-base-server
           - aws-k8s-node
           - aws-karpenter-node-amd64
-          - aws-karpenter-node-amd64-gha
           - aws-nix-builder
           - aws-base-server-arm
           - aws-k8s-node-arm
           - aws-karpenter-node-arm
-          - aws-karpenter-node-arm-gha
           - aws-nix-builder-arm
       region:
         description: 'AWS region'
@@ -89,9 +87,7 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.ami_name }}" != "all" ]]; then
             name="${{ inputs.ami_name }}"
-            # Route to ARM matrix if the config uses aarch64-linux.
-            # Naming convention: *-arm or *-arm-* is ARM, everything else is x86.
-            if [[ "$name" == *-arm || "$name" == *-arm-* ]]; then
+            if [[ "$name" == *-arm ]]; then
               echo "x86_matrix=[]" >> "$GITHUB_OUTPUT"
               echo "arm_matrix=[\"$name\"]" >> "$GITHUB_OUTPUT"
             else
@@ -99,8 +95,8 @@ jobs:
               echo "arm_matrix=[]" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo 'x86_matrix=["aws-karpenter-node-amd64","aws-karpenter-node-amd64-gha"]' >> "$GITHUB_OUTPUT"
-            echo 'arm_matrix=["aws-karpenter-node-arm","aws-karpenter-node-arm-gha"]' >> "$GITHUB_OUTPUT"
+            echo 'x86_matrix=["aws-karpenter-node-amd64"]' >> "$GITHUB_OUTPUT"
+            echo 'arm_matrix=["aws-karpenter-node-arm"]' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set parameters

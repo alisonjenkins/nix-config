@@ -412,40 +412,6 @@ let
       }];
     };
 
-    # Warmed Karpenter node AMIs — identical to the base karpenter-node AMIs
-    # but with desktop/laptop NixOS config closures pre-populated in the Nix
-    # store via system.extraDependencies. When GHA runner pods mount the host's
-    # /nix/store, builds find these paths already present and skip downloading.
-    aws-karpenter-node-amd64-gha = {
-      system = "x86_64-linux";
-      hostModules = [
-        self.nixosModules.aws
-        self.nixosModules.locale
-        awsKarpenterNodeConfig
-      ];
-      extraModules = [{
-        networking.hostName = lib.mkForce "aws-karpenter-node-amd64";
-        system.extraDependencies = [
-          self.nixosConfigurations.ali-desktop.config.system.build.toplevel
-          self.nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
-          self.nixosConfigurations.ali-work-laptop.config.system.build.toplevel
-        ];
-      }];
-    };
-
-    aws-karpenter-node-arm-gha = {
-      system = "aarch64-linux";
-      hostModules = [
-        self.nixosModules.aws
-        self.nixosModules.locale
-        awsKarpenterNodeConfig
-      ];
-      extraModules = [{
-        system.extraDependencies = [
-          self.nixosConfigurations.dev-vm.config.system.build.toplevel
-        ];
-      }];
-    };
   };
 
   mkAmiSystem = _name: cfg:
