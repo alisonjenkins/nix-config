@@ -1,0 +1,25 @@
+name: 'Configure AWS OIDC Profile'
+description: >
+  Set up an AWS CLI profile with auto-refreshing OIDC tokens.
+  Unlike aws-actions/configure-aws-credentials which exports static session
+  credentials that expire after ~1h, this action configures a CLI profile
+  backed by web_identity_token_file. A background process continuously
+  refreshes the GitHub OIDC token so the CLI can re-assume the role
+  indefinitely. Cleanup runs automatically at the end of the job.
+
+inputs:
+  role-arn:
+    description: 'ARN of the IAM role to assume via OIDC'
+    required: true
+  aws-region:
+    description: 'AWS region (no default — must be explicit)'
+    required: true
+  profile-name:
+    description: 'AWS CLI profile name'
+    required: false
+    default: 'default'
+
+runs:
+  using: 'node24'
+  main: 'main.js'
+  post: 'post.js'
