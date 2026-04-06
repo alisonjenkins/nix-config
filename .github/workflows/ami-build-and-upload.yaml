@@ -205,15 +205,18 @@ jobs:
           sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
 
           # Post-build-hook: stream each built derivation to the queue.
-          touch /tmp/niks3-queue && chmod 666 /tmp/niks3-queue
-          printf '#!/bin/bash\necho "${OUT_PATHS:-}" | tr " " "\\n" >> /tmp/niks3-queue\n' > /tmp/nix-post-build-hook.sh
-          chmod +x /tmp/nix-post-build-hook.sh
-          echo "Hook script contents:"; cat /tmp/nix-post-build-hook.sh
+          # Uses /var/tmp (not /tmp) because the nix-daemon runs with
+          # PrivateTmp=true so it can't see the runner's /tmp.
+          NIKS3_QUEUE="/var/tmp/niks3-queue"
+          echo "NIKS3_QUEUE=$NIKS3_QUEUE" >> "$GITHUB_ENV"
+          touch "$NIKS3_QUEUE" && chmod 666 "$NIKS3_QUEUE"
+          printf '#!/bin/bash\necho "${OUT_PATHS:-}" | tr " " "\\n" >> /var/tmp/niks3-queue\n' > /var/tmp/nix-post-build-hook.sh
+          chmod +x /var/tmp/nix-post-build-hook.sh
 
           sudo mkdir -p /etc/nix
           printf '%s\n' \
             "build-dir = /nix/tmp" \
-            "post-build-hook = /tmp/nix-post-build-hook.sh" \
+            "post-build-hook = /var/tmp/nix-post-build-hook.sh" \
             | sudo tee -a /etc/nix/nix.conf
           sudo systemctl restart nix-daemon || true
 
