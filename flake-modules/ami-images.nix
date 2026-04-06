@@ -74,6 +74,10 @@ let
   # At boot, cloud-init writes /etc/karpenter-node.conf with runtime values
   # (master endpoint, SSM token path, region). A NixOS systemd service reads
   # this config and starts the k3s agent — no downloads, no curl-to-shell.
+  #
+  # GHA runner pods mount the host's /nix/store and daemon socket so builds
+  # can use pre-warmed store paths. trusted-users includes "*" because the
+  # runner container UID is unpredictable and these nodes only run GHA workloads.
   awsKarpenterNodeConfig = { modulesPath, lib, pkgs, ... }: {
     imports = [
       (modulesPath + "/virtualisation/amazon-image.nix")
@@ -90,6 +94,11 @@ let
       hostName = "aws-karpenter-node";
       firewall.enable = lib.mkForce false; # Cilium eBPF is the firewall
     };
+
+    # GHA runner pods connect to the host nix-daemon via mounted socket.
+    # Trust all users since the container UID varies and these nodes only
+    # run ephemeral GHA workloads.
+    nix.settings.trusted-users = [ "root" "*" ];
 
     # Enable live kernel patching (kpatch/livepatch) for patching without reboot
     # LIVEPATCH is only supported on x86_64 in mainline Linux
@@ -391,6 +400,41 @@ let
       ];
       extraModules = [{
         networking.hostName = lib.mkForce "aws-nix-builder-arm";
+      }];
+    };
+
+    # Warmed Karpenter node AMIs — identical to the base karpenter-node AMIs
+    # but with desktop/laptop NixOS config closures pre-populated in the Nix
+    # store via system.extraDependencies. When GHA runner pods mount the host's
+    # /nix/store, builds find these paths already present and skip downloading.
+    aws-karpenter-node-amd64-gha = {
+      system = "x86_64-linux";
+      hostModules = [
+        self.nixosModules.aws
+        self.nixosModules.locale
+        awsKarpenterNodeConfig
+      ];
+      extraModules = [{
+        networking.hostName = lib.mkForce "aws-karpenter-node-amd64";
+        system.extraDependencies = [
+          self.nixosConfigurations.ali-desktop.config.system.build.toplevel
+          self.nixosConfigurations.ali-framework-laptop.config.system.build.toplevel
+          self.nixosConfigurations.ali-work-laptop.config.system.build.toplevel
+        ];
+      }];
+    };
+
+    aws-karpenter-node-arm-gha = {
+      system = "aarch64-linux";
+      hostModules = [
+        self.nixosModules.aws
+        self.nixosModules.locale
+        awsKarpenterNodeConfig
+      ];
+      extraModules = [{
+        system.extraDependencies = [
+          self.nixosConfigurations.dev-vm.config.system.build.toplevel
+        ];
       }];
     };
   };
