@@ -508,9 +508,9 @@ jobs:
       - name: Configure host Nix
         run: |
           # Use the host's Nix via mounted /nix/store and daemon socket
-          NIX_BIN="/nix/var/nix/profiles/default/bin"
+          NIX_BIN="/usr/local/nixos-sw/bin"
           if [ ! -x "$NIX_BIN/nix" ]; then
-            echo "::error::Host Nix not found at $NIX_BIN/nix — is /nix mounted?"
+            echo "::error::Host Nix not found at $NIX_BIN/nix — is /run/current-system/sw mounted?"
             exit 1
           fi
           echo "$NIX_BIN" >> "$GITHUB_PATH"
