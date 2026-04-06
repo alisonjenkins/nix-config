@@ -212,9 +212,17 @@ jobs:
           niks3_start_drainer
 
           echo "Building AMI for ${{ matrix.hostname }}..."
-          OUT=$(nix build ".#packages.x86_64-linux.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
+          nix build ".#packages.x86_64-linux.${{ matrix.hostname }}-ami" \
+            --print-out-paths --no-link \
+            2> >(tee -a /tmp/nix-build-stderr.log >&2) \
+            > /tmp/nix-build-out.txt
+
+          # Queue all intermediate derivations for cache push
+          cat /tmp/nix-build-out.txt | xargs -r nix path-info --recursive 2>/dev/null \
+            | sort -u >> "$NIKS3_QUEUE"
+
+          OUT=$(cat /tmp/nix-build-out.txt | tail -1)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
-          echo "$OUT" >> "$NIKS3_QUEUE"
 
           niks3_stop_and_final_push
 
@@ -590,9 +598,17 @@ jobs:
           niks3_start_drainer
 
           echo "Building AMI for ${{ matrix.hostname }}..."
-          OUT=$(nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" --print-out-paths --no-link)
+          nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" \
+            --print-out-paths --no-link \
+            2> >(tee -a /tmp/nix-build-stderr.log >&2) \
+            > /tmp/nix-build-out.txt
+
+          # Queue all intermediate derivations for cache push
+          cat /tmp/nix-build-out.txt | xargs -r nix path-info --recursive 2>/dev/null \
+            | sort -u >> "$NIKS3_QUEUE"
+
+          OUT=$(cat /tmp/nix-build-out.txt | tail -1)
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
-          echo "$OUT" >> "$NIKS3_QUEUE"
 
           niks3_stop_and_final_push
 
