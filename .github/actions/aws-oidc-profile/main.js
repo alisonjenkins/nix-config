@@ -68,15 +68,27 @@ echo "OIDC_TOKEN_FILE=${tokenFile}" >> "$GITHUB_ENV"
 echo "OIDC_REFRESHER_PID=$REFRESHER_PID" >> "$GITHUB_STATE"
 echo "OIDC_TOKEN_FILE=${tokenFile}" >> "$GITHUB_STATE"
 
-# Verify credentials work (skip if aws CLI not yet installed)
+# Ensure aws CLI is available, then verify credentials
+aws_cmd=""
 if command -v aws &>/dev/null; then
-  CALLER=$(aws sts get-caller-identity --query 'Arn' --output text 2>&1) || {
+  aws_cmd="aws"
+elif command -v nix &>/dev/null; then
+  echo "AWS CLI not in PATH — using nix run to provide it"
+  aws_cmd="nix --extra-experimental-features nix-command --extra-experimental-features flakes run nixpkgs#awscli2 --"
+elif [ -f /etc/debian_version ]; then
+  echo "AWS CLI not in PATH — installing via apt"
+  sudo apt-get update -qq && sudo apt-get install -y -qq awscli
+  aws_cmd="aws"
+fi
+
+if [ -n "$aws_cmd" ]; then
+  CALLER=$($aws_cmd sts get-caller-identity --query 'Arn' --output text 2>&1) || {
     echo "::error::AWS credential verification failed: $CALLER"
     kill "$REFRESHER_PID" 2>/dev/null || true
     exit 1
   }
   echo "Authenticated as: $CALLER"
 else
-  echo "AWS CLI not in PATH — skipping credential verification (will be verified on first use)"
+  echo "::warning::Could not find or install AWS CLI — skipping credential verification"
 fi
 `);
