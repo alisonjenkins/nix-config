@@ -197,6 +197,7 @@ jobs:
           # Write extra config for this job (host daemon config is already optimized)
           mkdir -p /tmp/nix-conf
           cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
+          experimental-features = nix-command flakes
           max-jobs = auto
           cores = 0
           eval-cache = true
@@ -317,6 +318,7 @@ jobs:
 
           mkdir -p /tmp/nix-conf
           cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
+          experimental-features = nix-command flakes
           max-jobs = auto
           cores = 0
           eval-cache = true

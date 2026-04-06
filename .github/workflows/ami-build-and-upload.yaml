@@ -526,6 +526,7 @@ jobs:
 
           mkdir -p /tmp/nix-conf
           cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
+          experimental-features = nix-command flakes
           max-jobs = auto
           cores = 0
           eval-cache = true
@@ -540,14 +541,7 @@ jobs:
           NIXCONF
           sed -i 's/^          //' /tmp/nix-conf/nix.conf
 
-          # Debug: check the nix binary
-          ls -la /tmp/nix-bin/nix
-          file /tmp/nix-bin/nix || true
-          readlink -f /tmp/nix-bin/nix
-          readlink -f /tmp/nix-bin/nix | xargs file || true
-          readlink -f /tmp/nix-bin/nix | xargs ldd 2>&1 || true
-          /tmp/nix-bin/nix --version 2>&1 || echo "nix --version failed with exit code $?"
-          echo "Using host Nix: $(/tmp/nix-bin/nix --version 2>&1 || true)"
+          echo "Using host Nix: $(nix --version)"
 
       - name: Enable unprivileged user namespaces for systemd-repart
         run: |
@@ -563,10 +557,7 @@ jobs:
         id: dry-run
         run: |
           echo "nix_system=aarch64-linux" >> "$GITHUB_OUTPUT"
-          echo "Testing nix daemon connectivity..."
-          nix store ping 2>&1 || echo "::warning::nix store ping failed"
-          echo "Running dry-run evaluation..."
-          dry_output=$(nix build --dry-run ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" 2>&1) || true
+          dry_output=$(nix build --dry-run ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" 2>&1)
           echo "$dry_output"
           if echo "$dry_output" | grep -q 'will be built:'; then
             echo "needs_build=true" >> "$GITHUB_OUTPUT"
