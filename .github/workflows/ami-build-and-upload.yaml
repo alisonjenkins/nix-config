@@ -203,25 +203,32 @@ jobs:
           # after nothing-but-nix rampage. Must configure the nix daemon, not just
           # the env var, since sandboxed builds use the daemon's build-dir.
           sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
+
+          # Post-build-hook: stream each built derivation to the queue
+          cat > /tmp/nix-post-build-hook.sh << 'HOOKEOF'
+          #!/bin/bash
+          set -eu; set -f
+          echo "$OUT_PATHS" | tr ' ' '\n' >> /tmp/niks3-queue
+          HOOKEOF
+          sed -i 's/^          //' /tmp/nix-post-build-hook.sh
+          chmod +x /tmp/nix-post-build-hook.sh
+
           sudo mkdir -p /etc/nix
-          echo "build-dir = /nix/tmp" | sudo tee -a /etc/nix/nix.conf
+          printf '%s\n' \
+            "build-dir = /nix/tmp" \
+            "post-build-hook = /tmp/nix-post-build-hook.sh" \
+            | sudo tee -a /etc/nix/nix.conf
           sudo systemctl restart nix-daemon || true
 
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
 
           echo "Building AMI for ${{ matrix.hostname }}..."
-          nix build ".#packages.x86_64-linux.${{ matrix.hostname }}-ami" \
+          OUT=$(nix build ".#packages.x86_64-linux.${{ matrix.hostname }}-ami" \
             --print-out-paths --no-link \
-            2> >(tee -a /tmp/nix-build-stderr.log >&2) \
-            > /tmp/nix-build-out.txt
-
-          # Queue all intermediate derivations for cache push
-          cat /tmp/nix-build-out.txt | xargs -r nix path-info --recursive 2>/dev/null \
-            | sort -u >> "$NIKS3_QUEUE"
-
-          OUT=$(cat /tmp/nix-build-out.txt | tail -1)
+            2> >(tee -a /tmp/nix-build-stderr.log >&2))
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          echo "$OUT" >> "$NIKS3_QUEUE"
 
           niks3_stop_and_final_push
 
@@ -570,22 +577,18 @@ jobs:
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
           NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
+          # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
+          NIKS3_QUEUE: /var/tmp/niks3-queue
         run: |
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
 
           echo "Building AMI for ${{ matrix.hostname }}..."
-          nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" \
+          OUT=$(nix build ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" \
             --print-out-paths --no-link \
-            2> >(tee -a /tmp/nix-build-stderr.log >&2) \
-            > /tmp/nix-build-out.txt
-
-          # Queue all intermediate derivations for cache push
-          cat /tmp/nix-build-out.txt | xargs -r nix path-info --recursive 2>/dev/null \
-            | sort -u >> "$NIKS3_QUEUE"
-
-          OUT=$(cat /tmp/nix-build-out.txt | tail -1)
+            2> >(tee -a /tmp/nix-build-stderr.log >&2))
           echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          echo "$OUT" >> "$NIKS3_QUEUE"
 
           niks3_stop_and_final_push
 

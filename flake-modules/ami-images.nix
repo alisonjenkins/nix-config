@@ -100,6 +100,15 @@ let
     # run ephemeral GHA workloads.
     nix.settings.trusted-users = [ "root" "*" ];
 
+    # Post-build-hook: stream each built derivation to a queue file that the
+    # niks3 background drainer (running inside the GHA runner pod) picks up
+    # and pushes to the binary cache in batches.
+    nix.settings.post-build-hook = pkgs.writeShellScript "niks3-post-build-hook" ''
+      set -eu; set -f
+      echo "$OUT_PATHS" | tr ' ' '\n' >> /var/tmp/niks3-queue
+    '';
+    systemd.tmpfiles.rules = [ "f /var/tmp/niks3-queue 0666 root root -" ];
+
     # Enable live kernel patching (kpatch/livepatch) for patching without reboot
     # LIVEPATCH is only supported on x86_64 in mainline Linux
     boot.kernelPatches = lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [{

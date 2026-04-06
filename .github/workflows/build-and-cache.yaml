@@ -158,6 +158,8 @@ jobs:
       # Use cluster-internal service URL — these runners are pods in the k3s cluster,
       # so the external URL (api.nixcache.org → public IP) causes hairpin NAT timeouts.
       NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
+      # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
+      NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
       - name: Skip if newer run is queued
         run: |
@@ -242,6 +244,8 @@ jobs:
       actions: read
     env:
       NIKS3_SERVER_URL: http://niks3.niks3.svc.cluster.local
+      # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
+      NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
       - name: Skip if newer run is queued
         run: |
