@@ -242,11 +242,22 @@ jobs:
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          # Install aws CLI and make it available via /tmp/nix-bin (already on PATH)
-          AWS_STORE_PATH=$(nix build nixpkgs#awscli2 --print-out-paths --no-link)
-          ln -sf "$AWS_STORE_PATH/bin/aws" /tmp/nix-bin/aws 2>/dev/null \
-            || echo "$AWS_STORE_PATH/bin" >> "$GITHUB_PATH"
-          aws --version
+          if command -v aws &>/dev/null; then
+            echo "aws already available: $(aws --version)"
+          elif [ -d /tmp/nix-bin ]; then
+            # Self-hosted NixOS runner — create a wrapper that uses nix run
+            cat > /tmp/nix-bin/aws << 'WRAPPER'
+          #!/usr/bin/env bash
+          exec nix run nixpkgs#awscli2 -- "$@"
+          WRAPPER
+            sed -i 's/^          //' /tmp/nix-bin/aws
+            chmod +x /tmp/nix-bin/aws
+            echo "aws via nix run: $(aws --version)"
+          else
+            nix profile install nixpkgs#awscli2
+            echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+            echo "aws installed: $(aws --version)"
+          fi
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -591,11 +602,22 @@ jobs:
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          # Install aws CLI and make it available via /tmp/nix-bin (already on PATH)
-          AWS_STORE_PATH=$(nix build nixpkgs#awscli2 --print-out-paths --no-link)
-          ln -sf "$AWS_STORE_PATH/bin/aws" /tmp/nix-bin/aws 2>/dev/null \
-            || echo "$AWS_STORE_PATH/bin" >> "$GITHUB_PATH"
-          aws --version
+          if command -v aws &>/dev/null; then
+            echo "aws already available: $(aws --version)"
+          elif [ -d /tmp/nix-bin ]; then
+            # Self-hosted NixOS runner — create a wrapper that uses nix run
+            cat > /tmp/nix-bin/aws << 'WRAPPER'
+          #!/usr/bin/env bash
+          exec nix run nixpkgs#awscli2 -- "$@"
+          WRAPPER
+            sed -i 's/^          //' /tmp/nix-bin/aws
+            chmod +x /tmp/nix-bin/aws
+            echo "aws via nix run: $(aws --version)"
+          else
+            nix profile install nixpkgs#awscli2
+            echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+            echo "aws installed: $(aws --version)"
+          fi
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
