@@ -89,6 +89,8 @@ if [ -n "$aws_cmd" ]; then
   }
   echo "Authenticated as: $CALLER"
 else
-  echo "::warning::Could not find or install AWS CLI — skipping credential verification"
+  echo "::error::Could not find or install AWS CLI — cannot verify credentials"
+  kill "$REFRESHER_PID" 2>/dev/null || true
+  exit 1
 fi
 `);
