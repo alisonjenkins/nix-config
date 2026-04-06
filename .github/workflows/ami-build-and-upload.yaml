@@ -563,7 +563,10 @@ jobs:
         id: dry-run
         run: |
           echo "nix_system=aarch64-linux" >> "$GITHUB_OUTPUT"
-          dry_output=$(nix build --dry-run ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" 2>&1)
+          echo "Testing nix daemon connectivity..."
+          nix store ping 2>&1 || echo "::warning::nix store ping failed"
+          echo "Running dry-run evaluation..."
+          dry_output=$(nix build --dry-run ".#packages.aarch64-linux.${{ matrix.hostname }}-ami" 2>&1) || true
           echo "$dry_output"
           if echo "$dry_output" | grep -q 'will be built:'; then
             echo "needs_build=true" >> "$GITHUB_OUTPUT"
