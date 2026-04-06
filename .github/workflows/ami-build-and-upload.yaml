@@ -234,7 +234,9 @@ jobs:
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
-        run: nix profile install nixpkgs#awscli2
+        run: |
+          nix profile install nixpkgs#awscli2
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
@@ -606,7 +608,9 @@ jobs:
 
       - name: Install AWS CLI
         if: steps.dry-run.outputs.needs_build == 'true'
-        run: nix profile install nixpkgs#awscli2
+        run: |
+          nix profile install nixpkgs#awscli2
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
 
       - name: Configure AWS credentials
         if: steps.dry-run.outputs.needs_build == 'true'
