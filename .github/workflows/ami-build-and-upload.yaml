@@ -508,12 +508,20 @@ jobs:
       - name: Configure host Nix
         run: |
           # Use the host's Nix via mounted /nix/store and daemon socket
-          NIX_BIN="/usr/local/nixos-sw/bin"
-          if [ ! -x "$NIX_BIN/nix" ]; then
-            echo "::error::Host Nix not found at $NIX_BIN/nix — is /run/current-system/sw mounted?"
+          NIX_SW="/usr/local/nixos-sw/bin"
+          if [ ! -x "$NIX_SW/nix" ]; then
+            echo "::error::Host Nix not found at $NIX_SW/nix — is /run/current-system/sw mounted?"
             exit 1
           fi
-          echo "$NIX_BIN" >> "$GITHUB_PATH"
+          # Symlink only nix binaries — adding the full NixOS sw/bin to PATH
+          # would make GHA use NixOS bash as the step shell, breaking things.
+          mkdir -p /tmp/nix-bin
+          for cmd in nix nix-build nix-channel nix-collect-garbage nix-copy-closure \
+                     nix-daemon nix-env nix-hash nix-instantiate nix-prefetch-url \
+                     nix-shell nix-store git; do
+            [ -x "$NIX_SW/$cmd" ] && ln -sf "$NIX_SW/$cmd" /tmp/nix-bin/
+          done
+          echo "/tmp/nix-bin" >> "$GITHUB_PATH"
           echo "NIX_CONF_DIR=/tmp/nix-conf" >> "$GITHUB_ENV"
 
           mkdir -p /tmp/nix-conf
