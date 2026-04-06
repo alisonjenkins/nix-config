@@ -20,9 +20,7 @@ fetch_oidc_token() {
   curl -sS \\
     -H "Authorization: bearer \${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \\
     -H "Accept: application/json; api-version=2.0" \\
-    -H "Content-Type: application/json" \\
-    -d '{"audience":"sts.amazonaws.com"}' \\
-    "\${ACTIONS_ID_TOKEN_REQUEST_URL}" | jq -r '.value'
+    "\${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value'
 }
 
 # Get initial token
