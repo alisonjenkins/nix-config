@@ -540,7 +540,14 @@ jobs:
           NIXCONF
           sed -i 's/^          //' /tmp/nix-conf/nix.conf
 
-          echo "Using host Nix: $(nix --version)"
+          # Debug: check the nix binary
+          ls -la /tmp/nix-bin/nix
+          file /tmp/nix-bin/nix || true
+          readlink -f /tmp/nix-bin/nix
+          readlink -f /tmp/nix-bin/nix | xargs file || true
+          readlink -f /tmp/nix-bin/nix | xargs ldd 2>&1 || true
+          /tmp/nix-bin/nix --version 2>&1 || echo "nix --version failed with exit code $?"
+          echo "Using host Nix: $(/tmp/nix-bin/nix --version 2>&1 || true)"
 
       - name: Enable unprivileged user namespaces for systemd-repart
         run: |
