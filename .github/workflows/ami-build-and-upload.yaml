@@ -185,8 +185,7 @@ jobs:
       - name: Install niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_x86_64.tar.gz | sudo tar xz -C /usr/local/bin niks3
-          sudo chmod +x /usr/local/bin/niks3
+          .github/scripts/install-niks3.sh
 
       - name: Update pre-pull image hashes
         if: steps.dry-run.outputs.needs_build == 'true' && contains(matrix.hostname, 'karpenter')
@@ -516,42 +515,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Configure host Nix
-        run: |
-          # Use the host's Nix via mounted /nix/store and daemon socket
-          NIX_SW="/usr/local/nixos-sw/bin"
-          if [ ! -x "$NIX_SW/nix" ]; then
-            echo "::error::Host Nix not found at $NIX_SW/nix — is /run/current-system/sw mounted?"
-            exit 1
-          fi
-          # Symlink only nix binaries — adding the full NixOS sw/bin to PATH
-          # would make GHA use NixOS bash as the step shell, breaking things.
-          mkdir -p /tmp/nix-bin
-          for cmd in nix nix-build nix-channel nix-collect-garbage nix-copy-closure \
-                     nix-daemon nix-env nix-hash nix-instantiate nix-prefetch-url \
-                     nix-shell nix-store git; do
-            [ -x "$NIX_SW/$cmd" ] && ln -sf "$NIX_SW/$cmd" /tmp/nix-bin/
-          done
-          echo "/tmp/nix-bin" >> "$GITHUB_PATH"
-          echo "NIX_CONF_DIR=/tmp/nix-conf" >> "$GITHUB_ENV"
-
-          mkdir -p /tmp/nix-conf
-          cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
-          experimental-features = nix-command flakes
-          max-jobs = auto
-          cores = 0
-          eval-cache = true
-          http-connections = 128
-          max-substitution-jobs = 128
-          narinfo-cache-negative-ttl = 3600
-          connect-timeout = 5
-          stalled-download-timeout = 10
-          fallback = true
-          extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
-          extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
-          NIXCONF
-          sed -i 's/^          //' /tmp/nix-conf/nix.conf
-
-          echo "Using host Nix: $(nix --version)"
+        uses: ./.github/actions/setup-host-nix
 
       - name: Enable unprivileged user namespaces for systemd-repart
         run: |
@@ -580,8 +544,7 @@ jobs:
       - name: Install niks3
         if: steps.dry-run.outputs.needs_build == 'true'
         run: |
-          curl -fsSL https://github.com/Mic92/niks3/releases/download/v1.4.0/niks3_Linux_arm64.tar.gz | sudo tar xz -C /usr/local/bin niks3
-          sudo chmod +x /usr/local/bin/niks3
+          .github/scripts/install-niks3.sh
 
       - name: Update pre-pull image hashes
         if: steps.dry-run.outputs.needs_build == 'true' && contains(matrix.hostname, 'karpenter')
