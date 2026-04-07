@@ -14,4 +14,7 @@
       inputs.zen-browser.homeModules.default
     ]
     ++ lib.optional (hostname != null && builtins.pathExists (./machines + "/${hostname}")) ./machines/${hostname};
+
+  # stylix module is Linux-only (loaded via nixosModules.desktop); Darwin has no stylix
+  stylix.enableReleaseChecks = false;
 }

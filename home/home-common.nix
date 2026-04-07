@@ -129,7 +129,6 @@
 
   # HM 26.05 tracks upstream master while nixpkgs is 25.11 stable — expected mismatch
   home.enableNixpkgsReleaseCheck = false;
-  stylix.enableReleaseChecks = false;
 
   home.stateVersion = "24.05";
 }
