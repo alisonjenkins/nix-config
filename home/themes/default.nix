@@ -7,6 +7,7 @@
 
   gtk = {
     enable = true;
+    gtk4.theme = null; # Silence HM 26.05 migration warning (adopting new default)
     # iconTheme = {
     #   name = "Yaru-magenta-dark";
     #   package = pkgs.yaru-theme;

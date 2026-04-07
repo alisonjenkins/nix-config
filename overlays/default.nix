@@ -17,10 +17,19 @@
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code claude-code-bin;
 
+    # Disable direnv fish test on Darwin — fish test-fish target gets SIGKILL'd in macOS sandbox
+    direnv = if prev.stdenv.hostPlatform.isDarwin
+      then prev.direnv.overrideAttrs (_: { doCheck = false; })
+      else prev.direnv;
+
     # Disable aiohttp tests to work around sandbox test failures
     pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
       (python-final: python-prev: {
         aiohttp = python-prev.aiohttp.overridePythonAttrs (oldAttrs: {
+          doCheck = false;
+        });
+        # test_acceptScaling fails on macOS: TCP accept scaling differs from Linux
+        twisted = python-prev.twisted.overridePythonAttrs (_: {
           doCheck = false;
         });
         django_4 = python-prev.django_4.overridePythonAttrs (oldAttrs: {
