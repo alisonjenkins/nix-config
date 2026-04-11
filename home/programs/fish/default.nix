@@ -86,7 +86,7 @@
             owner = "nickeb96";
             repo = "puffer-fish";
             rev = "3cb17caa88270e1bd215d97fbd591155c976f083";
-            sha256 = "sha256-NQa12L0zlEz2EJjMDhWUhw5cz/zcFokjuCK5ZofTn+Q=";
+            sha256 = "sha256-kzAFM4rYWGQiFiw4LTnWv8LYBL7VQ9VlPqOw6d9NYe4=";
           };
         }
         {
