@@ -118,6 +118,10 @@
     ".config/fish/functions/aws.fish".source = ./functions/aws.fish;
     ".config/fish/functions/terraform.fish".source = ./functions/terraform.fish;
     ".config/fish/functions/kubectl.fish".source = ./functions/kubectl.fish;
+    ".config/fish/functions/tide_bench.fish".source = ./functions/tide_bench.fish;
+    ".config/fish/functions/_tide_item_kubectl.fish".source = ./functions/_tide_item_kubectl.fish;
+    ".config/fish/functions/_tide_item_git.fish".source = ./functions/_tide_item_git.fish;
+    ".config/fish/functions/_tide_item_direnv.fish".source = ./functions/_tide_item_direnv.fish;
     ".config/fish/completions/asp.fish".source = ./completions/asp.fish;
     ".config/fish/completions/asr.fish".source = ./completions/asr.fish;
     ".config/fish/completions/just.fish".source = ./completions/just.fish;
