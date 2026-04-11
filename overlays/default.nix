@@ -22,6 +22,19 @@
       then prev.direnv.overrideAttrs (_: { doCheck = false; })
       else prev.direnv;
 
+    # Re-sign fish after build on Darwin.
+    # Nix's fixup phase runs install_name_tool to rewrite library paths, which
+    # invalidates the original code signature. Corporate AV tools then SIGKILL
+    # any new fish process. Signing in postFixup (after all patching) produces a
+    # valid ad-hoc signature over the final binary.
+    fish = if prev.stdenv.hostPlatform.isDarwin
+      then prev.fish.overrideAttrs (old: {
+        postFixup = (old.postFixup or "") + ''
+          /usr/bin/codesign --force --sign - $out/bin/fish
+        '';
+      })
+      else prev.fish;
+
     # Disable aiohttp tests to work around sandbox test failures
     pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
       (python-final: python-prev: {
