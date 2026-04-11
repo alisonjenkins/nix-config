@@ -35,6 +35,9 @@ end
 # Homebrew on Mac
 if test (uname -s) = "Darwin"
     set -gx HOMEBREW_CASK_OPTS '--appdir=/Applications'
+    # Skip optional git index locks during read operations (git status, git branch).
+    # Reduces AV-scanned file writes on every prompt render.
+    set -gx GIT_OPTIONAL_LOCKS 0
 end
 
 # PATH setup

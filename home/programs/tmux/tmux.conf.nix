@@ -2,9 +2,17 @@
     pkgs,
     tmux-catpuccin,
     ...
-}: ''
+}:
+let
+  # On macOS, use Homebrew fish — the Nix-built fish binary gets SIGKILL'd by
+  # Microsoft Defender because the build process voids the Apple code signature.
+  # Homebrew fish ships pre-signed with an Apple Developer ID.
+  fishBin = if pkgs.stdenv.isDarwin
+    then "/opt/homebrew/bin/fish"
+    else "${pkgs.fish}/bin/fish";
+in ''
 
-set-option -g default-command "${pkgs.fish}/bin/fish"
+set-option -g default-command "${fishBin}"
 set -g allow-passthrough on
 run-shell ${pkgs.tmuxPlugins.sensible}/share/tmux-plugins/sensible/sensible.tmux
 
