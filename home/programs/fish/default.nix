@@ -31,10 +31,7 @@
           end
         '' else ""}
 
-        # McFly history search
-        if type -q mcfly
-          mcfly init fish | source
-        end
+        # McFly: initialized by programs.mcfly.enableFishIntegration
       '';
 
       plugins = [
