@@ -1,3 +1,6 @@
+# Cache OS name once; environment_vars.fish may already have set this
+set -q _os_name; or set -g _os_name (uname -s)
+
 # Navigation aliases
 # Note: 'alias -- -' doesn't work in Fish, use 'prevd' or 'cd -' directly instead
 alias ..='cd ..'
@@ -53,7 +56,7 @@ end
 alias j='just'
 
 # Platform-specific ls aliases
-if test (uname -s) = "Darwin"
+if test "$_os_name" = Darwin
     alias ll='ls -G'
     alias ls='ls -G'
     if command -v tree &>/dev/null
