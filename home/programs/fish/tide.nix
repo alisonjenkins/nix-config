@@ -2,6 +2,8 @@
 {
   pkgs,
   lib,
+  # hostname is passed via extraSpecialArgs on hosts that set it; defaults to ""
+  hostname ? "",
   ...
 }: {
   programs.fish.plugins = [
@@ -16,5 +18,10 @@
     }
   ];
 
-  home.file.".config/fish/conf.d/tide_config.fish".source = ./tide_config.fish;
+  # Alisons-MacBook-Pro uses a slimmer config (9 fewer right-prompt items) to
+  # reduce per-render file-system checks under corporate AV scanning.
+  home.file.".config/fish/conf.d/tide_config.fish".source =
+    if hostname == "Alisons-MacBook-Pro"
+    then ./tide_config_macbook.fish
+    else ./tide_config.fish;
 }
