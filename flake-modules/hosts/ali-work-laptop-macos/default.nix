@@ -469,6 +469,9 @@ in {
           brews = [
             "choose-gui"
             "colima"  # Container runtime using lima
+            "fish"    # Homebrew fish is Developer ID signed + notarized; Defender trusts it
+                      # The Nix fish binary gets SIGKILL'd by Defender after each rebuild.
+                      # All ~/.config/fish/ config (tide, plugins, conf.d) works with either binary.
             "lima"
             "openconnect"
           ];
@@ -586,6 +589,7 @@ in {
           settings = {
             builders = "ssh-ng://builder@linux-builder aarch64-linux /etc/nix/builder_ed25519 11 - - - c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUpCV2N4Yi9CbGFxdDFhdU90RStGOFFVV3JVb3RpQzVxQkorVXVFV2RWQ2Igcm9vdEBuaXhvcwo=";
             builders-use-substitutes = true;
+            download-buffer-size = 256 * 1024 * 1024; # 256 MiB — prevents buffer-full warnings on large fetches
             experimental-features = "nix-command flakes";
             extra-trusted-users = "${username}";
             extra-platforms = "x86_64-linux";
