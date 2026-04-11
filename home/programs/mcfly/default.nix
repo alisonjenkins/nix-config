@@ -15,7 +15,7 @@ in
 {
   programs.mcfly = {
     enable = true;
-    enableFishIntegration = true;
+    enableFishIntegration = false; # handled by tool_init_cache.fish with caching + fast session ID
     enableZshIntegration = false; # Handled manually below for zsh-vi-mode compatibility
     keyScheme = "emacs";
   };

@@ -111,6 +111,7 @@
     ".config/fish/conf.d/carapace.fish".source = ./conf.d/carapace.fish;
     ".config/fish/conf.d/fzf_enhanced.fish".source = ./conf.d/fzf_enhanced.fish;
     ".config/fish/conf.d/abbreviations.fish".source = ./conf.d/abbreviations.fish;
+    ".config/fish/conf.d/tool_init_cache.fish".source = ./conf.d/tool_init_cache.fish;
     ".config/fish/functions/n.fish".source = ./functions/n.fish;
     ".config/fish/functions/aws.fish".source = ./functions/aws.fish;
     ".config/fish/functions/terraform.fish".source = ./functions/terraform.fish;

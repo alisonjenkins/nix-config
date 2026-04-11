@@ -2,7 +2,7 @@
   programs.carapace = {
     enable = true;
     enableBashIntegration = true;
-    enableFishIntegration = true;
+    enableFishIntegration = false; # handled by tool_init_cache.fish with caching
     enableNushellIntegration = true;
     enableZshIntegration = true;
   };
