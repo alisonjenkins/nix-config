@@ -1,15 +1,12 @@
 # Enable terraform completions
-if type -q terraform
+if type -q terraform; and not test -s ~/.config/fish/completions/terraform.fish
     terraform -install-autocomplete 2>/dev/null
 end
 
-# Enable terragrunt completions if available
 if type -q terragrunt
-    # Terragrunt uses similar completion to terraform
     complete -c terragrunt -w terraform
 end
 
-# Enable tofu completions if available
-if type -q tofu
+if type -q tofu; and not test -s ~/.config/fish/completions/tofu.fish
     tofu -install-autocomplete 2>/dev/null
 end
