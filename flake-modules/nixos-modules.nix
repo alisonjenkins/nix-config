@@ -17,6 +17,7 @@
     rocm = import ../modules/rocm;
     servers = import ../modules/servers;
     tts = import ../modules/tts;
+    uresourced = import ../modules/uresourced;
     vr = import ../modules/vr;
 
     # Network/VPN modules
