@@ -5,7 +5,6 @@
       with pkgs; [
         brightnessctl
         cpupower-gui
-        hyprshade
         playerctl
         swww
       ]
@@ -54,8 +53,6 @@
         ];
 
         modules-center = [
-          # "hyprland/workspaces"
-          # "hyprland/window"
           "clock"
         ];
 
@@ -81,8 +78,6 @@
             warning = 80;
             critical = 9;
           };
-          on-click = "${pkgs.hyprshade}/bin/hyprshade toggle bluefilter";
-          on-click-right = "${pkgs.hyprshade}/bin/hyprshade toggle extradark";
           on-scroll-down = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%-";
           on-scroll-up = "${pkgs.brightnessctl}/bin/brightnessctl -q set 5%+";
           tooltip = false;
@@ -179,41 +174,6 @@
           format-alt = " {percentage_used}% ({free})";
           tooltip = true;
           interval = 10;
-        };
-
-        "hyprland/window" = {
-          format = "  {}";
-          separate-outputs = true;
-          max-length = 32;
-          rewrite = {
-            "(.*)fish" = "> [$1]";
-            "(.*)neovide" = "neovide 󰕷 ";
-            "(.*)Mozilla Firefox" = "Firefox 󰈹";
-            "(.*)BlueMail" = "BlueMail 󰊫 ";
-            "(.*)Visual Studio Code" = "Code 󰨞";
-            "(.*)Dolphin" = "$1 󰉋";
-            "(.*)Spotify" = "Spotify 󰓇";
-            "(.*)Steam" = "Steam 󰓓";
-          };
-        };
-
-        "hyprland/workspaces" = {
-          active-only = false;
-          disable-scroll = false;
-          format = "{icon} {id} {name}";
-          on-scroll-down = "${pkgs.hyprland}/bin/hyprctl dispatch workspace +1";
-          on-scroll-up = "${pkgs.hyprland}/bin/hyprctl dispatch workspace -1";
-          sort-by-number = true;
-
-          format-icons = {
-            urgent = "󰗖";
-            active = "󰝥";
-            default = "󰝦";
-          };
-
-          persistent-workspaces = {
-            "*" = 5;
-          };
         };
 
         memory = {
