@@ -479,7 +479,7 @@ in
         enable = true;
         useOSProber = true;
 
-        theme = pkgs.stdenv.mkDerivation {
+        theme = lib.mkDefault (pkgs.stdenv.mkDerivation {
           pname = "distro-grub-themes";
           version = "3.1";
           src = pkgs.fetchFromGitHub {
@@ -489,7 +489,7 @@ in
             hash = "sha256-ZcoGbbOMDDwjLhsvs77C7G7vINQnprdfI37a9ccrmPs=";
           };
           installPhase = "cp -r customize/nixos $out";
-        };
+        });
       };
     })
 
