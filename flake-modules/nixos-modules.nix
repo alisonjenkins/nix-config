@@ -39,7 +39,6 @@
     app-desktop-greetd = import ../app-profiles/desktop/display-managers/greetd;
     app-desktop-greetd-regreet = import ../app-profiles/desktop/display-managers/greetd-regreet;
     app-desktop-sddm = import ../app-profiles/desktop/display-managers/sddm;
-    app-desktop-wm-hyprland = import ../app-profiles/desktop/wms/hyprland;
     app-desktop-wm-plasma6 = import ../app-profiles/desktop/wms/plasma6;
     app-desktop-wm-sway = import ../app-profiles/desktop/wms/sway;
     app-hardware-fingerprint-reader = import ../app-profiles/hardware/fingerprint-reader;

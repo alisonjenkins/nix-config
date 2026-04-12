@@ -9,7 +9,6 @@
     scripts = import ../home/scripts;
     themes = import ../home/themes;
     autostart = import ../home/autostart;
-    wm-hyprland = import ../home/wms/hyprland;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
