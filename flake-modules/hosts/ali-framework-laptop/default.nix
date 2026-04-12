@@ -33,6 +33,7 @@ in {
       self.nixosModules.development-web
       self.nixosModules.libvirtd
       self.nixosModules.nohang
+      self.nixosModules.uresourced
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.ollama
@@ -121,6 +122,7 @@ in {
           enable = true;
           enableDesktopNotifications = true;
         };
+        modules.uresourced.enable = true;
         modules.base = {
           enable = true;
           enableImpermanence = true;

@@ -29,6 +29,7 @@ in {
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
       self.nixosModules.ollama
+      self.nixosModules.uresourced
       self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.rocm
@@ -93,6 +94,7 @@ in {
           enable = true;
           enableDesktopNotifications = true;
         };
+        modules.uresourced.enable = true;
         modules.base = {
           enable = true;
           enableImpermanence = true;
