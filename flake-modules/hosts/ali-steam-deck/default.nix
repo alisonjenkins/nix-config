@@ -15,7 +15,11 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.ali-steam-deck-disko-config
       self.nixosModules.ali-steam-deck-hardware
-      self.nixosModules.app-desktop
+      self.nixosModules.desktop-1password
+      self.nixosModules.desktop-aws-tools
+      self.nixosModules.desktop-base
+      self.nixosModules.desktop-kubernetes
+      self.nixosModules.desktop-media
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.locale
@@ -70,6 +74,11 @@ in {
         };
 
         modules.desktop.enable = true;
+        modules.desktop-1password.enable = true;
+        modules.desktop-aws-tools.enable = true;
+        modules.desktop-base.enable = true;
+        modules.desktop-kubernetes.enable = true;
+        modules.desktop-media.enable = true;
         modules.locale.enable = true;
 
         boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
@@ -79,7 +88,7 @@ in {
         hardware.graphics.package = lib.mkForce pkgs.mesa;
         hardware.graphics.package32 = lib.mkForce pkgs.pkgsi686Linux.mesa;
 
-        # Disable app-desktop's gamescope wrapper — Jovian provides its own
+        # Disable desktop-base's gamescope wrapper — Jovian provides its own
         programs.gamescope.enable = lib.mkForce false;
 
         # Resolve conflict: Jovian sets true, base module sets 1 (same meaning)

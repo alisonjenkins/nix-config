@@ -17,7 +17,7 @@ in {
       self.nixosModules.base
       self.nixosModules.nohang
       self.nixosModules.servers
-      self.nixosModules.app-storage-server
+      self.nixosModules.storage-server
       self.nixosModules.home-storage-server-1-hardware
       self.nixosModules.home-storage-server-1-disko-config
 
@@ -44,6 +44,7 @@ in {
           enableImpermanence = true;
         };
         modules.locale.enable = true;
+        modules.storage-server.enable = true;
         modules.servers = {
           enable = true;
           prometheus.smartctlExporter.enable = true;

@@ -17,7 +17,7 @@ in {
       self.nixosModules.base
       self.nixosModules.nohang
       self.nixosModules.servers
-      self.nixosModules.app-k8s-master
+      self.nixosModules.k8s-master
       self.nixosModules.home-k8s-server-1-hardware
       self.nixosModules.home-k8s-server-1-disko-config
 
@@ -33,6 +33,7 @@ in {
         modules.base = {
           enable = true;
         };
+        modules.k8s-master.enable = true;
         modules.locale.enable = true;
         modules.servers.enable = true;
 

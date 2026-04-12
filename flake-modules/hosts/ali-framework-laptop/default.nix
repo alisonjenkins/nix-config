@@ -18,15 +18,17 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.ali-framework-laptop-disko-config
       self.nixosModules.ali-framework-laptop-hardware
-      self.nixosModules.app-desktop
-      self.nixosModules.app-desktop-aws
-      self.nixosModules.app-desktop-greetd-regreet
-      self.nixosModules.app-desktop-kde-connect
-      self.nixosModules.app-desktop-kwallet
-      self.nixosModules.app-desktop-local-k8s
-      self.nixosModules.app-hardware-fingerprint-reader
-      self.nixosModules.app-hardware-touchpad
-      self.nixosModules.app-hardware-vr
+      self.nixosModules.desktop-1password
+      self.nixosModules.desktop-aws-tools
+      self.nixosModules.desktop-base
+      self.nixosModules.desktop-greetd-regreet
+      self.nixosModules.desktop-kde-connect
+      self.nixosModules.desktop-kubernetes
+      self.nixosModules.desktop-kwallet
+      self.nixosModules.desktop-local-k8s
+      self.nixosModules.desktop-media
+      self.nixosModules.hardware-fingerprint
+      self.nixosModules.hardware-touchpad
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
       self.nixosModules.desktop
@@ -117,6 +119,20 @@ in {
         #   key = "niks3_token";
         # };
 
+        modules.desktop-1password.enable = true;
+        modules.desktop-aws-tools.enable = true;
+        modules.desktop-base.enable = true;
+        modules.desktop-greetd-regreet.enable = true;
+        modules.desktop-kde-connect.enable = true;
+        modules.desktop-kubernetes.enable = true;
+        modules.desktop-kwallet.enable = true;
+        modules.desktop-local-k8s.enable = true;
+        modules.desktop-media.enable = true;
+        modules.hardware-fingerprint = {
+          enable = true;
+          username = "ali";
+        };
+        modules.hardware-touchpad.enable = true;
         modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;

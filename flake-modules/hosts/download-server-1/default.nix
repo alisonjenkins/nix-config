@@ -19,7 +19,7 @@ in {
       self.nixosModules.servers
       self.nixosModules.proxy-vpn-gateway
       self.nixosModules.btfs-streaming
-      self.nixosModules.app-storage-server
+      self.nixosModules.storage-server
       self.nixosModules.download-server-1-hardware
       self.nixosModules.download-server-1-disko-config
 
@@ -44,6 +44,7 @@ in {
           enableIPv6 = true;
         };
         modules.locale.enable = true;
+        modules.storage-server.enable = true;
         modules.servers = {
           enable = true;
           prometheus = {

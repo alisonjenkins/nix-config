@@ -86,7 +86,7 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
   - `deploy.nix`: deploy-rs node definitions and checks
   - `dev-shells.nix`: Development shell (`perSystem.devShells.default`)
   - `templates.nix`: Flake templates
-  - `nixos-modules.nix`: Exports all NixOS modules and app-profiles as `flake.nixosModules.*`
+  - `nixos-modules.nix`: Exports all NixOS modules as `flake.nixosModules.*`
   - `home-modules.nix`: Exports home-manager modules as `flake.homeModules.*`
   - `hosts/`: One **directory** per host configuration (NixOS, Darwin, standalone home-manager), each containing `default.nix` (the flake-parts module), `hardware-configuration.nix` (wrapped as `flake.nixosModules.<hostname>-hardware`), and `disko-config.nix` (wrapped as `flake.nixosModules.<hostname>-disko-config`)
 - **`modules/`**: Reusable NixOS modules using the **options system** (`options.*` / `config = mkIf cfg.enable`):
@@ -95,9 +95,11 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
   - `development/`: Development tools and environments (e.g., web development)
   - `locale/`: Localization settings
   - `libvirtd/`, `vr/`, `rocm/`, `ollama/`, `servers/`: Specialized functionality modules
-- **`app-profiles/`**: Composable application bundles imported into hosts:
-  - `desktop/`: Desktop-related profiles (AWS tools, display managers, window managers, local K8s, VR hardware)
-  - `k8s-master/`, `kvm-server/`, `storage-server/`: Server role profiles
+  - `desktop-base/`, `desktop-1password/`, `desktop-aws-tools/`, `desktop-kubernetes/`, etc.: Desktop feature modules
+  - `desktop-greetd/`, `desktop-greetd-regreet/`, `desktop-sddm/`: Display manager modules
+  - `desktop-wm-plasma6/`, `desktop-wm-sway/`: Window manager modules
+  - `hardware-fingerprint/`, `hardware-touchpad/`: Hardware feature modules
+  - `k8s-master/`, `storage-server/`: Server role modules
 - **`home/`**: Home-manager configurations:
   - `home-linux.nix`, `home-macos.nix`, `home-common.nix`: Platform-specific and shared configs
   - `programs/`: Per-program home-manager configurations (zsh, neovim, tmux, git, etc.)
@@ -115,7 +117,7 @@ Each host is defined in its own flake-parts module directory at `flake-modules/h
 2. `hardware-configuration.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-hardware`
 3. `disko-config.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-disko-config`
 
-All custom modules and app-profiles are referenced via `self.nixosModules.*` (exported in `nixos-modules.nix`). Home-manager modules are referenced via `self.homeModules.*` (exported in `home-modules.nix`). File paths for secrets/patches use `self + "/path/to/file"`. No relative path imports (`../../`) are used — everything goes through flake outputs.
+All custom modules are referenced via `self.nixosModules.*` (exported in `nixos-modules.nix`) and enabled with `modules.<name>.enable = true`. Home-manager modules are referenced via `self.homeModules.*` (exported in `home-modules.nix`). File paths for secrets/patches use `self + "/path/to/file"`. No relative path imports (`../../`) are used — everything goes through flake outputs.
 
 New flake-modules files are **auto-discovered** by haumea - just create a `.nix` file or directory in `flake-modules/` and it will be imported automatically.
 
@@ -194,7 +196,7 @@ The `modules/niks3-cache-push` module and GHA parallel push workflow are impleme
 ## Development Workflow
 
 When modifying configurations:
-1. Edit relevant files in `modules/`, `app-profiles/`, `home/`, or `flake-modules/hosts/<hostname>/`
+1. Edit relevant files in `modules/`, `home/`, or `flake-modules/hosts/<hostname>/`
 2. Test changes with `just test` for temporary activation
 3. Use `just build` to build without activating (useful for checking for errors)
 4. Commit with `just switch` to activate and make permanent

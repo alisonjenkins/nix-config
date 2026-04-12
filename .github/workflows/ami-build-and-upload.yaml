@@ -31,7 +31,7 @@ on:
       - 'modules/aws/**'
       - 'modules/servers/**'
       - 'modules/locale/**'
-      - 'app-profiles/k8s-master/**'
+      - 'modules/k8s-master/**'
       - 'flake.lock'
 
   workflow_dispatch:

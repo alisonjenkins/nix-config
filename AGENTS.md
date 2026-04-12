@@ -54,9 +54,8 @@ No automated linting/formating tools configured.
 
 ### Directory Structure
 - **`flake.nix`**: Main entry point defining all system configurations
-- **`hosts/`**: Per-machine configurations (hardware-configuration.nix, machine-specific settings)
-- **`modules/`**: Reusable NixOS modules (base, desktop, development, locale, specialized functionality)
-- **`app-profiles/`**: Composable application bundles (desktop, server roles)
+- **`flake-modules/hosts/`**: Per-machine configurations (hardware-configuration.nix, machine-specific settings)
+- **`modules/`**: Reusable NixOS modules (base, desktop, hardware, server roles, specialized functionality)
 - **`home/`**: Home-manager configurations (programs, wms, themes, wallpapers)
 - **`pkgs/`**: Custom packages and overrides
 - **`overlays/`**: Nixpkgs overlays (stable/unstable/master package sets)
@@ -66,7 +65,7 @@ No automated linting/formating tools configured.
 ### Configuration Pattern
 Host configurations follow this structure:
 1. Import base modules from `modules/base` with configuration options
-2. Import relevant app-profiles from `app-profiles/`
+2. Enable relevant modules via `modules.<name>.enable = true`
 3. Import host-specific configuration from `hosts/<hostname>/configuration.nix`
 4. Configure home-manager pointing to configurations in `home/`
 
@@ -79,17 +78,16 @@ Host configurations follow this structure:
 ## Development Workflow
 
 ### Modifying Configurations
-1. Edit relevant files in `modules/`, `app-profiles/`, `home/`, or `hosts/`
+1. Edit relevant files in `modules/`, `home/`, or `flake-modules/hosts/`
 2. Test changes with `just test` for temporary activation
 3. Use `just build` to build without activating (error checking)
 4. Commit with `just switch` to activate and make permanent
 5. For remote hosts, use `just deploy .#<hostname>` after local testing
 
 ### Adding New Hosts
-1. Create directory in `hosts/<hostname>/`
-2. Add `configuration.nix` and `hardware-configuration.nix`
-3. Import appropriate modules and app-profiles
-4. Add to `nixosConfigurations` in `flake.nix`
+1. Create directory in `flake-modules/hosts/<hostname>/`
+2. Add `default.nix` as flake-parts module, `hardware-configuration.nix`, and `disko-config.nix`
+3. Import and enable appropriate modules via `self.nixosModules.*`
 5. Configure home-manager for the user
 
 ### Managing Secrets
@@ -111,7 +109,7 @@ imports = [
 ```
 
 ### Naming Conventions
-- **Files/Directories**: kebab-case (`app-profiles/`, `ali-desktop/`)
+- **Files/Directories**: kebab-case (`modules/`, `ali-desktop/`)
 - **Variables**: camelCase (`enableImpermanence`, `useSecureBoot`)
 - **Hosts**: kebab-case (`home-storage-server-1`)
 
@@ -119,7 +117,7 @@ imports = [
 - Use `lib.mkIf`, `lib.mkDefault`, `lib.mkForce` for conditional config
 - Merge with `//` operator for optional features
 - Parameterize modules with sensible defaults
-- Structure: base modules → app-profiles → host-specific → home-manager
+- Structure: base modules → feature modules → host-specific → home-manager
 
 ### Error Handling
 - Rely on Nix's built-in error reporting

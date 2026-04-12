@@ -47,6 +47,7 @@ let
     ];
 
     modules.aws.enable = true;
+    modules.k8s-master.enable = true;
     modules.locale.enable = true;
 
     modules.servers = {
@@ -348,7 +349,7 @@ let
         self.nixosModules.aws
         self.nixosModules.locale
         self.nixosModules.servers
-        self.nixosModules.app-k8s-master
+        self.nixosModules.k8s-master
         awsK8sNodeConfig
       ];
       extraModules = [];
@@ -360,7 +361,7 @@ let
         self.nixosModules.aws
         self.nixosModules.locale
         self.nixosModules.servers
-        self.nixosModules.app-k8s-master
+        self.nixosModules.k8s-master
         awsK8sNodeConfig
       ];
       extraModules = [{

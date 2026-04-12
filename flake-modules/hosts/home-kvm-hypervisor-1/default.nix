@@ -17,7 +17,7 @@ in {
       self.nixosModules.base
       self.nixosModules.nohang
       self.nixosModules.servers
-      self.nixosModules.app-kvm-server
+      self.nixosModules.libvirtd
       self.nixosModules.home-kvm-hypervisor-1-hardware
       self.nixosModules.home-kvm-hypervisor-1-disko-config
 
@@ -36,6 +36,7 @@ in {
           enable = true;
           bootLoader = "grub";
         };
+        modules.libvirtd.enable = true;
         modules.locale.enable = true;
         modules.servers = {
           enable = true;
