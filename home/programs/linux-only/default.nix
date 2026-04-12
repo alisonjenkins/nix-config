@@ -1,6 +1,5 @@
 { ... }: {
   imports = [
-    # ./hypridle
     # ./stasis
     ./davmail
     ./firefox
