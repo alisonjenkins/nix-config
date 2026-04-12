@@ -66,9 +66,26 @@
       "/nix".neededForBoot = true;
       "/persistence".neededForBoot = true;
 
+      # NFS mount for BTFS streaming content from download-server-1
+      "/media/btfs-streaming" = {
+        device = "download-server-1.lan:/media/btfs-streaming";
+        fsType = "nfs";
+        options = [
+          "ro"
+          "hard"
+          "intr"
+          "tcp"
+          "nfsvers=4.2"
+          "noac"        # Disable attribute caching - BTFS files grow in real-time
+          "noauto"      # Don't mount at boot - use automount
+          "x-systemd.automount"
+          "x-systemd.idle-timeout=0"
+        ];
+      };
+
       "/media/storage" = {
-        device = "/media/disks/*";
-        depends = media_disk_mount_points;
+        device = "/media/disks/*:/media/btfs-streaming";
+        depends = media_disk_mount_points ++ [ "/media/btfs-streaming" ];
         fsType = "fuse.mergerfs";
 
         options = [
