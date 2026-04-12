@@ -10,6 +10,15 @@
     "media.hardware-video-decoding.force-enabled" = false;  # Allow software fallback for MSE
     "media.eme.enabled" = true;
 
+    # === VP9/AV1 Codec Support (fixes YouTube defaulting to 360p on Firefox) ===
+    "media.mediasource.vp9.enabled" = true;   # Explicit VP9 via MSE (YouTube DASH streaming)
+    "media.benchmark.vp9.threshold" = 0;      # Skip software decode benchmark — VA-API handles it
+    "media.av1.enabled" = true;               # AV1 for YouTube Premium (RDNA 3/4 have HW decode)
+
+    # === Network Buffer Tuning (improves YouTube ABR throughput estimation) ===
+    "network.buffer.cache.size" = 262144;     # 256KB (up from 32KB default)
+    "network.http.rcvbuf-size" = 262144;      # Match receive buffer to cache
+
     # === Media Cache & Buffer Settings (for Jellyfin streaming) ===
     "media.cache_readahead_limit" = 120;  # Read ahead 120 seconds
     "media.cache_resume_threshold" = 60;  # Resume if cached > 60 seconds
