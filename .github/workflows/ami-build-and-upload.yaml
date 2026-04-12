@@ -28,13 +28,11 @@ on:
     paths:
       - '.github/workflows/ami-build-and-upload.yaml'
       - 'flake-modules/ami-images.nix'
-      - 'hosts/aws-*/**'
       - 'modules/aws/**'
       - 'modules/servers/**'
       - 'modules/locale/**'
       - 'app-profiles/k8s-master/**'
       - 'flake.lock'
-      - 'hosts/aws-nix-builder/**'
 
   workflow_dispatch:
     inputs:
