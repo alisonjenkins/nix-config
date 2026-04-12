@@ -565,7 +565,7 @@ in
         portaudio
         posting
         powertop
-        signal-desktop
+        master.signal-desktop
         suspendScripts
         television
         thunderbird
