@@ -61,8 +61,8 @@ in {
           ];
         };
 
-        # This VM only has 8GB RAM; reduce zram from the default 100%
-        zramSwap.memoryPercent = lib.mkForce 50;
+        # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
+        zramSwap.enable = lib.mkForce false;
 
         # smartd starts before passthrough disks are available; retry until they appear
         systemd.services.smartd.serviceConfig = {
