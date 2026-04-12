@@ -659,7 +659,7 @@
       "inputs": {
         "nix-github-actions": "nix-github-actions",
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs_unstable"
         ]
       },
       "locked": {

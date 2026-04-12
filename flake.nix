@@ -25,7 +25,7 @@
     };
     jovian-nixos = {
       url = "github:Jovian-Experiments/Jovian-NixOS";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     nix-cachyos-kernel = {
       url = "github:xddxdd/nix-cachyos-kernel/master";
