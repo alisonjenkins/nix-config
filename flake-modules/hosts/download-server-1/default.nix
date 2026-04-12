@@ -18,6 +18,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.proxy-vpn-gateway
+      self.nixosModules.btfs-streaming
       self.nixosModules.app-storage-server
       self.nixosModules.download-server-1-hardware
       self.nixosModules.download-server-1-disko-config
@@ -29,6 +30,7 @@ in {
       # Overlays
       {
         nixpkgs.overlays = [
+          self.overlays.additions
           self.overlays.qbittorrent
         ];
       }
@@ -75,7 +77,7 @@ in {
           kernelParams = [
             "irqpoll"
           ];
-          # Enable NFS client support
+          # Enable NFS client and server support (server for BTFS streaming export)
           supportedFilesystems = [ "nfs" "nfs4" ];
         };
 
@@ -157,9 +159,43 @@ in {
                   group = "nginx";
                   mode = "0755";
                 }
+                {
+                  directory = "/var/lib/btfs-streaming";
+                  user = "root";
+                  group = "root";
+                  mode = "0755";
+                }
+                {
+                  directory = "/var/lib/btfs-cache";
+                  user = "root";
+                  group = "root";
+                  mode = "0755";
+                }
+                {
+                  directory = "/var/lib/btfs-bridge";
+                  user = "root";
+                  group = "root";
+                  mode = "0755";
+                }
               ];
             };
           };
+        };
+
+        # BTFS torrent streaming via FUSE
+        modules.btfsStreaming = {
+          enable = true;
+          mountRoot = "/media/btfs-streaming";
+          cacheDir = "/var/lib/btfs-cache";
+          cacheEvictionDays = 14;
+        };
+
+        # NFS server to export BTFS streaming mounts to storage server
+        services.nfs.server = {
+          enable = true;
+          exports = ''
+            /media/btfs-streaming 192.168.1.0/24(ro,sync,no_subtree_check,no_root_squash,fsid=10,crossmnt)
+          '';
         };
 
         networking = {
@@ -173,10 +209,15 @@ in {
             allowedTCPPorts = [
               22
               80
+              111   # NFS portmapper
               443
+              2049  # NFS server (for BTFS streaming export)
               8118
             ];
-            allowedUDPPorts = [];
+            allowedUDPPorts = [
+              111   # NFS portmapper
+              2049  # NFS server
+            ];
 
             # VPN leak protection - only allow Wireguard and internal network traffic
             # extraCommands = ''
@@ -714,6 +755,21 @@ in {
           serviceConfig = {
             UMask = "0002";
             SupplementaryGroups = [ "media" "tv" "movies" ];
+          };
+        };
+
+        # BTFS Bridge: watches qBittorrent for "stream" category and mounts via BTFS
+        systemd.services.btfs-bridge = {
+          description = "BTFS Bridge - qBittorrent to BTFS streaming";
+          after = [ "network-online.target" "btfs-restore.service" ];
+          wants = [ "network-online.target" ];
+          wantedBy = [ "multi-user.target" ];
+
+          serviceConfig = {
+            ExecStart = "${pkgs.btfs-bridge}/bin/btfs-bridge --qbt-host 127.0.0.1 --qbt-port 8080 --qbt-username admin --qbt-password-file ${config.sops.secrets."qbittorrent/webui/password".path} --category stream --poll-interval 15";
+            Restart = "always";
+            RestartSec = "10s";
+            StateDirectory = "btfs-bridge";
           };
         };
 
