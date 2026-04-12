@@ -1421,8 +1421,16 @@ EOF
 
               domains = {
                 nix = [
+                  "cache.nixcache.org"
+                  "attic.xuyh0120.win"
+                  "cache.garnix.io"
                   "cache.nixos.org"
                   "channels.nixos.org"
+                  "jovian.cachix.org"
+                  "nix-community.cachix.org"
+                  "nix-gaming.cachix.org"
+                  "nixpkgs-wayland.cachix.org"
+                  "rust-overlay.cachix.org"
                 ];
               };
             };
