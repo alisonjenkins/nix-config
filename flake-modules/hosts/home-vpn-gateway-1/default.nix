@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.nohang
       self.nixosModules.amnezia-vpn-gateway
       self.nixosModules.home-vpn-gateway-1-hardware
       self.nixosModules.home-vpn-gateway-1-disko-config
@@ -25,6 +26,7 @@ in {
 
       # Host-specific configuration (inlined from hosts/home-vpn-gateway-1/configuration.nix)
       ({ config, inputs, lib, outputs, pkgs, ... }: {
+        modules.nohang.enable = true;
         modules.base = {
           enable = true;
           enableImpermanence = true;

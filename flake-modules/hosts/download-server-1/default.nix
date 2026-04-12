@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.proxy-vpn-gateway
       self.nixosModules.app-storage-server
@@ -34,6 +35,7 @@ in {
 
       # Host-specific configuration
       ({ config, inputs, lib, outputs, pkgs, ... }: {
+        modules.nohang.enable = true;
         modules.base = {
           enable = true;
           enableImpermanence = true;

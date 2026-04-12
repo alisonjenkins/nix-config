@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.app-kvm-server
       self.nixosModules.home-kvm-hypervisor-1-hardware
@@ -27,6 +28,10 @@ in {
 
       # Host-specific configuration
       ({ inputs, lib, pkgs, ... }: {
+        modules.nohang = {
+          enable = true;
+          extraProtectedProcesses = [ "libvirtd" "qemu-system-x86_64" ];
+        };
         modules.base = {
           enable = true;
           bootLoader = "grub";

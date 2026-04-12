@@ -32,6 +32,7 @@ in {
       self.nixosModules.desktop
       self.nixosModules.development-web
       self.nixosModules.libvirtd
+      self.nixosModules.nohang
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.ollama
@@ -116,6 +117,10 @@ in {
         # };
 
         modules.plymouth.enable = true;
+        modules.nohang = {
+          enable = true;
+          enableDesktopNotifications = true;
+        };
         modules.base = {
           enable = true;
           enableImpermanence = true;

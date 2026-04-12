@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.app-storage-server
       self.nixosModules.home-storage-server-1-hardware
@@ -34,6 +35,10 @@ in {
         ) shareNames));
       in
       {
+        modules.nohang = {
+          enable = true;
+          extraProtectedProcesses = [ "smbd" "nmbd" "nfsd" ];
+        };
         modules.base = {
           enable = true;
           enableImpermanence = true;

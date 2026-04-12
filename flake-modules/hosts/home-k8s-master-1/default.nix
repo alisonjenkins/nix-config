@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.nohang
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
 
@@ -29,6 +30,10 @@ in {
           (modulesPath + "/profiles/qemu-guest.nix")
         ];
 
+        modules.nohang = {
+          enable = true;
+          extraProtectedProcesses = [ "k3s" "containerd" ];
+        };
         modules.base = {
           enable = true;
         };

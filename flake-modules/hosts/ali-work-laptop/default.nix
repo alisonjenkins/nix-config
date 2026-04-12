@@ -29,6 +29,7 @@ in {
       self.nixosModules.desktop
       self.nixosModules.development-web
       self.nixosModules.libvirtd
+      self.nixosModules.nohang
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.ollama
@@ -76,6 +77,10 @@ in {
       # Host-specific configuration
       ({ config, lib, inputs, outputs, pkgs, ... }: {
         modules.plymouth.enable = true;
+        modules.nohang = {
+          enable = true;
+          enableDesktopNotifications = true;
+        };
         # TODO: Enable once secrets/niks3-token.enc.yaml is created with sops
         # modules.niks3CachePush = {
         #   enable = true;

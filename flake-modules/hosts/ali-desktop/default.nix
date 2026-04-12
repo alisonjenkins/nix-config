@@ -27,6 +27,7 @@ in {
       self.nixosModules.desktop
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
+      self.nixosModules.nohang
       self.nixosModules.ollama
       self.nixosModules.plymouth
       self.nixosModules.podman
@@ -88,6 +89,10 @@ in {
         # };
 
         modules.plymouth.enable = true;
+        modules.nohang = {
+          enable = true;
+          enableDesktopNotifications = true;
+        };
         modules.base = {
           enable = true;
           enableImpermanence = true;
