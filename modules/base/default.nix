@@ -110,6 +110,16 @@ in
         'shutdown' powers off immediately after writing the image (faster, skips firmware hooks).
       '';
     };
+
+    enableMGLRU = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Enable MGLRU (Multigenerational LRU) tuning via min_ttl_ms.
+        Improves page reclamation efficiency under memory pressure,
+        reducing swap thrashing. Requires kernel 6.1+ with MGLRU support.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -366,10 +376,6 @@ in
           filesystems = cfg.beesdFilesystems;
         };
 
-        earlyoom = {
-          enable = true;
-        };
-
         fwupd = {
           enable = lib.mkDefault true;
         };
@@ -439,6 +445,10 @@ in
       # Smaller image = less data to write/read = faster hibernate and resume
       systemd.tmpfiles.rules = [
         "w /sys/power/image_size - - - - 8589934592"
+      ]
+      # MGLRU tuning: set min_ttl_ms to improve page reclamation under memory pressure
+      ++ lib.optionals cfg.enableMGLRU [
+        "w /sys/kernel/mm/lru_gen/min_ttl_ms - - - - 1000"
       ];
 
       # Optimal suspend and hibernate settings
