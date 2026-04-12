@@ -9,6 +9,7 @@
     locale = import ../modules/locale;
     luksPCR15 = import ../modules/luksPCR15;
     niks3-cache-push = import ../modules/niks3-cache-push;
+    nohang = import ../modules/nohang;
     ollama = import ../modules/ollama;
     plymouth = import ../modules/plymouth;
     podman = import ../modules/podman;
