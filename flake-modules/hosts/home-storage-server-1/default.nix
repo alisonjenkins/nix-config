@@ -70,6 +70,36 @@ in {
           RestartSec = "10s";
         };
 
+        # Rescan SCSI bus after boot to detect disks the LSI controller missed,
+        # then mount any newly-appeared disks and restart mergerfs
+        systemd.services.scsi-rescan-and-mount = {
+          description = "Rescan SCSI bus and mount late-appearing disks";
+          after = [ "multi-user.target" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          path = [ pkgs.util-linux pkgs.coreutils ];
+          script = ''
+            # Rescan all SCSI hosts for new devices
+            for host in /sys/class/scsi_host/host*/scan; do
+              echo "- - -" > "$host"
+            done
+
+            # Wait for udev to settle after rescan
+            ${pkgs.systemd}/bin/udevadm settle --timeout=30
+
+            # Reload systemd to pick up any new device units, then
+            # start any disk mounts that are now satisfiable
+            systemctl daemon-reload
+            systemctl start --all 'media-disks-*.mount' 'media-parity-*.mount' 2>/dev/null || true
+
+            # Restart mergerfs to pick up newly mounted disks
+            systemctl restart media-storage.mount 2>/dev/null || true
+          '';
+        };
+
         environment = {
           pathsToLink = [ "/share/zsh" ];
 
