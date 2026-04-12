@@ -947,6 +947,20 @@ in
           { name = "nix-build"; type = "BG_CPUIO"; }
           { name = "nix"; type = "BG_CPUIO"; }
 
+          # Communication apps — real-time audio/video calls need low latency
+          { name = "signal-desktop"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = ".signal-desktop-wrapped"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+
+          # Browsers — WebRTC calls (Element Call, etc.) run in-process
+          { name = "firefox"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = "firefox-bin"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = ".firefox-wrapped"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = "zen"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = "zen-bin"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = ".zen-wrapped"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = "chromium"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+          { name = "chrome"; nice = -7; ioclass = "best-effort"; ionice = 0; latency_nice = -7; }
+
           # Games and Wine/Proton - high priority
           { name = "wine-preloader"; nice = -5; ioclass = "realtime"; }
           { name = "wine64-preloader"; nice = -5; ioclass = "realtime"; }
