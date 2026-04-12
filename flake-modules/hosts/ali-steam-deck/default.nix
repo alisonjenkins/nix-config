@@ -2,99 +2,92 @@
 let
   system = "x86_64-linux";
   lib = inputs.nixpkgs.lib;
+  inherit (self) outputs;
 in {
   flake.nixosConfigurations.ali-steam-deck = lib.nixosSystem rec {
     specialArgs = {
       username = "ali";
-      inherit inputs;
-      inherit (self) outputs;
+      inherit inputs outputs;
     };
     modules = [
       { nixpkgs.hostPlatform = system; }
 
       # Custom modules via flake outputs
+      self.nixosModules.ali-steam-deck-disko-config
+      self.nixosModules.ali-steam-deck-hardware
+      self.nixosModules.app-desktop
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.locale
-      self.nixosModules.app-desktop
-      self.nixosModules.ali-steam-deck-hardware
 
       # External flake modules
+      inputs.disko.nixosModules.disko
+      inputs.home-manager.nixosModules.home-manager
       inputs.jovian-nixos.nixosModules.default
       inputs.nix-flatpak.nixosModules.nix-flatpak
-      inputs.stylix.nixosModules.stylix
+      inputs.nur.modules.nixos.default
+
+      # Home-manager configuration
+      {
+        home-manager.backupCommand = ''
+          mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+        '';
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.users.${specialArgs.username} = {
+          imports = [ self.homeModules.home-linux ];
+        };
+        home-manager.extraSpecialArgs =
+          specialArgs
+          // {
+            hostname = "ali-steam-deck";
+            bluetoothHeadsetMac = "";
+            gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
+            gitGPGSigningKey = "";
+            gitUserName = "Alison Jenkins";
+            github_clone_ssh_host_personal = "github.com";
+            github_clone_ssh_host_work = "github.com";
+            primarySSHKey = "~/.ssh/id_personal.pub";
+          };
+      }
 
       # Host-specific configuration
-      ({ inputs, outputs, lib, pkgs, username, ... }: {
-        boot = {
-          kernelPackages = pkgs.linuxPackages_cachyos;
-
-          kernel = {
-            sysctl = {
-              # Network Perf Tuning
-              "net.core.netdev_max_backlog" = 16384;
-              "net.core.default_qdisc" = "cake";
-              "net.core.optmem_max" = 65536;
-              "net.core.rmem_default" = 1048576;
-              "net.core.rmem_max" = 16777216;
-              "net.core.somaxconn" = 8192;
-              "net.core.wmem_default" = 1048576;
-              "net.core.wmem_max" = 16777216;
-              "net.ipv4.conf.all.accept_redirects" = 0;
-              "net.ipv4.conf.all.log_martians" = 1;
-              "net.ipv4.conf.all.rp_filter" = 1;
-              "net.ipv4.conf.all.secure_redirects" = 0;
-              "net.ipv4.conf.all.send_redirects" = 0;
-              "net.ipv4.conf.default.accept_redirects" = 0;
-              "net.ipv4.conf.default.log_martians" = 1;
-              "net.ipv4.conf.default.rp_filter" = 1;
-              "net.ipv4.conf.default.secure_redirects" = 0;
-              "net.ipv4.conf.default.send_redirects" = 0;
-              "net.ipv4.icmp_echo_ignore_all" = 1;
-              "net.ipv4.tcp_congestion_control" = "bbr";
-              "net.ipv4.tcp_fastopen" = 3;
-              "net.ipv4.tcp_fin_timeout" = 10;
-              "net.ipv4.tcp_keepalive_intvl" = 10;
-              "net.ipv4.tcp_keepalive_probes" = 6;
-              "net.ipv4.tcp_keepalive_time" = 60;
-              "net.ipv4.tcp_max_syn_backlog" = 8192;
-              "net.ipv4.tcp_max_tw_buckets" = 2000000;
-              "net.ipv4.tcp_mtu_probing" = lib.mkForce 1;
-              "net.ipv4.tcp_rfc1337" = 1;
-              "net.ipv4.tcp_rmem" = "4096 1048576 2097152";
-              "net.ipv4.tcp_sack" = 1;
-              "net.ipv4.tcp_slow_start_after_idle" = 0;
-              "net.ipv4.tcp_syncookies" = 1;
-              "net.ipv4.tcp_timestamps" = 0;
-              "net.ipv4.tcp_tw_reuse" = 1;
-              "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
-              "net.ipv4.udp_rmem_min" = 8192;
-              "net.ipv4.udp_wmem_min" = 8192;
-              "net.ipv6.conf.all.accept_redirects" = 0;
-              "net.ipv6.conf.default.accept_redirects" = 0;
-              "net.ipv4.tcp_window_scaling" = 1;
-
-              # Virtual memory tuning
-              "vm.swappiness" = lib.mkForce 10;
-              "vm.dirty_ratio" = 10;
-              "vm.dirty_background_ratio" = 3;
-              "vm.vfs_cache_pressure" = 50;
-            };
-          };
-
-          loader = {
-            efi.efiSysMountPoint = "/boot";
-            grub = {
-              enable = true;
-              devices = [ "nodev" ];
-              efiInstallAsRemovable = true;
-              efiSupport = true;
-              useOSProber = true;
+      ({ lib, pkgs, username, ... }: {
+        modules.base = {
+          enable = true;
+          bootLoader = "grub";
+          enableImpermanence = true;
+          impermanencePersistencePath = "/persistence";
+          enableCachyOSKernel = false;
+          beesdFilesystems = {
+            crypted = {
+              spec = "LABEL=crypted";
+              hashTableSizeMB = 256;
+              verbosity = "crit";
+              extraOptions = [ "--loadavg-target" "5.0" ];
             };
           };
         };
 
-        console.keyMap = "us";
+        modules.desktop.enable = true;
+        modules.locale.enable = true;
+
+        boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
+        boot.loader.grub.efiInstallAsRemovable = lib.mkForce true;
+
+        # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa
+        hardware.graphics.package = lib.mkForce pkgs.mesa;
+        hardware.graphics.package32 = lib.mkForce pkgs.pkgsi686Linux.mesa;
+
+        # Disable app-desktop's gamescope wrapper — Jovian provides its own
+        programs.gamescope.enable = lib.mkForce false;
+
+        # Resolve conflict: Jovian sets true, base module sets 1 (same meaning)
+        boot.kernel.sysctl."net.ipv4.tcp_mtu_probing" = lib.mkForce 1;
+
+        # Jovian manages the power button via its own daemon (powerbuttond)
+        services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
+
 
         environment = {
           pathsToLink = [ "/share/zsh" ];
@@ -108,13 +101,9 @@ in {
           };
         };
 
-        hardware = {
-          graphics.enable = true;
-          pulseaudio.enable = false;
-        };
-
         jovian = {
           devices.steamdeck.enable = true;
+          decky-loader.enable = true;
 
           steam = {
             enable = true;
@@ -129,131 +118,56 @@ in {
           extraHosts = ''
             192.168.1.202 home-kvm-hypervisor-1
           '';
-          networkmanager.enable = true;
         };
 
-        nix = {
-          package = pkgs.nixVersions.nix_2_22;
-
-          gc = {
-            automatic = true;
-            dates = "weekly";
-            options = "--delete-older-than 60d";
-          };
+        programs.steam = {
+          remotePlay.openFirewall = true;
+          dedicatedServer.openFirewall = true;
         };
 
-        programs = {
-          steam = {
-            enable = true;
-            remotePlay.openFirewall = true;
-            dedicatedServer.openFirewall = true;
-          };
-          zsh.enable = true;
+        services.btrfs.autoScrub = {
+          enable = true;
+          fileSystems = [ "/persistence" ];
         };
 
-        security.rtkit.enable = true;
+        services.desktopManager.plasma6.enable = true;
 
-        services = {
-          openssh = {
-            enable = true;
-            settings.PasswordAuthentication = false;
-            settings.KbdInteractiveAuthentication = false;
-            settings.PermitRootLogin = "no";
-          };
+        # Stylix theme is configured by the desktop module (gruvbox-dark-medium).
 
-          pipewire = {
-            enable = true;
-            alsa.enable = true;
-            alsa.support32Bit = true;
-            pulse.enable = true;
-          };
+        system.stateVersion = "24.05";
 
-          xserver = {
-            videoDrivers = [
-              "fbdev"
-              "modesetting"
-            ];
-            xkb = {
-              layout = "us";
-              variant = "";
-            };
-          };
-        };
-
-        stylix =
-          {
-            base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-medium.yaml";
-            enable = true;
-            polarity = "dark";
-
-            cursor = {
-              package = pkgs.material-cursors;
-              name = "material_light_cursors";
-            };
-
-            fonts = {
-              serif = {
-                package = pkgs.nerd-fonts.fira-code;
-                name = "FiraCode Nerd Font Mono";
-              };
-
-              sansSerif = {
-                package = pkgs.nerd-fonts.fira-code;
-                name = "FiraCode Nerd Font Mono";
-              };
-
-              monospace = {
-                package = pkgs.nerd-fonts.fira-code;
-                name = "FiraCode Nerd Font Mono";
-              };
-
-              emoji = {
-                package = pkgs.noto-fonts-color-emoji;
-                name = "Noto Color Emoji";
-              };
-            };
-
-            opacity = {
-              desktop = 0.0;
-              terminal = 0.9;
-            };
-
-            targets = {
-              nixvim = {
-                transparentBackground = {
-                  main = true;
-                  signColumn = true;
-                };
-              };
-            };
-          };
-
-        system = {
-          stateVersion = "24.05";
-        };
-
-        time.timeZone = "Europe/London";
-
-        users = {
-          users = {
-            ali = {
-              isNormalUser = true;
-              description = "Alison Jenkins";
-              initialPassword = "initPw!";
-              extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
-              openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
-              packages = with pkgs; [
-                firefox
-                neofetch
-                lolcat
-              ];
-            };
-          };
+        users.users.ali = {
+          isNormalUser = true;
+          description = "Alison Jenkins";
+          initialPassword = "initPw!";
+          extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
+          openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+          packages = with pkgs; [
+            firefox
+            fastfetch
+          ];
         };
 
         xdg.portal = {
           enable = true;
           xdgOpenUsePortal = true;
+        };
+
+        # Desktop-only specialisation: boots directly into Plasma instead of
+        # Gaming Mode. Selectable from GRUB at boot. Useful as a recovery
+        # option when Steam's state is broken and Gaming Mode won't start.
+        specialisation.desktop-mode.configuration = {
+          jovian.steam.autoStart = lib.mkForce false;
+
+          services.greetd = {
+            enable = true;
+            settings.default_session = {
+              command = "${pkgs.kdePackages.plasma-workspace}/libexec/plasma-dbus-run-session-if-needed ${pkgs.kdePackages.plasma-workspace}/bin/startplasma-wayland";
+              user = username;
+            };
+          };
+
+          system.nixos.tags = [ "desktop-mode" ];
         };
       })
     ];
