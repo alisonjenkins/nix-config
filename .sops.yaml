@@ -42,13 +42,13 @@ creation_rules:
       - *admin_ali
       - *ali_personal
       - *server_home-k8s-master-1
-  - path_regex: ^hosts/home-storage-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
+  - path_regex: ^flake-modules/hosts/home-storage-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
     - age:
       - *admin_ali
       - *ali_personal
       - *server_home-storage-server-1
-  - path_regex: ^hosts/download-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
+  - path_regex: ^flake-modules/hosts/download-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
     - age:
       - *admin_ali
