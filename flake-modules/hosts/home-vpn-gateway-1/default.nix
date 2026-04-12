@@ -24,7 +24,6 @@ in {
       inputs.disko.nixosModules.disko
       inputs.sops-nix.nixosModules.sops
 
-      # Host-specific configuration (inlined from hosts/home-vpn-gateway-1/configuration.nix)
       ({ config, inputs, lib, outputs, pkgs, ... }: {
         modules.nohang.enable = true;
         modules.base = {

@@ -20,6 +20,7 @@ in {
       self.nixosModules.app-desktop
       self.nixosModules.app-desktop-aws
       self.nixosModules.app-desktop-greetd-regreet
+      self.nixosModules.app-desktop-local-k8s
       self.nixosModules.app-desktop-kde-connect
       self.nixosModules.app-hardware-vr
       self.nixosModules.audio-context-suspend
@@ -76,7 +77,6 @@ in {
           };
       }
 
-      # Inline configuration (merged from hosts/ali-desktop/configuration.nix)
       ({ config, pkgs, lib, ... }: {
         # TODO: Enable once secrets/niks3-token.enc.yaml is created with sops
         # modules.niks3CachePush = {
