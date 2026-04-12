@@ -1,0 +1,42 @@
+{ config, lib, pkgs, ... }:
+let
+  cfg = config.modules.desktop-greetd;
+in
+{
+  options.modules.desktop-greetd = {
+    enable = lib.mkEnableOption "greetd display manager with tuigreet";
+  };
+
+  config = lib.mkIf cfg.enable {
+    services = {
+      greetd = {
+        enable = true;
+        settings = {
+          default_session = {
+            command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --remember-user-session --sessions /run/booted-system/sw/share/wayland-sessions/:/run/booted-system/sw/share/xsessions/";
+          };
+        };
+      };
+    };
+
+    security.pam.services.greetd.kwallet.enable = true;
+    system.activationScripts.makeTuigreetCacheDir = lib.stringAfter [ "var" ] ''
+      mkdir -p /var/cache/tuigreet
+      chown greeter:greeter -R /var/cache/tuigreet
+    '';
+
+    environment.systemPackages = with pkgs; [
+      tuigreet
+    ];
+
+    environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
+      lib.mkIf config.modules.base.enableImpermanence [
+        {
+          directory = "/var/cache/tuigreet";
+          user = "greeter";
+          group = "greeter";
+          mode = "u=rwx,g=rx,o=";
+        }
+      ];
+  };
+}

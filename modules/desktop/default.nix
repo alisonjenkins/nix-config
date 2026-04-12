@@ -1528,8 +1528,11 @@ in
         };
       };
 
+    programs.dconf.enable = true;
+
     xdg.portal = {
       enable = true;
+      wlr.enable = true;
       xdgOpenUsePortal = true;
 
       extraPortals = mkDefault (with pkgs; [

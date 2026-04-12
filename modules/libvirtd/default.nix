@@ -5,11 +5,18 @@ in
 {
   options.modules.libvirtd = {
     enable = lib.mkEnableOption "libvirt virtualization";
+
+    parallelShutdown = lib.mkOption {
+      type = lib.types.int;
+      default = 4;
+      description = "Number of VMs to shut down in parallel.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
     virtualisation.libvirtd = {
       enable = true;
+      parallelShutdown = cfg.parallelShutdown;
       qemu = {
         package = pkgs.qemu_kvm.override { cephSupport = false; };
         runAsRoot = true;
