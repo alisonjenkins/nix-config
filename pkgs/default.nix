@@ -12,6 +12,7 @@
   detect-location = pkgs.callPackage ./detect-location { inherit pkgs; };
   audio-context-volume = pkgs.callPackage ./audio-context-volume { inherit pkgs; };
   bluetooth-connect = pkgs.callPackage ./bluetooth-connect { inherit pkgs; };
+  btfs-bridge = pkgs.callPackage ./btfs-bridge { inherit pkgs; };
   tiny4linux = pkgs.callPackage ./tiny4linux { inherit pkgs; };
   tiny4linux-gui = pkgs.callPackage ./tiny4linux { inherit pkgs; withCli = false; };
   tiny4linux-cli = pkgs.callPackage ./tiny4linux { inherit pkgs; withGui = false; };
