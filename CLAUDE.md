@@ -101,7 +101,7 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
 - **`home/`**: Home-manager configurations:
   - `home-linux.nix`, `home-macos.nix`, `home-common.nix`: Platform-specific and shared configs
   - `programs/`: Per-program home-manager configurations (zsh, neovim, tmux, git, etc.)
-  - `wms/`: Window manager configurations (hyprland, plasma, etc.)
+  - `wms/`: Window manager configurations (river, plasma, etc.)
 - **`pkgs/`**: Custom packages and overrides
 - **`overlays/`**: System-independent nixpkgs overlays (accepts only `{ inputs }`, uses `final.stdenv.hostPlatform.system` internally)
 - **`secrets/`**: SOPS-encrypted secrets (managed by sops-nix, configured in .sops.yaml)
