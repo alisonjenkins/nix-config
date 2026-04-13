@@ -564,7 +564,7 @@ in {
                    if ! ${pkgs.nftables}/bin/nft list ruleset | grep -q "tcp dport $FORWARDED_PORT accept"; then
                        ${pkgs.nftables}/bin/nft insert rule inet filter input tcp dport "$FORWARDED_PORT" accept
                    fi
-                   if ! ${pkgs.nftables}/bin/nft list ruleset | grep -q "udp dport $FORWARDED_PORT" | grep -q "accept"; then
+                   if ! ${pkgs.nftables}/bin/nft list ruleset | grep -q "udp dport $FORWARDED_PORT accept"; then
                        ${pkgs.nftables}/bin/nft insert rule inet filter input udp dport "$FORWARDED_PORT" accept
                    fi
                 fi
