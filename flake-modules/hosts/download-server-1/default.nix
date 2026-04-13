@@ -718,7 +718,7 @@ in {
         systemd.services.radarr = {
           serviceConfig = {
             UMask = "0002";
-            SupplementaryGroups = [ "media" ];
+            SupplementaryGroups = [ "media" "qbittorrent" ];
           };
           preStart = ''
             CONFIG_FILE="/var/lib/radarr/config.xml"
@@ -734,7 +734,7 @@ in {
         systemd.services.sonarr = {
           serviceConfig = {
             UMask = "0002";
-            SupplementaryGroups = [ "media" ];
+            SupplementaryGroups = [ "media" "qbittorrent" ];
           };
           preStart = ''
             CONFIG_FILE="/var/lib/sonarr/config.xml"
@@ -750,7 +750,7 @@ in {
         systemd.services.bazarr = {
           serviceConfig = {
             UMask = "0002";
-            SupplementaryGroups = [ "media" "tv" "movies" ];
+            SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
           };
           preStart = ''
             CONFIG_FILE="/var/lib/bazarr/config/config.ini"
