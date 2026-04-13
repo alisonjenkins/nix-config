@@ -34,7 +34,7 @@
           "virtio_pci"
           "xhci_pci"
         ];
-        kernelModules = [ "dm-snapshot" ];
+        kernelModules = [ "dm-snapshot" "mpt3sas" ];
       };
     };
 
