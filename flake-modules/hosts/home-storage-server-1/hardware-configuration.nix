@@ -94,7 +94,7 @@
       };
 
       "/media/storage" = {
-        device = "/media/disks/*:/media/btfs-streaming";
+        device = "/media/disks/*";
         depends = media_disk_mount_points;
         fsType = "fuse.mergerfs";
 
