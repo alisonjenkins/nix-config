@@ -82,7 +82,9 @@
         fsType = "nfs";
         options = [
           "ro"
-          "hard"
+          "soft"        # Fail quickly instead of hanging indefinitely when server is down
+          "timeo=30"    # 3 second timeout (units of 0.1s)
+          "retrans=2"   # 2 retries before failing
           "intr"
           "tcp"
           "nfsvers=4.2"
@@ -94,7 +96,7 @@
       };
 
       "/media/storage" = {
-        device = "/media/disks/*";
+        device = "/media/disks/*:/media/btfs-streaming";
         depends = media_disk_mount_points;
         fsType = "fuse.mergerfs";
 
