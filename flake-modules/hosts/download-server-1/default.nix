@@ -1215,7 +1215,7 @@ EOF
                 "FileLogger\\Backup" = true;
                 "FileLogger\\DeleteOld" = true;
                 "FileLogger\\Enabled" = true;
-                "FileLogger\\MaxSizeBytes" = 66560;
+                "FileLogger\\MaxSizeBytes" = 10485760;  # 10MB
                 "FileLogger\\Path" = "/var/lib/qBittorrent/qBittorrent/data/logs";
               };
 
@@ -1223,14 +1223,14 @@ EOF
                 MergeTrackersEnabled = true;
                 "Session\\AddExtensionToIncompleteFiles" = true;
                 "Session\\AddTorrentToTopOfQueue" = true;
-                "Session\\AnonymousModeEnabled" = false;  # Disabled - was causing stalled torrents
+                "Session\\AnonymousModeEnabled" = true;  # Hide client fingerprint from peers/trackers
                 "Session\\DefaultSavePath" = "/media/downloads/complete";
                 "Session\\DisableAutoTMMByDefault" = false;
                 "Session\\DisableAutoTMMTriggers\\CategorySavePathChanged" = false;
                 "Session\\DisableAutoTMMTriggers\\DefaultSavePathChanged" = false;
                 "Session\\ExcludedFileNames" = "";
                 "Session\\GlobalMaxRatio" = 2;
-                "Session\\MaxRatioAction" = 1;  # Remove torrent and files after hitting ratio
+                "Session\\MaxRatioAction" = 0;  # Pause torrent after hitting ratio (Sonarr/Radarr handle cleanup)
                 "Session\\I2P\\Enabled" = false;  # Temporarily disabled to debug crashes
                 "Session\\I2P\\MixedMode" = true;
                 "Session\\IgnoreSlowTorrentsForQueueing" = true;
