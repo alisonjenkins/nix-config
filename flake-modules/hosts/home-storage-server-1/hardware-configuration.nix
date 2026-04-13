@@ -47,7 +47,7 @@
         "/media/disks/ata-ST3000DM008-2DM166_Z5057TK6-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057TK6-part1";
         "/media/disks/ata-ST3000DM008-2DM166_Z5057WSB-part1".device = "/dev/disk/by-id/ata-ST3000DM008-2DM166_Z5057WSB-part1";
         "/media/disks/ata-ST4000DM004-2CV104_ZFN195XV-part1".device = "/dev/disk/by-id/ata-ST4000DM004-2CV104_ZFN195XV-part1";
-        # "/media/disks/ata-ST5000LM000-2AN170_WCJ53A54-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ53A54-part1"; # XFS corrupted - needs xfs_repair before re-enabling
+        "/media/disks/ata-ST5000LM000-2AN170_WCJ53A54-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ53A54-part1";
         # "/media/disks/ata-ST5000LM000-2AN170_WCJ7DQKA-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ7DQKA-part1"; # DEAD - I/O errors, bay 7
         "/media/disks/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1";
         "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
