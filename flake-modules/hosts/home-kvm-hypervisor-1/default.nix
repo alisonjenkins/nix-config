@@ -155,7 +155,7 @@ in {
           libvirtd = {
             package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libvirt;
             qemu = {
-              package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.qemu;
+              package = lib.mkForce inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.qemu;
               runAsRoot = true;
               swtpm.enable = true;
             };
