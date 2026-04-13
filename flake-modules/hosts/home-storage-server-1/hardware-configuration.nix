@@ -50,6 +50,16 @@
         "/media/disks/ata-ST5000LM000-2AN170_WCJ53A54-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ53A54-part1";
         # "/media/disks/ata-ST5000LM000-2AN170_WCJ7DQKA-part1".device = "/dev/disk/by-id/ata-ST5000LM000-2AN170_WCJ7DQKA-part1"; # DEAD - I/O errors, bay 7
         "/media/disks/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_71W0A3GYFWTG-part1";
+        "/media/disks/ata-TOSHIBA_MG08ACA16TE_7190A01VFVGG-part1" = {
+          device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A01VFVGG-part1";
+          fsType = "btrfs";
+          options = [ "compress=zstd:-1" ];
+        };
+        "/media/disks/ata-TOSHIBA_MN10ADA10TS_Z5S2A05QFNGL-part1" = {
+          device = "/dev/disk/by-id/ata-TOSHIBA_MN10ADA10TS_Z5S2A05QFNGL-part1";
+          fsType = "btrfs";
+          options = [ "compress=zstd:-1" ];
+        };
         "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
         "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
         "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
