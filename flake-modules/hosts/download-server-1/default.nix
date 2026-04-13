@@ -762,8 +762,9 @@ in {
         # BTFS Bridge: watches qBittorrent for "stream" category and mounts via BTFS
         systemd.services.btfs-bridge = {
           description = "BTFS Bridge - qBittorrent to BTFS streaming";
-          after = [ "network-online.target" "btfs-restore.service" ];
+          after = [ "network-online.target" "btfs-restore.service" "qbittorrent.service" ];
           wants = [ "network-online.target" ];
+          requires = [ "qbittorrent.service" ];
           wantedBy = [ "multi-user.target" ];
 
           serviceConfig = {
@@ -942,7 +943,7 @@ EOF
             # - actimeo=30 (cache attributes for 30 sec = faster stale handle detection)
             # - lookupcache=all (aggressive file lookup caching)
             # - hard,intr (reliable, but interruptible on hung operations)
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=30";
+            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -953,7 +954,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30";
+            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -964,7 +965,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30";
+            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1413,6 +1414,35 @@ EOF
                   "192.168.1.39"
                   "192.168.1.66"
                 ];
+              }
+              # Prometheus exporters (node, nginx, wireguard, exportarr)
+              {
+                port = 9100; # node exporter
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9113; # nginx exporter
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9586; # wireguard exporter
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9707; # exportarr radarr
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9708; # exportarr sonarr
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9709; # exportarr bazarr
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
+              }
+              {
+                port = 9710; # exportarr prowlarr
+                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
               }
             ];
 
