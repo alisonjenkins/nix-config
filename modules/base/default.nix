@@ -141,7 +141,7 @@ in
 
       boot = {
         consoleLogLevel = 0;
-        kernelModules = [
+        kernelModules = lib.optionals cfg.enableCachyOSKernel [
           "sch_dualpi2"
         ];
 
@@ -221,7 +221,7 @@ in
         };
 
         loader = {
-          timeout = lib.mkDefault 0;
+          timeout = lib.mkDefault 5;
           efi = {
             canTouchEfiVariables = true;
             efiSysMountPoint = "/boot";

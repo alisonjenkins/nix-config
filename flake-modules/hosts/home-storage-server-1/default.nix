@@ -61,9 +61,14 @@ in {
           ];
         };
 
-        # Disable zram - this VM only has 4GB RAM and the zram overhead
-        # worsens OOM. Use the real 32GB LVM swap partition instead.
-        zramSwap.enable = lib.mkForce false;
+        # This VM only has 8GB RAM; reduce zram from the default 100%
+        zramSwap.memoryPercent = lib.mkForce 50;
+
+        # smartd starts before passthrough disks are available; retry until they appear
+        systemd.services.smartd.serviceConfig = {
+          Restart = "on-failure";
+          RestartSec = "10s";
+        };
 
         environment = {
           pathsToLink = [ "/share/zsh" ];
@@ -102,24 +107,22 @@ in {
         };
 
         # Set proper ownership and permissions on media directories
-        # Runs after mergerfs mount to avoid blocking early boot
-        systemd.services.media-directory-setup = {
-          description = "Create media directory structure on mergerfs";
-          after = [ "media-storage.mount" ];
-          requires = [ "media-storage.mount" ];
-          wantedBy = [ "multi-user.target" ];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-          };
-          script = ''
-            install -d -m 2775 -o qbittorrent -g media /media/storage/downloads
-            install -d -m 2775 -o qbittorrent -g media /media/storage/downloads/downloading
-            install -d -m 2775 -o qbittorrent -g media /media/storage/downloads/complete
-            install -d -m 2775 -o radarr -g movies /media/storage/media/Movies
-            install -d -m 2775 -o sonarr -g tv /media/storage/media/TV
-          '';
-        };
+        systemd.tmpfiles.rules = [
+          # Impermanence: ensure /var/run is a symlink to ../run.
+          # The default 'L' rule doesn't replace an existing directory.
+          "L+ /var/run - - - - ../run"
+
+          # Downloads directory: owner=qbittorrent, group=media, setgid bit
+          "d /media/storage/downloads 2775 qbittorrent media -"
+          "d /media/storage/downloads/downloading 2775 qbittorrent media -"
+          "d /media/storage/downloads/complete 2775 qbittorrent media -"
+
+          # Movies directory: owner=radarr, group=movies
+          "d /media/storage/media/Movies 2775 radarr movies -"
+
+          # TV directory: owner=sonarr, group=tv
+          "d /media/storage/media/TV 2775 sonarr tv -"
+        ];
 
         services = {
           logrotate.checkConfig = false;

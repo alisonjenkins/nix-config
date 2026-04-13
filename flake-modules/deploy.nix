@@ -64,15 +64,15 @@
           };
         };
 
-        home-k8s-server-1 = {
-          hostname = "home-k8s-server-1.lan";
-          profiles = {
-            system = {
-              user = "root";
-              path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
-            };
-          };
-        };
+        # home-k8s-server-1 = {
+        #   hostname = "home-k8s-server-1.lan";
+        #   profiles = {
+        #     system = {
+        #       user = "root";
+        #       path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
+        #     };
+        #   };
+        # };
       };
     };
   };

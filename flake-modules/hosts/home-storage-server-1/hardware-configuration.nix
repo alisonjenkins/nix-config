@@ -71,6 +71,8 @@
         "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"; # Marginal - 26 pending, monitor closely
       };
       media_disk_mount_points = builtins.attrNames media_disks;
+      # Add nofail to all data disks so a dead/missing drive doesn't block boot
+      media_disks_nofail = builtins.mapAttrs (_: v: v // { options = [ "nofail" ]; }) media_disks;
     in {
       "/".neededForBoot = true;
       "/nix".neededForBoot = true;
@@ -96,11 +98,12 @@
       };
 
       "/media/storage" = {
-        device = "/media/disks/*";
+        device = "/media/disks/*:/media/btfs-streaming";
         depends = media_disk_mount_points;
         fsType = "fuse.mergerfs";
 
         options = [
+          "nofail"
           "allow_other"
           "cache.files=off"
           "category.create=mfs"  # Use most-free-space policy to spread data across disks
@@ -114,7 +117,7 @@
           "security_capability=false"
         ];
       };
-    } // media_disks;
+    } // media_disks_nofail;
 
     swapDevices = [
       {
