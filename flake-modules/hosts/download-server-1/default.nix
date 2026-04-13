@@ -339,11 +339,35 @@ in {
             INTERFACE="primary-vpn"
             # Maximum age in seconds before considering the tunnel stale (5 minutes)
             MAX_HANDSHAKE_AGE=300
+            # Backoff: max 3 restarts within 10 minutes, then stop trying
+            RESTART_STATE="/run/wireguard-watchdog-restarts"
+            MAX_RESTARTS=3
+            BACKOFF_WINDOW=600
+
+            do_restart() {
+              # Clean up restart timestamps older than the backoff window
+              CURRENT_TIME=$(date +%s)
+              if [ -f "$RESTART_STATE" ]; then
+                ${pkgs.gawk}/bin/awk -v cutoff="$((CURRENT_TIME - BACKOFF_WINDOW))" '$1 > cutoff' "$RESTART_STATE" > "$RESTART_STATE.tmp"
+                mv "$RESTART_STATE.tmp" "$RESTART_STATE"
+                RECENT_RESTARTS=$(wc -l < "$RESTART_STATE")
+              else
+                RECENT_RESTARTS=0
+              fi
+
+              if [ "$RECENT_RESTARTS" -ge "$MAX_RESTARTS" ]; then
+                echo "[$(date)] Suppressing restart — $RECENT_RESTARTS restarts in last $((BACKOFF_WINDOW / 60))min (max: $MAX_RESTARTS)"
+                return 1
+              fi
+
+              echo "$CURRENT_TIME" >> "$RESTART_STATE"
+              systemctl restart "wg-quick-$INTERFACE"
+            }
 
             # Check if the interface exists
             if ! ${pkgs.wireguard-tools}/bin/wg show "$INTERFACE" 2>/dev/null | grep -q "interface"; then
               echo "[$(date)] Interface $INTERFACE does not exist, restarting..."
-              systemctl restart "wg-quick-$INTERFACE"
+              do_restart
               exit 0
             fi
 
@@ -352,7 +376,7 @@ in {
 
             if [ -z "$HANDSHAKE_TIME" ] || [ "$HANDSHAKE_TIME" = "0" ]; then
               echo "[$(date)] No handshake recorded for $INTERFACE, restarting..."
-              systemctl restart "wg-quick-$INTERFACE"
+              do_restart
               exit 0
             fi
 
@@ -361,9 +385,11 @@ in {
 
             if [ "$HANDSHAKE_AGE" -gt "$MAX_HANDSHAKE_AGE" ]; then
               echo "[$(date)] Handshake for $INTERFACE is $HANDSHAKE_AGE seconds old (max: $MAX_HANDSHAKE_AGE), restarting..."
-              systemctl restart "wg-quick-$INTERFACE"
+              do_restart
             else
               echo "[$(date)] Handshake for $INTERFACE is $HANDSHAKE_AGE seconds old, tunnel is healthy"
+              # Tunnel is healthy — clear restart history
+              rm -f "$RESTART_STATE"
             fi
           '';
         };
@@ -533,7 +559,7 @@ in {
             if echo "$OUTPUT_TCP" | grep -q "Mapped public port"; then
               FORWARDED_PORT=$(echo "$OUTPUT_TCP" | grep "Mapped public port" | grep -oP '\d+' | head -1)
 
-              if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ]; then
+              if [ -n "$FORWARDED_PORT" ] && [ "$FORWARDED_PORT" -gt 0 ] && [ "$FORWARDED_PORT" -lt 65536 ]; then
                 echo "[$(date)] Successfully got forwarded port: $FORWARDED_PORT"
 
                 # Update Firewall Rules
@@ -1294,6 +1320,8 @@ EOF
                 "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
                 "WebUI\\Port" = 8080;
                 "WebUI\\Username" = "admin";
+                # Disabled because qBittorrent sits behind nginx reverse proxy which
+                # rewrites the Host header and origin, breaking both validations
                 "WebUI\\HostHeaderValidation" = false;
                 "WebUI\\CSRFProtection" = false;
               };
