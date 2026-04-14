@@ -1,0 +1,30 @@
+[
+  {
+    "imageName": "quay.io/cilium/cilium",
+    "imageTag": "v1.17.1",
+    "arch": "amd64",
+    "imageDigest": "sha256:8969bfd9c87cbea91e40665f8ebe327268c99d844ca26d7d12165de07f702866",
+    "hash": "sha256-Q0meSuQVYwxd4HCHWtRNyid5oYo7OF0+AdyRWYrvZQ4="
+  },
+  {
+    "imageName": "quay.io/cilium/cilium",
+    "imageTag": "v1.17.1",
+    "arch": "arm64",
+    "imageDigest": "sha256:8969bfd9c87cbea91e40665f8ebe327268c99d844ca26d7d12165de07f702866",
+    "hash": "sha256-z106uYGSQDPVr6qJpicEOLGsQeqht+UQmskyFcQtl0A="
+  },
+  {
+    "imageName": "quay.io/cilium/cilium-envoy",
+    "imageTag": "v1.31.5-1739264036-958bef243c6c66fcfd73ca319f2eb49fff1eb2ae",
+    "arch": "amd64",
+    "imageDigest": "sha256:fc708bd36973d306412b2e50c924cd8333de67e0167802c9b48506f9d772f521",
+    "hash": "sha256-4sJ4m4/FqD6ALaEakPYNBLU1CLKAPclULHWaeB1nK/0="
+  },
+  {
+    "imageName": "quay.io/cilium/cilium-envoy",
+    "imageTag": "v1.31.5-1739264036-958bef243c6c66fcfd73ca319f2eb49fff1eb2ae",
+    "arch": "arm64",
+    "imageDigest": "sha256:fc708bd36973d306412b2e50c924cd8333de67e0167802c9b48506f9d772f521",
+    "hash": "sha256-4PwVGlbP/4N2uUxC1t7/Sr70zvHtra+il4zZ6UxjHWg="
+  }
+]
