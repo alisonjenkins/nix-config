@@ -4,6 +4,7 @@
     audio-context-suspend = import ../modules/audio-context-suspend.nix;
     aws = import ../modules/aws;
     base = import ../modules/base;
+    hetzner = import ../modules/hetzner;
     btfs-streaming = import ../modules/btfs-streaming;
     desktop = import ../modules/desktop;
     libvirtd = import ../modules/libvirtd;
