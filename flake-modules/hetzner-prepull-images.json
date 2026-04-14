@@ -26,5 +26,61 @@
     "arch": "arm64",
     "imageDigest": "sha256:fc708bd36973d306412b2e50c924cd8333de67e0167802c9b48506f9d772f521",
     "hash": "sha256-4PwVGlbP/4N2uUxC1t7/Sr70zvHtra+il4zZ6UxjHWg="
+  },
+  {
+    "imageName": "hetznercloud/hcloud-csi-driver",
+    "imageTag": "v2.20.0",
+    "arch": "amd64",
+    "imageDigest": "sha256:2d347598e5cbd76957abf9597573e365ef340643151d96170be7620e557b3691",
+    "hash": "sha256-MMiXemAaqY9DQTs7j3wtgEWmv/a4HpfI+G5uHzgvz68="
+  },
+  {
+    "imageName": "hetznercloud/hcloud-csi-driver",
+    "imageTag": "v2.20.0",
+    "arch": "arm64",
+    "imageDigest": "sha256:254ed01692cad4da230955a68a1c6a52772d6a72cf4011d508d6fd75dbb361d8",
+    "hash": "sha256-u3DzZYVv12cQCG+NM1RN3loP+48Ccl9O6cjl2JwgMj0="
+  },
+  {
+    "imageName": "hetznercloud/hcloud-cloud-controller-manager",
+    "imageTag": "v1.30.1",
+    "arch": "amd64",
+    "imageDigest": "sha256:4d94e2dfec09ef9157d7347f7257d4aef4510f63107508c54a4fcc6bfdebd73d",
+    "hash": "sha256-Lvc57IWMcoNtvHXY9tQV0stuPMXpwsy8ohZN8JqUqqo="
+  },
+  {
+    "imageName": "hetznercloud/hcloud-cloud-controller-manager",
+    "imageTag": "v1.30.1",
+    "arch": "arm64",
+    "imageDigest": "sha256:3091b87b69c42dd27ccd060c7e0f0bcd68fb5e868f72a5d086387c81915b8424",
+    "hash": "sha256-mUQ9kVK64/S+OhhIBGGC30W0BfLIbAOiLjElXbrNDzs="
+  },
+  {
+    "imageName": "registry.k8s.io/sig-storage/csi-node-driver-registrar",
+    "imageTag": "v2.16.0",
+    "arch": "amd64",
+    "imageDigest": "sha256:aeecba5b171b50558bab359fdb8e28b9da185f666cef35cd87ac9784e51956c5",
+    "hash": "sha256-RNvviUUbP26dagTwh/fjZDQ3ZWFsXsQrSJfAYNvA4M0="
+  },
+  {
+    "imageName": "registry.k8s.io/sig-storage/csi-node-driver-registrar",
+    "imageTag": "v2.16.0",
+    "arch": "arm64",
+    "imageDigest": "sha256:108aadeb3bcdea7c60199f83ff53358bdcf42c365ed274b754baac2f81dd3883",
+    "hash": "sha256-LdYFWGLNwC6auzJn7SuHLor6cheGYCpUoktvv4htnDs="
+  },
+  {
+    "imageName": "registry.k8s.io/sig-storage/livenessprobe",
+    "imageTag": "v2.18.0",
+    "arch": "amd64",
+    "imageDigest": "sha256:7fe80915b3cb9fb1d09dbd300a0682cafa8ab93947cd3ddc3e15a8250621bf24",
+    "hash": "sha256-rA1aRc24T+8xF0dkV3lkovXTdup2JpG213NRhD49LfQ="
+  },
+  {
+    "imageName": "registry.k8s.io/sig-storage/livenessprobe",
+    "imageTag": "v2.18.0",
+    "arch": "arm64",
+    "imageDigest": "sha256:857cc375c99c4e610df0b47c8935456ad6ef81cfbb4479dfe5edee837a34abe3",
+    "hash": "sha256-ZoLfWcpZUR97VM/h3wUprtcW3g0G4KuXNn3Yslc1uTM="
   }
 ]
