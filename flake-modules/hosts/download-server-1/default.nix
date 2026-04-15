@@ -1248,6 +1248,7 @@ EOF
                 "Session\\SSL\\Port" = 51603;
                 "Session\\SlowTorrentsDownloadRate" = 10;   # Lowered from 100 (KB/s) - less aggressive
                 "Session\\SlowTorrentsUploadRate" = 1;    # Lowered from 5 (KB/s) - less aggressive
+                "Session\\SlowTorrentsInactivityTimer" = 30;  # Mark stalled torrents as slow after 30s (default 60)
                 "Session\\SubcategoriesEnabled" = true;
                 "Session\\Tags" = "arch, linux, nixos";
                 "Session\\TempPath" = "/media/downloads/downloading";
@@ -1265,7 +1266,7 @@ EOF
 
                 # Connection limits (prevent overwhelming the system)
                 "Session\\MaxConnections" = 500;                   # Global connection limit
-                "Session\\MaxConnectionsPerTorrent" = 100;         # Per-torrent connection limit
+                "Session\\MaxConnectionsPerTorrent" = 50;          # Per-torrent connection limit (reduced from 100 to lower overhead)
                 "Session\\MaxUploads" = 50;                        # Global upload slots
                 "Session\\MaxUploadsPerTorrent" = 4;               # Per-torrent upload slots
 
