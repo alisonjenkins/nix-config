@@ -2,6 +2,15 @@
 let
   system = "x86_64-linux";
   lib = inputs.nixpkgs.lib;
+
+  # IPs allowed to access the qBittorrent WebUI (used in both firewall
+  # allowedServices and qBittorrent's AuthSubnetWhitelist)
+  qbittorrentAllowedIPs = [
+    "192.168.1.187"
+    "192.168.1.190"
+    "192.168.1.39"
+    "192.168.1.66"
+  ];
 in {
   flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -1318,7 +1327,10 @@ EOF
                 "Advanced\\MaxMemoryWorkingSetLimit" = 4096;       # Limit RAM usage to 4GB to prevent crashes
                 "General\\Locale" = "en";
                 "MailNotification\\req_auth" = true;
-                "WebUI\\AuthSubnetWhitelist" = "@Invalid()";
+                # Whitelist localhost (nginx reverse proxy) and the specific IPs
+                # allowed through the firewall for port 8080
+                "WebUI\\AuthSubnetWhitelist" = lib.concatStringsSep ", " (["127.0.0.1/32"] ++ map (ip: "${ip}/32") qbittorrentAllowedIPs);
+                "WebUI\\AuthSubnetWhitelistEnabled" = true;
                 "WebUI\\Port" = 8080;
                 "WebUI\\Username" = "admin";
                 # Disabled because qBittorrent sits behind nginx reverse proxy which
@@ -1391,12 +1403,7 @@ EOF
               }
               {
                 port = 8080;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 8112;
