@@ -267,7 +267,7 @@ in
 
         overlays = [
           inputs.nur.overlays.default
-          inputs.rust-overlay.overlays.default
+          inputs.fenix.overlays.default
           outputs.overlays.additions
           outputs.overlays.master-packages
           outputs.overlays.modifications
@@ -305,7 +305,7 @@ in
             "https://nix-community.cachix.org"
             "https://nix-gaming.cachix.org"
             "https://nixpkgs-wayland.cachix.org"
-            "https://rust-overlay.cachix.org"
+            "https://fenix.cachix.org"
           ];
 
           trusted-public-keys = [
@@ -317,7 +317,7 @@ in
             "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
             "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
             "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-            "rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk="
+            "fenix.cachix.org-1:ecJhr+RdYEdcVgUkjruiYhjbBloIEGov7bos90cZi0Q="
           ];
         };
       };

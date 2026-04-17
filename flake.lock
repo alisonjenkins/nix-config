@@ -222,6 +222,27 @@
         "type": "github"
       }
     },
+    "fenix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs_unstable"
+        ],
+        "rust-analyzer-src": "rust-analyzer-src"
+      },
+      "locked": {
+        "lastModified": 1776413252,
+        "narHash": "sha256-ZQhyB2vnFsE1KcWJlWle1UujEDVjTJVL3oMIHUvnzuo=",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "a318c3c6120e91375eea1d7c57a0cd101a81b14a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "fenix",
+        "type": "github"
+      }
+    },
     "firefox-gnome-theme": {
       "flake": false,
       "locked": {
@@ -1378,6 +1399,7 @@
         "darwin": "darwin",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
+        "fenix": "fenix",
         "flake-parts": "flake-parts_3",
         "framework-inputmodule-rs-flake": "framework-inputmodule-rs-flake",
         "haumea": "haumea",
@@ -1407,11 +1429,27 @@
         "pipewire-screenaudio": "pipewire-screenaudio",
         "plasma-manager": "plasma-manager",
         "quickshell": "quickshell",
-        "rust-overlay": "rust-overlay_3",
         "sops-nix": "sops-nix",
         "stylix": "stylix",
         "tmux-sessionizer": "tmux-sessionizer",
         "zen-browser": "zen-browser"
+      }
+    },
+    "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776343166,
+        "narHash": "sha256-ZiHQPWwuUZk44epAZRbyFz23Kd4CYaq8WlBgAmCqAzQ=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "b8458013c217be4fccefc4e4f194026fa04ab4ca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "ref": "nightly",
+        "repo": "rust-analyzer",
+        "type": "github"
       }
     },
     "rust-overlay": {
@@ -1459,7 +1497,8 @@
     "rust-overlay_3": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs_unstable"
+          "tmux-sessionizer",
+          "nixpkgs"
         ]
       },
       "locked": {
@@ -1694,9 +1733,7 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rust-overlay": [
-          "rust-overlay"
-        ]
+        "rust-overlay": "rust-overlay_3"
       },
       "locked": {
         "lastModified": 1761389567,

@@ -153,12 +153,9 @@
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-
-      inputs = {
-        nixpkgs.follows = "nixpkgs_unstable";
-      };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
     sops-nix = {
@@ -170,7 +167,6 @@
       url = "github:alisonjenkins/tmux-sessionizer/b9965259166c588479c01328e34f0fbc98fa03a2";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        rust-overlay.follows = "rust-overlay";
       };
     };
 
