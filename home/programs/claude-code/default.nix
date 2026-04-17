@@ -22,6 +22,7 @@ in
       alwaysThinkingEnabled = true;
 
       permissions = {
+        defaultMode = "auto";
         allow = [
           "Read(*)"
           "Edit(*)"
@@ -160,7 +161,7 @@ in
       };
     };
 
-    skillsDir = "${anthropicSkills}/skills";
+    skills = "${anthropicSkills}/skills";
 
     agentsDir = ./agents;
 
