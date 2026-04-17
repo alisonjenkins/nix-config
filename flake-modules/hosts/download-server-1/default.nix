@@ -1505,7 +1505,7 @@ EOF
                   "nix-community.cachix.org"
                   "nix-gaming.cachix.org"
                   "nixpkgs-wayland.cachix.org"
-                  "rust-overlay.cachix.org"
+                  "fenix.cachix.org"
                 ];
               };
             };

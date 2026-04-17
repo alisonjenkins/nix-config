@@ -17,7 +17,7 @@ let
         self.overlays.zk
         self.overlays.qbittorrent
         inputs.nur.overlays.default
-        inputs.rust-overlay.overlays.default
+        inputs.fenix.overlays.default
       ]
       ++ (
         if builtins.getEnv "HOSTNAME" == "steamdeck"

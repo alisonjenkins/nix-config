@@ -102,7 +102,7 @@ in {
           config.allowUnfree = true;
           overlays = [
             inputs.nur.overlays.default
-            inputs.rust-overlay.overlays.default
+            inputs.fenix.overlays.default
             outputs.overlays.additions
             outputs.overlays.bluray-playback
             outputs.overlays.master-packages

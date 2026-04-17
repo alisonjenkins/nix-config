@@ -205,7 +205,7 @@ in {
         nixpkgs = {
           overlays = [
             inputs.nur.overlays.default
-            inputs.rust-overlay.overlays.default
+            inputs.fenix.overlays.default
             outputs.overlays._1password
             outputs.overlays.additions
             outputs.overlays.master-packages
