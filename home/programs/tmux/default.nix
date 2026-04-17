@@ -7,7 +7,7 @@
 }: {
   home.packages = [
     # Disabled on macOS due to rust-docs OOM when building tmux-sessionizer
-  ] ++ (if pkgs.stdenv.isLinux then [ pkgs.tmux-sessionizer ] else [ ]) ++ [
+  ] ++ [
     (pkgs.writeShellScriptBin "tmux-smart-kill-session" ''
       #!/bin/bash
       
