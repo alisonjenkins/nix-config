@@ -8,8 +8,8 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+    fenix = {
+      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -20,7 +20,7 @@
       nixpkgs,
       crane,
       flake-utils,
-      rust-overlay,
+      fenix,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -28,7 +28,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ (import rust-overlay) ];
+          overlays = [ fenix.overlays.default ];
         };
 
         inherit (pkgs) lib;
@@ -48,7 +48,11 @@
         muslTarget = if hasMusl then muslTargets.${system}.target else null;
         muslCc = if hasMusl then muslTargets.${system}.crossPkgs.stdenv.cc else null;
 
-        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+        rustToolchain = pkgs.fenix.fromToolchainFile {
+          file = ./rust-toolchain.toml;
+          # Run with lib.fakeSha256 first to get the real hash from the error message
+          sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        };
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
