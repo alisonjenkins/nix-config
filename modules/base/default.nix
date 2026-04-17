@@ -150,6 +150,11 @@ in
 
           availableKernelModules = [ "lz4" "lz4_compress" ];
 
+          # CachyOS kernel builds all default LUKS crypto modules (aes, aes_generic,
+          # sha256, cbc, xts, etc.) directly into the kernel. The initrd module-shrink
+          # step fails when it can't find them as loadable .ko files.
+          luks.cryptoModules = lib.mkIf cfg.enableCachyOSKernel (lib.mkForce [ ]);
+
           systemd = {
             enable = true;
           };
