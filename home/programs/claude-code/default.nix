@@ -1,10 +1,54 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 let
   anthropicSkills = pkgs.fetchFromGitHub {
     owner = "anthropics";
     repo = "skills";
     rev = "1ed29a03dc852d30fa6ef2ca53a67dc2c2c2c563";
     hash = "sha256-9FGubcwHcGBJcKl02aJ+YsTMiwDOdgU/FHALjARG51c=";
+  };
+
+  lspmuxPkg = inputs.ali-neovim.packages.${pkgs.system}.lspmux;
+  lspWrappers = inputs.ali-neovim.legacyPackages.${pkgs.system}.lspWrappers;
+
+  # Helper: wrap a binary path with lspmux client
+  mux = bin: {
+    command = "${lspmuxPkg}/bin/lspmux";
+    args = [ "client" "--server-path" bin ];
+  };
+
+  # Claude-Code-specific extension-to-language mappings
+  extensionMappings = {
+    nix        = { ".nix" = "nix"; };
+    go         = { ".go" = "go"; ".mod" = "gomod"; };
+    python     = { ".py" = "python"; };
+    bash       = { ".sh" = "shellscript"; ".bash" = "shellscript"; };
+    typescript = { ".ts" = "typescript"; ".tsx" = "typescriptreact";
+                   ".js" = "javascript"; ".jsx" = "javascriptreact"; };
+    rust       = { ".rs" = "rust"; };
+    terraform  = { ".tf" = "terraform"; ".tfvars" = "terraform-vars"; };
+    yaml       = { ".yaml" = "yaml"; ".yml" = "yaml"; };
+    json       = { ".json" = "json"; ".jsonc" = "jsonc"; };
+    lua        = { ".lua" = "lua"; };
+    toml       = { ".toml" = "toml"; };
+    markdown   = { ".md" = "markdown"; };
+    docker     = { ".dockerfile" = "dockerfile"; };
+  };
+
+  # Map friendly name → binary path from neovim flake's exports
+  serverBinaries = {
+    nix        = "${lspWrappers.nixd}/bin/nixd";
+    go         = "${lspWrappers.gopls}/bin/gopls";
+    python     = "${lspWrappers.pylsp}/bin/pylsp";
+    bash       = "${lspWrappers.bash-language-server}/bin/bash-language-server";
+    typescript = "${lspWrappers.typescript-language-server}/bin/typescript-language-server";
+    rust       = "${lspWrappers.rust-analyzer}/bin/rust-analyzer";
+    terraform  = "${lspWrappers.terraform-ls}/bin/terraform-ls";
+    yaml       = "${lspWrappers.yaml-language-server}/bin/yaml-language-server";
+    json       = "${lspWrappers.vscode-json-language-server}/bin/vscode-json-language-server";
+    lua        = "${lspWrappers.lua-language-server}/bin/lua-language-server";
+    toml       = "${lspWrappers.taplo-lsp}/bin/taplo-lsp";
+    markdown   = "${lspWrappers.marksman}/bin/marksman";
+    docker     = "${lspWrappers.docker-langserver}/bin/docker-langserver";
   };
 in
 {
@@ -30,7 +74,6 @@ in
           "WebFetch(*)"
           "WebSearch(*)"
           "mcp__playwright__*"
-          "mcp__nix-lsp__*"
           "mcp__context7__*"
           "mcp__github__*"
           "mcp__nixos__*"
@@ -170,13 +213,6 @@ in
         command = "${pkgs.playwright-mcp}/bin/mcp-server-playwright";
       };
 
-      # LSP integration — gives Claude access to diagnostics, hover, go-to-definition, etc.
-      # Uses bash wrapper to pass $PWD as workspace at launch time
-      nix-lsp = {
-        command = "bash";
-        args = [ "-c" "exec ${pkgs.master.mcp-language-server}/bin/mcp-language-server -workspace \"$PWD\" -lsp ${pkgs.master.nil}/bin/nil" ];
-      };
-
       # Up-to-date library documentation
       context7 = {
         command = "${pkgs.master.context7-mcp}/bin/context7-mcp";
@@ -205,5 +241,11 @@ in
         args = [ "stdio" ];
       };
     };
+
+    # LSP servers shared with Neovim via lspmux — both editors connect to the
+    # same LSP instances through the lspmux daemon
+    lspServers = builtins.mapAttrs (name: bin:
+      mux bin // { extensionToLanguage = extensionMappings.${name}; }
+    ) serverBinaries;
   };
 }
