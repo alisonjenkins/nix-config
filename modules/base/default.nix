@@ -295,7 +295,7 @@ in
         settings = {
           auto-optimise-store = lib.mkDefault false;
           cores = lib.mkDefault 0;
-          experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
+          experimental-features = lib.mkDefault [ "nix-command" "flakes" "ca-derivations" ];
           download-buffer-size = lib.mkDefault 268435456; # 256 MiB
           eval-cache = lib.mkDefault true;
           max-jobs = lib.mkDefault "auto";
