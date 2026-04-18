@@ -33,6 +33,7 @@
     ./keybase
     ./kitty
     ./kwalletd
+    ./lspmux
     ./lsd
     ./man
     ./mcfly
