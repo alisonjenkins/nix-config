@@ -47,7 +47,6 @@ in {
             privacy-badger
             surfingkeys
             tab-session-manager
-            youtube-auto-hd-fps
             ublock-origin
           ])
           else [ ]

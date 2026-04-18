@@ -41,7 +41,6 @@ in {
             tst-fade-old-tabs
             tst-indent-line
             tst-tab-search
-            youtube-auto-hd-fps
             ublock-origin
           ])
           else [ ]
