@@ -34,15 +34,16 @@ let
     docker     = { ".dockerfile" = "dockerfile"; };
   };
 
-  # Map friendly name → binary path from neovim flake's exports
+  # Map friendly name → binary path from neovim flake's exports.
+  # Prefers faster alternatives (pyright, vtsls, tfls) where available.
   serverBinaries = {
     nix        = "${lspWrappers.nixd}/bin/nixd";
     go         = "${lspWrappers.gopls}/bin/gopls";
-    python     = "${lspWrappers.pylsp}/bin/pylsp";
+    python     = "${lspWrappers.pyright}/bin/pyright-langserver";
     bash       = "${lspWrappers.bash-language-server}/bin/bash-language-server";
-    typescript = "${lspWrappers.typescript-language-server}/bin/typescript-language-server";
+    typescript = "${lspWrappers.vtsls}/bin/vtsls";
     rust       = "${lspWrappers.rust-analyzer}/bin/rust-analyzer";
-    terraform  = "${lspWrappers.terraform-ls}/bin/terraform-ls";
+    terraform  = "${lspWrappers.tfls}/bin/tfls";
     yaml       = "${lspWrappers.yaml-language-server}/bin/yaml-language-server";
     json       = "${lspWrappers.vscode-json-language-server}/bin/vscode-json-language-server";
     lua        = "${lspWrappers.lua-language-server}/bin/lua-language-server";
