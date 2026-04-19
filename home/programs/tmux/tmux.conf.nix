@@ -143,6 +143,10 @@ set-option -g set-titles-string '[#S:#I #h] #W'
 setw -g mode-keys vi
 set-option -sa terminal-features ",''${TERM}*:RGB"
 
+# Extended keys — enables Shift+Enter and other modified keys to pass through
+set -s extended-keys on
+set -as terminal-features 'xterm*:extkeys'
+
 # Claude Code session monitoring - bell detection
 set -g monitor-bell on
 set -g bell-action other
