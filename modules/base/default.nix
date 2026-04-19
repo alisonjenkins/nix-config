@@ -150,10 +150,16 @@ in
 
           availableKernelModules = [ "lz4" "lz4_compress" ];
 
-          # CachyOS kernel builds all default LUKS crypto modules (aes, aes_generic,
-          # sha256, cbc, xts, etc.) directly into the kernel. The initrd module-shrink
-          # step fails when it can't find them as loadable .ko files.
-          luks.cryptoModules = lib.mkIf cfg.enableCachyOSKernel (lib.mkForce [ ]);
+          # CachyOS Linux 7 builds cipher primitives (aes, xts, sha256, cbc, lrw,
+          # sha1/512, blowfish, twofish, serpent) into the kernel (=y), so naming
+          # them in cryptoModules breaks makeModulesClosure. These three stay =m
+          # and cryptsetup needs them at runtime — without them the initrd's
+          # systemd-cryptsetup@.service dies before it can prompt for a passphrase.
+          luks.cryptoModules = lib.mkIf cfg.enableCachyOSKernel (lib.mkForce [
+            "cryptd"
+            "af_alg"
+            "algif_skcipher"
+          ]);
 
           systemd = {
             enable = true;
