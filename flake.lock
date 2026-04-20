@@ -17,11 +17,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1776672718,
-        "narHash": "sha256-Iv4QfmJrBcmhHt6vDYaEtKyOBQ4rYlZrcZqVJa58OeM=",
+        "lastModified": 1776677939,
+        "narHash": "sha256-uB4VysCu51sgW96hKplyk7AeocjaOgojP0jj2xuTa/A=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "3e4680e7d154d29c16f5f6b12662a56540ca04ed",
+        "rev": "b6919b0d8ad607e41e8cd1fa5d51014d0abd7859",
         "type": "github"
       },
       "original": {
@@ -269,11 +269,11 @@
         "rust-analyzer-src": "rust-analyzer-src_2"
       },
       "locked": {
-        "lastModified": 1776584210,
-        "narHash": "sha256-ePiKtL1QlfFHEyUvhCrBKKuL/xzAwYBIAraPkXBObqA=",
+        "lastModified": 1776673701,
+        "narHash": "sha256-3rHmpU0phsXWJtSNbiolAeMzwLN+51G1Ji4FVENurMw=",
         "owner": "nix-community",
         "repo": "fenix",
-        "rev": "3dc46f7171ba708c559458d6f76043948a97efdf",
+        "rev": "d0ff0a903e7db7f8e71d5f7862446b7c92f12df7",
         "type": "github"
       },
       "original": {
@@ -809,11 +809,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1776661129,
-        "narHash": "sha256-8vQQ1935QxmrQEfK15MzTn/DSlwqaA30dycvX7eZGbI=",
+        "lastModified": 1776676553,
+        "narHash": "sha256-26gOVFcOo0WP3DMyFO5Uj29yaYzWMDNmsCqxq8569v0=",
         "owner": "Mic92",
         "repo": "niks3",
-        "rev": "70c57858aea78729aa00b08ecde73249651df32a",
+        "rev": "fa427ce70f976ee3b4248348026b4bb407f50aca",
         "type": "github"
       },
       "original": {
@@ -1141,11 +1141,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1776672127,
-        "narHash": "sha256-L/WND+KwZ2Cs8fFErmD5n5InLLIfyye1lzj6L2yQoTM=",
+        "lastModified": 1776677147,
+        "narHash": "sha256-jThVSfkpvrf6/pMC85y56UOmZDA3Oq8PSHVFU3xW0oA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "95d3bfa0e895839ecb5eb36c4445001726db9061",
+        "rev": "f5aa12eb144b805eb5d6a24c6c7be158cd5fb6b7",
         "type": "github"
       },
       "original": {
@@ -1311,11 +1311,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776671125,
-        "narHash": "sha256-L2d0n8lbrtppu7v/+G4+zpbVIZM9J57yO/rnCz+DsNg=",
+        "lastModified": 1776677582,
+        "narHash": "sha256-fgDkxgX50741b822XxEk7ACh4SnkE4SY+Uxk8HuhodM=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "2f9d03735406a4b4c4e707e099429fb771c4391c",
+        "rev": "8b49df9f37b99a0df3d3c8eede5c038a2ed7d06b",
         "type": "github"
       },
       "original": {
@@ -1512,11 +1512,11 @@
     "rust-analyzer-src_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1776441750,
-        "narHash": "sha256-1rVfG+mj8R4ze+lSYCa4iAv7FzrB03Cprtxmd1MfZak=",
+        "lastModified": 1776636258,
+        "narHash": "sha256-F3vhhEDyiPPWuYFxjFw+sv7BnLAGeb2bgS6xV+snvVQ=",
         "owner": "rust-lang",
         "repo": "rust-analyzer",
-        "rev": "251df518d73abb5c5d573c4d5d266a3edae9ca5a",
+        "rev": "adef948679e1f550805eeb2a78d10e25c0279f54",
         "type": "github"
       },
       "original": {
@@ -1745,11 +1745,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776671977,
-        "narHash": "sha256-HNBhaKdgNvln4ewnshiMmAZis21FkkCcJE/it4yO7Z8=",
+        "lastModified": 1776677831,
+        "narHash": "sha256-b9GkSr0687iBf7rUqoXT14f+vDZqkSLLKpZrwfgeVe4=",
         "owner": "alisonjenkins",
         "repo": "terraform-ls-rs",
-        "rev": "eaa55e636ee8385e09fbb1cd31d690342264ccb8",
+        "rev": "e8d5a51ef5abb2cce0c2cbba46e503c73ee2a880",
         "type": "github"
       },
       "original": {
