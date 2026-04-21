@@ -75,6 +75,7 @@ in {
             github_clone_ssh_host_personal = "pgithub.com";
             github_clone_ssh_host_work = "github.com";
             primarySSHKey = "~/.ssh/id_civica.pub";
+            azureDevopsRsaKey = "~/.ssh/id_civica_rsa.pub";
           };
       }
 

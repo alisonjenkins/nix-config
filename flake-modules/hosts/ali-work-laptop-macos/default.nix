@@ -411,6 +411,7 @@ in {
           github_clone_ssh_host_work = "github.com";
           hostname = "${hostnames.civica}";
           primarySSHKey = "~/.ssh/id_civica.pub";
+          azureDevopsRsaKey = "~/.ssh/id_civica_rsa.pub";
         };
       }
     ];

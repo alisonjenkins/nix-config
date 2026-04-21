@@ -1,5 +1,7 @@
 {
   primarySSHKey,
+  # Azure DevOps only supports RSA keys (not ed25519); set per work machine, empty on personal machines
+  azureDevopsRsaKey ? "",
   pkgs,
   ...
 }: {
@@ -191,10 +193,11 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        ${if azureDevopsRsaKey != "" then ''
         Host ssh.dev.azure.com
           User git
-          IdentityFile ~/.ssh/id_civica_rsa.pub
-          IdentitiesOnly yes
+          IdentityFile ${azureDevopsRsaKey}
+          IdentitiesOnly yes'' else ""}
       '';
   };
 }
