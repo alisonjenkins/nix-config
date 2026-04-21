@@ -1,4 +1,4 @@
-{ lib, buildNpmPackage, fetchurl, runCommand, python3, pkg-config, stdenv }:
+{ lib, buildNpmPackage, fetchurl, runCommand, python3, pkg-config }:
 
 let
   npmTarball = fetchurl {
