@@ -14,6 +14,10 @@
     inputs.plasma-manager.homeModules.plasma-manager
   ];
 
+  # Azure DevOps only supports RSA keys (not ed25519); work machines override
+  # this via extraSpecialArgs, personal machines get the empty-string default.
+  _module.args.azureDevopsRsaKey = lib.mkDefault "";
+
   home = {
     inherit username;
     homeDirectory = lib.mkForce (
