@@ -163,6 +163,11 @@ in
 
           systemd = {
             enable = true;
+            # Allow logging into the initrd emergency shell without a root password.
+            # Needed to diagnose early-boot failures (e.g. systemd-cryptsetup) when
+            # the machine can't pivot to the real root, so /persistence/passwords/root
+            # is unreachable and sulogin locks us out.
+            emergencyAccess = true;
           };
         };
 
