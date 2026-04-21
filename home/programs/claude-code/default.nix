@@ -7,6 +7,20 @@ let
     hash = "sha256-9FGubcwHcGBJcKl02aJ+YsTMiwDOdgU/FHALjARG51c=";
   };
 
+  cavemanPkg = pkgs.caveman;
+  cavekitPkg = pkgs.cavekit;
+  cavememPkg = pkgs.cavemem;
+
+  # Merge all skill directories; lndir skips conflicts (first wins — caveman takes precedence over cavekit's copy)
+  allSkills = pkgs.symlinkJoin {
+    name = "claude-code-skills";
+    paths = [
+      "${anthropicSkills}/skills"
+      "${cavemanPkg}/skills"
+      "${cavekitPkg}/skills"
+    ];
+  };
+
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.system}.lspmux;
   lspWrappers = inputs.ali-neovim.legacyPackages.${pkgs.system}.lspWrappers;
 
@@ -66,6 +80,12 @@ in
     settings = {
       alwaysThinkingEnabled = true;
 
+      # Caveman mode badge in the status bar — shows [CAVEMAN], [CAVEMAN:ULTRA], etc.
+      statusLine = {
+        type = "command";
+        command = "bash \"${cavemanPkg}/hooks/caveman-statusline.sh\"";
+      };
+
       permissions = {
         defaultMode = "auto";
         allow = [
@@ -80,6 +100,7 @@ in
           "mcp__nixos__*"
           "mcp__k8s__*"
 "mcp__terraform__*"
+          "mcp__cavemem__*"
           "Bash(git:*)"
           "Bash(GIT_PAGER=cat git:*)"
           "Bash(GIT_DIFF_OPTS= git:*)"
@@ -202,10 +223,84 @@ in
             ];
           }
         ];
+
+        # Caveman: auto-loads the full/mode-filtered SKILL.md as hidden system context each session
+        # Cavemem: captures session start event for cross-session memory
+        SessionStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.nodejs}/bin/node \"${cavemanPkg}/hooks/caveman-activate.js\"";
+                timeout = 5;
+                statusMessage = "Loading caveman mode...";
+              }
+            ];
+          }
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${cavememPkg}/bin/cavemem hook run session-start";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
+
+        # Caveman: tracks /caveman commands and natural-language activation phrases
+        # Cavemem: records each prompt for memory
+        UserPromptSubmit = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.nodejs}/bin/node \"${cavemanPkg}/hooks/caveman-mode-tracker.js\"";
+                timeout = 5;
+                statusMessage = "Tracking caveman mode...";
+              }
+            ];
+          }
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${cavememPkg}/bin/cavemem hook run user-prompt-submit";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
+
+        # Cavemem: captures tool results for memory
+        PostToolUse = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${cavememPkg}/bin/cavemem hook run post-tool-use";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
+
+        # Cavemem: persists session memory on agent stop
+        Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${cavememPkg}/bin/cavemem hook run session-end";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
       };
     };
 
-    skills = "${anthropicSkills}/skills";
+    skills = "${allSkills}";
 
     agentsDir = ./agents;
 
@@ -236,10 +331,16 @@ in
         command = "${pkgs.master.mcp-k8s-go}/bin/mcp-k8s-go";
       };
 
-# Terraform registry and provider documentation
+      # Terraform registry and provider documentation
       terraform = {
         command = "${pkgs.master.terraform-mcp-server}/bin/terraform-mcp-server";
         args = [ "stdio" ];
+      };
+
+      # Cavemem: persistent cross-session memory (search, timeline, get_observations)
+      cavemem = {
+        command = "${cavememPkg}/bin/cavemem";
+        args = [ "mcp" ];
       };
     };
 

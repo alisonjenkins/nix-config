@@ -21,4 +21,7 @@
   xr-video-player = pkgs.callPackage ./xr-video-player {};
   piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
   piper-tts-talk = pkgs.callPackage ./piper-tts-talk { inherit pkgs; piper-voice = piper-voice-jenny-dioco; };
+  caveman = pkgs.callPackage ./caveman {};
+  cavekit = pkgs.callPackage ./cavekit {};
+  cavemem = pkgs.callPackage ./cavemem {};
 }
