@@ -193,7 +193,7 @@
 
         Host ssh.dev.azure.com
           User git
-          IdentityFile ${primarySSHKey}
+          IdentityFile ~/.ssh/id_civica_rsa.pub
           IdentitiesOnly yes
       '';
   };
