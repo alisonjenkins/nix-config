@@ -120,6 +120,21 @@ in
         reducing swap thrashing. Requires kernel 6.1+ with MGLRU support.
       '';
     };
+
+    enableInitrdDebug = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Diagnostic-only. Turns the initrd into a debugging surface:
+          - forces sulogin to accept passwordless login (SYSTEMD_SULOGIN_FORCE=1)
+          - auto-dumps `journalctl -xb` to the console on emergency.target
+
+        SECURITY: when enabled, anyone with physical access can drop into a
+        root shell in the initrd (before LUKS unlock) and tamper with the
+        unencrypted EFI partition or re-sign boot images. Only enable on the
+        specific host being diagnosed, and disable again immediately after.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -537,6 +552,36 @@ in
       systemIdentity = {
         enable = true;
         pcr15 = cfg.pcr15Value;
+      };
+    })
+
+    # Initrd debug scaffolding — gated to a single host at a time.
+    # See modules.base.enableInitrdDebug description for the security note.
+    (lib.mkIf (cfg.bootLoader == "secure-boot" && cfg.enableInitrdDebug) {
+      # Baked into the UKI (and therefore into the secure-boot signature).
+      # sulogin reads this from /proc/cmdline when the env var isn't set.
+      boot.kernelParams = [ "SYSTEMD_SULOGIN_FORCE=1" ];
+
+      boot.initrd.systemd.services = {
+        # emergencyAccess writes an empty root password into the initrd's
+        # /etc/shadow, but sulogin still locks us out on early-boot failures
+        # without --force. Env-var route triggers --force unconditionally.
+        emergency.serviceConfig.Environment = "SYSTEMD_SULOGIN_FORCE=1";
+        rescue.serviceConfig.Environment    = "SYSTEMD_SULOGIN_FORCE=1";
+
+        # If sulogin still loses, dump journalctl -xb to the console so the
+        # operator can at least read and photograph the failure reason.
+        emergency-journal-dump = {
+          description = "Dump journal to console on emergency";
+          wantedBy = [ "emergency.target" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.systemd}/bin/journalctl -xb --no-pager";
+            StandardOutput = "journal+console";
+            StandardError  = "journal+console";
+          };
+        };
       };
     })
 

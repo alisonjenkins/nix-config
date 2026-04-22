@@ -145,6 +145,7 @@ in {
           bootLoader = "secure-boot";
           pcr15Value = "b538ad748a4d175bd234bf369e138b225bd9cfd55d6345763733578cd29700de";
           enableCachyOSKernel = true;
+          enableInitrdDebug = true;  # TODO: flip back to false once CachyOS 7 LUKS failure is diagnosed
           hibernateMode = "shutdown";
           suspendState = "mem";
           timezone = null;  # Use automatic-timezoned for VPN-proof timezone detection
