@@ -190,6 +190,13 @@ in
           "amdgpu.ppfeaturemask=0xfff7ffff"
           "hibernate=lz4"
           "preempt=full"
+        ] ++ lib.optionals cfg.enableCachyOSKernel [
+          # CachyOS LTO builds fail the cryptomgr self-test for xts(aes)/AES-NI
+          # at late_initcall time, which marks the template broken. dm-crypt
+          # then gets -ENOENT back from crypto_alloc_skcipher("xts(aes)") and
+          # the reload ioctl surfaces that as EINVAL — blocking LUKS unlock in
+          # the initrd. Skipping the self-tests lets the template stay usable.
+          "cryptomgr.notests=1"
         ];
 
         kernel = {
