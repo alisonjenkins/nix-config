@@ -1,5 +1,6 @@
 **/*.dec.*
 **/.claude
+**/.playwright-mcp
 **/*.qcow2
 **/result
 .aider*
