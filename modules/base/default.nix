@@ -569,6 +569,10 @@ in
       # sulogin reads this from /proc/cmdline when the env var isn't set.
       boot.kernelParams = [ "SYSTEMD_SULOGIN_FORCE=1" ];
 
+      # vfat so the operator can mount the ESP from the emergency shell and
+      # write diagnostic dumps to somewhere that survives reboot.
+      boot.initrd.supportedFilesystems = [ "vfat" ];
+
       boot.initrd.systemd.services = {
         # emergencyAccess writes an empty root password into the initrd's
         # /etc/shadow, but sulogin still locks us out on early-boot failures
