@@ -27,6 +27,7 @@ in {
       self.nixosModules.desktop-media
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
+      self.nixosModules.claude-sync
       self.nixosModules.desktop
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
@@ -89,6 +90,18 @@ in {
         # sops.secrets.niks3-token = {
         #   sopsFile = self + "/secrets/niks3-token.enc.yaml";
         #   key = "niks3_token";
+        # };
+
+        # TODO: Enable once secrets/claude-sync.enc.yaml is created with sops.
+        # Required keys (b2_* as plaintext, rclone_crypt_* passed through
+        # `rclone obscure`): b2_account_id, b2_application_key,
+        # rclone_crypt_password, rclone_crypt_salt. After creating the secret,
+        # run `just claude-sync-bootstrap` once to seed bisync state.
+        # modules.claudeSync = {
+        #   enable = true;
+        #   user = "ali";
+        #   bucket = "alison-claude-sync";
+        #   sopsFile = self + "/secrets/claude-sync.enc.yaml";
         # };
 
         modules.desktop-1password.enable = true;

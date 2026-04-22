@@ -14,6 +14,15 @@ creation_rules:
       - *ali_personal
       - *server_ali-desktop
       - *server_ali-work-laptop
+  # claude-sync secret is decryptable on ali-desktop today. When
+  # ali-framework-laptop's host age key is added above, re-encrypt this file
+  # (sops updatekeys secrets/claude-sync.enc.yaml) to extend access.
+  - path_regex: ^secrets/claude-sync\.enc\.yaml$
+    key_groups:
+    - age:
+      - *admin_ali
+      - *ali_personal
+      - *server_ali-desktop
   - path_regex: ^secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
     - age:

@@ -229,6 +229,13 @@ ami hostname region="eu-west-2" bucket="nixos-amis":
     just ami-build {{hostname}}
     just ami-upload {{hostname}} {{region}} {{bucket}}
 
+# One-time bootstrap of rclone bisync state for claude-sync.
+# Run this on each machine after the module is first enabled and the
+# secrets/claude-sync.enc.yaml secret is populated. It pauses the timer,
+# seeds bisync against the remote, then restarts the timer.
+claude-sync-bootstrap:
+    claude-sync-bootstrap
+
 alias b := boot
 alias B := build
 alias s := switch

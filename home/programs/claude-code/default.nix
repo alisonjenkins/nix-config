@@ -147,6 +147,38 @@ in
       };
 
       hooks = {
+        # Trigger claude-sync (defined in modules/claude-sync on NixOS hosts
+        # where it's enabled) at session boundaries. Commands no-op silently on
+        # hosts without the service (macOS, unsynced Linux machines).
+        SessionStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                # Wait up to ~30s for sync to complete so the session has
+                # fresh memory/transcripts. If sync takes longer, hook timeout
+                # triggers and the session proceeds with current local state.
+                command = "systemctl --user start --wait claude-sync.service 2>/dev/null || true";
+                timeout = 30;
+              }
+            ];
+          }
+        ];
+
+        Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                # Fire-and-forget: don't block the user after a session ends.
+                # The timer and pre-suspend hook will catch any missed flush.
+                command = "systemctl --user start --no-block claude-sync.service 2>/dev/null || true";
+                timeout = 5;
+              }
+            ];
+          }
+        ];
+
         PermissionRequest = [
           {
             matcher = "Bash";

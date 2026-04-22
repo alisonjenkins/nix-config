@@ -6,6 +6,7 @@
     base = import ../modules/base;
     hetzner = import ../modules/hetzner;
     btfs-streaming = import ../modules/btfs-streaming;
+    claude-sync = import ../modules/claude-sync;
     desktop = import ../modules/desktop;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;

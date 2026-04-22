@@ -31,6 +31,7 @@ in {
       self.nixosModules.hardware-touchpad
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
+      self.nixosModules.claude-sync
       self.nixosModules.desktop
       self.nixosModules.development-web
       self.nixosModules.libvirtd
@@ -117,6 +118,18 @@ in {
         # sops.secrets.niks3-token = {
         #   sopsFile = self + "/secrets/niks3-token.enc.yaml";
         #   key = "niks3_token";
+        # };
+
+        # TODO: Enable once
+        #   (a) ali-framework-laptop's host age key is added to .sops.yaml and
+        #       secrets/claude-sync.enc.yaml is re-keyed (sops updatekeys), and
+        #   (b) `just claude-sync-bootstrap` has been run once on this host to
+        #       seed bisync state against the same B2 bucket as ali-desktop.
+        # modules.claudeSync = {
+        #   enable = true;
+        #   user = "ali";
+        #   bucket = "alison-claude-sync";
+        #   sopsFile = self + "/secrets/claude-sync.enc.yaml";
         # };
 
         modules.desktop-1password.enable = true;
