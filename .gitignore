@@ -1,4 +1,5 @@
 **/*.dec.*
+**/.claude
 **/*.qcow2
 **/result
 .aider*
