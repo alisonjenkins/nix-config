@@ -11,13 +11,12 @@ let
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
 
-  # Merge all skill directories; lndir skips conflicts (first wins — caveman takes precedence over cavekit's copy)
+  # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
     paths = [
       "${anthropicSkills}/skills"
       "${cavemanPkg}/skills"
-      "${cavekitPkg}/skills"
     ];
   };
 
@@ -301,6 +300,10 @@ in
     };
 
     skills = "${allSkills}";
+
+    # cavekit as a plugin so Claude Code loads it with the "ck:" namespace
+    # (giving /ck:spec, /ck:build, /ck:check)
+    plugins = [ cavekitPkg ];
 
     agentsDir = ./agents;
 
