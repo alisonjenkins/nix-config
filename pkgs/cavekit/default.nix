@@ -12,7 +12,8 @@ stdenv.mkDerivation {
   };
 
   installPhase = ''
-    mkdir -p $out/skills $out/commands
+    mkdir -p $out/.claude-plugin $out/skills $out/commands
+    cp plugin.json $out/.claude-plugin/plugin.json
     cp -r skills/. $out/skills/
     cp -r commands/. $out/commands/
   '';
