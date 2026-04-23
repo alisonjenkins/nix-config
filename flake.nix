@@ -28,7 +28,13 @@
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     nix-cachyos-kernel = {
-      url = "github:xddxdd/nix-cachyos-kernel/master";
+      # Pinned to the last rev that still produces CachyOS 6.19.x. The 7.0.0
+      # kernel (first appearing at rev a2650352…) breaks LUKS unlock in the
+      # initrd — dm-crypt's reload ioctl returns EINVAL, blocking boot on
+      # every host using enableCachyOSKernel + LUKS. No public upstream fix
+      # yet; unpin once xddxdd/nix-cachyos-kernel or CachyOS/linux-cachyos
+      # ships one.
+      url = "github:xddxdd/nix-cachyos-kernel/0874d2c9eaea2e4be3fb116ab0a4b0f4cadccb3f";
       # Don't override nixpkgs — upstream Hydra/Garnix caches build against
       # their own nixpkgs rev, so following ours changes derivation hashes
       # and forces a full LTO kernel rebuild from source every time.
