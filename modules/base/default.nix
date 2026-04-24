@@ -139,12 +139,12 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      assertions = [
-        {
-          assertion = (cfg.bootLoader == "secure-boot") -> (cfg.pcr15Value != null);
-          message = "modules.base.pcr15Value must be set when using secure-boot boot loader";
-        }
-      ];
+      # Assertion relaxed: pcr15Value = null is a valid (diagnostic) setting.
+      # The luksPCR15 module already gates the check-pcrs service on
+      # `systemIdentity.pcr15 != null` (modules/luksPCR15/default.nix:73), so
+      # null simply disables the runtime check while leaving tpm2-measure-pcr
+      # wiring intact. TPM-backed LUKS unlock is unaffected.
+      assertions = [ ];
 
     }
 
@@ -165,16 +165,14 @@ in
 
           availableKernelModules = [ "lz4" "lz4_compress" ];
 
-          # CachyOS Linux 7 builds cipher primitives (aes, xts, sha256, cbc, lrw,
-          # sha1/512, blowfish, twofish, serpent) into the kernel (=y), so naming
-          # them in cryptoModules breaks makeModulesClosure. These three stay =m
-          # and cryptsetup needs them at runtime — without them the initrd's
-          # systemd-cryptsetup@.service dies before it can prompt for a passphrase.
-          luks.cryptoModules = lib.mkIf cfg.enableCachyOSKernel (lib.mkForce [
-            "cryptd"
-            "af_alg"
-            "algif_skcipher"
-          ]);
+          # Leave luks.cryptoModules at the NixOS default. The pinned CachyOS
+          # kernel (6.19.12) has xts/cbc/aesni-intel as loadable modules (=m),
+          # so they must be in the initrd for dm-crypt to work.
+          #
+          # Note: if the pin moves to a CachyOS ≥7.0 kernel where cipher
+          # primitives are built-in (=y), this may need to be mkForced back
+          # to just [ "cryptd" "af_alg" "algif_skcipher" ] to avoid
+          # makeModulesClosure failures.
 
           systemd = {
             enable = true;

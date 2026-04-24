@@ -28,16 +28,15 @@
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     nix-cachyos-kernel = {
-      # Pinned to the last rev that still produces CachyOS 6.19.x. The 7.0.0
-      # kernel (first appearing at rev a2650352…) breaks LUKS unlock in the
-      # initrd — dm-crypt's reload ioctl returns EINVAL, blocking boot on
-      # every host using enableCachyOSKernel + LUKS. No public upstream fix
-      # yet; unpin once xddxdd/nix-cachyos-kernel or CachyOS/linux-cachyos
-      # ships one.
-      url = "github:xddxdd/nix-cachyos-kernel/0874d2c9eaea2e4be3fb116ab0a4b0f4cadccb3f";
-      # Don't override nixpkgs — upstream Hydra/Garnix caches build against
-      # their own nixpkgs rev, so following ours changes derivation hashes
-      # and forces a full LTO kernel rebuild from source every time.
+      # Pinned to CachyOS 7.0.1 rev. Earlier belief that CachyOS 7 had a
+      # dm-crypt EINVAL regression was wrong — the real cause was
+      # `luks.cryptoModules = mkForce [...]` in modules/base/default.nix
+      # stripping xts.ko from the initrd. With default cryptoModules (xts,
+      # cbc, aesni-intel auto-included from the NixOS default list), LUKS
+      # opens fine on 7.0.1. Kept as a rev pin (not branch-following) so
+      # upstream Hydra/Garnix caches keep hitting — following nixpkgs
+      # forces full LTO rebuild from source.
+      url = "github:xddxdd/nix-cachyos-kernel/f3cbb61b11f57e2cde0fdc7e74a715c7a6d3e859";
     };
     niks3 = {
       url = "github:Mic92/niks3";
