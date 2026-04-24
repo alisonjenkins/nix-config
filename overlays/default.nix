@@ -41,6 +41,9 @@
         aiohttp = python-prev.aiohttp.overridePythonAttrs (oldAttrs: {
           doCheck = false;
         });
+        aioboto3 = python-prev.aioboto3.overridePythonAttrs (oldAttrs: {
+          doCheck = false;
+        });
         # test_acceptScaling fails on macOS: TCP accept scaling differs from Linux
         twisted = python-prev.twisted.overridePythonAttrs (_: {
           doCheck = false;
@@ -89,6 +92,17 @@
     master = import inputs.nixpkgs_master {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
+      overlays = [
+        (mfinal: mprev: {
+          pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
+            (python-final: python-prev: {
+              aioboto3 = python-prev.aioboto3.overridePythonAttrs (_: {
+                doCheck = false;
+              });
+            })
+          ];
+        })
+      ];
     };
   };
 

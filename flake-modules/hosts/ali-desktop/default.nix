@@ -36,6 +36,7 @@ in {
       self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.rocm
+      self.nixosModules.tts
       self.nixosModules.vr
 
       # External flake modules
@@ -134,6 +135,7 @@ in {
         modules.podman.enable = true;
         modules.podman.enableQemuBinfmt = true;
         modules.rocm.enable = true;
+        modules.tts.enable = true;
 
         modules.vr = {
           enable = true;
