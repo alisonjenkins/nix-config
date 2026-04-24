@@ -15,7 +15,7 @@
 
     # Pin claude-code to nixpkgs-master — nixos-unstable often lags behind
     # and yanked versions (e.g. 2.1.88) cause build failures.
-    inherit (final.master) claude-code claude-code-bin;
+    inherit (final.master) claude-code;
 
     # Disable direnv fish test on Darwin — fish test-fish target gets SIGKILL'd in macOS sandbox
     direnv = if prev.stdenv.hostPlatform.isDarwin

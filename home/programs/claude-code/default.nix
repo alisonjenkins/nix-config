@@ -68,13 +68,7 @@ in
 {
   programs.claude-code = {
     enable = true;
-    # claude-code-bin uses __noChroot which requires sandbox = relaxed.
-    # Use claude-code (builds from source) on aarch64 where we build on
-    # sandboxed self-hosted runners.
-    package =
-      if pkgs.stdenv.hostPlatform.isAarch64
-      then pkgs.master.claude-code
-      else pkgs.master.claude-code-bin;
+    package = pkgs.master.claude-code;
 
     settings = {
       alwaysThinkingEnabled = true;

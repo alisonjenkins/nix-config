@@ -1,6 +1,6 @@
 { pkgs, ... }:
 let
-  claude-code = if pkgs.stdenv.hostPlatform.isAarch64 then pkgs.master.claude-code else pkgs.master.claude-code-bin;
+  claude-code = pkgs.master.claude-code;
 in
 pkgs.writeShellScriptBin "claude-wt" ''
   BRANCH_NAME="$1"
