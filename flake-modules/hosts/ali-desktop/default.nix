@@ -111,12 +111,7 @@ in {
           enableImpermanence = true;
           bootLoader = "secure-boot";
           enableCachyOSKernel = true;
-          # Set to null: the stale literal value no longer matched what new
-          # generations measure into PCR 15, causing check-pcrs to exit 1 and
-          # block sysroot.mount. Recapture the real value from the initrd
-          # emergency shell (`systemd-analyze pcrs 15 --json=short`) and
-          # restore a literal here once the boot-fix dust settles.
-          pcr15Value = null;
+          pcr15Value = "7e6a73c51abc879e3b85cdfdd116192e4b4a1fd4ea810b180bfab548054858a4";
           beesdFilesystems = {
             persistence = {
               spec = "LABEL=persistence";
