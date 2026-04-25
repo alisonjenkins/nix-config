@@ -24,7 +24,7 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ modulesPath, lib, pkgs, ... }: {
+      ({ modulesPath, lib, outputs, pkgs, ... }: {
         imports = [
           (modulesPath + "/installer/scan/not-detected.nix")
           (modulesPath + "/profiles/qemu-guest.nix")
@@ -133,7 +133,7 @@ in {
             initialPassword = "initPw!";
             extraGroups = [ "networkmanager" "wheel" ];
             openssh.authorizedKeys.keys = [
-              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
+              outputs.lib.sshKeys.primary
             ];
           };
       })

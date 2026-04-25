@@ -27,7 +27,7 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ inputs, lib, pkgs, ... }: {
+      ({ inputs, lib, outputs, pkgs, ... }: {
         modules.nohang = {
           enable = true;
           extraProtectedProcesses = [ "libvirtd" "qemu-system-x86_64" ];
@@ -102,7 +102,7 @@ in {
           description = "Alison Jenkins";
           initialPassword = "initPw!";
           extraGroups = [ "docker" "libvirtd" "wheel" ];
-          openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+          openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
         };
 
         security = {

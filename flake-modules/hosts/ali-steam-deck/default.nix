@@ -56,7 +56,7 @@ in {
       }
 
       # Host-specific configuration
-      ({ lib, pkgs, username, ... }: {
+      ({ lib, outputs, pkgs, username, ... }: {
         modules.base = {
           enable = true;
           bootLoader = "grub";
@@ -150,7 +150,7 @@ in {
           description = "Alison Jenkins";
           initialPassword = "initPw!";
           extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
-          openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+          openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
           packages = with pkgs; [
             firefox
             fastfetch

@@ -1626,7 +1626,7 @@ EOF
               # hashedPasswordFile = "/persistence/passwords/ali";
               initialPassword = "initPw!";
               isNormalUser = true;
-              openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+              openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
             };
             root = {
               hashedPasswordFile = "/persistence/passwords/root";

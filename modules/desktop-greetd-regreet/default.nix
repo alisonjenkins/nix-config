@@ -8,6 +8,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Stylix emits a warning about our custom default_session.command (see
+    # below). It's a false positive — stylix themes regreet via
+    # programs.regreet.* options, not via the greetd command, so theming
+    # works fine. Filtering the warning hits infinite recursion (the filter
+    # would have to read options.warnings.definitionsWithLocations while
+    # contributing to it), so the warning stays. Cosmetic only.
+
     services = {
       greetd = {
         enable = true;

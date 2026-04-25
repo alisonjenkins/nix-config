@@ -229,6 +229,13 @@ ami hostname region="eu-west-2" bucket="nixos-amis":
     just ami-build {{hostname}}
     just ami-upload {{hostname}} {{region}} {{bucket}}
 
+# Build a NixOS installer ISO (defaults to the customised installer-iso host)
+iso hostname="installer-iso":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    nix build ".#nixosConfigurations.{{hostname}}.config.system.build.isoImage"
+    ls -lh result/iso/
+
 alias b := boot
 alias B := build
 alias s := switch

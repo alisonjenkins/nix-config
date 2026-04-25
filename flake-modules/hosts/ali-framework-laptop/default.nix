@@ -541,10 +541,7 @@ in {
               extraGroups = [ "audio" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
               hashedPasswordFile = "/persistence/passwords/ali";
 
-              openssh.authorizedKeys.keys = [
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK2wZMFO69SYvoIIs6Atx/22PVy8wHtYy0MKpYtUMsez phone-ssh-key"
-              ];
+              openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;
             };
             lace = {
               autoSubUidGidRange = true;

@@ -25,7 +25,7 @@ in {
       inputs.disko.nixosModules.disko
 
       # Host-specific configuration
-      ({ lib, pkgs, ... }: {
+      ({ lib, pkgs, outputs, ... }: {
         modules.nohang = {
           enable = true;
           extraProtectedProcesses = [ "k3s" "containerd" ];
@@ -87,7 +87,7 @@ in {
           description = "Alison Jenkins";
           initialPassword = "initPw!";
           extraGroups = [ "docker" "networkmanager" "wheel" ];
-          openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF" ];
+          openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
         };
       })
     ];

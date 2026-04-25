@@ -70,7 +70,7 @@ in {
             hostname = "ali-work-laptop";
             bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
-            gitGPGSigningKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF";
+            gitGPGSigningKey = outputs.lib.sshKeys.primary;
             gitUserName = "Alison Jenkins";
             github_clone_ssh_host_personal = "pgithub.com";
             github_clone_ssh_host_work = "github.com";
@@ -279,10 +279,7 @@ in {
               hashedPasswordFile = "/persistence/passwords/ali";
               extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
 
-              openssh.authorizedKeys.keys = [
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINqNVcWqkNPa04xMXls78lODJ21W43ZX6NlOtFENYUGF"
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK2wZMFO69SYvoIIs6Atx/22PVy8wHtYy0MKpYtUMsez phone-ssh-key"
-              ];
+              openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;
             };
           };
         };
