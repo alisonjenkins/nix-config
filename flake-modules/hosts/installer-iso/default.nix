@@ -26,6 +26,7 @@ in
               jq
               kdePackages.kdialog
               kdePackages.konsole
+              networkmanager
               util-linux
               nix
             ];
@@ -77,6 +78,16 @@ in
                   ;;
                 skip|*) ;;
               esac
+
+              # Internet precheck — nix eval / git pull need network. Loop
+              # with a user-friendly prompt rather than letting nix fail
+              # with a network error. The user is expected to use Plasma's
+              # NetworkManager applet in the system tray to connect WiFi.
+              while ! nm-online -t 2 -q 2>/dev/null; do
+                kdialog --warningyesno \
+                  "No network connection detected.\n\nOpen the NetworkManager icon in the system tray to connect to WiFi, then click Yes to retry. Click No to abort." \
+                  || exit 0
+              done
 
               # Host picker. Re-evaluate on each loop iteration so the
               # user can edit the flake locally and rescan without
