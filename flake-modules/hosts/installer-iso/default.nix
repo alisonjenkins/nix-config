@@ -20,6 +20,7 @@ in
             runtimeInputs = with pkgs; [
               coreutils
               gawk
+              git
               gnugrep
               gnused
               jq
@@ -41,6 +42,41 @@ in
                   || exit 0
               done
               cd "$REPO"
+
+              # Offer to pull latest changes from origin. Default to skip
+              # so a cached repo "just works" but the user can refresh
+              # without rebooting the installer.
+              UPDATE_CHOICE=$(kdialog --title "Update nix-config" \
+                --menu "Update $REPO from origin before installing?" \
+                skip "Use what's already on disk (default)" \
+                pull "Fast-forward pull (preserves local edits)" \
+                reset "Hard reset to origin/HEAD (DISCARDS local edits)" \
+                ) || exit 0
+
+              case "$UPDATE_CHOICE" in
+                pull)
+                  if ! git_out=$(git -C "$REPO" pull --ff-only 2>&1); then
+                    kdialog --error "git pull failed:\n\n$git_out"
+                    exit 1
+                  fi
+                  kdialog --passivepopup "$git_out" 5
+                  ;;
+                reset)
+                  kdialog --warningcontinuecancel \
+                    "This will discard ALL local edits in $REPO. Continue?" \
+                    || exit 0
+                  if ! git_out=$( {
+                    git -C "$REPO" fetch origin
+                    git -C "$REPO" reset --hard origin/HEAD
+                    git -C "$REPO" clean -fdx
+                  } 2>&1); then
+                    kdialog --error "git update failed:\n\n$git_out"
+                    exit 1
+                  fi
+                  kdialog --passivepopup "Reset to origin/HEAD" 5
+                  ;;
+                skip|*) ;;
+              esac
 
               # Host picker. Re-evaluate on each loop iteration so the
               # user can edit the flake locally and rescan without
