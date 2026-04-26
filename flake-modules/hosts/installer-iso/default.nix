@@ -28,12 +28,16 @@ in
           networking.hostName = "nixos-installer";
 
           # On-screen keyboard for Steam Deck / touch installs.
-          # KWin Wayland auto-pops maliit on text-field focus.
+          # InputMethod must be the absolute path to the .desktop file;
+          # nixpkgs ships it as com.github.maliit.keyboard.desktop.
+          # KWIN_IM_SHOW_ALWAYS=1 makes the OSK pop on focus for mouse/touch
+          # both — without it KWin only auto-shows on touch events.
           environment.etc."xdg/kwinrc".text = ''
             [Wayland]
             VirtualKeyboardEnabled=true
-            InputMethod=org.maliit.keyboard.desktop
+            InputMethod=${pkgs.maliit-keyboard}/share/applications/com.github.maliit.keyboard.desktop
           '';
+          environment.sessionVariables.KWIN_IM_SHOW_ALWAYS = "1";
 
           nix.settings = {
             experimental-features = [
@@ -64,7 +68,6 @@ in
             git
             vim
             just
-            maliit-framework
             maliit-keyboard
           ];
 
