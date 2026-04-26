@@ -16,8 +16,24 @@ in
         { pkgs, ... }:
         {
           services.desktopManager.plasma6.enable = true;
-          services.displayManager.sddm.enable = true;
+          services.displayManager = {
+            sddm.enable = true;
+            sddm.wayland.enable = true;
+            autoLogin = {
+              enable = true;
+              user = "nixos";
+            };
+            defaultSession = "plasma";
+          };
           networking.hostName = "nixos-installer";
+
+          # On-screen keyboard for Steam Deck / touch installs.
+          # KWin Wayland auto-pops maliit on text-field focus.
+          environment.etc."xdg/kwinrc".text = ''
+            [Wayland]
+            VirtualKeyboardEnabled=true
+            InputMethod=org.maliit.keyboard.desktop
+          '';
 
           nix.settings = {
             experimental-features = [
@@ -48,6 +64,8 @@ in
             git
             vim
             just
+            maliit-framework
+            maliit-keyboard
           ];
 
           systemd.services.clone-nix-config = {
