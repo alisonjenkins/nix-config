@@ -32,69 +32,87 @@ in
               set -euo pipefail
 
               REPO=/home/nixos/nix-config
-              if [ ! -d "$REPO/.git" ]; then
-                kdialog --error "nix-config not found at $REPO. Wait for the clone-nix-config service to finish or clone manually, then retry."
-                exit 1
-              fi
+
+              # Wait for the clone-nix-config service to finish, with a
+              # retry loop so the user can clone manually if it failed.
+              while [ ! -d "$REPO/.git" ]; do
+                kdialog --warningyesno \
+                  "nix-config not found at $REPO.\n\nClone it manually (e.g. via Konsole) then click Yes to retry, or No to abort." \
+                  || exit 0
+              done
               cd "$REPO"
 
-              # Discover hosts from the flake. Filter the installer itself
-              # and any darwin/home-only configs (those live under
-              # darwinConfigurations / homeConfigurations).
-              HOSTS=$(nix eval --json .#nixosConfigurations \
-                --apply 'cfgs: builtins.attrNames cfgs' 2>/dev/null \
-                | jq -r '.[]' \
-                | grep -vE '^installer-iso$' \
-                | sort)
+              # Host picker. Re-evaluate on each loop iteration so the
+              # user can edit the flake locally and rescan without
+              # restarting the launcher.
+              while true; do
+                HOSTS_JSON=$(nix eval --json .#nixosConfigurations \
+                  --apply 'cfgs: builtins.attrNames cfgs' 2>&1) || {
+                  kdialog --warningyesno \
+                    "nix eval failed:\n\n$HOSTS_JSON\n\nFix the flake then click Yes to retry, or No to abort." \
+                    || exit 0
+                  continue
+                }
+                HOSTS=$(echo "$HOSTS_JSON" | jq -r '.[]' \
+                  | grep -vE '^installer-iso$' | sort)
+                if [ -z "$HOSTS" ]; then
+                  kdialog --warningyesno \
+                    "No installable nixosConfigurations found.\n\nClick Yes to retry, or No to abort." \
+                    || exit 0
+                  continue
+                fi
 
-              if [ -z "$HOSTS" ]; then
-                kdialog --error "No installable nixosConfigurations found in $REPO."
-                exit 1
-              fi
+                menu_args=()
+                while IFS= read -r h; do
+                  menu_args+=("$h" "$h")
+                done <<< "$HOSTS"
 
-              # Build kdialog --menu argument list: "value" "label" pairs.
-              menu_args=()
-              while IFS= read -r h; do
-                menu_args+=("$h" "$h")
-              done <<< "$HOSTS"
+                HOST=$(kdialog --title "Install NixOS" \
+                  --menu "Select host configuration to install:" \
+                  "''${menu_args[@]}") || exit 0
+                [ -n "$HOST" ] && break
+              done
 
-              HOST=$(kdialog --title "Install NixOS" \
-                --menu "Select host configuration to install:" \
-                "''${menu_args[@]}") || exit 0
-              [ -n "$HOST" ] || exit 0
+              # Disk picker with rescan loop — handles late-plugged USB.
+              while true; do
+                disk_args=()
+                while read -r name size model; do
+                  [ -n "$name" ] || continue
+                  disk_args+=("/dev/$name" "$size  $model")
+                done < <(lsblk -dn -o NAME,SIZE,MODEL -e 7,11)
 
-              # Build disk picker. lsblk -d lists whole disks only; -e 7,11
-              # filters out loop and CD/DVD devices.
-              disk_args=()
-              while read -r name size model; do
-                [ -n "$name" ] || continue
-                disk_args+=("/dev/$name" "$size  $model")
-              done < <(lsblk -dn -o NAME,SIZE,MODEL -e 7,11)
+                if [ ''${#disk_args[@]} -eq 0 ]; then
+                  kdialog --warningyesno \
+                    "No installable disks detected.\n\nPlug a disk in then click Yes to rescan, or No to abort." \
+                    || exit 0
+                  continue
+                fi
 
-              if [ ''${#disk_args[@]} -eq 0 ]; then
-                kdialog --error "No installable disks detected."
-                exit 1
-              fi
-
-              DISK=$(kdialog --title "Target disk" \
-                --menu "Select target disk for $HOST.\nALL DATA WILL BE ERASED." \
-                "''${disk_args[@]}") || exit 0
-              [ -n "$DISK" ] || exit 0
+                DISK=$(kdialog --title "Target disk" \
+                  --menu "Select target disk for $HOST.\nALL DATA WILL BE ERASED." \
+                  "''${disk_args[@]}") || exit 0
+                [ -n "$DISK" ] && break
+              done
 
               kdialog --warningcontinuecancel \
                 "About to ERASE $DISK and install $HOST.\n\nThis cannot be undone. Continue?" \
                 || exit 0
 
-              PWD1=$(kdialog --password "LUKS password for disk encryption:") || exit 0
-              if [ -z "$PWD1" ]; then
-                kdialog --error "Empty password not allowed."
-                exit 1
-              fi
-              PWD2=$(kdialog --password "Confirm LUKS password:") || exit 0
-              if [ "$PWD1" != "$PWD2" ]; then
-                kdialog --error "Passwords don't match."
-                exit 1
-              fi
+              # LUKS password loop: re-prompt on empty input or mismatch
+              # rather than aborting. Cancel button still aborts.
+              while true; do
+                PWD1=$(kdialog --password "LUKS password for disk encryption:") || exit 0
+                if [ -z "$PWD1" ]; then
+                  kdialog --sorry "Password cannot be empty. Try again."
+                  continue
+                fi
+                PWD2=$(kdialog --password "Confirm LUKS password:") || exit 0
+                if [ "$PWD1" != "$PWD2" ]; then
+                  kdialog --sorry "Passwords don't match. Try again."
+                  continue
+                fi
+                break
+              done
 
               # Write password to keyfile with NO trailing newline so that
               # cryptsetup matches when the user types it at boot.
@@ -104,7 +122,10 @@ in
 
               # Hand off to konsole so the user sees disko + nixos-install
               # progress and can read errors. --hold keeps it open after.
+              # Trap inside the inner shell ensures the keyfile is wiped
+              # even if disko or nixos-install fails partway through.
               exec konsole --hold -e bash -c "
+                trap 'sudo rm -f /tmp/secret.key' EXIT
                 set -e
                 cd '$REPO'
                 echo '==> Running disko (format + mount $DISK)'
@@ -116,7 +137,6 @@ in
                 echo
                 echo '==> Running nixos-install'
                 sudo nixos-install --flake '.#$HOST' --no-root-passwd --root /mnt
-                sudo rm -f /tmp/secret.key
                 echo
                 echo '=========================================='
                 echo 'Install complete. Press Enter to reboot.'
