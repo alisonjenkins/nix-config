@@ -14,7 +14,7 @@
             };
             esp = {
               name = "ESP";
-              size = "1G";
+              size = "4G";
               type = "EF00";
               content = {
                 type = "filesystem";
@@ -38,7 +38,7 @@
                     "@nix" = {
                       mountpoint = "/nix";
                       mountOptions = [
-                        "compress=zstd:3"
+                        "compress=zstd:-1"
                         "noatime"
                         "ssd"
                         "space_cache=v2"
@@ -48,7 +48,7 @@
                     "@persistence" = {
                       mountpoint = "/persistence";
                       mountOptions = [
-                        "compress=zstd:3"
+                        "compress=zstd:-1"
                         "noatime"
                         "ssd"
                         "space_cache=v2"
@@ -58,7 +58,7 @@
                     "@home" = {
                       mountpoint = "/home";
                       mountOptions = [
-                        "compress=zstd:3"
+                        "compress=zstd:-1"
                         "noatime"
                         "ssd"
                         "space_cache=v2"
