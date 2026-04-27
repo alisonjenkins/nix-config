@@ -13,11 +13,19 @@ in
       { nixpkgs.hostPlatform = system; }
       "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-base.nix"
       (
-        { pkgs, ... }:
+        { pkgs, inputs, ... }:
         let
+          # disko CLI from the same source revision that produces the
+          # nixosModule used by host configs (`inputs.disko`). Using a
+          # `nix run github:nix-community/disko` would pull master and
+          # risk CLI ↔ module version drift, which surfaces as a
+          # spurious "config not found" at install time.
+          diskoPkg = inputs.disko.packages.${system}.disko;
           installNixos = pkgs.writeShellApplication {
             name = "install-nixos";
-            runtimeInputs = with pkgs; [
+            runtimeInputs = [
+              diskoPkg
+            ] ++ (with pkgs; [
               coreutils
               gawk
               git
@@ -29,7 +37,7 @@ in
               networkmanager
               util-linux
               nix
-            ];
+            ]);
             text = ''
               set -euo pipefail
 
@@ -237,10 +245,16 @@ in
               trap 'sudo rm -f /tmp/secret.key' EXIT
 
               step "Running disko (format + mount $DISK)"
-              sudo nix run --extra-experimental-features 'nix-command flakes' \
-                github:nix-community/disko -- \
-                --mode disko --flake ".#$HOST" \
-                --arg disk "\"$DISK\"" \
+              # Use the disko CLI from our locked `inputs.disko` (on
+              # PATH via runtimeInputs), NOT `nix run github:` — that
+              # would pull master and produce a spurious "config not
+              # found" when the CLI's eval expression doesn't match
+              # the module's attr shape. `--arg disk` is dropped: it
+              # only applies to function-style `diskoConfigurations`,
+              # not the NixOS-module style we use.
+              sudo disko \
+                --mode disko \
+                --flake ".#$HOST" \
                 --disk disk1 "$DISK"
 
               step "Running nixos-install"
@@ -429,7 +443,9 @@ in
           users.users.nixos.openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;
           users.users.root.openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
 
-          environment.systemPackages = with pkgs; [
+          environment.systemPackages = [
+            diskoPkg
+          ] ++ (with pkgs; [
             git
             vim
             just
@@ -438,7 +454,7 @@ in
             connectWifi
             kdePackages.kdialog
             kdePackages.konsole
-          ];
+          ]);
 
           # Allow `sudo` without a password so the installer launcher can
           # run disko + nixos-install non-interactively.
