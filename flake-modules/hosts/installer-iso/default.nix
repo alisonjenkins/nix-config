@@ -33,24 +33,52 @@ in
             text = ''
               set -euo pipefail
 
+              # Tee everything to a log file so the user can read it
+              # later if konsole closes or output scrolls off.
+              LOG=/tmp/install-nixos.log
+              exec > >(tee -a "$LOG") 2>&1
+
+              # Show line numbers in `set -x` traces if we ever flip
+              # them on. PS4 is shell-only; harmless when -x is off.
+              export PS4='+ [$LINENO] '
+
+              # ERR trap: any unhandled failure under `set -e` prints
+              # the failing line + command and pops a kdialog so the
+              # user knows WHY install-nixos exited. Konsole's --hold
+              # keeps the window open after this trap fires.
+              trap 'rc=$?; echo; echo "==> install-nixos ABORTED (exit $rc) at line $LINENO: $BASH_COMMAND" >&2; kdialog --error "install-nixos aborted (exit $rc).\n\nLine $LINENO: $BASH_COMMAND\n\nFull log: $LOG" 2>/dev/null || true; exit $rc' ERR
+
+              # Print a visible banner before each phase so the user
+              # always knows what the script is doing.
+              step() { echo; echo "==> $*"; echo; }
+
+              echo "==================================================="
+              echo " install-nixos starting at $(date -Iseconds)"
+              echo " log file: $LOG"
+              echo "==================================================="
+
               REPO=/home/nixos/nix-config
               REPO_URL=https://github.com/alisonjenkins/nix-config.git
 
+              step "Locating nix-config repo at $REPO"
               # Wait for the clone-nix-config service to finish, then fall
               # back to cloning inline so the user doesn't have to drop to
               # a terminal if the boot-time clone failed (e.g. no network
               # at boot).
               while [ ! -d "$REPO/.git" ]; do
-                if clone_out=$(git clone --depth 1 "$REPO_URL" "$REPO" 2>&1); then
+                echo "  no repo yet — attempting fresh clone from $REPO_URL"
+                if git clone --depth 1 "$REPO_URL" "$REPO"; then
                   continue
                 fi
                 kdialog --warningyesno \
-                  "Failed to clone nix-config into $REPO:\n\n$clone_out\n\nCheck network then click Yes to retry, or No to abort." \
+                  "Failed to clone nix-config into $REPO.\n\nSee terminal / $LOG for details. Check network then click Yes to retry, or No to abort." \
                   || exit 0
                 rm -rf "$REPO"
               done
               cd "$REPO"
+              echo "  repo present at $REPO ($(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown) on $(git -C "$REPO" branch --show-current 2>/dev/null || echo unknown))"
 
+              step "Asking whether to update nix-config from origin"
               # Offer to pull latest changes from origin. Default to skip
               # so a cached repo "just works" but the user can refresh
               # without rebooting the installer.
@@ -60,6 +88,7 @@ in
                 pull "Fast-forward pull (preserves local edits)" \
                 reset "Hard reset to origin/HEAD (DISCARDS local edits)" \
                 ) || exit 0
+              echo "  user chose: $UPDATE_CHOICE"
 
               case "$UPDATE_CHOICE" in
                 pull)
@@ -86,35 +115,56 @@ in
                 skip|*) ;;
               esac
 
+              step "Checking for network connectivity"
               # Internet precheck — nix eval / git pull need network. Loop
               # with a user-friendly prompt rather than letting nix fail
-              # with a network error. The user is expected to use Plasma's
-              # NetworkManager applet in the system tray to connect WiFi.
+              # with a network error. The user is expected to run the
+              # `Connect WiFi` desktop launcher (or use Plasma's NM tray
+              # applet) before reaching this point.
               while ! nm-online -t 2 -q 2>/dev/null; do
+                echo "  nm-online: no connectivity — prompting user"
                 kdialog --warningyesno \
-                  "No network connection detected.\n\nOpen the NetworkManager icon in the system tray to connect to WiFi, then click Yes to retry. Click No to abort." \
+                  "No network connection detected.\n\nUse the Connect WiFi launcher (or NM tray icon) then click Yes to retry. No aborts." \
                   || exit 0
               done
+              echo "  network: OK"
 
+              step "Listing host configurations from flake (this can take several minutes on first run while flake inputs download — watch the terminal for progress)"
               # Host picker. Re-evaluate on each loop iteration so the
               # user can edit the flake locally and rescan without
               # restarting the launcher.
+              #
+              # NOTE: stderr is intentionally NOT captured — it streams
+              # live to the terminal so the user can see nix's
+              # download/build progress instead of staring at a blank
+              # window. Only stdout (the JSON we need) is captured.
               while true; do
-                HOSTS_JSON=$(nix eval --json .#nixosConfigurations \
-                  --apply 'cfgs: builtins.attrNames cfgs' 2>&1) || {
+                err_log=$(mktemp)
+                if HOSTS_JSON=$(nix eval --json .#nixosConfigurations \
+                    --apply 'cfgs: builtins.attrNames cfgs' \
+                    --print-build-logs \
+                    2> >(tee "$err_log" >&2)); then
+                  rm -f "$err_log"
+                else
+                  rc=$?
+                  err_tail=$(tail -c 2000 "$err_log")
+                  rm -f "$err_log"
+                  echo "  nix eval failed (exit $rc)"
                   kdialog --warningyesno \
-                    "nix eval failed:\n\n$HOSTS_JSON\n\nFix the flake then click Yes to retry, or No to abort." \
+                    "nix eval failed (exit $rc):\n\n$err_tail\n\nFix the flake then click Yes to retry, or No to abort." \
                     || exit 0
                   continue
-                }
+                fi
                 HOSTS=$(echo "$HOSTS_JSON" | jq -r '.[]' \
-                  | grep -vE '^installer-iso$' | sort)
+                  | grep -vE '^installer-iso$' | sort || true)
                 if [ -z "$HOSTS" ]; then
+                  echo "  no installable hosts after filtering installer-iso"
                   kdialog --warningyesno \
                     "No installable nixosConfigurations found.\n\nClick Yes to retry, or No to abort." \
                     || exit 0
                   continue
                 fi
+                echo "  found hosts: $(echo "$HOSTS" | tr '\n' ' ')"
 
                 menu_args=()
                 while IFS= read -r h; do
@@ -126,7 +176,9 @@ in
                   "''${menu_args[@]}") || exit 0
                 [ -n "$HOST" ] && break
               done
+              echo "  selected host: $HOST"
 
+              step "Picking target disk for $HOST"
               # Disk picker with rescan loop — handles late-plugged USB.
               while true; do
                 disk_args=()
@@ -147,11 +199,14 @@ in
                   "''${disk_args[@]}") || exit 0
                 [ -n "$DISK" ] && break
               done
+              echo "  selected disk: $DISK"
 
+              step "Final confirmation before erasing $DISK"
               kdialog --warningcontinuecancel \
                 "About to ERASE $DISK and install $HOST.\n\nThis cannot be undone. Continue?" \
                 || exit 0
 
+              step "Collecting LUKS password"
               # LUKS password loop: re-prompt on empty input or mismatch
               # rather than aborting. Cancel button still aborts.
               while true; do
@@ -174,30 +229,29 @@ in
               sudo chmod 600 /tmp/secret.key
               unset PWD1 PWD2
 
-              # Hand off to konsole so the user sees disko + nixos-install
-              # progress and can read errors. --hold keeps it open after.
-              # Trap inside the inner shell ensures the keyfile is wiped
-              # even if disko or nixos-install fails partway through.
-              exec konsole --hold -e bash -c "
-                trap 'sudo rm -f /tmp/secret.key' EXIT
-                set -e
-                cd '$REPO'
-                echo '==> Running disko (format + mount $DISK)'
-                sudo nix run --extra-experimental-features 'nix-command flakes' \
-                  github:nix-community/disko -- \
-                  --mode disko --flake '.#$HOST' \
-                  --arg disk '\"$DISK\"' \
-                  --disk disk1 '$DISK'
-                echo
-                echo '==> Running nixos-install'
-                sudo nixos-install --flake '.#$HOST' --no-root-passwd --root /mnt
-                echo
-                echo '=========================================='
-                echo 'Install complete. Press Enter to reboot.'
-                echo '=========================================='
-                read -r _
-                sudo reboot
-              "
+              # We're already running inside konsole (see the desktop
+              # launcher's `Exec=konsole --hold -e install-nixos`), so
+              # disko + nixos-install can run inline and stream output
+              # straight to the user's terminal. Wipe the LUKS keyfile
+              # on exit even on failure.
+              trap 'sudo rm -f /tmp/secret.key' EXIT
+
+              step "Running disko (format + mount $DISK)"
+              sudo nix run --extra-experimental-features 'nix-command flakes' \
+                github:nix-community/disko -- \
+                --mode disko --flake ".#$HOST" \
+                --arg disk "\"$DISK\"" \
+                --disk disk1 "$DISK"
+
+              step "Running nixos-install"
+              sudo nixos-install --flake ".#$HOST" --no-root-passwd --root /mnt
+
+              echo
+              echo "=========================================="
+              echo " Install complete. Press Enter to reboot."
+              echo "=========================================="
+              read -r _
+              sudo reboot
             '';
           };
 
@@ -401,7 +455,7 @@ in
               Name=Install NixOS
               Comment=Run the NixOS installer for this flake
               Icon=system-software-install
-              Exec=${installNixos}/bin/install-nixos
+              Exec=${pkgs.kdePackages.konsole}/bin/konsole --hold -e ${installNixos}/bin/install-nixos
               Terminal=false
               Categories=System;
             '';
@@ -431,7 +485,7 @@ in
           ];
 
           systemd.services.clone-nix-config = {
-            description = "Clone nix-config on boot for convenience";
+            description = "Clone nix-config and pre-fetch flake inputs on boot";
             after = [ "network-online.target" ];
             wants = [ "network-online.target" ];
             wantedBy = [ "multi-user.target" ];
@@ -439,20 +493,31 @@ in
               pkgs.git
               pkgs.openssh
               pkgs.cacert
+              pkgs.nix
             ];
             serviceConfig = {
               Type = "oneshot";
               User = "nixos";
               Group = "users";
               WorkingDirectory = "/home/nixos";
-              ConditionPathExists = "!/home/nixos/nix-config";
+              # Drop ConditionPathExists so re-runs (after a manual rm)
+              # still pre-warm. If the repo exists we just skip the
+              # clone step inline.
               Environment = [
                 "GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
                 "HOME=/home/nixos"
+                "NIX_CONFIG=experimental-features = nix-command flakes"
               ];
             };
             script = ''
-              git clone --depth 1 https://github.com/alisonjenkins/nix-config.git /home/nixos/nix-config
+              if [ ! -d /home/nixos/nix-config/.git ]; then
+                git clone --depth 1 https://github.com/alisonjenkins/nix-config.git /home/nixos/nix-config
+              fi
+              # Pre-fetch flake inputs so the user-facing install-nixos
+              # eval is near-instant. Non-fatal — a network blip just
+              # means the user pays the fetch cost during install.
+              cd /home/nixos/nix-config
+              nix flake archive --json >/dev/null 2>&1 || true
             '';
           };
 
