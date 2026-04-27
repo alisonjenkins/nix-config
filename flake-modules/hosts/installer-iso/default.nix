@@ -20,11 +20,19 @@ in
           # `nix run github:nix-community/disko` would pull master and
           # risk CLI ↔ module version drift, which surfaces as a
           # spurious "config not found" at install time.
+          # disko-install is the all-in-one wrapper that DOES support
+          # `--disk NAME DEVICE` for module-style configs (the plain
+          # `disko` wrapper does not — only `--argstr`, which needs
+          # function-style `diskoConfigurations`). It also performs
+          # the nixos-install step itself so we don't need a separate
+          # call.
           diskoPkg = inputs.disko.packages.${system}.disko;
+          diskoInstallPkg = inputs.disko.packages.${system}.disko-install;
           installNixos = pkgs.writeShellApplication {
             name = "install-nixos";
             runtimeInputs = [
               diskoPkg
+              diskoInstallPkg
             ] ++ (with pkgs; [
               coreutils
               gawk
@@ -244,21 +252,19 @@ in
               # on exit even on failure.
               trap 'sudo rm -f /tmp/secret.key' EXIT
 
-              step "Running disko (format + mount $DISK)"
-              # Use the disko CLI from our locked `inputs.disko` (on
-              # PATH via runtimeInputs), NOT `nix run github:` — that
-              # would pull master and produce a spurious "config not
-              # found" when the CLI's eval expression doesn't match
-              # the module's attr shape. `--arg disk` is dropped: it
-              # only applies to function-style `diskoConfigurations`,
-              # not the NixOS-module style we use.
-              sudo disko \
-                --mode disko \
+              step "Running disko-install (format $DISK + install $HOST)"
+              # disko-install is the right tool for module-style
+              # disko configs where we need a runtime --disk
+              # override. The plain `disko` wrapper has no --disk
+              # flag (only --argstr, which requires a function-style
+              # `diskoConfigurations` entry that none of our hosts
+              # provide). disko-install also performs the nixos
+              # install in the same step, so we don't need a
+              # separate `nixos-install` call afterwards.
+              sudo disko-install \
+                --mode format \
                 --flake ".#$HOST" \
                 --disk disk1 "$DISK"
-
-              step "Running nixos-install"
-              sudo nixos-install --flake ".#$HOST" --no-root-passwd --root /mnt
 
               echo
               echo "=========================================="
@@ -457,6 +463,7 @@ in
 
           environment.systemPackages = [
             diskoPkg
+            diskoInstallPkg
           ] ++ (with pkgs; [
             git
             vim
