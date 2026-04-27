@@ -19,20 +19,20 @@ in
           # nixosModule used by host configs (`inputs.disko`). Using a
           # `nix run github:nix-community/disko` would pull master and
           # risk CLI ↔ module version drift, which surfaces as a
-          # spurious "config not found" at install time.
-          # disko-install is the all-in-one wrapper that DOES support
-          # `--disk NAME DEVICE` for module-style configs (the plain
-          # `disko` wrapper does not — only `--argstr`, which needs
-          # function-style `diskoConfigurations`). It also performs
-          # the nixos-install step itself so we don't need a separate
-          # call.
+          # spurious "config not found" at install time. We use plain
+          # `disko` (format + mount) followed by `nixos-install --root
+          # /mnt --flake ...` rather than the all-in-one
+          # `disko-install` wrapper, because nixos-install passes
+          # `--store /mnt` to nix build so substitutions land DIRECTLY
+          # on the target's btrfs nix store. disko-install would
+          # build into the live tmpfs first then copy, doubling RAM
+          # use and tripping systemd-oomd's PSI-based pre-emptive
+          # kill.
           diskoPkg = inputs.disko.packages.${system}.disko;
-          diskoInstallPkg = inputs.disko.packages.${system}.disko-install;
           installNixos = pkgs.writeShellApplication {
             name = "install-nixos";
             runtimeInputs = [
               diskoPkg
-              diskoInstallPkg
             ] ++ (with pkgs; [
               coreutils
               gawk
@@ -252,22 +252,42 @@ in
               # on exit even on failure.
               trap 'sudo rm -f /tmp/secret.key' EXIT
 
-              step "Disk usage before disko-install"
+              # Sanity: the user-picked $DISK is purely informational
+              # — plain `disko` has no --disk flag (only --argstr,
+              # which needs function-style configs). The actual
+              # device used is whatever the host's disko-config
+              # `lib.mkDefault "/dev/..."` says. Warn loudly if those
+              # don't match so the user can abort before we wipe the
+              # wrong disk.
+              expected=$(nix eval --no-warn-dirty --raw \
+                ".#nixosConfigurations.$HOST.config.disko.devices.disk.disk1.device" \
+                2>/dev/null || echo "")
+              if [ -n "$expected" ] && [ "$expected" != "$DISK" ]; then
+                kdialog --warningyesno \
+                  "WARNING: you picked $DISK but the disko config for $HOST hardcodes $expected.\n\nDisko will use $expected — your $DISK selection is IGNORED.\n\nProceed with $expected?\n\nTo install onto $DISK instead, abort and edit the host's disko-config.nix to change the \`device\` field." \
+                  || exit 0
+                DISK="$expected"
+              fi
+
+              step "Disk usage before format + install"
               df -h
 
-              step "Running disko-install (format $DISK + install $HOST)"
-              # disko-install is the right tool for module-style
-              # disko configs where we need a runtime --disk
-              # override. The plain `disko` wrapper has no --disk
-              # flag (only --argstr, which requires a function-style
-              # `diskoConfigurations` entry that none of our hosts
-              # provide). disko-install also performs the nixos
-              # install in the same step, so we don't need a
-              # separate `nixos-install` call afterwards.
-              sudo disko-install \
-                --mode format \
+              step "Running disko (format + mount $DISK)"
+              sudo disko \
+                --mode destroy,format,mount \
+                --yes-wipe-all-disks \
+                --flake ".#$HOST"
+
+              step "Running nixos-install (substitutes directly to /mnt)"
+              # `--root /mnt` makes nixos-install pass `--store /mnt`
+              # to nix build, so the closure substitutes straight to
+              # the target's btrfs nix store. The live tmpfs nix
+              # store stays nearly empty — no memory pressure, no
+              # systemd-oomd kill.
+              sudo nixos-install \
                 --flake ".#$HOST" \
-                --disk disk1 "$DISK"
+                --no-root-passwd \
+                --root /mnt
 
               echo
               echo "=========================================="
@@ -419,6 +439,16 @@ in
           # Aggressively prefer compressed swap before OOM-killing.
           boot.kernel.sysctl."vm.swappiness" = 180;
 
+          # Disable systemd-oomd on the installer. It uses PSI to
+          # preemptively kill processes on memory-pressure spikes
+          # ("Memory Shortage Avoided" notification), which has been
+          # killing nix during the install. Let the kernel handle
+          # real OOM — with 16 GiB RAM + 16 GiB zram and the install
+          # now substituting directly to the target via
+          # nixos-install --store /mnt, there should be no real
+          # pressure to react to.
+          systemd.oomd.enable = false;
+
           # Grow the live nix-store tmpfs cap. The base ISO leaves
           # `/nix/.rw-store` (the overlay upperdir for /nix/store)
           # at the tmpfs default of 50% of RAM (~8 GiB on Steam
@@ -512,7 +542,6 @@ in
 
           environment.systemPackages = [
             diskoPkg
-            diskoInstallPkg
           ] ++ (with pkgs; [
             git
             vim
