@@ -214,6 +214,39 @@ in
           };
           networking.hostName = "nixos-installer";
 
+          # WiFi auth fix for Steam Deck (and any host where the
+          # autologin `nixos` user has no password):
+          #   * Put `nixos` in `networkmanager` + `wheel` so polkit
+          #     rules grant it NM management without a password prompt.
+          #   * Tell NM to store WiFi PSKs as system-owned secrets
+          #     (`psk-flags=0`) in /etc/NetworkManager/system-connections
+          #     instead of routing them through kwallet — kwallet PAM
+          #     auto-unlock can't unlock the wallet for a passwordless
+          #     user, which causes plasma-nm to hang at "Waiting for
+          #     authorization" after the user types their WiFi password.
+          #   * Polkit rule grants any networkmanager-group member full
+          #     NM control without auth, as belt-and-braces in case the
+          #     distro polkit rules change.
+          users.users.nixos.extraGroups = [
+            "networkmanager"
+            "wheel"
+          ];
+          networking.networkmanager = {
+            enable = true;
+            settings.connection-defaults = {
+              "802-11-wireless-security.psk-flags" = 0;
+              "802-1x.password-flags" = 0;
+            };
+          };
+          security.polkit.extraConfig = ''
+            polkit.addRule(function(action, subject) {
+              if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0
+                  && subject.isInGroup("networkmanager")) {
+                return polkit.Result.YES;
+              }
+            });
+          '';
+
           # On-screen keyboard for Steam Deck / touch installs.
           # InputMethod must be the absolute path to the .desktop file;
           # nixpkgs ships it as com.github.maliit.keyboard.desktop.
