@@ -330,15 +330,12 @@ in
             "802-1x.password-flags" = 0;
           };
 
-          # Timezone: leave `time.timeZone` unset so /etc/localtime is
-          # NOT a read-only symlink into the nix store. KDE's clock
-          # panel (and `timedatectl`) can then write /etc/localtime at
-          # runtime when the user picks a timezone. `timesyncd` is the
-          # NixOS default but we set it explicitly so KDE finds an
-          # active NTP backend without needing to toggle anything (the
-          # toggle would otherwise fail with "file is read only" on a
-          # ROM-mounted ISO).
-          time.timeZone = lib.mkForce null;
+          # Timezone: pinned to Europe/London so KDE's clock shows the
+          # right time out of the box. `timesyncd` is the NixOS default
+          # but we set it explicitly so KDE finds an active NTP backend
+          # without needing to toggle anything (the toggle was failing
+          # with "file is read only" on the ROM-mounted ISO).
+          time.timeZone = "Europe/London";
           services.timesyncd.enable = true;
 
           # On-screen keyboard for Steam Deck / touch installs.
