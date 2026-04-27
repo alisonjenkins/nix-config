@@ -49,6 +49,13 @@ in
             text = ''
               set -euo pipefail
 
+              # Raise the soft file-descriptor limit to the hard
+              # limit. nix opens many .drv / NAR / cache files in
+              # parallel during substitution and hits the default
+              # 1024 cap as "Too many open files" on big closures
+              # (ali-steam-deck has multi-thousand store paths).
+              ulimit -Sn "$(ulimit -Hn)" || true
+
               # Tee everything to a log file so the user can read it
               # later if konsole closes or output scrolls off.
               LOG=/tmp/install-nixos.log
@@ -448,6 +455,17 @@ in
           # nixos-install --store /mnt, there should be no real
           # pressure to react to.
           systemd.oomd.enable = false;
+
+          # Raise nofile system-wide so the sudo'd `nixos-install`
+          # subprocess can substitute large closures without hitting
+          # "Too many open files" — nix opens many .drv / NAR /
+          # cache fds in parallel during substitution and the
+          # default 1024 cap is far too tight for the multi-thousand
+          # store paths in a desktop closure.
+          security.pam.loginLimits = [
+            { domain = "*"; type = "soft"; item = "nofile"; value = "1048576"; }
+            { domain = "*"; type = "hard"; item = "nofile"; value = "1048576"; }
+          ];
 
           # Grow the live nix-store tmpfs cap. The base ISO leaves
           # `/nix/.rw-store` (the overlay upperdir for /nix/store)
