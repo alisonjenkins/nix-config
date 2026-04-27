@@ -62,7 +62,7 @@ in
               # the failing line + command and pops a kdialog so the
               # user knows WHY install-nixos exited. Konsole's --hold
               # keeps the window open after this trap fires.
-              trap 'rc=$?; echo; echo "==> install-nixos ABORTED (exit $rc) at line $LINENO: $BASH_COMMAND" >&2; kdialog --error "install-nixos aborted (exit $rc).\n\nLine $LINENO: $BASH_COMMAND\n\nFull log: $LOG" 2>/dev/null || true; exit $rc' ERR
+              trap 'rc=$?; echo; echo "==> install-nixos ABORTED (exit $rc) at line $LINENO: $BASH_COMMAND" >&2; echo "==> df -h post-mortem:" >&2; df -h >&2 || true; kdialog --error "install-nixos aborted (exit $rc).\n\nLine $LINENO: $BASH_COMMAND\n\nFull log: $LOG" 2>/dev/null || true; exit $rc' ERR
 
               # Print a visible banner before each phase so the user
               # always knows what the script is doing.
@@ -252,6 +252,9 @@ in
               # on exit even on failure.
               trap 'sudo rm -f /tmp/secret.key' EXIT
 
+              step "Disk usage before disko-install"
+              df -h
+
               step "Running disko-install (format $DISK + install $HOST)"
               # disko-install is the right tool for module-style
               # disko configs where we need a runtime --disk
@@ -415,9 +418,28 @@ in
           };
           # Aggressively prefer compressed swap before OOM-killing.
           boot.kernel.sysctl."vm.swappiness" = 180;
-          # /tmp shares the same RAM pool as the nix-store tmpfs;
-          # cap it so the nix store gets the headroom.
-          boot.tmp.tmpfsSize = "2G";
+
+          # Grow the live nix-store tmpfs cap. The base ISO leaves
+          # `/nix/.rw-store` (the overlay upperdir for /nix/store)
+          # at the tmpfs default of 50% of RAM (~8 GiB on Steam
+          # Deck). disko-install substitutes the target host's
+          # closure into the LIVE store before formatting the disk,
+          # which can ENOSPC on a multi-GiB closure. We override via
+          # `lib.isoFileSystems` (the source `fileSystems` is read
+          # from in `installation-cd-base.nix`); writing to
+          # `fileSystems` directly is silently dropped because the
+          # base sets the whole attrset via `mkImageMediaOverride`.
+          # Pages spill to zramSwap under pressure, so a 16 GiB
+          # tmpfs costs only ~5 GiB physical RAM at peak.
+          lib.isoFileSystems."/nix/.rw-store" = lib.mkForce {
+            fsType = "tmpfs";
+            options = [ "mode=0755" "size=16G" ];
+            neededForBoot = true;
+          };
+          lib.isoFileSystems."/" = lib.mkForce {
+            fsType = "tmpfs";
+            options = [ "mode=0755" "size=4G" ];
+          };
 
           # NetworkManager: store WiFi PSKs as system-owned secrets
           # (`psk-flags=0`) in /etc/NetworkManager/system-connections
