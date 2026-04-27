@@ -398,6 +398,27 @@ in
           # the broken zfs-kernel module.
           boot.supportedFilesystems.zfs = lib.mkForce false;
 
+          # OOM avoidance during disko-install: the live installer's
+          # nix store is on a tmpfs overlay (squashfs is read-only),
+          # so the entire target host's closure piles up in RAM
+          # before disko has formatted the disk. Steam Deck has only
+          # 16 GiB and the ali-steam-deck closure is multi-GiB →
+          # the kernel OOM-kills disko-install partway through.
+          # zram with zstd gives ~3× compression, so a 16 GiB zram
+          # device costs ~5 GiB physical RAM and yields ~16 GiB of
+          # extra virtual memory.
+          zramSwap = {
+            enable = true;
+            algorithm = "zstd";
+            memoryPercent = 100;
+            priority = 100;
+          };
+          # Aggressively prefer compressed swap before OOM-killing.
+          boot.kernel.sysctl."vm.swappiness" = 180;
+          # /tmp shares the same RAM pool as the nix-store tmpfs;
+          # cap it so the nix store gets the headroom.
+          boot.tmp.tmpfsSize = "2G";
+
           # NetworkManager: store WiFi PSKs as system-owned secrets
           # (`psk-flags=0`) in /etc/NetworkManager/system-connections
           # instead of in kwallet. The autologin `nixos` user has no
@@ -447,6 +468,12 @@ in
               "@wheel"
               "nixos"
             ];
+            # Serialise builds so peak memory stays low. Almost
+            # everything should substitute from cache anyway, but if
+            # something does build, do it one-at-a-time (using all
+            # cores per build via cores=0).
+            max-jobs = 1;
+            cores = 0;
           };
 
           services.openssh = {
