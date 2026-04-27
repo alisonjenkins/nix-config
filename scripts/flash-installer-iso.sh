@@ -54,16 +54,6 @@ if [ ! -b "$DEV" ]; then
   exit 1
 fi
 
-# Refuse common internal-disk names. Deliberately conservative; user can
-# override by editing the script if they really mean it.
-case "$DEV" in
-  /dev/nvme*|/dev/sda|/dev/mmcblk*|/dev/vda|/dev/xvda)
-    echo "refusing to write to $DEV (looks like an internal disk)" >&2
-    echo "if you really mean this, edit the guard in $(basename "$0")" >&2
-    exit 1
-    ;;
-esac
-
 echo "==> target device:"
 lsblk -o NAME,SIZE,MODEL,TRAN,MOUNTPOINTS "$DEV"
 echo
@@ -94,8 +84,8 @@ sudo partprobe "$DEV" 2>/dev/null || true
 echo "==> verifying read-back"
 ISO_SIZE=$(stat -c%s "$ISO")
 ISO_SHA=$(sha256sum "$ISO" | awk '{print $1}')
-DEV_SHA=$(sudo dd if="$DEV" bs=1M count=$(( (ISO_SIZE + 1048575) / 1048576 )) iflag=direct status=none \
-  | head -c "$ISO_SIZE" | sha256sum | awk '{print $1}')
+DEV_SHA=$(sudo dd if="$DEV" bs=1M count=$(((ISO_SIZE + 1048575) / 1048576)) iflag=direct status=none |
+  head -c "$ISO_SIZE" | sha256sum | awk '{print $1}')
 
 echo "    iso sha256: $ISO_SHA"
 echo "    dev sha256: $DEV_SHA"
