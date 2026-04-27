@@ -386,6 +386,12 @@ in
           # 6.12.x which would reject the mount option.
           boot.kernelPackages = pkgs.linuxPackages_latest;
 
+          # ZFS is marked broken on the latest kernel (no upstream
+          # release tracking 7.x yet) and the installer doesn't need
+          # it — drop ZFS from supportedFilesystems and skip building
+          # the broken zfs-kernel module.
+          boot.supportedFilesystems.zfs = lib.mkForce false;
+
           # NetworkManager: store WiFi PSKs as system-owned secrets
           # (`psk-flags=0`) in /etc/NetworkManager/system-connections
           # instead of in kwallet. The autologin `nixos` user has no
