@@ -34,13 +34,20 @@ in
               set -euo pipefail
 
               REPO=/home/nixos/nix-config
+              REPO_URL=https://github.com/alisonjenkins/nix-config.git
 
-              # Wait for the clone-nix-config service to finish, with a
-              # retry loop so the user can clone manually if it failed.
+              # Wait for the clone-nix-config service to finish, then fall
+              # back to cloning inline so the user doesn't have to drop to
+              # a terminal if the boot-time clone failed (e.g. no network
+              # at boot).
               while [ ! -d "$REPO/.git" ]; do
+                if clone_out=$(git clone --depth 1 "$REPO_URL" "$REPO" 2>&1); then
+                  continue
+                fi
                 kdialog --warningyesno \
-                  "nix-config not found at $REPO.\n\nClone it manually (e.g. via Konsole) then click Yes to retry, or No to abort." \
+                  "Failed to clone nix-config into $REPO:\n\n$clone_out\n\nCheck network then click Yes to retry, or No to abort." \
                   || exit 0
+                rm -rf "$REPO"
               done
               cd "$REPO"
 
