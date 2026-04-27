@@ -380,6 +380,12 @@ in
           };
           networking.hostName = "nixos-installer";
 
+          # Use the latest mainline kernel so disko can format btrfs
+          # with `compress=zstd:-1` (negative zstd levels require
+          # kernel ≥ 6.15). nixpkgs' default LTS kernel is currently
+          # 6.12.x which would reject the mount option.
+          boot.kernelPackages = pkgs.linuxPackages_latest;
+
           # NetworkManager: store WiFi PSKs as system-owned secrets
           # (`psk-flags=0`) in /etc/NetworkManager/system-connections
           # instead of in kwallet. The autologin `nixos` user has no
