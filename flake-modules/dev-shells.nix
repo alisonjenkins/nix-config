@@ -14,6 +14,7 @@
           libsecret
           nix-fast-build
           nixos-anywhere
+          pv
           uplosi
         ];
       in
