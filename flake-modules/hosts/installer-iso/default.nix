@@ -200,6 +200,104 @@ in
               "
             '';
           };
+
+          # WiFi launcher that bypasses plasma-nm + kwallet entirely.
+          # Talks straight to NetworkManager via `nmcli` so there is no
+          # secret-agent in the loop — `psk-flags=0` from
+          # `connection-defaults` means NM stores the PSK system-wide.
+          connectWifi = pkgs.writeShellApplication {
+            name = "connect-wifi";
+            runtimeInputs = with pkgs; [
+              coreutils
+              gawk
+              gnused
+              kdePackages.kdialog
+              networkmanager
+            ];
+            text = ''
+              set -euo pipefail
+
+              # Make sure the radio is on. `nmcli radio wifi on` is a
+              # no-op if it's already on.
+              nmcli radio wifi on >/dev/null 2>&1 || true
+
+              # Force a rescan so freshly-powered radios populate the
+              # cache. Some drivers need a couple of seconds.
+              nmcli device wifi rescan >/dev/null 2>&1 || true
+              sleep 2
+
+              # SSID picker. Loop so the user can rescan without
+              # restarting the launcher.
+              while true; do
+                # SSID may contain spaces, so use a literal tab as the
+                # nmcli terse separator. Strip empty / hidden SSIDs.
+                mapfile -t lines < <(
+                  nmcli -t -s -f IN-USE,SSID,SECURITY,SIGNAL device wifi list \
+                    | awk -F: '$2 != "" && !seen[$2]++' \
+                    | sort -t: -k4 -nr
+                )
+
+                if [ ''${#lines[@]} -eq 0 ]; then
+                  kdialog --warningyesnocancel \
+                    "No WiFi networks visible.\n\nYes = rescan, No = abort, Cancel = abort." \
+                    && { nmcli device wifi rescan >/dev/null 2>&1 || true; sleep 2; continue; }
+                  exit 0
+                fi
+
+                menu_args=("__rescan__" "[ Rescan networks ]")
+                while IFS=: read -r in_use ssid sec signal; do
+                  [ -n "$ssid" ] || continue
+                  marker=" "
+                  [ "$in_use" = "*" ] && marker="*"
+                  menu_args+=("$ssid" "$marker $ssid  ($sec, $signal%)")
+                done < <(printf '%s\n' "''${lines[@]}")
+
+                SSID=$(kdialog --title "Connect WiFi" \
+                  --menu "Select a network:" \
+                  "''${menu_args[@]}") || exit 0
+
+                if [ "$SSID" = "__rescan__" ]; then
+                  nmcli device wifi rescan >/dev/null 2>&1 || true
+                  sleep 2
+                  continue
+                fi
+                break
+              done
+
+              # If the connection already exists (e.g. from a previous
+              # successful connect), bring it up without re-prompting
+              # for the password.
+              if nmcli -t -f NAME connection show | grep -Fxq "$SSID"; then
+                if up_out=$(nmcli connection up id "$SSID" 2>&1); then
+                  kdialog --passivepopup "Reconnected to $SSID" 5
+                  exit 0
+                fi
+                kdialog --sorry "Reconnect failed:\n\n$up_out\n\nWill prompt for password and re-create the connection."
+                nmcli connection delete id "$SSID" >/dev/null 2>&1 || true
+              fi
+
+              # Password loop: re-prompt on empty input.
+              while true; do
+                PSK=$(kdialog --password "Password for \"$SSID\":") || exit 0
+                if [ -z "$PSK" ]; then
+                  kdialog --sorry "Password cannot be empty. Try again."
+                  continue
+                fi
+                break
+              done
+
+              # Connect. nmcli writes the connection profile and
+              # respects `[connection-defaults] psk-flags=0` so the PSK
+              # lands in /etc/NetworkManager/system-connections, not in
+              # any user secret store.
+              if out=$(nmcli device wifi connect "$SSID" password "$PSK" 2>&1); then
+                kdialog --passivepopup "Connected to $SSID" 5
+              else
+                kdialog --error "Connect failed:\n\n$out"
+                exit 1
+              fi
+            '';
+          };
         in
         {
           services.desktopManager.plasma6.enable = true;
@@ -214,38 +312,34 @@ in
           };
           networking.hostName = "nixos-installer";
 
-          # WiFi auth fix for Steam Deck (and any host where the
-          # autologin `nixos` user has no password):
-          #   * Put `nixos` in `networkmanager` + `wheel` so polkit
-          #     rules grant it NM management without a password prompt.
-          #   * Tell NM to store WiFi PSKs as system-owned secrets
-          #     (`psk-flags=0`) in /etc/NetworkManager/system-connections
-          #     instead of routing them through kwallet — kwallet PAM
-          #     auto-unlock can't unlock the wallet for a passwordless
-          #     user, which causes plasma-nm to hang at "Waiting for
-          #     authorization" after the user types their WiFi password.
-          #   * Polkit rule grants any networkmanager-group member full
-          #     NM control without auth, as belt-and-braces in case the
-          #     distro polkit rules change.
-          users.users.nixos.extraGroups = [
-            "networkmanager"
-            "wheel"
-          ];
-          networking.networkmanager = {
-            enable = true;
-            settings.connection-defaults = {
-              "802-11-wireless-security.psk-flags" = 0;
-              "802-1x.password-flags" = 0;
-            };
+          # NetworkManager: store WiFi PSKs as system-owned secrets
+          # (`psk-flags=0`) in /etc/NetworkManager/system-connections
+          # instead of in kwallet. The autologin `nixos` user has no
+          # login password so kwallet's PAM auto-unlock can't open the
+          # wallet, which causes plasma-nm to hang at "Waiting for
+          # authorization" after credentials are entered. The
+          # `connect-wifi` desktop launcher below is the recommended
+          # path — it talks to NM directly via `nmcli` and bypasses
+          # plasma-nm + kwallet entirely.
+          # `installation-cd-graphical-base.nix` already enables NM and
+          # `installation-device.nix` already adds the `nixos` user to
+          # the `networkmanager`/`wheel` groups, so no extra user or
+          # polkit config is required here.
+          networking.networkmanager.settings.connection-defaults = {
+            "802-11-wireless-security.psk-flags" = 0;
+            "802-1x.password-flags" = 0;
           };
-          security.polkit.extraConfig = ''
-            polkit.addRule(function(action, subject) {
-              if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0
-                  && subject.isInGroup("networkmanager")) {
-                return polkit.Result.YES;
-              }
-            });
-          '';
+
+          # Timezone: leave `time.timeZone` unset so /etc/localtime is
+          # NOT a read-only symlink into the nix store. KDE's clock
+          # panel (and `timedatectl`) can then write /etc/localtime at
+          # runtime when the user picks a timezone. `timesyncd` is the
+          # NixOS default but we set it explicitly so KDE finds an
+          # active NTP backend without needing to toggle anything (the
+          # toggle would otherwise fail with "file is read only" on a
+          # ROM-mounted ISO).
+          time.timeZone = lib.mkForce null;
+          services.timesyncd.enable = true;
 
           # On-screen keyboard for Steam Deck / touch installs.
           # InputMethod must be the absolute path to the .desktop file;
@@ -290,6 +384,7 @@ in
             just
             maliit-keyboard
             installNixos
+            connectWifi
             kdePackages.kdialog
             kdePackages.konsole
           ];
@@ -298,8 +393,9 @@ in
           # run disko + nixos-install non-interactively.
           security.sudo.wheelNeedsPassword = lib.mkForce false;
 
-          # Drop a desktop launcher into the autologin user's Desktop
-          # directory pointing at the install-nixos script.
+          # Drop desktop launchers into the autologin user's Desktop
+          # directory pointing at the install-nixos and connect-wifi
+          # scripts.
           environment.etc."skel/Desktop/install-nixos.desktop" = {
             mode = "0755";
             text = ''
@@ -313,14 +409,28 @@ in
               Categories=System;
             '';
           };
+          environment.etc."skel/Desktop/connect-wifi.desktop" = {
+            mode = "0755";
+            text = ''
+              [Desktop Entry]
+              Type=Application
+              Name=Connect WiFi
+              Comment=Pick a WiFi network and connect via nmcli
+              Icon=network-wireless
+              Exec=${connectWifi}/bin/connect-wifi
+              Terminal=false
+              Categories=System;Network;
+            '';
+          };
 
           # Plasma 6 refuses to launch untrusted .desktop files. Pre-create
-          # the Desktop directory and copy the launcher with executable
-          # bit so Plasma renders it as a clickable tile. The user still
+          # the Desktop directory and copy the launchers with executable
+          # bit so Plasma renders them as clickable tiles. The user still
           # has to confirm "trust" once on first click.
           systemd.tmpfiles.rules = [
             "d /home/nixos/Desktop 0755 nixos users -"
             "C /home/nixos/Desktop/install-nixos.desktop 0755 nixos users - /etc/skel/Desktop/install-nixos.desktop"
+            "C /home/nixos/Desktop/connect-wifi.desktop 0755 nixos users - /etc/skel/Desktop/connect-wifi.desktop"
           ];
 
           systemd.services.clone-nix-config = {
