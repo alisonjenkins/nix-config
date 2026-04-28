@@ -1,6 +1,49 @@
 { inputs
 , ...
-}: {
+}:
+let
+  # Shared openldap override applied across every channel (top-level
+  # nixpkgs + master/unstable/stable). Multiple openldap derivations
+  # land in the closure (different versions across channels), so the
+  # override has to ride along with each channel's `import nixpkgs`
+  # — overriding only top-level `pkgs.openldap` leaves `pkgs.master`'s
+  # own openldap (2.6.13) un-patched and the build still fails the
+  # same flaky `test018-syncreplication-persist` mdb test.
+  openldapOverlay = _final: prev:
+    let
+      # Patch applied to every openldap derivation. Consumers
+      # (apr-util, libreoffice, kldap, lutris, gnupg, nfs-utils,
+      # cyrus_sasl, ...) often call `openldap.override { withCyrus
+      # = true; }` which re-runs the package function and bypasses
+      # a plain `overrideAttrs`. We re-apply the patch on .override
+      # so EVERY descendant derivation inherits it too.
+      patch = drv: drv.overrideAttrs (oldAttrs: {
+        doCheck = false;
+        preCheck = (oldAttrs.preCheck or "") + ''
+          rm -f tests/scripts/test018-syncreplication-persist
+          rm -f tests/scripts/test019-syncreplication-cascade
+          rm -f tests/scripts/test020-proxycache
+          rm -f tests/scripts/test058-syncrepl-asymmetric
+          rm -f tests/scripts/test059-slave-config
+          rm -f tests/scripts/test061-syncreplication-initiation
+          rm -f tests/scripts/test065-syncreplication-distributed
+          rm -f tests/scripts/test067-2master
+          rm -f tests/scripts/test074-multiprovider
+        '';
+      });
+      origOverride = prev.openldap.override;
+      patched = patch prev.openldap;
+    in {
+      openldap = patched // {
+        # Wrap .override so consumer-driven overrides still get the
+        # test deletions baked back in. Important: must wrap the
+        # RESULT of origOverride too, so chained .override.override
+        # paths keep the patch.
+        override = args: patch (origOverride args);
+      };
+    };
+in
+{
   # This one brings our custom packages from the 'pkgs' directory
   additions = final: _prev: import ../pkgs { pkgs = final; };
 
@@ -22,35 +65,11 @@
       then prev.direnv.overrideAttrs (_: { doCheck = false; })
       else prev.direnv;
 
-    # openldap's `test018-syncreplication-persist` is timing-sensitive
-    # (provider/consumer replication with 5/7/7-second sleeps) and flakes
-    # under I/O pressure — most visible during nixos-install on
-    # resource-constrained targets like the Steam Deck. Known issue:
-    # NixOS/nixpkgs#372569. We don't ship an openldap server, only client
-    # libs pulled in transitively, so skipping the test suite is safe.
-    #
-    # Belt-and-braces: set `doCheck = false` AND extend `preCheck` to
-    # remove every replication-related test script — even if some build
-    # invokes `make test` via a path that ignores `doCheck`, the test
-    # files themselves are gone before the test runner sees them.
-    openldap = prev.openldap.overrideAttrs (oldAttrs: {
-      doCheck = false;
-      preCheck = (oldAttrs.preCheck or "") + ''
-        # All known-flaky syncreplication / delta-multiprovider tests.
-        # nixpkgs already removes test063 and test076; we widen to the
-        # full sync* family because they all share the same timing
-        # assumptions that break under install-time I/O contention.
-        rm -f tests/scripts/test018-syncreplication-persist
-        rm -f tests/scripts/test019-syncreplication-cascade
-        rm -f tests/scripts/test020-proxycache
-        rm -f tests/scripts/test058-syncrepl-asymmetric
-        rm -f tests/scripts/test059-slave-config
-        rm -f tests/scripts/test061-syncreplication-initiation
-        rm -f tests/scripts/test065-syncreplication-distributed
-        rm -f tests/scripts/test067-2master
-        rm -f tests/scripts/test074-multiprovider
-      '';
-    });
+    # openldap test override applied via the shared `openldapOverlay`
+    # function (defined in the let-binding above). Same override is
+    # also re-applied inside each channel's `import nixpkgs` below
+    # so master/unstable/stable openldaps don't slip through.
+    inherit (openldapOverlay null prev) openldap;
 
     # Re-sign fish after build on Darwin.
     # Nix's fixup phase runs install_name_tool to rewrite library paths, which
@@ -106,6 +125,7 @@
     stable = import inputs.nixpkgs_stable {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
+      overlays = [ openldapOverlay ];
     };
   };
 
@@ -113,6 +133,7 @@
     unstable = import inputs.nixpkgs_unstable {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
+      overlays = [ openldapOverlay ];
     };
   };
 
@@ -123,6 +144,7 @@
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
       overlays = [
+        openldapOverlay
         (mfinal: mprev: {
           pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
             (python-final: python-prev: {
@@ -140,6 +162,7 @@
     lqx_pin = import inputs.nixpkgs_lqx_pin {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
+      overlays = [ openldapOverlay ];
     };
   };
 
