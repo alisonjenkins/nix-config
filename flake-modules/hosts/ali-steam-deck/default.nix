@@ -55,6 +55,17 @@ in {
           };
       }
 
+      # Pull in repo-wide overlays. `modifications` is where the
+      # openldap doCheck=false override lives (NixOS/nixpkgs#372569
+      # workaround), plus xrdb / claude-code / direnv pins. Without
+      # this the overrides never reach this host's nixpkgs and the
+      # openldap test failure resurfaces during nixos-install.
+      {
+        nixpkgs.overlays = [
+          self.overlays.modifications
+        ];
+      }
+
       # Host-specific configuration
       ({ lib, outputs, pkgs, username, ... }: {
         modules.base = {
