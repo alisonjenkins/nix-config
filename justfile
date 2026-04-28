@@ -58,6 +58,41 @@ build hostname="" *extraargs:
         sudo nixos-rebuild build --flake ".#$TARGET_HOST" {{extraargs}}
     fi
 
+# Build a host's system closure locally and ship it to a remote
+# install-iso target whose nix store lives at /mnt, then run
+# nixos-install on the remote to write bootloader + /etc.
+# Use when the target machine's CPU is too slow to build (e.g. Steam Deck).
+# Defaults match installing ali-steam-deck from a fast machine on the LAN.
+install-remote hostname="ali-steam-deck" target="root@192.168.1.67":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # SSH options: force the primary key + 1Password agent. Needed
+    # because the user's ~/.ssh/config sets `IdentitiesOnly yes`
+    # without a default IdentityFile, so agent keys aren't offered
+    # to ad-hoc hosts unless we name one explicitly here.
+    SSH_OPTS=(
+      -o IdentitiesOnly=yes
+      -o IdentityFile="$HOME/.ssh/id_personal.pub"
+      -o IdentityAgent="$HOME/.1password/agent.sock"
+      -o StrictHostKeyChecking=accept-new
+    )
+    export NIX_SSHOPTS="${SSH_OPTS[*]}"
+
+    echo "==> Building .#{{hostname}} locally"
+    storepath=$(nix build --no-link --print-out-paths \
+      ".#nixosConfigurations.{{hostname}}.config.system.build.toplevel")
+    echo "    closure: $storepath"
+
+    echo "==> Copying closure to {{target}}:/mnt/nix"
+    nix copy --no-check-sigs \
+      --to "ssh-ng://{{target}}?remote-store=local%3Froot%3D%2Fmnt" \
+      "$storepath"
+
+    echo "==> Running nixos-install on {{target}}"
+    ssh "${SSH_OPTS[@]}" "{{target}}" \
+      "nixos-install --root /mnt --no-root-passwd --no-channel-copy --system $storepath"
+
 # Build the config for this system and activate it
 switch *extraargs:
     #!/usr/bin/env bash
