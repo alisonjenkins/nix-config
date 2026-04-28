@@ -67,6 +67,14 @@ in {
               "mt7921e"
               "r8169"
             ];
+            # Bypass kernel workqueues for dm-crypt — significant
+            # NVMe I/O improvement on a CPU with hardware AES (the
+            # actual crypto is near-free; the workqueue latency
+            # was dominating). Runtime-only, applies on next boot.
+            luks.devices.os_raid1_crypt.crypttabExtraOpts = [
+              "no-read-workqueue"
+              "no-write-workqueue"
+            ];
           };
         };
 

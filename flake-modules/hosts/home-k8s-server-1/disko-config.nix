@@ -28,6 +28,16 @@
                   extraOpenArgs = [ ];
                   passwordFile = "/tmp/secret.key";
                   settings.allowDiscards = true;
+                  # Match SSD physical sector size (4 KiB) for
+                  # ~5-15% throughput improvement. The guest
+                  # virtio-blk passes through to host NVMe, so the
+                  # host's underlying physical sector size still
+                  # benefits. Format-time only; applies on next
+                  # reinstall.
+                  extraFormatArgs = [
+                    "--sector-size"
+                    "4096"
+                  ];
                   content = {
                     type = "lvm_pv";
                     vg = "pool";

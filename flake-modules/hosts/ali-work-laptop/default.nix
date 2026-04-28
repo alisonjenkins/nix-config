@@ -154,6 +154,15 @@ in {
         # interfere with TPM2 auto-unlock in the initrd crypttab
         boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
 
+        # Bypass kernel workqueues for dm-crypt — significant NVMe
+        # I/O improvement on a CPU with hardware AES (the actual
+        # crypto is near-free; the workqueue latency was
+        # dominating). Runtime-only, applies on next boot.
+        boot.initrd.luks.devices.crypted.crypttabExtraOpts = [
+          "no-read-workqueue"
+          "no-write-workqueue"
+        ];
+
         boot = {
           kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
 

@@ -285,6 +285,15 @@ in {
         # Nullify the disko-generated keyFile so systemd-cryptsetup uses the TPM2 token
         boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
 
+        # Bypass kernel workqueues for dm-crypt — significant NVMe
+        # I/O improvement on a CPU with hardware AES (the actual
+        # crypto is near-free; the workqueue latency was
+        # dominating). Runtime-only, applies on next boot.
+        boot.initrd.luks.devices.crypted.crypttabExtraOpts = [
+          "no-read-workqueue"
+          "no-write-workqueue"
+        ];
+
         boot = {
           bootspec.enableValidation = true;
 

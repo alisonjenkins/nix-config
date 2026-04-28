@@ -41,6 +41,13 @@ in {
           kernelParams = [
             "irqpoll"
           ];
+          # Bypass kernel workqueues for dm-crypt — significant
+          # I/O improvement on virtio-blk backed by host NVMe.
+          # Runtime-only, applies on next boot.
+          initrd.luks.devices.crypted.crypttabExtraOpts = [
+            "no-read-workqueue"
+            "no-write-workqueue"
+          ];
         };
 
         environment = {
