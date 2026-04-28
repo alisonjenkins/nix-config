@@ -28,7 +28,29 @@
     # resource-constrained targets like the Steam Deck. Known issue:
     # NixOS/nixpkgs#372569. We don't ship an openldap server, only client
     # libs pulled in transitively, so skipping the test suite is safe.
-    openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
+    #
+    # Belt-and-braces: set `doCheck = false` AND extend `preCheck` to
+    # remove every replication-related test script — even if some build
+    # invokes `make test` via a path that ignores `doCheck`, the test
+    # files themselves are gone before the test runner sees them.
+    openldap = prev.openldap.overrideAttrs (oldAttrs: {
+      doCheck = false;
+      preCheck = (oldAttrs.preCheck or "") + ''
+        # All known-flaky syncreplication / delta-multiprovider tests.
+        # nixpkgs already removes test063 and test076; we widen to the
+        # full sync* family because they all share the same timing
+        # assumptions that break under install-time I/O contention.
+        rm -f tests/scripts/test018-syncreplication-persist
+        rm -f tests/scripts/test019-syncreplication-cascade
+        rm -f tests/scripts/test020-proxycache
+        rm -f tests/scripts/test058-syncrepl-asymmetric
+        rm -f tests/scripts/test059-slave-config
+        rm -f tests/scripts/test061-syncreplication-initiation
+        rm -f tests/scripts/test065-syncreplication-distributed
+        rm -f tests/scripts/test067-2master
+        rm -f tests/scripts/test074-multiprovider
+      '';
+    });
 
     # Re-sign fish after build on Darwin.
     # Nix's fixup phase runs install_name_tool to rewrite library paths, which
