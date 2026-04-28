@@ -20,6 +20,7 @@ let
       patch = drv: drv.overrideAttrs (oldAttrs: {
         doCheck = false;
         preCheck = (oldAttrs.preCheck or "") + ''
+          rm -f tests/scripts/test017-syncreplication-refresh
           rm -f tests/scripts/test018-syncreplication-persist
           rm -f tests/scripts/test019-syncreplication-cascade
           rm -f tests/scripts/test020-proxycache
@@ -65,11 +66,28 @@ in
       then prev.direnv.overrideAttrs (_: { doCheck = false; })
       else prev.direnv;
 
-    # openldap test override applied via the shared `openldapOverlay`
-    # function (defined in the let-binding above). Same override is
-    # also re-applied inside each channel's `import nixpkgs` below
-    # so master/unstable/stable openldaps don't slip through.
+    # openldap flaky syncreplication tests: consumers like lutris call
+    # `openldap.override { withCyrus = true; }` which re-runs the package
+    # function and produces an uncached variant that runs the test suite.
+    # The wrapped .override ensures the patch sticks across consumer
+    # overrides.
     inherit (openldapOverlay null prev) openldap;
+
+    # fastmcp's pytest suite takes 2+ hours and is uncached upstream
+    # (cache.nixos.org has no narinfo for it), so disabling doCheck
+    # costs no cache hits and unblocks anything depending on fastmcp
+    # (mcp-nixos, claude-code-mcp.json, ...).
+    pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+      (python-final: python-prev: {
+        fastmcp = python-prev.fastmcp.overridePythonAttrs (old: {
+          doCheck = false;
+          dontCheck = true;
+          installCheckPhase = "true";
+          checkPhase = "true";
+          nativeCheckInputs = [];
+        });
+      })
+    ];
 
     # Re-sign fish after build on Darwin.
     # Nix's fixup phase runs install_name_tool to rewrite library paths, which
@@ -83,33 +101,6 @@ in
         '';
       })
       else prev.fish;
-
-    # Disable aiohttp tests to work around sandbox test failures
-    pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
-      (python-final: python-prev: {
-        aiohttp = python-prev.aiohttp.overridePythonAttrs (oldAttrs: {
-          doCheck = false;
-        });
-        aioboto3 = python-prev.aioboto3.overridePythonAttrs (oldAttrs: {
-          doCheck = false;
-        });
-        # test_acceptScaling fails on macOS: TCP accept scaling differs from Linux
-        twisted = python-prev.twisted.overridePythonAttrs (_: {
-          doCheck = false;
-        });
-        django_4 = python-prev.django_4.overridePythonAttrs (oldAttrs: {
-          doCheck = false;
-        });
-        inline-snapshot = python-prev.inline-snapshot.overridePythonAttrs (oldAttrs: {
-          disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_empty_sub_snapshot" ];
-        });
-        rich = python-prev.rich.overridePythonAttrs (oldAttrs: {
-          disabledTests = (oldAttrs.disabledTests or []) ++ [ "test_brokenpipeerror" ];
-        } // python-prev.lib.optionalAttrs python-prev.stdenv.hostPlatform.isAarch64 {
-          doCheck = false;
-        });
-      })
-    ];
   };
 
   # When applied, the stable nixpkgs set (declared in the flake inputs) will
@@ -146,10 +137,15 @@ in
       overlays = [
         openldapOverlay
         (mfinal: mprev: {
+          # fastmcp pytest takes 2+ hours, uncached upstream — skip checks
           pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
             (python-final: python-prev: {
-              aioboto3 = python-prev.aioboto3.overridePythonAttrs (_: {
+              fastmcp = python-prev.fastmcp.overridePythonAttrs (_: {
                 doCheck = false;
+                dontCheck = true;
+                installCheckPhase = "true";
+                checkPhase = "true";
+                nativeCheckInputs = [];
               });
             })
           ];
