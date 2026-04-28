@@ -346,6 +346,35 @@ in
                 rc=$?
                 [ "$rc" = 1 ] && exit 0  # user aborted
 
+                step "Enrolling TPM2 as a LUKS keyslot (PCR 7) for $HOST"
+                # If the target has a TPM, add a TPM-bound keyslot
+                # to the LUKS partition so subsequent boots can
+                # auto-unlock without a keyboard. Bound to PCR 7
+                # (UEFI Secure Boot state) so the seal is stable
+                # across kernel/grub updates. The original password
+                # keyslot stays as a fallback. Non-fatal — install
+                # proceeds even if enrollment is impossible (no TPM,
+                # no LUKS partition, etc).
+                luks_part=$(sudo lsblk -lno NAME,FSTYPE "$DISK" \
+                  | awk '$2 == "crypto_LUKS" { print "/dev/"$1; exit }')
+                if [ -z "$luks_part" ]; then
+                  echo "  no crypto_LUKS partition found on $DISK — skipping TPM enrollment"
+                  kdialog --sorry "Could not locate the LUKS partition on $DISK to enroll TPM2.\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                elif [ ! -e /dev/tpmrm0 ] && [ ! -e /dev/tpm0 ]; then
+                  echo "  no TPM device on this hardware — skipping TPM enrollment"
+                  kdialog --sorry "No TPM device detected (/dev/tpm{rm0,0} both missing).\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                else
+                  echo "  enrolling TPM on $luks_part (PCR 7)"
+                  if ! sudo systemd-cryptenroll \
+                        --unlock-key-file=/tmp/secret.key \
+                        --tpm2-device=auto \
+                        --tpm2-pcrs=7 \
+                        "$luks_part"; then
+                    echo "  TPM enrollment FAILED — continuing without TPM unlock"
+                    kdialog --error "TPM2 enrollment failed. Continuing install — you'll need a USB keyboard at boot. The original password keyslot still works." 2>/dev/null || true
+                  fi
+                fi
+
                 step "Running nixos-install (substitutes directly to /mnt)"
                 # `--root /mnt` makes nixos-install pass `--store
                 # /mnt` to nix build, so the closure substitutes
