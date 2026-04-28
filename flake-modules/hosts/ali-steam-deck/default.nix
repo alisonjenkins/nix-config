@@ -84,6 +84,20 @@ in {
         boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
         boot.loader.grub.efiInstallAsRemovable = lib.mkForce true;
 
+        # TPM2-based LUKS auto-unlock so the Steam Deck doesn't need
+        # a USB keyboard at boot to type the password. systemd-stage-1
+        # is required for systemd-cryptsetup's TPM2 support — scripted
+        # stage-1 (the default) cannot unseal TPM-bound keys.
+        # The TPM is enrolled as an additional keyslot during install
+        # by the install-nixos launcher; the original password keyslot
+        # stays as a fallback for the case where PCR 7 changes
+        # (UEFI Secure Boot toggle).
+        boot.initrd.systemd.enable = true;
+        boot.initrd.availableKernelModules = [ "tpm_crb" ];
+        boot.initrd.luks.devices."crypted".crypttabExtraOpts = [
+          "tpm2-device=auto"
+        ];
+
         # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa
         hardware.graphics.package = lib.mkForce pkgs.mesa;
         hardware.graphics.package32 = lib.mkForce pkgs.pkgsi686Linux.mesa;
