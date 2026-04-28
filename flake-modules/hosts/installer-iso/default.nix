@@ -278,24 +278,44 @@ in
               done
               echo "  selected disk: $DISK"
 
-              step "Final confirmation before erasing $DISK"
-              kdialog --warningcontinuecancel \
-                "About to ERASE $DISK and install $HOST.\n\nThis cannot be undone. Continue?" \
-                || exit 0
+              step "Install mode: fresh wipe vs resume"
+              INSTALL_MODE=$(kdialog --title "Install mode for $HOST" \
+                --menu "Pick fresh install or resume an interrupted one." \
+                fresh  "Wipe target + install (DESTROYS existing data on $DISK)" \
+                resume "Mount existing layout + continue install (preserves data)" \
+                ) || exit 0
+              echo "  selected mode: $INSTALL_MODE"
+
+              if [ "$INSTALL_MODE" = "fresh" ]; then
+                step "Final confirmation before erasing $DISK"
+                kdialog --warningcontinuecancel \
+                  "About to ERASE $DISK and install $HOST.\n\nThis cannot be undone. Continue?" \
+                  || exit 0
+              fi
 
               step "Collecting LUKS password"
-              # LUKS password loop: re-prompt on empty input or mismatch
-              # rather than aborting. Cancel button still aborts.
+              # LUKS password loop: re-prompt on empty input.
+              # Fresh mode: confirm a NEW password (used for luksFormat).
+              # Resume mode: just type the EXISTING password (used to
+              # open the already-formatted LUKS via disko --mode mount).
+              # Cancel button still aborts.
+              if [ "$INSTALL_MODE" = "fresh" ]; then
+                pwd_prompt="LUKS password for disk encryption (new):"
+              else
+                pwd_prompt="EXISTING LUKS password to unlock $DISK:"
+              fi
               while true; do
-                PWD1=$(kdialog --password "LUKS password for disk encryption:") || exit 0
+                PWD1=$(kdialog --password "$pwd_prompt") || exit 0
                 if [ -z "$PWD1" ]; then
                   kdialog --sorry "Password cannot be empty. Try again."
                   continue
                 fi
-                PWD2=$(kdialog --password "Confirm LUKS password:") || exit 0
-                if [ "$PWD1" != "$PWD2" ]; then
-                  kdialog --sorry "Passwords don't match. Try again."
-                  continue
+                if [ "$INSTALL_MODE" = "fresh" ]; then
+                  PWD2=$(kdialog --password "Confirm LUKS password:") || exit 0
+                  if [ "$PWD1" != "$PWD2" ]; then
+                    kdialog --sorry "Passwords don't match. Try again."
+                    continue
+                  fi
                 fi
                 break
               done
@@ -324,9 +344,13 @@ in
                 ".#nixosConfigurations.$HOST.config.disko.devices.disk.disk1.device" \
                 2>/dev/null || echo "")
               if [ -n "$expected" ] && [ "$expected" != "$DISK" ]; then
-                kdialog --warningyesno \
-                  "WARNING: you picked $DISK but the disko config for $HOST hardcodes $expected.\n\nDisko will use $expected — your $DISK selection is IGNORED.\n\nProceed with $expected?\n\nTo install onto $DISK instead, abort and edit the host's disko-config.nix to change the \`device\` field." \
-                  || exit 0
+                if [ "$INSTALL_MODE" = "fresh" ]; then
+                  kdialog --warningyesno \
+                    "WARNING: you picked $DISK but the disko config for $HOST hardcodes $expected.\n\nDisko will use $expected — your $DISK selection is IGNORED.\n\nProceed with $expected?\n\nTo install onto $DISK instead, abort and edit the host's disko-config.nix to change the \`device\` field." \
+                    || exit 0
+                else
+                  kdialog --passivepopup "Resume mode: ignoring picker, using $expected (per disko config)" 5 || true
+                fi
                 DISK="$expected"
               fi
 
@@ -338,42 +362,58 @@ in
               # failures (DNS, substituter timeouts, etc.) without
               # losing partial install progress on /mnt.
               while true; do
-                step "Running disko (format + mount $DISK)"
-                retry_loop "disko" sudo disko \
-                  --mode destroy,format,mount \
-                  --yes-wipe-all-disks \
-                  --flake ".#$HOST"
-                rc=$?
-                [ "$rc" = 1 ] && exit 0  # user aborted
+                case "$INSTALL_MODE" in
+                  fresh)
+                    step "Running disko (format + mount $DISK)"
+                    retry_loop "disko" sudo disko \
+                      --mode destroy,format,mount \
+                      --yes-wipe-all-disks \
+                      --flake ".#$HOST"
+                    rc=$?
+                    [ "$rc" = 1 ] && exit 0  # user aborted
 
-                step "Enrolling TPM2 as a LUKS keyslot (PCR 7) for $HOST"
-                # If the target has a TPM, add a TPM-bound keyslot
-                # to the LUKS partition so subsequent boots can
-                # auto-unlock without a keyboard. Bound to PCR 7
-                # (UEFI Secure Boot state) so the seal is stable
-                # across kernel/grub updates. The original password
-                # keyslot stays as a fallback. Non-fatal — install
-                # proceeds even if enrollment is impossible (no TPM,
-                # no LUKS partition, etc).
-                luks_part=$(sudo lsblk -lno NAME,FSTYPE "$DISK" \
-                  | awk '$2 == "crypto_LUKS" { print "/dev/"$1; exit }')
-                if [ -z "$luks_part" ]; then
-                  echo "  no crypto_LUKS partition found on $DISK — skipping TPM enrollment"
-                  kdialog --sorry "Could not locate the LUKS partition on $DISK to enroll TPM2.\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
-                elif [ ! -e /dev/tpmrm0 ] && [ ! -e /dev/tpm0 ]; then
-                  echo "  no TPM device on this hardware — skipping TPM enrollment"
-                  kdialog --sorry "No TPM device detected (/dev/tpm{rm0,0} both missing).\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
-                else
-                  echo "  enrolling TPM on $luks_part (PCR 7)"
-                  if ! sudo systemd-cryptenroll \
-                        --unlock-key-file=/tmp/secret.key \
-                        --tpm2-device=auto \
-                        --tpm2-pcrs=7 \
-                        "$luks_part"; then
-                    echo "  TPM enrollment FAILED — continuing without TPM unlock"
-                    kdialog --error "TPM2 enrollment failed. Continuing install — you'll need a USB keyboard at boot. The original password keyslot still works." 2>/dev/null || true
-                  fi
-                fi
+                    step "Enrolling TPM2 as a LUKS keyslot (PCR 7) for $HOST"
+                    # If the target has a TPM, add a TPM-bound keyslot
+                    # to the LUKS partition so subsequent boots can
+                    # auto-unlock without a keyboard. Bound to PCR 7
+                    # (UEFI Secure Boot state) so the seal is stable
+                    # across kernel/grub updates. The original password
+                    # keyslot stays as a fallback. Non-fatal — install
+                    # proceeds even if enrollment is impossible (no TPM,
+                    # no LUKS partition, etc).
+                    luks_part=$(sudo lsblk -lno NAME,FSTYPE "$DISK" \
+                      | awk '$2 == "crypto_LUKS" { print "/dev/"$1; exit }')
+                    if [ -z "$luks_part" ]; then
+                      echo "  no crypto_LUKS partition found on $DISK — skipping TPM enrollment"
+                      kdialog --sorry "Could not locate the LUKS partition on $DISK to enroll TPM2.\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                    elif [ ! -e /dev/tpmrm0 ] && [ ! -e /dev/tpm0 ]; then
+                      echo "  no TPM device on this hardware — skipping TPM enrollment"
+                      kdialog --sorry "No TPM device detected (/dev/tpm{rm0,0} both missing).\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                    else
+                      echo "  enrolling TPM on $luks_part (PCR 7)"
+                      if ! sudo systemd-cryptenroll \
+                            --unlock-key-file=/tmp/secret.key \
+                            --tpm2-device=auto \
+                            --tpm2-pcrs=7 \
+                            "$luks_part"; then
+                        echo "  TPM enrollment FAILED — continuing without TPM unlock"
+                        kdialog --error "TPM2 enrollment failed. Continuing install — you'll need a USB keyboard at boot. The original password keyslot still works." 2>/dev/null || true
+                      fi
+                    fi
+                    ;;
+
+                  resume)
+                    step "Mounting existing LUKS + btrfs layout for $HOST (no format)"
+                    # Just mount per the disko config, no format. LUKS
+                    # opens via /tmp/secret.key (the existing password
+                    # the user typed above). TPM keyslot stays as-is.
+                    retry_loop "disko mount" sudo disko \
+                      --mode mount \
+                      --flake ".#$HOST"
+                    rc=$?
+                    [ "$rc" = 1 ] && exit 0  # user aborted
+                    ;;
+                esac
 
                 step "Running nixos-install (substitutes directly to /mnt)"
                 # `--root /mnt` makes nixos-install pass `--store
