@@ -22,6 +22,14 @@
       then prev.direnv.overrideAttrs (_: { doCheck = false; })
       else prev.direnv;
 
+    # openldap's `test018-syncreplication-persist` is timing-sensitive
+    # (provider/consumer replication with 5/7/7-second sleeps) and flakes
+    # under I/O pressure — most visible during nixos-install on
+    # resource-constrained targets like the Steam Deck. Known issue:
+    # NixOS/nixpkgs#372569. We don't ship an openldap server, only client
+    # libs pulled in transitively, so skipping the test suite is safe.
+    openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
+
     # Re-sign fish after build on Darwin.
     # Nix's fixup phase runs install_name_tool to rewrite library paths, which
     # invalidates the original code signature. Corporate AV tools then SIGKILL
