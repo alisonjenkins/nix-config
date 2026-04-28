@@ -75,6 +75,60 @@ in
               # always knows what the script is doing.
               step() { echo; echo "==> $*"; echo; }
 
+              # Run "$@" in a loop; on non-zero exit, ask the user
+              # what to do via kdialog instead of letting the ERR
+              # trap blow the script away. Returns:
+              #   0 — command succeeded (eventually)
+              #   1 — user chose abort
+              #   2 — user chose pull-redisko (caller restarts from
+              #       disko)
+              # `set +e` round the actual command suppresses the
+              # script-wide ERR trap — we WANT to handle failure
+              # locally here.
+              retry_loop() {
+                local label="$1"
+                shift
+                while true; do
+                  set +e
+                  "$@"
+                  local rc=$?
+                  set -e
+                  if [ "$rc" -eq 0 ]; then
+                    return 0
+                  fi
+                  echo
+                  echo "==> $label failed (exit $rc) — prompting user for next action"
+                  local choice
+                  choice=$(kdialog --title "$label failed (exit $rc)" \
+                    --menu "What now?" \
+                    retry        "Retry as-is (best for transient network/DNS errors)" \
+                    pull         "git pull origin then retry (config fix already pushed)" \
+                    pull-redisko "git pull then re-format AND retry (DESTROYS partial install)" \
+                    abort        "Abort install-nixos") || return 1
+                  case "$choice" in
+                    retry) ;;
+                    pull)
+                      local git_out
+                      if ! git_out=$(git -C "$REPO" pull --ff-only 2>&1); then
+                        kdialog --error "git pull failed:\n\n$git_out"
+                      else
+                        kdialog --passivepopup "$git_out" 5
+                      fi
+                      ;;
+                    pull-redisko)
+                      local git_out
+                      if ! git_out=$(git -C "$REPO" pull --ff-only 2>&1); then
+                        kdialog --error "git pull failed:\n\n$git_out"
+                        continue
+                      fi
+                      kdialog --passivepopup "$git_out" 5
+                      return 2
+                      ;;
+                    abort) return 1 ;;
+                  esac
+                done
+              }
+
               echo "==================================================="
               echo " install-nixos starting at $(date -Iseconds)"
               echo " log file: $LOG"
@@ -279,22 +333,36 @@ in
               step "Disk usage before format + install"
               df -h
 
-              step "Running disko (format + mount $DISK)"
-              sudo disko \
-                --mode destroy,format,mount \
-                --yes-wipe-all-disks \
-                --flake ".#$HOST"
+              # Outer loop: handles "pull-redisko" by restarting
+              # from disko. Inner retry_loop handles transient
+              # failures (DNS, substituter timeouts, etc.) without
+              # losing partial install progress on /mnt.
+              while true; do
+                step "Running disko (format + mount $DISK)"
+                retry_loop "disko" sudo disko \
+                  --mode destroy,format,mount \
+                  --yes-wipe-all-disks \
+                  --flake ".#$HOST"
+                rc=$?
+                [ "$rc" = 1 ] && exit 0  # user aborted
 
-              step "Running nixos-install (substitutes directly to /mnt)"
-              # `--root /mnt` makes nixos-install pass `--store /mnt`
-              # to nix build, so the closure substitutes straight to
-              # the target's btrfs nix store. The live tmpfs nix
-              # store stays nearly empty — no memory pressure, no
-              # systemd-oomd kill.
-              sudo nixos-install \
-                --flake ".#$HOST" \
-                --no-root-passwd \
-                --root /mnt
+                step "Running nixos-install (substitutes directly to /mnt)"
+                # `--root /mnt` makes nixos-install pass `--store
+                # /mnt` to nix build, so the closure substitutes
+                # straight to the target's btrfs nix store. The
+                # live tmpfs nix store stays nearly empty — no
+                # memory pressure, no systemd-oomd kill.
+                retry_loop "nixos-install" sudo nixos-install \
+                  --flake ".#$HOST" \
+                  --no-root-passwd \
+                  --root /mnt
+                rc=$?
+                case "$rc" in
+                  0) break ;;     # success
+                  1) exit 0 ;;    # user aborted
+                  2) continue ;;  # pull-redisko: re-run disko + install
+                esac
+              done
 
               echo
               echo "=========================================="
