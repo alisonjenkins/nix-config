@@ -31,6 +31,17 @@
                   keyFile = "/tmp/secret.key";
                   allowDiscards = true;
                 };
+                # Match SSD physical sector size (4 KiB) so
+                # cryptsetup doesn't process 8x more blocks per
+                # 4 KiB I/O. ~5-15% throughput improvement on
+                # NVMe. Must be set at format time. Lives at the
+                # disko LUKS top level (not inside `settings`,
+                # which is verbatim-forwarded to NixOS's
+                # `boot.initrd.luks.devices.<name>`).
+                extraFormatArgs = [
+                  "--sector-size"
+                  "4096"
+                ];
                 content = {
                   type = "btrfs";
                   extraArgs = [ "-f" "-L" "crypted" ];

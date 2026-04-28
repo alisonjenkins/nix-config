@@ -96,6 +96,12 @@ in {
         boot.initrd.availableKernelModules = [ "tpm_crb" ];
         boot.initrd.luks.devices."crypted".crypttabExtraOpts = [
           "tpm2-device=auto"
+          # Bypass kernel workqueues for dm-crypt — significant
+          # NVMe I/O improvement on a CPU with hardware AES (Zen 2
+          # has AES-NI, so the actual crypto is near-free; the
+          # workqueue latency was dominating).
+          "no-read-workqueue"
+          "no-write-workqueue"
         ];
 
         # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa
