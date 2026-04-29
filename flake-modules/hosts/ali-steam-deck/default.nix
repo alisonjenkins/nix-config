@@ -23,6 +23,7 @@ in {
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.locale
+      self.nixosModules.luks-controller-unlock
 
       # External flake modules
       inputs.disko.nixosModules.disko
@@ -114,6 +115,18 @@ in {
           "no-read-workqueue"
           "no-write-workqueue"
         ];
+
+        # Game-controller fallback unlock. TPM2 is tried first and
+        # silently unseals 99% of boots. The agent only draws when
+        # systemd-cryptsetup falls through to ask-password — typically
+        # after a Secure Boot / firmware change invalidates the PCR
+        # binding. Keyboard passphrase keyslot remains the ultimate
+        # fallback (intentionally NOT masking the console agent until
+        # a week of clean reboots — see TESTING.md rung 5.3).
+        modules.luks-controller-unlock = {
+          enable = true;
+          maskConsoleAgent = false;
+        };
 
         # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa
         hardware.graphics.package = lib.mkForce pkgs.mesa;

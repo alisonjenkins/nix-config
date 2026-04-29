@@ -27,6 +27,12 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
+    luks-controller-unlock = {
+      # Local checkout while the project is still pre-release. Switch
+      # to `github:alisonjenkins/luks-controller-unlock` once pushed.
+      url = "git+file:///home/ali/git/personal/luks-controller-unlock";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-cachyos-kernel = {
       # Pinned to CachyOS 7.0.1 rev. Earlier belief that CachyOS 7 had a
       # dm-crypt EINVAL regression was wrong — the real cause was
