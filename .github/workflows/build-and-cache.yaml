@@ -148,7 +148,7 @@ jobs:
 
   # Heavy x86_64 desktop/laptop builds — self-hosted runner with nix
   build-desktops:
-    runs-on: aws-nix-builder-amd64
+    runs-on: home-nix-builder-amd64
     timeout-minutes: 1440
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
@@ -235,10 +235,12 @@ jobs:
           fi
 
   # aarch64-linux builds — self-hosted ARM runner with nix
+  # Disabled: ARM runner offline pending re-enable on aws-k3s.
+  # Restore by removing `if: false &&` below.
   build-arm64:
     runs-on: aws-nix-builder-arm64
     timeout-minutes: 1440
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ false && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') }}
     permissions:
       contents: read
       actions: read

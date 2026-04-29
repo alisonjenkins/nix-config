@@ -504,9 +504,11 @@ jobs:
 
   # ARM (aarch64) AMI builds — native Graviton runners (no cross-compilation).
   # Uses systemd-repart which doesn't need KVM, so standard (non-metal) instances work.
+  # Disabled: ARM runner offline pending re-enable on aws-k3s.
+  # Restore by removing `false &&` below.
   build-arm:
     needs: prepare
-    if: needs.prepare.outputs.arm_matrix != '[]'
+    if: ${{ false && needs.prepare.outputs.arm_matrix != '[]' }}
     runs-on: aws-nix-builder-arm64
     timeout-minutes: 360
     strategy:
