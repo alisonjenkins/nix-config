@@ -64,6 +64,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ts-desktop ali-desktop 100.127.142.30
+          HostName ali-desktop.tail476348.ts.net
+          User ali
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host download-server-1
           HostName download-server-1.lan
           IdentitiesOnly yes
