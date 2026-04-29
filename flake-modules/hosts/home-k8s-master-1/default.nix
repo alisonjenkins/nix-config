@@ -87,6 +87,8 @@ in {
               "--disable=servicelb"
               "--flannel-backend=none"
               "--service-cidr=10.43.0.0/16"
+              "--tls-san=home-k8s-master-1.tail476348.ts.net"
+              "--tls-san=100.87.232.102"
               "--write-kubeconfig-mode \"0400\""
               # "--disable servicelb"
               # "--disable traefik"
