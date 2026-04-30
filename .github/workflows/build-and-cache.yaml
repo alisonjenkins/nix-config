@@ -182,7 +182,7 @@ jobs:
         id: dry-run
         run: |
           needs_build=false
-          for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
+          for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
             if dry_output=$(nix build --dry-run ".#nixosConfigurations.${cfg}.config.system.build.toplevel" 2>&1); then
               if echo "$dry_output" | grep -q 'will be built:'; then
                 needs_build=true
@@ -212,7 +212,7 @@ jobs:
           # Build each config sequentially, appending output paths to queue
           set +e
           any_failed=false
-          for cfg in ali-desktop ali-framework-laptop ali-work-laptop; do
+          for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
             echo "=== Building $cfg ==="
             if nix build -L --keep-going --print-out-paths --no-link \
               ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
