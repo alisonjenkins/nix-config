@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      force_push:
+        description: >-
+          Push closures to niks3 even when the dry-run says everything is
+          cached. Use this to repopulate the remote cache after the
+          self-hosted runners' persistent /nix/store has built paths that
+          never made it to niks3.
+        type: boolean
+        default: false
   workflow_run:
     workflows: ["Update and push flake lock"]
     types:
@@ -199,18 +208,24 @@ jobs:
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
 
       - name: Install niks3
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
 
-          # Build each config sequentially, appending output paths to queue
+          # Build each config sequentially, appending output paths to queue.
+          # When force_push is set, the dry-run gate is bypassed, but `nix
+          # build` is still near-instant for paths already in the local
+          # store; --print-out-paths emits the toplevel paths into the
+          # queue, and the drainer expands them via `nix path-info
+          # --recursive` before pushing. niks3 server-side dedup skips paths
+          # already present in the remote cache.
           set +e
           any_failed=false
           for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
@@ -287,18 +302,19 @@ jobs:
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
 
       - name: Install niks3
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
 
-          # Build each config sequentially, appending output paths to queue
+          # Build each config sequentially, appending output paths to queue.
+          # See build-desktops above for force_push semantics.
           set +e
           any_failed=false
           for cfg in dev-vm; do
