@@ -8,10 +8,11 @@ on:
     inputs:
       force_push:
         description: >-
-          Push closures to niks3 even when the dry-run says everything is
-          cached. Use this to repopulate the remote cache after the
-          self-hosted runners' persistent /nix/store has built paths that
-          never made it to niks3.
+          Repopulate the remote niks3 cache from the runner's persistent
+          /nix/store. Enumerates each toplevel's closure with
+          `nix path-info --recursive` and pipes it to `niks3 push`. The
+          dry-run gate still controls whether the build runs; this only
+          adds the closure-push step.
         type: boolean
         default: false
   workflow_run:
@@ -212,7 +213,7 @@ jobs:
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
+        if: steps.dry-run.outputs.needs_build == 'true'
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
@@ -220,12 +221,8 @@ jobs:
           niks3_start_drainer
 
           # Build each config sequentially, appending output paths to queue.
-          # When force_push is set, the dry-run gate is bypassed, but `nix
-          # build` is still near-instant for paths already in the local
-          # store; --print-out-paths emits the toplevel paths into the
-          # queue, and the drainer expands them via `nix path-info
-          # --recursive` before pushing. niks3 server-side dedup skips paths
-          # already present in the remote cache.
+          # The drainer expands them via `nix path-info --recursive` before
+          # pushing.
           set +e
           any_failed=false
           for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
@@ -247,6 +244,40 @@ jobs:
             echo "::group::Full nix build stderr log"
             cat /tmp/nix-build-stderr.log 2>/dev/null || true
             echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Force-push toplevel closures from local store
+        # When force_push is set, repopulate the remote niks3 cache from
+        # paths already in the runner's persistent /nix/store, even if the
+        # dry-run skipped the build above. niks3 server-side dedup skips
+        # paths already present remotely, so this is cheap when the cache
+        # is in sync.
+        if: inputs.force_push == true
+        env:
+          NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
+        run: |
+          set +e
+          any_failed=false
+          for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
+            echo "=== Force-pushing closure for $cfg ==="
+            if nix path-info --recursive \
+                 ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
+                 2>/dev/null \
+               | sort -u \
+               | xargs -r niks3 push \
+                   --server-url "$NIKS3_SERVER_URL" \
+                   --max-concurrent-uploads 10 \
+                   --auth-token "$NIKS3_TOKEN"; then
+              echo "=== $cfg pushed ==="
+            else
+              echo "::warning::$cfg force-push failed"
+              any_failed=true
+            fi
+          done
+          set -e
+
+          if [ "$any_failed" = true ]; then
             exit 1
           fi
 
@@ -306,7 +337,7 @@ jobs:
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
+        if: steps.dry-run.outputs.needs_build == 'true'
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
@@ -314,7 +345,6 @@ jobs:
           niks3_start_drainer
 
           # Build each config sequentially, appending output paths to queue.
-          # See build-desktops above for force_push semantics.
           set +e
           any_failed=false
           for cfg in dev-vm; do
@@ -336,5 +366,35 @@ jobs:
             echo "::group::Full nix build stderr log"
             cat /tmp/nix-build-stderr.log 2>/dev/null || true
             echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Force-push toplevel closures from local store
+        # See build-desktops above for force_push semantics.
+        if: inputs.force_push == true
+        env:
+          NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
+        run: |
+          set +e
+          any_failed=false
+          for cfg in dev-vm; do
+            echo "=== Force-pushing closure for $cfg ==="
+            if nix path-info --recursive \
+                 ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
+                 2>/dev/null \
+               | sort -u \
+               | xargs -r niks3 push \
+                   --server-url "$NIKS3_SERVER_URL" \
+                   --max-concurrent-uploads 10 \
+                   --auth-token "$NIKS3_TOKEN"; then
+              echo "=== $cfg pushed ==="
+            else
+              echo "::warning::$cfg force-push failed"
+              any_failed=true
+            fi
+          done
+          set -e
+
+          if [ "$any_failed" = true ]; then
             exit 1
           fi
