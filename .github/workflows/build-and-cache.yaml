@@ -8,11 +8,12 @@ on:
     inputs:
       force_push:
         description: >-
-          Repopulate the remote niks3 cache from the runner's persistent
-          /nix/store. Enumerates each toplevel's closure with
-          `nix path-info --recursive` and pipes it to `niks3 push`. The
-          dry-run gate still controls whether the build runs; this only
-          adds the closure-push step.
+          Bypass the dry-run gate. Always runs the build step (a no-op
+          when paths are already in the runner's persistent /nix/store)
+          and adds an extra closure-push step that enumerates each
+          toplevel with `nix path-info --recursive` and pipes it to
+          `niks3 push`. Use this to repopulate the remote niks3 cache
+          from the runner's local store.
         type: boolean
         default: false
   workflow_run:
@@ -213,7 +214,7 @@ jobs:
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
@@ -337,7 +338,7 @@ jobs:
         run: .github/scripts/install-niks3.sh
 
       - name: Build and push to cache
-        if: steps.dry-run.outputs.needs_build == 'true'
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
