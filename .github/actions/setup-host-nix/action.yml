@@ -33,8 +33,11 @@ runs:
         mkdir -p /tmp/nix-conf
         cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
         experimental-features = nix-command flakes
-        max-jobs = auto
-        cores = 0
+        # Bound parallelism so heavy desktop closure rebuilds don't OOM the
+        # k3s control-plane node hosting this runner. Total compiler procs
+        # capped at max-jobs * cores = 1 * 4 = 4.
+        max-jobs = 1
+        cores = 4
         eval-cache = true
         http-connections = 128
         max-substitution-jobs = 128
