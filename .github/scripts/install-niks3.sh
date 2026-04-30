@@ -15,4 +15,4 @@ echo "Installing niks3 ${NIKS3_VERSION} for ${NIKS3_ARCH}..."
 curl -fsSL "https://github.com/Mic92/niks3/releases/download/${NIKS3_VERSION}/niks3_Linux_${NIKS3_ARCH}.tar.gz" \
   | sudo tar xz -C /usr/local/bin niks3
 sudo chmod +x /usr/local/bin/niks3
-echo "Installed: $(niks3 --version 2>&1 || echo niks3)"
+echo "Installed: $(command -v niks3)"

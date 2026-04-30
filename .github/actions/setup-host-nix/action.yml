@@ -47,4 +47,4 @@ runs:
         NIXCONF
         sed -i 's/^        //' /tmp/nix-conf/nix.conf
 
-        echo "Using host Nix: $(nix --version)"
+        echo "Using host Nix: $("$NIX_SW/nix" --version)"
