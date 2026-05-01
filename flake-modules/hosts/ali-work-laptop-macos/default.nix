@@ -353,6 +353,11 @@ in {
             reattach = true;
             touchIdAuth = true;
           };
+
+          # Lets the Hammerspoon menu-bar sleep-toggle flip pmset without prompting.
+          sudo.extraConfig = ''
+            ${username} ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
+          '';
         };
 
         services = {
