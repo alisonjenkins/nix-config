@@ -159,7 +159,7 @@
         };
 
         trace = {
-          shortCut = "Shift-A";
+          shortCut = "Ctrl-T";
           confirm = false;
           description = "Flux trace";
           scopes = [
