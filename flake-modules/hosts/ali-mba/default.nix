@@ -395,6 +395,23 @@ in {
         };
       })
 
+      inputs.sops-nix.darwinModules.sops
+      self.darwinModules.niks3-cache-push
+      ({ config, ... }: {
+        sops = {
+          age.keyFile = "/var/lib/sops-nix/key.txt";
+          secrets.niks3-token = {
+            sopsFile = self + "/secrets/niks3-token.enc.yaml";
+            key = "niks3_token";
+          };
+        };
+
+        modules.niks3CachePush = {
+          enable = true;
+          authTokenFile = config.sops.secrets.niks3-token.path;
+        };
+      })
+
       inputs.home-manager.darwinModules.home-manager
       {
         # Use timestamp-based backups to prevent conflicts

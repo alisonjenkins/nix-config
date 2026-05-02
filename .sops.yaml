@@ -2,55 +2,57 @@ keys:
   - &admin_ali age1rne0eqj5jfqahm5s5mmp3u0v97xm0lvwm2ghtjlv4p7m0l78tq5stgjtu4
   - &ali_personal age1efmxs2w78yw0knq7hvzxjsanphqgrx2mj5p5grkye590yq4rjexs5zvvzg
   - &server_ali-desktop age1enyaj2wdty5kpu8n2tfx2eswww7743ewxf7ykfmsdaqz0w5f4dqqx54eps
+  - &server_ali-work-laptop age1nupldhcp9judxvzt7ytdzdq3pph58kuucd4kln3m8ez5fc74l9kqdg3weq
   - &server_download-server-1 age1dket3z3j325e0vt3ynwaxxzume9sv0qcphvumaqk2ew7htmd93us4tncsw
   - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
-  - &server_ali-work-laptop age1nupldhcp9judxvzt7ytdzdq3pph58kuucd4kln3m8ez5fc74l9kqdg3weq
   - &server_home-storage-server-1 age1qs58x4rqva0s5mkwx0dul2akfnrwvarjkt2x75qtaz0g3mhzpezssj0wmx
+  - &server_ali-mba age1ltrjsdrf5wpdee7ate44perh0y4xz7dm2mhtsf2jad2mgcrrdg2q0rl6ev
 creation_rules:
   - path_regex: ^secrets/niks3-token\.enc\.yaml$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_ali-desktop
-      - *server_ali-work-laptop
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_ali-desktop
+          - *server_ali-work-laptop
+          - *server_ali-mba
   - path_regex: ^secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
+      - age:
+          - *admin_ali
+          - *ali_personal
   - path_regex: ^secrets/ali-desktop/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_ali-desktop
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_ali-desktop
   - path_regex: ^secrets/ali-framework-laptop/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
+      - age:
+          - *admin_ali
+          - *ali_personal
   - path_regex: ^secrets/ali-work-laptop/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_ali-work-laptop
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_ali-work-laptop
   - path_regex: ^secrets/home-k8s-master-1/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_home-k8s-master-1
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_home-k8s-master-1
   - path_regex: ^flake-modules/hosts/home-storage-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_home-storage-server-1
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_home-storage-server-1
   - path_regex: ^flake-modules/hosts/download-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
-    - age:
-      - *admin_ali
-      - *ali_personal
-      - *server_download-server-1
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_download-server-1
