@@ -238,7 +238,7 @@ in {
             "obs"
             "obsidian"
             "ollama-app"
-            "powershell"
+            "powershell@preview"
             "rectangle"
             "rio"
             "scribus"
