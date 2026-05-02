@@ -157,4 +157,29 @@
     };
     v106Filename = "supplylines-mc1.20.1-1.3.0-beta.2.jar";
   }
+  {
+    # minecoloniestransitnetworks: v1.05 -> v1.06
+    # Required upgrade — v0.1.17's mixin @Shadow on `wantedPosition`
+    # fails against MineColonies 1.1.1161 (field renamed/removed),
+    # crashing the server on boot. Originally missed by the diff
+    # script because the v1.05 filename contains a space + "(1)"
+    # which broke awk word-splitting on the unzip listing.
+    v105Filename = "minecoloniestransitnetworks-0.1.17-1.20.1-alpha (1).jar";
+    v106Jar = fetchurl {
+      url = "https://mediafilez.forgecdn.net/files/7420/165/minecoloniestransitnetworks-0.2.0-1.20.1-alpha.jar";
+      sha256 = "0axvl0nwcymbib1dyhk648b1wlpkkdy984igg8cia8ynv50xjfw0";
+    };
+    v106Filename = "minecoloniestransitnetworks-0.2.0-1.20.1-alpha.jar";
+  }
+  {
+    # JEI Tetra: v1.05 -> v1.06 (-fix suffix). Same version number,
+    # bugfix-only release per the publisher.
+    v105Filename = "JEI Tetra-6.9.0-1.2.0.jar";
+    v106Jar = fetchurl {
+      url = "https://mediafilez.forgecdn.net/files/7406/647/JEI%20Tetra-6.9.0-1.2.0-fix.jar";
+      name = "JEI-Tetra-6.9.0-1.2.0-fix.jar";
+      sha256 = "0p32firi4vrxavl27w3x7aajm6zbvl6wak4fr73iwmz6hi5j516y";
+    };
+    v106Filename = "JEI Tetra-6.9.0-1.2.0-fix.jar";
+  }
 ]
