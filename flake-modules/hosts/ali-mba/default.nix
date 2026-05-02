@@ -231,6 +231,7 @@ in {
             "obsidian"
             "ollama-app"
             "powershell@preview"
+            "prismlauncher"
             "rectangle"
             "rio"
             "scribus"
