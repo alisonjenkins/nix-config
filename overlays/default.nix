@@ -61,10 +61,23 @@ in
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code;
 
-    # Disable direnv fish test on Darwin — fish test-fish target gets SIGKILL'd in macOS sandbox
+    # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
+    # in the sandbox, and the zsh test target hangs at 0% CPU indefinitely.
+    # direnv runs its shell tests in installCheckPhase, so doCheck alone
+    # isn't enough — also disable installCheck.
     direnv = if prev.stdenv.hostPlatform.isDarwin
-      then prev.direnv.overrideAttrs (_: { doCheck = false; })
+      then prev.direnv.overrideAttrs (_: {
+        doCheck = false;
+        doInstallCheck = false;
+        installCheckPhase = "true";
+      })
       else prev.direnv;
+
+    # zsh's test suite hangs on Darwin (TTY-related tests sit at 0% CPU
+    # indefinitely in the Nix sandbox, blocking the rest of the build).
+    zsh = if prev.stdenv.hostPlatform.isDarwin
+      then prev.zsh.overrideAttrs (_: { doCheck = false; })
+      else prev.zsh;
 
     # openldap flaky syncreplication tests: consumers like lutris call
     # `openldap.override { withCyrus = true; }` which re-runs the package
@@ -87,6 +100,36 @@ in
           nativeCheckInputs = [];
         });
       })
+      # av's check phases SIGKILL on Darwin: Nix's fixup phase
+      # install_name_tool's the .so extension modules and the ffmpeg
+      # dylibs they dlopen, invalidating signatures. Re-signing only av's
+      # own .so files isn't enough — the transitive ffmpeg load still
+      # gets killed inside the sandbox during both pythonImportsCheck
+      # and pytest checkPhase. The kill cascades up the chain: any
+      # downstream package whose tests transitively `import av` (imageio,
+      # scikit-image, plotly, igraph) hits the same SIGKILL during pytest
+      # collection. Re-sign av defensively for runtime, and skip checks
+      # for the whole chain since none can pass in the sandbox.
+      # Pulled in via checkov → igraph → plotly → scikit-image → imageio → av.
+      (python-final: python-prev:
+        let
+          skipChecks = pkg: pkg.overridePythonAttrs (_: {
+            doCheck = false;
+            dontCheck = true;
+            pythonImportsCheck = [];
+            dontUsePythonImportsCheck = true;
+          });
+        in prev.lib.optionalAttrs prev.stdenv.hostPlatform.isDarwin {
+          av = (skipChecks python-prev.av).overridePythonAttrs (old: {
+            postFixup = (old.postFixup or "") + ''
+              find $out -name "*.so" -exec /usr/bin/codesign --force --sign - {} \;
+            '';
+          });
+          imageio = skipChecks python-prev.imageio;
+          scikit-image = skipChecks python-prev.scikit-image;
+          plotly = skipChecks python-prev.plotly;
+          igraph = skipChecks python-prev.igraph;
+        })
     ];
 
     # Re-sign fish after build on Darwin.
@@ -124,7 +167,38 @@ in
     unstable = import inputs.nixpkgs_unstable {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
-      overlays = [ openldapOverlay ];
+      overlays = [
+        openldapOverlay
+        (mfinal: mprev: {
+          # Re-sign av's .so files on Darwin and skip checks for the
+          # whole av-importing chain. install_name_tool invalidates
+          # signatures during fixup, and the ffmpeg dylibs av dlopens are
+          # also patched, so any pytest in this chain SIGKILLs at
+          # collection time when it imports av. Re-signing av is kept as
+          # a defensive measure for runtime use.
+          pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
+            (python-final: python-prev:
+              let
+                skipChecks = pkg: pkg.overridePythonAttrs (_: {
+                  doCheck = false;
+                  dontCheck = true;
+                  pythonImportsCheck = [];
+                  dontUsePythonImportsCheck = true;
+                });
+              in mprev.lib.optionalAttrs mprev.stdenv.hostPlatform.isDarwin {
+                av = (skipChecks python-prev.av).overridePythonAttrs (old: {
+                  postFixup = (old.postFixup or "") + ''
+                    find $out -name "*.so" -exec /usr/bin/codesign --force --sign - {} \;
+                  '';
+                });
+                imageio = skipChecks python-prev.imageio;
+                scikit-image = skipChecks python-prev.scikit-image;
+                plotly = skipChecks python-prev.plotly;
+                igraph = skipChecks python-prev.igraph;
+              })
+          ];
+        })
+      ];
     };
   };
 
