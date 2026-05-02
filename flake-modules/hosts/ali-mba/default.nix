@@ -400,6 +400,8 @@ in {
       ({ config, ... }: {
         sops = {
           age.keyFile = "/var/lib/sops-nix/key.txt";
+          age.sshKeyPaths = [ ];
+          gnupg.sshKeyPaths = [ ];
           secrets.niks3-token = {
             sopsFile = self + "/secrets/niks3-token.enc.yaml";
             key = "niks3_token";
