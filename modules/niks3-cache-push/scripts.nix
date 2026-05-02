@@ -5,8 +5,10 @@ rec {
   processingFile = "${queueDir}/processing";
 
   postBuildHook = pkgs.writeShellScript "niks3-queue-hook" ''
-    set -euf
-    echo "$OUT_PATHS" >> ${queueFile}
+    # Best-effort: never fail a build because we couldn't queue.
+    mkdir -p ${queueDir} 2>/dev/null || exit 0
+    printf '%s\n' "$OUT_PATHS" >> ${queueFile} 2>/dev/null || exit 0
+    exit 0
   '';
 
   drainScript = pkgs.writeShellScript "niks3-drain" ''
