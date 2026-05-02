@@ -18,7 +18,7 @@ rec {
 
     AUTH_TOKEN="$(cat "${cfg.authTokenFile}")"
 
-    cat "$PROCESSING" | xargs -r ${lib.getExe niks3} push \
+    cat "$PROCESSING" | xargs -r ${lib.getExe' niks3 "niks3"} push \
       --server-url "${cfg.serverUrl}" \
       --max-concurrent-uploads ${toString cfg.maxConcurrentUploads} \
       --auth-token "$AUTH_TOKEN"
