@@ -279,35 +279,43 @@ in {
             #automatic = true;
           #};
 
-          # run: "nix run 'nixpkgs#darwin.linux-builder'" before enabling
-          # linux-builder = {
-          #   enable = true;
-          #   ephemeral = false;
-          #   maxJobs = 4;
-          #   package = pkgs.darwin.linux-builder;
-          #
-          #   config = {
-          #     virtualisation = {
-          #       darwin-builder = {
-          #         diskSize = 200 * 1024;
-          #         memorySize = 8 * 1024;
-          #       };
-          #       cores = 8;
-          #     };
-          #   };
-          # };
+          linux-builder = {
+            enable = true;
+            ephemeral = false;
+            maxJobs = 4;
+            # Outer claim — both arches reachable via this builder.
+            # Inner binfmt below provides x86_64 emulation; aarch64 is native.
+            systems = [ "aarch64-linux" "x86_64-linux" ];
+
+            config = {
+              # The `systems` option above only sets the outer
+              # buildMachines declaration — qemu binfmt inside the VM
+              # has to be configured explicitly to actually run x86_64
+              # derivations.
+              boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
+
+              virtualisation = {
+                darwin-builder = {
+                  diskSize = 200 * 1024;
+                  # 12 GB so multi-mod Minecraft / 700 MB OCI tree builds don't OOM.
+                  memorySize = 12 * 1024;
+                };
+                cores = 8;
+              };
+            };
+          };
 
           # optimise = {
           #   enable = true;
           # };
 
           settings = {
-            builders = "ssh-ng://builder@linux-builder aarch64-linux /etc/nix/builder_ed25519 11 - - - c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUpCV2N4Yi9CbGFxdDFhdU90RStGOFFVV3JVb3RpQzVxQkorVXVFV2RWQ2Igcm9vdEBuaXhvcwo=";
+            # nix.linux-builder auto-populates `builders` and `extra-platforms`,
+            # so we only set the rest of nix.conf here.
             builders-use-substitutes = true;
             download-buffer-size = 256 * 1024 * 1024; # 256 MiB — prevents buffer-full warnings on large fetches
             experimental-features = "nix-command flakes";
             extra-trusted-users = "${username}";
-            extra-platforms = "x86_64-linux";
             substituters = [
               "https://cache.nixcache.org"
               "https://cache.nixos.org"
