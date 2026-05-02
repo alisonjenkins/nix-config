@@ -1,25 +1,15 @@
 { inputs, ... }: {
-  perSystem = { system, ... }: {
-    devShells.default =
-      let
-        sysPkgs = import inputs.nixpkgs {
-          inherit system;
-          config = {
-            allowUnfree = true;
-          };
-        };
-        buildInputs = with sysPkgs; [
-          deploy-rs
-          just
-          libsecret
-          nix-fast-build
-          nixos-anywhere
-          pv
-          uplosi
-        ];
-      in
-      sysPkgs.mkShell {
-        inherit buildInputs;
-      };
+  perSystem = { system, pkgs, ... }: {
+    devShells.default = pkgs.mkShellNoCC {
+      packages = with inputs.nixpkgs.legacyPackages.${system}; [
+        deploy-rs
+        just
+        libsecret
+        nix-fast-build
+        nixos-anywhere
+        pv
+        uplosi
+      ];
+    };
   };
 }
