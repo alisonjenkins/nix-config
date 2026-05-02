@@ -12,8 +12,11 @@
       in
       pkgs.mkShellNoCC {
         packages = (with inputs.nixpkgs.legacyPackages.${system}; [
+          age
           just
           pv
+          sops
+          ssh-to-age
         ]) ++ [
           (lazy "deploy" "deploy-rs")
           (lazy "nix-fast-build" "nix-fast-build")
