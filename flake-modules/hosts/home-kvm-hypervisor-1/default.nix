@@ -44,6 +44,23 @@ in {
           prometheus.libvirtExporter.enable = true;
         };
 
+        # Silence mdadm warning: mdmon needs MAILADDR or PROGRAM set or it
+         # crashes. Local root mail is enough — we don't have an MTA configured.
+        boot.swraid.mdadmConf = ''
+          MAILADDR root
+        '';
+
+        # Upstream prometheus-libvirt-exporter (2.3.3) lacks meta.mainProgram
+        # in our pinned nixpkgs (already added in nixos-unstable HEAD). Local
+        # override silences the getExe warning until the next nixpkgs bump.
+        nixpkgs.overlays = [
+          (_final: prev: {
+            prometheus-libvirt-exporter = prev.prometheus-libvirt-exporter.overrideAttrs (old: {
+              meta = (old.meta or { }) // { mainProgram = "libvirt-exporter"; };
+            });
+          })
+        ];
+
         boot = {
           kernelPackages = pkgs.linuxPackages_latest;
 
