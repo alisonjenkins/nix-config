@@ -29,6 +29,12 @@ let
       contents = [
         pkgs.bashInteractive
         pkgs.coreutils
+        # grep + gawk are NOT in coreutils — entrypoint.sh uses grep
+        # to filter user_jvm_args.txt. Without these the JVM_TUNING
+        # array is empty and the server boots with default JVM flags
+        # (no G1 tuning, no metaspace cap, etc).
+        pkgs.gnugrep
+        pkgs.gawk
         pkgs.cacert
         # libstdc++ for spark profiler's async-profiler engine — without
         # it spark falls back to the JVM sampling profiler (less accurate
