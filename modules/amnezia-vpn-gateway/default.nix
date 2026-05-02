@@ -1095,6 +1095,7 @@ EOF
     systemd.targets.vpn-gateway = {
       description = "VPN Gateway Services";
       wants = [
+        "network-online.target"
         "amnezia-wg.service"
         "unbound-system.service"
         "unbound-vpn.service"
