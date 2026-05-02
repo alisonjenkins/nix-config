@@ -1,6 +1,8 @@
 { stdenvNoCC, stdenv, lib, fetchurl, unzip, bash }:
 let
-  version = "1.05";
+  # v1.05 server pack base + 17 mod-jar overlays from v1.06 client
+  # (publisher hasn't shipped a v1.06 server pack — see v106-overlays.nix).
+  version = "1.06";
 
   serverPack = fetchurl {
     url = "https://mediafilez.forgecdn.net/files/7413/402/CSC%20Server%20Pack-v1.05.zip";
@@ -10,6 +12,7 @@ let
 
   perfMods = import ./perf-mods.nix { inherit fetchurl; };
   jvmArgs = import ./jvm-args.nix;
+  v106Overlays = import ./v106-overlays.nix { inherit fetchurl; };
 
   eulaFile = builtins.toFile "eula.txt" "eula=true\n";
   jvmArgsFile = builtins.toFile "user_jvm_args.txt" jvmArgs;
@@ -63,6 +66,16 @@ stdenvNoCC.mkDerivation {
     # list handshake tolerates server-missing client-only mods).
     rm $out/mods/ImmediatelyFast-Forge-1.5.3+1.20.4.jar
     rm $out/mods/sodiumdynamiclights-forge-1.0.10-1.20.1.jar
+
+    # v1.06 mod-jar overlays — publisher hasn't shipped a v1.06 server
+    # pack yet, so we patch the v1.05 server tree in place with the
+    # v1.06 versions of the 17 mods that bumped (sourced from the
+    # v1.06 client pack manifest). Keeps client/server mod versions
+    # in sync for clients running v1.06.
+    ${lib.concatMapStrings (m: ''
+      rm -f "$out/mods/${m.v105Filename}"
+      install -m644 "${m.v106Jar}" "$out/mods/${m.v106Filename}"
+    '') v106Overlays}
 
     # Admin-tunable defaults (4-player target).
     chmod +w $out/server.properties
