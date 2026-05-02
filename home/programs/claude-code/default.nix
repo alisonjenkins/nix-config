@@ -11,6 +11,18 @@ let
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
 
+  # Cross-platform sound for the Notification hook (fires when Claude waits
+  # for user input). Bypasses the tmux/ghostty bell-propagation chain.
+  notifyBell = pkgs.writeShellScript "claude-notify-bell" (
+    if pkgs.stdenv.isDarwin then ''
+      ${pkgs.coreutils}/bin/nohup /usr/bin/afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &
+    '' else ''
+      ${pkgs.coreutils}/bin/nohup ${pkgs.pulseaudio}/bin/paplay \
+        ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/bell.oga \
+        >/dev/null 2>&1 &
+    ''
+  );
+
   # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
@@ -212,6 +224,20 @@ in
                   "Respond with ONLY one of: 'yes', 'no', or 'ask' followed by a brief reason if 'no' or 'ask'."
                 ];
                 timeout = 60;
+              }
+            ];
+          }
+        ];
+
+        # Audible bell when Claude waits for user input — works under tmux+ghostty
+        # where the terminal bell chain is suppressed.
+        Notification = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${notifyBell}";
+                timeout = 5;
               }
             ];
           }
