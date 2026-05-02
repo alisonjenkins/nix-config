@@ -1,5 +1,6 @@
 **/*.dec.*
 **/.claude
+**/.DS_Store
 **/.playwright-mcp
 **/*.qcow2
 **/result
