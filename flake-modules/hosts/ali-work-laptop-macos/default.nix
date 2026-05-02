@@ -369,6 +369,8 @@ in {
 
           primaryUser = "ajenkins";
 
+          startup.chime = false;
+
           defaults = {
             dock = {
               autohide = true;

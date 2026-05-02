@@ -361,6 +361,8 @@ in {
 
           primaryUser = "ali";
 
+          startup.chime = false;
+
           defaults = {
             dock = {
               autohide = true;
