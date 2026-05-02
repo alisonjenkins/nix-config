@@ -22,11 +22,12 @@ in
 
     backfillMaxConcurrentUploads = lib.mkOption {
       type = lib.types.int;
-      default = 64;
+      default = 4;
       description = ''
         Per-process concurrency for the one-shot niks3-backfill script.
-        Combined with NIKS3_BACKFILL_PROCS (default 4) gives effective
-        parallelism PROCS*JOBS.
+        Combined with NIKS3_BACKFILL_PROCS (default 1) gives effective
+        parallelism PROCS*JOBS. Kept below the niks3 server's 5 req/s
+        rate limit by default to avoid thrashing on 429s.
       '';
     };
 

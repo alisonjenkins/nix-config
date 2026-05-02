@@ -38,9 +38,9 @@ rec {
         exit 1
       fi
       AUTH_TOKEN="$(cat "${cfg.authTokenFile}")"
-      : "''${NIKS3_BACKFILL_PROCS:=4}"
+      : "''${NIKS3_BACKFILL_PROCS:=1}"
       : "''${NIKS3_BACKFILL_JOBS:=${toString cfg.backfillMaxConcurrentUploads}}"
-      : "''${NIKS3_BACKFILL_BATCH:=200}"
+      : "''${NIKS3_BACKFILL_BATCH:=500}"
 
       echo "Enumerating local store paths..." >&2
       TMP=$(mktemp)
