@@ -289,15 +289,28 @@ mc-build arch="":
     nix build ".#packages.$sys.minecraft-csc-image" --print-out-paths
 
 # Build BOTH arches and push as a multi-arch manifest.
-# Requires `crane` and a registry with creds in ~/.docker/config.json.
+# Requires `skopeo` (handles gzipped docker-archive) and `crane`
+# (for `index append`). Registry creds: ~/.docker/config.json or
+# the registry-specific env vars skopeo/crane support.
 # Usage: just mc-push ghcr.io/alisonjenkins/create-sky-colonies v1.05
 mc-push image tag:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if ! command -v crane &>/dev/null; then
-        echo "error: 'crane' not found. Install via 'nix shell nixpkgs#go-containerregistry'." >&2
-        exit 1
+    # Tools fetched via nix run so the recipe works without entering the
+    # dev shell. skopeo handles gzipped docker-archive; crane handles
+    # the multi-arch index assembly.
+    skopeo() { nix run nixpkgs#skopeo -- "$@"; }
+    crane() { nix run nixpkgs#go-containerregistry -- "$@"; }
+
+    # skopeo writes auth to ~/.config/containers/auth.json by default;
+    # crane reads ~/.docker/config.json. Bridge them by exposing skopeo's
+    # auth file as a docker config in a temp DOCKER_CONFIG dir so crane
+    # sees the registry credentials we just established.
+    if [ -f "$HOME/.config/containers/auth.json" ]; then
+        export DOCKER_CONFIG="$(mktemp -d)"
+        trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+        ln -s "$HOME/.config/containers/auth.json" "$DOCKER_CONFIG/config.json"
     fi
 
     echo "==> Building amd64 image"
@@ -308,9 +321,9 @@ mc-push image tag:
       '.#packages.aarch64-linux.minecraft-csc-image')
 
     echo "==> Pushing amd64 layer"
-    crane push "$amd64_tar" "{{image}}:{{tag}}-amd64"
+    skopeo --insecure-policy copy "docker-archive:$amd64_tar" "docker://{{image}}:{{tag}}-amd64"
     echo "==> Pushing arm64 layer"
-    crane push "$arm64_tar" "{{image}}:{{tag}}-arm64"
+    skopeo --insecure-policy copy "docker-archive:$arm64_tar" "docker://{{image}}:{{tag}}-arm64"
 
     echo "==> Creating multi-arch manifest"
     crane index append \

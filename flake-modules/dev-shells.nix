@@ -18,10 +18,12 @@
           sops
           ssh-to-age
         ]) ++ [
+          (lazy "crane" "go-containerregistry")
           (lazy "deploy" "deploy-rs")
           (lazy "nix-fast-build" "nix-fast-build")
           (lazy "nixos-anywhere" "nixos-anywhere")
           (lazy "secret-tool" "libsecret")
+          (lazy "skopeo" "skopeo")
           (lazy "uplosi" "uplosi")
         ];
       };
