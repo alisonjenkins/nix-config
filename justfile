@@ -271,6 +271,57 @@ iso hostname="installer-iso":
     nix build ".#nixosConfigurations.{{hostname}}.config.system.build.isoImage"
     ls -lh result/iso/
 
+# Build the Create Sky Colonies Minecraft server OCI image (single arch).
+# Defaults to host arch; pass "amd64" or "arm64" to cross-build.
+mc-build arch="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{arch}}" in
+        amd64|x86_64) sys="x86_64-linux" ;;
+        arm64|aarch64) sys="aarch64-linux" ;;
+        "") sys="$(nix eval --impure --raw --expr 'builtins.currentSystem')" ;;
+        *) echo "unknown arch: {{arch}} (use amd64|arm64)"; exit 1 ;;
+    esac
+    case "$sys" in
+        *-linux) ;;
+        *) echo "host system $sys cannot build linux containers without a remote linux builder"; exit 1 ;;
+    esac
+    nix build ".#packages.$sys.minecraft-csc-image" --print-out-paths
+
+# Build BOTH arches and push as a multi-arch manifest.
+# Requires `crane` and a registry with creds in ~/.docker/config.json.
+# Usage: just mc-push ghcr.io/alisonjenkins/create-sky-colonies v1.05
+mc-push image tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if ! command -v crane &>/dev/null; then
+        echo "error: 'crane' not found. Install via 'nix shell nixpkgs#go-containerregistry'." >&2
+        exit 1
+    fi
+
+    echo "==> Building amd64 image"
+    amd64_tar=$(nix build --no-link --print-out-paths \
+      '.#packages.x86_64-linux.minecraft-csc-image')
+    echo "==> Building arm64 image"
+    arm64_tar=$(nix build --no-link --print-out-paths \
+      '.#packages.aarch64-linux.minecraft-csc-image')
+
+    echo "==> Pushing amd64 layer"
+    crane push "$amd64_tar" "{{image}}:{{tag}}-amd64"
+    echo "==> Pushing arm64 layer"
+    crane push "$arm64_tar" "{{image}}:{{tag}}-arm64"
+
+    echo "==> Creating multi-arch manifest"
+    crane index append \
+        -m "{{image}}:{{tag}}-amd64" \
+        -m "{{image}}:{{tag}}-arm64" \
+        -t "{{image}}:{{tag}}"
+
+    echo ""
+    echo "Pushed: {{image}}:{{tag}}"
+    crane manifest "{{image}}:{{tag}}" | head -40
+
 alias b := boot
 alias B := build
 alias s := switch

@@ -24,4 +24,5 @@
   caveman = pkgs.callPackage ./caveman {};
   cavekit = pkgs.callPackage ./cavekit {};
   cavemem = pkgs.callPackage ./cavemem {};
+  create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
 }
