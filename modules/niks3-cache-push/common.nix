@@ -1,0 +1,43 @@
+{ config, lib, pkgs, inputs, ... }:
+let
+  cfg = config.modules.niks3CachePush;
+  niks3 = inputs.niks3.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  scripts = import ./scripts.nix { inherit pkgs lib cfg niks3; };
+in
+{
+  options.modules.niks3CachePush = {
+    enable = lib.mkEnableOption "queue-based niks3 binary cache push";
+
+    serverUrl = lib.mkOption {
+      type = lib.types.str;
+      default = "https://api.nixcache.org";
+      description = "niks3 server URL to push store paths to";
+    };
+
+    maxConcurrentUploads = lib.mkOption {
+      type = lib.types.int;
+      default = 10;
+      description = "Maximum number of concurrent uploads to the cache server (per-build drain).";
+    };
+
+    backfillMaxConcurrentUploads = lib.mkOption {
+      type = lib.types.int;
+      default = 64;
+      description = ''
+        Per-process concurrency for the one-shot niks3-backfill script.
+        Combined with NIKS3_BACKFILL_PROCS (default 4) gives effective
+        parallelism PROCS*JOBS.
+      '';
+    };
+
+    authTokenFile = lib.mkOption {
+      type = lib.types.path;
+      description = "Path to file containing the niks3 auth token";
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    nix.settings.post-build-hook = scripts.postBuildHook;
+    environment.systemPackages = [ scripts.backfillScript ];
+  };
+}
