@@ -13,12 +13,12 @@
       pkgs.mkShellNoCC {
         packages = (with inputs.nixpkgs.legacyPackages.${system}; [
           just
-          libsecret
           pv
         ]) ++ [
           (lazy "deploy" "deploy-rs")
           (lazy "nix-fast-build" "nix-fast-build")
           (lazy "nixos-anywhere" "nixos-anywhere")
+          (lazy "secret-tool" "libsecret")
           (lazy "uplosi" "uplosi")
         ];
       };
