@@ -20,8 +20,8 @@ let
     ];
   };
 
-  lspmuxPkg = inputs.ali-neovim.packages.${pkgs.system}.lspmux;
-  lspWrappers = inputs.ali-neovim.legacyPackages.${pkgs.system}.lspWrappers;
+  lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
+  lspWrappers = inputs.ali-neovim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.lspWrappers;
 
   # Helper: wrap a binary path with lspmux client
   mux = bin: {

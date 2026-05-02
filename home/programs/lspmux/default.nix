@@ -1,6 +1,6 @@
 { pkgs, inputs, lib, ... }:
 let
-  lspmux = inputs.ali-neovim.packages.${pkgs.system}.lspmux;
+  lspmux = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
 
   # Wrapper that exits 0 if the daemon is already running (port bound by Neovim)
   lspmuxStart = pkgs.writeShellScript "lspmux-start" ''
