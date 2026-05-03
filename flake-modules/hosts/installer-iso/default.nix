@@ -450,8 +450,13 @@ in
                     ) || enroll_choice=skip
                   if [ "$enroll_choice" = "enroll" ]; then
                     echo "  enrolling controller PIN on $luks_part"
-                    if ! sudo luks-controller-unlock enroll --device "$luks_part" \
-                          < /tmp/secret.key; then
+                    # /tmp/secret.key is root-owned 0600 (sudo tee
+                    # earlier), so a `< /tmp/secret.key` redirect after
+                    # sudo runs in the caller shell and fails with
+                    # permission denied. Pipe via `sudo cat` so the
+                    # read happens with root privileges.
+                    if ! sudo cat /tmp/secret.key \
+                          | sudo luks-controller-unlock enroll --device "$luks_part"; then
                       echo "  controller PIN enrollment FAILED — continuing"
                       kdialog --error "Controller PIN enrollment failed.\n\nContinuing install — use the Manage LUKS desktop launcher to retry, or run \`luks-controller-unlock enroll\` from the booted system. Your password keyslot is unchanged." 2>/dev/null || true
                     fi
@@ -681,7 +686,10 @@ in
                 existing=$(ask_passphrase "Existing LUKS passphrase for $dev:") || return 0
                 kf=$(passphrase_to_keyfile "$existing")
                 unset existing
-                if sudo luks-controller-unlock enroll --device "$dev" < "$kf"; then
+                # Pipe via cat so shellcheck SC2024 doesn't fire — the
+                # keyfile is user-owned (mktemp), so a plain `cat`
+                # works without sudo.
+                if cat "$kf" | sudo luks-controller-unlock enroll --device "$dev"; then
                   kdialog --msgbox "Controller PIN enrolled on $dev.\n\nKeyboard passphrase keyslot is unchanged." || true
                 else
                   kdialog --error "Enrollment failed on $dev.\n\nCheck terminal for details. The existing keyslot is unchanged." || true
