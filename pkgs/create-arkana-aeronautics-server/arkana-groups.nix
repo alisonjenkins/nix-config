@@ -16,6 +16,7 @@
       283644  # Placebo-1.21.1-9.9.1.jar
       306770  # Patchouli-1.21.1-92-NEOFORGE.jar
       308989  # caelus-neoforge-7.0.1+1.21.1.jar
+      309927  # curios-neoforge-9.5.1+1.21.1.jar
       316873  # charmofundying-neoforge-9.1.0+1.21.1.jar
       317716  # elytraslot-neoforge-9.0.2+1.21.1.jar
       326652  # cupboard-1.21-2.9.jar
@@ -60,11 +61,8 @@
       1104882  # txnilib-neoforge-1.0.24-1.21.1.jar
       1145462  # atlas_api-1.21.1-1.2.0.jar
       1169634  # accessorify-2.2.0+1.21.1.jar
-      1194714  # gtbcs_spell_lib-1.0.1-1.21.1.jar
       1264423  # baguettelib-1.21.1-NeoForge-1.1.0.jar
-      1299492  # aces_spell_utils-1.1.7-1.21.1.jar
       1315611  # accessories_compat_layer-neoforge-0.1.6+1.21.1.jar
-      1316458  # familiarslib-1.0.0.jar
     ];
   };
 
@@ -96,7 +94,10 @@
       1125198  # gametechbcs_spellbooks-3.0.0-1.21.1.jar
       1153374  # crystal_chronicles-0.0.7-alpha.jar
       1171602  # alshanex_familiars-1.21.1_v3.0.jar
+      1194714  # gtbcs_spell_lib-1.0.1-1.21.1.jar
       1232116  # reliquified_lenders_cataclysm-1.21.1-0.1.1.jar
+      1299492  # aces_spell_utils-1.1.7-1.21.1.jar
+      1316458  # familiarslib-1.0.0.jar
     ];
   };
 
@@ -308,7 +309,6 @@
       245755  # waystones-neoforge-1.21.1-21.1.22.jar
       254268  # torchmaster-neoforge-1.21.1-21.1.5-beta.jar
       309858  # forbidden_arcanus-2.6.1.jar
-      309927  # curios-neoforge-9.5.1+1.21.1.jar
       448233  # entityculling-neoforge-1.8.2-mc1.21.jar
       574123  # darkmodeeverywhere-1.21-1.3.5.jar
       655619  # better_climbing-neoforge-4.jar

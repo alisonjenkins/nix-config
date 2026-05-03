@@ -17,9 +17,14 @@ RULES = [
     # though we don't emit a group for them.
     (r'^(sodium|iris-|reeses-sodium|sodiumdynamic|sodiumextras|sodiumleaf|sodiumoptions|flerovium|entity_texture_features|entity_model_features|DistantHorizons|EuphoriaPatcher|ComplementaryReimagined|FreshAnimations|-1\.21\.2 Fresh Moves|FA\+|sounds-|statuseffectbars|blur-|CameraOverhaul|SubtleEffects|visuality|customizableelytra|transmog|immersive_paintings|exposure|gpumemleakfix|alltheleaks|ImmersiveUI)', 'client-or-visual'),
 
-    (r'^(architectury|geckolib|azurelib|CodeChickenLib|balm|framework|jamlib|owo-lib|Placebo|resourcefullib|resourcefulconfig|kotlinforforge|expandability|atlas_api|fzzy_config|midnightlib|txnilib|baguettelib|mru-|ftb-library|accessories|accessorify|accessories_compat_layer|terra_curio|OctoLib|CerbonsAPI|Jupiter|valhelsia_core|lithostitched|moonlight|cupboard|configured|cloth-config|yet_another_config_lib|prickle|Iceberg|attributefix|lionfishapi|Patchouli|fusion|caelus|MidnightLib|jamlib|charmofundying|elytraslot|player-animation-lib|Searchables|PuzzlesLib|Bookshelf|bookshelf|fantasy_armor|amendments|gag-|ferritecore|modernfix|TerraBlender|familiarslib|gtbcs_spell_lib|aces_spell_utils|atlas)', 'core-libs'),
+    # gtbcs_spell_lib, aces_spell_utils, familiarslib were originally
+    # caught here but each hard-requires irons_spellbooks (familiarslib
+    # imports `io.redspace.ironsspellbooks.api.registry.SchoolRegistry`).
+    # All three moved to irons-spells. curios added — elytraslot +
+    # charmofundying soft-fail without it.
+    (r'^(architectury|geckolib|azurelib|CodeChickenLib|balm|framework|jamlib|owo-lib|Placebo|resourcefullib|resourcefulconfig|kotlinforforge|expandability|atlas_api|fzzy_config|midnightlib|txnilib|baguettelib|mru-|ftb-library|accessories|accessorify|accessories_compat_layer|terra_curio|OctoLib|CerbonsAPI|Jupiter|valhelsia_core|lithostitched|moonlight|cupboard|configured|cloth-config|yet_another_config_lib|prickle|Iceberg|attributefix|lionfishapi|Patchouli|fusion|caelus|MidnightLib|jamlib|charmofundying|elytraslot|player-animation-lib|Searchables|PuzzlesLib|Bookshelf|bookshelf|fantasy_armor|amendments|gag-|ferritecore|modernfix|TerraBlender|atlas|curios-)', 'core-libs'),
     (r'^(Apotheosis|ApothicAttributes|ApothicEnchanting|ApothicSpawners|apothiccombat|irons_apothic|GatewaysToEternity|Chaotix Apotheotic|ancientreforging|relics-)', 'apothic'),
-    (r"^(irons_spellbooks|simplyswords|simplymore|irons_jewelry|alshanex_familiars|gametechbcs_spellbooks|cataclysm_spellbooks|crystal_chronicles|Simply Swords Reforged|reliquified_lenders_cataclysm)", 'irons-spells'),
+    (r"^(irons_spellbooks|simplyswords|simplymore|irons_jewelry|alshanex_familiars|gametechbcs_spellbooks|cataclysm_spellbooks|crystal_chronicles|Simply Swords Reforged|reliquified_lenders_cataclysm|gtbcs_spell_lib|aces_spell_utils|familiarslib)", 'irons-spells'),
     (r'^(ars_|Ars Nouveau|not_enough_glyphs|starbunclemania|reliquified_ars_nouveau|aero_additions)', 'ars'),
     (r'^(letsdo-)', 'letsdo'),
     (r'^(DnT-|dungeons-and-taverns|lukis-|takesapillage|ess_requiem|endrem|loot_journal|lootintegrations)', 'dungeons'),
