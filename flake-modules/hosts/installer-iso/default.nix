@@ -707,19 +707,46 @@ in
                 for mod in hid_steam xpad hid_generic uinput; do
                   sudo modprobe -q "$mod" 2>/dev/null || true
                 done
-                # Force hid_steam out of lizard mode so the Deck's
-                # physical buttons arrive as BTN_* gamepad events,
-                # not KEY_W/A/S/D/etc keyboard codes. The sysfs
-                # parameter is writable while the module is loaded;
-                # this is the safety net for ISOs built before the
-                # boot.extraModprobeConfig change landed.
-                if [ -w /sys/module/hid_steam/parameters/lizard_mode ]; then
-                  echo 0 | sudo tee /sys/module/hid_steam/parameters/lizard_mode \
-                    >/dev/null 2>&1 || true
-                fi
                 # Give udev a beat to enumerate fresh evdev nodes if
                 # the modules were loaded for the first time.
                 sleep 1
+              }
+
+              # Run "$@" with hid_steam.lizard_mode forced to 0, then
+              # restore the previous value on exit. lizard mode at the
+              # default `1` translates Deck buttons into KEY_*
+              # keyboard events (which Plasma needs for desktop
+              # navigation — the Deck has no built-in keyboard /
+              # mouse), but luks-controller-unlock requires BTN_*
+              # gamepad events to capture a PIN. Toggling around the
+              # action keeps both worlds working.
+              with_lizard_disabled() {
+                local sysfs=/sys/module/hid_steam/parameters/lizard_mode
+                local prev=""
+                if [ -r "$sysfs" ]; then
+                  prev=$(cat "$sysfs" 2>/dev/null || echo "")
+                fi
+                local restore_needed=0
+                if [ -w "$sysfs" ] && [ "$prev" = "1" ]; then
+                  echo 0 | sudo tee "$sysfs" >/dev/null 2>&1 || true
+                  restore_needed=1
+                fi
+                # Brief settle so hid_steam re-routes events through
+                # the gamepad node before the wrapped command opens
+                # the evdev device.
+                sleep 1
+
+                # Use a subshell + trap so the lizard restore fires
+                # even if the wrapped command exits non-zero or the
+                # user Ctrl-Cs out of test-input.
+                local rc=0
+                (
+                  if [ "$restore_needed" = "1" ]; then
+                    trap 'echo 1 | sudo tee /sys/module/hid_steam/parameters/lizard_mode >/dev/null 2>&1 || true' EXIT INT TERM
+                  fi
+                  "$@"
+                ) || rc=$?
+                return "$rc"
               }
 
               action_enroll_pin() {
@@ -729,11 +756,12 @@ in
                 load_controller_modules
 
                 # Upstream's `selftest` probes DRM, controller, and
-                # cryptsetup. Surface its output through kdialog if it
-                # fails so the user knows the enroll loop will trip
-                # on "no controller detected" before we collect their
-                # passphrase.
-                if ! st_out=$(sudo luks-controller-unlock selftest 2>&1); then
+                # cryptsetup. Run it under with_lizard_disabled so
+                # hid_steam exposes BTN_* events for the controller
+                # probe — selftest with lizard mode on would falsely
+                # pass the BTN_SOUTH capability check while live
+                # button presses are still being routed as KEY_*.
+                if ! st_out=$(with_lizard_disabled sudo luks-controller-unlock selftest 2>&1); then
                   kdialog --warningyesno "luks-controller-unlock selftest reported a problem:\n\n$st_out\n\nOn a Steam Deck, the built-in controls require \`hid_steam\` to be loaded (try the 'Test controller' menu entry first). External pads must be wired or USB-dongle attached — Bluetooth is unsupported in v1.\n\nContinue with enroll anyway?" \
                     || return 0
                 fi
@@ -741,10 +769,21 @@ in
                 existing=$(ask_passphrase "Existing LUKS passphrase for $dev:") || return 0
                 kf=$(passphrase_to_keyfile "$existing")
                 unset existing
+
+                # Heads-up so the user understands that during PIN
+                # capture their controller will NOT drive Plasma's
+                # cursor / virtual keyboard — buttons are routed to
+                # luks-controller-unlock as gamepad events. Lizard
+                # restores automatically when enroll returns.
+                kdialog --msgbox "Press your PIN on the controller when prompted.\n\nWhile enroll is running, the controller will NOT drive the desktop cursor / virtual keyboard — buttons are routed to luks-controller-unlock as gamepad events. Normal navigation returns once enroll finishes." \
+                  2>/dev/null || true
+
                 # Pipe via cat so shellcheck SC2024 doesn't fire — the
                 # keyfile is user-owned (mktemp), so a plain `cat`
-                # works without sudo.
-                if cat "$kf" | sudo luks-controller-unlock enroll --device "$dev"; then
+                # works without sudo. Wrap the enroll in
+                # with_lizard_disabled so PIN buttons arrive as
+                # BTN_* gamepad events.
+                if cat "$kf" | with_lizard_disabled sudo luks-controller-unlock enroll --device "$dev"; then
                   kdialog --msgbox "Controller PIN enrolled on $dev.\n\nKeyboard passphrase keyslot is unchanged." || true
                 else
                   kdialog --error "Enrollment failed on $dev.\n\nCheck terminal for details. The existing keyslot is unchanged." || true
@@ -752,15 +791,28 @@ in
                 shred_keyfile "$kf"
               }
 
-              # Drop the user into a konsole running upstream's
-              # `test-input` so they can confirm their controller's
-              # buttons enumerate before committing to enroll.
-              # `--hold` keeps the window open after the user hits
-              # Ctrl-C so the button log stays readable.
+              # Run upstream's `test-input` for ~30 seconds with
+              # lizard mode disabled, so the user can confirm the
+              # controller's buttons enumerate as BTN_* gamepad
+              # events. After the timeout the konsole window closes
+              # and lizard mode restores via with_lizard_disabled's
+              # trap, returning Plasma keyboard / cursor support to
+              # the controller.
               action_test_controller() {
                 load_controller_modules
-                konsole --hold -e sudo luks-controller-unlock test-input \
-                  >/dev/null 2>&1 || true
+                kdialog --msgbox "test-input runs for 30 seconds with the controller in pure-gamepad mode.\n\nDuring that window the Deck's buttons will NOT drive the desktop cursor / virtual keyboard — that's expected. Press the controller buttons to see canonical event names print in the konsole window. Normal navigation returns when the window closes." \
+                  2>/dev/null || true
+
+                with_lizard_disabled konsole -e bash -c '
+                  set -u
+                  echo "==> Press buttons on the controller. Events should appear below."
+                  echo "==> Window auto-closes in 30 seconds."
+                  echo
+                  timeout 30 sudo luks-controller-unlock test-input || true
+                  echo
+                  echo "--- Test ended. Closing in 3s ---"
+                  sleep 3
+                ' >/dev/null 2>&1 || true
               }
 
               action_add_password() {
@@ -919,21 +971,20 @@ in
           # node and enroll exits with "no controller detected".
           boot.kernelModules = [ "hid_steam" "xpad" "hid_generic" "uinput" ];
 
-          # hid_steam defaults to `lizard_mode=1`, which translates
-          # the Deck's physical buttons into KEY_W/A/S/D/etc
-          # keyboard events for non-Steam contexts. The evdev node
-          # still advertises BTN_SOUTH (so luks-controller-unlock's
-          # `is_gamepad()` filter accepts it), but actual button
-          # presses are silently swallowed by the PIN capture loop
-          # because they arrive as KEY_* events rather than BTN_*.
-          # Force the module to expose the controller as a pure
-          # gamepad — the installer ISO has no Steam runtime so
-          # the keyboard fallback is never useful here. (Do NOT
-          # propagate to ali-steam-deck — Jovian + Steam manage
-          # lizard mode dynamically per-session.)
-          boot.extraModprobeConfig = ''
-            options hid_steam lizard_mode=0
-          '';
+          # NOTE on hid_steam.lizard_mode:
+          # We deliberately leave lizard_mode at its default `1` here.
+          # The Deck has no built-in keyboard or mouse, so the
+          # autologin Plasma session relies on hid_steam's keyboard /
+          # touchpad-mouse emulation to let the user navigate the
+          # installer desktop, click launchers, and type passwords
+          # via the on-screen keyboard. Forcing lizard_mode=0 at boot
+          # would lock the user out of their own ISO.
+          #
+          # manage-luks flips lizard_mode to 0 *transiently* around
+          # `Test controller` and `Enroll controller PIN` so the PIN
+          # buttons arrive as BTN_* gamepad events for those moments,
+          # then restores the previous value on exit. See
+          # `with_lizard_disabled` in the manageLuks shell text.
 
           # ZFS is marked broken on the latest kernel (no upstream
           # release tracking 7.x yet) and the installer doesn't need
