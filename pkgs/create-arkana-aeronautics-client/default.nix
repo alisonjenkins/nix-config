@@ -52,6 +52,18 @@ let
   # (no live file → CurseForge launcher errors on import otherwise).
   skippedJSON = builtins.toJSON
     (map (m: { inherit (m) projectID fileID; }) arkanaExtras.skipped);
+
+  # Disabled projectIDs — server filters these out; client must too,
+  # otherwise the launcher installs them and the same registry-init NPEs
+  # that crashed the server crash the client. `fileID = null` in the
+  # disabled record means "all versions of this projectID"; the manifest
+  # filter matches by projectID alone in that case so any pinned fileID
+  # in the original Arkana manifest is dropped.
+  disabledJSON = builtins.toJSON
+    (map (m: {
+      projectID = m.projectID;
+      fileID    = m.fileID;  # nullable
+    }) (arkanaExtras.disabled or [ ]));
 in
 stdenvNoCC.mkDerivation {
   pname = "create-arkana-aeronautics-client";
@@ -98,6 +110,7 @@ stdenvNoCC.mkDerivation {
       --argjson extra      '${curseforgeOverlayJSON}' \
       --argjson replace    '${replacementsJSON}' \
       --argjson skip       '${skippedJSON}' \
+      --argjson disabled   '${disabledJSON}' \
       '
         .name = $name
         | .version = $packVersion
@@ -105,6 +118,13 @@ stdenvNoCC.mkDerivation {
         | .files |= map(
             . as $f
             | if any($skip[]; .projectID == $f.projectID and .fileID == $f.fileID)
+              then empty
+              else . end)
+        | .files |= map(
+            . as $f
+            | if any($disabled[];
+                .projectID == $f.projectID
+                and (.fileID == null or .fileID == $f.fileID))
               then empty
               else . end)
         | .files |= map(
