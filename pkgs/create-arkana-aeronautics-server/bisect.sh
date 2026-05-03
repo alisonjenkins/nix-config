@@ -98,10 +98,19 @@ build_out="$(
 
 echo "[bisect] built: $build_out"
 
-# Always start from a clean PVC so the NeoForge installer re-runs and
-# stale mod state from a prior iteration doesn't mask the new mod set.
+# Wipe everything that depends on the mod set, but keep
+# /data/libraries (NeoForge's Maven cache from the installer — ~80MB,
+# unchanged unless NeoForge version bumps). Saves ~60-90s per round.
+# Set FRESH=1 to force a full wipe (use after a NeoForge bump).
 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-docker run --rm -v "$DATA:/data" alpine sh -c 'rm -rf /data/* /data/.[!.]*' >/dev/null 2>&1
+if [ "${FRESH:-0}" = "1" ]; then
+  docker run --rm -v "$DATA:/data" alpine sh -c 'rm -rf /data/* /data/.[!.]*' >/dev/null 2>&1
+else
+  docker run --rm -v "$DATA:/data" alpine sh -c '
+    cd /data
+    rm -rf world world_nether world_the_end logs crash-reports config mods kubejs datapacks defaultconfigs run.sh run.bat user_jvm_args.txt server.properties eula.txt 2>/dev/null
+  ' >/dev/null 2>&1
+fi
 mkdir -p "$DATA"
 
 echo "[bisect] loading image..."

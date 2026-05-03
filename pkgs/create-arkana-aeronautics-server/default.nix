@@ -1,4 +1,4 @@
-{ stdenvNoCC, stdenv, lib, fetchurl, unzip, bash
+{ stdenvNoCC, stdenv, lib, fetchurl, unzip, bash, python3
 , # Whitelist of Arkana mod groups to bake into the server tree. Default
   # `[]` is the verified Aeronautics-only floor (Aeronautics + Sable +
   # Compatability + New Age + Big Cannons + Ritchie's + spark + JEI). Flip
@@ -137,6 +137,10 @@ let
   # doesn't ship one — the publisher expects the launcher (or the NeoForge
   # installer) to generate it. We bake a 4-player default tuned for the
   # 4 GiB pod limit; admins can override via the PVC copy on first boot.
+  #
+  # `level-type=minecraft\:flat` keeps the spawn-prepare phase ~1s instead
+  # of 8-15s under biome-rich worldgen. Admins flipping to a survival
+  # world should override on the PVC.
   serverProperties = builtins.toFile "server.properties" ''
     server-port=25565
     max-players=4
@@ -147,6 +151,7 @@ let
     enable-rcon=false
     spawn-protection=0
     allow-flight=true
+    level-type=minecraft\:flat
   '';
 in
 stdenvNoCC.mkDerivation {
@@ -156,7 +161,7 @@ stdenvNoCC.mkDerivation {
   # Arkana zip is the structural source (manifest.json + overrides/);
   # everything else is composed in installPhase from the resolved jars.
   src = arkanaManifestPack;
-  nativeBuildInputs = [ unzip ];
+  nativeBuildInputs = [ unzip python3 ];
 
   unpackPhase = ''
     runHook preUnpack
@@ -196,11 +201,20 @@ stdenvNoCC.mkDerivation {
       ''
     ) arkanaModsAll}
 
-    # Aeronautics + Sable + companions on top. Server consumes ALL overlay
-    # entries (dropAsOverride is a client-only hint).
-    ${lib.concatMapStrings (m: ''
-      install -m644 "${m.jar}" "$out/mods/${m.filename}"
-    '') overlayMods}
+    # Aeronautics + Sable + companions on top. Each overlay entry may
+    # carry `requiresGroup = "<name>"` — if set, the entry only installs
+    # when that group is in `enabledArkanaGroups`. Lets us ship libs like
+    # AeroBlender (needs deep_aether's chain in `world`) without breaking
+    # the floor's pre-flight dep check.
+    ${lib.concatMapStrings (m:
+      if (m.requiresGroup or null) != null
+         && !(lib.elem m.requiresGroup enabledArkanaGroups)
+      then ''
+        # skip overlay ${m.filename} — requires group "${m.requiresGroup}"
+      '' else ''
+        install -m644 "${m.jar}" "$out/mods/${m.filename}"
+      ''
+    ) overlayMods}
 
     install -m644 ${eulaFile}            $out/eula.txt
     install -m644 ${jvmArgsFile}         $out/user_jvm_args.txt
@@ -214,6 +228,28 @@ stdenvNoCC.mkDerivation {
     substituteInPlace $out/entrypoint.sh \
         --replace-fail '#!/usr/bin/env bash' '#!${bash}/bin/bash' \
         --replace-fail '@libstdcxxLib@'      '${stdenv.cc.cc.lib}/lib'
+
+    # Pre-flight dep check: parse every jar's META-INF/neoforge.mods.toml
+    # (+ JIJ children) and surface any unsatisfied required deps. Fails
+    # the build before docker image is layered — saves a ~5 min boot
+    # cycle when a regression introduces a missing dep.
+    echo "[deps-check] running dep-tree.py on $out ..."
+    if python3 ${./dep-tree.py} "$out" > $out/.deps-check.log 2>&1; then
+      cat $out/.deps-check.log
+      if grep -qE '^=== Missing required deps \([1-9]' $out/.deps-check.log; then
+        echo "[deps-check] FAIL — missing required deps (see above)" >&2
+        exit 1
+      fi
+      if grep -qE '^=== Required deps out of version range \([1-9]' $out/.deps-check.log; then
+        echo "[deps-check] FAIL — version range mismatches (see above)" >&2
+        exit 1
+      fi
+      rm -f $out/.deps-check.log
+    else
+      cat $out/.deps-check.log >&2
+      echo "[deps-check] FAIL — analyzer crashed" >&2
+      exit 1
+    fi
 
     runHook postInstall
   '';

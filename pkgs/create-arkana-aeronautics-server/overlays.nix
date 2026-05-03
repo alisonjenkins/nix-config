@@ -95,19 +95,23 @@ in
   }
   {
     # AeroBlender — required by deep_aether (in `world` group). Not in
-    # Arkana. Surfaced by dep-tree.py on the all-groups build. Harmless
-    # when deep_aether isn't loaded; cheap to always include.
+    # Arkana. Itself hard-deps `aether` + `terrablender` so it can't be
+    # always-include — it'd fail the build-time dep check at floor mode
+    # where neither lib is present. `requiresGroup = "world"` gates it.
     filename       = "aeroblender-1.21.1-1.0.0-neoforge.jar";
     dropAsOverride = true;
+    requiresGroup  = "world";
     jar = modrinth "1eaq94ok" "wSvpPEr3"
       "aeroblender-1.21.1-1.0.0-neoforge.jar"
       "0a4s900665mavmhna5bz4gvvs0zjymwz7mhpj8y58bpfkhq154hn";
   }
   {
     # Common Networking — required by gliders (vc_gliders modId, in
-    # `combat` group). Not in Arkana.
+    # `combat` group). Not in Arkana. Self-contained (no upward deps),
+    # but no point shipping it without its dependent.
     filename       = "common-networking-neoforge-1.0.21-1.21.1.jar";
     dropAsOverride = true;
+    requiresGroup  = "combat";
     jar = modrinth "HIuqnQpi" "pR7AeZk3"
       "common-networking-neoforge-1.0.21-1.21.1.jar"
       "0gjg7shl18agxbga54dr7anckjwbv98jfck712yq81gs2qiwx6r8";
