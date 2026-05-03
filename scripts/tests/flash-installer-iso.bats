@@ -263,6 +263,36 @@ byte_at() {
 # BSD-dd compatibility regression
 # -----------------------------------------------------------------------------
 
+@test "script never passes lowercase-m bs/count to dd (GNU rejects it)" {
+  make_fixture_iso fixture.iso
+  : > target
+
+  # GNU dd is case-sensitive on size suffixes: bs=4M (1MiB) is accepted,
+  # bs=4m fails with `dd: invalid number: '4m'`. Users with nix coreutils
+  # earlier on PATH end up running GNU dd under sudo and hit this. The
+  # script must not emit lowercase suffixes anywhere.
+  shim_dir="$(mktemp -d)"
+  cat >"$shim_dir/dd" <<'SH'
+#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    bs=*[mkg]|count=*[mkg]|seek=*[mkg]|skip=*[mkg])
+      echo "dd: invalid number: '${arg#*=}'" >&2
+      exit 1
+      ;;
+  esac
+done
+real_dd=$(PATH=/usr/bin:/bin command -v dd)
+exec "$real_dd" "$@"
+SH
+  chmod +x "$shim_dir/dd"
+
+  run env PATH="$shim_dir:$PATH" bash -c "echo yes | '$SCRIPT' target fixture.iso 2>&1"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"invalid number"* ]]
+  [[ "$output" == *"OK — bootable ISO written"* ]]
+}
+
 @test "script does not pass GNU-only flags to dd (BSD compat)" {
   make_fixture_iso fixture.iso
   : > target

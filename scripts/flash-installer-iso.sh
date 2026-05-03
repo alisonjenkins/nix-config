@@ -180,9 +180,12 @@ elif [ "$OS" = "Darwin" ]; then
   show_partitions() { diskutil list "$DEV" || true; }
   # macOS dd lacks oflag=direct/conv=fsync (BSD dd). Use the raw device
   # (/dev/rdiskN) — it bypasses the buffer cache, giving the same "no stale
-  # buffer" guarantee that oflag=direct gives on Linux.
-  DD_OPTS=(bs=4m)
-  DD_VERIFY_OPTS=(bs=1m)
+  # buffer" guarantee that oflag=direct gives on Linux. Use uppercase M
+  # because GNU coreutils dd (often first on the user's PATH via nix) is
+  # case-sensitive and rejects "4m" with `dd: invalid number: '4m'`. BSD
+  # dd accepts both, so uppercase wins on portability.
+  DD_OPTS=(bs=4M)
+  DD_VERIFY_OPTS=(bs=1M)
 else
   # Linux
   enumerate_devices() {
