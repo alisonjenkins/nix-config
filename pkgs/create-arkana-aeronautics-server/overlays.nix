@@ -93,6 +93,41 @@ in
       "ritchiesprojectilelib-2.1.2%2Bmc.1.21.1-neoforge.jar"
       "093v93kwjlf9ly08x7vfrawywziswcf6phx419jzndiphdh90l6c";
   }
+  # ---- Worldgen ----
+  {
+    # Terralith — datapack-driven biome overhaul (~100 biomes). Replaces
+    # the role of BiomesOPlenty since GlitchCore (BoP's required lib) is
+    # stuck at 2.1.0.0 for MC 1.21.1 and registry-NPEs under our bumped
+    # Create. Terralith is pure data, no Java mod compat surface.
+    filename       = "Terralith_1.21.x_v2.5.8.jar";
+    dropAsOverride = true;
+    jar = modrinth "8oi3bsk5" "MuJMtPGQ"
+      "Terralith_1.21.x_v2.5.8.jar"
+      "1gr10rhfadigvam24d9dvhmn3q02bs6hj01pm6f7p2y3189klcq0";
+  }
+  # ---- Server-side performance mods ----
+  {
+    # C2ME — concurrent chunk management. Parallelizes chunk loading +
+    # generation across CPU cores, big win on 4-core pods. Server-only;
+    # client tolerates absence.
+    filename       = "c2me-neoforge-mc1.21.1-0.3.0+alpha.0.91.jar";
+    dropAsOverride = true;
+    jar = modrinth "COlSi5iR" "9iPiN34N"
+      "c2me-neoforge-mc1.21.1-0.3.0%2Balpha.0.91.jar"
+      "0sgk18ksgkwfk4a7v974f31rf0l8d1f5x8qswa706nm0rjrwazhh";
+  }
+  {
+    # Noisium — worldgen perf optimizer. Speeds up biome + structure
+    # placement by replacing slow vanilla Java loops with batched ops.
+    filename       = "noisium-neoforge-2.3.0+mc1.21-1.21.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "KuNKN7d2" "nJBE6tif"
+      "noisium-neoforge-2.3.0%2Bmc1.21-1.21.1.jar"
+      "170h2q2d0c7r7qwkisgvr05aggyzs7zldxwlvv2xf05wjgahjlp9";
+  }
+  # ScalableLux removed — Sable's mods.toml declares it as a hard
+  # incompatibility (`Mod sable is incompatible with scalablelux any`).
+  # Aeronautics priority means Sable wins; ScalableLux out.
   {
     # AeroBlender — required by deep_aether (in `world` group). Not in
     # Arkana. Itself hard-deps `aether` + `terrablender` so it can't be

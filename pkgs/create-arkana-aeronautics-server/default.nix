@@ -138,9 +138,10 @@ let
   # installer) to generate it. We bake a 4-player default tuned for the
   # 4 GiB pod limit; admins can override via the PVC copy on first boot.
   #
-  # `level-type=minecraft\:flat` keeps the spawn-prepare phase ~1s instead
-  # of 8-15s under biome-rich worldgen. Admins flipping to a survival
-  # world should override on the PVC.
+  # Default worldgen is vanilla overworld (Terralith activates as a
+  # datapack on first chunk request). `level-type=minecraft\:flat` was
+  # used during bisect cycles to cut the spawn-prepare phase from ~8s
+  # to ~1s; restored to default for production.
   serverProperties = builtins.toFile "server.properties" ''
     server-port=25565
     max-players=4
@@ -151,7 +152,6 @@ let
     enable-rcon=false
     spawn-protection=0
     allow-flight=true
-    level-type=minecraft\:flat
   '';
 in
 stdenvNoCC.mkDerivation {
