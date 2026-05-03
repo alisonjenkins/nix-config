@@ -615,13 +615,22 @@ in
               # Pick a LUKS device from the system. Filters lsblk to
               # crypto_LUKS partitions so users can't accidentally point
               # this at a non-LUKS disk.
+              #
+              # FSTYPE comes first in `-o` so awk's `$1` test is robust
+              # against MODEL fields that are empty (NVMe partition
+              # rows) or contain spaces (most SATA SSDs) — the previous
+              # 4-column ordering silently dropped the LUKS row whenever
+              # MODEL didn't render as exactly one whitespace-free token.
               pick_luks_device() {
-                local args=()
-                while read -r name size model; do
-                  [ -n "$name" ] || continue
-                  args+=("/dev/$name" "$size  ''${model:-(no model)}")
-                done < <(sudo lsblk -lno NAME,SIZE,MODEL,FSTYPE \
-                  | awk '$4 == "crypto_LUKS" { print $1, $2, $3 }')
+                local args=() dev size_h
+                while read -r dev; do
+                  [ -n "$dev" ] || continue
+                  size_h=$(sudo lsblk -bdno SIZE "$dev" 2>/dev/null \
+                    | numfmt --to=iec --suffix=B 2>/dev/null || echo "?")
+                  args+=("$dev" "$size_h")
+                done < <(sudo lsblk -lnp -o FSTYPE,NAME \
+                  | awk '$1 == "crypto_LUKS" { print $2 }' \
+                  | sort)
 
                 if [ ''${#args[@]} -eq 0 ]; then
                   kdialog --sorry "No crypto_LUKS partitions detected.\n\nIf you've just plugged in a disk, give it a moment then retry." 2>/dev/null || true
