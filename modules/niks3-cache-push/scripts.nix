@@ -18,12 +18,14 @@ rec {
 
     mv "$QUEUE" "$PROCESSING" 2>/dev/null || exit 0
 
-    AUTH_TOKEN="$(cat "${cfg.authTokenFile}")"
+    # Pass the token to niks3 via NIKS3_AUTH_TOKEN_FILE rather than
+    # --auth-token so it never enters the niks3 process's argv (where any
+    # local user could read it via `ps`). niks3 reads the file itself.
+    export NIKS3_AUTH_TOKEN_FILE=${lib.escapeShellArg (toString cfg.authTokenFile)}
 
     cat "$PROCESSING" | xargs -r ${lib.getExe' niks3 "niks3"} push \
       --server-url "${cfg.serverUrl}" \
-      --max-concurrent-uploads ${toString cfg.maxConcurrentUploads} \
-      --auth-token "$AUTH_TOKEN"
+      --max-concurrent-uploads ${toString cfg.maxConcurrentUploads}
 
     rm -f "$PROCESSING"
   '';
