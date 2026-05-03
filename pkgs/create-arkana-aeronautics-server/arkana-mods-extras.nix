@@ -180,5 +180,8 @@
     # Likely an upstream incompatibility with NeoForge 21.1.x; older
     # Forge ran setup events in a different order.
     { projectID = 506948;  fileID = null; reason = "jerintegration calls config.get from FMLCommonSetupEvent before config loaded; NeoForge 21.1.x lifecycle incompatibility."; phase = "common-setup"; }
+    { projectID = 820977;  fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
+    { projectID = 1216624; fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
+    { projectID = 688768; fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
   ];
 }
