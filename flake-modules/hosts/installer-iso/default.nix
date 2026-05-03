@@ -619,6 +619,8 @@ in
               gnugrep
               gnused
               kdePackages.kdialog
+              kdePackages.konsole
+              kmod
               util-linux
             ]);
             text = ''
@@ -694,9 +696,38 @@ in
                 [ -n "''${1:-}" ] && [ -f "$1" ] && sudo shred -u "$1" 2>/dev/null || rm -f "$1" 2>/dev/null || true
               }
 
+              # Best-effort modprobe of every kernel module that
+              # luks-controller-unlock might need. Idempotent if the
+              # module is already loaded; silent if the kernel was
+              # built without it. Called before any controller-touching
+              # action so older ISOs (or non-Deck installers) still
+              # work without a re-flash.
+              load_controller_modules() {
+                local mod
+                for mod in hid_steam xpad hid_generic uinput; do
+                  sudo modprobe -q "$mod" 2>/dev/null || true
+                done
+                # Give udev a beat to enumerate fresh evdev nodes if
+                # the modules were loaded for the first time.
+                sleep 1
+              }
+
               action_enroll_pin() {
-                local dev kf existing
+                local dev kf existing st_out
                 dev=$(pick_luks_device) || return 0
+
+                load_controller_modules
+
+                # Upstream's `selftest` probes DRM, controller, and
+                # cryptsetup. Surface its output through kdialog if it
+                # fails so the user knows the enroll loop will trip
+                # on "no controller detected" before we collect their
+                # passphrase.
+                if ! st_out=$(sudo luks-controller-unlock selftest 2>&1); then
+                  kdialog --warningyesno "luks-controller-unlock selftest reported a problem:\n\n$st_out\n\nOn a Steam Deck, the built-in controls require \`hid_steam\` to be loaded (try the 'Test controller' menu entry first). External pads must be wired or USB-dongle attached — Bluetooth is unsupported in v1.\n\nContinue with enroll anyway?" \
+                    || return 0
+                fi
+
                 existing=$(ask_passphrase "Existing LUKS passphrase for $dev:") || return 0
                 kf=$(passphrase_to_keyfile "$existing")
                 unset existing
@@ -709,6 +740,17 @@ in
                   kdialog --error "Enrollment failed on $dev.\n\nCheck terminal for details. The existing keyslot is unchanged." || true
                 fi
                 shred_keyfile "$kf"
+              }
+
+              # Drop the user into a konsole running upstream's
+              # `test-input` so they can confirm their controller's
+              # buttons enumerate before committing to enroll.
+              # `--hold` keeps the window open after the user hits
+              # Ctrl-C so the button log stays readable.
+              action_test_controller() {
+                load_controller_modules
+                konsole --hold -e sudo luks-controller-unlock test-input \
+                  >/dev/null 2>&1 || true
               }
 
               action_add_password() {
@@ -812,16 +854,18 @@ in
               while true; do
                 action=$(kdialog --title "Manage LUKS" \
                   --menu "Pick an action:" \
-                  enroll-pin     "Enroll a controller PIN keyslot via luks-controller-unlock" \
-                  add-password   "Add a new passphrase keyslot (cryptsetup luksAddKey)" \
+                  enroll-pin      "Enroll a controller PIN keyslot via luks-controller-unlock" \
+                  test-controller "Run luks-controller-unlock test-input to verify gamepad enumeration" \
+                  add-password    "Add a new passphrase keyslot (cryptsetup luksAddKey)" \
                   change-password "Replace an existing passphrase keyslot (cryptsetup luksChangeKey)" \
-                  remove-slot    "Remove a keyslot (cryptsetup luksKillSlot)" \
-                  show-status    "Show keyslot table (cryptsetup luksDump)" \
-                  quit           "Exit" \
+                  remove-slot     "Remove a keyslot (cryptsetup luksKillSlot)" \
+                  show-status     "Show keyslot table (cryptsetup luksDump)" \
+                  quit            "Exit" \
                   ) || exit 0
 
                 case "$action" in
                   enroll-pin)      action_enroll_pin ;;
+                  test-controller) action_test_controller ;;
                   add-password)    action_add_password ;;
                   change-password) action_change_password ;;
                   remove-slot)     action_remove_keyslot ;;
@@ -850,6 +894,20 @@ in
           # kernel ≥ 6.15). nixpkgs' default LTS kernel is currently
           # 6.12.x which would reject the mount option.
           boot.kernelPackages = pkgs.linuxPackages_latest;
+
+          # Controller HID drivers needed by luks-controller-unlock's
+          # evdev scan when the user runs `Manage LUKS → Enroll
+          # controller PIN`. hid_steam binds the Steam Deck's
+          # built-in controls; xpad covers Xbox / 8BitDo Pro 2;
+          # hid_generic backstops anything else advertising
+          # BTN_SOUTH; uinput is hid_steam's emulation pipe.
+          # boot.initrd.kernelModules from the
+          # luks-controller-unlock module only affects deployed
+          # systems' initrd, NOT this live ISO — without these
+          # modules loaded on the live kernel, the upstream tool's
+          # `is_gamepad()` check fails for every /dev/input/event*
+          # node and enroll exits with "no controller detected".
+          boot.kernelModules = [ "hid_steam" "xpad" "hid_generic" "uinput" ];
 
           # ZFS is marked broken on the latest kernel (no upstream
           # release tracking 7.x yet) and the installer doesn't need
