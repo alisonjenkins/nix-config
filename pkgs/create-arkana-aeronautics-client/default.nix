@@ -6,6 +6,7 @@ let
 
   arkanaVersion      = serverPkg.passthru.arkanaVersion;
   aeronauticsVersion = serverPkg.passthru.aeronauticsVersion;
+  neoforgeVersion    = serverPkg.passthru.neoforgeVersion;
 
   version = "${arkanaVersion}+aeronautics-${aeronauticsVersion}";
 
@@ -84,15 +85,23 @@ stdenvNoCC.mkDerivation {
     #      newer file so launcher fetches the version we built against.
     #   3) Append the CurseForge-distributed overlay mods (Big Cannons,
     #      Aeronautics: Compatability, …) to .files.
+    # Bump the manifest's loader id to match the server's NeoForge bump.
+    # Arkana 1.5 pinned 21.1.206; the server (and many overlay mods)
+    # require >= 21.1.219. Without this, the launcher installs 21.1.206
+    # and Aeronautics, Sable, simulated, offroad, create, create_new_age,
+    # aeronautics_bundled all fail mod-loading with "requires neoforge
+    # 21.1.219 or above".
     jq \
       --arg name           "Create: Arkana + Aeronautics" \
       --arg packVersion    "${version}" \
+      --arg loaderId       "neoforge-${neoforgeVersion}" \
       --argjson extra      '${curseforgeOverlayJSON}' \
       --argjson replace    '${replacementsJSON}' \
       --argjson skip       '${skippedJSON}' \
       '
         .name = $name
         | .version = $packVersion
+        | .minecraft.modLoaders |= map(.id = $loaderId)
         | .files |= map(
             . as $f
             | if any($skip[]; .projectID == $f.projectID and .fileID == $f.fileID)
