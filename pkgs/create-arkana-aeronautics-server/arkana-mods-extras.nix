@@ -122,6 +122,21 @@
         sha256 = "0yp3xyg7ary122zximlg2yg6dd5gnljjj2mjiddizfpi15bzx1zg";
       };
     }
+    {
+
+      alwaysInclude = true;
+      origProjectID = 508933;
+      origFileID    = 6791190;
+      projectID     = 508933;
+      fileID        = 7977122;
+      required      = true;
+      filename      = "DistantHorizons-3.0.2-b-26.1.2-fabric-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7977/122/DistantHorizons-3.0.2-b-26.1.2-fabric-neoforge.jar";
+        name   = "DistantHorizons-3.0.2-b-26.1.2-fabric-neoforge.jar";
+        sha256 = "183gpv4h4liijs908cbd41kwwcnksdw9r04ywj92k2x6z68k5v3n";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
