@@ -2,6 +2,15 @@ name: Build Installer ISO
 
 on:
   workflow_dispatch:
+    inputs:
+      force_push:
+        description: >-
+          Push closure to niks3 even when the dry-run says everything is
+          cached. Use this to repopulate the remote cache after the
+          self-hosted runner's persistent /nix/store has built paths that
+          never made it to niks3.
+        type: boolean
+        default: false
   push:
     branches:
       - main
@@ -51,10 +60,30 @@ jobs:
       - name: Configure host Nix
         uses: ./.github/actions/setup-host-nix
 
+      - name: Check if ISO build is needed
+        id: dry-run
+        run: |
+          if dry_output=$(nix build --dry-run \
+              ".#nixosConfigurations.installer-iso.config.system.build.isoImage" 2>&1); then
+            if echo "$dry_output" | grep -q 'will be built:'; then
+              echo "needs_build=true" >> "$GITHUB_OUTPUT"
+              echo "installer-iso needs building"
+            else
+              echo "needs_build=false" >> "$GITHUB_OUTPUT"
+              echo "installer-iso is fully cached — skipping build (re-run with force_push to repopulate)"
+            fi
+          else
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+            echo "installer-iso dry-run failed (needs building)"
+            echo "$dry_output"
+          fi
+
       - name: Install niks3
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         run: .github/scripts/install-niks3.sh
 
       - name: Build ISO and push closure to cache
+        if: steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
         run: |
@@ -64,7 +93,10 @@ jobs:
           # `--print-out-paths` writes the iso store path (e.g. .../iso/...) to
           # the queue. The drainer expands the closure via
           # `nix path-info --recursive` before pushing; niks3 server-side dedup
-          # skips paths already on the cache.
+          # skips paths already on the cache. When force_push is set, the
+          # dry-run gate is bypassed but `nix build` is near-instant for paths
+          # already in the local store — the value is in the resulting queue
+          # entry, not in re-running the build.
           set +e
           nix build -L --keep-going --print-out-paths --no-link \
             ".#nixosConfigurations.installer-iso.config.system.build.isoImage" \
@@ -83,7 +115,7 @@ jobs:
           exit $BUILD_EXIT
 
       - name: Stage ISO for artifact upload
-        if: success()
+        if: success() && (steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true)
         id: stage
         run: |
           iso_store=$(nix build --no-link --print-out-paths \
@@ -100,7 +132,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload ISO artifact
-        if: success()
+        if: success() && (steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true)
         uses: actions/upload-artifact@v4
         with:
           name: installer-iso-${{ github.run_id }}
@@ -116,9 +148,13 @@ jobs:
           {
             echo "## Installer ISO build"
             echo
-            echo "- Image: \`${{ steps.stage.outputs.iso_name }}\`"
-            echo "- SHA256: \`${{ steps.stage.outputs.iso_sha256 }}\`"
-            echo "- Closure pushed to: \`$NIKS3_SERVER_URL\`"
-            echo
-            echo "Download via the **Artifacts** section of this run."
+            if [ "${{ steps.dry-run.outputs.needs_build }}" = "true" ] || [ "${{ inputs.force_push }}" = "true" ]; then
+              echo "- Image: \`${{ steps.stage.outputs.iso_name }}\`"
+              echo "- SHA256: \`${{ steps.stage.outputs.iso_sha256 }}\`"
+              echo "- Closure pushed to: \`$NIKS3_SERVER_URL\`"
+              echo
+              echo "Download via the **Artifacts** section of this run."
+            else
+              echo "Fully cached — build + push skipped. Re-run with \`force_push\` to repopulate the cache."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
