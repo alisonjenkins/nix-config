@@ -365,6 +365,7 @@ in {
 
         services = {
           # karabiner-elements.enable = true;
+          tailscale.enable = true;
         };
 
         system = {
