@@ -47,23 +47,37 @@ SUDO="${FLASH_SUDO-sudo}"
 
 usage() {
   cat >&2 <<EOF
-usage: $0 [--legacy-bios|--strict-uefi] [--list] [<device> [<iso>]]
+usage: $0 [--legacy-bios|--strict-uefi] [--list] [--trace] [<device> [<iso>]]
 EOF
 }
 
 STRICT_UEFI=1
 LIST_ONLY=0
+TRACE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --legacy-bios) STRICT_UEFI=0; shift ;;
     --strict-uefi) STRICT_UEFI=1; shift ;;
     --list) LIST_ONLY=1; shift ;;
+    --trace) TRACE=1; shift ;;
     --help|-h) usage; exit 0 ;;
     --) shift; break ;;
     -*) echo "unknown flag: $1" >&2; usage; exit 2 ;;
     *) break ;;
   esac
 done
+
+# When --trace is on (or FLASH_TRACE=1) every command is logged to stderr
+# with `set -x`. Output is verbose but invaluable when the script silently
+# bails out in the dd pipeline.
+if [ "$TRACE" = "1" ] || [ "${FLASH_TRACE:-0}" = "1" ]; then
+  export PS4='+ ${BASH_SOURCE##*/}:${LINENO}> '
+  set -x
+fi
+
+# Trap any unexpected exit and print the LINENO + exit code so silent
+# failures (pipefail killing the script under `set -e`) are diagnosed.
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "::script exited with code $rc at line $LINENO" >&2; fi' EXIT
 
 if [ $# -gt 2 ]; then
   usage
@@ -323,19 +337,48 @@ echo "==> wiping existing signatures"
 wipe_signatures
 
 echo "==> writing ISO"
+# Save dd's stderr to a log so silent pipefail kills are diagnosable.
 # `status=none` is GNU-dd only — `sudo dd` on macOS resolves to BSD
-# /usr/bin/dd which rejects it as `dd: status: illegal argument` and
-# the pv|dd pipefail kills the whole script (silently, because dd's
-# stderr is gone with the pipe). So: omit status= entirely when pv is
-# in front (pv shows the live progress; dd's 3-line end-of-run summary
-# is fine), and only use `status=progress` on Linux's GNU dd.
-if [ "$USE_PV" = "1" ]; then
+# /usr/bin/dd which rejects it. We omit status= entirely on macOS (pv
+# shows the live progress; dd's 3-line end-of-run summary is fine) and
+# only use `status=progress` on Linux's GNU dd.
+DD_LOG=/tmp/flash-installer-iso.dd-write.log
+echo "    (dd stderr → $DD_LOG)"
+: > "$DD_LOG"
+if [ "$OS" = "Darwin" ]; then
+  # macOS: `pv | sudo dd` flakes — the pipe + sudo + BSD dd combo has
+  # historically delivered partial writes (a single 64 KiB pv buffer, dd
+  # exiting clean on early EOF). Run dd directly instead. Press Ctrl+T
+  # while it runs to make BSD dd dump progress on SIGINFO.
+  echo "    Tip: press Ctrl+T to make dd report progress."
+  set +e
+  $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}" 2>"$DD_LOG"
+  WRITE_RC=$?
+  set -e
+elif [ "$USE_PV" = "1" ]; then
+  set +e
   pv -s "$ISO_SIZE" -- "$ISO" \
-    | $SUDO dd of="$DEV" "${DD_OPTS[@]}"
-elif [ "$OS" = "Darwin" ]; then
-  $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}"
+    | $SUDO dd of="$DEV" "${DD_OPTS[@]}" 2>"$DD_LOG"
+  # pipefail returns the first non-zero status in the pipe.
+  WRITE_RC=$?
+  set -e
 else
-  $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}" status=progress
+  set +e
+  $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}" status=progress 2>"$DD_LOG"
+  WRITE_RC=$?
+  set -e
+fi
+echo "    dd exit code: $WRITE_RC"
+echo "    --- dd stderr ($(wc -l < "$DD_LOG" | tr -d ' ') line(s)) ---"
+sed 's/^/      /' "$DD_LOG"
+if [ "$WRITE_RC" -ne 0 ]; then
+  echo "::error:: dd write failed (rc=$WRITE_RC). Full log: $DD_LOG" >&2
+  exit 1
+fi
+# A clean dd exit with zero bytes written counts as a failure too — happens
+# when the pipe collapsed before any data flowed.
+if ! grep -qE 'bytes (transferred|copied)' "$DD_LOG"; then
+  echo "::warning:: dd produced no transfer summary — wrote 0 bytes?" >&2
 fi
 
 echo "==> flushing kernel buffers"

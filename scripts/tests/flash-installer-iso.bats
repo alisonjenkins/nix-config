@@ -302,15 +302,14 @@ SH
   make_fixture_iso fixture.iso
   : > target
 
-  # Wrap dd so the WRITE invocation produces a corrupted target. We detect
-  # the write by `of=target` and divert it to /dev/null after copying a
-  # truncated image; the verify dd still reads `target` (which now contains
-  # zero/short content) and produces a different sha256.
+  # Wrap dd so the WRITE step (of=target, target is a regular writable file)
+  # finishes "successfully" but leaves the file corrupted. We detect the
+  # write by `of=target` matching a writable file other than /dev/zero, run
+  # the real dd, then overwrite the target with a single byte so the
+  # subsequent read-back sha differs from the source ISO.
   shim_dir="$(mktemp -d)"
   cat >"$shim_dir/dd" <<'SH'
 #!/usr/bin/env bash
-# Forward to real dd, but for the WRITE step (of=<target>) silently corrupt
-# the target by writing only the first 4KiB of input.
 real_dd=$(PATH=/usr/bin:/bin command -v dd)
 out=""
 for arg in "$@"; do
@@ -318,11 +317,13 @@ for arg in "$@"; do
     of=*) out="${arg#of=}" ;;
   esac
 done
-if [ -n "$out" ] && [ -f "$out" ] && [ -w "$out" ] && [ "$out" != "/dev/zero" ]; then
-  # write step: truncate input to 4KiB so target sha differs
-  exec head -c 4096 | "$real_dd" "$@"
+"$real_dd" "$@"
+rc=$?
+if [ -n "$out" ] && [ -f "$out" ] && [ -w "$out" ] && [ "$out" != "/dev/zero" ] && [ $rc -eq 0 ]; then
+  # post-write: corrupt the target so verify-readback fails with MISMATCH
+  printf 'X' > "$out"
 fi
-exec "$real_dd" "$@"
+exit $rc
 SH
   chmod +x "$shim_dir/dd"
 
