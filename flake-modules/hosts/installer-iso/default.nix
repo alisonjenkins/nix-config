@@ -619,7 +619,6 @@ in
               gnugrep
               gnused
               kdePackages.kdialog
-              kdePackages.konsole
               kmod
               util-linux
             ]);
@@ -794,39 +793,48 @@ in
               # Run upstream's `test-input` for ~30 seconds with
               # lizard mode disabled, so the user can confirm the
               # controller's buttons enumerate as BTN_* gamepad
-              # events. After the timeout the konsole window closes
-              # and lizard mode restores via with_lizard_disabled's
-              # trap, returning Plasma keyboard / cursor support to
-              # the controller.
+              # events. We deliberately do NOT spawn a child konsole:
+              # KDE 6 konsole launches via dbus activation and returns
+              # 0 to the caller before the new window's bash starts,
+              # which let the surrounding with_lizard_disabled
+              # subshell exit and fire its EXIT trap (restoring
+              # lizard_mode=1) before test-input actually ran. The
+              # parent konsole that hosts manage-luks (started by the
+              # desktop launcher with `--hold`) is already a real
+              # terminal, so we run test-input inline in it — no
+              # second window, no fork, no race.
               action_test_controller() {
                 load_controller_modules
-                kdialog --msgbox "test-input runs for 30 seconds with the controller in pure-gamepad mode.\n\nDuring that window the Deck's buttons will NOT drive the desktop cursor / virtual keyboard — that's expected. Press the controller buttons to see canonical event names print in the konsole window. Normal navigation returns when the window closes." \
+
+                kdialog --msgbox "test-input runs for 30 seconds in this konsole window with the controller in pure-gamepad mode.\n\nThe Deck's buttons will NOT drive the desktop cursor / virtual keyboard during that window — that's expected. After 30 seconds the test ends and you'll be back at the menu." \
                   2>/dev/null || true
 
-                # `--nofork` so konsole stays attached to this shell.
-                # Without it konsole forks a detached KDE process and
-                # returns 0 immediately, which lets the surrounding
-                # `with_lizard_disabled` subshell exit and fire its
-                # EXIT trap that restores lizard_mode=1 — long before
-                # the konsole window has actually run test-input. The
-                # net result is a window that runs in lizard mode
-                # despite the toggle.
-                #
                 # The `$(cat ...)` inside the single-quoted bash -c
-                # is intentional — we want it expanded by the INNER
-                # bash launched by konsole, not by the outer shell.
+                # is intentional — we want the INNER bash to read
+                # the live sysfs value at run time, not capture it
+                # at script-build time.
                 # shellcheck disable=SC2016
-                with_lizard_disabled konsole --nofork -e bash -c '
+                with_lizard_disabled bash -c '
                   set -u
+                  echo
+                  echo "============================================================"
                   echo "==> hid_steam.lizard_mode = $(cat /sys/module/hid_steam/parameters/lizard_mode 2>/dev/null || echo unknown)"
                   echo "==> Press buttons on the controller. Events should appear below."
-                  echo "==> Window auto-closes in 30 seconds."
+                  echo "==> Test ends in 30 seconds (or Ctrl-C to stop early)."
+                  echo "============================================================"
                   echo
                   timeout 30 sudo luks-controller-unlock test-input || true
                   echo
-                  echo "--- Test ended. Closing in 3s ---"
-                  sleep 3
-                ' >/dev/null 2>&1 || true
+                  echo "============================================================"
+                  echo "==> Test ended."
+                  echo "============================================================"
+                ' || true
+
+                # Pause so the user can read the captured events
+                # before manage-luks redraws its kdialog menu and
+                # covers the konsole.
+                kdialog --msgbox "Test ended. Click OK to return to the menu." \
+                  2>/dev/null || true
               }
 
               action_add_password() {
