@@ -380,7 +380,7 @@ if [ "$WRITE_RC" -ne 0 ]; then
 fi
 # A clean dd exit with zero bytes written counts as a failure too — happens
 # when the pipe collapsed before any data flowed.
-if ! grep -qE 'bytes (transferred|copied)' "$DD_LOG"; then
+if ! grep -qE '(transferred|copied)' "$DD_LOG"; then
   echo "::warning:: dd produced no transfer summary — wrote 0 bytes?" >&2
 fi
 
