@@ -130,6 +130,13 @@ in
       # Linux builder.
       // {
         create-arkana-aeronautics-client = (pkgsFor system).create-arkana-aeronautics-client;
+        # Generic Minecraft modpack tooling (currently `dep-tree`).
+        # Run via `nix run .#dep-tree -- /path/to/server-tree`.
+        minecraft-modpack-tools = (pkgsFor system).minecraft-modpack-tools;
       };
+    apps.dep-tree = {
+      type = "app";
+      program = "${(pkgsFor system).minecraft-modpack-tools}/bin/dep-tree";
+    };
   };
 }

@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
-"""Pre-flight dep checker for the Arkana + Aeronautics mod set.
+"""Pre-flight dependency checker for any NeoForge / Forge server tree.
 
-Walks every jar in a built server tree's mods/, parses
-META-INF/neoforge.mods.toml, builds provides/requires graphs, and reports:
+Walks every jar in a built server tree's mods/ directory, parses
+META-INF/neoforge.mods.toml (falls back to META-INF/mods.toml for legacy
+Forge mods, recurses through META-INF/jars/* for JIJ-bundled children),
+builds provides/requires graphs, and reports:
 
   - mods whose required deps are missing (would fail at runtime)
   - mods whose required deps are present but version-out-of-range
   - the dep tree under any specific mod (use --tree <modId>)
   - reverse deps for a modId (use --dependents <modId>)
 
-Why: bisecting via boot cycles is ~5 min per round and a single missing dep
-masks every transitive dependent until that lib is grouped. With the dep
-graph in hand we classify mods deterministically by walking from the
-floor (Aeronautics + its overlay) outward — anything reachable through
-required edges that all resolve is bootable; anything blocked surfaces
-its blocker explicitly.
+Why pre-flight: bisecting via boot cycles is multi-minute per round and a
+single missing dep masks every transitive dependent until that lib is
+classified into a group. With the dep graph in hand we know exactly which
+libraries each feature mod expects — surface blockers in seconds, not
+minutes.
 
 Usage:
-  ./dep-tree.py /nix/store/<server-pkg-path>      # full report
-  ./dep-tree.py <server-pkg> --tree apotheosis    # apotheosis's transitive required deps
-  ./dep-tree.py <server-pkg> --dependents create  # what hard-requires create
+  dep-tree /path/to/server-tree                          # full report
+  dep-tree /path/to/server-tree --tree apotheosis        # transitive deps
+  dep-tree /path/to/server-tree --dependents create      # reverse deps
 
-JIJ (jar-in-jar) bundled mods aren't walked — Aeronautics' bundled
-`simulated` and `offroad` show up at runtime but their TOML lives inside
-nested jars and the cost of unzipping is too high for a pre-flight check.
-Treat the bundled jar as a single mod for analysis purposes.
-"""
+Generic to any modpack — no Arkana-specific assumptions. Bake into a
+modpack server derivation's installPhase to fail builds before the docker
+image layer is computed (saves a multi-minute boot cycle when a mod set
+regression introduces an unsatisfied required dep)."""
 import argparse
 import re
 import sys

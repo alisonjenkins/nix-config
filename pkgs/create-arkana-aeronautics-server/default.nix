@@ -1,4 +1,4 @@
-{ stdenvNoCC, stdenv, lib, fetchurl, unzip, bash, python3
+{ stdenvNoCC, stdenv, lib, fetchurl, unzip, bash, minecraft-modpack-tools
 , # Whitelist of Arkana mod groups to bake into the server tree. Default
   # `[]` is the verified Aeronautics-only floor (Aeronautics + Sable +
   # Compatability + New Age + Big Cannons + Ritchie's + spark + JEI). Flip
@@ -161,7 +161,7 @@ stdenvNoCC.mkDerivation {
   # Arkana zip is the structural source (manifest.json + overrides/);
   # everything else is composed in installPhase from the resolved jars.
   src = arkanaManifestPack;
-  nativeBuildInputs = [ unzip python3 ];
+  nativeBuildInputs = [ unzip minecraft-modpack-tools ];
 
   unpackPhase = ''
     runHook preUnpack
@@ -229,12 +229,13 @@ stdenvNoCC.mkDerivation {
         --replace-fail '#!/usr/bin/env bash' '#!${bash}/bin/bash' \
         --replace-fail '@libstdcxxLib@'      '${stdenv.cc.cc.lib}/lib'
 
-    # Pre-flight dep check: parse every jar's META-INF/neoforge.mods.toml
-    # (+ JIJ children) and surface any unsatisfied required deps. Fails
-    # the build before docker image is layered — saves a ~5 min boot
-    # cycle when a regression introduces a missing dep.
-    echo "[deps-check] running dep-tree.py on $out ..."
-    if python3 ${./dep-tree.py} "$out" > $out/.deps-check.log 2>&1; then
+    # Pre-flight dep check via minecraft-modpack-tools.dep-tree —
+    # parses every jar's META-INF/neoforge.mods.toml (+ JIJ children)
+    # and fails the build if any required dep is missing or out-of-range.
+    # Saves a ~5 min boot cycle when a regression introduces a missing
+    # dep. The tool is generic; see pkgs/minecraft-modpack-tools.
+    echo "[deps-check] running dep-tree on $out ..."
+    if dep-tree "$out" > $out/.deps-check.log 2>&1; then
       cat $out/.deps-check.log
       if grep -qE '^=== Missing required deps \([1-9]' $out/.deps-check.log; then
         echo "[deps-check] FAIL — missing required deps (see above)" >&2

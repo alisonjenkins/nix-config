@@ -25,6 +25,9 @@
   cavekit = pkgs.callPackage ./cavekit {};
   cavemem = pkgs.callPackage ./cavemem {};
   create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
-  create-arkana-aeronautics-server = pkgs.callPackage ./create-arkana-aeronautics-server {};
+  minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
+  create-arkana-aeronautics-server = pkgs.callPackage ./create-arkana-aeronautics-server {
+    minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
+  };
   create-arkana-aeronautics-client = pkgs.callPackage ./create-arkana-aeronautics-client {};
 }

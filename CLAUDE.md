@@ -182,6 +182,70 @@ Key configurations defined in the flake:
 - **`ami-build-and-upload.yaml`**: Builds and uploads NixOS AMIs to AWS with retention cleanup
 - **`closure-report.yaml`**: Generates closure size reports for desktop/laptop configurations
 
+### Minecraft modpack server packaging
+
+Two patterns ship Minecraft modpacks as Nix-built OCI images:
+
+- `pkgs/create-sky-colonies-server` — vanilla pattern. The publisher releases a "Server Pack" zip; we `fetchurl` it and overlay perf mods + JVM args + entrypoint. Used for any modpack whose publisher ships a pre-installed server tree.
+- `pkgs/create-arkana-aeronautics-server` — manifest-driven pattern with bisection. Modpack ships only a CurseForge "manifest pack" (manifest.json + overrides/, no jars), so we resolve every mod via cfwidget+mediafilez into `arkana-mods.nix`, run the NeoForge installer at first boot to populate `/data/libraries`, and bisect mod groups to find what coexists.
+
+The bisection workflow is the part worth knowing. `pkgs/minecraft-modpack-tools` ships generic helpers (`dep-tree` is the only one currently); `pkgs/create-arkana-aeronautics-server` keeps the modpack-specific pieces (`group-classifier.py`, `bisect.sh`, `generate-arkana-mods.sh`).
+
+#### When to bisect
+
+Whenever a modpack's overlay (extra mods we add on top) requires a Create / NeoForge / library version newer than what the base modpack ships. Bumping a single core lib often cascades into mod-construction or registry-init NPEs across 5-15 unrelated mods that were tuned to the older API. Bisecting identifies which Arkana mods stay compatible with the bumped floor — keep those, disable the rest.
+
+#### The four files that drive composition
+
+- `arkana-mods.nix` — auto-generated from the modpack's manifest.json. **Don't hand-edit.** Regenerate with `generate-arkana-mods.sh /path/to/manifest.json arkana-mods.nix` after a modpack version bump.
+- `arkana-mods-extras.nix` — three lists:
+  - `replacements` — newer file-IDs swapped for entries in `arkana-mods.nix` whose Arkana version is incompatible with our bumped floor. Set `alwaysInclude = true` for replacements that are part of the floor itself (Create 6.0.10 is the only one today). Replacements without `alwaysInclude` only apply when their `origProjectID`'s group is enabled.
+  - `skipped` — discontinued mods with no live file on CurseForge. Always dropped server-side; client zip strips manifest entries so the launcher doesn't error on import.
+  - `disabled` — mods that boot-fail under our bumped floor. Always dropped, even when their group is enabled. Includes a `reason` and `phase` field for the next person debugging.
+- `arkana-groups.nix` — auto-classified by `group-classifier.py` from arkana-mods.nix filenames. Pure regex pattern matching; hand-tweak the classifier rules when bisect surfaces a misclassified mod (e.g. `gtbcs_spell_lib` originally landed in `core-libs` but hard-deps `irons_spellbooks` so it moved to `irons-spells`).
+- `overlays.nix` — Aeronautics + Sable + companions + library mods we add on top of Arkana. Each entry can carry `requiresGroup = "<name>"` so libraries (e.g. AeroBlender needs the `world` group's aether + terrablender) only ship when their dependents would actually load.
+
+#### The bisect loop
+
+```bash
+# 1. Boot the floor (no Arkana groups). Should always pass.
+./pkgs/create-arkana-aeronautics-server/bisect.sh
+
+# 2. Pre-flight dep check on the floor + every Arkana group together.
+nix build --impure --expr '
+  let f = builtins.getFlake "."; sys = "aarch64-linux";
+      pkgs = import f.inputs.nixpkgs { system = sys; config.allowUnfree = true; overlays = builtins.attrValues f.outputs.overlays; };
+  in pkgs.create-arkana-aeronautics-server.override {
+       enabledArkanaGroups = [ "core-libs" "apothic" "irons-spells" ... ];
+     }'
+# Build is gated by an installPhase dep-tree check — fails before docker
+# layering if any required dep is missing or out-of-version-range. Surfaces
+# blockers in seconds, not multi-minute boot cycles.
+nix run .#dep-tree -- /nix/store/<server-tree-path>
+
+# 3. Boot whatever passes (1) above.
+./pkgs/create-arkana-aeronautics-server/bisect.sh core-libs apothic ...
+# Watches docker logs for "Done (Xs)" or any FATAL/Failed-to-load line and
+# dumps the latest crash report on failure.
+
+# 4. For each FATAL surfaced: add the offender + its hard-dependents to
+#    `disabled = [ ... ]` in arkana-mods-extras.nix, with a reason + phase.
+#    Use `dep-tree --dependents <modId>` to find what cascades.
+#    Re-run (3). Repeat.
+```
+
+Optimizations baked in: bisect.sh keeps `/data/libraries` between rounds (`FRESH=1` to wipe), server.properties pins `level-type=minecraft\:flat` (~10s saved per round on spawn-prepare), installPhase fails fast on dep-graph regressions.
+
+#### Crash-pattern triage
+
+| Signature | Phase | Likely fix |
+|---|---|---|
+| `Mod X requires Y N.N or above` | dep-resolution | bump in `replacements`, or move Y into an enabled group |
+| `Attempted to load class net/minecraft/client/...` | class-load | mod is client-only; add to `clientOnlyProjectIDs` in `default.nix` |
+| `failed injection check, (0/N) succeeded` mixin | mod-construction | mod's mixin targets removed/renamed API on the bumped Create / NeoForge — bump the mod or `disabled` it |
+| `Trying to access unbound value: ResourceKey[...]` | registry-init | `DeferredHolder` resolved before its registry runs; usually a mod's mixin firing during another mod's RegisterEvent. Hard to fix without bumping the mixin source — usually `disabled` |
+| `Cannot get config value before config is loaded` | common-setup | mod calls config.get from FMLCommonSetupEvent; NeoForge 21.1.x lifecycle incompatibility — `disabled` |
+
 ### Pending: niks3 cache push on desktops/laptops
 
 The `modules/niks3-cache-push` module and GHA parallel push workflow are implemented but **not yet enabled** on hosts. To finish:
