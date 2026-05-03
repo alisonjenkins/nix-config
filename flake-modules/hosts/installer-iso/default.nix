@@ -30,6 +30,17 @@ in
           # kill.
           diskoPkg = inputs.disko.packages.${system}.disko;
           luksControllerUnlockPkg = inputs.luks-controller-unlock.packages.${system}.default;
+          # Wrap scripts/luks-discover.sh as a `luks-discover` binary
+          # so manage-luks (and any future caller) shares the same
+          # discovery code path that scripts/tests/luks-discover.bats
+          # exercises. Keeping the discovery logic in a tested
+          # standalone script avoids drift between the picker and the
+          # regression suite.
+          luksDiscover = pkgs.writeShellApplication {
+            name = "luks-discover";
+            runtimeInputs = with pkgs; [ coreutils gawk util-linux ];
+            text = builtins.readFile ../../../scripts/luks-discover.sh;
+          };
           installNixos = pkgs.writeShellApplication {
             name = "install-nixos";
             runtimeInputs = [
@@ -600,6 +611,7 @@ in
             name = "manage-luks";
             runtimeInputs = [
               luksControllerUnlockPkg
+              luksDiscover
             ] ++ (with pkgs; [
               coreutils
               cryptsetup
@@ -612,15 +624,10 @@ in
             text = ''
               set -euo pipefail
 
-              # Pick a LUKS device from the system. Filters lsblk to
-              # crypto_LUKS partitions so users can't accidentally point
-              # this at a non-LUKS disk.
-              #
-              # FSTYPE comes first in `-o` so awk's `$1` test is robust
-              # against MODEL fields that are empty (NVMe partition
-              # rows) or contain spaces (most SATA SSDs) — the previous
-              # 4-column ordering silently dropped the LUKS row whenever
-              # MODEL didn't render as exactly one whitespace-free token.
+              # Pick a LUKS device. Discovery is delegated to
+              # `luks-discover` (scripts/luks-discover.sh, exercised by
+              # scripts/tests/luks-discover.bats) so the picker and the
+              # regression suite share one code path.
               pick_luks_device() {
                 local args=() dev size_h
                 while read -r dev; do
@@ -628,9 +635,7 @@ in
                   size_h=$(sudo lsblk -bdno SIZE "$dev" 2>/dev/null \
                     | numfmt --to=iec --suffix=B 2>/dev/null || echo "?")
                   args+=("$dev" "$size_h")
-                done < <(sudo lsblk -lnp -o FSTYPE,NAME \
-                  | awk '$1 == "crypto_LUKS" { print $2 }' \
-                  | sort)
+                done < <(luks-discover)
 
                 if [ ''${#args[@]} -eq 0 ]; then
                   kdialog --sorry "No crypto_LUKS partitions detected.\n\nIf you've just plugged in a disk, give it a moment then retry." 2>/dev/null || true
