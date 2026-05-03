@@ -803,8 +803,17 @@ in
                 kdialog --msgbox "test-input runs for 30 seconds with the controller in pure-gamepad mode.\n\nDuring that window the Deck's buttons will NOT drive the desktop cursor / virtual keyboard — that's expected. Press the controller buttons to see canonical event names print in the konsole window. Normal navigation returns when the window closes." \
                   2>/dev/null || true
 
-                with_lizard_disabled konsole -e bash -c '
+                # `--nofork` so konsole stays attached to this shell.
+                # Without it konsole forks a detached KDE process and
+                # returns 0 immediately, which lets the surrounding
+                # `with_lizard_disabled` subshell exit and fire its
+                # EXIT trap that restores lizard_mode=1 — long before
+                # the konsole window has actually run test-input. The
+                # net result is a window that runs in lizard mode
+                # despite the toggle.
+                with_lizard_disabled konsole --nofork -e bash -c '
                   set -u
+                  echo "==> hid_steam.lizard_mode = $(cat /sys/module/hid_steam/parameters/lizard_mode 2>/dev/null || echo unknown)"
                   echo "==> Press buttons on the controller. Events should appear below."
                   echo "==> Window auto-closes in 30 seconds."
                   echo
