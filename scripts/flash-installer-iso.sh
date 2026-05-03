@@ -323,9 +323,17 @@ echo "==> wiping existing signatures"
 wipe_signatures
 
 echo "==> writing ISO"
+# `status=none` is GNU-dd only — `sudo dd` on macOS resolves to BSD
+# /usr/bin/dd which rejects it as `dd: status: illegal argument` and
+# the pv|dd pipefail kills the whole script (silently, because dd's
+# stderr is gone with the pipe). So: omit status= entirely when pv is
+# in front (pv shows the live progress; dd's 3-line end-of-run summary
+# is fine), and only use `status=progress` on Linux's GNU dd.
 if [ "$USE_PV" = "1" ]; then
   pv -s "$ISO_SIZE" -- "$ISO" \
-    | $SUDO dd of="$DEV" "${DD_OPTS[@]}" status=none
+    | $SUDO dd of="$DEV" "${DD_OPTS[@]}"
+elif [ "$OS" = "Darwin" ]; then
+  $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}"
 else
   $SUDO dd if="$ISO" of="$DEV" "${DD_OPTS[@]}" status=progress
 fi
@@ -339,7 +347,7 @@ ISO_SHA=$(sha256 "$ISO")
 # Linux skips the page cache; macOS rdiskN is already unbuffered. dd bs=1M
 # rounds up to whole MiB, so head -c trims to the exact ISO size.
 COUNT=$(((ISO_SIZE + 1048575) / 1048576))
-DEV_SHA=$($SUDO dd if="$DEV" "${DD_VERIFY_OPTS[@]}" count="$COUNT" status=none |
+DEV_SHA=$($SUDO dd if="$DEV" "${DD_VERIFY_OPTS[@]}" count="$COUNT" 2>/dev/null |
   head -c "$ISO_SIZE" | sha256 /dev/stdin)
 
 echo "    iso sha256: $ISO_SHA"
@@ -355,7 +363,7 @@ if [ "$STRICT_UEFI" = "1" ]; then
   # MBR partition table is at offset 446, four 16-byte entries (64 bytes).
   # The 0x55AA boot signature lives at offset 510 and is left intact.
   # GPT at LBA 1 (offset 512) is untouched.
-  $SUDO dd if=/dev/zero of="$DEV" bs=1 count=64 seek=446 conv=notrunc status=none
+  $SUDO dd if=/dev/zero of="$DEV" bs=1 count=64 seek=446 conv=notrunc 2>/dev/null
   flush_buffers
 fi
 

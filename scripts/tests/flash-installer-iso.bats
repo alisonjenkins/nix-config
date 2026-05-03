@@ -260,6 +260,41 @@ byte_at() {
 }
 
 # -----------------------------------------------------------------------------
+# BSD-dd compatibility regression
+# -----------------------------------------------------------------------------
+
+@test "script does not pass GNU-only flags to dd (BSD compat)" {
+  make_fixture_iso fixture.iso
+  : > target
+
+  # Shim dd to fail loudly on any GNU-only argument BSD dd rejects. macOS
+  # /usr/bin/dd is BSD and lacks `status=none`, `status=progress`,
+  # `oflag=direct`, `iflag=direct`, `conv=fsync`. Hitting any of those
+  # under sudo on a real Mac silently kills the run, because dd's stderr
+  # is consumed by the pv|dd pipeline. Catch it here.
+  shim_dir="$(mktemp -d)"
+  cat >"$shim_dir/dd" <<'SH'
+#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    status=none|status=progress|oflag=direct|iflag=direct|conv=fsync)
+      echo "dd: $arg: illegal argument" >&2
+      exit 1
+      ;;
+  esac
+done
+real_dd=$(PATH=/usr/bin:/bin command -v dd)
+exec "$real_dd" "$@"
+SH
+  chmod +x "$shim_dir/dd"
+
+  run env PATH="$shim_dir:$PATH" bash -c "echo yes | '$SCRIPT' target fixture.iso 2>&1"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"illegal argument"* ]]
+  [[ "$output" == *"OK — bootable ISO written"* ]]
+}
+
+# -----------------------------------------------------------------------------
 # verify-readback failure detection
 # -----------------------------------------------------------------------------
 
