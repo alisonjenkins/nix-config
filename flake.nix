@@ -27,12 +27,14 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
-    # Disabled for now. Repo is now hosted at github.com/alisonjenkins/luks-controller-unlock
-    # but is private — the SSH flakeref below relies on the user's SSH agent for fetch access.
-    # luks-controller-unlock = {
-    #   url = "git+ssh://git@github.com/alisonjenkins/luks-controller-unlock.git";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    luks-controller-unlock = {
+      url = "github:alisonjenkins/luks-controller-unlock";
+      # Follow nixpkgs_unstable: upstream's flake.nix tracks nixos-unstable
+      # for its rustPlatform.buildRustPackage devshell + libdrm/cryptsetup
+      # buildInputs. Following our 25.11 stable channel risks pulling
+      # older versions than upstream tested against.
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
     nix-cachyos-kernel = {
       # Pinned to CachyOS 7.0.1 rev. Earlier belief that CachyOS 7 had a
       # dm-crypt EINVAL regression was wrong — the real cause was

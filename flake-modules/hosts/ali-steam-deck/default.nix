@@ -23,7 +23,7 @@ in {
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.locale
-      # self.nixosModules.luks-controller-unlock
+      self.nixosModules.luks-controller-unlock
 
       # External flake modules
       inputs.disko.nixosModules.disko
@@ -123,10 +123,10 @@ in {
         # binding. Keyboard passphrase keyslot remains the ultimate
         # fallback (intentionally NOT masking the console agent until
         # a week of clean reboots — see TESTING.md rung 5.3).
-        # modules.luks-controller-unlock = {
-        #   enable = true;
-        #   maskConsoleAgent = false;
-        # };
+        modules.luks-controller-unlock = {
+          enable = true;
+          maskConsoleAgent = false;
+        };
 
         # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa
         hardware.graphics.package = lib.mkForce pkgs.mesa;

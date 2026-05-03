@@ -29,12 +29,15 @@ in
           # use and tripping systemd-oomd's PSI-based pre-emptive
           # kill.
           diskoPkg = inputs.disko.packages.${system}.disko;
+          luksControllerUnlockPkg = inputs.luks-controller-unlock.packages.${system}.default;
           installNixos = pkgs.writeShellApplication {
             name = "install-nixos";
             runtimeInputs = [
               diskoPkg
+              luksControllerUnlockPkg
             ] ++ (with pkgs; [
               coreutils
+              cryptsetup
               gawk
               git
               gnugrep
@@ -371,35 +374,6 @@ in
                       --flake ".#$HOST"
                     rc=$?
                     [ "$rc" = 1 ] && exit 0  # user aborted
-
-                    step "Enrolling TPM2 as a LUKS keyslot (PCR 7) for $HOST"
-                    # If the target has a TPM, add a TPM-bound keyslot
-                    # to the LUKS partition so subsequent boots can
-                    # auto-unlock without a keyboard. Bound to PCR 7
-                    # (UEFI Secure Boot state) so the seal is stable
-                    # across kernel/grub updates. The original password
-                    # keyslot stays as a fallback. Non-fatal — install
-                    # proceeds even if enrollment is impossible (no TPM,
-                    # no LUKS partition, etc).
-                    luks_part=$(sudo lsblk -lno NAME,FSTYPE "$DISK" \
-                      | awk '$2 == "crypto_LUKS" { print "/dev/"$1; exit }')
-                    if [ -z "$luks_part" ]; then
-                      echo "  no crypto_LUKS partition found on $DISK — skipping TPM enrollment"
-                      kdialog --sorry "Could not locate the LUKS partition on $DISK to enroll TPM2.\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
-                    elif [ ! -e /dev/tpmrm0 ] && [ ! -e /dev/tpm0 ]; then
-                      echo "  no TPM device on this hardware — skipping TPM enrollment"
-                      kdialog --sorry "No TPM device detected (/dev/tpm{rm0,0} both missing).\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
-                    else
-                      echo "  enrolling TPM on $luks_part (PCR 7)"
-                      if ! sudo systemd-cryptenroll \
-                            --unlock-key-file=/tmp/secret.key \
-                            --tpm2-device=auto \
-                            --tpm2-pcrs=7 \
-                            "$luks_part"; then
-                        echo "  TPM enrollment FAILED — continuing without TPM unlock"
-                        kdialog --error "TPM2 enrollment failed. Continuing install — you'll need a USB keyboard at boot. The original password keyslot still works." 2>/dev/null || true
-                      fi
-                    fi
                     ;;
 
                   resume)
@@ -414,6 +388,77 @@ in
                     [ "$rc" = 1 ] && exit 0  # user aborted
                     ;;
                 esac
+
+                # Locate the crypto_LUKS partition on the target disk.
+                # Used by both the (fresh-only) TPM enroll step below and
+                # the (fresh + resume) controller-PIN enroll step.
+                luks_part=$(sudo lsblk -lno NAME,FSTYPE "$DISK" \
+                  | awk '$2 == "crypto_LUKS" { print "/dev/"$1; exit }')
+                if [ -n "$luks_part" ]; then
+                  echo "  located LUKS partition: $luks_part"
+                else
+                  echo "  no crypto_LUKS partition found on $DISK"
+                fi
+
+                if [ "$INSTALL_MODE" = "fresh" ]; then
+                  step "Enrolling TPM2 as a LUKS keyslot (PCR 7) for $HOST"
+                  # If the target has a TPM, add a TPM-bound keyslot
+                  # to the LUKS partition so subsequent boots can
+                  # auto-unlock without a keyboard. Bound to PCR 7
+                  # (UEFI Secure Boot state) so the seal is stable
+                  # across kernel/grub updates. The original password
+                  # keyslot stays as a fallback. Non-fatal — install
+                  # proceeds even if enrollment is impossible (no TPM,
+                  # no LUKS partition, etc).
+                  if [ -z "$luks_part" ]; then
+                    kdialog --sorry "Could not locate the LUKS partition on $DISK to enroll TPM2.\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                  elif [ ! -e /dev/tpmrm0 ] && [ ! -e /dev/tpm0 ]; then
+                    echo "  no TPM device on this hardware — skipping TPM enrollment"
+                    kdialog --sorry "No TPM device detected (/dev/tpm{rm0,0} both missing).\n\nContinuing without TPM unlock — you'll need a USB keyboard at boot." 2>/dev/null || true
+                  else
+                    echo "  enrolling TPM on $luks_part (PCR 7)"
+                    if ! sudo systemd-cryptenroll \
+                          --unlock-key-file=/tmp/secret.key \
+                          --tpm2-device=auto \
+                          --tpm2-pcrs=7 \
+                          "$luks_part"; then
+                      echo "  TPM enrollment FAILED — continuing without TPM unlock"
+                      kdialog --error "TPM2 enrollment failed. Continuing install — you'll need a USB keyboard at boot. The original password keyslot still works." 2>/dev/null || true
+                    fi
+                  fi
+                fi
+
+                step "Checking host config for controller-unlock module"
+                # Controller-PIN enrollment runs on both fresh and
+                # resume installs when the target host has
+                # `modules.luks-controller-unlock.enable = true`.
+                # luks-controller-unlock enroll reads the existing LUKS
+                # passphrase from stdin (per upstream src/enroll.rs) and
+                # then captures a PIN sequence from a connected gamepad.
+                # Non-fatal — if the user skips, has no controller, or
+                # enrollment fails, the install still completes and they
+                # can use the Manage LUKS desktop launcher (or the
+                # booted system) to enroll later.
+                controller_enabled=$(nix eval --no-warn-dirty --raw \
+                  ".#nixosConfigurations.$HOST.config.modules.luks-controller-unlock.enable" \
+                  2>/dev/null || echo "false")
+                if [ "$controller_enabled" = "true" ] && [ -n "$luks_part" ]; then
+                  enroll_choice=$(kdialog --title "Controller PIN enrollment" \
+                    --menu "Host $HOST has luks-controller-unlock enabled.\n\nEnroll a controller PIN keyslot on $luks_part now?" \
+                    enroll "Press buttons on a connected controller to set a PIN" \
+                    skip   "Skip — use the Manage LUKS launcher later, or enroll from the booted system" \
+                    ) || enroll_choice=skip
+                  if [ "$enroll_choice" = "enroll" ]; then
+                    echo "  enrolling controller PIN on $luks_part"
+                    if ! sudo luks-controller-unlock enroll --device "$luks_part" \
+                          < /tmp/secret.key; then
+                      echo "  controller PIN enrollment FAILED — continuing"
+                      kdialog --error "Controller PIN enrollment failed.\n\nContinuing install — use the Manage LUKS desktop launcher to retry, or run \`luks-controller-unlock enroll\` from the booted system. Your password keyslot is unchanged." 2>/dev/null || true
+                    fi
+                  fi
+                elif [ "$controller_enabled" = "true" ]; then
+                  echo "  module enabled but no LUKS partition located — skipping controller enroll"
+                fi
 
                 step "Running nixos-install (substitutes directly to /mnt)"
                 # `--root /mnt` makes nixos-install pass `--store
@@ -537,6 +582,231 @@ in
                 kdialog --error "Connect failed:\n\n$out"
                 exit 1
               fi
+            '';
+          };
+
+          # Standalone LUKS manager. Wraps `luks-controller-unlock
+          # enroll` and the relevant `cryptsetup` subcommands behind a
+          # kdialog menu. Designed for cases where the install-nixos
+          # controller-enroll prompt was skipped, the user wants to
+          # add/change/remove a keyslot from a live ISO, or recover
+          # from a failed enrollment without booting the target.
+          manageLuks = pkgs.writeShellApplication {
+            name = "manage-luks";
+            runtimeInputs = [
+              luksControllerUnlockPkg
+            ] ++ (with pkgs; [
+              coreutils
+              cryptsetup
+              gawk
+              gnugrep
+              gnused
+              kdePackages.kdialog
+              util-linux
+            ]);
+            text = ''
+              set -euo pipefail
+
+              # Pick a LUKS device from the system. Filters lsblk to
+              # crypto_LUKS partitions so users can't accidentally point
+              # this at a non-LUKS disk.
+              pick_luks_device() {
+                local args=()
+                while read -r name size model; do
+                  [ -n "$name" ] || continue
+                  args+=("/dev/$name" "$size  ''${model:-(no model)}")
+                done < <(sudo lsblk -lno NAME,SIZE,MODEL,FSTYPE \
+                  | awk '$4 == "crypto_LUKS" { print $1, $2, $3 }')
+
+                if [ ''${#args[@]} -eq 0 ]; then
+                  kdialog --sorry "No crypto_LUKS partitions detected.\n\nIf you've just plugged in a disk, give it a moment then retry." 2>/dev/null || true
+                  return 1
+                fi
+
+                kdialog --title "Pick LUKS device" \
+                  --menu "Select the LUKS partition:" \
+                  "''${args[@]}"
+              }
+
+              # Read a passphrase via kdialog; re-prompt on empty input.
+              ask_passphrase() {
+                local prompt="$1"
+                local pwd
+                while true; do
+                  pwd=$(kdialog --password "$prompt") || return 1
+                  if [ -z "$pwd" ]; then
+                    kdialog --sorry "Passphrase cannot be empty. Try again." || return 1
+                    continue
+                  fi
+                  printf '%s' "$pwd"
+                  return 0
+                done
+              }
+
+              # Read a NEW passphrase twice; re-prompt until they match
+              # and are non-empty.
+              ask_new_passphrase() {
+                local prompt1="$1" prompt2="$2"
+                local p1 p2
+                while true; do
+                  p1=$(kdialog --password "$prompt1") || return 1
+                  [ -z "$p1" ] && { kdialog --sorry "Passphrase cannot be empty." || return 1; continue; }
+                  p2=$(kdialog --password "$prompt2") || return 1
+                  if [ "$p1" != "$p2" ]; then
+                    kdialog --sorry "Passphrases don't match. Try again." || return 1
+                    continue
+                  fi
+                  printf '%s' "$p1"
+                  return 0
+                done
+              }
+
+              # Write a passphrase to a temp file with no trailing newline
+              # and echo the path. Caller is responsible for shredding.
+              passphrase_to_keyfile() {
+                local f
+                f=$(mktemp)
+                chmod 600 "$f"
+                printf '%s' "$1" > "$f"
+                printf '%s' "$f"
+              }
+
+              shred_keyfile() {
+                [ -n "''${1:-}" ] && [ -f "$1" ] && sudo shred -u "$1" 2>/dev/null || rm -f "$1" 2>/dev/null || true
+              }
+
+              action_enroll_pin() {
+                local dev kf existing
+                dev=$(pick_luks_device) || return 0
+                existing=$(ask_passphrase "Existing LUKS passphrase for $dev:") || return 0
+                kf=$(passphrase_to_keyfile "$existing")
+                unset existing
+                if sudo luks-controller-unlock enroll --device "$dev" < "$kf"; then
+                  kdialog --msgbox "Controller PIN enrolled on $dev.\n\nKeyboard passphrase keyslot is unchanged." || true
+                else
+                  kdialog --error "Enrollment failed on $dev.\n\nCheck terminal for details. The existing keyslot is unchanged." || true
+                fi
+                shred_keyfile "$kf"
+              }
+
+              action_add_password() {
+                local dev existing new ekf nkf
+                dev=$(pick_luks_device) || return 0
+                existing=$(ask_passphrase "Existing LUKS passphrase for $dev (any active keyslot):") || return 0
+                new=$(ask_new_passphrase "New passphrase for $dev:" "Confirm new passphrase:") || { unset existing; return 0; }
+                ekf=$(passphrase_to_keyfile "$existing")
+                nkf=$(passphrase_to_keyfile "$new")
+                unset existing new
+                if sudo cryptsetup luksAddKey --batch-mode --key-file "$ekf" "$dev" "$nkf"; then
+                  kdialog --msgbox "Added new passphrase keyslot on $dev." || true
+                else
+                  kdialog --error "luksAddKey failed on $dev." || true
+                fi
+                shred_keyfile "$ekf"
+                shred_keyfile "$nkf"
+              }
+
+              action_change_password() {
+                local dev existing new ekf nkf
+                dev=$(pick_luks_device) || return 0
+                existing=$(ask_passphrase "Existing passphrase to change on $dev:") || return 0
+                new=$(ask_new_passphrase "New passphrase for $dev:" "Confirm new passphrase:") || { unset existing; return 0; }
+                ekf=$(passphrase_to_keyfile "$existing")
+                nkf=$(passphrase_to_keyfile "$new")
+                unset existing new
+                # luksChangeKey replaces the slot that the supplied
+                # passphrase opens, in place. Other slots are untouched.
+                if sudo cryptsetup luksChangeKey --batch-mode --key-file "$ekf" "$dev" "$nkf"; then
+                  kdialog --msgbox "Replaced the passphrase you supplied on $dev. Other keyslots unchanged." || true
+                else
+                  kdialog --error "luksChangeKey failed on $dev." || true
+                fi
+                shred_keyfile "$ekf"
+                shred_keyfile "$nkf"
+              }
+
+              action_remove_keyslot() {
+                local dev slots args slot existing ekf
+                dev=$(pick_luks_device) || return 0
+
+                # Parse `cryptsetup luksDump` for active slot indices.
+                # Each active slot appears as a line like "  N: luks2".
+                slots=$(sudo cryptsetup luksDump "$dev" \
+                  | awk '/^  [0-9]+:/ { gsub(":",""); print $1 }')
+                if [ -z "$slots" ]; then
+                  kdialog --error "Could not parse keyslot list for $dev." || true
+                  return 0
+                fi
+
+                args=()
+                while IFS= read -r slot; do
+                  [ -n "$slot" ] || continue
+                  args+=("$slot" "Slot $slot")
+                done <<< "$slots"
+
+                slot=$(kdialog --title "Remove keyslot on $dev" \
+                  --menu "Pick the slot to PERMANENTLY remove from $dev." \
+                  "''${args[@]}") || return 0
+
+                if [ "$slot" = "0" ]; then
+                  kdialog --warningcontinuecancel \
+                    "Slot 0 is conventionally the original keyboard passphrase keyslot.\n\nRemoving it can leave you locked out if no other slot opens the volume.\n\nProceed anyway?" \
+                    || return 0
+                fi
+
+                kdialog --warningcontinuecancel \
+                  "About to wipe slot $slot on $dev.\n\nThis cannot be undone. Continue?" \
+                  || return 0
+
+                # Authenticate via an existing passphrase that is NOT
+                # the one being removed (cryptsetup requires a key file
+                # / passphrase that opens a DIFFERENT slot — or the
+                # same slot, if the user chooses).
+                existing=$(ask_passphrase "Passphrase from a still-active keyslot (any slot opens this for confirmation):") || return 0
+                ekf=$(passphrase_to_keyfile "$existing")
+                unset existing
+
+                if sudo cryptsetup luksKillSlot --batch-mode --key-file "$ekf" "$dev" "$slot"; then
+                  kdialog --msgbox "Slot $slot removed from $dev." || true
+                else
+                  kdialog --error "luksKillSlot failed on $dev." || true
+                fi
+                shred_keyfile "$ekf"
+              }
+
+              action_show_status() {
+                local dev dump
+                dev=$(pick_luks_device) || return 0
+                dump=$(sudo cryptsetup luksDump "$dev" 2>&1 || true)
+                # `kdialog --textbox` reads from a file, so spool the
+                # dump to a tempfile.
+                local f
+                f=$(mktemp)
+                printf '%s\n' "$dump" > "$f"
+                kdialog --title "luksDump $dev" --textbox "$f" 720 600 || true
+                rm -f "$f"
+              }
+
+              while true; do
+                action=$(kdialog --title "Manage LUKS" \
+                  --menu "Pick an action:" \
+                  enroll-pin     "Enroll a controller PIN keyslot via luks-controller-unlock" \
+                  add-password   "Add a new passphrase keyslot (cryptsetup luksAddKey)" \
+                  change-password "Replace an existing passphrase keyslot (cryptsetup luksChangeKey)" \
+                  remove-slot    "Remove a keyslot (cryptsetup luksKillSlot)" \
+                  show-status    "Show keyslot table (cryptsetup luksDump)" \
+                  quit           "Exit" \
+                  ) || exit 0
+
+                case "$action" in
+                  enroll-pin)      action_enroll_pin ;;
+                  add-password)    action_add_password ;;
+                  change-password) action_change_password ;;
+                  remove-slot)     action_remove_keyslot ;;
+                  show-status)     action_show_status ;;
+                  quit|*)          exit 0 ;;
+                esac
+              done
             '';
           };
         in
@@ -713,7 +983,10 @@ in
 
           environment.systemPackages = [
             diskoPkg
+            luksControllerUnlockPkg
+            manageLuks
           ] ++ (with pkgs; [
+            cryptsetup
             git
             vim
             just
@@ -757,6 +1030,19 @@ in
               Categories=System;Network;
             '';
           };
+          environment.etc."skel/Desktop/manage-luks.desktop" = {
+            mode = "0755";
+            text = ''
+              [Desktop Entry]
+              Type=Application
+              Name=Manage LUKS
+              Comment=Enroll controller PIN, add/change/remove LUKS keyslots
+              Icon=drive-harddisk-encrypted
+              Exec=${pkgs.kdePackages.konsole}/bin/konsole --hold -e ${manageLuks}/bin/manage-luks
+              Terminal=false
+              Categories=System;
+            '';
+          };
 
           # Plasma 6 refuses to launch untrusted .desktop files. Pre-create
           # the Desktop directory and copy the launchers with executable
@@ -766,6 +1052,7 @@ in
             "d /home/nixos/Desktop 0755 nixos users -"
             "C /home/nixos/Desktop/install-nixos.desktop 0755 nixos users - /etc/skel/Desktop/install-nixos.desktop"
             "C /home/nixos/Desktop/connect-wifi.desktop 0755 nixos users - /etc/skel/Desktop/connect-wifi.desktop"
+            "C /home/nixos/Desktop/manage-luks.desktop 0755 nixos users - /etc/skel/Desktop/manage-luks.desktop"
           ];
 
           systemd.services.clone-nix-config = {
