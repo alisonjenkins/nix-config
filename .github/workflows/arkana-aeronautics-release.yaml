@@ -1,0 +1,153 @@
+# Build + publish Create: Arkana + Aeronautics modpack artifacts on tag push.
+#
+# Triggered by:
+#   * pushing a tag matching `arkana-aeronautics-v*` (release semver tag)
+#   * manual workflow_dispatch
+#
+# Outputs:
+#   * Server OCI image at ghcr.io/<owner>/create-arkana-aeronautics-server
+#     tagged with the git tag + `latest`
+#   * Client zip attached to the GitHub release for that tag
+#
+# Auth notes:
+#   * GITHUB_TOKEN gets `packages: write` for ghcr push (no PAT needed)
+#   * GITHUB_TOKEN gets `contents: write` for release asset upload
+#   * No OIDC / external secrets — entirely first-party
+#
+# Builder: x86_64-linux Ubuntu runner. The Nix derivation is platform-keyed
+# to linux only (server tree + dockerTools.buildLayeredImage), so we don't
+# attempt aarch64-darwin or aarch64-linux outputs from CI — the home Linux
+# remote builder is for local devs, GHA runners build x86_64-linux directly.
+
+name: Arkana + Aeronautics — release
+
+on:
+  push:
+    tags:
+      - 'arkana-aeronautics-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to (re)publish (e.g. arkana-aeronautics-v1.5-aero-1.2.1)'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # release asset upload + tag read
+  packages: write   # ghcr push
+  id-token: write   # OIDC for any future signing/attestation
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/create-arkana-aeronautics-server
+    steps:
+      - name: Checkout (fetch the tagged commit)
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TAG }}
+          # No LFS in this repo; skip the fetch.
+          lfs: false
+
+      - name: Reclaim runner disk for the 2.5 GB image build
+        uses: wimpysworld/nothing-but-nix@main
+        with:
+          # Same shape as build-and-cache.yaml — keep cgroups so docker
+          # works, drop everything else.
+          hatchet-protocol: rampage
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            # Pull from the same caches the rest of this repo's CI uses
+            # so flake-input + nixpkgs derivations are warm.
+            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
+            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+
+      - name: Build server image (dockerTools layered tar.gz)
+        id: server
+        run: |
+          set -euo pipefail
+          out=$(nix build --no-link --print-out-paths --max-jobs 4 \
+            ".#packages.x86_64-linux.minecraft-arkana-aeronautics-image")
+          echo "image_tar=$out" >> "$GITHUB_OUTPUT"
+          ls -lh "$out"
+
+      - name: Build client zip (CurseForge-style)
+        id: client
+        run: |
+          set -euo pipefail
+          out=$(nix build --no-link --print-out-paths --max-jobs 4 \
+            ".#packages.x86_64-linux.create-arkana-aeronautics-client")
+          # The derivation outputs a directory containing one .zip — surface
+          # the zip path explicitly for the upload step.
+          zip=$(ls "$out"/*.zip)
+          echo "zip_path=$zip" >> "$GITHUB_OUTPUT"
+          ls -lh "$zip"
+
+      - name: Push server image to ghcr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # skopeo can copy directly from a docker-archive tar.gz to a
+          # docker:// registry without needing a running docker daemon
+          # (which the GHA runner doesn't have nix-set-up by default).
+          # The image we built is already named with the project tag; we
+          # also push `latest` so deployers can pin once.
+          tag_ref="${TAG#arkana-aeronautics-}"   # strip the leading prefix
+          # Read the OCI image's internal name:tag from its manifest so the
+          # destination matches and we don't accidentally upload a mismatched
+          # ref.
+          src_name=$(nix shell nixpkgs#skopeo nixpkgs#jq -c -- \
+            sh -c 'skopeo inspect docker-archive:'"${{ steps.server.outputs.image_tar }}"' | jq -r ".RepoTags[0]"')
+          echo "Source image RepoTag: $src_name"
+
+          echo "$GH_TOKEN" | nix shell nixpkgs#skopeo -c \
+            skopeo login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+          # Push under the canonical project tag.
+          nix shell nixpkgs#skopeo -c \
+            skopeo copy --multi-arch system \
+              "docker-archive:${{ steps.server.outputs.image_tar }}" \
+              "docker://${IMAGE}:${tag_ref}"
+
+          # Also push `latest`. dockerTools layered images are content-
+          # addressed so this is a cheap manifest-only push.
+          nix shell nixpkgs#skopeo -c \
+            skopeo copy --multi-arch system \
+              "docker-archive:${{ steps.server.outputs.image_tar }}" \
+              "docker://${IMAGE}:latest"
+
+          echo "::notice::Pushed ${IMAGE}:${tag_ref} and ${IMAGE}:latest"
+
+      - name: Upload client zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # `gh release create` is idempotent against an already-existing
+          # tag if we use `--clobber` on assets. If the release doesn't
+          # exist yet (workflow_dispatch on a new tag), create it.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "Create: Arkana + Aeronautics — $TAG" \
+              --notes "Auto-generated by .github/workflows/arkana-aeronautics-release.yaml. Edit the release on GitHub for richer notes."
+          fi
+
+          # `--clobber` overwrites an existing same-named asset (e.g. on a
+          # workflow re-run after a fix). Safer than failing the job.
+          gh release upload "$TAG" \
+            "${{ steps.client.outputs.zip_path }}" \
+            --clobber
+
+          echo "::notice::Attached client zip to release $TAG"
