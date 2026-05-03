@@ -681,6 +681,22 @@ in
             # cores per build via cores=0).
             max-jobs = 1;
             cores = 0;
+            # nixos-install runs against the ISO's nix daemon, not the
+            # target's nix.settings — without these the installer only
+            # knows about cache.nixos.org and rebuilds anything from
+            # overlays / NUR / jovian-nixos / custom packages. Mirrors
+            # modules/base/default.nix and the build runner's config in
+            # .github/actions/setup-host-nix/action.yml.
+            extra-substituters = [
+              "https://cache.nixcache.org"
+              "https://nix-community.cachix.org"
+              "https://cache.garnix.io"
+            ];
+            extra-trusted-public-keys = [
+              "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
+              "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+              "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+            ];
           };
 
           services.openssh = {
