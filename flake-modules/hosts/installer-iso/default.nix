@@ -811,6 +811,11 @@ in
                 # the konsole window has actually run test-input. The
                 # net result is a window that runs in lizard mode
                 # despite the toggle.
+                #
+                # The `$(cat ...)` inside the single-quoted bash -c
+                # is intentional — we want it expanded by the INNER
+                # bash launched by konsole, not by the outer shell.
+                # shellcheck disable=SC2016
                 with_lizard_disabled konsole --nofork -e bash -c '
                   set -u
                   echo "==> hid_steam.lizard_mode = $(cat /sys/module/hid_steam/parameters/lizard_mode 2>/dev/null || echo unknown)"
