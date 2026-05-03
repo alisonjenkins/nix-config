@@ -31,6 +31,20 @@ buildNpmPackage {
   # better-sqlite3 compiles its own bundled sqlite3 — needs a C++ toolchain and Python
   nativeBuildInputs = [ python3 pkg-config ];
 
+  # Workaround for upstream cavemem 0.1.3 bug: dist/index.js dispatches
+  # `cavemem mcp` via `await import("./server-*.js")`, but the server bundle
+  # only calls main() when isMainEntry() is true. Imported modules never
+  # satisfy that check, so the MCP server exits silently. Drop the guard so
+  # main() always runs when the bundle is loaded.
+  postInstall = ''
+    for f in $out/lib/node_modules/cavemem/dist/server-*.js; do
+      if grep -q 'McpServer' "$f"; then
+        substituteInPlace "$f" \
+          --replace-fail 'if (isMainEntry()) {' 'if (true) {'
+      fi
+    done
+  '';
+
   meta = {
     description = "Cross-agent persistent memory for coding assistants (Claude Code, Cursor, Gemini)";
     homepage = "https://github.com/JuliusBrussee/cavemem";
