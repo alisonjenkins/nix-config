@@ -30,30 +30,25 @@ rec {
 
   backfillScript = pkgs.writeShellApplication {
     name = "niks3-backfill";
-    runtimeInputs = [ niks3 pkgs.nix ];
+    runtimeInputs = [ niks3 pkgs.nix pkgs.curl pkgs.coreutils ];
     text = ''
-      set -euo pipefail
       if [ "$(id -u)" -ne 0 ]; then
         echo "Must run as root (needs to read ${cfg.authTokenFile})." >&2
         exit 1
       fi
-      AUTH_TOKEN="$(cat "${cfg.authTokenFile}")"
+
+      export CACHE_URL=${lib.escapeShellArg cfg.cacheUrl}
+      export SERVER_URL=${lib.escapeShellArg cfg.serverUrl}
+      export AUTH_TOKEN_FILE=${lib.escapeShellArg (toString cfg.authTokenFile)}
+      : "''${NIKS3_BACKFILL_CHECK_PROCS:=${toString cfg.backfillCheckConcurrency}}"
       : "''${NIKS3_BACKFILL_PROCS:=1}"
       : "''${NIKS3_BACKFILL_JOBS:=${toString cfg.backfillMaxConcurrentUploads}}"
       : "''${NIKS3_BACKFILL_BATCH:=500}"
+      export NIKS3_BACKFILL_CHECK_PROCS NIKS3_BACKFILL_PROCS NIKS3_BACKFILL_JOBS NIKS3_BACKFILL_BATCH
 
-      echo "Enumerating local store paths..." >&2
-      TMP=$(mktemp)
-      trap 'rm -f "$TMP"' EXIT
-      nix path-info --all | grep -v '\.drv$' > "$TMP"
-      TOTAL=$(wc -l < "$TMP")
-      echo "Pushing $TOTAL paths with $NIKS3_BACKFILL_PROCS workers x $NIKS3_BACKFILL_JOBS uploads each..." >&2
+      ${builtins.readFile ./backfill.sh}
 
-      < "$TMP" xargs -r -n "$NIKS3_BACKFILL_BATCH" -P "$NIKS3_BACKFILL_PROCS" \
-        niks3 push \
-          --server-url "${cfg.serverUrl}" \
-          --max-concurrent-uploads "$NIKS3_BACKFILL_JOBS" \
-          --auth-token "$AUTH_TOKEN"
+      run_backfill
     '';
   };
 }
