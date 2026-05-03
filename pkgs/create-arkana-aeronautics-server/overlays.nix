@@ -93,4 +93,23 @@ in
       "ritchiesprojectilelib-2.1.2%2Bmc.1.21.1-neoforge.jar"
       "093v93kwjlf9ly08x7vfrawywziswcf6phx419jzndiphdh90l6c";
   }
+  {
+    # AeroBlender — required by deep_aether (in `world` group). Not in
+    # Arkana. Surfaced by dep-tree.py on the all-groups build. Harmless
+    # when deep_aether isn't loaded; cheap to always include.
+    filename       = "aeroblender-1.21.1-1.0.0-neoforge.jar";
+    dropAsOverride = true;
+    jar = modrinth "1eaq94ok" "wSvpPEr3"
+      "aeroblender-1.21.1-1.0.0-neoforge.jar"
+      "0a4s900665mavmhna5bz4gvvs0zjymwz7mhpj8y58bpfkhq154hn";
+  }
+  {
+    # Common Networking — required by gliders (vc_gliders modId, in
+    # `combat` group). Not in Arkana.
+    filename       = "common-networking-neoforge-1.0.21-1.21.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "HIuqnQpi" "pR7AeZk3"
+      "common-networking-neoforge-1.0.21-1.21.1.jar"
+      "0gjg7shl18agxbga54dr7anckjwbv98jfck712yq81gs2qiwx6r8";
+  }
 ]

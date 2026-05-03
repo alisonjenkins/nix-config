@@ -53,12 +53,14 @@
       938917  # accessories-neoforge-1.1.0-beta.49+1.21.1.jar
       940057  # TerraBlender-neoforge-1.21.1-4.1.0.8.jar
       955605  # CerbonsAPI-NeoForge-1.21-1.3.0.jar
+      1001614  # lionfishapi-2.6.jar
       1005914  # fzzy_config-0.7.2+1.21+neoforge.jar
       1023259  # prickle-neoforge-1.21.1-21.1.10.jar
       1027625  # terra_curio-1.1.2.jar
       1072905  # Jupiter-2.2.2-neoforge.jar
       1083998  # fantasy_armor-1.1.1-1.21.1.jar
       1104882  # txnilib-neoforge-1.0.24-1.21.1.jar
+      1115285  # almanac-1.21.x-neoforge-1.0.2.jar
       1145462  # atlas_api-1.21.1-1.2.0.jar
       1169634  # accessorify-2.2.0+1.21.1.jar
       1264423  # baguettelib-1.21.1-NeoForge-1.1.0.jar
@@ -317,7 +319,6 @@
       897858  # bobberdetector-neoforge1.21.1-1.0.3.jar
       951287  # arcane_abilities-0.2.8.jar
       1010827  # uranus-2.3.2-1.21.1-neoforge.jar
-      1115285  # almanac-1.21.x-neoforge-1.0.2.jar
       1272655  # dynamic_difficulty-0.5.0.jar
     ];
   };

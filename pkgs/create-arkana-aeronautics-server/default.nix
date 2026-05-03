@@ -123,8 +123,10 @@ let
     925889   # Sounds (client-only — mixin loads net/minecraft/client/gui/screens/Screen)
     1089479  # Sodium Leaf Culling
     1103431  # Sodium Options API
+    1116812  # immersivelanterns — hard-deps sodiumdynamiclights (client-only)
     1142875  # Flerovium (Sodium addon — hard-deps Sodium 0.6.9+)
     1146393  # Sodium Options Mod Compat
+    1217518  # createbetterfps — hard-deps Sodium (client-only)
     1284599  # Status Effect Bars (client-only Screen mixin)
   ];
 

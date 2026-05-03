@@ -26,19 +26,23 @@
 {
   replacements = [
     {
-      # Arkana 1.5 references fileID 6168249 which is gated off
-      # cfwidget's pagination. Bump to the newest 1.21.1/NeoForge release
-      # that is still on the recent list — minor API drift only.
+      # Arkana 1.5 references fileID 6168249 which cfwidget can't resolve
+      # (older than its pagination window). The fileID IS still live on
+      # mediafilez — we just had to discover the filename by guessing.
+      # Originally bumped to 2.7-fix-fix but that release dropped the
+      # `com.github.L_Ender.lionfishapi.server.animation.IAnimatedEntity`
+      # class which L_Ender's Cataclysm + irons_spellbooks +
+      # cataclysm_spellbooks all hard-link to. 2.6 keeps the class.
       origProjectID = 1001614;
       origFileID    = 6168249;
       projectID     = 1001614;
-      fileID        = 7941057;
+      fileID        = 6168249;
       required      = true;
-      filename      = "lionfishapi-2.7-fix-fix.jar";
+      filename      = "lionfishapi-2.6.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7941/57/lionfishapi-2.7-fix-fix.jar";
-        name   = "lionfishapi-2.7-fix-fix.jar";
-        sha256 = "1j3rccsq02ix1y4vl07nsiwhh7p24zi4srqippbhgmzpq47wj08b";
+        url    = "https://mediafilez.forgecdn.net/files/6168/249/lionfishapi-2.6.jar";
+        name   = "lionfishapi-2.6.jar";
+        sha256 = "0pq222nwm31prvj0y7rgx36hqanqb77rpp8klnhbnlc31vqbfmky";
       };
     }
     {
@@ -138,5 +142,43 @@
   # version replacement re-enable the mod).
   #
   # Format:  { projectID = N; fileID = M | null; reason = "<crash>"; phase = "<phase>"; }
-  disabled = [ ];
+  disabled = [
+    {
+      projectID = 1111063;
+      fileID    = null;
+      reason    = "takesapillage requires resourcefullib >=3.0.12; Arkana ships 3.0.11 and bumping resourcefullib has wide blast radius (40+ dependents). Skip until Arkana refreshes.";
+      phase     = "dependency-resolution";
+    }
+    # ---- registry-init NPEs surfaced by all-groups bisect ----
+    # farm_and_charm 1.1.3 ships an ItemStack.getRarity mixin that
+    # resolves `farm_and_charm:chicken_coop` via DeferredHolder during
+    # other mods' RegisterEvent — under our bumped Create 6.0.10 the
+    # registration order shifts and the holder unbinds. Bumping to 1.1.22
+    # cascades into candlelight + bakery API breakage (tried earlier).
+    # Drop farm_and_charm and its three Let's Do consumers.
+    { projectID = 1038103; fileID = null; reason = "farm_and_charm 1.1.3 mixin DeferredHolder NPE on chicken_coop under Create 6.0.10."; phase = "registry-init"; }
+    { projectID = 1038130; fileID = null; reason = "bakery hard-deps farm_and_charm (disabled)."; phase = "dependency-resolution"; }
+    { projectID = 1038106; fileID = null; reason = "brewery hard-deps farm_and_charm (disabled)."; phase = "dependency-resolution"; }
+    { projectID = 1038117; fileID = null; reason = "candlelight hard-deps farm_and_charm (disabled)."; phase = "dependency-resolution"; }
+    # Apotheosis 8.4.0's WithdrawalRecipe.<init> resolves
+    # `apotheosis:sigil_of_withdrawal` from a DeferredHolder during item
+    # RegisterEvent — items haven't all registered yet → unbound holder
+    # NPE. 8.5.2 doesn't fix it; bumping 8.5.2 cascades into Let's Do
+    # candlelight + bakery API breakage (verified earlier).
+    { projectID = 313970;  fileID = null; reason = "Apotheosis 8.4.0 sigil_of_withdrawal DeferredHolder NPE; 8.5.2 bump cascades into other mods' API breakage."; phase = "registry-init"; }
+    { projectID = 985468;  fileID = null; reason = "ancientreforging hard-deps apotheosis (disabled)."; phase = "dependency-resolution"; }
+    { projectID = 986982;  fileID = null; reason = "apothiccombat hard-deps apotheosis (disabled)."; phase = "dependency-resolution"; }
+    { projectID = 1244863; fileID = null; reason = "irons_apothic hard-deps apotheosis (disabled)."; phase = "dependency-resolution"; }
+    # GlitchCore 2.1.0.0 hits `NullPointerException: at index 0` deep in
+    # `RegistryHelper.lambda$accept$0` during a RegisterEvent —
+    # ImmutableList.construct rejecting a null. Upstream bug; no newer
+    # GlitchCore for 1.21.1.
+    { projectID = 955399;  fileID = null; reason = "GlitchCore 2.1.0.0 NPE in RegistryHelper.accept (ImmutableList.construct null at index 0)."; phase = "registry-init"; }
+    { projectID = 220318;  fileID = null; reason = "BiomesOPlenty hard-deps glitchcore (disabled)."; phase = "dependency-resolution"; }
+    # JER Integration calls `config.get(...)` from FMLCommonSetupEvent
+    # which fires before NeoForge has loaded mod configs — IllegalState.
+    # Likely an upstream incompatibility with NeoForge 21.1.x; older
+    # Forge ran setup events in a different order.
+    { projectID = 506948;  fileID = null; reason = "jerintegration calls config.get from FMLCommonSetupEvent before config loaded; NeoForge 21.1.x lifecycle incompatibility."; phase = "common-setup"; }
+  ];
 }

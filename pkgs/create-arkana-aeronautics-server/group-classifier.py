@@ -21,8 +21,9 @@ RULES = [
     # caught here but each hard-requires irons_spellbooks (familiarslib
     # imports `io.redspace.ironsspellbooks.api.registry.SchoolRegistry`).
     # All three moved to irons-spells. curios added — elytraslot +
-    # charmofundying soft-fail without it.
-    (r'^(architectury|geckolib|azurelib|CodeChickenLib|balm|framework|jamlib|owo-lib|Placebo|resourcefullib|resourcefulconfig|kotlinforforge|expandability|atlas_api|fzzy_config|midnightlib|txnilib|baguettelib|mru-|ftb-library|accessories|accessorify|accessories_compat_layer|terra_curio|OctoLib|CerbonsAPI|Jupiter|valhelsia_core|lithostitched|moonlight|cupboard|configured|cloth-config|yet_another_config_lib|prickle|Iceberg|attributefix|lionfishapi|Patchouli|fusion|caelus|MidnightLib|jamlib|charmofundying|elytraslot|player-animation-lib|Searchables|PuzzlesLib|Bookshelf|bookshelf|fantasy_armor|amendments|gag-|ferritecore|modernfix|TerraBlender|atlas|curios-)', 'core-libs'),
+    # charmofundying soft-fail without it. almanac added — letmedespawn
+    # soft-fails without it (qol bisect surfaced this).
+    (r'^(architectury|geckolib|azurelib|CodeChickenLib|balm|framework|jamlib|owo-lib|Placebo|resourcefullib|resourcefulconfig|kotlinforforge|expandability|atlas_api|fzzy_config|midnightlib|txnilib|baguettelib|mru-|ftb-library|accessories|accessorify|accessories_compat_layer|terra_curio|OctoLib|CerbonsAPI|Jupiter|valhelsia_core|lithostitched|moonlight|cupboard|configured|cloth-config|yet_another_config_lib|prickle|Iceberg|attributefix|lionfishapi|Patchouli|fusion|caelus|MidnightLib|jamlib|charmofundying|elytraslot|player-animation-lib|Searchables|PuzzlesLib|Bookshelf|bookshelf|fantasy_armor|amendments|gag-|ferritecore|modernfix|TerraBlender|atlas|curios-|almanac-)', 'core-libs'),
     (r'^(Apotheosis|ApothicAttributes|ApothicEnchanting|ApothicSpawners|apothiccombat|irons_apothic|GatewaysToEternity|Chaotix Apotheotic|ancientreforging|relics-)', 'apothic'),
     (r"^(irons_spellbooks|simplyswords|simplymore|irons_jewelry|alshanex_familiars|gametechbcs_spellbooks|cataclysm_spellbooks|crystal_chronicles|Simply Swords Reforged|reliquified_lenders_cataclysm|gtbcs_spell_lib|aces_spell_utils|familiarslib)", 'irons-spells'),
     (r'^(ars_|Ars Nouveau|not_enough_glyphs|starbunclemania|reliquified_ars_nouveau|aero_additions)', 'ars'),
@@ -65,6 +66,23 @@ def main():
     here = Path(__file__).parent
     src = (here / 'arkana-mods.nix').read_text()
     entries = re.findall(r'\{\s*projectID\s*=\s*(\d+);.*?filename\s*=\s*"([^"]+)";', src, re.S)
+
+    # Replacement entries (arkana-mods-extras.nix) live outside arkana-mods.nix
+    # but represent mods we DO bake in. cfwidget couldn't resolve their
+    # original Arkana fileID so they never made it to arkana-mods.nix —
+    # without this pass the classifier wouldn't see lionfishapi (1001614)
+    # in any group, the floor wouldn't pull it in, and L_Ender's Cataclysm
+    # + Iron's Spellbooks + cataclysm_spellbooks fail with NoClassDefFoundError
+    # on `com.github.L_Ender.lionfishapi.server.animation.IAnimatedEntity`.
+    extras = (here / 'arkana-mods-extras.nix').read_text()
+    extra_entries = re.findall(
+        r'origProjectID\s*=\s*(\d+);.*?filename\s*=\s*"([^"]+)";',
+        extras, re.S)
+    seen_pids = {int(p) for p, _ in entries}
+    for pid, fn in extra_entries:
+        pid = int(pid)
+        if pid not in seen_pids:
+            entries.append((pid, fn))
 
     groups = {k: [] for k in GROUPS_ORDER + ['client-or-visual']}
     for pid, fn in entries:
