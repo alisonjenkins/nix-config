@@ -707,6 +707,16 @@ in
                 for mod in hid_steam xpad hid_generic uinput; do
                   sudo modprobe -q "$mod" 2>/dev/null || true
                 done
+                # Force hid_steam out of lizard mode so the Deck's
+                # physical buttons arrive as BTN_* gamepad events,
+                # not KEY_W/A/S/D/etc keyboard codes. The sysfs
+                # parameter is writable while the module is loaded;
+                # this is the safety net for ISOs built before the
+                # boot.extraModprobeConfig change landed.
+                if [ -w /sys/module/hid_steam/parameters/lizard_mode ]; then
+                  echo 0 | sudo tee /sys/module/hid_steam/parameters/lizard_mode \
+                    >/dev/null 2>&1 || true
+                fi
                 # Give udev a beat to enumerate fresh evdev nodes if
                 # the modules were loaded for the first time.
                 sleep 1
@@ -908,6 +918,22 @@ in
           # `is_gamepad()` check fails for every /dev/input/event*
           # node and enroll exits with "no controller detected".
           boot.kernelModules = [ "hid_steam" "xpad" "hid_generic" "uinput" ];
+
+          # hid_steam defaults to `lizard_mode=1`, which translates
+          # the Deck's physical buttons into KEY_W/A/S/D/etc
+          # keyboard events for non-Steam contexts. The evdev node
+          # still advertises BTN_SOUTH (so luks-controller-unlock's
+          # `is_gamepad()` filter accepts it), but actual button
+          # presses are silently swallowed by the PIN capture loop
+          # because they arrive as KEY_* events rather than BTN_*.
+          # Force the module to expose the controller as a pure
+          # gamepad — the installer ISO has no Steam runtime so
+          # the keyboard fallback is never useful here. (Do NOT
+          # propagate to ali-steam-deck — Jovian + Steam manage
+          # lizard mode dynamically per-session.)
+          boot.extraModprobeConfig = ''
+            options hid_steam lizard_mode=0
+          '';
 
           # ZFS is marked broken on the latest kernel (no upstream
           # release tracking 7.x yet) and the installer doesn't need
