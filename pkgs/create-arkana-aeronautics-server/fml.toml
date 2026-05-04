@@ -1,0 +1,15 @@
+# NeoForge FML configuration shipped pre-baked in the server tree so it
+# applies on first boot before any mod registers a config-file watch.
+#
+# disableConfigWatcher = true  — disables FML's inotify-based config
+# reload watcher. The default (false) leaks file descriptors over time
+# under heavy mod-config workloads; Arkana ships ~250 mods, each
+# writing its own config file, and FML's watcher accumulates dead
+# inotify watches that don't get released. Once the agent process
+# hits its NOFILE ceiling, mods fail to load and host-level daemons
+# sharing the inotify instance count (e.g. amazon-ssm-agent on the
+# k3s node hosting the server) start crashing with "too many open
+# files". Live config reload is a developer convenience — production
+# servers restart the JVM to pick up config changes anyway.
+[advanced]
+    disableConfigWatcher = true

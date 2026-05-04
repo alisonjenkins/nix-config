@@ -222,6 +222,9 @@ stdenvNoCC.mkDerivation {
     install -m644 ${jvmArgsFile}         $out/user_jvm_args.txt
     install -m644 ${serverProperties}    $out/server.properties
     install -m644 ${neoforgeInstaller}   $out/neoforge-installer.jar
+    # Pre-bake fml.toml with disableConfigWatcher=true so FML doesn't
+    # spawn the inotify watcher on first boot. See fml.toml for context.
+    install -Dm644 ${./fml.toml}         $out/config/fml.toml
 
     install -m755 ${./entrypoint.sh}     $out/entrypoint.sh
     # Replace the portable shebang with an absolute store path
