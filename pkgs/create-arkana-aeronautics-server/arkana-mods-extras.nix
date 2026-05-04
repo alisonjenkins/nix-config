@@ -128,13 +128,13 @@
       origProjectID = 508933;
       origFileID    = 6791190;
       projectID     = 508933;
-      fileID        = 7977110;
+      fileID        = 8037637;
       required      = true;
-      filename      = "DistantHorizons-3.0.2-b-1.21.1-fabric-neoforge.jar";
+      filename      = "DistantHorizons-3.0.3-b-1.21.1-fabric-neoforge.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7977/110/DistantHorizons-3.0.2-b-1.21.1-fabric-neoforge.jar";
-        name   = "DistantHorizons-3.0.2-b-1.21.1-fabric-neoforge.jar";
-        sha256 = "0mgq2s7kap2y8zqrn4fhhn1imfpmsr4hlsrhxgqxrvjdmhaxms7z";
+        url    = "https://mediafilez.forgecdn.net/files/8037/637/DistantHorizons-3.0.3-b-1.21.1-fabric-neoforge.jar";
+        name   = "DistantHorizons-3.0.3-b-1.21.1-fabric-neoforge.jar";
+        sha256 = "11a7xxwf29idg45byvv78rdkspa826zgdrif9zq3brggm9z4kfns";
       };
     }
     {

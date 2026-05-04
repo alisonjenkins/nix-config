@@ -157,6 +157,12 @@ stdenvNoCC.mkDerivation {
       manifest.json > manifest.new.json
     mv manifest.new.json manifest.json
 
+    # Pre-baked Distant Horizons config — pin glUploadMode=DATA so M1/M2
+    # Mac clients don't crash on GL 4.1 buffer-storage paths. DH merges
+    # this partial TOML into its defaults on first run.
+    mkdir -p overrides/config
+    install -m644 ${./DistantHorizons.toml} overrides/config/DistantHorizons.toml
+
     # Drop Modrinth-only overlay jars into overrides/mods/ — the CurseForge
     # launcher copies overrides/ verbatim into the instance after fetching
     # the manifest entries.

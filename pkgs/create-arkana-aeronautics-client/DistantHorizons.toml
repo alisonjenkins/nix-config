@@ -1,0 +1,14 @@
+# Pre-baked Distant Horizons config shipped via overrides/config/. DH
+# loads existing values from this file and merges with its defaults on
+# first run, so a partial config doesn't break unset keys.
+#
+# glUploadMode = "DATA"
+#   Forces the GPU vertex-buffer upload path that Apple Silicon's OpenGL
+#   4.1 backend supports. AUTO/SUB_DATA/BUFFER_STORAGE crash on M1/M2
+#   with "NEEDS IMPLEMENTATION" because Mac's GL driver lacks the
+#   modern persistent-mapped-buffer extensions DH prefers. DH itself
+#   logs "Preferred upload method is [DATA]" when run on Apple GPUs;
+#   pinning the value avoids relying on auto-detection that sometimes
+#   picks BUFFER_STORAGE anyway after a profile change.
+[client.advanced.debugging.openGl]
+glUploadMode = "DATA"
