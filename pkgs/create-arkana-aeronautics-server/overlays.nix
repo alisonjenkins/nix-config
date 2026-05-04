@@ -165,4 +165,19 @@ in
       "RapidLeafDecay-1.21.1-3.0.1.jar"
       "0wlh2awf7xb6avi9dayqb9m8ncps9fzq6hl959bkwl6haa20wffn";
   }
+  {
+    # Mouse Tweaks — inventory QoL (RMB drag, scroll-wheel item
+    # transfer). Client-only; mod's mixins target
+    # net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+    # and would fail to load on a dedicated server with dist-cleaner
+    # warnings. `clientOnly = true` skips it from the server tree;
+    # `dropAsOverride = true` puts the jar into the client zip's
+    # overrides/mods/ since Mouse Tweaks is Modrinth-hosted only.
+    filename       = "MouseTweaks-neoforge-mc1.21-2.26.1.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "aC3cM3Vq" "9I21YYxf"
+      "MouseTweaks-neoforge-mc1.21-2.26.1.jar"
+      "12ycyqsy2d6cxbj3mgx3lrn6k594ap4iawlsj9vppsax3hhg9rk8";
+  }
 ]

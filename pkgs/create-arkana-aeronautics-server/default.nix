@@ -239,9 +239,12 @@ stdenvNoCC.mkDerivation {
     # carry `requiresGroup = "<name>"` — if set, the entry only installs
     # when that group is in `enabledArkanaGroups`. Lets us ship libs like
     # AeroBlender (needs deep_aether's chain in `world`) without breaking
-    # the floor's pre-flight dep check.
+    # the floor's pre-flight dep check. `clientOnly = true` skips the
+    # overlay on the server entirely (client zip still picks it up).
     ${lib.concatMapStrings (m:
-      if (m.requiresGroup or null) != null
+      if (m.clientOnly or false) then ''
+        # skip overlay ${m.filename} — clientOnly
+      '' else if (m.requiresGroup or null) != null
          && !(lib.elem m.requiresGroup enabledArkanaGroups)
       then ''
         # skip overlay ${m.filename} — requires group "${m.requiresGroup}"
