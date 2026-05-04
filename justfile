@@ -336,19 +336,25 @@ mc-push image tag:
     crane manifest "{{image}}:{{tag}}" | head -40
 
 # Build the Create: Arkana + Aeronautics server OCI image (single arch).
-# Defaults to host arch; pass "amd64" or "arm64" to cross-build.
+# Pass "amd64" or "arm64". Defaults to the host's linux equivalent
+# (aarch64-darwin → aarch64-linux, x86_64-darwin → x86_64-linux,
+# linux hosts → their own arch). Darwin builds dispatch to the remote
+# linux builder configured in nix.conf — no docker daemon needed.
 arkana-build arch="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{arch}}" in
         amd64|x86_64) sys="x86_64-linux" ;;
         arm64|aarch64) sys="aarch64-linux" ;;
-        "") sys="$(nix eval --impure --raw --expr 'builtins.currentSystem')" ;;
+        "")
+            host="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
+            case "$host" in
+                aarch64-*) sys="aarch64-linux" ;;
+                x86_64-*)  sys="x86_64-linux"  ;;
+                *) echo "unknown host system: $host"; exit 1 ;;
+            esac
+            ;;
         *) echo "unknown arch: {{arch}} (use amd64|arm64)"; exit 1 ;;
-    esac
-    case "$sys" in
-        *-linux) ;;
-        *) echo "host system $sys cannot build linux containers without a remote linux builder"; exit 1 ;;
     esac
     nix build ".#packages.$sys.minecraft-arkana-aeronautics-image" --print-out-paths
 
