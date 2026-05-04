@@ -376,6 +376,319 @@
         sha256 = "1z3vzgzj9y0424igz958vnbh040andakbd5mc8n3a566n91zgxkv";
       };
     }
+    {
+      origProjectID = 896746;
+      origFileID    = 6919475;
+      projectID     = 896746;
+      fileID        = 7054319;
+      required      = true;
+      filename      = "amendments-1.21-2.0.8-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7054/319/amendments-1.21-2.0.8-neoforge.jar";
+        name   = "amendments-1.21-2.0.8-neoforge.jar";
+        sha256 = "05ah4xnij7apcgcqv1i3rbrg28bs426l5ikrvnfr2xblcvrb9x9k";
+      };
+    }
+    {
+      origProjectID = 898963;
+      origFileID    = 6751650;
+      projectID     = 898963;
+      fileID        = 7445079;
+      required      = true;
+      filename      = "ApothicAttributes-1.21.1-2.9.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7445/79/ApothicAttributes-1.21.1-2.9.1.jar";
+        name   = "ApothicAttributes-1.21.1-2.9.1.jar";
+        sha256 = "10g38jic23saqjj4dlnhdi2qf22740q6w4lk296lyy6104yxfgbf";
+      };
+    }
+    {
+      origProjectID = 1063926;
+      origFileID    = 6926290;
+      projectID     = 1063926;
+      fileID        = 7659120;
+      required      = true;
+      filename      = "ApothicEnchanting-1.21.1-1.5.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7659/120/ApothicEnchanting-1.21.1-1.5.2.jar";
+        name   = "ApothicEnchanting-1.21.1-1.5.2.jar";
+        sha256 = "17xvmdvra8zc39flr5i3ahp5mhhm9g5diydz8s8np2x7687w9wsh";
+      };
+    }
+    {
+      origProjectID = 986583;
+      origFileID    = 6751589;
+      projectID     = 986583;
+      fileID        = 7492121;
+      required      = true;
+      filename      = "ApothicSpawners-1.21.1-1.3.4.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7492/121/ApothicSpawners-1.21.1-1.3.4.jar";
+        name   = "ApothicSpawners-1.21.1-1.3.4.jar";
+        sha256 = "059y35d2b878f1wzffdgqlgqpzjzww749y0jwzk3ln80kdnifvnz";
+      };
+    }
+    {
+      origProjectID = 531761;
+      origFileID    = 6841890;
+      projectID     = 531761;
+      fileID        = 7420963;
+      required      = true;
+      filename      = "balm-neoforge-1.21.1-21.0.56.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7420/963/balm-neoforge-1.21.1-21.0.56.jar";
+        name   = "balm-neoforge-1.21.1-21.0.56.jar";
+        sha256 = "0bmk5w5ms0zpzk7ya6ngs2cc95cg0b9f59pa45mn9jyafd7dc3k7";
+      };
+    }
+    {
+      origProjectID = 242818;
+      origFileID    = 6583751;
+      projectID     = 242818;
+      fileID        = 7281427;
+      required      = true;
+      filename      = "CodeChickenLib-1.21.1-4.6.1.526.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7281/427/CodeChickenLib-1.21.1-4.6.1.526.jar";
+        name   = "CodeChickenLib-1.21.1-4.6.1.526.jar";
+        sha256 = "015wsr26snrxbj7c6vdh2zsys8kd89a2893iw7hqgsrs7v5b0p73";
+      };
+    }
+    {
+      origProjectID = 457570;
+      origFileID    = 5873783;
+      projectID     = 457570;
+      fileID        = 7276577;
+      required      = true;
+      filename      = "configured-neoforge-1.21.1-2.6.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7276/577/configured-neoforge-1.21.1-2.6.3.jar";
+        name   = "configured-neoforge-1.21.1-2.6.3.jar";
+        sha256 = "059a51wsbq15v95mnkgq7y7x59xq3ifyplc4naypqj5m0hkgs7s2";
+      };
+    }
+    {
+      origProjectID = 491794;
+      origFileID    = 5756947;
+      projectID     = 491794;
+      fileID        = 7892943;
+      required      = true;
+      filename      = "ExplorersCompass-1.21.1-3.4.0-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7892/943/ExplorersCompass-1.21.1-3.4.0-neoforge.jar";
+        name   = "ExplorersCompass-1.21.1-3.4.0-neoforge.jar";
+        sha256 = "095g3xnlwn3xacb84xv9x0jy5hkgfdv55zh6gh6j374cv1xv9rvi";
+      };
+    }
+    {
+      origProjectID = 363363;
+      origFileID    = 6875184;
+      projectID     = 363363;
+      fileID        = 7895926;
+      required      = true;
+      filename      = "ExtremeSoundMuffler-3.56_NeoForge-1.21.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7895/926/ExtremeSoundMuffler-3.56_NeoForge-1.21.jar";
+        name   = "ExtremeSoundMuffler-3.56_NeoForge-1.21.jar";
+        sha256 = "0cfmn9da0c3y7dnwlkflp8mrirlczahy3hr5zvlcrqs02m354h9w";
+      };
+    }
+    {
+      origProjectID = 475117;
+      origFileID    = 6751538;
+      projectID     = 475117;
+      fileID        = 7527945;
+      required      = true;
+      filename      = "FastSuite-1.21.1-6.0.7.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7527/945/FastSuite-1.21.1-6.0.7.jar";
+        name   = "FastSuite-1.21.1-6.0.7.jar";
+        sha256 = "03f7wqflghcv42j72hlfwdpwh1jkqkqi6hjiwbwdy9yw3g84q9ry";
+      };
+    }
+    {
+      origProjectID = 429235;
+      origFileID    = 5850121;
+      projectID     = 429235;
+      fileID        = 7524151;
+      required      = true;
+      filename      = "ferritecore-7.0.3-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7524/151/ferritecore-7.0.3-neoforge.jar";
+        name   = "ferritecore-7.0.3-neoforge.jar";
+        sha256 = "1a1hs2b22c48bpgj3h0vaajffs5lws9x90labgsbypkica1a4znq";
+      };
+    }
+    {
+      origProjectID = 549225;
+      origFileID    = 6531439;
+      projectID     = 549225;
+      fileID        = 7530361;
+      required      = true;
+      filename      = "framework-neoforge-1.21.1-0.13.11.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7530/361/framework-neoforge-1.21.1-0.13.11.jar";
+        name   = "framework-neoforge-1.21.1-0.13.11.jar";
+        sha256 = "1x83v85xfi9g58x4lf6r4nsxvcfpwiwhkriy8v0jaz1d2q5ak7j2";
+      };
+    }
+    {
+      origProjectID = 404468;
+      origFileID    = 6930910;
+      projectID     = 404468;
+      fileID        = 7144060;
+      required      = true;
+      filename      = "ftb-teams-neoforge-2101.1.5.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7144/60/ftb-teams-neoforge-2101.1.5.jar";
+        name   = "ftb-teams-neoforge-2101.1.5.jar";
+        sha256 = "0q2z5jr9xv1w9q3r7my4x5cm6gw0bfx73awndbk2bcv67fis0m0g";
+      };
+    }
+    {
+      origProjectID = 386134;
+      origFileID    = 6930900;
+      projectID     = 386134;
+      fileID        = 7188395;
+      required      = true;
+      filename      = "ftb-ultimine-neoforge-2101.1.12.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7188/395/ftb-ultimine-neoforge-2101.1.12.jar";
+        name   = "ftb-ultimine-neoforge-2101.1.12.jar";
+        sha256 = "02c17f4kx6ih6iw6xir0y3szsck0ykcs0ac0jkk5p8jpf3cq138y";
+      };
+    }
+    {
+      origProjectID = 854949;
+      origFileID    = 6923714;
+      projectID     = 854949;
+      fileID        = 7471474;
+      required      = true;
+      filename      = "fusion-1.2.12-neoforge-mc1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7471/474/fusion-1.2.12-neoforge-mc1.21.1.jar";
+        name   = "fusion-1.2.12-neoforge-mc1.21.1.jar";
+        sha256 = "033wp2sxjy08h4wzly9mm931c15wha0ryp66bch8igdphn6zfqar";
+      };
+    }
+    {
+      origProjectID = 388172;
+      origFileID    = 6920810;
+      projectID     = 388172;
+      fileID        = 7707149;
+      required      = true;
+      filename      = "geckolib-neoforge-1.21.1-4.8.4.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7707/149/geckolib-neoforge-1.21.1-4.8.4.jar";
+        name   = "geckolib-neoforge-1.21.1-4.8.4.jar";
+        sha256 = "1jfa5gj3i7r5kij168s6jc4qxxhsnyvfsbk793ksfyk2x0jwxdm1";
+      };
+    }
+    {
+      origProjectID = 238222;
+      origFileID    = 6614392;
+      projectID     = 238222;
+      fileID        = 7420587;
+      required      = true;
+      filename      = "jei-1.21.1-neoforge-19.27.0.340.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7420/587/jei-1.21.1-neoforge-19.27.0.340.jar";
+        name   = "jei-1.21.1-neoforge-19.27.0.340.jar";
+        sha256 = "09lqr7vvnmkgk4yhghsqz10gx4h6j5mkadmh7619bd7i69s59bwa";
+      };
+    }
+    {
+      origProjectID = 1082929;
+      origFileID    = 6735758;
+      projectID     = 1082929;
+      fileID        = 7456313;
+      required      = true;
+      filename      = "lukis-crazy-chambers-1.0.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7456/313/lukis-crazy-chambers-1.0.3.jar";
+        name   = "lukis-crazy-chambers-1.0.3.jar";
+        sha256 = "0i34arvpq2iaf8zns0j5lgg94mkvb42v9jnlrq673dwwcyx9jsrz";
+      };
+    }
+    {
+      origProjectID = 1003666;
+      origFileID    = 6786014;
+      projectID     = 1003666;
+      fileID        = 7456302;
+      required      = true;
+      filename      = "lukis-grand-capitals-1.1.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7456/302/lukis-grand-capitals-1.1.3.jar";
+        name   = "lukis-grand-capitals-1.1.3.jar";
+        sha256 = "0l9q7p334ahjpnzc0xdbrlzxr6lsjc6liq08wx2dkbq6sg42s62q";
+      };
+    }
+    {
+      origProjectID = 252848;
+      origFileID    = 5696042;
+      projectID     = 252848;
+      fileID        = 7892954;
+      required      = true;
+      filename      = "NaturesCompass-1.21.1-3.4.0-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7892/954/NaturesCompass-1.21.1-3.4.0-neoforge.jar";
+        name   = "NaturesCompass-1.21.1-3.4.0-neoforge.jar";
+        sha256 = "172kjyagd7ywwmxxp75scibgllm6ilc9wryrf1anr49g3g0rl90f";
+      };
+    }
+    {
+      origProjectID = 495476;
+      origFileID    = 6874068;
+      projectID     = 495476;
+      fileID        = 7140307;
+      required      = true;
+      filename      = "PuzzlesLib-v21.1.39-1.21.1-NeoForge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7140/307/PuzzlesLib-v21.1.39-1.21.1-NeoForge.jar";
+        name   = "PuzzlesLib-v21.1.39-1.21.1-NeoForge.jar";
+        sha256 = "05599dwhcs1p3zlfr5l4063g5g15nmjncs2ngf354nqs2y684p1h";
+      };
+    }
+    {
+      origProjectID = 412082;
+      origFileID    = 6944305;
+      projectID     = 412082;
+      fileID        = 6949037;
+      required      = true;
+      filename      = "supplementaries-1.21-3.4.14-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/6949/37/supplementaries-1.21-3.4.14-neoforge.jar";
+        name   = "supplementaries-1.21-3.4.14-neoforge.jar";
+        sha256 = "0krwg4wjakqp6bmi67wx8p7hglbfz1nhkhx6fz2f14gjp0ph3cq4";
+      };
+    }
+    {
+      origProjectID = 254268;
+      origFileID    = 5827075;
+      projectID     = 254268;
+      fileID        = 7197218;
+      required      = true;
+      filename      = "torchmaster-neoforge-1.21.1-21.1.9.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7197/218/torchmaster-neoforge-1.21.1-21.1.9.jar";
+        name   = "torchmaster-neoforge-1.21.1-21.1.9.jar";
+        sha256 = "01mqdrq38xazpbgg2hz4wabfbyvp2ynzy52sg9wmcxkmhnijz6nv";
+      };
+    }
+    {
+      origProjectID = 245755;
+      origFileID    = 6856574;
+      projectID     = 245755;
+      fileID        = 7966157;
+      required      = true;
+      filename      = "waystones-neoforge-1.21.1-21.1.30.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7966/157/waystones-neoforge-1.21.1-21.1.30.jar";
+        name   = "waystones-neoforge-1.21.1-21.1.30.jar";
+        sha256 = "1dvz9alq3j8h717f2n2sjf0imckpw4nx9f8p4fy9x5zwi8yp4czk";
+      };
+    }
+
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
