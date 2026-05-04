@@ -128,6 +128,8 @@ let
     1146393  # Sodium Options Mod Compat
     1217518  # createbetterfps — hard-deps Sodium (client-only)
     1284599  # Status Effect Bars (client-only Screen mixin)
+    393563   # Blur (UI mod — client-only)
+    574123   # Dark Mode Everywhere (UI mod — client-only)
   ];
 
   eulaFile    = builtins.toFile "eula.txt" "eula=true\n";
