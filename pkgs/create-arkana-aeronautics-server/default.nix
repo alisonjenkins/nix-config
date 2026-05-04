@@ -70,7 +70,22 @@ let
       else throw "create-arkana-aeronautics-server: unknown group '${g}' (see arkana-groups.nix)")
       enabledArkanaGroups);
 
+  # Every projectID that lives in any group, regardless of enable state.
+  # Used to detect mods that the auto-classifier missed — they should
+  # fall through into the install set rather than be silently dropped
+  # (the symptom: client connects with mods like exposure /
+  # immersive_paintings registered, server hasn't shipped them, NeoForge
+  # rejects the handshake with "Channel of mod X failed to connect").
+  allClassifiedProjectIDs = lib.concatLists
+    (map (g: g.projectIDs) (lib.attrValues arkanaGroups));
+
   isInEnabledGroup = m: lib.elem m.projectID enabledArkanaProjectIDs;
+  # Ungrouped = present in arkana-mods.nix but missing from every group
+  # in arkana-groups.nix. Treated as "include by default unless
+  # client-only/skipped/disabled". Bisect-narrowing still works against
+  # named groups; orphans don't get punished for the classifier missing
+  # them.
+  isUngrouped = m: !(lib.elem m.projectID allClassifiedProjectIDs);
 
   # Replacements (newer versions of mods that broke under bumped Create) and
   # skipped (discontinued, no live file) live in arkana-mods-extras.nix.
@@ -91,7 +106,8 @@ let
   # gated on group membership so an Apotheosis bump doesn't sneak in unless
   # the `apothic` group is on).
   arkanaModsFiltered = builtins.filter
-    (m: isInEnabledGroup m && !(isReplaced m) && !(isSkipped m) && !(isDisabled m))
+    (m: (isInEnabledGroup m || isUngrouped m)
+        && !(isReplaced m) && !(isSkipped m) && !(isDisabled m))
     arkanaMods;
   # Replacements with `alwaysInclude = true` are part of the Aeronautics
   # floor (Create 6.0.10 is the only one today). They install regardless of
@@ -134,6 +150,18 @@ let
     1284599  # Status Effect Bars (client-only Screen mixin)
     393563   # Blur (UI mod — client-only)
     574123   # Dark Mode Everywhere (UI mod — client-only)
+    # Newly-stripped (auto-classifier left these ungrouped → fall through
+    # into the install set unless we mark them client-only here):
+    423602   # CameraOverhaul (camera transition rendering)
+    453763   # FreshAnimations (resource-pack zip — not a mod jar)
+    627557   # ComplementaryReimagined (shaderpack zip)
+    704256   # Visuality (client-side particle effects)
+    844662   # Entity Model Features (client model loader)
+    882495   # gpumemleakfix (OpenGL leak workaround — client only)
+    915902   # EuphoriaPatcher (shader patcher zip)
+    990406   # Fresh Moves (resource-pack zip)
+    1021685  # ImmersiveUI (client UI overhaul)
+    1091339  # alltheleaks (client memory-leak workaround)
   ];
 
   eulaFile    = builtins.toFile "eula.txt" "eula=true\n";
