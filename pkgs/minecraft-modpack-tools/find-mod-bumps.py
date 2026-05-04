@@ -2,30 +2,35 @@
 """Find newer compatible mod versions for a NeoForge modpack.
 
 Algorithm (per the dep-graph leaf-first walk the user requested):
-  1. Read the existing mod set from `arkana-mods.nix` + `extras.nix`
-     (extras `replacements` override arkana entries by origProjectID).
+  1. Read the existing mod set:
+       - arkana-mods.nix (CurseForge entries, by projectID/fileID)
+       - extras.nix (replacements override arkana entries; skipped/disabled
+         remove them entirely)
+       - overlays.nix (CurseForge entries via the `curseforge` helper +
+         Modrinth entries via the `modrinth` helper)
   2. Walk the built server tree's mods/ to map filename -> modId via
      each jar's META-INF/neoforge.mods.toml, and build:
        - current_version[modId]
        - deps[modId] = [(dep_modId, versionRange, type), ...]
-       - projectID[modId] (CurseForge ID, from arkana-mods.nix)
+       - source[modId] = ("curseforge", projectID) | ("modrinth", projectId)
   3. Reverse-edge the graph -> dependents[modId].
   4. Topo-sort leaves first (no dependents -> first).
-  5. For each modId in that order, query cfwidget for all 1.21.1+NeoForge
-     files; walk newest-first; for each candidate:
-       a. download jar, parse its mods.toml to get its declared deps
+  5. For each modId in that order, query the appropriate source
+     (cfwidget for CF, api.modrinth.com for Modrinth) for all
+     1.21.1+NeoForge versions; walk newest-first; for each candidate:
+       a. download jar, parse its mods.toml for declared deps
        b. for each dep: planned version = bumped[dep] or current[dep];
           fail if dep version not in candidate's required range
        c. for each existing dependent of this mod: fail if candidate
           version not in dependent's existing required range
        d. first candidate that passes both = winner; record bump.
-  6. Print the bump table + ready-to-paste replacement entries for
-     extras.nix.
+  6. Print the bump table + ready-to-paste replacement entries split
+     by destination file (extras.nix vs overlays.nix vs in-place
+     overlays Modrinth lines).
 
-Generic — no Arkana-specific assumptions beyond the parse paths (which
-default to the Arkana files but accept --mods-nix / --extras-nix /
---server-tree overrides). Use from any modpack derivation that follows
-the same arkana-mods.nix layout.
+Generic — no Arkana-specific assumptions beyond default file paths
+(override with --mods-nix / --extras-nix / --overlays-nix). Use from
+any modpack derivation that follows the same nix layout.
 
 Usage:
   find-mod-bumps /path/to/server-tree
@@ -39,20 +44,22 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 try:
-    import tomllib  # Python 3.11+
+    import tomllib  # type: ignore[import-not-found]  # Python 3.11+ stdlib
 except ImportError:
     import tomli as tomllib  # type: ignore
 
 
 # ---------------------------------------------------------------------------
-# mods.toml parsing — deliberately the same shape as dep-tree.py so a future
-# refactor can extract a shared helper module.
+# mods.toml parsing — same shape as dep-tree.py for future shared-module
+# extraction.
 # ---------------------------------------------------------------------------
 
 def parse_modstoml_bytes(raw: bytes):
@@ -84,13 +91,16 @@ def parse_jar_mods(jar_path: Path):
                 mods, deps = parse_modstoml_bytes(zf.read(name))
                 if mods is None:
                     break
+                # `deps` is `Optional[Dict]` per pyright; guard explicitly so
+                # parse failures upstream don't blow up here.
+                deps_dict = deps or {}
                 for m in mods:
                     mid = m.get("modId")
                     if not mid:
                         continue
                     ver = m.get("version", "")
                     deplist = []
-                    raw = deps.get(mid, [])
+                    raw = deps_dict.get(mid, [])
                     if isinstance(raw, dict):
                         raw = [raw]
                     for d in raw:
@@ -105,8 +115,7 @@ def parse_jar_mods(jar_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# Version-range checks (lifted in spirit from dep-tree.py — same Maven
-# range syntax: `[lo,hi]` `[lo,)` `(lo,hi)` etc.).
+# Maven-style version-range checks (same syntax as dep-tree.py).
 # ---------------------------------------------------------------------------
 
 def parse_version_range(spec: str):
@@ -154,13 +163,14 @@ def in_range(version: str, spec: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Parse arkana-mods.nix + extras.nix to extract (filename, projectID, fileID).
-# Two passes: arkana entries first, then extras `replacements` override
-# any arkana entry whose (origProjectID, origFileID) match. Skipped/disabled
-# entries from extras are dropped entirely so we don't waste API calls
-# trying to bump them.
+# Pack-state parsers. Two source files now: arkana-mods.nix + extras.nix
+# (CurseForge), and overlays.nix (Modrinth + CurseForge via different
+# helpers). State is keyed by filename -> {source, ids, dest_file} so the
+# downstream bump walk can dispatch to the right API and emit the right
+# replacement-entry format.
 # ---------------------------------------------------------------------------
 
+# arkana-mods.nix entry shape: 4 fields in fixed order, ending in filename.
 ENTRY_RE = re.compile(
     r"projectID\s*=\s*(\d+)\s*;\s*"
     r"fileID\s*=\s*(\d+)\s*;\s*"
@@ -168,6 +178,7 @@ ENTRY_RE = re.compile(
     r"filename\s*=\s*\"([^\"]+)\"",
     re.S,
 )
+# extras.nix replacements have orig + new IDs.
 REPLACE_RE = re.compile(
     r"origProjectID\s*=\s*(\d+)\s*;\s*"
     r"origFileID\s*=\s*(\d+)\s*;\s*"
@@ -177,65 +188,119 @@ REPLACE_RE = re.compile(
     r"filename\s*=\s*\"([^\"]+)\"",
     re.S,
 )
+# extras.nix skipped/disabled — no fileID for "all versions" wildcard.
 SKIPDIS_RE = re.compile(r"projectID\s*=\s*(\d+)\s*;\s*fileID\s*=\s*(?:(\d+)|null)")
 
+# overlays.nix Modrinth entries — `modrinth "PROJECT" "VERSION" "FILENAME"`.
+# Filename in the helper call may differ slightly from the on-disk
+# filename when the Nix template uses `${...}` interpolation, but for our
+# pack the two match exactly. We match the on-disk filename via the
+# `filename       = "..."` line near the helper invocation.
+OVERLAY_MODRINTH_RE = re.compile(
+    r"filename\s*=\s*\"([^\"]+)\"\s*;[\s\S]{0,400}?"
+    r"modrinth\s+\"([A-Za-z0-9]+)\"\s+\"([A-Za-z0-9]+)\"",
+    re.S,
+)
+# overlays.nix CurseForge entries — `projectID = N; fileID = M; jar =
+# curseforge ...`. No `required = ...` field (entries here aren't part of
+# the manifest required-list semantics; that's the modpack's concern).
+OVERLAY_CURSEFORGE_RE = re.compile(
+    r"filename\s*=\s*\"([^\"]+)\"[\s\S]{0,300}?"
+    r"projectID\s*=\s*(\d+)\s*;\s*"
+    r"fileID\s*=\s*(\d+)\s*;\s*"
+    r"jar\s*=\s*curseforge",
+    re.S,
+)
 
-def load_pack_state(mods_nix: Path, extras_nix: Path):
-    """Returns dict: filename -> (projectID, fileID).
-    Effective state: extras `replacements` win over arkana entries by
-    (origProjectID, origFileID) match. extras `skipped`/`disabled`
-    blocks remove arkana entries (so we don't bump dropped mods)."""
+
+def load_pack_state(mods_nix: Path, extras_nix: Path, overlays_nix: Optional[Path]):
+    """Build the merged effective mod-source map.
+
+    Returns {filename: entry} where each entry has at minimum:
+        source       — "curseforge" or "modrinth"
+        dest_file    — "extras.nix" (replacement format) or
+                       "overlays.nix" (modrinth helper / curseforge helper)
+        For curseforge:  project_id, file_id
+        For modrinth:    project_id, version_id
+
+    Resolution order: arkana base -> extras replacements override by
+    (origProjectID, origFileID) -> extras skipped/disabled remove ->
+    overlays additive (no overlap with arkana set in practice).
+    """
+    state = {}
+
+    # 1) arkana-mods.nix (CurseForge, dest extras.nix when bumped)
     arkana_text = mods_nix.read_text()
-    extras_text = extras_nix.read_text()
-
-    # Step 1: arkana base set, keyed by (projectID, fileID) so we can
-    # apply the (origProjectID, origFileID) overrides directly.
     by_orig = {}
     for m in ENTRY_RE.finditer(arkana_text):
         pid, fid, fname = int(m.group(1)), int(m.group(2)), m.group(3)
         by_orig[(pid, fid)] = fname
 
-    # Step 2: replacements section — string-search to bound the match
-    # range. The two list bodies are syntactically identical so without
-    # bounding we'd pull `skipped`/`disabled` entries (which use a
-    # different schema) into the replacements pass.
-    repl_start = extras_text.find("replacements = [")
-    repl_end = extras_text.find("];", repl_start)
-    repl_text = extras_text[repl_start:repl_end]
-    for m in REPLACE_RE.finditer(repl_text):
-        opid, ofid = int(m.group(1)), int(m.group(2))
-        npid, nfid, fname = int(m.group(3)), int(m.group(4)), m.group(5)
-        # Drop the orig entry, install the replacement.
-        by_orig.pop((opid, ofid), None)
-        by_orig[(npid, nfid)] = fname
+    # 2) extras.nix replacements override arkana entries by orig key.
+    extras_text = extras_nix.read_text() if extras_nix.exists() else ""
+    if extras_text:
+        repl_start = extras_text.find("replacements = [")
+        if repl_start != -1:
+            repl_end = extras_text.find("];", repl_start)
+            for m in REPLACE_RE.finditer(extras_text[repl_start:repl_end]):
+                opid, ofid = int(m.group(1)), int(m.group(2))
+                npid, nfid, fname = int(m.group(3)), int(m.group(4)), m.group(5)
+                by_orig.pop((opid, ofid), None)
+                by_orig[(npid, nfid)] = fname
 
-    # Step 3: skipped + disabled — remove from working set so we don't
-    # try to bump a mod we deliberately exclude.
-    for section in ("skipped = [", "disabled = ["):
-        s = extras_text.find(section)
-        if s == -1:
-            continue
-        e = extras_text.find("];", s)
-        for m in SKIPDIS_RE.finditer(extras_text[s:e]):
-            pid = int(m.group(1))
-            fid = int(m.group(2)) if m.group(2) else None
-            if fid is None:
-                # nuke every entry for that projectID
-                for k in list(by_orig.keys()):
-                    if k[0] == pid:
-                        del by_orig[k]
-            else:
-                by_orig.pop((pid, fid), None)
+        # 3) extras skipped/disabled — drop from working set.
+        for section in ("skipped = [", "disabled = ["):
+            s = extras_text.find(section)
+            if s == -1:
+                continue
+            e = extras_text.find("];", s)
+            for m in SKIPDIS_RE.finditer(extras_text[s:e]):
+                pid = int(m.group(1))
+                fid = int(m.group(2)) if m.group(2) else None
+                if fid is None:
+                    for k in list(by_orig.keys()):
+                        if k[0] == pid:
+                            del by_orig[k]
+                else:
+                    by_orig.pop((pid, fid), None)
 
-    # Re-key by filename for the server-tree match step downstream.
-    return {fname: (pid, fid) for (pid, fid), fname in by_orig.items()}
+    for (pid, fid), fname in by_orig.items():
+        state[fname] = {
+            "source": "curseforge",
+            "dest_file": "extras.nix",
+            "project_id": pid,
+            "file_id": fid,
+        }
+
+    # 4) overlays.nix entries — both helper families.
+    if overlays_nix and overlays_nix.exists():
+        ov_text = overlays_nix.read_text()
+        for m in OVERLAY_MODRINTH_RE.finditer(ov_text):
+            fname, project_id, version_id = m.group(1), m.group(2), m.group(3)
+            state[fname] = {
+                "source": "modrinth",
+                "dest_file": "overlays.nix",
+                "project_id": project_id,
+                "version_id": version_id,
+            }
+        for m in OVERLAY_CURSEFORGE_RE.finditer(ov_text):
+            fname, pid, fid = m.group(1), int(m.group(2)), int(m.group(3))
+            # Don't clobber a Modrinth match for the same filename; first
+            # match wins. (No overlap in practice but defensive.)
+            state.setdefault(fname, {
+                "source": "curseforge",
+                "dest_file": "overlays.nix",
+                "project_id": pid,
+                "file_id": fid,
+            })
+
+    return state
 
 
 # ---------------------------------------------------------------------------
-# CurseForge query + jar fetch (cached). cfwidget gives us all files for
-# a project in one call so we can pick the newest 1.21.1+NeoForge candidate
-# without paginating. Mediafilez is the actual download — sometimes 403s
-# from non-residential IPs, but our local mac usually succeeds.
+# HTTP + cache. cfwidget's WAF blocks default urllib UA; pretending to be
+# curl gets through. Modrinth API has no such friction but we use the same
+# wrapper for parity.
 # ---------------------------------------------------------------------------
 
 CACHE_DIR = Path(os.environ.get("FIND_BUMPS_CACHE", "/tmp/find-mod-bumps-cache"))
@@ -243,9 +308,10 @@ CACHE_DIR = Path(os.environ.get("FIND_BUMPS_CACHE", "/tmp/find-mod-bumps-cache")
 
 def http_get(url: str, retries: int = 3, sleep: float = 1.0) -> bytes:
     last = None
+    req = urllib.request.Request(url, headers={"User-Agent": "curl/8"})
     for _ in range(retries):
         try:
-            with urllib.request.urlopen(url, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=30) as r:
                 return r.read()
         except (urllib.error.URLError, urllib.error.HTTPError) as e:
             last = e
@@ -276,35 +342,73 @@ def cfwidget_files(project_id: int):
     return files
 
 
-def fetch_jar(file_id: int, name: str) -> Path:
-    """Download a CF file to cache and return the local path."""
+def modrinth_versions(project_id: str):
+    """Return list of Modrinth version dicts for the project, sorted
+    newest-first, filtered to 1.21.1 + neoforge. Each has at least:
+        id            (Modrinth version_id)
+        version_number
+        files[0].url, files[0].filename, files[0].hashes.sha1
+        date_published
+    """
+    cache = CACHE_DIR / f"modrinth-{project_id}.json"
+    if cache.exists() and (time.time() - cache.stat().st_mtime) < 3600:
+        d = json.loads(cache.read_text())
+    else:
+        # API supports JSON-array filter params; URL-encode them so the
+        # square brackets and quotes don't get mangled.
+        gv = urllib.parse.quote('["1.21.1"]')
+        ld = urllib.parse.quote('["neoforge"]')
+        url = f"https://api.modrinth.com/v2/project/{project_id}/version?game_versions={gv}&loaders={ld}"
+        try:
+            raw = http_get(url)
+            d = json.loads(raw)
+        except Exception:
+            return []
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(d))
+    # API returns newest-first when sorted by date_published, but not
+    # guaranteed; sort defensively.
+    d.sort(key=lambda v: v.get("date_published", ""), reverse=True)
+    return d
+
+
+def fetch_jar_curseforge(file_id: int, name: str) -> Path:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    out = CACHE_DIR / f"{file_id}-{name}"
+    out = CACHE_DIR / f"cf-{file_id}-{name}"
     if out.exists() and out.stat().st_size > 0:
         return out
     pre, suf = file_id // 1000, file_id % 1000
     url = f"https://mediafilez.forgecdn.net/files/{pre}/{suf}/{name}"
     try:
-        data = http_get(url)
-        out.write_bytes(data)
-        return out
+        out.write_bytes(http_get(url))
     except Exception:
-        return out  # may be empty; caller handles
+        pass
+    return out
+
+
+def fetch_jar_modrinth(version_id: str, file_url: str, name: str) -> Path:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    out = CACHE_DIR / f"mr-{version_id}-{name}"
+    if out.exists() and out.stat().st_size > 0:
+        return out
+    try:
+        out.write_bytes(http_get(file_url))
+    except Exception:
+        pass
+    return out
 
 
 # ---------------------------------------------------------------------------
-# Toposort — leaves (no dependents) first. Falls back to Kahn-style on
-# cycles (logs a note); we don't need a strict ordering, just a hint.
+# Toposort — leaves (no dependents) first. Cycles fall through in arbitrary
+# order with a note; we don't need strict ordering, just a hint.
 # ---------------------------------------------------------------------------
 
 def toposort_leaves_first(modids, dependents):
     remaining = set(modids)
     ordered = []
     while remaining:
-        # Pick mods with no remaining dependents.
         leaves = [m for m in remaining if not (dependents.get(m, set()) & remaining)]
         if not leaves:
-            # Cycle. Just emit whatever's left in arbitrary order.
             ordered.extend(sorted(remaining))
             break
         leaves.sort()
@@ -312,6 +416,115 @@ def toposort_leaves_first(modids, dependents):
         for m in leaves:
             remaining.discard(m)
     return ordered
+
+
+# ---------------------------------------------------------------------------
+# Per-source candidate enumeration. Returns a list of dicts with the
+# uniform shape:
+#   {
+#     "source":     "curseforge"|"modrinth",
+#     "id":         <opaque id used by fetch + dedupe>,
+#     "name":       jar filename,
+#     "version":    semver-ish version string (filled lazily),
+#     "fetch":      callable -> Path returning local jar
+#   }
+# Newest-first.
+# ---------------------------------------------------------------------------
+
+def enumerate_candidates(entry: dict):
+    if entry["source"] == "curseforge":
+        files = cfwidget_files(entry["project_id"])
+        out = []
+        for f in files:
+            out.append({
+                "source": "curseforge",
+                "id": f["id"],
+                "name": f["name"],
+                "version": None,  # parsed from jar later
+                "fetch": (lambda fid=f["id"], nm=f["name"]: fetch_jar_curseforge(fid, nm)),
+            })
+        return out
+    if entry["source"] == "modrinth":
+        versions = modrinth_versions(entry["project_id"])
+        out = []
+        for v in versions:
+            files = v.get("files", [])
+            if not files:
+                continue
+            f0 = files[0]
+            out.append({
+                "source": "modrinth",
+                "id": v["id"],
+                "name": f0.get("filename", ""),
+                "version": v.get("version_number"),
+                "fetch": (lambda vid=v["id"], url=f0["url"], nm=f0.get("filename", ""):
+                          fetch_jar_modrinth(vid, url, nm)),
+            })
+        return out
+    return []
+
+
+def current_id_of(entry: dict):
+    """Return the source-appropriate identifier for the currently-pinned
+    version, used to short-circuit when the candidate list's newest entry
+    matches what we already ship."""
+    return entry.get("file_id") if entry["source"] == "curseforge" else entry.get("version_id")
+
+
+# ---------------------------------------------------------------------------
+# Output formatters per dest_file. Sha256 left as a $(nix hash file ...)
+# shell substitution so the user pastes the entry into a here-doc / shell
+# pipeline that materializes the literal hash. Avoids embedding `nix`
+# shell-outs in the script itself.
+# ---------------------------------------------------------------------------
+
+def format_extras_replacement(b: dict) -> str:
+    cached = CACHE_DIR / f"cf-{b['file_id']}-{b['name']}"
+    pre, suf = b["file_id"] // 1000, b["file_id"] % 1000
+    return (
+        f"    {{\n"
+        f"      origProjectID = {b['project_id']};\n"
+        f"      origFileID    = {b['current_file_id']};\n"
+        f"      projectID     = {b['project_id']};\n"
+        f"      fileID        = {b['file_id']};\n"
+        f"      required      = true;\n"
+        f"      filename      = \"{b['name']}\";\n"
+        f"      jar = fetchurl {{\n"
+        f"        url    = \"https://mediafilez.forgecdn.net/files/{pre}/{suf}/{b['name']}\";\n"
+        f"        name   = \"{b['name']}\";\n"
+        f"        sha256 = \"$(nix hash file --base32 --type sha256 {cached})\";\n"
+        f"      }};\n"
+        f"    }}"
+    )
+
+
+def format_overlays_curseforge(b: dict) -> str:
+    cached = CACHE_DIR / f"cf-{b['file_id']}-{b['name']}"
+    return (
+        f"  # In overlays.nix, replace the matching curseforge entry with:\n"
+        f"  {{\n"
+        f"    filename       = \"{b['name']}\";\n"
+        f"    dropAsOverride = false;\n"
+        f"    projectID      = {b['project_id']};\n"
+        f"    fileID         = {b['file_id']};\n"
+        f"    jar = curseforge {b['file_id']} \"{b['name']}\"\n"
+        f"      \"$(nix hash file --base32 --type sha256 {cached})\";\n"
+        f"  }}"
+    )
+
+
+def format_overlays_modrinth(b: dict) -> str:
+    cached = CACHE_DIR / f"mr-{b['version_id']}-{b['name']}"
+    return (
+        f"  # In overlays.nix, replace the matching modrinth entry with:\n"
+        f"  {{\n"
+        f"    filename       = \"{b['name']}\";\n"
+        f"    dropAsOverride = true;\n"
+        f"    jar = modrinth \"{b['project_id']}\" \"{b['version_id']}\"\n"
+        f"      \"{b['name']}\"\n"
+        f"      \"$(nix hash file --base32 --type sha256 {cached})\";\n"
+        f"  }}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +536,7 @@ def main():
     ap.add_argument("server_tree", help="Path to built server tree (mods/ inside)")
     ap.add_argument("--mods-nix", default="pkgs/create-arkana-aeronautics-server/arkana-mods.nix")
     ap.add_argument("--extras-nix", default="pkgs/create-arkana-aeronautics-server/arkana-mods-extras.nix")
+    ap.add_argument("--overlays-nix", default="pkgs/create-arkana-aeronautics-server/overlays.nix")
     ap.add_argument("--only", help="Comma-separated modIds — process these only")
     ap.add_argument("--skip", help="Comma-separated modIds to skip (e.g. known-incompat bumps)")
     ap.add_argument("--report-json", help="Also write machine-readable bumps to this file")
@@ -337,19 +551,20 @@ def main():
         print(f"no mods/ in {server_tree}", file=sys.stderr)
         sys.exit(2)
 
-    # Step 1: parse arkana-mods.nix + extras for filename -> (pid, fid).
-    state = load_pack_state(Path(args.mods_nix), Path(args.extras_nix))
+    # Parse all three source files into the merged state.
+    overlays_path = Path(args.overlays_nix)
+    state = load_pack_state(
+        Path(args.mods_nix),
+        Path(args.extras_nix),
+        overlays_path if overlays_path.exists() else None,
+    )
 
-    # Step 2: walk built server tree to extract modId -> (filename, version,
-    # deps). For each jar in mods/, parse its mods.toml.
-    #
-    # A modid may be served by a jar without a CurseForge projectID (Modrinth-
-    # only mods like Aeronautics, Sable, spark, c2me). Those skip the bump
-    # search but still count toward dep graph.
+    # Walk the built server tree to extract modId -> (filename, version,
+    # deps) and bind to source-tagged state entries by filename.
     print(f"Scanning {mods_dir}…", file=sys.stderr)
-    modid_to_pid = {}      # modId -> CF projectID (only for CF-managed)
-    modid_to_filename = {} # modId -> jar filename
-    current_version = {}   # modId -> version string
+    modid_to_entry = {}    # modId -> state entry (with source + ids)
+    modid_to_filename = {}
+    current_version = {}
     deps = {}              # modId -> [(dep_modId, range, type)]
     for jar in sorted(mods_dir.iterdir()):
         if not jar.name.endswith(".jar"):
@@ -360,30 +575,29 @@ def main():
             deps[mid] = meta["deps"]
             modid_to_filename[mid] = jar.name
             if jar.name in state:
-                modid_to_pid[mid] = state[jar.name][0]
+                modid_to_entry[mid] = state[jar.name]
 
-    # Step 3: reverse map (dependents).
+    # Reverse map (dependents).
     dependents = defaultdict(set)
     for mid, dlist in deps.items():
-        for dep_mid, _range, dep_type in dlist:
+        for dep_mid, _, dep_type in dlist:
             if dep_type == "required":
                 dependents[dep_mid].add(mid)
 
-    # Step 4: leaf-first toposort over the bumpable set (those with CF
-    # projectIDs). Mods without projectIDs still appear as deps but are
-    # never themselves promoted to a candidate.
-    bumpable = set(modid_to_pid.keys())
+    # Bumpable = all mods we have a known source for. Dropping --only/--skip.
+    bumpable = set(modid_to_entry.keys())
     if only:
         bumpable &= only
     bumpable -= skip
     order = toposort_leaves_first(bumpable, dependents)
-    print(f"Bumpable mod count: {len(bumpable)}; processing leaves first.", file=sys.stderr)
+    by_source = defaultdict(int)
+    for m in bumpable:
+        by_source[modid_to_entry[m]["source"]] += 1
+    print(f"Bumpable mod count: {len(bumpable)} "
+          f"(curseforge={by_source['curseforge']}, modrinth={by_source['modrinth']}); "
+          f"processing leaves first.", file=sys.stderr)
 
-    # Step 5: walk in that order. For each mod, find newest CF candidate
-    # whose declared deps are satisfied by current/already-planned bumps,
-    # AND whose new version still satisfies all existing dependents'
-    # ranges.
-    bumps = {}   # modId -> {file_id, name, version}
+    bumps = {}
     skipped_reasons = {}
 
     def planned_version(mid: str) -> str:
@@ -392,37 +606,38 @@ def main():
         return current_version.get(mid, "")
 
     for i, mid in enumerate(order):
-        pid = modid_to_pid[mid]
+        entry = modid_to_entry[mid]
         cur_ver = current_version.get(mid, "?")
-        candidates = cfwidget_files(pid)
+        candidates = enumerate_candidates(entry)
         if not candidates:
-            skipped_reasons[mid] = "no cfwidget files (project deleted? or rate-limited)"
+            skipped_reasons[mid] = (
+                f"no {entry['source']} versions returned (project deleted? "
+                f"or rate-limited)"
+            )
             continue
-        # Skip if current is already the newest known (cur fileID == latest).
-        cur_fid = state.get(modid_to_filename[mid], (0, 0))[1]
-        if candidates[0]["id"] == cur_fid:
+
+        cur_id = current_id_of(entry)
+        if cur_id is not None and candidates[0]["id"] == cur_id:
             skipped_reasons[mid] = f"already at latest ({cur_ver})"
             continue
 
         chose = None
         chose_meta = None
         for cand in candidates:
-            if cand["id"] == cur_fid:
-                # Reached current — no improvement available.
+            if cur_id is not None and cand["id"] == cur_id:
+                # Reached current — newer didn't satisfy; nothing left.
                 break
-            jar = fetch_jar(cand["id"], cand["name"])
+            jar = cand["fetch"]()
             if not jar.exists() or jar.stat().st_size == 0:
                 continue
             cand_info = parse_jar_mods(jar)
             cand_meta = cand_info.get(mid)
             if cand_meta is None:
-                # Multi-mod jar or modId mismatch — try the next candidate.
                 continue
-            cand_version = cand_meta["version"]
+            cand_version = cand_meta["version"] or cand.get("version") or ""
 
             # Forward-check: candidate's required deps satisfied?
             fwd_ok = True
-            fwd_failure = ""
             for dep_mid, drange, dtype in cand_meta["deps"]:
                 if dtype != "required":
                     continue
@@ -430,20 +645,16 @@ def main():
                     continue
                 planned = planned_version(dep_mid)
                 if not planned:
-                    # Dep modId not in our pack at all — can't satisfy.
                     fwd_ok = False
-                    fwd_failure = f"missing dep {dep_mid} (range {drange})"
                     break
                 if not in_range(planned, drange):
                     fwd_ok = False
-                    fwd_failure = f"{dep_mid} {planned} ∉ {drange}"
                     break
             if not fwd_ok:
                 continue
 
             # Reverse-check: existing dependents still accept this candidate?
             rev_ok = True
-            rev_failure = ""
             for dep_user in dependents.get(mid, set()):
                 user_deps = deps.get(dep_user, [])
                 for d_mid, d_range, d_type in user_deps:
@@ -451,7 +662,6 @@ def main():
                         continue
                     if not in_range(cand_version, d_range):
                         rev_ok = False
-                        rev_failure = f"{dep_user} requires {mid} {d_range}"
                         break
                 if not rev_ok:
                     break
@@ -462,53 +672,65 @@ def main():
             chose_meta = cand_meta
             break
 
-        if chose is None:
+        if chose is None or chose_meta is None:
             skipped_reasons[mid] = "no compatible newer version found"
             continue
-        bumps[mid] = {
-            "file_id": chose["id"],
-            "name": chose["name"],
-            "version": chose_meta["version"],
-            "project_id": pid,
-            "current_file_id": cur_fid,
-            "current_version": cur_ver,
-        }
-        print(f"  [{i+1}/{len(order)}] {mid}: {cur_ver} -> {chose_meta['version']} "
-              f"(fileID {cur_fid} -> {chose['id']})", file=sys.stderr)
 
-    # Step 6: print human-readable report + ready-to-paste extras entries.
+        # Build bump record. Shape varies by source so the formatter can
+        # emit the right replacement entry.
+        record = {
+            "source": entry["source"],
+            "dest_file": entry["dest_file"],
+            "name": chose["name"],
+            "version": chose_meta["version"] or chose.get("version") or "",
+            "current_version": cur_ver,
+            "project_id": entry["project_id"],
+        }
+        if entry["source"] == "curseforge":
+            record["file_id"] = chose["id"]
+            record["current_file_id"] = entry.get("file_id", 0)
+        else:
+            record["version_id"] = chose["id"]
+            record["current_version_id"] = entry.get("version_id", "")
+        bumps[mid] = record
+        print(f"  [{i+1}/{len(order)}] {mid}: {cur_ver} -> {record['version']} "
+              f"({entry['source']} {cur_id} -> {chose['id']})", file=sys.stderr)
+
+    # Report.
     print()
     print(f"=== {len(bumps)} bumps available ===")
     for mid, b in sorted(bumps.items()):
-        print(f"  {mid:35s}  {b['current_version']:20s} -> {b['version']}")
+        tag = "[mr]" if b["source"] == "modrinth" else "[cf]"
+        print(f"  {tag} {mid:30s}  {b['current_version']:20s} -> {b['version']}")
     print()
     print(f"=== Skipped: {len(skipped_reasons)} ===")
     for mid, reason in sorted(skipped_reasons.items()):
-        print(f"  {mid:35s}  {reason}")
+        print(f"  {mid:30s}  {reason}")
 
-    # Replacement entries — paste into extras.nix `replacements = [ ... ]`.
-    # sha256 deliberately left as a placeholder; user runs `nix hash file`
-    # locally on the cached jar (we already downloaded it). Keeping the
-    # script free of `nix` shell-outs makes it portable.
-    if bumps:
+    # Replacement entries grouped by destination file.
+    extras_bumps = [b for b in bumps.values() if b["dest_file"] == "extras.nix"]
+    overlays_cf  = [b for b in bumps.values()
+                    if b["dest_file"] == "overlays.nix" and b["source"] == "curseforge"]
+    overlays_mr  = [b for b in bumps.values()
+                    if b["dest_file"] == "overlays.nix" and b["source"] == "modrinth"]
+
+    if extras_bumps:
         print()
-        print("=== extras.nix replacement entries (compute sha256 locally) ===")
-        for mid, b in sorted(bumps.items()):
-            cached = CACHE_DIR / f"{b['file_id']}-{b['name']}"
-            pre, suf = b["file_id"] // 1000, b["file_id"] % 1000
-            print(f"""    {{
-      origProjectID = {b['project_id']};
-      origFileID    = {b['current_file_id']};
-      projectID     = {b['project_id']};
-      fileID        = {b['file_id']};
-      required      = true;
-      filename      = "{b['name']}";
-      jar = fetchurl {{
-        url    = "https://mediafilez.forgecdn.net/files/{pre}/{suf}/{b['name']}";
-        name   = "{b['name']}";
-        sha256 = "$(nix hash file --base32 --type sha256 {cached})";
-      }};
-    }}""")
+        print("=== extras.nix replacement entries (paste into `replacements = [ ... ]`) ===")
+        for b in sorted(extras_bumps, key=lambda x: x["name"]):
+            print(format_extras_replacement(b))
+
+    if overlays_cf:
+        print()
+        print("=== overlays.nix CurseForge entries (replace in-place) ===")
+        for b in sorted(overlays_cf, key=lambda x: x["name"]):
+            print(format_overlays_curseforge(b))
+
+    if overlays_mr:
+        print()
+        print("=== overlays.nix Modrinth entries (replace in-place) ===")
+        for b in sorted(overlays_mr, key=lambda x: x["name"]):
+            print(format_overlays_modrinth(b))
 
     if args.report_json:
         Path(args.report_json).write_text(json.dumps(
