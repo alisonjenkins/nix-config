@@ -82,79 +82,75 @@ jobs:
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 
-      - name: Build server image (dockerTools layered tar.gz)
-        id: server
+      - name: Build server image + client zip in parallel
+        id: build
         run: |
           set -euo pipefail
-          out=$(nix build --no-link --print-out-paths --max-jobs 4 \
-            ".#packages.x86_64-linux.minecraft-arkana-aeronautics-image")
-          echo "image_tar=$out" >> "$GITHUB_OUTPUT"
-          ls -lh "$out"
+          # Single nix invocation building both targets — Nix's internal
+          # scheduler parallelises derivations across them, sharing the
+          # arkana-mods.nix fetchurl results between server and client
+          # (otherwise both would refetch every CurseForge jar). max-jobs
+          # tracks runner CPU count; cores=0 lets each derivation use all
+          # available cores during its build phase.
+          nix build --no-link --print-out-paths \
+            --max-jobs auto --cores 0 \
+            ".#packages.x86_64-linux.minecraft-arkana-aeronautics-image" \
+            ".#packages.x86_64-linux.create-arkana-aeronautics-client" \
+            > build-out.txt
+          server_tar=$(sed -n '1p' build-out.txt)
+          client_dir=$(sed -n '2p' build-out.txt)
+          client_zip=$(ls "$client_dir"/*.zip)
+          echo "image_tar=$server_tar" >> "$GITHUB_OUTPUT"
+          echo "zip_path=$client_zip"  >> "$GITHUB_OUTPUT"
+          ls -lh "$server_tar" "$client_zip"
 
-      - name: Build client zip (CurseForge-style)
-        id: client
-        run: |
-          set -euo pipefail
-          out=$(nix build --no-link --print-out-paths --max-jobs 4 \
-            ".#packages.x86_64-linux.create-arkana-aeronautics-client")
-          # The derivation outputs a directory containing one .zip — surface
-          # the zip path explicitly for the upload step.
-          zip=$(ls "$out"/*.zip)
-          echo "zip_path=$zip" >> "$GITHUB_OUTPUT"
-          ls -lh "$zip"
-
-      - name: Push server image to ghcr
+      - name: Publish (push image + upload zip in parallel)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE_TAR: ${{ steps.server.outputs.image_tar }}
+          GH_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAR: ${{ steps.build.outputs.image_tar }}
+          ZIP_PATH:  ${{ steps.build.outputs.zip_path }}
         run: |
           set -euo pipefail
-          # skopeo can copy directly from a docker-archive tar.gz to a
-          # docker:// registry without needing a running docker daemon
-          # (which the GHA runner doesn't have set up by default).
-          # `nix shell -c <cmd>` runs <cmd> directly — no `--` separator.
           tag_ref="${TAG#arkana-aeronautics-}"   # strip the leading prefix
 
-          echo "$GH_TOKEN" | nix shell nixpkgs#skopeo -c \
-            skopeo login ghcr.io \
-              --username "${{ github.actor }}" \
-              --password-stdin
+          # Pre-resolve nix shell paths so backgrounded subshells don't
+          # race on the substitution lock. `nix build` is idempotent and
+          # cheap if already in store.
+          SKOPEO=$(nix build --no-link --print-out-paths nixpkgs#skopeo)/bin/skopeo
+          GH=$(nix build --no-link --print-out-paths nixpkgs#gh)/bin/gh
 
-          # Per-arch suffix only — the unsuffixed `:tag` + `:latest` tags
-          # are multi-arch manifest lists, created locally via
-          # `just arkana-publish-arm64 <tag>` once the aarch64 image has
-          # also been pushed (see workflow header comment).
-          nix shell nixpkgs#skopeo -c \
-            skopeo copy \
+          # skopeo's policy.json is missing on cold runners about ~10 % of
+          # the time depending on which substitute path lands the binary.
+          # `--insecure-policy` skips the trust-policy check (we don't
+          # gate on signature trust here — GHCR push is authenticated by
+          # the runner's GITHUB_TOKEN, not by image signature).
+          echo "$GH_TOKEN" | "$SKOPEO" --insecure-policy login ghcr.io \
+            --username "${{ github.actor }}" --password-stdin
+
+          # Image push (background) + release upload (background) — they
+          # share zero state after auth, so `wait` joins both.
+          (
+            "$SKOPEO" --insecure-policy copy \
               "docker-archive:$IMAGE_TAR" \
               "docker://${IMAGE}:${tag_ref}-amd64"
-
-          nix shell nixpkgs#skopeo -c \
-            skopeo copy \
+            "$SKOPEO" --insecure-policy copy \
               "docker-archive:$IMAGE_TAR" \
               "docker://${IMAGE}:latest-amd64"
+            echo "::notice::Pushed ${IMAGE}:${tag_ref}-amd64 and ${IMAGE}:latest-amd64"
+            echo "::notice::Multi-arch :${tag_ref} + :latest pending arm64 push (run 'just arkana-publish-arm64 ${TAG}' locally)"
+          ) &
+          push_pid=$!
 
-          echo "::notice::Pushed ${IMAGE}:${tag_ref}-amd64 and ${IMAGE}:latest-amd64"
-          echo "::notice::Multi-arch :${tag_ref} + :latest pending arm64 push (run 'just arkana-publish-arm64 ${TAG}' locally)"
+          (
+            if ! "$GH" release view "$TAG" >/dev/null 2>&1; then
+              "$GH" release create "$TAG" \
+                --title "Create: Arkana + Aeronautics — $TAG" \
+                --notes "Auto-generated by .github/workflows/arkana-aeronautics-release.yaml. Edit the release on GitHub for richer notes."
+            fi
+            "$GH" release upload "$TAG" "$ZIP_PATH" --clobber
+            echo "::notice::Attached client zip to release $TAG"
+          ) &
+          upload_pid=$!
 
-      - name: Upload client zip to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # `gh release create` is idempotent against an already-existing
-          # tag if we use `--clobber` on assets. If the release doesn't
-          # exist yet (workflow_dispatch on a new tag), create it.
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" \
-              --title "Create: Arkana + Aeronautics — $TAG" \
-              --notes "Auto-generated by .github/workflows/arkana-aeronautics-release.yaml. Edit the release on GitHub for richer notes."
-          fi
-
-          # `--clobber` overwrites an existing same-named asset (e.g. on a
-          # workflow re-run after a fix). Safer than failing the job.
-          gh release upload "$TAG" \
-            "${{ steps.client.outputs.zip_path }}" \
-            --clobber
-
-          echo "::notice::Attached client zip to release $TAG"
+          wait "$push_pid"   || { echo "image push failed" >&2; exit 1; }
+          wait "$upload_pid" || { echo "release upload failed" >&2; exit 1; }
