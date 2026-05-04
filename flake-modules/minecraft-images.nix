@@ -138,5 +138,9 @@ in
       type = "app";
       program = "${(pkgsFor system).minecraft-modpack-tools}/bin/dep-tree";
     };
+    apps.find-mod-bumps = {
+      type = "app";
+      program = "${(pkgsFor system).minecraft-modpack-tools}/bin/find-mod-bumps";
+    };
   };
 }

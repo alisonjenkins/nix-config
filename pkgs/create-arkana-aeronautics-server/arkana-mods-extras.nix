@@ -137,6 +137,245 @@
         sha256 = "0mgq2s7kap2y8zqrn4fhhn1imfpmsr4hlsrhxgqxrvjdmhaxms7z";
       };
     }
+    {
+      # 1.7.0's PotionMixingRecipesMixin invokes
+      # com.simibubi.create.foundation.fluid.FluidIngredient::fromFluidStack
+      # which Create 6.0.10 removed/relocated. JEI's loadCategories class-loads
+      # every Create mixin target during recipe registration, so the missing
+      # class crashes the client at world join (server has no JEI, never hit
+      # this path). 1.10.0 is explicitly built for Create 6.0.10 (CurseForge
+      # display name: "Create: Dragons Plus 1.10.0 for Create 1.21.1-6.0.10").
+      origProjectID = 1216624;
+      origFileID    = 6946959;
+      projectID     = 1216624;
+      fileID        = 7966760;
+      required      = true;
+      filename      = "CreateDragonsPlus-1.10.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7966/760/CreateDragonsPlus-1.10.0.jar";
+        name   = "CreateDragonsPlus-1.10.0.jar";
+        sha256 = "0bv12ba89wll4dd6j2p947ryhrqpp68dabyxs99xin8y4p83y577";
+      };
+    }
+    {
+      # Patch bump 21.1.10 → 21.1.11 (semver-compatible, Bookshelf-style lib).
+      origProjectID = 1023259;
+      origFileID    = 6910558;
+      projectID     = 1023259;
+      fileID        = 6961457;
+      required      = true;
+      filename      = "prickle-neoforge-1.21.1-21.1.11.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/6961/457/prickle-neoforge-1.21.1-21.1.11.jar";
+        name   = "prickle-neoforge-1.21.1-21.1.11.jar";
+        sha256 = "0rxi9rhz8y6dz9frhq43v16yqa88ar00jvq5mm0zxiyk5r26rx6c";
+      };
+    }
+    {
+      # Patch bump 21.1.2 → 21.1.3.
+      origProjectID = 280510;
+      origFileID    = 5824104;
+      projectID     = 280510;
+      fileID        = 7115922;
+      required      = true;
+      filename      = "attributefix-neoforge-1.21.1-21.1.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7115/922/attributefix-neoforge-1.21.1-21.1.3.jar";
+        name   = "attributefix-neoforge-1.21.1-21.1.3.jar";
+        sha256 = "1m1a70n7vhx576rl00253h744g9jsgsf6kf1hh90f9788hyhzcmj";
+      };
+    }
+    {
+      # Bookshelf 21.1.68 → 21.1.81. Lib used by Apothic family + many
+      # Arkana mods; minor bumps within 21.1.x are API-compatible per
+      # blamejared's semver discipline.
+      origProjectID = 228525;
+      origFileID    = 6909578;
+      projectID     = 228525;
+      fileID        = 7606240;
+      required      = true;
+      filename      = "bookshelf-neoforge-1.21.1-21.1.81.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7606/240/bookshelf-neoforge-1.21.1-21.1.81.jar";
+        name   = "bookshelf-neoforge-1.21.1-21.1.81.jar";
+        sha256 = "0xiyid4k8y6b7yjaiw4x6yjncvnrd6s7z3w05d612sibv908vs0r";
+      };
+    }
+    {
+      # Patch bump 1.0.33 → 1.0.35 (henkelmax gravestone).
+      origProjectID = 238551;
+      origFileID    = 6930851;
+      projectID     = 238551;
+      fileID        = 7099728;
+      required      = true;
+      filename      = "gravestone-neoforge-1.21.1-1.0.35.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7099/728/gravestone-neoforge-1.21.1-1.0.35.jar";
+        name   = "gravestone-neoforge-1.21.1-1.0.35.jar";
+        sha256 = "1c05866nhpb6pq47n3hzyk7cdxnkb73hlsphvk2j9mg1v8ic4rba";
+      };
+    }
+    {
+      # Aether 1.5.9 → 1.5.10. Required to match deep_aether 1.1.5.1 below
+      # (aether is a hard dep). Both gated to enabled `world` group via
+      # arkana-mods filter.
+      origProjectID = 255308;
+      origFileID    = 6894706;
+      projectID     = 255308;
+      fileID        = 7043502;
+      required      = true;
+      filename      = "aether-1.21.1-1.5.10-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7043/502/aether-1.21.1-1.5.10-neoforge.jar";
+        name   = "aether-1.21.1-1.5.10-neoforge.jar";
+        sha256 = "1gqdcg4f9jz7c45yy381jc7jg7lrb5xhlyg9b2j1g8302lq8d4xi";
+      };
+    }
+    {
+      # Deep Aether 1.1.4 → 1.1.5.1.
+      origProjectID = 852465;
+      origFileID    = 6839619;
+      projectID     = 852465;
+      fileID        = 7843283;
+      required      = true;
+      filename      = "deep_aether-1.21.1-1.1.5.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7843/283/deep_aether-1.21.1-1.1.5.1.jar";
+        name   = "deep_aether-1.21.1-1.1.5.1.jar";
+        sha256 = "1r8cps5x08c9nv02dm7z4nxdym3kbb1v51g78hrr7fqm0ybssm8g";
+      };
+    }
+    # ---- Ars Nouveau family ----
+    # Bumping the family together because the addons declare hard
+    # version-range deps on ars_nouveau and on each other; mismatched
+    # versions break client model loading and crash addons that hook
+    # ars_nouveau spell registration.
+    {
+      origProjectID = 401955;
+      origFileID    = 6954892;
+      projectID     = 401955;
+      fileID        = 7764018;
+      required      = true;
+      filename      = "ars_nouveau-1.21.1-5.11.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7764/018/ars_nouveau-1.21.1-5.11.3.jar";
+        name   = "ars_nouveau-1.21.1-5.11.3.jar";
+        sha256 = "0dxvvxa03fznyv5ixl4sml1wwmnwy2yqx0f6sq2f5sspd5ay3xci";
+      };
+    }
+    {
+      origProjectID = 974408;
+      origFileID    = 6928685;
+      projectID     = 974408;
+      fileID        = 7646325;
+      required      = true;
+      filename      = "ars_additions-1.21.1-21.3.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7646/325/ars_additions-1.21.1-21.3.0.jar";
+        name   = "ars_additions-1.21.1-21.3.0.jar";
+        sha256 = "16rc6qgr1hhpbz3vdgq2h9ysvfy9lxs1kklcc03q1lwwqgqa6d76";
+      };
+    }
+    {
+      origProjectID = 1061812;
+      origFileID    = 6917586;
+      projectID     = 1061812;
+      fileID        = 7534518;
+      required      = true;
+      filename      = "ars_controle-1.21.1-1.6.15.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7534/518/ars_controle-1.21.1-1.6.15.jar";
+        name   = "ars_controle-1.21.1-1.6.15.jar";
+        sha256 = "0l88y7qiy6a3asys6h4dbdaxjy3hiw41wrj6a51vwmyswijw9wl6";
+      };
+    }
+    {
+      origProjectID = 575698;
+      origFileID    = 6279953;
+      projectID     = 575698;
+      fileID        = 7528185;
+      required      = true;
+      filename      = "ars_creo-1.21.1-5.2.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7528/185/ars_creo-1.21.1-5.2.0.jar";
+        name   = "ars_creo-1.21.1-5.2.0.jar";
+        sha256 = "0bybq7r8mix0al8avwh9685sadfk6x2ikj5hwmvv264l7vf4lm34";
+      };
+    }
+    {
+      origProjectID = 1153666;
+      origFileID    = 6811235;
+      projectID     = 1153666;
+      fileID        = 7956082;
+      required      = true;
+      filename      = "ars_elemancy-1.21.1-1.17.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7956/082/ars_elemancy-1.21.1-1.17.jar";
+        name   = "ars_elemancy-1.21.1-1.17.jar";
+        sha256 = "0x0nd4fwa21ccfh27pbvdgaq4iggpfgd9mpdfl748i0p02nzm6y0";
+      };
+    }
+    {
+      origProjectID = 561470;
+      origFileID    = 6803373;
+      projectID     = 561470;
+      fileID        = 8005065;
+      required      = true;
+      filename      = "ars_elemental-1.21.1-0.7.9.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8005/065/ars_elemental-1.21.1-0.7.9.3.jar";
+        name   = "ars_elemental-1.21.1-0.7.9.3.jar";
+        sha256 = "1lnglp8ddxahi4idmlpywpfrl3caslhdhzsxdgs6ygl63lh788bj";
+      };
+    }
+    {
+      # 2.3.0 → 2.7.6. Significant feature jump but Ars Nouveau 5.11.x is
+      # the matched floor; ars_technica's mods.toml requires ars_nouveau
+      # >= 5.11.0 in 2.7.x.
+      origProjectID = 1096161;
+      origFileID    = 6825993;
+      projectID     = 1096161;
+      fileID        = 7642730;
+      required      = true;
+      filename      = "ars_technica-1.21.1-2.7.6.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7642/730/ars_technica-1.21.1-2.7.6.jar";
+        name   = "ars_technica-1.21.1-2.7.6.jar";
+        sha256 = "178msgaih63b2gc71rgpiqfa3a4lci5biqk95hk3ijn8z0whzdv4";
+      };
+    }
+    # NOTE: reliquified_ars_nouveau NOT bumped — 0.7.1 requires
+    # relics >=0.11.14 (major API break: IRelicItem moved, EffectRegistry
+    # removed, ExperienceAddEvent gone). Bumping relics to 0.11.16 broke
+    # arcane_abilities, reliquified_lenders_cataclysm, and a relics-using
+    # twilightforest plugin. 0.6.1 stays — its dep range `ars_nouveau
+    # >=5.10.2` accepts 5.11.3 fine.
+    {
+      origProjectID = 746215;
+      origFileID    = 6646495;
+      projectID     = 746215;
+      fileID        = 7638376;
+      required      = true;
+      filename      = "starbunclemania-1.21.1-1.5.6.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7638/376/starbunclemania-1.21.1-1.5.6.jar";
+        name   = "starbunclemania-1.21.1-1.5.6.jar";
+        sha256 = "1zgd99gq4ahjgzpz17lvk77zzvpqybhnzzyzbj9zjx805fjw5yvx";
+      };
+    }
+    {
+      origProjectID = 1023517;
+      origFileID    = 6784398;
+      projectID     = 1023517;
+      fileID        = 8015114;
+      required      = true;
+      filename      = "not_enough_glyphs-1.21.1-4.3.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8015/114/not_enough_glyphs-1.21.1-4.3.2.jar";
+        name   = "not_enough_glyphs-1.21.1-4.3.2.jar";
+        sha256 = "1z3vzgzj9y0424igz958vnbh040andakbd5mc8n3a566n91zgxkv";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
@@ -196,7 +435,9 @@
     # Forge ran setup events in a different order.
     { projectID = 506948;  fileID = null; reason = "jerintegration calls config.get from FMLCommonSetupEvent before config loaded; NeoForge 21.1.x lifecycle incompatibility."; phase = "common-setup"; }
     { projectID = 820977;  fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
-    { projectID = 1216624; fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
+    # create_dragons_plus 1.7.0 was disabled (PotionMixingRecipesMixin
+    # referenced removed Create FluidIngredient); replaced with 1.10.0
+    # above (built against Create 6.0.10) instead.
     { projectID = 688768; fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
   ];
 }

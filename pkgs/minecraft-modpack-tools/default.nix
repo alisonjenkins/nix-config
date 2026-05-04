@@ -11,6 +11,14 @@
 #   2. As an interactive tool (`nix run .#dep-tree -- /path/to/server`)
 #      when iterating on a new modpack composition.
 #
+# `find-mod-bumps` walks the dep graph leaf-first to find the latest
+# CurseForge release/beta of each pack mod compatible with both its own
+# declared deps and existing dependents' version ranges. Output is a
+# bump table + ready-to-paste extras.nix replacement entries. Used as
+# `nix run .#find-mod-bumps -- /path/to/server-tree`. Reads
+# arkana-mods.nix + arkana-mods-extras.nix from the cwd by default
+# (override with --mods-nix / --extras-nix for other modpacks).
+#
 # The dep-tree script ships its own filename-pattern provider list
 # tuned for Arkana + Create-family modpacks (kotlinforforge, flywheel,
 # ponder JIJ, Aeronautics bundled simulated/offroad). Other modpacks
@@ -29,12 +37,15 @@ stdenvNoCC.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 dep-tree.py $out/bin/dep-tree
+    install -Dm755 dep-tree.py        $out/bin/dep-tree
+    install -Dm755 find-mod-bumps.py  $out/bin/find-mod-bumps
     # Ensure the shebang resolves to a Python with tomllib (3.11+).
     # makeWrapper isn't strictly needed here — the script's `import
     # tomllib` already gates on 3.11 — but the wrapper pins the Python
     # store path so PATH-environment changes can't subvert it.
-    wrapProgram $out/bin/dep-tree --set PATH ${lib.makeBinPath [ python3 ]}
+    for bin in dep-tree find-mod-bumps; do
+      wrapProgram $out/bin/$bin --set PATH ${lib.makeBinPath [ python3 ]}
+    done
     runHook postInstall
   '';
 
