@@ -772,5 +772,17 @@
     # referenced removed Create FluidIngredient); replaced with 1.10.0
     # above (built against Create 6.0.10) instead.
     { projectID = 688768; fileID = null; reason = "Incompatible with Create Aeronautics"; phase = "worldgen"; }
+    # LeavesBeGone registers a per-chunk leaf-decay tick container during
+    # chunk init. Sable's physics engine builds a fresh ServerSubLevel
+    # mini-dimension on Aeronautics ship-assemble, and the chunks born
+    # there don't have their `randomBlockTicks` list populated yet at the
+    # moment LeavesBeGone's chunk-init hook fires → NPE:
+    #   Caused by: java.lang.NullPointerException: Random block ticks was null
+    #     at LeavesBeGone$ChunkInitHandler...
+    # Aeronautics ship-assemble silently fails (blocks stay as blocks).
+    # No upstream fix; LeavesBeGone author hasn't shipped null-guarded
+    # handler. Drop the mod — purely-cosmetic decay-speedup feature, low
+    # blast radius without it.
+    { projectID = 686435; fileID = null; reason = "LeavesBeGone NPE on Sable physics ServerSubLevel chunk init (randomBlockTicks null) breaks Aeronautics ship-assemble."; phase = "runtime"; }
   ];
 }
