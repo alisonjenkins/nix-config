@@ -51,10 +51,14 @@ mediafilez_url() {
   # `+` and ` ` in the filename must percent-encode (raw `+` 403s, raw space
   # 404s). jq's @uri encodes too aggressively (it touches `-`, `_`, `.`),
   # which mediafilez also 404s on, so we hand-encode just the chars we've
-  # actually seen break in CurseForge filenames: space and plus.
+  # actually seen break in CurseForge filenames: space, plus, and brackets.
+  # curl 8.x rejects literal `[`/`]` ("bad range in URL position N",
+  # IPv6-zone parser); mediafilez serves the %5B/%5D form fine.
   local encoded="$filename"
   encoded="${encoded// /%20}"
   encoded="${encoded//+/%2B}"
+  encoded="${encoded//\[/%5B}"
+  encoded="${encoded//\]/%5D}"
   printf 'https://mediafilez.forgecdn.net/files/%d/%d/%s' "$prefix" "$suffix" "$encoded"
 }
 

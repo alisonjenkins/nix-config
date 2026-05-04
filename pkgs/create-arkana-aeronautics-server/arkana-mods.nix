@@ -613,7 +613,7 @@
     required  = true;
     filename  = "DnT-swamp-hut-overhaul-v2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5619/488/DnT-swamp-hut-overhaul-v2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5619/488/DnT-swamp-hut-overhaul-v2%20%5BNeoForge%5D.jar";
       name   = "DnT-swamp-hut-overhaul-v2__NeoForge_.jar";
       sha256 = "06v32d4i363bi634fwy9nlll6rsymv4gp7v3ndl0ai8n37n7hncr";
     };
@@ -767,7 +767,7 @@
     required  = true;
     filename  = "dungeons-and-taverns-v4.4.4 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5768/823/dungeons-and-taverns-v4.4.4%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5768/823/dungeons-and-taverns-v4.4.4%20%5BNeoForge%5D.jar";
       name   = "dungeons-and-taverns-v4.4.4__NeoForge_.jar";
       sha256 = "019dfr581b2hwahw45axaxwigb78cqc5v5a0kszawxnbw24qxchx";
     };
@@ -965,7 +965,7 @@
     required  = true;
     filename  = "DnT-ancient-city-overhaul-v2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5619/465/DnT-ancient-city-overhaul-v2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5619/465/DnT-ancient-city-overhaul-v2%20%5BNeoForge%5D.jar";
       name   = "DnT-ancient-city-overhaul-v2__NeoForge_.jar";
       sha256 = "14gxv3rvkwp5pqh84hcdfhga765ywhgxmwf5bk6z3zrr2bn84249";
     };
@@ -1064,7 +1064,7 @@
     required  = true;
     filename  = "DnT-jungle-temple-replacement-v1.2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5724/471/DnT-jungle-temple-replacement-v1.2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5724/471/DnT-jungle-temple-replacement-v1.2%20%5BNeoForge%5D.jar";
       name   = "DnT-jungle-temple-replacement-v1.2__NeoForge_.jar";
       sha256 = "0zhxkcv1g220qwf2ll3gi7zb6jdp1zlhb0bahb9rmgp8sfbr1x8q";
     };
@@ -1537,7 +1537,7 @@
     required  = true;
     filename  = "DnT-nether-fortress-overhaul-v2.4 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5768/841/DnT-nether-fortress-overhaul-v2.4%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5768/841/DnT-nether-fortress-overhaul-v2.4%20%5BNeoForge%5D.jar";
       name   = "DnT-nether-fortress-overhaul-v2.4__NeoForge_.jar";
       sha256 = "1mvkxkz65v9apgglhphsgq1sar3qg8zqw1mvhqvrj3y7g7irp9yg";
     };
@@ -1845,7 +1845,7 @@
     required  = true;
     filename  = "CameraOverhaul-v2.0.4-neoforge+mc[1.21.0-1.21.1].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/6510/155/CameraOverhaul-v2.0.4-neoforge%2Bmc[1.21.0-1.21.1].jar";
+      url    = "https://mediafilez.forgecdn.net/files/6510/155/CameraOverhaul-v2.0.4-neoforge%2Bmc%5B1.21.0-1.21.1%5D.jar";
       name   = "CameraOverhaul-v2.0.4-neoforge+mc_1.21.0-1.21.1_.jar";
       sha256 = "1wrag3b02r9gwbwc9d689fd4z1h24s1xl6f6kj7skn9n50a5wrsa";
     };
@@ -1977,7 +1977,7 @@
     required  = true;
     filename  = "DnT-pillager-outpost-overhaul-v2.2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5619/504/DnT-pillager-outpost-overhaul-v2.2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5619/504/DnT-pillager-outpost-overhaul-v2.2%20%5BNeoForge%5D.jar";
       name   = "DnT-pillager-outpost-overhaul-v2.2__NeoForge_.jar";
       sha256 = "1pi2kdmw9f4h4gsdhi5mvb9r7c9rpjdiq01dcvl3zyni4yf6nxyw";
     };
@@ -2043,7 +2043,7 @@
     required  = true;
     filename  = "DnT-desert-temple-replacement-v1.2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5724/477/DnT-desert-temple-replacement-v1.2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5724/477/DnT-desert-temple-replacement-v1.2%20%5BNeoForge%5D.jar";
       name   = "DnT-desert-temple-replacement-v1.2__NeoForge_.jar";
       sha256 = "0ns8ss95p68g5c3b97nym1zixwlpp8g7km3b5ifh9966v86pskm4";
     };
@@ -2076,7 +2076,7 @@
     required  = true;
     filename  = "DnT-end-castle-standalone-v1.1 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5724/481/DnT-end-castle-standalone-v1.1%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5724/481/DnT-end-castle-standalone-v1.1%20%5BNeoForge%5D.jar";
       name   = "DnT-end-castle-standalone-v1.1__NeoForge_.jar";
       sha256 = "1bs8f06id9ybjvfs90p1qw19g5nhj6r70q380ll3knj0b61kb5vj";
     };
@@ -2131,7 +2131,7 @@
     required  = true;
     filename  = "DnT-ocean-monument-replacement-v1.2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5724/461/DnT-ocean-monument-replacement-v1.2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5724/461/DnT-ocean-monument-replacement-v1.2%20%5BNeoForge%5D.jar";
       name   = "DnT-ocean-monument-replacement-v1.2__NeoForge_.jar";
       sha256 = "143s28j3318d69ba18wvwiizalk2cbsk55cr9mkpxchbg36czi5x";
     };
@@ -2263,7 +2263,7 @@
     required  = true;
     filename  = "DnT-woodland-mansion-replacement-v1.2 [NeoForge].jar";
     jar = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5724/452/DnT-woodland-mansion-replacement-v1.2%20[NeoForge].jar";
+      url    = "https://mediafilez.forgecdn.net/files/5724/452/DnT-woodland-mansion-replacement-v1.2%20%5BNeoForge%5D.jar";
       name   = "DnT-woodland-mansion-replacement-v1.2__NeoForge_.jar";
       sha256 = "0gjbn87bxsygapcnqcc47nmxg3l0akzb56q99wf2my9jz0s6jj97";
     };
