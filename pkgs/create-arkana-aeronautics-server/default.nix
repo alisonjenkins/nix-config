@@ -1,9 +1,12 @@
 { stdenvNoCC, stdenv, lib, fetchurl, unzip, zip, python3, bash, minecraft-modpack-tools
 , # Whitelist of Arkana mod groups to bake into the server tree. Default
-  # `[]` is the verified Aeronautics-only floor (Aeronautics + Sable +
-  # Compatability + New Age + Big Cannons + Ritchie's + spark + JEI). Flip
-  # groups on via `.override { enabledArkanaGroups = [ "core-libs" … ]; }`
-  # — group names + membership defined in `./arkana-groups.nix`.
+  # is *every* group declared in `./arkana-groups.nix` — the published
+  # image is the full Arkana 1.5 + Aeronautics experience. Override to a
+  # narrower list when bisecting compatibility regressions:
+  #   .override { enabledArkanaGroups = [ "core-libs" "ars" ]; }
+  # Empty list reproduces the verified Aeronautics-only floor that we
+  # bisected from earlier (Aeronautics + Sable + Compatability + Create
+  # + Big Cannons + New Age + Ritchie's + spark + JEI).
   #
   # Why a whitelist instead of "everything minus a strip-list": Arkana 1.5
   # was tuned against Create 6.0.6 + NeoForge 21.1.206, but Aeronautics 1.2.1
@@ -12,9 +15,10 @@
   # (Apotheosis, GlitchCore, farm_and_charm, candlelight, bakery,
   # irons_jewelry, waystones, forbidden_arcanus, …) hit `DeferredHolder`
   # registry-init NPEs against the bumped Create. Bisecting which groups
-  # boot cleanly is faster than per-mod source patches, and Aeronautics
-  # is the user's priority — Arkana content opts in.
-  enabledArkanaGroups ? [ ]
+  # boot cleanly is faster than per-mod source patches; the bad mods within
+  # otherwise-good groups land in `arkanaExtras.disabled` so the whole
+  # group stays enabled without the offenders.
+  enabledArkanaGroups ? builtins.attrNames (import ./arkana-groups.nix)
 }:
 let
   # Pack version: <Arkana version>+aeronautics-<Aeronautics version>.
