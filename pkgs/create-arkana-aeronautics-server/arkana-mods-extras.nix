@@ -688,7 +688,27 @@
         sha256 = "1dvz9alq3j8h717f2n2sjf0imckpw4nx9f8p4fy9x5zwi8yp4czk";
       };
     }
-
+    # Accessories Compatibility Layer 0.1.6 had a null-holder bug where
+    # Iron's Spellbooks queries Rabbit#isInvisibleTo → curio lookup →
+    # AccessoriesHolderImpl.getSlotContainers() NPE because the compat
+    # layer didn't auto-create holders for non-player entities. 0.1.9
+    # adds the auto-create. Capped at 0.1.9 by accessories beta.49's
+    # `accessories_compat_layer (,0.1.9]` dep range — newer compat
+    # layers (0.1.10+) require accessories beta.53+, which we hold
+    # back to avoid wider blast radius across curio-bridged mods.
+    {
+      origProjectID = 1315611;
+      origFileID    = 6957780;
+      projectID     = 1315611;
+      fileID        = 7005354;
+      required      = true;
+      filename      = "accessories_compat_layer-neoforge-0.1.9+1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7005/354/accessories_compat_layer-neoforge-0.1.9%2B1.21.1.jar";
+        name   = "accessories_compat_layer-neoforge-0.1.9+1.21.1.jar";
+        sha256 = "0aq0ilfxg60sadzq3qpxhb3v0g8lkr0d97aichpp12cxj5kcsshg";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
