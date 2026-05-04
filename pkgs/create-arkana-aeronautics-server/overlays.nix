@@ -151,4 +151,18 @@ in
       "common-networking-neoforge-1.0.21-1.21.1.jar"
       "0gjg7shl18agxbga54dr7anckjwbv98jfck712yq81gs2qiwx6r8";
   }
+  {
+    # Replacement for LeavesBeGone (disabled in arkana-mods-extras —
+    # see runtime NPE on Sable's ServerSubLevel chunk init). Rapid Leaf
+    # Decay listens to BlockEvent.BreakEvent and walks neighbour leaves
+    # for instant decay; purely event-driven, no chunk-init hook, so it
+    # doesn't interact with Aeronautics' physics SubLevels at all.
+    # Modrinth-only (no CF mirror), so the client zip drops it under
+    # overrides/mods/.
+    filename       = "RapidLeafDecay-1.21.1-3.0.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "jSQXzmcf" "5jGrYR7B"
+      "RapidLeafDecay-1.21.1-3.0.1.jar"
+      "0wlh2awf7xb6avi9dayqb9m8ncps9fzq6hl959bkwl6haa20wffn";
+  }
 ]
