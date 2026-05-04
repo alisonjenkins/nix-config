@@ -16,7 +16,7 @@ in
 
     launchd.daemons.niks3-cache-push.serviceConfig = {
       Label = "org.nixos.niks3-cache-push";
-      ProgramArguments = [ "${scripts.drainScript}" ];
+      ProgramArguments = [ (lib.getExe scripts.drainScript) ];
       WatchPaths = [ scripts.queueFile ];
       RunAtLoad = false;
       KeepAlive = false;

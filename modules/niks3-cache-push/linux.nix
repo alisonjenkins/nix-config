@@ -26,7 +26,7 @@ in
       wants = [ "network-online.target" ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = scripts.drainScript;
+        ExecStart = lib.getExe scripts.drainScript;
       };
     };
   };

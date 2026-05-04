@@ -11,24 +11,31 @@ rec {
     exit 0
   '';
 
-  drainScript = pkgs.writeShellScript "niks3-drain" ''
-    set -euf
-    QUEUE=${queueFile}
-    PROCESSING=${processingFile}
+  drainScript = pkgs.writeShellApplication {
+    name = "niks3-drain";
+    # pkgs.nix is required because niks3 shells out to `nix path-info`.
+    # On Darwin launchd does not inherit /run/current-system/sw/bin, so
+    # `nix` must be on PATH explicitly for the daemon to function.
+    runtimeInputs = [ pkgs.nix ];
+    text = ''
+      QUEUE=${queueFile}
+      PROCESSING=${processingFile}
 
-    mv "$QUEUE" "$PROCESSING" 2>/dev/null || exit 0
+      mv "$QUEUE" "$PROCESSING" 2>/dev/null || exit 0
 
-    # Pass the token to niks3 via NIKS3_AUTH_TOKEN_FILE rather than
-    # --auth-token so it never enters the niks3 process's argv (where any
-    # local user could read it via `ps`). niks3 reads the file itself.
-    export NIKS3_AUTH_TOKEN_FILE=${lib.escapeShellArg (toString cfg.authTokenFile)}
+      # Pass the token to niks3 via NIKS3_AUTH_TOKEN_FILE rather than
+      # --auth-token so it never enters the niks3 process's argv (where any
+      # local user could read it via `ps`). niks3 reads the file itself.
+      export NIKS3_AUTH_TOKEN_FILE=${lib.escapeShellArg (toString cfg.authTokenFile)}
 
-    cat "$PROCESSING" | xargs -r ${lib.getExe' niks3 "niks3"} push \
-      --server-url "${cfg.serverUrl}" \
-      --max-concurrent-uploads ${toString cfg.maxConcurrentUploads}
+      xargs -r ${lib.getExe' niks3 "niks3"} push \
+        --server-url "${cfg.serverUrl}" \
+        --max-concurrent-uploads ${toString cfg.maxConcurrentUploads} \
+        < "$PROCESSING"
 
-    rm -f "$PROCESSING"
-  '';
+      rm -f "$PROCESSING"
+    '';
+  };
 
   backfillScript = pkgs.writeShellApplication {
     name = "niks3-backfill";
