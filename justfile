@@ -335,6 +335,120 @@ mc-push image tag:
     echo "Pushed: {{image}}:{{tag}}"
     crane manifest "{{image}}:{{tag}}" | head -40
 
+# Build the Create: Arkana + Aeronautics server OCI image (single arch).
+# Defaults to host arch; pass "amd64" or "arm64" to cross-build.
+arkana-build arch="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{arch}}" in
+        amd64|x86_64) sys="x86_64-linux" ;;
+        arm64|aarch64) sys="aarch64-linux" ;;
+        "") sys="$(nix eval --impure --raw --expr 'builtins.currentSystem')" ;;
+        *) echo "unknown arch: {{arch}} (use amd64|arm64)"; exit 1 ;;
+    esac
+    case "$sys" in
+        *-linux) ;;
+        *) echo "host system $sys cannot build linux containers without a remote linux builder"; exit 1 ;;
+    esac
+    nix build ".#packages.$sys.minecraft-arkana-aeronautics-image" --print-out-paths
+
+# Build BOTH arches and push as a multi-arch manifest.
+# Mirrors `mc-push` shape: skopeo for per-arch push, crane for manifest list.
+# Tag is the IMAGE tag (`v1.5-aero-1.2.1-7`), NOT the git tag.
+# Usage: just arkana-push v1.5-aero-1.2.1-7
+arkana-push tag image="ghcr.io/alisonjenkins/create-arkana-aeronautics-server":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    skopeo() { nix run nixpkgs#skopeo -- "$@"; }
+    crane()  { nix run nixpkgs#go-containerregistry -- "$@"; }
+
+    # skopeo auth file → docker config bridge (same dance as mc-push).
+    if [ -f "$HOME/.config/containers/auth.json" ]; then
+        export DOCKER_CONFIG="$(mktemp -d)"
+        trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+        ln -s "$HOME/.config/containers/auth.json" "$DOCKER_CONFIG/config.json"
+    fi
+
+    echo "==> Building amd64 image"
+    amd64_tar=$(nix build --no-link --print-out-paths \
+      '.#packages.x86_64-linux.minecraft-arkana-aeronautics-image')
+    echo "==> Building arm64 image"
+    arm64_tar=$(nix build --no-link --print-out-paths \
+      '.#packages.aarch64-linux.minecraft-arkana-aeronautics-image')
+
+    echo "==> Pushing {{image}}:{{tag}}-amd64"
+    skopeo --insecure-policy copy "docker-archive:$amd64_tar" "docker://{{image}}:{{tag}}-amd64"
+    echo "==> Pushing {{image}}:{{tag}}-arm64"
+    skopeo --insecure-policy copy "docker-archive:$arm64_tar" "docker://{{image}}:{{tag}}-arm64"
+
+    echo "==> Creating multi-arch manifest {{image}}:{{tag}}"
+    crane index append \
+        -m "{{image}}:{{tag}}-amd64" \
+        -m "{{image}}:{{tag}}-arm64" \
+        -t "{{image}}:{{tag}}"
+
+    echo "==> Updating multi-arch manifest {{image}}:latest"
+    crane index append \
+        -m "{{image}}:{{tag}}-amd64" \
+        -m "{{image}}:{{tag}}-arm64" \
+        -t "{{image}}:latest"
+
+    echo ""
+    echo "Pushed: {{image}}:{{tag}} ({{image}}:latest)"
+    crane manifest "{{image}}:{{tag}}" | head -40
+
+# Push ONLY the aarch64 image and assemble the multi-arch manifest list.
+# Use after CI has pushed `:tag-amd64` (release workflow does this on tag
+# push). Avoids wasting bandwidth + builder time re-pushing the amd64
+# layer the runner already shipped.
+# Tag is the IMAGE tag (`v1.5-aero-1.2.1-7`), NOT the git tag.
+# Usage: just arkana-publish-arm64 v1.5-aero-1.2.1-7
+arkana-publish-arm64 tag image="ghcr.io/alisonjenkins/create-arkana-aeronautics-server":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    skopeo() { nix run nixpkgs#skopeo -- "$@"; }
+    crane()  { nix run nixpkgs#go-containerregistry -- "$@"; }
+
+    if [ -f "$HOME/.config/containers/auth.json" ]; then
+        export DOCKER_CONFIG="$(mktemp -d)"
+        trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+        ln -s "$HOME/.config/containers/auth.json" "$DOCKER_CONFIG/config.json"
+    fi
+
+    # Assert the amd64 layer is already in the registry — fail fast with
+    # a clear message instead of producing a single-arch manifest list.
+    echo "==> Verifying {{image}}:{{tag}}-amd64 is published"
+    if ! crane manifest "{{image}}:{{tag}}-amd64" >/dev/null 2>&1; then
+        echo "ERROR: {{image}}:{{tag}}-amd64 is missing — is the GHA release workflow finished?" >&2
+        echo "       Run 'gh run list --workflow=arkana-aeronautics-release.yaml' to check." >&2
+        exit 1
+    fi
+
+    echo "==> Building arm64 image (via linux remote builder)"
+    arm64_tar=$(nix build --no-link --print-out-paths \
+      '.#packages.aarch64-linux.minecraft-arkana-aeronautics-image')
+
+    echo "==> Pushing {{image}}:{{tag}}-arm64"
+    skopeo --insecure-policy copy "docker-archive:$arm64_tar" "docker://{{image}}:{{tag}}-arm64"
+
+    echo "==> Creating multi-arch manifest {{image}}:{{tag}}"
+    crane index append \
+        -m "{{image}}:{{tag}}-amd64" \
+        -m "{{image}}:{{tag}}-arm64" \
+        -t "{{image}}:{{tag}}"
+
+    echo "==> Updating multi-arch manifest {{image}}:latest"
+    crane index append \
+        -m "{{image}}:{{tag}}-amd64" \
+        -m "{{image}}:{{tag}}-arm64" \
+        -t "{{image}}:latest"
+
+    echo ""
+    echo "Multi-arch published: {{image}}:{{tag}} + {{image}}:latest"
+    crane manifest "{{image}}:{{tag}}" | head -40
+
 alias b := boot
 alias B := build
 alias s := switch

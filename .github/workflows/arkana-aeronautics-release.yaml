@@ -18,6 +18,15 @@
 # to linux only (server tree + dockerTools.buildLayeredImage), so we don't
 # attempt aarch64-darwin or aarch64-linux outputs from CI — the home Linux
 # remote builder is for local devs, GHA runners build x86_64-linux directly.
+#
+# Multi-arch:
+#   * GHA pushes only `:tag-amd64` + `:latest-amd64` (this workflow).
+#   * The unsuffixed `:tag` and `:latest` tags are *manifest lists*
+#     created locally by `just arkana-publish-arm64 <tag>` after the
+#     aarch64-linux image is built on the maintainer's M-series Mac via
+#     the linux remote builder. Cross-building dockerTools images for
+#     aarch64 from x86_64 GHA runners is unreliable, so the per-arch
+#     builds are split.
 
 name: Arkana + Aeronautics — release
 
@@ -111,20 +120,22 @@ jobs:
               --username "${{ github.actor }}" \
               --password-stdin
 
-          # Push under the canonical project tag.
+          # Per-arch suffix only — the unsuffixed `:tag` + `:latest` tags
+          # are multi-arch manifest lists, created locally via
+          # `just arkana-publish-arm64 <tag>` once the aarch64 image has
+          # also been pushed (see workflow header comment).
           nix shell nixpkgs#skopeo -c \
             skopeo copy \
               "docker-archive:$IMAGE_TAR" \
-              "docker://${IMAGE}:${tag_ref}"
+              "docker://${IMAGE}:${tag_ref}-amd64"
 
-          # Also push `latest`. dockerTools layered images are content-
-          # addressed so this is a cheap manifest-only push.
           nix shell nixpkgs#skopeo -c \
             skopeo copy \
               "docker-archive:$IMAGE_TAR" \
-              "docker://${IMAGE}:latest"
+              "docker://${IMAGE}:latest-amd64"
 
-          echo "::notice::Pushed ${IMAGE}:${tag_ref} and ${IMAGE}:latest"
+          echo "::notice::Pushed ${IMAGE}:${tag_ref}-amd64 and ${IMAGE}:latest-amd64"
+          echo "::notice::Multi-arch :${tag_ref} + :latest pending arm64 push (run 'just arkana-publish-arm64 ${TAG}' locally)"
 
       - name: Upload client zip to release
         env:
