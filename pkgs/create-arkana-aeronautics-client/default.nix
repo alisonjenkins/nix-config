@@ -175,12 +175,21 @@ stdenvNoCC.mkDerivation {
     python3 ${../create-arkana-aeronautics-server/strip-lambdynamiclights-jij.py} \
       "overrides/mods/${arsNouveauReplacement.filename}"
 
+    # JVM-args guidance ships at the zip root (alongside manifest.json),
+    # not under overrides/. CurseForge-style zips treat anything outside
+    # overrides/ + manifest.json + modlist.html as informational, so the
+    # README is visible to anyone opening the zip but doesn't get extracted
+    # into the instance. JVM args can't ride in manifest.json (CF schema
+    # has no field for them) — Prism / CF Launcher / MultiMC each need
+    # per-launcher steps documented in the README.
+    install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
+
     # Repack as a CurseForge-style zip (manifest.json + modlist.html +
     # overrides/) and write it to $out. Importable in the CurseForge
     # launcher, Prism Launcher, and ATLauncher.
     mkdir -p $out
     zip -qr "$out/create-arkana-aeronautics-client-${version}.zip" \
-      manifest.json modlist.html overrides
+      manifest.json modlist.html JVM-ARGS.md overrides
 
     runHook postInstall
   '';
