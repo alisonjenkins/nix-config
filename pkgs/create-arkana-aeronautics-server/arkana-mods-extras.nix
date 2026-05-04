@@ -700,6 +700,11 @@
       fileID    = 6161857;
       reason    = "Ender's Nameless Necromancy is discontinued; CurseForge has no published files";
     }
+    {
+      projectID = 551736;
+      fileID    = 6044477;
+      reason    = "sodiumdynamiclights bundles dev.lambdaurora.lambdynlights.api.* — same package as the lambdynlights_api jar another mod (sauce) consumes. JPMS rejects two providers for the same package: 'Modules sodiumdynamiclights and lambdynlights_api export package dev.lambdaurora.lambdynlights.api.item to module sauce'. Client-only visual mod; server doesn't render — drop pack-wide.";
+    }
   ];
 
   # Mods that boot-fail under our bumped Create + NeoForge even when their
