@@ -1,4 +1,4 @@
-{ stdenvNoCC, stdenv, lib, fetchurl, unzip, bash, minecraft-modpack-tools
+{ stdenvNoCC, stdenv, lib, fetchurl, unzip, zip, python3, bash, minecraft-modpack-tools
 , # Whitelist of Arkana mod groups to bake into the server tree. Default
   # `[]` is the verified Aeronautics-only floor (Aeronautics + Sable +
   # Compatability + New Age + Big Cannons + Ritchie's + spark + JEI). Flip
@@ -161,7 +161,7 @@ stdenvNoCC.mkDerivation {
   # Arkana zip is the structural source (manifest.json + overrides/);
   # everything else is composed in installPhase from the resolved jars.
   src = arkanaManifestPack;
-  nativeBuildInputs = [ unzip minecraft-modpack-tools ];
+  nativeBuildInputs = [ unzip zip python3 minecraft-modpack-tools ];
 
   unpackPhase = ''
     runHook preUnpack
@@ -228,6 +228,25 @@ stdenvNoCC.mkDerivation {
     substituteInPlace $out/entrypoint.sh \
         --replace-fail '#!/usr/bin/env bash' '#!${bash}/bin/bash' \
         --replace-fail '@libstdcxxLib@'      '${stdenv.cc.cc.lib}/lib'
+
+    # Strip the lambdynamiclights-api JIJ that ars_nouveau bundles. It
+    # exports `dev.lambdaurora.lambdynlights.api.*` — the same package as
+    # top-level mod sodiumdynamiclights (a fork that re-bundles the API).
+    # JPMS rejects two providers of the same package to the consumer
+    # `sauce` (JIJ'd by ars_elemancy / ars_elemental / ars_technica /
+    # not_enough_glyphs / starbunclemania) with:
+    #   ResolutionException: Modules sodiumdynamiclights and
+    #   lambdynlights_api export package dev.lambdaurora.lambdynlights.api.item
+    #   to module sauce
+    # immersivelanterns hard-deps sodiumdynamiclights so we can't drop
+    # that side; strip the redundant API JIJ from any mod that ships it.
+    # Generic loop — survives ars_nouveau version bumps.
+    # nixpkgs `unzip` rejects modern NeoForge jars as zip bombs (overlapping
+    # components — benign, but the heuristic flags them). Drive the strip
+    # with python's zipfile module which doesn't impose that check.
+    for jar in "$out"/mods/*.jar; do
+      python3 ${./strip-lambdynamiclights-jij.py} "$jar" || exit 1
+    done
 
     # Pre-flight dep check via minecraft-modpack-tools.dep-tree —
     # parses every jar's META-INF/neoforge.mods.toml (+ JIJ children)

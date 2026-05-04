@@ -1,8 +1,21 @@
-{ stdenvNoCC, lib, fetchurl, unzip, zip, jq, callPackage }:
+{ stdenvNoCC, lib, fetchurl, unzip, zip, jq, python3, callPackage }:
 let
   serverPkg    = callPackage ../create-arkana-aeronautics-server { };
   overlayMods  = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
   arkanaExtras = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
+
+  # ars_nouveau bundles lambdynamiclights-api as JIJ which JPMS-conflicts
+  # with the top-level sodiumdynamiclights mod (immersivelanterns hard-deps
+  # the latter, so we can't drop that side). Strip the JIJ from
+  # ars_nouveau and ship the patched jar in overrides/mods/, dropping the
+  # CurseForge manifest entry so the launcher doesn't re-download the
+  # bundled version on top.
+  arsNouveauReplacement =
+    lib.findFirst (m: m.projectID == 401955)
+      (throw "client: ars_nouveau replacement (projectID 401955) missing from arkana-mods-extras.nix")
+      arkanaExtras.replacements;
+  stripJijProjectIDs = [ arsNouveauReplacement.projectID ];
+  stripJijProjectIDsJSON = builtins.toJSON stripJijProjectIDs;
 
   arkanaVersion      = serverPkg.passthru.arkanaVersion;
   aeronauticsVersion = serverPkg.passthru.aeronauticsVersion;
@@ -70,7 +83,7 @@ stdenvNoCC.mkDerivation {
   inherit version;
 
   src = arkanaManifestPack;
-  nativeBuildInputs = [ unzip zip jq ];
+  nativeBuildInputs = [ unzip zip jq python3 ];
 
   unpackPhase = ''
     runHook preUnpack
@@ -111,6 +124,7 @@ stdenvNoCC.mkDerivation {
       --argjson replace    '${replacementsJSON}' \
       --argjson skip       '${skippedJSON}' \
       --argjson disabled   '${disabledJSON}' \
+      --argjson stripJij   '${stripJijProjectIDsJSON}' \
       '
         .name = $name
         | .version = $packVersion
@@ -125,6 +139,11 @@ stdenvNoCC.mkDerivation {
             | if any($disabled[];
                 .projectID == $f.projectID
                 and (.fileID == null or .fileID == $f.fileID))
+              then empty
+              else . end)
+        | .files |= map(
+            . as $f
+            | if any($stripJij[]; . == $f.projectID)
               then empty
               else . end)
         | .files |= map(
@@ -145,6 +164,16 @@ stdenvNoCC.mkDerivation {
     ${lib.concatMapStrings (m: ''
       install -m644 "${m.jar}" "overrides/mods/${m.filename}"
     '') modrinthOverlayEntries}
+
+    # ars_nouveau JIJ-stripped (drops bundled lambdynamiclights-api so it
+    # no longer JPMS-conflicts with sodiumdynamiclights). The manifest
+    # entry for projectID 401955 was filtered above so the launcher
+    # doesn't pull the unstripped jar; this overrides/mods/ copy is what
+    # ships instead.
+    install -m644 "${arsNouveauReplacement.jar}" \
+      "overrides/mods/${arsNouveauReplacement.filename}"
+    python3 ${../create-arkana-aeronautics-server/strip-lambdynamiclights-jij.py} \
+      "overrides/mods/${arsNouveauReplacement.filename}"
 
     # Repack as a CurseForge-style zip (manifest.json + modlist.html +
     # overrides/) and write it to $out. Importable in the CurseForge
