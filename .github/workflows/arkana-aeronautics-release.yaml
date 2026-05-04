@@ -115,9 +115,13 @@ jobs:
 
           # Pre-resolve nix shell paths so backgrounded subshells don't
           # race on the substitution lock. `nix build` is idempotent and
-          # cheap if already in store.
-          SKOPEO=$(nix build --no-link --print-out-paths nixpkgs#skopeo)/bin/skopeo
-          GH=$(nix build --no-link --print-out-paths nixpkgs#gh)/bin/gh
+          # cheap if already in store. Pin the `out` output explicitly —
+          # `nixpkgs#skopeo` has multi-outputs (out + man) and bare
+          # --print-out-paths prints both lines in non-deterministic
+          # order; concatenating /bin/skopeo onto the `man` line gives
+          # a "No such file or directory" exit-127 at runtime.
+          SKOPEO=$(nix build --no-link --print-out-paths 'nixpkgs#skopeo^out')/bin/skopeo
+          GH=$(nix build --no-link --print-out-paths 'nixpkgs#gh^out')/bin/gh
 
           # skopeo's policy.json is missing on cold runners about ~10 % of
           # the time depending on which substitute path lands the binary.
