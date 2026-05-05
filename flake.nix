@@ -107,7 +107,18 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      # Pinned to commit 9c6f1307 (parent of fb6a0c6d, "modules: add modular
+      # services support" 2026-05-01). master HEAD imports
+      # `pkgs.path + "/lib/services/lib.nix"` from `modules/services-modular`,
+      # but that file only exists on nixpkgs unstable (landed 2026-04 in
+      # nixpkgs commit a338deb8) and is absent on 25.11, which is what our
+      # `nixpkgs` and `nixpkgs_stable_darwin` track. release-25.11 isn't an
+      # option either: our home configs use `programs.claude-code.lspServers`
+      # which only exists on master (added 2026-03-08, commit a455ac1b).
+      # So pin to the last master rev that still has lspServers but not yet
+      # services-modular. Bump along with nixpkgs when 25.11 backports
+      # lib/services/lib.nix or when we move to unstable.
+      url = "github:nix-community/home-manager/9c6f1307e1d76a2285d8001e1b8bc281bfe15dac";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
