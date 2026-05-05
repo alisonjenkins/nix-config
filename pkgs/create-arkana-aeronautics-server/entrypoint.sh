@@ -27,7 +27,11 @@ fi
 
 # Symlink immutable directories from the baked tree into the working dir.
 # `defaultconfigs` is optional on NeoForge packs (Arkana ships configs/).
-for d in mods kubejs datapacks defaultconfigs; do
+# `openloader` holds bundled datapacks/resourcepacks; OpenLoader (mod)
+# reads <game-dir>/openloader/data/*.zip and applies them to every
+# world, so the symlink ensures version bumps in the image take
+# effect without per-world manual installation.
+for d in mods kubejs defaultconfigs openloader; do
   if [ -e "/opt/server/$d" ] && [ ! -e "$d" ]; then
     ln -s "/opt/server/$d" "$d"
   fi

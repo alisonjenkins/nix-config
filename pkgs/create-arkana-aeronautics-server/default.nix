@@ -58,6 +58,7 @@ let
   arkanaExtras = import ./arkana-mods-extras.nix { inherit fetchurl; };
   arkanaGroups = import ./arkana-groups.nix;
   overlayMods  = import ./overlays.nix           { inherit fetchurl; };
+  datapacks    = import ./datapacks.nix          { inherit fetchurl; };
   jvmArgs      = import ./jvm-args.nix;
 
   # Group whitelist: union of all `projectIDs` across enabled groups. An
@@ -260,6 +261,16 @@ stdenvNoCC.mkDerivation {
     # Pre-bake fml.toml with disableConfigWatcher=true so FML doesn't
     # spawn the inotify watcher on first boot. See fml.toml for context.
     install -Dm644 ${./fml.toml}         $out/config/fml.toml
+    # Datapacks bundled at /opt/server/openloader/data/. OpenLoader (a
+    # mod shipped via overlays.nix) auto-loads zips from this folder
+    # into every world the server hosts, so the same set applies on
+    # both dedicated and single-player setups without per-world manual
+    # installation. The entrypoint symlinks /data/openloader →
+    # /opt/server/openloader so OpenLoader's path lookup finds them.
+    mkdir -p $out/openloader/data
+    ${lib.concatMapStrings (d: ''
+      install -m644 "${d.zip}" "$out/openloader/data/${d.filename}"
+    '') datapacks}
 
     install -m755 ${./entrypoint.sh}     $out/entrypoint.sh
     # Replace the portable shebang with an absolute store path

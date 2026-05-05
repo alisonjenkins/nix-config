@@ -3,6 +3,7 @@ let
   serverPkg    = callPackage ../create-arkana-aeronautics-server { };
   overlayMods  = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
   arkanaExtras = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
+  datapacks    = import ../create-arkana-aeronautics-server/datapacks.nix       { inherit fetchurl; };
 
   # ars_nouveau bundles lambdynamiclights-api as JIJ which JPMS-conflicts
   # with the top-level sodiumdynamiclights mod (immersivelanterns hard-deps
@@ -162,6 +163,16 @@ stdenvNoCC.mkDerivation {
     # this partial TOML into its defaults on first run.
     mkdir -p overrides/config
     install -m644 ${./DistantHorizons.toml} overrides/config/DistantHorizons.toml
+
+    # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
+    # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
+    # auto-loads zips from <game-dir>/openloader/data/ into every
+    # single-player world the user creates, mirroring the server-side
+    # behaviour without requiring per-world manual install.
+    mkdir -p overrides/openloader/data
+    ${lib.concatMapStrings (d: ''
+      install -m644 "${d.zip}" "overrides/openloader/data/${d.filename}"
+    '') datapacks}
 
     # Drop Modrinth-only overlay jars into overrides/mods/ — the CurseForge
     # launcher copies overrides/ verbatim into the instance after fetching

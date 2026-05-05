@@ -239,4 +239,17 @@ in
       "AdvancedPeripherals-1.21.1-0.7.61b.jar"
       "12hcnnxdry3fspbsyznnn3bs8mhfy3hsf18f3cjv5if2cd5by089";
   }
+  {
+    # OpenLoader — auto-loads datapacks/resourcepacks from a global
+    # `<game-dir>/openloader/data/` and `<game-dir>/openloader/resources/`
+    # folder for every world the server hosts AND every world the
+    # client opens in single-player. Lets us bundle datapacks (see
+    # ./datapacks.nix) once and have them apply uniformly without
+    # per-world manual installation. Modrinth KwWsINvD.
+    filename       = "OpenLoader-neoforge-1.21.1-21.1.5.jar";
+    dropAsOverride = true;
+    jar = modrinth "KwWsINvD" "Szobbnyh"
+      "OpenLoader-neoforge-1.21.1-21.1.5.jar"
+      "1zs2x1bk11jbiklmvs6dnz6dzb3x4fh2cflxjm72ap6lnaxwmgn0";
+  }
 ]
