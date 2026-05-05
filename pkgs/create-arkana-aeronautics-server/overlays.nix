@@ -192,4 +192,28 @@ in
       "cookingforblockheads-neoforge-1.21.1-21.1.21.jar"
       "1ryn7d3pnrmwrqyrwbkrh9l4ylxflr3pdlf3kw82i52l5xdikdap";
   }
+  {
+    # Tiny Redstone — fits redstone components (gates, repeaters, dust)
+    # into a single block-sized panel. Both-sided. NeoForge 21.1+,
+    # Modrinth ThvCqQMh. The jar's `forge` filename is misleading —
+    # mod metadata declares neoforge.mods.toml, runs natively on
+    # NeoForge.
+    filename       = "tinyredstone-1.21.1-6.1.3.jar";
+    dropAsOverride = true;
+    jar = modrinth "ThvCqQMh" "ESelEykG"
+      "tinyredstone-1.21.1-6.1.3.jar"
+      "1rvyf7ldlbzw0zd4519zy67g7d5ssmghbiq5s2jgcg6ryng33azj";
+  }
+  {
+    # CC: Tweaked — modern fork of ComputerCraft (in-game programmable
+    # computers + turtles + monitors via Lua). Both-sided.
+    # NeoForge [21.1.9, 21.2), satisfied by 21.1.228. Modrinth gu7yAYhd.
+    # Jar filename has "forge" in it because Modrinth historically
+    # tagged it that way; the mod metadata is neoforge.mods.toml.
+    filename       = "cc-tweaked-1.21.1-forge-1.118.0.jar";
+    dropAsOverride = true;
+    jar = modrinth "gu7yAYhd" "tufB2KsB"
+      "cc-tweaked-1.21.1-forge-1.118.0.jar"
+      "1hvd2rj49ksdw2bac0hd26s479x4spd7jmz46l2cpmmx4lvg7xsm";
+  }
 ]
