@@ -76,12 +76,15 @@ def parse_mod_toml(jar_path: Path):
                     elif err:
                         return None, err
                     break
-            # Walk JIJ children. They live in META-INF/jars/*.jar and
-            # ship deps the parent mod expects to be present at runtime
-            # (esl bundled by Create: New Age, create_factory_abstractions
-            # bundled by create_factory_logistics, etc.).
+            # Walk JIJ children. Forge ships them at META-INF/jars/*.jar;
+            # NeoForge moved to META-INF/jarjar/*.jar. Cover both so deps
+            # bundled by either loader's ecosystem (whitenoise inside
+            # BetterDays under jarjar/, esl inside Create: New Age under
+            # jars/) get parsed.
             for inner in zf.namelist():
-                if inner.startswith("META-INF/jars/") and inner.endswith(".jar"):
+                is_forge_jij    = inner.startswith("META-INF/jars/") and inner.endswith(".jar")
+                is_neoforge_jij = inner.startswith("META-INF/jarjar/") and inner.endswith(".jar")
+                if is_forge_jij or is_neoforge_jij:
                     try:
                         inner_bytes = zf.read(inner)
                     except KeyError:
@@ -231,7 +234,15 @@ def collect(mods_dir: Path):
                 v = str(m.get("version", "")).strip()
                 if "${file.jarVersion}" in v or v == "":
                     v = version_from_filename(jar.name)
-                provides[mid] = {"version": v, "jar": jar.name}
+                # Pick the highest version when the same modId appears
+                # multiple times. NeoForge's JIJ resolver does this at
+                # runtime — top-level mods often ship newer than JIJ
+                # copies bundled by other mods (e.g. top-level Placebo
+                # 9.9.1 vs JIJ Placebo 9.9.0 inside gag), and a naive
+                # last-write-wins flips the dep check spuriously.
+                prev = provides.get(mid)
+                if prev is None or version_key(v) > version_key(prev.get("version", "")):
+                    provides[mid] = {"version": v, "jar": jar.name}
 
         # Filename-pattern providers also kick in when a real mod is
         # parsed: e.g. Create's main jar declares `create` in TOML but
