@@ -180,4 +180,16 @@ in
       "MouseTweaks-neoforge-mc1.21-2.26.1.jar"
       "12ycyqsy2d6cxbj3mgx3lrn6k594ap4iawlsj9vppsax3hhg9rk8";
   }
+  {
+    # Cooking for Blockheads — kitchen-block + recipe-book mod (oven,
+    # fridge, sink, cooking table). Both-sided; registers blocks/items
+    # on server, GUI on client. Hard-deps balm >= 21.0.39 (we ship
+    # 21.0.56 via the bumps pass). Modrinth-only on NeoForge 1.21.1
+    # so client zip drops it under overrides/mods/.
+    filename       = "cookingforblockheads-neoforge-1.21.1-21.1.21.jar";
+    dropAsOverride = true;
+    jar = modrinth "vJnhuDde" "dzMpBcgd"
+      "cookingforblockheads-neoforge-1.21.1-21.1.21.jar"
+      "1ryn7d3pnrmwrqyrwbkrh9l4ylxflr3pdlf3kw82i52l5xdikdap";
+  }
 ]
