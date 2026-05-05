@@ -252,4 +252,38 @@ in
       "OpenLoader-neoforge-1.21.1-21.1.5.jar"
       "1zs2x1bk11jbiklmvs6dnz6dzb3x4fh2cflxjm72ap6lnaxwmgn0";
   }
+  {
+    # Lootr — replaces vanilla loot containers with per-player loot
+    # tables (each player gets their own roll, dungeon chests aren't
+    # exhausted by the first player to open them). NeoForge 21.1.195+
+    # ✓ (we ship 21.1.228). Both-sided. Modrinth EltpO5cN (the same
+    # mod is on CurseForge but Modrinth is faster + WAF-free).
+    filename       = "lootr-neoforge-1.21.1-1.11.37.120.jar";
+    dropAsOverride = true;
+    jar = modrinth "EltpO5cN" "C2tLycH2"
+      "lootr-neoforge-1.21.1-1.11.37.120.jar"
+      "13awnrfrw6gfsm13l4hb2kdwvsq84shac2k0n5zi1882dvw0pf7p";
+  }
+  {
+    # Farmer's Delight (vectorwing) — cooking + crops overhaul. Both-
+    # sided. NeoForge 21.1.219+ ✓. Optional crafttweaker dep is just
+    # for recipe-script hooks; we don't ship crafttweaker but FD
+    # boots fine without it. Modrinth R2OftAxM.
+    filename       = "FarmersDelight-1.21.1-1.3.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "R2OftAxM" "9gp7w8NC"
+      "FarmersDelight-1.21.1-1.3.1.jar"
+      "1x7lcl4mchlgya9d6r5lvmpnlvchnpafxnihp60x85xgjzsznbzh";
+  }
+  {
+    # BetterDays — slows down day/night cycle for longer days. Both-
+    # sided. Hard-deps `whitenoise` [2.2.0, 3.0.0) which BetterDays
+    # itself JIJ-bundles, so no separate overlay entry needed.
+    # Modrinth tPLE214j.
+    filename       = "betterdays-1.21.1-3.3.6.3-NEOFORGE.jar";
+    dropAsOverride = true;
+    jar = modrinth "tPLE214j" "Ho93yCC3"
+      "betterdays-1.21.1-3.3.6.3-NEOFORGE.jar"
+      "1am29ar8n8n49pgi8if8x5jxjblgmn3kxsvq24v8cpfx6w3avb03";
+  }
 ]

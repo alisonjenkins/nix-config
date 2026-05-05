@@ -790,5 +790,12 @@
     # spell schools), so dropping it has no cascade — ars_nouveau and
     # ars_elemental keep working without it.
     { projectID = 1153666; fileID = null; reason = "ars_elemancy 1.17 crashes client; latest available, no compatible fallback. Drop entirely (purely additive content, no cascade)."; phase = "runtime"; }
+    # User opted to drop Herbal Brews entirely after the
+    # tea-blossom-on-fortune loot-table bug. The shears-only datapack
+    # fix is removed alongside the mod (no need without it). No cascade
+    # — Herbal Brews is a Let's Do leaf addon, not depended on by other
+    # mods in the pack (the rest of Let's Do family was already
+    # disabled in the farm_and_charm cluster).
+    { projectID = 951221; fileID = null; reason = "User opted to drop Herbal Brews entirely (vanilla-flower loot-table bugs)."; phase = "runtime"; }
   ];
 }
