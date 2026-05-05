@@ -784,5 +784,11 @@
     # handler. Drop the mod — purely-cosmetic decay-speedup feature, low
     # blast radius without it.
     { projectID = 686435; fileID = null; reason = "LeavesBeGone NPE on Sable physics ServerSubLevel chunk init (randomBlockTicks null) breaks Aeronautics ship-assemble."; phase = "runtime"; }
+    # ars_elemancy 1.17 (latest on CurseForge) crashes the client at
+    # runtime; no newer release fixes it and rolling back to 1.10/1.16
+    # has not been validated. ars_elemancy is purely additive (extra
+    # spell schools), so dropping it has no cascade — ars_nouveau and
+    # ars_elemental keep working without it.
+    { projectID = 1153666; fileID = null; reason = "ars_elemancy 1.17 crashes client; latest available, no compatible fallback. Drop entirely (purely additive content, no cascade)."; phase = "runtime"; }
   ];
 }
