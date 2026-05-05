@@ -216,4 +216,27 @@ in
       "cc-tweaked-1.21.1-forge-1.118.0.jar"
       "1hvd2rj49ksdw2bac0hd26s479x4spd7jmz46l2cpmmx4lvg7xsm";
   }
+  {
+    # CC:C Bridge — bridges CC: Tweaked with Create. Adds peripherals
+    # for reading display boards, item flow, contraptions etc. from Lua.
+    # Hard-deps create [6.0.6, 7.0.0) ✓ (we ship 6.0.10) and
+    # computercraft >= 1.116.0 ✓ (we ship 1.118.0). Modrinth fXt291FO.
+    filename       = "cccbridge-mc1.21.1-v1.7.2-neoforge.jar";
+    dropAsOverride = true;
+    jar = modrinth "fXt291FO" "k3OVsWus"
+      "cccbridge-mc1.21.1-v1.7.2-neoforge.jar"
+      "11v67k48wxskb490l8rx25dzdql7p7c3dzza6r70s6hvx9hqj9nc";
+  }
+  {
+    # Advanced Peripherals — adds chat box, energy detector, geo
+    # scanner, ME bridge, etc. as CC:T peripherals. Hard-deps
+    # computercraft >= 1.116.2 ✓ and neoforge >= 21.1.200 ✓ (we ship
+    # 21.1.228). ae2/minecolonies/mekanism deps are optional. Modrinth
+    # SOw6jD6x.
+    filename       = "AdvancedPeripherals-1.21.1-0.7.61b.jar";
+    dropAsOverride = true;
+    jar = modrinth "SOw6jD6x" "Q4pvAMQj"
+      "AdvancedPeripherals-1.21.1-0.7.61b.jar"
+      "12hcnnxdry3fspbsyznnn3bs8mhfy3hsf18f3cjv5if2cd5by089";
+  }
 ]
