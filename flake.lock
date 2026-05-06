@@ -18,11 +18,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1778104775,
-        "narHash": "sha256-GWFLZT0GllNdxKKKP6T+Y68UvT2EzYqoyY+1C7JOg98=",
+        "lastModified": 1778106511,
+        "narHash": "sha256-UzrQM2V7qz0gc8PP7oN921gwptjYiHchiwnuT90TYEM=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "8001f97b7a8d5de383d4634b3a45d37b5a94193a",
+        "rev": "ce04b4d6092a2f4e2640bd8cd734adb135b782c0",
         "type": "github"
       },
       "original": {
@@ -1280,11 +1280,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1778104556,
-        "narHash": "sha256-UkYl9sAmJlSjgxYMalGu/y9TA600T1FpH5AY6+2N5ag=",
+        "lastModified": 1778106278,
+        "narHash": "sha256-QE5g8aopR50zkXNE72Z9SkV6XMraxvJmyTPhYVCV9P4=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "e76049af8d47ae26ad53d1068d1caa5f8ab2cf79",
+        "rev": "0fbe40ef4f70faa04eecbdd1153760a9a4b53ca3",
         "type": "github"
       },
       "original": {
@@ -1787,11 +1787,11 @@
         "tinted-zed": "tinted-zed"
       },
       "locked": {
-        "lastModified": 1778104746,
-        "narHash": "sha256-5nodEu0cm9ZmY6VtUVgNiVojsJ6ok0DCP8zTuxCvDDM=",
+        "lastModified": 1778105055,
+        "narHash": "sha256-SWz0cVHEGFb2rSszCaQ7nmuM9q7Cq3xbsg+DAg0N9jo=",
         "owner": "danth",
         "repo": "stylix",
-        "rev": "56ea47171881dc2fd5d542499273c35a3b6cb3f7",
+        "rev": "68b1ff44196f4f593d0cd837ffb2a088c2870055",
         "type": "github"
       },
       "original": {
