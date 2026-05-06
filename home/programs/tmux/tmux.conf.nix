@@ -4,12 +4,15 @@
     ...
 }:
 let
-  # On macOS, use Homebrew fish — the Nix-built fish binary gets SIGKILL'd by
-  # Microsoft Defender because the build process voids the Apple code signature.
-  # Homebrew fish ships pre-signed with an Apple Developer ID.
-  fishBin = if pkgs.stdenv.isDarwin
-    then "/opt/homebrew/bin/fish"
-    else "${pkgs.fish}/bin/fish";
+  # Use Nix-built fish on every platform. Previously the Darwin branch
+  # pointed at /opt/homebrew/bin/fish to dodge a Microsoft Defender SIGKILL
+  # on Nix fish, but Homebrew bumping fish (e.g. 4.6.0 → 4.7.0) would
+  # invalidate that path mid-session and tmux splits started failing
+  # instantly with `command not found`. The homebrew fish brew has since
+  # been removed from ali-mba; if Defender ever resumes SIGKILL'ing Nix
+  # fish, exclude `${pkgs.fish}/bin/fish` in the Defender allowlist
+  # rather than re-introducing the homebrew dependency.
+  fishBin = "${pkgs.fish}/bin/fish";
 in ''
 
 set-option -g default-command "${fishBin}"

@@ -171,6 +171,13 @@ in {
             PATH = ''${pkgs.jdk}/bin:$PATH'';
             ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten";
           };
+
+          # Register Nix-built fish in /etc/shells so `chsh -s $(which fish)`
+          # works if the user ever wants to switch login shells. Login shell
+          # currently stays /bin/zsh; fish is launched by the terminal app,
+          # which already prefers Nix fish via PATH. Listing it avoids
+          # surprises and matches the homebrew-removal note above.
+          shells = [ pkgs.fish ];
         };
 
         fonts = {
@@ -188,9 +195,14 @@ in {
           brews = [
             "choose-gui"
             "colima"  # Container runtime using lima
-            "fish"    # Homebrew fish is Developer ID signed + notarized; Defender trusts it
-                      # The Nix fish binary gets SIGKILL'd by Defender after each rebuild.
-                      # All ~/.config/fish/ config (tide, plugins, conf.d) works with either binary.
+            # Homebrew fish dropped: tide spawns a subshell via `status fish-path`
+            # of the running fish, and when Homebrew bumps fish (e.g. 4.6.0 →
+            # 4.7.0) the old Cellar path disappears mid-session and tide errors
+            # `command not found` on every prompt repaint. Nix fish at
+            # /etc/profiles/per-user/ali/bin/fish (via home-manager
+            # programs.fish.enable) is stable across rebuilds. If Defender ever
+            # SIGKILLs Nix fish again, re-add this brew and exclude the Nix
+            # fish binary in the Defender allowlist instead.
             "lima"
             "openconnect"
           ];
