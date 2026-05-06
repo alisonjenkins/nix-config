@@ -4,15 +4,25 @@
     ...
 }:
 let
-  # Use Nix-built fish on every platform. Previously the Darwin branch
-  # pointed at /opt/homebrew/bin/fish to dodge a Microsoft Defender SIGKILL
-  # on Nix fish, but Homebrew bumping fish (e.g. 4.6.0 → 4.7.0) would
-  # invalidate that path mid-session and tmux splits started failing
-  # instantly with `command not found`. The homebrew fish brew has since
-  # been removed from ali-mba; if Defender ever resumes SIGKILL'ing Nix
-  # fish, exclude `${pkgs.fish}/bin/fish` in the Defender allowlist
-  # rather than re-introducing the homebrew dependency.
-  fishBin = "${pkgs.fish}/bin/fish";
+  # Pick fish at runtime so the same tmux config works on both ali-mba
+  # (homebrew fish removed → use Nix fish) and ali-work-laptop-macos
+  # (Microsoft Defender historically SIGKILL'd Nix fish → keep using
+  # homebrew fish until that's verified resolved). Hardcoding either
+  # path causes one of the hosts to break:
+  #   - /opt/homebrew/bin/fish: dies on ali-mba (homebrew fish uninstalled)
+  #     and on either host when Homebrew bumps fish and the Cellar path
+  #     in `status fish-path` mid-session goes 404.
+  #   - ${pkgs.fish}/bin/fish: risks Defender SIGKILL on the work laptop.
+  # The wrapper prefers homebrew fish when present (work laptop) and
+  # falls back to Nix (ali-mba), which keeps both hosts working without
+  # baking host identity into the home-manager module.
+  fishLauncher = pkgs.writeShellScript "tmux-fish-launcher" ''
+    if [ -x /opt/homebrew/bin/fish ]; then
+      exec /opt/homebrew/bin/fish "$@"
+    fi
+    exec ${pkgs.fish}/bin/fish "$@"
+  '';
+  fishBin = "${fishLauncher}";
 in ''
 
 set-option -g default-command "${fishBin}"
