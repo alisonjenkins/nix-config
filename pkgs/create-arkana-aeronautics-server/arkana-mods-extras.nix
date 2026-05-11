@@ -709,6 +709,28 @@
         sha256 = "0aq0ilfxg60sadzq3qpxhb3v0g8lkr0d97aichpp12cxj5kcsshg";
       };
     }
+    {
+      # EuphoriaPatcher bump 1.6.5 → 1.8.6. Arkana 1.5 ships 1.6.5; the
+      # in-game updater shows "Update available: 1.8.6". Bumping silences
+      # the prompt and picks up the 1.7.x and 1.8.x changelog (bug fixes
+      # + new shader profile options). Tied to Complementary Shaders
+      # r5.7.1; the auto-patch runs at launcher init, no manual work.
+      # Marked client-only at the server-image strip layer
+      # (clientOnlyProjectIDs in default.nix already contains 915902),
+      # so this replacement only lands in the client zip's
+      # overrides/mods. CurseForge fileID 7624100.
+      origProjectID = 915902;
+      origFileID    = 6653765;
+      projectID     = 915902;
+      fileID        = 7624100;
+      required      = true;
+      filename      = "EuphoriaPatcher-1.8.6-r5.7.1-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7624/100/EuphoriaPatcher-1.8.6-r5.7.1-neoforge.jar";
+        name   = "EuphoriaPatcher-1.8.6-r5.7.1-neoforge.jar";
+        sha256 = "1yiy46ss9zja486kvpd3wgwpr7g51hync2dy9i03mm65ndxdnqgd";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
