@@ -6,6 +6,8 @@
     # ./audio-context
   ];
 
+  modules.vr.enableOpenSourceVR = true;
+
   home.packages = [
     pkgs.nbt-studio
   ];

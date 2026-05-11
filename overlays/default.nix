@@ -57,6 +57,16 @@ in
     # still references pkgs.xrdb (via lib.getExe)
     xrdb = prev.xorg.xrdb;
 
+    # WiVRn ships with xrizer first in OVR_COMPAT_SEARCH_PATH and overwrites
+    # openvrpaths.vrpath to xrizer at server startup. xrizer's GL backend
+    # requires an X11 display handle (GLX), which is null under Wayland —
+    # OpenGL apps like Vivecraft (Minecraft Java) fail with "X display is
+    # null" + "Texture submission error: Left/Right InvalidTexture". Drop
+    # xrizer so WiVRn only finds OpenComposite for the OpenVR bridge.
+    wivrn = prev.wivrn.override {
+      ovrCompatSearchPaths = "${prev.opencomposite}/lib/opencomposite";
+    };
+
     # Pin claude-code to nixpkgs-master — nixos-unstable often lags behind
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code;
