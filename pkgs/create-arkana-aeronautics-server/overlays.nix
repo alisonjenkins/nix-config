@@ -286,4 +286,33 @@ in
       "betterdays-1.21.1-3.3.6.3-NEOFORGE.jar"
       "1am29ar8n8n49pgi8if8x5jxjblgmn3kxsvq24v8cpfx6w3avb03";
   }
+  {
+    # MaFgLib — Masa's Forge/NeoForge library port. Hard-dep of
+    # Forgematica (the Litematica NeoForge port below). Client-only:
+    # the library wires up keybinds, configuration UIs, and GUI
+    # helpers that all reference net.minecraft.client.* classes;
+    # loading on a dedicated server triggers RuntimeDistCleaner.
+    # Modrinth SKI34J7B.
+    filename       = "mafglib-0.4.3+mc1.21.1.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "SKI34J7B" "CgDQ0u0Q"
+      "mafglib-0.4.3%2Bmc1.21.1.jar"
+      "10dhm9bgjxl02lqbqf15q62nbraz2cslayx06bi3lr7582nqj1yl";
+  }
+  {
+    # Forgematica — unofficial Litematica NeoForge port by
+    # ThinkingStudios. Holographic schematic overlay, area selection,
+    # save/load .litematic + vanilla .nbt. Pairs with the in-repo
+    # tools/schematic_to_lua.py + builder turtle for designed builds,
+    # and with Create's Schematicannon for full-fidelity replay.
+    # Hard-deps mafglib (above). Client-only — overlay rendering
+    # only, server has nothing to do. Modrinth dCKRaeBC.
+    filename       = "forgematica-0.4.1+mc1.21.1.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "dCKRaeBC" "bNQ9lJbg"
+      "forgematica-0.4.1%2Bmc1.21.1.jar"
+      "1vzp6pmlks8w4nvvsxcxrl4ns2q5piqbv0gslgp4clqiawrdli3j";
+  }
 ]
