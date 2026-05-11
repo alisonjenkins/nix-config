@@ -731,6 +731,27 @@
         sha256 = "1yiy46ss9zja486kvpd3wgwpr7g51hync2dy9i03mm65ndxdnqgd";
       };
     }
+    {
+      # ComplementaryReimagined bump r5.5.1 → r5.7.1. Arkana 1.5 ships
+      # r5.5.1, but EuphoriaPatcher 1.8.6 hard-checks for r5.7.1 at
+      # launcher init and refuses to patch otherwise (logs "SHADER NOT
+      # FOUND: required r5.7.1, found r5.5.1"). Bumping the base shader
+      # pack to r5.7.1 lets EuphoriaPatcher proceed. Shaderpack only —
+      # ships as a zip in overrides/shaderpacks/, never loaded by the
+      # dedicated server (project 627557 is in clientOnlyProjectIDs).
+      # CurseForge fileID 7574259.
+      origProjectID = 627557;
+      origFileID    = 6515577;
+      projectID     = 627557;
+      fileID        = 7574259;
+      required      = true;
+      filename      = "ComplementaryReimagined_r5.7.1.zip";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7574/259/ComplementaryReimagined_r5.7.1.zip";
+        name   = "ComplementaryReimagined_r5.7.1.zip";
+        sha256 = "1w33kyknwc0qsi6l0saww906iwi9d3hkn0nm7hnl4bc3lws0d8i4";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
