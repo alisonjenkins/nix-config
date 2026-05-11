@@ -328,4 +328,17 @@ in
       "moreoverlays-1.24.2-mc1.21.1-neoforge.jar"
       "1cf42yrkval08wb53nqcqrdclgljzllvmrfz1k7ybfriksjd3c0s";
   }
+  {
+    # Vivecraft — VR mod. mods.toml declares `side = "BOTH"` and
+    # `displayTest = "IGNORE_SERVER_VERSION"`: the server tolerates
+    # the jar (no dist-cleaner trips) and Vivecraft players get
+    # full body-tracking propagation when the server has the mod
+    # too; non-VR players are unaffected. NeoForge >= 21.0.110 ✓
+    # (we ship 21.1.228). Modrinth wGoQDPN5.
+    filename       = "vivecraft-1.21.1-1.3.7-neoforge.jar";
+    dropAsOverride = true;
+    jar = modrinth "wGoQDPN5" "HoNxcbXG"
+      "vivecraft-1.21.1-1.3.7-neoforge.jar"
+      "1h3sfs3790z6dr8z9v6ybg1cp9ig4khlqlkz1ksp1ha5gxh70xh3";
+  }
 ]
