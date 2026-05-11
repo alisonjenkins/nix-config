@@ -181,7 +181,7 @@ let
     server-port=25565
     max-players=4
     view-distance=4
-    simulation-distance=2
+    simulation-distance=5
     motd=Create: Arkana + Aeronautics
     online-mode=true
     enable-rcon=false
