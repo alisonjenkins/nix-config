@@ -315,4 +315,17 @@ in
       "forgematica-0.4.1%2Bmc1.21.1.jar"
       "1vzp6pmlks8w4nvvsxcxrl4ns2q5piqbv0gslgp4clqiawrdli3j";
   }
+  {
+    # More Overlays Updated — restores the JEI double-click-search-
+    # highlights-inventory feature (yellow search box) that JEI itself
+    # dropped as out-of-scope upstream (mezz/JustEnoughItems#2071).
+    # Also adds light-level overlay and mob-spawn indicator. Client-
+    # only — pure rendering on top of JEI's GUI. Modrinth Thy5Pqut.
+    filename       = "moreoverlays-1.24.2-mc1.21.1-neoforge.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "Thy5Pqut" "Kq8xaqKi"
+      "moreoverlays-1.24.2-mc1.21.1-neoforge.jar"
+      "1cf42yrkval08wb53nqcqrdclgljzllvmrfz1k7ybfriksjd3c0s";
+  }
 ]
