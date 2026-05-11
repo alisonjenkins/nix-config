@@ -30,4 +30,5 @@
     minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
   };
   create-arkana-aeronautics-client = pkgs.callPackage ./create-arkana-aeronautics-client {};
+  nbt-studio = pkgs.callPackage ./nbt-studio {};
 }
