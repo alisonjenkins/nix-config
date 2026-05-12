@@ -63,6 +63,7 @@ in {
       # openldap test failure resurfaces during nixos-install.
       {
         nixpkgs.overlays = [
+          self.overlays.additions
           self.overlays.modifications
         ];
       }
@@ -196,8 +197,9 @@ in {
           extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
           openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
           packages = with pkgs; [
-            firefox
+            citron
             fastfetch
+            firefox
           ];
         };
 

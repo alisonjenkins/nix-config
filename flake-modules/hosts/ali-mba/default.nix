@@ -53,6 +53,8 @@ in {
             btop
             cacert
             cachix
+            eden
+            ryubing
             cargo-chef
             cargo-component
             cargo-lambda

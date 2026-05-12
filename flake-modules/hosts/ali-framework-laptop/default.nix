@@ -357,6 +357,7 @@ in {
             amdgpu_top
             antigravity
             calibre
+            citron
             fw-ectool
             framework-tool
             framework-tool-tui

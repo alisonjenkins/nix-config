@@ -24,6 +24,8 @@
   caveman = pkgs.callPackage ./caveman {};
   cavekit = pkgs.callPackage ./cavekit {};
   cavemem = pkgs.callPackage ./cavemem {};
+  citron = pkgs.callPackage ./citron {};
+  eden = pkgs.callPackage ./eden {};
   create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
   minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
   create-arkana-aeronautics-server = pkgs.callPackage ./create-arkana-aeronautics-server {

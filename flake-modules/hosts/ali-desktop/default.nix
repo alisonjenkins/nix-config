@@ -259,6 +259,7 @@ in {
             amdgpu_top
             antigravity
             cifs-utils
+            citron
             cpu-x
             drawio
             freeplane
