@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Suppress Ice and Fire pixie natural spawns across all overworld biomes — they steal items + clutter inventories. Spawn eggs and structure-bound pixie villages still work."
+  }
+}

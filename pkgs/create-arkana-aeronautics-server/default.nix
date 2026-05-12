@@ -58,7 +58,7 @@ let
   arkanaExtras = import ./arkana-mods-extras.nix { inherit fetchurl; };
   arkanaGroups = import ./arkana-groups.nix;
   overlayMods  = import ./overlays.nix           { inherit fetchurl; };
-  datapacks    = import ./datapacks.nix          { inherit fetchurl; };
+  datapacks    = import ./datapacks.nix { inherit fetchurl stdenvNoCC zip; };
   jvmArgs      = import ./jvm-args.nix;
 
   # Group whitelist: union of all `projectIDs` across enabled groups. An
