@@ -37,13 +37,17 @@ let
 in
 [
   {
-    # Ice and Fire pixies spawn frequently in overworld biomes and lift
-    # items out of player inventories. The mod's PixieConfig in 1.21.1
-    # exposes only `size` + `stealItems` (no spawn-rate knob), so the
-    # cleanest cull is a NeoForge biome modifier that removes pixie
-    # spawns from every overworld biome. Spawn eggs + pixie-village
-    # structures still produce pixies for the pixie-dust craft path.
-    filename = "no-pixies-1.0.zip";
-    zip      = localDatapack "no-pixies";
+    # Ice and Fire pixies cluster around pixie villages and harass players
+    # by stealing inventory items on contact. The mod's PixieConfig only
+    # exposes `size` + `stealItems` (no spawn-rate knob), but the
+    # underlying density is driven by how many pixie-village structures
+    # generate. Default pixie_village structure_set has spacing=8
+    # separation=4 (chunks) — extremely dense compared to e.g. vanilla
+    # villages (spacing=32). Override to spacing=32 separation=12 → 4×
+    # rarer villages → ~4× fewer pixies wandering, without removing the
+    # mob entirely (spawn eggs + the remaining villages still produce
+    # pixies for the pixie-dust craft).
+    filename = "rare-pixie-villages-1.0.zip";
+    zip      = localDatapack "rare-pixie-villages";
   }
 ]

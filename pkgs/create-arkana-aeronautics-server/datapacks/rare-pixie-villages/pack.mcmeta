@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Make Ice and Fire pixie villages rarer (spacing 8 -> 32 chunks; separation 4 -> 12). Pixies still exist, just less omnipresent."
+  }
+}
