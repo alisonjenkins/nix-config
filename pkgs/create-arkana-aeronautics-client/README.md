@@ -4,6 +4,36 @@ CurseForge-style import zip for the Arkana 1.5 + Aeronautics 1.2.1 floor on
 Minecraft 1.21.1 NeoForge 21.1.228. Built reproducibly from nix-config at
 [github.com/alisonjenkins/nix-config](https://github.com/alisonjenkins/nix-config).
 
+## VR is a first-class citizen here
+
+This pack treats VR via Vivecraft as a primary play mode, anticipating
+players using Steam Frame headsets when they ship. Pre-baked client
+configs aim to make the VR experience usable out of the box without
+manual tweaks:
+
+- **`darkmodeeverywhere-client.toml`** — extends DarkModeEverywhere's
+  `METHOD_SHADER_BLACKLIST` to exclude vanilla GUI rendering + the
+  Vivecraft render path. Otherwise the dark shader makes Vivecraft's
+  3D GUI panel near-black + the pointer near-invisible.
+- **`vivecraft-client-config.json`** — bumps the seated-mode mouse-edge
+  rotation speeds to 2.0–2.5× Vivecraft's defaults. Without this, seated
+  players have to repeatedly lift + reposition their mouse to turn
+  around (Vivecraft's "keyhole" model only rotates the camera while the
+  cursor is pressed against the screen edge, and the default 1.0×
+  multiplier makes that very slow).
+
+If a value isn't right for your setup, tweak in-game:
+
+| Pain point | Fix |
+|---|---|
+| Turning is still too slow in seated VR | `VR Settings → Seated → Rotation Speed` slider (writes `xSensitivity`) |
+| Pitch (look-up/down) feels off | `VR Settings → Seated → Y Sensitivity` |
+| Standing-mode smooth-turn too slow | `VR Settings → Rotation → Rotation Speed` (writes `worldRotationXSensitivity`) |
+| Main menu / inventory still dark | In-game `Dark Mode` cycle button bottom-left of main menu |
+
+Players' in-game tweaks save back to `<instance>/config/vivecraft-client-config.json`
+under the active profile and persist on subsequent launches.
+
 ## What's in the zip
 
 | Path | What |

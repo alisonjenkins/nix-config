@@ -172,6 +172,14 @@ stdenvNoCC.mkDerivation {
     # stays at 0).
     install -m644 ${./darkmodeeverywhere-client.toml} overrides/config/darkmodeeverywhere-client.toml
 
+    # Pre-baked Vivecraft client config — bumps seated-mode mouse-edge
+    # rotation speed (xSensitivity / ySensitivity) so the Steam Frame +
+    # Quest seated-mode workflow doesn't require constant mouse re-grip
+    # to turn around. Values are a partial config; Vivecraft's GSON loader
+    # fills missing fields with defaults, so any per-player tweaks made
+    # in-game are preserved on subsequent saves.
+    install -m644 ${./vivecraft-client-config.json} overrides/config/vivecraft-client-config.json
+
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every

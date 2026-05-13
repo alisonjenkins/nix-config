@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "Vivecraft client config shipped via the Arkana Aeronautics client zip's overrides/config/.",
+    "Bumps the seated-mode mouse-edge rotation speed multipliers above Vivecraft's default 1.0",
+    "so seated VR players (Steam Frame + monitor / headset on flat mode) don't have to repeatedly",
+    "lift + re-place the mouse to turn around. Same multipliers cover smooth turn (in standing VR).",
+    "",
+    "Values map to the in-game `VR Settings -> Seated` sliders:",
+    "  xSensitivity                  = `Rotation Speed` (default 1.0, bumped to 2.5)",
+    "  ySensitivity                  = `Y Sensitivity`  (default 1.0, bumped to 1.5)",
+    "  worldRotationXSensitivity     = `Rotation Speed` for standing-mode smooth turn (default 1.0, bumped to 2.0)",
+    "",
+    "Vivecraft uses GSON; missing fields stay at Java defaults so this partial config is safe.",
+    "Players can tweak in-game; their tweaks are written back to this file under the active profile."
+  ],
+  "currentProfile": "Default",
+  "Profiles": {
+    "Default": {
+      "vrSettings": {
+        "xSensitivity": 2.5,
+        "ySensitivity": 1.5,
+        "worldRotationXSensitivity": 2.0
+      }
+    }
+  }
+}
