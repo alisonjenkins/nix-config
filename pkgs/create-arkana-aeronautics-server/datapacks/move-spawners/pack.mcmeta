@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Allow Create contraptions (pistons, bearings, rope pulleys, cart assemblers, super glue) to move minecraft:spawner blocks while preserving their stored entity / spawn potentials. Adds minecraft:spawner to the create:safe_nbt block tag."
+  }
+}

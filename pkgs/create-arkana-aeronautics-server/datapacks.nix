@@ -64,4 +64,16 @@ in
     filename = "ensure-vanilla-tags-1.0.zip";
     zip      = localDatapack "ensure-vanilla-tags";
   }
+  {
+    # Allow Create's contraption movement (pistons, bearings, rope
+    # pulleys, super-glue assemblies, cart assemblers) to carry
+    # minecraft:spawner blocks while preserving their tile-entity
+    # state (stored entity type, spawn potentials, delay range).
+    # Adds minecraft:spawner to create:safe_nbt via tag append
+    # (replace=false). Default Create refuses to move blocks whose
+    # tile-entity isn't in safe_nbt — this is the canonical knob.
+    # Server-side change: contraption movement runs on the server.
+    filename = "move-spawners-1.0.zip";
+    zip      = localDatapack "move-spawners";
+  }
 ]
