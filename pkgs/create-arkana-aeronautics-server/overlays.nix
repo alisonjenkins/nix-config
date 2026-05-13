@@ -399,4 +399,18 @@ in
       "colered-crosshair-neoforge-1.0.3.jar"
       "1vmvwiyv434jw628gcid3d8c0ns7mf725qlh2jza2l3dkxspcfas";
   }
+  {
+    # Create: Enchantment Industry — added in -46. Required by Ars Technica
+    # compat recipes already present in the Arkana datapack
+    # (create_enchantment_industry:grinding/ars_technica/*). Hard deps on
+    # create >= 6.0.10 (we ship 6.0.10) and create_dragons_plus >= 1.10.0
+    # (we ship 1.10.0b). touhou_little_maid integration optional, skipped.
+    filename       = "create-enchantment-industry-2.3.1.jar";
+    dropAsOverride = false;
+    projectID      = 688768;
+    fileID         = 7970748;
+    jar = curseforge 7970748 "create-enchantment-industry-2.3.1.jar"
+      "0r4h2wjn1x791rmzrgnpb6395rd6dvz853x3kah6h9aqry9h7mkb";
+  }
+
 ]
