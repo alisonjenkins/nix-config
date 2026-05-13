@@ -354,4 +354,19 @@ in
       "createdeco-2.1.3.jar"
       "0vhc83ww4a643v5agb0wv5b46q6y1kf505kigmkg3ffn1fnz3b7d";
   }
+  {
+    # Create: Gears n' Kinetics — expands Create's cogwheel + shaft
+    # surface with new cog tiers (small/large/quad/jumbo), beveled
+    # gearbox variants, kinetic transmission flavour. Both-sided.
+    # Hard deps verified:
+    #   neoforge  [21.1.200,)        ✓  (we ship 21.1.228)
+    #   minecraft [1.21.1, 1.22)     ✓
+    #   create    [6.0.8,)           ✓  (we ship 6.0.10)
+    # Modrinth gEWECBVL.
+    filename       = "GnKinetics-1.21.1-1.0m.jar";
+    dropAsOverride = true;
+    jar = modrinth "gEWECBVL" "qr9hMBnj"
+      "GnKinetics-1.21.1-1.0m.jar"
+      "0fw9217lp5bxbfmms7iswaz0y22bcf4qzf1qs2m68918b6dnjplz";
+  }
 ]
