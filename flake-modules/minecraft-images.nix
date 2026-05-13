@@ -34,7 +34,9 @@ let
       created = "1970-01-01T00:00:01Z";
 
       contents = [
-        pkgs.bashInteractive
+        # Plain bash (no readline / history / etc.) is enough for the
+        # entrypoint and saves ~5 MB vs bashInteractive.
+        pkgs.bash
         pkgs.coreutils
         # grep + gawk are NOT in coreutils — entrypoint.sh uses grep
         # to filter user_jvm_args.txt. Without these the JVM_TUNING
@@ -51,9 +53,13 @@ let
         server
       ];
 
-      # Layer the heavy server tree separately so a JRE bump or perf-mod
-      # change re-uses the cached server layer (650 MB extracted).
-      maxLayers = 100;
+      # Layer mod jars individually: the server tree symlinks each per-mod
+      # fetchurl store path, so dockerTools.buildLayeredImage spreads them
+      # across separate OCI layers. With 250+ mods we want as many layer
+      # slots as practical so each mod's bump invalidates only its own
+      # layer (typical Docker registries cap at 127 layers per image — 125
+      # leaves headroom for the JRE + system layers).
+      maxLayers = 125;
 
       extraCommands = ''
         mkdir -p opt data tmp

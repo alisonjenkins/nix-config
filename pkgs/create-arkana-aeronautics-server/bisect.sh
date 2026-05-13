@@ -71,10 +71,10 @@ build_out="$(
         tag = \"$IMAGE_TAG\";
         created = \"1970-01-01T00:00:01Z\";
         contents = [
-          pkgs.bashInteractive pkgs.coreutils pkgs.gnugrep pkgs.gawk
+          pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.gawk
           pkgs.cacert pkgs.stdenv.cc.cc.lib jre server
         ];
-        maxLayers = 100;
+        maxLayers = 125;
         extraCommands = ''
           mkdir -p opt data tmp
           ln -s \${server} opt/server

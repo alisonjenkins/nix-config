@@ -228,11 +228,20 @@ stdenvNoCC.mkDerivation {
     # clientOnlyProjectIDs is applied unconditionally — even if a group
     # is enabled that pulls in a Sodium addon, it still gets stripped here
     # because dedicated-server can't load client-only mixins.
+    #
+    # Mod jars are symlinked rather than copied so each per-mod fetchurl
+    # store path stays an independent closure entry of the server tree.
+    # dockerTools.buildLayeredImage distributes these across separate OCI
+    # layers (subject to maxLayers), so an incremental mod bump only
+    # invalidates one layer instead of rebuilding the entire ~700 MB mods
+    # bundle as a single layer. Forge's mod loader follows symlinks
+    # transparently and the image bakes /nix/store, so the linked jars
+    # resolve at runtime.
     ${lib.concatMapStrings (m:
       if lib.elem m.projectID clientOnlyProjectIDs then ''
         # skip ${toString m.projectID} (${m.filename}) — client-only
       '' else ''
-        install -m644 "${m.jar}" "$out/mods/${m.filename}"
+        ln -s "${m.jar}" "$out/mods/${m.filename}"
       ''
     ) arkanaModsAll}
 
@@ -250,7 +259,7 @@ stdenvNoCC.mkDerivation {
       then ''
         # skip overlay ${m.filename} — requires group "${m.requiresGroup}"
       '' else ''
-        install -m644 "${m.jar}" "$out/mods/${m.filename}"
+        ln -s "${m.jar}" "$out/mods/${m.filename}"
       ''
     ) overlayMods}
 
