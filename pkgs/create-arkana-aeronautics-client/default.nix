@@ -187,6 +187,35 @@ stdenvNoCC.mkDerivation {
     # in its config filename ("colered" not "colored").
     install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
 
+    # Pre-baked resource pack(s) → overrides/openloader/resources/.
+    # OpenLoader auto-loads zips from <game-dir>/openloader/resources/ at
+    # the highest priority, so they override any mod-bundled asset without
+    # needing the player to enable a pack in Options → Resource Packs.
+    #
+    # arkana-vanilla-tag-fixes ships an override of the Sounds mod's
+    # sheet_metal.json (replaces #minecraft:cauldrons with explicit block
+    # IDs). Sounds reads sheet_metal.json during client ResourceReload —
+    # before world datapack tags propagate — so its tag lookup of
+    # #minecraft:cauldrons returns empty and LMFT chats the "tags are
+    # cooked" alert. Pre-rewriting the asset to explicit cauldron block
+    # IDs eliminates the tag query at that early phase.
+    mkdir -p overrides/openloader/resources
+    arkanaTagFixesPack=${
+      stdenvNoCC.mkDerivation {
+        name = "arkana-vanilla-tag-fixes-resourcepack";
+        src  = ./resourcepacks/arkana-vanilla-tag-fixes;
+        nativeBuildInputs = [ zip ];
+        buildPhase = ''
+          ${zip}/bin/zip -r9 pack.zip . -x '.*' '*/.*'
+        '';
+        installPhase = ''
+          install -m644 pack.zip "$out"
+        '';
+      }
+    }
+    install -m644 "$arkanaTagFixesPack" \
+      overrides/openloader/resources/arkana-vanilla-tag-fixes-1.0.zip
+
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every

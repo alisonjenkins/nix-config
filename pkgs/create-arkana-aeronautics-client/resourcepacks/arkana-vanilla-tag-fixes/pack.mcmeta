@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 34,
+    "description": "Arkana Aeronautics — pre-shipped resource pack overrides. Currently: replace tag-based block lists with explicit block IDs for mods that query tags too early (Sounds reads sheet_metal.json during client ResourceReload, before tags from datapacks are populated)."
+  }
+}
