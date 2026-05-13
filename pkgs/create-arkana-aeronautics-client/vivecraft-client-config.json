@@ -19,7 +19,9 @@
       "vrSettings": {
         "xSensitivity": 2.5,
         "ySensitivity": 1.5,
-        "worldRotationXSensitivity": 2.0
+        "worldRotationXSensitivity": 2.0,
+        "crosshairScale": 1.5,
+        "useCrosshairOcclusion": false
       }
     }
   }

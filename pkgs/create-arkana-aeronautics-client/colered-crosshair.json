@@ -1,0 +1,11 @@
+{
+  "color": "YELLOW",
+  "useHitColor": true,
+  "hitColor": "RED",
+  "useAttackIndicatorColor": true,
+  "attackIndicatorColor": "YELLOW",
+  "useCrosshairIndicatorColor": true,
+  "crosshairIndicatorColor": "YELLOW",
+  "useCrosshairIndicatorHitColor": true,
+  "crosshairIndicatorHitColor": "RED"
+}

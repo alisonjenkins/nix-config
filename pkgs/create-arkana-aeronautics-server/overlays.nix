@@ -383,4 +383,20 @@ in
       "create_mixed_casing-1.21.1-1.1.1.jar"
       "0797i75gska9lb9hvs83f1z23p9k5wpa9ngj6lrxyvjs880xxyfp";
   }
+  {
+    # Colored Crosshair — recolors the vanilla crosshair (and attack /
+    # crosshair indicators) to a fixed color. Shipped specifically so the
+    # Vivecraft 3D crosshair stays visible in dark caves / nights:
+    # Vivecraft uses the vanilla inverse-blend crosshair, which fails when
+    # projected onto a near-zero-lit 3D surface. Pre-baked colered-
+    # crosshair.json sets color=YELLOW for visibility on both light + dark.
+    # Client-only — mod's mods.toml declares side = "CLIENT".
+    # Modrinth 8rCFhpfV.
+    filename       = "colered-crosshair-neoforge-1.0.3.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "8rCFhpfV" "9ApByJVD"
+      "colered-crosshair-neoforge-1.0.3.jar"
+      "1vmvwiyv434jw628gcid3d8c0ns7mf725qlh2jza2l3dkxspcfas";
+  }
 ]

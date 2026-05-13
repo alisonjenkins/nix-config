@@ -20,7 +20,15 @@ manual tweaks:
   players have to repeatedly lift + reposition their mouse to turn
   around (Vivecraft's "keyhole" model only rotates the camera while the
   cursor is pressed against the screen edge, and the default 1.0×
-  multiplier makes that very slow).
+  multiplier makes that very slow). Also bumps `crosshairScale` to 1.5
+  and disables `useCrosshairOcclusion` so the in-world crosshair stays
+  visible behind blocks during combat.
+- **Colored Crosshair mod + `colered-crosshair.json`** — recolors the
+  crosshair / attack indicator to YELLOW (with a RED hit color). Vivecraft
+  reuses vanilla Minecraft's inverse-blend crosshair, which fails to
+  stand out when projected onto a near-zero-lit 3D surface (caves at
+  night). A fixed-color crosshair is reliably visible on both light and
+  dark backgrounds.
 
 If a value isn't right for your setup, tweak in-game:
 
@@ -30,6 +38,9 @@ If a value isn't right for your setup, tweak in-game:
 | Pitch (look-up/down) feels off | `VR Settings → Seated → Y Sensitivity` |
 | Standing-mode smooth-turn too slow | `VR Settings → Rotation → Rotation Speed` (writes `worldRotationXSensitivity`) |
 | Main menu / inventory still dark | In-game `Dark Mode` cycle button bottom-left of main menu |
+| Crosshair colour clashes with your scenery | `<instance>/config/colered-crosshair.json` → change `color` to RED / ORANGE / GREEN / CYAN / BLUE / WHITE |
+| Crosshair too small in 3D space | `VR Settings → GUI → Crosshair Size` (writes `crosshairScale`) |
+| Crosshair disappears behind walls | `VR Settings → GUI → Crosshair Occlusion` (writes `useCrosshairOcclusion`) — already off by default |
 
 Players' in-game tweaks save back to `<instance>/config/vivecraft-client-config.json`
 under the active profile and persist on subsequent launches.

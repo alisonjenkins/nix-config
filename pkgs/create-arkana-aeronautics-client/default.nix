@@ -180,6 +180,13 @@ stdenvNoCC.mkDerivation {
     # in-game are preserved on subsequent saves.
     install -m644 ${./vivecraft-client-config.json} overrides/config/vivecraft-client-config.json
 
+    # Pre-baked Colored Crosshair config — sets crosshair to YELLOW with
+    # RED hit highlight so the Vivecraft 3D crosshair stays visible in
+    # dark caves. The mod (Modrinth 8rCFhpfV) is shipped via overlays.nix
+    # specifically for this use case. File path matches the mod's typo
+    # in its config filename ("colered" not "colored").
+    install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
+
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every
