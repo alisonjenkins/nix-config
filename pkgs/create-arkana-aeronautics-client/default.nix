@@ -164,6 +164,14 @@ stdenvNoCC.mkDerivation {
     mkdir -p overrides/config
     install -m644 ${./DistantHorizons.toml} overrides/config/DistantHorizons.toml
 
+    # Pre-baked Dark Mode Everywhere config — append "org.vivecraft" to
+    # METHOD_SHADER_BLACKLIST so the dark shader doesn't apply to the GUI
+    # texture Vivecraft samples for its in-world panel. Without this, VR
+    # players see a near-black main menu + nearly-invisible pointer.
+    # Non-VR players get the default dark theme (selectedShaderIndex
+    # stays at 0).
+    install -m644 ${./darkmodeeverywhere-client.toml} overrides/config/darkmodeeverywhere-client.toml
+
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every
