@@ -341,4 +341,17 @@ in
       "vivecraft-1.21.1-1.3.7-neoforge.jar"
       "1h3sfs3790z6dr8z9v6ybg1cp9ig4khlqlkz1ksp1ha5gxh70xh3";
   }
+  {
+    # Create Deco — decorative blocks themed around Create's industrial
+    # aesthetic (catwalks, railings, brass + iron sheet variants, cage
+    # lamps, placards, shipping containers). Both-sided. Declares hard
+    # deps on neoforge [21.1.209,) (we ship 21.1.228 ✓), minecraft
+    # [1.21.1] ✓, and create [6.0.7, 6.1.0) (we ship 6.0.10 ✓).
+    # Modrinth sMvUb4Rb.
+    filename       = "createdeco-2.1.3.jar";
+    dropAsOverride = true;
+    jar = modrinth "sMvUb4Rb" "qrcMVoBD"
+      "createdeco-2.1.3.jar"
+      "0vhc83ww4a643v5agb0wv5b46q6y1kf505kigmkg3ffn1fnz3b7d";
+  }
 ]
