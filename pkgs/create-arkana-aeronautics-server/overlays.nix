@@ -186,11 +186,11 @@ in
     # on server, GUI on client. Hard-deps balm >= 21.0.39 (we ship
     # 21.0.56 via the bumps pass). Modrinth-only on NeoForge 1.21.1
     # so client zip drops it under overrides/mods/.
-    filename       = "cookingforblockheads-neoforge-1.21.1-21.1.21.jar";
+    filename       = "cookingforblockheads-neoforge-1.21.1-21.1.23.jar";
     dropAsOverride = true;
-    jar = modrinth "vJnhuDde" "dzMpBcgd"
-      "cookingforblockheads-neoforge-1.21.1-21.1.21.jar"
-      "1ryn7d3pnrmwrqyrwbkrh9l4ylxflr3pdlf3kw82i52l5xdikdap";
+    jar = modrinth "vJnhuDde" "qbBLV6CQ"
+      "cookingforblockheads-neoforge-1.21.1-21.1.23.jar"
+      "0bag1w4hmd9vmgjmkpzvsfn259am6v2jb6r0dn85jkywfk78qkyi";
   }
   {
     # Tiny Redstone — fits redstone components (gates, repeaters, dust)

@@ -775,6 +775,287 @@
         sha256 = "04b6czhnfz0kvzaaw3s525llkhc9knhhg2yn9a7irzbqm7228rhn";
       };
     }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1156098;
+      origFileID    = 6912513;
+      projectID     = 1156098;
+      fileID        = 7687867;
+      required      = true;
+      filename      = "ConstructionSticks-1.21.1-1.3.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7687/867/ConstructionSticks-1.21.1-1.3.0.jar";
+        name   = "ConstructionSticks-1.21.1-1.3.0.jar";
+        sha256 = "1i8i2x76mqkgc4dfkcxdww43dhk9k8c5aqh0r89grzkqf5xy0df0";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1216624;
+      origFileID    = 7966760;
+      projectID     = 1216624;
+      fileID        = 7970093;
+      required      = true;
+      filename      = "CreateDragonsPlus-1.10.0b.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7970/93/CreateDragonsPlus-1.10.0b.jar";
+        name   = "CreateDragonsPlus-1.10.0b.jar";
+        sha256 = "0rlx5857plkn4vwb4g3j4l4zhi3abva6gjpb4kyvx2scl1g7mi4c";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 945149;
+      origFileID    = 6923054;
+      projectID     = 945149;
+      fileID        = 8070984;
+      required      = true;
+      filename      = "Glassential-renewed-1.21.1-3.4.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8070/984/Glassential-renewed-1.21.1-3.4.2.jar";
+        name   = "Glassential-renewed-1.21.1-3.4.2.jar";
+        sha256 = "0niw0iqan9sh6rcwy6qlmv51l0810id44kid8x3niw9xk8ss148x";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 306770;
+      origFileID    = 6842247;
+      projectID     = 306770;
+      fileID        = 7730942;
+      required      = true;
+      filename      = "Patchouli-1.21.1-93-NEOFORGE.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7730/942/Patchouli-1.21.1-93-NEOFORGE.jar";
+        name   = "Patchouli-1.21.1-93-NEOFORGE.jar";
+        sha256 = "14zrv7sligw3pa83hq6n3ahywjmy40s20sc479n32334sqpgb6lm";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1160104;
+      origFileID    = 6781033;
+      projectID     = 1160104;
+      fileID        = 7263416;
+      required      = true;
+      filename      = "aero_additions-1.2.7.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7263/416/aero_additions-1.2.7.jar";
+        name   = "aero_additions-1.2.7.jar";
+        sha256 = "0lg65jr0f587qxrs98z47dd245kwwkfq0i05pvidfcvyhdz5dg1d";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 248787;
+      origFileID    = 6616291;
+      projectID     = 248787;
+      fileID        = 7854442;
+      required      = true;
+      filename      = "appleskin-neoforge-mc1.21-3.0.9.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7854/442/appleskin-neoforge-mc1.21-3.0.9.jar";
+        name   = "appleskin-neoforge-mc1.21-3.0.9.jar";
+        sha256 = "1pr277xvln8a74wckgkjiz6ccrn8gv2l4vnfckwwjh8k4gb8vd1q";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 978125;
+      origFileID    = 6667255;
+      projectID     = 978125;
+      fileID        = 8038954;
+      required      = true;
+      filename      = "create_ultimate_factory-2.2.4-neoforge-1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8038/954/create_ultimate_factory-2.2.4-neoforge-1.21.1.jar";
+        name   = "create_ultimate_factory-2.2.4-neoforge-1.21.1.jar";
+        sha256 = "1c511wgbxl2fnaq6ilvmx2hqfq928962nfzk4lcaz7l57kacspdr";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1231381;
+      origFileID    = 6760692;
+      projectID     = 1231381;
+      fileID        = 8042566;
+      required      = true;
+      filename      = "createultimine-1.21.1-neoforge-1.3.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8042/566/createultimine-1.21.1-neoforge-1.3.1.jar";
+        name   = "createultimine-1.21.1-neoforge-1.3.1.jar";
+        sha256 = "00hl3pk6ggw2fda5x72yhdd9vdq7jhakvqjwia37g7rq0gkvwmxd";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 871755;
+      origFileID    = 6678572;
+      projectID     = 871755;
+      fileID        = 7862664;
+      required      = true;
+      filename      = "exposure-neoforge-1.21.1-1.9.16.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7862/664/exposure-neoforge-1.21.1-1.9.16.jar";
+        name   = "exposure-neoforge-1.21.1-1.9.16.jar";
+        sha256 = "0n5vlan5wj9l4bzk3kdkj696pjfp406vz64c03h4rkwlc0sgxbf4";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1083998;
+      origFileID    = 6951634;
+      projectID     = 1083998;
+      fileID        = 7850813;
+      required      = true;
+      filename      = "fantasy_armor-neoforge-1.2.4-1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7850/813/fantasy_armor-neoforge-1.2.4-1.21.1.jar";
+        name   = "fantasy_armor-neoforge-1.2.4-1.21.1.jar";
+        sha256 = "19bkf29srq1i0xpgmzrh6j5f9bxy4s16ppahvdvi9f9dp92n8k2c";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 238551;
+      origFileID    = 7099728;
+      projectID     = 238551;
+      fileID        = 8056307;
+      required      = true;
+      filename      = "gravestone-neoforge-1.21.1-1.0.37.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8056/307/gravestone-neoforge-1.21.1-1.0.37.jar";
+        name   = "gravestone-neoforge-1.21.1-1.0.37.jar";
+        sha256 = "0gjsplrrk2k3s6vzky5h6b7k9x4r2qhasimiy8df8d8zpzn5vpmp";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 639584;
+      origFileID    = 6679636;
+      projectID     = 639584;
+      fileID        = 7583940;
+      required      = true;
+      filename      = "immersive_paintings-neoforge-1.21.1-0.7.6.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7583/940/immersive_paintings-neoforge-1.21.1-0.7.6.jar";
+        name   = "immersive_paintings-neoforge-1.21.1-0.7.6.jar";
+        sha256 = "1x6yr3l0wpfviapqihgmd7y7chd16fdjngx89x6gxxkmym2hpkj8";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 368825;
+      origFileID    = 6794130;
+      projectID     = 368825;
+      fileID        = 8019500;
+      required      = true;
+      filename      = "inventoryessentials-neoforge-1.21.1-21.1.15.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8019/500/inventoryessentials-neoforge-1.21.1-21.1.15.jar";
+        name   = "inventoryessentials-neoforge-1.21.1-21.1.15.jar";
+        sha256 = "0pl87c44sfg9xf5z7187z8ihnl98ivmksp1kf9q3c7l56v0c1w9g";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1062363;
+      origFileID    = 6943627;
+      projectID     = 1062363;
+      fileID        = 7751818;
+      required      = true;
+      filename      = "letsdo-furniture-neoforge-1.1.4.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7751/818/letsdo-furniture-neoforge-1.1.4.jar";
+        name   = "letsdo-furniture-neoforge-1.1.4.jar";
+        sha256 = "0m3f34v2lxap7cw1k87mmj05ndvr2dakrys44n6n7vq28j7954f2";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 936015;
+      origFileID    = 6743507;
+      projectID     = 936015;
+      fileID        = 8056160;
+      required      = true;
+      filename      = "lithostitched-1.7.3-neoforge-21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8056/160/lithostitched-1.7.3-neoforge-21.1.jar";
+        name   = "lithostitched-1.7.3-neoforge-21.1.jar";
+        sha256 = "0lskjc21l5pv543ffhb93hlirxpi7qhd2kbilqa0hnx3y65v830x";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1134260;
+      origFileID    = 6168640;
+      projectID     = 1134260;
+      fileID        = 7920425;
+      required      = true;
+      filename      = "lootintegrations_cataclysm-1.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7920/425/lootintegrations_cataclysm-1.2.jar";
+        name   = "lootintegrations_cataclysm-1.2.jar";
+        sha256 = "0f35mrw25za55913h2agflsa9km0ihq52qggi8mjwgz3agyqzbhx";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1139414;
+      origFileID    = 6509967;
+      projectID     = 1139414;
+      fileID        = 7915316;
+      required      = true;
+      filename      = "lootintegrations_dnt-2.5.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7915/316/lootintegrations_dnt-2.5.jar";
+        name   = "lootintegrations_dnt-2.5.jar";
+        sha256 = "0zdy2g0sndgvv793vq3vld078yz6s43qgyrrgkicq9mn79arrjyq";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 1269720;
+      origFileID    = 6550111;
+      projectID     = 1269720;
+      fileID        = 7925171;
+      required      = true;
+      filename      = "lootintegrations_stellarity-1.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7925/171/lootintegrations_stellarity-1.1.jar";
+        name   = "lootintegrations_stellarity-1.1.jar";
+        sha256 = "13qdg9vb71zsk0av276r0ah6lpwpk84mn6qpnxysarxmprz0qyia";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 659887;
+      origFileID    = 6751823;
+      projectID     = 659887;
+      fileID        = 6958145;
+      required      = true;
+      filename      = "simplyswords-neoforge-1.62.0-1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/6958/145/simplyswords-neoforge-1.62.0-1.21.1.jar";
+        name   = "simplyswords-neoforge-1.62.0-1.21.1.jar";
+        sha256 = "16jmc2s4xywn96rkfbwyqhhwi1ayxmaddkqzv13gjfcrvyzaky82";
+      };
+    }
+    {
+      # Bump (find-mod-bumps, safe-curated set).
+      origProjectID = 245755;
+      origFileID    = 7966157;
+      projectID     = 245755;
+      fileID        = 8056467;
+      required      = true;
+      filename      = "waystones-neoforge-1.21.1-21.1.32.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8056/467/waystones-neoforge-1.21.1-21.1.32.jar";
+        name   = "waystones-neoforge-1.21.1-21.1.32.jar";
+        sha256 = "1ph1khf6r2majsa3km6s0ji68w1kqs3fkxdk13z7svlyxrzcpayl";
+      };
+    }
+
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
