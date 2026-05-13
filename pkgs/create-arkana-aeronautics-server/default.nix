@@ -114,9 +114,20 @@ let
   # floor (Create 6.0.10 is the only one today). They install regardless of
   # whether their `origProjectID`'s group is enabled — necessary because
   # the floor has zero Arkana groups but still needs Create.
+  #
+  # An "ungrouped" original (not classified into any group in arkana-groups.nix)
+  # also passes — matches the convention in arkanaModsFiltered. Without this
+  # clause, a bumped mod whose original was ungrouped would be silently
+  # dropped from the server: arkanaModsFiltered excludes it via isReplaced,
+  # and the old filter excluded the replacement because origProjectID was
+  # not in enabledArkanaProjectIDs. Currently affects Exposure (871755) and
+  # Immersive Paintings (639584), whose common-side packet handlers were
+  # missing on the server → handshake reject.
   enabledReplacements = builtins.filter
     (r: !(isDisabled r) &&
-        ((r.alwaysInclude or false) || lib.elem r.origProjectID enabledArkanaProjectIDs))
+        ((r.alwaysInclude or false)
+         || lib.elem r.origProjectID enabledArkanaProjectIDs
+         || !(lib.elem r.origProjectID allClassifiedProjectIDs)))
     arkanaExtras.replacements;
   arkanaModsAll = arkanaModsFiltered ++ enabledReplacements;
 
@@ -163,6 +174,11 @@ let
     990406   # Fresh Moves (resource-pack zip)
     1021685  # ImmersiveUI (client UI overhaul)
     1091339  # alltheleaks (client memory-leak workaround)
+    # Replacements whose originals are ungrouped — after the
+    # enabledReplacements filter learned the ungrouped fallback, these
+    # would otherwise leak onto the server. Both are resource/shader pack
+    # zips with no server-side gameplay code.
+    813608   # FA+All_Extensions (FreshAnimations extension pack)
   ];
 
   eulaFile    = builtins.toFile "eula.txt" "eula=true\n";
