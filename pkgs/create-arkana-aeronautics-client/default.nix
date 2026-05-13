@@ -209,12 +209,19 @@ stdenvNoCC.mkDerivation {
     # per-launcher steps documented in the README.
     install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
 
+    # README.md at zip root — alongside manifest.json + JVM-ARGS.md.
+    # Documents what's in the zip, the pre-baked config overrides we ship
+    # for known-issue mods (DarkModeEverywhere + Vivecraft, DH on macOS,
+    # EuphoriaPatcher shader version, no-pixie-spam datapack), and how to
+    # apply the overrides to an existing instance.
+    install -m644 ${./README.md} README.md
+
     # Repack as a CurseForge-style zip (manifest.json + modlist.html +
     # overrides/) and write it to $out. Importable in the CurseForge
     # launcher, Prism Launcher, and ATLauncher.
     mkdir -p $out
     zip -qr "$out/create-arkana-aeronautics-client-${version}.zip" \
-      manifest.json modlist.html JVM-ARGS.md overrides
+      manifest.json modlist.html JVM-ARGS.md README.md overrides
 
     runHook postInstall
   '';
