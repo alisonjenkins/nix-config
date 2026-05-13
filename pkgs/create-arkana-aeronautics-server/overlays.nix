@@ -369,4 +369,18 @@ in
       "GnKinetics-1.21.1-1.0m.jar"
       "0fw9217lp5bxbfmms7iswaz0y22bcf4qzf1qs2m68918b6dnjplz";
   }
+  {
+    # Create: Mixed Casing — right-click any casing/encased block/copycat/
+    # conveyor-belt with an ingot or casing plank to swap one half of the
+    # casing's recipe (mixed wood+metal variants). Pure aesthetic +
+    # logistic flavour. Both-sided. Deps:
+    #   minecraft [1.21, )         ✓
+    #   create    [6.0.6, 6.1.0)   ✓  (pack ships 6.0.10)
+    # Modrinth wMgXLrSd.
+    filename       = "create_mixed_casing-1.21.1-1.1.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "wMgXLrSd" "xo79epr6"
+      "create_mixed_casing-1.21.1-1.1.1.jar"
+      "0797i75gska9lb9hvs83f1z23p9k5wpa9ngj6lrxyvjs880xxyfp";
+  }
 ]
