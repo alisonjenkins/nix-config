@@ -236,6 +236,41 @@ nix run .#dep-tree -- /nix/store/<server-tree-path>
 
 Optimizations baked in: bisect.sh keeps `/data/libraries` between rounds (`FRESH=1` to wipe), server.properties pins `level-type=minecraft\:flat` (~10s saved per round on spawn-prepare), installPhase fails fast on dep-graph regressions.
 
+#### Mod-version bumping (after the pack boots clean)
+
+`pkgs/minecraft-modpack-tools/find-mod-bumps.py` walks the dep graph leaf-first, queries cfwidget + Modrinth for each mod's newest 1.21.1/NeoForge build, downloads candidates, and verifies forward + reverse `versionRange` compat. Emits ready-to-paste `replacements` blocks for `arkana-mods-extras.nix` with `$(nix hash file ...)` placeholders.
+
+Run against the **built** server tree's `mods/`:
+
+```bash
+# Export mods from the OCI image
+docker run --rm -v /tmp/mods:/out --entrypoint /bin/sh \
+  ghcr.io/<user>/create-arkana-aeronautics-server:<tag> \
+  -c 'mkdir -p /out/mods && cp -L /opt/server/mods/*.jar /out/mods/'
+
+python3 pkgs/minecraft-modpack-tools/find-mod-bumps.py /tmp
+```
+
+**Caveats — the tool's check is permissive:**
+- Forward/reverse uses declared `mods.toml` `versionRange` only. Mods commonly declare open ranges (`[0.10,)`); these admit any newer lib on paper but the dependent's bytecode may reference classes the new lib removed → runtime `NoClassDefFoundError` / `MixinTransformerError`. **Always boot-test after applying bumps.**
+- Tool prints `no compatible newer version found` for a dependent when its newer published versions declare a lib `versionRange` excluding the current lib version. That's the **lockstep bump signal** — bump lib + dependent together. Confirmed safe bundles: sophisticated-family (core + storage + backpacks + 2 create-integrations), familiarslib 1.7 + alshanex_familiars v4, irons_spellbooks family (spellbooks + jewelry + gtbcs_spell_lib + aces_spell_utils).
+- Known-bad ABI bumps (will drop mods): `relics 0.12.4` removes `IRelicItem`/`IRenderableCurio`/`ExperienceAddEvent` used by arcane_abilities, reliquified_lenders_cataclysm, reliquified_ars_nouveau; `azurelib 3.1.8` moves `AzureLib` class used by crystal_chronicles, cataclysm_spellbooks; `twilightforest 4.8` MixinTransformerError; `moonlight 3.0.7` major.
+- **Ignore NeoForge in-game `OUTDATED` reports.** NF string-compares `version=` against Modrinth's `forge_updates.json` `promos` which auto-publishes versions with `+mod` / `+mc1.21.1` metadata suffixes. Use `find-mod-bumps` for ground truth.
+- `lionfishapi 2.7-fix-fix` drops `IAnimatedEntity` — `arkana-mods-extras.nix` pins 2.6. Comment in extras explains; don't bump.
+- cfwidget's fileID sort isn't strictly version-sorted; watch for downgrades (`jeresources 1.6.0.17 → .12`).
+
+**Shipping a bump round:**
+1. Apply bumps to `arkana-mods-extras.nix`. Dedupe by `projectID` (one entry per mod); preserve original arkana `origFileID` when overwriting an earlier replacement.
+2. New mods (not in `arkana-mods.nix`) go into `overlays.nix` via the `curseforge` or `modrinth` helper.
+3. `nix build .#minecraft-arkana-aeronautics-image` → `docker load < <path>` → fresh container, watch for `Done (Xs)` and `failed to load correctly`.
+4. If broken: pull crash report from logs, identify failing mod, revert that bump, rebuild. Bisect by removing bumps in groups if multiple fail.
+5. Commit + annotated tag `arkana-aeronautics-v<modpack-version>-<n>`. GHA workflow only fires on tag push.
+6. Update gitops `clusters/aws-k3s/flux-system/minecraft/deployment.yaml` image tag separately to roll the deployed server.
+
+#### Known issue: OpenLoader datapack path
+
+`entrypoint.sh` symlinks `/data/openloader/data/` → `/opt/server/openloader/data/` for the OpenLoader mod to pick up shipped datapacks (move-spawners, rare-pixie-villages, ensure-vanilla-tags). **OpenLoader 21.1.5 actually scans `/data/config/openloader/packs/` instead** — the old path is ignored. Server-side datapacks silently don't load. Confirmed via `docker logs` showing `[Open Loader/]: Located 0 packs.`. Fix pending: symlink to the new path or write `/data/config/openloader/options.json` with `additional_locations: ["openloader/data"]` from the entrypoint.
+
 #### Crash-pattern triage
 
 | Signature | Phase | Likely fix |
