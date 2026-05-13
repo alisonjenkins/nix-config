@@ -1,58 +1,77 @@
 # DarkModeEverywhere client config — shipped via the Arkana Aeronautics
 # client zip's overrides/config/.
 #
-# The mod intercepts a list of well-known GUI render methods and applies
-# its dark shader to the GUI texture before the rest of the render pipe-
-# line continues. In VR, Vivecraft samples the resulting (now-dark) GUI
-# texture and composites it onto a flat panel in 3D world space — the
-# panel ends up near-unreadable and the Vivecraft pointer barely visible.
+# Goal: prevent the dark shader applying to anything we draw on the
+# main menu, in-game HUD, inventory screens, and anything Vivecraft
+# composites onto its 3D GUI panel.
 #
-# The mod doesn't know about Vivecraft, so its default METHOD_SHADER_
-# BLACKLIST doesn't exempt any org.vivecraft classes. We append a
-# substring-match entry to cover every Vivecraft render method.
+# DMME treats METHOD_SHADER_BLACKLIST as a list of case-sensitive
+# substrings matched against `class:method` identifiers at render
+# time. A short package-prefix entry catches every class beneath it.
+# The pack-side additions to the upstream default list:
 #
-# All other defaults preserved (in particular selectedShaderIndex stays
-# at 0 = perfect_dark for non-VR players).
+#   "net.minecraft.client.gui"   — covers the whole vanilla GUI
+#     package: Screen subclasses, AbstractWidget / Button rendering,
+#     components, layouts, and the components in the TitleScreen that
+#     the upstream-default `TitleScreen` blacklist entry doesn't
+#     reach. Effectively disables DMME for vanilla GUI rendering,
+#     which is what VR players need (text + buttons stay readable on
+#     Vivecraft's 3D GUI panel).
+#
+#   "org.vivecraft" and "vivecraft" — covers Vivecraft's own GUI
+#     render path. Substring match catches both fully-qualified
+#     org.vivecraft.* classes and the loose modid-package convention
+#     some mods use.
+#
+# Side effect: vanilla inventory / chest GUIs also stop being dark.
+# Non-VR players who specifically want the dark theme can remove the
+# `net.minecraft.client.gui` entry from this file or just rely on
+# the in-game `Dark Mode` cycle button.
 
 #A list of class:method strings (render methods) that the dark shader will not be applied to.
 #Each string consists of the class and the method (or any substring) to block the dark shader.
 #For example, 'renderHunger' is sufficient to block 'net.minecraftforge.client.gui.overlay.ForgeGui:renderFood' (either will work).
- METHOD_SHADER_BLACKLIST = [
-   "mezz.jei.common.render.FluidTankRenderer:drawTextureWithMasking",
-   "mezz.jei.library.render.FluidTankRenderer:drawTextureWithMasking",
-   "renderCrosshair",
-   "m_93080_",
-   "renderSky",
-   "m_202423_",
-   "renderHotbar",
-   "m_93009_",
-   "m_193837_",
-   "setupOverlayRenderState",
-   "net.minecraftforge.client.gui.overlay.ForgeGui",
-   "renderFood",
-   "renderExperienceBar",
-   "m_93071_",
-   "renderLogo",
-   "m_280037_",
-   "m_280118_",
-   "net.minecraft.client.gui.Gui",
-   "net.minecraft.src.C_3431_",
-   "renderDirtBackground",
-   "m_280039_",
-   "configured.client.screen.ListMenuScreen",
-   "OnlineServerEntry:drawIcon",
-   "OnlineServerEntry:m_99889_",
-   "WorldSelectionList$WorldListEntry:render",
-   "WorldSelectionList$WorldListEntry:m_6311_",
-   "CubeMap:render",
-   "CubeMap:m_108849_",
-   "squeek.appleskin.client.HUDOverlayHandler",
-   "shadows.packmenu.ExtendedMenuScreen",
-   # Vivecraft VR — without this, the dark shader applies to Vivecraft's
-   # in-world GUI panel, making text + pointer near-unreadable in VR.
-   "org.vivecraft"
- ]
+METHOD_SHADER_BLACKLIST = [
+  "mezz.jei.common.render.FluidTankRenderer:drawTextureWithMasking",
+  "mezz.jei.library.render.FluidTankRenderer:drawTextureWithMasking",
+  "renderCrosshair",
+  "m_93080_",
+  "renderSky",
+  "m_202423_",
+  "renderHotbar",
+  "m_93009_",
+  "m_193837_",
+  "setupOverlayRenderState",
+  "net.minecraftforge.client.gui.overlay.ForgeGui",
+  "renderFood",
+  "renderExperienceBar",
+  "m_93071_",
+  "renderLogo",
+  "m_280037_",
+  "m_280118_",
+  "net.minecraft.client.gui.Gui",
+  "net.minecraft.src.C_3431_",
+  "renderDirtBackground",
+  "m_280039_",
+  "configured.client.screen.ListMenuScreen",
+  "OnlineServerEntry:drawIcon",
+  "OnlineServerEntry:m_99889_",
+  "WorldSelectionList$WorldListEntry:render",
+  "WorldSelectionList$WorldListEntry:m_6311_",
+  "CubeMap:render",
+  "CubeMap:m_108849_",
+  "squeek.appleskin.client.HUDOverlayHandler",
+  "shadows.packmenu.ExtendedMenuScreen",
+  # Broad vanilla-GUI exemption: catches every Screen / button /
+  # widget / layout class. The upstream-default `TitleScreen` entry
+  # only matches that one class, leaving AbstractWidget-rendered
+  # buttons + splash on the title screen still dark.
+  "net.minecraft.client.gui",
+  # Vivecraft VR render path (org.vivecraft.* classes).
+  "org.vivecraft",
+  "vivecraft"
+]
 #Enabling this config will (every 5 seconds) dump which methods were used to render GUIs that the dark shader was applied to
 #The dump will consist of a list of class:method strings, e.g. 'net.minecraftforge.client.gui.overlay.ForgeGui:renderFood'
 #Use this feature to help find the render method strings of GUIs you would like to blacklist.
- METHOD_SHADER_DUMP = false
+METHOD_SHADER_DUMP = false

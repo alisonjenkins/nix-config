@@ -26,23 +26,31 @@ TOML into its full default config on first run.
 
 ### Dark Mode Everywhere + Vivecraft (VR)
 
-`overrides/config/darkmodeeverywhere-client.toml` appends `"org.vivecraft"`
-to `METHOD_SHADER_BLACKLIST`.
+`overrides/config/darkmodeeverywhere-client.toml` extends
+`METHOD_SHADER_BLACKLIST` to cover the whole vanilla GUI package plus the
+Vivecraft render path.
 
 **Why:** Dark Mode Everywhere intercepts a list of well-known GUI render
 methods and applies its dark shader to the GUI texture before the rest of
-the render pipeline continues. In VR, Vivecraft samples that (already-dark)
-GUI texture and composites it onto a flat panel in 3D world space — the
-panel becomes near-black and the Vivecraft pointer becomes near-invisible.
+the render pipeline continues. In VR, Vivecraft composites that
+(already-dark) GUI texture onto a flat panel in 3D world space, leaving
+text + pointer near-unreadable. Upstream's default blacklist exempts a
+narrow set of classes by exact name (`TitleScreen`, `renderCrosshair`,
+etc.) but not `AbstractWidget` / `Button` / other components that the
+title screen and inventories draw via — so most of the GUI stayed dark.
 
-DarkModeEverywhere's upstream default blacklist exempts vanilla
-crosshair / hotbar / title-screen methods but doesn't know about
-`org.vivecraft.*` — so VR players hit this. The shipped blacklist override
-adds a single substring entry that covers every Vivecraft GUI render method
-without enumerating them.
+Three additions to the upstream default list:
 
-Non-VR players are unaffected — `selectedShaderIndex = 0` (perfect_dark)
-stays as the upstream default.
+| Entry | Catches |
+|---|---|
+| `net.minecraft.client.gui` | Every vanilla Screen / button / widget / layout. Effectively disables DMME for vanilla GUI rendering — VR players see readable text + buttons on Vivecraft's 3D panel. |
+| `org.vivecraft` | Vivecraft's own render path. |
+| `vivecraft` | Loose modid-package fallback. |
+
+Side effect: vanilla inventory / chest GUIs also stop being dark. Non-VR
+players who specifically want the dark theme can remove the
+`net.minecraft.client.gui` entry from the config or use the in-game
+`Dark Mode` cycle button on the title screen to switch shader variants.
 
 ### EuphoriaPatcher 1.8.6 needs Complementary Reimagined r5.7.1
 
