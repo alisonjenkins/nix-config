@@ -752,6 +752,29 @@
         sha256 = "1w33kyknwc0qsi6l0saww906iwi9d3hkn0nm7hnl4bc3lws0d8i4";
       };
     }
+    {
+      # AllTheLeaks bump 1.0.1 → 1.1.8. Arkana 1.5 ships 1.0.1 which
+      # carries a hardcoded reference to Ars Nouveau's
+      # AlakarkinosConversionRegistry.LOOT_PARAMS field — that field was
+      # removed/renamed in Ars Nouveau 5.10+, so 1.0.1 spams
+      #   [AllTheLeaks/ERROR]: Failed to instantiate constructor.
+      #   java.lang.NoSuchFieldError: ... LOOT_PARAMS
+      # on every launch and the corresponding leak fix never applies.
+      # 1.1.8 (released Apr 2026) has the updated registry path. Marked
+      # client-only via clientOnlyProjectIDs (1091339) so server image is
+      # unaffected. CurseForge fileID 7955700.
+      origProjectID = 1091339;
+      origFileID    = 6930692;
+      projectID     = 1091339;
+      fileID        = 7955700;
+      required      = true;
+      filename      = "alltheleaks-1.1.8+1.21.1-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7955/700/alltheleaks-1.1.8%2B1.21.1-neoforge.jar";
+        name   = "alltheleaks-1.1.8+1.21.1-neoforge.jar";
+        sha256 = "04b6czhnfz0kvzaaw3s525llkhc9knhhg2yn9a7irzbqm7228rhn";
+      };
+    }
   ];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
