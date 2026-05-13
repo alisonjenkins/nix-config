@@ -130,6 +130,12 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
+  # GCC 14 false-positive `maybe-uninitialized` on u64 addr in
+  # function_browser.cpp (set via reference in ParseGhidraCsvLine, only read
+  # when that returns true). Citron's src/CMakeLists.txt sets `-Werror=all`
+  # which turns the warning into a hard error.
+  env.NIX_CFLAGS_COMPILE = "-Wno-error=maybe-uninitialized";
+
   cmakeFlags = [
     "-DCMAKE_BUILD_TYPE=Release"
     "-DUSE_SYSTEM_QT=ON"
