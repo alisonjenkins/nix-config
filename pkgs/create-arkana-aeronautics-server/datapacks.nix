@@ -50,4 +50,18 @@ in
     filename = "rare-pixie-villages-1.0.zip";
     zip      = localDatapack "rare-pixie-villages";
   }
+  {
+    # Redeclare vanilla tags some mods query during early
+    # ResourceReload phases before vanilla's built-in tag data
+    # propagates. The Sounds mod reads `#minecraft:cauldrons` from
+    # its sheet_metal sound group and logs WARN if the tag resolves
+    # empty — which fires LMFT's in-game "tags are cooked" chat
+    # alert on every world load. Explicitly shipping the same values
+    # as a datapack forces the tag loaded early and silences the
+    # warning. Append-only (replace=false) so mods adding new
+    # cauldron variants (Amendments adds dye_cauldron + liquid_
+    # cauldron) keep their entries.
+    filename = "ensure-vanilla-tags-1.0.zip";
+    zip      = localDatapack "ensure-vanilla-tags";
+  }
 ]

@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Redeclare vanilla tags that some mods read during early ResourceReload phases. Some mods (Sounds) query tags before vanilla's built-in tag data fully propagates, producing 'Failed to find block entries for tag key' warnings + LMFT in-game alerts. Explicitly shipping the same values as a datapack forces them loaded early."
+  }
+}
