@@ -187,18 +187,6 @@ stdenvNoCC.mkDerivation {
     # in its config filename ("colered" not "colored").
     install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
 
-    # Pre-baked LMFT (Load My F***ing Tags) config — disables the
-    # in-game chat alert that fires on every world load when a tag
-    # registers empty at the time some mod queries it. We separately
-    # ship the ensure-vanilla-tags datapack (server-side) that
-    # eliminates the actual root cause (Sounds mod reading
-    # #minecraft:cauldrons during early ResourceReload), but the
-    # chat alert can also surface for unrelated transient empty-tag
-    # states; flipping disableIngameError silences the noise without
-    # losing the WARN-level log entries that point at the real
-    # offender if there is one.
-    install -m644 ${./lmft.json} overrides/config/lmft.json
-
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every
