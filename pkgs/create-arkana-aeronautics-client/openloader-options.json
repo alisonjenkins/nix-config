@@ -1,0 +1,35 @@
+{
+  "load_resource_packs": {
+    "//": "Determines if OpenLoader should load resource packs.",
+    "//default": true,
+    "value": true
+  },
+  "load_data_packs": {
+    "//": "Determines if OpenLoader should load data packs.",
+    "//default": true,
+    "value": true
+  },
+  "additional_locations": {
+    "//": [
+      "OpenLoader 21.1.5 ships with this list empty by default and only scans",
+      "config/openloader/packs/, which the modpack does not populate. The",
+      "modpack puts bundled resource packs in openloader/resources/ and",
+      "datapacks in openloader/data/, so list both paths here so they are auto-",
+      "loaded at boot without the player having to enable anything manually."
+    ],
+    "//default": [],
+    "value": [
+      "openloader/resources",
+      "openloader/data"
+    ]
+  },
+  "load_datapacks_dir": {
+    "//": [
+      "Some launchers like CurseForge install data packs to the datapacks folder",
+      "(.minecraft/datapacks). When enabled, OpenLoader will always check that folder",
+      "for pack files."
+    ],
+    "//default": true,
+    "value": true
+  }
+}

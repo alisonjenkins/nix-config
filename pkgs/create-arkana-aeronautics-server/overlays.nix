@@ -93,6 +93,22 @@ in
       "ritchiesprojectilelib-2.1.2%2Bmc.1.21.1-neoforge.jar"
       "093v93kwjlf9ly08x7vfrawywziswcf6phx419jzndiphdh90l6c";
   }
+  {
+    # Resource Pack Overrides — modpack-developer mod that reads
+    # `config/resourcepackoverrides.json` and force-enables the listed
+    # packs every launch, ignoring options.txt. Solves the "existing
+    # players who already have an options.txt won't auto-get the new
+    # bundled packs" problem (Default Options would skip them since
+    # options.txt already exists). Also masks the "wrong version"
+    # incompat banner for mod-bundled packs via `compatibility` override.
+    # Client-only — server has no resource packs.
+    filename       = "ResourcePackOverrides-v21.1.0-1.21.1-NeoForge.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "YsFycamt" "xf3H2eJV"
+      "ResourcePackOverrides-v21.1.0-1.21.1-NeoForge.jar"
+      "0f2p8jsfjv1vckyqkb1nsjnpgidrqgs20kmysrjdx9w7sa175ass";
+  }
   # ---- Worldgen ----
   {
     # Terralith — datapack-driven biome overhaul (~100 biomes). Replaces

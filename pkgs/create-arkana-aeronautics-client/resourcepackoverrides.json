@@ -1,0 +1,44 @@
+{
+  "_comment_": [
+    "Read by the Resource Pack Overrides mod (Fuzss, Modrinth: YsFycamt).",
+    "The mod re-enables `defaultResourcePacks` on every client launch and",
+    "applies per-pack `overridesById` settings (required = always-enabled,",
+    "compatibility = mask the wrong-MC-version banner). This keeps the",
+    "Arkana modpack's optional mod-bundled packs forced-on even for players",
+    "who have an existing options.txt from a prior modpack version — which",
+    "is why we use this mod instead of shipping options.txt via overrides/."
+  ],
+
+  "schemaVersion": 1,
+
+  "defaultResourcePacks": [
+    "mod/subtle_effects:resourcepacks/biome_color_water_particles",
+    "supplementaries:darker_ropes",
+    "builtin/aether_tooltips",
+    "builtin/client/deep_aether_tooltips",
+    "builtin/overrides/deep_aether_additional_assets"
+  ],
+
+  "overridesById": {
+    "mod/subtle_effects:resourcepacks/biome_color_water_particles": {
+      "required": true,
+      "compatibility": "COMPATIBLE"
+    },
+    "supplementaries:darker_ropes": {
+      "required": true,
+      "compatibility": "COMPATIBLE"
+    },
+    "builtin/aether_tooltips": {
+      "required": true,
+      "compatibility": "COMPATIBLE"
+    },
+    "builtin/client/deep_aether_tooltips": {
+      "required": true,
+      "compatibility": "COMPATIBLE"
+    },
+    "builtin/overrides/deep_aether_additional_assets": {
+      "required": true,
+      "compatibility": "COMPATIBLE"
+    }
+  }
+}

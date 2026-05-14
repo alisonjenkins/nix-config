@@ -1,9 +1,10 @@
 { stdenvNoCC, lib, fetchurl, unzip, zip, jq, python3, callPackage }:
 let
   serverPkg    = callPackage ../create-arkana-aeronautics-server { };
-  overlayMods  = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
-  arkanaExtras = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
-  datapacks    = import ../create-arkana-aeronautics-server/datapacks.nix       { inherit fetchurl stdenvNoCC zip; };
+  overlayMods   = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
+  arkanaExtras  = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
+  datapacks     = import ../create-arkana-aeronautics-server/datapacks.nix       { inherit fetchurl stdenvNoCC zip; };
+  resourcePacks = import ./resource-packs.nix                                    { inherit fetchurl stdenvNoCC unzip zip jq; };
 
   # ars_nouveau bundles lambdynamiclights-api as JIJ which JPMS-conflicts
   # with the top-level sodiumdynamiclights mod (immersivelanterns hard-deps
@@ -15,8 +16,28 @@ let
     lib.findFirst (m: m.projectID == 401955)
       (throw "client: ars_nouveau replacement (projectID 401955) missing from arkana-mods-extras.nix")
       arkanaExtras.replacements;
-  stripJijProjectIDs = [ arsNouveauReplacement.projectID ];
-  stripJijProjectIDsJSON = builtins.toJSON stripJijProjectIDs;
+
+  # Supplementaries' `compat.CompatEMFMixin` @Inject is bound to the
+  # pre-3.0 EMFModelPartCustom callback signature; EMF 3.0+ added an
+  # EMFModelPartRoot parameter and the mixin can't apply. AllTheLeaks
+  # 1.1.8's runtime patch covers the EMF range [3.0.0, 3.0.6) but stops
+  # there, and any resource pack with JEM models (FreshAnimations etc.)
+  # triggers EMF to instantiate EMFModelPartCustom which then triggers
+  # the mixin apply → MixinApplyError → crash during model bake.
+  # Strip the bad mixin entry from supplementaries-common.mixins.json
+  # at build time, ship the patched jar in overrides/mods/, and remove
+  # the CurseForge manifest entry so the launcher doesn't re-download
+  # an unpatched copy on top.
+  supplementariesReplacement =
+    lib.findFirst (m: m.projectID == 412082)
+      (throw "client: supplementaries replacement (projectID 412082) missing from arkana-mods-extras.nix")
+      arkanaExtras.replacements;
+
+  stripFromManifestProjectIDs = [
+    arsNouveauReplacement.projectID
+    supplementariesReplacement.projectID
+  ];
+  stripFromManifestProjectIDsJSON = builtins.toJSON stripFromManifestProjectIDs;
 
   arkanaVersion      = serverPkg.passthru.arkanaVersion;
   aeronauticsVersion = serverPkg.passthru.aeronauticsVersion;
@@ -125,7 +146,7 @@ stdenvNoCC.mkDerivation {
       --argjson replace    '${replacementsJSON}' \
       --argjson skip       '${skippedJSON}' \
       --argjson disabled   '${disabledJSON}' \
-      --argjson stripJij   '${stripJijProjectIDsJSON}' \
+      --argjson stripIds   '${stripFromManifestProjectIDsJSON}' \
       '
         .name = $name
         | .version = $packVersion
@@ -144,7 +165,7 @@ stdenvNoCC.mkDerivation {
               else . end)
         | .files |= map(
             . as $f
-            | if any($stripJij[]; . == $f.projectID)
+            | if any($stripIds[]; . == $f.projectID)
               then empty
               else . end)
         | .files |= map(
@@ -187,6 +208,45 @@ stdenvNoCC.mkDerivation {
     # in its config filename ("colered" not "colored").
     install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
 
+    # Resource Pack Overrides config — read by the Modrinth mod
+    # `ResourcePackOverrides` (shipped via overlays.nix) to force the
+    # listed mod-bundled built-in packs always-enabled, every launch,
+    # regardless of options.txt state. Solves the update-flow case
+    # where an existing player already has options.txt from a prior
+    # modpack version and our shipped options.txt wouldn't apply.
+    # `compatibility: COMPATIBLE` also masks the "wrong MC version"
+    # banner for packs that declare pack_format outside 1.21.1's range
+    # (subtle_effects targets 1.21.5, supplementaries 1.20.x, etc.) —
+    # those packs' content is pure texture/model overrides and works on
+    # 1.21.1 fine.
+    install -D -m644 ${./resourcepackoverrides.json} \
+      overrides/config/resourcepackoverrides.json
+
+    # Pre-populated options.txt with the resource-pack selection that
+    # players would otherwise have to enable by hand: the four
+    # mod-bundled "optional" built-in packs (Biome Color Water Particles,
+    # Darker Ropes, Aether Item Tooltips, Deep Aether Tooltips + Deep
+    # Aether Additional Assets). Three of those declare pack_format
+    # values outside MC 1.21.1's range (subtle_effects targets 1.21.5+,
+    # supplementaries declares 1.20.x, deep_aether tooltips ditto) so
+    # they're also listed in `incompatibleResourcePacks` — that's MC's
+    # "yes the user really wants these even though they declare wrong
+    # version" override. Content is purely texture/model overrides and
+    # works on 1.21.1 unchanged. Other options.txt keys are not set
+    # here; MC fills in defaults on the first launch and the player can
+    # override anything from the in-game Options menu as normal.
+    install -m644 ${./options.txt} overrides/options.txt
+
+    # OpenLoader 21.1.5 ships with an empty `additional_locations` list and
+    # only scans config/openloader/packs/, which we don't populate — so the
+    # bundled openloader/resources/ + openloader/data/ trees were being
+    # ignored on first launch and the player had to enable each resource
+    # pack manually in the Options screen. Ship a pre-populated options.json
+    # in overrides/config/openloader/ so OL discovers both directories on
+    # the very first boot (before it ever writes the default config itself).
+    install -D -m644 ${./openloader-options.json} \
+      overrides/config/openloader/options.json
+
     # Pre-baked resource pack(s) → overrides/openloader/resources/.
     # OpenLoader auto-loads zips from <game-dir>/openloader/resources/ at
     # the highest priority, so they override any mod-bundled asset without
@@ -216,6 +276,17 @@ stdenvNoCC.mkDerivation {
     install -m644 "$arkanaTagFixesPack" \
       overrides/openloader/resources/arkana-vanilla-tag-fixes-1.0.zip
 
+    # Bundled visual-style resource packs → overrides/openloader/resources/.
+    # OpenLoader stacks zips alphabetically (later overrides earlier), so the
+    # filename prefixes `01-…` through `04-…` pin the precedence:
+    # Stay True → Stay True Compats → Fresh Animations → Create: Fresh Items.
+    # arkana-vanilla-tag-fixes-1.0.zip (above) sorts last and therefore wins
+    # any sheet_metal.json conflict — that's deliberate; the tag fixes pack
+    # *must* be on top because it patches an early-resolution asset.
+    ${lib.concatMapStrings (r: ''
+      install -m644 "${r.zip}" "overrides/openloader/resources/${r.filename}"
+    '') resourcePacks}
+
     # Bundled datapacks → overrides/openloader/data/. OpenLoader (an
     # overlay mod, see ../create-arkana-aeronautics-server/overlays.nix)
     # auto-loads zips from <game-dir>/openloader/data/ into every
@@ -243,6 +314,19 @@ stdenvNoCC.mkDerivation {
       "overrides/mods/${arsNouveauReplacement.filename}"
     python3 ${../create-arkana-aeronautics-server/strip-lambdynamiclights-jij.py} \
       "overrides/mods/${arsNouveauReplacement.filename}"
+
+    # Supplementaries with compat.CompatEMFMixin stripped from
+    # supplementaries-common.mixins.json. The mixin's @Inject targets
+    # EMFModelPartCustom with the pre-3.0 EMF callback signature; EMF
+    # 3.0+ added an EMFModelPartRoot parameter so mixin apply fails
+    # whenever an EMF JEM-model resource pack loads (FreshAnimations,
+    # FA+Extensions, etc.). The manifest entry for projectID 412082 was
+    # filtered above so the launcher doesn't pull the unpatched jar.
+    install -m644 "${supplementariesReplacement.jar}" \
+      "overrides/mods/${supplementariesReplacement.filename}"
+    chmod +w "overrides/mods/${supplementariesReplacement.filename}"
+    python3 ${../create-arkana-aeronautics-server/strip-supplementaries-emf-mixin.py} \
+      "overrides/mods/${supplementariesReplacement.filename}"
 
     # JVM-args guidance ships at the zip root (alongside manifest.json),
     # not under overrides/. CurseForge-style zips treat anything outside

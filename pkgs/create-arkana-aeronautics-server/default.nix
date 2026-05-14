@@ -147,7 +147,15 @@ let
     # server. Keep JEI in the server tree.
     394468   # Sodium (NeoForge port)
     455508   # Iris Shaders
-    508933   # Distant Horizons
+    # 508933 # Distant Horizons — UN-STRIPPED. DH's neoforge.mods.toml
+    #          declares clientSideOnly = "true" but also side = "BOTH":
+    #          it works server-side as a shared LOD-cache database.
+    #          Without server-side DH, each client lone-wolfs LOD gen
+    #          into its own per-player SQLite, so players walking the
+    #          same area duplicate work and new joiners see no distant
+    #          terrain until they walk it themselves. Server CPU stays
+    #          minimal (SQLite reads/writes only) unless
+    #          enableDistantGeneration = true.
     511319   # Reese's Sodium Options
     551736   # Sodium Dynamic Lights
     558905   # Sodium Extras
@@ -173,7 +181,14 @@ let
     915902   # EuphoriaPatcher (shader patcher zip)
     990406   # Fresh Moves (resource-pack zip)
     1021685  # ImmersiveUI (client UI overhaul)
-    1091339  # alltheleaks (client memory-leak workaround)
+    # 1091339 # alltheleaks — UN-STRIPPED. 1.1.8 ships 71 leak fixes in
+    #           dev/uncandango/alltheleaks/leaks/common/ that target
+    #           server-side classes (ServerPlayer, ServerGamePacket-
+    #           ListenerImpl, PlayerAdvancements, ServerStoppedEvent
+    #           via clearOnServerStopped) in addition to the 116 client
+    #           fixes. Stripping it from the server loses long-running
+    #           memory leak protection — material for a long-lived
+    #           shared world.
     # Replacements whose originals are ungrouped — after the
     # enabledReplacements filter learned the ungrouped fallback, these
     # would otherwise leak onto the server. Both are resource/shader pack
@@ -286,6 +301,12 @@ stdenvNoCC.mkDerivation {
     # Pre-bake fml.toml with disableConfigWatcher=true so FML doesn't
     # spawn the inotify watcher on first boot. See fml.toml for context.
     install -Dm644 ${./fml.toml}         $out/config/fml.toml
+
+    # Pre-bake DistantHorizons.toml: enables server-side LOD generation
+    # so the world's distant-chunk cache is centralised rather than
+    # each client generating its own duplicate copy. See file header
+    # for the full rationale + thread/perf tuning.
+    install -Dm644 ${./DistantHorizons.toml} $out/config/DistantHorizons.toml
     # Datapacks bundled at /opt/server/openloader/data/. OpenLoader (a
     # mod shipped via overlays.nix) auto-loads zips from this folder
     # into every world the server hosts, so the same set applies on

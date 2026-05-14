@@ -1,0 +1,2 @@
+resourcePacks:["vanilla","fabric","mod_resources","moonlight:merged_pack","mod/subtle_effects:resourcepacks/biome_color_water_particles","supplementaries:darker_ropes","builtin/aether_tooltips","builtin/client/deep_aether_tooltips","builtin/overrides/deep_aether_additional_assets"]
+incompatibleResourcePacks:["mod/subtle_effects:resourcepacks/biome_color_water_particles","supplementaries:darker_ropes","builtin/client/deep_aether_tooltips"]
