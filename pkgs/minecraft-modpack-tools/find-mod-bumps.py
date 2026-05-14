@@ -636,6 +636,17 @@ def main():
                 continue
             cand_version = cand_meta["version"] or cand.get("version") or ""
 
+            # Semver guard. CurseForge sometimes lists a file whose upload-id
+            # is higher than the current pack pin but whose semantic version
+            # is older (re-upload of a "fix" against an older version line —
+            # e.g. JustEnoughResources 1.6.0.17 currently pinned, .12 later
+            # re-uploaded with a higher fileID). enumerate_candidates sorts
+            # by fileID so those slip through as "newer". Reject any
+            # candidate whose parsed version isn't strictly greater than
+            # current, regardless of upload time.
+            if cur_ver and version_key(cand_version) <= version_key(cur_ver):
+                continue
+
             # Forward-check: candidate's required deps satisfied?
             fwd_ok = True
             for dep_mid, drange, dtype in cand_meta["deps"]:

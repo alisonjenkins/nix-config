@@ -43,11 +43,11 @@ in
     # Pinned to 1.2.1 (matched-date with Aeronautics 1.2.1) rather than the
     # newer 1.2.2 — Sable's API has churned and Aeronautics ships against the
     # same-day release.
-    filename       = "sable-neoforge-1.21.1-1.2.1.jar";
+    filename       = "sable-neoforge-1.21.1-1.2.2.jar";
     dropAsOverride = true;
-    jar = modrinth "T9PomCSv" "ADGYo8vU"
-      "sable-neoforge-1.21.1-1.2.1.jar"
-      "0vahdhgymb72mbgbxpb6rnzjg9vgz3yihki71mfjdjlsx2q13h04";
+    jar = modrinth "T9PomCSv" "3FMsUjO4"
+      "sable-neoforge-1.21.1-1.2.2.jar"
+      "1y2mqwwlbk1marf998jc2yvrfwqk936byrrrgyrh90in1l56dyqm";
   }
   {
     filename       = "create-new-age-1.1.7c+neoforge-mc1.21.1.jar";
@@ -269,11 +269,11 @@ in
     # sided. NeoForge 21.1.219+ ✓. Optional crafttweaker dep is just
     # for recipe-script hooks; we don't ship crafttweaker but FD
     # boots fine without it. Modrinth R2OftAxM.
-    filename       = "FarmersDelight-1.21.1-1.3.1.jar";
+    filename       = "FarmersDelight-1.21.1-1.3.2.jar";
     dropAsOverride = true;
-    jar = modrinth "R2OftAxM" "9gp7w8NC"
-      "FarmersDelight-1.21.1-1.3.1.jar"
-      "1x7lcl4mchlgya9d6r5lvmpnlvchnpafxnihp60x85xgjzsznbzh";
+    jar = modrinth "R2OftAxM" "GbNuOZ4S"
+      "FarmersDelight-1.21.1-1.3.2.jar"
+      "1rrxy3i5r80y29xa0wvfpl23x0jxjx2sxyj555a63khz5vb3ix4g";
   }
   {
     # BetterDays — slows down day/night cycle for longer days. Both-

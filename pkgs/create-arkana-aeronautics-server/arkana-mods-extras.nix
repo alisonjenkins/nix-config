@@ -26,23 +26,17 @@
 {
   replacements = [
     {
-      # Arkana 1.5 references fileID 6168249 which cfwidget can't resolve
-      # (older than its pagination window). The fileID IS still live on
-      # mediafilez — we just had to discover the filename by guessing.
-      # Originally bumped to 2.7-fix-fix but that release dropped the
-      # `com.github.L_Ender.lionfishapi.server.animation.IAnimatedEntity`
-      # class which L_Ender's Cataclysm + irons_spellbooks +
-      # cataclysm_spellbooks all hard-link to. 2.6 keeps the class.
+      # Bumped by find-mod-bumps (lionfishapi).
       origProjectID = 1001614;
       origFileID    = 6168249;
       projectID     = 1001614;
-      fileID        = 6168249;
+      fileID        = 7941057;
       required      = true;
-      filename      = "lionfishapi-2.6.jar";
+      filename      = "lionfishapi-2.7-fix-fix.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/6168/249/lionfishapi-2.6.jar";
-        name   = "lionfishapi-2.6.jar";
-        sha256 = "0pq222nwm31prvj0y7rgx36hqanqb77rpp8klnhbnlc31vqbfmky";
+        url    = "https://mediafilez.forgecdn.net/files/7941/57/lionfishapi-2.7-fix-fix.jar";
+        name   = "lionfishapi-2.7-fix-fix.jar";
+        sha256 = "1j3rccsq02ix1y4vl07nsiwhh7p24zi4srqippbhgmzpq47wj08b";
       };
     }
     {
@@ -377,16 +371,17 @@
       };
     }
     {
+      # Bumped by find-mod-bumps (amendments).
       origProjectID = 896746;
       origFileID    = 6919475;
       projectID     = 896746;
-      fileID        = 7054319;
+      fileID        = 7461027;
       required      = true;
-      filename      = "amendments-1.21-2.0.8-neoforge.jar";
+      filename      = "amendments-1.21-2.0.15-neoforge.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7054/319/amendments-1.21-2.0.8-neoforge.jar";
-        name   = "amendments-1.21-2.0.8-neoforge.jar";
-        sha256 = "05ah4xnij7apcgcqv1i3rbrg28bs426l5ikrvnfr2xblcvrb9x9k";
+        url    = "https://mediafilez.forgecdn.net/files/7461/27/amendments-1.21-2.0.15-neoforge.jar";
+        name   = "amendments-1.21-2.0.15-neoforge.jar";
+        sha256 = "1db2ycdlnhzqgm0bq8kh2vwcn36jkq4ykld3ikp76npbqbanfkp4";
       };
     }
     {
@@ -533,29 +528,31 @@
       };
     }
     {
+      # Bumped by find-mod-bumps (ftbteams).
       origProjectID = 404468;
       origFileID    = 6930910;
       projectID     = 404468;
-      fileID        = 7144060;
+      fileID        = 7878281;
       required      = true;
-      filename      = "ftb-teams-neoforge-2101.1.5.jar";
+      filename      = "ftb-teams-neoforge-2101.1.10.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7144/60/ftb-teams-neoforge-2101.1.5.jar";
-        name   = "ftb-teams-neoforge-2101.1.5.jar";
-        sha256 = "0q2z5jr9xv1w9q3r7my4x5cm6gw0bfx73awndbk2bcv67fis0m0g";
+        url    = "https://mediafilez.forgecdn.net/files/7878/281/ftb-teams-neoforge-2101.1.10.jar";
+        name   = "ftb-teams-neoforge-2101.1.10.jar";
+        sha256 = "0v3ssfkf0zl992jdmig6clgh9chfma87csdsnfm37a8i1smg4mm6";
       };
     }
     {
+      # Bumped by find-mod-bumps (ftbultimine).
       origProjectID = 386134;
       origFileID    = 6930900;
       projectID     = 386134;
-      fileID        = 7188395;
+      fileID        = 8078515;
       required      = true;
-      filename      = "ftb-ultimine-neoforge-2101.1.12.jar";
+      filename      = "ftb-ultimine-neoforge-2101.1.14.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7188/395/ftb-ultimine-neoforge-2101.1.12.jar";
-        name   = "ftb-ultimine-neoforge-2101.1.12.jar";
-        sha256 = "02c17f4kx6ih6iw6xir0y3szsck0ykcs0ac0jkk5p8jpf3cq138y";
+        url    = "https://mediafilez.forgecdn.net/files/8078/515/ftb-ultimine-neoforge-2101.1.14.jar";
+        name   = "ftb-ultimine-neoforge-2101.1.14.jar";
+        sha256 = "0w6966cq8aq2rcivl4bq4c8456cmckxq5h7hljbg039a36pid5nh";
       };
     }
     {
@@ -650,16 +647,17 @@
       };
     }
     {
+      # Bumped by find-mod-bumps (supplementaries).
       origProjectID = 412082;
       origFileID    = 6944305;
       projectID     = 412082;
-      fileID        = 6949037;
+      fileID        = 8051628;
       required      = true;
-      filename      = "supplementaries-1.21-3.4.14-neoforge.jar";
+      filename      = "supplementaries-neoforge-1.21.1-3.6.4.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/6949/37/supplementaries-1.21-3.4.14-neoforge.jar";
-        name   = "supplementaries-1.21-3.4.14-neoforge.jar";
-        sha256 = "0krwg4wjakqp6bmi67wx8p7hglbfz1nhkhx6fz2f14gjp0ph3cq4";
+        url    = "https://mediafilez.forgecdn.net/files/8051/628/supplementaries-neoforge-1.21.1-3.6.4.jar";
+        name   = "supplementaries-neoforge-1.21.1-3.6.4.jar";
+        sha256 = "158gv3vczgnzwnsbp8p53r3wn6gkz9hm4z61iazwfp4ybwy3xdz3";
       };
     }
     {
@@ -1057,17 +1055,17 @@
     }
 
     {
-      # Bump bundle (find-mod-bumps -46).
+      # Bumped by find-mod-bumps (sophisticatedcore).
       origProjectID = 618298;
       origFileID    = 6933219;
       projectID     = 618298;
-      fileID        = 8046952;
+      fileID        = 8084486;
       required      = true;
-      filename      = "sophisticatedcore-1.21.1-1.4.38.1847.jar";
+      filename      = "sophisticatedcore-1.21.1-1.4.39.1852.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/8046/952/sophisticatedcore-1.21.1-1.4.38.1847.jar";
-        name   = "sophisticatedcore-1.21.1-1.4.38.1847.jar";
-        sha256 = "0hbxhc0gihm53iwdr4sxjip8csb7w4avj4yz8dcpjcw8xgiqj5a6";
+        url    = "https://mediafilez.forgecdn.net/files/8084/486/sophisticatedcore-1.21.1-1.4.39.1852.jar";
+        name   = "sophisticatedcore-1.21.1-1.4.39.1852.jar";
+        sha256 = "1z2jilj2vfz4gdbjrwiqfzjynvd3fbgxcjg9pcbmxvfy9fc0vvq1";
       };
     }
     {
@@ -1239,31 +1237,31 @@
       };
     }
     {
-      # Bump bundle (find-mod-bumps -46).
+      # Bumped by find-mod-bumps (sophisticatedstorage).
       origProjectID = 619320;
       origFileID    = 6912198;
       projectID     = 619320;
-      fileID        = 8034906;
+      fileID        = 8084562;
       required      = true;
-      filename      = "sophisticatedstorage-1.21.1-1.5.46.1717.jar";
+      filename      = "sophisticatedstorage-1.21.1-1.5.47.1724.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/8034/906/sophisticatedstorage-1.21.1-1.5.46.1717.jar";
-        name   = "sophisticatedstorage-1.21.1-1.5.46.1717.jar";
-        sha256 = "0lh9bhgx02liz7d5qmm9hvfcjqp104iaxxmrqcjypk9h1rxb428w";
+        url    = "https://mediafilez.forgecdn.net/files/8084/562/sophisticatedstorage-1.21.1-1.5.47.1724.jar";
+        name   = "sophisticatedstorage-1.21.1-1.5.47.1724.jar";
+        sha256 = "19y14fzsb5q4j9q40j5rbdp2vmm458qk9rvnsd32qm0gbwww4psm";
       };
     }
     {
-      # Bump bundle (find-mod-bumps -46).
+      # Bumped by find-mod-bumps (sophisticatedbackpacks).
       origProjectID = 422301;
       origFileID    = 6907846;
       projectID     = 422301;
-      fileID        = 8034895;
+      fileID        = 8084526;
       required      = true;
-      filename      = "sophisticatedbackpacks-1.21.1-3.25.44.1736.jar";
+      filename      = "sophisticatedbackpacks-1.21.1-3.25.45.1742.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/8034/895/sophisticatedbackpacks-1.21.1-3.25.44.1736.jar";
-        name   = "sophisticatedbackpacks-1.21.1-3.25.44.1736.jar";
-        sha256 = "1hhn2kjni8smiqfcqhwa18ccmkfxkww7y8lw1arc23wbiwn1459i";
+        url    = "https://mediafilez.forgecdn.net/files/8084/526/sophisticatedbackpacks-1.21.1-3.25.45.1742.jar";
+        name   = "sophisticatedbackpacks-1.21.1-3.25.45.1742.jar";
+        sha256 = "0zw86f5b58f0m66lqzgbchb3hvyng8ymsv4xr41v0xdisy86zx6v";
       };
     }
     {
@@ -1311,7 +1309,287 @@
       };
     }
 
-  ];
+      {
+      # Bumped by find-mod-bumps (beautiful_potions).
+      origProjectID = 1298070;
+      origFileID    = 6953563;
+      projectID     = 1298070;
+      fileID        = 7952054;
+      required      = true;
+      filename      = "BTP-NeoForge-1.21.1-2.0.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7952/54/BTP-NeoForge-1.21.1-2.0.0.jar";
+        name   = "BTP-NeoForge-1.21.1-2.0.0.jar";
+        sha256 = "0pknzyaxgba9ilmnwf45x96ny6l8v0b7p3148fwxan7rvwg4zyfk";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (beb).
+      origProjectID = 1083202;
+      origFileID    = 6726136;
+      projectID     = 1083202;
+      fileID        = 7268159;
+      required      = true;
+      filename      = "BEB-NeoForge-1.21-6.0.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7268/159/BEB-NeoForge-1.21-6.0.0.jar";
+        name   = "BEB-NeoForge-1.21-6.0.0.jar";
+        sha256 = "19ibkkzkqizrpm9is5ws60cwprrr9zaxpyl8v11i8j44jsggwcgv";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (betterarcheology).
+      origProjectID = 835687;
+      origFileID    = 6423649;
+      projectID     = 835687;
+      fileID        = 7756575;
+      required      = true;
+      filename      = "betterarcheology-neoforge-1.21.1-1.3.4.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7756/575/betterarcheology-neoforge-1.21.1-1.3.4.jar";
+        name   = "betterarcheology-neoforge-1.21.1-1.3.4.jar";
+        sha256 = "1i1p21mas5knzwksrwh24yiaramnw1096cr7hxxrbv8svrfvkdg0";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (craftingtweaks).
+      origProjectID = 233071;
+      origFileID    = 6784518;
+      projectID     = 233071;
+      fileID        = 8019498;
+      required      = true;
+      filename      = "craftingtweaks-neoforge-1.21.1-21.1.10.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8019/498/craftingtweaks-neoforge-1.21.1-21.1.10.jar";
+        name   = "craftingtweaks-neoforge-1.21.1-21.1.10.jar";
+        sha256 = "1c33pvxjc0hqfvl5ss04w05gd1zs8gzsmjmhcy2zpxw94cnf5dg3";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (create_wizardry).
+      origProjectID = 949995;
+      origFileID    = 6845541;
+      projectID     = 949995;
+      fileID        = 7811721;
+      required      = true;
+      filename      = "create_wizardry-1.21.1-0.4.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7811/721/create_wizardry-1.21.1-0.4.2.jar";
+        name   = "create_wizardry-1.21.1-0.4.2.jar";
+        sha256 = "167xwbbxc30p0p9py54f56djx7b279rc2pdqwcd8rdfkqr77syjd";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (darkdoppelganger).
+      origProjectID = 1110803;
+      origFileID    = 6671169;
+      projectID     = 1110803;
+      fileID        = 7759880;
+      required      = true;
+      filename      = "darkdoppelganger-3.3.0-1.21.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7759/880/darkdoppelganger-3.3.0-1.21.1.jar";
+        name   = "darkdoppelganger-3.3.0-1.21.1.jar";
+        sha256 = "1lss5ijgz3pd5yriz3fzpagbwi73i4l8mwf0gyfv31k8bvh7905c";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (deeperdarker).
+      origProjectID = 659011;
+      origFileID    = 6463247;
+      projectID     = 659011;
+      fileID        = 7940538;
+      required      = true;
+      filename      = "deeperdarker-neoforge-1.21.1-1.4.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7940/538/deeperdarker-neoforge-1.21.1-1.4.jar";
+        name   = "deeperdarker-neoforge-1.21.1-1.4.jar";
+        sha256 = "1qjmbcxb1qca6mh56zma3aigsgqpz129l21icax1zhs4fr3bxf8s";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (dynamic_difficulty).
+      origProjectID = 1272655;
+      origFileID    = 6940848;
+      projectID     = 1272655;
+      fileID        = 7276221;
+      required      = true;
+      filename      = "dynamic_difficulty-0.9.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7276/221/dynamic_difficulty-0.9.1.jar";
+        name   = "dynamic_difficulty-0.9.1.jar";
+        sha256 = "1gc1z0hi6zdc5zjc211nka1whkimjycf79c3i5ax6sa904y11px9";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (ess_requiem).
+      origProjectID = 1336977;
+      origFileID    = 6948627;
+      projectID     = 1336977;
+      fileID        = 7932825;
+      required      = true;
+      filename      = "ess_requiem-0.1.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7932/825/ess_requiem-0.1.2.jar";
+        name   = "ess_requiem-0.1.2.jar";
+        sha256 = "0j7nqyh5rabr8ln9jvxlsygvrlicrh5lysadk9pc48s6fyssrand";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (firesenderexpansion).
+      origProjectID = 1245989;
+      origFileID    = 6932708;
+      projectID     = 1245989;
+      fileID        = 7804733;
+      required      = true;
+      filename      = "firesenderexpansion-2.3.5.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7804/733/firesenderexpansion-2.3.5.jar";
+        name   = "firesenderexpansion-2.3.5.jar";
+        sha256 = "0vqbicvvc9z57a4d6xwc9a486wbjkidb0xrwyr1k7hcrcjavr9d2";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (ftbchunks).
+      origProjectID = 314906;
+      origFileID    = 6900454;
+      projectID     = 314906;
+      fileID        = 7157142;
+      required      = true;
+      filename      = "ftb-chunks-neoforge-2101.1.13.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7157/142/ftb-chunks-neoforge-2101.1.13.jar";
+        name   = "ftb-chunks-neoforge-2101.1.13.jar";
+        sha256 = "0l3c71gdaas2r2kqka36n5s81xpis2jj185rz17i7mlfcrlvbw6h";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (gag).
+      origProjectID = 694962;
+      origFileID    = 6945014;
+      projectID     = 694962;
+      fileID        = 7261542;
+      required      = true;
+      filename      = "gag-neoforge-1.21.1-5.2.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7261/542/gag-neoforge-1.21.1-5.2.0.jar";
+        name   = "gag-neoforge-1.21.1-5.2.0.jar";
+        sha256 = "15cz34694b3gwzxh378b8mylm5p0qlrkfzb80qh26s9az91b1qp8";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (gravestonecurioscompat).
+      origProjectID = 1139062;
+      origFileID    = 6555981;
+      projectID     = 1139062;
+      fileID        = 7891807;
+      required      = true;
+      filename      = "gravestonecurioscompat-1.21.1-NeoForge-4.0.2.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7891/807/gravestonecurioscompat-1.21.1-NeoForge-4.0.2.jar";
+        name   = "gravestonecurioscompat-1.21.1-NeoForge-4.0.2.jar";
+        sha256 = "119jhb7k13zpqggg05mag680y0151pr3v7frc6zxqm57fjrrz1nq";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (iceandfire).
+      origProjectID = 1040076;
+      origFileID    = 6947928;
+      projectID     = 1040076;
+      fileID        = 8031633;
+      required      = true;
+      filename      = "IceAndFireCE-2.0-beta.16-1.21.1-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8031/633/IceAndFireCE-2.0-beta.16-1.21.1-neoforge.jar";
+        name   = "IceAndFireCE-2.0-beta.16-1.21.1-neoforge.jar";
+        sha256 = "08z22i2q3dhbjcf2v3badszpqwnl28m27q8z4bix1paffg5jcqwv";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (irons_jewelry).
+      origProjectID = 1101111;
+      origFileID    = 6880791;
+      projectID     = 1101111;
+      fileID        = 7358426;
+      required      = true;
+      filename      = "irons_jewelry-1.21.1-1.6.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7358/426/irons_jewelry-1.21.1-1.6.0.jar";
+        name   = "irons_jewelry-1.21.1-1.6.0.jar";
+        sha256 = "1213znzcf5f7z3jsi725dgiqfxgg1zsbjrpajyrqj8ydypgphdbb";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (moonlight).
+      origProjectID = 499980;
+      origFileID    = 6939532;
+      projectID     = 499980;
+      fileID        = 8065893;
+      required      = true;
+      filename      = "moonlight-neoforge-1.21.1-3.0.7.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/8065/893/moonlight-neoforge-1.21.1-3.0.7.jar";
+        name   = "moonlight-neoforge-1.21.1-3.0.7.jar";
+        sha256 = "1lq98bybn4l0nny9kfg69kxvsjwv5w50xqdh9k3k8nx8ja7wa9qh";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (reliquified_twilight_forest).
+      origProjectID = 1186617;
+      origFileID    = 6880511;
+      projectID     = 1186617;
+      fileID        = 7680883;
+      required      = true;
+      filename      = "reliquified_twilight_forest-1.21.1-0.5.3.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7680/883/reliquified_twilight_forest-1.21.1-0.5.3.jar";
+        name   = "reliquified_twilight_forest-1.21.1-0.5.3.jar";
+        sha256 = "1qx9ars6ai9jwm6j9nxlmw4m90d7hf2xvw3crrzgf29q1hqxg29c";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (simplymore).
+      origProjectID = 1095252;
+      origFileID    = 6879511;
+      projectID     = 1095252;
+      fileID        = 6958385;
+      required      = true;
+      filename      = "simplymore-forge-1.2.1.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/6958/385/simplymore-forge-1.2.1.jar";
+        name   = "simplymore-forge-1.2.1.jar";
+        sha256 = "0i735widsx927lnigbf8qc2yq2jp9lz4k28r9gkzf020kdsij0fb";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (subtle_effects).
+      origProjectID = 1023913;
+      origFileID    = 6857391;
+      projectID     = 1023913;
+      fileID        = 7064187;
+      required      = true;
+      filename      = "SubtleEffects-neoforge-1.21.1-1.13.0.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7064/187/SubtleEffects-neoforge-1.21.1-1.13.0.jar";
+        name   = "SubtleEffects-neoforge-1.21.1-1.13.0.jar";
+        sha256 = "186qwraf8zyizh8ah85ygcmgrr0napaadjm68vhjz6hdm4wbnp6c";
+      };
+    }
+    {
+      # Bumped by find-mod-bumps (twilightforest).
+      origProjectID = 227639;
+      origFileID    = 6472889;
+      projectID     = 227639;
+      fileID        = 7797302;
+      required      = true;
+      filename      = "twilightforest-1.21.1-4.8.3345-universal.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7797/302/twilightforest-1.21.1-4.8.3345-universal.jar";
+        name   = "twilightforest-1.21.1-4.8.3345-universal.jar";
+        sha256 = "0ddskayn4ic97ishshpf2r0b3saarf7ksfy3ld9ry3r121ns2ga9";
+      };
+    }
+];
 
   # Discontinued mods with no live file on CurseForge. Server ignores them;
   # client derivation strips matching entries from manifest.json so the
