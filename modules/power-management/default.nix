@@ -54,6 +54,24 @@ let
         run_step "pci-runtime-pm" pci_runtime_pm
       ''}
 
+      ${lib.optionalString (cfg.onBattery.cpuFreqGovernor != null) ''
+        cpu_governor_battery() {
+          for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            echo ${cfg.onBattery.cpuFreqGovernor} > "$gov" 2>/dev/null || true
+          done
+        }
+        run_step "cpu-governor" cpu_governor_battery
+      ''}
+
+      ${lib.optionalString (cfg.onBattery.energyPerformancePreference != null) ''
+        cpu_epp_battery() {
+          for epp in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
+            echo ${cfg.onBattery.energyPerformancePreference} > "$epp" 2>/dev/null || true
+          done
+        }
+        run_step "cpu-epp" cpu_epp_battery
+      ''}
+
       ${lib.optionalString cfg.onBattery.usbAutosuspend ''
         is_hid_device() {
           local dev="$1"
@@ -176,6 +194,24 @@ let
 
       ${lib.optionalString cfg.onBattery.wifiPowerSave ''
         run_step "wifi-power-save" iw dev wlan0 set power_save off
+      ''}
+
+      ${lib.optionalString (cfg.onAC.cpuFreqGovernor != null) ''
+        cpu_governor_ac() {
+          for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            echo ${cfg.onAC.cpuFreqGovernor} > "$gov" 2>/dev/null || true
+          done
+        }
+        run_step "cpu-governor" cpu_governor_ac
+      ''}
+
+      ${lib.optionalString (cfg.onAC.energyPerformancePreference != null) ''
+        cpu_epp_ac() {
+          for epp in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
+            echo ${cfg.onAC.energyPerformancePreference} > "$epp" 2>/dev/null || true
+          done
+        }
+        run_step "cpu-epp" cpu_epp_ac
       ''}
 
       dirty_writeback_ac() {
@@ -371,6 +407,20 @@ in
         example = "0012";
         description = "USB PID of QMK keyboard to turn off RGB backlight on battery (e.g. '0012' for Framework 16 ANSI). Restores previous brightness on AC.";
       };
+
+      cpuFreqGovernor = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "powersave";
+        example = "powersave";
+        description = "scaling_governor to set on battery. Null leaves untouched. Must be one of /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors (e.g. powersave/performance for amd_pstate, also schedutil/ondemand/conservative for legacy cpufreq).";
+      };
+
+      energyPerformancePreference = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "balance_power";
+        example = "power";
+        description = "amd_pstate / intel_pstate energy_performance_preference on battery. Null leaves untouched. Common values: performance, balance_performance, balance_power, power.";
+      };
     };
 
     onAC = {
@@ -397,6 +447,20 @@ in
         default = null;
         example = "2560x1600@165.000";
         description = "Display mode to set on AC (e.g. restore high refresh rate). Requires displayOutput and displayUser.";
+      };
+
+      cpuFreqGovernor = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "performance";
+        example = "performance";
+        description = "scaling_governor to set on AC. Null leaves untouched. amd_pstate supports performance/powersave; for sustained workloads (gaming) and to avoid audio stutter under load, performance is recommended.";
+      };
+
+      energyPerformancePreference = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "performance";
+        example = "performance";
+        description = "amd_pstate / intel_pstate energy_performance_preference on AC. Null leaves untouched. Common values: performance, balance_performance, balance_power, power.";
       };
     };
 

@@ -245,6 +245,12 @@ in {
             resampleQuality = 10;   # soxr-hq (high quality resampling)
             suspendTimeoutSeconds = 0;  # Disable suspend-on-idle to prevent crackling
             alsaHeadroom = 2048;    # Increased headroom to prevent audio clipping/crackling
+
+            # Pin Ryzen onboard analog codec to stereo. The card otherwise
+            # auto-selects analog-surround-40 which doubles per-frame bandwidth
+            # and causes ALSA underrun resyncs (`surround40:2p follower resync`)
+            # under CPU pressure while gaming.
+            forceStereoCards = [ "alsa_card.pci-0000_c4_00.6" ];
           };
 
           wifi = {
@@ -448,9 +454,9 @@ in {
 
         nix.package = pkgs.nix;
 
-        powerManagement = {
-          cpuFreqGovernor = "powersave";
-        };
+        # CPU governor + EPP are managed dynamically by modules.powerManagement
+        # (performance/performance on AC, powersave/balance_power on battery).
+        # See modules/power-management/default.nix.
 
         # Reduce ZRAM for faster hibernation (less data to serialize)
         zramSwap.memoryPercent = lib.mkForce 50;

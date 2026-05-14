@@ -183,6 +183,20 @@ in
           Default is 1024 samples (~21ms at 48kHz).
         '';
       };
+
+      forceStereoCards = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        example = [ "~alsa_card.pci-0000_c4_00.6" ];
+        description = ''
+          List of WirePlumber `device.name` patterns (with leading `~` for regex)
+          for ALSA cards that should be pinned to an analog-stereo profile.
+          Use when a card keeps re-selecting a surround profile that you don't want
+          (extra channels increase per-frame audio bandwidth and cause underruns
+          under CPU pressure). The first profile matching `output:analog-stereo`
+          is selected at device monitor time.
+        '';
+      };
     };
 
     gaming = {
@@ -1074,6 +1088,14 @@ in
               };
             };
           };
+
+          pipewire-pulse = {
+            "10-mlock" = {
+              "context.properties" = {
+                "mem.mlock-all" = true;
+              };
+            };
+          };
         };
 
         wireplumber = {
@@ -1170,7 +1192,27 @@ in
                 }
               ]
             '')
-          ];
+          ] ++ (optionals (cfg.pipewire.forceStereoCards != [ ]) [
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/53-force-stereo.conf" ''
+              monitor.alsa.rules = [
+                ${builtins.concatStringsSep "\n" (map (cardName: ''
+                  {
+                    matches = [
+                      {
+                        device.name = "${cardName}"
+                      }
+                    ]
+                    actions = {
+                      update-props = {
+                        api.alsa.use-acp = true
+                        device.profile = "output:analog-stereo+input:analog-stereo"
+                      }
+                    }
+                  }
+                '') cfg.pipewire.forceStereoCards)}
+              ]
+            '')
+          ]);
         };
       };
 
