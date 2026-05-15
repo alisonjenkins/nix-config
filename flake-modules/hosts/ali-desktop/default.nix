@@ -721,7 +721,9 @@ in {
               hashedPasswordFile = "/persistence/passwords/ali";
               useDefaultShell = true;
 
-              openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;
+              openssh.authorizedKeys.keys =
+                outputs.lib.sshKeys.all
+                ++ outputs.lib.sshKeys.remoteBuilders;
             };
             root = {
               hashedPasswordFile = "/persistence/passwords/root";

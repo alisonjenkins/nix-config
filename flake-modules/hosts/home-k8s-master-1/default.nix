@@ -136,7 +136,7 @@ in {
             extraGroups = [ "networkmanager" "wheel" ];
             openssh.authorizedKeys.keys = [
               outputs.lib.sshKeys.primary
-            ];
+            ] ++ outputs.lib.sshKeys.remoteBuilders;
           };
       })
     ];
