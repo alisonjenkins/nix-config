@@ -234,6 +234,17 @@ in {
           fileSystems = [ "/persistence" ];
         };
 
+        # Persist the journal so if Steam Big Picture / SDDM falls
+        # through to a tty bash shell, the failure cause is
+        # recoverable from /persistence/var/log/journal/ via a
+        # subsequent installer boot. Default Storage=auto only
+        # persists when /var/log/journal already exists — which it
+        # doesn't on a fresh impermanence root.
+        services.journald.extraConfig = ''
+          Storage=persistent
+          SystemMaxUse=200M
+        '';
+
         services.desktopManager.plasma6.enable = true;
 
         # Stylix theme is configured by the desktop module (gruvbox-dark-medium).
