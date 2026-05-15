@@ -264,6 +264,17 @@ in {
           ];
         };
 
+        # Remote diagnostics: authorize the primary key for root so a
+        # boot that lands at a tty bash shell (no keyboard available)
+        # can still be inspected via SSH over Tailscale without
+        # needing the sudo password. Tailscale auth state persists in
+        # /var/lib/tailscale (impermanence-pinned) so the link comes
+        # up automatically when multi-user.target is reached.
+        users.users.root.openssh.authorizedKeys.keys = [
+          outputs.lib.sshKeys.primary
+        ];
+        services.openssh.settings.PermitRootLogin = lib.mkForce "prohibit-password";
+
         xdg.portal = {
           enable = true;
           xdgOpenUsePortal = true;
