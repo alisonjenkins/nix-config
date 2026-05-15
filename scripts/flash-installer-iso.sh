@@ -392,9 +392,18 @@ ISO_SHA=$(sha256 "$ISO")
 # Read back ISO_SIZE bytes from the device and hash them. iflag=direct on
 # Linux skips the page cache; macOS rdiskN is already unbuffered. dd bs=1M
 # rounds up to whole MiB, so head -c trims to the exact ISO size.
+#
+# The pipefail+SIGPIPE trap: head closes its stdin as soon as it has
+# ISO_SIZE bytes; the next dd write into that closed pipe gets SIGPIPE
+# and dd exits 141, which under `set -o pipefail` aborts the whole
+# script before we ever print the comparison. Disable pipefail just
+# for this pipeline so the verify completes; the sha comparison below
+# is the real verdict on whether the read-back was correct.
 COUNT=$(((ISO_SIZE + 1048575) / 1048576))
+set +o pipefail
 DEV_SHA=$($SUDO dd if="$DEV" "${DD_VERIFY_OPTS[@]}" count="$COUNT" 2>/dev/null |
   head -c "$ISO_SIZE" | sha256 /dev/stdin)
+set -o pipefail
 
 echo "    iso sha256: $ISO_SHA"
 echo "    dev sha256: $DEV_SHA"
