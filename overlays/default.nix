@@ -116,7 +116,16 @@ in
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code;
 
-    pipewire = pipewireFix prev.pipewire;
+    # Only apply pipewireFix to the Jovian fork (1.6.4-jupiter1.5).
+    # Upstream nixpkgs pipewire is at 1.4.9 in nixos-25.11, where:
+    #   * 0060-libjack-path.patch's weakjack.h hunk applies cleanly
+    #     (file pre-refactor),
+    #   * -Dsystemd=enabled is still recognised,
+    #   * -Dbluez5-codec-ldac-dec doesn't exist as an option (the
+    #     decoder was split out in 1.6.x), so applying our fixer
+    #     there breaks configure with `Unknown option`.
+    # Substituting upstream pipewire from cache.nixos.org also stays
+    # cheap when we don't perturb its derivation hash.
     pipewire-jupiter = pipewireFix prev.pipewire-jupiter;
 
     # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
