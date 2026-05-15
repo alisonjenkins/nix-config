@@ -168,6 +168,24 @@ in {
         # Resolve conflict: Jovian sets true, base module sets 1 (same meaning)
         boot.kernel.sysctl."net.ipv4.tcp_mtu_probing" = lib.mkForce 1;
 
+        # DEBUG: forward systemd journal + log target to the kernel
+        # console so initrd failures (e.g. luks-controller-unlock agent
+        # crashing before pivot) print directly to screen — the only
+        # diagnostic channel available on a Deck without USB keyboard
+        # / wifi-in-initrd. The kernel takes the LAST loglevel=
+        # value, so appending loglevel=7 here overrides Jovian's
+        # loglevel=0 (which would otherwise silence printk and hide
+        # the forwarded journal too). Remove after agent is stable.
+        boot.kernelParams = lib.mkAfter [
+          "systemd.log_target=kmsg"
+          "systemd.journald.forward_to_console=1"
+          "systemd.journald.max_level_console=debug"
+          "systemd.log_level=debug"
+          "systemd.show_status=true"
+          "console=tty0"
+          "loglevel=7"
+        ];
+
         # Jovian manages the power button via its own daemon (powerbuttond)
         services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
 
