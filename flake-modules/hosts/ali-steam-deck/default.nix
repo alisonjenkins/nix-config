@@ -138,14 +138,11 @@ in {
         modules.luks-controller-unlock = {
           enable = true;
           maskConsoleAgent = false;
-          # DEBUG: capture agent stdout/stderr to the unencrypted ESP
-          # (vfat) so initrd failures are readable from a rescue boot.
-          # /dev/disk/by-partlabel/ESP times out in initrd because the
-          # partlabel udev rule doesn't fire fast enough — use the
-          # stable disko-defined nvme path directly. Read after
-          # failure: mount /dev/nvme0n1p2 on the installer, cat
-          # /boot/luks-controller-unlock.log. Remove once stable.
-          debugLogToEsp = "/dev/nvme0n1p2";
+          # debugLogToEsp left off — the ESP is unencrypted and the
+          # log + journal-dump may contain canonical PIN bytes if we
+          # ever re-enable -vv. Re-enable temporarily if diagnosing
+          # an initrd regression.
+          debugLogToEsp = null;
         };
 
         # SSH server inside initrd for debugging stuck boots. Wired
@@ -186,23 +183,11 @@ in {
         # Resolve conflict: Jovian sets true, base module sets 1 (same meaning)
         boot.kernel.sysctl."net.ipv4.tcp_mtu_probing" = lib.mkForce 1;
 
-        # DEBUG: forward systemd journal + log target to the kernel
-        # console so initrd failures (e.g. luks-controller-unlock agent
-        # crashing before pivot) print directly to screen — the only
-        # diagnostic channel available on a Deck without USB keyboard
-        # / wifi-in-initrd. The kernel takes the LAST loglevel=
-        # value, so appending loglevel=7 here overrides Jovian's
-        # loglevel=0 (which would otherwise silence printk and hide
-        # the forwarded journal too). Remove after agent is stable.
-        boot.kernelParams = lib.mkAfter [
-          "systemd.log_target=kmsg"
-          "systemd.journald.forward_to_console=1"
-          "systemd.journald.max_level_console=debug"
-          "systemd.log_level=debug"
-          "systemd.show_status=true"
-          "console=tty0"
-          "loglevel=7"
-        ];
+        # (Debug kernelparams removed — they were forwarding the
+        # systemd journal to tty1 after pivot, which blocked
+        # SDDM/getty from rendering Steam Big Picture. The LUKS
+        # path is stable now; re-enable selectively if a future
+        # initrd issue needs diagnosing.)
 
         # Jovian manages the power button via its own daemon (powerbuttond)
         services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
