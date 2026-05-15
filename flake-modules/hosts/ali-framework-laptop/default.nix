@@ -454,6 +454,38 @@ in {
 
         nix.package = pkgs.nix;
 
+        # Distribute heavy builds (KDE, kernels, qtwebengine) to
+        # ali-desktop over Tailscale. ali-desktop has 32 cores / 61
+        # GB RAM vs this laptop's 16 / 86, and is plugged in 24/7 so
+        # we don't burn battery on a 30-minute kernel rebuild.
+        #
+        # Prereq, run once before the next nixos-rebuild switch:
+        #   sudo install -m 600 -o root -g root \
+        #       ~ali/.ssh/id_personal /root/.ssh/id_remote_builder
+        # ali-desktop already authorizes id_personal.pub for the `ali`
+        # user, and `ali` is in @wheel which is in trusted-users on
+        # ali-desktop's nix.conf.
+        nix.distributedBuilds = true;
+        nix.buildMachines = [
+          {
+            hostName = "ali-desktop.tail476348.ts.net";
+            sshUser = "ali";
+            sshKey = "/root/.ssh/id_remote_builder";
+            systems = [ "x86_64-linux" ];
+            maxJobs = 8;
+            # Higher speedFactor → nix prefers this builder over local.
+            speedFactor = 2;
+            supportedFeatures = [
+              "kvm"
+              "nixos-test"
+              "big-parallel"
+              "benchmark"
+            ];
+            protocol = "ssh-ng";
+          }
+        ];
+        nix.settings.builders-use-substitutes = true;
+
         # CPU governor + EPP are managed dynamically by modules.powerManagement
         # (performance/performance on AC, powersave/balance_power on battery).
         # See modules/power-management/default.nix.
