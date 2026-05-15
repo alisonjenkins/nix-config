@@ -51,7 +51,41 @@ in
   # This one contains whatever you want to overlay
   # You can change versions, add patches, set compilation flags, anything really.
   # https://nixos.wiki/wiki/Overlays
-  modifications = final: prev: {
+  modifications = final: prev: let
+    # Pipewire 1.6.x (used by both nixpkgs's `pipewire` and Jovian's
+    # `pipewire-jupiter` fork) doesn't build with the patches/flags
+    # that nixos-25.11 still passes:
+    #   1. patches list: 0060-libjack-path.patch Hunk #1 fails at
+    #      weakjack.h:164 (file refactored upstream after the patch
+    #      was written).
+    #   2. mesonFlags: -Dsystemd=enabled aborts with
+    #      `meson.build:1:0: ERROR: Unknown option: "systemd"`
+    #      because the option was split into per-component
+    #      sub-options (still passed: systemd-system-service etc.).
+    #   3. mesonFlags: -Dbluez5-codec-ldac=enabled aborts with
+    #      `spa/meson.build:90:8: ERROR: LDAC decoder library not
+    #      found` because nixpkgs doesn't put ldacBT in buildInputs.
+    #      Flip to disabled — LDAC is only needed for specific Sony
+    #      headphones; SBC, AAC, aptX still work.
+    # Apply to BOTH the upstream package and the Jovian fork. Jovian's
+    # pipewire-jupiter is `pipewire'.overrideAttrs` of `prev.pipewire`,
+    # but our overlay runs AFTER Jovian's so the inherited patches /
+    # mesonFlags are the pre-fix versions and we have to retouch the
+    # fork explicitly.
+    pipewireFix = drv: drv.overrideAttrs (old: {
+      patches = builtins.filter (p:
+        let name = baseNameOf (toString p);
+        in !(prev.lib.hasInfix "libjack-path" name))
+        (old.patches or []);
+      mesonFlags = let
+        drop = f: f == "-Dsystemd=enabled";
+        rewrite = f:
+          if f == "-Dbluez5-codec-ldac=enabled"
+          then "-Dbluez5-codec-ldac=disabled"
+          else f;
+      in map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
+    });
+  in {
 
     # Restore xrdb alias removed from nixpkgs — home-manager's xresources module
     # still references pkgs.xrdb (via lib.getExe)
@@ -71,47 +105,8 @@ in
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code;
 
-    # nixpkgs nixos-25.11 ships a 0060-libjack-path.patch whose
-    # second hunk targets src/modules/module-jack-tunnel/weakjack.h
-    # at line 164. Pipewire 1.6.4-1.5 refactored that file and the
-    # hunk no longer applies, breaking every rebuild that needs a
-    # fresh pipewire build:
-    #     Hunk #1 FAILED at 164.
-    #     1 out of 1 hunk FAILED -- saving rejects to file
-    #     src/modules/module-jack-tunnel/weakjack.h.rej
-    # Drop the patch until nixpkgs re-syncs it. Side effect: the
-    # libjack search-path indirection it provides is gone, so
-    # pipewire-jack will dlopen libjack from the default loader path
-    # instead of the Nix-store-locked path. We don't run jack apps
-    # against a nix-installed libjack, so this is a no-op for us.
-    pipewire = prev.pipewire.overrideAttrs (old: {
-      patches = builtins.filter (p:
-        let name = baseNameOf (toString p);
-        in !(prev.lib.hasInfix "libjack-path" name))
-        (old.patches or []);
-      # nixpkgs passes both -Dsystemd=enabled and
-      # -Dsystemd-system-service=enabled. Pipewire 1.6.4-1.5 split
-      # the option and no longer recognises the bare `systemd`
-      # form, so configure aborts with:
-      #     meson.build:1:0: ERROR: Unknown option: "systemd".
-      # Drop the legacy flag; the split sub-options are still
-      # passed (system-service / user-service / journal etc.).
-      #
-      # And: -Dbluez5-codec-ldac=enabled fails configure with
-      #     spa/meson.build:90:8: ERROR: Problem encountered:
-      #     LDAC decoder library not found
-      # because nixpkgs doesn't add ldacBT to buildInputs in this
-      # rev. Flip to disabled — LDAC is a Sony codec only used
-      # with specific BT headphones; A2DP SBC + AAC + aptX still
-      # work without it.
-      mesonFlags = let
-        drop = f: f == "-Dsystemd=enabled";
-        rewrite = f:
-          if f == "-Dbluez5-codec-ldac=enabled"
-          then "-Dbluez5-codec-ldac=disabled"
-          else f;
-      in map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
-    });
+    pipewire = pipewireFix prev.pipewire;
+    pipewire-jupiter = pipewireFix prev.pipewire-jupiter;
 
     # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
     # in the sandbox, and the zsh test target hangs at 0% CPU indefinitely.
