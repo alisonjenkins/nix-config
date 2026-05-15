@@ -147,7 +147,7 @@ in {
         # physical access can extract the PSK + impersonate the
         # host key.
         modules.initrd-ssh = {
-          enable = true;
+          enable = false;
           port = 2222;
           authorizedKeys = [ outputs.lib.sshKeys.primary ];
           wifi = {
