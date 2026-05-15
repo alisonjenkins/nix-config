@@ -138,11 +138,12 @@ in {
         modules.luks-controller-unlock = {
           enable = true;
           maskConsoleAgent = true;
-          # debugLogToEsp left off — the ESP is unencrypted and the
-          # log + journal-dump may contain canonical PIN bytes if we
-          # ever re-enable -vv. Re-enable temporarily if diagnosing
-          # an initrd regression.
-          debugLogToEsp = null;
+          # TEMP: re-enabled to diagnose "agent reply doesn't unlock"
+          # — captures "agent: replied N bytes" so we can check the
+          # length against the enrolled PIN. The wrapper is currently
+          # at -v (debug, not trace) so no per-button bytes leak. Set
+          # back to null after the keyslot mismatch is resolved.
+          debugLogToEsp = "/dev/nvme0n1p2";
         };
 
         # SSH server inside initrd for debugging stuck boots. Wired
