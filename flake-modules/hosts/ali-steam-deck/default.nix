@@ -109,7 +109,17 @@ in {
         boot.initrd.systemd.enable = true;
         boot.initrd.availableKernelModules = [ "tpm_crb" ];
         boot.initrd.luks.devices."crypted".crypttabExtraOpts = [
-          "tpm2-device=auto"
+          # TEMPORARY: systemd 258.7's systemd-cryptsetup segfaults in
+          # libsystemd-shared.so during the TPM2 unlock attempt (seen
+          # in initrd journal: ".systemd-crypts[231]: segfault at 8 ip
+          # ... in libsystemd-shared-258.so"). The crash happens after
+          # "Successfully created primary key on TPM in 129ms" and
+          # before keyfile / ask-password fallback. Disabling the TPM2
+          # plugin sends cryptsetup straight to the keyfile-miss →
+          # ask-password path, which lets luks-controller-unlock
+          # actually receive the prompt. Re-enable once systemd is
+          # patched (upstream or NixOS revert).
+          # "tpm2-device=auto"
           # Bypass kernel workqueues for dm-crypt — significant
           # NVMe I/O improvement on a CPU with hardware AES (Zen 2
           # has AES-NI, so the actual crypto is near-free; the
