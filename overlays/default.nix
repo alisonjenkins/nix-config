@@ -83,7 +83,13 @@ in
           if f == "-Dbluez5-codec-ldac=enabled"
           then "-Dbluez5-codec-ldac=disabled"
           else f;
-      in map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
+        filtered = map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
+      in
+        # Pipewire 1.6.x added a separate ldac DECODER dep gated by
+        # `bluez5-codec-ldac-dec`. nixpkgs doesn't pass this flag yet
+        # so meson defaults to "auto" and fails when it can't find
+        # the lib. Pin it disabled to match the encoder.
+        filtered ++ [ "-Dbluez5-codec-ldac-dec=disabled" ];
     });
   in {
 
