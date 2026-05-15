@@ -483,6 +483,28 @@ in {
             ];
             protocol = "ssh-ng";
           }
+          {
+            # k8s master (k3s control plane). 16 cores, 15 GB RAM,
+            # actively loaded (k8s workloads typically push load avg
+            # ~12). Conservative caps so we don't degrade the cluster
+            # when the laptop dispatches a build:
+            #   * maxJobs=4 leaves headroom for kube-apiserver et al.
+            #   * speedFactor=1 — nix picks ali-desktop first when
+            #     both can take the work.
+            hostName = "home-k8s-master-1.tail476348.ts.net";
+            sshUser = "ali";
+            sshKey = "/root/.ssh/id_remote_builder";
+            systems = [ "x86_64-linux" ];
+            maxJobs = 4;
+            speedFactor = 1;
+            supportedFeatures = [
+              "kvm"
+              "nixos-test"
+              "big-parallel"
+              "benchmark"
+            ];
+            protocol = "ssh-ng";
+          }
         ];
         nix.settings.builders-use-substitutes = true;
 
