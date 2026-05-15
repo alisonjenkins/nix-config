@@ -463,8 +463,11 @@ in {
               }) (args // {
                 extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
               });
-              # Add patched bubblewrap inside FHS environment and tell pressure-vessel to use it
-              extraPkgs = pkgs: [ patchedBwrap ];
+              # Add patched bubblewrap inside FHS environment and tell pressure-vessel to use it.
+              # hidapi mirrors programs.steam.extraPackages from modules/desktop — overriding
+              # `package` here bypasses the module-level extraPackages, so we re-add it.
+              # See NixOS/nixpkgs#518150 for the Steam Controller (2026) firmware updater bug.
+              extraPkgs = pkgs: [ patchedBwrap pkgs.hidapi ];
               extraEnv = {
                 # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
                 BWRAP = "${patchedBwrap}/bin/bwrap";
