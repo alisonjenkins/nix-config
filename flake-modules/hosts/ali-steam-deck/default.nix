@@ -137,7 +137,7 @@ in {
         # a week of clean reboots — see TESTING.md rung 5.3).
         modules.luks-controller-unlock = {
           enable = true;
-          maskConsoleAgent = false;
+          maskConsoleAgent = true;
           # debugLogToEsp left off — the ESP is unencrypted and the
           # log + journal-dump may contain canonical PIN bytes if we
           # ever re-enable -vv. Re-enable temporarily if diagnosing
