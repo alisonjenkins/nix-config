@@ -89,6 +89,15 @@ in
         let name = baseNameOf (toString p);
         in !(prev.lib.hasInfix "libjack-path" name))
         (old.patches or []);
+      # nixpkgs passes both -Dsystemd=enabled and
+      # -Dsystemd-system-service=enabled. Pipewire 1.6.4-1.5 split
+      # the option and no longer recognises the bare `systemd`
+      # form, so configure aborts with:
+      #     meson.build:1:0: ERROR: Unknown option: "systemd".
+      # Drop the legacy flag; the split sub-options are still
+      # passed (system-service / user-service / journal etc.).
+      mesonFlags = builtins.filter (f: f != "-Dsystemd=enabled")
+        (old.mesonFlags or []);
     });
 
     # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
