@@ -128,11 +128,14 @@ in {
         modules.luks-controller-unlock = {
           enable = true;
           maskConsoleAgent = false;
-          # DEBUG: capture agent stdout/stderr to the unencrypted ESP so
-          # initrd failures are readable from a rescue boot. Read after
-          # failure: mount /dev/nvme0n1p2 (ESP) on the installer, cat
+          # DEBUG: capture agent stdout/stderr to the unencrypted ESP
+          # (vfat) so initrd failures are readable from a rescue boot.
+          # /dev/disk/by-partlabel/ESP times out in initrd because the
+          # partlabel udev rule doesn't fire fast enough — use the
+          # stable disko-defined nvme path directly. Read after
+          # failure: mount /dev/nvme0n1p2 on the installer, cat
           # /boot/luks-controller-unlock.log. Remove once stable.
-          debugLogToEsp = "/dev/disk/by-partlabel/ESP";
+          debugLogToEsp = "/dev/nvme0n1p2";
         };
 
         # SSH server inside initrd for debugging stuck boots. Wired
