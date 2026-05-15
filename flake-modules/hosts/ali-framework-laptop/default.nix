@@ -468,7 +468,16 @@ in {
         nix.distributedBuilds = true;
         nix.buildMachines = [
           {
-            hostName = "ali-desktop.tail476348.ts.net";
+            # Tailscale IPv4 of ali-desktop.tail476348.ts.net.
+            # MagicDNS is intermittently broken on this laptop
+            # (resolver returns "Device or resource busy"), and
+            # nix-daemon's SSH client can't fall back, so the
+            # builder gets skipped with "failed to start SSH
+            # connection". Pinning to the Tailscale IP avoids the
+            # resolver path entirely. IPs are stable per-host on
+            # the tailnet so this won't drift unless the device is
+            # logged out and re-added.
+            hostName = "100.127.142.30";
             sshUser = "ali";
             sshKey = "/root/.ssh/id_remote_builder";
             systems = [ "x86_64-linux" ];
@@ -484,6 +493,7 @@ in {
             protocol = "ssh-ng";
           }
           {
+            # Tailscale IPv4 of home-k8s-master-1.tail476348.ts.net.
             # k8s master (k3s control plane). 16 cores, 15 GB RAM,
             # actively loaded (k8s workloads typically push load avg
             # ~12). Conservative caps so we don't degrade the cluster
@@ -491,7 +501,7 @@ in {
             #   * maxJobs=4 leaves headroom for kube-apiserver et al.
             #   * speedFactor=1 — nix picks ali-desktop first when
             #     both can take the work.
-            hostName = "home-k8s-master-1.tail476348.ts.net";
+            hostName = "100.87.232.102";
             sshUser = "ali";
             sshKey = "/root/.ssh/id_remote_builder";
             systems = [ "x86_64-linux" ];
