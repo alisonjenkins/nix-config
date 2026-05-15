@@ -6,6 +6,20 @@
 }:
 with lib; let
   cfg = config.modules.initrd-ssh;
+
+  # Ephemeral ED25519 host key generated as part of the build. Nix
+  # caches the derivation output by .drv hash — same nixpkgs + same
+  # comment string = same key on subsequent rebuilds. New nixpkgs
+  # rev (or `nix-collect-garbage`) regenerates the key, which means
+  # the next initrd-SSH connection will warn about a changed host
+  # key. Clear with `ssh-keygen -R "[ip]:port"`. For a stable key
+  # across all rebuilds, override boot.initrd.network.ssh.hostKeys
+  # downstream of this module to point at a real path.
+  ephemeralHostKey = pkgs.runCommandLocal "initrd-ssh-host-key" {
+    nativeBuildInputs = [pkgs.openssh];
+  } ''
+    ssh-keygen -t ed25519 -N "" -f $out -C "initrd-ssh-build-time-${cfg.hostKeyComment}"
+  '';
 in {
   options.modules.initrd-ssh = {
     enable = mkEnableOption "SSH server inside initrd for debugging stuck boots";
@@ -28,20 +42,12 @@ in {
       '';
     };
 
-    hostKeyPath = mkOption {
-      type = types.path;
-      default = "/etc/secrets/initrd/ssh_host_ed25519_key";
+    hostKeyComment = mkOption {
+      type = types.str;
+      default = "initrd-ssh";
       description = ''
-        Path to an existing ED25519 private host key for the initrd
-        SSH server. Generate once on the target host before enabling:
-            sudo mkdir -p /etc/secrets/initrd
-            sudo ssh-keygen -t ed25519 -N "" -f /etc/secrets/initrd/ssh_host_ed25519_key
-            sudo chmod 600 /etc/secrets/initrd/ssh_host_ed25519_key
-
-        WARNING: the host key is bundled into the initrd cpio on the
-        unencrypted ESP. Physical access to the device permits
-        impersonation of the initrd SSH server. Acceptable for
-        debugging on a trusted network; disable when not needed.
+        Comment baked into the auto-generated initrd SSH host key.
+        Mostly cosmetic — visible via `ssh-keygen -lf`.
       '';
     };
 
@@ -96,15 +102,22 @@ in {
       pskFile = mkOption {
         type = types.path;
         description = ''
-          Path to a file containing the WPA2 PSK only (no trailing
-          newline). Generate once on the target host:
-              echo -n 'YOUR_WIFI_PSK' | sudo tee /etc/secrets/initrd/wifi.psk
+          Path on the TARGET host (read at activation time, not at
+          flake-eval time) to a file containing the WPA2 PSK only,
+          no trailing newline. Generate once on the target:
+              echo -n 'YOUR_WIFI_PSK' \
+                  | sudo tee /etc/secrets/initrd/wifi.psk
               sudo chmod 600 /etc/secrets/initrd/wifi.psk
 
-          WARNING: the PSK ends up inside the initrd cpio on the
-          unencrypted ESP. Physical access to the device leaks the
-          PSK. For long-term security, rotate the PSK after
-          debugging and disable initrd-ssh when not in use.
+          The file is copied into the initrd cpio at switch time via
+          boot.initrd.secrets — it is NOT read by the build host, so
+          building on a workstation works without any local secret
+          files.
+
+          WARNING: the PSK still ends up inside the initrd cpio on
+          the unencrypted ESP. Physical access to the device leaks
+          the PSK. Rotate the PSK after debugging and disable
+          initrd-ssh when not in use.
         '';
       };
     };
@@ -120,12 +133,6 @@ in {
           by this module.
         '';
       }
-      # NOTE: We don't assert on `pathExists hostKeyPath` because
-      # `builtins.pathExists` of an absolute path outside the flake
-      # source returns false in pure-eval mode regardless of whether
-      # the file exists. Building this module requires --impure;
-      # the underlying readFile / fileContents will produce a clear
-      # error if the host key or PSK is missing at build time.
     ];
 
     # Firmware bundling: redistributable firmware in /run/current-system
@@ -148,8 +155,16 @@ in {
         ssh = {
           enable = true;
           inherit (cfg) port authorizedKeys;
-          hostKeys = [cfg.hostKeyPath];
+          hostKeys = [ephemeralHostKey];
         };
+      };
+
+      # PSK lives outside the Nix store. boot.initrd.secrets copies
+      # it into the cpio at activation time on the TARGET host (not
+      # at flake-eval time on the build host) — so building on a
+      # workstation needs no /etc/secrets/* files locally.
+      secrets = mkIf cfg.wifi.enable {
+        "/etc/initrd-ssh/wifi.psk" = cfg.wifi.pskFile;
       };
 
       systemd = {
@@ -165,21 +180,24 @@ in {
           };
         };
 
-        # Bundle wpa_supplicant into the initrd and bring up the wifi
-        # link before systemd-networkd configures the interface.
+        # Bundle wpa_supplicant + the helpers used by the
+        # ExecStartPre conf-rendering script into the initrd.
         storePaths = mkIf cfg.wifi.enable [
           "${pkgs.wpa_supplicant}/bin/wpa_supplicant"
+          "${pkgs.coreutils}/bin/cat"
+          "${pkgs.gnused}/bin/sed"
         ];
 
+        # Bake a TEMPLATE conf into the initrd at build time. The
+        # PSK placeholder is replaced at boot by ExecStartPre using
+        # the activation-time secret at /etc/initrd-ssh/wifi.psk.
         contents = mkIf cfg.wifi.enable {
-          # PSK is read from a file outside the Nix store, embedded
-          # into a small config that lives in initrd cpio.
-          "/etc/wpa_supplicant-initrd.conf".source = pkgs.writeText "wpa_supplicant-initrd.conf" ''
+          "/etc/wpa_supplicant-initrd.conf.template".source = pkgs.writeText "wpa_supplicant-initrd.conf.tpl" ''
             ctrl_interface=DIR=/run/wpa_supplicant
             update_config=0
             network={
               ssid="${cfg.wifi.ssid}"
-              psk="${lib.removeSuffix "\n" (builtins.readFile cfg.wifi.pskFile)}"
+              psk="@PSK@"
               scan_ssid=1
               key_mgmt=WPA-PSK
             }
@@ -194,7 +212,16 @@ in {
           unitConfig.DefaultDependencies = false;
           serviceConfig = {
             Type = "simple";
-            ExecStart = "${pkgs.wpa_supplicant}/bin/wpa_supplicant -i ${cfg.wifi.interface} -c /etc/wpa_supplicant-initrd.conf";
+            # Render the real conf at boot by interpolating the
+            # activation-time secret into the template.
+            ExecStartPre = pkgs.writeShellScript "render-wpa-conf" ''
+              set -euo pipefail
+              psk=$(${pkgs.coreutils}/bin/cat /etc/initrd-ssh/wifi.psk)
+              ${pkgs.gnused}/bin/sed "s|@PSK@|$psk|" \
+                /etc/wpa_supplicant-initrd.conf.template \
+                > /run/wpa_supplicant-initrd.conf
+            '';
+            ExecStart = "${pkgs.wpa_supplicant}/bin/wpa_supplicant -i ${cfg.wifi.interface} -c /run/wpa_supplicant-initrd.conf";
             Restart = "on-failure";
             RestartSec = 2;
           };
