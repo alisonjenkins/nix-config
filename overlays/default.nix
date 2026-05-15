@@ -96,8 +96,21 @@ in
       #     meson.build:1:0: ERROR: Unknown option: "systemd".
       # Drop the legacy flag; the split sub-options are still
       # passed (system-service / user-service / journal etc.).
-      mesonFlags = builtins.filter (f: f != "-Dsystemd=enabled")
-        (old.mesonFlags or []);
+      #
+      # And: -Dbluez5-codec-ldac=enabled fails configure with
+      #     spa/meson.build:90:8: ERROR: Problem encountered:
+      #     LDAC decoder library not found
+      # because nixpkgs doesn't add ldacBT to buildInputs in this
+      # rev. Flip to disabled — LDAC is a Sony codec only used
+      # with specific BT headphones; A2DP SBC + AAC + aptX still
+      # work without it.
+      mesonFlags = let
+        drop = f: f == "-Dsystemd=enabled";
+        rewrite = f:
+          if f == "-Dbluez5-codec-ldac=enabled"
+          then "-Dbluez5-codec-ldac=disabled"
+          else f;
+      in map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
     });
 
     # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
