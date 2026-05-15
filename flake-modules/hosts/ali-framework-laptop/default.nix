@@ -518,6 +518,25 @@ in {
         ];
         nix.settings.builders-use-substitutes = true;
 
+        # Trust the remote builders' SSH host keys system-wide so
+        # nix-daemon (root) can ssh to them on first contact without
+        # interactive prompting. nix-daemon doesn't honour
+        # StrictHostKeyChecking=accept-new in /root/.ssh/config; the
+        # daemon spawns ssh non-interactively and any unknown-host
+        # warning aborts with `failed to start SSH connection`.
+        # programs.ssh.knownHosts writes /etc/ssh/ssh_known_hosts
+        # which OpenSSH treats as already-trusted.
+        programs.ssh.knownHosts = {
+          ali-desktop-ts = {
+            hostNames = [ "100.127.142.30" "ali-desktop.tail476348.ts.net" ];
+            publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHrvu44pLrT+P5uAD27syxuqJ/bWSvqydW+OwKluqlY";
+          };
+          home-k8s-master-1-ts = {
+            hostNames = [ "100.87.232.102" "home-k8s-master-1.tail476348.ts.net" ];
+            publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFMc6oarT75C2IAHHZQZLdJmBSjiHRQWZnj6UKvkPpCA";
+          };
+        };
+
         # CPU governor + EPP are managed dynamically by modules.powerManagement
         # (performance/performance on AC, powersave/balance_power on battery).
         # See modules/power-management/default.nix.
