@@ -161,10 +161,7 @@ in {
               then cfg.wifi.interface
               else "en* eth*";
             DHCP = "yes";
-            # Boost reachability: wait for IPv4 only (some routers are
-            # slow with IPv6 RA), don't require carrier (USB-Ethernet
-            # plugged in mid-boot still works).
-            networkConfig.RequiredForOnline = "routable";
+            linkConfig.RequiredForOnline = "routable";
           };
         };
 
