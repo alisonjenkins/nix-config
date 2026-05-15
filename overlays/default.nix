@@ -71,6 +71,26 @@ in
     # and yanked versions (e.g. 2.1.88) cause build failures.
     inherit (final.master) claude-code;
 
+    # nixpkgs nixos-25.11 ships a 0060-libjack-path.patch whose
+    # second hunk targets src/modules/module-jack-tunnel/weakjack.h
+    # at line 164. Pipewire 1.6.4-1.5 refactored that file and the
+    # hunk no longer applies, breaking every rebuild that needs a
+    # fresh pipewire build:
+    #     Hunk #1 FAILED at 164.
+    #     1 out of 1 hunk FAILED -- saving rejects to file
+    #     src/modules/module-jack-tunnel/weakjack.h.rej
+    # Drop the patch until nixpkgs re-syncs it. Side effect: the
+    # libjack search-path indirection it provides is gone, so
+    # pipewire-jack will dlopen libjack from the default loader path
+    # instead of the Nix-store-locked path. We don't run jack apps
+    # against a nix-installed libjack, so this is a no-op for us.
+    pipewire = prev.pipewire.overrideAttrs (old: {
+      patches = builtins.filter (p:
+        let name = baseNameOf (toString p);
+        in !(prev.lib.hasInfix "libjack-path" name))
+        (old.patches or []);
+    });
+
     # Disable direnv tests on Darwin: fish test-fish target gets SIGKILL'd
     # in the sandbox, and the zsh test target hangs at 0% CPU indefinitely.
     # direnv runs its shell tests in installCheckPhase, so doCheck alone
