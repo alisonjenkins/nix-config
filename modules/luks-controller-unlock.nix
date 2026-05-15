@@ -47,13 +47,25 @@ in {
         the duplicate kernel-tty prompt is suppressed.
       '';
     };
+
+    debugLogToEsp = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "/dev/disk/by-partlabel/ESP";
+      description = ''
+        Mount this device (FAT) at /boot-debug in the initrd and capture
+        the agent's stdout+stderr there. The ESP is unencrypted, so the
+        log is readable from any rescue env without the LUKS pass.
+        Debug only.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
     boot.initrd.luks-controller-unlock = {
       enable = true;
       package = inputs.luks-controller-unlock.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      inherit (cfg) maskConsoleAgent extraKernelModules;
+      inherit (cfg) maskConsoleAgent extraKernelModules debugLogToEsp;
     };
   };
 }

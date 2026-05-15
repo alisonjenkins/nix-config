@@ -872,11 +872,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778865630,
-        "narHash": "sha256-5C2L/3rzHH3Z+4cURAdGl3J9rlS9VfHUUGj3gkJRXlk=",
+        "lastModified": 1778870490,
+        "narHash": "sha256-BtUk+oRh/AaVMR5BIlwlxhZnDt5UmyRHXGRWO27Memc=",
         "owner": "alisonjenkins",
         "repo": "luks-controller-unlock",
-        "rev": "943347b55e1b347dedd61f022d02fbd39017f51a",
+        "rev": "9f7080a9d4922fce263efd317f590bf072ff564d",
         "type": "github"
       },
       "original": {
