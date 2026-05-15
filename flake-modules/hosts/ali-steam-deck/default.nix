@@ -24,6 +24,7 @@ in {
       self.nixosModules.desktop
       self.nixosModules.locale
       self.nixosModules.luks-controller-unlock
+      self.nixosModules.initrd-ssh
 
       # External flake modules
       inputs.disko.nixosModules.disko
@@ -127,6 +128,34 @@ in {
         modules.luks-controller-unlock = {
           enable = true;
           maskConsoleAgent = false;
+        };
+
+        # SSH server inside initrd for debugging stuck boots. Wired
+        # for wifi via ath11k (Qualcomm QCNFA765) since the Deck has
+        # no built-in ethernet and we typically debug without a dock.
+        # The PSK and host key live outside the Nix store at the
+        # paths below — generate them once on the device before
+        # rebuilding:
+        #   sudo mkdir -p /etc/secrets/initrd
+        #   sudo ssh-keygen -t ed25519 -N "" \
+        #       -f /etc/secrets/initrd/ssh_host_ed25519_key
+        #   echo -n 'YOUR_WIFI_PSK' \
+        #       | sudo tee /etc/secrets/initrd/wifi.psk >/dev/null
+        #   sudo chmod 600 /etc/secrets/initrd/*
+        # Disable this module after the agent regression is fixed —
+        # initrd cpio sits on the unencrypted ESP, so anyone with
+        # physical access can extract the PSK + impersonate the
+        # host key.
+        modules.initrd-ssh = {
+          enable = true;
+          port = 2222;
+          authorizedKeys = [ outputs.lib.sshKeys.primary ];
+          wifi = {
+            enable = true;
+            interface = "wlo1";
+            ssid = "jenkins";
+            pskFile = "/etc/secrets/initrd/wifi.psk";
+          };
         };
 
         # Let Jovian's custom Jupiter mesa override the desktop module's unstable mesa

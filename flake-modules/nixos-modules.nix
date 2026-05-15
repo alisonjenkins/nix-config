@@ -5,6 +5,7 @@
     aws = import ../modules/aws;
     base = import ../modules/base;
     hetzner = import ../modules/hetzner;
+    initrd-ssh = import ../modules/initrd-ssh.nix;
     btfs-streaming = import ../modules/btfs-streaming;
     desktop = import ../modules/desktop;
     libvirtd = import ../modules/libvirtd;
