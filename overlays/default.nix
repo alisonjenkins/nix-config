@@ -85,11 +85,16 @@ in
           else f;
         filtered = map rewrite (builtins.filter (f: !drop f) (old.mesonFlags or []));
       in
-        # Pipewire 1.6.x added a separate ldac DECODER dep gated by
-        # `bluez5-codec-ldac-dec`. nixpkgs doesn't pass this flag yet
-        # so meson defaults to "auto" and fails when it can't find
-        # the lib. Pin it disabled to match the encoder.
-        filtered ++ [ "-Dbluez5-codec-ldac-dec=disabled" ];
+        # Pipewire 1.6.x added new auto-detected deps that nixpkgs
+        # doesn't supply or flag. Pin them disabled:
+        # * bluez5-codec-ldac-dec — separate decoder dep, ldacBT_dec
+        #   not in buildInputs.
+        # * onnxruntime — ML runtime for noise-suppression, heavy
+        #   dep we don't need for the Steam Deck.
+        filtered ++ [
+          "-Dbluez5-codec-ldac-dec=disabled"
+          "-Donnxruntime=disabled"
+        ];
       # Pipewire 1.6.x's spa/meson.build:122 unconditionally requires
       # spandsp for an echo-cancel filter. nixpkgs doesn't add it to
       # pipewire's buildInputs in this rev, so configure aborts:
