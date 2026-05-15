@@ -90,6 +90,11 @@ in
         # so meson defaults to "auto" and fails when it can't find
         # the lib. Pin it disabled to match the encoder.
         filtered ++ [ "-Dbluez5-codec-ldac-dec=disabled" ];
+      # Pipewire 1.6.x's spa/meson.build:122 unconditionally requires
+      # spandsp for an echo-cancel filter. nixpkgs doesn't add it to
+      # pipewire's buildInputs in this rev, so configure aborts:
+      #     ERROR: Dependency "spandsp" not found, tried pkgconfig
+      buildInputs = (old.buildInputs or []) ++ [ prev.spandsp ];
     });
   in {
 
