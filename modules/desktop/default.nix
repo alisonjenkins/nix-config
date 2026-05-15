@@ -796,6 +796,12 @@ in
         enable = true;
         remotePlay.openFirewall = true;
         dedicatedServer.openFirewall = true;
+        # Steam Controller (2026) firmware updater dynamically loads
+        # libhidapi-hidraw / libhidapi-libusb but Valve does not bundle them
+        # yet, so the update fails with "Failed to update Steam Controller
+        # firmware" inside the pressure-vessel sandbox. Workaround per
+        # NixOS/nixpkgs#518150 — drop once Valve ships the fix upstream.
+        extraPackages = with pkgs; [ hidapi ];
       };
     };
 
