@@ -120,19 +120,12 @@ in {
           by this module.
         '';
       }
-      {
-        # Builds against the WORKING checkout, not the deployed system,
-        # so this fires during nixos-rebuild on the build host.
-        assertion = builtins.pathExists cfg.hostKeyPath;
-        message = ''
-          modules.initrd-ssh expects an ED25519 host key at
-          ${toString cfg.hostKeyPath} but the file is missing.
-          Generate it on the target host before rebuilding:
-              sudo mkdir -p $(dirname ${toString cfg.hostKeyPath})
-              sudo ssh-keygen -t ed25519 -N "" -f ${toString cfg.hostKeyPath}
-              sudo chmod 600 ${toString cfg.hostKeyPath}
-        '';
-      }
+      # NOTE: We don't assert on `pathExists hostKeyPath` because
+      # `builtins.pathExists` of an absolute path outside the flake
+      # source returns false in pure-eval mode regardless of whether
+      # the file exists. Building this module requires --impure;
+      # the underlying readFile / fileContents will produce a clear
+      # error if the host key or PSK is missing at build time.
     ];
 
     # Firmware bundling: redistributable firmware in /run/current-system
