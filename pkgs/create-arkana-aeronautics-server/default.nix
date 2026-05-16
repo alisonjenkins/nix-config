@@ -210,7 +210,7 @@ let
   # to ~1s; restored to default for production.
   serverProperties = builtins.toFile "server.properties" ''
     server-port=25565
-    max-players=4
+    max-players=10
     view-distance=4
     simulation-distance=5
     motd=Create: Arkana + Aeronautics
