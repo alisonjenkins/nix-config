@@ -66,6 +66,17 @@ in {
         nixpkgs.overlays = [
           self.overlays.additions
           self.overlays.modifications
+          # Decky plugin management is intentionally NOT declarative: every
+          # nix-based approach we tried (schradert/nur git-build,
+          # buildDeckyPlugin via pnpm, fetching Decky store zips into
+          # pkgs.deckyPlugins) broke at runtime — either pnpm/Python toolchain
+          # mismatches, missing plugin subdirectories that the installPhase
+          # didn't preserve, or React-error-#130 frontend crashes when even
+          # one plugin's bundle wasn't byte-identical to the maintainer's
+          # build. Decky's own in-Steam plugin browser handles all of this
+          # correctly; we just persist /var/lib/decky-loader so its installs
+          # survive impermanence (see persistence block in the host config
+          # below).
         ];
       }
 
@@ -208,7 +219,16 @@ in {
 
         jovian = {
           devices.steamdeck.enable = true;
-          decky-loader.enable = true;
+          decky-loader = {
+            enable = true;
+            # Jovian's decky-loader.nix sets `systemd.services.decky-loader.path`
+            # strictly to `cfg.extraPackages` — no system fallback. Decky's
+            # init queries `systemctl is-active <service>`; without systemd
+            # on the unit PATH that call FileNotFoundErrors and floods the
+            # log. Adding systemd silences the noise and lets plugins that
+            # shell out to systemctl work too.
+            extraPackages = [ pkgs.systemd ];
+          };
 
           steam = {
             enable = true;
@@ -217,6 +237,35 @@ in {
             desktopSession = "plasma";
           };
         };
+
+        # Decky's frontend only loads if Steam was started with CEF remote
+        # debugging enabled, which Steam keys off the presence of this
+        # sentinel file. Jovian's decky-loader docs treat creating it as
+        # an imperative step; do it declaratively here so a fresh install
+        # boots into a working Decky UI without manual intervention.
+        # Tracked in https://github.com/Jovian-Experiments/Jovian-NixOS/issues/460
+        #
+        # Target the resolved Steam path, not ~/.steam/steam — the latter is
+        # a symlink (~/.steam/steam → ~/.local/share/Steam), which
+        # systemd-tmpfiles refuses to traverse with "unsafe path transition".
+        # Steam creates ~/.local/share/Steam on first run; the file rule
+        # alone is enough — no parent directory creation needed.
+        systemd.tmpfiles.rules = [
+          "f /home/${username}/.local/share/Steam/.cef-enable-remote-debugging 0644 ${username} users -"
+        ];
+
+        # Persist Decky's state dir across reboots so plugins the user
+        # installs from inside Decky survive the impermanence tmpfs wipe.
+        # decky-loader runs as the `decky` system user (Jovian module
+        # default); stateDir matches.
+        environment.persistence."/persistence".directories = [
+          {
+            directory = "/var/lib/decky-loader";
+            user = "decky";
+            group = "decky";
+            mode = "0700";
+          }
+        ];
 
         networking = {
           hostName = "ali-steam-deck";
