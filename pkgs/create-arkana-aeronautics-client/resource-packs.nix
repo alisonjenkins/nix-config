@@ -166,12 +166,30 @@ in
   # over Stay True 16x on every vanilla asset (numbered later wins).
   # Modded blocks fall through to Stay True Compats (02) or the mods'
   # own textures since Faithful only covers vanilla.
+  #
+  # Faithful's spider textures use vanilla's 64x32 UV layout (just 4x-
+  # scaled to 256x128). FA+Extensions (05) ships a CEM model spider.jem
+  # with `textureSize=[64,64]` that samples FA's expanded layout (extra
+  # rows for pedipalps/jaws/eyes). When Faithful's vanilla-layout PNG
+  # wins via load order, the CEM model reads garbage regions → broken
+  # render. Strip the 3 spider PNGs from Faithful so FA+Extensions'
+  # 64x64-layout textures fall through and match the CEM model. Other
+  # Faithful coverage is unaffected.
   {
     filename = "07-faithful-64x.zip";
-    zip = fetchurl {
-      url    = "https://cdn.modrinth.com/data/r4GILswZ/versions/BauEG3pq/Faithful%2064x%20-%20Release%206.zip";
-      name   = "Faithful_64x_Release_6.zip";
-      sha256 = "17zpqnab80yba39f2bwz0zbw2bbiw7hhvf8w0asa436gi6128a5s";
+    zip = stripPaths {
+      pname = "faithful-64x";
+      version = "release-6";
+      src = fetchurl {
+        url    = "https://cdn.modrinth.com/data/r4GILswZ/versions/BauEG3pq/Faithful%2064x%20-%20Release%206.zip";
+        name   = "Faithful_64x_Release_6.zip";
+        sha256 = "17zpqnab80yba39f2bwz0zbw2bbiw7hhvf8w0asa436gi6128a5s";
+      };
+      paths = [
+        "assets/minecraft/textures/entity/spider/spider.png"
+        "assets/minecraft/textures/entity/spider/cave_spider.png"
+        "assets/minecraft/textures/entity/spider_eyes.png"
+      ];
     };
   }
   # Fresh Moves — player + mob movement animation overhaul. Companion to
