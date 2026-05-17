@@ -584,7 +584,8 @@ in
         television
         thunderbird
         unstable.cobang
-        unstable.copilot-cli
+        # copilot-cli removed upstream (deprecated by GitHub; use
+        # `gh extension install github/gh-copilot` instead).
         unstable.devenv
         unstable.jellycli
         unstable.mission-center
