@@ -803,6 +803,10 @@ in
         # firmware" inside the pressure-vessel sandbox. Workaround per
         # NixOS/nixpkgs#518150 — drop once Valve ships the fix upstream.
         extraPackages = with pkgs; [ hidapi ];
+        # Pulled from nixpkgs-unstable so we get the freshest Proton-GE
+        # release (25.11 lags a version or two behind). Listed under
+        # Steam → Settings → Compatibility per game once activated.
+        extraCompatPackages = [ pkgs.unstable.proton-ge-bin ];
       };
     };
 

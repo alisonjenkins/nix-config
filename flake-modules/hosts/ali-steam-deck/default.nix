@@ -274,15 +274,9 @@ in {
           '';
         };
 
-        programs.steam = {
-          remotePlay.openFirewall = true;
-          dedicatedServer.openFirewall = true;
-          # Pulled from nixpkgs-unstable so we get the freshest Proton-GE
-          # release (25.11 lags a version or two behind). Listed under
-          # Steam → Settings → Compatibility per game once activated.
-          extraCompatPackages = [ pkgs.unstable.proton-ge-bin ];
-        };
-
+        # programs.steam (including extraCompatPackages = proton-ge-bin)
+        # comes from modules/desktop.
+        #
         # programs.steam.extraCompatPackages only exposes
         # STEAM_EXTRA_COMPAT_TOOLS_PATHS via nixpkgs's `steam-gamescope`
         # wrapper, which Jovian's autostart bypasses (Jovian's
