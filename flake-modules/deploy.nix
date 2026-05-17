@@ -4,12 +4,32 @@
 
     deploy = {
       nodes = {
+        ali-desktop = {
+          hostname = "100.127.142.30";
+          profiles = {
+            system = {
+              user = "root";
+              path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-desktop;
+            };
+          };
+        };
+
         ali-framework-laptop = {
           hostname = "ali-framework-laptop-wifi.lan";
           profiles = {
             system = {
               user = "root";
               path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-framework-laptop;
+            };
+          };
+        };
+
+        ali-steam-deck = {
+          hostname = "192.168.1.67";
+          profiles = {
+            system = {
+              user = "root";
+              path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ali-steam-deck;
             };
           };
         };

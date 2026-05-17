@@ -10,7 +10,7 @@ let
   # Lives at /root/.ssh/id_remote_builder on ali-framework-laptop.
   # Authorize on hosts that should accept incoming nix builds via
   # nix.buildMachines.<entry>.sshKey = /root/.ssh/id_remote_builder.
-  nixBuilderLaptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDxiKaDaOBtW1EVZNjuDqwkCpjRT0X/+ZuOmW3VDFhlE nix-builder-laptop";
+  nixBuilderLaptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDA14oK6m/gMcRaAUnMbiI1Tr5c3aLORWyzX2U+IU6Eq nix-builder-laptop";
 in
 {
   flake.lib.sshKeys = {
