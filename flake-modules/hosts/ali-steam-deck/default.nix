@@ -81,7 +81,7 @@ in {
       }
 
       # Host-specific configuration
-      ({ lib, outputs, pkgs, username, ... }: {
+      ({ config, lib, outputs, pkgs, username, ... }: {
         modules.base = {
           enable = true;
           bootLoader = "grub";
@@ -277,7 +277,21 @@ in {
         programs.steam = {
           remotePlay.openFirewall = true;
           dedicatedServer.openFirewall = true;
+          # Pulled from nixpkgs-unstable so we get the freshest Proton-GE
+          # release (25.11 lags a version or two behind). Listed under
+          # Steam → Settings → Compatibility per game once activated.
+          extraCompatPackages = [ pkgs.unstable.proton-ge-bin ];
         };
+
+        # programs.steam.extraCompatPackages only exposes
+        # STEAM_EXTRA_COMPAT_TOOLS_PATHS via nixpkgs's `steam-gamescope`
+        # wrapper, which Jovian's autostart bypasses (Jovian's
+        # steam-launcher.service launches Steam directly under the user
+        # systemd manager, which never sources /etc/profile or PAM env).
+        # Inject the var directly into the unit's Environment so the
+        # Steam process inherits it on launch.
+        systemd.user.services.steam-launcher.environment.STEAM_EXTRA_COMPAT_TOOLS_PATHS =
+          lib.makeSearchPathOutput "steamcompattool" "" config.programs.steam.extraCompatPackages;
 
         services.btrfs.autoScrub = {
           enable = true;
