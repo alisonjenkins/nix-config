@@ -518,6 +518,20 @@ in {
         ];
         nix.settings.builders-use-substitutes = true;
 
+        # Persist /root/.ssh across reboots so the remote-builder SSH key
+        # (id_remote_builder, used by nix.buildMachines above) survives
+        # impermanence wiping the root tmpfs on boot. Without this entry
+        # the key disappears on reboot and distributed builds fail with
+        # "failed to start SSH connection" until manually reinstalled.
+        environment.persistence."/persistence".directories = [
+          {
+            directory = "/root/.ssh";
+            user = "root";
+            group = "root";
+            mode = "0700";
+          }
+        ];
+
         # Trust the remote builders' SSH host keys system-wide so
         # nix-daemon (root) can ssh to them on first contact without
         # interactive prompting. nix-daemon doesn't honour
