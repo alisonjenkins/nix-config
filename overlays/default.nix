@@ -490,5 +490,14 @@ in
 
       patches = [];
     });
+
+    # neotest (luarocks 5.18.0-1 packaged via ali-neovim flake's
+    # vimUtils.buildNeovimPlugin) currently fails its checkPhase
+    # despite all printed tests passing — busted exits 1 even when
+    # Success/Failed/Errors all read 0. Skip tests until upstream
+    # is fixed; functionality is unaffected.
+    luajitPackages = prev.luajitPackages.overrideScope (_lfinal: lprev: {
+      neotest = lprev.neotest.overrideAttrs (_: { doCheck = false; });
+    });
   };
 }
