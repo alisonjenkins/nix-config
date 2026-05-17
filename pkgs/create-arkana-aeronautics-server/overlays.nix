@@ -416,6 +416,22 @@ in
       "1vmvwiyv434jw628gcid3d8c0ns7mf725qlh2jza2l3dkxspcfas";
   }
   {
+    # Create: Hypertubes — pneumatic tube transport network for entities and
+    # items (think Hypertube from Satisfactory, themed for Create). Both-
+    # sided. Hard deps verified against mods.toml in 0.4.0-COMPAT:
+    #   neoforge  [21,)            ✓  (we ship 21.1.228)
+    #   create    [6.0.4, 6.1.0)   ✓  (we ship 6.0.10)
+    # betterthirdperson dep is optional, skipped. The -COMPAT build is the
+    # Create 6.0.x-compatible variant; the plain 0.4.0 jar targets Create
+    # 5.x. CurseForge projectID 1281336.
+    filename       = "create_hypertube-0.4.0-COMPAT-NEOFORGE.jar";
+    dropAsOverride = false;
+    projectID      = 1281336;
+    fileID         = 7948263;
+    jar = curseforge 7948263 "create_hypertube-0.4.0-COMPAT-NEOFORGE.jar"
+      "00i1csdalhiih669md3v6iwwjzc7ilw3wz1v7258rqbhzbf9rk1w";
+  }
+  {
     # Create: Enchantment Industry — added in -46. Required by Ars Technica
     # compat recipes already present in the Arkana datapack
     # (create_enchantment_industry:grinding/ars_technica/*). Hard deps on
