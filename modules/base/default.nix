@@ -331,6 +331,10 @@ in
             "https://cache.garnix.io"
             "https://cache.nixos.org"
             "https://jovian.cachix.org"
+            # Third-party daily builds of Jovian-NixOS `development` against
+            # nixos-unstable, including the Valve kernel + Mesa fork. Saves
+            # ~30 min of kernel compile per Steam Deck rebuild.
+            "https://hacker1024-jovian.cachix.org"
             "https://nix-community.cachix.org"
             "https://nix-gaming.cachix.org"
             "https://nixpkgs-wayland.cachix.org"
@@ -341,7 +345,12 @@ in
             "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
             "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-            "jovian.cachix.org-1:mAWLjAxLNI3RiPXtAE24VSpamW0gUfnGzroKvA/x2yE="
+            # Verified via https://app.cachix.org/api/v1/cache/jovian.
+            # The previous key here (mAWLjAxLNI3RiPXtAE24VSpamW0gUfnGzroKvA/x2yE=)
+            # did not match what jovian.cachix.org actually publishes, so
+            # substitutes from that cache were silently rejected.
+            "jovian.cachix.org-1:8Vq4Txku6VZIRhYrHYki3Ab9XHJRoWmdYqMqj4rB/Uc="
+            "hacker1024-jovian.cachix.org-1:YGV/5tSwGzqffiA1TuhqnWN8PWlJX6nwPo6ZTMcRHmg="
             "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
             "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
             "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
