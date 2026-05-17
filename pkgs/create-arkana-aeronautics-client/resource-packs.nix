@@ -35,7 +35,7 @@
 # even though their content is just textures and works fine. The
 # `patchMcmeta` helper below wraps such a pack: fetch upstream, edit
 # pack.mcmeta to widen `supported_formats`, rezip. Reproducible.
-{ fetchurl, stdenvNoCC, unzip, zip, jq }:
+{ lib, fetchurl, stdenvNoCC, unzip, zip, jq }:
 let
   # Build-time patch: fetches `src`, replaces `pack.mcmeta` inside the
   # zip with one that adds `supported_formats = {min, max}`, rezips.
@@ -57,6 +57,25 @@ let
       '';
       installPhase = ''install -m644 pack.zip "$out"'';
     };
+
+  # Build-time patch: fetches `src`, deletes the listed paths inside the
+  # zip via `zip -d`. Use when a pack's coverage is fine except for a
+  # specific asset that clashes with the modpack's preferred look (e.g.
+  # Stay True Compats's chunky 16x Farmer's Delight tomatoes — we keep
+  # the pack for its Create/Quark/etc. coverage but drop the tomato
+  # entries so vanilla FD textures fall through).
+  stripPaths = { pname, version, src, paths }:
+    stdenvNoCC.mkDerivation {
+      inherit pname version src;
+      dontUnpack = true;
+      nativeBuildInputs = [ zip ];
+      buildPhase = ''
+        cp "$src" pack.zip
+        chmod +w pack.zip
+        zip -d pack.zip ${lib.escapeShellArgs paths}
+      '';
+      installPhase = ''install -m644 pack.zip "$out"'';
+    };
 in
 [
   {
@@ -68,11 +87,29 @@ in
     };
   }
   {
+    # Stay True Compats retextures Farmer's Delight tomato plants with
+    # chunky 16x crossed-plane textures that read as overly pixelated
+    # next to the rest of the pack. Strip the tomato-specific entries
+    # at build time so vanilla FD tomato textures fall through; the
+    # rest of the pack's Create/Quark/Abnormals/etc. coverage stays.
     filename = "02-stay-true-compats-1.21.zip";
-    zip = fetchurl {
-      url    = "https://mediafilez.forgecdn.net/files/5966/648/staytrue1.21.zip";
-      name   = "staytrue1.21.zip";
-      sha256 = "0rfqghq7bwy5kl0q7x6hx36d2ac8r9w3jmp5h6007fnwb819vj2q";
+    zip = stripPaths {
+      pname = "stay-true-compats";
+      version = "1.21";
+      src = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/5966/648/staytrue1.21.zip";
+        name   = "staytrue1.21.zip";
+        sha256 = "0rfqghq7bwy5kl0q7x6hx36d2ac8r9w3jmp5h6007fnwb819vj2q";
+      };
+      paths = [
+        "assets/farmersdelight/blockstates/tomatoes.json"
+        "assets/farmersdelight/models/block/tomatoes_stage3_1.json"
+        "assets/farmersdelight/models/block/tomatoes_stage3_2.json"
+        "assets/farmersdelight/models/block/tomatoes_stage3_3.json"
+        "assets/farmersdelight/textures/block/tomatoes_stage3_1.png"
+        "assets/farmersdelight/textures/block/tomatoes_stage3_2.png"
+        "assets/farmersdelight/textures/block/tomatoes_stage3_3.png"
+      ];
     };
   }
   {

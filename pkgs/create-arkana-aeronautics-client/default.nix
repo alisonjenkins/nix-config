@@ -4,7 +4,7 @@ let
   overlayMods   = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
   arkanaExtras  = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
   datapacks     = import ../create-arkana-aeronautics-server/datapacks.nix       { inherit fetchurl stdenvNoCC zip; };
-  resourcePacks = import ./resource-packs.nix                                    { inherit fetchurl stdenvNoCC unzip zip jq; };
+  resourcePacks = import ./resource-packs.nix                                    { inherit lib fetchurl stdenvNoCC unzip zip jq; };
 
   # ars_nouveau bundles lambdynamiclights-api as JIJ which JPMS-conflicts
   # with the top-level sodiumdynamiclights mod (immersivelanterns hard-deps
