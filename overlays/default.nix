@@ -321,10 +321,31 @@ in
     };
   };
 
-  # Use linux-firmware from unstable to fix amdxdna NPU firmware
-  # (stable's fetchpatch strips binary blobs from the NPU firmware patch, resulting in 0-byte files)
+  # Pull linux-firmware from kernel.org main HEAD (post-20260410) so we
+  # get the May 7, 2026 AMD firmware batch — specifically GC 12.0.1
+  # (gfx1201, our RX 9070 XT), PSP 14.0.3, SMU 14.0.3 kicker, SDMA 6.1.3,
+  # VCN 5.0.0. Old GC 12.0.1 firmware ships without pipe-reset support
+  # ("The CPFW hasn't support pipe reset yet" in dmesg when amdgpu tries
+  # to recover a hung gfx ring), forcing the kernel into a MODE1 SoC
+  # reset that wipes VRAM. The May 7 firmware bundle is the candidate
+  # upstream fix.
+  #
+  # Also keeps the original reason for overriding from stable: stable's
+  # linux-firmware fetchpatch strips binary blobs from the amdxdna NPU
+  # firmware patch, producing 0-byte files.
+  #
+  # Revert to `final.unstable.linux-firmware` (or drop the overlay
+  # entirely once nixpkgs catches up) when the next tagged release
+  # (>20260410) lands containing the May 7 amdgpu updates.
   linux-firmware = final: _prev: {
-    linux-firmware = final.unstable.linux-firmware;
+    linux-firmware = final.unstable.linux-firmware.overrideAttrs (_old: {
+      version = "20260514-unstable-5b2bc2e";
+      src = final.fetchgit {
+        url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git";
+        rev = "5b2bc2e7d14c56e14c59a3d6e7b5b0641dc45c88";
+        hash = "sha256-96pu+G5o2X5RWkpFo7FTo4/j+1hpzm/DWG+4q0IsApU=";
+      };
+    });
   };
 
   tmux-sessionizer = final: _prev: {

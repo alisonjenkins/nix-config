@@ -298,6 +298,7 @@ in
           inputs.nur.overlays.default
           inputs.fenix.overlays.default
           outputs.overlays.additions
+          outputs.overlays.linux-firmware
           outputs.overlays.master-packages
           outputs.overlays.modifications
           outputs.overlays.stable-packages
