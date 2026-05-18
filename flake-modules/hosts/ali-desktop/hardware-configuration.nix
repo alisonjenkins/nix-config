@@ -86,14 +86,13 @@
 
       "/media/steam-games-1" = {
         device = "/dev/osvg/steam-games-1";
-        fsType = "btrfs";
+        fsType = "xfs";
         options = [
-          "compress=zstd:-10"      # Slight compression so we get good performance
-          "noatime"              # Don't update access times (performance)
-          "space_cache=v2"       # Modern free space cache (performance)
-          "discard=async"        # Async TRIM for SSD health (performance)
-          "ssd"                  # Enable SSD optimizations
-          "nofail"               # Don't block boot if unavailable
+          "noatime"              # No access-time writes on every read
+          "largeio"              # Hint for large sequential I/O (game asset streaming)
+          "allocsize=64m"        # Preallocate in 64MB chunks — reduces fragmentation for AAA installs
+          "logbsize=256k"        # Larger journal buffer for write throughput
+          "nofail"
         ];
       };
 

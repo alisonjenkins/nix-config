@@ -119,12 +119,6 @@ in {
               verbosity = "crit";
               extraOptions = [ "--loadavg-target" "15.0" ];
             };
-            steam-storage-1 = {
-              spec = "LABEL=steam-games-1";
-              hashTableSizeMB = 2048;
-              verbosity = "crit";
-              extraOptions = [ "--loadavg-target" "15.0" ];
-            };
           };
         };
         nix.settings.cores = 16;
@@ -191,19 +185,14 @@ in {
 
           gaming = {
             gpuVendor = "amd";
-            cpuTopology = "16:32";  # Ryzen 9 7950X: 16 cores, 32 threads
+            cpuTopology = null;  # Let Wine auto-detect; "16:32" string was misparsed as bitmap index 32 (out of range on 32-thread host) → NULL deref in games (e.g. FH6 FHE01)
             enableDxvkStateCache = true;
             enableVkd3dShaderCache = true;
             dxvkHud = "0";  # Disable HUD for performance (use "fps" or "compiler" for debugging)
             enableLargeAddressAware = true;
-            shaderCacheBasePath = "/media/steam-games-1/.shader-cache";  # Use high-performance volume
+            shaderCacheBasePath = "/media/storage1/.shader-cache";  # Different physical disk (nvme2n1 xfs) from game install (nvme3n1 btrfs 95% full) — avoids I/O queue contention causing texture-stream stutter
           };
         };
-
-        # Create shader cache directory on steam-games volume
-        systemd.tmpfiles.rules = [
-          "d /media/steam-games-1/.shader-cache 0755 ali users -"
-        ];
 
 
         services.audio-context-suspend = {
