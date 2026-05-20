@@ -65,6 +65,16 @@ in {
                 variable-refresh-rate
             }
           '';
+
+          programs.scopebuddy = {
+            enable = true;
+            # -O DP-2 required: scopebuddy errors "Primary display not supported!"
+            # on wlroots (niri/river/sway/hyprland) without --prefer-output, since
+            # wlroots has no primary-display concept.
+            gamescopeArgs = "-O DP-2 -W 2540 -H 1440 -w 2540 -h 1440 -r 120 -f";
+            autoHdr = true;
+            autoVrr = false;
+          };
         };
         home-manager.extraSpecialArgs =
           specialArgs
