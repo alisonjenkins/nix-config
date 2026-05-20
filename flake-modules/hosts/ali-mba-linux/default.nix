@@ -113,12 +113,20 @@ in {
         # GPU driver options (useExperimentalGPUDriver / experimentalGPUInstallMode /
         # withRust) were removed upstream once asahi support landed in mainline
         # mesa, so we just enable the module and let it pick the right kernel.
+        #
+        # Firmware: Apple peripheral firmware (Wi-Fi, etc) is non-redistributable.
+        # Copy `all_firmware.tar.gz` + `kernelcache*` out of /boot/asahi/ into the
+        # gitignored ./firmware/ dir inside this host's flake source tree. The
+        # `builtins.path` call below reads that directory into the nix store via
+        # a content-addressed copy — bypasses git tracking, stays flake-pure (no
+        # `--impure` needed). Files outside the flake (e.g. /var/lib/...) are
+        # blocked by pure-eval — that's why we anchor to ./firmware here.
         hardware.asahi = {
-          # Initial install: rely on the manual firmware path documented in
-          # docs/uefi-standalone.md. Set to true and populate ./firmware/
-          # (gitignored) once the host is up.
-          extractPeripheralFirmware = false;
-          peripheralFirmwareDirectory = null;
+          extractPeripheralFirmware = true;
+          peripheralFirmwareDirectory = builtins.path {
+            path = ./firmware;
+            name = "ali-mba-linux-asahi-firmware";
+          };
         };
 
         # The asahi EFI is touched by m1n1/u-boot, not by NixOS. Touching
