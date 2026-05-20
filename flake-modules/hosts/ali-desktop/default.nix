@@ -75,6 +75,13 @@ in {
             autoHdr = true;
             autoVrr = false;
           };
+
+          # Forces OpenAL Soft to stereo output. Without this, OpenAL's
+          # PulseAudio backend falls back to mono on the Scarlett 2i2's
+          # pro-audio profile (aux0,aux1 channel map is not recognized),
+          # causing crackling in Minecraft modpacks where many 3D sources
+          # sum into a single channel and hit the limiter.
+          programs.openal.enable = true;
         };
         home-manager.extraSpecialArgs =
           specialArgs

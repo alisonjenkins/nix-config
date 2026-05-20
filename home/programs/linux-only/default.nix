@@ -10,6 +10,7 @@
     ./mangohud
     ./niri
     ./nixcord
+    ./openal
     ./scopebuddy
     ./steam
     ./swayidle
