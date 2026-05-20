@@ -115,19 +115,23 @@ in {
         # mesa, so we just enable the module and let it pick the right kernel.
         #
         # Firmware: Apple peripheral firmware (Wi-Fi, etc) is non-redistributable.
-        # Copy `all_firmware.tar.gz` + `kernelcache*` out of /boot/asahi/ into the
-        # gitignored ./firmware/ dir inside this host's flake source tree. The
-        # `builtins.path` call below reads that directory into the nix store via
-        # a content-addressed copy — bypasses git tracking, stays flake-pure (no
-        # `--impure` needed). Files outside the flake (e.g. /var/lib/...) are
-        # blocked by pure-eval — that's why we anchor to ./firmware here.
+        # Stored on the host at /var/lib/asahi-firmware (populated manually post
+        # asahi-installer per docs/uefi-standalone.md). The value here is a
+        # *string*, not a nix path literal — string assignments to `types.path`
+        # options skip flake pure-eval's "absolute path is forbidden" check.
+        # asahi-fwextract reads from this path at build time; the nix-daemon
+        # sandbox is granted read access via `nix.settings.extra-sandbox-paths`
+        # further down in this host config. Result: fully flake-pure (no
+        # `--impure`), no files in the repo.
         hardware.asahi = {
           extractPeripheralFirmware = true;
-          peripheralFirmwareDirectory = builtins.path {
-            path = ./firmware;
-            name = "ali-mba-linux-asahi-firmware";
-          };
+          peripheralFirmwareDirectory = "/var/lib/asahi-firmware";
         };
+
+        # Grant the nix-daemon build sandbox read access to the host firmware
+        # dir so the asahi-fwextract derivation can read it. Without this,
+        # builds error with "no such file or directory" or sandbox EACCES.
+        nix.settings.extra-sandbox-paths = [ "/var/lib/asahi-firmware" ];
 
         # The asahi EFI is touched by m1n1/u-boot, not by NixOS. Touching
         # EFI variables from Linux on Apple Silicon does nothing useful

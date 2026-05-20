@@ -1,10 +1,5 @@
 **/*.dec.*
 **/.claude
-# Asahi peripheral firmware (non-redistributable Apple binaries).
-# Files copied here from /boot/asahi/ on the MBA at install time;
-# .keep tracked so the directory exists on every checkout.
-flake-modules/hosts/ali-mba-linux/firmware/*
-!flake-modules/hosts/ali-mba-linux/firmware/.keep
 **/.DS_Store
 **/.playwright-mcp
 **/*.qcow2
