@@ -614,8 +614,8 @@ in
         boilr
         gamemode
         mangohud
+        scopebuddy
         steamtinkerlaunch
-        unstable.gamescope-wsi
         unstable.goverlay
         stable.heroic-unwrapped
         unstable.protonplus
