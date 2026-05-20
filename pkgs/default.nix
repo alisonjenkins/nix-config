@@ -33,4 +33,5 @@
   };
   create-arkana-aeronautics-client = pkgs.callPackage ./create-arkana-aeronautics-client {};
   nbt-studio = pkgs.callPackage ./nbt-studio {};
+  scopebuddy = pkgs.callPackage ./scopebuddy {};
 }

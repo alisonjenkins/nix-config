@@ -1,0 +1,31 @@
+Strip LD_PRELOAD at script start, save it for NESTEDFIX re-injection.
+
+scopebuddy 1.4.0 only unsets LD_PRELOAD inside the final `eval` line. Every
+prior subshell — grep, perl, jq, wlr-randr, and the bash forks themselves —
+inherits Steam's gameoverlayrenderer.so via LD_PRELOAD. The overlay lib
+initializes inside those helpers, allocates IPC + futexes, then deadlocks in
+__futex_wait — scopebuddy hangs forever before gamescope ever launches.
+
+Fix: save LD_PRELOAD into __SCB_SAVED_LD_PRELOAD at the top of the script
+and unset it immediately. SCB_NESTEDFIX still picks it up from the saved
+variable and re-injects it for the game process via `env LD_PRELOAD=...`.
+
+--- a/bin/scopebuddy
++++ b/bin/scopebuddy
+@@ -1,4 +1,7 @@
+ #!/usr/bin/env bash
++__SCB_SAVED_LD_PRELOAD="${LD_PRELOAD:-}"
++unset LD_PRELOAD
++export LD_PRELOAD=
+ # Special thanks to @coolavery for the initial script for this
+ # https://github.com/ValveSoftware/gamescope/issues/835#issuecomment-2496383830
+ #
+@@ -801,7 +804,7 @@
+     # Apply nested gamescope fix for steam overlay and steam input
+     if [ "$SCB_NESTEDFIX" -eq 1 ]; then
+         # Transfer LD_PRELOAD before we unset it
+-        LD_PRELOAD_REAL=$LD_PRELOAD
++        LD_PRELOAD_REAL=$__SCB_SAVED_LD_PRELOAD
+     fi
+
+     # Unset LD_PRELOAD for gamescope (as it breaks the overlay) then start gamescope with LD_PRELOAD set for %command% instead
