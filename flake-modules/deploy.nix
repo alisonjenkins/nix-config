@@ -34,6 +34,16 @@
           };
         };
 
+        ali-mba-linux = {
+          hostname = "ali-mba-linux";  # Tailscale MagicDNS
+          profiles = {
+            system = {
+              user = "root";
+              path = inputs.deploy-rs.lib.aarch64-linux.activate.nixos self.nixosConfigurations.ali-mba-linux;
+            };
+          };
+        };
+
         ali-work-laptop = {
           hostname = "ali-work-laptop.lan";
           profiles = {

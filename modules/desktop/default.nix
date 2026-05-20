@@ -587,7 +587,6 @@ in
         # copilot-cli removed upstream (deprecated by GitHub; use
         # `gh extension install github/gh-copilot` instead).
         unstable.devenv
-        unstable.jellycli
         unstable.mission-center
         unstable.nvtopPackages.amd
         unstable.opencode
@@ -595,7 +594,6 @@ in
         unzip
         # wallpapers # TODO: re-enable after wallpapers relocated from LFS
         wleave
-        zoom-us
 
         (python3.withPackages (python-pkgs: [
           python-pkgs.boto3
@@ -604,7 +602,15 @@ in
           python-pkgs.sounddevice
           python-pkgs.soundfile
         ]))
-      ] ++ (optionals cfg.gaming.enable (with pkgs; [
+      ]
+      # x86_64-only extras — jellycli is marked broken on aarch64 in
+      # nixpkgs, zoom-us upstream has no aarch64 build. Gate so this
+      # module is reusable on Asahi.
+      ++ (optionals pkgs.stdenv.hostPlatform.isx86_64 (with pkgs; [
+        unstable.jellycli
+        zoom-us
+      ]))
+      ++ (optionals cfg.gaming.enable (with pkgs; [
         boilr
         gamemode
         mangohud
@@ -728,7 +734,6 @@ in
         enable = true;
         # Use unstable Mesa for better RDNA 4 support
         package = pkgs.unstable.mesa;
-        package32 = pkgs.unstable.pkgsi686Linux.mesa;
 
         # VA-API hardware video acceleration
         extraPackages = with pkgs; [
@@ -736,12 +741,16 @@ in
           libva-utils
           libva-vdpau-driver
         ];
-
+      }
+      # 32-bit graphics stack is x86-only; pkgsi686Linux throws on
+      # aarch64. Gate so this module can be reused on Asahi hosts.
+      // (lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+        package32 = pkgs.unstable.pkgsi686Linux.mesa;
         extraPackages32 = with pkgs.pkgsi686Linux; [
           libva
           libva-vdpau-driver
         ];
-      };
+      });
     };
 
     programs = {

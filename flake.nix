@@ -164,6 +164,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-apple-silicon = {
+      # Asahi NixOS support module (kernel, m1n1+u-boot, firmware extraction).
+      # Tracks unstable to stay in lockstep with the upstream linux-asahi
+      # kernel cadence; pinning to 25.11 lags too far behind. Only consumed
+      # by ali-mba-linux.
+      url = "github:nix-community/nixos-apple-silicon";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
+
     # nix-rosetta-builder = {
     #   url = "github:cpick/nix-rosetta-builder";
     #   inputs.nixpkgs.follows = "nixpkgs";

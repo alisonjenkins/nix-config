@@ -1,11 +1,16 @@
-{ pkgs, ... }: {
+{ pkgs, ... }: let
+  # Most autostart entries (steam, discord-canary, vesktop, keybase-gui,
+  # zapzap) are x86_64-only — gate the whole block to skip cleanly on
+  # aarch64-linux hosts like ali-mba-linux.
+  isLinuxX86 = pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
+in {
   home = {
-    packages = if pkgs.stdenv.isLinux then with pkgs; [
+    packages = if isLinuxX86 then with pkgs; [
       zapzap
     ] else [];
   };
 
-  home.file = (if pkgs.stdenv.isLinux then
+  home.file = (if isLinuxX86 then
     let
       steam-autostart-silent = pkgs.stdenvNoCC.mkDerivation {
         name = "steam-autostart-silent";

@@ -152,7 +152,7 @@ Configured in `overlays/default.nix` and exported via `flake-modules/overlays.ni
 ### Active Hosts
 
 Key configurations defined in the flake:
-- **Desktop/Laptop**: `ali-desktop`, `ali-framework-laptop`, `ali-work-laptop`
+- **Desktop/Laptop**: `ali-desktop`, `ali-framework-laptop`, `ali-work-laptop`, `ali-mba-linux` (M1 MacBook Air, NixOS-on-Asahi, aarch64-linux)
 - **macOS**: `Alisons-MacBook-Pro` (Darwin configuration for work laptop)
 - **Servers**: `home-storage-server-1`, `home-kvm-hypervisor-1`, `home-k8s-master-1`, `home-k8s-server-1`, `home-vpn-gateway-1`, `download-server-1`
 - **Dev/Test**: `dev-vm` (aarch64-linux VM)

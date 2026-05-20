@@ -35,6 +35,7 @@
     desktop-1password = import ../modules/desktop-1password;
     desktop-aws-tools = import ../modules/desktop-aws-tools;
     desktop-base = import ../modules/desktop-base;
+    desktop-gaming-arm64 = import ../modules/desktop-gaming-arm64;
     desktop-greetd = import ../modules/desktop-greetd;
     desktop-greetd-regreet = import ../modules/desktop-greetd-regreet;
     desktop-kde-connect = import ../modules/desktop-kde-connect;

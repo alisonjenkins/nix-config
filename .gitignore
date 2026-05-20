@@ -1,5 +1,7 @@
 **/*.dec.*
 **/.claude
+# Asahi peripheral firmware extracted from EFI partition (non-redistributable)
+flake-modules/hosts/ali-mba-linux/firmware/
 **/.DS_Store
 **/.playwright-mcp
 **/*.qcow2

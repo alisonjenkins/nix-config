@@ -1,10 +1,13 @@
 { pkgs
 , ...
 }: {
-  home.packages = if pkgs.stdenv.isLinux then with pkgs; [
-    keybase
-    keybase-gui
-  ] else [];
+  # keybase-gui has no aarch64 build; skip the gui on arm Linux.
+  home.packages =
+    if pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64 then
+      with pkgs; [ keybase keybase-gui ]
+    else if pkgs.stdenv.isLinux then
+      with pkgs; [ keybase ]
+    else [];
 
   # home.file =
   #   if pkgs.stdenv.isLinux then {

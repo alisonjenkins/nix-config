@@ -30,10 +30,14 @@
       [
         # unstable.advanced-scene-switcher
         droidcam-obs
-        looking-glass-obs
         obs-backgroundremoval
         obs-source-clone
         obs-vkcapture
+      ]
+      # looking-glass-obs is x86-only (depends on looking-glass which
+      # itself relies on shared-memory IVSHMEM, a QEMU/x86 KVM feature).
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+        looking-glass-obs
       ];
   };
 

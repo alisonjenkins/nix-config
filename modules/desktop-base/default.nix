@@ -10,7 +10,10 @@ in
   config = lib.mkIf cfg.enable {
     modules.base.useAliNeovim = true;
 
-    programs.gamescope = {
+    # gamescope pulls 32-bit graphics (pkgsi686Linux) into hardware.graphics
+    # — x86-only. Skip on aarch64; arm gaming via FEX has its own path
+    # (see modules/desktop-gaming-arm64).
+    programs.gamescope = lib.mkIf pkgs.stdenv.hostPlatform.isx86_64 {
       enable = true;
       capSysNice = true;
       package = pkgs.unstable.gamescope;
@@ -39,7 +42,6 @@ in
       curl
       ddcutil
       dig
-      discord-canary
       droidcam
       dua
       element-desktop
@@ -52,7 +54,6 @@ in
       gimp
       git
       gnupg
-      google-chrome
       gtk3
       haveged
       htop
@@ -62,9 +63,7 @@ in
       jdk17
       jq
       just
-      kbfs
       keybase
-      keybase-gui
       keyutils
       kodi-wayland
       libkrb5
@@ -101,16 +100,25 @@ in
       vulkan-tools
       vulnix
       watchexec
-      wine
       xdg-utils
       xorg.libXScrnSaver
       xorg.libXcursor
       xorg.libXi
       xorg.libXinerama
       yazi
-      zoom-us
       zsh
-    ];
+    ]
+    # x86_64-only packages — discord-canary/wine/google-chrome/kbfs/
+    # keybase-gui/zoom-us upstream don't ship aarch64 builds. Gate so
+    # the module is reusable on Asahi.
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 (with pkgs; [
+      discord-canary
+      google-chrome
+      kbfs
+      keybase-gui
+      wine
+      zoom-us
+    ]);
 
     programs = {
       partition-manager.enable = true;
@@ -127,8 +135,9 @@ in
       atd.enable = lib.mkDefault true;
       cpupower-gui.enable = false;
       haveged.enable = lib.mkDefault true;
-      kbfs.enable = lib.mkDefault true;
-      keybase.enable = lib.mkDefault true;
+      # keybase + kbfs binaries are x86-only on Linux.
+      kbfs.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isx86_64;
+      keybase.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isx86_64;
 
       avahi = {
         enable = lib.mkDefault true;
