@@ -49,7 +49,7 @@
         options = [ "noatime" "discard" ];
       };
       "/boot" = {
-        device = "/dev/disk/by-partuuid/REPLACE-WITH-EFI-PARTUUID-AT-INSTALL-TIME";
+        device = "/dev/disk/by-partuuid/103c3a2c-77a1-4400-a210-008761da1d25";
         fsType = "vfat";
         options = [ "fmask=0077" "dmask=0077" ];
       };
@@ -77,7 +77,12 @@
     #
     # And flip `modules.base.enableImpermanence = true` in default.nix.
 
-    swapDevices = [ ];
+    swapDevices = [
+      {
+        device = "/var/swapfile";
+        size = 16 * 1024;
+      }
+    ];
 
     networking.useDHCP = lib.mkDefault true;
 
