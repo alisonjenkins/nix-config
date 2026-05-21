@@ -562,7 +562,6 @@ in
       # pathsToLink = [ "/share/wallpapers" ]; # TODO: re-enable after wallpapers relocated from LFS
       systemPackages = with pkgs; [
         # unstable.winboat
-        birdtray
         bluetooth-connect
         deepfilternet
         dmidecode
@@ -582,7 +581,6 @@ in
         master.signal-desktop
         suspendScripts
         television
-        thunderbird
         unstable.cobang
         # copilot-cli removed upstream (deprecated by GitHub; use
         # `gh extension install github/gh-copilot` instead).
