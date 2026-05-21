@@ -34,6 +34,12 @@ in {
       default = "";
       description = "Additional KDL output blocks prepended before the main config.";
     };
+
+    touchpadTap = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable tap-to-click on the touchpad.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -102,7 +108,7 @@ in {
 
           touchpad {
               middle-emulation
-              tap
+              ${lib.optionalString cfg.touchpadTap "tap"}
           }
       }
 
