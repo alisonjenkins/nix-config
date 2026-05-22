@@ -327,6 +327,17 @@ in {
               updateMicrocode = true;
             };
           };
+
+          # Override desktop module's pkgs.unstable.mesa (25.2.6) with
+          # pkgs.master.mesa (26.1.1) on this host only. Master has the
+          # RADV gfx12 work that landed since 25.2.6: DGC+multiview
+          # enabled for vkd3d-proton, VK_KHR_pipeline_library under LLVM,
+          # VRS workaround on GFX12, depth/stencil clear perf, L2
+          # invalidation with streamout, quad-derivatives fix. Targets
+          # FH6 frame-pacing stutter on RX 9070 XT (gfx1201). Revisit
+          # once unstable catches up to 26.x.
+          graphics.package = lib.mkForce pkgs.master.mesa;
+          graphics.package32 = lib.mkForce pkgs.master.pkgsi686Linux.mesa;
         };
 
         # Disable NetworkManager-wait-online — desktop doesn't need network up before login
