@@ -544,6 +544,14 @@ in {
             extraRules = ''
               # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend)
               ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", ATTR{idProduct}=="3106", ATTR{power/control}="on"
+
+              # Use adios I/O scheduler on all storage devices (CachyOS kernel only).
+              # adios = adaptive deadline scheduler — better mixed-workload latency than `none`,
+              # negligible throughput cost on NVMe, much better interactivity during heavy I/O
+              # (parallel compiles, large file ops). Read-priority deadlines keep header reads
+              # from stalling behind object-file write bursts during `make -j32`.
+              ACTION=="add|change", KERNEL=="nvme*n*", ATTR{queue/scheduler}="adios"
+              ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="adios"
             '';
           };
 
