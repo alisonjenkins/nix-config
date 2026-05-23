@@ -550,25 +550,14 @@ in {
             enable = true;
             package = pkgs.unstable.lact;
 
-            settings = {
-              version = 5;
-              apply_settings_timer = 5;
-
-              daemon = {
-                admin_group = "wheel";
-                disable_clocks_cleanup = false;
-                log_level = "info";
-              };
-
-              gpus = {
-                "1002:7550-1DA2:E489-0000:03:00.0" = {
-                  fan_control_enabled = false;
-                  power_cap = 374.0;
-                  performance_level = "auto";
-                  voltage_offset = -80;
-                };
-              };
-            };
+            # Nix-managed settings TEMPORARILY DISABLED 2026-05-22 to test whether
+            # OC (-80mV / 374W cap) is contributing to GPU hang crashes (see
+            # memory/forza-horizon-6-linux.md Bug 3). With `settings` empty the
+            # NixOS module skips `environment.etc."lact/config.yaml"`, so the daemon
+            # owns the file and writes via GUI directly. /etc/lact persisted via
+            # impermanence so changes survive reboot. Original settings snapshot:
+            # ~/obsidian/3. Resources/1. KB/LACT settings - ali-desktop.md
+            # Restore by re-adding the settings block when testing is done.
           };
 
           snapper = {
