@@ -78,6 +78,13 @@ in {
           k3s = {
             enable = true;
             role = "server";
+            # Bump to 1.34.7+k3s1 from nixpkgs_unstable (nixos-25.11 still
+            # ships 1.34.5+k3s1). 1.34.5 self-shutdowns every 15 minutes on
+            # "tunnel watches failed to wait for RBAC: context deadline
+            # exceeded" — tunnel-server SelfSubjectAccessReview probe hits
+            # its hard 15-minute HTTP timeout against the local apiserver.
+            # Drop this override once nixos-25.11 picks up the bump.
+            package = pkgs.unstable.k3s_1_34;
             tokenFile = "/run/secrets/k8s-token";
 
             extraFlags = toString [
