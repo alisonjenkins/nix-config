@@ -309,7 +309,18 @@ in
   };
 
   _1password = final: _prev: {
-    _1password-gui = final.unstable._1password-gui;
+    # Agilebits republished 1Password 8.12.21 binary tarball at the same URL
+    # with new content on 2026-05-22, breaking nixpkgs's pinned hash. Override
+    # src with the current hash until nixpkgs (and nixos-unstable channel)
+    # picks up the new sources.json. Drop this overrideAttrs block once
+    # `nix flake update nixpkgs_unstable` pulls a commit with the corrected
+    # sha256 (post-2026-05-23).
+    _1password-gui = final.unstable._1password-gui.overrideAttrs (_old: {
+      src = final.fetchurl {
+        url = "https://downloads.1password.com/linux/tar/stable/x86_64/1password-8.12.21.x64.tar.gz";
+        hash = "sha256-JwiMi2iozP6jWSIUtgXla86aSAhuUob7snqtUbeXPpI=";
+      };
+    });
     _1password-cli = final.unstable._1password-cli;
   };
 
