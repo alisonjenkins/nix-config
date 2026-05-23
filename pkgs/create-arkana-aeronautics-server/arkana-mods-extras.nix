@@ -87,6 +87,24 @@
         sha256 = "1354gh585nq12a20869s2f5gprw2zb835zff6xy6j328mh7nnarh";
       };
     }
+    {
+      # 3.0.2 references `AllTags$AllItemTags.WRENCH` in ICopycatBlock.useItemOn,
+      # which Create 6.0.10 removed (wrench tag moved to NeoForge common
+      # `Tags$Items.TOOLS_WRENCH`). Using sliding-door copycats with any item
+      # crashes the client. 3.0.4 switches to the NeoForge tag and declares
+      # `create [6.0.8,)` so it's compatible with our bumped floor.
+      origProjectID = 968398;
+      origFileID    = 6650033;
+      projectID     = 968398;
+      fileID        = 7251823;
+      required      = true;
+      filename      = "copycats-3.0.4+mc.1.21.1-neoforge.jar";
+      jar = fetchurl {
+        url    = "https://mediafilez.forgecdn.net/files/7251/823/copycats-3.0.4%2Bmc.1.21.1-neoforge.jar";
+        name   = "copycats-3.0.4+mc.1.21.1-neoforge.jar";
+        sha256 = "1la5lxdw4vkcarkjxyhnv397fgggm7cc2cb8fxsmyqma5skf5044";
+      };
+    }
     # NOTE: tried Apotheosis 8.4 → 8.5.2, Apoth* family bumps, and
     # farm_and_charm 1.1.3 → 1.1.22 to clear the registry-init NPEs that
     # surface once Aeronautics + Create 6.0.10 are layered on Arkana.
