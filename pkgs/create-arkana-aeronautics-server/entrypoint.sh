@@ -52,6 +52,20 @@ if [ ! -e config ] && [ -e /opt/server/config ]; then
   cp -r /opt/server/config config
 fi
 
+# Force-sync config files that ship as part of the image and must stay
+# aligned across upgrades. `cp -r /opt/server/config` only runs on first
+# boot, so when NeoForge regenerates fml.toml with defaults on initial
+# startup the bake-time tuning gets shadowed forever. Files listed here
+# are overwritten from the image on every boot — they are not admin-tunable.
+# fml.toml in particular MUST stay disableConfigWatcher=true to avoid
+# exhausting the host's inotify instance budget under ~250 mods.
+# shellcheck disable=SC2043  # single-item list kept for future additions
+for f in fml.toml; do
+  if [ -e "/opt/server/config/$f" ]; then
+    cp -f "/opt/server/config/$f" "config/$f"
+  fi
+done
+
 # Spark profiler's async-profiler engine dlopens libstdc++.so.6 directly.
 # dockerTools images have no /lib search path, so point LD_LIBRARY_PATH at
 # the libstdc++ store path baked into the image. Without this spark falls
