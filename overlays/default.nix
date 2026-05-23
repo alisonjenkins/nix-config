@@ -308,6 +308,25 @@ in
     };
   };
 
+  # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml, but
+  # nixpkgs now ships jedi 0.20.0 → pythonRuntimeDepsCheckHook fails. pylsp
+  # works fine at runtime with jedi 0.20 (no API breakage), the upper bound
+  # is just an outdated pin. Relax it across all Python variants via
+  # pythonPackagesExtensions so every python3X.pkgs gets the patched version.
+  # Drop once nixpkgs bumps pylsp to >=1.14.1 (which relaxes the constraint).
+  python-lsp-server-jedi-relax = _final: prev: {
+    pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+      (_pyfinal: pyprev: {
+        python-lsp-server = pyprev.python-lsp-server.overridePythonAttrs (old: {
+          postPatch = (old.postPatch or "") + ''
+            substituteInPlace pyproject.toml \
+              --replace-fail 'jedi>=0.17.2,<0.20.0' 'jedi>=0.17.2,<0.21.0'
+          '';
+        });
+      })
+    ];
+  };
+
   _1password = final: _prev: {
     # Agilebits republished 1Password 8.12.21 binary tarball at the same URL
     # with new content on 2026-05-22, breaking nixpkgs's pinned hash. Override
