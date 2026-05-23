@@ -12,3 +12,14 @@
 #   picks BUFFER_STORAGE anyway after a profile change.
 [client.advanced.debugging.openGl]
 glUploadMode = "DATA"
+
+# overdrawPrevention = "1.0"
+#   Force LODs to render only beyond the vanilla render distance edge.
+#   The DH default (-1.0 / auto) picks a value based on vanilla render
+#   distance and frequently draws surface LODs *in front of* vanilla
+#   cave ceilings — surface terrain visible through stone, like an
+#   xray. Pinning to 1.0 makes vanilla chunks always occlude LODs.
+#   reduceOverdrawWithFastMovement (DH default true) mitigates the
+#   minor hole-on-fast-flight tradeoff.
+[client.advanced.graphics.culling]
+overdrawPrevention = "1.0"
