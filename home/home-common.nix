@@ -115,7 +115,9 @@
     else false;
 
   services = {
-    ssh-agent.enable = lib.mkIf pkgs.stdenv.isLinux true;
+    # ssh-agent disabled in favour of 1Password's SSH agent (see
+    # modules.desktop-1password). Running both fights over SSH_AUTH_SOCK.
+    ssh-agent.enable = false;
 
     gpg-agent = {
       enable = lib.mkIf pkgs.stdenv.isLinux true;

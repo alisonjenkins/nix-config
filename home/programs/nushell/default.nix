@@ -52,7 +52,7 @@ in
     };
 
     environmentVariables = {
-      SSH_AUTH_SOCK = ''$"($env.XDG_RUNTIME_DIR)/ssh-agent"'';
+      SSH_AUTH_SOCK = ''$"($env.HOME)/.1password/agent.sock"'';
     };
   };
 
