@@ -1487,6 +1487,20 @@ EOF
               udp = [ "10000-65535" ];
             };
 
+            # LAN-facing recursive resolver. Upstream queries egress via
+            # the primary-vpn WireGuard tunnel (wg-quick installs a
+            # default route via that interface when AllowedIPs=0.0.0.0/0).
+            # CoreDNS in home-cluster-1 forwards `.` here.
+            lanDns = {
+              enable = true;
+              listenAddress = "192.168.1.132";
+              allowSubnets = [
+                "192.168.1.0/24"   # LAN clients
+                "10.42.0.0/16"     # home-cluster-1 pod CIDR (CoreDNS)
+              ];
+              # Defaults to Quad9 + Cloudflare DoT — leave as-is.
+            };
+
             exceptions = {
               dnsServers = [
                 "149.112.112.112"

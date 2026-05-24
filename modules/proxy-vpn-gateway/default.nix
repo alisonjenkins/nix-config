@@ -133,6 +133,57 @@ in
         udp = [ 6881 ];
       };
     };
+
+    lanDns = mkOption {
+      type = types.submodule {
+        options = {
+          enable = mkEnableOption ''
+            a LAN-facing Unbound resolver. Listens on `listenAddress`,
+            answers queries from `allowSubnets`, and forces upstream
+            queries out via the VPN interface for privacy. Pair with an
+            in-cluster CoreDNS (or any forwarder) that delegates `.` to
+            this address.
+          '';
+          listenAddress = mkOption {
+            type = types.str;
+            default = "";
+            description = "LAN IP address Unbound should bind to (UDP+TCP/53).";
+            example = "192.168.1.132";
+          };
+          allowSubnets = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = ''
+              Source subnets (CIDR) allowed to query the resolver.
+              Anything else gets refused at the Unbound access-control
+              layer AND the nftables input chain.
+            '';
+            example = [ "192.168.1.0/24" "10.42.0.0/16" ];
+          };
+          upstreamServers = mkOption {
+            type = types.listOf types.str;
+            default = [
+              "9.9.9.9@853#dns.quad9.net"
+              "149.112.112.112@853#dns.quad9.net"
+              "1.1.1.1@853#cloudflare-dns.com"
+              "1.0.0.1@853#cloudflare-dns.com"
+            ];
+            description = ''
+              Upstream DoT resolvers, in Unbound `addr@port#authname`
+              format. Queries to these addresses egress via
+              `vpnInterface` (set via Unbound's `outgoing-interface:`).
+            '';
+          };
+        };
+      };
+      default = { enable = false; listenAddress = ""; allowSubnets = []; };
+      description = ''
+        Optional LAN-facing Unbound resolver. Designed for
+        download-server-1: an in-cluster CoreDNS forwards LAN-bound
+        recursion here, and Unbound exits upstream over the existing
+        WireGuard tunnel.
+      '';
+    };
   };
 
   config = mkIf cfg.enable (let
@@ -364,6 +415,18 @@ in
                   # Accept incoming responses from generic VPN endpoints
                   ${if (builtins.length endpointsWithoutPorts) > 0 then "ip saddr @vpn_endpoints accept" else ""}
 
+                  # == LAN DNS RESOLVER (lanDns) ==
+                  # Accept DNS queries (UDP+TCP/53) from allowed subnets
+                  # to the Unbound listener bound on listenAddress.
+                  ${lib.optionalString cfg.lanDns.enable (
+                    lib.concatMapStringsSep "\n" (lanInterface:
+                      lib.concatMapStringsSep "\n" (sub: ''
+                        iifname "${lanInterface}" ip saddr ${sub} ip daddr ${cfg.lanDns.listenAddress} udp dport 53 accept
+                        iifname "${lanInterface}" ip saddr ${sub} ip daddr ${cfg.lanDns.listenAddress} tcp dport 53 accept
+                      '') cfg.lanDns.allowSubnets
+                    ) cfg.lanInterfaces
+                  )}
+
                   # == VPN INCOMING PORTS ==
                   # Accept incoming TCP connections on VPN interface
                   ${lib.concatMapStringsSep "\n" (port:
@@ -425,5 +488,125 @@ in
           TimeoutStartSec = "2min";
         };
       };
+
+      # ====================================================================
+      # LAN DNS resolver (services.proxyVpnGateway.lanDns)
+      # ====================================================================
+      # Unbound listens on lanDns.listenAddress, answers queries from
+      # lanDns.allowSubnets, and routes upstream queries (DoT to Quad9 /
+      # Cloudflare by default) out via the VPN interface using Unbound's
+      # `outgoing-interface:` directive bound to the VPN's source IP.
+      users.users.unbound = lib.mkIf cfg.lanDns.enable {
+        isSystemUser = true;
+        group = "unbound";
+        home = "/var/lib/unbound-lan-dns";
+        createHome = true;
+      };
+      users.groups.unbound = lib.mkIf cfg.lanDns.enable {};
+
+      systemd.services.unbound-lan-dns = lib.mkIf cfg.lanDns.enable (let
+        unboundConfig = pkgs.writeText "unbound-lan-dns.conf" ''
+          server:
+              # Disable chroot — we run under systemd sandboxing,
+              # ProtectSystem + PrivateTmp already isolate the daemon.
+              chroot: ""
+              directory: "/var/lib/unbound-lan-dns"
+              pidfile: "/var/lib/unbound-lan-dns/unbound.pid"
+              username: ""
+
+              # Bind to LAN IP only.
+              interface: ${cfg.lanDns.listenAddress}
+              port: 53
+              do-ip4: yes
+              do-ip6: no
+              do-udp: yes
+              do-tcp: yes
+
+              # Recursion sources upstream queries via the VPN tunnel.
+              # We bind outgoing sockets to 0.0.0.0; the kernel chooses
+              # the route to upstreamServers — those routes go via
+              # `${cfg.vpnInterface}` because wg-quick installed
+              # `AllowedIPs = 0.0.0.0/0` on that interface.
+              outgoing-interface: 0.0.0.0
+
+              # Access control: deny by default, allow listed subnets.
+              ${lib.concatMapStringsSep "\n    " (sub:
+                "access-control: ${sub} allow"
+              ) cfg.lanDns.allowSubnets}
+              access-control: 0.0.0.0/0 refuse
+
+              # Caching
+              num-threads: 2
+              msg-cache-size: 64m
+              rrset-cache-size: 128m
+              cache-min-ttl: 60
+              cache-max-ttl: 86400
+              prefetch: yes
+              prefetch-key: yes
+              serve-expired: yes
+              serve-expired-ttl: 3600
+
+              # Security
+              hide-identity: yes
+              hide-version: yes
+              harden-glue: yes
+              harden-dnssec-stripped: yes
+              harden-below-nxdomain: yes
+              harden-referral-path: yes
+              use-caps-for-id: yes
+
+              # DNSSEC
+              auto-trust-anchor-file: "/var/lib/unbound-lan-dns/root.key"
+              val-clean-additional: yes
+
+              # Logging
+              verbosity: 1
+              log-queries: no
+
+              # DoT trust anchor
+              tls-cert-bundle: /etc/ssl/certs/ca-certificates.crt
+
+          forward-zone:
+              name: "."
+              forward-tls-upstream: yes
+              ${lib.concatMapStringsSep "\n    " (server:
+                "forward-addr: ${server}"
+              ) cfg.lanDns.upstreamServers}
+        '';
+      in {
+        description = "Unbound LAN DNS resolver (egress via VPN)";
+        after = [ "network-online.target" "wg-quick-${cfg.vpnInterface}.service" ];
+        wants = [ "network-online.target" "wg-quick-${cfg.vpnInterface}.service" ];
+        wantedBy = [ "multi-user.target" ];
+
+        preStart = ''
+          install -d -o unbound -g unbound -m 0750 /var/lib/unbound-lan-dns
+          if [ ! -f /var/lib/unbound-lan-dns/root.key ]; then
+            ${pkgs.unbound}/bin/unbound-anchor \
+              -a /var/lib/unbound-lan-dns/root.key \
+              -c /etc/ssl/certs/ca-certificates.crt || true
+            chown unbound:unbound /var/lib/unbound-lan-dns/root.key
+          fi
+        '';
+
+        serviceConfig = {
+          Type = "simple";
+          User = "unbound";
+          Group = "unbound";
+          ExecStart = "${pkgs.unbound}/bin/unbound -d -c ${unboundConfig}";
+          ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+          Restart = "on-failure";
+          RestartSec = "5s";
+
+          # Needs CAP_NET_BIND_SERVICE for :53; ProtectSystem + sandbox.
+          AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
+          CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
+          NoNewPrivileges = true;
+          PrivateTmp = true;
+          ProtectSystem = "strict";
+          ProtectHome = true;
+          ReadWritePaths = [ "/var/lib/unbound-lan-dns" ];
+        };
+      });
     });
 }
