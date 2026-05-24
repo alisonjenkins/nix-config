@@ -61,6 +61,7 @@ in {
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
             gitUserName = "Alison Jenkins";
+            enableDifftastic = false;  # jemalloc crashes on Asahi 16K pages
             github_clone_ssh_host_personal = "github.com";
             github_clone_ssh_host_work = "github.com";
             primarySSHKey = "~/.ssh/id_personal.pub";

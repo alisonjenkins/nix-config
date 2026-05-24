@@ -1,6 +1,7 @@
 { gitUserName
 , gitEmail
 , gitGPGSigningKey ? "~/.ssh/id_personal.pub"
+, enableDifftastic ? true
 , pkgs
 , ...
 }:
@@ -164,8 +165,8 @@ in
     ];
 
   programs.difftastic = {
-    enable = true;
-    git.enable = true;
+    enable = enableDifftastic;
+    git.enable = enableDifftastic;
     options = {
       background = "dark";
     };
