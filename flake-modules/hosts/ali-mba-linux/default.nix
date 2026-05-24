@@ -278,6 +278,17 @@ in {
 
         zramSwap.memoryPercent = lib.mkForce 50;
 
+        # Tune VM for zram-first paging: kernel resists swapping by default
+        # (vm.swappiness=10 in modules/base), which keeps cold JVM heap pages
+        # resident and triggers OOM under memory pressure (e.g. heavy Minecraft
+        # modpacks). zram is fast — prefer it over keeping cold anon pages.
+        boot.kernel.sysctl = {
+          "vm.swappiness" = lib.mkForce 180;
+          "vm.watermark_boost_factor" = lib.mkForce 0;
+          "vm.watermark_scale_factor" = lib.mkForce 125;
+          "vm.page-cluster" = lib.mkForce 0;
+        };
+
         system = {
           stateVersion = "25.11";
         };
