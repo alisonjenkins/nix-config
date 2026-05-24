@@ -333,7 +333,17 @@ in {
         # Add route for VPN endpoint via physical interface BEFORE wg-quick starts
         systemd.services.wg-quick-primary-vpn = {
           serviceConfig = {
-            ExecStartPre = "-${pkgs.iproute2}/bin/ip route add 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
+            # Multi-step start: wg-quick refuses to (re)create an existing
+            # interface (".wg-quick-wrapped: 'primary-vpn' already exists")
+            # so any stale stub from a previous failed run permanently
+            # wedges the service. Force-delete the iface first; "-" prefix
+            # makes systemd ignore non-zero exit when the iface is absent.
+            # The whole-home DNS chain depends on this tunnel — restart
+            # hygiene matters.
+            ExecStartPre = [
+              "-${pkgs.iproute2}/bin/ip link delete primary-vpn"
+              "-${pkgs.iproute2}/bin/ip route add 62.169.136.223/32 via 192.168.1.1 dev enp1s0"
+            ];
             ExecStopPost = "-${pkgs.iproute2}/bin/ip route del 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
           };
         };
@@ -346,12 +356,15 @@ in {
             set -euo pipefail
 
             INTERFACE="primary-vpn"
-            # Maximum age in seconds before considering the tunnel stale (5 minutes)
-            MAX_HANDSHAKE_AGE=300
-            # Backoff: max 3 restarts within 10 minutes, then stop trying
+            # Maximum age in seconds before considering the tunnel stale (3 minutes)
+            MAX_HANDSHAKE_AGE=180
+            # Backoff: max 10 restarts within 60 minutes. Widened from
+            # 3-in-10min so a longer transient (ProtonVPN endpoint blip,
+            # rolling reboot) doesn't quietly give up — the home DNS
+            # chain now depends on this tunnel.
             RESTART_STATE="/run/wireguard-watchdog-restarts"
-            MAX_RESTARTS=3
-            BACKOFF_WINDOW=600
+            MAX_RESTARTS=10
+            BACKOFF_WINDOW=3600
 
             do_restart() {
               # Clean up restart timestamps older than the backoff window
@@ -421,8 +434,8 @@ in {
           wantedBy = [ "timers.target" ];
 
           timerConfig = {
-            OnBootSec = "2min";
-            OnUnitActiveSec = "2min";
+            OnBootSec = "30s";
+            OnUnitActiveSec = "1min";
             Unit = "wireguard-watchdog.service";
           };
         };
