@@ -176,10 +176,15 @@ in {
             wifiPowerSave = true;
             pciRuntimePM = true;
             usbAutosuspend = true;
+            # apple-cpufreq's "powersave" governor pins to min P-state
+            # (600 MHz) unconditionally — not adaptive like intel/amd_pstate.
+            # schedutil ramps with scheduler load.
+            cpuFreqGovernor = "schedutil";
           };
           onAC = {
             ppdProfile = "balanced";
             scxArgs = [ ];
+            cpuFreqGovernor = "schedutil";
           };
         };
 
