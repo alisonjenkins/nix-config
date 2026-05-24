@@ -295,6 +295,16 @@ in
               });
             })
           ];
+
+          # mcp-nixos test_read_text_file is flaky: picks a random text file
+          # from /nix/store and asserts the substring "Error" doesn't appear
+          # in the read result. Any store file containing the word "Error"
+          # (e.g. python source defining error classes) fails it.
+          mcp-nixos = mprev.mcp-nixos.overridePythonAttrs (old: {
+            disabledTests = (old.disabledTests or []) ++ [
+              "test_read_text_file"
+            ];
+          });
         })
       ];
     };
