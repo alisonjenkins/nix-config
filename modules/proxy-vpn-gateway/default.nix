@@ -608,5 +608,46 @@ in
           ReadWritePaths = [ "/var/lib/unbound-lan-dns" ];
         };
       });
+
+      # =====================================================================
+      # DNS bootstrap bypass
+      # =====================================================================
+      # wg-quick (AllowedIPs=0.0.0.0/0) installs an ip rule sending all
+      # unmarked traffic through the VPN routing table. This includes the
+      # system-resolved queries to `exceptions.dnsServers` — meaning the
+      # host can't resolve its OWN VPN endpoint hostname / nix substituters
+      # / health probes until the VPN tunnel is up. Chicken-and-egg if the
+      # tunnel ever fails: bootstrap requires DNS, DNS requires VPN.
+      #
+      # Pin `exceptions.dnsServers` to the main routing table via a
+      # higher-priority ip rule so those few addresses always egress via
+      # the physical interface, even when the VPN is down. Privacy leak
+      # is bounded to a known set of public resolvers used only by the
+      # host's bootstrap stub (Unbound's recursion still goes via VPN).
+      systemd.services.proxy-vpn-dns-bootstrap-routes = {
+        description = "Pin DNS exception IPs to main routing table (bypass VPN)";
+        wantedBy = [ "multi-user.target" "network-pre.target" ];
+        before = [ "wg-quick-${cfg.vpnInterface}.service" "network.target" ];
+        after = [ "network-pre.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "proxy-vpn-dns-bootstrap-routes-up" ''
+            set +e
+            ${lib.concatMapStringsSep "\n" (ip: ''
+              ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 lookup main priority 5000 2>/dev/null
+              ${pkgs.iproute2}/bin/ip rule add to ${ip}/32 lookup main priority 5000
+            '') cfg.exceptions.dnsServers}
+            exit 0
+          '';
+          ExecStop = pkgs.writeShellScript "proxy-vpn-dns-bootstrap-routes-down" ''
+            ${lib.concatMapStringsSep "\n" (ip: ''
+              ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 lookup main priority 5000 2>/dev/null
+            '') cfg.exceptions.dnsServers}
+            exit 0
+          '';
+        };
+      };
     });
 }
