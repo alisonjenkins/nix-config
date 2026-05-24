@@ -18,6 +18,8 @@
   # this via extraSpecialArgs, personal machines get the empty-string default.
   _module.args.azureDevopsRsaKey = lib.mkDefault "";
 
+  _module.args.enableDifftastic = lib.mkDefault true;
+
   home = {
     inherit username;
     homeDirectory = lib.mkForce (
