@@ -111,6 +111,20 @@ in {
           };
         };
 
+        # Cilium L7LB (Gateway API / Ingress) requires accept_local=1 +
+        # route_localnet=1 on the external interface so the kernel
+        # delivers TPROXY-redirected packets (originated from non-local
+        # src) to envoy's 127.0.0.1 listening sockets. Without these,
+        # external SYNs hit the iptables CILIUM_PRE_mangle TPROXY rule
+        # (counter rises) but socket lookup silently drops the packet —
+        # every Gateway/Ingress VIP TIMEOUTs externally while
+        # host-originated curl works because OUTPUT bypasses PREROUTING.
+        boot.kernel.sysctl = {
+          "net.ipv4.conf.enp1s0.accept_local" = 1;
+          "net.ipv4.conf.enp1s0.route_localnet" = 1;
+          "net.ipv4.conf.all.accept_local" = 1;
+        };
+
         sops = {
           defaultSopsFile = self + "/secrets/home-k8s-master-1/secrets.yaml";
           defaultSopsFormat = "yaml";
