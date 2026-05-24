@@ -147,7 +147,10 @@ in
 
       flatpak = {
         enable = lib.mkDefault true;
-        packages = [
+        # Nyrna and Sober only publish x86_64 builds on flathub. On aarch64
+        # the managed-install service retries forever with
+        # "Nothing matches <app> in remote flathub". Gate them by arch.
+        packages = lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
           "codes.merritt.Nyrna"
           "org.vinegarhq.Sober"
         ];
