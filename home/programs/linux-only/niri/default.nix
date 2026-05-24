@@ -20,6 +20,23 @@ let
         --replace-fail \
           'import qs.Services.UI' \
           $'import qs.Services.UI\nimport qs.Services.Power'
+
+      # Extend KeepAwake to also inhibit lid-switch handling, so closing
+      # the lid does not suspend while keep-awake is active. The native
+      # Wayland IdleInhibitor protocol does not cover lid switch, so we
+      # spawn a sibling systemd-inhibit holding handle-lid-switch:sleep.
+      substituteInPlace $out/share/noctalia-shell/Services/Power/IdleInhibitorService.qml \
+        --replace-fail \
+          $'    isInhibited = true;\n    Logger.i("IdleInhibitor", "Started inhibition:", reason);' \
+          $'    lidInhibitorProcess.command = ["systemd-inhibit", "--what=handle-lid-switch:sleep", "--why=" + reason, "--mode=block", "sleep", "infinity"];\n    lidInhibitorProcess.running = true;\n    isInhibited = true;\n    Logger.i("IdleInhibitor", "Started inhibition:", reason);'
+      substituteInPlace $out/share/noctalia-shell/Services/Power/IdleInhibitorService.qml \
+        --replace-fail \
+          $'    isInhibited = false;\n    Logger.i("IdleInhibitor", "Stopped inhibition");' \
+          $'    if (lidInhibitorProcess.running) { lidInhibitorProcess.signal(15); }\n    isInhibited = false;\n    Logger.i("IdleInhibitor", "Stopped inhibition");'
+      substituteInPlace $out/share/noctalia-shell/Services/Power/IdleInhibitorService.qml \
+        --replace-fail \
+          $'  Process {\n    id: inhibitorProcess' \
+          $'  Process {\n    id: lidInhibitorProcess\n    running: false\n  }\n\n  Process {\n    id: inhibitorProcess'
     '';
   });
 in
