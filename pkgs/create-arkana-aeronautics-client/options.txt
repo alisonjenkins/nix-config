@@ -1,2 +1,4 @@
 resourcePacks:["vanilla","fabric","mod_resources","moonlight:merged_pack","mod/subtle_effects:resourcepacks/biome_color_water_particles","supplementaries:darker_ropes","builtin/aether_tooltips","builtin/client/deep_aether_tooltips","builtin/overrides/deep_aether_additional_assets"]
 incompatibleResourcePacks:["mod/subtle_effects:resourcepacks/biome_color_water_particles","supplementaries:darker_ropes","builtin/client/deep_aether_tooltips"]
+key_key.aether.open_accessories.desc:key.keyboard.unknown
+key_key.relics.active_abilities_list:key.keyboard.apostrophe

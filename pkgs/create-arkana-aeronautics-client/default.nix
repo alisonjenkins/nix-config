@@ -232,9 +232,22 @@ stdenvNoCC.mkDerivation {
     # they're also listed in `incompatibleResourcePacks` — that's MC's
     # "yes the user really wants these even though they declare wrong
     # version" override. Content is purely texture/model overrides and
-    # works on 1.21.1 unchanged. Other options.txt keys are not set
-    # here; MC fills in defaults on the first launch and the player can
-    # override anything from the in-game Options menu as normal.
+    # works on 1.21.1 unchanged.
+    #
+    # Also pre-binds two keymaps to dodge default-key collisions that
+    # closed mod UIs unexpectedly:
+    #   - `key.aether.open_accessories.desc` (default I) → unbound.
+    #     Aether's "Open/Close Accessories Inventory" stole I from any
+    #     focused modded UI (Ars search bar, Create storage filter, …)
+    #     so typing the letter I in those UIs popped the accessories
+    #     screen and closed the UI.
+    #   - `key.relics.active_abilities_list` (default LEFT_ALT) → '.
+    #     Relics' HUD-toggle conflicted with Create schematic
+    #     positioning, which also uses LEFT_ALT as its modifier key
+    #     when placing a schematic. Apostrophe is vanilla-unbound and
+    #     not registered by any other mod in this pack.
+    # MC fills in defaults on first launch for everything else; players
+    # can rebind any of these in-game and the new values stick.
     install -m644 ${./options.txt} overrides/options.txt
 
     # OpenLoader 21.1.5 ships with an empty `additional_locations` list and
