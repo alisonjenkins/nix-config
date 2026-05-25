@@ -1,5 +1,37 @@
 # Changelog - Create: Arkana + Aeronautics Client
 
+## [v1.5-aero-1.2.1-58] - 2026-05-25
+
+### Summary
+
+Hotfix for v57. `cataclysm_spellbooks 1.1.10` (the v57 pick) hard-references
+`com/github/L_Ender/cataclysm/config/CMConfig.Armor_Infinity_Durability`,
+a field that no longer exists in `cataclysm 3.28` (config split into
+`CMCommonConfig` + `CMClientConfig`). Result: NoClassDefFoundError on
+world-join — game crashes the moment the player connects to a server.
+
+Bumped to `cataclysm_spellbooks 1.1.11`, which drops the CMConfig
+reference. Verified by classfile scan + dedicated-server boot test.
+
+### Fixed
+
+1. **cataclysm_spellbooks 1.1.10 → 1.1.11.** The right version to ship
+   alongside cataclysm 3.28. Crashes that mentioned `CMConfig` /
+   `azurelib:anim_data_sync` channel mismatch are both resolved.
+
+### Tool bug (not yet fixed, worked around manually)
+
+`find-mod-bumps` evaluates bumps in leaves-first topo order. When
+`cataclysm_spellbooks` was evaluated, `azurelib` hadn't yet been
+bumped from 3.0.27 to 3.1.8 in the planned-version map. 1.1.11
+declares `azurelib [3.1.0,)` so its forward-check failed and the
+tool fell back to 1.1.10 (which accepts `azurelib [2.3.28,)`). The
+fixpoint loop only retries mods skipped as "no compatible newer
+version found" — it doesn't re-evaluate mods that already got bumped
+to see if a newer version is now possible. Future tool change:
+fixpoint should also retry already-bumped mods when their declared
+deps' planned versions changed.
+
 ## [v1.5-aero-1.2.1-57] - 2026-05-25
 
 ### Summary

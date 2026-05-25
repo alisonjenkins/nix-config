@@ -1605,17 +1605,27 @@
       };
     }
     {
-      # Bumped by find-mod-bumps (cataclysm_spellbooks).
+      # Bumped to 1.1.11 (not the find-mod-bumps pick of 1.1.10).
+      # find-mod-bumps evaluated this in leaves-first order before
+      # azurelib's bump landed; 1.1.11 declares azurelib `[3.1.0,)`
+      # which failed forward-check against the un-bumped 3.0.27, so the
+      # tool fell back to 1.1.10. 1.1.10 references the removed
+      # `com/github/L_Ender/cataclysm/config/CMConfig.Armor_Infinity_Durability`
+      # field — `CMConfig` was deleted in cataclysm 3.28 (config split
+      # into CMCommonConfig + CMClientConfig). 1.1.11 dropped the CMConfig
+      # reference and works against 3.28. Manual override until the tool's
+      # fixpoint loop also re-evaluates already-bumped mods after a lib
+      # bump (currently only retries skipped-as-incompat).
       origProjectID = 1099461;
       origFileID    = 6925079;
       projectID     = 1099461;
-      fileID        = 7358841;
+      fileID        = 7703231;
       required      = true;
-      filename      = "cataclysm_spellbooks-1.1.10-1.21.jar";
+      filename      = "cataclysm_spellbooks-1.1.11-1.21.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7358/841/cataclysm_spellbooks-1.1.10-1.21.jar";
-        name   = "cataclysm_spellbooks-1.1.10-1.21.jar";
-        sha256 = "0drm5kl9kv8qi2s332cqclqzl79bhqaz4b9hj5kc1jywc4bd5j39";
+        url    = "https://mediafilez.forgecdn.net/files/7703/231/cataclysm_spellbooks-1.1.11-1.21.jar";
+        name   = "cataclysm_spellbooks-1.1.11-1.21.jar";
+        sha256 = "0qqp577r1h4zmaiclb9g6582k6bmxln5rj6f672yypbkky6nw1ba";
       };
     }
     {
