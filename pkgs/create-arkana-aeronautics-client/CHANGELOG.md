@@ -1,5 +1,44 @@
 # Changelog - Create: Arkana + Aeronautics Client
 
+## [v1.5-aero-1.2.1-57] - 2026-05-25
+
+### Summary
+
+Hotfix for v56. The five "new entry" bumps shipped in v56
+(azurelib 3.1.8, cataclysm 3.28, cataclysm_spellbooks 1.1.10,
+crystal_chronicles 0.0.9, hazennstuff 1.4.0.10) **never actually
+applied** in v56's built tree — the apply-bumps script appended them
+to the `skipped = [ ... ]` list in `arkana-mods-extras.nix` instead
+of the `replacements = [ ... ]` list, because the replacements list
+closer had column-0 indent (`];`) rather than column-2 (`  ];`) and
+the script's regex matched the wrong list closer. v56 servers + clients
+both shipped with the original 3.0.27 azurelib + 3.16 cataclysm + etc.
+
+### Fixed
+
+1. **5 v56 bumps now actually fire.** Moved the misplaced replacement
+   blocks from `skipped = [ ... ]` to `replacements = [ ... ]` in
+   `arkana-mods-extras.nix`. Verified post-build that
+   `mods/azurelib-neo-1.21.1-3.1.8.jar` (etc.) replace the v55 versions.
+2. **URL encoding for cataclysm.** The cataclysm 3.28 fetchurl URL had
+   raw spaces and an apostrophe which curl refused to resolve as a
+   hostname. Percent-encoded to `%27` + `%20`.
+
+### Known issues / future work
+
+3. **Stale-jar auto-cleanup** was investigated but deferred. We
+   prototyped a NeoForge `IModFileCandidateLocator` mod
+   (`pkgs/arkana-mod-sweeper`) that would delete stale managed jars
+   before mod-load. Boot-test showed locator services declared in a
+   mod-jar's `mods.toml` don't run during the first discovery pass —
+   chicken-and-egg: the jar must be opened for its SPI registration,
+   but discovery is over by then. The duplicate-modid check rejects
+   boot before our shutdown hook can fire. Proper fix likely requires
+   shipping as `FMLModType=GAMELIBRARY` or as a `modlauncher`
+   `ITransformationService`, neither trivial — pushed to a future
+   release. **Manual cleanup step from v56 release notes still
+   required when updating from pre-v57 builds.**
+
 ## [v1.5-aero-1.2.1-56] - 2026-05-25
 
 ### Summary

@@ -1576,16 +1576,6 @@
         sha256 = "0ddskayn4ic97ishshpf2r0b3saarf7ksfy3ld9ry3r121ns2ga9";
       };
     }
-];
-  # Discontinued mods with no live file on CurseForge. Server ignores them;
-  # client derivation strips matching entries from manifest.json so the
-  # CurseForge launcher doesn't fail import.
-  skipped = [
-    {
-      projectID = 1171410;
-      fileID    = 6161857;
-      reason    = "Ender's Nameless Necromancy is discontinued; CurseForge has no published files";
-    }
     {
       # Bumped by find-mod-bumps (azurelib).
       origProjectID = 817423;
@@ -1609,7 +1599,7 @@
       required      = true;
       filename      = "L_Ender's Cataclysm 1.21.1-3.28.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/8095/590/L_Ender's Cataclysm 1.21.1-3.28.jar";
+        url    = "https://mediafilez.forgecdn.net/files/8095/590/L_Ender%27s%20Cataclysm%201.21.1-3.28.jar";
         name   = "L_Ender's Cataclysm 1.21.1-3.28.jar";
         sha256 = "1kmdicdcb5p75cdjqh3msgp4bnn5jgic2cdaxg9562i2h4bmz38i";
       };
@@ -1655,6 +1645,17 @@
         name   = "hazennstuff-1.4.0.10.jar";
         sha256 = "195j1j3m1n803qj8y3jm5g1yb9yqpcs3kz6zxlram21xig2hxb44";
       };
+    }
+  ];
+
+  # Discontinued mods with no live file on CurseForge. Server ignores them;
+  # client derivation strips matching entries from manifest.json so the
+  # CurseForge launcher doesn't fail import.
+  skipped = [
+    {
+      projectID = 1171410;
+      fileID    = 6161857;
+      reason    = "Ender's Nameless Necromancy is discontinued; CurseForge has no published files";
     }
   ];
 
