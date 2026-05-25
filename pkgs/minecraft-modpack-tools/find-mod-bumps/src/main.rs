@@ -194,6 +194,7 @@ fn main() -> Result<()> {
             &dependents,
             &bumps,
             args.prefetch,
+            None,
         ) {
             Ok(Some(record)) => {
                 eprintln!(
@@ -207,40 +208,58 @@ fn main() -> Result<()> {
                 );
                 bumps.insert(mid.clone(), record);
             }
-            Ok(None) => { /* skipped silently — reason set below */ }
+            Ok(None) => { /* unreachable today, kept for future shapes */ }
             Err(reason) => {
                 skipped_reasons.insert(mid.clone(), reason);
             }
         }
     }
 
-    // Fixpoint: only mods whose pass-1 reason was REASON_INCOMPAT have any
-    // chance of flipping — they failed forward-check against an
-    // un-bumped lib, which a later pass may have bumped. Re-evaluate
-    // those alone until the bumps map stops changing or we hit max_passes.
+    // Fixpoint: re-evaluate every bumpable mod against the updated
+    // planned-version map until no changes land. Two distinct cases
+    // each pass picks up:
+    //   1. A mod skipped as REASON_INCOMPAT because forward-check
+    //      failed against an un-bumped lib (which a later mod's pass
+    //      then bumped).
+    //   2. A mod already in `bumps` but on an older candidate than
+    //      ideal — when find-mod-bumps walked it leaves-first before a
+    //      lib it depends on got bumped, the newest candidate that
+    //      DECLARED a tight range on the new lib version was rejected;
+    //      the tool fell back to an older candidate with a looser range.
+    //      Once the lib is bumped, the newer candidate now passes.
+    //      (This is the cataclysm_spellbooks 1.1.10 vs 1.1.11 case that
+    //      shipped broken in v57.)
+    //
+    // For case (1) we pass `floor = None` so the candidate walk uses
+    // the pack pin. For case (2) we pass the just-chosen bump's id +
+    // version as the floor, so re-evaluation can ONLY land on a
+    // strictly-newer candidate — never downgrade. Mods unchanged by
+    // the previous pass naturally re-emerge with the same record;
+    // the loop terminates when no record changed this pass.
     let mut pass = 2;
     loop {
         if pass > args.max_passes + 1 {
             eprintln!("Reached --max-passes={}; stopping fixpoint.", args.max_passes);
             break;
         }
-        let retry_ids: Vec<String> = skipped_reasons
-            .iter()
-            .filter(|(_, r)| r.as_str() == REASON_INCOMPAT)
-            .map(|(m, _)| m.clone())
-            .collect();
-        if retry_ids.is_empty() {
-            break;
-        }
         eprintln!(
-            "Pass {}: re-evaluating {} previously-incompat mods against updated planned versions…",
+            "Pass {}: re-evaluating {} bumpable mods against updated planned versions…",
             pass,
-            retry_ids.len()
+            order.len()
         );
         let mut new_bumps = 0usize;
-        for mid in retry_ids {
+        let mut promoted_bumps = 0usize;
+        for mid in order.iter() {
+            let floor = bumps.get(mid).map(|b| {
+                let id = match modid_to_entry.get(mid).map(|e| &e.source) {
+                    Some(Source::Curseforge { .. }) => b.file_id.to_string(),
+                    Some(Source::Modrinth { .. }) => b.version_id.clone(),
+                    None => String::new(),
+                };
+                (id, b.version.clone())
+            });
             match try_bump_mod(
-                &mid,
+                mid,
                 &modid_to_entry,
                 &candidates_by_mid,
                 &current_version,
@@ -248,21 +267,48 @@ fn main() -> Result<()> {
                 &dependents,
                 &bumps,
                 args.prefetch,
+                floor.clone(),
             ) {
                 Ok(Some(record)) => {
-                    eprintln!(
-                        "  +bump {}: {} -> {} ({})",
-                        mid, record.current_version, record.version, record.source
-                    );
-                    skipped_reasons.remove(&mid);
-                    bumps.insert(mid, record);
-                    new_bumps += 1;
+                    if let Some(existing) = bumps.get(mid) {
+                        // Already had a bump — only count as a change
+                        // if the chosen candidate is different (i.e. a
+                        // promotion to a newer version).
+                        if existing.version != record.version {
+                            eprintln!(
+                                "  ^promote {}: {} -> {} ({})",
+                                mid, existing.version, record.version, record.source
+                            );
+                            bumps.insert(mid.clone(), record);
+                            promoted_bumps += 1;
+                        }
+                    } else {
+                        eprintln!(
+                            "  +bump {}: {} -> {} ({})",
+                            mid, record.current_version, record.version, record.source
+                        );
+                        skipped_reasons.remove(mid);
+                        bumps.insert(mid.clone(), record);
+                        new_bumps += 1;
+                    }
                 }
-                Ok(None) | Err(_) => { /* still no go */ }
+                Err(reason) => {
+                    // If this mod had a bump and we passed floor=Some,
+                    // a returned Err means "no newer candidate passes" —
+                    // existing bump stays. Don't overwrite skipped_reason
+                    // in that case.
+                    if floor.is_none() {
+                        skipped_reasons.insert(mid.clone(), reason);
+                    }
+                }
+                Ok(None) => {}
             }
         }
-        eprintln!("  pass {} added {} bumps.", pass, new_bumps);
-        if new_bumps == 0 {
+        eprintln!(
+            "  pass {} added {} new bumps, promoted {} existing.",
+            pass, new_bumps, promoted_bumps
+        );
+        if new_bumps == 0 && promoted_bumps == 0 {
             break;
         }
         pass += 1;
@@ -340,12 +386,14 @@ fn main() -> Result<()> {
 
 /// One mod's bump decision. Returns:
 ///   Ok(Some(rec))  — bump picked
-///   Ok(None)       — terminal-skipped (already-latest or no-versions);
-///                    reason was already inserted by the caller? No — we
-///                    set it inline; this variant currently unused after
-///                    refactor, kept as the "selected nothing without a
-///                    blocking reason" shape.
 ///   Err(reason)    — skipped with explanation; caller stores reason.
+///
+/// `floor_id`/`floor_ver` is the lower bound the candidate walk stops at
+/// (exclusive). Pass `None` for fresh evaluation — defaults to the pack's
+/// current pinned id+version (i.e. the arkana base or whatever extras
+/// already pinned). In the fixpoint loop, callers pass the just-chosen
+/// bump's id+version here so re-evaluation can only pick STRICTLY-NEWER
+/// candidates — never downgrade.
 fn try_bump_mod(
     mid: &str,
     modid_to_entry: &HashMap<String, StateEntry>,
@@ -355,6 +403,7 @@ fn try_bump_mod(
     dependents: &HashMap<String, HashSet<String>>,
     bumps: &BTreeMap<String, BumpRecord>,
     prefetch: usize,
+    floor: Option<(String, String)>,
 ) -> std::result::Result<Option<BumpRecord>, String> {
     let entry = modid_to_entry.get(mid).ok_or_else(|| "unknown mod".to_string())?;
     let cur_ver = current_version.get(mid).cloned().unwrap_or_default();
@@ -368,9 +417,11 @@ fn try_bump_mod(
         }
     };
 
-    let cur_id = current_id_of(entry);
-    if candidates[0].id == cur_id {
-        return Err(format!("already at latest ({})", cur_ver));
+    // floor_id = anything we already chose this round (no downgrade);
+    // floor_ver = its version (for the strict-semver guard).
+    let (floor_id, floor_ver) = floor.unwrap_or_else(|| (current_id_of(entry), cur_ver.clone()));
+    if candidates[0].id == floor_id {
+        return Err(format!("already at latest ({})", floor_ver));
     }
 
     let prefetch_n = prefetch.min(candidates.len());
@@ -386,7 +437,9 @@ fn try_bump_mod(
     };
 
     for cand in candidates.iter() {
-        if cand.id == cur_id {
+        if cand.id == floor_id {
+            // Reached floor (either pack pin or the version we already
+            // chose in this round). Anything older isn't a valid bump.
             break;
         }
         let jar = match (cand.fetch)() {
@@ -404,9 +457,14 @@ fn try_bump_mod(
             cand.version_hint.clone().unwrap_or_default()
         };
 
-        // Strict semver guard: must be strictly newer than current.
-        if !cur_ver.is_empty()
-            && cmp_versions(&version_key(&cand_version), &version_key(&cur_ver))
+        // Strict semver guard: must be strictly newer than the floor
+        // version. Catches CurseForge re-uploads where a newer fileID
+        // points at a semantically-older version, AND catches the case
+        // where the fixpoint already chose X and someone tries to
+        // re-evaluate against a candidate listed with a higher fileID
+        // but a lower version_key.
+        if !floor_ver.is_empty()
+            && cmp_versions(&version_key(&cand_version), &version_key(&floor_ver))
                 != std::cmp::Ordering::Greater
         {
             continue;
