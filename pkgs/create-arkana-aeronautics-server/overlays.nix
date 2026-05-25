@@ -214,11 +214,11 @@ in
     # Modrinth ThvCqQMh. The jar's `forge` filename is misleading —
     # mod metadata declares neoforge.mods.toml, runs natively on
     # NeoForge.
-    filename       = "tinyredstone-1.21.1-6.1.3.jar";
+    filename       = "tinyredstone-1.21.1-6.1.4.jar";
     dropAsOverride = true;
-    jar = modrinth "ThvCqQMh" "ESelEykG"
-      "tinyredstone-1.21.1-6.1.3.jar"
-      "1rvyf7ldlbzw0zd4519zy67g7d5ssmghbiq5s2jgcg6ryng33azj";
+    jar = modrinth "ThvCqQMh" "aIpBs9dG"
+      "tinyredstone-1.21.1-6.1.4.jar"
+      "0syv3kg5ajrhhry4w13vr7wpp6m6bz03wwva2j2a48zpz3h6zp71";
   }
   {
     # CC: Tweaked — modern fork of ComputerCraft (in-game programmable
@@ -226,11 +226,11 @@ in
     # NeoForge [21.1.9, 21.2), satisfied by 21.1.228. Modrinth gu7yAYhd.
     # Jar filename has "forge" in it because Modrinth historically
     # tagged it that way; the mod metadata is neoforge.mods.toml.
-    filename       = "cc-tweaked-1.21.1-forge-1.118.0.jar";
+    filename       = "cc-tweaked-1.21.1-forge-1.119.0.jar";
     dropAsOverride = true;
-    jar = modrinth "gu7yAYhd" "tufB2KsB"
-      "cc-tweaked-1.21.1-forge-1.118.0.jar"
-      "1hvd2rj49ksdw2bac0hd26s479x4spd7jmz46l2cpmmx4lvg7xsm";
+    jar = modrinth "gu7yAYhd" "puxJkazX"
+      "cc-tweaked-1.21.1-forge-1.119.0.jar"
+      "02va68zbxqab90n90pha993a6sbag56am2snq1i0acjy8kh2z7hn";
   }
   {
     # CC:C Bridge — bridges CC: Tweaked with Create. Adds peripherals
@@ -351,11 +351,11 @@ in
     # full body-tracking propagation when the server has the mod
     # too; non-VR players are unaffected. NeoForge >= 21.0.110 ✓
     # (we ship 21.1.228). Modrinth wGoQDPN5.
-    filename       = "vivecraft-1.21.1-1.3.7-neoforge.jar";
+    filename       = "vivecraft-1.21.1-1.3.8-neoforge.jar";
     dropAsOverride = true;
-    jar = modrinth "wGoQDPN5" "HoNxcbXG"
-      "vivecraft-1.21.1-1.3.7-neoforge.jar"
-      "1h3sfs3790z6dr8z9v6ybg1cp9ig4khlqlkz1ksp1ha5gxh70xh3";
+    jar = modrinth "wGoQDPN5" "eZ25nVLw"
+      "vivecraft-1.21.1-1.3.8-neoforge.jar"
+      "1zp5rk8dfyi1kvwmfxajsxpfrgx68vpw2wf1grxw7sw6nqng0qzp";
   }
   {
     # Create Deco — decorative blocks themed around Create's industrial
