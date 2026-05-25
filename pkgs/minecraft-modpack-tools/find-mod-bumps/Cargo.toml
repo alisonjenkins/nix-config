@@ -1,0 +1,29 @@
+[package]
+name = "find-mod-bumps"
+version = "0.2.0"
+edition = "2021"
+description = "Find newer compatible mod versions for a NeoForge modpack"
+
+[[bin]]
+name = "find-mod-bumps"
+path = "src/main.rs"
+
+[lib]
+name = "find_mod_bumps"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+rayon = "1"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

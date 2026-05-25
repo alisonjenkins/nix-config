@@ -1,4 +1,4 @@
-{ stdenvNoCC, lib, python3, makeWrapper }:
+{ stdenvNoCC, lib, python3, makeWrapper, rustPlatform }:
 # Pre-flight tooling shared across Minecraft modpack server packages.
 #
 # `dep-tree` parses META-INF/neoforge.mods.toml from every jar in a
@@ -12,40 +12,50 @@
 #      when iterating on a new modpack composition.
 #
 # `find-mod-bumps` walks the dep graph leaf-first to find the latest
-# CurseForge release/beta of each pack mod compatible with both its own
-# declared deps and existing dependents' version ranges. Output is a
-# bump table + ready-to-paste extras.nix replacement entries. Used as
-# `nix run .#find-mod-bumps -- /path/to/server-tree`. Reads
-# arkana-mods.nix + arkana-mods-extras.nix from the cwd by default
-# (override with --mods-nix / --extras-nix for other modpacks).
+# CurseForge/Modrinth release/beta of each pack mod compatible with both
+# its own declared deps and existing dependents' version ranges. Output
+# is a bump table + ready-to-paste extras.nix / overlays.nix replacement
+# entries. Used as `nix run .#find-mod-bumps -- /path/to/server-tree`.
+# Reads arkana-mods.nix + arkana-mods-extras.nix + overlays.nix from the
+# cwd by default (override with --mods-nix / --extras-nix / --overlays-nix
+# for other modpacks).
 #
-# The dep-tree script ships its own filename-pattern provider list
-# tuned for Arkana + Create-family modpacks (kotlinforforge, flywheel,
-# ponder JIJ, Aeronautics bundled simulated/offroad). Other modpacks
-# can still use the script — the patterns are additive and don't
-# interfere with unrelated jars.
+# The Rust port (find-mod-bumps/) parallelises both the per-mod listing
+# fetch (cfwidget + Modrinth API) and the per-mod jar pre-download, and
+# wraps all HTTP in an exponential-backoff retry loop. The retired
+# python script ran serially and would take ~10+ min for the Arkana
+# pack; the Rust binary completes the same walk in seconds when the
+# disk cache is warm.
+let
+  find-mod-bumps = rustPlatform.buildRustPackage {
+    pname = "find-mod-bumps";
+    version = "0.2.0";
+    src = ./find-mod-bumps;
+    cargoLock.lockFile = ./find-mod-bumps/Cargo.lock;
+    # No tests need network at build time — pure-logic unit tests + a
+    # zip-roundtrip integration test all run offline.
+    doCheck = true;
+  };
+in
 stdenvNoCC.mkDerivation {
   pname = "minecraft-modpack-tools";
-  version = "0.1.0";
+  version = "0.2.0";
 
   src = ./.;
   nativeBuildInputs = [ makeWrapper ];
-  buildInputs = [ python3 ];
+  buildInputs = [ python3 find-mod-bumps ];
 
   dontConfigure = true;
   dontBuild = true;
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 dep-tree.py        $out/bin/dep-tree
-    install -Dm755 find-mod-bumps.py  $out/bin/find-mod-bumps
-    # Ensure the shebang resolves to a Python with tomllib (3.11+).
-    # makeWrapper isn't strictly needed here — the script's `import
-    # tomllib` already gates on 3.11 — but the wrapper pins the Python
-    # store path so PATH-environment changes can't subvert it.
-    for bin in dep-tree find-mod-bumps; do
-      wrapProgram $out/bin/$bin --set PATH ${lib.makeBinPath [ python3 ]}
-    done
+    install -Dm755 dep-tree.py $out/bin/dep-tree
+    # `dep-tree` still requires python (3.11+ for tomllib); pin the
+    # interpreter so PATH-environment changes can't subvert it.
+    wrapProgram $out/bin/dep-tree --set PATH ${lib.makeBinPath [ python3 ]}
+    # find-mod-bumps is a standalone Rust binary — just expose it.
+    ln -s ${find-mod-bumps}/bin/find-mod-bumps $out/bin/find-mod-bumps
     runHook postInstall
   '';
 
