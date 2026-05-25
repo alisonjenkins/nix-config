@@ -24,6 +24,16 @@ let
         inputs.fenix.overlays.default
         (self: super: {
           nodejs = super.unstable.nodejs;
+          # yarn-berry 4.11.0 builds via `yarn workspace @yarnpkg/cli
+          # build:cli` → esbuild-wasm --service which hangs indefinitely
+          # in the nix sandbox on aarch64-darwin. cache.nixos.org only
+          # has yarn-berry built against nixpkgs's default nodejs_22, so
+          # pin yarn-berry's nodejs to nodejs_22 to hit the cache and
+          # avoid the local rebuild + hang.
+          yarn-berry = super.yarn-berry.override {
+            nodejs = super.nodejs_22;
+            yarn = super.yarn.override { nodejs = super.nodejs_22; };
+          };
         })
       ];
   };
