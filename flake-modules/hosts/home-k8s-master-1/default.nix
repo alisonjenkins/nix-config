@@ -125,6 +125,25 @@ in {
           "net.ipv4.conf.all.accept_local" = 1;
         };
 
+        # Hosts the home-nix-builder-amd64 GHA runner scale-set; pods
+        # hostPath-mount /nix/store + /nix/var and build via the host
+        # daemon, so every desktop closure lands here. Outputs are pushed
+        # to api.nixcache.org by the workflow before the pod exits, so
+        # local copies are disposable — keep retention short and let the
+        # daemon prune mid-build under disk pressure.
+        nix = {
+          gc = {
+            dates = lib.mkForce "daily";
+            options = lib.mkForce "--delete-older-than 3d";
+          };
+
+          settings = {
+            min-free = 50 * 1024 * 1024 * 1024;
+            max-free = 100 * 1024 * 1024 * 1024;
+            auto-optimise-store = lib.mkForce true;
+          };
+        };
+
         sops = {
           defaultSopsFile = self + "/secrets/home-k8s-master-1/secrets.yaml";
           defaultSopsFormat = "yaml";
