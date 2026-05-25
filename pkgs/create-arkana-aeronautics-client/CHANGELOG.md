@@ -1,5 +1,119 @@
 # Changelog - Create: Arkana + Aeronautics Client
 
+## [v1.5-aero-1.2.1-56] - 2026-05-25
+
+### Summary
+
+Round 4 of `find-mod-bumps`: 24 mod bumps applied after a Rust-port of
+the bump tool added parallel HTTP + a fixpoint pass that catches
+consumer-bumps gated on a lib bump in the same round. Two visible
+keymap collisions fixed in the client. Two flagged bumps (relics,
+lionfishapi) deliberately skipped — bytecode scan confirmed they would
+break mods that don't have a forward-compatible release available.
+
+### Added — mod bumps
+
+Inserted (no prior replacement) — five mods now pinned ahead of the
+arkana base:
+- **azurelib** 3.0.27 → **3.1.8** — package layout reorganised
+  (`mod/azure/azurelib/common/api/` removed). Consumers
+  cataclysm_spellbooks, hazennstuff and crystal_chronicles all bumped
+  in lockstep to versions that moved to the new namespace; verified by
+  classfile scan of the cached jars.
+- **cataclysm** 3.16 → **3.28**
+- **cataclysm_spellbooks** 1.1.9 → **1.1.10**
+- **crystal_chronicles** 0.0.7-alpha → **0.0.9** — picked up by the
+  fixpoint pass; declares `azurelib [3.1,)` which fails forward-check
+  in leaves-first order alone.
+- **hazennstuff** 1.2.0 → **1.4.0.10**
+
+### Changed — mod bumps (in-place updates)
+
+Existing replacement blocks rewritten:
+- apothic_enchanting 1.5.2 → **1.5.3**
+- create_dragons_plus 1.10.0 → **1.10.1**
+- createultimine 1.3.1 → **1.3.2**
+- ess_requiem 0.1.2 → **0.1.5**
+- firesenderexpansion 2.3.5 → **2.4.0**
+- ftbchunks 2101.1.13 → **2101.1.14**
+- glassential 3.4.2 → **3.4.3**
+- immersive_paintings 0.7.6 → **0.7.7**
+- lithostitched 1.7.3 → **1.7.7**
+- moonlight 3.0.7 → **3.0.14** — bytecode scan confirmed the removed
+  `ConfigBuilderImpl$StringCodecConfigValue` / `$StringJsonConfigValue`
+  inner classes have zero consumers in the pack; the old "moonlight
+  3.0.7 major" note is now outdated.
+- puzzleslib 21.1.39 → **21.1.46**
+- sophisticatedbackpacks 3.25.45 → **3.25.49**
+- sophisticatedcore 1.4.39 → **1.4.42**
+- sophisticatedstorage 1.5.47 → **1.5.50**
+- supplementaries 3.6.4 → **3.6.5**
+- waystones 21.1.30 → **21.1.33**
+
+Modrinth (overlays.nix):
+- computercraft 1.118.0 → **1.119.0**
+- tinyredstone 6.1.3 → **6.1.4**
+- vivecraft 1.3.7 → **1.3.8**
+
+### Removed — stale chain-replacement blocks
+
+waystones and create_dragons_plus each had a second
+chain-replacement block (`orig→A` plus `A→B`). Overwriting the first
+block's new-fileID would have left the second one matching nothing,
+causing the pack to install both copies of the mod side-by-side and
+NeoForge to fail on duplicate modIds. Collapsed each to a single
+canonical replacement that bumps directly from the arkana base.
+
+### Skipped — flagged unsafe after bytecode investigation
+
+- **relics 0.10.7.6 → 0.12.7** — IRelicItem still exists in 0.12.7,
+  but `IRenderableCurio` and `ExperienceAddEvent` are gone.
+  arcane_abilities 0.2.8 (latest) references `ExperienceAddEvent`;
+  reliquified_twilight_forest 0.5.3 (latest) uses `IRenderableCurio`.
+  No forward-compatible releases exist for either, so the bump would
+  break two mods unconditionally.
+- **lionfishapi 2.7-fix-fix → 3.0-beta** — drops `IAnimatedEntity`,
+  which IceAndFireCE, cataclysm (including the bumped 3.28), alltheleaks
+  and uranus all reference via bytecode. No forward-compatible release
+  available for the consumers.
+
+### Fixed — client keymaps
+
+- **`I` key no longer steals focus from modded UIs**.
+  Aether's "Open/Close Accessories Inventory"
+  (`key.aether.open_accessories.desc`) defaulted to `I`. Typing the
+  letter `I` in any focused modded search field (Ars Magicka storage
+  search, Create filter slots, JEI input) fired the hotkey, opened
+  Aether's accessories screen, and closed the modal UI. Pre-bind to
+  `key.keyboard.unknown` in `overrides/options.txt`. Players can pick
+  a different key in Options → Controls if they actually use Aether's
+  accessory tab.
+- **Relics HUD toggle off `LEFT_ALT`**.
+  `key.relics.active_abilities_list` defaulted to `LEFT_ALT`, the same
+  modifier Create uses for schematic positioning. Held LEFT_ALT while
+  placing a schematic flipped the Relics HUD instead of moving the
+  schematic ghost. Re-bound to `'` (apostrophe) — vanilla-unbound and
+  not registered by any other mod in the pack (verified via per-jar
+  KeyMapping disassembly).
+
+**Existing players whose `options.txt` was already written by a prior
+launch must rebind these themselves** in Options → Controls — the
+modpack-shipped values apply on first launch only, then MC owns the
+file.
+
+### Tooling
+
+- `pkgs/minecraft-modpack-tools/find-mod-bumps` rewritten in Rust.
+  Parallel cfwidget + Modrinth listing fetch, parallel per-mod
+  candidate jar pre-download, HTTP wrapped in exponential-backoff
+  retries (500ms → 30s cap, classifies transient 408/425/429/5xx vs
+  terminal). Adds a fixpoint loop that re-evaluates mods initially
+  skipped as "no compatible newer version found" against bumps
+  committed in earlier passes — fixes a leaves-first false-negative
+  where a consumer requiring a bumped lib's new version range was
+  evaluated before the lib's bump was decided. 40 unit + integration
+  tests; nix derivation builds via `rustPlatform.buildRustPackage`.
+
 ## [Unreleased] - 2026-05-14
 
 ### Summary
