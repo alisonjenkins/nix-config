@@ -283,15 +283,34 @@ in {
           open-maximized true
       }
 
+      // Steam Big Picture + games launched from it.
+      // App-id patterns covered:
+      //   - "steam" + BP title              -> Big Picture itself
+      //   - "gamescope"                     -> nested gamescope sessions
+      //   - "steam_app_<id>"                -> Steam Runtime sets SDL_VIDEO_X11_WMCLASS
+      //   - "steam_proton"                  -> Proton launcher
+      //   - "^Wine$" / ".+\\.exe$"          -> older Proton games where the runtime
+      //                                        doesn't override WM_CLASS
+      // If a game still slips through, run `niri msg windows` while it's running,
+      // grab the App ID and add it as a `match app-id="..."` line below.
       window-rule {
           match app-id="^gamescope$"
           match app-id="^steam$" title="^Steam Big Picture Mode$"
           match app-id="^steam_app_.*$"
           match app-id="^steam_proton$"
+          match app-id="^Wine$"
+          match app-id=".+\\.exe$"
           open-fullscreen true
           open-focused true
           open-on-workspace "game"
           variable-refresh-rate true
+          draw-border-with-background false
+          border {
+              off
+          }
+          focus-ring {
+              off
+          }
       }
 
       window-rule {
