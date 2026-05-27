@@ -88,14 +88,34 @@ in {
           enableImpermanence = true;
           impermanencePersistencePath = "/persistence";
           enableCachyOSKernel = false;
-          beesdFilesystems = {
-            crypted = {
-              spec = "LABEL=crypted";
-              hashTableSizeMB = 256;
-              verbosity = "crit";
-              extraOptions = [ "--loadavg-target" "5.0" ];
-            };
-          };
+          # No btrfs after the XFS migration — beesd is btrfs-only.
+        };
+
+        # XFS doesn't support discard mount option (no perf benefit);
+        # weekly fstrim keeps the SSD healthy instead.
+        services.fstrim.enable = true;
+
+        # Single XFS data LV (/persistence) is shared between /nix and
+        # /home via bind mounts. XFS can grow but not shrink, so we
+        # avoid pre-committing the split.
+        boot.initrd.systemd.tmpfiles.settings."10-deck-data-binds" = {
+          "/persistence/nix".d = { mode = "0755"; };
+          "/persistence/home".d = { mode = "0755"; };
+        };
+
+        fileSystems."/nix" = {
+          device = "/persistence/nix";
+          fsType = "none";
+          options = [ "bind" ];
+          neededForBoot = true;
+          depends = [ "/persistence" ];
+        };
+
+        fileSystems."/home" = {
+          device = "/persistence/home";
+          fsType = "none";
+          options = [ "bind" ];
+          depends = [ "/persistence" ];
         };
 
         modules.desktop.enable = true;
@@ -204,6 +224,36 @@ in {
         # Jovian manages the power button via its own daemon (powerbuttond)
         services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
 
+        # Auto-hibernate after 2h of suspend so the battery doesn't drain
+        # flat when the deck is left suspended. The Steam UI's Suspend
+        # button calls plain `systemctl suspend` via logind dbus, which
+        # ignores HibernateDelaySec (that only fires for
+        # suspend-then-hibernate). Workaround: arm an RTC-backed
+        # systemd timer when suspend.target activates; WakeSystem=true
+        # programs /sys/class/rtc/rtc0/wakealarm so the kernel resumes
+        # at the deadline, then the timer fires `systemctl hibernate`.
+        # partOf=suspend.target cancels the timer if the user resumes
+        # manually before 2h elapses. Requires the swap LV in
+        # disko-config to be marked resumeDevice=true.
+        systemd.services.auto-hibernate-after-suspend = {
+          description = "Hibernate after extended suspend to save battery";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.systemd}/bin/systemctl hibernate";
+          };
+        };
+        systemd.timers.auto-hibernate-after-suspend = {
+          description = "Trigger hibernate after 2h in suspend";
+          wantedBy = [ "suspend.target" ];
+          partOf = [ "suspend.target" ];
+          timerConfig = {
+            OnActiveSec = "2h";
+            AccuracySec = "1m";
+            WakeSystem = true;
+            RemainAfterElapse = false;
+          };
+        };
+
 
         environment = {
           pathsToLink = [ "/share/zsh" ];
@@ -286,11 +336,6 @@ in {
         # Steam process inherits it on launch.
         systemd.user.services.steam-launcher.environment.STEAM_EXTRA_COMPAT_TOOLS_PATHS =
           lib.makeSearchPathOutput "steamcompattool" "" config.programs.steam.extraCompatPackages;
-
-        services.btrfs.autoScrub = {
-          enable = true;
-          fileSystems = [ "/persistence" ];
-        };
 
         # Persist the journal so if Steam Big Picture / SDDM falls
         # through to a tty bash shell, the failure cause is
