@@ -130,6 +130,7 @@ in {
             pinentry_mac
             pkg-config
             posting
+            pup
             pwgen
             ripgrep
             rlwrap

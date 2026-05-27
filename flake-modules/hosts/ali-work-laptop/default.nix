@@ -197,6 +197,7 @@ in {
 
           systemPackages = with pkgs; [
             powershell
+            pup
             sbctl
             slack
             # wallpapers # TODO: re-enable after wallpapers relocated from LFS
