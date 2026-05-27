@@ -35,4 +35,5 @@
   nbt-studio = pkgs.callPackage ./nbt-studio {};
   scopebuddy = pkgs.callPackage ./scopebuddy {};
   pup = pkgs.callPackage ./pup {};
+  pup-claude = pkgs.callPackage ./pup-claude {};
 }

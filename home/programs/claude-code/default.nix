@@ -323,7 +323,7 @@ in
 
     # cavekit as a plugin so Claude Code loads it with the "ck:" namespace
     # (giving /ck:spec, /ck:build, /ck:check)
-    plugins = [ cavekitPkg ];
+    plugins = [ cavekitPkg pkgs.pup-claude ];
 
     agentsDir = ./agents;
 
