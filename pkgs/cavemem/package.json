@@ -49,7 +49,7 @@
     "publish:release": "pnpm pack:release && npm publish ./release --access public"
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "commander": "^14.0.0",
     "kleur": "^4.1.5",
     "better-sqlite3": "^11.5.0",
     "hono": "^4.6.10",
