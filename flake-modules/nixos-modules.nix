@@ -20,6 +20,7 @@
     power-management = import ../modules/power-management;
     rocm = import ../modules/rocm;
     servers = import ../modules/servers;
+    sunshine = import ../modules/sunshine;
     tts = import ../modules/tts;
     uresourced = import ../modules/uresourced;
     vr = import ../modules/vr;
