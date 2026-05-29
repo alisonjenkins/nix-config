@@ -10,6 +10,7 @@
     desktop = import ../modules/desktop;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
+    mosh = import ../modules/mosh;
     luks-controller-unlock = import ../modules/luks-controller-unlock.nix;
     luksPCR15 = import ../modules/luksPCR15;
     niks3-cache-push = import ../modules/niks3-cache-push;
