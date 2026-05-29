@@ -37,6 +37,8 @@ in {
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.ollama
+      self.nixosModules.mosh
+      self.nixosModules.sunshine
       self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.ali-work-laptop-hardware
@@ -125,7 +127,14 @@ in {
 
         services.automatic-timezoned.enable = true;
         modules.locale.enable = true;
-        modules.ollama.enable = true;
+        modules.mosh.enable = true;
+        modules.sunshine.enable = true;
+        modules.ollama = {
+          enable = true;
+          rocmOverrideGfx = "11.5.1";     # gfx1151 / Strix Halo iGPU
+          startAtBoot = true;             # so loadModels pulls + ollama is reachable
+          loadModels = [ "gpt-oss:120b" ];
+        };
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
         modules.podman.enableQemuBinfmt = true;
