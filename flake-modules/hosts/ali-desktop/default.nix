@@ -36,6 +36,7 @@ in {
       self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.rocm
+      self.nixosModules.sunshine
       self.nixosModules.tts
       self.nixosModules.vr
 
@@ -148,6 +149,96 @@ in {
         modules.podman.enableQemuBinfmt = true;
         modules.rocm.enable = true;
         modules.tts.enable = true;
+
+        # autoStart/capSysAdmin/openFirewall/package use modules.sunshine defaults
+        modules.sunshine = {
+          enable = true;
+
+          applications = {
+            env = {
+              PATH = "$(PATH):$(HOME)/.local/bin";
+            };
+            apps = [
+              {
+                name = "Desktop";
+                image-path = "desktop.png";
+              }
+              {
+                name = "Steam Big Picture";
+                detached = [
+                  "sunshine-steam-bp"
+                ];
+                prep-cmd = [
+                  {
+                    undo = "setsid steam steam://close/bigpicture";
+                  }
+                ];
+                image-path = "steam.png";
+              }
+              {
+                name = "Steam Big Picture (TV 1080p)";
+                detached = [
+                  "sunshine-steam-bp"
+                ];
+                prep-cmd = [
+                  {
+                    do = "niri msg output DP-2 mode 1920x1080@120.000";
+                    undo = "niri msg output DP-2 mode 5120x1440@119.999";
+                  }
+                  {
+                    undo = "setsid steam steam://close/bigpicture";
+                  }
+                ];
+                image-path = "steam.png";
+                auto-detach = "true";
+              }
+              {
+                name = "TV Desktop (1080p)";
+                prep-cmd = [
+                  {
+                    do = "niri msg output DP-2 mode 1920x1080@120.000";
+                    undo = "niri msg output DP-2 mode 5120x1440@119.999";
+                  }
+                ];
+                image-path = "desktop.png";
+              }
+              {
+                name = "TV Desktop (1440p)";
+                prep-cmd = [
+                  {
+                    do = "niri msg output DP-2 mode 2560x1440@119.998";
+                    undo = "niri msg output DP-2 mode 5120x1440@119.999";
+                  }
+                ];
+                image-path = "desktop.png";
+              }
+              {
+                name = "Gamescope 1080p";
+                detached = [
+                  "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1080p"
+                ];
+                prep-cmd = [
+                  {
+                    undo = "pkill -f 'gamescope.*steam'";
+                  }
+                ];
+                image-path = "steam.png";
+              }
+              {
+                name = "Gamescope 1440p";
+                detached = [
+                  "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1440p"
+                ];
+                prep-cmd = [
+                  {
+                    undo = "pkill -f 'gamescope.*steam'";
+                  }
+                ];
+                image-path = "steam.png";
+              }
+            ];
+          };
+        };
 
         modules.vr = {
           enable = true;
@@ -593,99 +684,6 @@ in {
           # Its CFS latency profiles are also redundant with scx_lavd.
           # Process scheduling is handled by ananicy-cpp with ananicy-rules-cachyos.
           system76-scheduler.enable = false;
-
-          sunshine = {
-            enable = true;
-            autoStart = true;
-            capSysAdmin = true;
-            openFirewall = true;
-            package = pkgs.unstable.sunshine;
-
-            applications = {
-              env = {
-                PATH = "$(PATH):$(HOME)/.local/bin";
-              };
-              apps = [
-                {
-                  name = "Desktop";
-                  image-path = "desktop.png";
-                }
-                {
-                  name = "Steam Big Picture";
-                  detached = [
-                    "sunshine-steam-bp"
-                  ];
-                  prep-cmd = [
-                    {
-                      undo = "setsid steam steam://close/bigpicture";
-                    }
-                  ];
-                  image-path = "steam.png";
-                }
-                {
-                  name = "Steam Big Picture (TV 1080p)";
-                  detached = [
-                    "sunshine-steam-bp"
-                  ];
-                  prep-cmd = [
-                    {
-                      do = "niri msg output DP-2 mode 1920x1080@120.000";
-                      undo = "niri msg output DP-2 mode 5120x1440@119.999";
-                    }
-                    {
-                      undo = "setsid steam steam://close/bigpicture";
-                    }
-                  ];
-                  image-path = "steam.png";
-                  auto-detach = "true";
-                }
-                {
-                  name = "TV Desktop (1080p)";
-                  prep-cmd = [
-                    {
-                      do = "niri msg output DP-2 mode 1920x1080@120.000";
-                      undo = "niri msg output DP-2 mode 5120x1440@119.999";
-                    }
-                  ];
-                  image-path = "desktop.png";
-                }
-                {
-                  name = "TV Desktop (1440p)";
-                  prep-cmd = [
-                    {
-                      do = "niri msg output DP-2 mode 2560x1440@119.998";
-                      undo = "niri msg output DP-2 mode 5120x1440@119.999";
-                    }
-                  ];
-                  image-path = "desktop.png";
-                }
-                {
-                  name = "Gamescope 1080p";
-                  detached = [
-                    "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1080p"
-                  ];
-                  prep-cmd = [
-                    {
-                      undo = "pkill -f 'gamescope.*steam'";
-                    }
-                  ];
-                  image-path = "steam.png";
-                }
-                {
-                  name = "Gamescope 1440p";
-                  detached = [
-                    "env ENABLE_GAMESCOPE_WSI=1 sunshine-gamescope 1440p"
-                  ];
-                  prep-cmd = [
-                    {
-                      undo = "pkill -f 'gamescope.*steam'";
-                    }
-                  ];
-                  image-path = "steam.png";
-                }
-              ];
-            };
-          };
 
           xserver = {
             videoDrivers = [ "amdgpu" ];
