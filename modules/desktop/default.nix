@@ -567,6 +567,9 @@ in
         dmidecode
         file-roller
         hicolor-icon-theme
+        # vainfo for debugging VA-API; match the unstable libva/mesa stack
+        # in hardware.graphics so it reports the same driver ABI.
+        unstable.libva-utils
         lock-session
         millisecond
         nethogs
@@ -733,8 +736,13 @@ in
         # Use unstable Mesa for better RDNA 4 support
         package = pkgs.unstable.mesa;
 
-        # VA-API hardware video acceleration
-        extraPackages = with pkgs; [
+        # VA-API hardware video acceleration.
+        # libva must match the mesa channel above — mesa's radeonsi VAAPI
+        # driver exports a versioned __vaDriverInit_<libva major.minor> symbol
+        # (1.23 for mesa 26.x), so a stable (older) libva runtime fails to
+        # dlsym the init function and VAAPI silently disappears (e.g. OBS shows
+        # no hardware encoders). Keep these on unstable alongside unstable.mesa.
+        extraPackages = with pkgs.unstable; [
           libva
           libva-utils
           libva-vdpau-driver
@@ -744,7 +752,8 @@ in
       # aarch64. Gate so this module can be reused on Asahi hosts.
       // (lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
         package32 = pkgs.unstable.pkgsi686Linux.mesa;
-        extraPackages32 = with pkgs.pkgsi686Linux; [
+        # Match unstable.pkgsi686Linux.mesa above (same ABI reason as 64-bit).
+        extraPackages32 = with pkgs.unstable.pkgsi686Linux; [
           libva
           libva-vdpau-driver
         ];
