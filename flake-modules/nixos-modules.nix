@@ -8,6 +8,7 @@
     initrd-ssh = import ../modules/initrd-ssh.nix;
     btfs-streaming = import ../modules/btfs-streaming;
     desktop = import ../modules/desktop;
+    docker = import ../modules/docker;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
     mosh = import ../modules/mosh;
