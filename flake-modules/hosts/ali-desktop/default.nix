@@ -28,13 +28,13 @@ in {
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
       self.nixosModules.desktop
+      self.nixosModules.docker
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
       self.nixosModules.ollama
       self.nixosModules.uresourced
       self.nixosModules.plymouth
-      self.nixosModules.podman
       self.nixosModules.rocm
       self.nixosModules.sunshine
       self.nixosModules.tts
@@ -145,8 +145,8 @@ in {
 
         modules.locale.enable = true;
         modules.ollama.enable = true;
-        modules.podman.enable = true;
-        modules.podman.enableQemuBinfmt = true;
+        modules.docker.enable = true;
+        modules.docker.enableQemuBinfmt = true;
         modules.rocm.enable = true;
         modules.tts.enable = true;
 
@@ -348,6 +348,18 @@ in {
         environment = {
           pathsToLink = [ "/share/zsh" ];
 
+          # Persist the rootful Docker data root across reboots (impermanence tmpfs
+          # root) so kind clusters and pulled images survive. Merged with the base
+          # module's persistence directory list.
+          persistence."/persistence".directories = [
+            {
+              directory = "/var/lib/docker";
+              user = "root";
+              group = "root";
+              mode = "0710";
+            }
+          ];
+
           etc = {
             "crypttab".text = ''
               # <name>       <device>                                     <password>              <options>
@@ -382,7 +394,7 @@ in {
             openrct2
             openttd
             openttd-ttf
-            podman
+            docker
             protontricks
             protonvpn-gui
             qbittorrent
@@ -735,7 +747,7 @@ in {
               autoSubUidGidRange = true;
               isNormalUser = true;
               description = "Alison Jenkins";
-              extraGroups = [ "audio" "libvirtd" "networkmanager" "podman" "video" "wheel" "realtime" ];
+              extraGroups = [ "audio" "libvirtd" "networkmanager" "docker" "video" "wheel" "realtime" ];
               hashedPasswordFile = "/persistence/passwords/ali";
               useDefaultShell = true;
 
