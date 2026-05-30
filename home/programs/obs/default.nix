@@ -31,6 +31,7 @@
         # unstable.advanced-scene-switcher
         droidcam-obs
         obs-backgroundremoval
+        obs-pipewire-audio-capture
         obs-source-clone
         obs-vkcapture
       ]
