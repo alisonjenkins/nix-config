@@ -71,9 +71,16 @@ in {
           programs.scopebuddy = {
             enable = true;
             # -O DP-2 required: scopebuddy errors "Primary display not supported!"
-            # on wlroots (niri/river/sway/hyprland) without --prefer-output, since
-            # wlroots has no primary-display concept.
-            gamescopeArgs = "-O DP-2 -W 2560 -H 1440 -w 2560 -h 1440 -r 120 -f";
+            # without --prefer-output on compositors with no primary-display
+            # concept — niri (Smithay-based) and the wlroots ones (river/sway/
+            # hyprland). niri is NOT wlroots; both just lack a primary display.
+            # -b (borderless) NOT -f (fullscreen): a 2560x1440 borderless window
+            # on the 5120x1440 G9 leaves the rest of the screen visible. With -f,
+            # gamescope scales/centers the 2560 output across the 5120 panel and
+            # --force-grab-cursor then confines the pointer to a mismatched centre
+            # sub-box (gamescope #1748/#1086). -b keeps output=render=window=2560
+            # so force-grab maps 1:1 and menus stay reachable.
+            gamescopeArgs = "-O DP-2 -W 2560 -H 1440 -w 2560 -h 1440 -r 120 -b --force-grab-cursor";
             autoHdr = true;
             autoVrr = false;
           };
