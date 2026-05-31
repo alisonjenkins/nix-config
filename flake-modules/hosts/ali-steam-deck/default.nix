@@ -183,45 +183,13 @@ in {
           debugLogToEsp = "/dev/nvme0n1p2";
         };
 
-        # The controller-unlock agent draws its PIN UI on /dev/dri/card0.
-        # On the 26.05 valve kernel, amdgpu's DRM node only appears ~3s
-        # into initrd (async DMUB/PSP/VCN firmware load), but the agent
-        # only retries for ~1.5s after systemd-cryptsetup fires the
-        # ask-password request, then gives up — so the prompt never
-        # draws and the unlock times out (initrd journal:
-        # "DRM: open /dev/dri/card0: No such file or directory; will
-        # retry" ×3, then silence, then dev-pool-data.device timeout).
-        # Delay cryptsetup until card0 exists so the agent has a screen
-        # when the prompt appears. 15s cap.
-        #
-        # CRITICAL: this is ORDERING-ONLY (before=), NOT requiredBy. An
-        # earlier version used requiredBy and a failure of this unit
-        # cascaded into "Dependency failed for Cryptography Setup" →
-        # emergency mode (no unlock at all). With before-only, cryptsetup
-        # still runs even if this unit fails or DRM never inits; combined
-        # with maskConsoleAgent=false the keyboard prompt is always
-        # available as a fallback. The script always exits 0 regardless.
-        boot.initrd.systemd.storePaths = [ pkgs.coreutils ];
-        boot.initrd.systemd.services.wait-for-drm-card = {
-          description = "Wait for DRM card0 before the LUKS unlock prompt";
-          wantedBy = [ "initrd.target" ];
-          before = [ "systemd-cryptsetup@crypted.service" ];
-          unitConfig.DefaultDependencies = false;
-          serviceConfig.Type = "oneshot";
-          # `script` (vs ExecStart=writeShellScript) ensures the wrapper
-          # is added to the initrd; a bare ExecStart store path was not
-          # pulled in and the unit failed to start.
-          script = ''
-            i=0
-            while [ "$i" -lt 150 ]; do
-              [ -e /dev/dri/card0 ] && exit 0
-              ${pkgs.coreutils}/bin/sleep 0.1
-              i=$((i + 1))
-            done
-            echo "wait-for-drm-card: /dev/dri/card0 never appeared after 15s; continuing (keyboard slot still works)" >&2
-            exit 0
-          '';
-        };
+        # NOTE: the DRM-card0 race that previously needed a host-side
+        # "wait-for-drm-card" initrd gate here is now fixed in the agent
+        # itself (luks-controller-unlock ≥ 027ea3e: it poll-retries the
+        # ask request until /dev/dri/card0 appears instead of giving up
+        # after the first inotify wake). maskConsoleAgent stays false as a
+        # keyboard fallback until a run of clean controller-PIN boots is
+        # confirmed; re-enable masking then.
 
         # SSH server inside initrd for debugging stuck boots. Wired
         # for wifi via ath11k (Qualcomm QCNFA765) since the Deck has
