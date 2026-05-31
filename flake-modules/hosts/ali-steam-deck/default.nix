@@ -376,6 +376,24 @@ in {
 
         services.desktopManager.plasma6.enable = true;
 
+        # On-screen keyboard for the Plasma (Wayland) desktop session via
+        # Maliit + KWin's input-method-v2. The Steam/"Valve" OSK only
+        # exists inside Gaming Mode (gamescope draws it); in a plain Plasma
+        # session Maliit is the working VK. This host's Plasma is NOT
+        # managed by plasma-manager, so rather than own kwinrc we poke the
+        # single `[Wayland] InputMethod` key with kwriteconfig at HM
+        # activation (idempotent; takes effect at the next session start).
+        # Tap a text field on the touchscreen — or toggle from the system
+        # tray "Virtual Keyboard" applet — to raise it.
+        home-manager.users.${username} = { lib, pkgs, ... }: {
+          home.packages = [ pkgs.maliit-keyboard pkgs.maliit-framework ];
+          home.activation.kwinMaliitVk = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            run ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+              --file kwinrc --group Wayland --key InputMethod \
+              "${pkgs.maliit-keyboard}/share/applications/com.github.maliit.keyboard.desktop"
+          '';
+        };
+
         # Stylix theme is configured by the desktop module (gruvbox-dark-medium).
 
         system.stateVersion = "24.05";
