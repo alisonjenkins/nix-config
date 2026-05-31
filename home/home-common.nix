@@ -125,13 +125,11 @@
       enable = lib.mkIf pkgs.stdenv.isLinux true;
       enableBashIntegration = true;
       enableZshIntegration = true;
-      pinentry.package = pkgs.kwalletcli.overrideAttrs (_: prev: {
-        meta =
-          prev.meta
-          // {
-            mainProgram = "pinentry-qt";
-          };
-      });
+      # kwalletcli was removed in nixpkgs 26.05 (Plasma 5 EOL) with no Qt6
+      # drop-in. The previous override forced mainProgram = pinentry-qt
+      # anyway, so use the Qt pinentry directly (no KWallet passphrase
+      # caching; plain Qt dialog).
+      pinentry.package = pkgs.pinentry-qt;
     };
   };
 

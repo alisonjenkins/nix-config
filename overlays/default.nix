@@ -103,10 +103,6 @@ in
     });
   in {
 
-    # Restore xrdb alias removed from nixpkgs — home-manager's xresources module
-    # still references pkgs.xrdb (via lib.getExe)
-    xrdb = prev.xorg.xrdb;
-
     # WiVRn ships with xrizer first in OVR_COMPAT_SEARCH_PATH and overwrites
     # openvrpaths.vrpath to xrizer at server startup. xrizer's GL backend
     # requires an X11 display handle (GLX), which is null under Wayland —

@@ -513,15 +513,13 @@ in
     };
 
     # Desktop-specific suspend and hibernate configuration
-    systemd.sleep = {
-      extraConfig = ''
-        # Desktop/laptop specific hibernate timing
-        # Delay before hibernating when using suspend-then-hibernate mode
-        HibernateDelaySec=${cfg.power.hibernateDelaySec}
+    systemd.sleep.settings.Sleep = {
+      # Desktop/laptop specific hibernate timing
+      # Delay before hibernating when using suspend-then-hibernate mode
+      HibernateDelaySec = cfg.power.hibernateDelaySec;
 
-        # Fallback estimation if battery monitoring unavailable
-        SuspendEstimationSec=${toString cfg.power.suspendEstimationSec}
-      '';
+      # Fallback estimation if battery monitoring unavailable
+      SuspendEstimationSec = toString cfg.power.suspendEstimationSec;
     };
 
     # Create shader cache directories automatically

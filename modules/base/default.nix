@@ -487,21 +487,20 @@ in
       ];
 
       # Optimal suspend and hibernate settings
-      systemd.sleep = {
-        extraConfig = ''
-          # Hibernate mode - configurable per-host
-          HibernateMode=${cfg.hibernateMode}
+      systemd.sleep.settings.Sleep = {
+        # Hibernate mode - configurable per-host
+        HibernateMode = cfg.hibernateMode;
 
-          # Suspend settings - configurable per-host
-          # 'mem' is S3 deep sleep, 'freeze' is s2idle (for hardware that doesn't support S3)
-          # Set to null to let the system auto-detect
-          ${lib.optionalString (cfg.suspendState != null) "SuspendState=${cfg.suspendState}"}
-
-          AllowHibernation=yes
-          AllowSuspend=yes
-          AllowHybridSleep=yes
-          AllowSuspendThenHibernate=yes
-        '';
+        AllowHibernation = "yes";
+        AllowSuspend = "yes";
+        AllowHybridSleep = "yes";
+        AllowSuspendThenHibernate = "yes";
+      }
+      # Suspend settings - configurable per-host
+      # 'mem' is S3 deep sleep, 'freeze' is s2idle (for hardware that doesn't support S3)
+      # Set to null to let the system auto-detect
+      // lib.optionalAttrs (cfg.suspendState != null) {
+        SuspendState = cfg.suspendState;
       };
     }
 

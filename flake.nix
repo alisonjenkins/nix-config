@@ -80,6 +80,13 @@
         nixpkgs.follows = "nixpkgs_unstable";
         nixpkgs-master.follows = "nixpkgs_master";
         nixpkgs-stable.follows = "nixpkgs_stable";
+        # Pin nixvim to its nixos-26.05 release branch and point its
+        # nixpkgs at nixpkgs_unstable (26.05 — the channel ali-neovim
+        # uses for packages). nixvim's `main` declares release 26.11
+        # while our pkgs is 26.05, which trips nixvim's
+        # mismatched-version warning; matching both to 26.05 clears it.
+        nixvim.url = "github:nix-community/nixvim/nixos-26.05";
+        nixvim.inputs.nixpkgs.follows = "nixpkgs_unstable";
       };
     };
 
@@ -107,18 +114,11 @@
     };
 
     home-manager = {
-      # Pinned to commit 9c6f1307 (parent of fb6a0c6d, "modules: add modular
-      # services support" 2026-05-01). master HEAD imports
-      # `pkgs.path + "/lib/services/lib.nix"` from `modules/services-modular`,
-      # but that file only exists on nixpkgs unstable (landed 2026-04 in
-      # nixpkgs commit a338deb8) and is absent on 25.11, which is what our
-      # `nixpkgs` and `nixpkgs_stable_darwin` track. release-25.11 isn't an
-      # option either: our home configs use `programs.claude-code.lspServers`
-      # which only exists on master (added 2026-03-08, commit a455ac1b).
-      # So pin to the last master rev that still has lspServers but not yet
-      # services-modular. Bump along with nixpkgs when 25.11 backports
-      # lib/services/lib.nix or when we move to unstable.
-      url = "github:nix-community/home-manager/9c6f1307e1d76a2285d8001e1b8bc281bfe15dac";
+      # Tracks the release branch matching our nixpkgs (26.05). release-26.05
+      # carries both `programs.claude-code.lspServers` and the modular-services
+      # support backed by nixpkgs 26.05's lib/services/lib.nix, so the old
+      # master-rev pin (needed under 25.11) is no longer required.
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -150,7 +150,7 @@
     };
 
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-25.11";
+      url = "github:nixos/nixpkgs/nixos-26.05";
       # url = "path:/home/ali/git/nixpkgs";
     };
 

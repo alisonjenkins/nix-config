@@ -1,9 +1,8 @@
 --- a/bubblewrap.c
 +++ b/bubblewrap.c
-@@ -876,14 +876,7 @@
-
-       /* Keep only the required capabilities for setup */
-       set_required_caps ();
+@@ -886,13 +886,6 @@
+       die ("setuid use of bubblewrap is not supported in this build");
+ #endif
      }
 -  else if (real_uid != 0 && has_caps ())
 -    {
