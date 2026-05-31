@@ -344,9 +344,21 @@ in {
         # Target the resolved Steam path, not ~/.steam/steam — the latter is
         # a symlink (~/.steam/steam → ~/.local/share/Steam), which
         # systemd-tmpfiles refuses to traverse with "unsafe path transition".
-        # Steam creates ~/.local/share/Steam on first run; the file rule
-        # alone is enough — no parent directory creation needed.
+        #
+        # The `f` rule's parent dirs MUST be declared explicitly with `d`
+        # rules owned by the user. On a fresh impermanence boot /home/ali
+        # doesn't exist yet, and systemd-tmpfiles creates the parents of an
+        # `f` rule as root by default — which left /home/ali itself
+        # root-owned before the user session started. The result:
+        # home-manager activation failed ("Could not find suitable profile
+        # directory"), the user had no writable home, and no apps/config
+        # loaded. tmpfiles processes shorter paths first, so these `d`
+        # rules own the chain before the file is created.
         systemd.tmpfiles.rules = [
+          "d /home/${username} 0700 ${username} users -"
+          "d /home/${username}/.local 0755 ${username} users -"
+          "d /home/${username}/.local/share 0755 ${username} users -"
+          "d /home/${username}/.local/share/Steam 0755 ${username} users -"
           "f /home/${username}/.local/share/Steam/.cef-enable-remote-debugging 0644 ${username} users -"
         ];
 
