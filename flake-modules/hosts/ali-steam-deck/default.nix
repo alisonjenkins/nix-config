@@ -168,13 +168,59 @@ in {
         # a week of clean reboots — see TESTING.md rung 5.3).
         modules.luks-controller-unlock = {
           enable = true;
-          maskConsoleAgent = true;
+          # Keyboard passphrase prompt left VISIBLE as a safety net while
+          # the controller-unlock DRM timing (see wait-for-drm-card below)
+          # is being stabilised on the 26.05 valve kernel. With the agent
+          # masked, a DRM failure left no prompt at all → emergency mode.
+          # Re-enable masking (true) once a week of clean controller-PIN
+          # boots confirms the gate works — see TESTING.md rung 5.3.
+          maskConsoleAgent = false;
           # TEMP: re-enabled to diagnose "agent reply doesn't unlock"
           # — captures "agent: replied N bytes" so we can check the
           # length against the enrolled PIN. The wrapper is currently
           # at -v (debug, not trace) so no per-button bytes leak. Set
           # back to null after the keyslot mismatch is resolved.
           debugLogToEsp = "/dev/nvme0n1p2";
+        };
+
+        # The controller-unlock agent draws its PIN UI on /dev/dri/card0.
+        # On the 26.05 valve kernel, amdgpu's DRM node only appears ~3s
+        # into initrd (async DMUB/PSP/VCN firmware load), but the agent
+        # only retries for ~1.5s after systemd-cryptsetup fires the
+        # ask-password request, then gives up — so the prompt never
+        # draws and the unlock times out (initrd journal:
+        # "DRM: open /dev/dri/card0: No such file or directory; will
+        # retry" ×3, then silence, then dev-pool-data.device timeout).
+        # Delay cryptsetup until card0 exists so the agent has a screen
+        # when the prompt appears. 15s cap.
+        #
+        # CRITICAL: this is ORDERING-ONLY (before=), NOT requiredBy. An
+        # earlier version used requiredBy and a failure of this unit
+        # cascaded into "Dependency failed for Cryptography Setup" →
+        # emergency mode (no unlock at all). With before-only, cryptsetup
+        # still runs even if this unit fails or DRM never inits; combined
+        # with maskConsoleAgent=false the keyboard prompt is always
+        # available as a fallback. The script always exits 0 regardless.
+        boot.initrd.systemd.storePaths = [ pkgs.coreutils ];
+        boot.initrd.systemd.services.wait-for-drm-card = {
+          description = "Wait for DRM card0 before the LUKS unlock prompt";
+          wantedBy = [ "initrd.target" ];
+          before = [ "systemd-cryptsetup@crypted.service" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig.Type = "oneshot";
+          # `script` (vs ExecStart=writeShellScript) ensures the wrapper
+          # is added to the initrd; a bare ExecStart store path was not
+          # pulled in and the unit failed to start.
+          script = ''
+            i=0
+            while [ "$i" -lt 150 ]; do
+              [ -e /dev/dri/card0 ] && exit 0
+              ${pkgs.coreutils}/bin/sleep 0.1
+              i=$((i + 1))
+            done
+            echo "wait-for-drm-card: /dev/dri/card0 never appeared after 15s; continuing (keyboard slot still works)" >&2
+            exit 0
+          '';
         };
 
         # SSH server inside initrd for debugging stuck boots. Wired
