@@ -441,6 +441,25 @@ in {
             };
           };
 
+          # Run the Steam client in the background within the Plasma
+          # session so the STEAM+X on-screen keyboard is available here
+          # too (the Steam OSK only works while the client is alive, and
+          # this specialisation keeps Gaming Mode autostart off above).
+          # `-silent` starts it minimised to the system tray. Maliit
+          # (configured for the base config) remains the no-Steam
+          # fallback for early boot / a broken Steam client.
+          systemd.user.services.steam-desktop = {
+            description = "Steam client (desktop mode) for the STEAM+X on-screen keyboard";
+            wantedBy = [ "graphical-session.target" ];
+            partOf = [ "graphical-session.target" ];
+            after = [ "graphical-session.target" ];
+            serviceConfig = {
+              ExecStart = "${config.programs.steam.package}/bin/steam -silent";
+              Restart = "on-failure";
+              RestartSec = 5;
+            };
+          };
+
           system.nixos.tags = [ "desktop-mode" ];
         };
       })
