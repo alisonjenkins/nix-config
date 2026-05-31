@@ -813,6 +813,12 @@ in
         enable = true;
         remotePlay.openFirewall = true;
         dedicatedServer.openFirewall = true;
+        # Steam Input mouse emulation (e.g. Steam Controller trackpad-as-mouse)
+        # synthesizes input via the X11 XTEST path, which only reaches XWayland
+        # surfaces — never native Wayland clients. extest preloads an
+        # XTEST->uinput shim so emulated mouse works on Wayland compositors.
+        # Requires the user in the "input" group to open /dev/uinput.
+        extest.enable = true;
         # Steam Controller (2026) firmware updater dynamically loads
         # libhidapi-hidraw / libhidapi-libusb but Valve does not bundle them
         # yet, so the update fails with "Failed to update Steam Controller

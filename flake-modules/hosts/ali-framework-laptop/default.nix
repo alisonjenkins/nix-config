@@ -651,7 +651,7 @@ in {
               autoSubUidGidRange = true;
               isNormalUser = true;
               description = "Alison Jenkins";
-              extraGroups = [ "audio" "gamemode" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
+              extraGroups = [ "audio" "gamemode" "input" "libvirt" "libvirtd" "networkmanager" "video" "wheel" "realtime"];
               hashedPasswordFile = "/persistence/passwords/ali";
 
               openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;

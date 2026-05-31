@@ -296,7 +296,7 @@ in {
               description = "Alison Jenkins";
               # initialPassword = "initPw!";
               hashedPasswordFile = "/persistence/passwords/ali";
-              extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
+              extraGroups = [ "networkmanager" "wheel" "docker" "realtime" "input" ];
 
               openssh.authorizedKeys.keys = outputs.lib.sshKeys.all;
             };

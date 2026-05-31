@@ -358,7 +358,7 @@ in {
           isNormalUser = true;
           description = "Alison Jenkins";
           initialPassword = "initPw!";
-          extraGroups = [ "networkmanager" "wheel" "docker" "realtime" ];
+          extraGroups = [ "networkmanager" "wheel" "docker" "realtime" "input" ];
           openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
           packages = with pkgs; [
             citron
