@@ -270,17 +270,22 @@ in {
         # Jovian manages the power button via its own daemon (powerbuttond)
         services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
 
-        # Auto-hibernate after 2h of suspend so the battery doesn't drain
-        # flat when the deck is left suspended. The Steam UI's Suspend
-        # button calls plain `systemctl suspend` via logind dbus, which
-        # ignores HibernateDelaySec (that only fires for
-        # suspend-then-hibernate). Workaround: arm an RTC-backed
-        # systemd timer when suspend.target activates; WakeSystem=true
-        # programs /sys/class/rtc/rtc0/wakealarm so the kernel resumes
-        # at the deadline, then the timer fires `systemctl hibernate`.
-        # partOf=suspend.target cancels the timer if the user resumes
-        # manually before 2h elapses. Requires the swap LV in
-        # disko-config to be marked resumeDevice=true.
+        # Auto-hibernate after 30m of suspend so the battery doesn't drain
+        # flat when the deck is left suspended (e.g. in a bag). Both the
+        # Steam UI Suspend button and KDE powerdevil call plain `suspend`
+        # via logind's dbus Suspend() method, which bypasses
+        # HandleSuspendKey/HandleLidSwitch *and* HibernateDelaySec (the
+        # latter only fires for the suspend-then-hibernate operation).
+        # Workaround: arm an RTC-backed systemd timer when suspend.target
+        # activates; WakeSystem=true programs /sys/class/rtc/rtc0/wakealarm
+        # so the kernel resumes at the deadline, then the timer fires
+        # `systemctl hibernate`. partOf=suspend.target cancels the timer if
+        # the user resumes manually first. Requires the swap LV in
+        # disko-config to be marked resumeDevice=true (it is).
+        #
+        # 30m balances quick-resume (short put-downs stay in S3) against
+        # bag-safety (the Deck's S3 still draws a few %/hr, so 2h could
+        # noticeably drain before hibernating). Tune as desired.
         systemd.services.auto-hibernate-after-suspend = {
           description = "Hibernate after extended suspend to save battery";
           serviceConfig = {
@@ -289,11 +294,11 @@ in {
           };
         };
         systemd.timers.auto-hibernate-after-suspend = {
-          description = "Trigger hibernate after 2h in suspend";
+          description = "Trigger hibernate after 30m in suspend";
           wantedBy = [ "suspend.target" ];
           partOf = [ "suspend.target" ];
           timerConfig = {
-            OnActiveSec = "2h";
+            OnActiveSec = "30m";
             AccuracySec = "1m";
             WakeSystem = true;
             RemainAfterElapse = false;
