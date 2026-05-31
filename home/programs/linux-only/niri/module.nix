@@ -300,7 +300,12 @@ in {
           match app-id="^steam_proton$"
           match app-id="^Wine$"
           match app-id=".+\\.exe$"
-          open-fullscreen true
+          // open-fullscreen removed: gamescope's own -b/-f flag controls window
+          // size, so niri must not force-fullscreen the window (that overrode
+          // gamescope -b and re-broke --force-grab-cursor on the 5120 G9). Lets
+          // gamescope -b land as a 2560 borderless column for friends-view.
+          // TODO: revisit when wiring up Sunshine + Big Picture so streamed
+          // sessions fullscreen on their own output.
           open-focused true
           open-on-workspace "game"
           variable-refresh-rate true
