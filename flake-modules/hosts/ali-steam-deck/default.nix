@@ -82,6 +82,38 @@ in {
 
       # Host-specific configuration
       ({ config, lib, outputs, pkgs, username, ... }: {
+        # deploy-rs wraps the system profile in an `activatable-nixos-system`
+        # layer, adding a symlink hop. jovian-stubs' steamos-update compares
+        # `readlink /run/booted-system/kernel` vs `readlink
+        # /nix/var/nix/profiles/system/kernel` shallowly, so that wrapper
+        # makes the strings differ even when they resolve to the same kernel
+        # → the stub returns 8 ("reboot needed") forever and Steam's
+        # first-run OOBE loops on "update & restart". Resolve fully
+        # (readlink -f) so it compares real kernels (exit 7 = no update).
+        # mkOrder 2000 forces this AFTER Jovian's own overlay (which
+        # re-defines jovian-stubs and otherwise clobbers a plain/mkAfter
+        # override); it reaches steamos-manager + Steam's FHS, both built
+        # with final.jovian-stubs.
+        nixpkgs.overlays = lib.mkOrder 2000 [
+          (_final: prev: {
+            jovian-stubs = prev.jovian-stubs.overrideAttrs (old: {
+              # NB: jovian-stubs uses `buildCommand`, which bypasses the
+              # postInstall hook — the patch must be appended to
+              # buildCommand. steamos-update and holo-update are the same
+              # source file; patch both. `readlink -f` resolves through
+              # deploy-rs's activatable wrapper so the kernel comparison
+              # matches and the stub returns 7 instead of 8.
+              buildCommand = old.buildCommand + ''
+                for f in steamos-update holo-update; do
+                  substituteInPlace "$out/bin/$f" \
+                    --replace-fail 'readlink /run' 'readlink -f /run' \
+                    --replace-fail 'readlink /nix' 'readlink -f /nix'
+                done
+              '';
+            });
+          })
+        ];
+
         modules.base = {
           enable = true;
           bootLoader = "grub";
