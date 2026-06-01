@@ -13,11 +13,12 @@
 # MUST go through `config.home-manager.users.${cfg.user}`, never a bare
 # `home.file`. This file is a standalone NixOS module extending the shared
 # `options.modules.emulation.*` namespace.
-{ config, lib, pkgs, ... }:
+{ config, lib, inputs, ... }:
 let
   cfg = config.modules.emulation;
   ccfg = cfg.controls;
   rcfg = ccfg.retroarch;
+  hmDag = inputs.home-manager.lib.hm.dag;
 
   # ── RetroArch unified hotkey block (EmuDeck values) ──────────────────────
   #
@@ -137,17 +138,28 @@ let
     ) rcfg.remaps
   );
 
-  # 4. standalone per-emulator config files shipped verbatim at targetPath.
-  #    home.file symlinks are read-only by construction; `readOnly = false`
-  #    copies the file into $HOME and makes it writable (`mutable`) so the
-  #    emulator can rewrite it — used for the rare emulator that insists on
-  #    writing UI state back into the same file we seed.
+  # 4a. standalone per-emulator config files, READ-ONLY case → a store symlink
+  #     (home.file default). The emulator only rewrites these on an explicit
+  #     in-GUI save, and the symlink target is on a read-only store, so an
+  #     on-exit rewrite fails harmlessly and our shipped config stays
+  #     authoritative (same principle as RetroArch's config_save_on_exit=false).
   standaloneFiles = lib.mapAttrs' (
-    _name: spec:
-    lib.nameValuePair spec.targetPath (
-      { source = spec.configFile; } // lib.optionalAttrs (!spec.readOnly) { mutable = true; }
-    )
-  ) (lib.filterAttrs (_n: spec: spec.configFile != null) ccfg.standalone);
+    _name: spec: lib.nameValuePair spec.targetPath { source = spec.configFile; }
+  ) (lib.filterAttrs (_n: spec: spec.configFile != null && spec.readOnly) ccfg.standalone);
+
+  # 4b. WRITABLE case (readOnly = false): home.file has no "writable copy" mode,
+  #     so seed a real (mutable) copy via home.activation for the rare emulator
+  #     that insists on rewriting the same file it reads. Re-seeds each
+  #     activation (overwrites local edits — that's the declarative trade).
+  standaloneWritableActivation = lib.mapAttrs' (
+    name: spec:
+    lib.nameValuePair "emulationStandalone-${name}" (hmDag.entryAfter [ "writeBoundary" ] ''
+      tgt="$HOME"/${lib.escapeShellArg spec.targetPath}
+      run mkdir -p "$(dirname "$tgt")"
+      run cp -f ${spec.configFile} "$tgt"
+      run chmod u+w "$tgt"
+    '')
+  ) (lib.filterAttrs (_n: spec: spec.configFile != null && !spec.readOnly) ccfg.standalone);
 
   # 5. Steam Input templates -> controller_base/templates/<name>.vdf
   #    Plain-text .vdf, keep the extension. The per-AppID assignment is NOT
@@ -279,10 +291,13 @@ in
               type = lib.types.bool;
               default = true;
               description = ''
-                When true (default) the file is a read-only store symlink —
-                safe for configs the emulator only rewrites on explicit save.
-                Set false to copy a writable (mutable) file into $HOME for the
-                rare emulator that rewrites the same file it reads from.
+                When true (default) the file is a read-only store symlink
+                (home.file) — safe for configs the emulator only rewrites on
+                explicit save (an on-exit rewrite to the store target fails
+                harmlessly). Set false to seed a WRITABLE copy into $HOME via a
+                home.activation step (home.file has no writable mode) for the
+                rare emulator that rewrites the same file it reads; the copy is
+                re-seeded on each activation, overwriting local edits.
               '';
             };
           };
@@ -327,6 +342,9 @@ in
   };
 
   config = lib.mkIf (cfg.enable && ccfg.enable) {
-    home-manager.users.${cfg.user}.home.file = allHomeFiles;
+    home-manager.users.${cfg.user} = {
+      home.file = allHomeFiles;
+      home.activation = standaloneWritableActivation;
+    };
   };
 }

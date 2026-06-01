@@ -75,7 +75,7 @@ let
     "rpcs3" = { bin = "rpcs3"; pre = "--no-gui"; };
     "cemu" = { bin = "cemu"; pre = "-f -g"; };
     "xemu" = { bin = "xemu"; pre = "-full-screen -dvd_path"; };
-    "ppsspp" = { bin = "ppsspp-sdl"; pre = "--fullscreen"; };
+    "ppsspp" = { bin = "ppsspp"; pre = "--fullscreen"; };
     "melonds" = { bin = "melonDS"; pre = ""; };
     "desmume" = { bin = "desmume"; pre = ""; };
     "mgba" = { bin = "mgba-qt"; pre = "-f"; };
@@ -83,7 +83,7 @@ let
     "azahar" = { bin = "azahar"; pre = ""; };
     "citron" = { bin = "citron"; pre = "-f -g"; };
     "eden" = { bin = "eden"; pre = "-f -g"; };
-    "ryubing" = { bin = "ryubing"; pre = ""; };
+    "ryubing" = { bin = "ryujinx"; pre = ""; };
     "shadps4" = { bin = "shadps4"; pre = ""; };
     "ares" = { bin = "ares"; pre = ""; };
     "mupen64plus" = { bin = "mupen64plus"; pre = "--fullscreen"; };
@@ -152,6 +152,12 @@ let
     # 1. seed from the package example tree (carries the default layouts)
     cp -r ${pkgs.retrofe}/share/retrofe/example $out
     chmod -R u+w $out
+    # Drop the upstream example's DEMO collections + launchers (e.g. MAME, Sega
+    # Genesis, Main.conf, mame.conf) so they can't leak into our menu — we
+    # generate Main + exactly one collection/launcher set per enabled platform
+    # below. Keep layouts/ (the real reason we seed the example tree).
+    find $out/collections -mindepth 1 -maxdepth 1 -type d ! -name Main -exec rm -rf {} +
+    rm -f $out/launchers/*.conf
     mkdir -p $out/collections/Main $out/launchers
 
     # 2. main menu = enabled collections
@@ -207,8 +213,13 @@ let
     set -eu
     dest="''${XDG_DATA_HOME:-$HOME/.local/share}/retrofe"
     mkdir -p "$dest"
-    # refresh declarative files from the Nix tree; leave RetroFE's own runtime
-    # files (meta cache, logs) in place.
+    # Purge the MANAGED trees first so a removed platform/emulator can't leave
+    # an orphaned launcher/collection that RetroFE then tries to exec (cp never
+    # deletes). launchers/ + collections/ are fully regenerated from the Nix
+    # tree below; RetroFE's own runtime state (meta cache, logs, settings the
+    # user changed) lives elsewhere and is left in place.
+    rm -rf "$dest/launchers" "$dest/collections"
+    # refresh declarative files from the Nix tree.
     cp -rfL --no-preserve=mode ${retrofeConfig}/. "$dest/"
     chmod -R u+w "$dest"
     cd "$dest"
@@ -244,6 +255,19 @@ in
   };
 
   config = lib.mkIf (cfg.enable && cfg.frontend == "retrofe") {
+    # `collectionConf` uses `lib.head p.emulators` for the default launcher, so
+    # an enabled platform with an empty emulators list would throw a cryptic
+    # "head: empty list". Surface it as an actionable assertion naming the
+    # platform instead.
+    assertions = [{
+      assertion = lib.all (p: p.emulators != [ ]) (lib.attrValues enabledPlatforms);
+      message =
+        "modules.emulation: RetroFE frontend enabled but platform(s) "
+        + lib.concatStringsSep ", "
+          (lib.attrNames (lib.filterAttrs (_n: p: p.emulators == [ ]) enabledPlatforms))
+        + " have an empty `emulators` list — set at least one backend or disable the platform.";
+    }];
+
     home-manager.users.${cfg.user} = {
       home.packages = [ retrofeWrapper pkgs.retrofe ];
 

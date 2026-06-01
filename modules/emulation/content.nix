@@ -123,46 +123,67 @@ let
       mkdir -p "$dest"
       chmod ${destMode} "$dest"
 
-      # 1) Fetch only the listed files. Incremental: rclone skips unchanged
-      #    files via size + (with --checksum) hash. --files-from restricts the
-      #    transfer set to exactly the manifest, relative to the remote prefix.
-      rclone copy \
+      # 0) Expand directory-style manifest entries (trailing "/", e.g.
+      #    folder-based PS3 games) into their actual remote files, so they are
+      #    BOTH fetched (rclone --files-from doesn't recurse a bare dir) AND
+      #    protected from the prune below (otherwise the folder's files, absent
+      #    as literal manifest lines, would be deleted → data loss). A failed
+      #    enumeration marks the run prune-UNSAFE so we never delete a folder we
+      #    couldn't list.
+      expanded="$(mktemp)"
+      allow="$(mktemp)"
+      have="$(mktemp)"
+      trap 'rm -f "$expanded" "$allow" "$have"' EXIT
+      prune_safe=1
+      while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        case "$line" in
+          */)
+            if ! rclone lsf --config /dev/null -R --files-only \
+                   "${remotePath}/$line" | awk -v p="$line" '{ print p $0 }' >> "$expanded"; then
+              echo "[emulation-sync:${name}] WARNING: could not list folder '$line' — skipping prune this run" >&2
+              prune_safe=0
+            fi
+            ;;
+          *) printf '%s\n' "$line" >> "$expanded" ;;
+        esac
+      done < "$manifest"
+
+      # 1) Fetch only the (expanded) listed files. Incremental: rclone skips
+      #    unchanged files via size + (with --checksum) hash. A failed copy must
+      #    NOT abort the run — we still reconcile on-disk state below.
+      if ! rclone copy \
         --config /dev/null \
-        --files-from "$manifest" \
+        --files-from "$expanded" \
         --checksum \
         --transfers 4 \
         --create-empty-src-dirs=false \
-        ${remotePath} "$dest"
+        ${remotePath} "$dest"; then
+        echo "[emulation-sync:${name}] WARNING: rclone copy failed — reconciling on-disk state anyway" >&2
+      fi
 
-      # 2) Prune anything under dest that is NOT in the manifest. We build the
-      #    allowlist as a sorted, NUL-delimited set of dest-relative paths and
-      #    walk the actual files under dest, deleting the complement. Scoped
-      #    strictly to "$dest" — never touches sibling dirs.
-      allow="$(mktemp)"
-      have="$(mktemp)"
-      trap 'rm -f "$allow" "$have"' EXIT
+      # 2) Prune anything under dest that is NOT on the (expanded) manifest.
+      #    Allowlist minus on-disk → delete. Scoped strictly to "$dest" — never
+      #    touches sibling dirs. Skipped entirely if folder expansion above was
+      #    incomplete (better a stale extra than a wrongly-deleted game).
+      if [ "$prune_safe" = 1 ]; then
+        LC_ALL=C sort -u "$expanded" > "$allow"
+        ( cd "$dest" && find . -type f -printf '%P\n' ) | LC_ALL=C sort -u > "$have"
+        LC_ALL=C comm -13 "$allow" "$have" | while IFS= read -r rel; do
+          [ -n "$rel" ] || continue
+          echo "[emulation-sync:${name}] prune: $rel"
+          rm -f -- "$dest/$rel"
+        done
+        # Drop now-empty subdirs left by pruning (keep the set root itself).
+        find "$dest" -mindepth 1 -type d -empty -delete || true
+      fi
 
-      # Manifest entries are dest-relative already (they mirror the bucket
-      # prefix layout). Normalise + sort for comm(1).
-      LC_ALL=C sort -u "$manifest" > "$allow"
-
-      # Enumerate files actually present, as dest-relative paths.
-      ( cd "$dest" && find . -type f -printf '%P\n' ) | LC_ALL=C sort -u > "$have"
-
-      # Lines present on disk but absent from the manifest → delete them.
-      LC_ALL=C comm -13 "$allow" "$have" | while IFS= read -r rel; do
-        [ -n "$rel" ] || continue
-        echo "[emulation-sync:${name}] prune: $rel"
-        rm -f -- "$dest/$rel"
-      done
-
-      # Drop any now-empty subdirectories left behind by pruning (but keep the
-      # set root itself).
-      find "$dest" -mindepth 1 -type d -empty -delete || true
-
-      # Re-assert perms on the (now reconciled) tree. Keys/firmware sets want
-      # 0700 dirs; files inherit the same restriction for the secret sets.
-      chmod -R ${destMode} "$dest" || true
+      # Re-assert perms. Secret sets (0700, keys/firmware) must NOT silently
+      # fall back to rclone's 0644 default → hard-fail; non-secret sets tolerate
+      # chmod noise.
+      ${if destMode == "0700"
+        then ''chmod -R 0700 "$dest" || { echo "[emulation-sync:${name}] CRITICAL: failed to chmod secret set to 0700" >&2; exit 1; }''
+        else ''chmod -R ${destMode} "$dest" || true''}
     '';
 
   # Per-set executable sync script (used by both the systemd unit and the
@@ -223,7 +244,9 @@ let
         Type = "oneshot";
         # The sops template renders to a user-owned 0400 file; load the B2
         # creds from it so no secret ever lands in the unit text or the store.
-        EnvironmentFile = envFile;
+        # Leading "-" tolerates the file being absent on first boot before sops
+        # activation has rendered it (the rom-sync wrapper guards existence too).
+        EnvironmentFile = "-${envFile}";
         ExecStart = syncSetExe name set;
         # Network sync — be patient but bounded.
         TimeoutStartSec = "30min";
@@ -265,7 +288,7 @@ let
       dest = expandHome set.dest;
     in
       lib.optionalAttrs (set.symlinkInto != [ ]) {
-        "emulationSymlink-${name}" = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+        "emulationSymlink-${name}" = inputs.home-manager.lib.hm.dag.entryAfter [ "writeBoundary" ] (
           lib.concatMapStringsSep "\n" (rawTarget:
             let target = expandHome rawTarget;
             in ''
@@ -276,7 +299,8 @@ let
               if [ -d ${lib.escapeShellArg dest} ]; then
                 for src in ${lib.escapeShellArg dest}/*; do
                   [ -e "$src" ] || continue
-                  run ln -sfn "$src" ${lib.escapeShellArg target}/"$(basename "$src")"
+                  run ln -sfn "$src" ${lib.escapeShellArg target}/"$(basename "$src")" \
+                    || echo "Warning: [emulation:${name}] symlink failed for $src -> ${target}" >&2
                 done
               fi
             ''
@@ -392,6 +416,13 @@ in
               HOME-relative per-emulator dirs to symlink this set's contents
               into (e.g. RetroArch system dir, citron keys dir). Wired via
               home-manager home.activation, idempotent + impermanence-safe.
+
+              Timing note: on a first boot the symlinks point at content that
+              isn't on disk until the first sync runs. The activation step links
+              whatever exists at activation time, so freshly-synced files only
+              appear in the emulator dirs after the NEXT rebuild's activation
+              (or just re-run `home-manager switch`). Debug BIOS-not-found with
+              this in mind.
             '';
           };
         };
