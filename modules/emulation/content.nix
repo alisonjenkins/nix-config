@@ -29,6 +29,32 @@
 let
   cfg = config.modules.emulation;
   ccfg = cfg.content;
+  catalogue = import ./catalogue.nix;
+
+  # Per-console ROM sync sets derived from the consoles model (default.nix). Each
+  # ENABLED console contributes a set fetching exactly its `games` into
+  # ~/Emulation/roms/<romDir>; a DISABLED console that still lists games gets an
+  # empty-allowlist set so its ROMs are PRUNED off disk (the single console
+  # toggle removes its games too). Consoles that are off AND list no games are
+  # skipped (nothing to fetch or prune).
+  consoleRomSets = lib.listToAttrs (lib.filter (x: x != null) (lib.mapAttrsToList
+    (name: c:
+      let cons = catalogue.${name}; in
+      if (c.enable || c.games != [ ]) then
+        lib.nameValuePair "roms-${name}" {
+          bucketPrefix = "roms/${cons.romDir}";
+          dest = "~/Emulation/roms/${cons.romDir}";
+          perms = "0755";
+          files = if c.enable then c.games else [ ];
+          symlinkInto = [ ];
+        }
+      else null)
+    cfg.consoles));
+
+  # Effective sets = the manual content.sets (bios/keys/firmware) + the derived
+  # per-console ROM sets. Everything below (manifests, units, prune, symlinks)
+  # operates on this merged map.
+  allSets = ccfg.sets // consoleRomSets;
 
   # rclone reads RCLONE_CONFIG_<REMOTE>_* from the environment, so the remote
   # name has to be upper-cased for the variable names. The set of secrets the
@@ -163,13 +189,13 @@ let
         case "$1" in
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: set:
         "        ${name}) ${syncSetExe name set} ;;"
-      ) ccfg.sets)}
+      ) allSets)}
           *) echo "rom-sync: unknown set '$1'" >&2; return 1 ;;
         esac
       }
 
       if [ "$#" -eq 0 ]; then
-        for s in ${lib.concatStringsSep " " (lib.attrNames ccfg.sets)}; do
+        for s in ${lib.concatStringsSep " " (lib.attrNames allSets)}; do
           run_set "$s"
         done
       else
@@ -417,16 +443,16 @@ in
               ];
             }
           ) (serviceFor name set)
-        ) ccfg.sets);
+        ) allSets);
 
       systemd.user.timers =
-        lib.mkMerge (lib.mapAttrsToList timerFor ccfg.sets);
+        lib.mkMerge (lib.mapAttrsToList timerFor allSets);
 
       # BIOS / keys / firmware placement: symlink each set's synced dest into
       # the dirs each emulator expects (RetroArch system dir, PCSX2 bios,
       # citron/eden keys + nand, Ryujinx system, ...).
       home.activation =
-        lib.mkMerge (lib.mapAttrsToList symlinkActivationFor ccfg.sets);
+        lib.mkMerge (lib.mapAttrsToList symlinkActivationFor allSets);
     };
   };
 }
