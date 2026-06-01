@@ -137,9 +137,13 @@
     default = [ "citron" ];
     keys = true; # needs prod.keys/title.keys + firmware (own dumps; see content.nix)
     backends = {
-      "citron" = { pkg = "citron"; }; # repo overlay emulator
-      "ryubing" = { pkg = "ryubing"; }; # nixpkgs (ships 72-yuzu-input.rules? no — eden does)
-      "eden" = { pkg = "eden"; }; # nixpkgs; ships the controller udev rule
+      "citron" = { pkg = "citron"; }; # repo overlay emulator (NOT upstream pkgs.citron)
+      "ryubing" = { pkg = "ryubing"; }; # nixpkgs; ships NO udev rule (bin: ryujinx)
+      # eden: nixpkgs HAS a source-built eden that ships 72-yuzu-input.rules, BUT
+      # this repo's overlay shadows it with an AppImage wrapper that may NOT ship
+      # the rule — so services.udev.packages=[eden] in default.nix can be a no-op.
+      # See audit follow-up: verify the rule ships, or source it explicitly.
+      "eden" = { pkg = "eden"; };
     };
   };
   dreamcast = {

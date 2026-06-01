@@ -292,6 +292,35 @@ The `modules/niks3-cache-push` module and GHA parallel push workflow are impleme
    - `flake-modules/hosts/ali-framework-laptop/default.nix`
    - `flake-modules/hosts/ali-work-laptop/default.nix`
 
+### Pending: emulation module follow-ups
+
+`modules/emulation` is implemented + audited (a 6-dimension adversarial audit;
+do-now + robustness findings fixed) but **disabled by default** — no host sets
+`modules.emulation.enable`. Remaining follow-ups, from highest value:
+
+1. **Activate on `ali-steam-deck`** — flip `enable = true`, set up the B2 sops
+   secret group (`<keySopsSecret>/accountId` + `/applicationKey`) + point
+   `content.sopsFile` at an encrypted file, pin the Sinden src hash, and drop
+   `citron` from the host's `users.users.ali.packages` (the module owns it).
+   The module has **zero integration coverage** until enabled — audit #15.
+2. **PS3 (folder-based) end-to-end** — content sync now expands + protects
+   trailing-slash folder entries (so no data-loss), but RetroFE still lists by
+   file scan, not folders; a PS3 collection needs folder-entry support + an
+   `rpcs3 --no-gui <EBOOT.BIN>` launcher. Folders are also why `catalogue.ps3`
+   has `extensions = [ ]`.
+3. **MAME controls** (audit #16) — `controls-emudeck.nix` deliberately omits
+   MAME: its `ctrlr/default.cfg` is clean but needs a `-ctrlr default` launch
+   flag (wire into the RetroFE mame launcher) + the right nixpkgs ctrlr search
+   path verified. Same for PCSX2/melonDS (input embedded in monolithic settings
+   files → can't ship read-only without clobbering paths/window-state).
+4. **RetroFE hardware validation** (audit #17) — the items flagged
+   UNVERIFIED-ON-HARDWARE in `frontend-retrofe.nix` + `design/05-frontend.md`
+   (gamescope nesting/focus, standalone bin names/flags, bundled-layout name,
+   per-game override case-sensitivity). Reconcile the two lists when validated.
+
+`flake check` runs `emudeck-config-paths` (bitrot guard on the pinned EmuDeck
+configs). PS1/PS3 disc ripping lives in the `.#ripping` dev shell.
+
 ## Development Workflow
 
 When modifying configurations:

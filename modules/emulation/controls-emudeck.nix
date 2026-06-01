@@ -39,14 +39,11 @@ let
   cfg = config.modules.emulation;
   ccfg = cfg.controls;
 
-  # Pinned EmuDeck checkout (the rev whose configs/ tree was extracted). Bump
-  # deliberately + re-verify the configs/<id> paths below on update.
-  emudeckSrc = pkgs.fetchFromGitHub {
-    owner = "dragoonDorise";
-    repo = "EmuDeck";
-    rev = "125a09a37f49c013338a9bb2811505b18844c988";
-    sha256 = "0rgsw8af00d4xawi3kgh2n0r5mkzv1yd0p4gpd7lqm63gddihia9";
-  };
+  # Pinned EmuDeck checkout — rev/hash live in ./emudeck-pin.nix (shared with
+  # the flake.checks bitrot guard). Bump there + re-verify the configs/<id>
+  # paths below.
+  emudeckPin = import ./emudeck-pin.nix;
+  emudeckSrc = pkgs.fetchFromGitHub { inherit (emudeckPin) owner repo rev sha256; };
 
   # A platform's backend is active iff the platform is enabled and lists it.
   uses = platform: backend:

@@ -28,6 +28,13 @@
 # LEGAL: this module ships NO copyrighted bytes. ROMs, BIOS, prod.keys/title.keys
 # and firmware are the user's responsibility (own-console / own-disc dumps only)
 # and are synced to the persisted /home disk by content.nix — never the store.
+#
+# OVERLAY REQUIREMENT: the Switch backends `citron` and `eden` resolve to this
+# repo's emulator derivations only with `self.overlays.additions` applied (see
+# catalogue.nix NB + design/01). Without the overlay, `pkgs.citron` is an
+# unrelated nixpkgs package (a notification daemon) — it would build but not run
+# as an emulator. The ali-steam-deck host applies the overlay; any other host
+# enabling Switch must too.
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.emulation;
@@ -56,7 +63,11 @@ let
         options = {
           file = lib.mkOption {
             type = lib.types.str;
-            description = "ROM filename relative to roms/${plat.romDir}/ in the B2 bucket.";
+            description = ''
+              ROM filename relative to roms/${plat.romDir}/ in the B2 bucket.
+              Must match the bucket object name EXACTLY, including case (rclone
+              fetch + RetroFE per-game matching are both case-sensitive).
+            '';
           };
           emulator = lib.mkOption {
             type = lib.types.nullOr (lib.types.enum (lib.attrNames plat.backends));
@@ -79,6 +90,13 @@ let
         roms/${plat.romDir}/. Synced to ~/Emulation/roms/${plat.romDir} when the
         platform is enabled; the dir is reconciled to exactly this list (unlisted
         pruned). Requires modules.emulation.content.enable + B2 creds.
+
+        Multi-disc (.m3u): list the .m3u AND every disc it references as separate
+        entries — content sync fetches only the literal filenames it's given, it
+        does NOT parse the .m3u to pull the discs. (Recommended layout: discs in
+        a `discs/` subfolder, the .m3u referencing `discs/<file>`; list all of
+        them here.) Folder-based games (e.g. PS3) may be given as a trailing-slash
+        entry like "BLES00000/" — content sync expands it to the folder's files.
       '';
     };
 
