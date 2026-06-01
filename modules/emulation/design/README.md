@@ -29,6 +29,7 @@ All nixpkgs attr/version claims were verified against unstable (≈26.05 lineage
 | [02-content-sync.md](02-content-sync.md) | Declarative **manifest-driven** ROM/BIOS/firmware management from a private Backblaze B2 bucket via `rclone` (exact-state, prune-unlisted, never in the nix store) |
 | [03-control-schemes.md](03-control-schemes.md) | Declarative input configs (RetroArch hotkeys/autoconfig/remaps, per-standalone table, the Steam Input imperative gap) |
 | [04-sinden-lightgun.md](04-sinden-lightgun.md) | Sinden lightgun + screen border — **experimental**, viability verdict, driver packaging, border methods, per-emulator config, blockers |
+| [05-frontend.md](05-frontend.md) | Pretty frontend — prettiness tier list, feature/music matrix, **decision: RetroFE**, integration design, media pipeline |
 
 ## Headline decisions
 
@@ -47,6 +48,10 @@ All nixpkgs attr/version claims were verified against unstable (≈26.05 lineage
    no proven Jovian-native success, pointer injection may be X11-only (Wayland blocker),
    dual-gun is X11-only. Safe declarative groundwork (driver package, udev, border assets)
    can land; the end-to-end gun experience is a hardware-in-hand spike.
+5. **Frontend: RetroFE** (`pkgs.retrofe`) — prettiest *animated* option that's actually
+   packaged + drives our emulators declaratively. Trade-off: weak native per-game music
+   (only AttractMode-Plus does that natively, but it's unpackaged + XWayland). Media via
+   `skyscraper`, synced from B2 like ROMs. See 05-frontend.md.
 
 ## Repo wiring (when implemented)
 
