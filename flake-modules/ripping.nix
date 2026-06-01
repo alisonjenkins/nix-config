@@ -121,12 +121,17 @@
     {
       devShells.ripping = pkgs.mkShellNoCC {
         # redumper + mame (for chdman) directly on PATH for manual use; the
-        # scripts wrap the common flows.
-        packages = (with pkgs; [ redumper mame cdrdao ]) ++ [ ripPsx bin2chd ];
+        # scripts wrap the common PS1 flows. ps3-disc-dumper is GUI-only (no
+        # CLI), so it's PATH-only — no wrapper. ps3netsrv serves a CFW PS3's
+        # decrypted dump over the network to the PC (route B).
+        packages = (with pkgs; [ redumper mame cdrdao ps3-disc-dumper ps3netsrv ]) ++ [ ripPsx bin2chd ];
         shellHook = ''
-          echo "ripping shell — PS1 Redump workflow"
-          echo "  rip-psx \"<Title>\" <USA|Europe|Japan> [--disc N] [--drive /dev/sr0]"
-          echo "  bin2chd <game.cue> [out.chd]      # pack existing bin/cue -> chd"
+          echo "ripping shell"
+          echo "  PS1: rip-psx \"<Title>\" <USA|Europe|Japan> [--disc N] [--drive /dev/sr0]"
+          echo "       bin2chd <game.cue> [out.chd]   # pack existing bin/cue -> chd"
+          echo "  PS3: ps3-disc-dumper                # GUI; auto-fetches IRD, outputs decrypted JB folder for RPCS3"
+          echo "       (needs a PS3-compatible Blu-ray drive — see rpcs3.net/quickstart#dumping_drives)"
+          echo "       ps3netsrv                      # serve a CFW-PS3 decrypted dump to the PC (route B)"
           echo "  raw tools on PATH: redumper, chdman, cdrdao"
         '';
       };
