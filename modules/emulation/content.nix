@@ -31,30 +31,35 @@ let
   ccfg = cfg.content;
   catalogue = import ./catalogue.nix;
 
-  # Per-console ROM sync sets derived from the consoles model (default.nix). Each
-  # ENABLED console contributes a set fetching exactly its `games` into
-  # ~/Emulation/roms/<romDir>; a DISABLED console that still lists games gets an
-  # empty-allowlist set so its ROMs are PRUNED off disk (the single console
-  # toggle removes its games too). Consoles that are off AND list no games are
+  # A game entry is either a bare filename string or { file; emulator; }; the
+  # content sync only needs the filename (the emulator override is for the
+  # RetroFE launcher wiring).
+  gameFile = g: if builtins.isString g then g else g.file;
+
+  # Per-platform ROM sync sets derived from the platforms model (default.nix).
+  # Each ENABLED platform contributes a set fetching exactly its `games` into
+  # ~/Emulation/roms/<romDir>; a DISABLED platform that still lists games gets an
+  # empty-allowlist set so its ROMs are PRUNED off disk (the single platform
+  # toggle removes its games too). Platforms that are off AND list no games are
   # skipped (nothing to fetch or prune).
-  consoleRomSets = lib.listToAttrs (lib.filter (x: x != null) (lib.mapAttrsToList
-    (name: c:
-      let cons = catalogue.${name}; in
-      if (c.enable || c.games != [ ]) then
+  platformRomSets = lib.listToAttrs (lib.filter (x: x != null) (lib.mapAttrsToList
+    (name: p:
+      let plat = catalogue.${name}; in
+      if (p.enable || p.games != [ ]) then
         lib.nameValuePair "roms-${name}" {
-          bucketPrefix = "roms/${cons.romDir}";
-          dest = "~/Emulation/roms/${cons.romDir}";
+          bucketPrefix = "roms/${plat.romDir}";
+          dest = "~/Emulation/roms/${plat.romDir}";
           perms = "0755";
-          files = if c.enable then c.games else [ ];
+          files = if p.enable then (map gameFile p.games) else [ ];
           symlinkInto = [ ];
         }
       else null)
-    cfg.consoles));
+    cfg.platforms));
 
   # Effective sets = the manual content.sets (bios/keys/firmware) + the derived
-  # per-console ROM sets. Everything below (manifests, units, prune, symlinks)
+  # per-platform ROM sets. Everything below (manifests, units, prune, symlinks)
   # operates on this merged map.
-  allSets = ccfg.sets // consoleRomSets;
+  allSets = ccfg.sets // platformRomSets;
 
   # rclone reads RCLONE_CONFIG_<REMOTE>_* from the environment, so the remote
   # name has to be upper-cased for the variable names. The set of secrets the

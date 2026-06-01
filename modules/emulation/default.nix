@@ -12,12 +12,15 @@
 # schemes (03) and the Sinden lightgun (04) live in the imported sub-files; they
 # extend the SAME options.modules.emulation namespace.
 #
-# PER-CONSOLE MODEL: `consoles.<name>` (names from ./catalogue.nix) each carry a
-# single `enable` toggle that gates that console's emulators, its games (content
-# sync), and its per-console RetroFE theme together. `emulators` is a LIST so a
-# console can install multiple backends (e.g. PS1 via swanstation + beetle-psx).
-# The module installs only the union of backends across ENABLED consoles, so the
-# closure scales with what you actually turn on.
+# PER-PLATFORM MODEL: `platforms.<name>` (names from ./catalogue.nix; "platform"
+# not "console" since the set includes arcade, handhelds, PC-ish targets) each
+# carry a single `enable` toggle that gates that platform's emulators, its games
+# (content sync), and its per-platform RetroFE theme together. `emulators` is a
+# LIST so a platform can install multiple backends (e.g. PS1 via swanstation +
+# beetle-psx). Individual games may override which of those emulators launches
+# them (games = [ "x.chd" { file = "y.chd"; emulator = "..."; } ]). The module
+# installs only the union of backends across ENABLED platforms, so the closure
+# scales with what you actually turn on.
 #
 # Host runs home-manager as a NixOS module, so all user-level state is set via
 # config.home-manager.users.${cfg.user}.* — NOT bare home.*.
@@ -30,30 +33,52 @@ let
   cfg = config.modules.emulation;
   catalogue = import ./catalogue.nix;
 
-  # Per-console option submodule, generated from each catalogue entry so the
-  # `emulators` enum is constrained to that console's valid backends.
-  consoleOptions = name: cons: {
-    enable = lib.mkEnableOption "the ${name} console (its emulators + games + theme)";
+  # Per-platform option submodule, generated from each catalogue entry so the
+  # `emulators` enum (and the per-game emulator override) is constrained to that
+  # platform's valid backends.
+  platformOptions = name: plat: {
+    enable = lib.mkEnableOption "the ${name} platform (its emulators + games + theme)";
 
     emulators = lib.mkOption {
-      type = lib.types.listOf (lib.types.enum (lib.attrNames cons.backends));
-      default = cons.default;
+      type = lib.types.listOf (lib.types.enum (lib.attrNames plat.backends));
+      default = plat.default;
       description = ''
         Backend(s) to install for ${name}. Multiple allowed. Valid keys:
-        ${lib.concatStringsSep ", " (lib.attrNames cons.backends)}.
+        ${lib.concatStringsSep ", " (lib.attrNames plat.backends)}.
         "retroarch-*" keys pull a libretro core into the shared RetroArch build;
-        the rest are standalone emulator packages.
+        the rest are standalone emulator packages. The first entry is the
+        platform's PRIMARY emulator (used for games that don't override it).
       '';
     };
 
     games = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      type = lib.types.listOf (lib.types.either lib.types.str (lib.types.submodule {
+        options = {
+          file = lib.mkOption {
+            type = lib.types.str;
+            description = "ROM filename relative to roms/${plat.romDir}/ in the B2 bucket.";
+          };
+          emulator = lib.mkOption {
+            type = lib.types.nullOr (lib.types.enum (lib.attrNames plat.backends));
+            default = null;
+            description = ''
+              Override which of this platform's emulators launches this game
+              (one of: ${lib.concatStringsSep ", " (lib.attrNames plat.backends)}).
+              null = the platform's primary (first `emulators`) backend. Consumed
+              by the RetroFE per-game launcher wiring; content sync only uses the
+              filename.
+            '';
+          };
+        };
+      }));
       default = [ ];
       description = ''
-        Explicit ROM filenames for this console (relative to its B2 prefix
-        roms/${cons.romDir}/). Synced to ~/Emulation/roms/${cons.romDir} when the
-        console is enabled; the dir is reconciled to exactly this list (unlisted
-        files pruned). Requires modules.emulation.content.enable + B2 creds.
+        Games for this platform. Either a bare ROM filename (uses the platform's
+        primary emulator) or { file; emulator; } to pick a specific installed
+        emulator for that game. Filenames are relative to the B2 prefix
+        roms/${plat.romDir}/. Synced to ~/Emulation/roms/${plat.romDir} when the
+        platform is enabled; the dir is reconciled to exactly this list (unlisted
+        pruned). Requires modules.emulation.content.enable + B2 creds.
       '';
     };
 
@@ -61,19 +86,19 @@ let
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = ''
-        Optional per-console RetroFE layout directory. When set, it is dropped
-        into the RetroFE layout's collections/${name}/layout/ so this console
+        Optional per-platform RetroFE layout directory. When set, it is dropped
+        into the RetroFE layout's collections/${name}/layout/ so this platform
         gets its own look (RetroFE resolves a per-collection layout there,
         falling back to the global layout). null = use the global layout.
       '';
     };
   };
 
-  # All enabled consoles, and the union of their chosen backend specs.
-  enabledConsoles = lib.filterAttrs (_n: c: c.enable) cfg.consoles;
+  # All enabled platforms, and the union of their chosen backend specs.
+  enabledPlatforms = lib.filterAttrs (_n: p: p.enable) cfg.platforms;
   chosenSpecs = lib.concatLists (lib.mapAttrsToList
-    (name: c: map (e: catalogue.${name}.backends.${e}) c.emulators)
-    enabledConsoles);
+    (name: p: map (e: catalogue.${name}.backends.${e}) p.emulators)
+    enabledPlatforms);
 
   standaloneAttrs = lib.unique (map (s: s.pkg) (lib.filter (s: s ? pkg) chosenSpecs));
   retroCores = lib.unique (map (s: s.core) (lib.filter (s: s ? core) chosenSpecs));
@@ -83,8 +108,8 @@ let
   retroarchPackage = lib.optional (retroCores != [ ])
     (pkgs.retroarch.withCores (cores: map (n: cores.${n}) retroCores));
 
-  # Switch console drives the controller udev rule (eden ships the real one).
-  switchEnabled = cfg.consoles.switch.enable;
+  # Switch platform drives the controller udev rule (eden ships the real one).
+  switchEnabled = cfg.platforms.switch.enable;
 in
 {
   imports = [
@@ -123,19 +148,20 @@ in
       '';
     };
 
-    consoles = lib.mkOption {
+    platforms = lib.mkOption {
       default = { };
       description = ''
-        Per-console configuration. Each console's single `enable` toggle gates
-        its emulators, its games (content sync) and its per-console theme. Only
-        the union of backends across ENABLED consoles is installed.
+        Per-platform configuration. Each platform's single `enable` toggle gates
+        its emulators, its games (content sync) and its per-platform theme. Only
+        the union of backends across ENABLED platforms is installed. Platform
+        names (nes, snes, arcade, switch, ...) come from ./catalogue.nix.
       '';
       type = lib.types.submodule {
         options = lib.mapAttrs
-          (name: cons: lib.mkOption {
-            type = lib.types.submodule { options = consoleOptions name cons; };
+          (name: plat: lib.mkOption {
+            type = lib.types.submodule { options = platformOptions name plat; };
             default = { };
-            description = "The ${name} console (romDir roms/${cons.romDir}).";
+            description = "The ${name} platform (romDir roms/${plat.romDir}).";
           })
           catalogue;
       };
