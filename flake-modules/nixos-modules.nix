@@ -9,6 +9,7 @@
     btfs-streaming = import ../modules/btfs-streaming;
     desktop = import ../modules/desktop;
     docker = import ../modules/docker;
+    emulation = import ../modules/emulation;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
     mosh = import ../modules/mosh;

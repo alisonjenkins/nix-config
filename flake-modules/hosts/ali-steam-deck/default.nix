@@ -25,6 +25,7 @@ in {
       self.nixosModules.locale
       self.nixosModules.luks-controller-unlock
       self.nixosModules.initrd-ssh
+      self.nixosModules.emulation
 
       # External flake modules
       inputs.disko.nixosModules.disko
