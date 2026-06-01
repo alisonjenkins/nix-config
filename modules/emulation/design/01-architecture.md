@@ -118,6 +118,13 @@ udev rule (so `services.udev.packages = [ pkgs.ryubing ]` is a no-op). The `inpu
 
 ## Module skeleton (conventions)
 
+> **Implemented — superseded shape.** The flat `home.packages` emulator list shown below was
+> the initial sketch. As built, emulator selection is the **per-platform catalogue model**
+> (`catalogue.nix` + `platforms.<name>.{enable,emulators[],games[],theme}`): the module
+> installs only the union of backends across *enabled* platforms (one `retroarch.withCores`
+> carrying just the cores in use). Steam ROM Manager adds a **single RetroFE shortcut** (not
+> one per emulator), so Steam Input is one layout for the whole stack. See README §2b + 03.
+
 `options.modules.emulation.*` / `config = mkIf cfg.enable`, at `modules/emulation/default.nix`,
 exported in `flake-modules/nixos-modules.nix`, referenced as `self.nixosModules.emulation`.
 

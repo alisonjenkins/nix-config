@@ -40,10 +40,18 @@ All nixpkgs attr/version claims were verified against unstable (≈26.05 lineage
    (listed = present, unlisted = pruned). Keeps multi-GB libraries out of the niks3
    cache push. Sourcing copyrighted content is the user's legal responsibility (own
    dumps only).
+2b. **Per-`platform` model** (renamed from "console" — the set includes arcade/handhelds).
+   Each `platforms.<name>` has ONE `enable` toggle gating its emulators, its games (content
+   sync), and its per-platform RetroFE theme. `emulators` is a LIST (multiple backends per
+   platform); `games` entries can be `{ file; emulator; }` to route a specific game to one
+   of the platform's installed emulators. Only the union of backends across enabled
+   platforms is installed.
 3. **Control schemes ship now** (all emulator input configs are plain text → declarative).
-   Steam Input per-AppID binding is the one imperative step (steam-rom-manager, one-time);
-   per-game Steam Input layouts only work in Gaming Mode, so native config is the
-   authoritative layer for desktop mode.
+   RetroArch unified hotkeys are auto-shipped; standalone per-emulator configs to be
+   sourced from EmuDeck templates. **Steam Input is simplified by launching only RetroFE as
+   the single Steam shortcut** → one controller layout for the whole stack, no
+   per-emulator/per-AppID binding; emulators inherit Steam Input's one virtual gamepad and
+   their native configs map against it.
 4. **Sinden lightgun is deferred to an experimental sub-module** (`enable = false`):
    no proven Jovian-native success, pointer injection may be X11-only (Wayland blocker),
    dual-gun is X11-only. Safe declarative groundwork (driver package, udev, border assets)

@@ -18,6 +18,20 @@ Pure `fetchurl`/`fetchzip` is the wrong tool for a personal dump library:
 pattern for any *single* copyrighted file you'd rather pin in the store — but for a whole
 library, sync-to-disk wins.
 
+## Update: ROM sets derive from `platforms.<name>.games`
+
+As implemented, **ROM sync sets are auto-derived from the platforms model**
+(default.nix → content.nix), not hand-declared. Each enabled platform contributes a
+`roms-<platform>` set (bucketPrefix `roms/<romDir>`, dest `~/Emulation/roms/<romDir>`,
+files = that platform's `games`). A disabled-but-still-listed platform gets an empty
+allowlist → its ROMs are **pruned off disk** (the single platform `enable` removes its games
+too). A `games` entry is either a bare filename or `{ file; emulator; }` (per-game emulator
+override, §05); content sync uses only the filename.
+
+The manual `content.sets` option below remains for the **non-ROM** content (BIOS, Switch
+keys, firmware) and is merged with the derived per-platform ROM sets. The exact-state /
+prune engine is identical for both.
+
 ## Model: declarative manifest → exact on-disk state
 
 The Nix config **enumerates exactly which files should exist**; an `rclone` sync makes the

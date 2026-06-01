@@ -74,37 +74,34 @@ pad has a stable GUID → a shipped config targeting it is reliable; an external
 match. Mitigation: prefer GUID/name forms, generate config at activation from the detected
 pad, or document external-pad reconfig as manual.
 
-## 3.3 Steam Input — the imperative gap
+## 3.3 Steam Input — simplified by the RetroFE-only model
 
-EmuDeck's "controls out of the box" rests on **Steam Input controller templates** (`.vdf`)
-bound per-AppID to each emulator's non-Steam shortcut:
+**Architecture decision (supersedes the per-emulator approach):** we launch **only the
+RetroFE frontend** as a single non-Steam shortcut (see 05-frontend.md). The emulators are
+**child processes of RetroFE**, not separate Steam shortcuts. This collapses the Steam Input
+problem:
 
-- **Declarable:** the template `.vdf` files (plain text) →
-  `~/.local/share/Steam/controller_base/templates/` via `home.file` (keep `.vdf` ext). Also
-  the SRM parser + `controllerTemplates.json`.
-- **Imperative (unavoidable):** the per-shortcut *assignment* (template → emulator AppID) is
-  keyed by Steam's runtime AppID + SteamID3 under `userdata/`. Only exists after Steam
-  imports the shortcut. **steam-rom-manager** computes + writes it — do not hand-write in Nix.
+- **One Steam Input layout** — RetroFE's — applied once to the single shortcut. **No
+  per-emulator/per-AppID `.vdf` templates, no per-game binding drift, none of the imperative
+  per-emulator SRM apply.** (The earlier per-emulator template+per-AppID design is dropped.)
+- In **Gaming Mode**, Steam Input presents **one virtual gamepad** (xbox360-style) to RetroFE
+  **and its child emulators** → every emulator sees the *same* stable controller. So the
+  emulator-native configs (§3.1/§3.2) map against **one consistent device** — that's the
+  "works out of the box" lever: tune the bundled defaults to the **Steam-Input virtual pad**
+  and everything inherits it.
 
-**Critical (confirmed, ValveSoftware/steam-for-linux #8904):** on the Deck, launching a
-non-Steam shortcut **through Steam in Desktop Mode does NOT activate the per-game Steam Input
-layout** — the Desktop layout stays in effect. Per-game layouts work reliably **only in
-Gaming Mode/gamescope**. Therefore:
+**Device-target nuance** (banked, not a blocker): the device the emulators see differs by
+launch path — Gaming-Mode-via-RetroFE = Steam Input's *virtual xbox360 pad*; pure
+desktop-direct (launching an emulator outside Steam) = the *raw Steam Deck pad* (different
+SDL GUID/name). Since RetroFE-via-Steam is the primary path, tune the bundled standalone
+defaults to the **virtual pad**; desktop-direct may need the emulator's own bind step or a
+second profile. RetroArch (§3.1) matches by name/udev so it's robust to both.
 
-- **Gaming Mode:** Steam Input templates apply → EmuDeck's chord UX works (incl. the keyboard
-  chords that give Cemu/melonDS-state/azahar their menu/exit/state hotkeys).
-- **Plasma desktop:** native-input-only. The emulator-native text config (§3.1/§3.2) is the
-  **authoritative** layer. The emulators that lean on Steam-Input chords (Cemu, azahar,
-  melonDS save/load-state, mGBA) lose those chords in Plasma → fall back to keyboard, the
-  emulator's own hotkeys, or an external mapper (antimicrox/input-remapper).
-
-**Recommended workflow:** (1) `home.file` the template `.vdf`s; (2) `home.file` the SRM
-parser + `controllerTemplates.json`; (3) after first Steam login, run `steam-rom-manager`
-once (manual or a gated one-shot user unit) to import shortcuts + write per-AppID bindings
-(the unavoidable imperative apply); (4) treat emulator-native input as a **mandatory** second
-layer for desktop parity; (5) document that per-game tweaks live in `userdata`/Steam Cloud
-(export `.vdf` back to re-declare). Matches the host's existing "Decky is non-declarative"
-stance.
+**What remains imperative:** essentially just the **one-time RetroFE Steam Input layout** (set
+once in Steam's controller UI, or shipped as a single template + applied via steam-rom-manager
+when RetroFE is imported as the shortcut). No longer per emulator. The
+`controls.steamInput.templates` option still exists (ship the RetroFE layout `.vdf`), but is
+now used for the *single* RetroFE template rather than one-per-emulator.
 
 ## 3.4 Stateful gotcha
 
