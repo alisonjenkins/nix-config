@@ -115,6 +115,7 @@ in
   imports = [
     ./content.nix # options.modules.emulation.content.* + B2 manifest sync (02)
     ./controls.nix # options.modules.emulation.controls.* + input configs (03)
+    ./controls-emudeck.nix # EmuDeck curated standalone control schemes (03 #3)
     ./sinden.nix # options.modules.emulation.sinden.*  (04, experimental, off)
     ./frontend-retrofe.nix # options.modules.emulation.retrofe.* + RetroFE wiring (05)
   ];
