@@ -173,6 +173,10 @@ in {
         # placed via a content set before games run.
         modules.emulation = {
           enable = true;
+          # Animated gaming-mode picker (the single Steam shortcut → one Steam
+          # Input layout for the whole stack). Collections are derived from the
+          # enabled platforms; wheels are empty until `games` are populated.
+          frontend = "retrofe";
           # Out-of-the-box input: RetroArch unified hotkeys (NES/SNES/N64/GB
           # cores) + EmuDeck's curated standalone schemes for the supported
           # emulators in this set (GameCube/Dolphin). emudeckStandaloneDefaults
