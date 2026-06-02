@@ -197,11 +197,17 @@ in
       ++ retroarchPackage
       ++ [ pkgs.steam-rom-manager ];
 
-    # Switch-controller HID uaccess rule. Only eden's package ships a usable rule
-    # (72-yuzu-input.rules); citron/ryubing ship none, so source it from eden
-    # whenever the Switch console is enabled (the rule is emulator-agnostic — it
-    # just grants the seat user access to Switch controllers over hidraw).
-    services.udev.packages = lib.mkIf switchEnabled [ pkgs.eden ];
+    # Switch-controller HID uaccess rule (72-yuzu-input.rules) ships in eden's
+    # package. Only pull it when eden is an ENABLED backend — do NOT force eden's
+    # build just because the Switch platform is on with a different emulator
+    # (citron/ryubing): this repo's eden overlay is an AppImage whose build can
+    # fail (bad upstream asset), which would brick the whole host build for a
+    # rule the chosen emulator doesn't need.
+    # FOLLOW-UP (audit #9): ship 72-yuzu-input.rules inline via
+    # services.udev.extraRules so citron/ryubing also get Switch-HID uaccess
+    # without depending on the eden package.
+    services.udev.packages =
+      lib.optional (switchEnabled && lib.elem "eden" cfg.platforms.switch.emulators) pkgs.eden;
 
     # Optional RetroDeck (ES-DE) flatpak via nix-flatpak (already imported by the
     # host). RetroFE wiring is handled in the frontend sub-module.
