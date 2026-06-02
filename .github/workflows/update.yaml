@@ -16,6 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: nixbuild/nix-quick-install-action@v34
+        with:
+          # Pin to match local dev nix (2.31.x). The action's v34 default is
+          # 2.29.2, which serialises nested `follows` (e.g. ali-neovim's
+          # nixvim.inputs.nixpkgs.follows) as a concrete nixpkgs node instead
+          # of a follows array. Local nix 2.31.x re-dedups it on every eval,
+          # churning flake.lock and blocking `git pull`. Keep in lockstep.
+          nix_version: "2.31.2"
       - uses: DeterminateSystems/flake-checker-action@v12
       - name: Setup git
         run: |
