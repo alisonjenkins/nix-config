@@ -159,6 +159,39 @@ in {
         modules.desktop-media.enable = true;
         modules.locale.enable = true;
 
+        # EmuDeck-equivalent emulation stack (modules/emulation). Initial set:
+        # NES, SNES, N64, Game Boy, GameCube, Wii U, Switch. Each platform
+        # installs its default emulator(s) (NES/SNES/N64/GB via RetroArch cores,
+        # GameCube via dolphin-emu, Wii U via cemu, Switch via citron) + the
+        # EmuDeck control schemes for the supported standalone emulators.
+        #
+        # `games` left empty for now: ROMs live in a private B2 bucket that
+        # isn't set up yet. content sync is therefore NOT enabled — flip
+        # content.enable + provision the sops B2 creds once the bucket exists
+        # (see modules/emulation/content.nix + CLAUDE.md "emulation follow-ups").
+        # Switch additionally needs prod.keys/title.keys + firmware (own dumps)
+        # placed via a content set before games run.
+        modules.emulation = {
+          enable = true;
+          # Out-of-the-box input: RetroArch unified hotkeys (NES/SNES/N64/GB
+          # cores) + EmuDeck's curated standalone schemes for the supported
+          # emulators in this set (GameCube/Dolphin). emudeckStandaloneDefaults
+          # defaults on; Cemu/citron have no shipped scheme yet (Steam Input).
+          controls = {
+            enable = true;
+            retroarch.enable = true;
+          };
+          platforms = {
+            nes.enable = true;
+            snes.enable = true;
+            n64.enable = true;
+            gb.enable = true; # original Game Boy; gbc (Color) is a separate platform
+            gamecube.enable = true;
+            wiiu.enable = true;
+            switch.enable = true;
+          };
+        };
+
         boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
         boot.loader.grub.efiInstallAsRemovable = lib.mkForce true;
 
@@ -425,7 +458,7 @@ in {
           extraGroups = [ "networkmanager" "wheel" "docker" "realtime" "input" ];
           openssh.authorizedKeys.keys = [ outputs.lib.sshKeys.primary ];
           packages = with pkgs; [
-            citron
+            # citron is now installed by modules.emulation (switch platform)
             fastfetch
             firefox
           ];
