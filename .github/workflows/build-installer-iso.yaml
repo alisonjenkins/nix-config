@@ -133,7 +133,7 @@ jobs:
 
       - name: Upload ISO artifact
         if: success() && (steps.dry-run.outputs.needs_build == 'true' || inputs.force_push == true)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installer-iso-${{ github.run_id }}
           path: iso-out/*.iso
