@@ -967,7 +967,10 @@ in {
 
               config = {
                 niri = {
-                  default = [
+                  # nixpkgs' niri.nix now ships its own niri.default
+                  # ("gnome;gtk") at normal priority; mkForce keeps our
+                  # gtk-first preference and avoids the conflict.
+                  default = lib.mkForce [
                     "gtk"
                     "gnome"
                   ];
