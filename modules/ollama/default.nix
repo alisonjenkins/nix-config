@@ -1,6 +1,14 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.modules.ollama;
+  # nixpkgs removed `services.ollama.acceleration`; the accel backend is now
+  # selected by package. Map our enum onto the matching ollama variant.
+  accelerationPackages = {
+    rocm = pkgs.ollama-rocm;
+    cuda = pkgs.ollama-cuda;
+    vulkan = pkgs.ollama-vulkan;
+    cpu = pkgs.ollama;
+  };
 in
 {
   options.modules.ollama = {
@@ -41,7 +49,7 @@ in
     services = {
       ollama = {
         enable = true;
-        acceleration = cfg.acceleration;
+        package = accelerationPackages.${cfg.acceleration} or pkgs.ollama;
         rocmOverrideGfx = cfg.rocmOverrideGfx;
         loadModels = cfg.loadModels;
         user = "ollama";
