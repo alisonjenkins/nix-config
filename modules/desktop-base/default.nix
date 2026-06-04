@@ -101,10 +101,10 @@ in
       vulnix
       watchexec
       xdg-utils
-      xorg.libXScrnSaver
-      xorg.libXcursor
-      xorg.libXi
-      xorg.libXinerama
+      libxscrnsaver
+      libxcursor
+      libxi
+      libxinerama
       yazi
       zsh
     ]
