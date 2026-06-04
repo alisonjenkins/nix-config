@@ -403,7 +403,7 @@ in {
             openttd-ttf
             docker
             protontricks
-            protonvpn-gui
+            proton-vpn
             qbittorrent
             qemu_full
             radeontop
@@ -426,8 +426,8 @@ in {
             wireguard-tools
             xd
             xdotool
-            xorg.xprop
-            xorg.xwininfo
+            xprop
+            xwininfo
             yad
             zk
           ];
