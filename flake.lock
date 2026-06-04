@@ -5,7 +5,7 @@
         "flake-parts": "flake-parts",
         "neovim-nightly-overlay": "neovim-nightly-overlay",
         "nixpkgs": [
-          "nixpkgs_unstable"
+          "nixpkgs"
         ],
         "nixpkgs-master": [
           "nixpkgs_master"
@@ -1397,7 +1397,7 @@
       "inputs": {
         "flake-parts": "flake-parts_3",
         "nixpkgs": [
-          "nixpkgs_unstable"
+          "nixpkgs"
         ],
         "systems": "systems"
       },

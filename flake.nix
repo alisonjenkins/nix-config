@@ -77,16 +77,19 @@
     ali-neovim = {
       url = "github:alisonjenkins/neovim-nix-flake";
       inputs = {
-        nixpkgs.follows = "nixpkgs_unstable";
+        # Build ali-neovim (and the nixvim packages it pulls) against the
+        # 26.05 release `nixpkgs`, not nixpkgs_unstable. nixpkgs_unstable
+        # has rolled to 26.11; nixvim is on its nixos-26.05 release, so
+        # feeding it a 26.11 `pkgs` trips nixvim's mismatched-version
+        # warning. Keeping pkgs + nixvim's eval-nixpkgs both on 26.05
+        # clears it.
+        nixpkgs.follows = "nixpkgs";
         nixpkgs-master.follows = "nixpkgs_master";
         nixpkgs-stable.follows = "nixpkgs_stable";
-        # Pin nixvim to its nixos-26.05 release branch and point its
-        # nixpkgs at nixpkgs_unstable (26.05 — the channel ali-neovim
-        # uses for packages). nixvim's `main` declares release 26.11
-        # while our pkgs is 26.05, which trips nixvim's
-        # mismatched-version warning; matching both to 26.05 clears it.
+        # nixvim pinned to its nixos-26.05 release branch, evaluated
+        # against the same 26.05 `nixpkgs` as above.
         nixvim.url = "github:nix-community/nixvim/nixos-26.05";
-        nixvim.inputs.nixpkgs.follows = "nixpkgs_unstable";
+        nixvim.inputs.nixpkgs.follows = "nixpkgs";
       };
     };
 
