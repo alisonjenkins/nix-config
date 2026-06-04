@@ -141,6 +141,20 @@ in
       })
       else prev.direnv;
 
+    # oxker's help-screen snapshot tests bake in key *names* (e.g. "Del",
+    # "Backspace") that crossterm renders differently on macOS ("Fwd Del",
+    # "Delete"), so insta's draw_blocks help snapshots fail the build when
+    # oxker is compiled from source on aarch64-darwin. The snapshots pass on
+    # Linux (hydra builds + caches it there), so scope the skip to Darwin and
+    # only drop the two affected custom-keymap snapshot tests.
+    oxker = if prev.stdenv.hostPlatform.isDarwin
+      then prev.oxker.overrideAttrs (old: {
+        checkFlags = (old.checkFlags or []) ++ [
+          "--skip" "ui::draw_blocks::help::tests::test_draw_blocks_help_custom_keymap"
+        ];
+      })
+      else prev.oxker;
+
     # zsh's test suite hangs on Darwin (TTY-related tests sit at 0% CPU
     # indefinitely in the Nix sandbox, blocking the rest of the build).
     zsh = if prev.stdenv.hostPlatform.isDarwin

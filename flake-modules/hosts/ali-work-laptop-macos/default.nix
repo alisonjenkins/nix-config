@@ -5,7 +5,7 @@ let
   username = "ajenkins";
   darwinSystem = "aarch64-darwin";
 
-  darwinPkgs = import inputs.nixpkgs_stable_darwin {
+  darwinPkgs = import inputs.nixpkgs {
     system = darwinSystem;
 
     config = {
