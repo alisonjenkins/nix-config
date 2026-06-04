@@ -14,7 +14,7 @@
   makeDesktopItem,
   copyDesktopItems,
   writeShellScript,
-  wineWowPackages,
+  wineWow64Packages,
   winetricks,
   cabextract,    # winetricks dep for some verbs
   p7zip,
@@ -30,7 +30,7 @@ let
     hash = "sha256-8yBKrXJlWvQQjNFh8ykim2Nhe0+vgbF4YLSZ5bkEfrk=";
   };
 
-  wine = wineWowPackages.stableFull;
+  wine = wineWow64Packages.stableFull;
 
   # PATH used by the launcher — keeps winetricks dependencies on $PATH
   # without leaking the build environment to the user's shell.
