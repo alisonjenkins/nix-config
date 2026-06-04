@@ -6,7 +6,7 @@
         brightnessctl
         cpupower-gui
         playerctl
-        swww
+        awww
       ]
     else [ ];
 
