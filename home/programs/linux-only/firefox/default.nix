@@ -14,6 +14,10 @@ in {
   config.programs.firefox = {
     enable = lib.mkIf pkgs.stdenv.isLinux true;
 
+    # Keep the legacy profile location (home.stateVersion < 26.05). Silences
+    # the configPath default-change warning without migrating ~/.mozilla/firefox.
+    configPath = ".mozilla/firefox";
+
     profiles.${username} = {
       settings = shared.settings;
 
