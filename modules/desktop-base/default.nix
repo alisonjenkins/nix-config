@@ -108,11 +108,11 @@ in
       yazi
       zsh
     ]
-    # x86_64-only packages — discord-canary/wine/google-chrome/kbfs/
+    # x86_64-only packages — discord/wine/google-chrome/kbfs/
     # keybase-gui/zoom-us upstream don't ship aarch64 builds. Gate so
     # the module is reusable on Asahi.
     ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 (with pkgs; [
-      discord-canary
+      discord
       google-chrome
       kbfs
       keybase-gui

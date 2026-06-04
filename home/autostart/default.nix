@@ -1,5 +1,5 @@
 { pkgs, ... }: let
-  # Most autostart entries (steam, discord-canary, vesktop, keybase-gui,
+  # Most autostart entries (steam, discord, vesktop, keybase-gui,
   # zapzap) are x86_64-only — gate the whole block to skip cleanly on
   # aarch64-linux hosts like ali-mba-linux.
   isLinuxX86 = pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
@@ -38,7 +38,7 @@ in {
       };
     in
     {
-      ".config/autostart/discord-canary.desktop".source = "${pkgs.discord-canary}/share/applications/discord-canary.desktop";
+      ".config/autostart/discord.desktop".source = "${pkgs.discord}/share/applications/discord.desktop";
       ".config/autostart/element-desktop.desktop".source = "${pkgs.element}/share/applications/element-desktop.desktop";
       ".config/autostart/ghostty.desktop".source = "${pkgs.ghostty}/share/applications/com.mitchellh.ghostty.desktop";
       ".config/autostart/keybase.desktop".source = "${pkgs.keybase-gui}/share/applications/keybase.desktop";

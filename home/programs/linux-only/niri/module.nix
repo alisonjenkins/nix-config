@@ -234,7 +234,7 @@ in {
 
       window-rule {
           match app-id="^Keybase$"
-          match app-id="^discord-canary$"
+          match app-id="^discord$"
           match app-id="^vesktop$"
           match app-id="^ZapZap$"
           match app-id="^signal$"
