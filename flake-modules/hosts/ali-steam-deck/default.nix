@@ -152,6 +152,20 @@ in {
         };
 
         modules.desktop.enable = true;
+
+        # Built-in-speaker audio underruns under demanding games: the 15 W APU
+        # downclocks the CPU when the GPU is maxed, so the RT audio thread can't
+        # refill a small buffer in time → crackle. Pin a larger fixed quantum
+        # (~21 ms @ 48 kHz) so apps/Wine can't negotiate a tiny buffer the
+        # throttled APU can't service. Inaudible latency for gaming; mirrors
+        # SteamOS's larger-buffer approach. Desktop keeps the 256 default.
+        modules.desktop.pipewire = {
+          quantum = 1024;
+          minQuantum = null; # null => fixed quantum (collapses to `quantum`)
+          maxQuantum = null; # fixed
+          alsaHeadroom = 2048; # extra DMA slack under load (default 1024)
+        };
+
         modules.desktop-1password.enable = true;
         modules.desktop-aws-tools.enable = true;
         modules.desktop-base.enable = true;
