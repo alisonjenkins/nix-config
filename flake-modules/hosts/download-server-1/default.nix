@@ -696,14 +696,18 @@ in {
 
           serviceConfig = {
             ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
-            ExecStartPre = "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
+            # mkForce so the config-merger remains the sole ExecStartPre: newer
+            # nixpkgs qbittorrent modules add their own ExecStartPre that installs
+            # the declarative serverConfig and would clobber the runtime-managed
+            # qBittorrent.conf (VPN port + hashed WebUI password) on every start.
+            ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
             Restart = "always";
             RestartSec = "5s";
             StartLimitBurst = 0; # Unlimited restart attempts
 
             # Set umask to 002 so files are created with group write permissions (664)
             # and directories with 775. This allows radarr/sonarr to modify files.
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
 
             # Ensure qbittorrent runs with supplementary groups (including media group)
             SupplementaryGroups = [ "media" ];
@@ -739,7 +743,7 @@ in {
         # Configure umask for all media services to create files with group write permissions
         systemd.services.radarr = {
           serviceConfig = {
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
           };
           preStart = ''
@@ -755,7 +759,7 @@ in {
 
         systemd.services.sonarr = {
           serviceConfig = {
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
           };
           preStart = ''
@@ -771,7 +775,7 @@ in {
 
         systemd.services.bazarr = {
           serviceConfig = {
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
           };
           preStart = ''
@@ -786,7 +790,7 @@ in {
 
         systemd.services.prowlarr = {
           serviceConfig = {
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" ];
           };
           preStart = ''
@@ -802,7 +806,7 @@ in {
 
         systemd.services.jellyseerr = {
           serviceConfig = {
-            UMask = "0002";
+            UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" ];
           };
         };
@@ -962,12 +966,12 @@ EOF
         # Configure Deluge services
         systemd.services.deluged.serviceConfig = {
           ExecStartPre = "+${pkgs.bash}/bin/bash /etc/deluge/init-config.sh";
-          UMask = "0002";
+          UMask = lib.mkForce "0002";
           SupplementaryGroups = [ "media" ];
         };
 
         systemd.services.delugeweb.serviceConfig = {
-          UMask = "0002";
+          UMask = lib.mkForce "0002";
         };
 
         # Ensure mount points exist
