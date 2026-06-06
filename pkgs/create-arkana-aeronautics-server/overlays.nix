@@ -3,8 +3,33 @@
 # client derivation (where Modrinth-hosted entries become overrides/mods/
 # files because the CurseForge launcher can't follow non-CurseForge URLs in
 # manifest.json).
-{ fetchurl }:
+{ fetchurl, stdenvNoCC, unzip, zip }:
 let
+  # Repackage a fetched jar after running a shell `sedScript` over its
+  # extracted tree. Used to fix mods that ship broken datapack files — e.g.
+  # Create Tracks 1.0.1 writes its loot tables + block tags with an invalid
+  # UPPERCASE `Tracks:` namespace (Minecraft resource locations must be
+  # lowercase), so vanilla refuses to load them and track blocks drop nothing.
+  # The `name`/output is a single .jar file so it drops into mods/ like any
+  # fetchurl jar.
+  patchJarJson = { src, filename, sedScript }:
+    stdenvNoCC.mkDerivation {
+      name = filename;
+      nativeBuildInputs = [ unzip zip ];
+      dontUnpack = true;
+      dontFixup = true;
+      buildPhase = ''
+        runHook preBuild
+        mkdir extracted && ( cd extracted && unzip -q ${src} && ${sedScript} )
+        runHook postBuild
+      '';
+      installPhase = ''
+        runHook preInstall
+        ( cd extracted && zip -qr -X "$out" . )
+        runHook postInstall
+      '';
+    };
+
   # Source-of-truth tag: every entry should target Minecraft 1.21.1 NeoForge.
   # Bumping any pin here keeps both the server image and the client zip in
   # sync — they share this single list.
@@ -443,6 +468,168 @@ in
     fileID         = 8204326;
     jar = curseforge 8204326 "create-enchantment-industry-2.4.1.jar"
       "1lq20ma81mnb1qc1hby9ns68fqhgvffh6hx8b422wk2gnmgcv3al";
+  }
+
+  # ==== Create Aeronautics expansion pack (added -60) ====
+  # Nine Create Aeronautics / Sable physics addons. Several hard deps are
+  # already satisfied by jars nested (JarJar) in existing entries:
+  #   simulated 1.2.1 + offroad 1.2.1   → create-aeronautics-bundled
+  #   sablecompanion 1.6.0              → sable-neoforge-1.21.1-1.2.2
+  # The only NEW transitive deps are the four library mods below, all pulled
+  # in by Delivery Required: ldlib2, and the ponderjs → kubejs → rhino chain.
+
+  # ---- Library deps (for Create Aeronautics: Delivery Required) ----
+  {
+    # LDLib2 (LowDragLib2) — hard dep of createdeliveryrequired (>=2.2.8).
+    # `-all` classifier JarJars its own libs (taffy/yoga/kotlin); no extra
+    # entries needed. neoforge >=21.1.216 (we ship 21.1.228).
+    filename       = "ldlib2-neoforge-1.21.1-2.2.17-all.jar";
+    dropAsOverride = true;
+    jar = modrinth "B1CBVXHX" "eFcwlxhy"
+      "ldlib2-neoforge-1.21.1-2.2.17-all.jar"
+      "1sw5zqmmwz8jpnml7501h3ma79pvzls2cqnbyydvzaljlzd9z2w5";
+  }
+  {
+    # PonderJS — hard dep of createdeliveryrequired (>=1.21.1-2.4.0). modId
+    # `ponderjs`, distinct from Create's built-in `ponder`. Hard-requires
+    # KubeJS → Rhino (below).
+    filename       = "ponderjs-neoforge-1.21.1-2.4.0.jar";
+    dropAsOverride = true;
+    jar = modrinth "5A34Stj8" "BqhDf7W8"
+      "ponderjs-neoforge-1.21.1-2.4.0.jar"
+      "0ril8hmp095w80baia4sbjaxzv4km561q02q6050mymhkihrq4yr";
+  }
+  {
+    # KubeJS — hard dep of PonderJS. Ships passive (no pack scripts present).
+    filename       = "kubejs-neoforge-2101.7.2-build.368.jar";
+    dropAsOverride = true;
+    jar = modrinth "umyGl7zF" "F2nzeC19"
+      "kubejs-neoforge-2101.7.2-build.368.jar"
+      "0h77ckha0s0halx400snk60fzrx7phhlqz3i33rsii59fyv7nxh1";
+  }
+  {
+    # Rhino — JS engine, hard dep of KubeJS (shipped in lockstep; bump together).
+    filename       = "rhino-2101.2.7-build.81.jar";
+    dropAsOverride = true;
+    jar = modrinth "sk9knFPE" "ZdLtebKH"
+      "rhino-2101.2.7-build.81.jar"
+      "1yqrgxg3na5x240lm68294mnw2ih9k0gycc63bf7ldpamkcik7y7";
+  }
+
+  # ---- Aeronautics addon mods ----
+  {
+    # Create Cardan Shafts (modId sable_kardanwelle) — Cardan Connector that
+    # transmits shaft power across angles/distances and onto moving
+    # contraptions. create [6.0.9,6.1.0) ✓, sable >=1.2.1 ✓, neoforge >=21.1.227 ✓.
+    filename       = "create_cardan_shafts-0.1.6.jar";
+    dropAsOverride = false;
+    projectID      = 1546625;
+    fileID         = 8146378;
+    jar = curseforge 8146378 "create_cardan_shafts-0.1.6.jar"
+      "1wfs2ybqpdjr3ljs4m2a75cf0p32j4mq222pj69b620kxhazjgpx";
+  }
+  {
+    # Create Aeronautics Transmission & Linkage (modId aeronautics_utility_objects)
+    # — universal joints (brass elastic / andesite stretch) + pneumatic
+    # rod/hinge linear systems. create >=6.0.10 ✓, sable >=1.1.3 ✓,
+    # simulated >=1.1.3 ✓ (nested).
+    filename       = "create_aeronautics_transmission_linkage-0.2.3.jar";
+    dropAsOverride = true;
+    jar = modrinth "Y1dq5ioE" "4m4AqUqT"
+      "create_aeronautics_transmission_linkage-0.2.3.jar"
+      "14hs1zmvnp8gapg3bnmfa25vm4cwy8dx6v8v4mkq0zln0nzkbkyc";
+  }
+  {
+    # VS / Sable Hose Connectors (modId vsfluidlink) — flexible hoses moving
+    # fluids/items/FE/SU over distance; wrench + magnet auto-link variants.
+    # create [6.0.9,6.1.0) ✓. valkyrienskies optional.
+    filename       = "VS-Sable-HoseConnectors-0.1.6-1.21.1.jar";
+    dropAsOverride = true;
+    jar = modrinth "YaZEkFmd" "AJSmuGAV"
+      "VS-Sable-HoseConnectors-0.1.6-1.21.1.jar"
+      "1m5b8sfvsysj8vasbbg8qp5h0zhxda49ycjf98da2fd238xrbj0w";
+  }
+  {
+    # Create Aeronautics Tool Gun (modId create_aeronautics_toolgun) —
+    # magnetic physics gun, portable structure container, survival tool gun
+    # (copy/translate/rotate/weld). neoforge >=21.1.226 ✓; Create/Aeronautics
+    # integration is runtime-soft (no hard dep in toml).
+    filename       = "create_aeronautics_toolgun-0.2.0.jar";
+    dropAsOverride = true;
+    jar = modrinth "5fUBLqeW" "f3dJL2d2"
+      "create_aeronautics_toolgun-0.2.0.jar"
+      "15f94k81mcl6j9scp1m6zj2ff6r0ggp594p06ap5azziyjrhssjh";
+  }
+  {
+    # Create Tracks (modId tracks) — tank-tread / caterpillar system for
+    # Aeronautics ground vehicles; dyeable; suspension-key tuning. create
+    # >=6.0.9 ✓, sable >=1.0.3 ✓, simulated >=1.0.1 ✓, offroad >=1.0.1 ✓ (nested).
+    #
+    # tracks 1.0.1 ships its loot tables + block tags (data/tracks,
+    # data/create/tags/.../safe_nbt, data/minecraft/tags/.../mineable) with an
+    # invalid UPPERCASE `Tracks:` namespace, so vanilla drops them at load:
+    # track blocks would yield no item on break and have broken mineable /
+    # create:safe_nbt tags. We repackage the SERVER jar with the namespace
+    # lowercased (`Tracks:` -> `tracks:` in those 6 JSON files). The client
+    # still pulls the unpatched jar from CurseForge via (projectID,fileID),
+    # but datapacks are server-authoritative in multiplayer so drops + tags
+    # are governed by this patched copy. Drop the patch wrapper once upstream
+    # fixes the namespace.
+    filename       = "tracks-neoforge-1.21.1-1.0.1.jar";
+    dropAsOverride = false;
+    projectID      = 1519765;
+    fileID         = 7968280;
+    jar = patchJarJson {
+      src = curseforge 7968280 "tracks-neoforge-1.21.1-1.0.1.jar"
+        "1j15c5wq79cb8q3gj710vyixkfi64xhbi4b4xkmi770j599b49mi";
+      filename = "tracks-neoforge-1.21.1-1.0.1.jar";
+      sedScript = "find data -name '*.json' -exec sed -i 's/Tracks:/tracks:/g' {} +";
+    };
+  }
+  {
+    # Create: Aeroworks (modId aeroworks) — Gyroscope (keeps craft level) +
+    # Joystick (WASD/mouse → analog redstone). create >=6.0.0 ✓, sable >=1.1.0
+    # ✓. drivebywire optional. (Mechanical/Stepper Servos not yet in 1.2.11.)
+    filename       = "aeroworks-1.2.11.jar";
+    dropAsOverride = true;
+    jar = modrinth "P26k79kP" "vsT0uzkn"
+      "aeroworks-1.2.11.jar"
+      "03gzp65iy987igzhkqh7jxs2wl82wphcf6rgqr3rnvy3m7kqa58x";
+  }
+  {
+    # Create Propulsion: Simulated (modId createpropulsion) — liquid/ion/vector
+    # thrusters, copycat wings, Stirling engines. create >=6.0.6 ✓, sable ✓,
+    # sablecompanion ✓ (1.6.0 nested in sable).
+    filename       = "createpropulsion-1.1.4.jar";
+    dropAsOverride = true;
+    jar = modrinth "ApkoHNO9" "hTnJ29I0"
+      "createpropulsion-1.1.4.jar"
+      "189rdyzbyav8mc7j8yav3za7117l1nh7w6mxp3wd15g55hj2jqw1";
+  }
+  {
+    # Create Aeronautics: Thrusters and Things (modId createthrusters) —
+    # upgradable thrusters, physics gantry/claw, zipline, physics
+    # goggles/staff. create >=6.0.10 ✓, aeronautics >=1.2.1 ✓, sable >=1.2.2 ✓,
+    # simulated >=1.2.1 ✓ (nested); flywheel client-side ships with Create;
+    # computercraft optional.
+    filename       = "createthrusters-bundled-0.1.10.jar";
+    dropAsOverride = true;
+    jar = modrinth "Sza3GgEL" "J3z85r47"
+      "createthrusters-bundled-0.1.10.jar"
+      "1ipvifqqpwpin269fp17aw6kajv23ff4f70rzls317xw1lijimf1";
+  }
+  {
+    # Create Aeronautics: Delivery Required (modId createdeliveryrequired) —
+    # cargo delivery economy minigame (Contractor ledger, delivery markers,
+    # P2P terminal). create >=6.0.10 ✓, aeronautics >=1.2.1 ✓, sable >=1.2.2 ✓,
+    # ponderjs + kubejs + rhino + ldlib2 (above). numismatics optional — we
+    # ship numismaticoverhaul (a different mod), so coin payouts are inactive
+    # until/unless Numismatics is added.
+    filename       = "createdeliveryrequired-1.0.2.jar";
+    dropAsOverride = true;
+    jar = modrinth "hSTW3jx7" "NOeDEseI"
+      "createdeliveryrequired-1.0.2.jar"
+      "0fgybwq803yir1hl7djl4i71vb4lidc86xv0ak1ikw2hd4wl4y5x";
   }
 
 ]

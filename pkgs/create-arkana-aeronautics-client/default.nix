@@ -1,7 +1,7 @@
 { stdenvNoCC, lib, fetchurl, unzip, zip, jq, python3, callPackage }:
 let
   serverPkg    = callPackage ../create-arkana-aeronautics-server { };
-  overlayMods   = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl; };
+  overlayMods   = import ../create-arkana-aeronautics-server/overlays.nix        { inherit fetchurl stdenvNoCC unzip zip; };
   arkanaExtras  = import ../create-arkana-aeronautics-server/arkana-mods-extras.nix { inherit fetchurl; };
   datapacks     = import ../create-arkana-aeronautics-server/datapacks.nix       { inherit fetchurl stdenvNoCC zip; };
   resourcePacks = import ./resource-packs.nix                                    { inherit lib fetchurl stdenvNoCC unzip zip jq; };

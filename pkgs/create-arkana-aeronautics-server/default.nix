@@ -57,7 +57,7 @@ let
   arkanaMods   = import ./arkana-mods.nix        { inherit fetchurl; };
   arkanaExtras = import ./arkana-mods-extras.nix { inherit fetchurl; };
   arkanaGroups = import ./arkana-groups.nix;
-  overlayMods  = import ./overlays.nix           { inherit fetchurl; };
+  overlayMods  = import ./overlays.nix           { inherit fetchurl stdenvNoCC unzip zip; };
   datapacks    = import ./datapacks.nix { inherit fetchurl stdenvNoCC zip; };
   jvmArgs      = import ./jvm-args.nix;
 
