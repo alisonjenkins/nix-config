@@ -993,8 +993,12 @@ EOF
             # - noatime/nodiratime (no access time updates = less metadata writes)
             # - actimeo=30 (cache attributes for 30 sec = faster stale handle detection)
             # - lookupcache=all (aggressive file lookup caching)
-            # - hard,intr (reliable, but interruptible on hung operations)
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
+            # - hard (reliable; retries indefinitely on server hiccups)
+            # - nordirplus: disable READDIRPLUS. Kernel 7.0.11 (nixpkgs 26.05)
+            #   has a READDIRPLUS regression that makes per-directory listings
+            #   alternate correct<->empty (EINVAL), so Sonarr/ls intermittently
+            #   saw series folders as empty though the files were present.
+            options = "rw,hard,tcp,nfsvers=4.2,nordirplus,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1005,7 +1009,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
+            options = "rw,hard,tcp,nfsvers=4.2,nordirplus,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1016,7 +1020,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,intr,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
+            options = "rw,hard,tcp,nfsvers=4.2,nordirplus,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=all,actimeo=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
