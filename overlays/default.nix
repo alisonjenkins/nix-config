@@ -548,24 +548,10 @@ in
     };
   };
 
-  qbittorrent = final: prev: {
-    qbittorrent = (prev.callPackage (prev.path + "/pkgs/by-name/qb/qbittorrent/package.nix") {
-      guiSupport = false;
-      boost = final.boost186;
-      libtorrent-rasterbar = prev.libtorrent-rasterbar-2_0_x;
-    }).overrideAttrs (oldAttrs: {
-      version = "5.1.4";
-      name = "qbittorrent-nox-5.1.4";
-
-      src = prev.fetchFromGitHub {
-        owner = "qbittorrent";
-        repo = "qBittorrent";
-        rev = "release-5.1.4";
-        sha256 = "1zja55b97cnij3vffmfa5p65dasybbm1gd3xjspw5yyypy5cl5zm";
-      };
-
-      patches = [];
-    });
+  luajitPackages = _final: prev: {
+    # qbittorrent is no longer overlaid — nixpkgs 26.05 ships qbittorrent-nox
+    # 5.2.1 with libtorrent-rasterbar 2.0.x, which the host uses directly. The
+    # old 5.1.4 + boost186 override SEGV'd after the 26.05 bump (boost ABI).
 
     # neotest (luarocks 5.18.0-1 packaged via ali-neovim flake's
     # vimUtils.buildNeovimPlugin) currently fails its checkPhase

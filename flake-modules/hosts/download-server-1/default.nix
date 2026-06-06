@@ -40,7 +40,6 @@ in {
       {
         nixpkgs.overlays = [
           self.overlays.additions
-          self.overlays.qbittorrent
         ];
       }
 
@@ -1350,7 +1349,7 @@ EOF
           qbittorrent = {
             enable = true;
             openFirewall = true;
-            package = pkgs.qbittorrent;  # Uses overlayed version with libtorrent 1.2.x
+            package = pkgs.qbittorrent-nox;  # stock nixpkgs 26.05 (5.2.1, libtorrent 2.0.x)
             # NOTE: Don't set torrentingPort - it overrides config file via command line
             # The port is dynamically set by protonvpn-portforward.service
 
