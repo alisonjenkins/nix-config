@@ -936,12 +936,30 @@ EOF
             CERT_DIR="/var/lib/nginx-certs"
             mkdir -p "$CERT_DIR"
 
+            # SANs cover the LAN name plus the per-app *.alison-jenkins.com
+            # subdomains served by the reverse proxy below.
+            SANS="DNS:download-server-1.lan,DNS:sonarr.alison-jenkins.com,DNS:radarr.alison-jenkins.com,DNS:prowlarr.alison-jenkins.com,DNS:bazarr.alison-jenkins.com,DNS:qbittorrent.alison-jenkins.com"
+
+            # Regenerate when the cert is missing or does not yet carry every
+            # required SAN (e.g. after adding a new subdomain to the list).
+            NEED_REGEN=0
             if [ ! -f "$CERT_DIR/cert.pem" ] || [ ! -f "$CERT_DIR/key.pem" ]; then
+              NEED_REGEN=1
+            else
+              for d in download-server-1.lan sonarr.alison-jenkins.com radarr.alison-jenkins.com prowlarr.alison-jenkins.com bazarr.alison-jenkins.com qbittorrent.alison-jenkins.com; do
+                if ! ${pkgs.openssl}/bin/openssl x509 -in "$CERT_DIR/cert.pem" -noout -text | grep -q "DNS:$d"; then
+                  NEED_REGEN=1
+                fi
+              done
+            fi
+
+            if [ "$NEED_REGEN" -eq 1 ]; then
               ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 \
                 -keyout "$CERT_DIR/key.pem" \
                 -out "$CERT_DIR/cert.pem" \
                 -days 3650 -nodes \
-                -subj "/CN=download-server-1.lan"
+                -subj "/CN=download-server-1.lan" \
+                -addext "subjectAltName=$SANS"
               chown nginx:nginx "$CERT_DIR/key.pem"
               chown nginx:nginx "$CERT_DIR/cert.pem"
               chmod 600 "$CERT_DIR/key.pem"
@@ -1070,6 +1088,108 @@ EOF
                     deny all;
                   '';
                 };
+              };
+            };
+
+            # Per-app subdomains (DNS records in the home-cluster CoreDNS point
+            # these names at this host). The *arr apps keep their UrlBase, so the
+            # bare subdomain just redirects to the app's base path; that preserves
+            # existing inter-app integrations (e.g. Prowlarr -> Sonarr/Radarr).
+            virtualHosts."sonarr.alison-jenkins.com" = {
+              forceSSL = true;
+              sslCertificate = "/var/lib/nginx-certs/cert.pem";
+              sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+              locations = {
+                "/" = {
+                  return = "302 /sonarr/";
+                };
+                "/sonarr/" = {
+                  proxyPass = "http://127.0.0.1:8989/sonarr/";
+                  extraConfig = ''
+                    proxy_set_header X-Forwarded-Host $host;
+                    proxy_set_header X-Forwarded-Server $host;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  '';
+                };
+              };
+            };
+
+            virtualHosts."radarr.alison-jenkins.com" = {
+              forceSSL = true;
+              sslCertificate = "/var/lib/nginx-certs/cert.pem";
+              sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+              locations = {
+                "/" = {
+                  return = "302 /radarr/";
+                };
+                "/radarr/" = {
+                  proxyPass = "http://127.0.0.1:7878/radarr/";
+                  extraConfig = ''
+                    proxy_set_header X-Forwarded-Host $host;
+                    proxy_set_header X-Forwarded-Server $host;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  '';
+                };
+              };
+            };
+
+            virtualHosts."prowlarr.alison-jenkins.com" = {
+              forceSSL = true;
+              sslCertificate = "/var/lib/nginx-certs/cert.pem";
+              sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+              locations = {
+                "/" = {
+                  return = "302 /prowlarr/";
+                };
+                "/prowlarr/" = {
+                  proxyPass = "http://127.0.0.1:9696/prowlarr/";
+                  extraConfig = ''
+                    proxy_set_header X-Forwarded-Host $host;
+                    proxy_set_header X-Forwarded-Server $host;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  '';
+                };
+              };
+            };
+
+            virtualHosts."bazarr.alison-jenkins.com" = {
+              forceSSL = true;
+              sslCertificate = "/var/lib/nginx-certs/cert.pem";
+              sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+              locations = {
+                "/" = {
+                  return = "302 /bazarr/";
+                };
+                "/bazarr/" = {
+                  proxyPass = "http://127.0.0.1:6767/bazarr/";
+                  extraConfig = ''
+                    proxy_set_header X-Forwarded-Host $host;
+                    proxy_set_header X-Forwarded-Server $host;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  '';
+                };
+              };
+            };
+
+            # qBittorrent has no UrlBase, so it is served directly at the
+            # subdomain root.
+            virtualHosts."qbittorrent.alison-jenkins.com" = {
+              forceSSL = true;
+              sslCertificate = "/var/lib/nginx-certs/cert.pem";
+              sslCertificateKey = "/var/lib/nginx-certs/key.pem";
+              locations."/" = {
+                proxyPass = "http://127.0.0.1:8080/";
+                extraConfig = ''
+                  proxy_set_header Host 127.0.0.1:8080;
+                  proxy_set_header X-Forwarded-Host $http_host;
+                  proxy_set_header X-Forwarded-For $remote_addr;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_set_header X-Frame-Options SAMEORIGIN;
+                '';
               };
             };
           };
