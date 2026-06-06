@@ -55,6 +55,8 @@ in {
           systemPackages = with pkgs; [
             (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
             (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
+            alacritty
+            antigravity
             unstable.aws-sam-cli
             aws-vault
             awscli2
@@ -80,6 +82,7 @@ in {
             dive
             docker
             docker-credential-helpers
+            drawio
             dua
             fd
             figlet
@@ -87,6 +90,7 @@ in {
             fzf
             gama-tui
             gh
+            gitify
             gitui
             glow
             gnupg
@@ -115,11 +119,15 @@ in {
             lnav
             lolcat
             luajitPackages.lpeg
+            mitmproxy
             mitmproxy2swagger
             mustache-go
+            neovide
             nix-fast-build
             nodejs
             nushell
+            obsidian
+            openconnect
             openssl
             oxker
             packer
@@ -130,7 +138,9 @@ in {
             pinentry_mac
             pkg-config
             posting
+            prismlauncher
             pwgen
+            rio
             ripgrep
             rlwrap
             selene
@@ -154,6 +164,7 @@ in {
             unstable.prek
             unstable.teamtype
             unstable.terraform
+            vagrant
             watch
             watchexec
             wget
@@ -216,14 +227,12 @@ in {
             # SIGKILLs Nix fish again, re-add this brew and exclude the Nix
             # fish binary in the Defender allowlist instead.
             "lima"
-            "openconnect"
           ];
 
           # https://medium.com/rahasak/switching-from-docker-desktop-to-podman-on-macos-m1-m2-arm64-cpu-7752c02453ec
           casks = [
             "1password"
             "1password-cli"
-            "alacritty"
             "alfred"
             "amethyst"
             "apache-directory-studio"
@@ -231,7 +240,6 @@ in {
             "cyberduck"
             "dbeaver-community"
             "discord"
-            "drawio"
             "element"
             "firefox"
             "flameshot"
@@ -240,7 +248,6 @@ in {
             "ghostty"
             "gimp"
             "github"
-            "gitify"
             "google-chrome"
             "hammerspoon"
             "inkscape"
@@ -248,23 +255,17 @@ in {
             "karabiner-elements"
             "keybase"
             "krita"
-            "mitmproxy"
-            "neovide-app"
             "notion"
             "obs"
-            "obsidian"
             "ollama-app"
             "powershell@preview"
-            "prismlauncher"
             "rectangle"
-            "rio"
             "scribus"
             "slack"
             "soundsource"
             "steam"
             "uhk-agent"
             "utm"
-            "vagrant"
             "whisky"
             "windows-app"
             "yed"
@@ -278,6 +279,9 @@ in {
             autoUpdate = true;
             cleanup = "uninstall";
             upgrade = true;
+            # Newer `brew bundle --cleanup` refuses to uninstall non-interactively
+            # without one of --force / --force-cleanup / $HOMEBREW_ASK.
+            extraFlags = [ "--force" ];
           };
 
           taps = [
