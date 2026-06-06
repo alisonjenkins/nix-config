@@ -241,6 +241,11 @@ in
     stable = import inputs.nixpkgs_stable {
       system = final.stdenv.hostPlatform.system;
       config.allowUnfree = true;
+      # heroic-unwrapped (stable.heroic-unwrapped, enabled in modules/desktop)
+      # pins electron_39, which upstream marked EOL/insecure. Heroic uses
+      # electron_39 across channels, so a channel bump doesn't help. Permit it
+      # until heroic upstream moves to a supported electron.
+      config.permittedInsecurePackages = [ "electron-39.8.10" ];
       overlays = [ openldapOverlay ];
     };
   };
