@@ -65,14 +65,21 @@
         "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
         "/media/disks/ata-ST31500341AS_9VS21EM9-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21EM9-part1";
         "/media/disks/ata-ST31500341AS_9VS21ESL-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21ESL-part1";
-        "/media/disks/ata-ST31500341AS_9VS21WFH-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21WFH-part1";
+        "/media/disks/ata-ST31500341AS_9VS21WFH-part1" = {
+          device = "/dev/disk/by-id/ata-ST31500341AS_9VS21WFH-part1";
+          fsType = "ext4";  # the one non-xfs data disk
+        };
         "/media/disks/ata-ST31500341AS_9VS21WMQ-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21WMQ-part1";
         # "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZA9443921-part1"; # DEAD - 996 pending sectors, physically removed
         "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1".device = "/dev/disk/by-id/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"; # Marginal - 26 pending, monitor closely
       };
-      media_disk_mount_points = builtins.attrNames media_disks;
-      # Add nofail to all data disks so a dead/missing drive doesn't block boot
-      media_disks_nofail = builtins.mapAttrs (_: v: v // { options = [ "nofail" ]; }) media_disks;
+      # Default data disks to xfs (the common case here; btrfs/ext4 entries set
+      # their own fsType above) and append nofail so a dead/missing drive doesn't
+      # block boot — without preserving the entry's own fsType/options the
+      # fileSystems eval fails with "fsType has no value".
+      media_disks_nofail = builtins.mapAttrs
+        (_: v: { fsType = "xfs"; } // v // { options = (v.options or [ ]) ++ [ "nofail" ]; })
+        media_disks;
     in {
       "/".neededForBoot = true;
       "/nix".neededForBoot = true;
@@ -112,7 +119,15 @@
           "minfreespace=200G"
           "moveonenospc=true"
           "nonempty"
-          "use_ino"
+          # NFS/SMB export safety: the pool is exported over NFS (download-server-1)
+          # and SMB (home-cluster jellyfin). Those protocols are stateful and
+          # inode-sensitive, so the pool needs stable, unique inodes across
+          # branches. use_ino (per-branch inodes) caused empty/alternating
+          # directory listings and "missing" files on clients. path-hash keeps
+          # inodes stable even when files live on different disks; noforget stops
+          # FUSE forgetting nodes (which NFS sees as ESTALE).
+          "inodecalc=path-hash"
+          "noforget"
           "security_capability=false"
         ];
       };
