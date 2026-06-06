@@ -110,6 +110,12 @@
 
         options = [
           "nofail"
+          # _netdev: the pool includes the btfs-streaming NFS branch (from
+          # download-server-1), so mergerfs must mount AFTER the network is up.
+          # Without this the mount lands in local-fs and the early
+          # systemd-tmpfiles-setup (d /media/storage/...) reaches into the NFS
+          # branch before networking exists, wedging boot indefinitely.
+          "_netdev"
           "allow_other"
           "cache.files=off"
           "category.create=mfs"  # Use most-free-space policy to spread data across disks
