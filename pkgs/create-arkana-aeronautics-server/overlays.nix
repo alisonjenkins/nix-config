@@ -214,11 +214,11 @@ in
     # Modrinth ThvCqQMh. The jar's `forge` filename is misleading —
     # mod metadata declares neoforge.mods.toml, runs natively on
     # NeoForge.
-    filename       = "tinyredstone-1.21.1-6.1.4.jar";
+    filename       = "tinyredstone-1.21.1-6.1.5.jar";
     dropAsOverride = true;
-    jar = modrinth "ThvCqQMh" "aIpBs9dG"
-      "tinyredstone-1.21.1-6.1.4.jar"
-      "0syv3kg5ajrhhry4w13vr7wpp6m6bz03wwva2j2a48zpz3h6zp71";
+    jar = modrinth "ThvCqQMh" "xksLRXvG"
+      "tinyredstone-1.21.1-6.1.5.jar"
+      "1bk4hdi2kqz3x2h96bapb2x76s6axxj619ry1z601q7qkdd38k81";
   }
   {
     # CC: Tweaked — modern fork of ComputerCraft (in-game programmable
@@ -351,11 +351,11 @@ in
     # full body-tracking propagation when the server has the mod
     # too; non-VR players are unaffected. NeoForge >= 21.0.110 ✓
     # (we ship 21.1.228). Modrinth wGoQDPN5.
-    filename       = "vivecraft-1.21.1-1.3.8-neoforge.jar";
+    filename       = "vivecraft-1.21.1-1.3.9-neoforge.jar";
     dropAsOverride = true;
-    jar = modrinth "wGoQDPN5" "eZ25nVLw"
-      "vivecraft-1.21.1-1.3.8-neoforge.jar"
-      "1zp5rk8dfyi1kvwmfxajsxpfrgx68vpw2wf1grxw7sw6nqng0qzp";
+    jar = modrinth "wGoQDPN5" "D20p9MIc"
+      "vivecraft-1.21.1-1.3.9-neoforge.jar"
+      "0rq5nmyaynmbyjv81z5kxq0j1wjlw3a833kc1yw7rhcqyzysh1sf";
   }
   {
     # Create Deco — decorative blocks themed around Create's industrial
@@ -437,12 +437,12 @@ in
     # (create_enchantment_industry:grinding/ars_technica/*). Hard deps on
     # create >= 6.0.10 (we ship 6.0.10) and create_dragons_plus >= 1.10.0
     # (we ship 1.10.0b). touhou_little_maid integration optional, skipped.
-    filename       = "create-enchantment-industry-2.3.1.jar";
+    filename       = "create-enchantment-industry-2.4.1.jar";
     dropAsOverride = false;
     projectID      = 688768;
-    fileID         = 7970748;
-    jar = curseforge 7970748 "create-enchantment-industry-2.3.1.jar"
-      "0r4h2wjn1x791rmzrgnpb6395rd6dvz853x3kah6h9aqry9h7mkb";
+    fileID         = 8204326;
+    jar = curseforge 8204326 "create-enchantment-industry-2.4.1.jar"
+      "1lq20ma81mnb1qc1hby9ns68fqhgvffh6hx8b422wk2gnmgcv3al";
   }
 
 ]
