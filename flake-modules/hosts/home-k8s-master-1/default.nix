@@ -92,13 +92,16 @@ in {
               "--cluster-init"
               "--disable-network-policy"
               "--disable=servicelb"
+              # Disable the bundled traefik addon: it's unused (no ingresses
+              # or issuers reference it) and its traefik-crd job crash-loops
+              # trying to adopt the raw-installed Gateway API CRDs. Ingress is
+              # Cilium; Gateway API CRDs are provided by the Flux traefik HR.
+              "--disable=traefik"
               "--flannel-backend=none"
               "--service-cidr=10.43.0.0/16"
               "--tls-san=home-k8s-master-1.tail476348.ts.net"
               "--tls-san=100.87.232.102"
               "--write-kubeconfig-mode \"0400\""
-              # "--disable servicelb"
-              # "--disable traefik"
               # "--disable-kube-proxy"
             ];
 
