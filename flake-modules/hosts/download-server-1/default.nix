@@ -63,20 +63,26 @@ in {
           prometheus = {
             nginxExporter.enable = true;
             wireguardExporter.enable = true;
+            # url must include each app's UrlBase (the apps run behind a path
+            # prefix); without it the API calls 307-redirect and exportarr 500s.
             exportarrRadarr = {
               enable = true;
+              url = "http://localhost:7878/radarr";
               apiKeyFile = config.sops.secrets."exportarr/radarr-api-key".path;
             };
             exportarrSonarr = {
               enable = true;
+              url = "http://localhost:8989/sonarr";
               apiKeyFile = config.sops.secrets."exportarr/sonarr-api-key".path;
             };
             exportarrBazarr = {
               enable = true;
+              url = "http://localhost:6767/bazarr";
               apiKeyFile = config.sops.secrets."exportarr/bazarr-api-key".path;
             };
             exportarrProwlarr = {
               enable = true;
+              url = "http://localhost:9696/prowlarr";
               apiKeyFile = config.sops.secrets."exportarr/prowlarr-api-key".path;
             };
           };
