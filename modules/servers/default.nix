@@ -13,6 +13,16 @@ in
       description = "Open firewall ports for enabled Prometheus exporters";
     };
 
+    # Loki log shipping (promtail -> cluster Loki)
+    lokiPush = {
+      enable = lib.mkOption { type = lib.types.bool; default = false; description = "Ship systemd journal to Loki via promtail"; };
+      url = lib.mkOption {
+        type = lib.types.str;
+        default = "http://192.168.1.244:3100/loki/api/v1/push";
+        description = "Loki push API URL (internal LB in the k8s cluster)";
+      };
+    };
+
     # Node exporter
     prometheus.nodeExporter = {
       enable = lib.mkOption { type = lib.types.bool; default = true; description = "Enable node exporter"; };
@@ -152,6 +162,49 @@ in
       url = cfg.prometheus.exportarrProwlarr.url;
       apiKeyFile = cfg.prometheus.exportarrProwlarr.apiKeyFile;
     };
+
+    # Grafana Alloy - ship the systemd journal to the cluster Loki (promtail
+    # is EOL/removed from nixpkgs). Mirrors the in-cluster journal job (relabel
+    # unit/hostname) and adds a `host` label so logs are filterable per machine.
+    services.alloy = lib.mkIf cfg.lokiPush.enable {
+      enable = true;
+    };
+
+    environment.etc."alloy/config.alloy" = lib.mkIf cfg.lokiPush.enable {
+      text = ''
+        loki.write "default" {
+          endpoint {
+            url = "${cfg.lokiPush.url}"
+          }
+        }
+
+        loki.relabel "journal" {
+          forward_to = []
+          rule {
+            source_labels = ["__journal__systemd_unit"]
+            target_label  = "unit"
+          }
+          rule {
+            source_labels = ["__journal__hostname"]
+            target_label  = "hostname"
+          }
+        }
+
+        loki.source.journal "journal" {
+          max_age       = "12h"
+          relabel_rules = loki.relabel.journal.rules
+          forward_to    = [loki.write.default.receiver]
+          labels        = {
+            job  = "systemd-journal",
+            host = "${config.networking.hostName}",
+          }
+        }
+      '';
+    };
+
+    # alloy runs as its own user; grant journal read access.
+    systemd.services.alloy.serviceConfig.SupplementaryGroups =
+      lib.mkIf cfg.lokiPush.enable [ "systemd-journal" ];
 
     # Firewall rules - open ports for all enabled exporters
     networking.firewall.allowedTCPPorts = let

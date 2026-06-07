@@ -55,6 +55,7 @@ in {
         modules.storage-server.enable = true;
         modules.servers = {
           enable = true;
+          lokiPush.enable = true;
           prometheus = {
             nginxExporter.enable = true;
             wireguardExporter.enable = true;

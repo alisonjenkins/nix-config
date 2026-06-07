@@ -48,6 +48,7 @@ in {
         modules.servers = {
           enable = true;
           prometheus.smartctlExporter.enable = true;
+          lokiPush.enable = true;
         };
 
         console.keyMap = "us";

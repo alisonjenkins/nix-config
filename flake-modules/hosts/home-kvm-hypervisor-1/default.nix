@@ -42,6 +42,7 @@ in {
           enable = true;
           prometheus.smartctlExporter.enable = true;
           prometheus.libvirtExporter.enable = true;
+          lokiPush.enable = true;
         };
 
         # Silence mdadm warning: mdmon needs MAILADDR or PROGRAM set or it
