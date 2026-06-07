@@ -141,6 +141,14 @@ in {
             min-free = 50 * 1024 * 1024 * 1024;
             max-free = 100 * 1024 * 1024 * 1024;
             auto-optimise-store = lib.mkForce true;
+
+            # This node also runs the k3s control plane (apiserver + etcd).
+            # Default max-jobs=auto (16) x cores=0 (all) lets the GHA nix
+            # builder oversubscribe every core, driving loadavg ~10 and
+            # starving etcd/apiserver. Cap to <=2 concurrent builds x 4 cores
+            # = 8 cores max, leaving the other 8 for the control plane.
+            max-jobs = 2;
+            cores = 4;
           };
         };
 
