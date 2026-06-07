@@ -11,6 +11,10 @@ let
     "192.168.1.39"
     "192.168.1.66"
   ];
+  # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
+  # plus the k8s cluster node (192.168.1.129), which is where the in-cluster
+  # Prometheus scrapes from (pod traffic is masqueraded to the node IP).
+  monitoringSources = qbittorrentAllowedIPs ++ [ "192.168.1.129" ];
 in {
   flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -1593,35 +1597,15 @@ EOF
                   "192.168.1.66"
                 ];
               }
-              # Prometheus exporters (node, nginx, wireguard, exportarr)
-              {
-                port = 9100; # node exporter
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9113; # nginx exporter
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9586; # wireguard exporter
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9707; # exportarr radarr
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9708; # exportarr sonarr
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9709; # exportarr bazarr
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
-              {
-                port = 9710; # exportarr prowlarr
-                sources = [ "192.168.1.187" "192.168.1.190" "192.168.1.39" "192.168.1.66" ];
-              }
+              # Prometheus exporters (scraped by the k8s cluster + LAN admins)
+              { port = 9100; sources = monitoringSources; }  # node exporter
+              { port = 9558; sources = monitoringSources; }  # systemd exporter
+              { port = 9113; sources = monitoringSources; }  # nginx exporter
+              { port = 9586; sources = monitoringSources; }  # wireguard exporter
+              { port = 9707; sources = monitoringSources; }  # exportarr radarr
+              { port = 9708; sources = monitoringSources; }  # exportarr sonarr
+              { port = 9709; sources = monitoringSources; }  # exportarr bazarr
+              { port = 9710; sources = monitoringSources; }  # exportarr prowlarr
             ];
 
             vpnIncomingPorts = {
