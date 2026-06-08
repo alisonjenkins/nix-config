@@ -94,7 +94,9 @@
     };
 
     darwin = {
-      url = "github:lnl7/nix-darwin/master";
+      # Must match nixpkgs release: nixpkgs = nixos-26.05, so nix-darwin
+      # uses the nix-darwin-26.05 branch (master tracks unstable/26.11).
+      url = "github:lnl7/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
