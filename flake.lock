@@ -18,11 +18,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1780949602,
-        "narHash": "sha256-E60ul8k8YU4feCBt+0X0yc8eNKi7GZGL70Dl0yhnrkI=",
+        "lastModified": 1780958315,
+        "narHash": "sha256-gGl4vzC4rBftHGqGyGWFMFpYGifZXhJ4KV/Q5sO2K+0=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "c70a00eb08d0e1b4784a3ed735d6adf32252c75c",
+        "rev": "4c430475ba1abf00e27f8af255d10ba2160d4310",
         "type": "github"
       },
       "original": {
@@ -148,11 +148,11 @@
     },
     "crane_2": {
       "locked": {
-        "lastModified": 1780099841,
-        "narHash": "sha256-EVZd2RsbpreRUDSi9rBwPY+ZxoyMaiEBbZxxhljbaS4=",
+        "lastModified": 1780532242,
+        "narHash": "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "0532eb17955225173906d671fb36306bdeb1e2dc",
+        "rev": "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37",
         "type": "github"
       },
       "original": {
@@ -843,11 +843,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1780574905,
-        "narHash": "sha256-2YH74Fj5+/gc94qW7ZMN0YF3sMhf2BFB5NBaJgDsugo=",
+        "lastModified": 1780957691,
+        "narHash": "sha256-DElCq5E9lipzEW+K1chfiw9OQhkwjGsTNUQZheiWTio=",
         "owner": "nix-community",
         "repo": "lanzaboote",
-        "rev": "e780b8e19d405b6906d759d270bbc125d221e81a",
+        "rev": "b9e331d75d4618c7073ea08ff30fddf9a7d2fb08",
         "type": "github"
       },
       "original": {
@@ -1316,11 +1316,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1780948831,
-        "narHash": "sha256-fWDJZV4/31Y7XmD0l2Hs6qtCVIYs3bLIZqHP6Jwb8ZQ=",
+        "lastModified": 1780956837,
+        "narHash": "sha256-L4ym2V8ueRLVzxWgvp3VtKAuIFXhdXYVavMOs2cGvtg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "22ceef607b233672caa54ea3785977dcd37ebd63",
+        "rev": "fc18a841b67c97077381ea24cb5e37d3f07dfa24",
         "type": "github"
       },
       "original": {
@@ -1465,11 +1465,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780948745,
-        "narHash": "sha256-eonuiwdpiNdf2Wj2BKPpNRrqhaJoNTKTJMRAmgN+5Pw=",
+        "lastModified": 1780955754,
+        "narHash": "sha256-Z0xHU0iAt4CpFFwV0PUelZc0VQgfdsTlN4lhA6j27+E=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "dc0f59576bb7a77ffed90c6f4e726e3ad273058c",
+        "rev": "fda013d939984b3756f271d4e88c7f5e172f3ad1",
         "type": "github"
       },
       "original": {
@@ -1707,11 +1707,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780284119,
-        "narHash": "sha256-y2wR4Mk6D/N1ID4FZa2oUMStCUxyIoRzmgOOpLzoWmo=",
+        "lastModified": 1780802404,
+        "narHash": "sha256-bGtIUeLb0yChX4h6hB40OOCwcYhcpQZHXSDvZGdWgeM=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "51390d0bfca0a68a8c337d215a4bbeddc2ca616e",
+        "rev": "8e596a8430f2ce54d55c742198187d6945a5501e",
         "type": "github"
       },
       "original": {
@@ -1918,16 +1918,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1780947677,
-        "narHash": "sha256-9CFeu312TuqG1kiMNNfwFkWO5U7h4ntmYjQjZtlWZdw=",
+        "lastModified": 1780957254,
+        "narHash": "sha256-1k0i6psY4v7eUh982o762i+lCYZwx/UHncQVsutSOQ8=",
         "owner": "alisonjenkins",
         "repo": "terraform-ls-rs",
-        "rev": "a15c84d201f397f19fa623ac0d60421d769235d5",
+        "rev": "3b0f3bdd8427c65521db24b5742b8e71a09d34f3",
         "type": "github"
       },
       "original": {
         "owner": "alisonjenkins",
-        "ref": "v0.7.1",
+        "ref": "v0.8.0",
         "repo": "terraform-ls-rs",
         "type": "github"
       }
@@ -2102,11 +2102,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780897889,
-        "narHash": "sha256-+MeF3tMeeo2gw16AUr0Tk1JnIwu9e5v6ri4OGOXLM2A=",
+        "lastModified": 1780957638,
+        "narHash": "sha256-NQ0WpkNDRR79BWGNmh1dpgchGJnALW7De71kaXD87nc=",
         "owner": "0xc000022070",
         "repo": "zen-browser-flake",
-        "rev": "a7bea35003ffc9cfa914c53338eff754e1b9f7b8",
+        "rev": "fc9b27eb5585548282004fac3f0d34fcf2f06467",
         "type": "github"
       },
       "original": {
