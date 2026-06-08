@@ -157,7 +157,6 @@ in {
             tmux
             typst
             typst-live
-            unstable.checkov
             unstable.delve
             unstable.devenv
             unstable.opentofu
