@@ -278,6 +278,10 @@ in {
             autoUpdate = true;
             cleanup = "uninstall";
             upgrade = true;
+            # Homebrew 4.x refuses `brew bundle --cleanup` non-interactively
+            # without --force/--force-cleanup/$HOMEBREW_ASK. nix-darwin doesn't
+            # emit it, so pass it ourselves.
+            extraFlags = [ "--force-cleanup" ];
           };
 
           taps = [
