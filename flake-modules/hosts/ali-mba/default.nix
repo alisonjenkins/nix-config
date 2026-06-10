@@ -434,6 +434,7 @@ in {
 
       inputs.sops-nix.darwinModules.sops
       self.darwinModules.niks3-cache-push
+      self.darwinModules.github-actions-runner
       ({ config, ... }: {
         sops = {
           age.keyFile = "/var/lib/sops-nix/key.txt";
@@ -443,11 +444,30 @@ in {
             sopsFile = self + "/secrets/niks3-token.enc.yaml";
             key = "niks3_token";
           };
+          # Owner must match the poller daemon's UserName (cfg.user = ali), since
+          # the daemon runs as that user and needs to read the PAT.
+          secrets.github-runner-token = {
+            sopsFile = self + "/secrets/github-runner-token.enc.yaml";
+            key = "github_runner_token";
+            owner = "ali";
+          };
         };
 
         modules.niks3CachePush = {
           enable = true;
           authTokenFile = config.sops.secrets.niks3-token.path;
+        };
+
+        modules.githubActionsRunner = {
+          enable = true;
+          tokenFile = config.sops.secrets.github-runner-token.path;
+          # Add more personal repos / orgs to build for here.
+          repos = [
+            "alisonjenkins/nix-config"
+            "alisonjenkins/tf-format"
+            "alisonjenkins/terraform-ls-rs"
+          ];
+          orgs = [ ];
         };
       })
 
