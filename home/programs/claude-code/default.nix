@@ -304,8 +304,19 @@ in
           }
         ];
 
+        # Audible bell on task completion — Stop fires immediately at end of
+        # turn, unlike Notification which only fires after ~60s idle.
         # Cavemem: persists session memory on agent stop
         Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${notifyBell}";
+                timeout = 5;
+              }
+            ];
+          }
           {
             hooks = [
               {
