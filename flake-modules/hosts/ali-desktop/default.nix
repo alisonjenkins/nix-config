@@ -51,7 +51,6 @@ in {
         nixpkgs.overlays = [
           self.overlays._1password
           self.overlays.python-lsp-server-jedi-relax
-          self.overlays.qbittorrent
         ];
 
         # Use timestamp-based backups to prevent conflicts

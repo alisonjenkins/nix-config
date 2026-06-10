@@ -115,7 +115,7 @@ let
             sudo -u ${cfg.noctaliaUser} \
               DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
               XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-              noctalia-shell ipc call powerProfile enableNoctaliaPerformance
+              noctalia-shell msg power-set power-saver
           fi
         }
         run_step "noctalia-performance" noctalia_battery
@@ -234,7 +234,7 @@ let
             sudo -u ${cfg.noctaliaUser} \
               DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
               XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-              noctalia-shell ipc call powerProfile disableNoctaliaPerformance
+              noctalia-shell msg power-set performance
           fi
         }
         run_step "noctalia-performance" noctalia_ac
@@ -367,7 +367,14 @@ in
       noctaliaPerformanceMode = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable noctalia-shell performance mode on battery (disables shadows/animations).";
+        description = ''
+          Drive the power-profiles-daemon profile via noctalia-shell IPC
+          (`msg power-set`): power-saver on battery, performance on AC.
+
+          noctalia 5.x dropped the old custom "noctaliaPerformanceMode"
+          visual flag (shadows/animations toggle), so this no longer changes
+          noctalia's rendering — it sets the system power profile instead.
+        '';
       };
 
       throttleFossilize = lib.mkOption {
