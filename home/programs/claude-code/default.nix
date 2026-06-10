@@ -7,6 +7,21 @@ let
     hash = "sha256-9FGubcwHcGBJcKl02aJ+YsTMiwDOdgU/FHALjARG51c=";
   };
 
+  # Canonical git workflow mandate — single source of truth, appended to the
+  # git-touching agents and published as the user-level CLAUDE.md (context).
+  gitStrategy = ''
+    # Git Strategy (user mandate)
+
+    - Atomic commits: each commit does exactly one granular thing; reverting it
+      alone must leave the project compilable (assuming it compiled before).
+      Never bundle unrelated changes into one commit.
+    - Never squash. Squash merges collapse atomic commits into one oversized
+      commit and destroy per-change revertability.
+    - Merging PRs/branches: prefer rebase-and-merge (`gh pr merge --rebase`);
+      if rebase merges are unavailable or disallowed, use a merge commit
+      (`gh pr merge --merge`); never `gh pr merge --squash`.
+  '';
+
   cavemanPkg = pkgs.caveman;
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
@@ -336,7 +351,17 @@ in
     # (giving /ck:spec, /ck:build, /ck:check)
     plugins = [ cavekitPkg pkgs.pup-claude ];
 
-    agentsDir = ./agents;
+    # Listed explicitly (not agentsDir) so the shared gitStrategy mandate can
+    # be appended to the git-touching agents.
+    agents = {
+      aws-iam-debugger = ./agents/aws-iam-debugger.md;
+      git-commit-generator = builtins.readFile ./agents/git-commit-generator.md + "\n" + gitStrategy;
+      pr-creator = builtins.readFile ./agents/pr-creator.md + "\n" + gitStrategy;
+    };
+
+    # User-level ~/.claude/CLAUDE.md — applies to every session, so the main
+    # agent obeys the same git mandate as the subagents.
+    context = gitStrategy;
 
     mcpServers = {
       playwright = {
