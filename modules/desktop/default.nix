@@ -18,7 +18,7 @@ let
 
   updateProtonRunners = pkgs.writeShellApplication {
     name = "update-proton-runners";
-    runtimeInputs = with pkgs; [ curl jq gnutar gzip xz coreutils ];
+    runtimeInputs = with pkgs; [ curl jq gnutar gzip xz coreutils gnugrep ];
     text = builtins.readFile ./proton-runners/update-proton-runners.sh;
   };
 
