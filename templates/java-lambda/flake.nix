@@ -23,7 +23,7 @@
           pname = "my-lambda";
           version = "0.1.0";
           src = ./.;
-          mvnHash = "sha256-VEnxoHlPYkt8nyphTnqbXiP+UdtnWwq1O9QrRBRTJ0Q=";
+          mvnHash = "sha256-IiWnC0xvbTg5DFrCF0ll6+Nulfppoo2n7XUpwUODpeM=";
 
           installPhase = ''
             runHook preInstall

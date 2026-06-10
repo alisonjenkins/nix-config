@@ -23,7 +23,7 @@
           pname = "my-app";
           version = "0.1.0";
           src = ./.;
-          mvnHash = "sha256-WzGmWJqFO0l/+NoGdh1+E94fhbNyKC3E32zl4ZOrmOo=";
+          mvnHash = "sha256-pS4vpWbY7tfQ0P7IQicTxHQA8vgRsoVJjZMBPtPPL8E=";
 
           nativeBuildInputs = [ pkgs.makeWrapper ];
 
