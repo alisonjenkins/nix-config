@@ -127,7 +127,7 @@ needed — runners are ephemeral and re-minted per job.
 
 ## Troubleshooting
 
-- Logs: `tail -f /var/log/github-actions-runner.log`.
+- Logs: `tail -f <runnerDir>/poller.log` (default `/var/lib/github-actions-runner/poller.log`).
 - Daemon: `launchctl print system/org.nixos.github-actions-runner-poller`.
 - Idle proof: log shows `tick: no queued jobs` and `pgrep -f Runner.Listener` is empty.
 - `mint-token` perms check: run `github-runner-mint-token repo owner/repo` — prints a token

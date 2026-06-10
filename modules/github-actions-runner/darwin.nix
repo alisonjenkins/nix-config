@@ -10,7 +10,12 @@ in
     # Pre-stage the writable RUNNER_ROOT. No copy of the store package needed:
     # the wrapped config.sh/run.sh write mutable state here while reading the
     # immutable runner assets from the nix store via RUNNER_ROOT.
-    system.activationScripts.githubActionsRunnerDir.text = ''
+    #
+    # NB: nix-darwin only runs the preActivation/extraActivation/postActivation
+    # phases of system.activationScripts — arbitrary keys are NOT executed. So
+    # this must live in postActivation (runs as root during `darwin-rebuild
+    # switch`), not a custom-named script.
+    system.activationScripts.postActivation.text = lib.mkAfter ''
       mkdir -p ${lib.escapeShellArg (toString cfg.runnerDir)}
       chown ${cfg.user}:staff ${lib.escapeShellArg (toString cfg.runnerDir)}
       chmod 0750 ${lib.escapeShellArg (toString cfg.runnerDir)}
@@ -24,8 +29,10 @@ in
       KeepAlive = false;
       # Poller (and thus jobs) run as the target user, not root.
       UserName = cfg.user;
-      StandardOutPath = "/var/log/github-actions-runner.log";
-      StandardErrorPath = "/var/log/github-actions-runner.log";
+      # Log under runnerDir (owned by cfg.user) — the daemon runs as cfg.user
+      # and cannot create files in /var/log (root:wheel).
+      StandardOutPath = "${toString cfg.runnerDir}/poller.log";
+      StandardErrorPath = "${toString cfg.runnerDir}/poller.log";
       EnvironmentVariables = {
         HOME = toString cfg.runnerDir;
         RUNNER_ROOT = toString cfg.runnerDir;
