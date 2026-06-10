@@ -22,6 +22,57 @@ let
       (`gh pr merge --merge`); never `gh pr merge --squash`.
   '';
 
+  # Model routing mandate — context-only: never append to agents (sub-agents
+  # must not re-delegate).
+  modelRouting = ''
+    # Model Routing (user mandate)
+
+    - Delegate mechanical stretches to a sub-agent (Agent tool) instead of
+      grinding them in the main loop: any run of ~5+ bulk calls of the same
+      shape — gh/GraphQL queries, grep/glob sweeps, web searches, log trawls.
+    - Pick the sub-agent model by difficulty: "sonnet" for routine mechanical
+      work, "haiku" for trivial enumeration/extraction. The main loop stays on
+      the big model, reserved for voice, scope, and judgement.
+    - Sub-agent prompts must be self-contained: include every path, ID, query,
+      and the exact output format — the sub-agent cannot see this conversation.
+    - Cap the sub-agent's reply length explicitly (e.g. "return at most 30
+      lines: one line per PR — number, state, mergeable").
+    - Never delegate: user-facing judgement, irreversible actions, or work
+      whose context cannot be compressed into a prompt.
+  '';
+
+  # Working principles + communication substance. Tone-neutral by design:
+  # caveman (SessionStart hook) controls brevity; this controls substance.
+  workStyle = ''
+    # Working Principles (user mandate)
+
+    - Times: ISO8601 UTC (e.g. 2026-06-10T14:03:22Z) in all files, logs, and
+      reports.
+    - UTF-8 everywhere; prefer formats both humans and machines can read
+      (Markdown tables, JSON, CSV) over free-form dumps.
+    - Commits: small and focused — one logical change per commit.
+    - External systems: make interactions idempotent — check current state
+      before mutating; safe to re-run.
+    - Tenacity: retry transient failures with backoff before giving up; when a
+      subtask is unrecoverable, degrade gracefully — deliver the rest and
+      report the gap.
+    - Infrastructure as code first: prefer proposing the change in the IaC
+      repo and letting CI/CD apply it. Mutating live infrastructure directly
+      (consoles, ad-hoc kubectl/aws edits) is sometimes acceptable for
+      personal infra, but ALWAYS ask the user for permission first — never
+      mutate live infra unprompted.
+
+    # Communication (user mandate)
+
+    - Work autonomously with best judgement, but keep the user in the loop:
+      surface load-bearing decisions as they are made.
+    - Flag uncertainty and assumptions explicitly — never present a guess as
+      fact.
+    - Calm and factual; no speculation about people or motives.
+    - Ask only when genuinely blocked; otherwise decide, act, and report the
+      decision.
+  '';
+
   cavemanPkg = pkgs.caveman;
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
@@ -361,9 +412,10 @@ in
       pr-creator = builtins.readFile ./agents/pr-creator.md + "\n" + gitStrategy;
     };
 
-    # User-level ~/.claude/CLAUDE.md — applies to every session, so the main
-    # agent obeys the same git mandate as the subagents.
-    context = gitStrategy;
+    # User-level ~/.claude/CLAUDE.md — concatenated user mandates, applied to
+    # every session. Only gitStrategy is also appended to agents; modelRouting
+    # and workStyle are context-only.
+    context = builtins.concatStringsSep "\n" [ gitStrategy modelRouting workStyle ];
 
     mcpServers = {
       playwright = {
