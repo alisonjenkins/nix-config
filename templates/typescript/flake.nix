@@ -23,7 +23,7 @@
           pname = "my-app";
           version = "0.1.0";
           src = ./.;
-          npmDepsHash = "sha256-Y4vgdYQCbhyL7stsHMFrxOta84tzFEBVj50NzDzO2e8=";
+          npmDepsHash = "sha256-DiElGwZHVLmFkgBhy92npeBhM2so1MPFocLqOwVOZdE=";
 
           buildPhase = ''
             runHook preBuild
