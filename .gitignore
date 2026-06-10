@@ -1,6 +1,9 @@
 **/__pycache__/
 **/*.dec.*
 **/.claude
+!/.claude
+/.claude/*
+!/.claude/skills
 **/.DS_Store
 **/.playwright-mcp
 **/*.qcow2
