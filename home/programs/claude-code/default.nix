@@ -38,12 +38,14 @@ let
     ''
   );
 
-  # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here
+  # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here.
+  # ./skills holds locally-authored global skills (process-todo, ...).
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
     paths = [
       "${anthropicSkills}/skills"
       "${cavemanPkg}/skills"
+      ./skills
     ];
   };
 
