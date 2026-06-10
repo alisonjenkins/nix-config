@@ -376,6 +376,14 @@ in
                 description = ''
                   Regex matching exactly one asset name in the latest release.
                   The first match (by GitHub's asset order) is downloaded.
+
+                  Each runner is serialized to the updater as a
+                  pipe-delimited `name|repo|assetRegex` record, so this value
+                  must not contain a literal `|` or a newline — regex
+                  alternation cannot be expressed here. To match one of
+                  several asset shapes, anchor a single pattern (a character
+                  class like `[.](tgz)$` works) or add a separate runner entry
+                  per shape.
                 '';
               };
             };
