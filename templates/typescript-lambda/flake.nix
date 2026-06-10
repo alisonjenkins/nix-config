@@ -23,7 +23,7 @@
           pname = "my-lambda";
           version = "0.1.0";
           src = ./.;
-          npmDepsHash = "sha256-7LSNoxb8X4RLHqQgsuCwuYV6VY2kEu3mGBjcRcLCesM=";
+          npmDepsHash = "sha256-1LQY77tb9k1QeObMHTgnZDOR/A27iBzaHCdulzEs9Pw=";
 
           buildPhase = ''
             runHook preBuild
