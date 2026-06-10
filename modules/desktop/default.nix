@@ -4,6 +4,35 @@ with lib;
 
 let
   cfg = config.modules.desktop;
+  gcfg = cfg.gaming;
+
+  # Launch-time Proton runner updater (see options.modules.desktop.gaming.protonRunners).
+  protonRunnersActive = gcfg.enable && gcfg.protonRunners.enable;
+
+  # One "name|repo|assetRegex" record per runner, fed to the updater via the
+  # PROTON_RUNNERS environment variable.
+  protonRunnerLines =
+    lib.concatMapStringsSep "\n"
+      (r: "${r.name}|${r.repo}|${r.assetRegex}")
+      gcfg.protonRunners.runners;
+
+  updateProtonRunners = pkgs.writeShellApplication {
+    name = "update-proton-runners";
+    runtimeInputs = with pkgs; [ curl jq gnutar gzip xz coreutils gnugrep ];
+    text = builtins.readFile ./proton-runners/update-proton-runners.sh;
+  };
+
+  # `steam` shim: refresh the runners (blocking, parallel) then hand off to the
+  # real Steam package. Added to systemPackages with hiPrio so it shadows the
+  # Steam package's own bin/steam for both CLI and the desktop launcher.
+  steamWithRunnerUpdate = pkgs.writeShellApplication {
+    name = "steam";
+    runtimeInputs = [ updateProtonRunners ];
+    text = ''
+      PROTON_RUNNERS=${lib.escapeShellArg protonRunnerLines} update-proton-runners || true
+      exec ${config.programs.steam.package}/bin/steam "$@"
+    '';
+  };
 in
 {
   imports = [
@@ -274,6 +303,92 @@ in
           - 1: Usually discrete GPU on laptops with hybrid graphics
           Check /sys/class/drm/ to identify your GPU device number.
         '';
+      };
+
+      protonRunners = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = ''
+            Replace the nix-pinned Proton-GE with a launch-time updater.
+
+            A `steam` wrapper (placed at higher PATH priority than the Steam
+            package via `lib.hiPrio`, so both the CLI and the desktop launcher
+            route through it) downloads the latest release of each configured
+            runner into Steam's compatibilitytools.d in parallel, blocks until
+            every download finishes, then execs the real Steam. Steam does not
+            re-scan compat tools after launch, so the update must complete
+            first.
+
+            The updater is idempotent: it queries each repo's latest release
+            tag and skips the download when the installed tag already matches.
+            Failures are non-fatal — the previously installed runner is kept
+            and Steam still launches.
+
+            Only takes effect when `gaming.enable` is also true. When enabled,
+            the nix-pinned `proton-ge-bin` is dropped from
+            `programs.steam.extraCompatPackages` (the updater owns Proton-GE).
+
+            Note: hosts that autostart Steam by full store path (e.g. the Steam
+            Deck's jovian Gaming Mode service) bypass the PATH wrapper; only
+            launches that resolve `steam` via PATH are intercepted.
+          '';
+        };
+
+        runners = mkOption {
+          default = [
+            {
+              name = "GE-Proton";
+              repo = "GloriousEggroll/proton-ge-custom";
+              assetRegex = "\\.tar\\.gz$";
+            }
+            {
+              name = "proton-cachyos";
+              repo = "CachyOS/proton-cachyos";
+              # Generic x86_64 build. The release also ships a `_v3.tar.xz`
+              # (x86-64-v3 optimised) and an `arm64.tar.xz`; this regex matches
+              # only the baseline x86_64 asset. For a v3-capable CPU swap to
+              # "-x86_64_v3\\.tar\\.xz$"; on aarch64 use "-arm64\\.tar\\.xz$".
+              assetRegex = "-x86_64\\.tar\\.xz$";
+            }
+          ];
+          description = ''
+            Proton runners to keep up to date. Each is fetched from the named
+            GitHub repo's latest release; `assetRegex` (an Oniguruma regex,
+            matched against asset file names) must select exactly one release
+            asset to download and install.
+          '';
+          type = types.listOf (types.submodule {
+            options = {
+              name = mkOption {
+                type = types.str;
+                description = ''
+                  Stable identifier for this runner, used as the on-disk update
+                  marker name. Independent of the extracted directory name.
+                '';
+              };
+              repo = mkOption {
+                type = types.str;
+                description = "GitHub owner/repo publishing the runner releases.";
+              };
+              assetRegex = mkOption {
+                type = types.str;
+                description = ''
+                  Regex matching exactly one asset name in the latest release.
+                  The first match (by GitHub's asset order) is downloaded.
+
+                  Each runner is serialized to the updater as a
+                  pipe-delimited `name|repo|assetRegex` record, so this value
+                  must not contain a literal `|` or a newline — regex
+                  alternation cannot be expressed here. To match one of
+                  several asset shapes, anchor a single pattern (a character
+                  class like `[.](tgz)$` works) or add a separate runner entry
+                  per shape.
+                '';
+              };
+            };
+          });
+        };
       };
     };
 
@@ -626,6 +741,11 @@ in
       ])
       ++ (optionals cfg.printing.enable [
         pkgs.hplipWithPlugin
+      ])
+      # `steam` shim that updates Proton runners before launch. hiPrio so it
+      # shadows the Steam package's own bin/steam in the system profile.
+      ++ (optionals protonRunnersActive [
+        (lib.hiPrio steamWithRunnerUpdate)
       ]);
 
       variables = mkMerge [
@@ -823,10 +943,13 @@ in
         # firmware" inside the pressure-vessel sandbox. Workaround per
         # NixOS/nixpkgs#518150 — drop once Valve ships the fix upstream.
         extraPackages = with pkgs; [ hidapi ];
-        # Pulled from nixpkgs-unstable so we get the freshest Proton-GE
-        # release (25.11 lags a version or two behind). Listed under
-        # Steam → Settings → Compatibility per game once activated.
-        extraCompatPackages = [ pkgs.unstable.proton-ge-bin ];
+        # Proton-GE compat tool. Normally pulled from nixpkgs-unstable (25.11
+        # lags a version or two behind). When the launch-time runner updater
+        # (gaming.protonRunners) is active it owns Proton-GE imperatively, so
+        # the nix-pinned package is dropped to avoid a duplicate stale entry.
+        # Listed under Steam → Settings → Compatibility per game once active.
+        extraCompatPackages =
+          optionals (!protonRunnersActive) [ pkgs.unstable.proton-ge-bin ];
       };
     };
 
