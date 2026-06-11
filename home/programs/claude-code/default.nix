@@ -29,10 +29,23 @@ let
 
     - Delegate mechanical stretches to a sub-agent (Agent tool) instead of
       grinding them in the main loop: any run of ~5+ bulk calls of the same
-      shape — gh/GraphQL queries, grep/glob sweeps, web searches, log trawls.
+      shape — gh/GraphQL queries, web searches, log trawls. Prefer running
+      these in the background (run_in_background) so the main loop is not
+      blocked waiting on them.
     - Pick the sub-agent model by difficulty: "sonnet" for routine mechanical
       work, "haiku" for trivial enumeration/extraction. The main loop stays on
       the big model, reserved for voice, scope, and judgement.
+    - Code reading stays inline: Read/Grep/Glob used to understand code you are
+      working on are cheap and belong in the main loop — never route ordinary
+      exploration through a sub-agent. Delegate a search sweep only when you
+      need the conclusion (not the file contents) AND it spans many files or
+      areas you will not otherwise open.
+    - Fast local search keeps inline reading cheap: the built-in Grep tool
+      already uses ripgrep and works on every machine — make it the default for
+      content search. At the shell, use `rg` (content) and `fd` (file/dir
+      names) when present, but do not assume they are installed or at any fixed
+      path: probe with `command -v` first, fall back to `grep -r` / `find`, and
+      note `fd` may be packaged as `fdfind` on Debian/Ubuntu.
     - Sub-agent prompts must be self-contained: include every path, ID, query,
       and the exact output format — the sub-agent cannot see this conversation.
     - Cap the sub-agent's reply length explicitly (e.g. "return at most 30
