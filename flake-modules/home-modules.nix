@@ -10,6 +10,8 @@
     themes = import ../home/themes;
     autostart = import ../home/autostart;
     vr = import ../home/modules/vr;
+    blender = import ../home/modules/blender;
+    freecad = import ../home/modules/freecad;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
