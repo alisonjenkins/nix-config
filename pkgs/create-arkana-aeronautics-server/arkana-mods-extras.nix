@@ -26,17 +26,30 @@
 {
   replacements = [
     {
-      # Bumped by find-mod-bumps (lionfishapi).
+      # PINNED to 3.0 to MATCH L_Ender's Cataclysm 3.29 — do NOT let
+      # find-mod-bumps move this (cataclysm declares no lionfishapi range, so
+      # the tool can't see the coupling). lionfishapi 3.0 replaced the abstract
+      # client model method `parts()` with `root()`; Cataclysm 3.29's 81 model
+      # subclasses implement `root()` and NOT `parts()`. On lionfishapi 2.6/2.7
+      # (which still declare abstract `parts()`) every cataclysm entity/item
+      # render throws AbstractMethodError and crashes the CLIENT (server never
+      # renders, so it tolerates the mismatch). 3.0 still ships the server class
+      # `server/animation/IAnimatedEntity`, so nothing that used it regresses.
+      # lionfishapi has no blocks/items/registry -> world-safe to move.
+      # Audited 2026-06-12: cataclysm 3.29 is the ONLY lionfishapi model
+      # consumer in the pack; irons_spellbooks 3.15.4 / alshanex_familiars
+      # v4.0.2 / familiarslib 1.7.1 no longer reference lionfishapi at all.
+      noBump        = true;
       origProjectID = 1001614;
       origFileID    = 6168249;
       projectID     = 1001614;
-      fileID        = 7941057;
+      fileID        = 8230518;
       required      = true;
-      filename      = "lionfishapi-2.7-fix-fix.jar";
+      filename      = "lionfishapi-3.0.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7941/57/lionfishapi-2.7-fix-fix.jar";
-        name   = "lionfishapi-2.7-fix-fix.jar";
-        sha256 = "1j3rccsq02ix1y4vl07nsiwhh7p24zi4srqippbhgmzpq47wj08b";
+        url    = "https://mediafilez.forgecdn.net/files/8230/518/lionfishapi-3.0.jar";
+        name   = "lionfishapi-3.0.jar";
+        sha256 = "0fgsvx9xb2v9i1qxhav3s16hkza9b6h31xvhqlf3gbd2g2q89bl3";
       };
     }
     {
