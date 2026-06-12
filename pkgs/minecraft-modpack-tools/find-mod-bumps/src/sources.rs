@@ -236,6 +236,7 @@ mod tests {
                 file_id: 42,
             },
             dest_file: crate::state::DestFile::Extras,
+            no_bump: false,
         };
         assert_eq!(current_id_of(&cf), "42");
 
@@ -245,6 +246,7 @@ mod tests {
                 version_id: "xyz".into(),
             },
             dest_file: crate::state::DestFile::Overlays,
+            no_bump: false,
         };
         assert_eq!(current_id_of(&mr), "xyz");
     }

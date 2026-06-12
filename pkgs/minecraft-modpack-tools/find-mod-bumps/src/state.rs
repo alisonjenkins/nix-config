@@ -22,6 +22,12 @@ pub enum DestFile {
 pub struct StateEntry {
     pub source: Source,
     pub dest_file: DestFile,
+    /// `noBump = true` on the extras replacement — a hand-pin the tool must
+    /// never advance. Set for mods where a newer upstream file is a known-bad
+    /// ABI break (e.g. lionfishapi 2.6: 2.7-fix-fix drops IAnimatedEntity and
+    /// changes BasicEntityModel, crashing L_Ender's Cataclysm). Without this,
+    /// every fixpoint round re-suggests the bump and clobbers the manual pin.
+    pub no_bump: bool,
 }
 
 impl StateEntry {
@@ -45,8 +51,11 @@ fn re_entry() -> &'static Regex {
 fn re_replace() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| {
+        // Optional `noBump = true;` immediately precedes origProjectID when a
+        // replacement is a hand-pin (group 1). Groups then shift: 2=origPID,
+        // 3=origFID, 4=newPID, 5=newFID, 6=filename.
         Regex::new(
-            r#"(?s)origProjectID\s*=\s*(\d+)\s*;\s*origFileID\s*=\s*(\d+)\s*;\s*projectID\s*=\s*(\d+)\s*;\s*fileID\s*=\s*(\d+)\s*;\s*required\s*=\s*\w+\s*;\s*filename\s*=\s*"([^"]+)""#,
+            r#"(?s)(?:noBump\s*=\s*(true|false)\s*;\s*)?origProjectID\s*=\s*(\d+)\s*;\s*origFileID\s*=\s*(\d+)\s*;\s*projectID\s*=\s*(\d+)\s*;\s*fileID\s*=\s*(\d+)\s*;\s*required\s*=\s*\w+\s*;\s*filename\s*=\s*"([^"]+)""#,
         )
         .unwrap()
     })
@@ -115,6 +124,8 @@ pub fn load_pack_state_from_strings(
     overlays_text: &str,
 ) -> HashMap<String, StateEntry> {
     let mut by_orig: HashMap<(u64, u64), String> = HashMap::new();
+    // (projectID, fileID) pairs carrying `noBump = true` — never advance.
+    let mut no_bump_keys: std::collections::HashSet<(u64, u64)> = std::collections::HashSet::new();
     for c in re_entry().captures_iter(mods_text) {
         let pid: u64 = c[1].parse().unwrap_or(0);
         let fid: u64 = c[2].parse().unwrap_or(0);
@@ -124,12 +135,16 @@ pub fn load_pack_state_from_strings(
     if !extras_text.is_empty() {
         if let Some(section) = slice_section(extras_text, "replacements = [") {
             for c in re_replace().captures_iter(section) {
-                let opid: u64 = c[1].parse().unwrap_or(0);
-                let ofid: u64 = c[2].parse().unwrap_or(0);
-                let npid: u64 = c[3].parse().unwrap_or(0);
-                let nfid: u64 = c[4].parse().unwrap_or(0);
+                let no_bump = c.get(1).is_some_and(|m| m.as_str() == "true");
+                let opid: u64 = c[2].parse().unwrap_or(0);
+                let ofid: u64 = c[3].parse().unwrap_or(0);
+                let npid: u64 = c[4].parse().unwrap_or(0);
+                let nfid: u64 = c[5].parse().unwrap_or(0);
                 by_orig.remove(&(opid, ofid));
-                by_orig.insert((npid, nfid), c[5].to_string());
+                by_orig.insert((npid, nfid), c[6].to_string());
+                if no_bump {
+                    no_bump_keys.insert((npid, nfid));
+                }
             }
         }
         for marker in ["skipped = [", "disabled = ["] {
@@ -151,6 +166,7 @@ pub fn load_pack_state_from_strings(
 
     let mut state: HashMap<String, StateEntry> = HashMap::new();
     for ((pid, fid), fname) in by_orig.into_iter() {
+        let no_bump = no_bump_keys.contains(&(pid, fid));
         state.insert(
             fname,
             StateEntry {
@@ -159,6 +175,7 @@ pub fn load_pack_state_from_strings(
                     file_id: fid,
                 },
                 dest_file: DestFile::Extras,
+                no_bump,
             },
         );
     }
@@ -174,6 +191,7 @@ pub fn load_pack_state_from_strings(
                         version_id: c[3].to_string(),
                     },
                     dest_file: DestFile::Overlays,
+                    no_bump: false,
                 },
             );
         }
@@ -186,6 +204,7 @@ pub fn load_pack_state_from_strings(
                     file_id: c[3].parse().unwrap_or(0),
                 },
                 dest_file: DestFile::Overlays,
+                no_bump: false,
             });
         }
     }
@@ -254,6 +273,40 @@ mod tests {
                 file_id: 20
             }
         );
+    }
+
+    #[test]
+    fn extras_replacement_nobump_flag_parsed() {
+        let mods = r#"
+          { projectID = 1; fileID = 10; required = true; filename = "pinned-old.jar"; }
+          { projectID = 2; fileID = 20; required = true; filename = "free-old.jar"; }
+        "#;
+        // First replacement is a hand-pin (noBump = true); second is a normal
+        // bump with no flag. Only the first entry must carry no_bump.
+        let extras = r#"
+        replacements = [
+          {
+            noBump        = true;
+            origProjectID = 1;
+            origFileID    = 10;
+            projectID     = 1;
+            fileID        = 11;
+            required      = true;
+            filename      = "pinned-new.jar";
+          }
+          {
+            origProjectID = 2;
+            origFileID    = 20;
+            projectID     = 2;
+            fileID        = 21;
+            required      = true;
+            filename      = "free-new.jar";
+          }
+        ];
+        "#;
+        let s = load_pack_state_from_strings(mods, extras, "");
+        assert!(s.get("pinned-new.jar").unwrap().no_bump, "pin must set no_bump");
+        assert!(!s.get("free-new.jar").unwrap().no_bump, "unflagged stays bumpable");
     }
 
     #[test]

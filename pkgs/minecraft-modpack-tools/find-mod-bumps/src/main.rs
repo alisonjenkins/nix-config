@@ -145,6 +145,23 @@ fn main() -> Result<()> {
     for s in &skip {
         bumpable.remove(s);
     }
+    // Persistent hand-pins: replacements marked `noBump = true` in
+    // arkana-mods-extras.nix are never advanced. Unlike --skip (per-run),
+    // this travels with the data so a later fixpoint round can't re-suggest
+    // a known-bad ABI bump and clobber the pin (e.g. lionfishapi 2.6).
+    let pinned: Vec<String> = modid_to_entry
+        .iter()
+        .filter(|(_, e)| e.no_bump)
+        .map(|(mid, _)| mid.clone())
+        .collect();
+    for mid in &pinned {
+        bumpable.remove(mid);
+    }
+    if !pinned.is_empty() {
+        let mut names = pinned.clone();
+        names.sort();
+        eprintln!("Honoring {} noBump pin(s): {}", names.len(), names.join(", "));
+    }
 
     let order = toposort_leaves_first(&bumpable, &dependents);
     let (cf_n, mr_n) = bumpable.iter().fold((0usize, 0usize), |(c, m), mid| {
