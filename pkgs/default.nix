@@ -36,4 +36,6 @@
   scopebuddy = pkgs.callPackage ./scopebuddy {};
   pup = pkgs.callPackage ./pup {};
   pup-claude = pkgs.callPackage ./pup-claude {};
+  blender-mcp = pkgs.callPackage ./blender-mcp {};
+  freecad-mcp = pkgs.callPackage ./freecad-mcp {};
 }
