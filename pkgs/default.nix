@@ -27,6 +27,7 @@
   citron = pkgs.callPackage ./citron {};
   eden = pkgs.callPackage ./eden {};
   create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
+  liberica-jdk-crac = pkgs.callPackage ./liberica-jdk-crac {};
   minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
   create-arkana-aeronautics-server = pkgs.callPackage ./create-arkana-aeronautics-server {
     minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};

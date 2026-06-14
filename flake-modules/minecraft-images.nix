@@ -129,6 +129,8 @@ in
         minecraft-csc-image = cscImage system;
         minecraft-arkana-aeronautics-image = arkanaAeronauticsImage system;
         create-arkana-aeronautics-server = (pkgsFor system).create-arkana-aeronautics-server;
+        # CRaC-enabled JDK used to bake a warmed/checkpointed server JVM.
+        liberica-jdk-crac = (pkgsFor system).liberica-jdk-crac;
       }
       # Cross-platform: client zip is just metadata + jar shuffling, builds
       # on Darwin too. Exposed for both linux and darwin so a Mac dev can
