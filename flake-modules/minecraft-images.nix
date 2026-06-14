@@ -131,6 +131,8 @@ in
         create-arkana-aeronautics-server = (pkgsFor system).create-arkana-aeronautics-server;
         # CRaC-enabled JDK used to bake a warmed/checkpointed server JVM.
         liberica-jdk-crac = (pkgsFor system).liberica-jdk-crac;
+        # CRaC's criu fork — checkpoint engine the JVM shells out to.
+        crac-criu = (pkgsFor system).crac-criu;
       }
       # Cross-platform: client zip is just metadata + jar shuffling, builds
       # on Darwin too. Exposed for both linux and darwin so a Mac dev can
