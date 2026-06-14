@@ -20,6 +20,11 @@
 
   _module.args.enableDifftastic = lib.mkDefault true;
 
+  # Total idle seconds before swayidle powers the displays off (DPMS) via niri.
+  # Default 30 min for all niri hosts; a host can override via extraSpecialArgs,
+  # or set to null to disable. See home/programs/linux-only/swayidle.
+  _module.args.screenOffTimeoutSeconds = lib.mkDefault 1800;
+
   home = {
     inherit username;
     homeDirectory = lib.mkForce (
