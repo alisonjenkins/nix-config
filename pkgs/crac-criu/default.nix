@@ -63,6 +63,13 @@ criu.overrideAttrs (old: {
     # crit (criu image tool) still imports distutils, removed in Python 3.12.
     substituteInPlace scripts/crit-setup.py \
       --replace-fail 'from distutils.core import setup' 'from setuptools import setup'
+    # criu reserves only 4 pages (16 KiB) for probing the 32-bit compat
+    # vDSO; recent/custom kernels (e.g. cachyos-lto 7.0.1) ship a larger
+    # compat vDSO, so kerndat init aborts with "Compatible vdso's size is
+    # bigger than reserved buf". We only ever checkpoint 64-bit JVMs, but
+    # the probe runs unconditionally — enlarge the buffer so it passes.
+    substituteInPlace criu/vdso.c \
+      --replace-fail '#define COMPAT_VDSO_BUF_SZ (PAGE_SIZE * 4)' '#define COMPAT_VDSO_BUF_SZ (PAGE_SIZE * 16)'
   '';
 
   # nixpkgs' criu patches target the 4.1.1 source layout; the CRaC fork is a
