@@ -99,22 +99,36 @@ Instrumented criu (`PIPE-DBG`) proved the **page-pipe is NOT the problem**
 out. System mitigations (THP off, per-device `read_ahead_kb=0`,
 `drop_caches`) reduce but do NOT eliminate the stray unfaulted page.
 
+### Counter-evidence: the simple theory does NOT fully reproduce
+
+A JVM-free C repro (`repro.c`) that mmaps the 135 MB JDK `lib/modules`
+MAP_PRIVATE, touches one byte to trigger cachyos readahead, then is dumped
+with `criu dump -t` — **succeeds** (exit 0, full pages-1.img), both with
+and without `MADV_POPULATE_READ`. So a large private file mapping +
+readahead is NOT sufficient to trigger the fault on this kernel. The
+failure is **specific to the JVM checkpoint flow** — the CRaC engine's
+criu invocation (different options than a plain `criu dump`) and/or the
+JVM's particular mappings (CDS archive, many small file segments, madvise
+state, ~40 threads). The exact trigger is not yet isolated.
+
 ## Conclusion / next steps
 
-The clean fix is to ensure every mapped page has a real PTE before the
-checkpoint — which the **lifecycle coremod** does naturally: before
-`Core.checkpointRestore()` it can `madvise(MADV_POPULATE_READ)` /
-`MADV_RANDOM` or just touch all mapped ranges, leaving no
-present-but-unfaulted file pages for criu to trip on. So this cachyos
-blocker is plausibly **dissolved by the coremod step we need anyway** —
-verify once the coremod exists. Alternatives:
-1. **Coremod fault-in step** (preferred) — fold MADV_POPULATE_READ into the
-   warm phase; retest checkpoint on cachyos.
-2. **Stock kernel (aarch64/AWS)** — readahead 128 KB, issue doesn't arise;
-   the production target anyway.
-3. **criu `generate_iovs`/`mem.c` surgery** — drop non-resident file pages
-   from the dump set. Deepest, last resort.
+State of knowledge: checkpoint fails in criu's parasite page-dump on a
+file-mapping page (EFAULT with THP on, partial splice with THP off); the
+page-pipe is NOT the cause (proven, 64 MiB). The kernel's own vmsplice and
+a standalone large file mapping both dump fine — so it is the *combination*
+of the cachyos kernel and the JVM's CRaC checkpoint, not either alone.
 
-Coremod (warm -> unload-world -> checkpoint; restore -> load live world) is
-NOT started — gated on a working checkpoint primitive, but the root cause
-above means it should be attempted WITH the fault-in step on cachyos.
+Decisive next step is the **stock-kernel comparison** — run the same
+Liberica-CRaC JVM checkpoint in a NixOS VM on the default kernel:
+- PASS -> confirms cachyos kernel is required for the bug; then either run
+  CRaC on stock kernels only (aarch64/AWS = the production target anyway),
+  or bisect which cachyos mm change is responsible against a real repro.
+- FAIL -> the bug is in our CRaC/criu setup or the JVM mappings, not the
+  kernel; debug the CRaC engine's criu options + JVM mapping types.
+
+Candidate fixes once localised: coremod `MADV_POPULATE_READ`/touch-all in
+the warm phase (faults every page before checkpoint); or criu
+`generate_iovs` surgery to drop non-resident file pages. The lifecycle
+coremod (warm -> unload-world -> checkpoint; restore -> load live world) is
+NOT started — gated on a working checkpoint primitive.
