@@ -75,18 +75,46 @@ not a userspace-tweakable one — patching it means changing criu's
 file-mapping dump-set selection, which may itself depend on the kernel's
 pagemap behaviour.
 
+### The exact cachyos cause + what's ruled out
+
+Kernel from `xddxdd/nix-cachyos-kernel` -> `CachyOS/linux-cachyos`
+(`1c61dfd`) + `CachyOS/kernel-patches` (`579b7bd`). Two cachyos mm changes
+explain it:
+
+- **`VM_READAHEAD_PAGES` 128 KB -> 8 MB** (`0001-cachyos-base-all.patch`,
+  `include/linux/pagemap.h`). mmap'd files (the JDK's `lib/modules`
+  jimage, jars, .so) get up to 2048 pages of speculative readahead +
+  fault-around. Those pages show present in `/proc/pid/pagemap` but aren't
+  cleanly splice-able, so the parasite `vmsplice` returns EFAULT or a
+  partial count on them.
+- **`CONFIG_READ_ONLY_THP_FOR_FS=y`** — read-only file mappings can be
+  collapsed to huge folios; criu 3.17.1 mis-handles a sub-page of a file
+  huge-folio -> EFAULT. Turning THP off flips that EFAULT into the partial
+  splice, confirming both are in play.
+
+Instrumented criu (`PIPE-DBG`) proved the **page-pipe is NOT the problem**
+(forced to 64 MiB; most VMA batches splice fully — pages-1.img reaches
+~24 MB). The workingset-protection sysctls one theory flagged
+(`vm.clean_min_ratio` etc.) **do not exist** in this kernel build — ruled
+out. System mitigations (THP off, per-device `read_ahead_kb=0`,
+`drop_caches`) reduce but do NOT eliminate the stray unfaulted page.
+
 ## Conclusion / next steps
 
-The fixable-in-criu-userspace levers are exhausted. Remaining options:
-1. **Stock-kernel validation (decisive, cheap):** run the same harness in
-   a NixOS qemu VM on the default kernel. If it passes, cachyos-lto is
-   confirmed the cause and we have a working, repeatable baseline +
-   CI test for the coremod work. If it fails too, isolates to our setup.
-2. **aarch64/AWS:** build aarch64 `liberica-jdk-crac` and validate on an
-   EC2/k3s node (stock kernel = production target).
-3. **Deep parasite debugging:** instrument criu/compel's parasite to trace
-   the exact failing address/page on cachyos-lto. Days, uncertain, and
-   likely a kernel-patch interaction rather than a criu bug.
+The clean fix is to ensure every mapped page has a real PTE before the
+checkpoint — which the **lifecycle coremod** does naturally: before
+`Core.checkpointRestore()` it can `madvise(MADV_POPULATE_READ)` /
+`MADV_RANDOM` or just touch all mapped ranges, leaving no
+present-but-unfaulted file pages for criu to trip on. So this cachyos
+blocker is plausibly **dissolved by the coremod step we need anyway** —
+verify once the coremod exists. Alternatives:
+1. **Coremod fault-in step** (preferred) — fold MADV_POPULATE_READ into the
+   warm phase; retest checkpoint on cachyos.
+2. **Stock kernel (aarch64/AWS)** — readahead 128 KB, issue doesn't arise;
+   the production target anyway.
+3. **criu `generate_iovs`/`mem.c` surgery** — drop non-resident file pages
+   from the dump set. Deepest, last resort.
 
-Coremod (warm → unload-world → checkpoint; restore → load live world) is
-NOT started — it's gated on a working checkpoint primitive first.
+Coremod (warm -> unload-world -> checkpoint; restore -> load live world) is
+NOT started — gated on a working checkpoint primitive, but the root cause
+above means it should be attempted WITH the fault-in step on cachyos.

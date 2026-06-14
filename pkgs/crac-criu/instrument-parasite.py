@@ -36,9 +36,9 @@ OLD = (
 NEW = (
     "\tiovs = pargs_iovs(args);\n"
     "\t(void)nr_segs;\n"
-    "\t/* force pipe large enough for all pages so pipe-fill can't mask\n"
-    "\t * the real per-iov fault (1031 = F_SETPIPE_SZ) */\n"
-    "\tsys_fcntl(p, 1031, (long)args->nr_pages * PAGE_SIZE);\n"
+    "\t/* force pipe to 64 MiB and log the achieved size (1031 = F_SETPIPE_SZ) */\n"
+    "\t{ int _ps = sys_fcntl(p, 1031, 64 << 20);\n"
+    "\t  pr_err(\"PIPE-DBG got=%d nr_pages=%d nr_segs=%d\\n\", _ps, args->nr_pages, args->nr_segs); }\n"
     "\tfor (off = 0; off < args->nr_segs; off++) {\n"
     "\t\tstruct iovec *_v = &iovs[args->off + off];\n"
     "\t\tret = sys_vmsplice(p, _v, 1, SPLICE_F_NONBLOCK);\n"
