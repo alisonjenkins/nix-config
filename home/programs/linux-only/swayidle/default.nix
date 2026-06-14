@@ -1,6 +1,11 @@
 {
   bluetoothHeadsetMac ? "",
+  lib,
   pkgs,
+  # Total idle seconds before the displays are powered off (DPMS) via niri.
+  # Fires independently of the 900s lock timeout, so on niri hosts a locked,
+  # idle screen no longer stays lit indefinitely. Set to null to disable.
+  screenOffTimeoutSeconds ? 1800,
   ...
 }: {
   home.packages = with pkgs; [
@@ -27,6 +32,12 @@
 
     timeouts = [
       { timeout = 900; command = "${pkgs.lock-session}/bin/lock-session ${toString idleLockGracePeriodSeconds} ${toString lockFadeInSeconds}"; }
+    ] ++ lib.optionals (screenOffTimeoutSeconds != null) [
+      {
+        timeout = screenOffTimeoutSeconds;
+        command = "${pkgs.niri}/bin/niri msg action power-off-monitors";
+        resumeCommand = "${pkgs.niri}/bin/niri msg action power-on-monitors";
+      }
     ];
   };
 }
