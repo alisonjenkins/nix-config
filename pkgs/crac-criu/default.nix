@@ -70,14 +70,10 @@ criu.overrideAttrs (old: {
     # the probe runs unconditionally — enlarge the buffer so it passes.
     substituteInPlace criu/vdso.c \
       --replace-fail '#define COMPAT_VDSO_BUF_SZ (PAGE_SIZE * 4)' '#define COMPAT_VDSO_BUF_SZ (PAGE_SIZE * 16)'
-    # The parasite page-dump uses vmsplice(SPLICE_F_GIFT), which requires
-    # exclusively-owned anonymous pages; on this kernel it returns EFAULT on
-    # a non-giftable page in the JVM's mappings. Drop GIFT so vmsplice just
-    # references the pages into the pipe (criu reads them out the same way);
-    # loses the zero-copy optimisation but works for any readable page.
-    substituteInPlace criu/pie/parasite.c \
-      --replace-fail 'sys_vmsplice(p, &iovs[args->off + off], nr_segs, SPLICE_F_GIFT | SPLICE_F_NONBLOCK)' \
-                     'sys_vmsplice(p, &iovs[args->off + off], nr_segs, SPLICE_F_NONBLOCK)'
+    # Instrument the parasite page-dump: drop GIFT, force a big pipe, splice
+    # one iov at a time and log the first failing iov's address. Pinpoints
+    # the EFAULT/partial vmsplice on the cachyos-lto kernel.
+    python3 ${./instrument-parasite.py} criu/pie/parasite.c
   '';
 
   # nixpkgs' criu patches target the 4.1.1 source layout; the CRaC fork is a

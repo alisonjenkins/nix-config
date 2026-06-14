@@ -54,6 +54,27 @@ GIFT, **not** zero-pages. The failure is specific to criu's
 this custom (cachyos-lto, LTO + mm/sched patches) kernel — a context that
 does not reproduce in standalone C.
 
+### Root cause (instrumented parasite, `instrument-parasite.py`)
+
+Per-iov instrumentation (splice one iov at a time, log the first failure)
+pinpoints it:
+
+```
+SPLICE-DBG fail iov #0 base=0x771da1edf000 len=0x1000 ret=-14   (EFAULT)
+```
+
+The faulting page lives in a cluster of **private file-backed mappings**
+(`reg fp`, `flags 0x2` = MAP_PRIVATE, shmid 0x7, non-zero file offsets) —
+a mmap'd file (shared lib / jar / jimage), not anon heap. criu's parasite
+tries to `vmsplice` a page of a private *file* mapping that is **not
+resident** at splice time → EFAULT. Standalone C proves `vmsplice` works
+on resident pages, so criu's pagemap/soft-dirty interpretation for private
+file mappings disagrees with what this kernel reports (it tries to dump a
+clean/evicted file page). This is a criu↔kernel pagemap-semantics issue,
+not a userspace-tweakable one — patching it means changing criu's
+file-mapping dump-set selection, which may itself depend on the kernel's
+pagemap behaviour.
+
 ## Conclusion / next steps
 
 The fixable-in-criu-userspace levers are exhausted. Remaining options:
