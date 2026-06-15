@@ -220,7 +220,6 @@ in {
           casks = [
             "1password"
             "1password-cli"
-            "aerospace"
             "alfred"
             "amethyst"
             "apache-directory-studio"
@@ -274,10 +273,6 @@ in {
             # without one of --force / --force-cleanup / $HOMEBREW_ASK.
             extraFlags = [ "--force" ];
           };
-
-          taps = [
-            "nikitabobko/tap"
-          ];
         };
 
         networking = {
