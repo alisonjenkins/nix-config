@@ -283,7 +283,11 @@
       required      = true;
       filename      = "ars_nouveau-1.21.1-5.11.3.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7764/018/ars_nouveau-1.21.1-5.11.3.jar";
+        # Re-pointed from CurseForge to Modrinth: the CF mediafilez file
+        # (fileID 7764018) now 403s for everyone (CF link-rot), breaking the
+        # build whenever the jar is GC'd. Byte-identical jar (same sha256).
+        # projectID/fileID above are kept for the client-zip CF manifest entry.
+        url    = "https://cdn.modrinth.com/data/TKB6INcv/versions/BmGGrC9A/ars_nouveau-1.21.1-5.11.3.jar";
         name   = "ars_nouveau-1.21.1-5.11.3.jar";
         sha256 = "0dxvvxa03fznyv5ixl4sml1wwmnwy2yqx0f6sq2f5sspd5ay3xci";
       };
