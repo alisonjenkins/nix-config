@@ -59,12 +59,18 @@ fi
 # are overwritten from the image on every boot — they are not admin-tunable.
 # fml.toml in particular MUST stay disableConfigWatcher=true to avoid
 # exhausting the host's inotify instance budget under ~250 mods.
-# shellcheck disable=SC2043  # single-item list kept for future additions
-for f in fml.toml; do
+for f in fml.toml neovelocity-common.toml; do
   if [ -e "/opt/server/config/$f" ]; then
     cp -f "/opt/server/config/$f" "config/$f"
   fi
 done
+
+# Velocity-MODERN forwarding (NeoVelocity fork): the shared secret is provided as
+# a MOUNTED FILE at /data/forwarding.secret (a k8s Secret volume mounted there;
+# for local testing, `docker run -v <secret>:/data/forwarding.secret:ro`).
+# neovelocity-common.toml reads it directly — no entrypoint handling, so there is
+# no stale-secret reuse and the secret never touches the process env. online-mode
+# is baked false (this backend is always behind the proxy; see server.properties).
 
 # Spark profiler's async-profiler engine dlopens libstdc++.so.6 directly.
 # dockerTools images have no /lib search path, so point LD_LIBRARY_PATH at

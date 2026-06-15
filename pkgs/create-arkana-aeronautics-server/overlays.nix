@@ -631,5 +631,25 @@ in
       "createdeliveryrequired-1.0.2.jar"
       "0fgybwq803yir1hl7djl4i71vb4lidc86xv0ak1ikw2hd4wl4y5x";
   }
+  {
+    # Forked NeoVelocity (CrossStitch disabled — github.com/alisonjenkins/NeoVelocity
+    # branch no-crossstitch, FORK.md). Enables Velocity-MODERN forwarding so the
+    # backend trusts mc-limbo-proxy. SERVER-ONLY: `serverOnly = true` drops it from
+    # the client zip. CrossStitch removed because mc-limbo-proxy is a transparent
+    # (non-re-serializing) proxy — native command serialization passes straight
+    # through; the upstream CrossStitch wrapper would break the client's commands
+    # decode. Config baked as neovelocity-common.toml; secret written by entrypoint.
+    filename       = "neovelocity-1.2.6-nocrossstitch.jar";
+    serverOnly     = true;
+    # Non-CurseForge (GitHub release) jar → follows the "drop as override"
+    # convention like the other Modrinth/non-CF entries. Moot for the client zip
+    # (serverOnly filters it out there), but keeps the pattern consistent.
+    dropAsOverride = true;
+    jar = fetchurl {
+      url = "https://github.com/alisonjenkins/NeoVelocity/releases/download/fork-v1.2.6-nocrossstitch.1/neovelocity-1.2.6%2B1.21.1-1.21.5.jar";
+      name = "neovelocity-1.2.6-nocrossstitch.jar";
+      sha256 = "1vk2rli76v5bcxp7y7kdqay2xjfls1m81iynyn69ac5nzgl9sy4a";
+    };
+  }
 
 ]

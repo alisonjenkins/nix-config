@@ -58,10 +58,14 @@ let
   # — the CurseForge launcher refuses non-CF URLs — so they ship as
   # overrides/mods/<jar>, identical to dragging the jar into the instance
   # by hand.
+  # `serverOnly` overlay mods (e.g. the NeoVelocity forwarding fork) are dropped
+  # from the client zip entirely — they only make sense on the server.
+  clientOverlayMods =
+    builtins.filter (m: !(m.serverOnly or false)) overlayMods;
   curseforgeOverlayEntries =
-    builtins.filter (m: !m.dropAsOverride) overlayMods;
+    builtins.filter (m: !m.dropAsOverride) clientOverlayMods;
   modrinthOverlayEntries =
-    builtins.filter (m: m.dropAsOverride) overlayMods;
+    builtins.filter (m: m.dropAsOverride) clientOverlayMods;
 
   # Manifest.json shape for files[]: projectID + fileID + required.
   curseforgeOverlayJSON = builtins.toJSON
