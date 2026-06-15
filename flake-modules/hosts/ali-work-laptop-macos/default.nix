@@ -189,6 +189,10 @@ in {
           ];
 
           variables = {
+            # Datadog org lives on the US3 site; pup defaults to US1
+            # (datadoghq.com), which breaks OAuth token exchange
+            # (invalid_grant). Pin the site for pup + other DD tooling.
+            DD_SITE = "us3.datadoghq.com";
             JAVA_HOME = ''${pkgs.jdk}'';
             PATH = ''${pkgs.jdk}/bin:$PATH'';
             ZK_NOTEBOOK_DIR = "$HOME/git/zettelkasten";

@@ -197,6 +197,10 @@ in {
 
           variables = {
             # NIXOS_OZONE_WL = "1";
+            # Datadog org lives on the US3 site; pup defaults to US1
+            # (datadoghq.com), which breaks OAuth token exchange
+            # (invalid_grant). Pin the site for pup + other DD tooling.
+            DD_SITE = "us3.datadoghq.com";
             PATH = [
               "\${HOME}/.local/bin"
               "\${HOME}/.config/rofi/scripts"
