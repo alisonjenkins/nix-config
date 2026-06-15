@@ -5,7 +5,10 @@
   # Total idle seconds before the displays are powered off (DPMS) via niri.
   # Fires independently of the 900s lock timeout, so on niri hosts a locked,
   # idle screen no longer stays lit indefinitely. Set to null to disable.
-  screenOffTimeoutSeconds ? 1800,
+  # Default lives solely in home/home-common.nix
+  # (`_module.args.screenOffTimeoutSeconds`) — the module system resolves this
+  # arg from _module.args, so a function-default here would be dead code.
+  screenOffTimeoutSeconds,
   ...
 }: {
   home.packages = with pkgs; [
