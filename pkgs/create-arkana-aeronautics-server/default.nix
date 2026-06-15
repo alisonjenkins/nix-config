@@ -214,7 +214,12 @@ let
     view-distance=4
     simulation-distance=5
     motd=Create: Arkana + Aeronautics
-    online-mode=true
+    # Offline-mode: this backend always sits behind mc-limbo-proxy, which is the
+    # sole online-mode endpoint (it terminates Mojang auth and forwards the
+    # verified identity via NeoVelocity Velocity-modern forwarding). The backend
+    # is only reachable via the proxy (ClusterIP, not internet-exposed), so it
+    # must NOT perform its own Mojang auth.
+    online-mode=false
     enable-rcon=false
     spawn-protection=0
     allow-flight=true
@@ -307,6 +312,10 @@ stdenvNoCC.mkDerivation {
     # each client generating its own duplicate copy. See file header
     # for the full rationale + thread/perf tuning.
     install -Dm644 ${./DistantHorizons.toml} $out/config/DistantHorizons.toml
+    # Pre-bake the NeoVelocity (forked, CrossStitch-disabled) forwarding config.
+    # The entrypoint force-syncs it + writes the secret file from
+    # $MINECRAFT_FORWARDING_SECRET. See neovelocity-common.toml.
+    install -Dm644 ${./neovelocity-common.toml} $out/config/neovelocity-common.toml
     # Datapacks bundled at /opt/server/openloader/data/. OpenLoader (a
     # mod shipped via overlays.nix) auto-loads zips from this folder
     # into every world the server hosts, so the same set applies on

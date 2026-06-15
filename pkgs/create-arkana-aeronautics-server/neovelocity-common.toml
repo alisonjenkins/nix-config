@@ -1,0 +1,16 @@
+# NeoVelocity (forked: CrossStitch disabled) — Velocity-MODERN forwarding config.
+# Baked into the server tree by default.nix and copied to /data/config on first
+# boot. The shared HMAC secret is NOT inlined: it is read from a file MOUNTED at
+# /data/forwarding.secret (a k8s Secret volume from sops; for local testing,
+# `docker run -v <secret>:/data/forwarding.secret:ro`). `online-mode=false` is
+# baked into server.properties — the proxy is the sole online-mode endpoint.
+[forwarding]
+# FILE mode: read the secret from this path (relative to the server run dir
+# /data), i.e. the mounted /data/forwarding.secret.
+forwarding-secret = "forwarding.secret"
+forwarding-secret-type = "FILE"
+
+[compatibility]
+# Treat login-phase custom packets as Velocity auth (default). Our proxy only
+# sends the velocity:player_info packet, so this is safe.
+login-custom-packet-catchall = true
