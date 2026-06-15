@@ -28,6 +28,7 @@ on:
     paths:
       - '.github/workflows/ami-build-and-upload.yaml'
       - 'flake-modules/ami-images.nix'
+      - 'flake-modules/karpenter-prepull-images.json'
       - 'modules/aws/**'
       - 'modules/servers/**'
       - 'modules/locale/**'
