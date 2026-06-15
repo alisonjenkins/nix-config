@@ -5,7 +5,6 @@
     # ./batsignal
     # ./dunst
     # ./kubecolor
-    ./aerospace
     ./alacritty
     ./aws
     ./bat
