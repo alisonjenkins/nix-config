@@ -126,5 +126,21 @@
     "imageDigest": "sha256:a911876a5d1f30e0087aa7458af668e1df8baae459d8bb38063213e9bf450ef2",
     "hash": "sha256-nRd+L+svUYDZ1tIeFthfTh7SCsdAMk90aGQjZQf+0IA="
   }
+,
+  {
+    "imageName": "ghcr.io/alisonjenkins/create-arkana-aeronautics-server",
+    "imageTag": "v1.5-aero-1.2.1-62",
+    "arch": "amd64",
+    "imageDigest": "sha256:bbf8e2ef3442c22d0421add07983047056089ee2be2cb3071d48e9a23db32253",
+    "hash": "sha256-tkmWx9uspB9a8nNRQCb+LqYaUuXNB3Hm8xDZEgH+6VY="
+  }
+,
+  {
+    "imageName": "ghcr.io/alisonjenkins/create-arkana-aeronautics-server",
+    "imageTag": "v1.5-aero-1.2.1-62",
+    "arch": "arm64",
+    "imageDigest": "sha256:bbf8e2ef3442c22d0421add07983047056089ee2be2cb3071d48e9a23db32253",
+    "hash": "sha256-En3LuESeczx7KN2O4p+g5DfjTT2DE6hRTWrbLuR9Yf4="
+  }
 
 ]
