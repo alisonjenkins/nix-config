@@ -1,15 +1,44 @@
 # `modules.githubActionsRunner` — on-demand, scale-to-zero GitHub Actions runner
 
-A nix-darwin module that runs the **official** `actions/runner` on a Mac, but only
-when there is a job to do. A small launchd poller (`StartInterval`, default 60s) checks
-the GitHub API for queued jobs and spawns a single **ephemeral** runner on demand; after
-the job the runner de-registers and exits, so idle RAM is ~0MB (no persistent `.NET`
-listener).
+Runs the **official** `actions/runner`, but only when there is a job to do. A small poller
+(every `pollInterval`, default 60s) checks the GitHub API for queued jobs and spawns a
+single **ephemeral** runner on demand; after the job the runner de-registers and exits, so
+idle RAM is ~0MB (no persistent `.NET` listener).
 
 - Engine: official `actions/runner` (nixpkgs `github-runner`) — full action compatibility.
 - Idle: ~0MB (poller exits between ticks). Tradeoff: ~30–60s job pickup latency.
 - Concurrency: one runner at a time (atomic `mkdir` lock).
 - Scope: per-repo (`repos`) and/or org-wide (`orgs`).
+- **Cross-platform:** `darwin.nix` (launchd) and `nixos.nix` (systemd timer) share the
+  same options (`common.nix`) and poller/spawn logic (`scripts.nix`). Import
+  `self.darwinModules.github-actions-runner` on macOS, `self.nixosModules.github-actions-runner`
+  on NixOS.
+
+## macOS + Linux on one Mac
+
+ali-mba runs **both**: a native macOS arm64 runner (host, launchd) and a Linux arm64
+runner **inside the `nix.linux-builder` NixOS VM** (systemd). The VM is enabled via
+`nix.linux-builder.config` importing this module + sops-nix; it gets its own sops key from
+its persistent ssh host key.
+
+Label routing relies on **subset matching**: a runner only takes a queued job whose labels
+are all advertised by that runner (plus the implicit `self-hosted`). The two runners use
+disjoint labels so each job lands on exactly one:
+
+| Runner | Where | Labels |
+| ------ | ----- | ------ |
+| macOS arm64 | host (launchd) | `self-hosted, macos, aarch64, nix` |
+| Linux arm64 | linux-builder VM (systemd) | `self-hosted, linux, aarch64, nix` |
+
+Target them explicitly in workflows:
+```yaml
+# builds on the Mac
+runs-on: [self-hosted, macos, aarch64, nix]
+# builds in the Linux VM
+runs-on: [self-hosted, linux, aarch64, nix]
+```
+Don't request only `[self-hosted, aarch64, nix]` — that's a subset of *both*, so either
+runner could grab it.
 
 ## Quick start (per host)
 
@@ -115,20 +144,22 @@ needed — runners are ephemeral and re-minted per job.
 | `tokenFile` | — | Path to the PAT file (from sops). |
 | `repos` | `[]` | `owner/repo` targets. |
 | `orgs` | `[]` | Org names; runner registers org-wide. Keep small. |
-| `pollInterval` | `60` | launchd `StartInterval` (s). 30–60 recommended. |
+| `pollInterval` | `60` | Poll interval (s) — launchd `StartInterval` / systemd `OnUnitActiveSec`. 30–60 recommended. |
 | `repoListCacheMinutes` | `10` | Org repo-list cache TTL. |
 | `runnerNamePrefix` | hostname | Runner name prefix (unique suffix appended). |
-| `extraLabels` | `[ "macos" "aarch64" "nix" ]` | Advertised labels. |
+| `extraLabels` | `[ "macos" "aarch64" "nix" ]` | Advertised labels. Set to `[ "linux" "aarch64" "nix" ]` for the NixOS variant. |
 | `extraPackages` | `[]` | Extra packages on the job PATH. |
-| `user` | `system.primaryUser` | Owns `runnerDir`; poller + jobs run as this user. |
+| `user` | darwin: `system.primaryUser`; nixos: `github-runner` | Owns `runnerDir`; poller + jobs run as this user. |
 | `runnerDir` | `/var/lib/github-actions-runner` | `RUNNER_ROOT`. |
 | `spawnTimeoutMinutes` | `20` | Watchdog for false-positive detection. |
 | `package` | `pkgs.github-runner` | The official runner package. |
 
 ## Troubleshooting
 
-- Logs: `tail -f <runnerDir>/poller.log` (default `/var/lib/github-actions-runner/poller.log`).
-- Daemon: `launchctl print system/org.nixos.github-actions-runner-poller`.
+- Logs (macOS): `tail -f <runnerDir>/poller.log` (default `/var/lib/github-actions-runner/poller.log`).
+- Logs (NixOS): `journalctl -u github-actions-runner-poller -f`.
+- Daemon (macOS): `launchctl print system/org.nixos.github-actions-runner-poller`.
+- Timer (NixOS): `systemctl status github-actions-runner-poller.timer`.
 - Idle proof: log shows `tick: no queued jobs` and `pgrep -f Runner.Listener` is empty.
 - `mint-token` perms check: run `github-runner-mint-token repo owner/repo` — prints a token
   if the PAT is scoped correctly.

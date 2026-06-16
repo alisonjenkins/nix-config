@@ -68,8 +68,10 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.system.primaryUser;
-      defaultText = lib.literalExpression "config.system.primaryUser";
+      # Neutral default that works on both NixOS and Darwin. darwin.nix overrides
+      # this to config.system.primaryUser (mkDefault); nixos.nix creates a
+      # dedicated system user of this name.
+      default = "github-runner";
       description = "User that owns runnerDir and that the poller and jobs run as.";
     };
 

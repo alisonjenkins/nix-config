@@ -7,6 +7,10 @@ in
   imports = [ ./common.nix ];
 
   config = lib.mkIf cfg.enable {
+    # On macOS run as the machine's primary user (so the nix daemon + $HOME work
+    # for jobs). NixOS uses a dedicated system user instead — see nixos.nix.
+    modules.githubActionsRunner.user = lib.mkDefault config.system.primaryUser;
+
     # Pre-stage the writable RUNNER_ROOT. No copy of the store package needed:
     # the wrapped config.sh/run.sh write mutable state here while reading the
     # immutable runner assets from the nix store via RUNNER_ROOT.

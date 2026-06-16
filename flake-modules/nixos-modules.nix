@@ -10,6 +10,7 @@
     desktop = import ../modules/desktop;
     docker = import ../modules/docker;
     emulation = import ../modules/emulation;
+    github-actions-runner = import ../modules/github-actions-runner/nixos.nix;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
     mosh = import ../modules/mosh;

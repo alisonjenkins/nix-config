@@ -147,17 +147,23 @@ rec {
       }
       release_lock() { rm -rf "$LOCK"; }
 
+      # Portable mtime (epoch secs): GNU stat first, BSD/macOS stat fallback.
+      mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"; }
+
       # ---- detection: is a queued job waiting that THIS runner should take? --
-      # Match iff job is queued AND it asks for a self-hosted runner whose
-      # labels we advertise. GitHub-hosted jobs never carry "self-hosted".
+      # SUBSET semantics (matches GitHub's own runner selection): a queued job
+      # is ours iff it requests "self-hosted" AND every other label it requests
+      # is one we advertise. This keeps the macOS poller (macos,aarch64,nix) from
+      # grabbing a linux job (linux,aarch64,nix) just because they share aarch64.
       jobs_match() { # stdin: run-jobs JSON -> exit 0 if a matching queued job exists
         jq -e --arg want ${lib.escapeShellArg labelsCsv} '
           ($want | split(",")) as $wl
           | [ .jobs[]
               | select(.status == "queued")
+              | select(.labels | index("self-hosted"))
               | select(
-                  (.labels | index("self-hosted"))
-                  or ([ .labels[] | select(. as $l | $wl | index($l)) ] | length > 0)
+                  [ .labels[] | select(. != "self-hosted") | select(($wl | index(.)) | not) ]
+                  | length == 0
                 )
             ] | length > 0
         ' >/dev/null 2>&1
@@ -177,7 +183,7 @@ rec {
       org_repos() { # <org> -> echoes owner/repo lines (cached repoListCacheMinutes)
         local org="$1" maxage chunk n page
         maxage=$(( ${toString cfg.repoListCacheMinutes} * 60 ))
-        if [ -f "$CACHE" ] && [ "$(( $(date +%s) - $(stat -f %m "$CACHE") ))" -lt "$maxage" ]; then
+        if [ -f "$CACHE" ] && [ "$(( $(date +%s) - $(mtime "$CACHE") ))" -lt "$maxage" ]; then
           grep -i "^$org/" "$CACHE" || true
           return 0
         fi

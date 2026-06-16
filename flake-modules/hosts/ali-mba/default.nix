@@ -315,7 +315,12 @@ in {
             # Inner binfmt below provides x86_64 emulation; aarch64 is native.
             systems = [ "aarch64-linux" "x86_64-linux" ];
 
-            config = {
+            config = { config, ... }: {
+              imports = [
+                inputs.sops-nix.nixosModules.sops
+                self.nixosModules.github-actions-runner
+              ];
+
               # The `systems` option above only sets the outer
               # buildMachines declaration — qemu binfmt inside the VM
               # has to be configured explicitly to actually run x86_64
@@ -329,6 +334,32 @@ in {
                   memorySize = 12 * 1024;
                 };
                 cores = 8;
+              };
+
+              # sops inside the VM, keyed off the VM's own persistent ssh host
+              # key (ephemeral=false keeps it across rebuilds). Same pattern as
+              # the other NixOS hosts. The VM's age recipient is added to
+              # .sops.yaml for secrets/github-runner-token.enc.yaml.
+              sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+              sops.secrets.github-runner-token = {
+                sopsFile = self + "/secrets/github-runner-token.enc.yaml";
+                key = "github_runner_token";
+                owner = "github-runner";
+              };
+
+              # Linux arm64 runner. Labels are intentionally disjoint from the
+              # macOS runner's (macos,aarch64,nix) so subset label matching
+              # routes each queued job to exactly one runner.
+              modules.githubActionsRunner = {
+                enable = true;
+                tokenFile = config.sops.secrets.github-runner-token.path;
+                repos = [
+                  "alisonjenkins/nix-config"
+                  "alisonjenkins/tf-format"
+                  "alisonjenkins/terraform-ls-rs"
+                ];
+                orgs = [ ];
+                extraLabels = [ "linux" "aarch64" "nix" ];
               };
             };
           };
