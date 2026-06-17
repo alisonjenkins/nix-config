@@ -147,30 +147,30 @@ in {
           instances = {
             # Heavy thinker / orchestrator — Qwen3.5-122B-A10B MoE
             # 122B total, ~10B active, UD-Q5_K_XL ~85.6 GiB, ~22 tok/s
-            # orchestrator = {
-            #   enable = true;
-            #   model = "/persistence/models/Qwen3.5-122B-A10B-UD-Q5_K_XL.gguf";
-            #   port = 8080;
-            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
-            # };
+            orchestrator = {
+              enable = true;
+              model = pkgs.llama-models.qwen3-5-122b-a10b-ud-q5-k-xl.modelFile;
+              port = 8080;
+              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+            };
 
             # Workhorse / interactive coding — Qwen3-Coder 30B-A3B MoE
-            # 30B total, 3B active, Q4_K_S ~17 GiB, ~98 tok/s
-            # coder = {
-            #   enable = true;
-            #   model = "/persistence/models/Qwen3-Coder-30B-A3B-Q4_K_S.gguf";
-            #   port = 8081;
-            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
-            # };
+            # 30B total, 3B active, Q4_K_S ~16.3 GiB, ~98 tok/s
+            coder = {
+              enable = true;
+              model = pkgs.llama-models.qwen3-coder-30b-a3b-q4-k-s.modelFile;
+              port = 8081;
+              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+            };
 
             # Fast agent / tool calling — Qwen3.6-35B-A3B MoE
-            # 35B total, 3B active, UD-Q4_K_XL ~19 GiB, ~60 tok/s
-            # agent = {
-            #   enable = true;
-            #   model = "/persistence/models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
-            #   port = 8082;
-            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "16384" ];
-            # };
+            # 35B total, 3B active, UD-Q4_K_XL ~20.8 GiB, ~60 tok/s
+            agent = {
+              enable = true;
+              model = pkgs.llama-models.qwen3-6-35b-a3b-ud-q4-k-xl.modelFile;
+              port = 8082;
+              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "16384" ];
+            };
           };
         };
         modules.libvirtd.enable = true;
