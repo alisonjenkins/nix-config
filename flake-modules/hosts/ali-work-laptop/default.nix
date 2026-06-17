@@ -151,7 +151,10 @@ in {
               enable = true;
               model = pkgs.llama-models.qwen3-5-122b-a10b-ud-q5-k-xl.modelFile;
               port = 8080;
-              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+              extraFlags = [
+                "--gpu-layers" "999" "--ctx-size" "32768"
+                "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
+              ];
             };
 
             # Workhorse / interactive coding — Qwen3-Coder 30B-A3B MoE
@@ -160,7 +163,10 @@ in {
               enable = true;
               model = pkgs.llama-models.qwen3-coder-30b-a3b-q4-k-s.modelFile;
               port = 8081;
-              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+              extraFlags = [
+                "--gpu-layers" "999" "--ctx-size" "32768"
+                "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
+              ];
             };
 
             # Fast agent / tool calling — Qwen3.6-35B-A3B MoE
@@ -169,7 +175,10 @@ in {
               enable = true;
               model = pkgs.llama-models.qwen3-6-35b-a3b-ud-q4-k-xl.modelFile;
               port = 8082;
-              extraFlags = [ "--gpu-layers" "999" "--ctx-size" "16384" ];
+              extraFlags = [
+                "--gpu-layers" "999" "--ctx-size" "16384"
+                "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
+              ];
             };
           };
         };
