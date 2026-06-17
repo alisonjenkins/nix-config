@@ -175,7 +175,7 @@ in {
       spawn-at-startup "systemctl" "--user" "import-environment" "DISPLAY" "GTK_THEME" "QT_QPA_PLATFORMTHEME" "WAYLAND_DISPLAY" "XCURSOR_SIZE" "XCURSOR_THEME" "XDG_CURRENT_DESKTOP"
       spawn-at-startup "dbus-update-activation-environment" "--all" "--systemd"
       spawn-at-startup "systemctl" "--user" "restart" "xdg-desktop-portal.service"
-      spawn-at-startup "noctalia-shell"
+      spawn-at-startup "noctalia"
       spawn-at-startup "1password" "--silent"
       spawn-at-startup "zen-beta"
       spawn-at-startup "niri" "msg" "action" "focus-workspace" "terminal"

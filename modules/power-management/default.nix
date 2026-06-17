@@ -111,11 +111,11 @@ let
 
       ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
         noctalia_battery() {
-          if command -v noctalia-shell &>/dev/null; then
+          if command -v noctalia &>/dev/null; then
             sudo -u ${cfg.noctaliaUser} \
               DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
               XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-              noctalia-shell msg power-set power-saver
+              noctalia msg power-set power-saver
           fi
         }
         run_step "noctalia-performance" noctalia_battery
@@ -230,11 +230,11 @@ let
 
       ${lib.optionalString (cfg.onBattery.noctaliaPerformanceMode && cfg.noctaliaUser != null) ''
         noctalia_ac() {
-          if command -v noctalia-shell &>/dev/null; then
+          if command -v noctalia &>/dev/null; then
             sudo -u ${cfg.noctaliaUser} \
               DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u ${cfg.noctaliaUser})/bus" \
               XDG_RUNTIME_DIR="/run/user/$(id -u ${cfg.noctaliaUser})" \
-              noctalia-shell msg power-set performance
+              noctalia msg power-set performance
           fi
         }
         run_step "noctalia-performance" noctalia_ac
@@ -368,7 +368,7 @@ in
         type = lib.types.bool;
         default = false;
         description = ''
-          Drive the power-profiles-daemon profile via noctalia-shell IPC
+          Drive the power-profiles-daemon profile via noctalia IPC
           (`msg power-set`): power-saver on battery, performance on AC.
 
           noctalia 5.x dropped the old custom "noctaliaPerformanceMode"
