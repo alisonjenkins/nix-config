@@ -94,7 +94,7 @@ This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea**
   - `desktop/`: Desktop environment configurations
   - `development/`: Development tools and environments (e.g., web development)
   - `locale/`: Localization settings
-  - `libvirtd/`, `vr/`, `rocm/`, `ollama/`, `servers/`: Specialized functionality modules
+  - `libvirtd/`, `vr/`, `rocm/`, `llama-cpp/`, `servers/`: Specialized functionality modules
   - `desktop-base/`, `desktop-1password/`, `desktop-aws-tools/`, `desktop-kubernetes/`, etc.: Desktop feature modules
   - `desktop-greetd/`, `desktop-greetd-regreet/`, `desktop-sddm/`: Display manager modules
   - `desktop-wm-plasma6/`, `desktop-wm-sway/`: Window manager modules

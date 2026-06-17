@@ -32,7 +32,6 @@ in {
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
-      self.nixosModules.ollama
       self.nixosModules.uresourced
       self.nixosModules.plymouth
       self.nixosModules.rocm
@@ -150,7 +149,6 @@ in {
         nix.settings.max-jobs = 8;
 
         modules.locale.enable = true;
-        modules.ollama.enable = true;
         modules.docker.enable = true;
         modules.docker.enableQemuBinfmt = true;
         modules.rocm.enable = true;

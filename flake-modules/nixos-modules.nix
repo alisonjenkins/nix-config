@@ -18,7 +18,7 @@
     luksPCR15 = import ../modules/luksPCR15;
     niks3-cache-push = import ../modules/niks3-cache-push;
     nohang = import ../modules/nohang;
-    ollama = import ../modules/ollama;
+    llama-cpp = import ../modules/llama-cpp;
     plymouth = import ../modules/plymouth;
     podman = import ../modules/podman;
     power-management = import ../modules/power-management;

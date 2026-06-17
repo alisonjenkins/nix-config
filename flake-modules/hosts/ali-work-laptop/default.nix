@@ -36,7 +36,7 @@ in {
       self.nixosModules.uresourced
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
-      self.nixosModules.ollama
+      self.nixosModules.llama-cpp
       self.nixosModules.mosh
       self.nixosModules.sunshine
       self.nixosModules.plymouth
@@ -129,11 +129,20 @@ in {
         modules.locale.enable = true;
         modules.mosh.enable = true;
         modules.sunshine.enable = true;
-        modules.ollama = {
+        modules.llama-cpp = {
           enable = true;
-          rocmOverrideGfx = "11.5.1";     # gfx1151 / Strix Halo iGPU
-          startAtBoot = true;             # so loadModels pulls + ollama is reachable
-          loadModels = [ "gpt-oss:120b" ];
+          package = pkgs.llama-cpp-rocm;
+          allowedIPs = [
+            # Tailscale IPs
+            # "100.x.x.x"   # ali-desktop
+            # "100.x.x.x"   # ali-framework-laptop
+            # LAN IPs
+            # "192.168.x.x"
+          ];
+          extraFlags = [
+            "--gpu-layers" "999"     # Offload all layers to iGPU
+          ];
+          # model = "/path/to/model.gguf";  # TODO: set path to GGUF model
         };
         modules.libvirtd.enable = true;
         modules.podman.enable = true;

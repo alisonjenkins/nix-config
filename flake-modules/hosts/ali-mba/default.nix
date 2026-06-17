@@ -256,7 +256,6 @@ in {
             "krita"
             "notion"
             "obs"
-            "ollama-app"
             "powershell@preview"
             "rectangle"
             "scribus"

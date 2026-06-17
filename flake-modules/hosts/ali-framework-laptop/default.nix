@@ -38,7 +38,6 @@ in {
       self.nixosModules.uresourced
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
-      self.nixosModules.ollama
       self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.power-management
@@ -182,7 +181,6 @@ in {
             }
           ];
         };
-        modules.ollama.enable = true;
         modules.tts.enable = true;
 
         modules.powerManagement = {
