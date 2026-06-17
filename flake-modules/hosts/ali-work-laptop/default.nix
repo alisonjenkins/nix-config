@@ -152,7 +152,8 @@ in {
               model = pkgs.llama-models.qwen3-5-122b-a10b-ud-q5-k-xl.modelFile;
               port = 8080;
               extraFlags = [
-                "--gpu-layers" "999" "--ctx-size" "65536"
+                "--gpu-layers" "999" "--ctx-size" "131072"
+                "--cache-type-k" "q8_0" "--cache-type-v" "q8_0"
                 "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
               ];
             };
@@ -164,7 +165,8 @@ in {
               model = pkgs.llama-models.qwen3-coder-30b-a3b-q4-k-s.modelFile;
               port = 8081;
               extraFlags = [
-                "--gpu-layers" "999" "--ctx-size" "65536"
+                "--gpu-layers" "999" "--ctx-size" "131072"
+                "--cache-type-k" "q8_0" "--cache-type-v" "q8_0"
                 "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
               ];
             };
@@ -176,7 +178,8 @@ in {
               model = pkgs.llama-models.qwen3-6-35b-a3b-ud-q4-k-xl.modelFile;
               port = 8082;
               extraFlags = [
-                "--gpu-layers" "999" "--ctx-size" "32768"
+                "--gpu-layers" "999" "--ctx-size" "65536"
+                "--cache-type-k" "q8_0" "--cache-type-v" "q8_0"
                 "--jinja" "--reasoning-format" "deepseek" "--reasoning" "auto"
               ];
             };

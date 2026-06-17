@@ -140,7 +140,7 @@ in {
           baseURL = "http://localhost:8080/v1";
           models.qwen3-5-122b = mkModel {
             name = "Qwen3.5-122B-A10B";
-            contextLimit = 49152;
+            contextLimit = 114688;
             outputLimit = 16384;
           };
         };
@@ -148,7 +148,7 @@ in {
           baseURL = "http://localhost:8081/v1";
           models.qwen3-coder-30b = mkModel {
             name = "Qwen3-Coder-30B-A3B";
-            contextLimit = 49152;
+            contextLimit = 114688;
             outputLimit = 16384;
           };
         };
@@ -156,8 +156,8 @@ in {
           baseURL = "http://localhost:8082/v1";
           models.qwen3-6-35b = mkModel {
             name = "Qwen3.6-35B-A3B";
-            contextLimit = 24576;
-            outputLimit = 8192;
+            contextLimit = 49152;
+            outputLimit = 16384;
           };
         };
       };
