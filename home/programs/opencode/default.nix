@@ -165,7 +165,6 @@ let
     }
   ) cavemanCommandFiles;
 
-  nodeBin = "${pkgs.nodejs}/bin/node";
   cavememCli = "${cavememPkg}/bin/cavemem";
 
   cavememPluginJS = ''
@@ -173,14 +172,13 @@ let
     // Re-run home-manager switch to refresh.
     import { spawn } from 'node:child_process';
 
-    const NODE = ${builtins.toJSON nodeBin};
     const CLI = ${builtins.toJSON cavememCli};
 
     const callArgs = new Map();
 
     function runHook(event, payload) {
       try {
-        const child = spawn(NODE, [CLI, 'hook', 'run', event, '--ide', 'opencode'], {
+        const child = spawn(CLI, ['hook', 'run', event, '--ide', 'opencode'], {
           stdio: ['pipe', 'ignore', 'ignore'],
           detached: true,
         });
@@ -284,7 +282,7 @@ in {
         };
         cavemem = {
           type = "local";
-          command = [ nodeBin cavememCli "mcp" ];
+          command = [ cavememCli "mcp" ];
         };
       };
 
