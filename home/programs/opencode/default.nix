@@ -6,7 +6,6 @@ let
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
   cavekitPkg = pkgs.cavekit;
-  pupPkg = pkgs.pup-claude;
 
   mkProvider = { baseURL, models }:
     { options = { inherit baseURL; }; inherit models; };
@@ -51,92 +50,6 @@ let
 
       ${stripClaudeFrontmatter file}${lib.optionalString (extraBody != "") "\n${extraBody}"}
     '';
-
-  # Pup agents: strip non-opencode frontmatter fields and remap color names
-  allowedAgentKeys = [ "description" "mode" "model" "temperature" "top_p" "steps" "disable" "hidden" "color" "permission" "prompt" "tools" ];
-  colorMap = { blue = "info"; red = "error"; green = "success"; yellow = "warning"; orange = "warning"; };
-  patchColor = line:
-    let
-      m = builtins.match "^color: (.+)$" line;
-      val = if m != null then builtins.head m else null;
-    in
-      if m == null then line
-      else if colorMap ? ${val} then "color: ${colorMap.${val}}"
-      else line;
-
-  getFieldKey = l:
-    let m = builtins.match "^([a-zA-Z_][a-zA-Z0-9_-]*):.*" l;
-    in if m != null then builtins.head m else null;
-
-  # Convert rejected frontmatter fields into markdown body sections
-  formatRejectedLine = line:
-    let
-      isName = builtins.match "^name:.*" line != null;
-      isWhenToUse = builtins.match "^when_to_use:.*" line != null;
-      isExamples = builtins.match "^examples:.*" line != null;
-      listMatch = builtins.match "^[ \t]+- (.+)$" line;
-      contMatch = builtins.match "^[ \t]+(.+)$" line;
-    in
-      if isName then null
-      else if isWhenToUse then "## When to Use"
-      else if isExamples then "## Examples"
-      else if listMatch != null then "- ${builtins.head listMatch}"
-      else if contMatch != null then builtins.head contMatch
-      else line;
-
-  patchAgentFile = file:
-    let
-      raw = builtins.readFile file;
-      lines = lib.splitString "\n" raw;
-      hasFrontmatter = lines != [] && builtins.head lines == "---";
-      rest = if hasFrontmatter then builtins.tail lines else [];
-      endIdx = if hasFrontmatter then lib.lists.findFirstIndex (l: l == "---") null rest else null;
-      frontmatterLines = if endIdx != null then lib.take endIdx rest else [];
-      bodyLines = if endIdx != null then lib.drop (endIdx + 1) rest
-                  else if hasFrontmatter then rest else lines;
-      filterResult = builtins.foldl' (acc: line:
-        let
-          key = getFieldKey line;
-          isField = key != null;
-          isAllowed = isField && builtins.elem key allowedAgentKeys;
-          patchedLine = if isAllowed && key == "color" then patchColor line else line;
-        in
-          if isAllowed then
-            { allowed = acc.allowed ++ [ patchedLine ]; rejected = acc.rejected; keep = true; }
-          else if isField then
-            { inherit (acc) allowed; rejected = acc.rejected ++ [ line ]; keep = false; }
-          else if acc.keep then
-            { allowed = acc.allowed ++ [ line ]; rejected = acc.rejected; keep = true; }
-          else
-            { inherit (acc) allowed; rejected = acc.rejected ++ [ line ]; keep = false; }
-      ) { allowed = []; rejected = []; keep = true; } frontmatterLines;
-      formatted = builtins.filter (l: l != null) (map formatRejectedLine filterResult.rejected);
-      spaced = lib.concatMap (l:
-        if lib.hasPrefix "## " l then [ "" l "" ] else [ l ]
-      ) formatted;
-      rejectedBlock = lib.concatStringsSep "\n" spaced;
-      extraContext = if formatted != [] then "\n${rejectedBlock}\n" else "";
-      body = lib.concatStringsSep "\n" bodyLines;
-      fm = lib.concatStringsSep "\n" filterResult.allowed;
-    in "---\n${fm}\n---${extraContext}\n${body}";
-
-  pupAgentFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
-    (builtins.readDir "${pupPkg}/agents");
-
-  pupAgentConfigs = lib.mapAttrs' (name: _:
-    lib.nameValuePair "opencode/agents/pup-${name}" {
-      text = patchAgentFile "${pupPkg}/agents/${name}";
-    }
-  ) pupAgentFiles;
-
-  pupSkillDirs = lib.filterAttrs (n: v: v == "directory" && n != "extensions")
-    (builtins.readDir "${pupPkg}/skills");
-
-  pupSkillConfigs = lib.mapAttrs' (name: _:
-    lib.nameValuePair "opencode/skills/${name}/SKILL.md" {
-      source = "${pupPkg}/skills/${name}/SKILL.md";
-    }
-  ) pupSkillDirs;
 
   cavekitSkillDirs = lib.filterAttrs (n: v: v == "directory")
     (builtins.readDir "${cavekitPkg}/skills");
@@ -213,6 +126,9 @@ let
     });
   '';
 
+  ghBin = "${pkgs.gh}/bin/gh";
+  kubectlBin = "${pkgs.kubectl}/bin/kubectl";
+
 in {
   xdg.configFile = {
     # Main opencode config
@@ -255,30 +171,15 @@ in {
         "~/.config/opencode/instructions/tool-use.md"
       ];
 
+      # Only lightweight MCPs — heavy ones replaced by lazy-loaded skills
       mcp = {
         context7 = {
           type = "local";
           command = [ "${pkgs.master.context7-mcp}/bin/context7-mcp" ];
         };
-        github = {
-          type = "local";
-          command = [ "bash" "-c" "GITHUB_PERSONAL_ACCESS_TOKEN=$(${pkgs.gh}/bin/gh auth token) exec ${pkgs.master.github-mcp-server}/bin/github-mcp-server stdio" ];
-        };
         nixos = {
           type = "local";
           command = [ "${pkgs.master.mcp-nixos}/bin/mcp-nixos" ];
-        };
-        k8s = {
-          type = "local";
-          command = [ "${pkgs.master.mcp-k8s-go}/bin/mcp-k8s-go" ];
-        };
-        terraform = {
-          type = "local";
-          command = [ "${pkgs.master.terraform-mcp-server}/bin/terraform-mcp-server" "stdio" ];
-        };
-        playwright = {
-          type = "local";
-          command = [ "${pkgs.playwright-mcp}/bin/playwright-mcp" ];
         };
         cavemem = {
           type = "local";
@@ -352,10 +253,129 @@ in {
     # Process-todo skill
     "opencode/skills/process-todo/SKILL.md".source = ../claude-code/skills/process-todo/SKILL.md;
 
+    # ── Lazy-loaded skills replacing heavy MCPs ──
+    # These replace github (42 tools), k8s (9 tools), and terraform (9 tools)
+    # MCPs. Only ~100 chars of description in baseline context; full CLI
+    # guide loads only when skill is invoked.
+
+    "opencode/skills/github/SKILL.md".text = ''
+      ---
+      description: GitHub operations — issues, PRs, code search, releases, and repo management via gh CLI
+      ---
+
+      # GitHub Operations
+
+      Use `${ghBin}` (already authenticated) for all GitHub operations.
+      Prefer `--json field1,field2` for machine-readable output.
+
+      ## Issues
+      ```
+      gh issue list [--repo owner/repo] [--state open|closed] [--label bug] [--json number,title,state]
+      gh issue view <number> [--repo owner/repo] [--json title,body,comments]
+      gh issue create --title "..." --body "..."
+      gh issue comment <number> --body "..."
+      gh search issues "query" [--repo owner/repo] [--json number,title,repository]
+      ```
+
+      ## Pull Requests
+      ```
+      gh pr list [--repo owner/repo] [--state open|merged|closed] [--json number,title,state]
+      gh pr view <number> [--json title,body,reviews,mergeable,statusCheckRollup]
+      gh pr create --title "..." --body "..." [--base main]
+      gh pr review <number> --approve|--comment|--request-changes --body "..."
+      gh pr merge <number> --rebase
+      gh pr diff <number>
+      gh pr checks <number>
+      gh search prs "query" [--repo owner/repo]
+      ```
+
+      ## Code & Repo Search
+      ```
+      gh search code "query" [--repo owner/repo] [--language nix]
+      gh search repos "query" [--language nix] [--json fullName,description]
+      gh search commits "query" [--repo owner/repo]
+      ```
+
+      ## Repository
+      ```
+      gh repo view [owner/repo] [--json name,description,defaultBranchRef]
+      gh release list [--repo owner/repo]
+      gh release view <tag> [--repo owner/repo]
+      gh api repos/{owner}/{repo}/... [--jq '.field']
+      gh api graphql -f query='...'
+      ```
+    '';
+
+    "opencode/skills/kubernetes/SKILL.md".text = ''
+      ---
+      description: Kubernetes cluster operations — pods, deployments, services, logs, and debugging via kubectl
+      ---
+
+      # Kubernetes Operations
+
+      Use `${kubectlBin}` for all Kubernetes operations.
+
+      ## Core Commands
+      ```
+      kubectl get pods|deployments|services|nodes [-n namespace] [-o wide|json|yaml]
+      kubectl describe pod|deployment|service <name> [-n namespace]
+      kubectl logs <pod> [-n namespace] [-c container] [--tail=100] [-f]
+      kubectl exec -it <pod> [-n namespace] -- <command>
+      kubectl apply -f <file.yaml>
+      kubectl delete pod|deployment|service <name> [-n namespace]
+      ```
+
+      ## Debugging
+      ```
+      kubectl get events [-n namespace] [--sort-by='.lastTimestamp']
+      kubectl top pods|nodes [-n namespace]
+      kubectl get pods --field-selector=status.phase!=Running [-n namespace]
+      kubectl rollout status deployment/<name> [-n namespace]
+      kubectl rollout restart deployment/<name> [-n namespace]
+      ```
+
+      ## Context & Config
+      ```
+      kubectl config get-contexts
+      kubectl config use-context <name>
+      kubectl get namespaces
+      ```
+    '';
+
+    "opencode/skills/terraform/SKILL.md".text = ''
+      ---
+      description: Terraform provider and module lookup — search the registry for docs, versions, and examples
+      ---
+
+      # Terraform Registry Lookup
+
+      Query the Terraform Registry API for provider and module documentation.
+
+      ## Provider Lookup
+      ```
+      curl -s "https://registry.terraform.io/v1/providers?q=<query>" | jq '.providers[] | {name, description, version: .tag}'
+      curl -s "https://registry.terraform.io/v2/provider-docs?filter[provider-name]=<name>&filter[category]=resources" | jq '.data[] | .attributes.title'
+      ```
+
+      ## Module Search
+      ```
+      curl -s "https://registry.terraform.io/v1/modules?q=<query>" | jq '.modules[] | {id, description, version}'
+      curl -s "https://registry.terraform.io/v1/modules/<namespace>/<name>/<provider>" | jq '{version: .version, inputs: .root.inputs, outputs: .root.outputs}'
+      ```
+
+      ## Local Operations
+      ```
+      terraform init
+      terraform plan [-var-file=vars.tfvars]
+      terraform apply [-auto-approve]
+      terraform state list
+      terraform state show <resource>
+      terraform output [-json]
+      ```
+    '';
+
   }
   // cavemanCommandConfigs
   // cavekitSkillConfigs
-  // cavekitCommandConfigs
-  // pupAgentConfigs
-  // pupSkillConfigs;
+  // cavekitCommandConfigs;
 }
