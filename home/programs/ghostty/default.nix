@@ -22,7 +22,7 @@
       ".config/ghostty/config".text = ''
         adjust-underline-position = 40%
         adjust-underline-thickness = -60%
-        background-opacity = 0.9
+        background-opacity = 1
         clipboard-paste-protection = false
         command = ${zsh} -l -c 'tmux attach || tmux new-session -s shell'
         # confirm-close-surface = false
