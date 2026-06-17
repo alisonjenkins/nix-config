@@ -278,7 +278,7 @@ in {
         };
         playwright = {
           type = "local";
-          command = [ "${pkgs.playwright-mcp}/bin/mcp-server-playwright" ];
+          command = [ "${pkgs.playwright-mcp}/bin/playwright-mcp" ];
         };
         cavemem = {
           type = "local";

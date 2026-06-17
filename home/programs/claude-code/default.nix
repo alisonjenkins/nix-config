@@ -356,7 +356,7 @@ in
 
     mcpServers = {
       playwright = {
-        command = "${pkgs.playwright-mcp}/bin/mcp-server-playwright";
+        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
       };
 
       # Up-to-date library documentation
