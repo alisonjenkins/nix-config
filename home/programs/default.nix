@@ -44,6 +44,7 @@
     ./nushell
     ./obs
     ./obsidian
+    ./opencode
     ./opencommit
     ./opentofu
     ./quickshell
