@@ -33,6 +33,7 @@
         font-size = 11
         font-style = Regular
         font-thicken = true
+        macos-option-as-alt = left
         # palette = 12=#344CFF
         # palette = 4=#3D52E2
         # selection-background = 1d3c3b
