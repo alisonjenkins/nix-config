@@ -36,4 +36,5 @@
   scopebuddy = pkgs.callPackage ./scopebuddy {};
   pup = pkgs.callPackage ./pup {};
   pup-claude = pkgs.callPackage ./pup-claude {};
+  llama-models = pkgs.callPackage ./llama-models {};
 }
