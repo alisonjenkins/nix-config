@@ -180,10 +180,8 @@ in {
         };
       };
 
-      model = {
-        coder = "local-coder/qwen3-coder-30b";
-        task = "local-agent/qwen3-6-35b";
-      };
+      model = "local-coder/qwen3-coder-30b";
+      small_model = "local-agent/qwen3-6-35b";
 
       instructions = [
         "~/.config/opencode/instructions/git-strategy.md"
