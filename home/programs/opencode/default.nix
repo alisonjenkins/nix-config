@@ -68,6 +68,22 @@ let
     let m = builtins.match "^([a-zA-Z_][a-zA-Z0-9_-]*):.*" l;
     in if m != null then builtins.head m else null;
 
+  # Convert rejected frontmatter fields into markdown body sections
+  formatRejectedLine = line:
+    let
+      isName = builtins.match "^name:.*" line != null;
+      isWhenToUse = builtins.match "^when_to_use:.*" line != null;
+      isExamples = builtins.match "^examples:.*" line != null;
+      listMatch = builtins.match "^[ \t]+- (.+)$" line;
+      contMatch = builtins.match "^[ \t]+(.+)$" line;
+    in
+      if isName then null
+      else if isWhenToUse then "## When to Use"
+      else if isExamples then "## Examples"
+      else if listMatch != null then "- ${builtins.head listMatch}"
+      else if contMatch != null then builtins.head contMatch
+      else line;
+
   patchAgentFile = file:
     let
       raw = builtins.readFile file;
@@ -86,17 +102,23 @@ let
           patchedLine = if isAllowed && key == "color" then patchColor line else line;
         in
           if isAllowed then
-            { lines = acc.lines ++ [ patchedLine ]; keep = true; }
+            { allowed = acc.allowed ++ [ patchedLine ]; rejected = acc.rejected; keep = true; }
           else if isField then
-            { inherit (acc) lines; keep = false; }
+            { inherit (acc) allowed; rejected = acc.rejected ++ [ line ]; keep = false; }
           else if acc.keep then
-            { lines = acc.lines ++ [ line ]; keep = true; }
+            { allowed = acc.allowed ++ [ line ]; rejected = acc.rejected; keep = true; }
           else
-            { inherit (acc) lines; keep = false; }
-      ) { lines = []; keep = true; } frontmatterLines;
+            { inherit (acc) allowed; rejected = acc.rejected ++ [ line ]; keep = false; }
+      ) { allowed = []; rejected = []; keep = true; } frontmatterLines;
+      formatted = builtins.filter (l: l != null) (map formatRejectedLine filterResult.rejected);
+      spaced = lib.concatMap (l:
+        if lib.hasPrefix "## " l then [ "" l "" ] else [ l ]
+      ) formatted;
+      rejectedBlock = lib.concatStringsSep "\n" spaced;
+      extraContext = if formatted != [] then "\n${rejectedBlock}\n" else "";
       body = lib.concatStringsSep "\n" bodyLines;
-      fm = lib.concatStringsSep "\n" filterResult.lines;
-    in "---\n${fm}\n---\n${body}";
+      fm = lib.concatStringsSep "\n" filterResult.allowed;
+    in "---\n${fm}\n---${extraContext}\n${body}";
 
   pupAgentFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
     (builtins.readDir "${pupPkg}/agents");
