@@ -11,8 +11,19 @@ let
   mkProvider = { baseURL, models }:
     { api = "openai"; inherit baseURL models; };
 
-  mkModel = { name, toolCall ? true, reasoning ? true, attachment ? true }:
-    { inherit name attachment toolCall reasoning; };
+  mkModel = {
+    name,
+    toolCall ? true,
+    reasoning ? true,
+    attachment ? true,
+    temperature ? true,
+    contextLimit,
+    outputLimit,
+  }: {
+    inherit name attachment reasoning temperature;
+    tool_call = toolCall;
+    limit = { context = contextLimit; output = outputLimit; };
+  };
 
   stripClaudeFrontmatter = file:
     let
@@ -145,15 +156,27 @@ in {
       provider = {
         local-orchestrator = mkProvider {
           baseURL = "http://localhost:8080/v1";
-          models.qwen3-5-122b = mkModel { name = "Qwen3.5-122B-A10B"; };
+          models.qwen3-5-122b = mkModel {
+            name = "Qwen3.5-122B-A10B";
+            contextLimit = 32768;
+            outputLimit = 16384;
+          };
         };
         local-coder = mkProvider {
           baseURL = "http://localhost:8081/v1";
-          models.qwen3-coder-30b = mkModel { name = "Qwen3-Coder-30B-A3B"; };
+          models.qwen3-coder-30b = mkModel {
+            name = "Qwen3-Coder-30B-A3B";
+            contextLimit = 32768;
+            outputLimit = 16384;
+          };
         };
         local-agent = mkProvider {
           baseURL = "http://localhost:8082/v1";
-          models.qwen3-6-35b = mkModel { name = "Qwen3.6-35B-A3B"; };
+          models.qwen3-6-35b = mkModel {
+            name = "Qwen3.6-35B-A3B";
+            contextLimit = 16384;
+            outputLimit = 8192;
+          };
         };
       };
 
@@ -165,6 +188,7 @@ in {
       instructions = [
         "~/.config/opencode/instructions/git-strategy.md"
         "~/.config/opencode/instructions/work-style.md"
+        "~/.config/opencode/instructions/tool-use.md"
       ];
 
       mcp = {
@@ -223,6 +247,19 @@ in {
     # Instruction files (mandates)
     "opencode/instructions/git-strategy.md".text = gitStrategy;
     "opencode/instructions/work-style.md".text = workStyle;
+    "opencode/instructions/tool-use.md".text = ''
+      # Tool Use (system instruction)
+
+      You have access to tools provided by opencode. Always prefer using tools
+      over asking the user to run commands. When you need to read files, search
+      code, edit files, or run commands, use the appropriate tool.
+
+      When calling tools, provide all required arguments. For bash commands,
+      prefer specific commands over interactive ones.
+
+      When multiple independent tool calls would help, make them in parallel
+      when the tool supports it.
+    '';
 
     # Custom agents
     "opencode/agents/aws-iam-debugger.md".text = mkOpencodeAgent {
