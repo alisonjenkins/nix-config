@@ -132,6 +132,11 @@ in {
         modules.llama-cpp = {
           enable = true;
           package = pkgs.llama-cpp-rocm;
+          environment = {
+            HSA_OVERRIDE_GFX_VERSION = "11.5.1";
+            HCC_AMDGPU_TARGET = "gfx1151";
+            HSA_ENABLE_SDMA = "0";
+          };
           allowedIPs = [
             # Tailscale IPs
             # "100.x.x.x"   # ali-desktop
@@ -139,10 +144,34 @@ in {
             # LAN IPs
             # "192.168.x.x"
           ];
-          extraFlags = [
-            "--gpu-layers" "999"     # Offload all layers to iGPU
-          ];
-          # model = "/path/to/model.gguf";  # TODO: set path to GGUF model
+          instances = {
+            # Heavy thinker / orchestrator — Qwen3.5-122B-A10B MoE
+            # 122B total, ~10B active, UD-Q5_K_XL ~85.6 GiB, ~22 tok/s
+            # orchestrator = {
+            #   enable = true;
+            #   model = "/persistence/models/Qwen3.5-122B-A10B-UD-Q5_K_XL.gguf";
+            #   port = 8080;
+            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+            # };
+
+            # Workhorse / interactive coding — Qwen3-Coder 30B-A3B MoE
+            # 30B total, 3B active, Q4_K_S ~17 GiB, ~98 tok/s
+            # coder = {
+            #   enable = true;
+            #   model = "/persistence/models/Qwen3-Coder-30B-A3B-Q4_K_S.gguf";
+            #   port = 8081;
+            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "32768" ];
+            # };
+
+            # Fast agent / tool calling — Qwen3.6-35B-A3B MoE
+            # 35B total, 3B active, UD-Q4_K_XL ~19 GiB, ~60 tok/s
+            # agent = {
+            #   enable = true;
+            #   model = "/persistence/models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+            #   port = 8082;
+            #   extraFlags = [ "--gpu-layers" "999" "--ctx-size" "16384" ];
+            # };
+          };
         };
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
@@ -195,6 +224,12 @@ in {
           kernelParams = [
             "amd_iommu=off"
             "amdgpu.runpm=0"  # Disable GPU runtime power management to prevent SMU race after suspend
+
+            # Strix Halo unified memory: expose ~115GB to GPU via GTT/TTM
+            # instead of relying on BIOS UMA carve-out (keep BIOS at Auto/512MB)
+            "amdgpu.gttsize=117760"
+            "ttm.page_pool_size=25600000"
+            "ttm.pages_limit=25600000"
           ];
 
         };
