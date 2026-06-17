@@ -9,7 +9,7 @@ let
   pupPkg = pkgs.pup-claude;
 
   mkProvider = { baseURL, models }:
-    { api = "openai"; inherit baseURL models; };
+    { options = { inherit baseURL; }; inherit models; };
 
   mkModel = {
     name,
