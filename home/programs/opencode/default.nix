@@ -52,12 +52,58 @@ let
       ${stripClaudeFrontmatter file}${lib.optionalString (extraBody != "") "\n${extraBody}"}
     '';
 
+  # Pup agents: strip non-opencode frontmatter fields and remap color names
+  allowedAgentKeys = [ "description" "mode" "model" "temperature" "top_p" "steps" "disable" "hidden" "color" "permission" "prompt" "tools" ];
+  colorMap = { blue = "info"; red = "error"; green = "success"; yellow = "warning"; orange = "warning"; };
+  patchColor = line:
+    let
+      m = builtins.match "^color: (.+)$" line;
+      val = if m != null then builtins.head m else null;
+    in
+      if m == null then line
+      else if colorMap ? ${val} then "color: ${colorMap.${val}}"
+      else line;
+
+  getFieldKey = l:
+    let m = builtins.match "^([a-zA-Z_][a-zA-Z0-9_-]*):.*" l;
+    in if m != null then builtins.head m else null;
+
+  patchAgentFile = file:
+    let
+      raw = builtins.readFile file;
+      lines = lib.splitString "\n" raw;
+      hasFrontmatter = lines != [] && builtins.head lines == "---";
+      rest = if hasFrontmatter then builtins.tail lines else [];
+      endIdx = if hasFrontmatter then lib.lists.findFirstIndex (l: l == "---") null rest else null;
+      frontmatterLines = if endIdx != null then lib.take endIdx rest else [];
+      bodyLines = if endIdx != null then lib.drop (endIdx + 1) rest
+                  else if hasFrontmatter then rest else lines;
+      filterResult = builtins.foldl' (acc: line:
+        let
+          key = getFieldKey line;
+          isField = key != null;
+          isAllowed = isField && builtins.elem key allowedAgentKeys;
+          patchedLine = if isAllowed && key == "color" then patchColor line else line;
+        in
+          if isAllowed then
+            { lines = acc.lines ++ [ patchedLine ]; keep = true; }
+          else if isField then
+            { inherit (acc) lines; keep = false; }
+          else if acc.keep then
+            { lines = acc.lines ++ [ line ]; keep = true; }
+          else
+            { inherit (acc) lines; keep = false; }
+      ) { lines = []; keep = true; } frontmatterLines;
+      body = lib.concatStringsSep "\n" bodyLines;
+      fm = lib.concatStringsSep "\n" filterResult.lines;
+    in "---\n${fm}\n---\n${body}";
+
   pupAgentFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
     (builtins.readDir "${pupPkg}/agents");
 
   pupAgentConfigs = lib.mapAttrs' (name: _:
     lib.nameValuePair "opencode/agents/pup-${name}" {
-      source = "${pupPkg}/agents/${name}";
+      text = patchAgentFile "${pupPkg}/agents/${name}";
     }
   ) pupAgentFiles;
 
