@@ -339,7 +339,7 @@ in
 
     # cavekit as a plugin so Claude Code loads it with the "ck:" namespace
     # (giving /ck:spec, /ck:build, /ck:check)
-    plugins = [ cavekitPkg pkgs.pup-claude ];
+    plugins = [ cavekitPkg pkgs.pup-claude pkgs.superpowers ];
 
     # Listed explicitly (not agentsDir) so the shared gitStrategy mandate can
     # be appended to the git-touching agents.
