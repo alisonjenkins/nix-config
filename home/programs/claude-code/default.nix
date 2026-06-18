@@ -88,6 +88,16 @@ in
     package = pkgs.master.claude-code;
 
     settings = {
+      # Opt out of nonessential network traffic + telemetry. The umbrella var
+      # disables Claude Code's autoupdater/error-reporting/telemetry AND is one
+      # of the three vars the superpowers brainstorm server checks before
+      # emitting its primeradiant.com logo beacon; DISABLE_TELEMETRY is
+      # belt-and-suspenders (also honored by superpowers).
+      env = {
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+        DISABLE_TELEMETRY = "1";
+      };
+
       alwaysThinkingEnabled = true;
 
       # Caveman mode badge in the status bar — shows [CAVEMAN], [CAVEMAN:ULTRA], etc.
