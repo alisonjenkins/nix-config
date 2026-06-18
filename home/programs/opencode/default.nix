@@ -40,7 +40,7 @@ let
             else lib.concatStringsSep "\n" (lib.drop (endIdx + 1) rest);
     in lib.trimWith { start = true; end = false; } body;
 
-  mkOpencodeAgent = { file, description, model ? "local-coder/qwen3-coder-30b", mode ? "subagent", extraBody ? "" }:
+  mkOpencodeAgent = { file, description, model ? "local/qwen3-32b", mode ? "subagent", extraBody ? "" }:
     ''
       ---
       description: "${description}"
@@ -136,34 +136,18 @@ in {
       "$schema" = "https://opencode.ai/config.json";
 
       provider = {
-        local-orchestrator = mkProvider {
+        local = mkProvider {
           baseURL = "http://localhost:8080/v1";
-          models.qwen3-5-122b = mkModel {
-            name = "Qwen3.5-122B-A10B";
-            contextLimit = 114688;
-            outputLimit = 16384;
-          };
-        };
-        local-coder = mkProvider {
-          baseURL = "http://localhost:8081/v1";
-          models.qwen3-coder-30b = mkModel {
-            name = "Qwen3-Coder-30B-A3B";
-            contextLimit = 114688;
-            outputLimit = 16384;
-          };
-        };
-        local-agent = mkProvider {
-          baseURL = "http://localhost:8082/v1";
-          models.qwen3-6-35b = mkModel {
-            name = "Qwen3.6-35B-A3B";
-            contextLimit = 49152;
+          models.qwen3-32b = mkModel {
+            name = "Qwen3-32B";
+            contextLimit = 122880;
             outputLimit = 16384;
           };
         };
       };
 
-      model = "local-coder/qwen3-coder-30b";
-      small_model = "local-agent/qwen3-6-35b";
+      model = "local/qwen3-32b";
+      small_model = "local/qwen3-32b";
 
       instructions = [
         "~/.config/opencode/instructions/git-strategy.md"
@@ -193,7 +177,7 @@ in {
         glob = "allow";
         grep = "allow";
         webfetch = "allow";
-        bash = "ask";
+        bash = "allow";
         task = "allow";
         skill = { "*" = "allow"; };
       };
