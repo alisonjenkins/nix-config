@@ -13,3 +13,4 @@
 k8s-setup/charts
 reports/
 result-*
+.cavemem/
