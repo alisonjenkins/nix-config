@@ -101,15 +101,17 @@ in {
               # NB: jovian-stubs uses `buildCommand`, which bypasses the
               # postInstall hook — the patch must be appended to
               # buildCommand. steamos-update and holo-update are the same
-              # source file; patch both. `readlink -f` resolves through
-              # deploy-rs's activatable wrapper so the kernel comparison
-              # matches and the stub returns 7 instead of 8.
+              # source file, installed to two paths (Jovian now drops
+              # steamos-update under bin/steamos-polkit-helpers/); patch
+              # both. `readlink -f` resolves through deploy-rs's activatable
+              # wrapper so the kernel comparison matches and the stub
+              # returns 7 instead of 8.
               buildCommand = old.buildCommand + ''
-                for f in steamos-update holo-update; do
-                  substituteInPlace "$out/bin/$f" \
-                    --replace-fail 'readlink /run' 'readlink -f /run' \
-                    --replace-fail 'readlink /nix' 'readlink -f /nix'
-                done
+                substituteInPlace \
+                  "$out/bin/holo-update" \
+                  "$out/bin/steamos-polkit-helpers/steamos-update" \
+                  --replace-fail 'readlink /run' 'readlink -f /run' \
+                  --replace-fail 'readlink /nix' 'readlink -f /nix'
               '';
             });
           })
