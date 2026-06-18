@@ -115,6 +115,42 @@ in {
               '';
             });
           })
+          (final: prev:
+            # nixos-26.05's gamescope 3.16.24 ships a stale shaders-path.patch
+            # — its hunk targets the removed `GetUsrDir` in
+            # reshade_effect_manager.cpp (upstream moved that path logic to
+            # Utils/DirHelpers.cpp), so patchPhase dies on a failed hunk.
+            # nixos-unstable carries the same 3.16.24 src with the corrected
+            # patch set + postPatch, so graft those onto 26.05's build (keeping
+            # 26.05's deps — aliasing wholesale to unstable.gamescope would drag
+            # in a separately-broken unstable 32-bit xwayland). Applied to both
+            # the native build and pkgsi686Linux (Steam gaming mode pulls the
+            # 32-bit gamescope into hardware.graphics). Drop once 26.05 fixes
+            # the patch (or reverts gamescope to 3.16.23).
+            #
+            # 3.16.24 also adds a tests/ subdir (needs catch2 + leaks a vulkan
+            # include-path gap in the test target). Tests aren't run here
+            # (doCheck = false), so just disable them via meson — keeps the
+            # graft arch-independent (no per-arch catch2) and dodges the test
+            # compile break.
+            let
+              fixGamescope = baseGs: baseGs.overrideAttrs (old: {
+                inherit (final.unstable.gamescope) patches postPatch;
+                mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Denable_tests=false" ];
+              });
+            in {
+              gamescope = fixGamescope prev.gamescope;
+              # gamescope-wsi is a separate instantiation of the same broken
+              # package.nix (nixpkgs callPackages it fresh; Jovian re-derives it
+              # via `gamescope.override`, which discards .overrideAttrs) — so it
+              # needs the same graft applied directly. Steam pulls it into
+              # hardware.graphics extraPackages{,32} for the Vulkan WSI layer.
+              gamescope-wsi = fixGamescope prev.gamescope-wsi;
+              pkgsi686Linux = prev.pkgsi686Linux.extend (_f: p: {
+                gamescope = fixGamescope p.gamescope;
+                gamescope-wsi = fixGamescope p.gamescope-wsi;
+              });
+            })
         ];
 
         modules.base = {
