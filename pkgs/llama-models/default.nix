@@ -78,4 +78,33 @@ in
       }
     ];
   };
+
+  # Single smart model — Qwen3-32B Dense
+  # All 32B params active every token, Q5_K_M ~21.6 GiB
+  # Near GPT-4o on coding/reasoning benchmarks
+  qwen3-32b-q5-k-m = mkGgufModel {
+    pname = "qwen3-32b-q5-k-m";
+    primaryFile = "Qwen3-32B-Q5_K_M.gguf";
+    files = [
+      {
+        name = "Qwen3-32B-Q5_K_M.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3-32B-GGUF/resolve/main/Qwen3-32B-Q5_K_M.gguf";
+        hash = "sha256-vJa6a8XtfXhUDSyn/mYjTHG4IUgElsasjRLYxAZClEY=";
+      }
+    ];
+  };
+
+  # Speculative decoding draft model — Qwen3-0.6B
+  # Same tokenizer as Qwen3-32B, Q8_0 ~0.6 GiB
+  qwen3-0-6b-q8-0 = mkGgufModel {
+    pname = "qwen3-0.6b-q8-0";
+    primaryFile = "Qwen3-0.6B-Q8_0.gguf";
+    files = [
+      {
+        name = "Qwen3-0.6B-Q8_0.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf";
+        hash = "sha256-4VDtVE3+YBaTDAJqk5E6XjGEGB6/5qsiI64B3QSReEw=";
+      }
+    ];
+  };
 }
