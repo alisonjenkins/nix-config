@@ -246,7 +246,6 @@ in {
             "karabiner-elements"
             "keybase"
             "krita"
-            "librewolf"
             "microsoft-auto-update"
             "microsoft-azure-storage-explorer"
             "microsoft-outlook"
