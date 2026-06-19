@@ -18,11 +18,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1781849415,
-        "narHash": "sha256-KRegA8rw+enALIV7wPiC0OUpfVNu+PX0ka1OOwxMOUg=",
+        "lastModified": 1781852352,
+        "narHash": "sha256-R1INV+6ETyby4tNR499Pqlxu0Lj8xuknkdTbdV0Uz4w=",
         "owner": "alisonjenkins",
         "repo": "neovim-nix-flake",
-        "rev": "30cd76c17f6f79bfa79f7ae5663d641a28136d35",
+        "rev": "b354ee13a90563d47fc544fd8fa171c3356ea3ae",
         "type": "github"
       },
       "original": {
@@ -1315,11 +1315,11 @@
     },
     "nixpkgs_master": {
       "locked": {
-        "lastModified": 1781848088,
-        "narHash": "sha256-vDBjwbDSQEin1U4HDJiUgf6Zs949hydQr2CfjXWGwl0=",
+        "lastModified": 1781851389,
+        "narHash": "sha256-TTBeN0xrdoNnKIItzJ+lbwnUeddCCNl2x29wLQIkhr4=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "baedd1f918e49496378f7dccc65e268388d19c97",
+        "rev": "a85e1ec86fc49eb6d3069c0eb10988c2dd702ee3",
         "type": "github"
       },
       "original": {
@@ -1464,11 +1464,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781848325,
-        "narHash": "sha256-B2RVbXXAv/GqNFqWOEdAuQinZZXuyG5xyrwFbD5xzGs=",
+        "lastModified": 1781852089,
+        "narHash": "sha256-rtWLZoXxzdoHCRZeviSk/PMO8HJeAulUtn+/OYM++cg=",
         "owner": "nix-community",
         "repo": "nur",
-        "rev": "ee17b38a83ce798752f0b70b9ea834b756affeba",
+        "rev": "c9ad5c97d48b09d019177fb1cd864e7edf8558c9",
         "type": "github"
       },
       "original": {
@@ -1896,16 +1896,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1781848684,
-        "narHash": "sha256-zVOG8PORaFmN9DTb9PoeLdyncv8RtJDJIusoRwwycko=",
+        "lastModified": 1781851636,
+        "narHash": "sha256-M5vfxWtdG7RgmkjtNCilphoiooFn8vGqURT0TrLML68=",
         "owner": "alisonjenkins",
         "repo": "terraform-ls-rs",
-        "rev": "ad95fddc52cc9f3ae1b15e3835aff87237ae7cd4",
+        "rev": "1956b1e8162f83b6c9db733ea21d1d7c35125e7c",
         "type": "github"
       },
       "original": {
         "owner": "alisonjenkins",
-        "ref": "v0.11.6",
+        "ref": "v0.12.0",
         "repo": "terraform-ls-rs",
         "type": "github"
       }
