@@ -15,6 +15,25 @@ let
   # plus the k8s cluster node (192.168.1.129), which is where the in-cluster
   # Prometheus scrapes from (pod traffic is masqueraded to the node IP).
   monitoringSources = qbittorrentAllowedIPs ++ [ "192.168.1.129" ];
+
+  # Cap the .NET ThreadPool so a blocked download-client / indexer poll can't
+  # trigger runaway worker injection. On 2026-06-20 Sonarr's ThreadPool ran
+  # away to 1452 idle workers whose stacks paged out to 14 GB of disk swap;
+  # the resulting thrash stalled nginx upstream reads past proxy_read_timeout
+  # -> intermittent 504s. 100 is far above the *arr apps' real concurrency
+  # (healthy Sonarr ~25-40 threads). This env knob is the load-bearing fix for
+  # that incident; the CoreCLR runtime reads it at startup.
+  #
+  # NOTE: per-service MemoryHigh/MemoryMax/MemorySwapMax cgroup caps were tried
+  # here and REMOVED. On a 3.8 GB box that already runs zram (zstd, see
+  # modules/base) those caps backfired: MemorySwapMax counts zram swap, so it
+  # blocked the *arr apps from using zram and the kernel throttled them into
+  # API hangs ("Failed to load series from API"; Sonarr cgroup showed
+  # high=471k throttle events pinned at the 512M swap ceiling). The 14 GB
+  # disk-thrash they were meant to prevent can't recur anyway: the ThreadPool
+  # cap kills the leak at source and zram is capacity-bounded. Lean on zram +
+  # this cap, not on hard memory limits.
+  dotnetThreadCap = { DOTNET_ThreadPool_ForceMaxWorkerThreads = "100"; };
 in {
   flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -91,6 +110,15 @@ in {
         console.keyMap = "us";
         programs.zsh.enable = true;
         time.timeZone = "Europe/London";
+
+        # 3.8 GB RAM is structurally tight for the full media stack (sonarr +
+        # radarr + prowlarr + bazarr + qbittorrent + flaresolverr + i2pd +
+        # btfs). The base module enables zram (zstd); override it larger here
+        # because this box has 16 idle cores (cpu PSI ~0) but is memory-bound
+        # (memory PSI was ~60% full-stall) — trade cheap CPU for effective RAM.
+        # 200% + ~2.7:1 zstd ratio yields roughly 2-3x usable memory and keeps
+        # cold pages off the slow disk swap partition.
+        zramSwap.memoryPercent = lib.mkForce 200;
 
         boot = {
           kernelPackages = pkgs.linuxPackages_latest;
@@ -752,6 +780,7 @@ in {
 
         # Configure umask for all media services to create files with group write permissions
         systemd.services.radarr = {
+          environment = dotnetThreadCap;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
@@ -768,6 +797,7 @@ in {
         };
 
         systemd.services.sonarr = {
+          environment = dotnetThreadCap;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
@@ -799,6 +829,7 @@ in {
         };
 
         systemd.services.prowlarr = {
+          environment = dotnetThreadCap;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" ];
