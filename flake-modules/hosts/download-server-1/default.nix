@@ -16,6 +16,14 @@ let
   # Prometheus scrapes from (pod traffic is masqueraded to the node IP).
   monitoringSources = qbittorrentAllowedIPs ++ [ "192.168.1.129" ];
 
+  # qBittorrent WebUI auth-bypass whitelist. Must cover BOTH loopback families:
+  # a client connecting to "localhost" resolves to IPv6 ::1 on this
+  # (IPv6-enabled) host, so without ::1/128 qbt demands auth for it; only
+  # 127.0.0.1 was whitelisted. Shared by serverConfig and the config-merger
+  # enforcer below so they can't drift.
+  qbtAuthWhitelist = lib.concatStringsSep ", "
+    ([ "127.0.0.1/32" "::1/128" ] ++ map (ip: "${ip}/32") qbittorrentAllowedIPs);
+
   # Cap the .NET ThreadPool so a blocked download-client / indexer poll can't
   # trigger runaway worker injection. On 2026-06-20 Sonarr's ThreadPool ran
   # away to 1452 idle workers whose stacks paged out to 14 GB of disk swap;
@@ -587,6 +595,20 @@ in {
               ${pkgs.coreutils}/bin/mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
             fi
 
+            # Enforce the WebUI auth-bypass whitelist (incl. IPv6 loopback
+            # ::1/128) on every start, mirroring the Nix-declared value. The
+            # merger preserves the persisted conf, so a stale whitelist would
+            # otherwise never pick up new entries. Backslash escaping matches
+            # the Session\Port sed above (\\\\ -> literal \ for qBittorrent's
+            # WebUI\Key names).
+            WHITELIST="${qbtAuthWhitelist}"
+            if grep -q '^WebUI\\AuthSubnetWhitelist=' "$CONFIG_FILE"; then
+              ${pkgs.gnused}/bin/sed -i "s|^WebUI\\\\AuthSubnetWhitelist=.*|WebUI\\\\AuthSubnetWhitelist=$WHITELIST|" "$CONFIG_FILE"
+            else
+              ${pkgs.gnused}/bin/sed -i "/^\[Preferences\]/a WebUI\\\\AuthSubnetWhitelist=$WHITELIST" "$CONFIG_FILE"
+            fi
+            ${pkgs.gnused}/bin/sed -i "s|^WebUI\\\\AuthSubnetWhitelistEnabled=.*|WebUI\\\\AuthSubnetWhitelistEnabled=true|" "$CONFIG_FILE"
+
             # Set proper permissions
             ${pkgs.coreutils}/bin/chmod 0640 "$CONFIG_FILE"
             ${pkgs.coreutils}/bin/chown qbittorrent:qbittorrent "$CONFIG_FILE"
@@ -731,6 +753,11 @@ in {
           # Restart qBittorrent if NFS mounts are remounted (prevents stale file handles)
           bindsTo = [ "media-downloads.mount" ];
           after = [ "media-downloads.mount" "media-movies.mount" "media-tv.mount" ];
+
+          # Re-run the config-merger (and thus re-apply the auth whitelist /
+          # port / password) whenever the merger script changes, so a deploy
+          # picks up whitelist edits without a manual restart.
+          restartTriggers = [ config.environment.etc."qbittorrent/config-merger.sh".source ];
 
           serviceConfig = {
             ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
@@ -1510,9 +1537,10 @@ EOF
                 "Advanced\\MaxMemoryWorkingSetLimit" = 4096;       # Limit RAM usage to 4GB to prevent crashes
                 "General\\Locale" = "en";
                 "MailNotification\\req_auth" = true;
-                # Whitelist localhost (nginx reverse proxy) and the specific IPs
-                # allowed through the firewall for port 8080
-                "WebUI\\AuthSubnetWhitelist" = lib.concatStringsSep ", " (["127.0.0.1/32"] ++ map (ip: "${ip}/32") qbittorrentAllowedIPs);
+                # Whitelist localhost (IPv4 + IPv6 loopback, nginx reverse
+                # proxy) and the specific IPs allowed through the firewall for
+                # port 8080. See qbtAuthWhitelist in the let block.
+                "WebUI\\AuthSubnetWhitelist" = qbtAuthWhitelist;
                 "WebUI\\AuthSubnetWhitelistEnabled" = true;
                 "WebUI\\Port" = 8080;
                 "WebUI\\Username" = "admin";
