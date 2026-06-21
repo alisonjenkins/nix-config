@@ -293,9 +293,8 @@ in {
             #enable = true;
           #};
 
-          #gc = {
-            #automatic = true;
-          #};
+          # GC / optimise / free-space settings live in
+          # self.darwinModules.darwin-nix-maintenance.
 
           # run: "nix run 'nixpkgs#darwin.linux-builder'" before enabling
           # linux-builder = {
@@ -313,10 +312,6 @@ in {
           #       cores = 8;
           #     };
           #   };
-          # };
-
-          # optimise = {
-          #   enable = true;
           # };
 
           settings = {
