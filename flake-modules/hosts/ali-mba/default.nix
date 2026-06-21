@@ -302,9 +302,8 @@ in {
             #enable = true;
           #};
 
-          #gc = {
-            #automatic = true;
-          #};
+          # GC / optimise / free-space settings live in
+          # self.darwinModules.darwin-nix-maintenance.
 
           linux-builder = {
             enable = true;
@@ -362,10 +361,6 @@ in {
               };
             };
           };
-
-          # optimise = {
-          #   enable = true;
-          # };
 
           settings = {
             # nix.linux-builder auto-populates `builders` and `extra-platforms`,
