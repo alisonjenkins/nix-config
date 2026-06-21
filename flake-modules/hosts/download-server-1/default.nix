@@ -486,6 +486,59 @@ in {
           };
         };
 
+        # One Piece download prioritizer. While catching up, Sonarr grabs the
+        # missing episodes over time and qBittorrent appends each new torrent at
+        # the BOTTOM of the queue, so episodes download out of order. This keeps
+        # One Piece (Sonarr seriesId 52) torrents ordered lowest-episode-first
+        # by re-running topPrio every 3 min. qbt's WebUI auth is bypassed for
+        # 127.0.0.1 (AuthSubnetWhitelist) so no creds are needed locally.
+        # TEMPORARY: remove this block (script + service + timer) once caught up.
+        environment.etc."op-prioritize.sh" = {
+          mode = "0755";
+          text = ''
+            #!/usr/bin/env bash
+            set -uo pipefail
+            Q=http://127.0.0.1:8080
+            # Drive ordering straight from qBittorrent. (Sonarr's queue mis-maps
+            # release episode numbers to absolutes and paginates past our items,
+            # so it can't be trusted here.) Parse the episode number from each
+            # One Piece torrent name -- excluding the 2023 live-action -- sort
+            # ascending, then topPrio from HIGHEST to LOWEST so the lowest
+            # episode ends at the very top of the queue. qbt WebUI auth is
+            # bypassed for 127.0.0.1 via AuthSubnetWhitelist, so no creds needed.
+            ${pkgs.curl}/bin/curl -s --max-time 30 "$Q/api/v2/torrents/info" \
+              | ${pkgs.jq}/bin/jq -r '.[]|select(.name|test("one.?piece";"i"))|select(.name|test("2023")|not)|select(.priority>0)|"\(.hash)\t\(.name)"' \
+              | while IFS=$'\t' read -r h name; do
+                  ep=$(printf "%s" "$name" | ${pkgs.gnugrep}/bin/grep -oiP 'one.?piece[ _.\-]+(?:ep)?0*\K[0-9]{1,4}' | ${pkgs.coreutils}/bin/head -1)
+                  [ -n "$ep" ] && printf "%s\t%s\n" "$ep" "$h"
+                done \
+              | ${pkgs.coreutils}/bin/sort -n | ${pkgs.coreutils}/bin/tac \
+              | while IFS=$'\t' read -r ep h; do
+                  ${pkgs.curl}/bin/curl -s --max-time 8 -X POST "$Q/api/v2/torrents/topPrio" -d "hashes=$h" >/dev/null || true
+                done
+            echo "reprioritized One Piece torrents lowest-episode-first"
+          '';
+        };
+
+        systemd.services.op-prioritize = {
+          description = "Prioritize One Piece downloads lowest-episode-first in qBittorrent";
+          after = [ "qbittorrent.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.bash}/bin/bash /etc/op-prioritize.sh";
+          };
+        };
+
+        systemd.timers.op-prioritize = {
+          description = "One Piece download prioritizer timer";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "1min";
+            OnUnitActiveSec = "1min";
+            Unit = "op-prioritize.service";
+          };
+        };
+
         # Create script to merge qbittorrent config with sops secret
         environment.etc."qbittorrent/config-merger.sh" = {
           user = "qbittorrent";
