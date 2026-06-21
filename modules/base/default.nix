@@ -317,8 +317,21 @@ in
           options = lib.mkDefault "--delete-older-than 60d";
         };
 
+        # Scheduled hardlink dedup sweep, complementing the per-build
+        # auto-optimise-store below.
+        optimise = {
+          automatic = lib.mkDefault true;
+          dates = lib.mkDefault [ "weekly" ];
+        };
+
         settings = {
-          auto-optimise-store = lib.mkDefault false;
+          auto-optimise-store = lib.mkDefault true;
+          # Free-space-triggered GC: the daemon GCs mid-build when free space
+          # drops below min-free, freeing until max-free is available. This is
+          # the safety net that stops the store filling the disk between the
+          # scheduled weekly GC runs above.
+          min-free = lib.mkDefault (5 * 1024 * 1024 * 1024); # 5 GiB
+          max-free = lib.mkDefault (20 * 1024 * 1024 * 1024); # 20 GiB
           cores = lib.mkDefault 0;
           experimental-features = lib.mkDefault [ "nix-command" "flakes" "ca-derivations" ];
           download-buffer-size = lib.mkDefault 268435456; # 256 MiB
