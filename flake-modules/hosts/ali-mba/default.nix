@@ -463,6 +463,7 @@ in {
       })
 
       inputs.sops-nix.darwinModules.sops
+      self.darwinModules.darwin-nix-maintenance
       self.darwinModules.niks3-cache-push
       self.darwinModules.github-actions-runner
       ({ config, ... }: {
