@@ -201,6 +201,12 @@ in {
                 "aio write size" = "16384";
                 "getwd cache" = "yes";
                 "oplocks" = "yes";
+                # Disable KERNEL oplocks on the FUSE (mergerfs) backend: kernel
+                # oplocks on FUSE can stall under concurrent access. Userspace
+                # oplocks above stay on. (case-sensitive=true would speed scans
+                # further but breaks case-insensitive macOS/Windows access, so
+                # left at the safe default.)
+                "kernel oplocks" = "no";
                 "read raw" = "yes";
                 "socket options" = "TCP_NODELAY IPTOS_LOWDELAY SO_RCVBUF=131072 SO_SNDBUF=131072";
                 "use sendfile" = "yes";
@@ -292,6 +298,23 @@ in {
             parityFiles = parityFilesOpt;
           };
         };
+
+        # Defer the daily SnapRAID sync while the array is busy (heavy NFS
+        # downloads / Jellyfin scans saturate the spinning disks, and a sync on
+        # top of that thrashes everything). ExecCondition runs before the sync:
+        # exit 0 = proceed, non-zero = skip this run (systemd marks it
+        # "condition failed", not an error). The daily timer then simply retries
+        # on the next calm day, so the sync waits out a catch-up automatically
+        # with no manual intervention. Gate: sustained IO pressure ("some"
+        # avg300, a 5-min average) below 40%; idle is ~0-10, heavy serving ~85.
+        # A read failure defaults to "calm" so the sync is never blocked forever.
+        systemd.services.snapraid-sync.serviceConfig.ExecCondition =
+          let
+            deferCheck = pkgs.writeShellScript "snapraid-defer-check" ''
+              A=$(${pkgs.gawk}/bin/awk '/^some/{for(i=1;i<=NF;i++) if($i ~ /^avg300=/){sub(/avg300=/,"",$i); print $i}}' /proc/pressure/io)
+              ${pkgs.gawk}/bin/awk -v a="''${A:-0}" 'BEGIN{ exit !((a+0) < 40) }'
+            '';
+          in "${deferCheck}";
 
         sops = {
           defaultSopsFile = self + "/secrets/main.enc.yaml";

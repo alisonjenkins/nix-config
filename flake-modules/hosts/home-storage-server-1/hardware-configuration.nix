@@ -133,6 +133,16 @@
           "inodecalc=path-hash"
           "noforget"
           "security_capability=false"
+          # Metadata/scan performance for NFS + SMB clients. With the inode
+          # foundation above (path-hash + noforget) plus mergerfs >=2.40.1, NFS
+          # readdir/lookup caching is safe, so these speed up scans:
+          # - cache.readdir: cache directory listings in the kernel
+          # - nfsopenhack: work around NFS O_RDONLY-create POSIX incompatibility
+          # NOTE: readdirplus is NOT a valid mount-time option in mergerfs 2.41.1
+          # ("fuse: ERROR - unknown option - readdirplus=true" -> mount fails);
+          # it's a runtime control only, so it is intentionally omitted here.
+          "cache.readdir=true"
+          "nfsopenhack=all"
         ];
       };
     } // media_disks_nofail;

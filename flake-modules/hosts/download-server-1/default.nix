@@ -1113,15 +1113,16 @@ EOF
             # - rsize/wsize=1MB for maximum throughput
             # - async on downloads (faster writes, safe since qBittorrent verifies data)
             # - noatime/nodiratime (no access time updates = less metadata writes)
-            # - actimeo=30 (cache attributes for 30 sec = faster stale handle detection)
+            # - nconnect=4 (parallel TCP connections; big scan/throughput win)
             # - hard (reliable; retries indefinitely on server hiccups)
-            # - lookupcache=none: REQUIRED on kernel 7.0.11 (nixpkgs 26.05).
-            #   With lookupcache=all (or pos) this kernel intermittently returns
-            #   an empty directory (EINVAL) on alternating readdir calls, so
-            #   Sonarr/ls saw series folders flip empty though every file was
-            #   present. lookupcache=none is the only value that lists reliably
-            #   (nordirplus and actimeo=0 do NOT help; verified by test mounts).
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,lookupcache=none,actimeo=30,x-systemd.mount-timeout=30";
+            # - lookupcache=pos + ac* caching: re-enabled (was lookupcache=none).
+            #   The old empty/alternating-readdir bug that forced lookupcache=none
+            #   was rooted in mergerfs FUSE node-forget + unstable inodes. The
+            #   server now sets inodecalc=path-hash + noforget on mergerfs (>=2.40.1
+            #   also fixes the NFS root-generation bug), which makes cached lookups
+            #   safe. pos avoids caching negative entries (so new files still appear
+            #   within acregmin). VERIFY with the readdir stress test before trusting.
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1132,7 +1133,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=none,actimeo=30,x-systemd.mount-timeout=30";
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1143,7 +1144,7 @@ EOF
             type = "nfs";
             # No async for movies/tv (Radarr/Sonarr move completed files here)
             # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,lookupcache=none,actimeo=30,x-systemd.mount-timeout=30";
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
