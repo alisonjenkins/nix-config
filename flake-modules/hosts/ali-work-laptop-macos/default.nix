@@ -51,6 +51,7 @@ in {
   flake.darwinConfigurations."${hostnames.civica}" = inputs.darwin.lib.darwinSystem {
     system = darwinSystem;
     modules = [
+      self.darwinModules.darwin-nix-maintenance
       # Host-specific configuration (inlined from configuration.nix)
       ({ pkgs, inputs, outputs, username, hostname, ... }: {
         environment = {
