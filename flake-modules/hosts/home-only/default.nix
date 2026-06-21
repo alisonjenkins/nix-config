@@ -15,7 +15,6 @@ let
         self.overlays.master-packages
         self.overlays.unstable-packages
         self.overlays.zk
-        self.overlays.qbittorrent
         inputs.nur.overlays.default
         inputs.fenix.overlays.default
       ]
