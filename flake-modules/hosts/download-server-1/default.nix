@@ -490,8 +490,9 @@ in {
         # missing episodes over time and qBittorrent appends each new torrent at
         # the BOTTOM of the queue, so episodes download out of order. This keeps
         # One Piece (Sonarr seriesId 52) torrents ordered lowest-episode-first
-        # by re-running topPrio every 3 min. qbt's WebUI auth is bypassed for
-        # 127.0.0.1 (AuthSubnetWhitelist) so no creds are needed locally.
+        # via an idempotent check every 5 min (only reorders when actually out
+        # of order, to avoid throttling active downloads). qbt's WebUI auth is
+        # bypassed for 127.0.0.1 (AuthSubnetWhitelist) so no creds are needed.
         # TEMPORARY: remove this block (script + service + timer) once caught up.
         environment.etc."op-prioritize.sh" = {
           mode = "0755";
@@ -499,24 +500,45 @@ in {
             #!/usr/bin/env bash
             set -uo pipefail
             Q=http://127.0.0.1:8080
-            # Drive ordering straight from qBittorrent. (Sonarr's queue mis-maps
-            # release episode numbers to absolutes and paginates past our items,
-            # so it can't be trusted here.) Parse the episode number from each
-            # One Piece torrent name -- excluding the 2023 live-action -- sort
-            # ascending, then topPrio from HIGHEST to LOWEST so the lowest
-            # episode ends at the very top of the queue. qbt WebUI auth is
-            # bypassed for 127.0.0.1 via AuthSubnetWhitelist, so no creds needed.
-            ${pkgs.curl}/bin/curl -s --max-time 30 "$Q/api/v2/torrents/info" \
-              | ${pkgs.jq}/bin/jq -r '.[]|select(.name|test("one.?piece";"i"))|select(.name|test("2023")|not)|select(.priority>0)|"\(.hash)\t\(.name)"' \
-              | while IFS=$'\t' read -r h name; do
-                  ep=$(printf "%s" "$name" | ${pkgs.gnugrep}/bin/grep -oiP 'one.?piece[ _.\-]+(?:ep)?0*\K[0-9]{1,4}' | ${pkgs.coreutils}/bin/head -1)
-                  [ -n "$ep" ] && printf "%s\t%s\n" "$ep" "$h"
-                done \
-              | ${pkgs.coreutils}/bin/sort -n | ${pkgs.coreutils}/bin/tac \
-              | while IFS=$'\t' read -r ep h; do
-                  ${pkgs.curl}/bin/curl -s --max-time 8 -X POST "$Q/api/v2/torrents/topPrio" -d "hashes=$h" >/dev/null || true
-                done
-            echo "reprioritized One Piece torrents lowest-episode-first"
+            # Keep the LOWEST One Piece episodes (excl 2023 live-action) at the
+            # front of the qBittorrent queue so a catch-up watcher gets earlier
+            # episodes first -- WITHOUT stalling active downloads.
+            #
+            # qbt only downloads max_active_downloads torrents at once; any
+            # topPrio re-evaluates that active set, pausing/resuming torrents and
+            # killing their rate. Earlier versions reshuffled whenever the full
+            # order differed, which was almost every run during a catch-up (the
+            # set constantly changes) -> constant stalls.
+            #
+            # SMART rule: only act when the lowest-K episodes are not already the
+            # top-K by queue position (K = max_active + 5 buffer), comparing them
+            # as SETS (not order). Parallel-download reorderings and new HIGH-
+            # numbered grabs (which belong at the bottom) never trigger a
+            # reshuffle; only a newly-arrived LOW episode that should jump the
+            # queue does -- a rare, justified event. Converges to stable = no
+            # churn. qbt WebUI auth is bypassed for 127.0.0.1 (AuthSubnetWhitelist).
+            CURL=${pkgs.curl}/bin/curl; JQ=${pkgs.jq}/bin/jq
+            GREP=${pkgs.gnugrep}/bin/grep; CU=${pkgs.coreutils}/bin
+            TAB=$(printf '\t')
+            mad=$("$CURL" -s --max-time 20 "$Q/api/v2/app/preferences" | "$JQ" -r '.max_active_downloads // 10')
+            K=$((mad + 5))
+            parsed=$("$CURL" -s --max-time 30 "$Q/api/v2/torrents/info" \
+              | "$JQ" -r '.[]|select(.name|test("one.?piece";"i"))|select(.name|test("2023")|not)|select(.progress<1)|"\(.priority)\t\(.hash)\t\(.name)"' \
+              | while IFS="$TAB" read -r prio h name; do
+                  ep=$(printf "%s" "$name" | "$GREP" -oiP 'one.?piece[ _.\-]+(?:ep)?0*\K[0-9]{1,4}' | "$CU"/head -1)
+                  [ -n "$ep" ] && printf '%s\t%s\t%s\n' "$ep" "$prio" "$h"
+                done)
+            [ -z "$parsed" ] && exit 0
+            # set of lowest-K episodes vs set of current top-K by queue position
+            lowest=$(printf '%s\n' "$parsed" | "$CU"/sort -t"$TAB" -k1,1n | "$CU"/head -n "$K" | "$CU"/cut -f3 | "$CU"/sort)
+            topcur=$(printf '%s\n' "$parsed" | "$CU"/sort -t"$TAB" -k2,2n | "$CU"/head -n "$K" | "$CU"/cut -f3 | "$CU"/sort)
+            if [ "$lowest" = "$topcur" ]; then exit 0; fi
+            # A low episode is waiting behind higher ones: promote the lowest K to
+            # the top (reverse episode order so the lowest ends up first).
+            printf '%s\n' "$parsed" | "$CU"/sort -t"$TAB" -k1,1n | "$CU"/head -n "$K" | "$CU"/cut -f3 | "$CU"/tac | while read -r h; do
+              "$CURL" -s --max-time 8 -X POST "$Q/api/v2/torrents/topPrio" -d "hashes=$h" >/dev/null || true
+            done
+            echo "promoted lowest $K One Piece episodes to the front"
           '';
         };
 
@@ -533,9 +555,70 @@ in {
           description = "One Piece download prioritizer timer";
           wantedBy = [ "timers.target" ];
           timerConfig = {
-            OnBootSec = "1min";
-            OnUnitActiveSec = "1min";
+            OnBootSec = "2min";
+            OnUnitActiveSec = "5min";
             Unit = "op-prioritize.service";
+          };
+        };
+
+        # Dead-torrent reaper. Indexers report inflated seeder counts, so even
+        # with minimumSeeders=5 the *arrs sometimes grab releases that are dead:
+        # they get stuck in qBittorrent "metaDL" (can't fetch metadata) or
+        # stalled at 0 seeds / 0 progress forever. This removes such torrents and
+        # blocklists them via the Sonarr/Radarr queue API so the app re-grabs a
+        # live release (autoRedownloadFailed). Spares anything with any seeds or
+        # any progress. qbt + *arr APIs are localhost (no creds).
+        # TEMPORARY: remove once caught up.
+        environment.etc."torrent-reaper.sh" = {
+          mode = "0755";
+          text = ''
+            #!/usr/bin/env bash
+            set -uo pipefail
+            Q=http://127.0.0.1:8080
+            CURL=${pkgs.curl}/bin/curl; JQ=${pkgs.jq}/bin/jq; GREP=${pkgs.gnugrep}/bin/grep
+            NOW=$(${pkgs.coreutils}/bin/date +%s)
+            # Stuck = metaDL >15min, OR (0 seeds AND 0 progress AND stalled/downloading) >20min.
+            stuck=$("$CURL" -s --max-time 30 "$Q/api/v2/torrents/info" \
+              | "$JQ" -r --argjson now "$NOW" '.[]
+                  | select(
+                      (.state=="metaDL" and ($now - .added_on) > 900)
+                      or (.num_complete==0 and .progress==0 and (.state=="stalledDL" or .state=="downloading") and ($now - .added_on) > 1200)
+                    )
+                  | .hash | ascii_downcase')
+            [ -z "$stuck" ] && exit 0
+            stuckarr=$(printf '%s\n' "$stuck" | "$JQ" -R . | "$JQ" -s .)
+            reap() {
+              base=$1; cfg=$2
+              key=$("$GREP" -oP '(?<=<ApiKey>)[^<]+' "$cfg" 2>/dev/null) || return 0
+              [ -z "$key" ] && return 0
+              ids=$("$CURL" -s --max-time 40 -H "X-Api-Key:$key" "$base/queue?pageSize=5000" \
+                | "$JQ" -c --argjson s "$stuckarr" '[.records[]|select(.downloadId!=null and ((.downloadId|ascii_downcase) as $h|$s|index($h)))|.id]')
+              if [ -n "$ids" ] && [ "$ids" != "[]" ]; then
+                "$CURL" -s -o /dev/null -X DELETE -H "X-Api-Key:$key" -H "Content-Type: application/json" "$base/queue/bulk?removeFromClient=true&blocklist=true" -d "{\"ids\":$ids}"
+                echo "reaped $(printf '%s' "$ids" | "$JQ" length) stuck torrents via $base"
+              fi
+            }
+            reap http://127.0.0.1:8989/sonarr/api/v3 /var/lib/sonarr/.config/NzbDrone/config.xml
+            reap http://127.0.0.1:7878/radarr/api/v3 /var/lib/radarr/.config/Radarr/config.xml
+          '';
+        };
+
+        systemd.services.torrent-reaper = {
+          description = "Reap dead/stuck torrents (metaDL / 0-seed) and blocklist+re-grab via the arrs";
+          after = [ "qbittorrent.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.bash}/bin/bash /etc/torrent-reaper.sh";
+          };
+        };
+
+        systemd.timers.torrent-reaper = {
+          description = "Dead-torrent reaper timer";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "5min";
+            OnUnitActiveSec = "15min";
+            Unit = "torrent-reaper.service";
           };
         };
 
