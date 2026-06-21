@@ -164,6 +164,21 @@ jobs:
               echo "$cfg dry-run failed (needs building)"
             fi
           done
+          # Standalone packages (not part of any host toplevel) built on this
+          # x86_64 runner: camoufox-browser is a heavy from-source Firefox build.
+          for pkg in camoufox-browser; do
+            if dry_output=$(nix build --dry-run ".#${pkg}" 2>&1); then
+              if echo "$dry_output" | grep -q 'will be built:'; then
+                needs_build=true
+                echo "$pkg needs building"
+              else
+                echo "$pkg is fully cached"
+              fi
+            else
+              needs_build=true
+              echo "$pkg dry-run failed (needs building)"
+            fi
+          done
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
 
       - name: Install niks3
@@ -195,6 +210,18 @@ jobs:
               echo "=== $cfg complete ==="
             else
               echo "::warning::$cfg build failed"
+              any_failed=true
+            fi
+          done
+          # Standalone packages built + pushed on this runner.
+          for pkg in camoufox-browser; do
+            echo "=== Building $pkg ==="
+            if nix build -L --keep-going --print-out-paths --no-link \
+              ".#${pkg}" \
+              2> >(tee -a /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$NIKS3_QUEUE"; then
+              echo "=== $pkg complete ==="
+            else
+              echo "::warning::$pkg build failed"
               any_failed=true
             fi
           done
