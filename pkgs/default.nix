@@ -27,6 +27,7 @@
   citron = pkgs.callPackage ./citron {};
   eden = pkgs.callPackage ./eden {};
   obscura = pkgs.callPackage ./obscura {};
+  camoufox-browser = pkgs.callPackage ./camoufox-browser {};
   create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
   minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
   create-arkana-aeronautics-server = pkgs.callPackage ./create-arkana-aeronautics-server {
