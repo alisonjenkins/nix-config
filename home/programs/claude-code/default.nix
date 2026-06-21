@@ -114,7 +114,7 @@ in
           "Write(*)"
           "WebFetch(*)"
           "WebSearch(*)"
-          "mcp__playwright__*"
+          "mcp__obscura__*"
           "mcp__context7__*"
           "mcp__github__*"
           "mcp__nixos__*"
@@ -365,8 +365,29 @@ in
     context = builtins.concatStringsSep "\n" [ gitStrategy modelRouting workStyle ];
 
     mcpServers = {
-      playwright = {
-        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+      # Headless stealth browser for AI agents / web scraping.
+      #   --stealth: BoringSSL Chrome TLS impersonation + JS fingerprint spoof.
+      #   --allow-private-network: permit loopback/RFC1918/link-local fetches
+      #     (off by default as SSRF guard) so local dev servers are reachable.
+      #   --storage-dir: persist cookies + localStorage across sessions, so a
+      #     clearance cookie (cf_clearance / Akamai _abck) solved once in a
+      #     real browser on this residential IP can be reused.
+      #   OBSCURA_TIMEZONE/GEOLOCATION: align the spoofed locale with our UK IP
+      #     (mismatched timezone vs IP geo is a bot-detection signal).
+      # Wrapped in bash so $HOME expands at runtime (no `config` in scope here)
+      # and the env vars apply to the long-lived MCP process.
+      obscura = {
+        command = "bash";
+        args = [
+          "-c"
+          ''
+            dir="''${XDG_STATE_HOME:-$HOME/.local/state}/obscura"
+            mkdir -p "$dir"
+            exec env OBSCURA_TIMEZONE=Europe/London OBSCURA_GEOLOCATION=51.5074,-0.1278 \
+              ${pkgs.obscura}/bin/obscura --storage-dir "$dir" \
+              mcp --stealth --allow-private-network
+          ''
+        ];
       };
 
       # Up-to-date library documentation
