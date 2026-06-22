@@ -576,13 +576,38 @@ in {
             set -uo pipefail
             Q=http://127.0.0.1:8080
             CURL=${pkgs.curl}/bin/curl; JQ=${pkgs.jq}/bin/jq; GREP=${pkgs.gnugrep}/bin/grep
-            NOW=$(${pkgs.coreutils}/bin/date +%s)
-            # Stuck = metaDL >15min, OR (0 seeds AND 0 progress AND stalled/downloading) >20min.
-            stuck=$("$CURL" -s --max-time 30 "$Q/api/v2/torrents/info" \
-              | "$JQ" -r --argjson now "$NOW" '.[]
+            DEADSECS=14400   # 4h active: a partial torrent that has tried this long with 0 swarm seeds is dead
+            info=$("$CURL" -s --max-time 30 "$Q/api/v2/torrents/info") || exit 0
+            [ -z "$info" ] && exit 0
+            # Staleness is keyed on .time_active (seconds the torrent has actually
+            # been active), NOT (now - added_on): added_on is 0/garbage on the bulk
+            # of the imported back-catalogue, which would make a wall-clock age test
+            # fire on thousands of healthy queued torrents.
+            #
+            # Only ACTIVE states (metaDL / stalledDL / downloading) are judged on
+            # seed count: a queuedDL torrent has not announced to the tracker yet, so
+            # its num_complete reads 0 even when the swarm is healthy -- never reap
+            # queued torrents.
+            #
+            # Mount-blip guard: if many torrents report missingFiles at once it is
+            # almost certainly the media mount that vanished, not individual dead
+            # torrents -- skip the missingFiles branch entirely in that case so a
+            # transient mount drop can't blocklist the whole library.
+            mfcount=$(printf '%s' "$info" | "$JQ" '[.[]|select(.state=="missingFiles")]|length')
+            mfok=$([ "''${mfcount:-0}" -le 3 ] && echo true || echo false)
+            # Stuck =
+            #   metaDL active >15min (can't even fetch metadata), OR
+            #   0 swarm seeds AND 0 progress AND stalled/downloading active >20min (dead from the start), OR
+            #   0 swarm seeds AND partial AND stalled/downloading active >4h (seeders vanished
+            #       mid-download -- progress-agnostic; this is what the old reaper missed), OR
+            #   missingFiles (qbt lost the data) -- only when not a mass mount blip.
+            stuck=$(printf '%s' "$info" \
+              | "$JQ" -r --argjson dead "$DEADSECS" --argjson mfok "$mfok" '.[]
                   | select(
-                      (.state=="metaDL" and ($now - .added_on) > 900)
-                      or (.num_complete==0 and .progress==0 and (.state=="stalledDL" or .state=="downloading") and ($now - .added_on) > 1200)
+                      (.state=="metaDL" and .time_active > 900)
+                      or (.num_complete==0 and .progress==0 and (.state=="stalledDL" or .state=="downloading") and .time_active > 1200)
+                      or (.num_complete==0 and .progress<1 and (.state=="stalledDL" or .state=="downloading") and .time_active > $dead)
+                      or ($mfok and .state=="missingFiles")
                     )
                   | .hash | ascii_downcase')
             [ -z "$stuck" ] && exit 0
