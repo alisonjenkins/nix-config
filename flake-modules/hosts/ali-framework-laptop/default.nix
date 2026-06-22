@@ -57,7 +57,6 @@ in {
       {
         nixpkgs.overlays = [
           self.overlays._1password
-          self.overlays.qbittorrent
         ];
 
         # Use timestamp-based backups to prevent conflicts
