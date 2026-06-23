@@ -374,6 +374,18 @@ in {
           IOSchedulingClass = "idle";
         };
 
+        # Prioritise smbd's I/O + CPU over the idle-class parity scrubber so a
+        # Jellyfin SMB readdir/read is dispatched ahead of background work (the
+        # consumer-side symmetry to the idle class on snapraid above; takes full
+        # effect under BFQ). Samba serves each client in a userspace smbd
+        # process, so unlike knfsd (kernel kthreads, not tunable here) this
+        # works. Unit name confirmed as samba-smbd.service.
+        systemd.services."samba-smbd".serviceConfig = {
+          IOSchedulingClass = "best-effort";
+          IOSchedulingPriority = 0;
+          Nice = -5;
+        };
+
         sops = {
           defaultSopsFile = self + "/secrets/main.enc.yaml";
           defaultSopsFormat = "yaml";
