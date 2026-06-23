@@ -50,7 +50,7 @@
     <devices>
       <emulator>/run/libvirt/nix-emulators/qemu-system-x86_64</emulator>
       <disk type='file' device='disk'>
-        <driver name='qemu' type='qcow2' discard='unmap'/>
+        <driver name='qemu' type='qcow2' cache='none' io='native' discard='unmap'/>
         <source file='/var/lib/libvirt/images/home-k8s-master-1.qcow2'/>
         <target dev='vda' bus='virtio'/>
         <boot order='2'/>
