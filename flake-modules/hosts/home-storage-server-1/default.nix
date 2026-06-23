@@ -228,6 +228,27 @@ in {
                 "socket options" = "TCP_NODELAY IPTOS_LOWDELAY SO_RCVBUF=131072 SO_SNDBUF=131072";
                 "use sendfile" = "yes";
                 "write raw" = "yes";
+
+                # Drop per-entry xattr probing. Both default "yes" in Samba 4.x:
+                # store dos attributes -> read/write user.DOSATTRIB xattr per
+                # file; ea support -> extra EA probing. On mergerfs every
+                # getxattr() fans across all 16 branches, a real per-entry cost
+                # when enumerating a several-hundred-entry dir during a stall
+                # (the listing-truncation/scan-timeout window). Jellyfin/*arr
+                # don't need DOS-attr bits; with this off Samba maps them onto
+                # the unix perm bits already in the readdir lstat (no syscalls).
+                "store dos attributes" = "no";
+                "ea support" = "no";
+                # Regression guards (defaults, pinned intentionally):
+                # - vfs objects empty: never add acl_xattr/streams_xattr/fruit/
+                #   recycle/full_audit -- each does per-file getxattr() fanned
+                #   across all branches, re-introducing the per-entry stall.
+                # - strict sync stays on: a future "strict sync=no" speed hack
+                #   would widen the torn / zero-length-file window on a parity
+                #   (snapraid) pool.
+                "vfs objects" = "";
+                "strict sync" = "yes";
+                "smbd async dosmode" = "no";
               };
 
               "storage" = {
