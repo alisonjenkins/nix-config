@@ -18,7 +18,7 @@
          (pinned VMs can't resize live): virsh destroy && virsh start. -->
     <memory unit='KiB'>18432000</memory>
     <currentMemory unit='KiB'>18432000</currentMemory>
-    <vcpu placement='static'>16</vcpu>
+    <vcpu placement='static'>8</vcpu>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
       <firmware>
@@ -34,7 +34,9 @@
       <vmport state='off'/>
       <smm state='on'/>
     </features>
-    <cpu mode='host-passthrough' check='none' migratable='on'/>
+    <cpu mode='host-passthrough' check='none' migratable='on'>
+      <topology sockets='1' cores='8' threads='1'/>
+    </cpu>
     <clock offset='utc'>
       <timer name='rtc' tickpolicy='catchup'/>
       <timer name='pit' tickpolicy='delay'/>
