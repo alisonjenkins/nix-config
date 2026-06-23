@@ -207,7 +207,11 @@ in {
                     definition = pkgs.writeText "home-storage-server-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-storage-server-1.xml.nix") {inherit pkgs;});
                   }
                   {
-                    active = true;
+                    # Disabled: not needed. active=false keeps the domain defined
+                    # but stopped and prevents libvirt autostart, reclaiming its
+                    # 4 GiB reservation for the other VMs (notably jellyfin on
+                    # home-k8s-master-1). Re-enable by flipping back to true.
+                    active = false;
                     definition = pkgs.writeText "home-vpn-gateway-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-vpn-gateway-1.xml.nix") {inherit pkgs;});
                   }
                   # {
