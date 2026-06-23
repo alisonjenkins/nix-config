@@ -88,6 +88,18 @@ in {
             sysctl = {
               "net.ipv4.conf.all.forwarding" = true;
               "net.ipv6.conf.all.forwarding" = true;
+
+              # Bound dirty (un-flushed) page-cache in absolute bytes instead of
+              # the default ratios. dirty_ratio=20 on a 30.5 GiB host lets ~6 GiB
+              # of dirty pages accumulate before a writer blocks — on a host
+              # where ~22 GiB is mlock-pinned by passthrough VMs that spike
+              # competes for the little remaining RAM. Cap at 1 GiB / 256 MiB bg.
+              # bytes and ratio are mutually exclusive, so the base ratios MUST
+              # be forced to 0 or the kernel keeps using them.
+              "vm.dirty_bytes" = 1073741824;            # 1 GiB
+              "vm.dirty_background_bytes" = 268435456;  # 256 MiB
+              "vm.dirty_ratio" = lib.mkForce 0;
+              "vm.dirty_background_ratio" = lib.mkForce 0;
             };
           };
 
