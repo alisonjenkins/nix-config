@@ -1263,7 +1263,14 @@ EOF
             type = "nfs";
             # downloads: async is safe here (qBittorrent verifies its own data).
             # lookupcache=none is mandatory — see the block comment above.
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # softreval: serve last-good cached attrs if a revalidation RPC times
+            #   out during a storage stall (default is nosoftreval) -> fewer
+            #   false-missing. Safe with hard (false-present is benign for *arr;
+            #   false-missing is the failure we fear).
+            # x-systemd.mount-timeout was removed: it is IGNORED in unit files
+            #   (only honoured in /etc/fstab) — use native mountConfig.TimeoutSec.
+            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
+            mountConfig.TimeoutSec = "120";  # ride out a scrub stall; not infinity (hard already blocks established I/O)
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1274,7 +1281,11 @@ EOF
             type = "nfs";
             # movies/tv: no async (Radarr/Sonarr move completed files here).
             # lookupcache=none is mandatory — see the block comment above.
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # softreval: serve last-good attrs on revalidation timeout (fewer
+            #   false-missing under load). x-systemd.mount-timeout removed (no-op
+            #   in unit files) -> native mountConfig.TimeoutSec instead.
+            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
+            mountConfig.TimeoutSec = "120";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1285,7 +1296,11 @@ EOF
             type = "nfs";
             # movies/tv: no async (Radarr/Sonarr move completed files here).
             # lookupcache=none is mandatory — see the block comment above.
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # softreval: serve last-good attrs on revalidation timeout (fewer
+            #   false-missing under load). x-systemd.mount-timeout removed (no-op
+            #   in unit files) -> native mountConfig.TimeoutSec instead.
+            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
+            mountConfig.TimeoutSec = "120";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
