@@ -65,6 +65,18 @@ in {
         boot = {
           kernelPackages = pkgs.linuxPackages_latest;
 
+          # This board boots GRUB purely via the EFI removable/fallback path
+          # (\EFI\BOOT\BOOTX64.EFI on each RAID1 ESP member); there is no
+          # persistent "nixos" NVRAM boot entry. The firmware rejects
+          # efibootmgr NVRAM writes ("Operation not permitted"), so the base
+          # module's canTouchEfiVariables=true made every deploy's grub-install
+          # exit non-zero even though grub.cfg updated fine. Install as
+          # removable and stop touching EFI variables to match reality.
+          loader = {
+            efi.canTouchEfiVariables = lib.mkForce false;
+            grub.efiInstallAsRemovable = lib.mkForce true;
+          };
+
           kernelParams = [
             # SAS3008 controllers (1000:0097) bound early via vfio-pci — prevents mpt3sas from claiming them
             # GPU (1002:164e) stays on amdgpu for LUKS prompt; libvirt rebinds it when VM starts (managed='yes')
