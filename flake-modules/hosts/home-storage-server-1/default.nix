@@ -60,7 +60,40 @@ in {
           kernelParams = [
             "irqpoll"
           ];
+          # BFQ is the only in-tree I/O scheduler that honours IOPRIO_CLASS_IDLE
+          # and prioritises latency-sensitive readers over a bulk sequential
+          # writer -- it is what makes the idle-class snapraid + best-effort smbd
+          # priorities (in default.nix) actually take effect. Loaded
+          # unconditionally (a udev write to a non-existent scheduler silently
+          # no-ops). VALIDATE post-deploy: confirm CPU headroom under scrub+stream
+          # on this qemu guest; if CPU-bound, revert the udev rule to mq-deadline.
+          kernelModules = [ "bfq" ];
+
+          # Bound dirty memory on this RAM-tight box (3.8GB). modules/base sets
+          # dirty_ratio=20 / dirty_background_ratio=5 as HARD values (~760MB /
+          # ~190MB) -- too much for slow spindles; a writeback storm can
+          # monopolise a disk long enough to time out a FUSE readdir. Cap by
+          # bytes and FORCE the ratio knobs to 0: ratio and bytes are mutually
+          # exclusive and whichever sysctl is applied LAST wins, so a later
+          # `sysctl --system` re-asserting ratio=20 would silently zero
+          # dirty_bytes; pinning the ratios to 0 makes kernel state deterministic
+          # regardless of apply order. These caps REDUCE memory pressure (RAM
+          # safe). VALIDATE: vm.dirty_bytes==268435456 && vm.dirty_ratio==0 after
+          # boot; watch large-copy / *arr-import write latency.
+          kernel.sysctl = {
+            "vm.dirty_background_bytes" = 67108864;   # 64 MiB
+            "vm.dirty_bytes" = 268435456;             # 256 MiB
+            "vm.dirty_ratio" = lib.mkForce 0;
+            "vm.dirty_background_ratio" = lib.mkForce 0;
+          };
         };
+
+        # Put the rotational pool disks on BFQ (the 16+ HBA-passthrough SATA
+        # disks are sd*; the virtio system disk vda is excluded by the sd[a-z]
+        # match; rotational==1 excludes any SSD). See boot.kernelModules above.
+        services.udev.extraRules = ''
+          ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+        '';
 
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
         zramSwap.enable = lib.mkForce false;
