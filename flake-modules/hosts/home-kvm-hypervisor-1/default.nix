@@ -129,6 +129,13 @@ in {
           };
         };
 
+        # Cap zram at 50% of RAM (base sets 100%). zram is RAM-backed, so on a
+        # host this tight an oversized zram could itself consume the RAM it is
+        # meant to relieve. With swappiness raised, more lands in zram — this is
+        # the guardrail. Only ~8.5 GiB is swappable here (22 GiB pinned), so
+        # 50% is a safe ceiling, not a throughput limit.
+        zramSwap.memoryPercent = lib.mkForce 50;
+
         console.keyMap = "us";
 
         environment = {
