@@ -100,6 +100,15 @@ in {
               "vm.dirty_background_bytes" = 268435456;  # 256 MiB
               "vm.dirty_ratio" = lib.mkForce 0;
               "vm.dirty_background_ratio" = lib.mkForce 0;
+
+              # Push cold anonymous pages of the swappable tenants (download +
+              # storage VMs, host daemons) into zram aggressively to free real
+              # RAM — frees ~2 GiB. The pinned jellyfin VM is exempt (its RAM is
+              # mlock'd, unswappable at any swappiness). page-cluster=0 reads one
+              # page per swap-in: zram is random-access RAM, so the default
+              # 8-page readahead just wastes work.
+              "vm.swappiness" = 100;
+              "vm.page-cluster" = 0;
             };
           };
 
