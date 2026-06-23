@@ -216,6 +216,17 @@ in {
               global = {
                 "aio read size" = "16384";
                 "aio write size" = "16384";
+                # Cap aio worker threads (default 100). A single smbd can spawn
+                # up to 100 aio pthreads -> per-thread stacks (RAM) + a seek-storm
+                # that starves the synchronous readdir/getattr path Jellyfin's
+                # scan uses. 8 suits an effectively single-streamer workload.
+                # (VALIDATE: scan+playback overlap.)
+                "aio max threads" = "8";
+                # Pin SMB 3.1.1 min: large credits + durable handles so a session
+                # survives a long server-side stall without teardown (the
+                # prune-on-stall window). Verified the only client (Jellyfin
+                # cifs) already negotiates vers=3.1.1, so this breaks nothing.
+                "server min protocol" = "SMB3_11";
                 "getwd cache" = "yes";
                 "oplocks" = "yes";
                 # Disable KERNEL oplocks on the FUSE (mergerfs) backend: kernel
@@ -225,7 +236,10 @@ in {
                 # left at the safe default.)
                 "kernel oplocks" = "no";
                 "read raw" = "yes";
-                "socket options" = "TCP_NODELAY IPTOS_LOWDELAY SO_RCVBUF=131072 SO_SNDBUF=131072";
+                # No hard-coded SO_RCVBUF/SO_SNDBUF: pinning them disables Linux
+                # TCP window auto-tuning, hurting LAN throughput and post-stall
+                # scan recovery. (VALIDATE: large-copy benchmark.)
+                "socket options" = "TCP_NODELAY IPTOS_LOWDELAY";
                 "use sendfile" = "yes";
                 "write raw" = "yes";
 
