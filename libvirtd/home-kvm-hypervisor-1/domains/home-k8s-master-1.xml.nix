@@ -7,8 +7,17 @@
         <libosinfo:os id="http://libosinfo.org/linux/2022"/>
       </libosinfo:libosinfo>
     </metadata>
-    <memory unit='KiB'>16384000</memory>
-    <currentMemory unit='KiB'>16384000</currentMemory>
+    <!-- 18000 MiB. Bumped from 16000 MiB: this guest runs k3s + Jellyfin +
+         Prometheus/Grafana and was swapping ~5 GiB under pressure. The VM has a
+         GPU <hostdev> passthrough so QEMU mlocks ALL guest RAM resident (no
+         balloon/swap on the host side) — every KiB here is pinned host RAM.
+         18000 MiB is the safe ceiling: 30.5 GiB host - 18 (this, pinned)
+         - 4 (storage, pinned) - ~2.5 (host) leaves ~6 GiB for download-server-1
+         (4 GiB, swappable). Do NOT exceed while storage keeps its HBA. Reclaimed
+         headroom comes from the disabled vpn-gateway. Cold power-cycle to apply
+         (pinned VMs can't resize live): virsh destroy && virsh start. -->
+    <memory unit='KiB'>18432000</memory>
+    <currentMemory unit='KiB'>18432000</currentMemory>
     <vcpu placement='static'>16</vcpu>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
