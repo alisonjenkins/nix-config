@@ -9,7 +9,7 @@
     </metadata>
     <memory unit='KiB'>4194304</memory>
     <currentMemory unit='KiB'>4194304</currentMemory>
-    <vcpu placement='static'>16</vcpu>
+    <vcpu placement='static'>4</vcpu>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
       <firmware>
@@ -25,7 +25,9 @@
       <vmport state='off'/>
       <smm state='on'/>
     </features>
-    <cpu mode='host-passthrough' check='none' migratable='on'/>
+    <cpu mode='host-passthrough' check='none' migratable='on'>
+      <topology sockets='1' cores='4' threads='1'/>
+    </cpu>
     <clock offset='utc'>
       <timer name='rtc' tickpolicy='catchup'/>
       <timer name='pit' tickpolicy='delay'/>
