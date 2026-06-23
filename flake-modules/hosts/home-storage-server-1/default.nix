@@ -181,13 +181,23 @@ in {
               # no_root_squash: Allow root access from client
               # no_subtree_check: Better performance, safe for dedicated exports
               # sync: Ensure data integrity on server (client uses async for speed)
-              /media/storage/downloads    192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=1)
+              #
+              # fsid=<random UUID> per export (NOT 1/2/3): the pool is a
+              # fuse.mergerfs union, and FUSE filesystems share st_dev across
+              # branches, which destabilises NFS filehandles -> ESTALE / "files
+              # gone" on clients, independent of the readdir-truncation bug.
+              # mergerfs remote_filesystems.md: "set each mergerfs export fsid to
+              # some random value ... use uuidgen". Do NOT add crossmnt/nohide
+              # (these are sibling subtrees of one mergerfs mount with no child
+              # mounts; crossmnt synthesises submount filehandles on a FUSE export
+              # lacking distinct st_dev -> more ESTALE). Do NOT switch to async.
+              /media/storage/downloads    192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=9ec7c92a-1c8c-42c1-8b41-77a4a0138268)
 
               # Movies share - for Radarr
-              /media/storage/media/Movies 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=2)
+              /media/storage/media/Movies 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=32607c05-4f67-428c-95b1-26de08ae4078)
 
               # TV share - for Sonarr
-              /media/storage/media/TV     192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=3)
+              /media/storage/media/TV     192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=00a0212d-447f-487d-afbc-3faaafab5b73)
             '';
           };
 
