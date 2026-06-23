@@ -1816,11 +1816,20 @@ EOF
 
             lanSubnets = [
               "192.168.1.0/24"
+              # Isolated jumbo storage network (br-storage) to
+              # home-storage-server-1. Without this the VPN killswitch's
+              # output chain (policy drop) blocks NFS to 10.10.10.2.
+              "10.10.10.0/24"
             ];
 
             lanInterfaces = [
               "enp1s0"
               "tailscale0"
+              # Second NIC on br-storage carrying NFS to the storage server.
+              # Name is the libvirt-assigned PCI slot (persisted in the domain
+              # XML, so stable across restarts). If a future domain recreation
+              # renames it, update this to match `ip -br link` on the guest.
+              "enp7s0"
             ];
 
             vpnEndpoints = [
