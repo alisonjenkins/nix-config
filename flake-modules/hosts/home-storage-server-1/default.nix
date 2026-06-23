@@ -175,6 +175,13 @@ in {
             lockdPort = 4001;
             mountdPort = 4002;
             statdPort = 4000;
+            # 32 nfsd threads (default 8). Under a scrub/recheck stall all 8
+            # default threads park on slow mergerfs getattr/readdir and queue
+            # every other client, which surfaces as client-visible stalls /
+            # incomplete listings. 32 threads cost only a few KiB kernel stack
+            # each (negligible on this RAM-tight box); kept <=32 so we don't
+            # over-drive the 16 spindles. Check /proc/net/rpc/nfsd 'th' line.
+            nproc = 32;
 
             exports = ''
               # Downloads share - optimized for qBittorrent on download-server
