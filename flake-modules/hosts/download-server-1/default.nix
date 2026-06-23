@@ -935,9 +935,11 @@ in {
 
         # Override qbittorrent service to inject secrets and configure aggressive restarts
         systemd.services.qbittorrent = {
-          # Restart qBittorrent if NFS mounts are remounted (prevents stale file handles)
-          bindsTo = [ "media-downloads.mount" ];
-          after = [ "media-downloads.mount" "media-movies.mount" "media-tv.mount" ];
+          # Restart qBittorrent if the NFS mount is remounted (prevents stale
+          # file handles). The pool is now a single mount (/media/storage); the
+          # old per-subdir mounts are symlinks into it.
+          bindsTo = [ "media-storage.mount" ];
+          after = [ "media-storage.mount" ];
 
           # Re-run the config-merger (and thus re-apply the auth whitelist /
           # port / password) whenever the merger script changes, so a deploy
