@@ -168,6 +168,52 @@ in {
               111   # RPC
             ];
           };
+
+          # Static config for the second (jumbo) NIC on br-storage, bound by its
+          # fixed MAC. Isolated point-to-point with download-server-1 (10.10.10.1);
+          # no gateway/DNS. MTU 9000 must match every hop (bridge + taps + peer).
+          networkmanager.ensureProfiles.profiles = {
+            storage-jumbo = {
+              connection = {
+                id = "storage-jumbo";
+                type = "ethernet";
+                autoconnect = true;
+              };
+              ethernet = {
+                mac-address = "52:54:00:69:9C:40";
+                mtu = 9000;
+              };
+              ipv4 = {
+                method = "manual";
+                address1 = "10.10.10.2/24";
+              };
+              ipv6.method = "disabled";
+            };
+          };
+        };
+
+        # Turn on virtio-net multiqueue (the device offers 4 queues but Linux
+        # uses 1 until told). Spreads NIC softirq across the 4 vCPUs under the
+        # parallel NFS streams. Matches by driver so it covers both NICs.
+        systemd.services.virtio-nic-multiqueue = {
+          description = "Enable virtio-net multiqueue on all virtio NICs";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          path = [ pkgs.ethtool pkgs.coreutils pkgs.gawk ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            for dev in /sys/class/net/*; do
+              name=$(basename "$dev")
+              [ -e "$dev/device/driver" ] || continue
+              case "$(readlink "$dev/device/driver")" in *virtio*) ;; *) continue ;; esac
+              max=$(ethtool -l "$name" 2>/dev/null | awk '/^Combined:/{print $2; exit}')
+              [ -n "$max" ] && [ "$max" -gt 1 ] && ethtool -L "$name" combined "$max" || true
+            done
+          '';
         };
 
         # Set proper ownership and permissions on media directories
@@ -238,6 +284,18 @@ in {
 
               # TV share - for Sonarr
               /media/storage/media/TV     192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=00a0212d-447f-487d-afbc-3faaafab5b73)
+
+              # Pool-ROOT export for download-server-1 ONLY, so it mounts the
+              # whole union once and Sonarr/Radarr can HARDLINK imports
+              # (downloads + media library under one st_dev) instead of copying
+              # every file back over NFS. Own fresh random fsid (mergerfs/FUSE
+              # shares st_dev -> each export needs a distinct fsid). NO
+              # crossmnt/nohide (ESTALE on FUSE). Restricted to the download box:
+              # 10.10.10.1 = its jumbo (br-storage) IP (primary path), plus its
+              # LAN FQDN as a fallback if the jumbo path is ever pointed back at
+              # br0. The three exports above are untouched -> other clients
+              # (Jellyfin/k8s, desktops) unaffected.
+              /media/storage  10.10.10.1(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f) download-server-1.lan(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f)
             '';
           };
 
