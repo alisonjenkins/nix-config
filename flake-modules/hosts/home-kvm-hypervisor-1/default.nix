@@ -191,6 +191,18 @@ in {
                   Name = "br0";
                 };
               };
+
+              # Isolated, host-only L2 bridge carrying the jumbo (MTU 9000)
+              # storage network between download-server-1 and home-storage-server-1.
+              # No physical uplink and no host IP — pure guest<->guest fast path so
+              # the NFS data traffic stays off br0 (which must remain MTU 1500 for
+              # the LAN). Guests attach a second virtio NIC to this bridge.
+              "21-br-storage" = {
+                netdevConfig = {
+                  Kind = "bridge";
+                  Name = "br-storage";
+                };
+              };
             };
 
             networks = {
@@ -211,6 +223,21 @@ in {
                 dhcpV4Config = { UseDNS = true; UseRoutes = true; };
                 linkConfig = {
                   RequiredForOnline = "routable";
+                };
+              };
+
+              # br-storage carries no host IP; force MTU 9000 and let it come up
+              # without a carrier (members appear only when guests boot). Not
+              # required for boot-online so a guest-down state never blocks the host.
+              "41-br-storage" = {
+                matchConfig.Name = "br-storage";
+                networkConfig = {
+                  ConfigureWithoutCarrier = true;
+                  LinkLocalAddressing = "no";
+                };
+                linkConfig = {
+                  MTUBytes = "9000";
+                  RequiredForOnline = "no";
                 };
               };
             };
