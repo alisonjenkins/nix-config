@@ -133,11 +133,18 @@
           "inodecalc=path-hash"
           "noforget"
           "security_capability=false"
-          # Metadata/scan performance for NFS + SMB clients. With the inode
-          # foundation above (path-hash + noforget) plus mergerfs >=2.40.1, NFS
-          # readdir/lookup caching is safe, so these speed up scans:
+          # Metadata/scan performance for NFS + SMB clients:
           # - cache.readdir: cache directory listings in the kernel
           # - nfsopenhack: work around NFS O_RDONLY-create POSIX incompatibility
+          #
+          # WARNING: these server-side options (and inodecalc=path-hash +
+          # noforget above) do NOT make CLIENT-side NFS dentry caching safe.
+          # The mergerfs+knfsd readdir paging bug means NFS clients must still
+          # mount with lookupcache=none, or directory listings intermittently
+          # truncate and clients (Sonarr/Radarr) think files are missing. Do not
+          # "optimise" the client to lookupcache=pos/all again — that regression
+          # (commit d790c5f3) caused ~460 redundant re-downloads in 2026-06.
+          # See download-server-1/default.nix systemd.mounts for the full story.
           # NOTE: readdirplus is NOT a valid mount-time option in mergerfs 2.41.1
           # ("fuse: ERROR - unknown option - readdirplus=true" -> mount fails);
           # it's a runtime control only, so it is intentionally omitted here.

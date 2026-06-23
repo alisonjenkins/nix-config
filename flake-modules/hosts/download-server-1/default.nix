@@ -1210,27 +1210,60 @@ EOF
           "d /media/tv 0755 root root -"
         ];
 
-        # Configure NFS mounts with automount (optimized for torrenting performance)
-        # Storage server (192.168.1.97) exports from /media/storage/* paths
+        # NFS mounts of the storage server (192.168.1.97), which exports a
+        # mergerfs (FUSE) union from /media/storage/*.
+        #
+        # ─────────────────────────────────────────────────────────────────────
+        #  DO NOT set lookupcache=pos or lookupcache=all on these mounts.
+        # ─────────────────────────────────────────────────────────────────────
+        #
+        # The Linux NFS client caches directory entries (dentries) per the
+        # `lookupcache` option (see nfs(5)):
+        #   all  (kernel default): cache positive AND negative dir entries until
+        #                          the parent dir's attribute cache expires
+        #   pos                  : cache positive entries (same expiry)
+        #   none                 : revalidate dir entries before every use
+        #
+        # knfsd serves a large mergerfs directory via READDIR in cookie-paged
+        # chunks. FUSE's readdir-offset/cookie handling is fragile, so the client
+        # can latch onto a PARTIAL or EMPTY listing for a directory. With
+        # lookupcache=pos/all it then keeps serving that truncated listing until
+        # the dir attribute cache expires, so files intermittently "vanish".
+        # Sonarr/Radarr read the library through this mount, see whole series as
+        # missing, and re-download hundreds of files that already exist on disk.
+        # Observed 2026-06: a /media/tv listing dropped 150 -> 132 dirs
+        # (entire series gone: The Flash, The Vampire Diaries, Westworld, ...),
+        # which triggered ~460 redundant grabs.
+        #
+        # lookupcache=none forces revalidation, so a partial listing is never
+        # served stale. It is the ONLY value proven reliable on this
+        # mergerfs + NFS + kernel combination. It was previously set, then
+        # "optimised" to pos in commit d790c5f3 on the theory that server-side
+        # inodecalc=path-hash + noforget made client caching safe. They do NOT:
+        # the fault is the CLIENT dentry cache, not server inodes. Reverted.
+        # Refs: mergerfs mkdocs/docs/remote_filesystems.md (server-side
+        # noforget + inodecalc=path-hash + fsid, which we already do) and nfs(5)
+        # (lookupcache). mergerfs's own docs give no client recommendation and
+        # warn that "NFS and FUSE do not always work perfectly together".
+        #
+        # PERFORMANCE IS PRESERVED. lookupcache only governs name->handle
+        # (LOOKUP) caching; it does NOT control attribute caching or READDIRPLUS,
+        # which is where the scan-speed wins actually come from. We keep every
+        # performance option and sacrifice only the modest LOOKUP cache:
+        #   - nconnect=4             parallel TCP connections (throughput)
+        #   - rsize/wsize=1MiB       large transfers
+        #   - acreg*/acdir* caching  cached stat() -> fast *arr/Jellyfin scans
+        #   - READDIRPLUS (default)  bundled readdir+stat -> fast listings
+        #   - async (downloads only) faster writes; safe, qBittorrent verifies
+        #   - hard                   retry on server hiccups (no data loss)
         systemd.mounts = [
           {
             what = "192.168.1.97:/media/storage/downloads";
             where = "/media/downloads";
             type = "nfs";
-            # Performance-optimized NFS options for qBittorrent:
-            # - rsize/wsize=1MB for maximum throughput
-            # - async on downloads (faster writes, safe since qBittorrent verifies data)
-            # - noatime/nodiratime (no access time updates = less metadata writes)
-            # - nconnect=4 (parallel TCP connections; big scan/throughput win)
-            # - hard (reliable; retries indefinitely on server hiccups)
-            # - lookupcache=pos + ac* caching: re-enabled (was lookupcache=none).
-            #   The old empty/alternating-readdir bug that forced lookupcache=none
-            #   was rooted in mergerfs FUSE node-forget + unstable inodes. The
-            #   server now sets inodecalc=path-hash + noforget on mergerfs (>=2.40.1
-            #   also fixes the NFS root-generation bug), which makes cached lookups
-            #   safe. pos avoids caching negative entries (so new files still appear
-            #   within acregmin). VERIFY with the readdir stress test before trusting.
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # downloads: async is safe here (qBittorrent verifies its own data).
+            # lookupcache=none is mandatory — see the block comment above.
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1239,9 +1272,9 @@ EOF
             what = "192.168.1.97:/media/storage/media/Movies";
             where = "/media/movies";
             type = "nfs";
-            # No async for movies/tv (Radarr/Sonarr move completed files here)
-            # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # movies/tv: no async (Radarr/Sonarr move completed files here).
+            # lookupcache=none is mandatory — see the block comment above.
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1250,9 +1283,9 @@ EOF
             what = "192.168.1.97:/media/storage/media/TV";
             where = "/media/tv";
             type = "nfs";
-            # No async for movies/tv (Radarr/Sonarr move completed files here)
-            # actimeo=30 for faster stale handle detection after server reboots
-            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=pos,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
+            # movies/tv: no async (Radarr/Sonarr move completed files here).
+            # lookupcache=none is mandatory — see the block comment above.
+            options = "rw,hard,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30,x-systemd.mount-timeout=30";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
