@@ -337,22 +337,42 @@ in {
           };
         };
 
-        # Defer the daily SnapRAID sync while the array is busy (heavy NFS
-        # downloads / Jellyfin scans saturate the spinning disks, and a sync on
-        # top of that thrashes everything). ExecCondition runs before the sync:
-        # exit 0 = proceed, non-zero = skip this run (systemd marks it
-        # "condition failed", not an error). The daily timer then simply retries
-        # on the next calm day, so the sync waits out a catch-up automatically
-        # with no manual intervention. Gate: sustained IO pressure ("some"
-        # avg300, a 5-min average) below 40%; idle is ~0-10, heavy serving ~85.
-        # A read failure defaults to "calm" so the sync is never blocked forever.
-        systemd.services.snapraid-sync.serviceConfig.ExecCondition =
-          let
-            deferCheck = pkgs.writeShellScript "snapraid-defer-check" ''
-              A=$(${pkgs.gawk}/bin/awk '/^some/{for(i=1;i<=NF;i++) if($i ~ /^avg300=/){sub(/avg300=/,"",$i); print $i}}' /proc/pressure/io)
-              ${pkgs.gawk}/bin/awk -v a="''${A:-0}" 'BEGIN{ exit !((a+0) < 40) }'
-            '';
-          in "${deferCheck}";
+        # Defer the daily SnapRAID sync AND scrub while the array is busy (heavy
+        # NFS downloads / Jellyfin scans saturate the spinning disks, and parity
+        # work on top of that thrashes everything -> client readdir stalls that
+        # read as "files gone"). ExecCondition runs before the unit: exit 0 =
+        # proceed, non-zero = skip this run (systemd marks it "condition failed",
+        # not an error); the daily/weekly timer simply retries on the next calm
+        # cycle, so it waits out a catch-up automatically. Gate: sustained IO
+        # pressure ("some" avg300, a 5-min average) below 40%; idle ~0-10, heavy
+        # serving ~85. A read failure defaults to "calm" so it's never blocked
+        # forever. The SCRUB was previously ungated and ran at the exact bug
+        # window -- gating it is the highest-leverage fix.
+        #
+        # IOSchedulingClass=idle so an incoming nfsd/smbd read preempts the
+        # parity job. NOTE: only the BFQ I/O scheduler honours the idle class;
+        # under mq-deadline/none this is inert (harmless) -- BFQ on the
+        # rotational pool disks is a separate [VALIDATE-FIRST] change.
+        systemd.services.snapraid-sync.serviceConfig = let
+          deferCheck = pkgs.writeShellScript "snapraid-defer-check" ''
+            A=$(${pkgs.gawk}/bin/awk '/^some/{for(i=1;i<=NF;i++) if($i ~ /^avg300=/){sub(/avg300=/,"",$i); print $i}}' /proc/pressure/io)
+            ${pkgs.gawk}/bin/awk -v a="''${A:-0}" 'BEGIN{ exit !((a+0) < 40) }'
+          '';
+        in {
+          ExecCondition = "${deferCheck}";
+          IOSchedulingClass = "idle";
+        };
+        systemd.services.snapraid-scrub.serviceConfig = let
+          # Identical script name+content -> same /nix/store path as the sync
+          # gate above (no duplication cost).
+          deferCheck = pkgs.writeShellScript "snapraid-defer-check" ''
+            A=$(${pkgs.gawk}/bin/awk '/^some/{for(i=1;i<=NF;i++) if($i ~ /^avg300=/){sub(/avg300=/,"",$i); print $i}}' /proc/pressure/io)
+            ${pkgs.gawk}/bin/awk -v a="''${A:-0}" 'BEGIN{ exit !((a+0) < 40) }'
+          '';
+        in {
+          ExecCondition = "${deferCheck}";
+          IOSchedulingClass = "idle";
+        };
 
         sops = {
           defaultSopsFile = self + "/secrets/main.enc.yaml";
