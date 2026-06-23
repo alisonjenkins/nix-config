@@ -28,6 +28,9 @@
     <cpu mode='host-passthrough' check='none' migratable='on'>
       <topology sockets='1' cores='4' threads='1'/>
     </cpu>
+    <cputune>
+      <shares>512</shares>
+    </cputune>
     <clock offset='utc'>
       <timer name='rtc' tickpolicy='catchup'/>
       <timer name='pit' tickpolicy='delay'/>
