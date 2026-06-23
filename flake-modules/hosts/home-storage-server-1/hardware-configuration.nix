@@ -150,6 +150,16 @@
           # it's a runtime control only, so it is intentionally omitted here.
           "cache.readdir=true"
           "nfsopenhack=all"
+          # Parallel branch readdir. Default func.readdir=seq walks all 16
+          # branches one-at-a-time, so a cold-cache readdir takes seconds while
+          # disks spin up -> the stall window where clients see truncated/empty
+          # listings. cosr = concurrent-open / sequential-read, documented as
+          # "low memory and CPU" (vs cor's per-thread buffering, which only wins
+          # on high-latency *network* branches; these are local disks). :2 bounds
+          # concurrent spin-ups on this RAM-tight box. VALIDATE: watch mergerfs
+          # RSS under a scrub+rescan and confirm a full A-Z /media/tv listing
+          # survives; if RSS climbs, drop to cosr:1. Never use cor here.
+          "func.readdir=cosr:2"
         ];
       };
     } // media_disks_nofail;
