@@ -17,6 +17,12 @@ in
     virtualisation.libvirtd = {
       enable = true;
       parallelShutdown = cfg.parallelShutdown;
+      # Gracefully ACPI-shutdown guests on host shutdown/reboot instead of the
+      # default "suspend" (managedsave). VMs with PCI <hostdev> passthrough
+      # (home-k8s-master-1 GPU, home-storage-server-1 HBA) cannot be
+      # managed-saved — libvirt-guests would fail the save and hard-kill them
+      # ungracefully on every host reboot. "shutdown" avoids that.
+      onShutdown = "shutdown";
       qemu = {
         package = pkgs.qemu_kvm.override { cephSupport = false; };
         runAsRoot = true;
