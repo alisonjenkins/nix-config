@@ -327,6 +327,30 @@ in {
             # '';
           };
 
+          # Static config for the second (jumbo) NIC on br-storage, bound by its
+          # fixed MAC. Isolated point-to-point with home-storage-server-1
+          # (10.10.10.2); no gateway/DNS, so the directly-connected /24 route
+          # carries NFS straight to storage (off both the LAN br0 and the wg-quick
+          # VPN default route). MTU 9000 must match every hop.
+          networkmanager.ensureProfiles.profiles = {
+            storage-jumbo = {
+              connection = {
+                id = "storage-jumbo";
+                type = "ethernet";
+                autoconnect = true;
+              };
+              ethernet = {
+                mac-address = "52:54:00:0A:29:40";
+                mtu = 9000;
+              };
+              ipv4 = {
+                method = "manual";
+                address1 = "10.10.10.1/24";
+              };
+              ipv6.method = "disabled";
+            };
+          };
+
           wg-quick = {
             interfaces = {
               primary-vpn = {
@@ -1203,11 +1227,18 @@ EOF
           UMask = lib.mkForce "0002";
         };
 
-        # Ensure mount points exist
+        # Single mount point for the whole storage pool, plus compatibility
+        # symlinks so the apps keep their existing paths. Because /media/downloads,
+        # /media/movies and /media/tv now resolve into ONE NFS mount
+        # (/media/storage), Sonarr/Radarr see the download dir and the library on
+        # the same st_dev and HARDLINK imports instead of copying the file back
+        # over NFS. L+ force-replaces the old (now stale) empty mountpoint dirs
+        # with symlinks on activation.
         systemd.tmpfiles.rules = [
-          "d /media/downloads 0755 root root -"
-          "d /media/movies 0755 root root -"
-          "d /media/tv 0755 root root -"
+          "d /media/storage 0755 root root -"
+          "L+ /media/downloads - - - - /media/storage/downloads"
+          "L+ /media/movies - - - - /media/storage/media/Movies"
+          "L+ /media/tv - - - - /media/storage/media/TV"
         ];
 
         # NFS mounts of the storage server (192.168.1.97), which exports a
@@ -1256,51 +1287,29 @@ EOF
         #   - READDIRPLUS (default)  bundled readdir+stat -> fast listings
         #   - async (downloads only) faster writes; safe, qBittorrent verifies
         #   - hard                   retry on server hiccups (no data loss)
+        # ONE mount of the mergerfs pool root, exported just for this host (see
+        # home-storage-server-1 exports). Replaces the previous three subdir
+        # mounts so that the download dir and the *arr library share a single
+        # st_dev -> imports HARDLINK (server-side metadata op) instead of copying
+        # the file back over NFS. /media/{downloads,movies,tv} are symlinks into
+        # this mount (tmpfiles above) so app paths are unchanged.
+        #
+        # Target 10.10.10.2 = storage's jumbo (MTU 9000, br-storage) IP, keeping
+        # the bulk NFS traffic on the isolated fast path off the LAN br0. To fall
+        # back to the LAN, change this to 192.168.1.97 (the root export also
+        # allows download-server-1.lan).
+        #
+        # async dropped (the old downloads-only knob): one mount can't be both
+        # async and sync, and with hardlinks the import writes ~nothing anyway.
+        # nconnect raised 4 -> 8. lookupcache=none retained (mandatory — see the
+        # block comment above). softreval + hard + TimeoutSec=120 as before.
         systemd.mounts = [
           {
-            what = "192.168.1.97:/media/storage/downloads";
-            where = "/media/downloads";
+            what = "10.10.10.2:/media/storage";
+            where = "/media/storage";
             type = "nfs";
-            # downloads: async is safe here (qBittorrent verifies its own data).
-            # lookupcache=none is mandatory — see the block comment above.
-            # softreval: serve last-good cached attrs if a revalidation RPC times
-            #   out during a storage stall (default is nosoftreval) -> fewer
-            #   false-missing. Safe with hard (false-present is benign for *arr;
-            #   false-missing is the failure we fear).
-            # x-systemd.mount-timeout was removed: it is IGNORED in unit files
-            #   (only honoured in /etc/fstab) — use native mountConfig.TimeoutSec.
-            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,async,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
+            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=8,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
             mountConfig.TimeoutSec = "120";  # ride out a scrub stall; not infinity (hard already blocks established I/O)
-            wantedBy = [ ];
-            requires = [ "network-online.target" ];
-            after = [ "network-online.target" ];
-          }
-          {
-            what = "192.168.1.97:/media/storage/media/Movies";
-            where = "/media/movies";
-            type = "nfs";
-            # movies/tv: no async (Radarr/Sonarr move completed files here).
-            # lookupcache=none is mandatory — see the block comment above.
-            # softreval: serve last-good attrs on revalidation timeout (fewer
-            #   false-missing under load). x-systemd.mount-timeout removed (no-op
-            #   in unit files) -> native mountConfig.TimeoutSec instead.
-            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
-            mountConfig.TimeoutSec = "120";
-            wantedBy = [ ];
-            requires = [ "network-online.target" ];
-            after = [ "network-online.target" ];
-          }
-          {
-            what = "192.168.1.97:/media/storage/media/TV";
-            where = "/media/tv";
-            type = "nfs";
-            # movies/tv: no async (Radarr/Sonarr move completed files here).
-            # lookupcache=none is mandatory — see the block comment above.
-            # softreval: serve last-good attrs on revalidation timeout (fewer
-            #   false-missing under load). x-systemd.mount-timeout removed (no-op
-            #   in unit files) -> native mountConfig.TimeoutSec instead.
-            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=4,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
-            mountConfig.TimeoutSec = "120";
             wantedBy = [ ];
             requires = [ "network-online.target" ];
             after = [ "network-online.target" ];
@@ -1309,18 +1318,34 @@ EOF
 
         systemd.automounts = [
           {
-            where = "/media/downloads";
-            wantedBy = [ "multi-user.target" ];
-          }
-          {
-            where = "/media/movies";
-            wantedBy = [ "multi-user.target" ];
-          }
-          {
-            where = "/media/tv";
+            where = "/media/storage";
             wantedBy = [ "multi-user.target" ];
           }
         ];
+
+        # Turn on virtio-net multiqueue (the device offers 4 queues but Linux
+        # uses 1 until told). Spreads NIC softirq across the 4 vCPUs under the
+        # many parallel torrent + NFS streams. Matches by driver -> both NICs.
+        systemd.services.virtio-nic-multiqueue = {
+          description = "Enable virtio-net multiqueue on all virtio NICs";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          path = [ pkgs.ethtool pkgs.coreutils pkgs.gawk ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            for dev in /sys/class/net/*; do
+              name=$(basename "$dev")
+              [ -e "$dev/device/driver" ] || continue
+              case "$(readlink "$dev/device/driver")" in *virtio*) ;; *) continue ;; esac
+              max=$(ethtool -l "$name" 2>/dev/null | awk '/^Combined:/{print $2; exit}')
+              [ -n "$max" ] && [ "$max" -gt 1 ] && ethtool -L "$name" combined "$max" || true
+            done
+          '';
+        };
 
         # Generate self-signed certificate for nginx
         systemd.services.nginx-self-signed-cert = {
