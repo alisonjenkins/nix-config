@@ -442,13 +442,16 @@ in {
           };
 
           # Override desktop module's pkgs.unstable.mesa (25.2.6) with
-          # pkgs.master.mesa (26.1.1) on this host only. Master has the
+          # pkgs.master.mesa (26.1.3) on this host only. Master has the
           # RADV gfx12 work that landed since 25.2.6: DGC+multiview
           # enabled for vkd3d-proton, VK_KHR_pipeline_library under LLVM,
           # VRS workaround on GFX12, depth/stencil clear perf, L2
-          # invalidation with streamout, quad-derivatives fix. Targets
-          # FH6 frame-pacing stutter on RX 9070 XT (gfx1201). Revisit
-          # once unstable catches up to 26.x.
+          # invalidation with streamout, quad-derivatives fix. Plus the
+          # FH6-specific RADV app-workarounds: radv_wait_for_vm_map_updates
+          # (26.1.1), radv_force_64_byte_sampled_image (26.1.2), gfx12
+          # SPI_SHADER_PGM_RSRC4_GS + smem_partial_oob workaround (26.1.3).
+          # Targets FH6 frame-pacing stutter on RX 9070 XT (gfx1201).
+          # Revisit once unstable catches up to 26.x.
           graphics.package = lib.mkForce pkgs.master.mesa;
           graphics.package32 = lib.mkForce pkgs.master.pkgsi686Linux.mesa;
         };
