@@ -394,11 +394,11 @@ in
   # (>20260410) lands containing the May 7 amdgpu updates.
   linux-firmware = final: _prev: {
     linux-firmware = final.unstable.linux-firmware.overrideAttrs (_old: {
-      version = "20260514-unstable-5b2bc2e";
+      version = "20260622-unstable-b2722d2";
       src = final.fetchgit {
         url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git";
-        rev = "5b2bc2e7d14c56e14c59a3d6e7b5b0641dc45c88";
-        hash = "sha256-96pu+G5o2X5RWkpFo7FTo4/j+1hpzm/DWG+4q0IsApU=";
+        rev = "b2722d241309a1872446c1d00c2e812bad055f89";
+        hash = "sha256-nSoJhgI4hAxtNmnj5M6ticzuBSt9uNAYcmc1VR/yXxE=";
       };
     });
   };
