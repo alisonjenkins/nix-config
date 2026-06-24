@@ -8,6 +8,7 @@ in
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
     ../luksPCR15
+    ../darwin-remote-builder
     ./vm-variant.nix
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
@@ -307,6 +308,12 @@ in
           outputs.overlays.unstable-packages
         ] ++ lib.optional cfg.enableCachyOSKernel inputs.nix-cachyos-kernel.overlays.pinned;
       };
+
+      # Offload aarch64-darwin builds to the Mac mini (home-macos-builder-1).
+      # SCAFFOLD — left disabled until the mini is reachable and the
+      # PLACEHOLDER values in modules/darwin-remote-builder are filled in.
+      # Flip to true (here, once, for the whole fleet) on arrival.
+      modules.darwinRemoteBuilder.enable = lib.mkDefault false;
 
       nix = {
         package = lib.mkDefault pkgs.nixVersions.stable;
