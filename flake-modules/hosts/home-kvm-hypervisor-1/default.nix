@@ -206,8 +206,16 @@ in {
             };
 
             networks = {
-              "30-enp16s0" = {
-                matchConfig.Name = "enp16s0";
+              # Match the LAN uplink by driver, not interface name, so this
+              # survives the EPYC/ROMED8-2T board swap. ixgbe matches the
+              # current board's enp16s0 today and the new board's onboard Intel
+              # X550 after the swap. On the new board both X550 ports match;
+              # only the cabled LAN port has carrier, so br0 DHCPs over it with
+              # no loop. The second (WAN-reserved) port sits enslaved with no
+              # carrier until the firewall VM is built, at which point it gets
+              # carved out for passthrough.
+              "30-lan-uplink" = {
+                matchConfig.Driver = "ixgbe";
                 networkConfig = {
                   Bridge = "br0";
                 };
