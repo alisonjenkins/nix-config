@@ -47,10 +47,12 @@
       url = "github:xddxdd/nix-cachyos-kernel/f3cbb61b11f57e2cde0fdc7e74a715c7a6d3e859";
     };
     niks3 = {
-      # Pinned to v1.4.0 to match the server running in aws-k3s.
+      # Pinned to v1.7.0 to match the server running in aws-k3s.
       # Bump in lockstep with the server deployment to avoid 404s on
-      # client/server API drift.
-      url = "github:Mic92/niks3/v1.4.0";
+      # client/server API drift. v1.6.1 (server) switched small NARs
+      # (<=~10MB) to single-PUT presigned URLs; clients <1.6.1 reject
+      # that response with "NAR files should use multipart upload".
+      url = "github:Mic92/niks3/v1.7.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
