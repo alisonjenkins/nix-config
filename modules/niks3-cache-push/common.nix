@@ -6,7 +6,7 @@ let
 in
 {
   options.modules.niks3CachePush = {
-    enable = lib.mkEnableOption "queue-based niks3 binary cache push";
+    enable = lib.mkEnableOption "niks3 binary cache auto-upload (niks3-hook)";
 
     serverUrl = lib.mkOption {
       type = lib.types.str;
@@ -26,10 +26,52 @@ in
       '';
     };
 
+    socketPath = lib.mkOption {
+      type = lib.types.str;
+      default = "/run/niks3/upload-to-cache.sock";
+      description = ''
+        Unix stream socket the post-build-hook (`niks3-hook send`) writes
+        store paths to and the upload daemon (`niks3-hook serve`) listens on.
+      '';
+    };
+
     maxConcurrentUploads = lib.mkOption {
       type = lib.types.int;
-      default = 10;
-      description = "Maximum number of concurrent uploads to the cache server (per-build drain).";
+      default = 4;
+      description = ''
+        Maximum concurrent uploads for the auto-upload daemon. Kept low
+        because the cache is backed by Backblaze B2, whose API rate limit
+        throttles (and historically errored) under high upload concurrency.
+      '';
+    };
+
+    batchSize = lib.mkOption {
+      type = lib.types.int;
+      default = 50;
+      description = "Number of store paths the daemon collects before pushing a batch.";
+    };
+
+    idleExitTimeout = lib.mkOption {
+      type = lib.types.int;
+      default = 0;
+      description = ''
+        Seconds of idle time before the upload daemon exits; 0 keeps it
+        resident. On darwin the daemon is a KeepAlive launchd service that
+        owns its socket, so it must stay resident (0). On NixOS the upstream
+        module socket-activates the daemon, so a non-zero value is also fine.
+      '';
+    };
+
+    verifyS3Integrity = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Verify objects actually exist in S3 before skipping re-upload.";
+    };
+
+    debug = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable niks3-hook debug logging.";
     };
 
     backfillMaxConcurrentUploads = lib.mkOption {
@@ -60,8 +102,11 @@ in
     };
   };
 
+  # The post-build-hook and upload daemon are wired per-platform (linux.nix
+  # delegates to upstream's niks3-auto-upload NixOS module; darwin.nix
+  # hand-rolls a launchd daemon, since upstream only ships a systemd unit).
+  # Shared here: just the manual backfill tool.
   config = lib.mkIf cfg.enable {
-    nix.settings.post-build-hook = scripts.postBuildHook;
     environment.systemPackages = [ scripts.backfillScript ];
   };
 }
