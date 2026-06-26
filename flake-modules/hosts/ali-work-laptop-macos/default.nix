@@ -94,9 +94,12 @@ in {
             cargo-make
             cargo-tarpaulin
             cargo-watch
+            choose-gui
             # colima  # Moved to homebrew to avoid EOL lima dependency
             comma
             cowsay
+            cyberduck
+            dbeaver-bin
             direnv
             diskus
             dive
@@ -104,12 +107,14 @@ in {
             docker-credential-helpers
             drawio
             dua
+            element-desktop
             fd
             figlet
             flameshot
             fluxcd
             fzf
             gama-tui
+            gephi
             gh
             gitify
             gitui
@@ -120,6 +125,7 @@ in {
             graphviz
             htop
             hurl
+            inkscape
             inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
             # inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
             ipcalc
@@ -159,8 +165,10 @@ in {
             pinentry_mac
             pkg-config
             posting
+            powershell
             pup
             pwgen
+            rectangle
             rio
             ripgrep
             rlwrap
@@ -234,7 +242,6 @@ in {
           enable = true;
 
           brews = [
-            "choose-gui"
             "colima"  # Container runtime using lima
             "fish"    # Homebrew fish is Developer ID signed + notarized; Defender trusts it
                       # The Nix fish binary gets SIGKILL'd by Defender after each rebuild.
@@ -250,19 +257,14 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
-            "cyberduck"
-            "dbeaver-community"
             "discord"
-            "element"
             "firefox"
             "freeplane"
-            "gephi"
             "ghostty"
             "gimp"
             "github"
             "google-chrome"
             "hammerspoon"
-            "inkscape"
             "jordanbaird-ice"
             "karabiner-elements"
             "keybase"
