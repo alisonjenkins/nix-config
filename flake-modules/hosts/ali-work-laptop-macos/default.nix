@@ -275,8 +275,6 @@ in {
             "microsoft-teams"
             "notion"
             "obs"
-            "powershell@preview"
-            "rectangle"
             "scribus"
             "slack"
             "soundsource"
