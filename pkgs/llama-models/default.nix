@@ -94,6 +94,24 @@ in
     ];
   };
 
+  # Dedicated fast commit-message model — Qwen2.5-Coder-7B-Instruct
+  # Code-tuned, ~4.7 GiB Q4_K_M. Plenty for conventional-commit generation
+  # and far faster to load/run than the 30B MoE for this bounded task.
+  qwen2-5-coder-7b-instruct-q4-k-m = mkGgufModel {
+    pname = "qwen2.5-coder-7b-instruct-q4-k-m";
+    primaryFile = "Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
+    files = [
+      {
+        name = "Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
+        url = "https://huggingface.co/unsloth/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
+        # TODO: placeholder — resolve on a machine with HF access:
+        #   nix store prefetch-file --hash-type sha256 <url>
+        # then push the built model to nixcache.org so this host can pull it.
+        hash = lib.fakeHash;
+      }
+    ];
+  };
+
   # Speculative decoding draft model — Qwen3-0.6B
   # Same tokenizer as Qwen3-32B, Q8_0 ~0.6 GiB
   qwen3-0-6b-q8-0 = mkGgufModel {
