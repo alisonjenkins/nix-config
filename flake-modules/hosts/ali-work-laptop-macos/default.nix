@@ -52,6 +52,25 @@ in {
     system = darwinSystem;
     modules = [
       self.darwinModules.darwin-nix-maintenance
+      self.darwinModules.llama-swap
+      # Local LLM: llama-swap proxies an OpenAI-compatible endpoint on
+      # 127.0.0.1:8080, spawning Metal llama.cpp per requested model and
+      # unloading after idle. Models reused from pkgs/llama-models.
+      ({ pkgs, ... }: {
+        modules.llamaSwap = {
+          enable = true;
+          models = {
+            # Fast 3B-active MoE workhorse for coding/agentic/scripting.
+            "qwen3-coder".modelFile =
+              pkgs.llama-models.qwen3-coder-30b-a3b-q4-k-s.modelFile;
+            # Smarter dense 32B; Qwen3-0.6B draft for speculative decoding.
+            "qwen3-32b" = {
+              modelFile = pkgs.llama-models.qwen3-32b-q5-k-m.modelFile;
+              draftModelFile = pkgs.llama-models.qwen3-0-6b-q8-0.modelFile;
+            };
+          };
+        };
+      })
       # Host-specific configuration (inlined from configuration.nix)
       ({ pkgs, inputs, outputs, username, hostname, ... }: {
         environment = {
