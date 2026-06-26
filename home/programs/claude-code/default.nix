@@ -100,6 +100,11 @@ in
 
       alwaysThinkingEnabled = true;
 
+      # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer
+      # with virtualized scrollback (equivalent to CLAUDE_CODE_NO_FLICKER=1).
+      # Equivalent to running `/tui fullscreen`. "default" = classic renderer.
+      tui = "fullscreen";
+
       # Caveman mode badge in the status bar — shows [CAVEMAN], [CAVEMAN:ULTRA], etc.
       statusLine = {
         type = "command";
