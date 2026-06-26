@@ -68,6 +68,10 @@ in {
               modelFile = pkgs.llama-models.qwen3-32b-q5-k-m.modelFile;
               draftModelFile = pkgs.llama-models.qwen3-0-6b-q8-0.modelFile;
             };
+            # Fast dedicated model for git commit-message generation
+            # (git-ai-commit + the aichat commit-msg role).
+            "qwen-commit".modelFile =
+              pkgs.llama-models.qwen2-5-coder-7b-instruct-q4-k-m.modelFile;
           };
         };
       })
