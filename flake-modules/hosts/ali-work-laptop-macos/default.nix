@@ -106,6 +106,7 @@ in {
             dua
             fd
             figlet
+            flameshot
             fluxcd
             fzf
             gama-tui
@@ -254,7 +255,6 @@ in {
             "discord"
             "element"
             "firefox"
-            "flameshot"
             "freeplane"
             "gephi"
             "ghostty"
