@@ -73,9 +73,12 @@ in {
             cargo-make
             cargo-tarpaulin
             cargo-watch
+            choose-gui
             # colima  # Moved to homebrew to avoid EOL lima dependency
             comma
             cowsay
+            cyberduck
+            dbeaver-bin
             direnv
             diskus
             dive
@@ -83,12 +86,14 @@ in {
             docker-credential-helpers
             drawio
             dua
+            element-desktop
             fd
             figlet
             flameshot
             fluxcd
             fzf
             gama-tui
+            gephi
             gh
             gitify
             gitui
@@ -99,6 +104,7 @@ in {
             graphviz
             htop
             hurl
+            inkscape
             inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.nvim
             # inputs.eks-creds.packages.${pkgs.stdenv.hostPlatform.system}.eks-creds
             ipcalc
@@ -138,8 +144,10 @@ in {
             pinentry_mac
             pkg-config
             posting
+            powershell
             prismlauncher
             pwgen
+            rectangle
             rio
             ripgrep
             rlwrap
@@ -215,7 +223,6 @@ in {
           enable = true;
 
           brews = [
-            "choose-gui"
             "colima"  # Container runtime using lima
             # Homebrew fish dropped: tide spawns a subshell via `status fish-path`
             # of the running fish, and when Homebrew bumps fish (e.g. 4.6.0 →
@@ -236,27 +243,20 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
-            "cyberduck"
-            "dbeaver-community"
             "discord"
-            "element"
             "firefox"
             "freeplane"
-            "gephi"
             "ghostty"
             "gimp"
             "github"
             "google-chrome"
             "hammerspoon"
-            "inkscape"
             "jordanbaird-ice"
             "karabiner-elements"
             "keybase"
             "krita"
             "notion"
             "obs"
-            "powershell@preview"
-            "rectangle"
             "scribus"
             "slack"
             "soundsource"
