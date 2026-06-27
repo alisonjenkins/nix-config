@@ -86,6 +86,10 @@ in
           "seed_random"
           "growpart"
           "resizefs"
+          # write_files MUST be here or userData /etc/karpenter-node.conf is
+          # never written -> ROLE/token/tailscale-key missing -> bootstrap
+          # services starve [B6].
+          "write_files"
           "update_hostname"
           "users-groups"
           "ssh"
