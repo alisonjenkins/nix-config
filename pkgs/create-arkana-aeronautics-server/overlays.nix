@@ -370,6 +370,20 @@ in
       "1cf42yrkval08wb53nqcqrdclgljzllvmrfz1k7ybfriksjd3c0s";
   }
   {
+    # No Chat Restrictions — removes the vanilla 256-char chat limit and the
+    # "illegal characters" send-block. Client-only: project declares
+    # server_side = unsupported, client_side = required, so clientOnly = true
+    # keeps it out of the server tree and dropAsOverride = true puts the jar
+    # into the client zip's overrides/mods/ (Modrinth-hosted). Universal
+    # 1.21–1.21.11 build covers our 1.21.1 target. Modrinth z440MEwJ.
+    filename       = "NoChatRestrictions-NeoForge-MC1.21.11-v1.0.0.jar";
+    dropAsOverride = true;
+    clientOnly     = true;
+    jar = modrinth "z440MEwJ" "GtCgmBXp"
+      "NoChatRestrictions-NeoForge-MC1.21.11-v1.0.0.jar"
+      "1gks3zcbl3wa10pxgf5by2qk7shnmpija78kp6l2ljs3ycha1ad1";
+  }
+  {
     # Vivecraft — VR mod. mods.toml declares `side = "BOTH"` and
     # `displayTest = "IGNORE_SERVER_VERSION"`: the server tolerates
     # the jar (no dist-cleaner trips) and Vivecraft players get
