@@ -57,10 +57,13 @@ in
       options = [ "noatime" "lazytime" "commit=60" ];
     };
 
-    # Cloud-init for Hetzner instance provisioning
+    # Cloud-init for Hetzner instance provisioning. cloud-init OWNS networking:
+    # the Hetzner datasource renders networkd .network files for the public NIC
+    # (v4 + v6) and each private network (matched by MAC). We must NOT also
+    # hand-roll a systemd.network match for the same interface (races/clobbers).
     services.cloud-init = {
       enable = true;
-      network.enable = false; # systemd-networkd handles networking
+      network.enable = true; # enables networkd; cloud-init writes the .network files
 
       settings = {
         datasource_list = [ "Hetzner" ];
@@ -117,17 +120,17 @@ in
 
     systemd.network = {
       enable = true;
-      wait-online.enable = false;
-
-      # Hetzner uses en* for virtio-net interfaces
-      networks."10-hetzner" = {
-        matchConfig.Name = "en*";
-        networkConfig = {
-          DHCP = "yes";
-          IPv6AcceptRA = true;
-        };
-      };
+      wait-online.enable = false; # cloud-init configures the NIC post-boot
+      # No static networks here — cloud-init (Hetzner datasource) is the SOLE
+      # writer of .network files; a custom en* match would race it [B4].
     };
+
+    # cloud-init-local must reach the metadata service (169.254.169.254) before
+    # networking is up; without a DHCP client in PATH the metadata crawler fails
+    # and no network config is ever written [B4, nixpkgs#215571].
+    systemd.services.cloud-init-local.path = [ pkgs.dhcpcd ];
+    systemd.services.systemd-networkd.stopIfChanged = false;
+    systemd.services.systemd-resolved.stopIfChanged = false;
 
     # SSH: enabled by default on Hetzner (primary access method)
     services.openssh = {
