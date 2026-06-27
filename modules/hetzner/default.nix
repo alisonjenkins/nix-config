@@ -187,8 +187,12 @@ in
       memoryPercent = 100;
     };
 
-    # Cap journal size
-    services.journald.extraConfig = "SystemMaxUse=50M";
+    # Cap journal size; persist to disk so early-boot failures survive a hang
+    # (read /var/log/journal from rescue). Storage=persistent creates the dir.
+    services.journald.extraConfig = ''
+      SystemMaxUse=50M
+      Storage=persistent
+    '';
 
     # Disable unnecessary services
     services.fwupd.enable = false;
