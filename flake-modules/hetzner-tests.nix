@@ -28,6 +28,7 @@ in
 
           environment.systemPackages = with pkgs; [
             btrfs-progs
+            cryptsetup
             curl
             jq
             k3s
@@ -38,6 +39,15 @@ in
           ];
 
           services.tailscale.enable = true;
+
+          # Post-quantum SSH KEX [V12] — mirrors hetznerKarpenterNodeConfig.
+          services.openssh.enable = true;
+          services.openssh.settings.KexAlgorithms = [
+            "mlkem768x25519-sha256"
+            "sntrup761x25519-sha512@openssh.com"
+            "curve25519-sha256"
+            "curve25519-sha256@libssh.org"
+          ];
 
           # Pre-pulled container images (same logic as hetznerKarpenterNodeConfig)
           systemd.tmpfiles.rules =
@@ -124,6 +134,11 @@ in
               done
               source /etc/karpenter-node.conf
 
+              if [ "''${ROLE:-agent}" != "agent" ]; then
+                echo "ROLE=''${ROLE:-agent}, not agent — skipping k3s-agent-bootstrap"
+                exit 0
+              fi
+
               METADATA=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
               SERVER_ID=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.instance-id')
               LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
@@ -148,6 +163,107 @@ in
                 --kubelet-arg="kube-api-burst=200" \
                 --kubelet-arg="event-qps=50" \
                 --kubelet-arg="event-burst=100"
+            '';
+          };
+
+          # --- control-plane (role=server) services (mirror hetzner-images.nix) ---
+
+          systemd.services.k3s-state-volume = {
+            description = "Unlock + mount the k3s state volume (role=server)";
+            after = [ "network-online.target" "cloud-init.service" ];
+            wants = [ "network-online.target" ];
+            before = [ "k3s-server-bootstrap.service" ];
+            wantedBy = [ "multi-user.target" ];
+
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              TimeoutStartSec = "infinity";
+            };
+
+            script = ''
+              set -euo pipefail
+
+              for i in $(seq 1 60); do
+                [ -f /etc/karpenter-node.conf ] && break
+                sleep 2
+              done
+              source /etc/karpenter-node.conf
+
+              if [ "''${ROLE:-agent}" != "server" ]; then
+                echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-state-volume"
+                exit 0
+              fi
+
+              DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1 || true)
+              if [ -z "$DEV" ]; then
+                echo "No Hetzner volume attached — cannot mount k3s state" >&2
+                exit 1
+              fi
+
+              if ! ${pkgs.cryptsetup}/bin/cryptsetup isLuks "$DEV"; then
+                echo "Volume $DEV is not LUKS — run one-time enrollment first (runbook)" >&2
+                exit 1
+              fi
+
+              if [ ! -e /dev/mapper/k3s-state ]; then
+                ${pkgs.systemd}/bin/systemd-ask-password "Unlock k3s state volume:" \
+                  | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -
+              fi
+
+              mkdir -p /var/lib/rancher/k3s
+              ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
+                || mount /dev/mapper/k3s-state /var/lib/rancher/k3s
+            '';
+          };
+
+          systemd.services.k3s-server-bootstrap = {
+            description = "K3s Server Bootstrap (cattle control-plane)";
+            after = [ "network-online.target" "cloud-init.service" "tailscale-bootstrap.service" "k3s-state-volume.service" ];
+            wants = [ "network-online.target" ];
+            requires = [ "tailscale-bootstrap.service" "k3s-state-volume.service" ];
+            wantedBy = [ "multi-user.target" ];
+
+            serviceConfig = {
+              Type = "exec";
+              Restart = "on-failure";
+              RestartSec = "10s";
+            };
+
+            script = ''
+              set -euo pipefail
+
+              for i in $(seq 1 60); do
+                [ -f /etc/karpenter-node.conf ] && break
+                sleep 2
+              done
+              source /etc/karpenter-node.conf
+
+              if [ "''${ROLE:-agent}" != "server" ]; then
+                echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-server-bootstrap"
+                exit 0
+              fi
+
+              ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s
+
+              TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
+              NODE_IP=''${TS_IP:-$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
+                | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')}
+
+              exec ${pkgs.k3s}/bin/k3s server \
+                --token "$K3S_TOKEN" \
+                --node-ip "$NODE_IP" \
+                --tls-san "$FLOATING_IP" \
+                ''${TS_IP:+--tls-san "$TS_IP"} \
+                --flannel-backend=none \
+                --disable-network-policy \
+                --disable-kube-proxy \
+                --disable=traefik \
+                --disable=servicelb \
+                --secrets-encryption \
+                --cluster-cidr=10.42.0.0/16 \
+                --service-cidr=10.43.0.0/16 \
+                --write-kubeconfig-mode=0400
             '';
           };
 
@@ -393,6 +509,53 @@ in
 
           with subtest("zram module available"):
               machine.succeed("modprobe zram")
+
+          # --- role dispatch (one image, agent|server) ---
+
+          with subtest("cryptsetup present (LUKS state volume)"):
+              machine.succeed("cryptsetup --version")
+
+          with subtest("agent bootstrap is role-guarded (skips when not agent)"):
+              agent_unit = machine.succeed("cat /etc/systemd/system/k3s-agent-bootstrap.service")
+              m = re.search(r'ExecStart=(/nix/store/\S+)', agent_unit)
+              assert m, f"no ExecStart: {agent_unit}"
+              script = machine.succeed(f"cat {m.group(1)}")
+              assert 'ROLE:-agent' in script and 'skipping k3s-agent-bootstrap' in script, \
+                  "agent bootstrap missing ROLE guard"
+
+          # --- control-plane (role=server) ---
+
+          with subtest("k3s-state-volume service exists, server-guarded, post-boot SSH unlock"):
+              unit = machine.succeed("cat /etc/systemd/system/k3s-state-volume.service")
+              m = re.search(r'ExecStart=(/nix/store/\S+)', unit)
+              assert m, f"no ExecStart: {unit}"
+              script = machine.succeed(f"cat {m.group(1)}")
+              assert 'scsi-0HC_Volume_' in script, "must auto-discover the Hetzner volume"
+              assert 'cryptsetup' in script and 'luksOpen' in script, "must LUKS-open the volume"
+              assert 'systemd-ask-password' in script, "unlock must be post-boot SSH ask-password [V21]"
+              assert '/var/lib/rancher/k3s' in script, "must mount the k3s state dir"
+              assert 'ROLE:-agent' in script and 'not server' in script, "must be role-guarded"
+
+          with subtest("k3s-server-bootstrap waits for the state volume"):
+              after = machine.succeed("systemctl show k3s-server-bootstrap.service --property=Requires")
+              assert "k3s-state-volume.service" in after, f"must require state volume: {after}"
+
+          with subtest("k3s-server-bootstrap uses SQLite single-master flags (no etcd)"):
+              unit = machine.succeed("cat /etc/systemd/system/k3s-server-bootstrap.service")
+              m = re.search(r'ExecStart=(/nix/store/\S+)', unit)
+              assert m, f"no ExecStart: {unit}"
+              script = machine.succeed(f"cat {m.group(1)}")
+              assert "k3s server" in script or "/k3s server" in script, "must run k3s server"
+              assert "--cluster-init" not in script, "single master is SQLite — must NOT use etcd [V21]"
+              assert "--secrets-encryption" in script, "missing --secrets-encryption [V5]"
+              assert "--flannel-backend=none" in script, "Cilium CNI — flannel must be off [V4]"
+              assert "--disable-kube-proxy" in script, "kube-proxy replacement [V4]"
+              assert "--disable-network-policy" in script, "k3s netpol controller off [V4]"
+              assert "--tls-san" in script, "must set tls-san (floating IP) [V3]"
+
+          with subtest("post-quantum SSH KEX offered [V12]"):
+              kex = machine.succeed("sshd -T 2>/dev/null | grep -i '^kexalgorithms'")
+              assert "mlkem768x25519-sha256" in kex, f"PQC KEX missing: {kex}"
         '';
       };
     };

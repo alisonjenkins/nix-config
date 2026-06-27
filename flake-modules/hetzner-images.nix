@@ -39,6 +39,7 @@ let
 
     environment.systemPackages = with pkgs; [
       btrfs-progs
+      cryptsetup
       k3s
       nftables
       tailscale
@@ -47,6 +48,15 @@ let
 
     # Enable Tailscale for cross-cloud networking
     services.tailscale.enable = true;
+
+    # Post-quantum SSH key exchange [V12]. mlkem768x25519-sha256 needs
+    # OpenSSH 9.9+; keep classical curve25519 as fallback for older clients.
+    services.openssh.settings.KexAlgorithms = [
+      "mlkem768x25519-sha256"
+      "sntrup761x25519-sha512@openssh.com"
+      "curve25519-sha256"
+      "curve25519-sha256@libssh.org"
+    ];
 
     # Pre-populate containerd image store at build time.
     # Reuses the same prepull image list as AWS but filters by architecture.
@@ -145,6 +155,12 @@ let
         done
         source /etc/karpenter-node.conf
 
+        # One image, two roles: only run the agent path on agent nodes. [V2]
+        if [ "''${ROLE:-agent}" != "agent" ]; then
+          echo "ROLE=''${ROLE:-agent}, not agent — skipping k3s-agent-bootstrap"
+          exit 0
+        fi
+
         # Get Hetzner metadata (YAML format, no auth needed)
         METADATA=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
         SERVER_ID=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.instance-id')
@@ -173,6 +189,121 @@ let
           --kubelet-arg="kube-api-burst=200" \
           --kubelet-arg="event-qps=50" \
           --kubelet-arg="event-burst=100"
+      '';
+    };
+
+    # --- control-plane (role=server) path -----------------------------
+    #
+    # Cattle master [V21]: root is the ephemeral snapshot; all k3s state lives
+    # on a detachable LUKS volume mounted at /var/lib/rancher/k3s. Unlock is
+    # post-boot SSH: the operator SSHes in and answers systemd-ask-password
+    # (passphrase never on box). First-init is a one-time manual enrollment
+    # (luksFormat + mkfs) — this service only OPENS an already-enrolled volume.
+
+    systemd.services.k3s-state-volume = {
+      description = "Unlock + mount the k3s state volume (role=server)";
+      after = [ "network-online.target" "cloud-init.service" ];
+      wants = [ "network-online.target" ];
+      before = [ "k3s-server-bootstrap.service" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        # Allow the operator time to SSH in and answer the passphrase prompt.
+        TimeoutStartSec = "infinity";
+      };
+
+      script = ''
+        set -euo pipefail
+
+        for i in $(seq 1 60); do
+          [ -f /etc/karpenter-node.conf ] && break
+          sleep 2
+        done
+        source /etc/karpenter-node.conf
+
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-state-volume"
+          exit 0
+        fi
+
+        # Auto-discover the attached Hetzner volume (only non-root block device).
+        DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1 || true)
+        if [ -z "$DEV" ]; then
+          echo "No Hetzner volume attached — cannot mount k3s state" >&2
+          exit 1
+        fi
+
+        if ! ${pkgs.cryptsetup}/bin/cryptsetup isLuks "$DEV"; then
+          echo "Volume $DEV is not LUKS — run one-time enrollment first (runbook)" >&2
+          exit 1
+        fi
+
+        # Open via SSH-answerable prompt (passphrase never stored on the box).
+        if [ ! -e /dev/mapper/k3s-state ]; then
+          ${pkgs.systemd}/bin/systemd-ask-password "Unlock k3s state volume:" \
+            | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -
+        fi
+
+        mkdir -p /var/lib/rancher/k3s
+        ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
+          || mount /dev/mapper/k3s-state /var/lib/rancher/k3s
+      '';
+    };
+
+    # k3s server bootstrap — single master, SQLite (⊥ --cluster-init/etcd) [V21].
+    # Cilium CNI, kube-proxy replacement, secrets-encryption [V4,V5]; tls-san =
+    # floating IP + Tailscale [V3]. State dir provided by k3s-state-volume.
+    systemd.services.k3s-server-bootstrap = {
+      description = "K3s Server Bootstrap (cattle control-plane)";
+      after = [ "network-online.target" "cloud-init.service" "tailscale-bootstrap.service" "k3s-state-volume.service" ];
+      wants = [ "network-online.target" ];
+      requires = [ "tailscale-bootstrap.service" "k3s-state-volume.service" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Type = "exec";
+        Restart = "on-failure";
+        RestartSec = "10s";
+      };
+
+      script = ''
+        set -euo pipefail
+
+        for i in $(seq 1 60); do
+          [ -f /etc/karpenter-node.conf ] && break
+          sleep 2
+        done
+        source /etc/karpenter-node.conf
+
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-server-bootstrap"
+          exit 0
+        fi
+
+        # Require the encrypted state volume to be mounted before starting.
+        ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s
+
+        TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
+        NODE_IP=''${TS_IP:-$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
+          | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')}
+
+        # SQLite single-node control plane — NO --cluster-init (that is etcd).
+        exec ${pkgs.k3s}/bin/k3s server \
+          --token "$K3S_TOKEN" \
+          --node-ip "$NODE_IP" \
+          --tls-san "$FLOATING_IP" \
+          ''${TS_IP:+--tls-san "$TS_IP"} \
+          --flannel-backend=none \
+          --disable-network-policy \
+          --disable-kube-proxy \
+          --disable=traefik \
+          --disable=servicelb \
+          --secrets-encryption \
+          --cluster-cidr=10.42.0.0/16 \
+          --service-cidr=10.43.0.0/16 \
+          --write-kubeconfig-mode=0400
       '';
     };
 
