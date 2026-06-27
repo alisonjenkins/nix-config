@@ -380,17 +380,50 @@ in
         let
           imagePkg = hetznerSystems."hetzner-karpenter-node-amd64".config.system.build.hetznerImage;
           version = hetznerSystems."hetzner-karpenter-node-amd64".config.system.nixos.version;
+          # VM-free GRUB i386-pc install: boot.img -> MBR (patched with core LBA),
+          # core.img -> bios_grub partition (patched blocklist). argv:
+          # boot.img core.img raw bios_grub_lba
+          biosInstallPy = pkgs.writeText "grub-bios-install.py" ''
+            import struct, sys
+            bootp, corep, rawp, lba = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+            boot = bytearray(open(bootp, "rb").read())
+            core = bytearray(open(corep, "rb").read())
+            core_sectors = (len(core) + 511) // 512
+            struct.pack_into("<Q", boot, 0x5c, lba)
+            struct.pack_into("<Q", core, 0x1f4, lba + 1)
+            struct.pack_into("<H", core, 0x1fc, core_sectors - 1)
+            struct.pack_into("<H", core, 0x1fe, 0x0820)
+            with open(rawp, "r+b") as f:
+                f.seek(0);         f.write(boot[:440])
+                f.seek(lba * 512); f.write(core)
+            print("GRUB BIOS installed: core %dB @ LBA %d" % (len(core), lba))
+          '';
         in
         pkgs.writeShellApplication {
           name = "publish-hetzner-snapshot";
-          runtimeInputs = [ pkgs.hcloud-upload-image pkgs.findutils pkgs.coreutils ];
+          runtimeInputs = [ pkgs.hcloud-upload-image pkgs.findutils pkgs.coreutils pkgs.util-linux pkgs.python3 ];
           text = ''
             : "''${HCLOUD_TOKEN:?Set HCLOUD_TOKEN (e.g. via op run)}"
-            raw=$(find ${imagePkg} -name '*.raw' | head -1)
-            [ -n "$raw" ] || { echo "no .raw found in ${imagePkg}" >&2; exit 1; }
-            echo "Publishing $raw as Hetzner snapshot (purpose=k8s-node)..."
+            src=$(find ${imagePkg} -name '*.raw' | head -1)
+            [ -n "$src" ] || { echo "no .raw found in ${imagePkg}" >&2; exit 1; }
+
+            work=$(mktemp -d)
+            trap 'rm -rf "$work"' EXIT
+            cp "$src" "$work/image.raw"
+            chmod +w "$work/image.raw"
+
+            # Install GRUB i386-pc for SeaBIOS boot [V23,B3]. grub-bios-setup probes
+            # host disks and fails in restricted envs, so place boot.img/core.img by
+            # hand: boot.img -> MBR (patched with core's LBA), core.img -> bios_grub
+            # partition (patched blocklist). Validated by qemu before first publish.
+            lba=$(fdisk -l "$work/image.raw" | awk '/BIOS boot/{print $2}')
+            [ -n "$lba" ] || { echo "no BIOS boot partition in image" >&2; exit 1; }
+            python3 ${biosInstallPy} \
+              ${imagePkg}/grub/boot.img ${imagePkg}/grub/core.img "$work/image.raw" "$lba"
+
+            echo "Publishing as Hetzner snapshot (purpose=k8s-node)..."
             hcloud-upload-image upload \
-              --image-path "$raw" \
+              --image-path "$work/image.raw" \
               --architecture x86 \
               --location nbg1 \
               --description "nixos-k8s-node amd64 ${version}" \
