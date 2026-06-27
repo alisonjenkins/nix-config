@@ -367,9 +367,36 @@ in
 {
   flake.nixosConfigurations = hetznerSystems;
 
-  perSystem = { system, ... }: {
-    packages = lib.mapAttrs'
+  perSystem = { system, pkgs, ... }: {
+    packages = (lib.mapAttrs'
       (name: _: lib.nameValuePair "${name}-image" hetznerSystems.${name}.config.system.build.hetznerImage)
-      (lib.filterAttrs (_: cfg: cfg.system == system) hetznerConfigs);
+      (lib.filterAttrs (_: cfg: cfg.system == system) hetznerConfigs))
+    # Publish the amd64 image to Hetzner as a labelled snapshot. Idempotent by
+    # convention: each run creates a new snapshot tagged purpose=k8s-node, and
+    # the tofu CP/Karpenter side selects the most-recent match (T9 -> T6/T10).
+    # Needs HCLOUD_TOKEN in the env (e.g. `op run -- nix run .#publish-...`).
+    // lib.optionalAttrs (system == "x86_64-linux") {
+      publish-hetzner-snapshot =
+        let
+          imagePkg = hetznerSystems."hetzner-karpenter-node-amd64".config.system.build.hetznerImage;
+          version = hetznerSystems."hetzner-karpenter-node-amd64".config.system.nixos.version;
+        in
+        pkgs.writeShellApplication {
+          name = "publish-hetzner-snapshot";
+          runtimeInputs = [ pkgs.hcloud-upload-image pkgs.findutils pkgs.coreutils ];
+          text = ''
+            : "''${HCLOUD_TOKEN:?Set HCLOUD_TOKEN (e.g. via op run)}"
+            raw=$(find ${imagePkg} -name '*.raw' | head -1)
+            [ -n "$raw" ] || { echo "no .raw found in ${imagePkg}" >&2; exit 1; }
+            echo "Publishing $raw as Hetzner snapshot (purpose=k8s-node)..."
+            hcloud-upload-image upload \
+              --image-path "$raw" \
+              --architecture x86 \
+              --location nbg1 \
+              --description "nixos-k8s-node amd64 ${version}" \
+              --labels purpose=k8s-node,os=nixos,arch=amd64
+          '';
+        };
+    };
   };
 }
