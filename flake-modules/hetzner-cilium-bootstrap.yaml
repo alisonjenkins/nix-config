@@ -1,0 +1,93 @@
+# Cilium bootstrap for the Hetzner cattle control-plane (k3s helm-controller).
+# Written to /var/lib/rancher/k3s/server/manifests/ by k3s-server-bootstrap so
+# the CNI comes up before Flux. Tuned for cx33 (4c/8g, kernel 6.18, virtio) +
+# Hetzner private-net native routing with tunnel fallback for Tailscale workers.
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  repo: https://helm.cilium.io/
+  chart: cilium
+  version: "1.19.5"
+  targetNamespace: kube-system
+  bootstrap: true
+  valuesContent: |-
+    # kube-proxy replacement; k3s apiserver on the CP private IP [V4].
+    kubeProxyReplacement: true
+    k8sServiceHost: "10.0.1.10"
+    k8sServicePort: "6443"
+
+    # IPAM delegated to k3s (--cluster-cidr); avoids a second allocator.
+    ipam:
+      mode: kubernetes
+
+    # Native routing over the Hetzner private net. The private net has a gateway,
+    # so plain autoDirectNodeRoutes fails; directRoutingSkipUnreachable routes
+    # natively to in-net peers and falls back to tunnel for Tailscale/cross-cloud.
+    routingMode: native
+    ipv4NativeRoutingCIDR: "10.0.0.0/8"
+    autoDirectNodeRoutes: true
+    directRoutingSkipUnreachable: true
+    enableIPv4Masquerade: true
+    enableIPv4BIGTCP: false   # virtio NIC — BIG TCP needs mlx/ice
+    ipv6:
+      enabled: false
+
+    endpointRoutes:
+      enabled: true
+
+    # Modern datapath (kernel 6.18): netkit + BPF host-routing + tproxy.
+    bpf:
+      datapathMode: netkit
+      masquerade: true
+      hostLegacyRouting: false
+      tproxy: true
+
+    bandwidthManager:
+      enabled: true
+      bbr: true
+
+    # Gateway API via hostNetwork Envoy (floating-IP ingress) [V13]. Separate
+    # Envoy DaemonSet so Karpenter sees its per-node reservation.
+    gatewayAPI:
+      enabled: true
+      hostNetwork:
+        enabled: true
+    l7Proxy: true
+    loadBalancer:
+      l7:
+        backend: envoy
+      mode: hybrid
+    envoy:
+      enabled: true
+      resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits: { cpu: 500m, memory: 512Mi }
+
+    # Observability — relay yes, UI off (RAM) on a small node.
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+        resources:
+          requests: { cpu: 50m, memory: 64Mi }
+          limits: { cpu: 200m, memory: 128Mi }
+      ui:
+        enabled: false
+      metrics:
+        enabled: [drop, tcp, flow, port-distribution, httpV2]
+
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+    operator:
+      replicas: 1
+      resources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { cpu: 500m, memory: 256Mi }
+
+    cni:
+      binPath: /var/lib/rancher/k3s/data/current/bin
+      confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d

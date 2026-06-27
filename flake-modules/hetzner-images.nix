@@ -6,6 +6,10 @@ let
   # Hetzner repart image builder (raw format, no VHD conversion)
   commonHetznerModule = self + "/lib/hetzner-repart-image.nix";
 
+  # Cilium CNI bootstrap (k3s helm-controller manifest) — written to the k3s
+  # manifests dir by the server bootstrap so the CNI is up before Flux.
+  ciliumBootstrapManifest = self + "/flake-modules/hetzner-cilium-bootstrap.yaml";
+
   # Shared Hetzner Karpenter node config
   hetznerKarpenterNodeConfig = { modulesPath, lib, pkgs, ... }: {
     modules.hetzner = {
@@ -284,6 +288,16 @@ let
 
         # Require the encrypted state volume to be mounted before starting.
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s
+
+        # CNI bootstrap: drop Cilium (helm-controller) + Gateway API CRDs into the
+        # k3s manifests dir so the CNI comes up before Flux [V4]. Idempotent.
+        install -d /var/lib/rancher/k3s/server/manifests
+        install -m644 ${ciliumBootstrapManifest} \
+          /var/lib/rancher/k3s/server/manifests/cilium.yaml
+        ${pkgs.curl}/bin/curl -fsSL --retry 5 \
+          -o /var/lib/rancher/k3s/server/manifests/gateway-api-crds.yaml \
+          https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml \
+          || echo "WARN: Gateway API CRD fetch failed; Gateway inactive until present"
 
         TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
         NODE_IP=''${TS_IP:-$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
