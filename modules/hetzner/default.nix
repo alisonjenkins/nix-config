@@ -17,6 +17,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Guard: Hetzner Cloud root disk is virtio-scsi; without these in the initrd
+    # the root device never appears and the node drops to emergency mode [B5].
+    assertions = [
+      {
+        assertion = builtins.elem "virtio_scsi" config.boot.initrd.kernelModules
+          && builtins.elem "sd_mod" config.boot.initrd.kernelModules;
+        message = "modules.hetzner: initrd must include virtio_scsi + sd_mod (Hetzner Cloud uses virtio-scsi /dev/sda) [B5].";
+      }
+    ];
+
     # Boot speed optimizations
     boot = {
       loader.timeout = lib.mkForce 0;
@@ -24,7 +34,11 @@ in
       initrd = {
         systemd.enable = true;
         includeDefaultModules = false;
-        kernelModules = [ "virtio_blk" "virtio_pci" "virtio_net" ];
+        # Hetzner Cloud exposes the root disk over virtio-SCSI (/dev/sda), so the
+        # initrd needs virtio_scsi + sd_mod or /dev/disk/by-label/nixos never
+        # appears -> root timeout -> emergency mode [B5]. virtio_blk kept for
+        # local virtio-blk testing.
+        kernelModules = [ "virtio_blk" "virtio_scsi" "sd_mod" "virtio_pci" "virtio_net" ];
       };
 
       kernelParams = [
