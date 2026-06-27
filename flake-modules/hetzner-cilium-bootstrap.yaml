@@ -14,9 +14,12 @@ spec:
   targetNamespace: kube-system
   bootstrap: true
   valuesContent: |-
-    # kube-proxy replacement; k3s apiserver on the CP private IP [V4].
+    # kube-proxy replacement [V4]. apiserver is local on the single master;
+    # 127.0.0.1 is reliable (k3s binds *:6443). NB: when cross-cloud workers join
+    # (T10) this must become a shared address (CP Tailscale MagicDNS name) — and
+    # the Hetzner private NIC needs bringing up (currently absent → 10.0.1.10 down).
     kubeProxyReplacement: true
-    k8sServiceHost: "10.0.1.10"
+    k8sServiceHost: "127.0.0.1"
     k8sServicePort: "6443"
 
     # IPAM delegated to k3s (--cluster-cidr); avoids a second allocator.
@@ -38,12 +41,13 @@ spec:
     endpointRoutes:
       enabled: true
 
-    # Modern datapath (kernel 6.18): netkit + BPF host-routing + tproxy.
+    # Modern datapath (kernel 6.18): netkit + BPF host-routing.
+    # NB: bpf.tproxy is incompatible with datapathMode=netkit (Cilium validate);
+    # netkit handles L7 redirect without it.
     bpf:
       datapathMode: netkit
       masquerade: true
       hostLegacyRouting: false
-      tproxy: true
 
     bandwidthManager:
       enabled: true
@@ -88,6 +92,6 @@ spec:
         requests: { cpu: 50m, memory: 64Mi }
         limits: { cpu: 500m, memory: 256Mi }
 
-    cni:
-      binPath: /var/lib/rancher/k3s/data/current/bin
-      confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
+    # NB: this k3s's embedded containerd uses the DEFAULT CNI dirs
+    # (/etc/cni/net.d + /opt/cni/bin per `crictl info`), NOT the k3s paths.
+    # Leave Cilium's cni paths at default so they match containerd.
