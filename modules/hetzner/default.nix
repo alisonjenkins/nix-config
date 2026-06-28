@@ -133,14 +133,28 @@ in
       firewall = {
         enable = true;
         allowedTCPPorts = lib.optionals cfg.enableSSH [ 22 ];
+        # Public NIC (eth0) is governed by the Hetzner Cloud firewall (443 + SSH
+        # only) [V13]. Intra-cluster traffic rides Tailscale [V3] + the Hetzner
+        # private net [B7]; trust those interfaces so k3s API (6443), Cilium
+        # (health/VXLAN/Geneve), and node joins flow between CP and workers.
+        trustedInterfaces = [ "tailscale0" "enp7s0" ];
       };
     };
 
     systemd.network = {
       enable = true;
-      wait-online.enable = false; # cloud-init configures the NIC post-boot
-      # No static networks here — cloud-init (Hetzner datasource) is the SOLE
-      # writer of .network files; a custom en* match would race it [B4].
+      wait-online.enable = false; # cloud-init configures the public NIC post-boot
+      # cloud-init (Hetzner datasource) is the SOLE writer for the PUBLIC NIC
+      # (eth0) — never add a match for it here, it races cloud-init [B4,V24].
+      # The PRIVATE NIC (enp7s0) is NOT touched by cloud-init, so we must bring
+      # it up ourselves or 10.0.1.10 never appears [B7]. Match enp* (≠ eth0);
+      # DHCP from the Hetzner private net, no default route (eth0 owns default).
+      networks."10-hetzner-private" = {
+        matchConfig.Name = "enp*";
+        networkConfig.DHCP = "ipv4";
+        dhcpV4Config.UseGateway = false;
+        dhcpV4Config.RouteMetric = 2048;
+      };
     };
 
     # cloud-init-local must reach the metadata service (169.254.169.254) before
