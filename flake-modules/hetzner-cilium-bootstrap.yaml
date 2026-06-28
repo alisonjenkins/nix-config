@@ -14,12 +14,13 @@ spec:
   targetNamespace: kube-system
   bootstrap: true
   valuesContent: |-
-    # kube-proxy replacement [V4]. apiserver is local on the single master;
-    # 127.0.0.1 is reliable (k3s binds *:6443). NB: when cross-cloud workers join
-    # (T10) this must become a shared address (CP Tailscale MagicDNS name) — and
-    # the Hetzner private NIC needs bringing up (currently absent → 10.0.1.10 down).
+    # kube-proxy replacement [V4]. Shared API address reachable by ALL nodes:
+    # the CP's stable Hetzner private IP (tofu-pinned, survives replace) [T10].
+    # k3s binds *:6443; the CP reaches it locally, workers over the private net
+    # (B7 brings up enp7s0=10.0.1.10). Cross-cloud workers (future) would need
+    # the CP Tailscale name instead.
     kubeProxyReplacement: true
-    k8sServiceHost: "127.0.0.1"
+    k8sServiceHost: "10.0.1.10"
     k8sServicePort: "6443"
 
     # IPAM delegated to k3s (--cluster-cidr); avoids a second allocator.
