@@ -264,8 +264,10 @@ let
         fi
 
         # Open via SSH-answerable prompt (passphrase never stored on the box).
+        # --timeout=0: wait indefinitely for the operator; the default 90s expires
+        # before an operator can SSH in and answer → unlock fails [B13].
         if [ ! -e /dev/mapper/k3s-state ]; then
-          ${pkgs.systemd}/bin/systemd-ask-password "Unlock k3s state volume:" \
+          ${pkgs.systemd}/bin/systemd-ask-password --timeout=0 "Unlock k3s state volume:" \
             | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -
         fi
 
