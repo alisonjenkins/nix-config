@@ -132,7 +132,10 @@ in
 
       firewall = {
         enable = true;
-        allowedTCPPorts = lib.optionals cfg.enableSSH [ 22 ];
+        # 443 = Cilium Gateway (HTTPS via floating IP) [V13]; 22 = SSH. The
+        # hcloud Cloud firewall is the real public gate; this matches it so the
+        # NixOS host doesn't drop 443 on eth0. (harmless on agents — no listener.)
+        allowedTCPPorts = [ 443 ] ++ lib.optionals cfg.enableSSH [ 22 ];
         # Public NIC (eth0) is governed by the Hetzner Cloud firewall (443 + SSH
         # only) [V13]. Intra-cluster traffic rides Tailscale [V3] + the Hetzner
         # private net [B7]; trust those interfaces so k3s API (6443), Cilium
