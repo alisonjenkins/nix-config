@@ -476,7 +476,13 @@ in
               --image-path "$work/image.raw" \
               --architecture x86 \
               --location nbg1 \
-              --description "nixos-k8s-node amd64 ${version}" \
+              # "talos" tag is load-bearing: karpenter-provider-hetzner v1.0.0
+              # resolves custom SNAPSHOTS only via family=talos, which filters by
+              # `description contains "talos"` [B14]. family only selects the
+              # image — userData/cloud-init is passed verbatim, so our NixOS image
+              # boots normally. The real image is selected by the purpose=k8s-node
+              # label (HCloudNodeClass.imageSelector.selector).
+              --description "talos-compat nixos-k8s-node amd64 ${version}" \
               --labels purpose=k8s-node,os=nixos,arch=amd64
           '';
         };
