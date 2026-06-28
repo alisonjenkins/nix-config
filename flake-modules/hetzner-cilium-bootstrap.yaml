@@ -42,11 +42,15 @@ spec:
     endpointRoutes:
       enabled: true
 
-    # Modern datapath (kernel 6.18): netkit + BPF host-routing.
-    # NB: bpf.tproxy is incompatible with datapathMode=netkit (Cilium validate);
-    # netkit handles L7 redirect without it.
+    # Datapath: veth + tproxy (NOT netkit). The L7 proxy (Gateway API / Envoy)
+    # REQUIRES tproxy to redirect to/from Envoy, and tproxy is INCOMPATIBLE with
+    # netkit [Cilium 1.19 docs]. On netkit the Envoy→backend path silently fails
+    # ("upstream connect timeout"; cilium#29864) — our Gateway couldn't reach
+    # Museum. veth + bpf.tproxy is the documented combo for Gateway/Envoy L7
+    # with kube-proxy-replacement + native routing [B19, V4].
     bpf:
-      datapathMode: netkit
+      datapathMode: veth
+      tproxy: true
       masquerade: true
       hostLegacyRouting: false
 
