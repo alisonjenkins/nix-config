@@ -42,15 +42,13 @@ spec:
     endpointRoutes:
       enabled: true
 
-    # Datapath: veth + tproxy (NOT netkit). The L7 proxy (Gateway API / Envoy)
-    # REQUIRES tproxy to redirect to/from Envoy, and tproxy is INCOMPATIBLE with
-    # netkit [Cilium 1.19 docs]. On netkit the Envoy→backend path silently fails
-    # ("upstream connect timeout"; cilium#29864) — our Gateway couldn't reach
-    # Museum. veth + bpf.tproxy is the documented combo for Gateway/Envoy L7
-    # with kube-proxy-replacement + native routing [B19, V4].
+    # Datapath: netkit (perf; kernel 6.18). Cilium does NOT do L7 here — its L7
+    # proxy (tproxy) can't reach same-node backends (cilium#29864), broken on a
+    # single node. Ingress is Envoy Gateway instead (its own Envoy, normal pod
+    # networking) [B19,B21,V4]. So cilium L7/Gateway/Envoy are DISABLED; with no
+    # cilium L7, tproxy is unneeded and netkit is fine.
     bpf:
-      datapathMode: veth
-      tproxy: true
+      datapathMode: netkit
       masquerade: true
       hostLegacyRouting: false
 
@@ -58,22 +56,17 @@ spec:
       enabled: true
       bbr: true
 
-    # Gateway API via hostNetwork Envoy (floating-IP ingress) [V13]. Separate
-    # Envoy DaemonSet so Karpenter sees its per-node reservation.
+    # Cilium L7 OFF — ingress via Envoy Gateway (gatewayClassName eg) [I.gateway].
+    # Leaving cilium's Envoy on would also collide with EG's Envoy on host base-id
+    # 0 / port 443 [B21].
     gatewayAPI:
-      enabled: true
-      hostNetwork:
-        enabled: true
-    l7Proxy: true
+      enabled: false
+    l7Proxy: false
     loadBalancer:
       l7:
-        backend: envoy
-      mode: hybrid
+        backend: disabled
     envoy:
-      enabled: true
-      resources:
-        requests: { cpu: 100m, memory: 128Mi }
-        limits: { cpu: 500m, memory: 512Mi }
+      enabled: false
 
     # Observability — relay yes, UI off (RAM) on a small node.
     hubble:
