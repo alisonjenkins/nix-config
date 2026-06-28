@@ -171,15 +171,18 @@ let
         LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
 
         # node-ip MUST be a hcloud-known address (CCM rejects others) [B10];
-        # Tailscale is for join only [V3]. Prefer private NIC IP if up, else public.
-        PRIV_IP=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
+        # Tailscale is for join only [V3]. Private IP is DHCP-only (not in
+        # metadata) [B16] — read it off the private NIC (10.0.0.0/8), waiting for
+        # B7's DHCP; fall back to public.
         PUB_IP=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.public-ipv4')
-        if [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] \
-            && ${pkgs.iproute2}/bin/ip -4 addr show | grep -qw "$PRIV_IP"; then
-          NODE_IP="$PRIV_IP"
-        else
-          NODE_IP="$PUB_IP"
-        fi
+        PRIV_IP=""
+        for _ in $(seq 1 30); do
+          PRIV_IP=$(${pkgs.iproute2}/bin/ip -4 -o addr show 2>/dev/null \
+            | ${pkgs.gawk}/bin/awk '$4 ~ /^10\.0\./ {print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
+          [ -n "$PRIV_IP" ] && break
+          sleep 2
+        done
+        NODE_IP="''${PRIV_IP:-$PUB_IP}"
 
         # Wait for master reachability
         for i in $(seq 1 60); do
@@ -323,24 +326,27 @@ let
 
         # Tailscale IP is for tls-san/join only [V3]. node-ip MUST be a
         # hcloud-known address or the hcloud CCM rejects the node and never sets
-        # providerID ("provided node ip ... not valid") [B10]. Prefer the private
-        # NIC IP when it is actually up (B7); else the public IPv4.
+        # providerID ("provided node ip ... not valid") [B10].
         TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
-        META=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
-        PRIV_IP=$(echo "$META" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
-        PUB_IP=$(echo "$META" | ${pkgs.yq-go}/bin/yq '.public-ipv4')
-        if [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] \
-            && ${pkgs.iproute2}/bin/ip -4 addr show | grep -qw "$PRIV_IP"; then
-          NODE_IP="$PRIV_IP"
-        else
-          NODE_IP="$PUB_IP"
-        fi
+        PUB_IP=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
+          | ${pkgs.yq-go}/bin/yq '.public-ipv4')
+        # Private IP is DHCP-only — Hetzner metadata does NOT expose it [B16], so
+        # read it off the private NIC (10.0.0.0/8) once B7's DHCP has assigned it.
+        # Wait up to 60s; the iface can lag network-online.target.
+        PRIV_IP=""
+        for _ in $(seq 1 30); do
+          PRIV_IP=$(${pkgs.iproute2}/bin/ip -4 -o addr show 2>/dev/null \
+            | ${pkgs.gawk}/bin/awk '$4 ~ /^10\.0\./ {print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
+          [ -n "$PRIV_IP" ] && break
+          sleep 2
+        done
+        NODE_IP="''${PRIV_IP:-$PUB_IP}"
 
         # tls-san MUST include the private IP: it is the shared k8sServiceHost
         # [T10] that cilium + workers dial (https://<priv>:6443) — without it in
-        # the cert, TLS verification fails. Guard against the yq "null".
+        # the cert, TLS verification fails.
         PRIV_SAN=""
-        [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] && PRIV_SAN="--tls-san $PRIV_IP"
+        [ -n "$PRIV_IP" ] && PRIV_SAN="--tls-san $PRIV_IP"
 
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
