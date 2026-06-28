@@ -182,11 +182,15 @@ let
         done
 
         # Run k3s agent (blocks — systemd manages the lifecycle)
+        # cloud-provider=external: kubelet leaves providerID unset + adds the
+        # uninitialized taint; hcloud CCM then sets providerID=hcloud://<id> and
+        # untaints [I.ccm]. ⊥ self-set provider-id (CCM rejects non-hcloud:// — it
+        # must own it; legacy hetzner:/// format broke node init).
         exec ${pkgs.k3s}/bin/k3s agent \
           --server "https://$SERVER_ENDPOINT:6443" \
           --token "$K3S_TOKEN" \
           --node-ip "$NODE_IP" \
-          --kubelet-arg="provider-id=hetzner:///$LOCATION/$SERVER_ID" \
+          --kubelet-arg="cloud-provider=external" \
           --node-label="topology.kubernetes.io/region=$LOCATION" \
           --node-label="karpenter.sh/registered=true" \
           --kubelet-arg="kube-api-qps=100" \
@@ -314,6 +318,8 @@ let
           --disable-kube-proxy \
           --disable=traefik \
           --disable=servicelb \
+          --disable-cloud-controller \
+          --kubelet-arg=cloud-provider=external \
           --secrets-encryption \
           --cluster-cidr=10.42.0.0/16 \
           --service-cidr=10.43.0.0/16 \
