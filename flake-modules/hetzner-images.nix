@@ -336,12 +336,19 @@ let
           NODE_IP="$PUB_IP"
         fi
 
+        # tls-san MUST include the private IP: it is the shared k8sServiceHost
+        # [T10] that cilium + workers dial (https://<priv>:6443) — without it in
+        # the cert, TLS verification fails. Guard against the yq "null".
+        PRIV_SAN=""
+        [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] && PRIV_SAN="--tls-san $PRIV_IP"
+
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
           --token "$K3S_TOKEN" \
           --node-ip "$NODE_IP" \
           --tls-san "$FLOATING_IP" \
           ''${TS_IP:+--tls-san "$TS_IP"} \
+          $PRIV_SAN \
           --flannel-backend=none \
           --disable-network-policy \
           --disable-kube-proxy \
