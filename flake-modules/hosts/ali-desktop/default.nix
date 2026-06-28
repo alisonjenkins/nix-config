@@ -649,8 +649,15 @@ in {
               pkgs.uhk-udev-rules
             ];
             extraRules = ''
-              # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend)
-              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", ATTR{idProduct}=="3106", ATTR{power/control}="on"
+              # Keep the Scarlett 2i2 4th Gen USB audio interface fully powered.
+              # It sits behind a USB switch + hub shared with the controllers below;
+              # autosuspend churn on that hub jitters its isochronous audio stream.
+              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="1235", ATTR{idProduct}=="8219", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
+
+              # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend).
+              # Shares the Scarlett's hub branch; its autosuspend re-enumeration storms
+              # (descriptor read error -32 / -71 at boot) disrupt the audio device.
+              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", ATTR{idProduct}=="3109", ATTR{power/control}="on"
 
               # Use adios I/O scheduler on all storage devices (CachyOS kernel only).
               # adios = adaptive deadline scheduler — better mixed-workload latency than `none`,
