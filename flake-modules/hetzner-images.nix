@@ -170,9 +170,16 @@ let
         SERVER_ID=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.instance-id')
         LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
 
-        # Get the node IP — use Tailscale IP if available, otherwise private IP
-        NODE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || \
-          echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
+        # node-ip MUST be a hcloud-known address (CCM rejects others) [B10];
+        # Tailscale is for join only [V3]. Prefer private NIC IP if up, else public.
+        PRIV_IP=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
+        PUB_IP=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.public-ipv4')
+        if [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] \
+            && ${pkgs.iproute2}/bin/ip -4 addr show | grep -qw "$PRIV_IP"; then
+          NODE_IP="$PRIV_IP"
+        else
+          NODE_IP="$PUB_IP"
+        fi
 
         # Wait for master reachability
         for i in $(seq 1 60); do
@@ -237,9 +244,17 @@ let
         fi
 
         # Auto-discover the attached Hetzner volume (only non-root block device).
-        DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1 || true)
+        # On a cattle replace the tofu volume_attachment lands AFTER the server is
+        # created, so the device can be absent for the first seconds of boot —
+        # wait for it instead of failing immediately [B8].
+        DEV=""
+        for i in $(seq 1 60); do
+          DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1 || true)
+          [ -n "$DEV" ] && break
+          sleep 2
+        done
         if [ -z "$DEV" ]; then
-          echo "No Hetzner volume attached — cannot mount k3s state" >&2
+          echo "No Hetzner volume attached after 120s — cannot mount k3s state" >&2
           exit 1
         fi
 
@@ -255,8 +270,9 @@ let
         fi
 
         mkdir -p /var/lib/rancher/k3s
+        # full path: bare `mount` is not in the unit PATH [B9].
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
-          || mount /dev/mapper/k3s-state /var/lib/rancher/k3s
+          || ${pkgs.util-linux}/bin/mount /dev/mapper/k3s-state /var/lib/rancher/k3s
       '';
     };
 
@@ -303,9 +319,20 @@ let
           https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml \
           || echo "WARN: Gateway API CRD fetch failed; Gateway inactive until present"
 
+        # Tailscale IP is for tls-san/join only [V3]. node-ip MUST be a
+        # hcloud-known address or the hcloud CCM rejects the node and never sets
+        # providerID ("provided node ip ... not valid") [B10]. Prefer the private
+        # NIC IP when it is actually up (B7); else the public IPv4.
         TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
-        NODE_IP=''${TS_IP:-$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
-          | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')}
+        META=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
+        PRIV_IP=$(echo "$META" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
+        PUB_IP=$(echo "$META" | ${pkgs.yq-go}/bin/yq '.public-ipv4')
+        if [ -n "$PRIV_IP" ] && [ "$PRIV_IP" != "null" ] \
+            && ${pkgs.iproute2}/bin/ip -4 addr show | grep -qw "$PRIV_IP"; then
+          NODE_IP="$PRIV_IP"
+        else
+          NODE_IP="$PUB_IP"
+        fi
 
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
@@ -318,6 +345,7 @@ let
           --disable-kube-proxy \
           --disable=traefik \
           --disable=servicelb \
+          --disable=local-storage \
           --disable-cloud-controller \
           --kubelet-arg=cloud-provider=external \
           --secrets-encryption \
