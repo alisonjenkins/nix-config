@@ -226,6 +226,54 @@ in
           is selected at device monitor time.
         '';
       };
+
+      usbAudioStability = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Give USB audio interfaces larger, more resilient buffers than the
+          aggressive low-latency settings used for internal/wired ALSA.
+
+          USB audio is isochronous and far more sensitive to bus jitter —
+          especially when the interface sits behind a hub, dock or USB switch
+          shared with other devices. The generic low-latency rule pushes every
+          ALSA node to `minQuantum`-sized periods, which a contended USB bus
+          cannot refill in time → xruns → crackle/dropouts. When enabled, a
+          dedicated WirePlumber rule matches only `alsa_*.usb-*` nodes (both
+          playback and capture, since the capture node is often the graph
+          driver) and pins the larger `usbPeriodSize`/`usbPeriodNum`/`usbHeadroom`
+          values below. Internal and wired audio keep their low latency.
+        '';
+      };
+
+      usbPeriodSize = mkOption {
+        type = types.int;
+        default = 1024;
+        description = ''
+          ALSA period size (frames) for USB audio nodes when
+          `usbAudioStability` is enabled. ~21ms at 48kHz. Raise to 2048 if a
+          USB interface behind a hub/switch still crackles.
+        '';
+      };
+
+      usbPeriodNum = mkOption {
+        type = types.int;
+        default = 4;
+        description = ''
+          Number of ALSA periods to buffer for USB audio nodes when
+          `usbAudioStability` is enabled. More periods cushion bus jitter from
+          contended hubs at the cost of latency.
+        '';
+      };
+
+      usbHeadroom = mkOption {
+        type = types.int;
+        default = 2048;
+        description = ''
+          ALSA headroom (frames) for USB audio nodes when `usbAudioStability`
+          is enabled. Extra slack absorbs scheduling/bus jitter.
+        '';
+      };
     };
 
     gaming = {
@@ -1364,6 +1412,32 @@ in
                     }
                   }
                 '') cfg.pipewire.forceStereoCards)}
+              ]
+            '')
+          ]) ++ (optionals cfg.pipewire.usbAudioStability [
+            # USB audio interfaces want larger, more resilient buffers than the
+            # aggressive low-latency settings in 52-device-latency.conf. USB is
+            # isochronous and sensitive to bus jitter — doubly so behind a hub,
+            # dock or USB switch shared with other devices. This file sorts after
+            # 52- so its props win for USB nodes. It matches both output and input
+            # (the capture node is frequently the graph driver), leaving internal
+            # and wired ALSA at their low-latency settings.
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/54-usb-audio-latency.conf" ''
+              monitor.alsa.rules = [
+                {
+                  matches = [
+                    { node.name = "~alsa_output.usb-.*" }
+                    { node.name = "~alsa_input.usb-.*" }
+                  ]
+                  actions = {
+                    update-props = {
+                      api.alsa.period-size = ${toString cfg.pipewire.usbPeriodSize}
+                      api.alsa.period-num = ${toString cfg.pipewire.usbPeriodNum}
+                      api.alsa.headroom = ${toString cfg.pipewire.usbHeadroom}
+                      node.latency = "${toString cfg.pipewire.usbPeriodSize}/48000"
+                    }
+                  }
+                }
               ]
             '')
           ]);
