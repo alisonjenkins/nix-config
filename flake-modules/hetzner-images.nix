@@ -366,6 +366,29 @@ let
       '';
     };
 
+    # Bind the Hetzner floating IP to eth0 on the CP so the Cilium Gateway
+    # (hostNetwork Envoy, :443) is reachable through it [V13]. Hetzner routes the
+    # floating IP to the server but the OS must accept it on an interface.
+    systemd.services.floating-ip-bind = {
+      description = "Bind Hetzner floating IP to eth0 (CP ingress) [V13]";
+      after = [ "network-online.target" "cloud-init.service" ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      script = ''
+        set -euo pipefail
+        for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
+        source /etc/karpenter-node.conf
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping floating-ip-bind"; exit 0
+        fi
+        [ -n "''${FLOATING_IP:-}" ] || { echo "no FLOATING_IP in conf"; exit 0; }
+        ${pkgs.iproute2}/bin/ip -4 addr show eth0 | grep -qw "$FLOATING_IP" \
+          || ${pkgs.iproute2}/bin/ip addr add "$FLOATING_IP/32" dev eth0
+        echo "floating IP $FLOATING_IP bound to eth0"
+      '';
+    };
+
     security.sudo.wheelNeedsPassword = lib.mkForce false;
 
     system.stateVersion = "25.11";
