@@ -97,9 +97,11 @@ in
                 exit 0
               fi
 
+              # Mirror the image (bash builtin read, no bare hostname/cat) — until
+              # the DRY service-module extraction [B30/T23] removes this copy.
               ${pkgs.tailscale}/bin/tailscale up \
                 --auth-key="$TAILSCALE_AUTH_KEY" \
-                --hostname="$(hostname)"
+                --hostname="$(< /proc/sys/kernel/hostname)"
 
               for i in $(seq 1 30); do
                 TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)

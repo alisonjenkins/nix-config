@@ -19,7 +19,7 @@
 # catches it). Idempotent mutations below keep explicit `|| true`.
 set -euo pipefail
 
-NODE="${NODE_NAME_OVERRIDE:-$(cat /proc/sys/kernel/hostname)}"
+NODE="${NODE_NAME_OVERRIDE:-$(< /proc/sys/kernel/hostname)}"  # bash builtin read, no external `cat`
 METADATA_URL="${METADATA_URL:-http://169.254.169.254/hetzner/v1/metadata}"
 export KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 
