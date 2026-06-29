@@ -79,6 +79,15 @@ in
                 in "L /var/lib/rancher/k3s/agent/images/${safeName}.tar - - - - ${tar}"
               ) archImages;
 
+          # In prod cloud-init writes /etc/karpenter-node.conf; the test has no
+          # cloud-init, so seed it (ROLE=agent) as a writable regular file. Without
+          # it the real k3s-state-volume unit blocks ~120s on its conf-wait, which
+          # delays tailscaled (ordered after it) and fails the "tailscaled running"
+          # subtest. A later subtest overwrites this file (regular, writable).
+          system.activationScripts.seedKarpenterNodeConf.text = ''
+            [ -e /etc/karpenter-node.conf ] || echo 'export ROLE=agent' > /etc/karpenter-node.conf
+          '';
+
           system.stateVersion = "25.11";
 
           virtualisation = {
@@ -175,13 +184,18 @@ in
               assert "aws ssm" not in script, \
                   "Should not use AWS SSM"
 
-          with subtest("bootstrap uses hetzner:/// provider ID format"):
+          with subtest("agent bootstrap uses cloud-provider=external (CCM owns providerID)"):
               unit_file2 = machine.succeed("cat /etc/systemd/system/k3s-agent-bootstrap.service")
               match2 = re.search(r'ExecStart=(/nix/store/\S+)', unit_file2)
               assert match2 is not None, f"Could not find ExecStart path: {unit_file2}"
               script = machine.succeed(f"cat {match2.group(1)}")
-              assert "provider-id=hetzner:///" in script, \
-                  "Should use hetzner:/// provider ID prefix"
+              # Legacy hetzner:/// self-set provider-id was dropped — hcloud CCM
+              # sets providerID=hcloud://<id>; the agent runs cloud-provider=external
+              # [B17].
+              assert "cloud-provider=external" in script, \
+                  "agent must run --kubelet-arg=cloud-provider=external (CCM owns providerID)"
+              assert "provider-id=hetzner:///" not in script, \
+                  "legacy hetzner:/// provider-id must NOT be self-set [B17]"
               assert "karpenter.sh/registered=true" in script, \
                   "Missing karpenter registration label"
               assert "topology.kubernetes.io/region" in script, \
@@ -357,8 +371,11 @@ in
               m = re.search(r'ExecStart=(/nix/store/\S+)', unit)
               assert m, f"no ExecStart: {unit}"
               script = machine.succeed(f"cat {m.group(1)}")
-              assert "k3s server" in script or "/k3s server" in script, "must run k3s server"
-              assert "--cluster-init" not in script, "single master is SQLite — must NOT use etcd [V21]"
+              # strip comment lines so negative assertions don't match a comment that
+              # merely mentions a flag (e.g. "# NO --cluster-init").
+              code = "\n".join(l for l in script.splitlines() if not l.lstrip().startswith("#"))
+              assert "k3s server" in code or "/k3s server" in code, "must run k3s server"
+              assert "--cluster-init" not in code, "single master is SQLite — must NOT use etcd [V21]"
               assert "--secrets-encryption" in script, "missing --secrets-encryption [V5]"
               assert "--flannel-backend=none" in script, "Cilium CNI — flannel must be off [V4]"
               assert "--disable-kube-proxy" in script, "kube-proxy replacement [V4]"
