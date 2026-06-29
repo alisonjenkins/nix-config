@@ -19,6 +19,14 @@
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        # conf-wait (≤120s) + TS-IP-wait (≤60s) + `tailscale up` can exceed
+        # systemd's 90s default → the unit would be KILLED mid-bootstrap and every
+        # downstream service (agent/server bootstrap require this) would block,
+        # wedging the node after a replace. Generous timeout + retry on transient
+        # `tailscale up` failures (auth rate-limit, tailscaled socket lag).
+        TimeoutStartSec = "300s";
+        Restart = "on-failure";
+        RestartSec = "15s";
       };
 
       script = ''
@@ -377,7 +385,17 @@
       # it, so the IP survives networkd restarts without manual re-binding [B25].
       partOf = [ "systemd-networkd.service" ];
       wantedBy = [ "multi-user.target" ];
-      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      # conf-wait (≤120s) > systemd 90s default → set a generous timeout so it
+      # isn't killed before binding. On a networkd-triggered restart (PartOf) eth0
+      # may still be reconfiguring → `ip addr add` fails under set -e; retry so the
+      # floating IP (CP ingress) isn't left unbound until manual intervention [B25].
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        TimeoutStartSec = "180s";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
       script = ''
         set -euo pipefail
         for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
@@ -412,8 +430,12 @@
       # set a generous timeout so the heal isn't killed before it runs [PR#155].
       serviceConfig = { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = "600s"; };
       # Thin wrapper: role-guard, then run the standalone, unit-tested heal script.
+      # set -e so a failed `source` (conf genuinely absent) fails the unit loudly
+      # instead of silently defaulting ROLE=agent and skipping the server heal. The
+      # heal runs after k3s-server-bootstrap, which already sourced the conf, so the
+      # file is present in the normal path.
       script = ''
-        set -uo pipefail
+        set -euo pipefail
         for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
         source /etc/karpenter-node.conf
         if [ "''${ROLE:-agent}" != "server" ]; then
