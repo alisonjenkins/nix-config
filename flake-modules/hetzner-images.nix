@@ -270,7 +270,25 @@ let
         # full path: bare `mount` is not in the unit PATH [B9].
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
           || ${pkgs.util-linux}/bin/mount /dev/mapper/k3s-state /var/lib/rancher/k3s
+
+        # Persist Tailscale state on the LUKS volume so the node keeps its
+        # Tailscale identity + IP across a cattle replace [B25]. Without this a
+        # fresh VM re-registers under a new name/IP (master-1 -> master-1-1) and
+        # the kubeconfig server (https://<ts-ip>:6443) breaks. Bind it here,
+        # before tailscaled starts (tailscaled is ordered after this unit).
+        mkdir -p /var/lib/rancher/k3s/tailscale /var/lib/tailscale
+        ${pkgs.util-linux}/bin/mountpoint -q /var/lib/tailscale \
+          || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/tailscale /var/lib/tailscale
       '';
+    };
+
+    # tailscaled state lives on the LUKS volume (bound by k3s-state-volume) so the
+    # Tailscale identity/IP is stable across a cattle replace [B25,V21]. Order it
+    # after the volume is unlocked + bound. On agents k3s-state-volume is a no-op
+    # that exits 0, so this ordering is harmless there (state stays on root).
+    systemd.services.tailscaled = {
+      after = [ "k3s-state-volume.service" ];
+      requires = [ "k3s-state-volume.service" ];
     };
 
     # k3s server bootstrap — single master, SQLite (⊥ --cluster-init/etcd) [V21].
@@ -371,8 +389,12 @@ let
     # floating IP to the server but the OS must accept it on an interface.
     systemd.services.floating-ip-bind = {
       description = "Bind Hetzner floating IP to eth0 (CP ingress) [V13]";
-      after = [ "network-online.target" "cloud-init.service" ];
+      after = [ "network-online.target" "cloud-init.service" "systemd-networkd.service" ];
       wants = [ "network-online.target" ];
+      # PartOf systemd-networkd: a networkd restart flushes addresses (dropping
+      # the floating IP); PartOf makes this unit restart with networkd and re-add
+      # it, so the IP survives networkd restarts without manual re-binding [B25].
+      partOf = [ "systemd-networkd.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
       script = ''
@@ -386,6 +408,68 @@ let
         ${pkgs.iproute2}/bin/ip -4 addr show eth0 | grep -qw "$FLOATING_IP" \
           || ${pkgs.iproute2}/bin/ip addr add "$FLOATING_IP/32" dev eth0
         echo "floating IP $FLOATING_IP bound to eth0"
+      '';
+    };
+
+    # Cattle-replace self-heal [B12,B20,B25]. The Node object persists on the LUKS
+    # volume, so a replaced VM boots with the OLD providerID (hcloud://<old-id>)
+    # and stale VolumeAttachments: CCM then can't find the server ("server not
+    # found") and would delete the node, and CSI won't re-attach PVCs. On boot, if
+    # the Node's providerID != this VM's hcloud id, drop the stale Node + its
+    # VolumeAttachments and restart the server so it re-registers cleanly (k3s only
+    # registers at startup). No-op on a normal reboot (providerID matches) or on
+    # agents (role != server).
+    systemd.services.k3s-node-heal = {
+      description = "Heal stale Node/providerID + VolumeAttachments after a cattle replace [B12,B20]";
+      after = [ "k3s-server-bootstrap.service" ];
+      wants = [ "k3s-server-bootstrap.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      script = ''
+        set -uo pipefail
+        for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
+        source /etc/karpenter-node.conf
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-node-heal"; exit 0
+        fi
+
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        K="${pkgs.k3s}/bin/k3s kubectl"
+
+        # Wait for the local API to be ready.
+        for i in $(seq 1 60); do
+          $K get --raw=/readyz >/dev/null 2>&1 && break
+          sleep 5
+        done
+
+        NODE=$(hostname)
+        INSTANCE_ID=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
+          | ${pkgs.yq-go}/bin/yq '.instance-id')
+        WANT="hcloud://$INSTANCE_ID"
+        HAVE=$($K get node "$NODE" -o jsonpath='{.spec.providerID}' 2>/dev/null || true)
+
+        if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "null" ]; then
+          echo "no instance-id from metadata — skipping heal"; exit 0
+        fi
+        if [ -z "$HAVE" ] || [ "$HAVE" = "$WANT" ]; then
+          echo "providerID ok (have=''${HAVE:-none}) — no heal needed"; exit 0
+        fi
+
+        echo "stale providerID: have=$HAVE want=$WANT — healing"
+        # Stale VolumeAttachments: detached at hcloud when the old VM died, but the
+        # VA still claims attached → CSI won't re-attach [B20]. Delete those on this
+        # node.
+        for va in $($K get volumeattachments \
+          -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName --no-headers 2>/dev/null \
+          | ${pkgs.gawk}/bin/awk -v n="$NODE" '$2==n {print $1}'); do
+          echo "deleting stale VolumeAttachment $va"
+          $K delete volumeattachment "$va" --wait=false || true
+        done
+        # Drop the stale Node so it re-registers fresh (CCM assigns the new
+        # providerID by name). k3s only registers at startup → restart it [B12].
+        $K delete node "$NODE" --wait=false || true
+        echo "restarting k3s-server-bootstrap to re-register the node"
+        ${pkgs.systemd}/bin/systemctl restart --no-block k3s-server-bootstrap.service || true
       '';
     };
 
