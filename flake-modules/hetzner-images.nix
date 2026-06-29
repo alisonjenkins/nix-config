@@ -284,6 +284,13 @@ let
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
           || ${pkgs.util-linux}/bin/mount /dev/mapper/k3s-state /var/lib/rancher/k3s
 
+        # Grow ext4 to the LUKS mapping (idempotent — no-op if already at size).
+        # luksOpen maps the full backing device, so when the tofu volume is grown
+        # [T24/B28] a fresh boot opens at the new size and this expands the fs —
+        # no manual cryptsetup/resize2fs. Stops the containerd image store filling
+        # the (previously 10G) state volume → DiskPressure → Museum evictions [B28].
+        ${pkgs.e2fsprogs}/bin/resize2fs /dev/mapper/k3s-state 2>/dev/null || true
+
         # Persist Tailscale state on the LUKS volume so the node keeps its
         # Tailscale identity + IP across a cattle replace [B25]. Without this a
         # fresh VM re-registers under a new name/IP (master-1 -> master-1-1) and
