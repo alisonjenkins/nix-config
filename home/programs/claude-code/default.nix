@@ -139,6 +139,8 @@ in
         # and PostToolUse tool-capture hooks (both default OFF without these).
         TS_BASH_COMPACT = "1";
         TS_BASH_REWRITE = "1";
+        # Drop _hints/_suggestion blocks from MCP tool results (~30-50 tok/call).
+        TS_NO_HINTS = "1";
       };
 
       alwaysThinkingEnabled = true;
@@ -386,7 +388,13 @@ in
             ];
           }
           {
-            matcher = "Bash|WebFetch|Read|Grep|mcp__token-savior__search_codebase|mcp__token-savior__get_function_source|mcp__token-savior__get_class_source";
+            # Capture large built-in + MCP tool outputs. `mcp__.*` matches every
+            # MCP tool regardless of plugin namespacing (this module ships its
+            # servers as the `claude-code-home-manager` inline plugin, so live
+            # names are `mcp__plugin_claude-code-home-manager_<srv>__<tool>` —
+            # bare `mcp__token-savior__*` never matched). The hook no-ops under
+            # TS_CAPTURE_THRESHOLD_BYTES (4096), so small outputs pass through.
+            matcher = "Bash|WebFetch|Read|Grep|mcp__.*";
             hooks = [
               {
                 type = "command";
