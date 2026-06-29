@@ -247,7 +247,7 @@ in
       };
 
       usbPeriodSize = mkOption {
-        type = types.int;
+        type = types.ints.positive;
         default = 1024;
         description = ''
           ALSA period size (frames) for USB audio nodes when
@@ -257,7 +257,7 @@ in
       };
 
       usbPeriodNum = mkOption {
-        type = types.int;
+        type = types.ints.positive;
         default = 2;
         description = ''
           Number of ALSA periods to buffer for USB audio nodes when
@@ -270,7 +270,7 @@ in
       };
 
       usbHeadroom = mkOption {
-        type = types.int;
+        type = types.ints.unsigned;
         default = 1024;
         description = ''
           ALSA headroom (frames) for USB audio nodes when `usbAudioStability`
@@ -1431,8 +1431,8 @@ in
               monitor.alsa.rules = [
                 {
                   matches = [
-                    { node.name = "~alsa_output.usb-.*" }
-                    { node.name = "~alsa_input.usb-.*" }
+                    { node.name = "~alsa_output\.usb-.*" }
+                    { node.name = "~alsa_input\.usb-.*" }
                   ]
                   actions = {
                     update-props = {
