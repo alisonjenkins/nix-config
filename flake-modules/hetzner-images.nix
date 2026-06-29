@@ -53,13 +53,10 @@ let
     # Enable Tailscale for cross-cloud networking
     services.tailscale.enable = true;
 
-    # Persistent, size-capped journal. The journal dir is bind-mounted onto the
-    # LUKS volume by k3s-state-volume so logs survive a cattle replace [B25]; cap
-    # the size so it can't fill the (small) state volume.
-    services.journald.extraConfig = ''
-      Storage=persistent
-      SystemMaxUse=500M
-    '';
+    # NB: journald persistence + size cap (Storage=persistent, SystemMaxUse) is
+    # the single authoritative config in modules/hetzner/default.nix — k3s-state-
+    # volume bind-mounts /var/log/journal onto the LUKS volume so those persistent
+    # logs survive a cattle replace [B25].
 
     # Post-quantum SSH key exchange [V12]. mlkem768x25519-sha256 needs
     # OpenSSH 9.9+; keep classical curve25519 as fallback for older clients.
@@ -295,6 +292,11 @@ let
         # operational logs (the ones that explain a death) land on the volume.
         # Size-capped via services.journald (SystemMaxUse) so it can't fill the vol.
         mkdir -p /var/lib/rancher/k3s/journal /var/log/journal
+        # journald only accepts a persistent /var/log/journal owned root:systemd-
+        # journal mode 2755 (setgid); without this it refuses to write there and
+        # the cross-replace logs are lost [PR#154 review].
+        ${pkgs.coreutils}/bin/chgrp systemd-journal /var/lib/rancher/k3s/journal 2>/dev/null || true
+        ${pkgs.coreutils}/bin/chmod 2755 /var/lib/rancher/k3s/journal
         ${pkgs.util-linux}/bin/mountpoint -q /var/log/journal \
           || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/journal /var/log/journal
         ${pkgs.systemd}/bin/systemctl restart systemd-journald 2>/dev/null || true
@@ -424,7 +426,7 @@ let
           echo "ROLE=''${ROLE:-agent}, not server — skipping floating-ip-bind"; exit 0
         fi
         [ -n "''${FLOATING_IP:-}" ] || { echo "no FLOATING_IP in conf"; exit 0; }
-        ${pkgs.iproute2}/bin/ip -4 addr show eth0 | grep -qw "$FLOATING_IP" \
+        ${pkgs.iproute2}/bin/ip -4 addr show eth0 | ${pkgs.gnugrep}/bin/grep -qw "$FLOATING_IP" \
           || ${pkgs.iproute2}/bin/ip addr add "$FLOATING_IP/32" dev eth0
         echo "floating IP $FLOATING_IP bound to eth0"
       '';
