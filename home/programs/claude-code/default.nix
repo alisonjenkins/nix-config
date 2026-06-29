@@ -88,14 +88,18 @@ in
     package = pkgs.master.claude-code;
 
     settings = {
-      # Opt out of nonessential network traffic + telemetry. The umbrella var
-      # disables Claude Code's autoupdater/error-reporting/telemetry AND is one
-      # of the three vars the superpowers brainstorm server checks before
-      # emitting its primeradiant.com logo beacon; DISABLE_TELEMETRY is
-      # belt-and-suspenders (also honored by superpowers).
+      # Opt out of telemetry/autoupdate/error-reporting WITHOUT the umbrella
+      # CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC var: that umbrella also blocks
+      # the Remote Control backplane (outbound HTTPS register+poll to the
+      # Anthropic API), which silently removes /remote-control from the menu.
+      # Granular vars below disable the same telemetry/update/report traffic
+      # but leave remote-control working. DISABLE_TELEMETRY also suppresses the
+      # superpowers brainstorm primeradiant.com logo beacon.
       env = {
-        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
         DISABLE_TELEMETRY = "1";
+        DISABLE_AUTOUPDATER = "1";
+        DISABLE_ERROR_REPORTING = "1";
+        DISABLE_BUG_COMMAND = "1";
       };
 
       alwaysThinkingEnabled = true;
