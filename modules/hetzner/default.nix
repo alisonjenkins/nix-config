@@ -191,10 +191,17 @@ in
     nix = {
       extraOptions = "experimental-features = nix-command flakes";
 
+      # Automatic GC is DISABLED on this cattle/ephemeral-root appliance node.
+      # The node boots fresh from a baked snapshot and is never rebuilt in place
+      # (config changes ship as a new snapshot + cattle-replace), so no old
+      # generations accumulate — auto-gc has zero upside here. It is also a known
+      # wedge risk: GC roots only cover current-system's closure, so a store path
+      # referenced only at runtime (e.g. k3s/containerd-extracted runc, a lazily
+      # activated unit) can be collected out from under the running system →
+      # "binary vanished, exec fails" lockup (observed 2026-06-28). Reclaim space
+      # by replacing the node, not by GC.
       gc = {
-        automatic = true;
-        dates = "weekly";
-        options = "--delete-older-than 30d";
+        automatic = false;
       };
 
       settings = {
