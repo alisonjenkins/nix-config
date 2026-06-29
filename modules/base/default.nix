@@ -294,10 +294,23 @@ in
           allowUnfree = true;
 
           # signal-desktop builds with pnpm 10.29.2, which nixpkgs marked
-          # insecure (CVE-2026-48995 et al). pnpm is a build-time-only tool
-          # used to assemble node_modules — it is not in the system runtime
-          # closure or PATH — so the CVEs don't affect the running system.
-          # Permit it until nixpkgs ships a non-flagged pnpm for signal.
+          # insecure (CVE-2026-48995 et al).
+          #
+          # NOTE: this is a GLOBAL eval-time policy — it lets *any* consumer of
+          # this exact pnpm version evaluate/build system-wide without the
+          # insecure-package refusal, not just signal. It does NOT scope to
+          # signal. We accept that because (a) pnpm is a build-time-only tool
+          # for assembling node_modules — never in the system runtime closure
+          # or PATH, so the CVEs don't affect the running system — and (b)
+          # signal-desktop (+ its node-sqlcipher / sticker-creator) is currently
+          # the only pnpm consumer in our closures (vesktop was dropped for this
+          # reason). True per-consumer scoping isn't expressible here; it would
+          # need an overlay clearing meta.knownVulnerabilities on a pnpm threaded
+          # through those derivations.
+          #
+          # REMOVE this permit once nixpkgs ships a non-flagged pnpm for signal
+          # (or pin signal to a build that uses one). Re-check after flake
+          # updates: `nix-store -q --requisites <toplevel.drv> | grep pnpm`.
           permittedInsecurePackages = [ "pnpm-10.29.2" ];
         };
 
