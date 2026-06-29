@@ -12,7 +12,12 @@
 #   METADATA_URL        hcloud metadata  (default: hcloud link-local)
 #   KUBECONFIG          kubeconfig       (default: k3s.yaml)
 #   HEAL_API_RETRIES    readyz wait iters (default 60; tests set 0 to skip)
-set -uo pipefail
+#
+# set -e (with pipefail): a bare-command failure inside a $(...) aborts the script
+# instead of silently yielding empty + falling through to "no heal needed" — so a
+# regression to a missing command surfaces (and the PATH-constrained unit test
+# catches it). Idempotent mutations below keep explicit `|| true`.
+set -euo pipefail
 
 NODE="${NODE_NAME_OVERRIDE:-$(cat /proc/sys/kernel/hostname)}"
 METADATA_URL="${METADATA_URL:-http://169.254.169.254/hetzner/v1/metadata}"
