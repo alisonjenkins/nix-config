@@ -11,9 +11,18 @@ in
         name = "hetzner-karpenter-node";
 
         nodes.machine = { config, pkgs, lib, ... }: {
+          imports = [
+            (import ../lib/hetzner-node-services.nix {
+              inherit pkgs lib;
+              ciliumBootstrapManifest = ../flake-modules/hetzner-cilium-bootstrap.yaml;
+              healScript = ../lib/hetzner-node-heal.sh;
+            })
+          ];
+
           # We can't import the full hetzner module (cloud-init datasource
           # requires Hetzner metadata) or hetzner-repart-image.nix. Instead
-          # replicate the Karpenter-specific config to test critical components.
+          # we import the shared lib/hetzner-node-services.nix so the VM test
+          # exercises the REAL unit scripts [B30,V27].
 
           networking = {
             hostName = "hetzner-karpenter-node-amd64";
@@ -69,205 +78,6 @@ in
                     safeName = builtins.replaceStrings ["/" ":" "@"] ["_" "_" "_"] "${img.imageName}:${img.imageTag}";
                 in "L /var/lib/rancher/k3s/agent/images/${safeName}.tar - - - - ${tar}"
               ) archImages;
-
-          # Tailscale bootstrap service
-          systemd.services.tailscale-bootstrap = {
-            description = "Tailscale Bootstrap (Karpenter node)";
-            after = [ "network-online.target" "cloud-init.service" "tailscaled.service" ];
-            wants = [ "network-online.target" "tailscaled.service" ];
-            wantedBy = [ "multi-user.target" ];
-            before = [ "k3s-agent-bootstrap.service" ];
-
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-            };
-
-            script = ''
-              set -euo pipefail
-
-              for i in $(seq 1 60); do
-                [ -f /etc/karpenter-node.conf ] && break
-                sleep 2
-              done
-              source /etc/karpenter-node.conf
-
-              if [ -z "''${TAILSCALE_AUTH_KEY:-}" ]; then
-                echo "No TAILSCALE_AUTH_KEY set, skipping Tailscale bootstrap"
-                exit 0
-              fi
-
-              # Mirror the image (bash builtin read, no bare hostname/cat) — until
-              # the DRY service-module extraction [B30/T23] removes this copy.
-              ${pkgs.tailscale}/bin/tailscale up \
-                --auth-key="$TAILSCALE_AUTH_KEY" \
-                --hostname="$(< /proc/sys/kernel/hostname)"
-
-              for i in $(seq 1 30); do
-                TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
-                [ -n "$TS_IP" ] && break
-                sleep 2
-              done
-
-              echo "Tailscale IP: $TS_IP"
-            '';
-          };
-
-          # k3s agent bootstrap service
-          systemd.services.k3s-agent-bootstrap = {
-            description = "K3s Agent Bootstrap (Karpenter node)";
-            after = [ "network-online.target" "cloud-init.service" "tailscale-bootstrap.service" ];
-            wants = [ "network-online.target" ];
-            requires = [ "tailscale-bootstrap.service" ];
-            wantedBy = [ "multi-user.target" ];
-
-            serviceConfig = {
-              Type = "exec";
-              Restart = "on-failure";
-              RestartSec = "10s";
-            };
-
-            script = ''
-              set -euo pipefail
-
-              for i in $(seq 1 60); do
-                [ -f /etc/karpenter-node.conf ] && break
-                sleep 2
-              done
-              source /etc/karpenter-node.conf
-
-              if [ "''${ROLE:-agent}" != "agent" ]; then
-                echo "ROLE=''${ROLE:-agent}, not agent — skipping k3s-agent-bootstrap"
-                exit 0
-              fi
-
-              METADATA=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
-              SERVER_ID=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.instance-id')
-              LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
-
-              NODE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || \
-                echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')
-
-              for i in $(seq 1 60); do
-                ${pkgs.curl}/bin/curl -sk --max-time 3 \
-                  "https://$SERVER_ENDPOINT:6443/ping" && break
-                sleep 2
-              done
-
-              exec ${pkgs.k3s}/bin/k3s agent \
-                --server "https://$SERVER_ENDPOINT:6443" \
-                --token "$K3S_TOKEN" \
-                --node-ip "$NODE_IP" \
-                --kubelet-arg="provider-id=hetzner:///$LOCATION/$SERVER_ID" \
-                --node-label="topology.kubernetes.io/region=$LOCATION" \
-                --node-label="karpenter.sh/registered=true" \
-                --kubelet-arg="kube-api-qps=100" \
-                --kubelet-arg="kube-api-burst=200" \
-                --kubelet-arg="event-qps=50" \
-                --kubelet-arg="event-burst=100"
-            '';
-          };
-
-          # --- control-plane (role=server) services (mirror hetzner-images.nix) ---
-
-          systemd.services.k3s-state-volume = {
-            description = "Unlock + mount the k3s state volume (role=server)";
-            after = [ "network-online.target" "cloud-init.service" ];
-            wants = [ "network-online.target" ];
-            before = [ "k3s-server-bootstrap.service" ];
-            wantedBy = [ "multi-user.target" ];
-
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-              TimeoutStartSec = "infinity";
-            };
-
-            script = ''
-              set -euo pipefail
-
-              for i in $(seq 1 60); do
-                [ -f /etc/karpenter-node.conf ] && break
-                sleep 2
-              done
-              source /etc/karpenter-node.conf
-
-              if [ "''${ROLE:-agent}" != "server" ]; then
-                echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-state-volume"
-                exit 0
-              fi
-
-              DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1 || true)
-              if [ -z "$DEV" ]; then
-                echo "No Hetzner volume attached — cannot mount k3s state" >&2
-                exit 1
-              fi
-
-              if ! ${pkgs.cryptsetup}/bin/cryptsetup isLuks "$DEV"; then
-                echo "Volume $DEV is not LUKS — run one-time enrollment first (runbook)" >&2
-                exit 1
-              fi
-
-              if [ ! -e /dev/mapper/k3s-state ]; then
-                ${pkgs.systemd}/bin/systemd-ask-password "Unlock k3s state volume:" \
-                  | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -
-              fi
-
-              mkdir -p /var/lib/rancher/k3s
-              ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s \
-                || mount /dev/mapper/k3s-state /var/lib/rancher/k3s
-            '';
-          };
-
-          systemd.services.k3s-server-bootstrap = {
-            description = "K3s Server Bootstrap (cattle control-plane)";
-            after = [ "network-online.target" "cloud-init.service" "tailscale-bootstrap.service" "k3s-state-volume.service" ];
-            wants = [ "network-online.target" ];
-            requires = [ "tailscale-bootstrap.service" "k3s-state-volume.service" ];
-            wantedBy = [ "multi-user.target" ];
-
-            serviceConfig = {
-              Type = "exec";
-              Restart = "on-failure";
-              RestartSec = "10s";
-            };
-
-            script = ''
-              set -euo pipefail
-
-              for i in $(seq 1 60); do
-                [ -f /etc/karpenter-node.conf ] && break
-                sleep 2
-              done
-              source /etc/karpenter-node.conf
-
-              if [ "''${ROLE:-agent}" != "server" ]; then
-                echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-server-bootstrap"
-                exit 0
-              fi
-
-              ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s
-
-              TS_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
-              NODE_IP=''${TS_IP:-$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
-                | ${pkgs.yq-go}/bin/yq '.private-networks[0].ip')}
-
-              exec ${pkgs.k3s}/bin/k3s server \
-                --token "$K3S_TOKEN" \
-                --node-ip "$NODE_IP" \
-                --tls-san "$FLOATING_IP" \
-                ''${TS_IP:+--tls-san "$TS_IP"} \
-                --flannel-backend=none \
-                --disable-network-policy \
-                --disable-kube-proxy \
-                --disable=traefik \
-                --disable=servicelb \
-                --secrets-encryption \
-                --cluster-cidr=10.42.0.0/16 \
-                --service-cidr=10.43.0.0/16 \
-                --write-kubeconfig-mode=0400
-            '';
-          };
 
           system.stateVersion = "25.11";
 
