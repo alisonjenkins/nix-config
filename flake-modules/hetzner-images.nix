@@ -10,6 +10,11 @@ let
   # manifests dir by the server bootstrap so the CNI is up before Flux.
   ciliumBootstrapManifest = self + "/flake-modules/hetzner-cilium-bootstrap.yaml";
 
+  # Cattle-replace self-heal logic — a standalone, unit-tested script (the same
+  # file the `hetzner-node-heal` check exercises, so the test tracks reality, no
+  # duplication [B30,V27]). The systemd unit below provides its PATH.
+  healScript = self + "/lib/hetzner-node-heal.sh";
+
   # Shared Hetzner Karpenter node config
   hetznerKarpenterNodeConfig = { modulesPath, lib, pkgs, ... }: {
     modules.hetzner = {
@@ -445,7 +450,11 @@ let
       after = [ "k3s-server-bootstrap.service" ];
       wants = [ "k3s-server-bootstrap.service" ];
       wantedBy = [ "multi-user.target" ];
+      # Declare the script's deps on the unit PATH (NixOS strips defaults — this is
+      # what the unit test mirrors). Kills the bare-command-127 class [B27].
+      path = with pkgs; [ k3s curl yq-go gawk coreutils systemd ];
       serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      # Thin wrapper: role-guard, then run the standalone, unit-tested heal script.
       script = ''
         set -uo pipefail
         for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
@@ -453,47 +462,7 @@ let
         if [ "''${ROLE:-agent}" != "server" ]; then
           echo "ROLE=''${ROLE:-agent}, not server — skipping k3s-node-heal"; exit 0
         fi
-
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        K="${pkgs.k3s}/bin/k3s kubectl"
-
-        # Wait for the local API to be ready.
-        for i in $(seq 1 60); do
-          $K get --raw=/readyz >/dev/null 2>&1 && break
-          sleep 5
-        done
-
-        # `hostname` is NOT in the systemd unit PATH on NixOS (it's in inetutils)
-        # → the bare call exited 127 and the heal never ran [B25 self-heal bugfix].
-        # Read the kernel hostname directly.
-        NODE=$(cat /proc/sys/kernel/hostname)
-        INSTANCE_ID=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
-          | ${pkgs.yq-go}/bin/yq '.instance-id')
-        WANT="hcloud://$INSTANCE_ID"
-        HAVE=$($K get node "$NODE" -o jsonpath='{.spec.providerID}' 2>/dev/null || true)
-
-        if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "null" ]; then
-          echo "no instance-id from metadata — skipping heal"; exit 0
-        fi
-        if [ -z "$HAVE" ] || [ "$HAVE" = "$WANT" ]; then
-          echo "providerID ok (have=''${HAVE:-none}) — no heal needed"; exit 0
-        fi
-
-        echo "stale providerID: have=$HAVE want=$WANT — healing"
-        # Stale VolumeAttachments: detached at hcloud when the old VM died, but the
-        # VA still claims attached → CSI won't re-attach [B20]. Delete those on this
-        # node.
-        for va in $($K get volumeattachments \
-          -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName --no-headers 2>/dev/null \
-          | ${pkgs.gawk}/bin/awk -v n="$NODE" '$2==n {print $1}'); do
-          echo "deleting stale VolumeAttachment $va"
-          $K delete volumeattachment "$va" --wait=false || true
-        done
-        # Drop the stale Node so it re-registers fresh (CCM assigns the new
-        # providerID by name). k3s only registers at startup → restart it [B12].
-        $K delete node "$NODE" --wait=false || true
-        echo "restarting k3s-server-bootstrap to re-register the node"
-        ${pkgs.systemd}/bin/systemctl restart --no-block k3s-server-bootstrap.service || true
+        exec ${pkgs.bash}/bin/bash ${healScript}
       '';
     };
 
