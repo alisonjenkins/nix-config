@@ -292,6 +292,13 @@ in
       nixpkgs = {
         config = {
           allowUnfree = true;
+
+          # signal-desktop builds with pnpm 10.29.2, which nixpkgs marked
+          # insecure (CVE-2026-48995 et al). pnpm is a build-time-only tool
+          # used to assemble node_modules — it is not in the system runtime
+          # closure or PATH — so the CVEs don't affect the running system.
+          # Permit it until nixpkgs ships a non-flagged pnpm for signal.
+          permittedInsecurePackages = [ "pnpm-10.29.2" ];
         };
 
         overlays = [
