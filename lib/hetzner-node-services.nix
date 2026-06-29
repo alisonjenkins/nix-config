@@ -329,6 +329,7 @@
           --disable=local-storage \
           --disable-cloud-controller \
           --kubelet-arg=cloud-provider=external \
+          --kube-controller-manager-arg=terminated-pod-gc-threshold=10 \
           --secrets-encryption \
           --cluster-cidr=10.42.0.0/16 \
           --service-cidr=10.43.0.0/16 \
