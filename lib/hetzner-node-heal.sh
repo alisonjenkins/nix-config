@@ -54,5 +54,14 @@ done
 # Drop the stale Node so it re-registers fresh (CCM assigns the new providerID by
 # name). k3s only registers at startup → restart it [B12].
 kc delete node "$NODE" --wait=false || true
+# Ghost pods: a replace leaves terminated (Failed/Succeeded) pod objects from the
+# old generation. ReplicaSet controllers ignore terminal pods and pod-GC only
+# sweeps past --terminated-pod-gc-threshold, so they linger forever. Clear them
+# here (the threshold backstop in k3s-server bounds any late stragglers).
+# Scoped to THIS node (spec.nodeName) so other nodes' terminal pods keep their
+# debug signal — the ghosts carry this node's name (the hostname is reused).
+echo "sweeping terminated (Failed/Succeeded) ghost pods on $NODE left by the replace"
+kc delete pods -A --field-selector=status.phase=Failed,spec.nodeName="$NODE" --wait=false || true
+kc delete pods -A --field-selector=status.phase=Succeeded,spec.nodeName="$NODE" --wait=false || true
 echo "restarting k3s-server-bootstrap to re-register the node"
 systemctl restart --no-block k3s-server-bootstrap.service || true

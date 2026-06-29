@@ -59,6 +59,8 @@
           grep -q "delete volumeattachment csi-mine" calllog || { echo "FAIL B: own VA not deleted"; cat calllog; exit 1; }
           ! grep -q "csi-other" calllog || { echo "FAIL B: other node's VA touched"; exit 1; }
           grep -q "delete node cp" calllog || { echo "FAIL B: stale node not deleted"; cat calllog; exit 1; }
+          grep -q "delete pods -A --field-selector=status.phase=Failed,spec.nodeName=cp" calllog || { echo "FAIL B: Failed ghost pods not swept (scoped to node)"; cat calllog; exit 1; }
+          grep -q "delete pods -A --field-selector=status.phase=Succeeded,spec.nodeName=cp" calllog || { echo "FAIL B: Succeeded ghost pods not swept (scoped to node)"; cat calllog; exit 1; }
           grep -q "restart .*k3s-server-bootstrap" calllog || { echo "FAIL B: bootstrap not restarted"; cat calllog; exit 1; }
 
           echo "## C: no instance-id -> skip"
