@@ -86,9 +86,10 @@
           exit 0
         fi
 
-        # Get Hetzner metadata (YAML format, no auth needed)
+        # Get Hetzner metadata (YAML format, no auth needed). NB: instance-id is
+        # NOT parsed — it was only for the dropped legacy self-set provider-id;
+        # the hcloud CCM owns providerID=hcloud://<id> now [B17].
         METADATA=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
-        SERVER_ID=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.instance-id')
         LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
 
         # node-ip = PUBLIC: the hcloud CCM (networking.enabled=false) only knows
@@ -300,11 +301,18 @@
         # used for tls-san (below), not node-ip.
         NODE_IP="$PUB_IP"
 
-        # tls-san MUST include the private IP: it is the shared k8sServiceHost
+        # tls-san SHOULD include the private IP: it is the shared k8sServiceHost
         # [T10] that cilium + workers dial (https://<priv>:6443) — without it in
-        # the cert, TLS verification fails.
+        # the cert, those TLS connections fail. The private NIC is attached at
+        # server-create (stack-split) so the 60s wait above normally finds it; if
+        # it is still absent we warn loudly + start anyway (failing closed here
+        # would block the whole CP on a transient NIC lag, a worse outcome) [B16].
         PRIV_SAN=""
-        [ -n "$PRIV_IP" ] && PRIV_SAN="--tls-san $PRIV_IP"
+        if [ -n "$PRIV_IP" ]; then
+          PRIV_SAN="--tls-san $PRIV_IP"
+        else
+          echo "WARN: no private (10.0.0.0/8) IP found — starting k3s WITHOUT the private tls-san; cilium/workers dialing the private k8sServiceHost will fail TLS until fixed [B16]" >&2
+        fi
 
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
