@@ -1,6 +1,6 @@
 { pkgs, ... }: let
-  # Most autostart entries (steam, discord, vesktop, keybase-gui,
-  # zapzap) are x86_64-only — gate the whole block to skip cleanly on
+  # Most autostart entries (steam, discord, keybase-gui, zapzap) are
+  # x86_64-only — gate the whole block to skip cleanly on
   # aarch64-linux hosts like ali-mba-linux.
   isLinuxX86 = pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
 in {
@@ -46,7 +46,6 @@ in {
       ".config/autostart/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
       ".local/share/applications/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
       ".config/autostart/steam.desktop".source = "${pkgs.steam}/share/applications/steam.desktop";
-      ".config/autostart/vesktop.desktop".source = "${pkgs.vesktop}/share/applications/vesktop.desktop";
       ".config/autostart/zapzap.desktop".source = "${pkgs.zapzap}/share/applications/com.rtosta.zapzap.desktop";
       # ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
     } else { });

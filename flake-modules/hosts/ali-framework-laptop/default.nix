@@ -792,7 +792,7 @@ in {
               "video/*" = video;
               "x-scheme-handler/about" = browser;
               "x-scheme-handler/chrome" = browser;
-              "x-scheme-handler/discord" = [ "vesktop.desktop" ];
+              "x-scheme-handler/discord" = [ "discord.desktop" ];
               "x-scheme-handler/etcher" = [ "balena-etcher-electron.desktop" ];
               "x-scheme-handler/ftp" = browser;
               "x-scheme-handler/gitkraken" = [ "GitKraken.desktop" ];
