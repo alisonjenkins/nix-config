@@ -100,6 +100,11 @@ in
         DISABLE_AUTOUPDATER = "1";
         DISABLE_ERROR_REPORTING = "1";
         DISABLE_BUG_COMMAND = "1";
+
+        # Token Savior bash-compaction toggles — read by its PreToolUse rewriter
+        # and PostToolUse tool-capture hooks (both default OFF without these).
+        TS_BASH_COMPACT = "1";
+        TS_BASH_REWRITE = "1";
       };
 
       alwaysThinkingEnabled = true;
@@ -130,6 +135,7 @@ in
           "mcp__k8s__*"
 "mcp__terraform__*"
           "mcp__cavemem__*"
+          "mcp__token-savior__*"
           "Bash(git:*)"
           "Bash(GIT_PAGER=cat git:*)"
           "Bash(GIT_DIFF_OPTS= git:*)"
@@ -176,6 +182,23 @@ in
       };
 
       hooks = {
+        # Token Savior bash rewriter — rewrites known commands (git status/diff/log,
+        # tsc, pytest, npm/yarn/pnpm test, cargo test, gh run watch, gh pr list,
+        # docker ps) to compact variants; everything else passes through. Gated
+        # internally by TS_BASH_REWRITE (set in settings.env above).
+        PreToolUse = [
+          {
+            matcher = "Bash";
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.token-savior.pythonEnv}/bin/python3 ${pkgs.token-savior}/share/token-savior/hooks/bash_rewriter_hook.py";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
+
         PermissionRequest = [
           {
             matcher = "Bash";
@@ -316,12 +339,24 @@ in
         ];
 
         # Cavemem: captures tool results for memory
+        # Token Savior: captures large tool outputs into its compaction sandbox,
+        # replacing them with expandable references (gated by TS_BASH_COMPACT).
         PostToolUse = [
           {
             hooks = [
               {
                 type = "command";
                 command = "${cavememPkg}/bin/cavemem hook run post-tool-use";
+                timeout = 10;
+              }
+            ];
+          }
+          {
+            matcher = "Bash|WebFetch|Read|Grep|mcp__token-savior__search_codebase|mcp__token-savior__get_function_source|mcp__token-savior__get_class_source";
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.token-savior.pythonEnv}/bin/python3 ${pkgs.token-savior}/share/token-savior/hooks/tool_capture_hook.py";
                 timeout = 10;
               }
             ];
@@ -431,6 +466,22 @@ in
       cavemem = {
         command = "${cavememPkg}/bin/cavemem";
         args = [ "mcp" ];
+      };
+
+      # Token Savior: structural code navigation + tool-output compaction.
+      # Named "token-savior" so the PostToolUse capture matcher's
+      # mcp__token-savior__* tool names resolve. Wrapped in bash so
+      # WORKSPACE_ROOTS picks up the session's project dir at launch (mirrors
+      # the obscura wrapper). "optimized" = 15-tool, ~1.5K-token manifest.
+      token-savior = {
+        command = "bash";
+        args = [
+          "-c"
+          ''
+            exec env WORKSPACE_ROOTS="$PWD" TOKEN_SAVIOR_CLIENT=claude-code TOKEN_SAVIOR_PROFILE=optimized \
+              ${pkgs.token-savior}/bin/token-savior
+          ''
+        ];
       };
     };
 
