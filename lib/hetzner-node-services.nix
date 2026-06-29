@@ -224,6 +224,34 @@
         ${pkgs.util-linux}/bin/mountpoint -q /var/log/journal \
           || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/journal /var/log/journal
         ${pkgs.systemd}/bin/systemctl restart systemd-journald 2>/dev/null || true
+
+        # Persist the k3s node identity (/etc/rancher/node, holding the node
+        # password) on the LUKS volume. k3s validates a node's password against a
+        # hash stored in the datastore (also on the volume); the agent's plaintext
+        # copy normally lives at /etc/rancher/node/password on the EPHEMERAL root,
+        # so a cattle replace regenerates it -> hash mismatch -> k3s removes the
+        # node on every registration -> the CP never comes back [B31]. Worse, that
+        # plaintext credential sat on unencrypted storage. Bind it onto the LUKS
+        # volume (here, BEFORE k3s-server-bootstrap starts) so the password both
+        # persists across replaces (matches the stored hash → clean registration)
+        # and stays inside the encryption boundary. 0700 root: only k3s reads it.
+        mkdir -p /var/lib/rancher/k3s/etc-rancher-node /etc/rancher/node
+        ${pkgs.coreutils}/bin/chown root:root /var/lib/rancher/k3s/etc-rancher-node
+        ${pkgs.coreutils}/bin/chmod 0700 /var/lib/rancher/k3s/etc-rancher-node
+        # First rollout / safety: if a password already exists on the ephemeral
+        # root (e.g. k3s ran before this on some path) and the LUKS dir is still
+        # empty, migrate it in BEFORE the bind — otherwise the bind hides it and
+        # k3s regenerates a fresh one, reintroducing the very hash mismatch this
+        # fixes [B31, PR#160 review]. Only when the target isn't already a
+        # mountpoint and we won't clobber an existing LUKS copy.
+        if ! ${pkgs.util-linux}/bin/mountpoint -q /etc/rancher/node \
+           && [ ! -e /var/lib/rancher/k3s/etc-rancher-node/password ] \
+           && [ -f /etc/rancher/node/password ]; then
+          ${pkgs.coreutils}/bin/cp -a /etc/rancher/node/password \
+            /var/lib/rancher/k3s/etc-rancher-node/password
+        fi
+        ${pkgs.util-linux}/bin/mountpoint -q /etc/rancher/node \
+          || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/etc-rancher-node /etc/rancher/node
       '';
     };
 
