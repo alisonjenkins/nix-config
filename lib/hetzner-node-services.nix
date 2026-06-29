@@ -6,6 +6,41 @@
 # can inject its own pkgs, lib, and the two store-path values.
 { pkgs, lib, ciliumBootstrapManifest, healScript }:
 {
+  # kube-apiserver audit policy [B32-HARDEN]. Referenced by the k3s server exec
+  # (--kube-apiserver-arg=audit-policy-file). Lives on the ephemeral /etc (static,
+  # regenerated from the image each boot — not a secret); the audit LOG it drives
+  # is written to the LUKS volume so it survives a cattle replace.
+  # Rules are first-match-wins, so ORDER matters:
+  #  1. Secrets/ConfigMaps at Metadata level for ALL verbs (incl. reads — reading
+  #     a secret is the threat we care about) — but Metadata, NOT RequestResponse,
+  #     so secret VALUES are never written into the audit log [PR#162 review].
+  #  2. then drop read noise for everything else, and health/discovery chatter.
+  #  3. everything else (mutations): Metadata.
+  environment.etc."rancher/k3s/audit-policy.yaml".text = ''
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    omitStages:
+      - RequestReceived
+    rules:
+      # Log access to secret material (who/when/what) — never the values.
+      - level: Metadata
+        resources:
+          - group: ""
+            resources: ["secrets", "configmaps"]
+      # Drop reads of everything else, and health/discovery noise.
+      - level: None
+        verbs: ["get", "list", "watch"]
+      - level: None
+        nonResourceURLs:
+          - /healthz*
+          - /readyz*
+          - /livez*
+          - /version
+          - /metrics
+      # Everything else (mutations): metadata only.
+      - level: Metadata
+  '';
+
   systemd.services = {
     # Tailscale bootstrap service — brings up the Tailscale tunnel before k3s.
     # Auth key is provided via cloud-init userData in /etc/karpenter-node.conf.
@@ -305,6 +340,11 @@
         # Require the encrypted state volume to be mounted before starting.
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/rancher/k3s
 
+        # API-server audit log lives on the LUKS volume (persists across a cattle
+        # replace, like the journal). apiserver won't create the dir → make it here
+        # before exec, or apiserver fails to start [B32-HARDEN].
+        install -d -m700 /var/lib/rancher/k3s/server/logs
+
         # CNI bootstrap: drop Cilium (helm-controller) + Gateway API CRDs into the
         # k3s manifests dir so the CNI comes up before Flux [V4]. Idempotent.
         install -d /var/lib/rancher/k3s/server/manifests
@@ -369,6 +409,13 @@
           --secrets-encryption \
           --cluster-cidr=10.42.0.0/16 \
           --service-cidr=10.43.0.0/16 \
+          --kube-apiserver-arg=audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log \
+          --kube-apiserver-arg=audit-policy-file=/etc/rancher/k3s/audit-policy.yaml \
+          --kube-apiserver-arg=audit-log-maxage=30 \
+          --kube-apiserver-arg=audit-log-maxbackup=10 \
+          --kube-apiserver-arg=audit-log-maxsize=100 \
+          --kubelet-arg=streaming-connection-idle-timeout=5m \
+          --kubelet-arg=tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305 \
           --write-kubeconfig-mode=0400
       '';
     };
