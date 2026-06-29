@@ -40,4 +40,5 @@
   pup-claude = pkgs.callPackage ./pup-claude {};
   llama-models = pkgs.callPackage ./llama-models {};
   superpowers = pkgs.callPackage ./superpowers {};
+  token-savior = pkgs.callPackage ./token-savior { python3Packages = pkgs.unstable.python3Packages; };
 }
