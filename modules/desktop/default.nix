@@ -258,20 +258,25 @@ in
 
       usbPeriodNum = mkOption {
         type = types.int;
-        default = 4;
+        default = 2;
         description = ''
           Number of ALSA periods to buffer for USB audio nodes when
-          `usbAudioStability` is enabled. More periods cushion bus jitter from
-          contended hubs at the cost of latency.
+          `usbAudioStability` is enabled. Keep at 2 (double-buffering): the
+          total ALSA buffer is `usbPeriodSize * usbPeriodNum`, and when the
+          interface runs as a graph *follower* PipeWire resyncs continuously
+          if that buffer sits far above its delay target (~`usbPeriodSize +
+          usbHeadroom`) — which silences output. Raise only alongside headroom.
         '';
       };
 
       usbHeadroom = mkOption {
         type = types.int;
-        default = 2048;
+        default = 1024;
         description = ''
           ALSA headroom (frames) for USB audio nodes when `usbAudioStability`
-          is enabled. Extra slack absorbs scheduling/bus jitter.
+          is enabled. Absorbs scheduling/bus jitter. Keep roughly
+          `usbHeadroom + usbPeriodSize` >= total buffer
+          (`usbPeriodSize * usbPeriodNum`) to avoid follower resync storms.
         '';
       };
     };
@@ -1431,6 +1436,15 @@ in
                   ]
                   actions = {
                     update-props = {
+                      # Timer-based scheduling (NOT IRQ/period-based). USB audio
+                      # behind a hub/dock/switch cannot guarantee period-interrupt
+                      # delivery; in IRQ mode (disable-tsched=true) a single late
+                      # interrupt underruns the stream, and the device cannot
+                      # recover -> permanent XRUN -> the graph loses its driver ->
+                      # total silence, and apps (e.g. browser video) stall waiting
+                      # on a working audio stream. Timer mode wakes PipeWire on its
+                      # own clock, independent of USB IRQ timing.
+                      api.alsa.disable-tsched = false
                       api.alsa.period-size = ${toString cfg.pipewire.usbPeriodSize}
                       api.alsa.period-num = ${toString cfg.pipewire.usbPeriodNum}
                       api.alsa.headroom = ${toString cfg.pipewire.usbHeadroom}
