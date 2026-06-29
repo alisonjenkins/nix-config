@@ -652,7 +652,7 @@ in {
               # Keep the Scarlett 2i2 4th Gen USB audio interface fully powered.
               # It sits behind a USB switch + hub shared with the controllers below;
               # autosuspend churn on that hub jitters its isochronous audio stream.
-              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="1235", ATTR{idProduct}=="8219", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
+              ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="1235", ATTR{idProduct}=="8219", ATTR{power/control}="on"
 
               # Fix 8BitDo Ultimate Wireless Controller connection issues (autosuspend).
               # Shares the Scarlett's hub branch; its autosuspend re-enumeration storms
