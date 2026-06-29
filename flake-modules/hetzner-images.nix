@@ -128,10 +128,13 @@ let
           exit 0
         fi
 
-        # Bring up Tailscale
+        # Bring up Tailscale. `hostname` is not in the stripped unit PATH (it's in
+        # inetutils) → bare `$(hostname)` exits 127 and yields an empty hostname
+        # (masked here only because tailscale then falls back to the OS hostname)
+        # [B27 class]. Read the kernel hostname directly.
         ${pkgs.tailscale}/bin/tailscale up \
           --auth-key="$TAILSCALE_AUTH_KEY" \
-          --hostname="$(hostname)"
+          --hostname="$(cat /proc/sys/kernel/hostname)"
 
         # Wait for Tailscale IP assignment
         for i in $(seq 1 30); do
