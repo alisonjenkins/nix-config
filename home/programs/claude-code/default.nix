@@ -14,6 +14,35 @@ let
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
 
+  # token-savior stats viewers. Both read ~/.local/share/token-savior/*.json,
+  # populated by the MCP nav tools (search_codebase/get_function_source/…), not
+  # the bash-compaction hooks. Profile-independent, zero per-session token cost.
+  tsStatsDashboard = pkgs.writeShellApplication {
+    name = "token-savior-stats";
+    text = ''
+      exec ${pkgs.token-savior}/bin/token-savior-dashboard "$@"
+    '';
+  };
+
+  # Prints the get_usage_stats ASCII view (sparkline + savings table) without
+  # advertising the tool over MCP. Registers $PWD as a project root so
+  # _collect_history() reads that project's cumulative stats file.
+  tsStatsScript = pkgs.writeText "ts-stats.py" ''
+    import os
+    from token_savior import server_state as s
+    from token_savior.server_handlers import stats
+    s._slot_mgr.register_roots([os.environ.get("WORKSPACE_ROOTS", os.getcwd())])
+    for block in stats._hm_get_usage_stats({"daily": True}):
+        print(block.text)
+  '';
+  tsStatsCli = pkgs.writeShellApplication {
+    name = "ts-stats";
+    text = ''
+      exec env TOKEN_SAVIOR_PROFILE=optimized WORKSPACE_ROOTS="''${WORKSPACE_ROOTS:-$PWD}" \
+        ${pkgs.token-savior.pythonEnv}/bin/python3 ${tsStatsScript} "$@"
+    '';
+  };
+
   # Cross-platform sound for the Notification hook (fires when Claude waits
   # for user input). Bypasses the tmux/ghostty bell-propagation chain.
   notifyBell = pkgs.writeShellScript "claude-notify-bell" (
@@ -83,6 +112,11 @@ let
   };
 in
 {
+  # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
+  # would also drop the broken token-savior-bench, the server bin, and the
+  # stats-less `ts` onto PATH.
+  home.packages = [ tsStatsDashboard tsStatsCli ];
+
   programs.claude-code = {
     enable = true;
     package = pkgs.master.claude-code;
