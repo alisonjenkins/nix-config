@@ -453,7 +453,9 @@ let
       # Declare the script's deps on the unit PATH (NixOS strips defaults — this is
       # what the unit test mirrors). Kills the bare-command-127 class [B27].
       path = with pkgs; [ k3s curl yq-go gawk coreutils systemd ];
-      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      # conf-wait (≤120s) + readyz-wait (≤300s) exceed systemd's 90s default →
+      # set a generous timeout so the heal isn't killed before it runs [PR#155].
+      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = "600s"; };
       # Thin wrapper: role-guard, then run the standalone, unit-tested heal script.
       script = ''
         set -uo pipefail
