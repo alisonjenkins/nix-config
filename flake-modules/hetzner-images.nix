@@ -53,6 +53,14 @@ let
     # Enable Tailscale for cross-cloud networking
     services.tailscale.enable = true;
 
+    # Persistent, size-capped journal. The journal dir is bind-mounted onto the
+    # LUKS volume by k3s-state-volume so logs survive a cattle replace [B25]; cap
+    # the size so it can't fill the (small) state volume.
+    services.journald.extraConfig = ''
+      Storage=persistent
+      SystemMaxUse=500M
+    '';
+
     # Post-quantum SSH key exchange [V12]. mlkem768x25519-sha256 needs
     # OpenSSH 9.9+; keep classical curve25519 as fallback for older clients.
     services.openssh.settings.KexAlgorithms = [
@@ -279,6 +287,17 @@ let
         mkdir -p /var/lib/rancher/k3s/tailscale /var/lib/tailscale
         ${pkgs.util-linux}/bin/mountpoint -q /var/lib/tailscale \
           || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/tailscale /var/lib/tailscale
+
+        # Persist the systemd journal on the LUKS volume so a dead node's logs
+        # survive a VM nuke (cattle replace) — readable after the next boot
+        # ["preserve logs across nukes", B25]. journald flushed early-boot logs to
+        # the ephemeral root pre-unlock; re-open it on the persistent dir so the
+        # operational logs (the ones that explain a death) land on the volume.
+        # Size-capped via services.journald (SystemMaxUse) so it can't fill the vol.
+        mkdir -p /var/lib/rancher/k3s/journal /var/log/journal
+        ${pkgs.util-linux}/bin/mountpoint -q /var/log/journal \
+          || ${pkgs.util-linux}/bin/mount --bind /var/lib/rancher/k3s/journal /var/log/journal
+        ${pkgs.systemd}/bin/systemctl restart systemd-journald 2>/dev/null || true
       '';
     };
 
@@ -442,7 +461,10 @@ let
           sleep 5
         done
 
-        NODE=$(hostname)
+        # `hostname` is NOT in the systemd unit PATH on NixOS (it's in inetutils)
+        # → the bare call exited 127 and the heal never ran [B25 self-heal bugfix].
+        # Read the kernel hostname directly.
+        NODE=$(cat /proc/sys/kernel/hostname)
         INSTANCE_ID=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata \
           | ${pkgs.yq-go}/bin/yq '.instance-id')
         WANT="hcloud://$INSTANCE_ID"
