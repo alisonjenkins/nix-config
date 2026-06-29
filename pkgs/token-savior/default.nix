@@ -35,7 +35,7 @@ let
     # interpreter that can import token_savior — see passthru.pythonEnv.
     postInstall = ''
       mkdir -p $out/share/token-savior/hooks
-      cp -r hooks/. $out/share/token-savior/hooks/
+      cp hooks/bash_rewriter_hook.py hooks/tool_capture_hook.py $out/share/token-savior/hooks/
     '';
 
     meta = {
