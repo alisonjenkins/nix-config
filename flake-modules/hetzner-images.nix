@@ -40,7 +40,9 @@ let
       set -eu; set -f
       echo "$OUT_PATHS" | tr ' ' '\n' >> /var/tmp/niks3-queue
     '';
-    systemd.tmpfiles.rules = [ "f /var/tmp/niks3-queue 0666 root root -" ];
+    # 0600 not 0666: the post-build-hook runs as root, so a world-writable queue
+    # only lets an unprivileged process (or a pod with hostPath) inject store paths.
+    systemd.tmpfiles.rules = [ "f /var/tmp/niks3-queue 0600 root root -" ];
 
     boot.kernel.sysctl = {
       # Cilium Envoy: allow binding to privileged ports (80/443) for Gateway API hostNetwork mode
