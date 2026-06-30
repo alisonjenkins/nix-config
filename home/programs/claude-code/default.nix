@@ -179,6 +179,61 @@ let
     exec claude --plugin-dir ${pkgs.pup-claude} "$@"
   '';
 
+  # Subcommand-aware dispatcher nested INSIDE programs.claude-code.package.
+  #
+  # The home-manager claude-code module delivers our mcpServers + lspServers
+  # (and cavekit/superpowers) by wrapping the binary with `--plugin-dir <…>`
+  # flags injected into EVERY invocation. But Claude Code's subcommands
+  # (`remote-control`, `mcp`, `setup-token`, …) reject `--plugin-dir` and die
+  # with `Error: Unknown argument: <plugindir>`. The module's `finalPackage`
+  # wrapper is readOnly/internal (not overridable) and structural (it carries
+  # the MCP/LSP config), so we can't drop it.
+  #
+  # Instead we hand the module a `package` whose own `bin/claude` is this
+  # dispatcher around the real binary (`bin/.claude-real`). The module then
+  # renames our dispatcher to `.claude-wrapped` and wraps THAT with its
+  # `--plugin-dir` flags. Call chain: module-wrapper → dispatcher → real claude.
+  # The dispatcher peels the module-injected flags and forwards them only for
+  # the bare REPL / prompt invocations, stripping them when a subcommand follows
+  # so subcommands run clean. `@REAL@` is substituted with the absolute store
+  # path of `.claude-real` at build time (below).
+  claudeDispatcher = pkgs.writeShellScript "claude-dispatcher" ''
+    inject=()
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        # `--flag=value` form: single token.
+        --plugin-dir=*|--plugin-dir-no-mcp=*|--mcp-config=*) inject+=("$1"); shift ;;
+        # `--flag value` form: consume the value too, but guard against a
+        # trailing flag with no value (else `shift 2` errors / loops forever).
+        --plugin-dir|--plugin-dir-no-mcp|--mcp-config)
+          if [ $# -ge 2 ]; then inject+=("$1" "$2"); shift 2; else inject+=("$1"); shift; fi ;;
+        *) break ;;
+      esac
+    done
+    case "''${1:-}" in
+      remote-control|rc|mcp|config|setup-token|update|doctor|plugin|marketplace|login|logout|auth|agents|serve|install|migrate-installer|setup)
+        # Subcommand: drop the injected --plugin-dir/--mcp-config flags.
+        exec -a "$0" @REAL@ "$@" ;;
+      *)
+        # REPL or prompt arg: keep the plugins/MCP config.
+        exec -a "$0" @REAL@ "''${inject[@]}" "$@" ;;
+    esac
+  '';
+
+  # claude-code with bin/claude replaced by the dispatcher; the upstream
+  # entrypoint is preserved as bin/.claude-real.
+  claudeWrapped = pkgs.symlinkJoin {
+    name = "claude-code";
+    paths = [ pkgs.master.claude-code ];
+    postBuild = ''
+      mv $out/bin/claude $out/bin/.claude-real
+      install -m755 ${claudeDispatcher} $out/bin/claude
+      substituteInPlace $out/bin/claude --replace '@REAL@' "$out/bin/.claude-real"
+      chmod 555 $out/bin/claude
+    '';
+    inherit (pkgs.master.claude-code) meta;
+  };
+
   # Map friendly name → binary path from neovim flake's exports.
   # Prefers faster alternatives (pyright, vtsls, tfls) where available.
   serverBinaries = {
@@ -205,7 +260,7 @@ in
 
   programs.claude-code = {
     enable = true;
-    package = pkgs.master.claude-code;
+    package = claudeWrapped;
 
     settings = {
       # Opt out of autoupdate/error-reporting/bug-command. We deliberately do
