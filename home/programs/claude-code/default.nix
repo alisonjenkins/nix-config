@@ -208,15 +208,20 @@ in
     package = pkgs.master.claude-code;
 
     settings = {
-      # Opt out of telemetry/autoupdate/error-reporting WITHOUT the umbrella
-      # CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC var: that umbrella also blocks
-      # the Remote Control backplane (outbound HTTPS register+poll to the
-      # Anthropic API), which silently removes /remote-control from the menu.
-      # Granular vars below disable the same telemetry/update/report traffic
-      # but leave remote-control working. DISABLE_TELEMETRY also suppresses the
-      # superpowers brainstorm primeradiant.com logo beacon.
+      # Opt out of autoupdate/error-reporting/bug-command. We deliberately do
+      # NOT set DISABLE_TELEMETRY (nor the umbrella
+      # CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC): DISABLE_TELEMETRY also
+      # disables Claude Code's feature-flag (GrowthBook) evaluation, which
+      # Remote Control requires — setting it silently removes /remote-control
+      # from the menu ("Remote Control requires feature-flag evaluation, which
+      # is disabled because DISABLE_TELEMETRY is set"). Leaving it unset only
+      # re-enables the feature-flag config fetch; OTel usage export stays off
+      # (opt-in via CLAUDE_CODE_ENABLE_TELEMETRY, unset). The superpowers
+      # brainstorm primeradiant.com logo beacon — the original reason for
+      # DISABLE_TELEMETRY — is suppressed independently via its own dedicated
+      # SUPERPOWERS_DISABLE_TELEMETRY switch below.
       env = {
-        DISABLE_TELEMETRY = "1";
+        SUPERPOWERS_DISABLE_TELEMETRY = "1";
         DISABLE_AUTOUPDATER = "1";
         DISABLE_ERROR_REPORTING = "1";
         DISABLE_BUG_COMMAND = "1";
