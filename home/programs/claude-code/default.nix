@@ -109,6 +109,15 @@ let
     docker     = { ".dockerfile" = "dockerfile"; };
   };
 
+  # Datadog-scoped Claude: layers the pup-claude plugin (Datadog `pup` CLI + 49
+  # agents + skills) onto the default wrapped `claude` only when invoked, keeping
+  # pup out of the default session/subagent baseline. Resolves `claude` from the
+  # ambient PATH (the home-manager-wrapped binary) so its own --plugin-dir /
+  # --mcp-config wrapping is preserved; this just appends another --plugin-dir.
+  claudeDd = pkgs.writeShellScriptBin "claude-dd" ''
+    exec claude --plugin-dir ${pkgs.pup-claude} "$@"
+  '';
+
   # Map friendly name → binary path from neovim flake's exports.
   # Prefers faster alternatives (pyright, vtsls, tfls) where available.
   serverBinaries = {
@@ -131,7 +140,7 @@ in
   # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
   # would also drop the broken token-savior-bench, the server bin, and the
   # stats-less `ts` onto PATH.
-  home.packages = [ tsStatsDashboard tsStatsCli ];
+  home.packages = [ tsStatsDashboard tsStatsCli claudeDd ];
 
   programs.claude-code = {
     enable = true;
@@ -450,8 +459,11 @@ in
     skills = "${allSkills}";
 
     # cavekit as a plugin so Claude Code loads it with the "ck:" namespace
-    # (giving /ck:spec, /ck:build, /ck:check)
-    plugins = [ cavekitPkg pkgs.pup-claude pkgs.superpowers ];
+    # (giving /ck:spec, /ck:build, /ck:check).
+    # pup-claude is intentionally NOT global — it ships 49 agents + ~14 skills
+    # that would load into every session/subagent. It's layered in on demand via
+    # the `claude-dd` wrapper (see let block) only for Datadog work.
+    plugins = [ cavekitPkg pkgs.superpowers ];
 
     # Listed explicitly (not agentsDir) so the shared gitStrategy mandate can
     # be appended to the git-touching agents.
