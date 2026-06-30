@@ -361,6 +361,16 @@ in
               assert 'systemd-ask-password' in script, "unlock must be post-boot SSH ask-password [V21]"
               assert '/var/lib/rancher/k3s' in script, "must mount the k3s state dir"
               assert 'ROLE:-agent' in script and 'not server' in script, "must be role-guarded"
+              # Unlock must RETRY on a wrong passphrase, not fail the unit [B34] —
+              # a failed k3s-state-volume cancels k3s-server-bootstrap (Requires=)
+              # and wedges the CP boot. Loop re-prompts until the volume opens.
+              assert 'until [ -e /dev/mapper/k3s-state' in script, \
+                  "unlock must loop/retry on wrong passphrase, not fail the unit [B34]"
+              # Node identity (/etc/rancher/node, the node password) must bind onto
+              # the LUKS volume so it persists across a replace (matches the stored
+              # hash → clean re-registration) AND stays encrypted [B31].
+              assert '/etc/rancher/node' in script and 'etc-rancher-node' in script, \
+                  "must bind /etc/rancher/node onto the LUKS volume [B31]"
 
           with subtest("k3s-server-bootstrap waits for the state volume"):
               after = machine.succeed("systemctl show k3s-server-bootstrap.service --property=Requires")
@@ -381,6 +391,41 @@ in
               assert "--disable-kube-proxy" in script, "kube-proxy replacement [V4]"
               assert "--disable-network-policy" in script, "k3s netpol controller off [V4]"
               assert "--tls-san" in script, "must set tls-san (floating IP) [V3]"
+              # API audit logging [B32-HARDEN]: log to the LUKS volume, policy file present.
+              assert "audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log" in script, \
+                  "kube-apiserver audit log must go to the LUKS volume [B32-HARDEN]"
+              assert "audit-policy-file=/etc/rancher/k3s/audit-policy.yaml" in script, \
+                  "kube-apiserver must reference the audit policy [B32-HARDEN]"
+
+          with subtest("kube-apiserver audit policy present, secrets at Metadata not RequestResponse [B32-HARDEN]"):
+              pol = machine.succeed("cat /etc/rancher/k3s/audit-policy.yaml")
+              assert "kind: Policy" in pol, "audit policy must be a valid Policy doc"
+              assert 'resources: ["secrets", "configmaps"]' in pol, "must audit secret access"
+              # The whole policy is Metadata-only by design: RequestResponse anywhere
+              # would log request/response BODIES (incl. secret values) to disk, so it
+              # must never appear in this policy [PR#162].
+              assert "RequestResponse" not in pol, \
+                  "audit policy must never use RequestResponse (logs bodies incl. secrets) [PR#162]"
+
+          with subtest("boot oneshots have TimeoutStartSec + Restart (no wedge on slow/flaky boot) [B27/B34]"):
+              # Assert the EXACT configured timeout, not just "not the default" — a
+              # regression to any too-small value must fail. systemd renders µs as a
+              # human string: 300s -> "5min", 180s -> "3min".
+              expected = {"tailscale-bootstrap": "5min", "floating-ip-bind": "3min"}
+              for svc, want in expected.items():
+                  props = machine.succeed(
+                      f"systemctl show {svc}.service -p TimeoutStartUSec -p Restart"
+                  )
+                  assert f"TimeoutStartUSec={want}" in props, \
+                      f"{svc} TimeoutStartSec must be {want}: {props}"
+                  assert "Restart=on-failure" in props, f"{svc} must Restart=on-failure: {props}"
+
+          with subtest("k3s-node-heal wrapper fails loudly on missing conf (set -e) [B34]"):
+              unit = machine.succeed("cat /etc/systemd/system/k3s-node-heal.service")
+              m = re.search(r'ExecStart=.*?(/nix/store/\S+heal\S*)', unit) or re.search(r'ExecStart=(/nix/store/\S+)', unit)
+              assert m, f"no heal ExecStart: {unit}"
+              wrapper = machine.succeed(f"cat {m.group(1)}")
+              assert "set -euo pipefail" in wrapper, "heal wrapper must set -e (loud failure) [B34]"
 
           with subtest("post-quantum SSH KEX offered [V12]"):
               kex = machine.succeed("sshd -T 2>/dev/null | grep -i '^kexalgorithms'")
