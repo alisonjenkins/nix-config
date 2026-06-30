@@ -226,10 +226,24 @@
         # Open via SSH-answerable prompt (passphrase never stored on the box).
         # --timeout=0: wait indefinitely for the operator; the default 90s expires
         # before an operator can SSH in and answer → unlock fails [B13].
-        if [ ! -e /dev/mapper/k3s-state ]; then
-          ${pkgs.systemd}/bin/systemd-ask-password --timeout=0 "Unlock k3s state volume:" \
-            | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -
-        fi
+        #
+        # RETRY on a wrong passphrase [B34]: a typo'd answer makes `cryptsetup
+        # luksOpen` exit non-zero. Without this loop, `set -e` would then FAIL the
+        # whole unit — and because k3s-server-bootstrap `Requires=`/`After=` this
+        # one, systemd cancels it and does NOT re-run it when the operator unlocks
+        # on a later attempt → the CP silently never starts (needs a manual
+        # `systemctl start k3s-server-bootstrap`). Looping keeps the unit in
+        # `activating` (TimeoutStartSec=infinity) and re-prompts until the volume
+        # opens, so the dependency chain stays intact. The pipeline is the `until`
+        # condition, so its non-zero exit is exempt from `set -e` (no abort).
+        until [ -e /dev/mapper/k3s-state ]; do
+          if ${pkgs.systemd}/bin/systemd-ask-password --timeout=0 "Unlock k3s state volume:" \
+               | ${pkgs.cryptsetup}/bin/cryptsetup luksOpen "$DEV" k3s-state -; then
+            break
+          fi
+          echo "luksOpen failed (wrong passphrase?) — re-prompting" >&2
+          sleep 1
+        done
 
         mkdir -p /var/lib/rancher/k3s
         # full path: bare `mount` is not in the unit PATH [B9].
