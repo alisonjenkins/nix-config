@@ -28,6 +28,12 @@
       exploration through a sub-agent. Delegate a search sweep only when you
       need the conclusion (not the file contents) AND it spans many files or
       areas you will not otherwise open.
+    - When you DO delegate a read-only search/exploration sweep, prefer the
+      Explore (or Plan) sub-agent over general-purpose: Explore/Plan skip
+      CLAUDE.md + git status at startup, so they cost far less per spawn than a
+      general-purpose agent that loads the full memory hierarchy. Reach for
+      general-purpose only when the sweep needs tools Explore lacks (edits,
+      writes, MCP mutations).
     - Fast local search keeps inline reading cheap: the built-in Grep tool
       already uses ripgrep and works on every machine — make it the default for
       content search. At the shell, use `rg` (content) and `fd` (file/dir
