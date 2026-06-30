@@ -57,13 +57,29 @@ let
 
   # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here.
   # ./skills holds locally-authored global skills (process-todo, ...).
+  #
+  # Curated subset of anthropics/skills rather than the whole repo: every skill's
+  # name+description loads into every agent/subagent, so the unused ones
+  # (algorithmic-art, brand-guidelines, canvas-design, theme-factory) are dropped
+  # to trim the subagent baseline.
+  anthropicSkillNames = [
+    # Document / office
+    "docx" "pdf" "pptx" "xlsx"
+    # Dev / web
+    "frontend-design" "web-artifacts-builder" "webapp-testing" "mcp-builder"
+    # Authoring / meta
+    "doc-coauthoring" "internal-comms" "skill-creator"
+    # Misc kept
+    "slack-gif-creator"
+  ];
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
-    paths = [
-      "${anthropicSkills}/skills"
-      "${cavemanPkg}/skills"
-      ./skills
-    ];
+    paths =
+      (map (n: "${anthropicSkills}/skills/${n}") anthropicSkillNames)
+      ++ [
+        "${cavemanPkg}/skills"
+        ./skills
+      ];
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
