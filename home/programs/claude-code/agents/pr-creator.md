@@ -1,6 +1,6 @@
 ---
 name: pr-creator
-description: "Use this agent when the user requests to create a GitHub pull request for their current branch, or when they ask to open/submit/create a PR. This agent handles the complete workflow of rebasing, pushing, and creating/updating PRs with appropriate descriptions.\\n\\nExamples:\\n- <example>\\nuser: \"Can you create a pull request for this branch?\"\\nassistant: \"I'll use the pr-creator agent to handle the complete PR workflow including rebasing and creating the pull request.\"\\n<uses Task tool to launch pr-creator agent>\\n</example>\\n- <example>\\nuser: \"Please open a PR for my changes\"\\nassistant: \"Let me launch the pr-creator agent to rebase your branch and create a pull request with an appropriate description.\"\\n<uses Task tool to launch pr-creator agent>\\n</example>\\n- <example>\\nuser: \"I'm done with these changes, can you submit them?\"\\nassistant: \"I'll use the pr-creator agent to prepare and create a pull request for your changes.\"\\n<uses Task tool to launch pr-creator agent>\\n</example>"
+description: "Create / open / submit / update a GitHub pull request for the current branch. Handles the full workflow: rebase, push, create-or-update PR with an appropriate description. Use when the user asks to open/submit a PR or says they're done and want changes submitted."
 model: sonnet
 memory: user
 aliases: []
