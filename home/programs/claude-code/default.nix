@@ -109,6 +109,67 @@ let
     docker     = { ".dockerfile" = "dockerfile"; };
   };
 
+  # ---- MCP gateway (mcp-gateway) ---------------------------------------------
+  # A single always-on aggregator MCP server that hosts the heavy / situational
+  # downstream servers (github, k8s, terraform, obscura, context7). Those
+  # downstreams connect to the GATEWAY, not to Claude Code — so their tool names
+  # AND their verbose `instructions` blocks never enter Claude Code's per-session
+  # context (the dominant subagent-baseline cost). The model reaches them lazily
+  # through the gateway_* meta-tools (gateway_search_tools / gateway_invoke).
+  #
+  # We do NOT route nixos / cavemem / token-savior through the gateway: nixos is
+  # used constantly in this repo, and token-savior must stay first-class so the
+  # Pre/PostToolUse hooks' mcp__.* matchers keep firing.
+  #
+  # mcp-gateway's per-backend `command` is a single shlex-split string with NO
+  # `args` list and NO shell — so github + obscura (which need launch-time setup:
+  # a gh-keyring token; an obscura storage dir + UK-locale env) are each wrapped
+  # in their own store-path launcher script, referenced as an absolute command.
+  githubMcpLauncher = pkgs.writeShellScript "github-mcp-launcher" ''
+    export GITHUB_PERSONAL_ACCESS_TOKEN="$(${pkgs.gh}/bin/gh auth token)"
+    exec ${pkgs.master.github-mcp-server}/bin/github-mcp-server stdio
+  '';
+
+  obscuraMcpLauncher = pkgs.writeShellScript "obscura-mcp-launcher" ''
+    dir="''${XDG_STATE_HOME:-$HOME/.local/state}/obscura"
+    mkdir -p "$dir"
+    exec env OBSCURA_TIMEZONE=Europe/London OBSCURA_GEOLOCATION=51.5074,-0.1278 \
+      ${pkgs.obscura}/bin/obscura --storage-dir "$dir" \
+      mcp --stealth --allow-private-network
+  '';
+
+  # YAML config for the gateway. `command` strings are shlex-split (spaces =
+  # arg separators), so absolute store paths + plain trailing args are fine;
+  # anything needing env/setup goes through a launcher script above.
+  mcpGatewayConfig = pkgs.writeText "mcp-gateway.yaml" ''
+    meta_mcp:
+      enabled: true
+      # warm_start is REQUIRED for discovery: without it backends stay stopped
+      # with tools_count=0 and gateway_search_tools returns nothing. Warm-start
+      # spawns each backend once at session start and caches its tool list, so
+      # the model can find downstream tools via gateway_search_tools — while the
+      # client still sees only the ~15 gateway_* meta-tools (the token win). This
+      # is no worse than the old setup, where each of these ran as a direct
+      # per-session MCP server anyway (just with all their tool names in context).
+      warm_start: ["github", "k8s", "terraform", "obscura", "context7"]
+    backends:
+      github:
+        description: "GitHub API: issues, pull requests, code search, releases, commits"
+        command: "${githubMcpLauncher}"
+      k8s:
+        description: "Kubernetes: contexts, namespaces, nodes, resources, pod logs and exec"
+        command: "${pkgs.master.mcp-k8s-go}/bin/mcp-k8s-go"
+      terraform:
+        description: "Terraform registry: providers, modules, policies and docs"
+        command: "${pkgs.master.terraform-mcp-server}/bin/terraform-mcp-server stdio"
+      obscura:
+        description: "Headless stealth browser for web scraping, fetches and form automation"
+        command: "${obscuraMcpLauncher}"
+      context7:
+        description: "Up-to-date library / framework / SDK documentation lookup"
+        command: "${pkgs.master.context7-mcp}/bin/context7-mcp"
+  '';
+
   # Datadog-scoped Claude: layers the pup-claude plugin (Datadog `pup` CLI + 49
   # agents + skills) onto the default wrapped `claude` only when invoked, keeping
   # pup out of the default session/subagent baseline. Resolves `claude` from the
@@ -189,14 +250,17 @@ in
           "Write(*)"
           "WebFetch(*)"
           "WebSearch(*)"
-          "mcp__obscura__*"
-          "mcp__context7__*"
-          "mcp__github__*"
           "mcp__nixos__*"
-          "mcp__k8s__*"
-"mcp__terraform__*"
           "mcp__cavemem__*"
           "mcp__token-savior__*"
+          # MCP gateway: auto-allow only the read-only discovery meta-tools.
+          # gateway_invoke is deliberately NOT allowed so that actual downstream
+          # calls (incl. k8s / terraform mutations, github writes) prompt — the
+          # Bash safety hook never covered MCP tools, and routing 5 servers
+          # through one gateway would otherwise collapse their per-server gating.
+          "mcp__mcp-gateway__gateway_list_servers"
+          "mcp__mcp-gateway__gateway_list_tools"
+          "mcp__mcp-gateway__gateway_search_tools"
           "Bash(git:*)"
           "Bash(GIT_PAGER=cat git:*)"
           "Bash(GIT_DIFF_OPTS= git:*)"
@@ -479,57 +543,21 @@ in
     context = builtins.concatStringsSep "\n" [ gitStrategy modelRouting workStyle ];
 
     mcpServers = {
-      # Headless stealth browser for AI agents / web scraping.
-      #   --stealth: BoringSSL Chrome TLS impersonation + JS fingerprint spoof.
-      #   --allow-private-network: permit loopback/RFC1918/link-local fetches
-      #     (off by default as SSRF guard) so local dev servers are reachable.
-      #   --storage-dir: persist cookies + localStorage across sessions, so a
-      #     clearance cookie (cf_clearance / Akamai _abck) solved once in a
-      #     real browser on this residential IP can be reused.
-      #   OBSCURA_TIMEZONE/GEOLOCATION: align the spoofed locale with our UK IP
-      #     (mismatched timezone vs IP geo is a bot-detection signal).
-      # Wrapped in bash so $HOME expands at runtime (no `config` in scope here)
-      # and the env vars apply to the long-lived MCP process.
-      obscura = {
-        command = "bash";
-        args = [
-          "-c"
-          ''
-            dir="''${XDG_STATE_HOME:-$HOME/.local/state}/obscura"
-            mkdir -p "$dir"
-            exec env OBSCURA_TIMEZONE=Europe/London OBSCURA_GEOLOCATION=51.5074,-0.1278 \
-              ${pkgs.obscura}/bin/obscura --storage-dir "$dir" \
-              mcp --stealth --allow-private-network
-          ''
-        ];
+      # Aggregator gateway hosting the heavy / situational servers (github, k8s,
+      # terraform, obscura, context7) as lazy downstreams — see mcpGatewayConfig
+      # in the let block. Only the gateway_* meta-tools enter Claude Code's
+      # context; downstream tool names + instruction blocks do not. The model
+      # discovers + calls downstream tools via gateway_search_tools /
+      # gateway_invoke. `serve --stdio` makes the gateway itself a stdio server.
+      mcp-gateway = {
+        command = "${pkgs.master.mcp-gateway}/bin/mcp-gateway";
+        args = [ "serve" "--stdio" "--config" "${mcpGatewayConfig}" ];
       };
 
-      # Up-to-date library documentation
-      context7 = {
-        command = "${pkgs.master.context7-mcp}/bin/context7-mcp";
-      };
-
-      # GitHub API integration (issues, PRs, code search)
-      # Wraps with gh auth token to pull the token from gh's keyring
-      github = {
-        command = "bash";
-        args = [ "-c" "GITHUB_PERSONAL_ACCESS_TOKEN=$(${pkgs.gh}/bin/gh auth token) exec ${pkgs.master.github-mcp-server}/bin/github-mcp-server stdio" ];
-      };
-
-      # NixOS/Home Manager options and package search
+      # NixOS/Home Manager options and package search — kept direct (first-class;
+      # used constantly in this repo).
       nixos = {
         command = "${pkgs.master.mcp-nixos}/bin/mcp-nixos";
-      };
-
-      # Kubernetes cluster interaction
-      k8s = {
-        command = "${pkgs.master.mcp-k8s-go}/bin/mcp-k8s-go";
-      };
-
-      # Terraform registry and provider documentation
-      terraform = {
-        command = "${pkgs.master.terraform-mcp-server}/bin/terraform-mcp-server";
-        args = [ "stdio" ];
       };
 
       # Cavemem: persistent cross-session memory (search, timeline, get_observations)
