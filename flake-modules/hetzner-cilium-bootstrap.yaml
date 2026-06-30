@@ -23,6 +23,15 @@ spec:
     k8sServiceHost: "10.0.1.10"
     k8sServicePort: "6443"
 
+    # Host firewall [B37]: lets a CiliumClusterwideNetworkPolicy with nodeSelector
+    # police the NODE's own (host-netns) traffic, not just pods — defence in depth
+    # beyond the hcloud Cloud Firewall. The allow policy is GitOps
+    # (network-policies/cp-host-firewall). Validated live in audit mode + Hubble
+    # (zero would-be-drops) before enforcing. NB: with no host policy the host is
+    # default-ALLOW (fail-open), so enabling this alone never locks the node out.
+    hostFirewall:
+      enabled: true
+
     # IPAM delegated to k3s (--cluster-cidr); avoids a second allocator.
     ipam:
       mode: kubernetes
