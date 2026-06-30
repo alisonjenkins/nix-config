@@ -6,17 +6,17 @@ tags: []
 ---
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) in this repo.
 
 ## Repository Overview
 
-This is a NixOS and nix-darwin flake configuration managing multiple machines including desktops, laptops (Framework and work), servers (storage, K8s, VPN gateway, KVM hypervisor), and macOS systems. The configuration uses home-manager for user-level configuration and supports both NixOS and Darwin systems.
+NixOS + nix-darwin flake. Manages many machines: desktops, laptops (Framework + work), servers (storage, K8s, VPN gateway, KVM hypervisor), macOS. home-manager for user-level config. Both NixOS + Darwin.
 
 ## Common Commands
 
 ### Building and Switching
 
-All commands are managed via `just` (justfile). The system automatically uses `nh` if available, otherwise falls back to `nixos-rebuild` or `darwin-rebuild`:
+Via `just` (justfile). Auto-uses `nh` if available, else `nixos-rebuild`/`darwin-rebuild`:
 
 ```bash
 # Build and switch immediately
@@ -76,193 +76,89 @@ nix flake lock --update-input <input-name>
 
 ## Architecture
 
-This repository uses the **Dendritic Pattern** with **flake-parts** + **haumea** for modular, auto-discovered configuration.
+**Dendritic Pattern**: flake-parts + haumea. Modular, auto-discovered.
 
 ### Directory Structure
 
-- **`flake.nix`**: Minimal entry point (~50 lines of outputs logic). Defines inputs, uses haumea to auto-discover all flake-parts modules from `flake-modules/`.
-- **`flake-modules/`**: All flake output definitions, auto-discovered by haumea:
-  - `overlays.nix`: Exports `flake.overlays` from `overlays/`
-  - `deploy.nix`: deploy-rs node definitions and checks
-  - `dev-shells.nix`: Development shell (`perSystem.devShells.default`)
-  - `templates.nix`: Flake templates
-  - `nixos-modules.nix`: Exports all NixOS modules as `flake.nixosModules.*`
-  - `home-modules.nix`: Exports home-manager modules as `flake.homeModules.*`
-  - `hosts/`: One **directory** per host configuration (NixOS, Darwin, standalone home-manager), each containing `default.nix` (the flake-parts module), `hardware-configuration.nix` (wrapped as `flake.nixosModules.<hostname>-hardware`), and `disko-config.nix` (wrapped as `flake.nixosModules.<hostname>-disko-config`)
-- **`modules/`**: Reusable NixOS modules using the **options system** (`options.*` / `config = mkIf cfg.enable`):
-  - `base/`: Core system configuration (networking, boot, nix settings, impermanence, secure boot)
-  - `desktop/`: Desktop environment configurations
-  - `development/`: Development tools and environments (e.g., web development)
-  - `locale/`: Localization settings
-  - `libvirtd/`, `vr/`, `rocm/`, `llama-cpp/`, `servers/`: Specialized functionality modules
-  - `desktop-base/`, `desktop-1password/`, `desktop-aws-tools/`, `desktop-kubernetes/`, etc.: Desktop feature modules
-  - `desktop-greetd/`, `desktop-greetd-regreet/`, `desktop-sddm/`: Display manager modules
-  - `desktop-wm-plasma6/`, `desktop-wm-sway/`: Window manager modules
-  - `hardware-fingerprint/`, `hardware-touchpad/`: Hardware feature modules
-  - `k8s-master/`, `storage-server/`: Server role modules
-- **`home/`**: Home-manager configurations:
-  - `home-linux.nix`, `home-macos.nix`, `home-common.nix`: Platform-specific and shared configs
-  - `programs/`: Per-program home-manager configurations (zsh, neovim, tmux, git, etc.)
-  - `wms/`: Window manager configurations (river, plasma, etc.)
-- **`pkgs/`**: Custom packages and overrides
-- **`overlays/`**: System-independent nixpkgs overlays (accepts only `{ inputs }`, uses `final.stdenv.hostPlatform.system` internally)
-- **`secrets/`**: SOPS-encrypted secrets (managed by sops-nix, configured in .sops.yaml)
-- **`templates/`**: Flake templates (e.g., Rust development environment)
+- **`flake.nix`**: minimal entry (~50 lines outputs). Inputs + haumea auto-discovers flake-parts modules from `flake-modules/`.
+- **`flake-modules/`**: all flake outputs, haumea auto-discovered:
+  - `overlays.nix`: `flake.overlays` from `overlays/`
+  - `deploy.nix`: deploy-rs nodes + checks
+  - `dev-shells.nix`: `perSystem.devShells.default`
+  - `templates.nix`: flake templates
+  - `nixos-modules.nix`: `flake.nixosModules.*`
+  - `home-modules.nix`: `flake.homeModules.*`
+  - `hosts/`: one **dir** per host (NixOS/Darwin/standalone home-manager). Each: `default.nix` (flake-parts module), `hardware-configuration.nix` (→ `flake.nixosModules.<hostname>-hardware`), `disko-config.nix` (→ `flake.nixosModules.<hostname>-disko-config`)
+- **`modules/`**: reusable NixOS modules, options pattern (`options.*` / `config = mkIf cfg.enable`):
+  - `base/`: core (networking, boot, nix, impermanence, secure boot)
+  - `desktop/`, `development/` (e.g. web dev), `locale/`
+  - `libvirtd/`, `vr/`, `rocm/`, `llama-cpp/`, `servers/`: specialized
+  - `desktop-base/`, `desktop-1password/`, `desktop-aws-tools/`, `desktop-kubernetes/`, etc.: desktop features
+  - `desktop-greetd/`, `desktop-greetd-regreet/`, `desktop-sddm/`: display managers
+  - `desktop-wm-plasma6/`, `desktop-wm-sway/`: WMs
+  - `hardware-fingerprint/`, `hardware-touchpad/`: hardware features
+  - `k8s-master/`, `storage-server/`: server roles
+- **`home/`**: home-manager:
+  - `home-linux.nix`, `home-macos.nix`, `home-common.nix`
+  - `programs/`: per-program (zsh, neovim, tmux, git, ...)
+  - `wms/`: WM configs (river, plasma, ...)
+- **`pkgs/`**: custom packages/overrides
+- **`overlays/`**: system-independent overlays (accept only `{ inputs }`, use `final.stdenv.hostPlatform.system`)
+- **`secrets/`**: SOPS secrets (sops-nix, `.sops.yaml`)
+- **`templates/`**: flake templates (e.g. Rust dev env)
 
 ### Configuration Pattern
 
-Each host is defined in its own flake-parts module directory at `flake-modules/hosts/<hostname>/`. These directories contain:
+Host = own flake-parts dir `flake-modules/hosts/<hostname>/`:
+1. `default.nix`: defines `flake.nixosConfigurations.<hostname>` (or `darwinConfigurations`/`homeConfigurations`)
+2. `hardware-configuration.nix`: → `flake.nixosModules.<hostname>-hardware`
+3. `disko-config.nix`: → `flake.nixosModules.<hostname>-disko-config`
 
-1. `default.nix`: The flake-parts module defining `flake.nixosConfigurations.<hostname>` (or `darwinConfigurations`/`homeConfigurations`)
-2. `hardware-configuration.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-hardware`
-3. `disko-config.nix`: Wrapped as a flake-parts module exporting `flake.nixosModules.<hostname>-disko-config`
+Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enabled `modules.<name>.enable = true`. Home modules via `self.homeModules.*`. Secret/patch paths via `self + "/path"`. No relative imports (`../../`) — all via flake outputs. New `flake-modules/` files auto-discovered by haumea.
 
-All custom modules are referenced via `self.nixosModules.*` (exported in `nixos-modules.nix`) and enabled with `modules.<name>.enable = true`. Home-manager modules are referenced via `self.homeModules.*` (exported in `home-modules.nix`). File paths for secrets/patches use `self + "/path/to/file"`. No relative path imports (`../../`) are used — everything goes through flake outputs.
-
-New flake-modules files are **auto-discovered** by haumea - just create a `.nix` file or directory in `flake-modules/` and it will be imported automatically.
-
-The `modules/base` module uses NixOS options under `modules.base`:
-- `enable`: Enable the base module
-- `bootLoader`: Boot loader selection — enum of `"systemd-boot"`, `"grub"`, or `"secure-boot"` (Lanzaboote with TPM)
-- `pcr15Value`: TPM PCR15 value for LUKS unlocking (required when `bootLoader = "secure-boot"`)
-- `enableImpermanence`: Enable tmpfs root with persistence
-- `impermanencePersistencePath`: Where to persist data (default: `/persistence`)
-- `enableCachyOSKernel`: Enable CachyOS kernel overlay (for hosts using CachyOS kernel packages)
-- `enableOpenSSH`, `enableTailscale`, `enableIPv6`, `enableICMPPing`: Feature toggles
-- `suspendState`: Suspend state (`"mem"`, `"standby"`, `"freeze"`, or `null` for auto-detect)
-- `hibernateMode`: Hibernate mode (`"platform"` or `"shutdown"`)
-- `timezone`, `consoleKeyMap`: Locale settings
-- `beesdFilesystems`: Btrfs dedup filesystem configuration
+`modules/base` options under `modules.base`:
+- `enable`; `bootLoader` (enum `"systemd-boot"` / `"grub"` / `"secure-boot"` = Lanzaboote+TPM); `pcr15Value` (TPM PCR15 for LUKS, required when secure-boot)
+- `enableImpermanence`, `impermanencePersistencePath` (default `/persistence`)
+- `enableCachyOSKernel`
+- `enableOpenSSH`, `enableTailscale`, `enableIPv6`, `enableICMPPing`
+- `suspendState` (`"mem"` / `"standby"` / `"freeze"` / `null`), `hibernateMode` (`"platform"` / `"shutdown"`)
+- `timezone`, `consoleKeyMap`
+- `beesdFilesystems` (btrfs dedup)
 
 ### Key Systems
 
-**Overlays**: The flake provides system-independent overlays for accessing different nixpkgs channels:
-- `pkgs.stable`: nixpkgs 25.11 stable
-- `pkgs.unstable`: nixos-unstable
-- `pkgs.master`: nixpkgs master branch
+**Overlays** (system-independent, channel access): `pkgs.stable` (nixpkgs 25.11), `pkgs.unstable` (nixos-unstable), `pkgs.master` (master). In `overlays/default.nix`, exported `flake-modules/overlays.nix`, applied per-host.
 
-Configured in `overlays/default.nix` and exported via `flake-modules/overlays.nix`. Applied per-host in their flake-parts module files.
+**Impermanence**: some hosts tmpfs root + selective persistence; per-host paths.
 
-**Impermanence**: Several hosts use tmpfs root filesystems with selective persistence via the impermanence module. Persistence paths are configured per-host.
+**Secrets**: sops-nix + age. Keys + path rules in `.sops.yaml`.
 
-**Secrets Management**: Uses sops-nix with age encryption. Age keys are defined in `.sops.yaml` with path-based rules for different hosts/secrets.
-
-**Remote Deployment**: The flake exports a `deploy` attribute using deploy-rs for remote system deployments, defined in `flake-modules/deploy.nix`.
+**Remote Deploy**: `deploy` attr via deploy-rs, in `flake-modules/deploy.nix`.
 
 ### Active Hosts
 
-Key configurations defined in the flake:
 - **Desktop/Laptop**: `ali-desktop`, `ali-framework-laptop`, `ali-work-laptop`, `ali-mba-linux` (M1 MacBook Air, NixOS-on-Asahi, aarch64-linux)
-- **macOS**: `Alisons-MacBook-Pro` (Darwin configuration for work laptop)
+- **macOS**: `Alisons-MacBook-Pro` (Darwin, work)
 - **Servers**: `home-storage-server-1`, `home-kvm-hypervisor-1`, `home-k8s-master-1`, `home-k8s-server-1`, `home-vpn-gateway-1`, `download-server-1`
 - **Dev/Test**: `dev-vm` (aarch64-linux VM)
 - **Home-Manager Only**: `ali` (Arch Linux), `deck` (Steam Deck)
 
 ### Notable Flake Inputs
 
-- `ali-neovim`: Custom Neovim configuration flake
-- `home-manager`: User environment management
-- `stylix`: System-wide theming
-- `plasma-manager`: KDE Plasma home-manager integration
-- `sops-nix`: Secrets management
-- `disko`: Declarative disk partitioning
-- `lanzaboote`: Secure Boot support
-- `impermanence`: Tmpfs root persistence
-- `deploy-rs`: Remote deployment tool
-- `nixos-hardware`: Hardware-specific configurations (e.g., Framework 16)
-- `nixos-cosmic`: Alternative desktop environment
-- `rust-overlay`: Rust toolchain management
-- `jovian-nixos`: Steam Deck specific configurations
-- `niks3`: Self-hosted binary cache push tool
+`ali-neovim` (custom neovim flake), `home-manager`, `stylix` (theming), `plasma-manager`, `sops-nix`, `disko`, `lanzaboote` (Secure Boot), `impermanence`, `deploy-rs`, `nixos-hardware` (e.g. Framework 16), `nixos-cosmic`, `rust-overlay`, `jovian-nixos` (Steam Deck), `niks3` (self-hosted binary cache push).
 
 ### CI/CD Workflows
 
-- **`build-and-cache.yaml`**: Builds all nixosConfigurations on push to main and pushes to niks3 binary cache. Includes dry-run check to skip cached builds and parallel build+push via queue drain.
-- **`update.yaml`**: Automated daily flake lock updates (2 AM UTC)
-- **`ami-build-and-upload.yaml`**: Builds and uploads NixOS AMIs to AWS with retention cleanup
-- **`closure-report.yaml`**: Generates closure size reports for desktop/laptop configurations
+- **`build-and-cache.yaml`**: builds all nixosConfigurations on push to main → niks3 cache. Dry-run skips cached; parallel build+push via queue drain.
+- **`update.yaml`**: daily flake lock update (2 AM UTC)
+- **`ami-build-and-upload.yaml`**: builds+uploads NixOS AMIs to AWS, retention cleanup
+- **`closure-report.yaml`**: closure size reports for desktop/laptop configs
 
 ### Minecraft modpack server packaging
 
-Server-side Minecraft modpack packaging — the `create-sky-colonies-server`
-(vanilla) and `create-arkana-aeronautics-server` (manifest + bisection)
-patterns, the bisect loop, mod-version bumping (`find-mod-bumps`), the
-composition files, and crash-pattern triage — lives in the
-**`minecraft-modpack-packaging`** skill
-(`.claude/skills/minecraft-modpack-packaging/SKILL.md`), loaded on demand when
-working on `pkgs/create-*-server` / `pkgs/minecraft-modpack-tools`.
+Lives in the **`minecraft-modpack-packaging`** skill (`.claude/skills/minecraft-modpack-packaging/SKILL.md`) — `create-sky-colonies-server` (vanilla) + `create-arkana-aeronautics-server` (manifest+bisection) patterns, the bisect loop, mod-version bumping (`find-mod-bumps`), composition files, crash triage. Auto-loads when working on `pkgs/create-*-server` / `pkgs/minecraft-modpack-tools`.
 
-### Pending: niks3 cache push on desktops/laptops
+### Dev workflows + pending work
 
-The `modules/niks3-cache-push` module and GHA parallel push workflow are implemented but **not yet enabled** on hosts. To finish:
-
-1. Create `secrets/niks3-token.enc.yaml` via `sops secrets/niks3-token.enc.yaml` with key `niks3_token`
-2. Add ali-framework-laptop's server age key to `.sops.yaml` (keys section + niks3-token creation rule)
-3. Uncomment the `modules.niks3CachePush` and `sops.secrets.niks3-token` blocks in:
-   - `flake-modules/hosts/ali-desktop/default.nix`
-   - `flake-modules/hosts/ali-framework-laptop/default.nix`
-   - `flake-modules/hosts/ali-work-laptop/default.nix`
-
-### Pending: emulation module follow-ups
-
-`modules/emulation` is implemented + audited (a 6-dimension adversarial audit;
-do-now + robustness findings fixed) but **disabled by default** — no host sets
-`modules.emulation.enable`. Remaining follow-ups, from highest value:
-
-1. **Activate on `ali-steam-deck`** — flip `enable = true`, set up the B2 sops
-   secret group (`<keySopsSecret>/accountId` + `/applicationKey`) + point
-   `content.sopsFile` at an encrypted file, pin the Sinden src hash, and drop
-   `citron` from the host's `users.users.ali.packages` (the module owns it).
-   The module has **zero integration coverage** until enabled — audit #15.
-2. **PS3 (folder-based) end-to-end** — content sync now expands + protects
-   trailing-slash folder entries (so no data-loss), but RetroFE still lists by
-   file scan, not folders; a PS3 collection needs folder-entry support + an
-   `rpcs3 --no-gui <EBOOT.BIN>` launcher. Folders are also why `catalogue.ps3`
-   has `extensions = [ ]`.
-3. **MAME controls** (audit #16) — `controls-emudeck.nix` deliberately omits
-   MAME: its `ctrlr/default.cfg` is clean but needs a `-ctrlr default` launch
-   flag (wire into the RetroFE mame launcher) + the right nixpkgs ctrlr search
-   path verified. Same for PCSX2/melonDS (input embedded in monolithic settings
-   files → can't ship read-only without clobbering paths/window-state).
-4. **RetroFE hardware validation** (audit #17) — the items flagged
-   UNVERIFIED-ON-HARDWARE in `frontend-retrofe.nix` + `design/05-frontend.md`
-   (gamescope nesting/focus, standalone bin names/flags, bundled-layout name,
-   per-game override case-sensitivity). Reconcile the two lists when validated.
-
-`flake check` runs `emudeck-config-paths` (bitrot guard on the pinned EmuDeck
-configs). PS1/PS3 disc ripping lives in the `.#ripping` dev shell.
-
-## Development Workflow
-
-When modifying configurations:
-1. Edit relevant files in `modules/`, `home/`, or `flake-modules/hosts/<hostname>/`
-2. Test changes with `just test` for temporary activation
-3. Use `just build` to build without activating (useful for checking for errors)
-4. Commit with `just switch` to activate and make permanent
-5. For remote hosts, use `just deploy .#<hostname>` after testing locally
-
-When adding new hosts:
-1. Create a directory at `flake-modules/hosts/<hostname>/` (auto-discovered by haumea)
-2. Create `default.nix` as a flake-parts module defining `flake.nixosConfigurations.<hostname>`
-3. Create `hardware-configuration.nix` wrapped as `{ ... }: { flake.nixosModules.<hostname>-hardware = { ... }; }`
-4. Create `disko-config.nix` wrapped as `{ ... }: { flake.nixosModules.<hostname>-disko-config = { ... }; }`
-5. Reference custom modules via `self.nixosModules.*`, home modules via `self.homeModules.*`, secrets via `self + "/secrets/..."`, and overlays via `self.overlays.*`
-6. New files must be `git add`ed before `nix eval`/`nix build` will see them (flake git tracking)
-
-When adding new NixOS modules (two-step process):
-1. Create the module in `modules/<name>/default.nix` using the options pattern
-2. Export it in `flake-modules/nixos-modules.nix` (add an entry to `flake.nixosModules`)
-3. Reference it in host files via `self.nixosModules.<name>`
-4. New files in `modules/` must be `git add`ed before `nix eval`/`nix build` will see them (flake git tracking)
-
-When adding new flake-modules:
-1. Create a `.nix` file in `flake-modules/` or `flake-modules/hosts/`
-2. The file will be auto-discovered by haumea - no need to update `flake.nix`
-3. Use the flake-parts module signature: `{ inputs, self, ... }: { flake = { ... }; }`
-
-When adding secrets:
-1. Add age keys to `.sops.yaml` if needed
-2. Create secret files in `secrets/` or `secrets/<hostname>/`
-3. Unencrypted Secrets should be named using the pattern `<name>.dec.yaml` so that they are gitignored. Encrypted secrets get saved with the name pattern `<name>.enc.yaml`
-4. Encrypt with `sops` command
-5. Reference in host configuration via `sops.secrets.<name>`
+- **How to** modify configs / add hosts / modules / flake-modules / secrets → the **`nix-config-workflows`** skill (`.claude/skills/nix-config-workflows/SKILL.md`), auto-loads for that work.
+- **Pending / unfinished** work (niks3 cache-push enablement, emulation module follow-ups) → `PENDING.md` (repo root).
