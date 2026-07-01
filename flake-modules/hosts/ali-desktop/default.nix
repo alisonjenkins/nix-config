@@ -735,7 +735,9 @@ in {
         sops = {
           defaultSopsFile = self + "/secrets/main.enc.yaml";
           defaultSopsFormat = "yaml";
-          age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+          # Impermanence host: SSH host key lives under /persistence, not
+          # /etc/ssh. Let sops-nix default sshKeyPaths off
+          # services.openssh.hostKeys instead of hardcoding the wrong path.
           secrets = {
             niks3-token = {
               sopsFile = self + "/secrets/niks3-token.enc.yaml";
