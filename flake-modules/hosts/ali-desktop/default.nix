@@ -105,16 +105,10 @@ in {
       }
 
       ({ config, pkgs, lib, outputs, ... }: {
-        # TODO: Enable once secrets/niks3-token.enc.yaml is created with sops
-        # modules.niks3CachePush = {
-        #   enable = true;
-        #   authTokenFile = config.sops.secrets.niks3-token.path;
-        # };
-        #
-        # sops.secrets.niks3-token = {
-        #   sopsFile = self + "/secrets/niks3-token.enc.yaml";
-        #   key = "niks3_token";
-        # };
+        modules.niks3CachePush = {
+          enable = true;
+          authTokenFile = config.sops.secrets.niks3-token.path;
+        };
 
         modules.desktop-1password.enable = true;
         modules.desktop-aws-tools.enable = true;
@@ -743,6 +737,10 @@ in {
           defaultSopsFormat = "yaml";
           age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
           secrets = {
+            niks3-token = {
+              sopsFile = self + "/secrets/niks3-token.enc.yaml";
+              key = "niks3_token";
+            };
             # "myservice/my_subdir/my_secret" = {
             #   mode = "0400";
             #   owner = config.users.users.nobody.name;
