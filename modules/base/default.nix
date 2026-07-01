@@ -506,7 +506,11 @@ in
       zramSwap = {
         enable = true;
         algorithm = "zstd";
-        memoryPercent = 100;
+        # mkDefault so memory-heavy hosts (e.g. compile boxes with a real disk
+        # swap) can lower this — zram-compressed pages stay resident in RAM, so
+        # a smaller zram lets big working sets overflow to disk swap sooner
+        # instead of burning CPU on zstd reclaim under load.
+        memoryPercent = lib.mkDefault 100;
       };
 
       # Reduce hibernate image size target to 8GB (default is ~2/5 of RAM)
