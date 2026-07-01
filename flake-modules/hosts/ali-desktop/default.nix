@@ -128,7 +128,22 @@ in {
         modules.nohang = {
           enable = true;
           enableDesktopNotifications = true;
+          # Heavy parallel compiles (nix max-jobs=8 × cores=16) spike memory PSI
+          # while zstd reclaim fights the build for CPU — the preset's
+          # full_avg10 soft threshold (40 held 30s) misreads this as OOM and
+          # SIGTERMs a build job despite 125G of swap sitting mostly free.
+          # Relax: higher pressure bar, longer sustain window.
+          settingsOverride = {
+            psi_excess_duration = "60";
+            soft_threshold_max_psi = "60";
+          };
         };
+
+        # Halve zram (base default 100%) — with a real 64G disk swap present,
+        # a smaller zram lets large compile working sets overflow to disk (which
+        # frees physical RAM) instead of compressing into RAM-resident zram and
+        # driving reclaim churn during builds.
+        zramSwap.memoryPercent = 50;
         modules.uresourced.enable = true;
         modules.base = {
           enable = true;
