@@ -54,6 +54,29 @@ in {
 
           LOCATION=$(${pkgs.detect-location}/bin/detect-location)
           ${pkgs.audio-context-volume}/bin/audio-context-volume --location "$LOCATION"
+
+          # Recover USB audio devices left in ALSA SUSPENDED state after resume.
+          # The kernel suspends the USB playback substream on sleep; PipeWire keeps
+          # feeding samples into the still-suspended pcm, so everything downstream
+          # looks RUNNING but no sound comes out (seen on the Focusrite Scarlett 2i2
+          # on ali-desktop). Cycling the card profile off->back forces PipeWire to
+          # tear down and re-prepare the pcm, clearing SUSPENDED. Only touches USB
+          # cards, only when a suspended playback substream actually exists, and
+          # restores whatever profile was active.
+          if ${pkgs.gnugrep}/bin/grep -ql SUSPENDED /proc/asound/card*/pcm*p/sub*/status 2>/dev/null; then
+            ${pkgs.pulseaudio}/bin/pactl list short cards | while read -r _ name _; do
+              case "$name" in
+                alsa_card.usb-*) ;;
+                *) continue ;;
+              esac
+              prof=$(${pkgs.pulseaudio}/bin/pactl list cards \
+                | ${pkgs.gawk}/bin/awk -v n="$name" '$0 ~ "Name: "n {f=1} f && /Active Profile:/ {print $3; exit}')
+              [ -n "$prof" ] && [ "$prof" != "off" ] || continue
+              ${pkgs.pulseaudio}/bin/pactl set-card-profile "$name" off
+              ${pkgs.coreutils}/bin/sleep 1
+              ${pkgs.pulseaudio}/bin/pactl set-card-profile "$name" "$prof"
+            done
+          fi
         '' + lib.optionalString cfg.syncMicMuteLed ''
 
           # Sync mic mute LED with PipeWire state
