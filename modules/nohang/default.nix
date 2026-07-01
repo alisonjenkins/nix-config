@@ -15,7 +15,14 @@ let
     "@BADNESS_ADJ_RE_NAME -500 /// ^${name}$"
   ) allProtectedProcesses;
 
-  # Append protection rules to the base config
+  # sed line-replacements for scalar key overrides. Each active nohang
+  # threshold key appears exactly once in the preset as `key = value`;
+  # the `^` anchor skips the "    Key: <name>" doc-comment lines.
+  overrideCmds = lib.concatStringsSep "\n" (lib.mapAttrsToList (k: v:
+    "sed -i -E 's|^${k}[[:space:]]*=.*|${k} = ${v}|' $out"
+  ) cfg.settingsOverride);
+
+  # Append protection rules to the base config, then apply key overrides.
   configFile = pkgs.runCommand "nohang.conf" { } ''
     cat ${baseConfigFile} > $out
     cat >> $out <<'EXTRA'
@@ -23,6 +30,7 @@ let
 ## Protected processes added by NixOS module
 ${protectionLines}
 EXTRA
+    ${overrideCmds}
   '';
 in
 {
@@ -71,6 +79,25 @@ in
       description = ''
         Additional process names to protect, appended to protectedProcesses.
         Use this for role-specific processes (e.g. k3s, libvirtd, smbd).
+      '';
+    };
+
+    settingsOverride = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = {};
+      example = {
+        psi_excess_duration = "60";
+        soft_threshold_max_psi = "60";
+      };
+      description = ''
+        Override scalar keys in the nohang base preset. Each key = value
+        pair replaces the matching `key = ...` line via sed. The key must
+        already exist in the preset (all standard nohang thresholds do).
+
+        Use to relax PSI/threshold values on hosts that generate legitimate
+        transient memory pressure (e.g. heavy parallel compiles), which the
+        desktop preset's PSI defaults (soft_threshold_max_psi = 40 on
+        full_avg10, psi_excess_duration = 30) otherwise mistake for OOM.
       '';
     };
   };
