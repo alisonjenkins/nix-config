@@ -135,11 +135,23 @@
         METADATA=$(${pkgs.curl}/bin/curl -s http://169.254.169.254/hetzner/v1/metadata)
         LOCATION=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.region')
 
-        # node-ip = PUBLIC: the hcloud CCM (networking.enabled=false) only knows
-        # the server's public address; a private node-ip is rejected and providerID
-        # never set [B10,B17]. Reaching the CP uses the private net via B7 + the
-        # SERVER_ENDPOINT in the join config, independent of node-ip.
-        NODE_IP=$(echo "$METADATA" | ${pkgs.yq-go}/bin/yq '.public-ipv4')
+        # node-ip = PRIVATE hcloud IP (10.0.0.0/8) so cross-node pod traffic +
+        # kubelet ride the Hetzner private network, not the firewalled public NIC
+        # [T17, supersedes B17]. Requires the hcloud CCM with private networking
+        # enabled — it then accepts the private node-ip + sets providerID. The
+        # private IP is DHCP-only (NOT in metadata [B16]) → read it off the NIC
+        # once B7's DHCP assigns it; fail closed (no private net ⇒ no cross-node).
+        NODE_IP=""
+        for _ in $(seq 1 30); do
+          NODE_IP=$(${pkgs.iproute2}/bin/ip -4 -o addr show 2>/dev/null \
+            | ${pkgs.gawk}/bin/awk '$4 ~ /^10\.0\./ {print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
+          [ -n "$NODE_IP" ] && break
+          sleep 2
+        done
+        if [ -z "$NODE_IP" ]; then
+          echo "FATAL: no private (10.0.0.0/8) IP found — cannot join over the Hetzner private network [T17]" >&2
+          exit 1
+        fi
 
         # Wait for master reachability
         for i in $(seq 1 60); do
@@ -385,11 +397,17 @@
           [ -n "$PRIV_IP" ] && break
           sleep 2
         done
-        # node-ip = PUBLIC: the hcloud CCM runs networking.enabled=false so it only
-        # knows the server's public address; a private node-ip is rejected ("node
-        # address ... not valid") and providerID never set [B17]. The private IP is
-        # used for tls-san (below), not node-ip.
-        NODE_IP="$PUB_IP"
+        # node-ip = PRIVATE hcloud IP (10.0.1.x) so the CP's InternalIP + kubelet
+        # serving cert + Cilium native routing all ride the Hetzner private net
+        # [T17, supersedes B17]. Requires the hcloud CCM with private networking
+        # enabled — it then accepts the private node-ip + sets providerID. PRIV_IP
+        # is read off the private NIC above; fail closed if it never appeared
+        # (a public node-ip would silently break cross-node pod networking).
+        NODE_IP="$PRIV_IP"
+        if [ -z "$NODE_IP" ]; then
+          echo "FATAL: no private (10.0.0.0/8) IP — CP cannot use a private node-ip [T17]" >&2
+          exit 1
+        fi
 
         # tls-san SHOULD include the private IP: it is the shared k8sServiceHost
         # [T10] that cilium + workers dial (https://<priv>:6443) — without it in
