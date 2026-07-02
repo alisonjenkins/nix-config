@@ -428,6 +428,7 @@
           --node-ip "$NODE_IP" \
           --tls-san "$FLOATING_IP" \
           ''${TS_IP:+--tls-san "$TS_IP"} \
+          ''${PUB_IP:+--tls-san "$PUB_IP"} \
           $PRIV_SAN \
           --flannel-backend=none \
           --disable-network-policy \
