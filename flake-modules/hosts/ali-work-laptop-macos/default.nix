@@ -1,6 +1,5 @@
 { inputs, self, ... }:
 let
-  lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
   username = "ajenkins";
   darwinSystem = "aarch64-darwin";
@@ -63,36 +62,12 @@ in {
     system = darwinSystem;
     modules = [
       self.darwinModules.darwin-nix-maintenance
-      self.darwinModules.llama-swap
-      # Local LLM: llama-swap proxies an OpenAI-compatible endpoint on
-      # 127.0.0.1:8080, spawning Metal llama.cpp per requested model and
-      # unloading after idle. Models reused from pkgs/llama-models.
-      ({ pkgs, ... }: {
-        modules.llamaSwap = {
-          enable = true;
-          models = {
-            # Fast 3B-active MoE workhorse for coding/agentic/scripting.
-            "qwen3-coder".modelFile =
-              pkgs.llama-models.qwen3-coder-30b-a3b-q4-k-s.modelFile;
-            # Smarter dense 32B; Qwen3-0.6B draft for speculative decoding.
-            "qwen3-32b" = {
-              modelFile = pkgs.llama-models.qwen3-32b-q5-k-m.modelFile;
-              draftModelFile = pkgs.llama-models.qwen3-0-6b-q8-0.modelFile;
-            };
-            # Fast dedicated model for git commit-message generation
-            # (git-ai-commit + the aichat commit-msg role).
-            "qwen-commit".modelFile =
-              pkgs.llama-models.qwen2-5-coder-7b-instruct-q4-k-m.modelFile;
-          };
-        };
-      })
       # Host-specific configuration (inlined from configuration.nix)
-      ({ pkgs, inputs, outputs, username, hostname, ... }: {
+      ({ pkgs, inputs, username, hostname, ... }: {
         environment = {
           systemPackages = with pkgs; [
             (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
             (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
-            aichat
             alacritty
             unstable.aws-sam-cli
             aws-vault
@@ -460,6 +435,9 @@ in {
           github_clone_ssh_host_personal = "pgithub.com";
           github_clone_ssh_host_work = "github.com";
           hostname = "${hostnames.civica}";
+          # No local llama endpoint on this host — opencode falls back to
+          # its built-in github-copilot provider.
+          opencodeLocalLLM = false;
           primarySSHKey = "~/.ssh/id_civica.pub";
           azureDevopsRsaKey = "~/.ssh/id_civica_rsa.pub";
         };
