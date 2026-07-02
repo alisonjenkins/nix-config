@@ -199,6 +199,11 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host codeberg.org
+          User git
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         ${if azureDevopsRsaKey != "" then ''
         Host ssh.dev.azure.com
           User git
