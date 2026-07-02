@@ -1,7 +1,20 @@
-{ pkgs, lib, ... }:
+# opencodeLocalLLM read via `args ... or` rather than a named formal arg: the
+# module system resolves named args through _module.args and errors when the
+# specialArg is absent, ignoring lambda defaults.
+{ pkgs, lib, ... } @ args:
 let
+  opencodeLocalLLM = args.opencodeLocalLLM or true;
+
   mandates = import ../shared-mandates.nix;
   inherit (mandates) gitStrategy workStyle;
+
+  # Hosts without a local llama endpoint (opencodeLocalLLM = false via
+  # home-manager.extraSpecialArgs) fall back to opencode's built-in
+  # github-copilot provider, which needs no provider block in config.json
+  # (auth via `opencode auth login github-copilot`).
+  defaultModel =
+    if opencodeLocalLLM then "local/qwen3-32b"
+    else "github-copilot/claude-sonnet-4.5";
 
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
@@ -40,7 +53,7 @@ let
             else lib.concatStringsSep "\n" (lib.drop (endIdx + 1) rest);
     in lib.trimWith { start = true; end = false; } body;
 
-  mkOpencodeAgent = { file, description, model ? "local/qwen3-32b", mode ? "subagent", extraBody ? "" }:
+  mkOpencodeAgent = { file, description, model ? defaultModel, mode ? "subagent", extraBody ? "" }:
     ''
       ---
       description: "${description}"
@@ -135,7 +148,7 @@ in {
     "opencode/config.json".text = builtins.toJSON {
       "$schema" = "https://opencode.ai/config.json";
 
-      provider = {
+      provider = lib.optionalAttrs opencodeLocalLLM {
         local = mkProvider {
           baseURL = "http://localhost:8080/v1";
           models.qwen3-32b = mkModel {
@@ -146,8 +159,8 @@ in {
         };
       };
 
-      model = "local/qwen3-32b";
-      small_model = "local/qwen3-32b";
+      model = defaultModel;
+      small_model = defaultModel;
 
       instructions = [
         "~/.config/opencode/instructions/git-strategy.md"
