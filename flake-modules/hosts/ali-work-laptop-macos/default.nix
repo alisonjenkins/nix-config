@@ -10,6 +10,17 @@ let
 
     config = {
       allowUnfree = true;
+
+      # context7-mcp (pkgs.master.context7-mcp, wired into the claude-code +
+      # opencode home configs) builds with pnpm 10.29.2, which nixpkgs marked
+      # insecure (CVE-2026-48995 et al). pnpm is a build-time-only tool for
+      # assembling node_modules — never in the system runtime closure or PATH —
+      # so the CVEs don't affect the running system. Mirrors the same permit in
+      # modules/base for NixOS hosts.
+      #
+      # REMOVE once nixpkgs ships a non-flagged pnpm. Re-check after flake
+      # updates: `nix-store -q --requisites <toplevel.drv> | grep pnpm`.
+      permittedInsecurePackages = [ "pnpm-10.29.2" ];
     };
 
     overlays = [
