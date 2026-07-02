@@ -120,6 +120,7 @@ in {
             gama-tui
             gephi
             gh
+            github-copilot-cli
             gitify
             gitui
             glow
