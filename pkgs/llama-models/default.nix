@@ -104,10 +104,7 @@ in
       {
         name = "Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
         url = "https://huggingface.co/unsloth/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
-        # TODO: placeholder — resolve on a machine with HF access:
-        #   nix store prefetch-file --hash-type sha256 <url>
-        # then push the built model to nixcache.org so this host can pull it.
-        hash = lib.fakeHash;
+        hash = "sha256-mpYbsiXLK5/YSyKX3w1TCJiVwEnX2dxfX4rrvNMkeHI=";
       }
     ];
   };
