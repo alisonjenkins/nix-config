@@ -36,13 +36,18 @@ spec:
     ipam:
       mode: kubernetes
 
-    # Native routing over the Hetzner private net. The private net has a gateway,
-    # so plain autoDirectNodeRoutes fails; directRoutingSkipUnreachable routes
-    # natively to in-net peers and falls back to tunnel for Tailscale/cross-cloud.
-    routingMode: native
-    ipv4NativeRoutingCIDR: "10.0.0.0/8"
-    autoDirectNodeRoutes: true
-    directRoutingSkipUnreachable: true
+    # VXLAN over the Hetzner private net. Native routing does NOT work here: the
+    # private net is gatewayed (peers not on-link) so autoDirectNodeRoutes
+    # installs nothing, and directRoutingSkipUnreachable has NO tunnel fallback
+    # in native mode (no cilium_vxlan device exists) — cross-node pod traffic
+    # silently left via the public default route and was dropped [T17 cutover,
+    # 2026-07-02]. Tunnel outer IPs = node private IPs (node-ip=private), so pod
+    # traffic rides the Hetzner network. MTU pinned: private NIC 1450 − vxlan 50
+    # = 1400 (autodetect would pick eth0's 1500 → blackholed big packets).
+    routingMode: tunnel
+    tunnelProtocol: vxlan
+    MTU: 1400
+    autoDirectNodeRoutes: false
     enableIPv4Masquerade: true
     enableIPv4BIGTCP: false   # virtio NIC — BIG TCP needs mlx/ice
     ipv6:
