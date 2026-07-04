@@ -207,20 +207,24 @@ in {
 
             networks = {
               # Match the LAN uplink by driver, not interface name, so this
-              # survives the EPYC/ROMED8-2T board swap. ixgbe matches the
-              # current board's enp16s0 today and the new board's onboard Intel
-              # X550 after the swap. On the new board both X550 ports match;
-              # only the cabled LAN port has carrier, so br0 DHCPs over it with
-              # no loop. The second (WAN-reserved) port sits enslaved with no
-              # carrier until the firewall VM is built, at which point it gets
-              # carved out for passthrough.
+              # survived the EPYC/ROMED8-2T board swap. ixgbe now matches FOUR
+              # ports (2x onboard X550 + 2x discrete X520 destined for the
+              # firewall VM); only the cabled LAN port gets carrier and
+              # actually joins br0. RequiredForOnline must be "no": a
+              # carrier-less matched port never reaches "enslaved", so
+              # "enslaved" here makes wait-online block on the three uncabled
+              # ports. Host readiness is gated by "40-br0" routable instead.
+              # TODO(firewall VM): replace the driver match with
+              # matchConfig.PermanentMACAddress of the LAN port so the
+              # WAN/passthrough ports never enslave to br0 (L2-loop guard —
+              # br0 runs no STP).
               "30-lan-uplink" = {
                 matchConfig.Driver = "ixgbe";
                 networkConfig = {
                   Bridge = "br0";
                 };
                 linkConfig = {
-                  RequiredForOnline = "enslaved";
+                  RequiredForOnline = "no";
                 };
               };
 
