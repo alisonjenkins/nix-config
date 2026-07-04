@@ -213,6 +213,9 @@ in {
                 netdevConfig = {
                   Kind = "bridge";
                   Name = "br-storage";
+                  # Born jumbo: without this the bridge MTU tracks the lowest
+                  # member and briefly flaps 1500 while guests attach.
+                  MTUBytes = "9000";
                 };
               };
             };
