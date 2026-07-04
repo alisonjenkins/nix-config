@@ -81,6 +81,11 @@ in {
             # SAS3008 controllers (1000:0097) bound early via vfio-pci — prevents mpt3sas from claiming them
             # GPU (1002:164e) stays on amdgpu for LUKS prompt; libvirt rebinds it when VM starts (managed='yes')
             "vfio-pci.ids=1000:0097"
+            # Identity-map DMA for host-owned devices (X550 ixgbe, OS NVMe):
+            # with the IOMMU enabled for VFIO, host devices otherwise pay full
+            # DMA remapping on every transfer. Passthrough domains keep their
+            # own translation — does not affect the HBA passthrough.
+            "iommu=pt"
             "systemd.gpt_auto=no"
           ];
 
