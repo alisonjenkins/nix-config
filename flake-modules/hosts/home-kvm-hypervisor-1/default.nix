@@ -38,6 +38,15 @@ in {
         };
         modules.libvirtd.enable = true;
         modules.locale.enable = true;
+
+        # Cap nix build parallelism well below the 64 hardware threads: base
+        # sets max-jobs=auto / cores=0, which lets a rebuild schedule up to
+        # 64 concurrent builds each with unbounded make -j, starving the
+        # running VMs' vCPU threads. 4 jobs x 8 cores ~= half the machine.
+        nix.settings = {
+          max-jobs = lib.mkForce 4;
+          cores = lib.mkForce 8;
+        };
         modules.servers = {
           enable = true;
           prometheus.smartctlExporter.enable = true;
