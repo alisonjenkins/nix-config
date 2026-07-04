@@ -87,8 +87,8 @@ in {
           };
 
           kernelParams = [
-            # SAS3008 controllers (1000:0097) bound early via vfio-pci — prevents mpt3sas from claiming them
-            # GPU (1002:164e) stays on amdgpu for LUKS prompt; libvirt rebinds it when VM starts (managed='yes')
+            # SAS3008 controllers (1000:0097) bound early via vfio-pci — prevents mpt3sas from claiming them.
+            # Console/LUKS prompt renders via the ROMED8-2T's ASPEED BMC (ast/simpledrm); no discrete GPU fitted.
             "vfio-pci.ids=1000:0097"
             # Identity-map DMA for host-owned devices (X550 ixgbe, OS NVMe):
             # with the IOMMU enabled for VFIO, host devices otherwise pay full
