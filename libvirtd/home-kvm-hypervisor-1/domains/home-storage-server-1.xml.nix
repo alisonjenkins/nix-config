@@ -17,6 +17,9 @@
     <access mode="shared"/>
   </memoryBacking>
   <vcpu placement="static">8</vcpu>
+  <!-- Dedicated disk I/O threads for the qcow2 OS disk (pool disks go via the
+       passthrough HBAs and are unaffected). -->
+  <iothreads>2</iothreads>
   <os firmware="efi">
     <type arch="x86_64" machine="pc-q35-9.1">hvm</type>
     <firmware>
@@ -58,7 +61,7 @@
            disk (the NFS server guest caches its own reads; host-side
            double-buffering just burns host RAM and adds a copy). Matches the
            k8s and download domains. -->
-      <driver name="qemu" type="qcow2" cache="none" io="native" discard="unmap"/>
+      <driver name="qemu" type="qcow2" cache="none" io="native" discard="unmap" iothread="1" queues="4"/>
       <source file="/var/lib/libvirt/images/home-storage-server-1.qcow2"/>
       <target dev="vda" bus="virtio"/>
       <boot order="1"/>

@@ -10,6 +10,8 @@
     <memory unit='KiB'>8388608</memory>
     <currentMemory unit='KiB'>8388608</currentMemory>
     <vcpu placement='static'>6</vcpu>
+    <!-- Dedicated disk I/O threads: keeps torrent write bursts off the vCPUs. -->
+    <iothreads>2</iothreads>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
       <firmware>
@@ -46,7 +48,7 @@
     <devices>
       <emulator>/run/libvirt/nix-emulators/qemu-system-x86_64</emulator>
       <disk type='file' device='disk'>
-        <driver name='qemu' type='qcow2' cache='none' io='native' discard='unmap'/>
+        <driver name='qemu' type='qcow2' cache='none' io='native' discard='unmap' iothread='1' queues='4'/>
         <source file='/var/lib/libvirt/images/download-server-1.qcow2'/>
         <target dev='vda' bus='virtio'/>
         <boot order='2'/>
