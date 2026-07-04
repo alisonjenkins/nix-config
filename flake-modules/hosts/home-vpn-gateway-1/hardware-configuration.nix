@@ -18,16 +18,11 @@
       extraModulePackages = [ ];
 
       initrd = {
+        # virtio-only guest: physical-host modules (ahci/nvme/usb) trimmed;
+        # includeDefaultModules covers the standard virtio set. cryptd stays
+        # (LUKS-on-vda console unlock).
         availableKernelModules = [
-          "ahci"
           "cryptd"
-          "ehci_pci"
-          "nvme"
-          "sd_mod"
-          "sr_mod"
-          "uas"
-          "usb_storage"
-          "usbhid"
           "virtio_blk"
           "virtio_pci"
           "xhci_pci"
