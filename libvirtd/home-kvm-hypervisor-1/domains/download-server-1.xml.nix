@@ -7,9 +7,9 @@
         <libosinfo:os id="http://libosinfo.org/linux/2022"/>
       </libosinfo:libosinfo>
     </metadata>
-    <memory unit='KiB'>4194304</memory>
-    <currentMemory unit='KiB'>4194304</currentMemory>
-    <vcpu placement='static'>4</vcpu>
+    <memory unit='KiB'>8388608</memory>
+    <currentMemory unit='KiB'>8388608</currentMemory>
+    <vcpu placement='static'>6</vcpu>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
       <firmware>
@@ -26,7 +26,7 @@
       <smm state='on'/>
     </features>
     <cpu mode='host-passthrough' check='none' migratable='on'>
-      <topology sockets='1' cores='4' threads='1'/>
+      <topology sockets='1' cores='6' threads='1'/>
     </cpu>
     <cputune>
       <shares>512</shares>
