@@ -222,9 +222,9 @@
       <address type="usb" bus="0" port="3"/>
     </redirdev>
     <watchdog model="itco" action="reset"/>
-    <memballoon model="virtio">
-      <address type="pci" domain="0x0000" bus="0x05" slot="0x00" function="0x0"/>
-    </memballoon>
+    <!-- No balloon: the SAS HBA hostdevs mlock-pin ALL guest RAM, so the
+         balloon can never reclaim anything — it's pure overhead here. -->
+    <memballoon model="none"/>
     <rng model="virtio">
       <backend model="random">/dev/urandom</backend>
       <address type="pci" domain="0x0000" bus="0x06" slot="0x00" function="0x0"/>
