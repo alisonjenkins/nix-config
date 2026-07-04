@@ -75,7 +75,10 @@
               size = "32G";
               content = {
                 type = "swap";
-                resumeDevice = true;
+                # Hibernation is unusable on this host: VFIO passthrough
+                # domains pin their RAM and cannot be suspended to disk.
+                # resumeDevice=true only injected pointless resume= boot logic.
+                resumeDevice = false;
               };
             };
             root = {
