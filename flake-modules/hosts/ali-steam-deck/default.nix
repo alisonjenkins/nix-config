@@ -34,6 +34,11 @@ in {
       inputs.nix-flatpak.nixosModules.nix-flatpak
       inputs.nur.modules.nixos.default
 
+      # jovian-nixos sets zramSwap.memoryPercent=50 and base sets 100, both at
+      # normal priority → module-system eval conflict (surfaced by deploy-rs's
+      # flake checks). Force the Jovian intent (50) to resolve it.
+      { zramSwap.memoryPercent = lib.mkForce 50; }
+
       # Home-manager configuration
       {
         home-manager.backupCommand = ''
