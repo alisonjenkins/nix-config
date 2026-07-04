@@ -129,8 +129,6 @@ in {
           initrd = {
             availableKernelModules = [
               "ixgbe"
-              "mt7921e"
-              "r8169"
             ];
             # Bypass kernel workqueues for dm-crypt — significant
             # NVMe I/O improvement on a CPU with hardware AES (the
