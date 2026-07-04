@@ -69,11 +69,13 @@ in {
           # on this qemu guest; if CPU-bound, revert the udev rule to mq-deadline.
           kernelModules = [ "bfq" ];
 
-          # Bound dirty memory on this RAM-tight box (3.8GB). modules/base sets
-          # dirty_ratio=20 / dirty_background_ratio=5 as HARD values (~760MB /
-          # ~190MB) -- too much for slow spindles; a writeback storm can
-          # monopolise a disk long enough to time out a FUSE readdir. Cap by
-          # bytes and FORCE the ratio knobs to 0: ratio and bytes are mutually
+          # Bound dirty memory by BYTES, not ratio. The VM now has 64 GiB
+          # (EPYC host), so modules/base's dirty_ratio=20 / background=5 would
+          # allow ~12.8 GiB / ~3.2 GiB of dirty pages -- far too much for slow
+          # spindles; a writeback storm can monopolise a disk long enough to
+          # time out a FUSE readdir. The cap is drain-rate-bound (spindle
+          # speed), NOT RAM-bound, so it stays small despite the big page
+          # cache. Cap by bytes and FORCE the ratio knobs to 0: ratio and bytes are mutually
           # exclusive and whichever sysctl is applied LAST wins, so a later
           # `sysctl --system` re-asserting ratio=20 would silently zero
           # dirty_bytes; pinning the ratios to 0 makes kernel state deterministic
@@ -85,6 +87,11 @@ in {
             "vm.dirty_bytes" = 268435456;             # 256 MiB
             "vm.dirty_ratio" = lib.mkForce 0;
             "vm.dirty_background_ratio" = lib.mkForce 0;
+            # Hold dentries/inodes hard now the VM has 64 GiB: *arr scans and
+            # cold readdir over 16 spindles are metadata-bound. base sets 25;
+            # 10 makes the kernel strongly prefer evicting data pages over
+            # metadata.
+            "vm.vfs_cache_pressure" = lib.mkForce 10;
           };
         };
 

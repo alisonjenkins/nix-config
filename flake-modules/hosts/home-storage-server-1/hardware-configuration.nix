@@ -115,10 +115,21 @@
         options = [
           "nofail"
           "allow_other"
-          "cache.files=off"
+          # Aggressive read caching for the spinning pool (host has 64 GiB):
+          # auto-full keeps file data in the kernel page cache across opens and
+          # invalidates only when mtime/size changed (safe vs direct branch
+          # writes, e.g. snapraid). off/direct-io bypassed the page cache at the
+          # FUSE layer entirely and made every read a userspace round trip.
+          "cache.files=auto-full"
           "category.create=mfs"  # Use most-free-space policy to spread data across disks
           "defaults"
-          "dropcacheonclose=true"
+          # Keep cached pages after close (pair of cache.files=auto-full).
+          # dropcacheonclose=true fadvise-dropped the cache on every close and
+          # only made sense alongside cache.files=off to avoid double caching.
+          "dropcacheonclose=false"
+          # Kernel readahead (KiB) for mergerfs AND its branches — sequential
+          # media streaming off spinning disks; default 128 KiB starves it.
+          "readahead=2048"
           "fsname=mergerf"
           "minfreespace=200G"
           "moveonenospc=true"
