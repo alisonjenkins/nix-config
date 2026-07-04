@@ -1,5 +1,5 @@
 { ... }: {
-  flake.nixosModules.home-k8s-master-1-hardware = { config, lib, pkgs, modulesPath, ... }: {
+  flake.nixosModules.home-k8s-master-1-hardware = { lib, pkgs, modulesPath, ... }: {
     imports = [
       (modulesPath + "/installer/scan/not-detected.nix")
     ];
@@ -13,9 +13,11 @@
     };
 
     boot.extraModulePackages = [ ];
-    boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "usbhid" "usb_storage" "sd_mod" "sdhci_pci" ];
+    # virtio-only guest: the physical-host module list (ahci/sdhci/usb) came
+    # from the original bare-metal install. includeDefaultModules already
+    # covers the virtio set; dm-snapshot stays for LVM.
+    boot.initrd.availableKernelModules = [ "xhci_pci" "sd_mod" ];
     boot.initrd.kernelModules = [ "dm-snapshot" ];
-    boot.kernelModules = [ "kvm-intel" ];
     boot.kernelPackages = pkgs.linuxPackages_latest;
     boot.kernelPatches = [
       {
@@ -37,6 +39,5 @@
     # networking.interfaces.enp3s0.useDHCP = lib.mkDefault true;
 
     nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-    hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   };
 }
