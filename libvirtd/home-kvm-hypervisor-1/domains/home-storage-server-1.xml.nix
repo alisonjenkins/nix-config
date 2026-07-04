@@ -62,7 +62,6 @@
     </disk>
     <disk type="file" device="cdrom">
       <driver name="qemu" type="raw"/>
-      <source file="/var/lib/libvirt/images/nixos-minimal-24.11.710486.4dc2fc4e62db-x86_64-linux.iso"/>
       <target dev="sda" bus="sata"/>
       <readonly/>
       <address type="drive" controller="0" bus="0" target="0" unit="0"/>
