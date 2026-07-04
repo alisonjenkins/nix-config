@@ -36,6 +36,11 @@
     # networking.interfaces.br0.useDHCP = true;
 
     nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+    # Pull in redistributable CPU microcode. updateMicrocode below follows this
+    # flag, which was previously unset (=false), so no AMD microcode was applied.
+    # Required ahead of the EPYC 7543P / ROMED8-2T swap: server silicon wants the
+    # early-boot microcode update present in initrd.
+    hardware.enableRedistributableFirmware = true;
     hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   };
 }
