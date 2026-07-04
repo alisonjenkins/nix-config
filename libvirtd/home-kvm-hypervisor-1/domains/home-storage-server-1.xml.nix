@@ -54,7 +54,11 @@
   <devices>
     <emulator>/run/libvirt/nix-emulators/qemu-system-x86_64</emulator>
     <disk type="file" device="disk">
-      <driver name="qemu" type="qcow2" discard="unmap"/>
+      <!-- cache=none io=native: skip the HOST page cache for the guest OS
+           disk (the NFS server guest caches its own reads; host-side
+           double-buffering just burns host RAM and adds a copy). Matches the
+           k8s and download domains. -->
+      <driver name="qemu" type="qcow2" cache="none" io="native" discard="unmap"/>
       <source file="/var/lib/libvirt/images/home-storage-server-1.qcow2"/>
       <target dev="vda" bus="virtio"/>
       <boot order="1"/>
