@@ -7,18 +7,15 @@
         <libosinfo:os id="http://libosinfo.org/linux/2022"/>
       </libosinfo:libosinfo>
     </metadata>
-    <!-- 18000 MiB. Bumped from 16000 MiB: this guest runs k3s + Jellyfin +
-         Prometheus/Grafana and was swapping ~5 GiB under pressure. The VM has a
-         GPU <hostdev> passthrough so QEMU mlocks ALL guest RAM resident (no
-         balloon/swap on the host side) — every KiB here is pinned host RAM.
-         18000 MiB is the safe ceiling: 30.5 GiB host - 18 (this, pinned)
-         - 4 (storage, pinned) - ~2.5 (host) leaves ~6 GiB for download-server-1
-         (4 GiB, swappable). Do NOT exceed while storage keeps its HBA. Reclaimed
-         headroom comes from the disabled vpn-gateway. Cold power-cycle to apply
-         (pinned VMs can't resize live): virsh destroy && virsh start. -->
-    <memory unit='KiB'>18432000</memory>
-    <currentMemory unit='KiB'>18432000</currentMemory>
-    <vcpu placement='static'>8</vcpu>
+    <!-- 152 GiB. New EPYC 7543P board has 251 GiB RAM (was 30.5 GiB), so this guest
+         (k3s + Jellyfin + Prometheus/Grafana) gets most of the headroom. RAM is no
+         longer pinned: the GPU <hostdev> is commented out below (the 1002:164e device
+         was the previous CPU's iGPU and does not exist on EPYC), so QEMU no longer
+         mlocks all guest RAM. Budget: 251 - 152 (this) - 64 (storage) - 8 (download)
+         leaves ~27 GiB for the host. Cold power-cycle to apply: virsh destroy && virsh start. -->
+    <memory unit='KiB'>159383552</memory>
+    <currentMemory unit='KiB'>159383552</currentMemory>
+    <vcpu placement='static'>16</vcpu>
     <os firmware='efi'>
       <type arch='x86_64' machine='pc-q35-9.1'>hvm</type>
       <firmware>
@@ -35,7 +32,7 @@
       <smm state='on'/>
     </features>
     <cpu mode='host-passthrough' check='none' migratable='on'>
-      <topology sockets='1' cores='8' threads='1'/>
+      <topology sockets='1' cores='16' threads='1'/>
     </cpu>
     <cputune>
       <shares>4096</shares>
@@ -200,12 +197,17 @@
         <backend model='random'>/dev/urandom</backend>
         <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
       </rng>
+      <!-- GPU passthrough disabled: 1002:164e was the previous CPU's integrated GPU;
+           the EPYC 7543P has no iGPU so the device does not exist on the new board.
+           Jellyfin falls back to software transcode. Re-enable (and repoint the source
+           host address) if a discrete GPU is installed.
       <hostdev mode='subsystem' type='pci' managed='yes'>
         <source>
           <address domain='0x0000' bus='0x15' slot='0x00' function='0x0'/>
         </source>
         <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0'/>
       </hostdev>
+      -->
     </devices>
   </domain>
 ''

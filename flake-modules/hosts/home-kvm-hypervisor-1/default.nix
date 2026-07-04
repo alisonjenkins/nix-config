@@ -274,12 +274,12 @@ in {
                     definition = pkgs.writeText "download-server-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/download-server-1.xml.nix") {inherit pkgs;});
                   }
                   {
-                    # active=false for the EPYC/ROMED8-2T board swap: this domain
-                    # passes through the AMD GPU (1002:164e) at a fixed host PCI
-                    # address that changes on the new board. Don't autostart with a
-                    # stale <hostdev> address — start it by hand after the address
-                    # is corrected post-swap, then flip back to true.
-                    active = false;
+                    # Re-enabled after the EPYC/ROMED8-2T board swap. The GPU
+                    # (1002:164e) was the previous CPU's iGPU and no longer exists on
+                    # EPYC, so the GPU <hostdev> is commented out in the domain XML and
+                    # this runs headless (Jellyfin software transcode) until a discrete
+                    # GPU is fitted.
+                    active = true;
                     definition = pkgs.writeText "home-k8s-master-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-k8s-master-1.xml.nix") {inherit pkgs;});
                   }
                   {
