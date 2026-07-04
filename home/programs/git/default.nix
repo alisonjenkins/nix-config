@@ -138,6 +138,18 @@ in
         {
           path = "~/.config/git/includes/extra-config";
         }
+        # Use the Codeberg per-user noreply address for repos hosted on
+        # Codeberg, keeping the real email private. hasconfig globs are
+        # path-scoped (`*` does not cross `/`), so the URL scheme must be
+        # matched literally — cover both the ssh and https remote forms.
+        {
+          condition = "hasconfig:remote.*.url:ssh://git@codeberg.org/**";
+          contents.user.email = "alisonjenkins@noreply.codeberg.org";
+        }
+        {
+          condition = "hasconfig:remote.*.url:https://codeberg.org/**";
+          contents.user.email = "alisonjenkins@noreply.codeberg.org";
+        }
       ];
     }
     // {
