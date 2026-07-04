@@ -274,11 +274,19 @@ in {
                     definition = pkgs.writeText "download-server-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/download-server-1.xml.nix") {inherit pkgs;});
                   }
                   {
-                    active = true;
+                    # active=false for the EPYC/ROMED8-2T board swap: this domain
+                    # passes through the AMD GPU (1002:164e) at a fixed host PCI
+                    # address that changes on the new board. Don't autostart with a
+                    # stale <hostdev> address — start it by hand after the address
+                    # is corrected post-swap, then flip back to true.
+                    active = false;
                     definition = pkgs.writeText "home-k8s-master-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-k8s-master-1.xml.nix") {inherit pkgs;});
                   }
                   {
-                    active = true;
+                    # active=false for the board swap: passes through the SAS3008
+                    # HBA (1000:0097) at a fixed host PCI address that changes on the
+                    # new board. Same rationale as home-k8s-master-1 above.
+                    active = false;
                     definition = pkgs.writeText "home-storage-server-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-storage-server-1.xml.nix") {inherit pkgs;});
                   }
                   {
