@@ -283,10 +283,11 @@ in {
                     definition = pkgs.writeText "home-k8s-master-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-k8s-master-1.xml.nix") {inherit pkgs;});
                   }
                   {
-                    # active=false for the board swap: passes through the SAS3008
-                    # HBA (1000:0097) at a fixed host PCI address that changes on the
-                    # new board. Same rationale as home-k8s-master-1 above.
-                    active = false;
+                    # Re-enabled after the board swap. Passes through the SAS3008 HBA
+                    # (1000:0097); on the new board the one dual-controller card sits at
+                    # host 84:00.0 + 86:00.0 (both are in the domain XML). vfio-pci binds
+                    # them via vfio-pci.ids so the address is fixed at boot.
+                    active = true;
                     definition = pkgs.writeText "home-storage-server-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-storage-server-1.xml.nix") {inherit pkgs;});
                   }
                   {

@@ -10,13 +10,13 @@
       <libosinfo:os id="http://libosinfo.org/linux/2022"/>
     </libosinfo:libosinfo>
   </metadata>
-  <memory unit="KiB">4194304</memory>
-  <currentMemory unit="KiB">4194304</currentMemory>
+  <memory unit="KiB">67108864</memory>
+  <currentMemory unit="KiB">67108864</currentMemory>
   <memoryBacking>
     <source type="memfd"/>
     <access mode="shared"/>
   </memoryBacking>
-  <vcpu placement="static">4</vcpu>
+  <vcpu placement="static">8</vcpu>
   <os firmware="efi">
     <type arch="x86_64" machine="pc-q35-9.1">hvm</type>
     <firmware>
@@ -34,7 +34,7 @@
     <smm state="on"/>
   </features>
   <cpu mode="host-passthrough" check="none" migratable="on">
-    <topology sockets="1" cores="4" threads="1"/>
+    <topology sockets="1" cores="8" threads="1"/>
   </cpu>
   <cputune>
     <shares>512</shares>
@@ -197,11 +197,20 @@
       <model type="virtio" heads="1" primary="yes"/>
       <address type="pci" domain="0x0000" bus="0x00" slot="0x01" function="0x0"/>
     </video>
+    <!-- SAS3008 HBA passthrough. New EPYC/ROMED8-2T board: one physical dual-controller
+         card behind a PLX PEX 8724 switch enumerates as TWO SAS3008 functions at host
+         84:00.0 and 86:00.0 (was a single 05:00.0 on the old board). Both bound to
+         vfio-pci by vfio-pci.ids=1000:0097; the pool drives are split across both, so
+         pass both. Guest <address> omitted so libvirt auto-assigns free pcie-root-ports. -->
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
-        <address domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
+        <address domain='0x0000' bus='0x84' slot='0x00' function='0x0'/>
       </source>
-      <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0'/>
+    </hostdev>
+    <hostdev mode='subsystem' type='pci' managed='yes'>
+      <source>
+        <address domain='0x0000' bus='0x86' slot='0x00' function='0x0'/>
+      </source>
     </hostdev>
     <redirdev bus="usb" type="spicevmc">
       <address type="usb" bus="0" port="2"/>
