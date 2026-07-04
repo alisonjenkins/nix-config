@@ -314,10 +314,6 @@ in {
                     active = false;
                     definition = pkgs.writeText "home-vpn-gateway-1.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/home-vpn-gateway-1.xml.nix") {inherit pkgs;});
                   }
-                  # {
-                  #   active = true;
-                  #   definition = pkgs.writeText "Unraid.xml" (import (self + "/libvirtd/home-kvm-hypervisor-1/domains/Unraid.xml.nix") {inherit pkgs;});
-                  # }
                 ];
 
                 networks = [
