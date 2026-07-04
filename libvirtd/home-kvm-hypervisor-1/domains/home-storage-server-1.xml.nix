@@ -157,18 +157,18 @@
       <mac address="52:54:00:69:9c:5c"/>
       <source bridge="br0"/>
       <model type="virtio"/>
-      <driver queues="4"/>
+      <driver name="vhost" queues="8"/>
       <address type="pci" domain="0x0000" bus="0x01" slot="0x00" function="0x0"/>
     </interface>
     <!-- Second NIC on the isolated jumbo (MTU 9000) storage bridge. Serves NFS
-         to download-server-1 (10.10.10.1) off the LAN br0. Multiqueue (queues=4)
-         spreads NIC softirq across the 4 vCPUs. PCI address omitted so libvirt
+         to download-server-1 (10.10.10.1) off the LAN br0. Multiqueue (queues=8)
+         spreads NIC softirq across the 8 vCPUs. PCI address omitted so libvirt
          auto-assigns a free pcie-root-port. -->
     <interface type="bridge">
       <mac address="52:54:00:69:9c:40"/>
       <source bridge="br-storage"/>
       <model type="virtio"/>
-      <driver queues="4"/>
+      <driver name="vhost" queues="8"/>
       <mtu size="9000"/>
     </interface>
     <serial type="pty">

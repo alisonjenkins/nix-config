@@ -152,6 +152,9 @@
         <mac address='52:54:00:0a:29:2c'/>
         <source bridge='br0'/>
         <model type='virtio'/>
+        <!-- vhost multiqueue: one queue per vCPU so NIC softirq spreads across
+             all 16 instead of serialising on one. -->
+        <driver name='vhost' queues='16'/>
         <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
       </interface>
       <serial type='pty'>
