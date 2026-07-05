@@ -935,11 +935,16 @@ in {
 
         # Override qbittorrent service to inject secrets and configure aggressive restarts
         systemd.services.qbittorrent = {
-          # Restart qBittorrent if the NFS mount is remounted (prevents stale
-          # file handles). The pool is now a single mount (/media/storage); the
-          # old per-subdir mounts are symlinks into it.
-          bindsTo = [ "media-storage.mount" ];
-          after = [ "media-storage.mount" ];
+          # Depend on the AUTOMOUNT, not the live NFS mount. bindsTo the .mount
+          # turned a boot-time mount failure — storage-server-1 still on its LUKS
+          # prompt when download boots first — into a terminal 'dependency'
+          # failure that Restart= never retries, leaving the whole download stack
+          # dead until qbt was started by hand. The automount is boot-stable; the
+          # ExecStartPre below waits for storage to actually be reachable (hard
+          # mount + stable fsid means Restart=always covers stale-handle recovery
+          # if the NFS server later bounces).
+          wants = [ "media-storage.automount" ];
+          after = [ "media-storage.automount" ];
 
           # Re-run the config-merger (and thus re-apply the auth whitelist /
           # port / password) whenever the merger script changes, so a deploy
@@ -948,11 +953,21 @@ in {
 
           serviceConfig = {
             ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
-            # mkForce so the config-merger remains the sole ExecStartPre: newer
-            # nixpkgs qbittorrent modules add their own ExecStartPre that installs
-            # the declarative serverConfig and would clobber the runtime-managed
+            # mkForce so these remain the sole ExecStartPre: newer nixpkgs
+            # qbittorrent modules add their own ExecStartPre that installs the
+            # declarative serverConfig and would clobber the runtime-managed
             # qBittorrent.conf (VPN port + hashed WebUI password) on every start.
-            ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
+            ExecStartPre = lib.mkForce [
+              # Block until the storage NFS is actually mounted and readable.
+              # Accessing the path triggers the automount; with the hard mount
+              # this rides out a storage server that is still booting instead of
+              # letting qbt come up over an empty /media/storage.
+              "+${pkgs.bash}/bin/bash -c 'until ${pkgs.coreutils}/bin/test -e /media/storage/downloads; do echo \"waiting for /media/storage (storage server booting?)\"; sleep 3; done'"
+              "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh"
+            ];
+            # The wait above may run a long time on a co-reboot where storage
+            # boots slower (LUKS + 20 disks); do not let the start timeout kill it.
+            TimeoutStartSec = "infinity";
             Restart = "always";
             RestartSec = "5s";
             StartLimitBurst = 0; # Unlimited restart attempts
