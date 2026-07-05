@@ -933,18 +933,39 @@ in {
           '';
         };
 
-        # Override qbittorrent service to inject secrets and configure aggressive restarts
+        # Shared boot gate for every service that reads /media/storage
+        # (qbittorrent + the *arr apps). Blocks until the storage NFS is actually
+        # mounted and readable, so a co-reboot where storage-server-1 boots slower
+        # (LUKS unlock + 20-disk import) doesn't start them against an empty
+        # /media/storage — which would flap the *arr root-folder health checks and
+        # deny qbt its download dir. Touching the path triggers the automount; the
+        # hard mount then blocks until storage serves. 5 min timeout + Wants (not
+        # Requires) on the consumers: a genuinely dead storage lets the UIs come
+        # up degraded rather than hang forever.
+        systemd.services.media-storage-ready = {
+          description = "Wait until /media/storage (NFS) is mounted and readable";
+          after = [ "network-online.target" "media-storage.automount" ];
+          wants = [ "network-online.target" "media-storage.automount" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            TimeoutStartSec = "300";
+            ExecStart = "+${pkgs.bash}/bin/bash -c 'until ${pkgs.coreutils}/bin/test -e /media/storage/downloads; do echo \"waiting for /media/storage (storage server booting?)\"; sleep 3; done'";
+          };
+        };
+
+        # Gate qbittorrent on the shared media-storage-ready oneshot instead of
+        # hard-binding the NFS .mount. bindsTo the .mount turned a boot-time mount
+        # failure — storage-server-1 still on its LUKS prompt when download boots
+        # first — into a terminal 'dependency' failure that Restart= never
+        # retries, leaving the whole download stack dead until started by hand.
+        # media-storage-ready blocks until storage is actually readable; Wants
+        # (not Requires) means a genuinely dead storage still lets qbt come up
+        # after the gate's timeout. Restart=always + the stable export fsid cover
+        # stale-handle recovery if the NFS server later bounces.
         systemd.services.qbittorrent = {
-          # Depend on the AUTOMOUNT, not the live NFS mount. bindsTo the .mount
-          # turned a boot-time mount failure — storage-server-1 still on its LUKS
-          # prompt when download boots first — into a terminal 'dependency'
-          # failure that Restart= never retries, leaving the whole download stack
-          # dead until qbt was started by hand. The automount is boot-stable; the
-          # ExecStartPre below waits for storage to actually be reachable (hard
-          # mount + stable fsid means Restart=always covers stale-handle recovery
-          # if the NFS server later bounces).
-          wants = [ "media-storage.automount" ];
-          after = [ "media-storage.automount" ];
+          wants = [ "media-storage-ready.service" ];
+          after = [ "media-storage-ready.service" ];
 
           # Re-run the config-merger (and thus re-apply the auth whitelist /
           # port / password) whenever the merger script changes, so a deploy
@@ -953,21 +974,12 @@ in {
 
           serviceConfig = {
             ExecStart = lib.mkForce "${config.services.qbittorrent.package}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent/ --webui-port=8080";
-            # mkForce so these remain the sole ExecStartPre: newer nixpkgs
-            # qbittorrent modules add their own ExecStartPre that installs the
-            # declarative serverConfig and would clobber the runtime-managed
+            # mkForce so the config-merger remains the sole ExecStartPre: newer
+            # nixpkgs qbittorrent modules add their own ExecStartPre that installs
+            # the declarative serverConfig and would clobber the runtime-managed
             # qBittorrent.conf (VPN port + hashed WebUI password) on every start.
-            ExecStartPre = lib.mkForce [
-              # Block until the storage NFS is actually mounted and readable.
-              # Accessing the path triggers the automount; with the hard mount
-              # this rides out a storage server that is still booting instead of
-              # letting qbt come up over an empty /media/storage.
-              "+${pkgs.bash}/bin/bash -c 'until ${pkgs.coreutils}/bin/test -e /media/storage/downloads; do echo \"waiting for /media/storage (storage server booting?)\"; sleep 3; done'"
-              "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh"
-            ];
-            # The wait above may run a long time on a co-reboot where storage
-            # boots slower (LUKS + 20 disks); do not let the start timeout kill it.
-            TimeoutStartSec = "infinity";
+            # (Storage-readiness is handled by the media-storage-ready gate above.)
+            ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
             Restart = "always";
             RestartSec = "5s";
             StartLimitBurst = 0; # Unlimited restart attempts
@@ -1009,6 +1021,9 @@ in {
 
         # Configure umask for all media services to create files with group write permissions
         systemd.services.radarr = {
+          # Wait for storage before scanning root folders (see media-storage-ready).
+          wants = [ "media-storage-ready.service" ];
+          after = [ "media-storage-ready.service" ];
           environment = dotnetThreadCap;
           serviceConfig = {
             UMask = lib.mkForce "0002";
@@ -1026,6 +1041,9 @@ in {
         };
 
         systemd.services.sonarr = {
+          # Wait for storage before scanning root folders (see media-storage-ready).
+          wants = [ "media-storage-ready.service" ];
+          after = [ "media-storage-ready.service" ];
           environment = dotnetThreadCap;
           serviceConfig = {
             UMask = lib.mkForce "0002";
@@ -1043,6 +1061,9 @@ in {
         };
 
         systemd.services.bazarr = {
+          # Wait for storage before scanning (see media-storage-ready).
+          wants = [ "media-storage-ready.service" ];
+          after = [ "media-storage-ready.service" ];
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
