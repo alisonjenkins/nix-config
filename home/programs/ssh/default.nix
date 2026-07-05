@@ -99,12 +99,9 @@
           IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
 
-        # LAN DHCP reservation for home-kvm-hypervisor-1 was lost in the EPYC board
-        # swap (new NIC MACs → fresh dynamic lease, no .lan DNS). Route these names
-        # over Tailscale (always resolves) until the UDM reservation is restored.
         Host home-kvm-hypervisor-1.lan home-kvm-hypervisor-1 hkh1
           user ali
-          HostName home-kvm-hypervisor-1.tail476348.ts.net
+          HostName home-kvm-hypervisor-1.lan
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
