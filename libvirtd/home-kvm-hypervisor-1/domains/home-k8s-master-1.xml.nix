@@ -157,6 +157,17 @@
         <driver name='vhost' queues='16'/>
         <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
       </interface>
+      <!-- Second NIC on the isolated jumbo (MTU 9000) br-storage bridge. Carries
+           the Jellyfin media NFS mount straight to home-storage-server-1
+           (10.10.10.2) off the LAN br0 — same fast path download-server-1 uses.
+           Guest PCI address omitted so libvirt auto-assigns a free root-port. -->
+      <interface type='bridge'>
+        <mac address='52:54:00:0a:29:41'/>
+        <source bridge='br-storage'/>
+        <model type='virtio'/>
+        <mtu size='9000'/>
+        <driver name='vhost' queues='4'/>
+      </interface>
       <serial type='pty'>
         <target type='isa-serial' port='0'>
           <model name='isa-serial'/>

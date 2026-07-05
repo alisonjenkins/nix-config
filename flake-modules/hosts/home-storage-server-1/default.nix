@@ -297,12 +297,11 @@ in {
               # (downloads + media library under one st_dev) instead of copying
               # every file back over NFS. Own fresh random fsid (mergerfs/FUSE
               # shares st_dev -> each export needs a distinct fsid). NO
-              # crossmnt/nohide (ESTALE on FUSE). Restricted to the download box:
-              # 10.10.10.1 = its jumbo (br-storage) IP (primary path), plus its
-              # LAN FQDN as a fallback if the jumbo path is ever pointed back at
-              # br0. The three exports above are untouched -> other clients
-              # (Jellyfin/k8s, desktops) unaffected.
-              /media/storage  10.10.10.1(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f) download-server-1.lan(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f)
+              # crossmnt/nohide (ESTALE on FUSE). Own fresh random fsid. Clients:
+              # 10.10.10.1 = download-server-1's jumbo IP, 10.10.10.3 =
+              # home-k8s-master-1's jumbo IP (Jellyfin mounts the media/ subdir
+              # over this off the LAN br0), plus download's LAN FQDN as a fallback.
+              /media/storage  10.10.10.1(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f) 10.10.10.3(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f) download-server-1.lan(rw,sync,no_subtree_check,no_root_squash,fsid=e3fdacb1-c2cf-472d-b686-b53f12e8639f)
             '';
           };
 

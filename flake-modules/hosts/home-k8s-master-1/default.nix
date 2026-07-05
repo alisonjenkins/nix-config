@@ -62,6 +62,30 @@ in {
               iptables -I INPUT -d 192.168.1.240/28 -p tcp -m multiport --dports 80,443 -j ACCEPT
             '';
           };
+
+          # Second (jumbo) NIC on br-storage, bound by its fixed MAC. Isolated
+          # point-to-point with home-storage-server-1 (10.10.10.2), no gateway/DNS
+          # — the directly-connected /24 carries the Jellyfin media NFS mount off
+          # the LAN br0. MTU 9000 must match every hop. Same pattern as
+          # download-server-1's storage-jumbo profile.
+          networkmanager.ensureProfiles.profiles = {
+            storage-jumbo = {
+              connection = {
+                id = "storage-jumbo";
+                type = "ethernet";
+                autoconnect = true;
+              };
+              ethernet = {
+                mac-address = "52:54:00:0A:29:41";
+                mtu = 9000;
+              };
+              ipv4 = {
+                method = "manual";
+                address1 = "10.10.10.3/24";
+              };
+              ipv6.method = "disabled";
+            };
+          };
         };
 
         security = {
