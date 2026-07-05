@@ -41,6 +41,13 @@ in {
 
         boot.initrd.kernelModules = [ "amdgpu" ];
 
+        # NFS client (mount.nfs) so kubelet can mount NFS PersistentVolumes —
+        # the Jellyfin media volume moved from SMB to NFS over the jumbo
+        # br-storage path (10.10.10.2:/media/storage/media). Without this the
+        # kernel supports nfs but the userspace mount helper is absent and
+        # mounts fail with "mount program didn't pass remote address".
+        boot.supportedFilesystems = [ "nfs" ];
+
         hardware.graphics.enable = true;
 
         environment.systemPackages = map lib.lowPrio [
