@@ -30,6 +30,9 @@ jobs:
   build-iso:
     runs-on: home-nix-builder-amd64
     timeout-minutes: 240
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for push events.
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: read
       actions: read
