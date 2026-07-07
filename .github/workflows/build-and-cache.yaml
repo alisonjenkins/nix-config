@@ -118,7 +118,10 @@ jobs:
   build-desktops:
     runs-on: home-nix-builder-amd64
     timeout-minutes: 1440
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for push events
+    # (github.event.pull_request is null → null != true → true).
+    if: ${{ (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: read
       actions: read
