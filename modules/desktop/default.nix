@@ -748,6 +748,7 @@ in
         posting
         powertop
         master.signal-desktop
+        shortwave
         suspendScripts
         television
         unstable.cobang
