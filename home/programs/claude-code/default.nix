@@ -13,6 +13,19 @@ let
   cavemanPkg = pkgs.caveman;
   cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
+  claudeStatusbarPkg = pkgs.claude-statusbar;
+
+  # Merged statusLine: caveman mode badge + claude-statusbar usage bar on one line.
+  # Only one statusLine command may exist in settings.json, so we compose the two.
+  # caveman-statusline.sh ignores stdin and prints nothing when no mode is active;
+  # `cs` reads Claude Code's session JSON from stdin. So run caveman with stdin
+  # closed to grab its badge, then hand the untouched real stdin to `cs`. Inline
+  # `cs` (not `cs render`) — no daemon, no auto-upgrade, purely functional.
+  statusLineCombined = pkgs.writeShellScript "claude-statusline-combined" ''
+    badge=$(${pkgs.bash}/bin/bash "${cavemanPkg}/hooks/caveman-statusline.sh" </dev/null)
+    [ -n "$badge" ] && printf '%s ' "$badge"
+    exec ${claudeStatusbarPkg}/bin/cs
+  '';
 
   # token-savior stats viewers. Both read ~/.local/share/token-savior/*.json,
   # populated by the MCP nav tools (search_codebase/get_function_source/…), not
@@ -78,6 +91,7 @@ let
       (map (n: "${anthropicSkills}/skills/${n}") anthropicSkillNames)
       ++ [
         "${cavemanPkg}/skills"
+        "${claudeStatusbarPkg}/share/claude-statusbar/skills"
         ./skills
       ];
   };
@@ -256,7 +270,7 @@ in
   # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
   # would also drop the broken token-savior-bench, the server bin, and the
   # stats-less `ts` onto PATH.
-  home.packages = [ tsStatsDashboard tsStatsCli claudeDd ];
+  home.packages = [ tsStatsDashboard tsStatsCli claudeDd claudeStatusbarPkg ];
 
   programs.claude-code = {
     enable = true;
@@ -296,10 +310,10 @@ in
       # Equivalent to running `/tui fullscreen`. "default" = classic renderer.
       tui = "fullscreen";
 
-      # Caveman mode badge in the status bar — shows [CAVEMAN], [CAVEMAN:ULTRA], etc.
+      # Caveman mode badge + claude-statusbar usage bar (merged, see statusLineCombined).
       statusLine = {
         type = "command";
-        command = "bash \"${cavemanPkg}/hooks/caveman-statusline.sh\"";
+        command = "${statusLineCombined}";
       };
 
       permissions = {
@@ -579,6 +593,13 @@ in
         ];
       };
     };
+
+    # claude-statusbar slash commands (/statusbar, /statusbar-theme, …), source-
+    # linked from the package into ~/.claude/commands/. Uses commandsDir (a
+    # source-linked directory) rather than the `commands` attrset: that option's
+    # string values are written as literal file *content*, whereas commandsDir
+    # links the store-path dir — the same idiom as `skills` below, and no IFD.
+    commandsDir = "${claudeStatusbarPkg}/share/claude-statusbar/commands";
 
     skills = "${allSkills}";
 
