@@ -41,4 +41,8 @@
   llama-models = pkgs.callPackage ./llama-models {};
   superpowers = pkgs.callPackage ./superpowers {};
   token-savior = pkgs.callPackage ./token-savior { python3Packages = pkgs.unstable.python3Packages; };
+  claude-statusbar = pkgs.callPackage ./claude-statusbar {
+    python3Packages = pkgs.unstable.python3Packages;
+    claude-monitor = pkgs.unstable.claude-monitor;
+  };
 }
