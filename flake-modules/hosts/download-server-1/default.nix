@@ -1315,14 +1315,18 @@ EOF
         # (lookupcache). mergerfs's own docs give no client recommendation and
         # warn that "NFS and FUSE do not always work perfectly together".
         #
-        # PERFORMANCE IS PRESERVED. lookupcache only governs name->handle
-        # (LOOKUP) caching; it does NOT control attribute caching or READDIRPLUS,
-        # which is where the scan-speed wins actually come from. We keep every
-        # performance option and sacrifice only the modest LOOKUP cache:
-        #   - nconnect=4             parallel TCP connections (throughput)
+        # PERFORMANCE IS LARGELY PRESERVED. lookupcache only governs
+        # name->handle (LOOKUP) caching; it does NOT control attribute caching.
+        # We keep every throughput option and sacrifice the modest LOOKUP cache
+        # plus READDIRPLUS batching (see nordirplus below):
+        #   - nconnect=8             parallel TCP connections (throughput)
         #   - rsize/wsize=1MiB       large transfers
         #   - acreg*/acdir* caching  cached stat() -> fast *arr/Jellyfin scans
-        #   - READDIRPLUS (default)  bundled readdir+stat -> fast listings
+        #   - nordirplus (NEW)       READDIRPLUS OFF: names-only READDIR pages
+        #                            can't silently truncate under mergerfs load
+        #                            (the ~460 re-download incident's mechanism);
+        #                            per-entry LOOKUPs fail loudly instead. Small
+        #                            cold-scan cost, pipelined over nconnect=8.
         #   - async (downloads only) faster writes; safe, qBittorrent verifies
         #   - hard                   retry on server hiccups (no data loss)
         # ONE mount of the mergerfs pool root, exported just for this host (see
@@ -1346,7 +1350,7 @@ EOF
             what = "10.10.10.2:/media/storage";
             where = "/media/storage";
             type = "nfs";
-            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=8,lookupcache=none,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
+            options = "rw,hard,softreval,tcp,nfsvers=4.2,rsize=1048576,wsize=1048576,timeo=600,retrans=2,noatime,nodiratime,nconnect=8,lookupcache=none,nordirplus,acregmin=3,acregmax=30,acdirmin=5,acdirmax=30";
             mountConfig.TimeoutSec = "120";  # ride out a scrub stall; not infinity (hard already blocks established I/O)
             wantedBy = [ ];
             requires = [ "network-online.target" ];
