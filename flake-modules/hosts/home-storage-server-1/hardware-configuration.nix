@@ -167,10 +167,15 @@
           # listings. cosr = concurrent-open / sequential-read, documented as
           # "low memory and CPU" (vs cor's per-thread buffering, which only wins
           # on high-latency *network* branches; these are local disks). :2 bounds
-          # concurrent spin-ups on this RAM-tight box. VALIDATE: watch mergerfs
-          # RSS under a scrub+rescan and confirm a full A-Z /media/tv listing
-          # survives; if RSS climbs, drop to cosr:1. Never use cor here.
-          "func.readdir=cosr:2"
+          # concurrent spin-ups. :16 opens all 16 branches at once so a cold
+          # readdir is one parallel seek per spindle, not 8 serial batches ->
+          # the stall window that truncates listings (B98, 2026-07-19) closes.
+          # The old :2 bound was for a RAM-tight box; this host now has 62 GiB
+          # (~60 GiB free/cache), so the concurrent dir-open buffers are
+          # negligible. Still cosr, never cor (local disks, not network
+          # branches). VALIDATE: watch mergerfs RSS under a scrub+rescan; if it
+          # ever climbs, step back toward cosr:8.
+          "func.readdir=cosr:16"
         ];
       };
     } // media_disks_nofail;
