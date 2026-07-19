@@ -138,6 +138,52 @@ in {
 
             # Restart mergerfs to pick up newly mounted disks
             systemctl restart media-storage.mount 2>/dev/null || true
+
+            # Normalize the category top-dirs on any newly-mounted branch so
+            # mergerfs (category.create=mfs, which routes new writes to the
+            # emptiest disk) never lands imports on a branch whose backing
+            # media/Movies|TV or downloads dir is still root-owned / non-setgid.
+            systemctl start media-branch-normalize.service 2>/dev/null || true
+          '';
+        };
+
+        # Normalize the media/downloads category top-dirs on EVERY mergerfs
+        # branch: correct owner + setgid group + POSIX *default* ACLs. Because
+        # setgid propagates the group and the default ACL propagates group-rwX to
+        # all new children regardless of the writing service's umask, correctness
+        # is INHERITED downward — so this only ever touches the ~5 top-dirs per
+        # branch and is never a recursive file walk. Runs at boot and is
+        # re-triggered by scsi-rescan-and-mount when a late disk appears.
+        #
+        # This is the load-bearing guard against the recurring *arr "Access to
+        # the path ... is denied" import failures: a freshly-added pool disk's
+        # top dirs are root-owned until seeded, and the merged tmpfiles.rules
+        # below only reach a single branch via mergerfs, not each backing disk.
+        systemd.services.media-branch-normalize = {
+          description = "Normalize media/downloads top-dir ownership + default ACLs across all mergerfs branches";
+          after = [ "media-storage.mount" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          path = [ pkgs.coreutils pkgs.acl ];
+          script = ''
+            shopt -s nullglob
+            for b in /media/disks/*/; do
+              # install -d applies owner/group/mode to existing dirs too, so this
+              # also repairs a branch whose top dir is currently root:root.
+              install -d -o radarr      -g movies -m 2775 "$b/media/Movies"
+              install -d -o sonarr      -g tv     -m 2775 "$b/media/TV"
+              install -d -o qbittorrent -g media  -m 2775 \
+                      "$b/downloads" "$b/downloads/complete" "$b/downloads/downloading"
+              # Default ACLs: new files/dirs inherit group rwX regardless of the
+              # writer's umask (covers jellyfin on k8s, which has no systemd UMask).
+              setfacl -m g:movies:rwx -d -m g:movies:rwx "$b/media/Movies"
+              setfacl -m g:tv:rwx     -d -m g:tv:rwx     "$b/media/TV"
+              setfacl -m g:media:rwx  -d -m g:media:rwx \
+                      "$b/downloads" "$b/downloads/complete" "$b/downloads/downloading"
+            done
           '';
         };
 
