@@ -39,6 +39,13 @@ in {
       # flake checks). Force the Jovian intent (50) to resolve it.
       { zramSwap.memoryPercent = lib.mkForce 50; }
 
+      # nixpkgs 26.11 marks pnpm 9.15.9 insecure. Jovian's decky-loader
+      # build pins that pnpm to assemble Decky's static frontend — a
+      # build-time-only tool that runs in the nix sandbox and never lands
+      # in the runtime closure, so the advisory doesn't reach the running
+      # system. Permit it here so this host still evaluates on 26.11.
+      { nixpkgs.config.permittedInsecurePackages = [ "pnpm-9.15.9" ]; }
+
       # Home-manager configuration
       {
         home-manager.backupCommand = ''
