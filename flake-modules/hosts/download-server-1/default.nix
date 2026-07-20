@@ -1137,7 +1137,14 @@ in {
           after = [ "network-online.target" "btfs-restore.service" "qbittorrent.service" ];
           wants = [ "network-online.target" ];
           requires = [ "qbittorrent.service" ];
-          wantedBy = [ "multi-user.target" ];
+          # partOf so a qbittorrent *restart* propagates a restart here instead
+          # of just stopping us: protonvpn-portforward restarts qbittorrent when
+          # the forwarded port changes, and with requires= alone that left
+          # btfs-bridge dead (requires propagates stop, never re-start).
+          # wantedBy qbittorrent.service also pull-starts us whenever qbittorrent
+          # comes up, not only at boot.
+          partOf = [ "qbittorrent.service" ];
+          wantedBy = [ "multi-user.target" "qbittorrent.service" ];
 
           serviceConfig = {
             ExecStart = "${pkgs.btfs-bridge}/bin/btfs-bridge --qbt-host 127.0.0.1 --qbt-port 8080 --qbt-username admin --qbt-password-file ${config.sops.secrets."qbittorrent/webui/password".path} --category stream --poll-interval 15";
