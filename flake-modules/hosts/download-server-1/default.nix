@@ -689,6 +689,22 @@ in {
             # Ensure config directory exists
             mkdir -p "$CONFIG_DIR"
 
+            # Remove a stale single-instance lockfile left by an unclean
+            # shutdown. qBittorrent keeps its instance lock in the (persistent)
+            # config dir; after a hard power-off the lockfile survives the
+            # reboot and qBittorrent refuses to start ("another instance is
+            # already running"), then crash-loops forever. The StartLimit in the
+            # service block can't surface this on its own, so clear the lock here
+            # when its recorded PID is not a live qbittorrent-nox process.
+            LOCK_FILE="$CONFIG_DIR/lockfile"
+            if [ -f "$LOCK_FILE" ]; then
+              LOCK_PID=$(${pkgs.coreutils}/bin/head -n1 "$LOCK_FILE" 2>/dev/null | ${pkgs.coreutils}/bin/tr -dc '0-9')
+              if [ -z "$LOCK_PID" ] || ! ${pkgs.gnugrep}/bin/grep -qs qbittorrent-nox "/proc/$LOCK_PID/comm" 2>/dev/null; then
+                echo "Removing stale qBittorrent lockfile (pid $LOCK_PID not live)"
+                ${pkgs.coreutils}/bin/rm -f "$LOCK_FILE"
+              fi
+            fi
+
             # Get the port to use - prefer the saved-port file (from port forwarding)
             # over the config file (which qBittorrent may have saved with a random port)
             SAVED_PORT=""
