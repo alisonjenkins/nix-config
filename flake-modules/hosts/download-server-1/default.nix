@@ -980,8 +980,22 @@ in {
         # after the gate's timeout. Restart=always + the stable export fsid cover
         # stale-handle recovery if the NFS server later bounces.
         systemd.services.qbittorrent = {
-          wants = [ "media-storage-ready.service" ];
-          after = [ "media-storage-ready.service" ];
+          # wg-quick-primary-vpn brings up the primary-vpn interface that
+          # qBittorrent binds its BitTorrent socket to (Session\Interface);
+          # ordering after it (Wants, not Requires) means the interface exists
+          # at start without turning a VPN hiccup into a terminal dep failure.
+          wants = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
+          after = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
+
+          # A finite start limit: an unlimited burst (the old StartLimitBurst=0)
+          # let qBittorrent crash-loop silently forever without ever entering
+          # 'failed', so `systemctl --failed` and monitoring stayed blind to a
+          # dead download stack. With the stale-lock auto-clear in the
+          # config-merger removing the one known infinite-loop trigger, a unit
+          # that still exhausts 5 starts in 5min is genuinely broken and should
+          # surface as failed.
+          startLimitIntervalSec = 300;
+          startLimitBurst = 5;
 
           # Re-run the config-merger (and thus re-apply the auth whitelist /
           # port / password) whenever the merger script changes, so a deploy
@@ -998,7 +1012,6 @@ in {
             ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash /etc/qbittorrent/config-merger.sh";
             Restart = "always";
             RestartSec = "5s";
-            StartLimitBurst = 0; # Unlimited restart attempts
 
             # Set umask to 002 so files are created with group write permissions (664)
             # and directories with 775. This allows radarr/sonarr to modify files.
