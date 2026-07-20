@@ -527,16 +527,29 @@ in {
             ];
           };
 
-          # nameservers = [
-          #   "9.9.9.9"
-          #   "149.112.112.112"
-          # ];
-
           interfaces = {
             "enp16s0" = {
               wakeOnLan = {
                 enable = true;
               };
+            };
+          };
+
+          networkmanager.ensureProfiles.profiles = {
+            "Wired connection 1" = {
+              connection = {
+                id = "Wired connection 1";
+                type = "ethernet";
+                interface-name = "enp16s0";
+                autoconnect = true;
+              };
+              ipv4 = {
+                method = "auto";
+                # DHCP-provided DNS only (192.168.1.246, the LAN resolver) — do not pin a
+                # static resolver here, it shadows internal .lan hostname resolution.
+                ignore-auto-dns = false;
+              };
+              ipv6.method = "auto";
             };
           };
         };
