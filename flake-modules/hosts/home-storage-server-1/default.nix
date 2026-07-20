@@ -26,13 +26,22 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ config, inputs, lib, outputs, pkgs, ... }:
+      ({ config, inputs, lib, outputs, pkgs, utils, ... }:
       let
         sambaSettings = config.services.samba.settings;
         shareNames = builtins.filter (name: name != "global") (builtins.attrNames sambaSettings);
         sambaUsers = lib.unique (lib.flatten (map (share:
           builtins.filter (u: u != "") (lib.splitString " " (lib.attrByPath [ "valid users" ] "" sambaSettings.${share}))
         ) shareNames));
+
+        # systemd .mount unit names for every disk that backs the mergerfs pool
+        # (the "/media/disks/*" branch glob; parity is excluded — it is not a
+        # pool branch). Derived from fileSystems so it auto-tracks disk add/
+        # remove with no second list to keep in sync. Consumed by the
+        # media-disks-ready barrier below to order the pool mount after them.
+        mergerfsBranchMounts = map (mp: "${utils.escapeSystemdPath mp}.mount")
+          (builtins.filter (lib.hasPrefix "/media/disks/")
+            (builtins.attrNames config.fileSystems));
       in
       {
         modules.nohang = {
@@ -59,6 +68,17 @@ in {
           kernelPackages = pkgs.linuxPackages_latest;
           kernelParams = [
             "irqpoll"
+            # Enumerate all SCSI/mpt3sas LUNs synchronously at boot instead of
+            # the async default. The LSI HBA presents ~16 disks across 8 SCSI
+            # hosts; async scanning let local-fs proceed before every host had
+            # finished, so on a cold boot (power loss) the mergerfs pool globbed
+            # an EMPTY branch set and came up as a broken pool ("no valid
+            # mergerfs branch found") -> NFS answered ENOENT for every subtree
+            # (jellyfin/pharos mount failures, 2026-07-20). sync scan makes the
+            # disks present before any mount runs. The post-boot
+            # scsi-rescan-and-mount service below stays as a fallback for a disk
+            # that only spins up later than the kernel scan.
+            "scsi_mod.scan=sync"
           ];
           # BFQ is the only in-tree I/O scheduler that honours IOPRIO_CLASS_IDLE
           # and prioritises latency-sensitive readers over a bulk sequential
@@ -121,7 +141,7 @@ in {
             Type = "oneshot";
             RemainAfterExit = true;
           };
-          path = [ pkgs.util-linux pkgs.coreutils ];
+          path = [ pkgs.util-linux pkgs.coreutils pkgs.attr pkgs.nfs-utils ];
           script = ''
             # Rescan all SCSI hosts for new devices
             for host in /sys/class/scsi_host/host*/scan; do
@@ -136,8 +156,26 @@ in {
             systemctl daemon-reload
             systemctl start --all 'media-disks-*.mount' 'media-parity-*.mount' 2>/dev/null || true
 
-            # Restart mergerfs to pick up newly mounted disks
-            systemctl restart media-storage.mount 2>/dev/null || true
+            # Re-add branches at runtime for any disk that appeared only after
+            # the pool mounted. A `systemctl restart media-storage.mount` can
+            # NEVER work here: nfsd/smbd hold the FUSE mount open, so the unmount
+            # fails "target is busy" and the pool is left exactly as it was (this
+            # is why the empty-pool state survived the 2026-07-20 power-loss
+            # boot). The mergerfs runtime control file re-globs the branch spec
+            # in place with no unmount. Idempotent when branches already present.
+            # Guard: only poke a LIVE, mounted pool. Setting branches on a
+            # zero-branch / dead FUSE endpoint can crash mergerfs ("Transport
+            # endpoint is not connected"). The boot ordering above means the
+            # pool is always healthy by the time this runs; the guard just stops
+            # a degenerate state from being made worse.
+            if [ -e /media/storage/.mergerfs ] \
+              && mountpoint -q /media/storage \
+              && stat /media/storage >/dev/null 2>&1; then
+              setfattr -n user.mergerfs.branches -v '/media/disks/*' /media/storage/.mergerfs || true
+            fi
+            # Re-export so a now-present subtree (e.g. /media/storage/media) is
+            # actually served rather than answered with ENOENT.
+            exportfs -ra 2>/dev/null || true
 
             # Normalize the category top-dirs on any newly-mounted branch so
             # mergerfs (category.create=mfs, which routes new writes to the
@@ -185,6 +223,51 @@ in {
                       "$b/downloads" "$b/downloads/complete" "$b/downloads/downloading"
             done
           '';
+        };
+
+        # Ordering barrier: the mergerfs pool must not mount before its branch
+        # disks are mounted. The pool's device is the glob "/media/disks/*", and
+        # systemd cannot derive an ordering from a glob string, so media-storage.
+        # mount has no dependency on the individual disk mounts. On a cold boot
+        # it therefore races them and wins, globbing zero branches -> the pool
+        # comes up broken/empty and NFS answers ENOENT for every subtree
+        # (root cause of the 2026-07-20 jellyfin/pharos mount failures).
+        #
+        # This oneshot gathers every branch-disk .mount unit and is inserted
+        # between them and the pool mount (requiredBy + before media-storage.
+        # mount). The disk deps are SOFT (wants + after, not requires) so a
+        # single dead/absent disk still lets the barrier complete and the pool
+        # mount with the remaining branches — preserving the fileSystems `nofail`
+        # dead-disk tolerance. DefaultDependencies=false keeps the barrier inside
+        # the local-fs ordering island (a normal service is ordered after
+        # local-fs.target, which would form a cycle with media-storage.mount's
+        # Before=local-fs.target).
+        systemd.services.media-disks-ready = {
+          description = "Barrier: mergerfs branch disks mounted before the pool";
+          after = mergerfsBranchMounts;
+          wants = mergerfsBranchMounts;
+          before = [ "media-storage.mount" ];
+          requiredBy = [ "media-storage.mount" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.coreutils}/bin/true";
+          };
+        };
+
+        # Do not export/serve the pool until mergerfs has actually mounted with
+        # its branches. Ordering only (after + wants, never requires) so a pool
+        # problem degrades to "server waiting", not NFS/SMB fully down. Combined
+        # with the barrier above (which media-storage.mount now requires), this
+        # guarantees exportfs runs against a populated pool, never an empty one.
+        systemd.services.nfs-server = {
+          after = [ "media-storage.mount" ];
+          wants = [ "media-storage.mount" ];
+        };
+        systemd.services.samba-smbd = {
+          after = [ "media-storage.mount" ];
+          wants = [ "media-storage.mount" ];
         };
 
         environment = {
