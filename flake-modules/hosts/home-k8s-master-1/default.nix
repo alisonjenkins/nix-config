@@ -73,6 +73,13 @@ in {
         # nvidia-ctk honours the first; `discovery-mode` is the replacing knob.)
         hardware.nvidia-container-toolkit.discovery-mode = "nvml";
 
+        # Name CDI devices by GPU UUID (nvidia.com/gpu=GPU-<uuid>) to match how
+        # the k8s device plugin advertises + requests them. The default `index`
+        # strategy names them nvidia.com/gpu=0, so the runtime can't resolve the
+        # plugin's UUID reference ("unresolvable CDI devices") and every GPU pod
+        # fails to create.
+        hardware.nvidia-container-toolkit.device-name-strategy = "uuid";
+
         # Put nvidia-container-runtime on k3s' PATH so k3s' startup
         # auto-detection templates a `nvidia` containerd runtime (in the
         # correct config version for its bundled containerd). NixOS'
@@ -255,6 +262,33 @@ in {
             };
           };
         };
+
+        # nvidia-container-runtime config for the k3s/containerd path. The
+        # upstream nvidia-container-toolkit module only writes this under
+        # `virtualisation.docker.enableNvidia`, so with k3s it is absent and
+        # the runtime defaults to LEGACY mode → it shells out to
+        # nvidia-container-cli (libnvidia-container), which this headless
+        # NixOS node does not ship → `nvidia-container-runtime` exits 2 and
+        # every `runtimeClassName: nvidia` pod fails to create. Force `cdi`
+        # mode: the runtime then injects the GPU purely from the CDI spec the
+        # generator wrote to /run/cdi (no libnvidia-container needed).
+        environment.etc."nvidia-container-runtime/config.toml".text = ''
+          disable-require = true
+          [nvidia-container-runtime]
+          mode = "cdi"
+          # nvidia-container-runtime is a thin wrapper that, after injecting
+          # the GPU, execs a low-level OCI runtime. It searches PATH for
+          # [runc crun] by default, but the containerd shim invokes it with a
+          # PATH that doesn't include k3s' bundled runc → "no runtime binary
+          # found". Pin an explicit runc from nixpkgs (OCI-standard; cgroup
+          # flags still come from the containerd runtime options).
+          runtimes = ["${lib.getExe pkgs.runc}"]
+          [nvidia-container-runtime.modes.cdi]
+          default-kind = "nvidia.com/gpu"
+          spec-dirs = ["/run/cdi", "/etc/cdi"]
+          [nvidia-ctk]
+          path = "${lib.getExe' config.hardware.nvidia-container-toolkit.package "nvidia-ctk"}"
+        '';
 
         system.stateVersion = "24.05";
 
