@@ -214,15 +214,38 @@
         <backend model='random'>/dev/urandom</backend>
         <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
       </rng>
-      <!-- GPU passthrough disabled: 1002:164e was the previous CPU's integrated GPU;
-           the EPYC 7543P has no iGPU so the device does not exist on the new board.
-           Jellyfin falls back to software transcode. Re-enable (and repoint the source
-           host address) if a discrete GPU is installed.
+      <!-- GTX 1070 (Pascal, GP104) passthrough for NVENC transcode on k3s.
+           STILL DISABLED (commented) until the card is physically seated: the
+           <source> host PCI addresses below are PLACEHOLDERS. libvirt refuses to
+           start a domain whose managed hostdev source address matches no device,
+           so leaving this commented keeps the VM (and the k3s control plane it
+           runs) bootable through the pre-hardware deploy.
+
+           TO ARM after seating the card:
+             1. On home-kvm-hypervisor-1: `lspci -nn -D | grep -i nvidia`
+                → note the VGA function (…:NN:00.0) and its HDMI-audio sibling
+                (…:NN:00.1). Confirm both sit in their own clean IOMMU group:
+                `for d in /sys/kernel/iommu_groups/*/devices/*; do ...` (only the
+                two GPU functions may share the group).
+             2. Set both <source> addresses below to the real bus/slot/function.
+             3. Uncomment this block.
+           Host binds them to vfio-pci at boot via modules.vfioIsolate (IDs
+           10de:1b81 + 10de:10f0), so managed='yes' hand-off is clean. The two
+           functions are presented to the guest as one multifunction device
+           (VGA fn0 + audio fn1) on a dedicated pcie-root-port. A Linux guest
+           needs no <kvm><hidden/> / vendor-id spoof (that is a Windows Code 43
+           workaround only).
       <hostdev mode='subsystem' type='pci' managed='yes'>
         <source>
-          <address domain='0x0000' bus='0x15' slot='0x00' function='0x0'/>
+          <address domain='0x0000' bus='0xNN' slot='0x00' function='0x0'/>
         </source>
-        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0'/>
+        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0' multifunction='on'/>
+      </hostdev>
+      <hostdev mode='subsystem' type='pci' managed='yes'>
+        <source>
+          <address domain='0x0000' bus='0xNN' slot='0x00' function='0x1'/>
+        </source>
+        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x1'/>
       </hostdev>
       -->
     </devices>

@@ -18,6 +18,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.libvirtd
+      self.nixosModules.vfio-isolate
       self.nixosModules.home-kvm-hypervisor-1-hardware
       self.nixosModules.home-kvm-hypervisor-1-disko-config
 
@@ -38,6 +39,23 @@ in {
         };
         modules.libvirtd.enable = true;
         modules.locale.enable = true;
+
+        # VFIO passthrough device isolation. Single source of truth for every
+        # `vfio-pci.ids` binding on this host (the kernel honours only the last
+        # such cmdline param, so they MUST live in one place):
+        #   1000:0097            — SAS3008 HBA → home-storage-server-1
+        #   10de:1b81 / 10de:10f0 — GTX 1070 (GP104 VGA + HDMI-audio) →
+        #                           home-k8s-master-1 for NVENC transcode.
+        # The 1070 IDs are the standard GP104 GTX-1070 values; VERIFY against
+        # `lspci -nn` once the card is seated (board-partner rebadges are rare
+        # but possible). Binding an absent device is a no-op, so this is safe to
+        # deploy before the card is physically installed. Passthrough is only
+        # armed once the <hostdev> is uncommented in the k8s-master domain XML.
+        modules.vfioIsolate = {
+          enable = true;
+          pciIds = [ "1000:0097" "10de:1b81" "10de:10f0" ];
+          blacklistDrivers = [ "nouveau" ];
+        };
 
         # Cap nix build parallelism well below the 64 hardware threads: base
         # sets max-jobs=auto / cores=0, which lets a rebuild schedule up to
@@ -87,9 +105,11 @@ in {
           };
 
           kernelParams = [
-            # SAS3008 controllers (1000:0097) bound early via vfio-pci — prevents mpt3sas from claiming them.
-            # Console/LUKS prompt renders via the ROMED8-2T's ASPEED BMC (ast/simpledrm); no discrete GPU fitted.
-            "vfio-pci.ids=1000:0097"
+            # vfio-pci.ids (SAS3008 1000:0097 + GTX 1070 10de:1b81/10f0) and
+            # amd_iommu=on are emitted by modules.vfioIsolate above — prevents
+            # mpt3sas/nouveau from claiming the passthrough devices.
+            # Console/LUKS prompt renders via the ROMED8-2T's ASPEED BMC
+            # (ast/simpledrm); no host-owned discrete GPU.
             # Identity-map DMA for host-owned devices (X550 ixgbe, OS NVMe):
             # with the IOMMU enabled for VFIO, host devices otherwise pay full
             # DMA remapping on every transfer. Passthrough domains keep their

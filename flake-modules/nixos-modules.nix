@@ -55,6 +55,7 @@
     # Hardware modules
     hardware-fingerprint = import ../modules/hardware-fingerprint;
     hardware-touchpad = import ../modules/hardware-touchpad;
+    vfio-isolate = import ../modules/vfio-isolate;
 
     # Server modules
     k8s-master = import ../modules/k8s-master;
