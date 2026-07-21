@@ -58,12 +58,11 @@ in {
           enable = true;
           driverPackage = config.boot.kernelPackages.nvidiaPackages.legacy_580;
           # Uncap concurrent NVENC sessions (byte-patches libnvidia-encode.so).
-          # Off by default: the stock driver already allows 5 concurrent encode
-          # sessions, and enabling this forces a LOCAL driver rebuild (the
-          # patched .so is not in the binary cache). Flip to true only if you
-          # genuinely need >5 simultaneous transcodes. Verified to patch
-          # 580.173.02 exactly once (see modules/nvidia-transcode).
-          nvencUnlock = false;
+          # ON 2026-07-21: lifts the stock 5-session consumer cap so pharos'
+          # NVENC probe can ramp to its full 8 permits on the 1070. Forces a
+          # LOCAL driver rebuild (the patched .so is not in the binary cache).
+          # Verified to patch 580.173.02 exactly once (see modules/nvidia-transcode).
+          nvencUnlock = true;
         };
 
         boot.initrd.kernelModules = [ "amdgpu" ];
