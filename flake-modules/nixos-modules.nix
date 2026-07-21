@@ -55,6 +55,7 @@
     # Hardware modules
     hardware-fingerprint = import ../modules/hardware-fingerprint;
     hardware-touchpad = import ../modules/hardware-touchpad;
+    nvidia-transcode = import ../modules/nvidia-transcode;
     vfio-isolate = import ../modules/vfio-isolate;
 
     # Server modules

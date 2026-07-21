@@ -16,6 +16,7 @@ in {
       self.nixosModules.locale
       self.nixosModules.base
       self.nixosModules.nohang
+      self.nixosModules.nvidia-transcode
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
 
@@ -24,7 +25,7 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ modulesPath, lib, outputs, pkgs, ... }: {
+      ({ config, modulesPath, lib, outputs, pkgs, ... }: {
         imports = [
           (modulesPath + "/installer/scan/not-detected.nix")
           (modulesPath + "/profiles/qemu-guest.nix")
@@ -38,6 +39,32 @@ in {
           enable = true;
         };
         modules.locale.enable = true;
+
+        # NVENC transcode stack for the GTX 1070 passed through from
+        # home-kvm-hypervisor-1 (modules.vfioIsolate there + the <hostdev> in
+        # this VM's domain XML). Loading the proprietary driver with no GPU yet
+        # present is benign — the kmod probes nothing and creates no /dev/nvidia*
+        # — so this deploys safely before the card is seated. Pinned to the 580
+        # `production` branch: 590 dropped Pascal (assertion enforces it).
+        # Cluster-layer follow-ups (NOT node config): the `nvidia` RuntimeClass,
+        # the nvidia-device-plugin DaemonSet advertising `nvidia.com/gpu`, and
+        # the pharos Deployment's GPU resource request.
+        #
+        # Pinned to legacy_580 (580.173.02): the 1070 is Pascal, and the current
+        # `production`/`stable` (595.x) dropped Pascal. legacy_580 is NVIDIA's
+        # Pascal/Maxwell/Volta legacy-support branch (< 590, satisfies the
+        # module's requirePascalDriver assertion).
+        modules.nvidiaTranscode = {
+          enable = true;
+          driverPackage = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+          # Uncap concurrent NVENC sessions (byte-patches libnvidia-encode.so).
+          # Off by default: the stock driver already allows 5 concurrent encode
+          # sessions, and enabling this forces a LOCAL driver rebuild (the
+          # patched .so is not in the binary cache). Flip to true only if you
+          # genuinely need >5 simultaneous transcodes. Verified to patch
+          # 580.173.02 exactly once (see modules/nvidia-transcode).
+          nvencUnlock = false;
+        };
 
         boot.initrd.kernelModules = [ "amdgpu" ];
 
