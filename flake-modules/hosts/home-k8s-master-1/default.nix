@@ -65,6 +65,28 @@ in {
           nvencUnlock = true;
         };
 
+        # Discover GPUs via NVML directly instead of the default `auto` probe.
+        # `auto` additionally sniffs for WSL/Tegra/CSV environments, which this
+        # headless x86 passthrough node is not — `nvml` is the exact, minimal
+        # mode for a normal discrete GPU and skips those pointless probes.
+        # (extraArgs can't set this: it only appends a duplicate flag and
+        # nvidia-ctk honours the first; `discovery-mode` is the replacing knob.)
+        hardware.nvidia-container-toolkit.discovery-mode = "nvml";
+
+        # Put nvidia-container-runtime on k3s' PATH so k3s' startup
+        # auto-detection templates a `nvidia` containerd runtime (in the
+        # correct config version for its bundled containerd). NixOS'
+        # nvidia-container-toolkit installs the runtime into the store but not
+        # onto k3s' (minimal) service PATH, so without this k3s never sees it:
+        # the `nvidia` RuntimeClass resolves to a handler containerd doesn't
+        # have, and a `runtimeClassName: nvidia` pod fails to start.
+        # NB: the runtime binary lives in the package's `tools` OUTPUT (the
+        # default output only ships nvidia-ctk), so getOutput "tools" — the
+        # same reference the nixpkgs module uses for the runtime hook.
+        systemd.services.k3s.path = [
+          (lib.getOutput "tools" config.hardware.nvidia-container-toolkit.package)
+        ];
+
         boot.initrd.kernelModules = [ "amdgpu" ];
 
         # NFS client (mount.nfs) so kubelet can mount NFS PersistentVolumes —
