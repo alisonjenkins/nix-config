@@ -24,6 +24,7 @@
   caveman = pkgs.callPackage ./caveman {};
   cavekit = pkgs.callPackage ./cavekit {};
   cavemem = pkgs.callPackage ./cavemem {};
+  spec-kit = pkgs.callPackage ./spec-kit {};
   citron = pkgs.callPackage ./citron {};
   eden = pkgs.callPackage ./eden {};
   obscura = pkgs.callPackage ./obscura {};

@@ -18,7 +18,6 @@ let
 
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
-  cavekitPkg = pkgs.cavekit;
 
   mkProvider = { baseURL, models }:
     { options = { inherit baseURL; }; inherit models; };
@@ -63,24 +62,6 @@ let
 
       ${stripClaudeFrontmatter file}${lib.optionalString (extraBody != "") "\n${extraBody}"}
     '';
-
-  cavekitSkillDirs = lib.filterAttrs (n: v: v == "directory")
-    (builtins.readDir "${cavekitPkg}/skills");
-
-  cavekitSkillConfigs = lib.mapAttrs' (name: _:
-    lib.nameValuePair "opencode/skills/ck-${name}/SKILL.md" {
-      source = "${cavekitPkg}/skills/${name}/SKILL.md";
-    }
-  ) cavekitSkillDirs;
-
-  cavekitCommandFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
-    (builtins.readDir "${cavekitPkg}/commands");
-
-  cavekitCommandConfigs = lib.mapAttrs' (name: _:
-    lib.nameValuePair "opencode/commands/ck-${name}" {
-      source = "${cavekitPkg}/commands/${name}";
-    }
-  ) cavekitCommandFiles;
 
   cavemanCommandFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
     (builtins.readDir "${cavemanPkg}/opencode-commands");
@@ -372,7 +353,5 @@ in {
     '';
 
   }
-  // cavemanCommandConfigs
-  // cavekitSkillConfigs
-  // cavekitCommandConfigs;
+  // cavemanCommandConfigs;
 }

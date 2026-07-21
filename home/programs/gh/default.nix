@@ -24,4 +24,9 @@
       };
     };
   };
+
+  # Add specify CLI for spec-kit (used with GitHub Copilot CLI)
+  home.packages = with pkgs; [
+    spec-kit
+  ];
 }
