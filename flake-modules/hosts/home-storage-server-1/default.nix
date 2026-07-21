@@ -297,6 +297,51 @@ in {
           wants = [ "media-storage.mount" ];
         };
 
+        # Catch-all self-heal: if the mergerfs pool ever drops while the box is
+        # up (a SAS `sata affiliation conflict` flap, a stray daemon-reload, a
+        # branch bounce), NFS keeps serving the now-empty mountpoint stubs and
+        # every client gets ENOENT until someone manually remounts — a SILENT
+        # total outage (2026-07-21: the pool sat dead for ~2.5h before anyone
+        # noticed nothing played). This watchdog detects the pool being gone and
+        # brings it straight back, so the failure self-resolves server-side in
+        # <=60s instead of needing an ssh in. It only ever STARTs the mount (the
+        # pool is unmounted when unhealthy, so nothing holds it open — safe, and
+        # it no-ops the instant the pool is a live fuse.mergerfs mount again).
+        systemd.services.media-pool-watchdog = {
+          description = "Heal the mergerfs pool + NFS export if it drops";
+          after = [ "media-storage.mount" ];
+          path = [ pkgs.util-linux pkgs.coreutils pkgs.attr pkgs.nfs-utils pkgs.systemd ];
+          serviceConfig = {
+            Type = "oneshot";
+          };
+          script = ''
+            if findmnt -t fuse.mergerfs /media/storage >/dev/null 2>&1; then
+              exit 0
+            fi
+            echo "mergerfs pool /media/storage is DOWN -> healing"
+            systemctl start media-disks-ready.service 2>/dev/null || true
+            systemctl start media-storage.mount || true
+            if findmnt -t fuse.mergerfs /media/storage >/dev/null 2>&1; then
+              # Re-export so a now-present subtree is served rather than ENOENT'd,
+              # and re-normalize the branch top-dir ownership/ACLs.
+              exportfs -ra 2>/dev/null || true
+              systemctl start media-branch-normalize.service 2>/dev/null || true
+              echo "mergerfs pool healed"
+            else
+              echo "mergerfs pool still down after heal attempt" >&2
+            fi
+          '';
+        };
+        systemd.timers.media-pool-watchdog = {
+          description = "Periodic mergerfs pool health check";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "90s";
+            OnUnitActiveSec = "60s";
+            AccuracySec = "10s";
+          };
+        };
+
         environment = {
           pathsToLink = [ "/share/zsh" ];
 
