@@ -141,20 +141,47 @@ in {
             Type = "oneshot";
             RemainAfterExit = true;
           };
-          path = [ pkgs.util-linux pkgs.coreutils pkgs.attr pkgs.nfs-utils ];
+          path = [ pkgs.util-linux pkgs.coreutils pkgs.gnugrep pkgs.attr pkgs.nfs-utils ];
           script = ''
-            # Rescan all SCSI hosts for new devices
-            for host in /sys/class/scsi_host/host*/scan; do
-              echo "- - -" > "$host"
-            done
+            # Only do the DESTRUCTIVE SCSI rescan when a branch disk is actually
+            # missing. Echoing "- - -" to every scsi_host forces the LSI HBA to
+            # re-run discovery, which on this passthrough card emits a
+            # `sata affiliation conflict` storm and can transiently drop a live
+            # SATA drive behind the expander. When paired with the `systemctl
+            # daemon-reload` this service USED to run, that reload re-evaluated
+            # the fstab-generated media-storage.mount mid-device-flux and
+            # UNMOUNTED the healthy pool — NFS then served empty stub dirs and
+            # every client got ENOENT (silent total playback outage, 2026-07-21;
+            # boot 0: pool mounted 17:46:18 -> daemon-reload 17:46:22 -> pool
+            # Deactivated 17:46:23, never recovered). So: gate the rescan, and
+            # NEVER daemon-reload here (the branch .mount units are static, built
+            # from fileSystems — they already exist; starting them needs no
+            # reload). The media-pool-watchdog below is the catch-all if the pool
+            # ever drops anyway.
+            expected=${toString (builtins.length mergerfsBranchMounts)}
+            branches_mounted() {
+              findmnt -rn -o TARGET 2>/dev/null | grep -c '^/media/disks/' || true
+            }
 
-            # Wait for udev to settle after rescan
-            ${pkgs.systemd}/bin/udevadm settle --timeout=30
+            if [ "$(branches_mounted)" -lt "$expected" ]; then
+              echo "branches $(branches_mounted)/$expected mounted -> SCSI rescan for late disks"
+              for host in /sys/class/scsi_host/host*/scan; do
+                echo "- - -" > "$host"
+              done
+              # Wait for udev to settle after rescan
+              ${pkgs.systemd}/bin/udevadm settle --timeout=30
+              # Start any disk mounts that are now satisfiable (NO daemon-reload).
+              systemctl start --all 'media-disks-*.mount' 'media-parity-*.mount' 2>/dev/null || true
+            else
+              echo "all $expected branches mounted -> skip destructive SCSI rescan"
+            fi
 
-            # Reload systemd to pick up any new device units, then
-            # start any disk mounts that are now satisfiable
-            systemctl daemon-reload
-            systemctl start --all 'media-disks-*.mount' 'media-parity-*.mount' 2>/dev/null || true
+            # Ensure the pool is up (an earlier event may have dropped it). We
+            # only ever START it here, never restart: if it is down nothing holds
+            # it open so the mount succeeds; if it is up we no-op.
+            if ! findmnt -t fuse.mergerfs /media/storage >/dev/null 2>&1; then
+              systemctl start media-storage.mount || true
+            fi
 
             # Re-add branches at runtime for any disk that appeared only after
             # the pool mounted. A `systemctl restart media-storage.mount` can
