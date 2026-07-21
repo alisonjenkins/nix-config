@@ -203,19 +203,24 @@
       <model type="virtio" heads="1" primary="yes"/>
       <address type="pci" domain="0x0000" bus="0x00" slot="0x01" function="0x0"/>
     </video>
-    <!-- SAS3008 HBA passthrough. New EPYC/ROMED8-2T board: one physical dual-controller
-         card behind a PLX PEX 8724 switch enumerates as TWO SAS3008 functions at host
-         84:00.0 and 86:00.0 (was a single 05:00.0 on the old board). Both bound to
-         vfio-pci by vfio-pci.ids=1000:0097; the pool drives are split across both, so
-         pass both. Guest <address> omitted so libvirt auto-assigns free pcie-root-ports. -->
+    <!-- SAS3008 HBA passthrough. One physical dual-controller card behind a PLX PEX
+         8724 switch enumerates as TWO SAS3008 functions. Host addresses are NOT stable
+         across hardware changes: moving the HBA to a different slot for the GTX 1070
+         install (2026-07-21) changed the pair from 84:00.0/86:00.0 to 03:00.0/05:00.0.
+         Verify with `lspci -Dnn | grep 1000:0097` after any card add/remove/move. Bound
+         to vfio-pci by
+         device ID (vfio-pci.ids=1000:0097, address-independent), but this <hostdev>
+         pins host address, so it MUST track lspci after any card add/remove. The pool
+         drives are split across both functions, so pass both. Guest <address> omitted
+         so libvirt auto-assigns free pcie-root-ports. -->
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
-        <address domain='0x0000' bus='0x84' slot='0x00' function='0x0'/>
+        <address domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
       </source>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
-        <address domain='0x0000' bus='0x86' slot='0x00' function='0x0'/>
+        <address domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
       </source>
     </hostdev>
     <redirdev bus="usb" type="spicevmc">
