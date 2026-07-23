@@ -13,6 +13,7 @@
     ./chromium
     ./claude-code
     ./comodoro
+    ./copilot-cli
     ./direnv
     ./eww
     ./fish
