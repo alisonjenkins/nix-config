@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, lib, config, inputs, ... }:
 let
   anthropicSkills = pkgs.fetchFromGitHub {
     owner = "anthropics";
@@ -670,4 +670,44 @@ in
       mux bin // { extensionToLanguage = extensionMappings.${name}; }
     ) serverBinaries;
   };
+
+  # settings.json must be a REAL writable file, not a store symlink: Claude Code
+  # writes user-scope runtime state back into this exact path (`/effort`,
+  # `/model`, …) and an EROFS on the store symlink makes those commands fail:
+  #   Failed to read raw settings from ~/.claude/settings.json: EROFS
+  # So we keep `programs.claude-code.settings` above as the single declarative
+  # source, suppress the home.file symlink it would produce, and materialise the
+  # generated JSON ourselves in an activation script (below).
+  home.file."${config.programs.claude-code.configDir}/settings.json".enable = lib.mkForce false;
+
+  # Merge the nix-generated settings over whatever is already on disk. Every key
+  # nix declares wins outright — the key is *deleted* from the old file rather
+  # than deep-merged, so a hook or env var removed from the nix config actually
+  # disappears instead of lingering forever. Keys nix never mentions (effort,
+  # model, anything Claude Code grows later) are carried across rebuilds.
+  home.activation.claudeCodeSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    claudeSettingsTarget="${config.programs.claude-code.configDir}/settings.json"
+
+    # Not a plain regular file (e.g. the previous generation's store symlink, or
+    # corrupt JSON) ⇒ no runtime state worth preserving.
+    claudeSettingsOld=$(mktemp)
+    if [ -f "$claudeSettingsTarget" ] && [ ! -L "$claudeSettingsTarget" ] \
+      && ${pkgs.jq}/bin/jq -e . "$claudeSettingsTarget" >/dev/null 2>&1; then
+      cp "$claudeSettingsTarget" "$claudeSettingsOld"
+    else
+      echo '{}' > "$claudeSettingsOld"
+    fi
+
+    claudeSettingsNew=$(mktemp)
+    ${pkgs.jq}/bin/jq -s '
+      .[0] as $old | .[1] as $new | ($new | keys) as $managed
+      | ($old | with_entries(select(.key as $k | $managed | index($k) | not))) + $new
+    ' "$claudeSettingsOld" \
+      "${config.home.file."${config.programs.claude-code.configDir}/settings.json".source}" \
+      > "$claudeSettingsNew"
+
+    run mkdir -p "$(dirname "$claudeSettingsTarget")"
+    run install -m 0644 "$claudeSettingsNew" "$claudeSettingsTarget"
+    rm -f "$claudeSettingsOld" "$claudeSettingsNew"
+  '';
 }
