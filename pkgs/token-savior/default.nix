@@ -1,8 +1,19 @@
 { lib, fetchFromGitHub, python3Packages }:
 
 let
+  # nixpkgs' tree-sitter-grammars generator prefixes the derivation pname with
+  # "python-" (e.g. "python-tree-sitter-java"), but the built wheel's
+  # dist-info metadata name is the unprefixed "tree_sitter_java" — so
+  # pythonMetadataCheckPhase's `importlib.metadata.version(pname)` lookup
+  # always raises PackageNotFoundError. Disable the check; the imports-check
+  # (which does pass) already verifies the package is usable.
+  fixMetadataCheck = drv: drv.overrideAttrs (_: { dontCheckPythonMetadata = true; });
+
   token-savior = python3Packages.buildPythonPackage {
-    pname = "token-savior";
+    # Upstream's pyproject.toml `[project].name` is "token-savior-recall", not
+    # "token-savior" — pname must match it or pythonMetadataCheckPhase's
+    # dist-info lookup fails with PackageNotFoundError.
+    pname = "token-savior-recall";
     version = "4.4.1";
     pyproject = true;
 
@@ -20,8 +31,8 @@ let
     dependencies = with python3Packages; [
       pyyaml
       tree-sitter
-      tree-sitter-grammars.tree-sitter-java
-      tree-sitter-grammars.tree-sitter-ruby
+      (fixMetadataCheck tree-sitter-grammars.tree-sitter-java)
+      (fixMetadataCheck tree-sitter-grammars.tree-sitter-ruby)
       watchfiles
       mcp
     ];
