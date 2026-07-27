@@ -11,7 +11,6 @@ let
   inherit (mandates) gitStrategy modelRouting workStyle;
 
   cavemanPkg = pkgs.caveman;
-  cavekitPkg = pkgs.cavekit;
   cavememPkg = pkgs.cavemem;
   claudeStatusbarPkg = pkgs.claude-statusbar;
 
@@ -68,8 +67,21 @@ let
     ''
   );
 
-  # Merge skill directories — cavekit is installed as a plugin (plugin-dir) so it's excluded here.
-  # ./skills holds locally-authored global skills (process-todo, ...).
+  # /speckit-init — the single global entry point to GitHub spec-kit (replaces
+  # cavekit's /ck:* commands). spec-kit's Claude integration is per-project: it
+  # writes .claude/skills/speckit-<name>/SKILL.md plus a .specify/ tree of bash
+  # scripts the generated skills shell out to, so it cannot be shipped globally.
+  # This skill just runs the initialiser in whatever repo the session is in.
+  # The `specify` binary is substituted as an absolute store path rather than
+  # resolved from PATH.
+  speckitInitSkill = pkgs.runCommand "speckit-init-skill" { } ''
+    mkdir -p $out/speckit-init
+    substitute ${./speckit-init-SKILL.md} $out/speckit-init/SKILL.md \
+      --replace-fail '@specify@' '${lib.getExe pkgs.spec-kit}'
+  '';
+
+  # Merge skill directories. ./skills holds locally-authored global skills
+  # (process-todo, ...).
   #
   # Curated subset of anthropics/skills rather than the whole repo: every skill's
   # name+description loads into every agent/subagent, so the unused ones
@@ -92,6 +104,7 @@ let
       ++ [
         "${cavemanPkg}/skills"
         "${claudeStatusbarPkg}/share/claude-statusbar/skills"
+        speckitInitSkill
         ./skills
       ];
   };
@@ -196,7 +209,7 @@ let
   # Subcommand-aware dispatcher nested INSIDE programs.claude-code.package.
   #
   # The home-manager claude-code module delivers our mcpServers + lspServers
-  # (and cavekit/superpowers) by wrapping the binary with `--plugin-dir <…>`
+  # (and superpowers) by wrapping the binary with `--plugin-dir <…>`
   # flags injected into EVERY invocation. But Claude Code's subcommands
   # (`remote-control`, `mcp`, `setup-token`, …) reject `--plugin-dir` and die
   # with `Error: Unknown argument: <plugindir>`. The module's `finalPackage`
@@ -270,7 +283,10 @@ in
   # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
   # would also drop the broken token-savior-bench, the server bin, and the
   # stats-less `ts` onto PATH.
-  home.packages = [ tsStatsDashboard tsStatsCli claudeDd claudeStatusbarPkg ];
+  #
+  # spec-kit (`specify`) serves both agents: Claude Code via the /speckit-init
+  # skill above, and GitHub Copilot CLI via `specify init --integration copilot`.
+  home.packages = [ tsStatsDashboard tsStatsCli claudeDd claudeStatusbarPkg pkgs.spec-kit ];
 
   programs.claude-code = {
     enable = true;
@@ -603,12 +619,14 @@ in
 
     skills = "${allSkills}";
 
-    # cavekit as a plugin so Claude Code loads it with the "ck:" namespace
-    # (giving /ck:spec, /ck:build, /ck:check).
+    # cavekit used to live here (the "ck:" namespace — /ck:spec, /ck:build,
+    # /ck:check). GitHub spec-kit replaced it: see the speckitInitSkill in the
+    # let block and docs/spec-kit-setup.md. `pkgs.cavekit` is still packaged, so
+    # re-adding it here is all it takes to bring the /ck:* commands back.
     # pup-claude is intentionally NOT global — it ships 49 agents + ~14 skills
     # that would load into every session/subagent. It's layered in on demand via
     # the `claude-dd` wrapper (see let block) only for Datadog work.
-    plugins = [ cavekitPkg pkgs.superpowers ];
+    plugins = [ pkgs.superpowers ];
 
     # Listed explicitly (not agentsDir) so the shared gitStrategy mandate can
     # be appended to the git-touching agents.
