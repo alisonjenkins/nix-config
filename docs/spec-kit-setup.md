@@ -1,38 +1,86 @@
-# Spec-Kit Setup for GitHub Copilot CLI
+# Spec-Kit Setup (Claude Code + GitHub Copilot CLI)
 
-Spec-kit has been configured in your Nix setup to work with GitHub Copilot CLI.
+[Spec-kit](https://github.com/github/spec-kit) is packaged in this repo as
+`pkgs/spec-kit` (the `specify` CLI) and wired up for both Claude Code and
+GitHub Copilot CLI.
 
-## What was changed
+## How it is installed
 
-1. **Added `spec-kit` package**: The `specify` CLI tool is now installed and available in your PATH
-2. **Removed `cavekit` from opencode**: Cavekit was removed from the opencode (Copilot) configuration since cavekit is Claude Code-specific
-3. **Cavekit remains in Claude Code**: Your claude-code setup still has cavekit installed
+- `pkgs/spec-kit/default.nix` builds the `specify` CLI from `github/spec-kit`.
+- `home/programs/claude-code/default.nix` puts `specify` on `PATH`
+  (`home.packages`) and ships the `/speckit-init` global skill.
+- Nothing is pinned per-agent: the same CLI serves both integrations.
 
-## How to use spec-kit with Copilot CLI
+Spec-kit is **per-project**, unlike a Claude Code plugin. `specify init` writes
+into the repo you run it in:
 
-### First time setup (per project)
+- `.specify/scripts/bash/` — the shell scripts the `/speckit-*` commands call
+- `.specify/templates/` — spec / plan / tasks / checklist / constitution templates
+- `.specify/memory/` — the project constitution
+- the agent-specific command files (see below)
 
-In any project where you want to use spec-kit:
+Initialisation needs **no network access** — templates and scripts are bundled
+inside the CLI package.
+
+## Claude Code
+
+In a session, inside the repo you want to set up:
+
+```
+/speckit-init
+```
+
+That skill (`home/programs/claude-code/speckit-init-SKILL.md`) checks for an
+existing `.specify/`, then runs:
+
+```bash
+specify init --here --force --integration claude
+```
+
+The Claude integration installs commands as **skills**, at
+`.claude/skills/speckit-<name>/SKILL.md`. Commit `.specify/` and
+`.claude/skills/speckit-*` along with the rest of the repo, and **restart the
+session** — project skills are only read at startup.
+
+Invocation uses hyphens, not dots:
+
+```
+/speckit-constitution   Define project principles
+/speckit-specify        Write the spec (what to build)
+/speckit-clarify        Resolve ambiguities in the spec
+/speckit-plan           Technical implementation plan (how to build)
+/speckit-tasks          Break the plan into tasks
+/speckit-analyze        Cross-check spec / plan / tasks for drift
+/speckit-implement      Execute
+```
+
+Also bundled: `/speckit-checklist`, `/speckit-converge`, `/speckit-taskstoissues`.
+
+### Replaces cavekit
+
+Claude Code previously loaded [cavekit](https://github.com/JuliusBrussee/cavekit)
+as a nix plugin, giving `/ck:spec`, `/ck:build` and `/ck:check`. Spec-kit replaced
+it — `plugins` in `home/programs/claude-code/default.nix` no longer lists it.
+`pkgs/cavekit` still builds; re-adding `pkgs.cavekit` to that `plugins` list is
+all it takes to bring the `/ck:*` commands back.
+
+## GitHub Copilot CLI
 
 ```bash
 cd /path/to/your/project
 specify init . --integration copilot
 ```
 
-This will create:
-- `.specify/` directory with spec templates  
-- `.github/copilot-instructions.md` with project context (optional)
-- Agent files that Copilot CLI can use
-
-### Using spec-kit commands in Copilot CLI
-
-Once initialized, you can use spec-kit commands in `gh copilot`:
+This creates `.specify/` plus the Copilot-side command files under `.github/`.
+Then:
 
 ```bash
-# Start Copilot CLI
 gh copilot
+```
 
-# Use spec-kit commands (examples):
+Copilot's integration uses the dotted form:
+
+```
 /speckit.constitution Create principles focused on code quality...
 /speckit.specify Build an application that...
 /speckit.plan The application uses...
@@ -40,49 +88,49 @@ gh copilot
 /speckit.implement
 ```
 
-Or in non-interactive mode:
+Non-interactive:
 
 ```bash
 gh copilot -p "/speckit.specify Build a CLI tool for..." --allow-all-tools
 ```
 
-### Available spec-kit commands
-
-- `/speckit.constitution` - Define project principles and guidelines
-- `/speckit.specify` - Create specifications (what to build)
-- `/speckit.plan` - Create technical implementation plans (how to build)
-- `/speckit.tasks` - Break down plans into tasks
-- `/speckit.implement` - Execute implementation
-- And more... (see [spec-kit docs](https://github.com/github/spec-kit))
-
-### Verify installation
+## Verifying
 
 ```bash
-# Check specify CLI is installed
 specify --version
-
-# Check spec-kit integration
-specify --help
+specify init --help          # lists every --integration
+ls .specify/scripts/bash     # after an init, in the target repo
 ```
 
 ## Updating spec-kit
 
-Spec-kit is installed via Nix. To update:
+1. Update `rev` in `pkgs/spec-kit/default.nix`
+2. Update `hash`
+3. `just switch`
 
-1. Update the version/rev in `pkgs/spec-kit/default.nix`
-2. Update the hash
-3. Run `home-manager switch`
+Already-initialised repos keep the old bundled scripts until you re-run
+`/speckit-init --force` (or `specify init --here --force --integration claude`)
+in them.
+
+## Troubleshooting
+
+`/speckit-*` commands missing in Claude Code:
+
+1. Confirm `.specify/` and `.claude/skills/speckit-*` exist in the repo — if not,
+   run `/speckit-init`.
+2. Restart the session; project skills load at startup only.
+
+`/speckit.*` commands missing in Copilot CLI:
+
+1. Confirm you ran `specify init . --integration copilot` in that project.
+2. Restart the `gh copilot` session.
+3. Check the command files were created under `.github/`.
+
+`specify init` aborts on an agent-tool check: add `--ignore-agent-tools`. The
+`claude` binary here is a nix wrapper and the check can miss it.
 
 ## Documentation
 
 - [Spec-Kit GitHub](https://github.com/github/spec-kit)
 - [Spec-Kit Documentation](https://github.github.io/spec-kit/)
 - [Copilot CLI Docs](https://docs.github.com/copilot/how-tos/copilot-cli)
-
-## Troubleshooting
-
-If `/speckit.*` commands aren't available in Copilot CLI:
-
-1. Make sure you ran `specify init . --integration copilot` in your project
-2. Restart `gh copilot` session
-3. Check that agent files were created in `.github/` or your integration directory
