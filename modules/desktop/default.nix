@@ -751,7 +751,18 @@ in
         shortwave
         suspendScripts
         television
-        unstable.cobang
+        # cobang's python-zbar dep: nixpkgs' derivation pname "python-zbar"
+        # doesn't match the built wheel's dist-info name "zbar", so
+        # pythonMetadataCheckPhase always fails on python3.14. Disable it.
+        (unstable.cobang.override {
+          python3Packages = unstable.python3Packages.overrideScope (
+            _final: prev: {
+              python-zbar = prev.python-zbar.overrideAttrs (_: {
+                dontCheckPythonMetadata = true;
+              });
+            }
+          );
+        })
         # copilot-cli removed upstream (deprecated by GitHub; use
         # `gh extension install github/gh-copilot` instead).
         unstable.devenv
