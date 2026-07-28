@@ -212,6 +212,21 @@ in
           plotly = skipChecks python-prev.plotly;
           igraph = skipChecks python-prev.igraph;
         })
+      # azure-core's pytest suite spawns subprocess HTTP test servers and
+      # polls `is_port_available()` in a loop, raising `ValueError("Didn't
+      # start!")` when the server never comes up — port binding for
+      # loopback test servers doesn't work inside the Nix build sandbox.
+      # 263 tests fail this way, which then cascades (dependency-failed)
+      # to every azure-* package and azure-cli itself. Disable checks;
+      # azure-core works fine at runtime, only its sandboxed test harness
+      # is broken.
+      (python-final: python-prev: {
+        azure-core = python-prev.azure-core.overridePythonAttrs (old: {
+          doCheck = false;
+          dontCheck = true;
+          nativeCheckInputs = [];
+        });
+      })
     ];
 
     # Re-sign fish after build on Darwin.
