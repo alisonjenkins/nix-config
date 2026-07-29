@@ -256,7 +256,6 @@ in {
             "github"
             "google-chrome"
             "hammerspoon"
-            "jordanbaird-ice"
             "karabiner-elements"
             "keybase"
             "krita"
