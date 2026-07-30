@@ -561,8 +561,15 @@
 
         [ -f "$DB" ] || { echo "no datastore at $DB — nothing to do"; exit 0; }
 
-        SIZE=$(stat -c %s "$DB")
-        echo "datastore size: $SIZE bytes (threshold $THRESHOLD_BYTES)"
+        # Measure the DB *and* its WAL. In the 2026-07-30 incident the WAL was
+        # the LARGER half — 21 GB against a 7.6 GB db — because SQLite cannot
+        # truncate it while a reader is open and kine holds long-running watch
+        # reads. A trigger on state.db alone would sail straight past a runaway
+        # WAL, which is the same outage with the sizes swapped.
+        DB_SIZE=$(stat -c %s "$DB")
+        WAL_SIZE=$(stat -c %s "$DB-wal" 2>/dev/null || echo 0)
+        SIZE=$((DB_SIZE + WAL_SIZE))
+        echo "datastore: db=$DB_SIZE wal=$WAL_SIZE total=$SIZE (threshold $THRESHOLD_BYTES)"
         if [ "$SIZE" -lt "$THRESHOLD_BYTES" ]; then
           echo "under threshold — no maintenance needed, k3s untouched"; exit 0
         fi
@@ -585,8 +592,19 @@
 
         # Fold the WAL back in and truncate it. With k3s stopped there are no
         # readers, so this can finally reclaim the WAL that grows without bound
-        # under live watch traffic.
+        # under live watch traffic. Cheap — seconds — and on its own enough when
+        # the WAL was what crossed the threshold.
         sqlite3 "$DB" "PRAGMA wal_checkpoint(TRUNCATE);"
+
+        # Re-measure. If truncating the WAL got us back under, stop here: the
+        # row-delete below is the expensive part (40 minutes on the 7.6 GB
+        # datastore in the 2026-07-30 incident) and every second of it is a full
+        # outage, since stopping k3s takes containerd and all pods with it.
+        DB_SIZE=$(stat -c %s "$DB")
+        if [ "$DB_SIZE" -lt "$THRESHOLD_BYTES" ]; then
+          echo "checkpoint alone sufficed (db=$DB_SIZE) — skipping compaction"
+          exit 0
+        fi
 
         # Drop every superseded revision, keeping the newest row per key. This is
         # the compaction kine failed to do. Deleted keys keep their tombstone row
