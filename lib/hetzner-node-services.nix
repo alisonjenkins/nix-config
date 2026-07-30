@@ -606,9 +606,17 @@
     # state.db is performed without a net. k3s's --etcd-snapshot does not apply on
     # SQLite, so roll our own.
     #
-    # `.backup` is SQLite's online backup API — safe against a live, running k3s,
-    # so this needs no downtime at all. Backups land on the LUKS volume, which has
-    # delete protection and survives a cattle replace [V21].
+    # Uses `VACUUM INTO`, NOT `.backup`. Both are online and safe against a live
+    # k3s, but SQLite's `.backup` restarts the copy from the beginning whenever
+    # the source is written mid-copy — and kine's lease renewals write every few
+    # seconds, so it starves. Measured on this node: `.backup` reached 378 MB of
+    # a 550 MB datastore and then made no further progress at all.
+    #
+    # `VACUUM INTO` takes a single read snapshot and writes a compacted copy in
+    # one pass with no restart loop, and the output is defragmented as a bonus.
+    #
+    # Backups land on the LUKS volume, which has delete protection and survives a
+    # cattle replace [V21].
     k3s-datastore-backup = {
       description = "Online backup of the k3s SQLite datastore";
       path = with pkgs; [ sqlite coreutils findutils ];
@@ -641,8 +649,14 @@
         fi
 
         mkdir -p "$DEST"; chmod 0700 "$DEST"
+        # Clear any .partial left by a previous interrupted run, so they cannot
+        # accumulate and fill the state volume.
+        rm -f "$DEST"/*.partial
         STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-        sqlite3 "$DB" ".backup '$DEST/state-$STAMP.db'"
+        # Write to a .partial name and rename only on success, so an interrupted
+        # run can never leave a truncated file that looks like a valid backup.
+        sqlite3 "$DB" "VACUUM INTO '$DEST/state-$STAMP.db.partial';"
+        mv "$DEST/state-$STAMP.db.partial" "$DEST/state-$STAMP.db"
         echo "wrote $DEST/state-$STAMP.db ($(stat -c %s "$DEST/state-$STAMP.db") bytes)"
 
         # Retain the newest $KEEP only — unbounded backups are another way to fill
