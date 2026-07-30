@@ -505,5 +505,178 @@
         exec ${pkgs.bash}/bin/bash ${healScript}
       '';
     };
+
+    # Datastore maintenance [2026-07-30 outage]. k3s on SQLite has TWO unbounded
+    # growth paths and no built-in remedy for either:
+    #
+    #  1. kine keeps every revision of every key in the `kine` table and relies on
+    #     its own periodic compaction. When that stalls, nothing notices — the
+    #     table just grows. On 2026-07-30 state.db reached 7.6 GB backing only
+    #     ~3000 live objects, of which just 323 MB was reclaimable free pages:
+    #     the rest was genuinely-live superseded revisions — 2,324,353 rows over
+    #     94,345 distinct keys.
+    #
+    #     The churn is almost entirely leader-election Leases, NOT scanner report
+    #     objects as first assumed. Every controller renews its Lease every few
+    #     seconds and each renewal writes a new revision; the top keys were
+    #     /registry/leases/ente/ente-db (163k revisions), the four kyverno
+    #     controllers (~90k each), envoy-gateway (83k) and the six flux-system
+    #     leader-election leases (~75k each). Nothing is misconfigured — this is
+    #     the steady-state write rate of the platform, so compaction has to keep
+    #     up or the file grows without bound.
+    #  2. SQLite never shrinks the file on its own (DELETE only frees pages) and
+    #     never truncates the WAL while a reader is open. kine holds long-running
+    #     watch reads, so the WAL had grown to 21 GB.
+    #
+    # Together those drove datastore writes to 45s, failed the API server's readyz
+    # etcd check, flapped the node NotReady and took down ingress-served apps.
+    #
+    # This unit is SIZE-TRIGGERED, not unconditionally periodic: on a healthy
+    # cluster it inspects the file and exits in milliseconds with no downtime. It
+    # only stops k3s when the datastore has actually bloated past the threshold.
+    k3s-datastore-maintenance = {
+      description = "Compact + vacuum the k3s SQLite datastore when it bloats [2026-07-30]";
+      # Explicit PATH — NixOS strips defaults and a bare command here would exit
+      # 127 silently, which is exactly how k3s-node-heal shipped broken [B27].
+      path = with pkgs; [ sqlite coreutils systemd util-linux ];
+      # A vacuum of a multi-GB DB on a small swapping node is slow; never let
+      # systemd kill it half-way through.
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "infinity";
+      };
+      script = ''
+        set -euo pipefail
+
+        DB=/var/lib/rancher/k3s/server/db/state.db
+        # Act at 2 GB. Healthy is well under 1 GB; by 4 GB the API server is
+        # already failing readyz, so this leaves real headroom to act in.
+        THRESHOLD_BYTES=$((2 * 1024 * 1024 * 1024))
+
+        for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
+        source /etc/karpenter-node.conf
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping datastore maintenance"; exit 0
+        fi
+
+        [ -f "$DB" ] || { echo "no datastore at $DB — nothing to do"; exit 0; }
+
+        SIZE=$(stat -c %s "$DB")
+        echo "datastore size: $SIZE bytes (threshold $THRESHOLD_BYTES)"
+        if [ "$SIZE" -lt "$THRESHOLD_BYTES" ]; then
+          echo "under threshold — no maintenance needed, k3s untouched"; exit 0
+        fi
+
+        echo "over threshold — compacting (k3s will be stopped)"
+        systemctl stop k3s-server-bootstrap.service
+
+        # Always bring the control plane back, even if compaction fails. Without
+        # this an aborted vacuum would leave the cluster down indefinitely.
+        restart_k3s() { echo "restarting k3s"; systemctl start k3s-server-bootstrap.service || true; }
+        trap restart_k3s EXIT
+
+        # Safety copy on the EPHEMERAL root disk, not the state volume: the state
+        # volume is what we are trying to free, and root has far more headroom.
+        # Only needs to outlive this run — the durable copy is the backup timer.
+        SAFETY=/var/tmp/k3s-datastore-premaintenance.db
+        rm -f "$SAFETY"
+        sqlite3 "$DB" ".backup '$SAFETY'"
+        echo "safety copy: $(stat -c %s "$SAFETY") bytes at $SAFETY"
+
+        # Fold the WAL back in and truncate it. With k3s stopped there are no
+        # readers, so this can finally reclaim the WAL that grows without bound
+        # under live watch traffic.
+        sqlite3 "$DB" "PRAGMA wal_checkpoint(TRUNCATE);"
+
+        # Drop every superseded revision, keeping the newest row per key. This is
+        # the compaction kine failed to do. Deleted keys keep their tombstone row
+        # (it is the MAX for that name) so watchers still observe the deletion.
+        sqlite3 "$DB" "DELETE FROM kine WHERE id NOT IN (SELECT MAX(id) FROM kine GROUP BY name);"
+
+        # DELETE only moves pages to the freelist; VACUUM is what shrinks the file.
+        sqlite3 "$DB" "VACUUM;"
+
+        echo "datastore after maintenance: $(stat -c %s "$DB") bytes"
+      '';
+    };
+
+    # Durable recovery point for the datastore. SPEC T18-DBDONE deferred this as
+    # "mostly GitOps-reconstructible", but the 2026-07-30 incident showed the real
+    # value is different: without a backup, ANY repair to a bloated or corrupted
+    # state.db is performed without a net. k3s's --etcd-snapshot does not apply on
+    # SQLite, so roll our own.
+    #
+    # `.backup` is SQLite's online backup API — safe against a live, running k3s,
+    # so this needs no downtime at all. Backups land on the LUKS volume, which has
+    # delete protection and survives a cattle replace [V21].
+    k3s-datastore-backup = {
+      description = "Online backup of the k3s SQLite datastore";
+      path = with pkgs; [ sqlite coreutils findutils ];
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "3600s";
+      };
+      script = ''
+        set -euo pipefail
+
+        DB=/var/lib/rancher/k3s/server/db/state.db
+        DEST=/var/lib/rancher/k3s/server/db-backups
+        KEEP=7
+
+        for i in $(seq 1 60); do [ -f /etc/karpenter-node.conf ] && break; sleep 2; done
+        source /etc/karpenter-node.conf
+        if [ "''${ROLE:-agent}" != "server" ]; then
+          echo "ROLE=''${ROLE:-agent}, not server — skipping datastore backup"; exit 0
+        fi
+
+        [ -f "$DB" ] || { echo "no datastore at $DB — nothing to back up"; exit 0; }
+
+        # Refuse to back up a bloated datastore: copying multi-GB files is exactly
+        # what fills the state volume and triggers the DiskPressure/Kyverno
+        # deadlock [2026-07-22]. Maintenance must shrink it first.
+        SIZE=$(stat -c %s "$DB")
+        if [ "$SIZE" -gt $((4 * 1024 * 1024 * 1024)) ]; then
+          echo "datastore is $SIZE bytes — too large to back up safely; run k3s-datastore-maintenance first" >&2
+          exit 1
+        fi
+
+        mkdir -p "$DEST"; chmod 0700 "$DEST"
+        STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+        sqlite3 "$DB" ".backup '$DEST/state-$STAMP.db'"
+        echo "wrote $DEST/state-$STAMP.db ($(stat -c %s "$DEST/state-$STAMP.db") bytes)"
+
+        # Retain the newest $KEEP only — unbounded backups are another way to fill
+        # the very volume this is meant to protect.
+        ls -1t "$DEST"/state-*.db | tail -n +$((KEEP + 1)) | while read -r old; do
+          echo "pruning $old"; rm -f "$old"
+        done
+      '';
+    };
+  };
+
+  systemd.timers = {
+    # Daily size check. Cheap and silent when healthy — it only imposes downtime
+    # on the day the datastore has actually crossed the threshold, and the
+    # K3sDatastoreGrowing alert fires well before that so a human can pre-empt it.
+    k3s-datastore-maintenance = {
+      description = "Daily k3s datastore size check (compacts only when bloated)";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 04:00:00 UTC";
+        # Spread load and survive a node that was down at the scheduled time.
+        RandomizedDelaySec = "30m";
+        Persistent = true;
+      };
+    };
+
+    k3s-datastore-backup = {
+      description = "Daily online backup of the k3s datastore";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 03:00:00 UTC";
+        RandomizedDelaySec = "15m";
+        Persistent = true;
+      };
+    };
   };
 }
