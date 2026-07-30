@@ -427,6 +427,42 @@ in
               wrapper = machine.succeed(f"cat {m.group(1)}")
               assert "set -euo pipefail" in wrapper, "heal wrapper must set -e (loud failure) [B34]"
 
+          with subtest("datastore maintenance + backup units exist and are role-guarded [2026-07-30]"):
+              # The 2026-07-30 outage was an unbounded kine/SQLite datastore that
+              # nothing compacted and nothing watched. These units are the fix, so
+              # guard them the way B30/V27 guard the rest: assert on the REAL unit.
+              for svc in ("k3s-datastore-maintenance", "k3s-datastore-backup"):
+                  unit = machine.succeed(f"systemctl cat {svc}.service")
+                  # Must never run on a worker — stopping k3s there would be an
+                  # outage for no reason, and there is no server datastore to fix.
+                  assert 'ROLE:-agent' in unit, f"{svc} must role-guard to server only: {unit}"
+                  # Timer must be installed, else the automation silently never runs.
+                  machine.succeed(f"systemctl cat {svc}.timer")
+                  props = machine.succeed(f"systemctl show {svc}.timer -p Persistent")
+                  assert "Persistent=yes" in props, \
+                      f"{svc}.timer must be Persistent (a node down at the scheduled time must still run): {props}"
+
+              # Maintenance must never be killed part-way through a VACUUM: an
+              # interrupted vacuum on a multi-GB datastore is how you turn a slow
+              # cluster into a corrupt one.
+              props = machine.succeed(
+                  "systemctl show k3s-datastore-maintenance.service -p TimeoutStartUSec"
+              )
+              assert "TimeoutStartUSec=infinity" in props, \
+                  f"maintenance must not time out mid-vacuum: {props}"
+
+              # It stops k3s, so it MUST restart it unconditionally — without the
+              # trap an aborted run leaves the control plane down indefinitely.
+              unit = machine.succeed("systemctl cat k3s-datastore-maintenance.service")
+              m = re.search(r'ExecStart=(/nix/store/\S+)', unit)
+              assert m, f"no maintenance ExecStart: {unit}"
+              script = machine.succeed(f"cat {m.group(1)}")
+              assert "trap restart_k3s EXIT" in script, \
+                  "maintenance must restart k3s via an EXIT trap even when compaction fails"
+
+              # On an agent the guard should short-circuit cleanly, not error.
+              machine.succeed("systemctl start k3s-datastore-maintenance.service")
+
           with subtest("post-quantum SSH KEX offered [V12]"):
               kex = machine.succeed("sshd -T 2>/dev/null | grep -i '^kexalgorithms'")
               assert "mlkem768x25519-sha256" in kex, f"PQC KEX missing: {kex}"
