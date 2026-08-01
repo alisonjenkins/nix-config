@@ -2025,7 +2025,6 @@ EOF
                 nix = [
                   "cache.nixcache.org"
                   "attic.xuyh0120.win"
-                  "cache.garnix.io"
                   "cache.nixos.org"
                   "channels.nixos.org"
                   "jovian.cachix.org"
