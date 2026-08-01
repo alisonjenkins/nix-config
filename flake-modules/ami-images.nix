@@ -284,12 +284,10 @@ let
         extra-substituters = [
           "https://cache.nixcache.org"
           "https://nix-community.cachix.org"
-          "https://cache.garnix.io"
         ];
         extra-trusted-public-keys = [
           "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
           "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-          "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         ];
       };
       gc.options = lib.mkForce "--delete-older-than 7d";
