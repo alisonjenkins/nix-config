@@ -966,11 +966,142 @@ in {
           description = "Wait until /media/storage (NFS) is mounted and readable";
           after = [ "network-online.target" "media-storage.automount" ];
           wants = [ "network-online.target" "media-storage.automount" ];
+
+          # Keep retrying after the 5 min timeout instead of staying failed
+          # forever. On 2026-07-21 this unit timed out at boot (storage-server-1
+          # was still 3 h from serving) and then sat in 'failed' for 11 days: the
+          # consumers had long since started degraded and nothing ever re-ran the
+          # gate. Wants (not Requires) on the consumers means a retrying gate does
+          # not hold the UIs down; it just re-establishes the ordering fact once
+          # storage really is up. No start-rate limit — a storage server that
+          # takes hours should be waited out, and the probe costs nothing.
+          startLimitIntervalSec = 0;
+
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
             TimeoutStartSec = "300";
+            Restart = "on-failure";
+            RestartSec = "30s";
             ExecStart = "+${pkgs.bash}/bin/bash -c 'until ${pkgs.coreutils}/bin/test -e /media/storage/downloads; do echo \"waiting for /media/storage (storage server booting?)\"; sleep 3; done'";
+          };
+        };
+
+        # Stale-filehandle watchdog for /media/storage.
+        #
+        # The gate above only covers "storage is not serving yet". It cannot see
+        # the other failure mode, which is what actually bit on 2026-07-21: the
+        # client mounted the export at 16:30:59Z, storage-server-1's mergerfs
+        # union only came up at 19:21:04Z, and the client was left holding a root
+        # filehandle from the previous instance. The mount stays 'active' and
+        # cached subpaths keep resolving, so every health check looks green —
+        # but `ls /media/storage` and `df /media/storage` return ESTALE, every
+        # fresh lookup from the root fails, and the kernel logs
+        # "NFS: server 10.10.10.2 error: fileid changed" tens of times a day.
+        # qBittorrent quietly lost its data handles and parked 2476 of ~2487
+        # torrents in missingFiles (data intact on disk, just unreachable), so
+        # the whole library stopped seeding for 11 days without anything failing.
+        #
+        # Nothing detected or repaired that. This does: probe the mount root, and
+        # on ESTALE specifically, cycle the mount and bounce the consumers.
+        environment.etc."media-storage-watchdog.sh" = {
+          mode = "0755";
+          text = ''
+            #!/usr/bin/env bash
+            set -uo pipefail
+
+            MOUNT=/media/storage
+            # Services that hold open filehandles on the mount and therefore both
+            # (a) pin the old superblock and (b) need restarting once it is
+            # replaced. btfs-bridge is partOf qbittorrent, so it follows along.
+            CONSUMERS=(qbittorrent sonarr radarr bazarr seerr)
+
+            # Repairing stops the entire media stack, so it must stay rare: at
+            # most 3 repairs per 6 h. Same ledger pattern as wireguard-watchdog.
+            REPAIR_STATE=/run/media-storage-watchdog-repairs
+            MAX_REPAIRS=3
+            BACKOFF_WINDOW=21600
+
+            # Probe with a timeout. Distinguish the two failure modes:
+            #   ESTALE          -> filehandle is dead, only a remount fixes it
+            #   timeout/blocked -> storage is down or slow; the hard mount will
+            #                      recover on its own, so do NOT touch it
+            ERR=$(${pkgs.coreutils}/bin/timeout 20 ${pkgs.coreutils}/bin/ls "$MOUNT" 2>&1 >/dev/null)
+            RC=$?
+
+            if [ "$RC" -eq 0 ]; then
+              # Healthy — clear the repair history.
+              rm -f "$REPAIR_STATE"
+              exit 0
+            fi
+
+            if ! printf '%s' "$ERR" | ${pkgs.gnugrep}/bin/grep -qi "stale file handle"; then
+              echo "[$(date -Is)] $MOUNT not readable (rc=$RC) but not ESTALE: ''${ERR:-<timeout>} — leaving it to the hard mount"
+              exit 0
+            fi
+
+            CURRENT_TIME=$(date +%s)
+            if [ -f "$REPAIR_STATE" ]; then
+              ${pkgs.gawk}/bin/awk -v cutoff="$((CURRENT_TIME - BACKOFF_WINDOW))" '$1 > cutoff' "$REPAIR_STATE" > "$REPAIR_STATE.tmp"
+              mv "$REPAIR_STATE.tmp" "$REPAIR_STATE"
+              RECENT_REPAIRS=$(wc -l < "$REPAIR_STATE")
+            else
+              RECENT_REPAIRS=0
+            fi
+
+            if [ "$RECENT_REPAIRS" -ge "$MAX_REPAIRS" ]; then
+              echo "[$(date -Is)] $MOUNT still ESTALE but suppressing repair — $RECENT_REPAIRS repairs in last $((BACKOFF_WINDOW / 3600))h (max: $MAX_REPAIRS). Needs a human."
+              exit 1
+            fi
+            echo "$CURRENT_TIME" >> "$REPAIR_STATE"
+
+            echo "[$(date -Is)] $MOUNT is ESTALE — stopping consumers and cycling the mount"
+            systemctl stop "''${CONSUMERS[@]}"
+
+            systemctl stop media-storage.automount media-storage.mount || true
+            # The stale superblock can outlive the unit stop if anything still
+            # holds a reference; a lazy umount detaches it either way.
+            ${pkgs.util-linux}/bin/umount -l "$MOUNT" 2>/dev/null || true
+
+            systemctl start media-storage.automount
+            # Touch the path to fire the automount and pick up a fresh filehandle.
+            ${pkgs.coreutils}/bin/timeout 60 ${pkgs.coreutils}/bin/ls "$MOUNT" >/dev/null 2>&1
+
+            if ! ${pkgs.coreutils}/bin/timeout 20 ${pkgs.coreutils}/bin/ls "$MOUNT" >/dev/null 2>&1; then
+              echo "[$(date -Is)] remount did NOT clear the stale handle — starting consumers anyway so the UIs come back"
+              systemctl start "''${CONSUMERS[@]}"
+              exit 1
+            fi
+
+            systemctl reset-failed media-storage-ready.service || true
+            systemctl start media-storage-ready.service || true
+            systemctl start "''${CONSUMERS[@]}"
+
+            echo "[$(date -Is)] $MOUNT remounted cleanly; consumers restarted."
+            echo "[$(date -Is)] NOTE: qBittorrent may still hold torrents in missingFiles — force-recheck them (throttle MaxActiveCheckingTorrents first)."
+          '';
+        };
+
+        systemd.services.media-storage-watchdog = {
+          description = "Repair a stale /media/storage NFS filehandle";
+          after = [ "network-online.target" "media-storage.automount" ];
+          wants = [ "network-online.target" ];
+
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.bash}/bin/bash /etc/media-storage-watchdog.sh";
+          };
+        };
+
+        systemd.timers.media-storage-watchdog = {
+          description = "Stale /media/storage watchdog timer";
+          wantedBy = [ "timers.target" ];
+
+          timerConfig = {
+            # Late enough that the boot-time gate has had its say first.
+            OnBootSec = "10min";
+            OnUnitActiveSec = "5min";
+            Unit = "media-storage-watchdog.service";
           };
         };
 
