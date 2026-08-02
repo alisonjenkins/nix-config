@@ -1111,6 +1111,39 @@ in {
           '';
         };
 
+        # Bazarr leaks memory steadily: on 2026-08-02 it had reached 3.6 GB RSS +
+        # 4.4 GB swap (peak 5.25 GB, 112 threads) after 11 days of uptime, on a
+        # box with 7.7 GB of RAM. That alone drove memory PSI to full avg10=16%,
+        # i.e. every other service on the host stalling ~16% of wall-clock — which
+        # is what makes the *arr UIs and imports feel slow.
+        #
+        # A periodic restart is the blunt-but-correct lever here. Deliberately NOT
+        # a MemoryMax/MemorySwapMax cgroup cap: on this zram box those count the
+        # compressed swap too, and capping the media services that way previously
+        # throttled the *arrs into outright API hangs (see the zramSwap comment).
+        # Subtitle search is idempotent and stateless across restarts, so losing an
+        # in-flight scan costs nothing — the next scheduled scan re-runs it.
+        systemd.services.bazarr-restart = {
+          description = "Restart bazarr to bound its memory leak";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${pkgs.systemd}/bin/systemctl restart bazarr.service";
+          };
+        };
+
+        systemd.timers.bazarr-restart = {
+          description = "Weekly bazarr restart timer";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnCalendar = "weekly";
+            # Survive a host that was off at the scheduled time.
+            Persistent = true;
+            # Don't collide with the other weekly maintenance jobs.
+            RandomizedDelaySec = "30min";
+            Unit = "bazarr-restart.service";
+          };
+        };
+
         systemd.services.prowlarr = {
           environment = dotnetThreadCap;
           serviceConfig = {
