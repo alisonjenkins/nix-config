@@ -186,6 +186,10 @@ in {
                   mode = "0755";
                 }
                 {
+                  # Still the jellyseerr path, not seerr: nixpkgs 26.05 renamed
+                  # the module (services.jellyseerr -> services.seerr) but keeps
+                  # the legacy configDir while stateVersion < 26.05, which this
+                  # host is (24.05). Rename this only if stateVersion is bumped.
                   directory = "/var/lib/private/jellyseerr";
                   user = "root";
                   group = "root";
@@ -1124,7 +1128,12 @@ in {
           '';
         };
 
-        systemd.services.jellyseerr = {
+        # nixpkgs 26.05 renamed jellyseerr -> seerr. The rename alias keeps
+        # services.jellyseerr working, but the *unit* is now seerr.service:
+        # overriding systemd.services.jellyseerr materialised an orphan unit with
+        # no ExecStart ("Service has no ExecStart=. Refusing.") while these
+        # settings silently stopped applying to the service that actually runs.
+        systemd.services.seerr = {
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" ];
@@ -1713,7 +1722,10 @@ EOF
             };
           };
 
-          jellyseerr = {
+          # Renamed from services.jellyseerr in nixpkgs 26.05; the rename alias
+          # still accepts the old name, but the unit is seerr.service (see the
+          # systemd.services.seerr override below).
+          seerr = {
             enable = true;
             openFirewall = true;
           };
