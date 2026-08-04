@@ -76,8 +76,13 @@ in {
             gitUserName = "Alison Jenkins";
             github_clone_ssh_host_personal = "pgithub.com";
             github_clone_ssh_host_work = "github.com";
-            primarySSHKey = "~/.ssh/id_civica.pub";
-            azureDevopsRsaKey = "~/.ssh/id_civica_rsa.pub";
+            # This host is dormant, so it carries no work identity: the work
+            # SSH keys now come from sops and only on machines that opt in.
+            # To make it a work machine again, set workIdentity = true and
+            # workIdentitySecretsFile = self + "/secrets/ali-work-laptop/work-identity.enc.yaml"
+            # (its &server_ali-work-laptop age recipient already exists), then
+            # switch primarySSHKey/azureDevopsRsaKey to ~/.ssh/id_work{,_rsa}.pub.
+            primarySSHKey = "~/.ssh/id_personal.pub";
           };
       }
 

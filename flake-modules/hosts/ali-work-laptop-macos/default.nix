@@ -55,10 +55,10 @@ let
   };
 
   hostnames = {
-    civica = "Alisons-MacBook-Pro";
+    work = "Alisons-MacBook-Pro";
   };
 in {
-  flake.darwinConfigurations."${hostnames.civica}" = inputs.darwin.lib.darwinSystem {
+  flake.darwinConfigurations."${hostnames.work}" = inputs.darwin.lib.darwinSystem {
     system = darwinSystem;
     modules = [
       self.darwinModules.darwin-nix-maintenance
@@ -428,22 +428,27 @@ in {
         home-manager.useUserPackages = true;
         home-manager.users.${username} = self.homeModules.home-macos;
         home-manager.extraSpecialArgs = commonArgs // {
-          gitEmail = "alison.jenkins@civica.com";
-          gitGPGSigningKey = "~/.ssh/id_civica.pub";
+          # gitEmail is deliberately unset: the work email lives in
+          # workIdentitySecretsFile and reaches git via a sops-rendered
+          # include, so it stays out of this public repo and out of the
+          # world-readable nix store.
+          gitGPGSigningKey = "~/.ssh/id_work.pub";
           gitUserName = "Alison Jenkins";
           github_clone_ssh_host_personal = "pgithub.com";
           github_clone_ssh_host_work = "github.com";
-          hostname = "${hostnames.civica}";
+          hostname = "${hostnames.work}";
           # No local llama endpoint on this host — opencode falls back to
           # its built-in github-copilot provider.
           opencodeLocalLLM = false;
-          primarySSHKey = "~/.ssh/id_civica.pub";
-          azureDevopsRsaKey = "~/.ssh/id_civica_rsa.pub";
+          primarySSHKey = "~/.ssh/id_work.pub";
+          azureDevopsRsaKey = "~/.ssh/id_work_rsa.pub";
+          workIdentity = true;
+          workIdentitySecretsFile = self + "/secrets/ali-work-laptop-macos/work-identity.enc.yaml";
         };
       }
     ];
     specialArgs = commonArgs // {
-      hostname = "${hostnames.civica}";
+      hostname = "${hostnames.work}";
     };
   };
 }
