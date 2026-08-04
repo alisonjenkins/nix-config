@@ -1,7 +1,14 @@
-{ gitUserName
-, gitEmail
+{ config
+, lib
+, gitUserName
+  # null on work machines: the email is decrypted from sops at activation and
+  # pulled in via an include, so it never lands in the (public) nix store.
+, gitEmail ? null
 , gitGPGSigningKey ? "~/.ssh/id_personal.pub"
 , enableDifftastic ? true
+  # Work machines only; see home/home-common.nix.
+, workIdentity ? false
+, workIdentitySecretsFile ? null
 , pkgs
 , ...
 }:
@@ -22,7 +29,7 @@ in
       enable = true;
       lfs.enable = true;
       settings = {
-        user = {
+        user = lib.filterAttrs (_: v: v != null) {
           email = gitEmail;
           name = gitUserName;
         };
@@ -150,7 +157,13 @@ in
           condition = "hasconfig:remote.*.url:https://codeberg.org/**";
           contents.user.email = "alisonjenkins@noreply.codeberg.org";
         }
-      ];
+      ]
+      # Work machines get user.email from a sops-rendered include instead of
+      # from settings.user.email, keeping it out of the nix store. Git ignores
+      # an include.path that does not exist yet.
+      ++ lib.optional workIdentity {
+        path = config.sops.templates."git-work-identity".path;
+      };
     }
     // {
       signing = {
@@ -159,6 +172,20 @@ in
         signByDefault = gpgSign;
       };
     };
+
+  sops = lib.mkIf workIdentity {
+    # The user-level age key that decrypts the work identity. It is never in
+    # this repo — restore it from 1Password before the first switch on a new
+    # machine. mkDefault so a host module can point somewhere else.
+    age.keyFile = lib.mkDefault "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+
+    secrets."git_email".sopsFile = workIdentitySecretsFile;
+
+    templates."git-work-identity".content = ''
+      [user]
+      	email = ${config.sops.placeholder."git_email"}
+    '';
+  };
 
   home.packages =
     let
