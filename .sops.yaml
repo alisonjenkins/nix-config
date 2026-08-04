@@ -3,6 +3,9 @@ keys:
   - &ali_personal age1efmxs2w78yw0knq7hvzxjsanphqgrx2mj5p5grkye590yq4rjexs5zvvzg
   - &server_ali-desktop age1fu2wpcf6u7fe4hza6965qq6ujgk2vtfcm0qccs65kc7kt6fzsaqsw9afaz
   - &server_ali-work-laptop age1nupldhcp9judxvzt7ytdzdq3pph58kuucd4kln3m8ez5fc74l9kqdg3weq
+  # User-level age key on the work Mac (~/.config/sops/age/keys.txt), used by
+  # the sops-nix home-manager module. Private key backed up in 1Password.
+  - &user_ali-work-laptop-macos age1vkzthtd57jefjamh2t8vtxacdyz6wyajrvu7xve6pc0qlz0ue3esyt8lk0
   - &server_download-server-1 age1dket3z3j325e0vt3ynwaxxzume9sv0qcphvumaqk2ew7htmd93us4tncsw
   - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
   - &server_home-storage-server-1 age1qs58x4rqva0s5mkwx0dul2akfnrwvarjkt2x75qtaz0g3mhzpezssj0wmx
@@ -46,6 +49,12 @@ creation_rules:
           - *admin_ali
           - *ali_personal
           - *server_ali-work-laptop
+  - path_regex: ^secrets/ali-work-laptop-macos/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *user_ali-work-laptop-macos
   - path_regex: ^secrets/home-k8s-master-1/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
       - age:
