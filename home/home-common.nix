@@ -20,6 +20,13 @@
 
   _module.args.enableDifftastic = lib.mkDefault true;
 
+  # Work machines set workIdentity = true and point workIdentitySecretsFile at
+  # their sops file; the work email and work SSH public keys are then decrypted
+  # at activation instead of being committed to this (public) repo. Personal
+  # machines get the defaults and carry no work identity at all.
+  _module.args.workIdentity = lib.mkDefault false;
+  _module.args.workIdentitySecretsFile = lib.mkDefault null;
+
   # Total idle seconds before swayidle powers the displays off (DPMS) via niri.
   # Default 30 min for all niri hosts; a host can override via extraSpecialArgs,
   # or set to null to disable. See home/programs/linux-only/swayidle.

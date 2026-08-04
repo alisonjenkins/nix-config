@@ -1,32 +1,38 @@
 {
+  config,
+  lib,
   primarySSHKey,
   # Azure DevOps only supports RSA keys (not ed25519); set per work machine, empty on personal machines
   azureDevopsRsaKey ? "",
+  # Work machines only: decrypt the work SSH public keys out of sops instead of
+  # shipping them in this public repo. See home/home-common.nix.
+  workIdentity ? false,
+  workIdentitySecretsFile ? null,
   pkgs,
   ...
 }: {
+  # The work public keys live in sops, not in the store, so they are only
+  # present on machines that opt in.
+  sops.secrets = lib.mkIf workIdentity {
+    "id_work_pub" = {
+      sopsFile = workIdentitySecretsFile;
+      mode = "0644";
+      path = "${config.home.homeDirectory}/.ssh/id_work.pub";
+    };
+
+    "id_work_rsa_pub" = {
+      sopsFile = workIdentitySecretsFile;
+      mode = "0644";
+      path = "${config.home.homeDirectory}/.ssh/id_work_rsa.pub";
+    };
+  };
+
   home.file = {
     ".ssh/id_personal.pub.source" = {
       source = ./id_personal.pub;
       onChange = ''
         cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
         chmod 644 ~/.ssh/id_personal.pub
-      '';
-    };
-
-    ".ssh/id_civica.pub.source" = {
-      source = ./id_civica.pub;
-      onChange = ''
-        cp ~/.ssh/id_civica.pub.source ~/.ssh/id_civica.pub
-        chmod 644 ~/.ssh/id_civica.pub
-      '';
-    };
-
-    ".ssh/id_civica_rsa.pub.source" = {
-      source = ./id_civica_rsa.pub;
-      onChange = ''
-        cp ~/.ssh/id_civica_rsa.pub.source ~/.ssh/id_civica_rsa.pub
-        chmod 644 ~/.ssh/id_civica_rsa.pub
       '';
     };
 
@@ -182,11 +188,12 @@
           IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
 
-        Host cgithub.com
+        ${lib.optionalString workIdentity ''
+        Host wgithub.com
           Hostname github.com
           User alisonjenkins
-          IdentityFile ~/.ssh/id_civica.pub
-          IdentitiesOnly yes
+          IdentityFile ~/.ssh/id_work.pub
+          IdentitiesOnly yes''}
 
         Host pgithub.com
           Hostname github.com
