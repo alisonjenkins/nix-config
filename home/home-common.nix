@@ -24,6 +24,10 @@
   # their sops file; the work email and work SSH public keys are then decrypted
   # at activation instead of being committed to this (public) repo. Personal
   # machines get the defaults and carry no work identity at all.
+  # Work machines leave gitEmail unset and get user.email from the decrypted
+  # include instead.
+  _module.args.gitEmail = lib.mkDefault null;
+
   _module.args.workIdentity = lib.mkDefault false;
   _module.args.workIdentitySecretsFile = lib.mkDefault null;
 
