@@ -2,10 +2,10 @@ name: Update and push flake lock
 
 on:
   schedule:
-    - cron: "* 2 * * *"
+    - cron: "0 2 * * *"
   workflow_dispatch:
   repository_dispatch:
-    event_type: update-flake-lock
+    types: [update-flake-lock]
 
 jobs:
   build:
