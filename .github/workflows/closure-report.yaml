@@ -15,8 +15,12 @@ concurrency:
 
 jobs:
   report:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 120
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for workflow_run
+    # (github.event.pull_request is null → null != true → true).
+    if: ${{ (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && github.event.pull_request.head.repo.fork != true }}
     strategy:
       fail-fast: false
       matrix:
@@ -28,27 +32,31 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Skip if newer run is queued
+        run: |
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
+          if [ "$NEWER" -gt 0 ]; then
+            echo "::notice::Skipping this run — $NEWER newer run(s) queued"
+            exit 1
+          fi
       - uses: actions/checkout@v6
-      - uses: wimpysworld/nothing-but-nix@main
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
         with:
-          hatchet-protocol: 'rampage'
-      - uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            max-jobs = auto
-            cores = 0
-            eval-cache = true
-            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://nix-gaming.cachix.org https://rust-overlay.cachix.org https://attic.xuyh0120.win/lantian https://cache.garnix.io
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4= rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk= lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
-      - name: Cache Nix evaluation
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/nix
-          key: nix-eval-${{ hashFiles('flake.lock') }}-${{ matrix.host }}
-          restore-keys: |
-            nix-eval-${{ hashFiles('flake.lock') }}-
+          # scripts/closure-report.sh drives its JSON handling through python3,
+          # which the bare ARC runner image does not ship.
+          extra-tools: python3
+          # Desktop closures pull from caches beyond the repo-wide set.
+          extra-substituters: >-
+            https://nix-gaming.cachix.org
+            https://rust-overlay.cachix.org
+            https://attic.xuyh0120.win/lantian
+          extra-trusted-public-keys: >-
+            nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4=
+            rust-overlay.cachix.org-1:l2scEhXR2wTljEGAr/OGGykVBVbvHI/phxoBUwxaXkk=
+            lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=
       - name: Generate closure report
         run: |
           ./scripts/closure-report.sh \
