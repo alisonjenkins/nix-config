@@ -1,0 +1,10 @@
+# actionlint cannot discover self-hosted runner labels from GitHub, so it flags
+# every `runs-on:` here as unknown. Declare them so the real findings are not
+# buried. Keep in step with the ARC scale sets:
+#   home-nix-builder-amd64 -> home-cluster/clusters/home-cluster-1/flux-system/
+#                             helmreleases/home-nix-builder-amd64.yaml
+#   aws-nix-builder-arm64  -> currently offline (jobs gated off)
+self-hosted-runner:
+  labels:
+    - home-nix-builder-amd64
+    - aws-nix-builder-arm64
