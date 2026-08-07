@@ -1,0 +1,34 @@
+name: 'Skip if superseded'
+description: >
+  Fail the job early when a newer run of the SAME workflow is already queued
+  on this branch. The self-hosted scale set has few runners, so without this a
+  burst of pushes leaves stale runs occupying them ahead of the current one.
+
+  Scoped to this workflow deliberately: an unscoped query sees every queued run
+  in the repo, so a dispatched flake update would make an unrelated build skip
+  itself.
+
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      run: |
+        set -uo pipefail
+
+        # github.workflow_ref looks like
+        #   owner/repo/.github/workflows/build-and-cache.yaml@refs/heads/main
+        # and the runs API accepts the bare filename as the workflow id.
+        WORKFLOW_FILE="${{ github.workflow_ref }}"
+        WORKFLOW_FILE="${WORKFLOW_FILE%%@*}"
+        WORKFLOW_FILE="${WORKFLOW_FILE##*/}"
+
+        NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${WORKFLOW_FILE}/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+          | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
+
+        # Nested ids in the payload (actor, repository, ...) are orders of
+        # magnitude smaller than a run id, so they never pass the awk filter.
+        if [ "${NEWER:-0}" -gt 0 ]; then
+          echo "::notice::Skipping this run — $NEWER newer run(s) of $WORKFLOW_FILE queued"
+          exit 1
+        fi
