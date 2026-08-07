@@ -104,11 +104,16 @@ jobs:
           echo "region=${{ inputs.region || 'eu-west-1' }}" >> "$GITHUB_OUTPUT"
           echo "retention_count=${{ inputs.retention_count || '3' }}" >> "$GITHUB_OUTPUT"
 
-  # x86_64 AMI builds — GitHub-hosted ubuntu runners with nothing-but-nix for disk space
+  # x86_64 AMI builds — self-hosted NixOS runner with nix. The host store makes
+  # the disk-reclaim dance unnecessary, and the actual image build runs inside
+  # the host nix-daemon's sandbox rather than in the runner container.
   build-x86:
     needs: prepare
-    if: needs.prepare.outputs.x86_matrix != '[]'
-    runs-on: ubuntu-latest
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for push events
+    # (github.event.pull_request is null → null != true → true).
+    if: ${{ needs.prepare.outputs.x86_matrix != '[]' && github.event.pull_request.head.repo.fork != true }}
+    runs-on: home-nix-builder-amd64
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -132,36 +137,17 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - uses: wimpysworld/nothing-but-nix@main
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
         with:
-          hatchet-protocol: 'rampage'
+          # The image-info parsing below is jq-driven; the bare ARC runner
+          # image ships neither jq nor the AWS CLI.
+          extra-tools: jq
 
-      - uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            max-jobs = auto
-            cores = 0
-            eval-cache = true
-            http-connections = 128
-            max-substitution-jobs = 128
-            narinfo-cache-negative-ttl = 3600
-            connect-timeout = 5
-            stalled-download-timeout = 10
-            fallback = true
-            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
-
-      - name: Enable unprivileged user namespaces for systemd-repart
-        run: |
-          # systemd-repart uses `unshare --map-root-user` to build filesystem images.
-          # Ubuntu 24.04 restricts this via AppArmor by default.
-          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
-            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          fi
-          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
-          unshare --map-root-user echo "User namespace test: OK"
+      # No user-namespace fixup here (unlike the GitHub-hosted job this
+      # replaced): systemd-repart runs inside the host nix-daemon's build
+      # sandbox on NixOS, not in the runner container, so the container's
+      # dropped capabilities are irrelevant to the image build.
 
       - name: Check if AMI build is needed
         id: dry-run
@@ -192,31 +178,16 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
+          # home-nix-builder-amd64 runs in home-cluster-1; niks3 lives in aws-k3s,
+          # so the cluster-internal service DNS (niks3.niks3.svc.cluster.local)
+          # does not resolve. Use the public ingress URL.
           NIKS3_SERVER_URL: https://api.nixcache.org
+          NIKS3_QUEUE: /var/tmp/niks3-queue-ami-x86
         run: |
-          # Use /nix/tmp for build scratch space — root filesystem is nearly full
-          # after nothing-but-nix rampage. Must configure the nix daemon, not just
-          # the env var, since sandboxed builds use the daemon's build-dir.
-          sudo mkdir -p /nix/tmp && sudo chown "$(id -u):$(id -g)" /nix/tmp
-
-          # Post-build-hook: stream each built derivation to the queue.
-          # The hook runs inside the nix sandbox which only has access to
-          # /nix/store and the build dir. Use a path under /nix/ so the
-          # hook can write to it from within the sandbox.
-          sudo mkdir -p /nix/var/niks3 && sudo chmod 777 /nix/var/niks3
-          NIKS3_QUEUE="/nix/var/niks3/queue"
-          echo "NIKS3_QUEUE=$NIKS3_QUEUE" >> "$GITHUB_ENV"
-          touch "$NIKS3_QUEUE" && chmod 666 "$NIKS3_QUEUE"
-          printf '#!/bin/bash\necho "${OUT_PATHS:-}" | tr " " "\\n" >> /nix/var/niks3/queue\n' > /nix/var/niks3/post-build-hook.sh
-          chmod +x /nix/var/niks3/post-build-hook.sh
-
-          sudo mkdir -p /etc/nix
-          printf '%s\n' \
-            "build-dir = /nix/tmp" \
-            "post-build-hook = /nix/var/niks3/post-build-hook.sh" \
-            | sudo tee -a /etc/nix/nix.conf
-          sudo systemctl restart nix-daemon || true
-
+          # No scratch-space or post-build-hook plumbing here (unlike the
+          # GitHub-hosted job this replaced): the self-hosted runner has no
+          # sudo, the host nix-daemon already owns build-dir and store layout,
+          # and --print-out-paths below feeds the queue directly.
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
 
