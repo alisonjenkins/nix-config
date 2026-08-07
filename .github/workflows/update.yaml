@@ -9,20 +9,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Self-hosted NixOS runner: it already has Nix, so no installer action is
+    # needed. It also removes the version-skew hazard that forced a pin here —
+    # the host's Nix is the same build the machines being updated run, so
+    # nested `follows` serialise identically and flake.lock stops churning
+    # between CI and local `nix flake update`.
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 60
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if
+    # a `pull_request` trigger is added here by mistake. Inert for schedule and
+    # dispatch events (github.event.pull_request is null → null != true → true).
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v6
-      - uses: nixbuild/nix-quick-install-action@v34
-        with:
-          # Pin to match local dev nix (2.31.x). The action's v34 default is
-          # 2.29.2, which serialises nested `follows` (e.g. ali-neovim's
-          # nixvim.inputs.nixpkgs.follows) as a concrete nixpkgs node instead
-          # of a follows array. Local nix 2.31.x re-dedups it on every eval,
-          # churning flake.lock and blocking `git pull`. Keep in lockstep.
-          nix_version: "2.31.2"
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
       - uses: DeterminateSystems/flake-checker-action@v12
       - name: Setup git
         run: |
