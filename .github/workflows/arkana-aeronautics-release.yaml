@@ -52,7 +52,15 @@ permissions:
 
 jobs:
   build-and-publish:
-    runs-on: ubuntu-latest
+    # Self-hosted NixOS runner: its persistent /nix/store already holds the
+    # CurseForge fetchurl results, so the 2.5 GB image build no longer needs a
+    # disk-reclaim pass on a GitHub-hosted runner.
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 360
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for tag pushes
+    # (github.event.pull_request is null → null != true → true).
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
     env:
       TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       IMAGE: ghcr.io/${{ github.repository_owner }}/create-arkana-aeronautics-server
@@ -64,23 +72,8 @@ jobs:
           # No LFS in this repo; skip the fetch.
           lfs: false
 
-      - name: Reclaim runner disk for the 2.5 GB image build
-        uses: wimpysworld/nothing-but-nix@main
-        with:
-          # Same shape as build-and-cache.yaml — keep cgroups so docker
-          # works, drop everything else.
-          hatchet-protocol: rampage
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            accept-flake-config = true
-            # Pull from the same caches the rest of this repo's CI uses
-            # so flake-input + nixpkgs derivations are warm.
-            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
 
       - name: Build server image + client zip in parallel
         id: build
@@ -89,11 +82,11 @@ jobs:
           # Single nix invocation building both targets — Nix's internal
           # scheduler parallelises derivations across them, sharing the
           # arkana-mods.nix fetchurl results between server and client
-          # (otherwise both would refetch every CurseForge jar). max-jobs
-          # tracks runner CPU count; cores=0 lets each derivation use all
-          # available cores during its build phase.
+          # (otherwise both would refetch every CurseForge jar). Parallelism is
+          # left to the runner's nix.conf — the self-hosted builder shares a
+          # k3s control-plane node, so max-jobs/cores are capped there rather
+          # than opened up per-invocation.
           nix build --no-link --print-out-paths \
-            --max-jobs auto --cores 0 \
             ".#packages.x86_64-linux.minecraft-arkana-aeronautics-image" \
             ".#packages.x86_64-linux.create-arkana-aeronautics-client" \
             > build-out.txt
