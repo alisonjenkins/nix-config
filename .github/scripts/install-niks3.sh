@@ -8,7 +8,16 @@
 # and put it on PATH for subsequent steps instead.
 set -euo pipefail
 
-NIKS3_VERSION="v1.4.0"
+# Keep in step with the SERVER image deployed in home-cluster
+# (clusters/aws-k3s/flux-system/niks3/deployment.yaml, ghcr.io/mic92/niks3:main
+# pinned by digest). v1.7.0 was released 2026-06-25T07:27Z and the deployed
+# digest was pinned 2026-06-25T08:11Z, so they are the same upstream vintage.
+#
+# Do not simply track the newest release: v1.8.0 carries the 2026-07-19
+# "record uploads at completion with real refs and size" client/server protocol
+# change, which the currently deployed server predates. Bump the server first,
+# then this.
+NIKS3_VERSION="v1.7.0"
 ARCH=$(uname -m)
 case "$ARCH" in
   x86_64)  NIKS3_ARCH="x86_64" ;;
