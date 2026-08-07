@@ -34,5 +34,21 @@ jobs:
           git config --global user.email 'alisonjenkins-gha@users.noreply.github.com'
       - name: Update flake
         run: |
-          nix flake update --commit-lock-file && \
-          git push origin main
+          set -euo pipefail
+          # A push landing on main while this job runs makes the push below a
+          # non-fast-forward, which used to lose the whole update. Redo the
+          # update on top of the current tip instead of rebasing: the result is
+          # one commit against whatever main is now, and re-running is
+          # harmless when the lock is already current.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard FETCH_HEAD
+            nix flake update --commit-lock-file
+            if git push origin HEAD:main; then
+              echo "::notice::flake.lock pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::push rejected — main moved during the update, retrying ($attempt/3)"
+          done
+          echo "::error::main kept moving; giving up after 3 attempts"
+          exit 1
