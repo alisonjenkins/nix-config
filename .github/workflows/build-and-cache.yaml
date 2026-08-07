@@ -26,10 +26,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Lightweight server builds — run on free GHA runners (fully cached, ~2 min each)
+  # Lightweight server builds — self-hosted runner with nix (fully cached,
+  # ~2 min each). The 5-way matrix queues against maxRunners on the scale set,
+  # but each leg is near-instant against the runner's persistent /nix/store.
   build-servers:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 360
+    # Backstop: never run fork-PR code on the home self-hosted runner, even if a
+    # `pull_request` trigger is added here by mistake. Inert for push events
+    # (github.event.pull_request is null → null != true → true).
+    if: ${{ (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && github.event.pull_request.head.repo.fork != true }}
     strategy:
       fail-fast: false
       matrix:
@@ -42,36 +48,31 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: read
+    env:
+      # home-nix-builder-amd64 runs in home-cluster-1; niks3 lives in aws-k3s,
+      # so the cluster-internal service DNS (niks3.niks3.svc.cluster.local) does
+      # not resolve. Use the public ingress URL.
+      NIKS3_SERVER_URL: https://api.nixcache.org
+      # Per-matrix-leg queue: the runner pods are ephemeral so /var/tmp is not
+      # shared, but keep the names distinct anyway to stay robust if that
+      # changes.
+      NIKS3_QUEUE: /var/tmp/niks3-queue-servers
     steps:
+      - name: Skip if newer run is queued
+        run: |
+          NEWER=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=queued&branch=${{ github.ref_name }}&per_page=10" \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*' | awk '$1 > ${{ github.run_id }}' | wc -l)
+          if [ "$NEWER" -gt 0 ]; then
+            echo "::notice::Skipping this run — $NEWER newer run(s) queued"
+            exit 1
+          fi
       - uses: actions/checkout@v6
         with:
           lfs: false
-      - uses: wimpysworld/nothing-but-nix@main
-        with:
-          hatchet-protocol: 'rampage'
-      - uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            max-jobs = auto
-            cores = 0
-            eval-cache = true
-            http-connections = 128
-            max-substitution-jobs = 128
-            narinfo-cache-negative-ttl = 3600
-            connect-timeout = 5
-            stalled-download-timeout = 10
-            fallback = true
-            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
-      - name: Cache Nix evaluation
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/nix
-          key: nix-eval-servers-${{ matrix.configuration }}-${{ github.run_id }}
-          restore-keys: |
-            nix-eval-servers-${{ matrix.configuration }}-
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
       - uses: DeterminateSystems/flake-checker-action@v12
       - name: Check if build is needed
         id: dry-run
@@ -91,8 +92,6 @@ jobs:
         if: steps.dry-run.outputs.needs_build == 'true'
         env:
           NIKS3_TOKEN: ${{ secrets.NIKS3_TOKEN }}
-          NIKS3_SERVER_URL: https://api.nixcache.org
-          NIKS3_QUEUE: /tmp/niks3-queue
         run: |
           source .github/scripts/niks3-background-push.sh
           niks3_start_drainer
