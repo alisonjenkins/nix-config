@@ -5,10 +5,36 @@ description: >
   binaries and writes a nix.conf with flakes, caches, and tuning.
   Only works on self-hosted runners with the NixOS host mounts.
 
+inputs:
+  extra-substituters:
+    description: >-
+      Space-separated substituter URLs to append to the shared defaults.
+      For jobs that need caches beyond the repo-wide set (e.g. the closure
+      report pulls nix-gaming / rust-overlay / lantian).
+    required: false
+    default: ''
+  extra-trusted-public-keys:
+    description: >-
+      Space-separated public keys matching `extra-substituters`. Must be
+      supplied whenever that input is set, or the extra caches are ignored.
+    required: false
+    default: ''
+  extra-tools:
+    description: >-
+      Space-separated tool names to guarantee on PATH (e.g. "jq skopeo").
+      Taken from the host's system profile when present, otherwise realised
+      from nixpkgs via the host Nix. `nix`, git and friends are always set up.
+    required: false
+    default: ''
+
 runs:
   using: 'composite'
   steps:
     - shell: bash
+      env:
+        EXTRA_SUBSTITUTERS: ${{ inputs.extra-substituters }}
+        EXTRA_TRUSTED_KEYS: ${{ inputs.extra-trusted-public-keys }}
+        EXTRA_TOOLS: ${{ inputs.extra-tools }}
       run: |
         set -euo pipefail
 
@@ -25,13 +51,24 @@ runs:
         for cmd in nix nix-build nix-channel nix-collect-garbage nix-copy-closure \
                    nix-daemon nix-env nix-hash nix-instantiate nix-prefetch-url \
                    nix-shell nix-store git; do
-          [ -x "$NIX_SW/$cmd" ] && ln -sf "$NIX_SW/$cmd" /tmp/nix-bin/
+          if [ -x "$NIX_SW/$cmd" ]; then ln -sf "$NIX_SW/$cmd" /tmp/nix-bin/; fi
         done
+        # Export for the rest of THIS step (the extra-tools realisation below
+        # needs both); GITHUB_PATH/GITHUB_ENV only reach subsequent steps.
+        export PATH="/tmp/nix-bin:$PATH"
+        export NIX_CONF_DIR=/tmp/nix-conf
         echo "/tmp/nix-bin" >> "$GITHUB_PATH"
         echo "NIX_CONF_DIR=/tmp/nix-conf" >> "$GITHUB_ENV"
 
+        # Repo-wide caches. Jobs extend this via the action inputs rather than
+        # each rewriting the whole list.
+        SUBSTITUTERS="https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io"
+        TRUSTED_KEYS="nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+        if [ -n "$EXTRA_SUBSTITUTERS" ]; then SUBSTITUTERS="$SUBSTITUTERS $EXTRA_SUBSTITUTERS"; fi
+        if [ -n "$EXTRA_TRUSTED_KEYS" ]; then TRUSTED_KEYS="$TRUSTED_KEYS $EXTRA_TRUSTED_KEYS"; fi
+
         mkdir -p /tmp/nix-conf
-        cat > /tmp/nix-conf/nix.conf << 'NIXCONF'
+        cat > /tmp/nix-conf/nix.conf << NIXCONF
         experimental-features = nix-command flakes
         # Bound parallelism so heavy desktop closure rebuilds don't OOM the
         # k3s control-plane node hosting this runner. Total compiler procs
@@ -45,9 +82,25 @@ runs:
         connect-timeout = 5
         stalled-download-timeout = 10
         fallback = true
-        extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io
-        extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
+        extra-substituters = $SUBSTITUTERS
+        extra-trusted-public-keys = $TRUSTED_KEYS
         NIXCONF
         sed -i 's/^        //' /tmp/nix-conf/nix.conf
+
+        # The ARC runner image is a bare Ubuntu container and the NixOS host's
+        # system profile carries no guarantee of any given CLI tool, so jobs
+        # that need one must declare it. Prefer the host profile (no fetch),
+        # fall back to realising it from nixpkgs through the host daemon.
+        for tool in $EXTRA_TOOLS; do
+          if [ -x "$NIX_SW/$tool" ]; then
+            ln -sf "$NIX_SW/$tool" "/tmp/nix-bin/$tool"
+          elif command -v "$tool" >/dev/null 2>&1; then
+            : # already provided by the runner image
+          else
+            echo "Realising $tool from nixpkgs..."
+            toolpath=$(nix build --no-link --print-out-paths "nixpkgs#$tool^out")
+            ln -sf "$toolpath/bin/$tool" "/tmp/nix-bin/$tool"
+          fi
+        done
 
         echo "Using host Nix: $("$NIX_SW/nix" --version)"
