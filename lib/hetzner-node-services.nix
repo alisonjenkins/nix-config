@@ -588,7 +588,8 @@
         SAFETY=/var/tmp/k3s-datastore-premaintenance.db
         rm -f "$SAFETY"
         sqlite3 "$DB" ".backup '$SAFETY'"
-        echo "safety copy: $(stat -c %s "$SAFETY") bytes at $SAFETY"
+        SAFETY_SIZE=$(stat -c %s "$SAFETY")
+        echo "safety copy: $SAFETY_SIZE bytes at $SAFETY"
 
         # Fold the WAL back in and truncate it. With k3s stopped there are no
         # readers, so this can finally reclaim the WAL that grows without bound
