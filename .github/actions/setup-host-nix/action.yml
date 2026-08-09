@@ -62,8 +62,15 @@ runs:
 
         # Repo-wide caches. Jobs extend this via the action inputs rather than
         # each rewriting the whole list.
-        SUBSTITUTERS="https://cache.nixcache.org https://nix-community.cachix.org https://cache.garnix.io"
-        TRUSTED_KEYS="nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+        #
+        # cache.garnix.io is deliberately absent — the service shut down (see
+        # a7f6189d, which dropped it everywhere else). A dead substituter is
+        # not free: nix still probes it for every narinfo, and it now answers
+        # with a 503 or hangs until connect-timeout, which showed up as ~40
+        # "unable to download .../nix-cache-info: HTTP error 503" warnings in a
+        # single desktop build.
+        SUBSTITUTERS="https://cache.nixcache.org https://nix-community.cachix.org"
+        TRUSTED_KEYS="nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         if [ -n "$EXTRA_SUBSTITUTERS" ]; then SUBSTITUTERS="$SUBSTITUTERS $EXTRA_SUBSTITUTERS"; fi
         if [ -n "$EXTRA_TRUSTED_KEYS" ]; then TRUSTED_KEYS="$TRUSTED_KEYS $EXTRA_TRUSTED_KEYS"; fi
 
