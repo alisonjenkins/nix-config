@@ -79,8 +79,20 @@ runs:
         experimental-features = nix-command flakes
         # Bound parallelism so heavy desktop closure rebuilds don't OOM the
         # k3s control-plane node hosting this runner. Total compiler procs
-        # capped at max-jobs * cores = 1 * 4 = 4.
-        max-jobs = 1
+        # capped at max-jobs * cores = 4 * 4 = 16, matching the node's vCPU
+        # count.
+        #
+        # 98b4dfdf originally pinned this to max-jobs=1 after a global OOM took
+        # out k3s and cilium-operator, when the node was 15 GiB / 16 vCPU. It
+        # is now 16 vCPU / ~149 GiB, so that ceiling was throttling builds by
+        # roughly 4x for a constraint that no longer exists: a single desktop
+        # run built 1409 derivations strictly one at a time while the node sat
+        # at ~20% CPU and ~20% memory.
+        #
+        # Keep a cap rather than max-jobs=auto: builds run in the HOST
+        # nix-daemon, outside the runner pod's cgroup, so the pod's memory
+        # limit does not bound them. This setting is the only guard.
+        max-jobs = 4
         cores = 4
         eval-cache = true
         http-connections = 128
