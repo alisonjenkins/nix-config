@@ -214,6 +214,22 @@ in {
           "net.ipv4.conf.all.accept_local" = 1;
         };
 
+        # GC-root drop box for the GHA runner pods. They build via the host
+        # daemon but `nix build --no-link` leaves no root, so min-free pruning
+        # below could delete a freshly built path before the workflow pushed it
+        # to niks3 ("error: path '...' is not valid"). The workflow points
+        # --out-link here, and a root only counts if it lives under
+        # /nix/var/nix/gcroots where the HOST daemon can see it.
+        #
+        # 1777 rather than 0755: the runner container runs as the image's
+        # non-root uid, and hostPath mounts do not honour fsGroup, so the
+        # directory has to be writable by an unprivileged user. Sticky, so one
+        # runner cannot remove another's roots. Blast radius is pinning store
+        # paths (disk), by a runner that already executes arbitrary build code.
+        systemd.tmpfiles.rules = [
+          "d /nix/var/nix/gcroots/gha 1777 root root -"
+        ];
+
         # Hosts the home-nix-builder-amd64 GHA runner scale-set; pods
         # hostPath-mount /nix/store + /nix/var and build via the host
         # daemon, so every desktop closure lands here. Outputs are pushed
