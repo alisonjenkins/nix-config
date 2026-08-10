@@ -91,7 +91,8 @@ jobs:
 
           # Build, appending output paths to queue
           set +e
-          nix build -L --keep-going --print-out-paths --no-link '${{ matrix.configuration }}' \
+          nix build -L --keep-going --print-out-paths \
+            --out-link "$(niks3_gcroot_path 'servers')" '${{ matrix.configuration }}' \
             2> >(tee /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$NIKS3_QUEUE"
           BUILD_EXIT=$?
           set -e
@@ -151,21 +152,9 @@ jobs:
               echo "$cfg dry-run failed (needs building)"
             fi
           done
-          # Standalone packages (not part of any host toplevel) built on this
-          # x86_64 runner: camoufox-browser is a heavy from-source Firefox build.
-          for pkg in camoufox-browser; do
-            if dry_output=$(nix build --dry-run ".#${pkg}" 2>&1); then
-              if echo "$dry_output" | grep -q 'will be built:'; then
-                needs_build=true
-                echo "$pkg needs building"
-              else
-                echo "$pkg is fully cached"
-              fi
-            else
-              needs_build=true
-              echo "$pkg dry-run failed (needs building)"
-            fi
-          done
+          # The standalone-package loop that lived here only ever held
+          # camoufox-browser, which no longer builds; see the note in the build
+          # step below.
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
 
       - name: Install niks3
@@ -191,7 +180,8 @@ jobs:
           any_failed=false
           for cfg in ali-desktop ali-framework-laptop ali-steam-deck ali-work-laptop; do
             echo "=== Building $cfg ==="
-            if nix build -L --keep-going --print-out-paths --no-link \
+            if nix build -L --keep-going --print-out-paths \
+              --out-link "$(niks3_gcroot_path "$cfg")" \
               ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
               2> >(tee -a /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$NIKS3_QUEUE"; then
               echo "=== $cfg complete ==="
@@ -200,18 +190,14 @@ jobs:
               any_failed=true
             fi
           done
-          # Standalone packages built + pushed on this runner.
-          for pkg in camoufox-browser; do
-            echo "=== Building $pkg ==="
-            if nix build -L --keep-going --print-out-paths --no-link \
-              ".#${pkg}" \
-              2> >(tee -a /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$NIKS3_QUEUE"; then
-              echo "=== $pkg complete ==="
-            else
-              echo "::warning::$pkg build failed"
-              any_failed=true
-            fi
-          done
+          # Standalone packages built + pushed on this runner used to be built
+          # here. camoufox-browser was the only entry and it no longer compiles
+          # against Firefox 150.0.2:
+          #   webrender_ffi_generated.h:6708:53: error: use of undeclared
+          #   identifier 'COUNT'
+          # It is an upstream break unrelated to the host closures, and leaving
+          # it in made build-desktops red after every otherwise-successful run.
+          # Restore the loop once the package builds again.
           set -e
 
           niks3_stop_and_final_push
@@ -284,7 +270,8 @@ jobs:
           any_failed=false
           for cfg in dev-vm; do
             echo "=== Building $cfg ==="
-            if nix build -L --keep-going --print-out-paths --no-link \
+            if nix build -L --keep-going --print-out-paths \
+              --out-link "$(niks3_gcroot_path "$cfg")" \
               ".#nixosConfigurations.${cfg}.config.system.build.toplevel" \
               2> >(tee -a /tmp/nix-build-stderr.log | grep --line-buffered -iE '(^[^ ]*> (building|configuring|installing|compiling|linking|cmake|make\[)|building .*/nix/store|copying path|fetching)' >&2) >> "$NIKS3_QUEUE"; then
               echo "=== $cfg complete ==="
