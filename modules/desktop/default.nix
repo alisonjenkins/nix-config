@@ -43,12 +43,6 @@ in
   options.modules.desktop = {
     enable = mkEnableOption "desktop environment configuration";
 
-    enableVirtualCamera = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Enable v4l2loopback virtual camera devices for multi-app camera sharing.";
-    };
-
     wallpaper = mkOption {
       type = types.nullOr types.path;
       default = null;
@@ -661,14 +655,11 @@ in
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
     boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ])
-      ++ [ "sch_cake" ]
-      ++ optional cfg.enableVirtualCamera "v4l2loopback";
+      ++ [ "sch_cake" ];
 
-    # v4l2loopback virtual webcam devices for multi-app camera sharing
-    boot.extraModulePackages = optionals cfg.enableVirtualCamera [ config.boot.kernelPackages.v4l2loopback ];
-    boot.extraModprobeConfig = mkIf cfg.enableVirtualCamera ''
-      options v4l2loopback devices=2 video_nr=10,11 card_label="Virtual_Camera_1","Virtual_Camera_2" exclusive_caps=1
-    '';
+    # v4l2loopback lives in modules/virtual-cameras now, which also ships the
+    # PipeWire -> loopback feeders that make the devices actually produce
+    # frames. Two unfed loopbacks here were dead weight.
 
     # Cleanly disconnect WiFi before suspend to avoid stale AP sessions on resume
     powerManagement = mkIf cfg.power.cleanWifiOnSuspend {
