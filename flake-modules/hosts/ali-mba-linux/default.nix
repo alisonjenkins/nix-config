@@ -31,6 +31,7 @@ in {
       self.nixosModules.libvirtd
       self.nixosModules.nohang
       self.nixosModules.uresourced
+      self.nixosModules.virtual-cameras
       self.nixosModules.locale
       self.nixosModules.podman
       self.nixosModules.power-management
@@ -80,6 +81,7 @@ in {
         modules.desktop-kwallet.enable = true;
         modules.desktop-local-k8s.enable = true;
         modules.desktop-media.enable = true;
+        modules.virtual-cameras.enable = true;
         modules.hardware-touchpad.enable = true;
         modules.nohang = {
           enable = true;

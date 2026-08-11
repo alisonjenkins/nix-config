@@ -34,6 +34,7 @@ in {
       self.nixosModules.libvirtd
       self.nixosModules.nohang
       self.nixosModules.uresourced
+      self.nixosModules.virtual-cameras
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.llama-cpp
@@ -97,6 +98,7 @@ in {
         modules.desktop-kwallet.enable = true;
         modules.desktop-local-k8s.enable = true;
         modules.desktop-media.enable = true;
+        modules.virtual-cameras.enable = true;
         modules.hardware-fingerprint = {
           enable = true;
           username = "ali";

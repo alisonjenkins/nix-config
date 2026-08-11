@@ -33,6 +33,7 @@ in {
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
       self.nixosModules.uresourced
+      self.nixosModules.virtual-cameras
       self.nixosModules.plymouth
       self.nixosModules.hardware-scarlett-mixer
       self.nixosModules.rocm
@@ -119,6 +120,7 @@ in {
         modules.desktop-kubernetes.enable = true;
         modules.desktop-local-k8s.enable = true;
         modules.desktop-media.enable = true;
+        modules.virtual-cameras.enable = true;
         modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;
