@@ -12,6 +12,7 @@
     ./nixcord
     ./openal
     ./scopebuddy
+    ./session-gate.nix
     ./steam
     ./swayidle
     ./tofi
