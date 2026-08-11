@@ -26,6 +26,9 @@
 
         ali-steam-deck = {
           hostname = "192.168.1.67";
+          # The deck has no passwordless sudo for the login user, so connect as
+          # root directly instead of escalating after login.
+          sshUser = "root";
           profiles = {
             system = {
               user = "root";
