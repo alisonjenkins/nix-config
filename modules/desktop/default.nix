@@ -671,6 +671,21 @@ in
       '';
     };
 
+    # soteria is the DE-agnostic polkit agent this module installs for the
+    # wlroots/niri sessions. Plasma ships its own (polkit-kde-agent) and wins
+    # the race, leaving soteria to die on
+    #
+    #   org.freedesktop.PolicyKit1.Error.Failed: An authentication agent
+    #   already exists for the given subject
+    #
+    # and then hit its start limit. Skip it inside Plasma. Negative match for
+    # the same reason as the home-manager side (see
+    # home/programs/linux-only/session-gate.nix): Plasma exports the variable
+    # early and reliably, whereas niri imports it in a way that races
+    # graphical-session.target, so an unset value must still start the agent.
+    systemd.user.services.polkit-soteria.unitConfig.ConditionEnvironment =
+      "!XDG_CURRENT_DESKTOP=KDE";
+
     # Desktop-specific suspend and hibernate configuration
     systemd.sleep.settings.Sleep = {
       # Desktop/laptop specific hibernate timing
