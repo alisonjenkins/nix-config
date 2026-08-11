@@ -441,6 +441,43 @@ in {
           };
         };
 
+        # Gaming Mode leaves the systemd/D-Bus user environment advertising
+        # XDG_SESSION_TYPE=x11 while gamescope-session deliberately runs
+        # `systemctl --user unset-environment DISPLAY XAUTHORITY` (removing
+        # DISPLAY breaks gamescope startup otherwise). Any D-Bus-activated Qt
+        # program therefore selects the xcb QPA plugin, finds no display, and
+        # calls qFatal():
+        #
+        #   kwalletd6: could not connect to display
+        #   kwalletd6: Could not load the Qt platform plugin "xcb" ...
+        #
+        # kwalletd6 is activated repeatedly (Steam's secret storage), so it
+        # crash-loops; each abort is picked up by drkonqi, which is itself a
+        # Qt GUI program and aborts the same way, and *its* core dump
+        # re-triggers drkonqi — a self-amplifying loop that produced 1171
+        # core dumps and a load average of ~6 one minute after boot.
+        #
+        # Give those programs a QPA fallback chain instead. Qt tries the
+        # entries in order, so a real Wayland session still gets a window and
+        # a headless activation quietly lands on "offscreen" rather than
+        # dying. WAYLAND_DISPLAY is deliberately NOT set here: gamescope is
+        # started with no explicit backend, so a WAYLAND_DISPLAY in the
+        # session environment would make it nest inside itself.
+        systemd.user.services.gamescope-qt-platform-env = {
+          description = "Usable Qt QPA platform for D-Bus-activated apps in Gaming Mode";
+          wantedBy = [ "gamescope-session.service" ];
+          before = [ "gamescope-session.service" ];
+          after = [ "dbus.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = [
+              "${pkgs.systemd}/bin/systemctl --user set-environment 'QT_QPA_PLATFORM=wayland;offscreen'"
+              "${pkgs.dbus}/bin/dbus-update-activation-environment --systemd QT_QPA_PLATFORM"
+            ];
+          };
+        };
+
         # Decky's frontend only loads if Steam was started with CEF remote
         # debugging enabled, which Steam keys off the presence of this
         # sentinel file. Jovian's decky-loader docs treat creating it as
