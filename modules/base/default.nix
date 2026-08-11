@@ -521,6 +521,14 @@ in
         "w /sys/kernel/mm/lru_gen/min_ttl_ms - - - - 1000"
       ];
 
+      # Cap core dump storage. Upstream leaves this to MaxUse's default (~10%
+      # of the filesystem) with a 2w tmpfiles age, which is bounded only in
+      # the loosest sense: a single crash-looping desktop program reached
+      # 4.1G on ali-desktop, and /var/lib/systemd/coredump is on the
+      # impermanence persist list above, so on those hosts it survives
+      # reboots and eats the persistence volume rather than a tmpfs.
+      systemd.coredump.settings.Coredump.MaxUse = "2G";
+
       # Optimal suspend and hibernate settings
       systemd.sleep.settings.Sleep = {
         # Hibernate mode - configurable per-host
