@@ -31,4 +31,28 @@
   # a Plasma or gamescope session. Plasma handles idle and suspend through
   # powerdevil here.
   services.swayidle.enable = lib.mkForce false;
+
+  # home/autostart launches a full desktop's worth of chat apps at login. On a
+  # handheld that is a slow, noisy startup for apps that are not used here;
+  # they stay available to launch by hand.
+  home.file.".config/autostart/discord.desktop".enable = false;
+  home.file.".config/autostart/element-desktop.desktop".enable = false;
+  home.file.".config/autostart/ghostty.desktop".enable = false;
+  home.file.".config/autostart/keybase.desktop".enable = false;
+  home.file.".config/autostart/obsidian.desktop".enable = false;
+  home.file.".config/autostart/signal.desktop".enable = false;
+  home.file.".config/autostart/zapzap.desktop".enable = false;
+
+  # keybase_autostart.desktop is written by run_keybase itself, not by
+  # home/autostart, so there is no home.file entry to switch off — take the
+  # path over with a hidden entry instead. (Its unit was failing at every
+  # login here anyway: app-keybase_autostart@autostart.service.)
+  home.file.".config/autostart/keybase_autostart.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Keybase
+    Exec=true
+    Hidden=true
+    X-GNOME-Autostart-enabled=false
+  '';
 }
