@@ -27,6 +27,7 @@
     sunshine = import ../modules/sunshine;
     tts = import ../modules/tts;
     uresourced = import ../modules/uresourced;
+    virtual-cameras = import ../modules/virtual-cameras;
     vr = import ../modules/vr;
 
     # Network/VPN modules
