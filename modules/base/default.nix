@@ -511,13 +511,37 @@ in
         memoryPercent = lib.mkDefault 100;
       };
 
-      # Reduce hibernate image size target to 8GB (default is ~2/5 of RAM)
-      # Smaller image = less data to write/read = faster hibernate and resume
-      systemd.tmpfiles.rules = [
-        "w /sys/power/image_size - - - - 8589934592"
-      ]
+      # Hibernate image size target. Smaller image = less data to write/read =
+      # faster hibernate and resume, but the cap has to scale with RAM: the
+      # kernel's copy phase needs the image to fit in roughly half of RAM, so a
+      # flat 8G is a reduction on a 64G desktop and an impossible target on the
+      # 15G Steam Deck. There every suspend-then-hibernate cycle died with
+      #   PM: hibernation: Not enough free memory
+      #   PM: hibernation: Error -12 creating image
+      #   systemd-sleep: Failed to put system to sleep. System resumed again
+      # i.e. the machine woke from suspend on schedule and then just stayed
+      # awake. Take the smaller of 8G and 2/5 of RAM (the kernel's own default
+      # ratio, safely under the half-RAM ceiling).
+      systemd.services.hibernate-image-size = {
+        description = "Set hibernate image size target from RAM size";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          mem_kb=$(${pkgs.gawk}/bin/awk '/^MemTotal:/ { print $2 }' /proc/meminfo)
+          target=$(( mem_kb * 1024 * 2 / 5 ))
+          cap=$(( 8 * 1024 * 1024 * 1024 ))
+          if [ "$target" -gt "$cap" ]; then
+            target=$cap
+          fi
+          echo "$target" > /sys/power/image_size
+        '';
+      };
+
       # MGLRU tuning: set min_ttl_ms to improve page reclamation under memory pressure
-      ++ lib.optionals cfg.enableMGLRU [
+      systemd.tmpfiles.rules = lib.optionals cfg.enableMGLRU [
         "w /sys/kernel/mm/lru_gen/min_ttl_ms - - - - 1000"
       ];
 
