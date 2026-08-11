@@ -45,8 +45,9 @@ in {
       ".config/autostart/obsidian.desktop".source = "${pkgs.obsidian}/share/applications/obsidian.desktop";
       ".config/autostart/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
       ".local/share/applications/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
-      ".config/autostart/steam.desktop".source = "${pkgs.steam}/share/applications/steam.desktop";
+      # `steam -silent` starts the client minimised to the system tray instead
+      # of throwing its window in front of whatever you were doing at login.
+      ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
       ".config/autostart/zapzap.desktop".source = "${pkgs.zapzap}/share/applications/com.rtosta.zapzap.desktop";
-      # ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
     } else { });
 }
