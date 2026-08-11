@@ -25,6 +25,12 @@ in {
       self.nixosModules.desktop-kubernetes
       self.nixosModules.desktop-local-k8s
       self.nixosModules.desktop-media
+      # Imported but never enabled: modules.desktop-wm-plasma6.enable would
+      # take displayManager.defaultSession = "plasma", and niri stays the
+      # default here. Its stylix qt/kvantum fix is keyed on the upstream
+      # services.desktopManager.plasma6.enable instead, which this host does
+      # set — but only if the module is in the list at all.
+      self.nixosModules.desktop-wm-plasma6
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
       self.nixosModules.desktop
