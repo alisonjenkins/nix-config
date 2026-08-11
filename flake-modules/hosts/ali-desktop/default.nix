@@ -645,6 +645,30 @@ in {
           };
         };
 
+        # nixpkgs' plasma6 module switches pam_kwallet on for greetd, kde and
+        # login. greetd and login fire on *every* login here, niri included,
+        # and pam_kwallet D-Bus-activates kwalletd6 from pam_sm_open_session —
+        # the same second logind opens the session, before WAYLAND_DISPLAY or
+        # QT_QPA_PLATFORM reach the D-Bus activation environment. Qt then
+        # falls back to xcb, finds no DISPLAY, and qFatal()s:
+        #
+        #   kwalletd6: could not connect to display
+        #   kwalletd6: Could not load the Qt platform plugin "xcb" in ""
+        #   This application failed to start because no Qt platform plugin
+        #   could be initialized.
+        #
+        # A ~774K core per login, for a daemon this host does not use: the
+        # secret service is gnome-keyring (see the xdg.portal Secret impl
+        # above), and modules.desktop-kwallet is deliberately left off here
+        # while the other Linux hosts enable it. Plasma still starts kwalletd6
+        # itself a few seconds later with a full environment if something asks
+        # for it.
+        security.pam.services = {
+          greetd.kwallet.enable = lib.mkForce false;
+          kde.kwallet.enable = lib.mkForce false;
+          login.kwallet.enable = lib.mkForce false;
+        };
+
         # security = {
         #   wrappers = {
         #     sunshine = {
