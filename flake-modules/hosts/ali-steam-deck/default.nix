@@ -20,6 +20,12 @@ in {
       self.nixosModules.desktop-base
       self.nixosModules.desktop-kubernetes
       self.nixosModules.desktop-media
+      # Imported for its Plasma-session fixes, which key off
+      # `services.desktopManager.plasma6.enable` (set directly below). The
+      # module's own `modules.desktop-wm-plasma6.enable` stays off: it would
+      # set displayManager.defaultSession = "plasma", and this host must log
+      # straight into Jovian's Gaming Mode instead.
+      self.nixosModules.desktop-wm-plasma6
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.locale
