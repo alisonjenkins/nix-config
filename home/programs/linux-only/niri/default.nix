@@ -30,13 +30,19 @@ in
   # journal (journalctl --user -u noctalia) for future diagnosis. The module
   # adds noctalia-shell to home.packages itself. settings left unset so the
   # user's mutable ~/.config/noctalia is untouched.
+  #
+  # mkDefault: home/programs/linux-only is imported by every Linux home
+  # config, so hosts that run a different desktop (e.g. ali-steam-deck, which
+  # is Gaming Mode + Plasma) can switch the niri shell off in
+  # home/machines/<hostname> without the shell autostarting into their
+  # session via graphical-session.target.
   programs.noctalia = {
-    enable = true;
+    enable = lib.mkDefault true;
     package = noctalia-shell;
     systemd.enable = true;
   };
 
-  custom.niri.enable = true;
+  custom.niri.enable = lib.mkDefault true;
 
   home.file.".config/wlr-which-key/config.yaml".source = ./wlr-which-key/config.yaml;
 }
