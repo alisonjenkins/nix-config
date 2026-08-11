@@ -671,6 +671,17 @@ in {
             # cosmic = {
             #   enable = true;
             # };
+
+            # Plasma alongside niri, selectable at the regreet greeter.
+            #
+            # Enabled through the upstream option rather than
+            # modules.desktop-wm-plasma6, because that module also sets
+            # `displayManager.defaultSession = "plasma"` and niri stays the
+            # default here. modules/desktop-wm-plasma6 keys its stylix
+            # qt/kvantum fix on this option, so that still applies. (Same
+            # reasoning as ali-steam-deck, which runs Plasma next to Gaming
+            # Mode.)
+            plasma6.enable = true;
           };
 
           udev = {
@@ -743,6 +754,13 @@ in {
             xkb.variant = "";
 
             displayManager = {
+              # nixpkgs' plasma6 module sets this to "plasma" itself
+              # (mkDefault), which would hand the greeter's default over to
+              # Plasma the moment it was enabled above. niri remains the
+              # session this machine boots into; Plasma is a pick-from-the-list
+              # alternative.
+              defaultSession = "niri";
+
               importedVariables = [
                 "XDG_SESSION_TYPE"
                 "XDG_CURRENT_DESKTOP"
@@ -1013,6 +1031,14 @@ in {
                     "gtk"
                     "gnome"
                   ];
+                };
+
+                # Without a kde section the Plasma session falls through to
+                # `common` (gtk), giving GTK file dialogs and screencast
+                # pickers inside Plasma. plasma6 pulls the portal in itself.
+                kde = {
+                  default = [ "kde" ];
+                  "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
                 };
               };
 
