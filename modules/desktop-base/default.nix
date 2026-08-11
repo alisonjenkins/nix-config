@@ -165,7 +165,13 @@ in
           }
         ];
         update = {
-          onActivation = true;
+          # Deliberately NOT on activation: NetworkManager and
+          # systemd-resolved are themselves restarted during a switch, so
+          # flathub is intermittently unresolvable exactly while this unit
+          # runs. A failed flatpak install then fails switch-to-configuration,
+          # which makes deploy-rs roll the whole deployment back. The unit
+          # still runs at boot and on the daily timer below.
+          onActivation = false;
           auto = {
             enable = true;
             onCalendar = "daily";
@@ -182,8 +188,15 @@ in
     };
 
     systemd.services."flatpak-managed-install" = {
+      # network-online.target alone is not enough during a switch: it is already
+      # reached, so the unit starts while systemd-resolved is still restarting
+      # and flathub fails to resolve, which fails the whole activation.
       wants = [ "network-online.target" ];
-      after = [ "network-online.target" ];
+      after = [
+        "network-online.target"
+        "systemd-resolved.service"
+        "nss-lookup.target"
+      ];
     };
   };
 }
