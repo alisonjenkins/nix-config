@@ -34,6 +34,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.uresourced
       self.nixosModules.plymouth
+      self.nixosModules.hardware-scarlett-mixer
       self.nixosModules.rocm
       self.nixosModules.sunshine
       self.nixosModules.tts
@@ -321,6 +322,10 @@ in {
           enable = true;
           user = "ali";
         };
+
+        # Pin the Scarlett's internal mixer matrix to unity so PipeWire is the
+        # only software volume stage on the playback path.
+        hardware.scarlettMixer.enable = true;
 
         boot = {
           bootspec.enableValidation = true;
