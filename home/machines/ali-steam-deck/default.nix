@@ -43,6 +43,14 @@
   home.file.".config/autostart/signal.desktop".enable = false;
   home.file.".config/autostart/zapzap.desktop".enable = false;
 
+  # Disabling the autostart entries is not enough on its own: Plasma defaults
+  # to restoring whatever was running at the last logout, which is why ghostty
+  # and the keybase GUI kept coming back as transient app scopes
+  # (app-ghostty-surface-transient-*.scope, app-keybase@*.service) with no
+  # autostart file behind them. Start clean instead.
+  programs.plasma.session.sessionRestore.restoreOpenApplicationsOnLogin =
+    "startWithEmptySession";
+
   # keybase_autostart.desktop is written by run_keybase itself, not by
   # home/autostart, so there is no home.file entry to switch off — take the
   # path over with a hidden entry instead. (Its unit was failing at every
