@@ -33,12 +33,186 @@ let
       exec ${config.programs.steam.package}/bin/steam "$@"
     '';
   };
+
+  # Store path a declared ROM will occupy. A fixed-output path is a function of
+  # name and hash alone, so rebuilding the same requireFile here reproduces the
+  # exact path the consuming package looks for, with no hash-encoded string
+  # pinned in this file to rot.
+  #
+  # The context is discarded deliberately: these paths only ever name GC roots
+  # and fill a manifest. Keeping the context would put every declared ROM in
+  # the system closure, which would both make the host unbuildable without all
+  # of them present and drag copyrighted game images into anything the closure
+  # is copied to (deploy-rs, binary cache pushes).
+  romStorePath = rom: builtins.unsafeDiscardStringContext "${pkgs.requireFile {
+    inherit (rom) hash;
+    name = rom.fileName;
+    message = "Not fetched yet. Run: fetch-rom ${rom.fileName}";
+  }}";
+
+  # Everything fetch-rom needs, as data. Keeping this out of the script body is
+  # what makes the ROM count irrelevant: the script is a fixed size whether one
+  # cartridge is declared or a thousand.
+  romManifest = pkgs.writeText "roms.json" (builtins.toJSON
+    (mapAttrs (_: rom: {
+      inherit (rom) fileName hash s3Uri sets;
+      storePath = romStorePath rom;
+    }) gcfg.roms));
+
+  # Fetches declared dumps from S3 into the store under the exact name+hash
+  # their consuming derivations expect. Idempotent by construction: a store
+  # path is content-addressed, so anything already present is skipped.
+  fetchRom = pkgs.writeShellApplication {
+    name = "fetch-rom";
+    runtimeInputs = [ pkgs.awscli2 pkgs.coreutils pkgs.findutils pkgs.jq config.nix.package ];
+    text = ''
+      manifest=${romManifest}
+      profile="''${AWS_PROFILE:-${gcfg.romsAwsProfile}}"
+      jobs="''${FETCH_ROM_JOBS:-4}"
+
+      usage() {
+        cat <<'EOF'
+      Usage:
+        fetch-rom <handle>...     fetch the named ROMs
+        fetch-rom --set <name>    fetch every ROM belonging to a set
+        fetch-rom --all           fetch everything declared
+        fetch-rom --list          list declared ROMs and their state
+        fetch-rom --sets          list declared sets
+
+      Environment:
+        AWS_PROFILE      overrides the configured profile
+        FETCH_ROM_JOBS   parallel downloads (default 4)
+      EOF
+      }
+
+      # Re-entrant worker: the dispatcher below runs this through xargs so
+      # downloads overlap. Splitting it out keeps parallelism to one xargs call
+      # rather than hand-rolled job control.
+      fetch_one() {
+        local handle="$1" entry file hash uri store_path workdir dump actual
+        entry="$(jq -c --arg h "$handle" '.[$h]' "$manifest")"
+        file="$(jq -r '.fileName' <<<"$entry")"
+        hash="$(jq -r '.hash' <<<"$entry")"
+        uri="$(jq -r '.s3Uri' <<<"$entry")"
+        store_path="$(jq -r '.storePath' <<<"$entry")"
+
+        if [ -e "$store_path" ]; then
+          echo "= $handle already present"
+          return 0
+        fi
+
+        workdir="$(mktemp -d)"
+        trap 'rm -rf "$workdir"' RETURN
+        # The basename decides the resulting store path, so it is load-bearing
+        # rather than cosmetic.
+        dump="$workdir/$file"
+
+        echo "> $handle fetching from $uri"
+        if ! aws s3 cp --only-show-errors --profile "$profile" "$uri" "$dump"; then
+          echo "! $handle download failed" >&2
+          return 1
+        fi
+
+        # nix-store --add-fixed derives the path from whatever it is handed, so
+        # a wrong dump lands at some other path and fails much later, during the
+        # build that wanted it. Catch it here instead.
+        actual="$(nix hash file --type sha256 --sri "$dump")"
+        if [ "$actual" != "$hash" ]; then
+          echo "! $handle hash mismatch (expected $hash, got $actual)" >&2
+          return 1
+        fi
+
+        nix-store --add-fixed sha256 "$dump" >/dev/null
+        echo "+ $handle added as $store_path"
+      }
+
+      if [ "''${1:-}" = "--fetch-one" ]; then
+        fetch_one "$2"
+        exit $?
+      fi
+
+      handles=()
+      case "''${1:-}" in
+        ""|-h|--help)
+          usage
+          exit 0
+          ;;
+        --list)
+          jq -r 'to_entries[] | "\(.key)\t\(.value.fileName)\t\(.value.storePath)"' "$manifest" |
+            while IFS=$'\t' read -r handle file store_path; do
+              if [ -e "$store_path" ]; then state=present; else state=missing; fi
+              printf '%-24s %-28s %s\n' "$handle" "$file" "$state"
+            done
+          exit 0
+          ;;
+        --sets)
+          jq -r '[.[].sets[]] | unique[]' "$manifest"
+          exit 0
+          ;;
+        --all)
+          mapfile -t handles < <(jq -r 'keys[]' "$manifest")
+          ;;
+        --set)
+          if [ -z "''${2:-}" ]; then
+            echo "--set needs a set name" >&2
+            exit 2
+          fi
+          mapfile -t handles < <(jq -r --arg s "$2" \
+            'to_entries[] | select(.value.sets | index($s)) | .key' "$manifest")
+          if [ ''${#handles[@]} -eq 0 ]; then
+            echo "No ROMs declared in set '$2'. See: fetch-rom --sets" >&2
+            exit 2
+          fi
+          ;;
+        -*)
+          usage >&2
+          exit 2
+          ;;
+        *)
+          for handle in "$@"; do
+            if [ "$(jq -r --arg h "$handle" 'has($h)' "$manifest")" != "true" ]; then
+              echo "Unknown ROM '$handle'. See: fetch-rom --list" >&2
+              exit 2
+            fi
+          done
+          handles=("$@")
+          ;;
+      esac
+
+      # One failed dump should not abandon the rest, so failures are collected
+      # and reported at the end rather than aborting the run.
+      if printf '%s\n' "''${handles[@]}" |
+        xargs -r -P "$jobs" -n1 "$0" --fetch-one; then
+        echo "Done: ''${#handles[@]} ROM(s) processed."
+      else
+        echo "Some ROMs failed; rerun to retry only those still missing." >&2
+        exit 1
+      fi
+    '';
+  };
+
+  # ROM declarations live under ./roms, organised as <company>/<console>.nix,
+  # because a single flat map covering everything would swamp this file. Each
+  # file is an ordinary NixOS module setting modules.desktop.gaming.roms; the
+  # module system merges the attrsets, so a new file needs no edit here.
+  #
+  # The walk recurses, so the layout is a convention rather than a constraint —
+  # nest further where a console warrants it. Non-.nix files are skipped, which
+  # is what keeps the directories' READMEs out.
+  collectRomFiles = dir: concatLists (mapAttrsToList (entry: kind:
+    let path = dir + "/${entry}";
+    in if kind == "directory" then collectRomFiles path
+    else if kind == "regular" && hasSuffix ".nix" entry then [ path ]
+    else [ ]
+  ) (builtins.readDir dir));
+
+  romModules = collectRomFiles ./roms;
 in
 {
   imports = [
     inputs.lsfg-vk-flake.nixosModules.default
     inputs.stylix.nixosModules.stylix
-  ];
+  ] ++ romModules;
 
   options.modules.desktop = {
     enable = mkEnableOption "desktop environment configuration";
@@ -352,6 +526,78 @@ in
         type = types.bool;
         default = true;
         description = "Enable large address aware for 32-bit Windows games (allows >2GB RAM usage)";
+      };
+
+      roms = mkOption {
+        default = { };
+        example = literalExpression ''
+          {
+            majoras-mask = {
+              fileName = "mm.us.rev1.rom.z64";
+              hash = "sha256-77E2WzrjYmBFFMD5oaLRH13IaIulvmYKN96/XjvkPys=";
+              s3Uri = "s3://my-bucket/roms/mm.us.rev1.rom.z64";
+            };
+          }
+        '';
+        description = ''
+          Cartridge dumps kept in your own S3 bucket, keyed by a short handle.
+
+          Each entry gets a Nix store GC root, so a dump survives
+          nix-collect-garbage even though nothing in the system closure
+          references it — packages built by static recompilation bake the game
+          data in rather than pointing at the file.
+
+          Declaring a ROM here does not fetch it. Run `fetch-rom <handle>` (or
+          `fetch-rom --all`) to download and verify one. That has to happen
+          before the rebuild that enables a package needing it, since such a
+          package cannot build without its ROM already in the store.
+        '';
+        type = types.attrsOf (types.submodule ({ name, ... }: {
+          options = {
+            fileName = mkOption {
+              type = types.str;
+              default = name;
+              description = ''
+                Name the dump takes in the Nix store. Must match what the
+                consuming package's requireFile asks for: the store path is
+                derived from name and hash together, so a mismatch produces a
+                path nothing looks for.
+              '';
+            };
+
+            hash = mkOption {
+              type = types.str;
+              example = "sha256-77E2WzrjYmBFFMD5oaLRH13IaIulvmYKN96/XjvkPys=";
+              description = "SRI hash of the dump, as the consuming package expects it.";
+            };
+
+            s3Uri = mkOption {
+              type = types.str;
+              example = "s3://my-bucket/roms/mm.us.rev1.rom.z64";
+              description = "S3 URI to fetch the dump from.";
+            };
+
+            sets = mkOption {
+              type = types.listOf types.str;
+              default = [ ];
+              example = [ "n64" "recomp" ];
+              description = ''
+                Groups this ROM belongs to, fetchable in bulk with
+                `fetch-rom --set <name>`. Membership is declared per ROM so
+                adding a cartridge needs one entry, not two.
+              '';
+            };
+          };
+        }));
+      };
+
+      romsAwsProfile = mkOption {
+        type = types.str;
+        default = "default";
+        description = ''
+          AWS profile `fetch-rom` authenticates with. Overridable per run via
+          AWS_PROFILE.
+        '';
       };
 
       shaderCacheBasePath = mkOption {
@@ -723,13 +969,22 @@ in
     };
 
     # Create shader cache directories automatically
-    systemd.tmpfiles.rules = mkIf cfg.gaming.enable [
+    systemd.tmpfiles.rules = mkIf cfg.gaming.enable ([
       "d ${cfg.gaming.shaderCacheBasePath} 0755 - - -"
       "d ${cfg.gaming.shaderCacheBasePath}/dxvk 0755 - - -"
       "d ${cfg.gaming.shaderCacheBasePath}/vkd3d 0755 - - -"
       "d ${cfg.gaming.shaderCacheBasePath}/nvidia 0755 - - -"
       "d ${cfg.gaming.shaderCacheBasePath}/steam 0755 - - -"
-    ];
+    ]
+    # Any symlink under /nix/var/nix/gcroots is a GC root, so this keeps every
+    # declared dump alive declaratively. None are reachable from the system
+    # closure — recompiled binaries bake the game data in rather than
+    # referencing the path — so without roots here the next nixpkgs bump would
+    # rebuild a recomp package and fail on a ROM the GC had already collected.
+    # Roots for dumps not fetched yet are dangling symlinks, which is harmless.
+    ++ (mapAttrsToList
+      (_: rom: "L+ /nix/var/nix/gcroots/${rom.fileName} - - - - ${romStorePath rom}")
+      cfg.gaming.roms));
 
     services.logind = {
       settings = {
@@ -833,6 +1088,12 @@ in
         unstable.scx.full
         unstable.umu-launcher
       ]))
+      # Deliberately not gated on the packages that consume these ROMs: a dump
+      # has to reach the store before the rebuild that enables its package, so
+      # the fetcher must already be on PATH by then.
+      ++ (optionals (cfg.gaming.enable && cfg.gaming.roms != { }) [
+        fetchRom
+      ])
       ++ (optionals cfg.lsfg.enable [
         pkgs.lsfg-vk-ui
       ])
