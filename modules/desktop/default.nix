@@ -528,6 +528,25 @@ in
         description = "Enable large address aware for 32-bit Windows games (allows >2GB RAM usage)";
       };
 
+      enableZelda64Recomp = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Install zelda64recomp, the native Majora's Mask port produced by
+          static recompilation.
+
+          Off by default because the build is not self-contained: nixpkgs
+          recompiles the game code into the binary, so a US rev1 dump must
+          already be in the Nix store or the build fails outright. Declare
+          the dump under `roms` with hash
+          sha256-77E2WzrjYmBFFMD5oaLRH13IaIulvmYKN96/XjvkPys= and file name
+          mm.us.rev1.rom.z64, run `fetch-rom` for it, and only then enable
+          this and rebuild.
+
+          Leaving it false keeps hosts buildable in CI, where no ROM exists.
+        '';
+      };
+
       roms = mkOption {
         default = { };
         example = literalExpression ''
@@ -1088,6 +1107,12 @@ in
         unstable.scx.full
         unstable.umu-launcher
       ]))
+      # Native Majora's Mask port (static recompilation, RT64 renderer). Kept
+      # out of the block above because the build needs a ROM dump already in
+      # the store — see the enableZelda64Recomp option description.
+      ++ (optionals (cfg.gaming.enable && cfg.gaming.enableZelda64Recomp) [
+        pkgs.unstable.zelda64recomp
+      ])
       # Deliberately not gated on the packages that consume these ROMs: a dump
       # has to reach the store before the rebuild that enables its package, so
       # the fetcher must already be on PATH by then.
