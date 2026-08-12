@@ -86,6 +86,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host ali-steam-deck ali-steam-deck.lan 192.168.1.67
+          HostName 192.168.1.67
+          User ali
+          IdentityFile ${primarySSHKey}
+          IdentitiesOnly yes
+
         Host download-server-1
           HostName download-server-1.lan
           IdentitiesOnly yes
