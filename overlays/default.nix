@@ -285,10 +285,27 @@ in
           # extraPkgs is baked into the wrapType2 call, out of reach of both
           # .override (which sees only the package's own arguments) and
           # .overrideAttrs (which acts on the built env, not its inputs).
+          #
+          # glib-networking is the second half of the same gap: it carries
+          # libgiognutls.so, the GIO TLS backend libsoup dispatches to, without
+          # which every https:// fetch in the built-in browser (Login/Register,
+          # Online Models) renders "TLS support is not available" and the debug
+          # log shows GIO settling for GDummyTlsBackend.
+          #
+          # GIO_EXTRA_MODULES must name the path *inside* the FHS env rather
+          # than glib-networking's store path: WebKit runs its network process
+          # — the one that actually needs TLS — in a nested sandbox that cannot
+          # see the latter, so pointing there fixes the main process and leaves
+          # the browser exactly as broken.
           qidi-studio = mprev.qidi-studio.override {
             appimageTools = mprev.appimageTools // {
               wrapType2 = args: mprev.appimageTools.wrapType2 (args // {
-                extraPkgs = p: (args.extraPkgs p) ++ [ p.libsoup_3 ];
+                extraPkgs = p: (args.extraPkgs p) ++ [ p.libsoup_3 p.glib-networking ];
+                extraInstallCommands = (args.extraInstallCommands or "") + ''
+                  wrapProgram "$out/bin/qidi-studio" \
+                    --set-default GIO_EXTRA_MODULES /usr/lib64/gio/modules \
+                    --set-default SSL_CERT_FILE ${mprev.cacert}/etc/ssl/certs/ca-bundle.crt
+                '';
               });
             };
           };
