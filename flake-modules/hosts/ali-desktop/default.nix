@@ -312,6 +312,16 @@ in {
           pipewire = {
             suspendTimeoutSeconds = 0;  # Never suspend audio devices — prevents crackle on resume
             alsaHeadroom = 2048;        # Extra headroom to absorb scheduling jitter under CPU load
+
+            # The Scarlett 2i2 4th Gen's card offers only the Pro Audio profile
+            # (no analog-stereo to fall back on), so its sink comes up as
+            # aux0,aux1 — two channels with no speaker positions. Game engines
+            # that choose their own output layout then guess: MECCHA CHAMELEON
+            # negotiated quad (FL,FR,RL,RR) on a two-channel interface, folding
+            # rear cues onto the front pair and killing directional hearing.
+            channelPositions = {
+              "~alsa_output\\.usb-Focusrite_Scarlett_2i2_4th_Gen.*pro-output-0" = [ "FL" "FR" ];
+            };
           };
 
           gaming = {

@@ -221,6 +221,32 @@ in
         '';
       };
 
+      channelPositions = mkOption {
+        type = types.attrsOf (types.listOf types.str);
+        default = { };
+        example = {
+          "~alsa_output.usb-Focusrite_Scarlett_2i2.*pro-output-0" = [ "FL" "FR" ];
+        };
+        description = ''
+          Map of WirePlumber node.name patterns (leading `~` for regex) to the
+          channel positions their ALSA node should advertise.
+
+          The Pro Audio profile deliberately exposes no channel positions — its
+          channels come out as AUX0, AUX1, ... because it targets DAWs, which
+          want raw channels with no mixing. PipeWire itself down-mixes into an
+          AUX sink correctly, but clients that pick their own speaker layout
+          (game engines via FAudio/FMOD/OpenAL) see a device with no front-left
+          or front-right and negotiate nonsense layouts — e.g. quad on a
+          two-channel interface, which folds rear cues onto the front pair and
+          destroys positional audio.
+
+          Stamping real positions makes such a device look like an ordinary
+          stereo sink to every client while keeping the Pro Audio profile.
+          Only useful for interfaces whose card offers no analog-stereo profile
+          (`forceStereoCards` handles the ones that do).
+        '';
+      };
+
       usbAudioStability = mkOption {
         type = types.bool;
         default = true;
@@ -1435,6 +1461,29 @@ in
                     }
                   }
                 '') cfg.pipewire.forceStereoCards)}
+              ]
+            '')
+          ]) ++ (optionals (cfg.pipewire.channelPositions != { }) [
+            # Give nodes that come up with positionless AUX channels (Pro Audio
+            # profile) a real speaker layout, so clients that select their own
+            # output layout see a plain stereo sink instead of an unmappable
+            # device. Sorts after 54- so it wins over the generic USB rules.
+            (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/55-channel-positions.conf" ''
+              monitor.alsa.rules = [
+                ${builtins.concatStringsSep "\n" (lib.mapAttrsToList (nodeName: positions: ''
+                  {
+                    matches = [
+                      {
+                        node.name = "${nodeName}"
+                      }
+                    ]
+                    actions = {
+                      update-props = {
+                        audio.position = [ ${builtins.concatStringsSep " " positions} ]
+                      }
+                    }
+                  }
+                '') cfg.pipewire.channelPositions)}
               ]
             '')
           ]) ++ (optionals cfg.pipewire.usbAudioStability [
