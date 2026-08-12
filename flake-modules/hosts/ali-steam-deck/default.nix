@@ -178,6 +178,20 @@ in {
           impermanencePersistencePath = "/persistence";
           enableCachyOSKernel = false;
           # No btrfs after the XFS migration — beesd is btrfs-only.
+
+          # Hibernate via a real power-off (S5) rather than ACPI S4.
+          #
+          # With the default "platform" mode the kernel writes the image and
+          # then hands the power-down to the firmware's S4 hooks, leaving the
+          # Deck in a firmware-managed state whose wake sources the EC picks.
+          # Valve doesn't support hibernation, so that path is essentially
+          # untested on this hardware: after auto-hibernate the power button
+          # does nothing and only attaching USB-C (a PD event the EC always
+          # wakes on) brings the Deck back, with the battery still charged.
+          # "shutdown" skips the firmware hooks entirely, so resuming is an
+          # ordinary power-on — the same path that works from a normal
+          # shutdown — and the initrd resume picks the image back up.
+          hibernateMode = "shutdown";
         };
 
         # XFS doesn't support discard mount option (no perf benefit);
