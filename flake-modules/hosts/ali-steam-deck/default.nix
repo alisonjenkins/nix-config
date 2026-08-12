@@ -408,11 +408,26 @@ in {
         # 30m balances quick-resume (short put-downs stay in S3) against
         # bag-safety (the Deck's S3 still draws a few %/hr, so 2h could
         # noticeably drain before hibernating). Tune as desired.
+        # If hibernation fails the machine has already been woken by the RTC
+        # alarm, the timer has elapsed (RemainAfterElapse=false) and
+        # suspend.target is inactive — so nothing puts it back to sleep and
+        # the Deck sits fully awake with the screen off until the battery is
+        # flat. That is not hypothetical: before b1b51ed0 capped the hibernate
+        # image size, every cycle died with "Error -12 creating image" and the
+        # Deck stayed awake. Fall back to a plain suspend so a failed
+        # hibernate costs S3 drain rather than a flat battery; re-entering
+        # suspend.target also re-arms the timer for another attempt later.
         systemd.services.auto-hibernate-after-suspend = {
           description = "Hibernate after extended suspend to save battery";
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = "${pkgs.systemd}/bin/systemctl hibernate";
+            ExecStart = pkgs.writeShellScript "auto-hibernate-after-suspend" ''
+              set -u
+              if ! ${pkgs.systemd}/bin/systemctl hibernate; then
+                echo "hibernate failed; falling back to suspend" >&2
+                exec ${pkgs.systemd}/bin/systemctl suspend
+              fi
+            '';
           };
         };
         systemd.timers.auto-hibernate-after-suspend = {
