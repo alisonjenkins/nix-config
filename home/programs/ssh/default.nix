@@ -54,7 +54,17 @@
             Host *
               AddKeysToAgent yes
               IdentitiesOnly yes
-              IdentityAgent ${identity_sock_path}''
+              IdentityAgent ${identity_sock_path}
+              # IdentitiesOnly restricts ssh to the identities named in the
+              # config; with none named here it falls back to the default
+              # filenames (~/.ssh/id_rsa, id_ed25519, ...), none of which
+              # exist because the private key lives in the 1Password agent.
+              # The result is that any host without its own stanza offers
+              # *zero* keys and fails with "Permission denied (publickey)"
+              # despite the agent holding the right key. Naming the public
+              # key here selects the matching agent identity, which is why
+              # every per-host stanza below repeats the same line.
+              IdentityFile ${primarySSHKey}''
           else ""
           )
           }
