@@ -292,6 +292,11 @@ in
           # Online Models) renders "TLS support is not available" and the debug
           # log shows GIO settling for GDummyTlsBackend.
           #
+          # Prefixed, not --set-default: a NixOS desktop session already
+          # exports GIO_EXTRA_MODULES for gvfs and dconf, so a default is a
+          # no-op exactly where it matters and the app inherits a module list
+          # with no TLS backend in it.
+          #
           # GIO_EXTRA_MODULES must name the path *inside* the FHS env rather
           # than glib-networking's store path: WebKit runs its network process
           # — the one that actually needs TLS — in a nested sandbox that cannot
@@ -303,7 +308,7 @@ in
                 extraPkgs = p: (args.extraPkgs p) ++ [ p.libsoup_3 p.glib-networking ];
                 extraInstallCommands = (args.extraInstallCommands or "") + ''
                   wrapProgram "$out/bin/qidi-studio" \
-                    --set-default GIO_EXTRA_MODULES /usr/lib64/gio/modules \
+                    --prefix GIO_EXTRA_MODULES : /usr/lib64/gio/modules \
                     --set-default SSL_CERT_FILE ${mprev.cacert}/etc/ssl/certs/ca-bundle.crt
                 '';
               });
