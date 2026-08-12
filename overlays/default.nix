@@ -272,6 +272,27 @@ in
       overlays = [
         openldapOverlay
         (mfinal: mprev: {
+          # QIDI Studio's AppImage reaches libsoup-3 through webkitgtk_4_1, but
+          # its FHS env lists webkitgtk itself and nothing else: buildFHSEnv
+          # links only the lib dirs of the packages it is handed, not those of
+          # their dependencies. The binary dies before its first log line with
+          #
+          #   error while loading shared libraries: libsoup-3.0.so.0:
+          #   cannot open shared object file: No such file or directory
+          #
+          # LD_LIBRARY_PATH is no escape hatch — bwrap resets it, so the lib has
+          # to be inside the env. Overriding appimageTools is the only seam:
+          # extraPkgs is baked into the wrapType2 call, out of reach of both
+          # .override (which sees only the package's own arguments) and
+          # .overrideAttrs (which acts on the built env, not its inputs).
+          qidi-studio = mprev.qidi-studio.override {
+            appimageTools = mprev.appimageTools // {
+              wrapType2 = args: mprev.appimageTools.wrapType2 (args // {
+                extraPkgs = p: (args.extraPkgs p) ++ [ p.libsoup_3 ];
+              });
+            };
+          };
+
           # Re-sign av's .so files on Darwin and skip checks for the
           # whole av-importing chain. install_name_tool invalidates
           # signatures during fixup, and the ffmpeg dylibs av dlopens are
