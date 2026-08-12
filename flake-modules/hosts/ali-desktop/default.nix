@@ -409,10 +409,14 @@ in {
             alsa-scarlett-gui
             amdgpu_top
             antigravity
+            blender
             cifs-utils
             citron
             cpu-x
             drawio
+            # Wayland build: this host's default session is niri, and the plain
+            # `freecad` attr is the X11/XWayland one.
+            freecad-wayland
             freeplane
             gcc
             geekbench
@@ -425,16 +429,29 @@ in {
             libaacs
             lsscsi
             master.yt-dlp
+            meshlab
             mkvtoolnix
             moonlight-qt
             openrct2
+            # The stable `openscad` attr is the 2021.01 release; -unstable is the
+            # maintained snapshot and the one every current tutorial assumes.
+            openscad-unstable
             openttd
             openttd-ttf
+            # Second slicer alongside QIDI Studio: same Bambu Studio lineage, but
+            # it carries the calibration suite (flow, pressure advance, tolerance
+            # towers) that QIDI's fork drops. From unstable for the newer QIDI
+            # printer profiles.
+            unstable.orca-slicer
             docker
             protontricks
             proton-vpn
             qbittorrent
             qemu_full
+            # Slicer for the QIDI Max4 (Bambu Studio fork). From unstable: the
+            # pinned nixpkgs still has 2.05.02.50, which predates the Max4 and
+            # its QIDI Box multi-colour unit, so it ships no profile for them.
+            unstable.qidi-studio
             radeontop
             rio
             s-tui
