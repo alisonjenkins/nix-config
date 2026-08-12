@@ -408,26 +408,56 @@ in {
         # 30m balances quick-resume (short put-downs stay in S3) against
         # bag-safety (the Deck's S3 still draws a few %/hr, so 2h could
         # noticeably drain before hibernating). Tune as desired.
-        # If hibernation fails the machine has already been woken by the RTC
-        # alarm, the timer has elapsed (RemainAfterElapse=false) and
-        # suspend.target is inactive — so nothing puts it back to sleep and
-        # the Deck sits fully awake with the screen off until the battery is
-        # flat. That is not hypothetical: before b1b51ed0 capped the hibernate
-        # image size, every cycle died with "Error -12 creating image" and the
-        # Deck stayed awake. Fall back to a plain suspend so a failed
-        # hibernate costs S3 drain rather than a flat battery; re-entering
-        # suspend.target also re-arms the timer for another attempt later.
         systemd.services.auto-hibernate-after-suspend = {
           description = "Hibernate after extended suspend to save battery";
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = pkgs.writeShellScript "auto-hibernate-after-suspend" ''
-              set -u
-              if ! ${pkgs.systemd}/bin/systemctl hibernate; then
-                echo "hibernate failed; falling back to suspend" >&2
-                exec ${pkgs.systemd}/bin/systemctl suspend
-              fi
-            '';
+            # NB: `systemctl hibernate` returns as soon as logind queues the
+            # job, ~24s before the kernel actually attempts the image write,
+            # so its exit status says nothing about whether hibernation
+            # worked. Failure is handled by the OnFailure hook on
+            # systemd-hibernate.service below, which is the unit that does
+            # report a real result.
+            ExecStart = "${pkgs.systemd}/bin/systemctl hibernate";
+          };
+        };
+
+        # Hibernation on this hardware is intermittent: roughly half of all
+        # attempts abort with
+        #   amdgpu 0000:04:00.0: PM: dpm_run_callback(): pci_pm_thaw returns -16
+        #   PM: Image saving failed: -11
+        #   systemd-sleep: Failed to put system to sleep. System resumed again
+        # The snapshot is built fine and then amdgpu refuses to thaw after the
+        # ASIC reset that amdgpu_pmops_freeze() performs, so the write is
+        # abandoned at 0%. Measured across 8 attempts on 2026-08-12 it was
+        # independent of GPU load, of whether an S3 resume preceded it, and of
+        # how long the Deck had been awake — i.e. a driver race, not something
+        # the timing here can avoid.
+        #
+        # What must not happen is the Deck being left awake with the screen
+        # off: the RTC alarm has already woken it, its timer has elapsed
+        # (RemainAfterElapse=false) and suspend.target is inactive, so nothing
+        # else puts it back to sleep and the battery runs flat in a bag. A
+        # flat Deck ignores the power button entirely until USB-C is attached,
+        # which is exactly the failure this whole exercise started from.
+        #
+        # Falling back to suspend keeps the cost at S3 drain, and because
+        # re-entering suspend.target re-arms the timer above, the next attempt
+        # follows automatically one interval later — a natural retry loop for
+        # a race that succeeds about half the time.
+        systemd.services.systemd-hibernate = {
+          overrideStrategy = "asDropin";
+          unitConfig.OnFailure = "hibernate-fallback-suspend.service";
+        };
+
+        systemd.services.hibernate-fallback-suspend = {
+          description = "Suspend after a failed hibernation attempt";
+          serviceConfig = {
+            Type = "oneshot";
+            # Let the resume settle before asking for another sleep
+            # transition; systemd-sleep has only just thawed user.slice.
+            ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
+            ExecStart = "${pkgs.systemd}/bin/systemctl suspend";
           };
         };
         systemd.timers.auto-hibernate-after-suspend = {
