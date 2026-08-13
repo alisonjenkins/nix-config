@@ -272,6 +272,35 @@ in
       overlays = [
         openldapOverlay
         (mfinal: mprev: {
+          # `programs.gamescope.capSysNice` puts CAP_SYS_NICE in gamescope's
+          # *ambient* set so the game it wraps inherits RT scheduling. Every
+          # descendant inherits it too — including umu's bwrap, which refuses
+          # to run with capabilities it did not expect:
+          #
+          #   bwrap: Unexpected capabilities but not setuid, old file caps config?
+          #
+          # Heroic launches `gamescope ... -- umu-run game.exe`, so every GOG /
+          # Epic title with gamescope enabled dies there before Proton starts.
+          # (Steam escapes it: `scb -- %command%` runs gamescope *inside* the
+          # pressure-vessel container, after bwrap has already done its work.)
+          #
+          # Dropping the caps here rather than setting capSysNice = false keeps
+          # the RT boost for gamescope itself and for Steam's path; only the umu
+          # process tree gives it up. buildCommand, not postFixup: umu-launcher
+          # is a runCommand, and stdenv skips every other phase when
+          # buildCommand is set.
+          umu-launcher = mprev.umu-launcher.overrideAttrs (old: {
+            buildCommand = (old.buildCommand or "") + ''
+              realUmu=$(readlink -f "$out/bin/umu-run")
+              rm "$out/bin/umu-run"
+              cat > "$out/bin/umu-run" <<EOF
+              #!${mprev.runtimeShell}
+              exec ${mprev.util-linux}/bin/setpriv --ambient-caps=-all --inh-caps=-all "$realUmu" "\$@"
+              EOF
+              chmod +x "$out/bin/umu-run"
+            '';
+          });
+
           # QIDI Studio's AppImage reaches libsoup-3 through webkitgtk_4_1, but
           # its FHS env lists webkitgtk itself and nothing else: buildFHSEnv
           # links only the lib dirs of the packages it is handed, not those of
