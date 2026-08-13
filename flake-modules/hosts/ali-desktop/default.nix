@@ -724,6 +724,21 @@ in {
             };
           };
 
+          # nixpkgs' niri module turns gnome-keyring on as a side effect of
+          # programs.niri.enable. pam_gnome_keyring then starts the daemon
+          # from /etc/pam.d/{login,greetd} and it owns
+          # org.freedesktop.secrets before anything gets a chance to D-Bus
+          # activate kwalletd6 — so the user-level activation file from
+          # home/programs/kwalletd never fires and every stored secret is
+          # silently split between two stores. Existing secrets on this host
+          # (Signal's DB key, aws-vault) live in kwallet, so kwallet wins.
+          #
+          # pam_kwallet deliberately stays off (see security.pam.services
+          # above) — kwalletd6 is D-Bus activatable and comes up fine from a
+          # real graphical session; the cost is one wallet-password prompt
+          # per login instead of a PAM auto-unlock.
+          gnome.gnome-keyring.enable = lib.mkForce false;
+
           desktopManager = {
             # cosmic = {
             #   enable = true;
@@ -1088,6 +1103,11 @@ in {
                     "gtk"
                     "gnome"
                   ];
+
+                  # gnome-keyring is forced off on this host, so its portal
+                  # backend would never answer. niri.nix pins gnome-keyring
+                  # here at normal priority, hence the mkForce.
+                  "org.freedesktop.impl.portal.Secret" = lib.mkForce [ "kwallet" ];
                 };
 
                 # Without a kde section the Plasma session falls through to
@@ -1095,7 +1115,7 @@ in {
                 # pickers inside Plasma. plasma6 pulls the portal in itself.
                 kde = {
                   default = [ "kde" ];
-                  "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+                  "org.freedesktop.impl.portal.Secret" = [ "kwallet" ];
                 };
               };
 
