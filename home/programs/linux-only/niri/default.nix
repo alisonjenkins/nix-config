@@ -19,7 +19,14 @@ in
     nautilus
     unstable.wlr-which-key
     wlsunset
-    xwayland-satellite
+    # unstable: 0.8.1 panics with "Failed flushing clientside events:
+    # Io(BrokenPipe)" (src/server/mod.rs:882) whenever the DP-2 connector
+    # disconnects — monitor sleep or session lock. The panic takes DISPLAY=:0
+    # down with it, so every X11 client (Steam, Discord, Keybase, ZapZap) dies
+    # silently, no core and no crash log. Observed 8 times in the week to
+    # 2026-08-14. 0.8.2 is the newest release; upstream tracks this class of
+    # flush panic in Supreeeme/xwayland-satellite#210 and niri-wm/niri#2159.
+    unstable.xwayland-satellite
   ] else [];
 
   # Run noctalia as a systemd user service (Restart=on-failure) bound to
