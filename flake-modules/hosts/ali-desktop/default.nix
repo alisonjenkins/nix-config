@@ -498,7 +498,14 @@ in {
             sysbench
             tiny4linux
             unixtools.xxd
-            unstable.makemkv
+            # Pinned to FFmpeg 7: makemkv's libffabi still reads AVCodec fields
+            # (supported_samplerates, ch_layouts, sample_fmts) that FFmpeg 8
+            # removed in favour of avcodec_get_supported_config(), so it fails
+            # to compile against unstable's default (now 9.0):
+            #   ffabi.c:589: error: 'AVCodec' has no member named 'supported_samplerates'
+            # 7.1 still carries them (deprecated but present). Drop the override
+            # once makemkv upstream adopts the new API.
+            (unstable.makemkv.override { ffmpeg = unstable.ffmpeg_7; })
             unstable.uhk-agent
             unzip
             upscayl
