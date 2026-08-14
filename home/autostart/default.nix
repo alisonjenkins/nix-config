@@ -31,7 +31,15 @@ in {
         dontUnpack = true;
         installPhase = ''
           cp "${pkgs.signal-desktop}/share/applications/signal.desktop" signal.desktop
-          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --enable-gpu --ignore-gpu-blocklist --ozone-platform-hint=auto --enable-features=VaapiVideoDecoder,VaapiVideoEncoder,PipeWireCamera,WebRTCPipeWireCapturer#' signal.desktop
+          # Electron picks its password store from the desktop environment:
+          # KDE* -> kwallet, GNOME/XFCE/... -> libsecret, anything else ->
+          # basic_text (plaintext, and it refuses to reuse the old key). On
+          # niri XDG_CURRENT_DESKTOP is "niri", so Signal downgrades itself
+          # to basic_text and errors out with "the OS encryption keyring
+          # backend has changed from kwallet6 to basic_text". This host keeps
+          # its secrets in kwallet (see the ali-desktop portal Secret config),
+          # so name the backend explicitly.
+          ${pkgs.gnused}/bin/sed -i 's#Exec=signal-desktop#Exec=signal-desktop --password-store=kwallet6 --enable-gpu --ignore-gpu-blocklist --ozone-platform-hint=auto --enable-features=VaapiVideoDecoder,VaapiVideoEncoder,PipeWireCamera,WebRTCPipeWireCapturer#' signal.desktop
           mkdir -p "$out/share/applications"
           cp signal.desktop "$out/share/applications/signal.desktop"
         '';
