@@ -473,6 +473,146 @@ in
           (`usbPeriodSize * usbPeriodNum`) to avoid follower resync storms.
         '';
       };
+
+      binauralSurround = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+          description = ''
+            Expose a virtual 7.1 sink that is binauralised to stereo with an
+            HRTF convolution, for listening on headphones.
+
+            Game engines pick their output layout from what the device
+            advertises. On a two-channel interface they fold surround down
+            themselves, and that fold routinely discards the rear bus — a
+            source directly behind the player becomes near-inaudible. Offering
+            a 7.1 sink makes the engine render discrete surround instead, and
+            the SOFA spatializer below turns each speaker position into a real
+            binaural cue rather than a flat downmix.
+
+            Costs one convolution per channel; negligible on a desktop CPU.
+          '';
+        };
+
+        hrirFile = mkOption {
+          type = types.path;
+          default = "${pkgs.libmysofa}/share/libmysofa/MIT_KEMAR_normal_pinna.sofa";
+          defaultText = literalExpression ''"''${pkgs.libmysofa}/share/libmysofa/MIT_KEMAR_normal_pinna.sofa"'';
+          description = ''
+            SOFA file holding the head-related impulse responses. The default
+            is the MIT KEMAR dummy-head set shipped with libmysofa. HRIRs are
+            not personalised, so front/back and left/right imaging accuracy
+            varies between listeners; `default.sofa` in the same directory is
+            the alternative to try.
+          '';
+        };
+
+        outputNode = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          example = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
+          description = ''
+            `node.name` of the sink the binaural output is fed into. Pin this
+            to the physical output. Leaving it null lets the node follow the
+            default sink, which loops if this sink is itself made the default
+            (directly, or via an effects sink such as EasyEffects that follows
+            the default in turn).
+          '';
+        };
+
+        sinkName = mkOption {
+          type = types.str;
+          default = "effect_input.binaural71";
+          description = "`node.name` of the virtual 7.1 sink.";
+        };
+
+        makeDefault = mkOption {
+          type = types.bool;
+          default = false;
+          description = ''
+            Rank this sink above the hardware outputs so it is chosen as the
+            default, which is what makes games see 7.1 without a per-game
+            `PULSE_SINK` override. Everything else gets binauralised through
+            the front pair too, colouring music and video — that is inherent
+            to routing all output through an HRTF, not a fault.
+
+            Only affects automatic selection. A sink previously chosen by hand
+            is recorded in WirePlumber's `default-nodes` state and still wins;
+            pick this one once in the audio settings to clear that.
+          '';
+        };
+
+        description = mkOption {
+          type = types.str;
+          default = "Binaural Surround 7.1";
+          description = "Human-readable name shown in audio device pickers.";
+        };
+
+        compensationEq = mkOption {
+          type = types.listOf (types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [ "bq_lowshelf" "bq_peaking" "bq_highshelf" ];
+                description = "Biquad filter type.";
+              };
+              freq = mkOption {
+                type = types.int;
+                description = "Centre (peaking) or corner (shelf) frequency in Hz.";
+              };
+              q = mkOption {
+                type = types.float;
+                default = 1.0;
+                description = "Filter Q.";
+              };
+              gain = mkOption {
+                type = types.float;
+                description = "Gain in dB. Negative cuts.";
+              };
+            };
+          });
+          default = [ ];
+          description = ''
+            Biquad filters applied to the binaural output, in order, to undo the
+            HRIR's own colouration.
+
+            An HRIR carries the dummy head's pinna and ear-canal response. On
+            headphones that response is applied a second time by your own ears,
+            so the raw chain has a large presence-region peak — measured here at
+            +19 dB around 2.5 kHz with the bass 6 dB down, which sounds harsh
+            and thin. Real virtual-surround products fix this with a headphone
+            compensation stage; this is that stage.
+
+            The values are specific to the HRIR, the headphones and the output
+            device, so they must be measured rather than copied. Method: play a
+            fixed noise file into a dedicated null sink, one channel at a time,
+            capture its monitor, and compare each channel's spectrum linearly
+            against the source. Fit the bank to the inverse of the average, then
+            iterate with damping until the residual stops falling. Never FFT a
+            time-domain magnitude such as `sqrt(L^2+R^2)` — it is not a spectrum
+            and will invent a plausible, wrong answer.
+          '';
+        };
+
+        angles = mkOption {
+          type = types.attrsOf types.int;
+          default = {
+            FL = 30;
+            FR = 330;
+            FC = 0;
+            LFE = 0;
+            RL = 150;
+            RR = 210;
+            SL = 90;
+            SR = 270;
+          };
+          description = ''
+            Azimuth in degrees for each of the eight speaker positions.
+            Measured counter-clockwise from straight ahead, so 90 is hard left
+            and 270 is hard right. LFE is non-directional and conventionally
+            sits at 0.
+          '';
+        };
+      };
     };
 
     gaming = {
@@ -1624,7 +1764,113 @@ in
                 "api.alsa.headroom" = cfg.pipewire.alsaHeadroom;
               };
             };
-          };
+          } // (lib.optionalAttrs cfg.pipewire.binauralSurround.enable (
+            let
+              bs = cfg.pipewire.binauralSurround;
+              # Sink channel order. The index within this list is also the
+              # mixer input number each spatializer feeds, so the two must
+              # stay in step.
+              channels = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
+              spatializer = ch: {
+                type = "sofa";
+                label = "spatializer";
+                name = "sp${ch}";
+                config = {
+                  filename = toString bs.hrirFile;
+                };
+                control = {
+                  "Azimuth" = bs.angles.${ch};
+                  "Elevation" = 0;
+                  "Radius" = 1;
+                };
+              };
+              # Every spatializer emits a stereo pair; the two mixers sum all
+              # eight pairs back down to one binaural stereo output.
+              linksFor = mixer: side:
+                lib.imap1 (i: ch: {
+                  output = "sp${ch}:Out ${side}";
+                  input = "${mixer}:In ${toString i}";
+                }) channels;
+
+              # Compensation EQ, one identical chain per output channel, hung
+              # off the mixer. Empty list leaves the mixers as the outputs.
+              eq = bs.compensationEq;
+              eqName = side: i: "eq${side}${toString i}";
+              eqNodes = side:
+                lib.imap1 (i: filt: {
+                  type = "builtin";
+                  label = filt.type;
+                  name = eqName side i;
+                  control = {
+                    "Freq" = filt.freq;
+                    "Q" = filt.q;
+                    "Gain" = filt.gain;
+                  };
+                }) eq;
+              # Link mixer -> first filter -> ... -> last filter.
+              eqLinks = side:
+                lib.imap1 (i: _: {
+                  output = if i == 1 then "mix${side}:Out" else "${eqName side (i - 1)}:Out";
+                  input = "${eqName side i}:In";
+                }) eq;
+              outputFor = side:
+                if eq == [ ] then "mix${side}:Out" else "${eqName side (builtins.length eq)}:Out";
+            in {
+              "99-binaural-surround" = {
+                "context.modules" = [
+                  {
+                    name = "libpipewire-module-filter-chain";
+                    flags = [ "nofail" ];
+                    args = {
+                      "node.description" = bs.description;
+                      "media.name" = bs.description;
+                      "filter.graph" = {
+                        nodes = (map spatializer channels) ++ [
+                          { type = "builtin"; label = "mixer"; name = "mixL"; }
+                          { type = "builtin"; label = "mixer"; name = "mixR"; }
+                        ] ++ (eqNodes "L") ++ (eqNodes "R");
+                        links = (linksFor "mixL" "L") ++ (linksFor "mixR" "R")
+                          ++ (eqLinks "L") ++ (eqLinks "R");
+                        inputs = map (ch: "sp${ch}:In") channels;
+                        outputs = [ (outputFor "L") (outputFor "R") ];
+                      };
+                      "capture.props" = {
+                        "node.name" = bs.sinkName;
+                        "media.class" = "Audio/Sink";
+                        "audio.channels" = builtins.length channels;
+                        "audio.position" = channels;
+                      } // (lib.optionalAttrs bs.makeDefault {
+                        # Above the ~1000 that ALSA sinks score, so automatic
+                        # default selection lands here.
+                        "priority.session" = 2000;
+                      });
+                      "playback.props" = {
+                        "node.name" = "effect_output.binaural71";
+                        "node.passive" = true;
+                        "audio.channels" = 2;
+                        "audio.position" = [ "FL" "FR" ];
+                        # Never remix the binaural pair: it is already the
+                        # final stereo image, and a channelmix pass on top
+                        # would undo the HRTF.
+                        "stream.dont-remix" = true;
+                      } // (lib.optionalAttrs (bs.outputNode != null) {
+                        # `node.target` alone is only a hint — session policy
+                        # re-targets it freely, and when this sink is the
+                        # default that lands the output on whichever effects
+                        # sink is chained in front of it, feeding the graph
+                        # back into itself and suspending the hardware.
+                        # `target.object` + `node.dont-reconnect` make the
+                        # link fixed.
+                        "node.target" = bs.outputNode;
+                        "target.object" = bs.outputNode;
+                        "node.dont-reconnect" = true;
+                      });
+                    };
+                  }
+                ];
+              };
+            }
+          ));
 
           pipewire-pulse = {
             "10-mlock" = {
