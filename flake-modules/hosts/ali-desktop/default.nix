@@ -320,7 +320,8 @@ in {
             # negotiated quad (FL,FR,RL,RR) on a two-channel interface, folding
             # rear cues onto the front pair and killing directional hearing.
             channelPositions = {
-              "~alsa_output\\.usb-Focusrite_Scarlett_2i2_4th_Gen.*pro-output-0" = [ "FL" "FR" ];
+              # No "\." escapes: SPA-JSON rejects them and drops the whole section.
+              "~alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen.*pro-output-0" = [ "FL" "FR" ];
             };
           };
 

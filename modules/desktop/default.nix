@@ -1784,8 +1784,13 @@ in
               monitor.alsa.rules = [
                 {
                   matches = [
-                    { node.name = "~alsa_output\.usb-.*" }
-                    { node.name = "~alsa_input\.usb-.*" }
+                    # NOTE: no backslash escapes in these patterns. The SPA-JSON
+                    # parser rejects "\." as an invalid string escape and then
+                    # discards the whole section ("section 'monitor.alsa.rules'
+                    # has no value"), silently disabling every rule in this file.
+                    # An unescaped "." is a regex any-char, which is harmless here.
+                    { node.name = "~alsa_output.usb-.*" }
+                    { node.name = "~alsa_input.usb-.*" }
                   ]
                   actions = {
                     update-props = {
