@@ -323,6 +323,39 @@ in {
               # No "\." escapes: SPA-JSON rejects them and drops the whole section.
               "~alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen.*pro-output-0" = [ "FL" "FR" ];
             };
+
+            # Games render surround internally and fold it to stereo themselves
+            # when the device only offers two channels — and that fold drops the
+            # rear bus, so anything behind the player goes near-silent (measured
+            # in HELLDIVERS 2: it negotiates full 7.1 the moment a 7.1 sink is
+            # offered). This sink takes the discrete surround and binauralises
+            # it instead. Pinned to the Scarlett so it cannot loop through
+            # EasyEffects, which follows the default sink.
+            binauralSurround = {
+              enable = true;
+              outputNode = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
+              makeDefault = true;
+
+              # Measured on this machine, 2026-08-14: the raw chain ran +19 dB
+              # at 2.5 kHz with the bass 6 dB down (harsh and thin — the KEMAR
+              # pinna resonance landing on top of the one the headphones already
+              # produce). Fitted by iterating a nine-band bank against the
+              # measured response until the residual stopped falling: 10.14 dB
+              # rms deviation -> 2.92 dB, flat within +/-2 dB from 60 Hz to
+              # 10 kHz. Mostly cuts, so the chain is quieter than bypass —
+              # match levels before A/B-ing it.
+              compensationEq = [
+                { type = "bq_lowshelf";  freq = 100;   q = 0.7; gain = 4.4; }
+                { type = "bq_peaking";   freq = 300;   q = 1.0; gain = -0.9; }
+                { type = "bq_peaking";   freq = 700;   q = 1.0; gain = -1.9; }
+                { type = "bq_peaking";   freq = 1400;  q = 1.2; gain = -2.2; }
+                { type = "bq_peaking";   freq = 2500;  q = 1.0; gain = -18.0; }
+                { type = "bq_peaking";   freq = 3800;  q = 1.4; gain = -4.9; }
+                { type = "bq_peaking";   freq = 6000;  q = 1.2; gain = -2.8; }
+                { type = "bq_peaking";   freq = 9000;  q = 1.2; gain = -5.4; }
+                { type = "bq_highshelf"; freq = 13000; q = 0.7; gain = -9.7; }
+              ];
+            };
           };
 
           gaming = {
