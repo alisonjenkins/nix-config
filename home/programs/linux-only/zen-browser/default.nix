@@ -30,7 +30,6 @@ in {
         packages = (
           if pkgs.stdenv.isLinux
           then (with pkgs.nur.repos.rycee.firefox-addons; [
-            # auto-tab-discard
             # firenvim
             # plasma-integration
             # switchyomega
