@@ -33,6 +33,7 @@ in {
       self.nixosModules.desktop-wm-plasma6
       self.nixosModules.audio-context-suspend
       self.nixosModules.base
+      self.nixosModules.camera-resume
       self.nixosModules.desktop
       self.nixosModules.docker
       self.nixosModules.locale
@@ -373,6 +374,23 @@ in {
         services.audio-context-suspend = {
           enable = true;
           user = "ali";
+        };
+
+        # S3 drops VBUS to the root hubs, so the OBSBOT re-enumerates on every
+        # wake and moves /dev/videoN (video0 -> video2 on 2026-08-16). Give it
+        # a fixed name, rebind its port if it fails to come back, and restart
+        # the loopback feeders that died with the old node.
+        services.camera-resume = {
+          enable = true;
+          user = "ali";
+          devices = [
+            {
+              name = "OBSBOT Tiny 2 Lite";
+              vendorId = "3564";
+              productId = "fef9";
+              symlink = "webcam";
+            }
+          ];
         };
 
         # Pin the Scarlett's internal mixer matrix to unity so PipeWire is the
