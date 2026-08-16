@@ -21,9 +21,14 @@ with lib; let
   maxBuffers = toString cfg.maxBuffers;
 
   gstPlugins = [
-    pkgs.gst_all_1.gstreamer
+    # .out, not the default output: gstreamer's outputs are ordered
+    # [ bin out dev debug ], so the bare attribute is the `bin` output, which
+    # carries no lib/gstreamer-1.0 at all. Without it libgstcoreelements.so is
+    # off the plugin path, decodebin cannot find `typefind`, and the pipeline
+    # dies with "could not link pipewiresrc0 to decodebin0".
+    pkgs.gst_all_1.gstreamer.out
     pkgs.gst_all_1.gst-plugins-base
-    pkgs.gst_all_1.gst-plugins-good
+    pkgs.gst_all_1.gst-plugins-good # jpegdec for the camera's MJPG stream
     pkgs.pipewire # libgstpipewire.so -> pipewiresrc
   ];
 
