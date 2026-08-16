@@ -37,6 +37,12 @@ with lib; let
   targetProp = optionalString (cfg.target != null)
     '' target-object="${cfg.target}"'';
 
+  # WirePlumber routes a stream by its media.class, and pipewiresrc does not
+  # set one -- so the server has no candidate target and refuses the connect
+  # with "stream error: target not found", target-object set or not. Declaring
+  # the class is what makes a camera capture resolve at all.
+  streamProps = ''stream-properties="props,media.class=Stream/Input/Video"'';
+
   # One feeder per loopback: PipeWire owns the physical camera, this pulls a
   # stream off it and writes raw frames into /dev/video<N>. PipeWire fans the
   # camera node out to as many consumers as ask for it, so several feeders
@@ -53,7 +59,7 @@ with lib; let
     fi
 
     exec ${gstLaunch} -q \
-      pipewiresrc${targetProp} do-timestamp=true \
+      pipewiresrc${targetProp} ${streamProps} do-timestamp=true \
       ! decodebin \
       ! videoconvertscale \
       ! videorate \
