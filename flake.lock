@@ -2015,7 +2015,7 @@
       "inputs": {
         "home-manager": "home-manager_2",
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs_unstable"
         ]
       },
       "locked": {

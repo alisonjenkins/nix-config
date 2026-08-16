@@ -225,7 +225,13 @@
 
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Follow nixpkgs_unstable: upstream's flake.nix tracks nixos-unstable,
+      # and its package.nix takes ffmpeg_9. That attribute only exists on
+      # unstable/master — the nixos-26.05 release branch tops out at ffmpeg_8
+      # and will never gain a new major version — so following our main
+      # nixpkgs breaks eval outright with "Function called without required
+      # argument ffmpeg_9".
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
   };
 
