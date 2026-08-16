@@ -16,7 +16,10 @@ with lib; let
   # "`2,2,2,2' invalid for parameter `max_buffers'", so no loopbacks appear.
   commaList = f: concatStringsSep "," (map f indices);
   videoNrs = commaList (i: toString (deviceNr i));
-  cardLabels = commaList (i: ''"${cfg.labelPrefix}${toString i}"'');
+  # One pair of quotes around the whole list, not around each label: modprobe
+  # only strips the outermost quoting, so per-label quotes end up inside the
+  # value and the card reports itself as `Virtual Camera 1"`.
+  cardLabels = ''"${commaList (i: "${cfg.labelPrefix}${toString i}")}"'';
   exclusiveCaps = commaList (_: if cfg.exclusiveCaps then "1" else "0");
   maxBuffers = toString cfg.maxBuffers;
 
