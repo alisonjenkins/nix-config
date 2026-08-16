@@ -9,13 +9,16 @@ with lib; let
   indices = range 1 cfg.count;
   deviceNr = i: cfg.firstVideoNr + i - 1;
 
-  # v4l2loopback takes per-device arrays; a single value only applies to
-  # device 0, so every array parameter has to be spelled out in full.
+  # video_nr, card_label and exclusive_caps are per-device arrays; a single
+  # value only applies to device 0, so those have to be spelled out in full.
+  # max_buffers is NOT an array -- `modinfo -p v4l2loopback` reports it as a
+  # plain (int), and passing a comma list makes the insert fail outright with
+  # "`2,2,2,2' invalid for parameter `max_buffers'", so no loopbacks appear.
   commaList = f: concatStringsSep "," (map f indices);
   videoNrs = commaList (i: toString (deviceNr i));
   cardLabels = commaList (i: ''"${cfg.labelPrefix}${toString i}"'');
   exclusiveCaps = commaList (_: if cfg.exclusiveCaps then "1" else "0");
-  maxBuffers = commaList (_: toString cfg.maxBuffers);
+  maxBuffers = toString cfg.maxBuffers;
 
   gstPlugins = [
     pkgs.gst_all_1.gstreamer
@@ -187,7 +190,10 @@ in
     maxBuffers = mkOption {
       type = types.ints.positive;
       default = 2;
-      description = "v4l2loopback ring buffers per device; low = low latency.";
+      description = ''
+        v4l2loopback ring buffers; low = low latency. Applies to every
+        loopback -- the module parameter is a scalar, not a per-device array.
+      '';
     };
 
     hideFromPipewire = mkOption {
