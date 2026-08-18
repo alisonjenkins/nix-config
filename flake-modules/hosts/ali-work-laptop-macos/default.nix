@@ -434,6 +434,11 @@ in {
           gitGPGSigningKey = "~/.ssh/id_work.pub";
           gitUserName = "Alison Jenkins";
           github_clone_ssh_host_personal = "pgithub.com";
+          # No Fable on the work account. Without this the consult-top agent
+          # would ask for a model the org blocks, and Claude Code falls back to
+          # the *parent's* model (sonnet) rather than to opus — the escalation
+          # would silently do nothing. Naming opus here keeps the top rung real.
+          hasFable = false;
           github_clone_ssh_host_work = "github.com";
           hostname = "${hostnames.work}";
           # No local llama endpoint on this host — opencode falls back to

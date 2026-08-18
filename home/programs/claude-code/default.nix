@@ -1,4 +1,4 @@
-{ pkgs, lib, config, inputs, ... }:
+{ pkgs, lib, config, inputs, ... } @ args:
 let
   anthropicSkills = pkgs.fetchFromGitHub {
     owner = "anthropics";
@@ -9,6 +9,70 @@ let
 
   mandates = import ../shared-mandates.nix;
   inherit (mandates) gitStrategy modelRouting workStyle;
+
+  # Fable is unavailable on the work account. A `model: fable` agent there does
+  # NOT quietly fall back to opus — when a model is blocked, Claude Code falls
+  # back to the subagent's *inherited* model, which is the sonnet main loop, so
+  # the escalation would silently do nothing while appearing to work. Name the
+  # top tier per host instead of relying on any fallback.
+  #
+  # Read via `args ... or` rather than a named formal: a lambda default on a
+  # module argument is ignored by the module system (see
+  # home/skills/programming/languages/nix.md), and this module is imported in
+  # contexts that may not declare the arg at all.
+  hasFable = args.hasFable or true;
+  topTierModel = if hasFable then "fable" else "opus";
+
+  # Consultant agents: read-only advisors the session escalates to when it hits
+  # a countable trigger (third failed attempt, hard-to-reverse decision, …).
+  # They are advisory by design — the expensive model decides, the sonnet main
+  # loop writes the code, which is where the saving comes from.
+  #
+  # Frontmatter is generated here rather than living in the markdown so
+  # consult-top's model can be templated from topTierModel. Same string-valued
+  # `agents` entry the git agents already use.
+  mkConsultant = { model, effort, maxTurns, skills, extraDenied ? [ ] }: body: ''
+    ---
+    name: ${body.name}
+    description: ${body.description}
+    model: ${model}
+    effort: ${effort}
+    maxTurns: ${toString maxTurns}
+    memory: user
+    skills:
+    ${lib.concatMapStringsSep "\n" (s: "  - ${s}") skills}
+    disallowedTools:
+    ${lib.concatMapStringsSep "\n" (t: "  - ${t}") ([ "Edit" "Write" "NotebookEdit" ] ++ extraDenied)}
+    ---
+
+  '' + builtins.readFile body.path;
+
+  consultOpus = mkConsultant {
+    model = "opus";
+    effort = "xhigh";
+    maxTurns = 30;
+    # Preloaded because a subagent gets no skill listing and cannot discover a
+    # skill on its own. These two are what a consult is almost always about.
+    skills = [ "debugging" "design" ];
+  } {
+    name = "consult-opus";
+    description = "Consult a stronger model when stuck or facing a hard-to-reverse decision. Use on the third failed attempt at the same failure, when two hypotheses are disproved with no third, when a decision picks a dependency, data format or module boundary, or when the user reports the same thing still broken twice. Read-only: returns a decision and its rationale, not an edit.";
+    path = ./agents/consult-opus.md;
+  };
+
+  consultTop = mkConsultant {
+    model = topTierModel;
+    effort = "max";
+    maxTurns = 40;
+    skills = [ "design" ];
+    # Agent denied so the ladder terminates here regardless of the spawn-depth
+    # limit: consult-top must never escalate further or fan out.
+    extraDenied = [ "Agent" ];
+  } {
+    name = "consult-top";
+    description = "Last-rung consultant for whole-system decisions and investigations larger than a single sitting. Spawned by consult-opus, not by the main session.";
+    path = ./agents/consult-top.md;
+  };
 
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
@@ -696,6 +760,11 @@ in
       aws-iam-debugger = ./agents/aws-iam-debugger.md;
       git-commit-generator = builtins.readFile ./agents/git-commit-generator.md + "\n" + gitStrategy;
       pr-creator = builtins.readFile ./agents/pr-creator.md + "\n" + gitStrategy;
+      # Escalation ladder. modelRouting is context-only and never reaches an
+      # agent, so neither consultant inherits the trigger list that sent work
+      # here — each carries its own, different escalation rule in its body.
+      consult-opus = consultOpus;
+      consult-top = consultTop;
     };
 
     # User-level ~/.claude/CLAUDE.md — concatenated user mandates, applied to
