@@ -7,14 +7,36 @@ in
     enable = lib.mkEnableOption "greetd display manager with regreet GUI";
   };
 
-  config = lib.mkIf cfg.enable {
-    # Stylix emits a warning about our custom default_session.command (see
-    # below). It's a false positive — stylix themes regreet via
-    # programs.regreet.* options, not via the greetd command, so theming
-    # works fine. Filtering the warning hits infinite recursion (the filter
-    # would have to read options.warnings.definitionsWithLocations while
-    # contributing to it), so the warning stays. Cosmetic only.
+  # Drop one stylix warning, which is a false positive here.
+  #
+  # stylix/modules/regreet/nixos.nix warns whenever
+  # services.greetd.settings.default_session.command differs at all from
+  # nixpkgs' default, `dbus-run-session cage <cageArgs> -- regreet`. Dropping
+  # dbus-run-session is the entire point of the override below, so the warning
+  # fires by construction and cannot be satisfied without reintroducing the
+  # ~25s greeter delay.
+  #
+  # Theming is unaffected either way: stylix applies it through
+  # programs.regreet.* — adw-gtk3, GTK css generated from the scheme, the dark
+  # preference and the wallpaper — never through the greetd command. Disabling
+  # the target would silence the warning and lose all of that, so filter the
+  # message instead.
+  #
+  # `apply` transforms the merged list rather than reading config.warnings from
+  # a definition, which is what would recurse. It matches the full message
+  # prefix so a different regreet warning would still surface, and if stylix
+  # rewords this one the filter stops matching and the warning comes back —
+  # both failure modes are safe.
+  options.warnings = lib.mkOption {
+    apply = builtins.filter (
+      warning:
+      !lib.hasPrefix
+        "stylix: regreet: custom services.greetd.settings.default_session.command"
+        warning
+    );
+  };
 
+  config = lib.mkIf cfg.enable {
     services = {
       greetd = {
         enable = true;
