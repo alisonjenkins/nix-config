@@ -45,6 +45,11 @@ content of skills named in its `skills:` frontmatter list. So:
 
 - Guidance a subagent must have goes in its `skills:` list — a description it
   cannot see will never fire.
+- For an ad-hoc subagent with no definition of its own, the **parent injects**:
+  name the skill in the delegation prompt. A subagent can invoke a skill by
+  exact name even though none are listed to it, and the parent knows what the
+  task needs, so it sends only the relevant one rather than preloading
+  everything. This is the cheaper half of the same idea as `skills:`.
 - `disable-model-invocation: true` skills **cannot** be preloaded this way.
 - `Explore` and `Plan` skip the instructions hierarchy entirely, which is why
   they are cheap for read-only sweeps.

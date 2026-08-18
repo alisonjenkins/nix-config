@@ -46,6 +46,12 @@
       note `fd` may be packaged as `fdfind` on Debian/Ubuntu.
     - Sub-agent prompts must be self-contained: include every path, ID, query,
       and the exact output format — the sub-agent cannot see this conversation.
+    - Name the relevant skills in the sub-agent prompt. A sub-agent receives NO
+      skill listing, so it cannot discover a skill on its own — but it can
+      invoke one by exact name. You know why you are spawning it, so inject
+      only what that task needs: "invoke the `programming` skill, then read its
+      languages/rust.md" for code work, "invoke `testing`" for tests, and so on.
+      Skip this only for Explore/Plan sweeps, which are read-only.
     - Cap the sub-agent's reply length explicitly (e.g. "return at most 30
       lines: one line per PR — number, state, mergeable").
     - Never delegate: user-facing judgement, irreversible actions, or work
