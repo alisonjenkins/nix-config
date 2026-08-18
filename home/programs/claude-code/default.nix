@@ -97,16 +97,26 @@ let
     # Misc kept
     "slack-gif-creator"
   ];
+  # Each anthropic entry is a single skill *directory*, so it has to keep its own
+  # name: symlinkJoin merges directory contents, which would flatten every skill
+  # into the root (one winning SKILL.md, colliding scripts/ and reference/ dirs).
+  # linkFarm names each one, and the join below then merges those named dirs.
+  anthropicSkillsFarm = pkgs.linkFarm "anthropic-skills" (
+    map (n: {
+      name = n;
+      path = "${anthropicSkills}/skills/${n}";
+    }) anthropicSkillNames
+  );
+  # The remaining paths are *parents* of many skills, so merging contents is right.
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
-    paths =
-      (map (n: "${anthropicSkills}/skills/${n}") anthropicSkillNames)
-      ++ [
-        "${cavemanPkg}/skills"
-        "${claudeStatusbarPkg}/share/claude-statusbar/skills"
-        speckitInitSkill
-        ./skills
-      ];
+    paths = [
+      anthropicSkillsFarm
+      "${cavemanPkg}/skills"
+      "${claudeStatusbarPkg}/share/claude-statusbar/skills"
+      speckitInitSkill
+      ./skills
+    ];
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
