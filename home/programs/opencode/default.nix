@@ -120,9 +120,6 @@ let
     });
   '';
 
-  ghBin = "${pkgs.gh}/bin/gh";
-  kubectlBin = "${pkgs.kubectl}/bin/kubectl";
-
 in {
   xdg.configFile = {
     # Main opencode config
@@ -228,135 +225,19 @@ in {
     # Cavemem opencode plugin
     "opencode/plugins/cavemem.js".text = cavememPluginJS;
 
-    # Skills shared with Claude Code come from home/skills/ via
-    # flake.lib.skills, linked in below the attrset rather than named here.
-
-    # ── Lazy-loaded skills replacing heavy MCPs ──
-    # These replace github (42 tools), k8s (9 tools), and terraform (9 tools)
-    # MCPs. Only ~100 chars of description in baseline context; full CLI
-    # guide loads only when skill is invoked.
-
-    "opencode/skills/github/SKILL.md".text = ''
-      ---
-      description: GitHub operations — issues, PRs, code search, releases, and repo management via gh CLI
-      ---
-
-      # GitHub Operations
-
-      Use `${ghBin}` (already authenticated) for all GitHub operations.
-      Prefer `--json field1,field2` for machine-readable output.
-
-      ## Issues
-      ```
-      gh issue list [--repo owner/repo] [--state open|closed] [--label bug] [--json number,title,state]
-      gh issue view <number> [--repo owner/repo] [--json title,body,comments]
-      gh issue create --title "..." --body "..."
-      gh issue comment <number> --body "..."
-      gh search issues "query" [--repo owner/repo] [--json number,title,repository]
-      ```
-
-      ## Pull Requests
-      ```
-      gh pr list [--repo owner/repo] [--state open|merged|closed] [--json number,title,state]
-      gh pr view <number> [--json title,body,reviews,mergeable,statusCheckRollup]
-      gh pr create --title "..." --body "..." [--base main]
-      gh pr review <number> --approve|--comment|--request-changes --body "..."
-      gh pr merge <number> --rebase
-      gh pr diff <number>
-      gh pr checks <number>
-      gh search prs "query" [--repo owner/repo]
-      ```
-
-      ## Code & Repo Search
-      ```
-      gh search code "query" [--repo owner/repo] [--language nix]
-      gh search repos "query" [--language nix] [--json fullName,description]
-      gh search commits "query" [--repo owner/repo]
-      ```
-
-      ## Repository
-      ```
-      gh repo view [owner/repo] [--json name,description,defaultBranchRef]
-      gh release list [--repo owner/repo]
-      gh release view <tag> [--repo owner/repo]
-      gh api repos/{owner}/{repo}/... [--jq '.field']
-      gh api graphql -f query='...'
-      ```
-    '';
-
-    "opencode/skills/kubernetes/SKILL.md".text = ''
-      ---
-      description: Kubernetes cluster operations — pods, deployments, services, logs, and debugging via kubectl
-      ---
-
-      # Kubernetes Operations
-
-      Use `${kubectlBin}` for all Kubernetes operations.
-
-      ## Core Commands
-      ```
-      kubectl get pods|deployments|services|nodes [-n namespace] [-o wide|json|yaml]
-      kubectl describe pod|deployment|service <name> [-n namespace]
-      kubectl logs <pod> [-n namespace] [-c container] [--tail=100] [-f]
-      kubectl exec -it <pod> [-n namespace] -- <command>
-      kubectl apply -f <file.yaml>
-      kubectl delete pod|deployment|service <name> [-n namespace]
-      ```
-
-      ## Debugging
-      ```
-      kubectl get events [-n namespace] [--sort-by='.lastTimestamp']
-      kubectl top pods|nodes [-n namespace]
-      kubectl get pods --field-selector=status.phase!=Running [-n namespace]
-      kubectl rollout status deployment/<name> [-n namespace]
-      kubectl rollout restart deployment/<name> [-n namespace]
-      ```
-
-      ## Context & Config
-      ```
-      kubectl config get-contexts
-      kubectl config use-context <name>
-      kubectl get namespaces
-      ```
-    '';
-
-    "opencode/skills/terraform/SKILL.md".text = ''
-      ---
-      description: Terraform provider and module lookup — search the registry for docs, versions, and examples
-      ---
-
-      # Terraform Registry Lookup
-
-      Query the Terraform Registry API for provider and module documentation.
-
-      ## Provider Lookup
-      ```
-      curl -s "https://registry.terraform.io/v1/providers?q=<query>" | jq '.providers[] | {name, description, version: .tag}'
-      curl -s "https://registry.terraform.io/v2/provider-docs?filter[provider-name]=<name>&filter[category]=resources" | jq '.data[] | .attributes.title'
-      ```
-
-      ## Module Search
-      ```
-      curl -s "https://registry.terraform.io/v1/modules?q=<query>" | jq '.modules[] | {id, description, version}'
-      curl -s "https://registry.terraform.io/v1/modules/<namespace>/<name>/<provider>" | jq '{version: .version, inputs: .root.inputs, outputs: .root.outputs}'
-      ```
-
-      ## Local Operations
-      ```
-      terraform init
-      terraform plan [-var-file=vars.tfvars]
-      terraform apply [-auto-approve]
-      terraform state list
-      terraform state show <resource>
-      terraform output [-json]
-      ```
-    '';
+    # Skills shared with Claude Code, from home/skills/
+    # (flake.lib.skills). Linked as whole directories, not single files, so
+    # each family's bundled children (languages/*.md, per-tool guides) come
+    # along — that is where the detail lives, loaded on demand rather than
+    # sitting in baseline context.
+    #
+    # These SKILL.md files use agentskills.io spec frontmatter only, which is
+    # what makes them usable from here as well as from Claude Code. The infra
+    # family replaced the former inline github / kubernetes / terraform skills,
+    # which duplicated the same CLI guidance.
 
   }
   // cavemanCommandConfigs
-  # Every shared skill, linked as a whole *directory* so its bundled child
-  # files come along; linking SKILL.md alone would silently drop them and the
-  # skill's routing table would point at nothing.
   // lib.mapAttrs' (
     name: path: lib.nameValuePair "opencode/skills/${name}" { source = path; }
   ) inputs.self.lib.skills;
