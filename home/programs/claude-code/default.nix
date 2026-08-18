@@ -355,8 +355,9 @@ in
       # cost ~10 chars each in baseline context instead of ~500.
       #   documents -> docx, pdf, pptx, xlsx, doc-coauthoring, internal-comms
       #   web-ui    -> frontend-design, web-artifacts-builder, webapp-testing
-      # Leaves without a natural parent (mcp-builder, skill-creator,
-      # slack-gif-creator) keep their descriptions and stay top-level.
+      #   skill-authoring -> skill-creator
+      # Leaves without a natural parent (mcp-builder, slack-gif-creator) keep
+      # their descriptions and stay top-level.
       skillOverrides = {
         docx = "name-only";
         pdf = "name-only";
@@ -367,6 +368,7 @@ in
         frontend-design = "name-only";
         web-artifacts-builder = "name-only";
         webapp-testing = "name-only";
+        skill-creator = "name-only";
       };
 
       # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer
