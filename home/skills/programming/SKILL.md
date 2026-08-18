@@ -1,6 +1,6 @@
 ---
 name: programming
-description: Use when writing, changing, fixing, debugging or refactoring code in any language — including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language — including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, and input validation and secrets.
 ---
 
 # Programming
@@ -31,6 +31,16 @@ language.
   checks current state before mutating, and is safe to re-run.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
   retry count, buffer size) gets a name and a one-line justification.
+
+## By-concern routing
+
+Independent of language. Read the one that matches what the change involves.
+
+| The change involves | Read |
+|---|---|
+| Input that could be wrong, an impossible state, an assertion, a resource to release, an error path | [defensive.md](defensive.md) |
+| Threads, async tasks, workers, locks, shared or cached state, an intermittent failure | [concurrency.md](concurrency.md) |
+| Untrusted input, a query or command built from data, permissions, tokens or secrets, a dependency bump | [security.md](security.md) |
 
 ## Per-language routing
 
