@@ -875,25 +875,24 @@ in {
           # Process scheduling is handled by ananicy-cpp with ananicy-rules-cachyos.
           system76-scheduler.enable = false;
 
+          # nixpkgs' plasma6 module sets this to "plasma" itself (mkDefault),
+          # which would hand the greeter's default over to Plasma the moment it
+          # was enabled above. niri remains the session this machine boots into;
+          # Plasma is a pick-from-the-list alternative.
+          displayManager.defaultSession = "niri";
+
           xserver = {
             videoDrivers = [ "amdgpu" ];
             xkb.layout = "us";
             xkb.variant = "";
 
-            displayManager = {
-              # nixpkgs' plasma6 module sets this to "plasma" itself
-              # (mkDefault), which would hand the greeter's default over to
-              # Plasma the moment it was enabled above. niri remains the
-              # session this machine boots into; Plasma is a pick-from-the-list
-              # alternative.
-              defaultSession = "niri";
-
-              importedVariables = [
-                "XDG_SESSION_TYPE"
-                "XDG_CURRENT_DESKTOP"
-                "XDG_SESSION_DESKTOP"
-              ];
-            };
+            # importedVariables is still declared under services.xserver; only
+            # defaultSession moved out to services.displayManager.
+            displayManager.importedVariables = [
+              "XDG_SESSION_TYPE"
+              "XDG_CURRENT_DESKTOP"
+              "XDG_SESSION_DESKTOP"
+            ];
           };
         };
 
