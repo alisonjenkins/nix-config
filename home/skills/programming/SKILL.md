@@ -46,6 +46,10 @@ Read the file matching what you are editing. If several apply, read each.
 
 ## Related
 
+- Finding out *why* something is broken, before writing the fix: the
+  `debugging` skill. This one covers writing the change; that one covers
+  locating the fault and deciding which evidence to trust. Both apply to a bug
+  fix, in that order.
 - Tests for the code you are writing: the `testing` skill.
 - Committing the result: the `git` skill.
 - Reviewing a finished diff: the `review` skill.

@@ -44,6 +44,11 @@ Run the test, quote the result, and say plainly if something was skipped.
 Build success is not test success, and a passing test suite you did not run is
 not evidence. See `superpowers:verification-before-completion`.
 
+Verifying a fix to *running* software is a harder problem than running a test
+suite — the environment you verify in has to match the one the user runs, and
+plenty of signals report success while the fix never applied. The `debugging`
+family's `verifying-a-fix.md` covers that case.
+
 ## Per-language routing
 
 | Testing | Read |
