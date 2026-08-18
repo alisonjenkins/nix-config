@@ -403,17 +403,19 @@ in
 
       alwaysThinkingEnabled = true;
 
-      # Sonnet for the session, Opus for plan mode. Planning is the single
-      # largest category of work Sonnet should not do alone, and `opusplan` is
-      # the built-in alias for exactly that split — everything else escalates
-      # on demand through the consultant agents below.
+      # Sonnet always, including plan mode: it is the fastest model that
+      # isn't Haiku, and Haiku can't run auto mode. Everything Sonnet cannot
+      # handle alone — a hard design call, plan mode on something with no
+      # obvious shape, being stuck — escalates on demand through the
+      # consultant agents below instead of running the whole session on a
+      # bigger, slower model by default.
       #
       # Note this key is now nix-managed, so the activation script at the foot
       # of this file replaces it on every rebuild: a `/model` chosen mid-session
-      # lasts for that session and is reset to opusplan on the next switch.
+      # lasts for that session and is reset to sonnet on the next switch.
       # `CLAUDE_CODE_SUBAGENT_MODEL` is deliberately NOT set — it overrides
       # every subagent's model and would defeat the per-agent `model:` below.
-      model = "opusplan";
+      model = "sonnet";
 
       # Skill listing visibility. The listing budget is 1% of the model's
       # context window, with per-entry text capped at 1536 chars; on a 1M-token
