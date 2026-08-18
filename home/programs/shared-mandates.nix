@@ -61,6 +61,13 @@
   workStyle = ''
     # Working Principles (user mandate)
 
+    - Restate the task in one sentence before starting anything that is more
+      than a single mechanical edit: what is wrong today, and for whom. If the
+      request named a solution rather than a problem ("add caching", "make it
+      faster", "clean this up"), or the sentence only works with a guess in it,
+      invoke the `requirements` skill before writing code — not to interrogate
+      the user, but to decide what to assume out loud and what genuinely
+      blocks.
     - Before writing, changing, or fixing code — including a one-line fix —
       invoke the `programming` skill and read its language file for whatever
       you are editing. Same for `testing` before touching tests and `review`
