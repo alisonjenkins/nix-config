@@ -61,6 +61,10 @@
   workStyle = ''
     # Working Principles (user mandate)
 
+    - Before writing, changing, or fixing code — including a one-line fix —
+      invoke the `programming` skill and read its language file for whatever
+      you are editing. Same for `testing` before touching tests and `review`
+      before judging a diff. Debugging counts as changing code.
     - Times: ISO8601 UTC (e.g. 2026-06-10T14:03:22Z) in all files, logs, and
       reports.
     - UTF-8 everywhere; prefer formats both humans and machines can read
