@@ -46,6 +46,10 @@ Read the file matching what you are editing. If several apply, read each.
 
 ## Related
 
+- Deciding what shape the change should be — where a responsibility belongs,
+  whether to split a module, why a small change is touching many files: the
+  `design` skill. Reach for it before writing when the structure is in
+  question, not after.
 - Finding out *why* something is broken, before writing the fix: the
   `debugging` skill. This one covers writing the change; that one covers
   locating the fault and deciding which evidence to trust. Both apply to a bug
