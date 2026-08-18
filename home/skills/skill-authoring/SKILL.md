@@ -19,6 +19,21 @@ grown from *facts* into a *procedure*.
   skill cannot make itself run on an event.
 - **A one-off** → neither. Just do it.
 
+## Corrections belong here, not only in memory
+
+When the user corrects how you work, and the correction would hold next month
+on a different repo, it belongs in a skill. A memory records that it happened
+once; a skill changes what happens by default.
+
+The test is whether the correction survives its context. "Ask before mutating
+live infrastructure" and "probe `sudo -n` before deferring" generalise — they
+go in a family. "This host has 3.8GB of RAM" does not — that stays a memory.
+
+Put it in the narrowest place that still catches the case: a language file
+beats the family parent, and the family parent beats an always-loaded
+instructions file. Reserve the instructions file for rules that must hold even
+when no skill is loaded.
+
 ## The family pattern
 
 Skills are discovered at exactly one level: `~/.claude/skills/<name>/SKILL.md`

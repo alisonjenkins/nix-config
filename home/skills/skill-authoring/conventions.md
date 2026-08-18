@@ -49,6 +49,22 @@ Make a **family** when:
 Keep it a **leaf** when it has a distinct trigger and no siblings —
 `process-todo` and `mcp-builder` are correctly standalone.
 
+## These files run on machines you are not sitting at
+
+A shared skill is deployed to every machine the user works from — different
+distributions, different package managers, macOS as well as Linux. Guidance
+that silently assumes otherwise breaks where you cannot see it.
+
+- Never hardcode an absolute tool path. What sits at
+  `/run/current-system/sw/bin/<tool>` on one machine is elsewhere or absent on
+  the next.
+- Never assume a tool is installed. Prefer the portable built-in; for shell
+  tools, probe with `command -v` and give the fallback. Call out naming quirks
+  where they exist — `fd` is packaged as `fdfind` on Debian and Ubuntu, and
+  macOS ships BSD rather than GNU userland.
+- Keep wording tool- and path-agnostic in anything shared. Machine-specific
+  detail belongs in that machine's own configuration or in memory, not here.
+
 ## Body
 
 - Keep `SKILL.md` under 500 lines; move detail into sibling files and link
