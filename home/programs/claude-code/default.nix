@@ -80,8 +80,9 @@ let
       --replace-fail '@specify@' '${lib.getExe pkgs.spec-kit}'
   '';
 
-  # Merge skill directories. ./skills holds locally-authored global skills
-  # (process-todo, ...).
+  # Merge skill directories from three sources: the curated anthropics/skills
+  # subset below, the runtime-agnostic families in home/skills/, and the
+  # skill-shipping packages (caveman, claude-statusbar, spec-kit).
   #
   # Curated subset of anthropics/skills rather than the whole repo: every skill's
   # name+description loads into every agent/subagent, so the unused ones
@@ -107,15 +108,22 @@ let
       path = "${anthropicSkills}/skills/${n}";
     }) anthropicSkillNames
   );
+  # Locally-authored skills live at home/skills/, not under this module: they
+  # carry agentskills.io spec frontmatter only and are linked into opencode too,
+  # so no single agent runtime owns them. flake.lib.skills auto-discovers that
+  # directory, so a new family needs no edit here.
+  sharedSkillsFarm = pkgs.linkFarm "shared-skills" (
+    lib.mapAttrsToList (name: path: { inherit name path; }) inputs.self.lib.skills
+  );
   # The remaining paths are *parents* of many skills, so merging contents is right.
   allSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
     paths = [
       anthropicSkillsFarm
+      sharedSkillsFarm
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
       speckitInitSkill
-      ./skills
     ];
   };
 

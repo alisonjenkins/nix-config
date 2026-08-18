@@ -1,7 +1,7 @@
 # opencodeLocalLLM read via `args ... or` rather than a named formal arg: the
 # module system resolves named args through _module.args and errors when the
 # specialArg is absent, ignoring lambda defaults.
-{ pkgs, lib, ... } @ args:
+{ pkgs, lib, inputs, ... } @ args:
 let
   opencodeLocalLLM = args.opencodeLocalLLM or true;
 
@@ -228,8 +228,8 @@ in {
     # Cavemem opencode plugin
     "opencode/plugins/cavemem.js".text = cavememPluginJS;
 
-    # Process-todo skill
-    "opencode/skills/process-todo/SKILL.md".source = ../claude-code/skills/process-todo/SKILL.md;
+    # Skills shared with Claude Code come from home/skills/ via
+    # flake.lib.skills, linked in below the attrset rather than named here.
 
     # ── Lazy-loaded skills replacing heavy MCPs ──
     # These replace github (42 tools), k8s (9 tools), and terraform (9 tools)
@@ -353,5 +353,11 @@ in {
     '';
 
   }
-  // cavemanCommandConfigs;
+  // cavemanCommandConfigs
+  # Every shared skill, linked as a whole *directory* so its bundled child
+  # files come along; linking SKILL.md alone would silently drop them and the
+  # skill's routing table would point at nothing.
+  // lib.mapAttrs' (
+    name: path: lib.nameValuePair "opencode/skills/${name}" { source = path; }
+  ) inputs.self.lib.skills;
 }
