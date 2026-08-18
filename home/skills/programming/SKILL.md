@@ -31,6 +31,23 @@ language.
   checks current state before mutating, and is safe to re-run.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
   retry count, buffer size) gets a name and a one-line justification.
+- **Don't program by coincidence.** If you cannot say *why* it works, it does
+  not work yet — it happens to pass. Code that was arrived at by permuting
+  until the test went green is the most expensive kind to own, because the
+  next person, including you, will assume it was reasoned. Understand the
+  mechanism, or say plainly that you have not.
+- **Name well; rename when needed.** A name that no longer describes what the
+  thing does is a defect, not cosmetics — it actively misleads every reader
+  after you. Renaming the thing you are already changing is part of the change,
+  not scope creep; renaming things you are not otherwise touching is.
+- **Don't live with broken windows.** A known-wrong thing left in place
+  licenses the next one, and the decay compounds faster than anyone expects.
+  Fix it if it is in reach, and if it is genuinely out of scope, record it
+  where it will be found — never step over it silently.
+- **Treat reluctance as a signal.** When you find yourself circling a change
+  without starting it, the usual cause is that the requirement is unclear or
+  the design is wrong, not that the work is unpleasant. Stop and re-read the
+  requirement before pushing through.
 
 ## By-concern routing
 
