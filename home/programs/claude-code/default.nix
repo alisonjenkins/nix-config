@@ -339,6 +339,36 @@ in
 
       alwaysThinkingEnabled = true;
 
+      # Skill listing visibility. The listing budget is 1% of the model's
+      # context window, with per-entry text capped at 1536 chars; on a 1M-token
+      # model there is headroom, but on a 200k model the listing truncates and
+      # Claude Code drops descriptions from the least-used skills first.
+      #
+      # Values: "on" (default) | "name-only" (listed without description) |
+      # "user-invocable-only" (hidden from Claude, still typable) | "off".
+      # Only bundled/personal/project skills — plugin skills ignore this.
+      #
+      # Used here to make the specialist skills below *children* of a family
+      # skill: "name-only" keeps them fully invocable and visible in the `/`
+      # menu, but drops their (long) descriptions from the listing. The parent
+      # family skill carries the trigger keywords and routes to them, so they
+      # cost ~10 chars each in baseline context instead of ~500.
+      #   documents -> docx, pdf, pptx, xlsx, doc-coauthoring, internal-comms
+      #   web-ui    -> frontend-design, web-artifacts-builder, webapp-testing
+      # Leaves without a natural parent (mcp-builder, skill-creator,
+      # slack-gif-creator) keep their descriptions and stay top-level.
+      skillOverrides = {
+        docx = "name-only";
+        pdf = "name-only";
+        pptx = "name-only";
+        xlsx = "name-only";
+        doc-coauthoring = "name-only";
+        internal-comms = "name-only";
+        frontend-design = "name-only";
+        web-artifacts-builder = "name-only";
+        webapp-testing = "name-only";
+      };
+
       # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer
       # with virtualized scrollback (equivalent to CLAUDE_CODE_NO_FLICKER=1).
       # Equivalent to running `/tui fullscreen`. "default" = classic renderer.
