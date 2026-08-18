@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check and NixOS VM tests. Carries the TDD loop, what makes a test worth having, mocking policy, and routes to per-language guidance for Rust, Python, Nix and TypeScript/JavaScript.
+description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check and NixOS VM tests. Carries the TDD loop, what makes a test worth having, mocking policy, property-based testing and how to check the suite can actually go red, and routes to per-language guidance for Rust, Python, Nix and TypeScript/JavaScript.
 ---
 
 # Testing
@@ -16,6 +16,26 @@ Discipline detail for the full TDD workflow lives in
 `superpowers:test-driven-development` — invoke that skill rather than
 restating it here. This file covers what to test and how to judge a test.
 
+## What testing is for
+
+**Not finding bugs.** Bugs are what testing catches; feedback on the design is
+what it is *for*. A thing that is hard to test is telling you something
+structural — too many collaborators, hidden state, work fused to I/O — and the
+fix is to the code, not to the test. Elaborate setup is a design finding.
+The `design` skill covers what to do about it.
+
+Three consequences:
+
+- **A test is the first user of your code.** Write the call site you wish
+  existed, then make it exist. An API that is awkward from a test is awkward
+  from everywhere.
+- **Design to test.** Testability is a constraint you accept while designing,
+  not a property you retrofit afterwards. Injecting the clock, the RNG and the
+  I/O boundary costs nothing up front and is expensive to add later.
+- **Find bugs once.** Any bug a human had to find gets a test that would have
+  caught it, before the fix lands. Finding it a second time means the first
+  fix bought nothing.
+
 ## What makes a test worth having
 
 - **It fails when the behaviour breaks, and only then.** A test that also
@@ -26,6 +46,10 @@ restating it here. This file covers what to test and how to judge a test.
   to understand a red test, the assertion is too coarse.
 - **It is deterministic.** No wall-clock, no network, no ordering dependence
   between test cases. Inject the clock and the RNG.
+- **It covers states, not lines.** Line coverage of two booleans can hit 100%
+  while three of their four combinations are never exercised. Ask which states
+  and which boundaries the test visits — empty, one, many, maximum, error —
+  not what percentage the tool reports.
 
 ## Mocking policy
 
@@ -49,10 +73,11 @@ suite — the environment you verify in has to match the one the user runs, and
 plenty of signals report success while the fix never applied. The `debugging`
 family's `verifying-a-fix.md` covers that case.
 
-## Per-language routing
+## Routing
 
 | Testing | Read |
 |---|---|
+| Rules that must hold for *all* inputs; parsers, encoders, boundary bugs; checking the suite can go red at all | [property-based.md](property-based.md) |
 | Rust (`cargo test`, `cargo nextest`) | [languages/rust.md](languages/rust.md) |
 | Python (`pytest`) | [languages/python.md](languages/python.md) |
 | Nix (`nix flake check`, NixOS VM tests) | [languages/nix.md](languages/nix.md) |
