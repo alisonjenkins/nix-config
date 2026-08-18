@@ -1,6 +1,6 @@
 ---
 name: testing
-description: How to test — what a good failing test looks like, the TDD loop, when a test is worth writing, mocking policy, and how to verify a change end to end before claiming it works. Routes to per-language guidance for Rust, Python, Nix, and TypeScript/JavaScript. Use when adding tests, fixing a failing test, deciding whether something is testable, or verifying a change.
+description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check and NixOS VM tests. Carries the TDD loop, what makes a test worth having, mocking policy, and routes to per-language guidance for Rust, Python, Nix and TypeScript/JavaScript.
 ---
 
 # Testing

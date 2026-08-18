@@ -24,7 +24,18 @@ as a matching surface, not a summary.
 - For a family parent, include trigger vocabulary for **every child**.
 - State the negative case when the skill is easily confused with a neighbour:
   "not for source code" is worth its characters.
-- Aim for 250–400 characters. `programming` is 400 and covers five languages;
+- **Lead with the verb, not the noun.** Descriptions that describe *what the
+  skill contains* ("general code-writing conventions", "how to review code")
+  do not fire; descriptions that name *what the user is doing* ("use when
+  fixing, debugging or changing code") do. Measured: the `git` family fired
+  unprompted on "commit this" because its description said "use when
+  committing", while `programming` sat unused through an entire Nix debugging
+  session because it said "use when writing or refactoring code, or when
+  unsure of the idiom" — and the model was neither writing nor unsure.
+- **Cover the broken case.** Most code work arrives as "this is broken, fix
+  it", not "write me a feature". A description that only names the greenfield
+  verbs excludes the common path.
+- Aim for 250–450 characters. `programming` is 448 and covers five languages;
   a leaf rarely needs more than 200.
 
 ## Parent or leaf?

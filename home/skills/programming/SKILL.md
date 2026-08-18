@@ -1,6 +1,6 @@
 ---
 name: programming
-description: General code-writing conventions that apply in every language — naming, comments, error handling, altitude, and matching the surrounding code — plus a routing table to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript, and shell. Use when writing or refactoring code, reviewing your own diff before handing it over, or when unsure of the idiom for a language in this repo.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language — including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell.
 ---
 
 # Programming
@@ -42,7 +42,7 @@ Read the file matching what you are editing. If several apply, read each.
 | `*.py`, `pyproject.toml` | [languages/python.md](languages/python.md) |
 | `*.nix`, `flake.nix` | [languages/nix.md](languages/nix.md) |
 | `*.ts`, `*.tsx`, `*.js`, `package.json` | [languages/typescript.md](languages/typescript.md) |
-| `*.sh`, `*.bash`, shell in a hook or CI step | [languages/shell.md](languages/shell.md) |
+| `*.sh`, `*.bash`, or a shell snippet embedded anywhere else — a hook, a CI step, a Nix string, a systemd unit | [languages/shell.md](languages/shell.md) |
 
 ## Related
 

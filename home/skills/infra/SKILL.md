@@ -1,6 +1,6 @@
 ---
 name: infra
-description: Infrastructure and operations — the infrastructure-as-code-first rule, when direct mutation of live systems is allowed and when to ask, and per-tool guidance for Nix deployment, Kubernetes, Terraform, AWS, and the GitHub CLI. Use when deploying, changing cluster or cloud state, debugging a running service, or reaching for kubectl, terraform, aws, gh, or deploy-rs.
+description: Use when deploying, changing cluster or cloud state, debugging a running service or a failed activation, or reaching for kubectl, terraform, aws, gh, deploy-rs, nixos-rebuild or just switch/deploy. Carries the infrastructure-as-code-first rule and when asking permission is required before touching live systems, and routes to per-tool guidance for Nix deployment, Kubernetes, Terraform, AWS and the GitHub CLI.
 ---
 
 # Infrastructure

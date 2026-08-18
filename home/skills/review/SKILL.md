@@ -1,6 +1,6 @@
 ---
 name: review
-description: How to review code — the rubric for judging a diff, severity ordering, how to phrase a finding so it is actionable, and how to verify a finding is real before reporting it. Covers reviewing your own diff before handing it over and reviewing someone else's pull request. Use when reviewing a diff, a PR, or checking your own work before committing.
+description: Use when reviewing a diff, a pull request, or your own work before committing or handing it over — including "look over this change", "is this right", or checking for bugs you introduced. Carries the rubric for judging a diff, severity ordering, how to phrase a finding so it is actionable, and how to verify a finding is real before reporting it.
 ---
 
 # Review

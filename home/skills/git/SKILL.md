@@ -1,6 +1,6 @@
 ---
 name: git
-description: Git and GitHub workflow — atomic commits, never squash, rebase-and-merge, commit message format, branch and PR handling, and worktree isolation. Use when committing, splitting or amending changes, opening or merging a PR, choosing a merge strategy, or setting up an isolated workspace for a feature.
+description: Use when committing, amending, splitting or reordering changes, opening / updating / reviewing / merging a pull request, choosing a merge strategy, branching, or setting up an isolated worktree — including "commit this", "push it", "open a PR". Carries the atomic-commit and never-squash mandate, the commit message format, and routes to commit, PR and worktree guidance.
 ---
 
 # Git

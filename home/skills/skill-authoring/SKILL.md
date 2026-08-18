@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: Creating, structuring, and maintaining skills — the family pattern used here, how to write a description that actually fires, which frontmatter fields are portable versus Claude-Code-only, what a skill costs in baseline context, and how skills get installed from this repo. Use when adding a skill, editing an existing one, deciding whether something should be a skill at all, splitting a skill that has grown too large, or wondering why a skill is not triggering.
+description: Use when adding, editing, splitting or reorganising a skill, deciding whether something should be a skill at all, or working out why a skill is not firing when it should. Carries the family pattern used here, how to write a description that actually matches, which frontmatter fields are portable versus Claude-Code-only, what a skill costs in context, and how skills get installed from this repo.
 ---
 
 # Skill authoring

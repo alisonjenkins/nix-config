@@ -1,6 +1,6 @@
 ---
 name: documents
-description: Producing or reading real documents and written comms — Word (.docx), PDF, PowerPoint (.pptx), Excel (.xlsx), long-form co-authored drafts, and internal announcements. Use when asked for a report, memo, letter, deck, spreadsheet, or template as a file, when extracting or editing content from one, or when drafting an announcement or update for other people to read. Routes to the specialist skill that does the work.
+description: Use when asked to produce, read, edit or extract from a real document file — a report, memo, letter, deck, spreadsheet or template as .docx, .pdf, .pptx or .xlsx — when drafting long-form writing alongside the user, or when writing an announcement or update aimed at other people. Routes to the specialist skill that does the work. Not for source code or markdown in a repo.
 ---
 
 # Documents
