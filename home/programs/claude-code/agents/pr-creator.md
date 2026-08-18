@@ -3,6 +3,8 @@ name: pr-creator
 description: "Create / open / submit / update a GitHub pull request for the current branch. Handles the full workflow: rebase, push, create-or-update PR with an appropriate description. Use when the user asks to open/submit a PR or says they're done and want changes submitted."
 model: sonnet
 memory: user
+skills:
+  - git
 aliases: []
 id: pr-creator
 tags: []

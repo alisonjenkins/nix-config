@@ -1,15 +1,19 @@
 {
+  # Headline rules only. The full workflow — commit-message format, splitting a
+  # change, PR handling, worktrees — lives in the `git` skill, which is the
+  # single source of truth. Keep these three lines here anyway: they are
+  # safety-critical and must hold even when the skill is not loaded.
   gitStrategy = ''
     # Git Strategy (user mandate)
 
     - Atomic commits: each commit does exactly one granular thing; reverting it
       alone must leave the project compilable (assuming it compiled before).
       Never bundle unrelated changes into one commit.
-    - Never squash. Squash merges collapse atomic commits into one oversized
-      commit and destroy per-change revertability.
-    - Merging PRs/branches: prefer rebase-and-merge (`gh pr merge --rebase`);
-      if rebase merges are unavailable or disallowed, use a merge commit
-      (`gh pr merge --merge`); never `gh pr merge --squash`.
+    - Never squash — it destroys per-change revertability.
+    - Merging PRs/branches: prefer rebase-and-merge (`gh pr merge --rebase`),
+      else a merge commit (`gh pr merge --merge`); never `--squash`.
+    - Invoke the `git` skill before committing, opening a PR, or merging: it
+      carries the message format, the splitting rules, and the PR workflow.
   '';
 
   modelRouting = ''
@@ -55,17 +59,16 @@
       reports.
     - UTF-8 everywhere; prefer formats both humans and machines can read
       (Markdown tables, JSON, CSV) over free-form dumps.
-    - Commits: small and focused — one logical change per commit.
     - External systems: make interactions idempotent — check current state
       before mutating; safe to re-run.
     - Tenacity: retry transient failures with backoff before giving up; when a
       subtask is unrecoverable, degrade gracefully — deliver the rest and
       report the gap.
-    - Infrastructure as code first: prefer proposing the change in the IaC
-      repo and letting CI/CD apply it. Mutating live infrastructure directly
-      (consoles, ad-hoc kubectl/aws edits) is sometimes acceptable for
-      personal infra, but ALWAYS ask the user for permission first — never
-      mutate live infra unprompted.
+    - Infrastructure as code first: propose the change in the IaC repo and let
+      CI/CD apply it. Direct mutation of live infrastructure (consoles, ad-hoc
+      kubectl/aws edits) is sometimes acceptable for personal infra, but
+      ALWAYS ask the user for permission first — never mutate live infra
+      unprompted. Per-tool guidance: the `infra` skill.
 
     # Communication (user mandate)
 
