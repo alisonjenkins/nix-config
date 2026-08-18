@@ -26,8 +26,15 @@ just deploy [extraargs]
   `just test` locally or a VM build first.
 - `nix flake check` may fail from the wrong host when an input only evaluates
   on another platform. Skipping it is legitimate; say that you skipped it.
-- Anything requiring `sudo` must be handed to the user to run — agent sessions
-  have no askpass.
+- Before assuming `sudo` is unavailable, **probe it**: `sudo -n true`, or
+  `ssh -o BatchMode=yes <host> 'sudo -n true'`. Servers are often deliberately
+  configured passwordless for remote operations, and deferring to the user on
+  those wastes a round trip. Where the probe fails — typically an interactive
+  workstation — hand the exact command to the user rather than retrying a
+  password prompt that cannot succeed.
+- systemd cannot infer ordering from a glob. A unit that depends on
+  wildcard-matched device or mount units will race a slow dependency at boot.
+  Generate an explicit barrier unit that expands the glob at build time.
 
 ## Authoring side
 
