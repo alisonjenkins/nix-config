@@ -42,6 +42,19 @@ them is your only evidence, go and get better evidence.
   a different topology and do nothing, or the exact opposite of what it says.
   Verify the effect, not the intent.
 
+## Reproduction
+
+- **"It passes on retry" is not flakiness, it is a race.** Random,
+  intermittent and load-dependent failures are concurrency issues until proven
+  otherwise: a test that passes alone and fails in the suite, a bug that only
+  appears on the faster machine, an import that fails one time in twenty. The
+  retry that makes it go away is the signal being suppressed, not the fault
+  being fixed. Go and find the shared state — the `programming` skill's
+  `concurrency.md` covers where it hides.
+- **Not reproducing is not evidence of absence.** It is evidence that your
+  reproduction is missing a condition — load, ordering, a cold cache, a
+  different clock, a second client.
+
 ## The general form
 
 If the signal you are trusting is produced by something *other than* the thing

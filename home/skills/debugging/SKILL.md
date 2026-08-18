@@ -25,6 +25,21 @@ discipline does not: **which evidence to trust.**
 5. **Change one thing, and confirm it took effect** — not that the symptom went
    away, which has many causes.
 
+## Before any of that
+
+- **Don't panic.** Under pressure the first move is to slow down and read what
+  is actually being reported — the whole message, the whole stack trace, the
+  timestamps — not to start changing things. Most of the time the answer is in
+  the output already, unread.
+- **Suspect yourself first.** The OS, the compiler and a widely-used library
+  are almost certainly not broken; your most recent change almost certainly is.
+  Work outward in that order — your change, your code, your configuration, your
+  dependencies, and only then the platform. When you do reach the conclusion
+  that a third party is at fault, you need the reproduction to prove it.
+- **Fix the problem, not the blame.** Whether the fault is yours, a library's
+  or the user's is irrelevant until it is fixed, and deciding early narrows the
+  search to the wrong place. Note it afterwards if it matters.
+
 ## The habit that catches the most
 
 Ask: *what would this look like if the thing I trust were lying?* Then go and
