@@ -20,5 +20,7 @@
 
 ## Scripts
 - A utility script resolves its own tools — a `nix-shell` shebang or a devshell
-  — and never assumes anything beyond coreutils is on `PATH`.
+  — and never assumes anything beyond coreutils is on `PATH`. Anything needing
+  pandas, numpy, scipy or similar ships as a directory with a `flake.nix`
+  devshell beside the script, invoked via `nix develop`.
 - Scripts that touch external systems take a `--dry-run` and are safe to re-run.

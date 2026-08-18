@@ -13,6 +13,15 @@
 ## Rules
 - **DRY is enforced.** A value used twice (SSH keys, hostnames, ports, mandate
   text) gets one definition and is referenced. Duplicated literals are a bug.
+  Before writing any literal — an SSH key, IP, DNS name, hostname, git URL,
+  password hash — grep the flake for it. If it already exists, extract the
+  existing occurrence into a shared file or a `flake.lib.<topic>` output and
+  consume it from both places. Do not add the second copy.
+- **Machine-specific settings go in the host's own configuration**, never in a
+  shared module. `modules/base` and friends apply to desktops, laptops and
+  servers alike; a core-count limit, kernel parameter, or hardware workaround
+  that suits one machine is wrong for the others. Ask which hosts a setting
+  should apply to before putting it somewhere shared.
 - New or renamed files must be `git add`ed before building — flakes only see
   tracked files, and the failure looks like "file does not exist".
 - `symlinkJoin` merges directory *contents*. To keep each input as its own
