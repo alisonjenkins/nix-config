@@ -3,6 +3,7 @@ name: deploy
 description: Build then deploy hosts to remote machines via deploy-rs. Use when user
   runs /deploy, says "deploy <host>", "deploy the servers", or "roll out to all".
 argument-hint: "[boot|switch] <host|group ...>"
+disable-model-invocation: true
 ---
 
 # /deploy — build, then deploy-rs

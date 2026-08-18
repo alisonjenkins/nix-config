@@ -7,6 +7,9 @@ description: How this repo packages Minecraft modpacks as Nix-built OCI images
   (find-mod-bumps), arkana-mods*.nix / arkana-groups.nix / overlays.nix, dep-tree,
   CurseForge/NeoForge/Create version floors, or any Minecraft modpack server crash
   triage in this repo.
+paths:
+  - "pkgs/create-*/**"
+  - "pkgs/minecraft-modpack-tools/**"
 ---
 
 # Minecraft modpack server packaging

@@ -4,6 +4,7 @@ description: Build NixOS/darwin/home configs from this flake without activating.
   Use when user runs /build, says "build <host>", "build the servers", or
   "check the config builds".
 argument-hint: "[host|group ...]"
+disable-model-invocation: true
 ---
 
 # /build — build configs, never activate

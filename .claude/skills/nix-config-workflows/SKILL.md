@@ -1,6 +1,9 @@
 ---
 name: nix-config-workflows
 description: How to modify and build this nix-config repo — editing configs, adding hosts, NixOS modules, flake-modules, and secrets. Use when adding a new host / module / flake-module / secret, or when unsure of the test→build→switch→deploy flow. Covers haumea auto-discovery and the git-add-before-build gotcha.
+paths:
+  - "**/*.nix"
+  - "justfile"
 ---
 
 # nix-config workflows
