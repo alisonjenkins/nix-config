@@ -1,9 +1,17 @@
 ---
 name: requirements
-description: Use when a request is ambiguous, underspecified, or names a solution instead of a problem — "make it faster", "add caching", "clean this up", "it should just work" — and before starting work whose shape depends on which reading is right. Covers separating the problem from the proposed solution, spotting a constraint that is assumed rather than real, deciding which assumption to state and proceed on versus which question actually blocks, and keeping terms consistent so the same word means one thing.
+description: Use before starting work when the request names a solution rather than a problem ("add caching", "make it faster", "clean this up", "refactor this", "it should just work"), when a term in it could mean two things, when you are about to guess which reading was meant, or when you cannot say in one sentence what goes wrong today and for whom. Also when a constraint looks like it makes the task impossible. Covers separating the problem from the proposed solution, marking constraints as given versus assumed, deciding which assumption to state and proceed on versus which question actually blocks, and keeping terms consistent.
 ---
 
 # Requirements
+
+## If you got here and the ask was clear
+
+Say so in one line and carry on. This skill is invoked on a cheap check, so it
+will sometimes fire on a request that was fine — that is the intended cost.
+Do **not** manufacture a clarifying question to justify having read it. An
+unnecessary question costs the user a round trip; an unnecessary read costs
+nothing.
 
 ## Nobody knows exactly what they want
 

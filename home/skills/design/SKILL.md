@@ -59,6 +59,9 @@ two modules.
 
 ## Related
 
+- Before any of this, if the requirement is not settled: the `requirements`
+  skill. A design cannot be judged easier-to-change without knowing what is
+  expected to change.
 - Writing the code once the shape is settled: the `programming` skill.
 - Testability is a design signal, not a testing afterthought — a thing that is
   hard to test is usually coupled. The `testing` skill covers what to do about

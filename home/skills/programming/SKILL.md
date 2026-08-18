@@ -73,6 +73,9 @@ Read the file matching what you are editing. If several apply, read each.
 
 ## Related
 
+- The ask itself being unclear — it named a solution rather than a problem, or
+  you are about to guess which of two readings was meant: the `requirements`
+  skill, before any of this.
 - Deciding what shape the change should be — where a responsibility belongs,
   whether to split a module, why a small change is touching many files: the
   `design` skill. Reach for it before writing when the structure is in
