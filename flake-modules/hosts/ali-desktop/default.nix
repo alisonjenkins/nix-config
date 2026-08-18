@@ -55,16 +55,15 @@ in {
       inputs.home-manager.nixosModules.home-manager
 
       # Home-manager configuration
-      {
+      ({ lib, pkgs, ... }: {
         nixpkgs.overlays = [
           self.overlays._1password
           self.overlays.python-lsp-server-jedi-relax
         ];
 
-        # Use timestamp-based backups to prevent conflicts
-        home-manager.backupCommand = ''
-          mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
-        '';
+        # Must be a single executable: home-manager word-splits
+        # $HOME_MANAGER_BACKUP_COMMAND and appends the target as $1.
+        home-manager.backupCommand = lib.getExe pkgs.hm-backup-file;
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
@@ -111,7 +110,7 @@ in {
             github_clone_ssh_host_work = "github.com";
             primarySSHKey = "~/.ssh/id_personal.pub";
           };
-      }
+      })
 
       ({ config, pkgs, lib, outputs, ... }: {
         modules.niks3CachePush = {

@@ -53,10 +53,10 @@ in {
       { nixpkgs.config.permittedInsecurePackages = [ "pnpm-9.15.9" ]; }
 
       # Home-manager configuration
-      {
-        home-manager.backupCommand = ''
-          mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
-        '';
+      ({ lib, pkgs, ... }: {
+        # Must be a single executable: home-manager word-splits
+        # $HOME_MANAGER_BACKUP_COMMAND and appends the target as $1.
+        home-manager.backupCommand = lib.getExe pkgs.hm-backup-file;
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
@@ -74,7 +74,7 @@ in {
             github_clone_ssh_host_work = "github.com";
             primarySSHKey = "~/.ssh/id_personal.pub";
           };
-      }
+      })
 
       # Pull in repo-wide overlays. `modifications` is where the
       # openldap doCheck=false override lives (NixOS/nixpkgs#372569

@@ -53,11 +53,10 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Home-manager configuration
-      {
-        # Use timestamp-based backups to prevent conflicts
-        home-manager.backupCommand = ''
-          mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
-        '';
+      ({ lib, pkgs, ... }: {
+        # Must be a single executable: home-manager word-splits
+        # $HOME_MANAGER_BACKUP_COMMAND and appends the target as $1.
+        home-manager.backupCommand = lib.getExe pkgs.hm-backup-file;
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
@@ -85,7 +84,7 @@ in {
             # switch primarySSHKey/azureDevopsRsaKey to ~/.ssh/id_work{,_rsa}.pub.
             primarySSHKey = "~/.ssh/id_personal.pub";
           };
-      }
+      })
 
       # Host-specific configuration
       ({ config, lib, inputs, outputs, pkgs, ... }: {

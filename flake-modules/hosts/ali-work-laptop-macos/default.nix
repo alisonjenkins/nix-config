@@ -419,11 +419,10 @@ in {
       })
 
       inputs.home-manager.darwinModules.home-manager
-      {
-        # Use timestamp-based backups to prevent conflicts
-        home-manager.backupCommand = ''
-          mv -v "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
-        '';
+      ({ lib, pkgs, ... }: {
+        # Must be a single executable: home-manager word-splits
+        # $HOME_MANAGER_BACKUP_COMMAND and appends the target as $1.
+        home-manager.backupCommand = lib.getExe pkgs.hm-backup-file;
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${username} = self.homeModules.home-macos;
@@ -445,7 +444,7 @@ in {
           workIdentity = true;
           workIdentitySecretsFile = self + "/secrets/ali-work-laptop-macos/work-identity.enc.yaml";
         };
-      }
+      })
     ];
     specialArgs = commonArgs // {
       hostname = "${hostnames.work}";

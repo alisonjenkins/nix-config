@@ -3,10 +3,9 @@
     inputs.home-manager.nixosModules.home-manager
   ];
 
-  # Use timestamp-based backups to prevent conflicts with existing backup files
-  home-manager.backupCommand = ''
-    ${pkgs.coreutils}/bin/mv -v "$1" "$1.backup-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
-  '';
+  # Must be a single executable: home-manager word-splits
+  # $HOME_MANAGER_BACKUP_COMMAND and appends the target as $1.
+  home-manager.backupCommand = "${pkgs.hm-backup-file}/bin/hm-backup-file";
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
   home-manager.users.${specialArgs.username} = import ../../home/home-linux.nix;
