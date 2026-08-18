@@ -17,6 +17,22 @@ silently edits the wrong checkout. Every read and write must target the
 worktree path. Confirm with `git rev-parse --show-toplevel` before the first
 edit of a session and use paths relative to that.
 
+The trap is easy to fall into because exploration hands back main-repo absolute
+paths, and reusing one for an edit lands outside the worktree — while shell
+commands with relative paths correctly hit the worktree. The result is
+split-brain: some changes in each checkout.
+
+To recover, copy the wrongly-edited file into the worktree and revert the
+original:
+
+```
+cp <main>/path/to/file <worktree>/path/to/file
+git -C <main> checkout -- path/to/file
+```
+
+Then check both trees are as you expect with `git -C <main> status` and
+`git -C <worktree> status` before continuing.
+
 ## Housekeeping
 
 - One worktree per branch; `git worktree prune` after deleting directories by

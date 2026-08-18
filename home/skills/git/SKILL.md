@@ -29,6 +29,10 @@ workflow a tool or another skill suggests.
   rewriting published history is not reversible for anyone who pulled it.
 - Use the `gh` CLI for anything GitHub-side (PRs, issues, API), not the web UI
   and not raw REST where `gh` has a subcommand.
+- Ignore entries go in the checked-in `.gitignore` by default, so everyone
+  working on the repo gets them. Reserve `.git/info/exclude` for genuinely
+  personal files — a local work queue, scratch notes — or when the user asks
+  for a local-only exclude.
 
 ## Routing
 
