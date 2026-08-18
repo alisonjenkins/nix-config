@@ -26,6 +26,16 @@
   tracked files, and the failure looks like "file does not exist".
 - `symlinkJoin` merges directory *contents*. To keep each input as its own
   named directory, use `linkFarm`. Mixing these up silently flattens trees.
+- **A lambda default on a module argument does not make it optional.** Writing
+  `{ someArg ? "fallback", ... }:` looks like it makes the argument safe to
+  omit, and does not: the module system resolves named arguments through
+  `_module.args` and never consults the default, failing with
+  `error: attribute 'someArg' missing`. Every configuration importing the
+  module must pass the value — so a module that is genuinely optional should
+  read it as `args.someArg or "fallback"` from an `@ args` pattern instead.
+  This bites when a module is shared between configurations that supply
+  different argument sets, such as a NixOS host and a standalone
+  home-manager configuration.
 - Avoid IFD. Prefer `source`-linked store paths over `builtins.readFile` into
   a text option when the thing is a whole directory.
 - Overlays here take only `{ inputs }` and branch on
