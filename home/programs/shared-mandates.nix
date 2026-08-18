@@ -52,6 +52,18 @@
       only what that task needs: "invoke the `programming` skill, then read its
       languages/rust.md" for code work, "invoke `testing`" for tests, and so on.
       Skip this only for Explore/Plan sweeps, which are read-only.
+    - Escalate instead of grinding. The session runs on a fast model; hard
+      problems are handled by consulting a stronger one via the `consult-opus`
+      agent, which may escalate further itself. Consult when ANY of these is
+      true, without waiting to feel stuck: a third attempt at the same failure;
+      two hypotheses tested and disproved with no third; a decision that picks
+      a dependency, data format or module boundary; the same file read three
+      times without the picture resolving; the user reporting the same thing
+      still broken twice; or an irreversible operation, on the first attempt.
+      Invoke the `consulting` skill for the brief format — the consultant sees
+      none of the conversation, so a thin brief buys a confident wrong answer.
+      Do NOT consult for mechanical volume, for something the user already
+      decided, or for anything answerable by reading a file first.
     - Cap the sub-agent's reply length explicitly (e.g. "return at most 30
       lines: one line per PR — number, state, mergeable").
     - Never delegate: user-facing judgement, irreversible actions, or work
