@@ -90,5 +90,6 @@ forge_enable_secret_scanning()       { _forge_dispatch enable_secret_scanning "$
 forge_get_default_branch()           { _forge_dispatch get_default_branch "$@"; }
 forge_repo_settings()                { _forge_dispatch repo_settings "$@"; }
 forge_list_workflow_files()          { _forge_dispatch list_workflow_files "$@"; }
+forge_collaborator_count()           { _forge_dispatch collaborator_count "$@"; }
 forge_list_recent_commit_subjects()  { _forge_dispatch list_recent_commit_subjects "$@"; }
 forge_list_releases()                { _forge_dispatch list_releases "$@"; }
