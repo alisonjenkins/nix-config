@@ -75,6 +75,70 @@ test_main_skips_non_checkout_target() {
     assert_contains "$out" "needs a local checkout" "main: skips (not fails) when target isn't a local checkout"
 }
 
+test_renovate_automerge_enabled_true_key() {
+    renovate_automerge_enabled '{"automerge": true}'
+    assert_exit 0 $? "renovate_automerge_enabled: detects explicit automerge:true"
+}
+
+test_renovate_automerge_enabled_preset() {
+    renovate_automerge_enabled '{"extends": ["config:recommended", ":automergeAll"]}'
+    assert_exit 0 $? "renovate_automerge_enabled: detects :automergeAll preset"
+}
+
+test_renovate_automerge_enabled_missing() {
+    renovate_automerge_enabled '{"extends": ["config:recommended"]}'
+    assert_exit 1 $? "renovate_automerge_enabled: returns 1 when neither is present"
+}
+
+test_main_flags_renovate_missing_automerge() {
+    local repo; repo="$(make_fixture_repo)"
+    echo '{"extends": ["config:recommended"]}' > "$repo/renovate.json"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "auto-merge not enabled" "main: flags renovate.json with no automerge as a hard finding"
+    rm -rf "$repo"
+}
+
+test_main_passes_renovate_with_automerge() {
+    local repo; repo="$(make_fixture_repo)"
+    echo '{"extends": ["config:recommended"], "automerge": true}' > "$repo/renovate.json"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "auto-merge enabled" "main: passes renovate.json with automerge:true"
+    rm -rf "$repo"
+}
+
+test_main_flags_dependabot_missing_automerge() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github"
+    echo 'version: 2' > "$repo/.github/dependabot.yml"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "auto-merge not enabled" "main: flags dependabot.yml with no auto-merge workflow"
+    rm -rf "$repo"
+}
+
+test_main_passes_dependabot_with_automerge_workflow() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github/workflows"
+    echo 'version: 2' > "$repo/.github/dependabot.yml"
+    echo 'uses: dependabot/fetch-metadata@v2' > "$repo/.github/workflows/automerge.yaml"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "auto-merge enabled" "main: passes dependabot.yml with a fetch-metadata automerge workflow"
+    rm -rf "$repo"
+}
+
+test_fix_enables_renovate_automerge_on_confirm() {
+    local repo; repo="$(make_fixture_repo)"
+    echo '{"extends": ["config:recommended"]}' > "$repo/renovate.json"
+    echo y | main "$repo" --fix >/dev/null 2>&1
+    local automerge
+    automerge="$(jq -r '.automerge' "$repo/renovate.json")"
+    assert_eq "true" "$automerge" "main --fix: sets automerge:true in an existing renovate.json when confirmed"
+    rm -rf "$repo"
+}
+
 test_fix_scaffolds_renovate_on_confirm() {
     local repo; repo="$(make_fixture_repo)"
     echo y | main "$repo" --fix >/dev/null 2>&1
@@ -97,6 +161,14 @@ run_all() {
     test_main_reports_uncovered_ecosystem
     test_main_passes_when_ecosystem_covered
     test_main_skips_non_checkout_target
+    test_renovate_automerge_enabled_true_key
+    test_renovate_automerge_enabled_preset
+    test_renovate_automerge_enabled_missing
+    test_main_flags_renovate_missing_automerge
+    test_main_passes_renovate_with_automerge
+    test_main_flags_dependabot_missing_automerge
+    test_main_passes_dependabot_with_automerge_workflow
+    test_fix_enables_renovate_automerge_on_confirm
     test_fix_scaffolds_renovate_on_confirm
     test_fix_does_not_scaffold_on_decline
 }
