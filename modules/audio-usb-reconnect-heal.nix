@@ -8,7 +8,7 @@ with lib; let
   cfg = config.services.audio-usb-reconnect-heal;
 
   # Root, because udev rules run as root; pw-link needs the user's PipeWire.
-  asUser = "${pkgs.util-linux}/bin/runuser -u ${cfg.user} --";
+  asUser = "${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg cfg.user} --";
 
   udevRules =
     concatMapStringsSep "\n" (d: ''
@@ -16,7 +16,9 @@ with lib; let
     '')
     cfg.devices;
 
-  # Shell-quoted "output-port input-port" pairs, fed to the relink loop below.
+  # Space-delimited "output-port input-port" pairs, one per line, fed to the
+  # relink loop's `read -r out_port in_port` below. Not shell-quoted -- relies
+  # on port names (Nix-generated node:port strings) never containing spaces.
   linkList = concatMapStringsSep "\n" (l: "${l.output} ${l.input}") cfg.expectedLinks;
 in {
   options.services.audio-usb-reconnect-heal = {
@@ -64,7 +66,7 @@ in {
         options = {
           name = mkOption {
             type = types.str;
-            description = "Human-readable name, used only in log lines.";
+            description = "Human-readable name, for readability in the config only -- not referenced at runtime.";
           };
           vendorId = mkOption {
             type = types.strMatching "[0-9a-f]{4}";
