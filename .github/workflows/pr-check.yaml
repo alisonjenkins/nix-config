@@ -7,17 +7,16 @@ name: PR check
 # home-nix-builder-amd64: fork-PR code gets a throwaway sandbox instead of
 # the host's LAN-attached persistent /nix/store.
 #
-# Scope is deliberately light — evaluation only, not full derivation builds
-# (those already run on push via build-and-cache.yaml). This just needs to
-# catch broken eval/syntax before a dependency bump merges unattended.
-#
-# --no-build skips building the outputs `nix flake check` inspects, but a
-# handful of them (e.g. the claude-code-skills package used by some hosts'
-# home-manager config) read a build output at *eval* time via IFD — that
-# still needs a real derivation output regardless of --no-build. Pointing at
-# this repo's own niks3 cache (same one build-and-cache.yaml pushes to, and
-# setup-host-nix already trusts) lets those substitute instead of building
-# from scratch on a plain GitHub-hosted runner.
+# Originally eval-only (--no-build) to stay light, since full builds already
+# run on push via build-and-cache.yaml. Dropped that: a handful of outputs
+# (e.g. the claude-code-skills package some hosts' home-manager config reads
+# via IFD) need a real built derivation *during evaluation*, and --no-build
+# blocks that build/substitute path entirely, not just the final "build the
+# checked output" step — there's no flag that lets IFD resolve while still
+# skipping everything else. Points at this repo's own niks3 cache (same
+# URL/key setup-host-nix already trusts) so most of what still needs
+# realizing substitutes from there instead of building from scratch on a
+# bare GitHub-hosted runner.
 
 on:
   pull_request:
@@ -32,7 +31,7 @@ permissions:
 jobs:
   flake-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: DeterminateSystems/nix-installer-action@v19
@@ -41,5 +40,5 @@ jobs:
             extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org
             extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
       - uses: DeterminateSystems/flake-checker-action@v12
-      - name: nix flake check (eval only)
-        run: nix flake check --no-build --no-warn-dirty
+      - name: nix flake check
+        run: nix flake check --no-warn-dirty
