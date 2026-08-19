@@ -599,6 +599,21 @@ in {
           # once unstable catches up to 26.x.
           graphics.package = lib.mkForce pkgs.master.mesa;
           graphics.package32 = lib.mkForce pkgs.master.pkgsi686Linux.mesa;
+
+          # Modern mesa (both nixos-unstable 26.1.5 and master 26.2.0 —
+          # checked both directly) is GLVND-only: it ships libGLX_mesa.so
+          # / libEGL_mesa.so ICDs but never libGL.so.1 itself. The NixOS
+          # `hardware.graphics` module doesn't add libglvnd on its own
+          # either (checked nixos/modules/hardware/graphics.nix — no
+          # glvnd handling at all), so without an explicit extraPackages
+          # entry /run/opengl-driver never gets a libGL.so.1 dispatcher.
+          # Surfaced when the gamescope launch chain's LD_PRELOAD'd
+          # overlay/mangohud layer needs it and gamemoderun's bash dies
+          # with "error while loading shared libraries: libGL.so.1".
+          # Pull libglvnd from the same pkgs.master used above so its
+          # ABI matches the mesa ICDs it's dispatching to.
+          graphics.extraPackages = [ pkgs.master.libglvnd ];
+          graphics.extraPackages32 = [ pkgs.master.pkgsi686Linux.libglvnd ];
         };
 
         # Disable NetworkManager-wait-online — desktop doesn't need network up before login
