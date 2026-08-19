@@ -42,6 +42,10 @@ github_enable_secret_scanning() {
     gh api --method PATCH "repos/$TARGET_REPO" --input - <<<"$payload"
 }
 
+github_collaborator_count() {
+    gh api "repos/$TARGET_REPO/collaborators" --jq 'length' 2>/dev/null || echo 1
+}
+
 github_list_workflow_files() {
     gh api "repos/$TARGET_REPO/contents/.github/workflows" --jq '.[].name' 2>/dev/null || true
 }

@@ -42,6 +42,11 @@ gitlab_list_workflow_files() {
     return 2
 }
 
+gitlab_collaborator_count() {
+    echo "unsupported-forge:gitlab:collaborator_count" >&2
+    return 2
+}
+
 gitlab_list_recent_commit_subjects() {
     echo "unsupported-forge:gitlab:list_recent_commit_subjects" >&2
     return 2
