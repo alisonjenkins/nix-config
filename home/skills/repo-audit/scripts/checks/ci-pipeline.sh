@@ -37,6 +37,19 @@ check_workflow_file() {
     fi
 }
 
+# any_workflow_triggers_on_pull_request <workflows-dir> -> 0/1
+any_workflow_triggers_on_pull_request() {
+    local dir="$1"
+    local wf
+    for wf in "$dir"/*.yaml "$dir"/*.yml; do
+        [[ -f "$wf" ]] || continue
+        # Matches `pull_request:` or `pull_request_target:` as an `on:` key
+        # (2-space indented, the convention every workflow here uses).
+        grep -qE '^  pull_request(_target)?:' "$wf" && return 0
+    done
+    return 1
+}
+
 main() {
     set -euo pipefail
     FINDINGS_COUNT=0
@@ -65,6 +78,13 @@ main() {
         [[ -f "$wf" ]] || continue
         check_workflow_file "$wf"
     done
+
+    if any_workflow_triggers_on_pull_request "$target/.github/workflows"; then
+        report_pass "at least one workflow triggers on pull_request (required checks can be satisfied)"
+    else
+        report_fail "no workflow triggers on pull_request — required status checks (branch protection, automerge) can never be satisfied" \
+            "add a workflow with 'on: pull_request' so PRs get a check-run at all"
+    fi
 
     echo "-- $FINDINGS_COUNT finding(s) --"
 }
