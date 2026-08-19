@@ -63,12 +63,54 @@ test_passes_caching_step() {
     rm -rf "$repo"
 }
 
+test_any_workflow_triggers_on_pull_request_true() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github/workflows"
+    printf 'name: x\non:\n  pull_request:\njobs: {}\n' > "$repo/.github/workflows/x.yaml"
+    any_workflow_triggers_on_pull_request "$repo/.github/workflows"
+    assert_exit 0 $? "any_workflow_triggers_on_pull_request: detects 'pull_request:' trigger"
+    rm -rf "$repo"
+}
+
+test_any_workflow_triggers_on_pull_request_false() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github/workflows"
+    printf 'name: x\non:\n  push:\n    branches: [main]\njobs: {}\n' > "$repo/.github/workflows/x.yaml"
+    any_workflow_triggers_on_pull_request "$repo/.github/workflows"
+    assert_exit 1 $? "any_workflow_triggers_on_pull_request: returns 1 when nothing triggers on pull_request"
+    rm -rf "$repo"
+}
+
+test_main_flags_no_pull_request_trigger() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github/workflows"
+    printf 'name: x\non:\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs: {}\n' > "$repo/.github/workflows/x.yaml"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "no workflow triggers on pull_request" "main: flags a repo with no pull_request-triggered workflow"
+    rm -rf "$repo"
+}
+
+test_main_passes_with_pull_request_trigger() {
+    local repo; repo="$(make_fixture_repo)"
+    mkdir -p "$repo/.github/workflows"
+    printf 'name: x\non:\n  pull_request:\npermissions:\n  contents: read\njobs: {}\n' > "$repo/.github/workflows/x.yaml"
+    local out
+    out="$(main "$repo" 2>&1)"
+    assert_contains "$out" "at least one workflow triggers on pull_request" "main: passes when a workflow triggers on pull_request"
+    rm -rf "$repo"
+}
+
 run_all() {
     test_main_skips_repo_without_workflows
     test_flags_write_all_permissions
     test_passes_explicit_permissions
     test_flags_missing_permissions_block
     test_passes_caching_step
+    test_any_workflow_triggers_on_pull_request_true
+    test_any_workflow_triggers_on_pull_request_false
+    test_main_flags_no_pull_request_trigger
+    test_main_passes_with_pull_request_trigger
 }
 
 run_all
