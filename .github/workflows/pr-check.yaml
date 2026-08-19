@@ -1,0 +1,33 @@
+name: PR check
+
+# Runs on every pull request so it produces a status on the PR's head commit
+# — none of this repo's other workflows trigger on `pull_request` (they're
+# all push/tag/schedule/dispatch), so nothing else can gate branch protection
+# or Renovate automerge on green. GitHub-hosted runner, not the self-hosted
+# home-nix-builder-amd64: fork-PR code gets a throwaway sandbox instead of
+# the host's LAN-attached persistent /nix/store.
+#
+# Scope is deliberately light — evaluation only, not full derivation builds
+# (those already run on push via build-and-cache.yaml). This just needs to
+# catch broken eval/syntax before a dependency bump merges unattended.
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@v19
+      - uses: DeterminateSystems/flake-checker-action@v12
+      - name: nix flake check (eval only)
+        run: nix flake check --no-build --no-warn-dirty
