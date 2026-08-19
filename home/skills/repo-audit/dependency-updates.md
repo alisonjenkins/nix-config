@@ -12,8 +12,14 @@ Run via `scripts/checks/dependency-updates.sh <target>`.
   Actions versions, then diffs that against what the config's `packageRules`/
   `updates` entries actually cover. A config that only updates npm in a repo
   that also has a Dockerfile is a finding.
-- Auto-merge-on-green policy is **reported, not enforced** — how much trust to
-  extend to automated updates is a per-repo judgment call.
+- Auto-merge-on-green is a **hard requirement**, not a per-repo judgment call —
+  without it, dependency PRs pile up and get rubber-stamped or ignored, which
+  defeats the point of automating updates at all. The config must enable
+  `automerge` (Renovate) or auto-merge equivalent (Dependabot's
+  `target-branch`/GitHub's native auto-merge), gated on required status checks
+  actually passing — this only merges safely when `branch-protection.md`'s
+  required-checks criterion is also met, so a repo failing that check gets
+  both findings, not just one.
 
 ## GitHub
 
@@ -32,6 +38,8 @@ unimplemented check in v1 (`lib/gitlab.sh` stub).
 
 ## Fixing
 
-`--fix` scaffolds a minimal `renovate.json` (`{"extends": ["config:recommended"]}`,
-matching this repo's own `renovate.json`) or appends a missing ecosystem entry
-to an existing config, with the diff shown and confirmed before writing.
+`--fix` scaffolds a minimal `renovate.json` (`{"extends": ["config:recommended",
+":automergeAll"]}`) when none exists, or offers to add
+`"automerge": true` (Renovate) to an existing config that's missing it, or
+appends a missing ecosystem entry — each shown as a diff and confirmed before
+writing.

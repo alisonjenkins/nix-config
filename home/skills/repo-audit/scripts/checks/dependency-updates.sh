@@ -40,8 +40,33 @@ find_dependency_config() {
 
 apply_scaffold_renovate() {
     local target="$1"
-    echo "{\"\$schema\": \"https://docs.renovatebot.com/renovate-schema.json\", \"extends\": [\"config:recommended\"]}" \
+    echo "{\"\$schema\": \"https://docs.renovatebot.com/renovate-schema.json\", \"extends\": [\"config:recommended\", \":automergeAll\"]}" \
         | jq . > "$target/renovate.json"
+}
+
+# renovate_automerge_enabled <config-content> -> 0/1
+# Matches an explicit "automerge": true, or one of Renovate's automerge
+# presets pulled in via "extends".
+renovate_automerge_enabled() {
+    local content="$1"
+    grep -qiE '"automerge"[[:space:]]*:[[:space:]]*true' <<<"$content" && return 0
+    grep -qiE ':automerge(all|patch|minor)?"' <<<"$content" && return 0
+    return 1
+}
+
+apply_enable_renovate_automerge() {
+    local target="$1" config_file="$2"
+    jq '.automerge = true' "$target/$config_file" > "$target/$config_file.tmp" \
+        && mv "$target/$config_file.tmp" "$target/$config_file"
+}
+
+# dependabot_automerge_enabled <target> -> 0/1
+# Dependabot itself has no automerge key — the standard pattern is a
+# workflow using dependabot/fetch-metadata + `gh pr merge --auto`.
+dependabot_automerge_enabled() {
+    local target="$1"
+    [[ -d "$target/.github/workflows" ]] \
+        && grep -qriE 'dependabot/fetch-metadata|pr merge --auto|enable-automerge' "$target/.github/workflows" 2>/dev/null
 }
 
 main() {
@@ -88,6 +113,26 @@ main() {
                 fi
             fi
         done
+
+        case "$config_file" in
+            renovate.json|renovate.json5|.github/renovate.json|.github/renovate.json5)
+                if renovate_automerge_enabled "$config_content"; then
+                    report_pass "auto-merge enabled (required for dependency updates to scale)"
+                else
+                    report_fail "auto-merge not enabled — required, not a per-repo judgment call" \
+                        "add \"automerge\": true, or extend \":automergeAll\"; only merges safely once required status checks are set (see branch-protection.md)"
+                    confirm_fix "enable automerge in $config_file" apply_enable_renovate_automerge "$target" "$config_file"
+                fi
+                ;;
+            .github/dependabot.yml)
+                if dependabot_automerge_enabled "$target"; then
+                    report_pass "auto-merge enabled (dependabot/fetch-metadata + auto-merge workflow found)"
+                else
+                    report_fail "auto-merge not enabled — required, not a per-repo judgment call" \
+                        "add a workflow using dependabot/fetch-metadata + 'gh pr merge --auto' (or GitHub's native auto-merge) gated on required status checks"
+                fi
+                ;;
+        esac
     fi
 
     echo "-- $FINDINGS_COUNT finding(s) --"
