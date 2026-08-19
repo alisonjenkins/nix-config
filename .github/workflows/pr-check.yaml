@@ -3,20 +3,25 @@ name: PR check
 # Runs on every pull request so it produces a status on the PR's head commit
 # — none of this repo's other workflows trigger on `pull_request` (they're
 # all push/tag/schedule/dispatch), so nothing else can gate branch protection
-# or Renovate automerge on green. GitHub-hosted runner, not the self-hosted
-# home-nix-builder-amd64: fork-PR code gets a throwaway sandbox instead of
-# the host's LAN-attached persistent /nix/store.
+# or Renovate automerge on green.
 #
-# Originally eval-only (--no-build) to stay light, since full builds already
-# run on push via build-and-cache.yaml. Dropped that: a handful of outputs
-# (e.g. the claude-code-skills package some hosts' home-manager config reads
-# via IFD) need a real built derivation *during evaluation*, and --no-build
-# blocks that build/substitute path entirely, not just the final "build the
-# checked output" step — there's no flag that lets IFD resolve while still
-# skipping everything else. Points at this repo's own niks3 cache (same
-# URL/key setup-host-nix already trusts) so most of what still needs
-# realizing substitutes from there instead of building from scratch on a
-# bare GitHub-hosted runner.
+# Self-hosted (home-nix-builder-amd64), not GitHub-hosted: a plain
+# ubuntu-latest runner can't actually do this — a handful of outputs (e.g.
+# the claude-code-skills package some hosts' home-manager config reads via
+# IFD) need a real built derivation during evaluation, so `--no-build` can't
+# be used, and a full `nix flake check` against this repo's 100+ flake inputs
+# and many full NixOS closures exhausts a GitHub-hosted runner's disk before
+# it gets anywhere (confirmed: it dies mid-build with a bare "operation was
+# canceled", no error, after a handful of minutes). The self-hosted runner
+# already has the persistent /nix/store and matching disk headroom this
+# needs — same reason build-and-cache.yaml/update.yaml/closure-report.yaml
+# all use it.
+#
+# Fork-PR guard: this repo has one collaborator (you), so the realistic
+# fork-PR exposure is low, but the backstop costs nothing and matches every
+# other self-hosted workflow here — a forked PR gets no run at all, so it
+# can never satisfy this required check (forked-PR automerge is impossible
+# by construction, not by policy).
 
 on:
   pull_request:
@@ -25,20 +30,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   flake-check:
-    runs-on: ubuntu-latest
+    runs-on: home-nix-builder-amd64
     timeout-minutes: 90
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@v19
-        with:
-          extra-conf: |
-            extra-substituters = https://cache.nixcache.org https://nix-community.cachix.org
-            extra-trusted-public-keys = nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-      - uses: DeterminateSystems/flake-checker-action@v12
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
       - name: nix flake check
         run: nix flake check --no-warn-dirty
