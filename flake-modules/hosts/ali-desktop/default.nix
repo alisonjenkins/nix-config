@@ -32,6 +32,7 @@ in {
       # set — but only if the module is in the list at all.
       self.nixosModules.desktop-wm-plasma6
       self.nixosModules.audio-context-suspend
+      self.nixosModules.audio-usb-reconnect-heal
       self.nixosModules.base
       self.nixosModules.camera-resume
       self.nixosModules.desktop
@@ -373,6 +374,49 @@ in {
         services.audio-context-suspend = {
           enable = true;
           user = "ali";
+        };
+
+        # Fixes the incident from 2026-08-19: the Scarlett sits behind a USB
+        # switch and briefly dropped mid-session, which left two PipeWire
+        # links missing -- EasyEffects' virtual sink never reached the
+        # Scarlett's hardware playback ports, and the binaural spatializer
+        # never reached EasyEffects. Everything downstream still looked
+        # healthy (unmuted, RUNNING, hw_ptr advancing); only those specific
+        # links were gone, and nothing recreates them on its own.
+        #
+        # Deliberately relinks rather than restarting wireplumber: doing the
+        # latter live-drops every active PipeWire stream, which is how a
+        # Zoom call's mic got killed mid-session while chasing this same bug.
+        services.audio-usb-reconnect-heal = {
+          enable = true;
+          user = "ali";
+          devices = [
+            {
+              name = "Focusrite Scarlett 2i2 4th Gen";
+              vendorId = "1235";
+              productId = "8219";
+            }
+          ];
+          expectedLinks = let
+            scarlettOut = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
+          in [
+            {
+              output = "easyeffects_sink:monitor_FL";
+              input = "${scarlettOut}:playback_FL";
+            }
+            {
+              output = "easyeffects_sink:monitor_FR";
+              input = "${scarlettOut}:playback_FR";
+            }
+            {
+              output = "effect_output.binaural71:output_FL";
+              input = "easyeffects_sink:playback_FL";
+            }
+            {
+              output = "effect_output.binaural71:output_FR";
+              input = "easyeffects_sink:playback_FR";
+            }
+          ];
         };
 
         # S3 drops VBUS to the root hubs, so the OBSBOT re-enumerates on every
