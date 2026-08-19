@@ -2,6 +2,7 @@
   flake.nixosModules = {
     # Core modules
     audio-context-suspend = import ../modules/audio-context-suspend.nix;
+    audio-usb-reconnect-heal = import ../modules/audio-usb-reconnect-heal.nix;
     aws = import ../modules/aws;
     base = import ../modules/base;
     camera-resume = import ../modules/camera-resume.nix;
