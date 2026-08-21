@@ -16,11 +16,13 @@ TARGET="$TESTS_DIR/../checks/dev-shell.sh"
 # shellcheck source=/dev/null
 . "$TARGET"
 
-test_main_flags_missing_flake() {
+test_main_skips_missing_flake() {
     local repo; repo="$(make_fixture_repo)"
     local out
     out="$(main "$repo" 2>&1)"
-    assert_contains "$out" "no flake.nix found" "main: flags a repo with no flake.nix at all"
+    assert_contains "$out" "no flake.nix found" "main: notes a repo with no flake.nix at all"
+    assert_contains "$out" "SKIP" "main: missing flake.nix is a skip/suggestion, not a failure"
+    assert_contains "$out" "-- 0 finding(s) --" "main: missing flake.nix doesn't count as a finding"
     rm -rf "$repo"
 }
 
@@ -83,7 +85,7 @@ test_fix_scaffolds_envrc_on_confirm() {
 }
 
 run_all() {
-    test_main_flags_missing_flake
+    test_main_skips_missing_flake
     test_main_flags_missing_devshell_and_package
     test_main_passes_devshell_and_package_when_both_present
     test_main_accepts_hand_rolled_envrc

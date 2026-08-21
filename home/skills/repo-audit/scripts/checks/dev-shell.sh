@@ -37,7 +37,7 @@ main() {
     echo "== dev-shell ($target) =="
 
     if [[ ! -f "$target/flake.nix" ]]; then
-        report_fail "no flake.nix found — Nix packaging is the house standard for dev shell + build"
+        report_skip "no flake.nix found — Nix packaging is a personal convention, not enforced here; suggest it, don't fail on it"
         echo "-- $FINDINGS_COUNT finding(s) --"
         return 0
     fi
