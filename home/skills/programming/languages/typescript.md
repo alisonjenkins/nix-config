@@ -14,6 +14,13 @@
 - `strict: true`. No `any` — use `unknown` plus a narrowing check when the
   shape is genuinely dynamic.
 - Discriminated unions instead of optional-field soup for state that has modes.
+- Branded types for identifiers/values that must not be mixed up despite
+  sharing a primitive type: `type CustomerId = string & { readonly __brand:
+  "CustomerId" }`, with a constructor function as the only way to produce one.
+  `f(customerId: CustomerId, orderId: OrderId)` then rejects a swapped call at
+  compile time — plain `string`/`string` would not. Mandatory at any function
+  boundary taking two or more same-typed values that mean different things —
+  see `defensive.md`'s "distinct domain concepts" rule.
 - Parse external data at the boundary (zod or an explicit validator) and pass
   typed values inward. Do not cast untrusted JSON with `as`.
 - `async`/`await` throughout; a floating promise is a bug — await it or

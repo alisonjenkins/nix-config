@@ -54,7 +54,15 @@ decision at each site rather than an accident of syntax.
   the message says what the operator should do about it.
 - Prefer borrowed parameters (`&str`, `&[T]`) and return owned types. Clone
   when it makes the lifetime story simple; measure before optimising it away.
-- Newtypes over bare `String`/`u64` for identifiers that must not be mixed up.
+- **Newtypes over bare `String`/`u64`/`i32` for any identifier or measurement
+  that must not be mixed up with another of the same underlying type** —
+  `struct CustomerId(String)`, `struct OrderId(String)`, not two `String`
+  parameters. `fn f(customer_id: CustomerId, order_id: OrderId)` makes a
+  swapped-argument call a compile error instead of a runtime bug. Mandatory
+  at any function boundary taking two or more same-typed values that mean
+  different things — see `defensive.md`'s "distinct domain concepts" rule.
+  A `#[derive(...)]`'d unit struct is zero-cost; there is no runtime reason
+  not to.
 - `#[derive(Debug)]` on everything that can appear in an error path.
 
 ## Async
