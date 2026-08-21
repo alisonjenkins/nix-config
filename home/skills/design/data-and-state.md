@@ -11,6 +11,20 @@ Once it is written as a sequence of transformations, the function boundaries
 are usually obvious, each step is independently testable, and there is nothing
 to mock.
 
+## Give distinct concepts distinct types
+
+A `customer_id` and an `order_id` that are both a bare `String` are the same
+type as far as the compiler is concerned — nothing stops them being passed in
+the wrong order, and the mistake surfaces at runtime, in someone else's
+incident, instead of at the call site. Two kinds of ID, a validated vs.
+unvalidated string, a quantity in cents vs. dollars: whenever two values share
+a representation but mean different things, that is a modelling gap, not a
+detail to fix later. Wrap each in its own type so a mismatched call is a
+compile/type error. This is the design-level statement of the same rule the
+`programming` skill's `defensive.md` covers mechanically — see it for the
+concrete construct per language (Rust newtypes, TypeScript branded types,
+Python `NewType`).
+
 ## Don't hoard state — pass it around
 
 State stored so that a later call can find it is an implicit contract between
