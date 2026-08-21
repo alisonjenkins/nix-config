@@ -59,7 +59,7 @@ jobs:
       # changes.
       NIKS3_QUEUE: /var/tmp/niks3-queue-servers
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
       - name: Skip if superseded
@@ -126,7 +126,7 @@ jobs:
       # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
       NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
       - name: Skip if superseded
@@ -224,7 +224,7 @@ jobs:
       # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
       NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
       - name: Skip if superseded
