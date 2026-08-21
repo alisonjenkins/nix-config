@@ -5,12 +5,13 @@ involved.
 
 ## Criteria
 
-- `flake.nix` present at repo root. If the user's convention is Nix-based dev
-  environments (no bare Dockerfiles, no assumed global toolchains — see
-  `programming/languages/rust.md`'s "build with Nix" convention), a missing
-  `flake.nix` is itself a finding, not a skip, regardless of what language the
-  repo is in. If that convention doesn't apply here, skip this criterion
-  instead of reporting it.
+- `flake.nix` present at repo root. Nix-based dev environments are a personal
+  convention (no bare Dockerfiles, no assumed global toolchains — see
+  `programming/languages/rust.md`'s "build with Nix" convention), **not a
+  universal standard** — a missing `flake.nix` is reported as a skip
+  (suggestion, not a failure) so this doesn't manufacture noise on repos,
+  teams, or workplaces that haven't adopted Nix. The rest of this criterion
+  only evaluates once a `flake.nix` already exists.
 - `devShells.<system>.default` (or at least one named dev shell) exists, and
   provides the toolchain actually needed to build/test the repo.
 - `packages.<system>.default` (or at least one named package) exists **in the
@@ -32,9 +33,9 @@ GitLab, or no forge at all (a plain local clone).
 
 ## Fixing
 
-`--fix` never invents a devShell/package definition from nothing — that
-requires knowing the repo's actual toolchain, which is a judgment call, not a
-mechanical fix. Instead it: scaffolds a `.envrc` with `use flake` when
-`flake.nix` already exists but `.envrc` doesn't, and reports (without writing)
-a starting-point `flake.nix` skeleton for the detected language — for the
-user to review and commit themselves.
+`--fix` never invents a devShell/package/flake.nix definition from nothing —
+that requires knowing the repo's actual toolchain, which is a judgment call,
+not a mechanical fix. It only scaffolds a `.envrc` with `use flake`, and only
+when `flake.nix` already exists but `.envrc` doesn't — a missing `flake.nix`
+itself is left as a skip/suggestion (see Criteria above) for the user to
+write and commit themselves.
