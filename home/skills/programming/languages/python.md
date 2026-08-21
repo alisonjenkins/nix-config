@@ -5,6 +5,12 @@
   devshell. Do not `pip install` into the user profile.
 - Format with `ruff format`, lint with `ruff check`. Type-check with `mypy`
   where the project already has annotations.
+- Guard rail: on a new project (or a module you can annotate fully), run
+  `mypy --strict` rather than the default permissive mode — Python's type
+  system only catches what you've told it to check, so an unannotated
+  function is invisible to it. `pydantic`/`dataclass` at the boundary (see
+  Idioms below) is what makes an invalid input a validation error at parse
+  time instead of an `AttributeError` deep in the call stack.
 
 ## Idioms
 - Type-annotate every public function. Annotations are the documentation.
