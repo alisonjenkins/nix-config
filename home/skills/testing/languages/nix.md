@@ -14,9 +14,11 @@
 - **Activation**: a temporary activation (`nixos-rebuild test`/`darwin-rebuild
   test` or repo wrapper) that reverts on reboot — the safe way to try a
   change that could break boot or display.
-- **VM**: `nixos-rebuild build-vm` (or a `nixosTest`/VM-build wrapper the repo
-  provides) for a full boot in a VM — the only way to test boot-path and disk
-  changes without risking the machine.
+- **VM**: `nixos-rebuild build-vm --flake .#<host>` (the `--flake .#<host>`
+  matters — omitting it silently builds the wrong/default configuration in a
+  flake-based repo), or a `nixosTest`/VM-build wrapper the repo provides, for
+  a full boot in a VM — the only way to test boot-path and disk changes
+  without risking the machine.
 
 ## Practice
 - `git add` new files before any of the above; flakes ignore untracked files
