@@ -32,7 +32,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Skip if superseded
         uses: ./.github/actions/skip-if-superseded
       - name: Configure host Nix
