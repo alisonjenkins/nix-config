@@ -12,8 +12,15 @@ nixos-rebuild boot --flake .#<host>      # set for next boot
 nixos-rebuild switch --flake .#<host>    # activate now, permanently
 ```
 
-(`darwin-rebuild` / `home-manager switch` in place of `nixos-rebuild` for
-nix-darwin / standalone home-manager targets — same verbs.)
+nix-darwin and standalone home-manager don't have the full verb set above —
+neither has a bootloader-staged `boot`, and neither has a reboot-reverting
+`test`:
+- nix-darwin: `darwin-rebuild build --flake .#<host>` /
+  `darwin-rebuild switch --flake .#<host>` (switch activates immediately,
+  permanently — there is no temporary/reverting mode).
+- standalone home-manager: `home-manager build --flake .#<user>@<host>` /
+  `home-manager switch --flake .#<user>@<host>` — note the flake target is
+  `<user>@<host>`, not `<host>`.
 
 Remote machines: check what the repo uses for remote deploy (deploy-rs,
 `nixos-rebuild --target-host`, colmena, morph, ...) — don't assume any one of

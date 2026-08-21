@@ -4,16 +4,20 @@
 - **Evaluation**: `nix flake check` catches eval errors and runs any flake
   checks (deploy-rs checks, custom checks, etc). Note that a broken input for
   one platform (e.g. a Darwin-only or otherwise platform-gated derivation) can
-  fail the whole check from the wrong host — skipping it (`--skip-checks` if
-  the repo wraps this, or excluding the failing check) is legitimate there,
-  but say so rather than hiding it.
+  fail the whole check from the wrong host. `nix flake check` has no flag to
+  exclude one check — the legitimate move is either `--skip-checks` if the
+  repo wraps this, or building the specific checks you actually want
+  (`nix build .#checks.<system>.<name>` per check) instead of the aggregate
+  command; say which you did rather than hiding it.
 - **Build**: build a host's/target's toplevel without activating (raw
   `nixos-rebuild build --flake .#<host>`, or the repo's own wrapper if one
   exists — check `infra/nix.md`). This is the cheapest real proof that a
   module change is sound.
-- **Activation**: a temporary activation (`nixos-rebuild test`/`darwin-rebuild
-  test` or repo wrapper) that reverts on reboot — the safe way to try a
-  change that could break boot or display.
+- **Activation**: a temporary activation — `nixos-rebuild test --flake
+  .#<host>` (or repo wrapper) reverts on reboot, the safe way to try a change
+  that could break boot or display. nix-darwin has no equivalent: `darwin-
+  rebuild switch --flake .#<host>` activates immediately and permanently, so
+  build first and review the diff instead of relying on a revert.
 - **VM**: `nixos-rebuild build-vm --flake .#<host>` (the `--flake .#<host>`
   matters — omitting it silently builds the wrong/default configuration in a
   flake-based repo), or a `nixosTest`/VM-build wrapper the repo provides, for
