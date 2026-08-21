@@ -5,9 +5,10 @@ Run via `scripts/checks/release-management.sh <target>`.
 ## Criteria
 
 - Automated release tooling present and wired into CI: `release-please` on
-  GitHub (a `.github/workflows/*.yaml` running `googleapis/release-please-
-  action`, or a `release-please-config.json`); `semantic-release` (or
-  `python-semantic-release`/similar) elsewhere, or on GitLab where
+  GitHub (a `.github/workflows/*.yaml` running
+  `googleapis/release-please-action`, or a `release-please-config.json`);
+  `semantic-release` (or `python-semantic-release`/similar) elsewhere, or on
+  GitLab where
   release-please has no native support.
 - Commit messages / PR titles conform to the convention the tool consumes —
   Conventional Commits (`feat:`, `fix:`, ...). Checked heuristically against

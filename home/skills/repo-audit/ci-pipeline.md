@@ -8,9 +8,10 @@ Run via `scripts/checks/ci-pipeline.sh <target>`.
   corresponds to a job that actually exists in the current CI config — checked
   both directions: no stale required check, and no CI job that plainly should
   be required but isn't.
-- Workflow permissions are least-privilege: no default `permissions:
-  write-all` at the workflow level; jobs that don't need write access declare
-  `contents: read` explicitly rather than inheriting an org-wide default.
+- Workflow permissions are least-privilege: no default
+  `permissions: write-all` at the workflow level; jobs that don't need write
+  access declare `contents: read` explicitly rather than inheriting an
+  org-wide default.
 - Basic caching present for the ecosystem in use (e.g. `actions/cache` or a
   language-specific cache action for Go modules/npm/Cargo; Nix builds caching
   via a binary cache or a `cachix`/self-hosted-push-style workflow).

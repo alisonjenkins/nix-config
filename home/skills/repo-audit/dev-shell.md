@@ -18,10 +18,11 @@ involved.
   same flake**, and `nix build .#<package>` succeeds — the flake is expected
   to serve both roles (dev shell and package build), not split across two
   mechanisms.
-- `.envrc` present at repo root and wires up the flake's dev shell — `use
-  flake`/`use nix`, or an equivalent hand-rolled `nix print-dev-env`/`nix
-  develop` invocation (a repo may skip the stock `use flake` gcroot-per-input
-  behavior for cold-reload speed; that's a valid variant, not a finding), so
+- `.envrc` present at repo root and wires up the flake's dev shell —
+  `use flake`/`use nix`, or an equivalent hand-rolled
+  `nix print-dev-env`/`nix develop` invocation (a repo may skip the stock
+  `use flake` gcroot-per-input behavior for cold-reload speed; that's a valid
+  variant, not a finding), so
   `direnv` picks up the shell automatically on `cd`.
 - Onboarding docs (`README.md` / `CONTRIBUTING.md`) mention `direnv allow` (or
   equivalent) so a new contributor knows the step exists.
