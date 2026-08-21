@@ -13,11 +13,12 @@
   `nixos-rebuild build --flake .#<host>`, or the repo's own wrapper if one
   exists — check `infra/nix.md`). This is the cheapest real proof that a
   module change is sound.
-- **Activation**: a temporary activation — `nixos-rebuild test --flake
-  .#<host>` (or repo wrapper) reverts on reboot, the safe way to try a change
-  that could break boot or display. nix-darwin has no equivalent: `darwin-
-  rebuild switch --flake .#<host>` activates immediately and permanently, so
-  build first and review the diff instead of relying on a revert.
+- **Activation**: a temporary activation —
+  `nixos-rebuild test --flake .#<host>` (or repo wrapper) reverts on reboot,
+  the safe way to try a change that could break boot or display. nix-darwin
+  has no equivalent: `darwin-rebuild switch --flake .#<host>` activates
+  immediately and permanently, so build first and review the diff instead of
+  relying on a revert.
 - **VM**: `nixos-rebuild build-vm --flake .#<host>` (the `--flake .#<host>`
   matters — omitting it silently builds the wrong/default configuration in a
   flake-based repo), or a `nixosTest`/VM-build wrapper the repo provides, for

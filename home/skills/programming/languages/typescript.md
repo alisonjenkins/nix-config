@@ -15,8 +15,9 @@
   shape is genuinely dynamic.
 - Discriminated unions instead of optional-field soup for state that has modes.
 - Branded types for identifiers/values that must not be mixed up despite
-  sharing a primitive type: `type CustomerId = string & { readonly __brand:
-  "CustomerId" }`, with a constructor function as the only way to produce one.
+  sharing a primitive type:
+  `type CustomerId = string & { readonly __brand: "CustomerId" }`, with a
+  constructor function as the only way to produce one.
   `f(customerId: CustomerId, orderId: OrderId)` then rejects a swapped call at
   compile time — plain `string`/`string` would not. Mandatory at any function
   boundary taking two or more same-typed values that mean different things —

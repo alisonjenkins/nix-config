@@ -19,9 +19,9 @@
 - Dataclasses (or pydantic, if the project already uses it) instead of dicts
   for structured data that crosses a function boundary.
 - `typing.NewType` for identifiers/values that must not be mixed up despite
-  sharing a primitive type: `CustomerId = NewType("CustomerId", str)`. `def
-  f(customer_id: CustomerId, order_id: OrderId)` then makes a swapped call a
-  `mypy` error — plain `str`/`str` would not catch it, and this only helps
+  sharing a primitive type: `CustomerId = NewType("CustomerId", str)`.
+  `def f(customer_id: CustomerId, order_id: OrderId)` then makes a swapped
+  call a `mypy` error — plain `str`/`str` would not catch it, and this only helps
   under `mypy --strict` (see Toolchain above); it is erased at runtime like
   all Python type hints, so it is a static guard rail, not a validation one.
   Mandatory at any function boundary taking two or more same-typed values that
