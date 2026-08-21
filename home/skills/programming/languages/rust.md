@@ -50,8 +50,11 @@ upgraded, use the equivalent crate-root attribute instead:
 This makes the existing "no `unwrap()`/`expect()` outside tests and `main`"
 rule a lint failure instead of a review-time hope. For the narrow places that
 rule already permits — `main`'s top-level error handling, test modules — use
-a scoped `#[allow(clippy::unwrap_used, reason = "...")]` on the item, not a
-blanket crate-level allow; the lint should stay live everywhere else. Test
+a scoped `#[allow(clippy::unwrap_used)]` on the item, preceded by a `//`
+comment saying why, not a blanket crate-level allow — the lint should stay
+live everywhere else. (`reason = "..."` inside the attribute itself needs the
+nightly-only `lint_reasons` feature; a plain comment above the attribute is
+the stable equivalent.) Test
 modules commonly get `#![allow(clippy::unwrap_used, clippy::expect_used)]` at
 the `#[cfg(test)] mod tests` level, since panicking on bad test setup is the
 correct behaviour there.
@@ -59,9 +62,9 @@ correct behaviour there.
 `indexing_slicing` and `arithmetic_side_effects` will flag plenty of correct
 code (a loop indexing within a bound you just checked, a counter that cannot
 realistically overflow) — that is the point: replace `v[i]` with
-`v.get(i)` and handle the `None` case explicitly (or a scoped
-`#[allow(..., reason = "...")]` when a prior check truly makes it
-unreachable — see `defensive.md` on assertions vs error handling), and replace
+`v.get(i)` and handle the `None` case explicitly (or a scoped `#[allow(...)]`
+with a `//` comment above it when a prior check truly makes it unreachable —
+see `defensive.md` on assertions vs error handling), and replace
 unchecked `+`/`-`/`*` on values from outside this function with
 `checked_add`/`saturating_add`/etc. so the panic path is a deliberate, visible
 decision at each site rather than an accident of syntax.
