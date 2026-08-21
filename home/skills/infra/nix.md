@@ -1,29 +1,34 @@
 # Nix deployment
 
-Local machine, in increasing order of commitment:
+Check for a repo-local wrapper first (`just`, `Makefile`, `bin/`, a `flake.nix`
+app) — many Nix configs alias the raw commands below behind their own verbs.
+If one exists, prefer it; it may carry repo-specific pre/post steps. Otherwise
+use the underlying tools directly, in increasing order of commitment:
 
 ```
-just build [hostname]   # build only, no activation
-just test               # activate temporarily; reverts on reboot
-just boot               # set for next boot
-just switch             # activate now, permanently
+nixos-rebuild build --flake .#<host>     # build only, no activation
+nixos-rebuild test --flake .#<host>      # activate temporarily; reverts on reboot
+nixos-rebuild boot --flake .#<host>      # set for next boot
+nixos-rebuild switch --flake .#<host>    # activate now, permanently
 ```
 
-Remote machines go through deploy-rs:
+(`darwin-rebuild` / `home-manager switch` in place of `nixos-rebuild` for
+nix-darwin / standalone home-manager targets — same verbs.)
 
-```
-just deploy [extraargs]
-```
+Remote machines: check what the repo uses for remote deploy (deploy-rs,
+`nixos-rebuild --target-host`, colmena, morph, ...) — don't assume any one of
+these by default.
 
 ## Rules
 
 - `git add` new files before building. Flakes ignore untracked files and the
   error does not say so.
-- Build before deploying. `just build <hostname>` proves the closure evaluates
-  and compiles without touching the target.
-- deploy-rs has automatic rollback on a failed activation — but a change that
-  breaks *boot* rather than activation will not roll back. For those, use
-  `just test` locally or a VM build first.
+- Build before deploying — prove the closure evaluates and compiles without
+  touching the target first.
+- If the deploy tool has automatic rollback on failed activation (deploy-rs
+  does), remember it only covers *activation* failures — a change that breaks
+  *boot* will not roll back. For those, use a temporary `test`-style
+  activation or a VM build first.
 - `nix flake check` may fail from the wrong host when an input only evaluates
   on another platform. Skipping it is legitimate; say that you skipped it.
 - Before assuming `sudo` is unavailable, **probe it**: `sudo -n true`, or
@@ -38,6 +43,7 @@ just deploy [extraargs]
 
 ## Authoring side
 
-Module structure, host scaffolding, secrets, and the haumea auto-discovery
-rules live in the `programming` skill's `languages/nix.md` and, for this repo
-specifically, the `nix-config-workflows` project skill.
+General module structure and conventions live in the `programming` skill's
+`languages/nix.md`. A given repo may carry its own project-local workflow
+skill (host/module scaffolding, secrets) — check for one before assuming
+generic conventions cover everything.

@@ -1,17 +1,22 @@
 # Testing Nix
 
 ## Levels
-- **Evaluation**: `nix flake check` catches eval errors and runs the deploy-rs
-  checks. Note that a broken input for one platform (for example a Darwin or
-  Asahi-only derivation) can fail the whole check from the wrong host —
-  `--skip-checks` is legitimate there, but say so rather than hiding it.
-- **Build**: `just build <hostname>` builds a host's toplevel without
-  activating. This is the cheapest real proof that a module change is sound.
-- **Activation**: `just test` activates temporarily and reverts on reboot —
-  the safe way to try a change that could break boot or display.
-- **VM**: `just test-build <hostname>` then `just test-run <hostname>` for a
-  full boot in a VM, which is the only way to test boot-path and disk changes
-  without risking the machine.
+- **Evaluation**: `nix flake check` catches eval errors and runs any flake
+  checks (deploy-rs checks, custom checks, etc). Note that a broken input for
+  one platform (e.g. a Darwin-only or otherwise platform-gated derivation) can
+  fail the whole check from the wrong host — skipping it (`--skip-checks` if
+  the repo wraps this, or excluding the failing check) is legitimate there,
+  but say so rather than hiding it.
+- **Build**: build a host's/target's toplevel without activating (raw
+  `nixos-rebuild build --flake .#<host>`, or the repo's own wrapper if one
+  exists — check `infra/nix.md`). This is the cheapest real proof that a
+  module change is sound.
+- **Activation**: a temporary activation (`nixos-rebuild test`/`darwin-rebuild
+  test` or repo wrapper) that reverts on reboot — the safe way to try a
+  change that could break boot or display.
+- **VM**: `nixos-rebuild build-vm` (or a `nixosTest`/VM-build wrapper the repo
+  provides) for a full boot in a VM — the only way to test boot-path and disk
+  changes without risking the machine.
 
 ## Practice
 - `git add` new files before any of the above; flakes ignore untracked files
