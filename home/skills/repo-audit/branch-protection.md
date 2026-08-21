@@ -12,14 +12,14 @@ Run via `scripts/checks/branch-protection.sh <target>`.
   has no second identity to approve it either. Required status checks are the
   real gate there instead. The check calls `gh api repos/{owner}/{repo}/
   collaborators` to decide which branch applies — found this the hard way
-  applying it to nix-config itself.
+  applying it to a solo repo.
 - Required status checks configured, and the check names actually match a
   **job id** (or `name:`) in the repo's current CI workflows — a required
   check pointing at a renamed or deleted job is a silent no-op, worse than no
   requirement. Matched against job ids read from the workflow YAML, not
   workflow filenames — a job called `flake-check` living in `pr-check.yaml`
   is a match, not a mismatch; comparing against the filename was an earlier
-  bug that flagged this repo's own correctly-configured check as stale.
+  bug that flagged a correctly-configured check as stale.
 - Force-push disabled on the default branch.
 - Branch deletion protection enabled on the default branch.
 - Merge-strategy policy (squash / rebase / merge-commit) is **reported, not

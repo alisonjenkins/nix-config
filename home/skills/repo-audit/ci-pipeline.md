@@ -13,14 +13,12 @@ Run via `scripts/checks/ci-pipeline.sh <target>`.
   `contents: read` explicitly rather than inheriting an org-wide default.
 - Basic caching present for the ecosystem in use (e.g. `actions/cache` or a
   language-specific cache action for Go modules/npm/Cargo; Nix builds caching
-  via a binary cache or `cachix`/`niks3`-style push, matching this repo's own
-  `build-and-cache.yaml` pattern).
+  via a binary cache or a `cachix`/self-hosted-push-style workflow).
 - At least one workflow triggers on `pull_request` (or `pull_request_target`).
-  A repo whose CI is entirely push/tag/schedule/dispatch-triggered — this
-  repo's own state before `pr-check.yaml` was added — can never satisfy a
-  required status check on a PR, which silently breaks both branch protection
-  and Renovate automerge-on-green: they'd wait forever on a status that never
-  reports, not fail loudly. Caught this the hard way while wiring up
+  A repo whose CI is entirely push/tag/schedule/dispatch-triggered can never
+  satisfy a required status check on a PR, which silently breaks both branch
+  protection and Renovate automerge-on-green: they'd wait forever on a status
+  that never reports, not fail loudly. Caught this the hard way while wiring up
   `dependency-updates.md`'s automerge requirement.
 
 ## GitHub

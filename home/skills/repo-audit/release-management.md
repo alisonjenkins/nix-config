@@ -10,11 +10,10 @@ Run via `scripts/checks/release-management.sh <target>`.
   `python-semantic-release`/similar) elsewhere, or on GitLab where
   release-please has no native support.
 - Commit messages / PR titles conform to the convention the tool consumes —
-  Conventional Commits (`feat:`, `fix:`, ...) — matching this repo's own
-  atomic-commit mandate. Checked heuristically against recent commit history
-  (last ~50 commits on the default branch), not enforced as a commit-msg hook
-  by this check (that's `pre-commit.md`'s territory if the repo chooses to add
-  one).
+  Conventional Commits (`feat:`, `fix:`, ...). Checked heuristically against
+  recent commit history (last ~50 commits on the default branch), not
+  enforced as a commit-msg hook by this check (that's `pre-commit.md`'s
+  territory if the repo chooses to add one).
 - Releases actually publish on merge to the default branch — a release-please
   workflow that only opens a release PR nobody merges is a finding, not a
   pass. Checked by confirming the workflow both opens release PRs and, on
