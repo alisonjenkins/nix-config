@@ -17,7 +17,22 @@ the last resort.
 - **Invariants** hold across every public entry point, not just the happy path.
 
 Prefer making an illegal state unrepresentable over checking for it: a type
-that cannot hold an empty list beats an assertion that it is not empty.
+that cannot hold an empty list beats an assertion that it is not empty. Reach
+for this whenever the language's type system supports it — a newtype that can
+only be constructed from validated input, a sum type with no "impossible"
+variant, a non-empty-list type — parse untrusted input into that type once at
+the boundary and pass the typed value inward; do not re-validate downstream.
+
+## Guard rails
+
+Where a language lets you turn a whole class of runtime failure into a
+build-time or lint-time one, turn it on — project-wide, not opt-in per file.
+This is a mandate, not a suggestion: a lint that is merely enabled but not set
+to deny/error is advisory and gets ignored under deadline pressure exactly
+when it matters most. Concrete settings live in the per-language file (e.g.
+`languages/rust.md`'s clippy deny list for panic-class lints); the principle
+here is general — prefer "the compiler/linter refuses to build this" over
+"we wrote a test that would probably have caught this."
 
 ## Crash early
 
