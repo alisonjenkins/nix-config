@@ -4,9 +4,10 @@
 - **Evaluation**: `nix flake check` catches eval errors and runs any flake
   checks (deploy-rs checks, custom checks, etc). Note that a broken input for
   one platform (e.g. a Darwin-only or otherwise platform-gated derivation) can
-  fail the whole check from the wrong host. `nix flake check` has no flag to
-  exclude one check — the legitimate move is either `--skip-checks` if the
-  repo wraps this, or building the specific checks you actually want
+  fail the whole check from the wrong host. Vanilla `nix flake check` has no
+  flag to exclude one check — `--skip-checks` only works if the repo's own
+  wrapper script implements that flag itself (check for one before assuming
+  it exists); otherwise build the specific checks you actually want
   (`nix build .#checks.<system>.<name>` per check) instead of the aggregate
   command; say which you did rather than hiding it.
 - **Build**: build a host's/target's toplevel without activating (raw
