@@ -12,7 +12,8 @@
 
 Deny the clippy `restriction`-group lints that catch panic-class bugs —
 `-D warnings` alone does not enable these; they are off by default and must be
-opted into. Add to the crate's (or workspace's) `Cargo.toml`:
+opted into. Add a `[lints.clippy]` table to the crate's (or workspace's)
+`Cargo.toml`:
 
 ```toml
 [lints.clippy]
@@ -26,6 +27,24 @@ unreachable = "deny"
 todo = "deny"
 unimplemented = "deny"
 get_unwrap = "deny"
+```
+
+`[lints.clippy]` needs Cargo 1.74+. On an older toolchain that can't be
+upgraded, use the equivalent crate-root attribute instead:
+
+```rust
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::unwrap_in_result,
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    clippy::unreachable,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::get_unwrap,
+)]
 ```
 
 This makes the existing "no `unwrap()`/`expect()` outside tests and `main`"
