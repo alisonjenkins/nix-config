@@ -5,7 +5,7 @@
   and authoritative; never regenerate it as a side effect of another change.
 - `tsc --noEmit` clean is the bar, alongside the project's linter.
 - Guard rail: enable `noUncheckedIndexedAccess` in `tsconfig.json`. Without it,
-  `arr[i]`/`obj[key]` type as the value type, not `T | undefined` — the
+  `arr[i]`/`obj[key]` types as the value type, not `T | undefined` — the
   equivalent of Rust's unchecked indexing panic, except here it's a silent
   `undefined` that surfaces as a crash three calls later instead of at the
   access site.
