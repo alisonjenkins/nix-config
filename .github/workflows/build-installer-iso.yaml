@@ -46,7 +46,7 @@ jobs:
       NIKS3_QUEUE: /var/tmp/niks3-queue-installer-iso
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
       - name: Skip if superseded
