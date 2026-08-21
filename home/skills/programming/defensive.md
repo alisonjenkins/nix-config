@@ -23,6 +23,20 @@ only be constructed from validated input, a sum type with no "impossible"
 variant, a non-empty-list type — parse untrusted input into that type once at
 the boundary and pass the typed value inward; do not re-validate downstream.
 
+**Give distinct domain concepts distinct types, even when the underlying
+representation is identical.** A function that takes `customer_id: String`
+and `order_id: String` will happily accept them swapped — same type, so
+nothing catches it until the wrong row gets returned or updated at runtime.
+Wrap each in its own type (`CustomerId(String)`, `OrderId(String)`) so the
+function signature becomes `fn f(customer_id: CustomerId, order_id: OrderId)`
+and passing them in the wrong order is a compile error, not a bug someone
+finds in production. This applies to any pair of same-shaped values that mean
+different things: two kinds of ID, a validated vs. unvalidated string, a
+quantity in cents vs. a quantity in dollars, meters vs. feet. Mandatory
+wherever the language supports zero- or near-zero-cost wrapper types — see the
+per-language file for the concrete mechanism (Rust newtypes, TypeScript
+branded types, Python `NewType`).
+
 ## Guard rails
 
 Where a language lets you turn a whole class of runtime failure into a
