@@ -35,7 +35,10 @@ different things: two kinds of ID, a validated vs. unvalidated string, a
 quantity in cents vs. a quantity in dollars, meters vs. feet. Mandatory
 wherever the language supports zero- or near-zero-cost wrapper types — see the
 per-language file for the concrete mechanism (Rust newtypes, TypeScript
-branded types, Python `NewType`).
+branded types, Python `NewType`). This is a mechanical instruction; the
+design-level version of the same rule — recognising when two values are
+secretly different concepts in the first place — is the `design` skill's
+[data-and-state.md](../design/data-and-state.md).
 
 ## Guard rails
 

@@ -46,6 +46,9 @@ two modules.
   behaviour is two functions wearing a trench coat. Name them.
 - **Putting the logic where the data is convenient** rather than where the
   responsibility is. Convenience now, coupling forever.
+- **Using the same type for two different concepts.** Two IDs, a validated and
+  an unvalidated string, cents and dollars — same representation, different
+  meaning. See [data-and-state.md](data-and-state.md).
 - **Deciding something irreversibly to save an hour.** See
   [reversibility.md](reversibility.md).
 
