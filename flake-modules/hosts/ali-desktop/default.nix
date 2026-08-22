@@ -6,6 +6,24 @@ let
   bluetoothMacs = {
     sonyHeadset = "88:C9:E8:06:5E:9C";
   };
+  # The binaural spatializer's output is pinned straight to the Scarlett
+  # with node.dont-reconnect (see binauralSurround below), so nothing
+  # re-links it automatically if it ever drops. Both known ways that
+  # happens (see services.audio-context-suspend and
+  # services.audio-usb-reconnect-heal below) share this one list of links
+  # to restore.
+  binauralOutputLinks = let
+    scarlettOut = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
+  in [
+    {
+      output = "effect_output.binaural71:output_FL";
+      input = "${scarlettOut}:playback_FL";
+    }
+    {
+      output = "effect_output.binaural71:output_FR";
+      input = "${scarlettOut}:playback_FR";
+    }
+  ];
 in {
   flake.nixosConfigurations.ali-desktop = lib.nixosSystem rec {
     specialArgs = {
@@ -374,15 +392,17 @@ in {
         services.audio-context-suspend = {
           enable = true;
           user = "ali";
+          # Covers the 2026-08-21 case: this resume hook's own SUSPENDED-pcm
+          # fix (cycling the Scarlett's card profile) recreates the card's
+          # PipeWire nodes, which the dont-reconnect link doesn't survive.
+          relinkPorts = binauralOutputLinks;
         };
 
-        # Fixes the incident from 2026-08-19: the Scarlett sits behind a USB
-        # switch and briefly dropped mid-session, which left two PipeWire
-        # links missing -- EasyEffects' virtual sink never reached the
-        # Scarlett's hardware playback ports, and the binaural spatializer
-        # never reached EasyEffects. Everything downstream still looked
-        # healthy (unmuted, RUNNING, hw_ptr advancing); only those specific
-        # links were gone, and nothing recreates them on its own.
+        # Covers the 2026-08-19 case: the Scarlett sits behind a USB switch
+        # and briefly dropped mid-session, taking the same link with it.
+        # Everything downstream still looked healthy (unmuted, RUNNING,
+        # hw_ptr advancing); only the link itself was gone, and nothing
+        # recreates it on its own.
         #
         # Deliberately relinks rather than restarting wireplumber: doing the
         # latter live-drops every active PipeWire stream, which is how a
@@ -397,26 +417,7 @@ in {
               productId = "8219";
             }
           ];
-          expectedLinks = let
-            scarlettOut = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
-          in [
-            {
-              output = "easyeffects_sink:monitor_FL";
-              input = "${scarlettOut}:playback_FL";
-            }
-            {
-              output = "easyeffects_sink:monitor_FR";
-              input = "${scarlettOut}:playback_FR";
-            }
-            {
-              output = "effect_output.binaural71:output_FL";
-              input = "easyeffects_sink:playback_FL";
-            }
-            {
-              output = "effect_output.binaural71:output_FR";
-              input = "easyeffects_sink:playback_FR";
-            }
-          ];
+          expectedLinks = binauralOutputLinks;
         };
 
         # S3 drops VBUS to the root hubs, so the OBSBOT re-enumerates on every

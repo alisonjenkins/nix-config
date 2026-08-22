@@ -20,6 +20,45 @@ in {
       default = false;
       description = "Sync mic mute LED with PipeWire mute state on resume";
     };
+
+    relinkPorts = mkOption {
+      description = ''
+        PipeWire port links to recreate, as `node:port` pairs (see `pw-link
+        -l`), whenever this resume hook actually cycles a USB card profile.
+
+        Cycling a card's profile (below) tears down and recreates that
+        card's ALSA nodes to clear a stuck SUSPENDED playback substream.
+        Any filter-chain node pinned to the old node with
+        `node.dont-reconnect = true` (to stop it re-targeting the session
+        default -- see `binauralSurround`) is not relinked by PipeWire on
+        its own once its target reappears: `dont-reconnect` suppresses
+        exactly that. Confirmed on ali-desktop, 2026-08-21: this resume
+        hook's own profile cycle silently dropped the binaural
+        spatializer's output link to the Scarlett, leaving a
+        healthy-looking graph with no sound.
+      '';
+      default = [];
+      example = literalExpression ''
+        [
+          {
+            output = "effect_output.binaural71:output_FL";
+            input = "alsa_output.usb-Focusrite_..._pro-output-0:playback_FL";
+          }
+        ]
+      '';
+      type = types.listOf (types.submodule {
+        options = {
+          output = mkOption {
+            type = types.str;
+            description = "Source port, as `node:port`.";
+          };
+          input = mkOption {
+            type = types.str;
+            description = "Destination port, as `node:port`.";
+          };
+        };
+      });
+    };
   };
 
   config = mkIf cfg.enable {
@@ -76,6 +115,16 @@ in {
               ${pkgs.coreutils}/bin/sleep 1
               ${pkgs.pulseaudio}/bin/pactl set-card-profile "$name" "$prof"
             done
+
+            # Cycling the profile above recreates that card's PipeWire nodes,
+            # which drops any dont-reconnect link pinned to the old one (see
+            # relinkPorts' description). pw-link is a no-op if the link is
+            # already there, so this only ever adds what's missing.
+          ''
+          + lib.concatMapStringsSep "\n" (l: ''
+            ${pkgs.pipewire}/bin/pw-link ${lib.escapeShellArg l.output} ${lib.escapeShellArg l.input} >/dev/null 2>&1 || true
+          '') cfg.relinkPorts
+          + ''
           fi
         '' + lib.optionalString cfg.syncMicMuteLed ''
 
