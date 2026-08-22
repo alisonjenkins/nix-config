@@ -161,6 +161,20 @@
           # it's a runtime control only, so it is intentionally omitted here.
           "cache.readdir=true"
           "nfsopenhack=all"
+          # Merged-dir attributes must come from the NEWEST branch, not the
+          # first found (the default, ff). With ff, a dir that exists on
+          # several branches reports the mtime of whichever branch sorts
+          # first; writing a file onto a DIFFERENT branch then never bumps
+          # the merged dir's mtime, and NFS clients — which invalidate their
+          # cached readdir pages only on a dir mtime change (lookupcache=none
+          # does not cover readdir) — serve a stale listing indefinitely.
+          # Seen 2026-08-22: a replaced movie was invisible to the k8s
+          # clients (ghost old entries, no new file) until the stale
+          # duplicate dirs were removed by hand (pharos B201 incident).
+          # newest costs a getattr against each branch holding the path,
+          # acceptable on this pool; it makes any branch's change visible in
+          # the merged attributes.
+          "func.getattr=newest"
           # Parallel branch readdir. Default func.readdir=seq walks all 16
           # branches one-at-a-time, so a cold-cache readdir takes seconds while
           # disks spin up -> the stall window where clients see truncated/empty
