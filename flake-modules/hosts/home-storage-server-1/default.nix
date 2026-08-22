@@ -42,6 +42,141 @@ in {
         mergerfsBranchMounts = map (mp: "${utils.escapeSystemdPath mp}.mount")
           (builtins.filter (lib.hasPrefix "/media/disks/")
             (builtins.attrNames config.fileSystems));
+
+        # Self-healing watchdog for ghost dentries / stale mergerfs views (see
+        # the media-storage-watchdog systemd unit below for the incident this
+        # guards against). shellcheck-clean via writeShellApplication; every
+        # runtime dep is declared, nothing assumed off PATH.
+        mediaStorageWatchdogScript = pkgs.writeShellApplication {
+          name = "media-storage-watchdog";
+          runtimeInputs = [ pkgs.coreutils pkgs.findutils pkgs.util-linux pkgs.systemd pkgs.nfs-utils ];
+          text = ''
+            # Probe directory for the ghost-dentry check: a real, populated
+            # subtree behind the union that every branch can contribute to.
+            probe_dir="/media/storage/media/Movies"
+            mount_unit="media-storage.mount"
+            nfs_unit="nfs-server.service"
+            # A hung FUSE/NFS call must never hang the watchdog itself.
+            probe_timeout=15
+            # At most one restart per flap window: home-storage-server-1 runs
+            # this every 2 minutes, and a flapping fault (e.g. a disk mid-
+            # rescan) restarting the export every cycle would itself cause
+            # client-visible churn. Persisted under systemd's StateDirectory
+            # so it survives across timer-triggered runs.
+            flap_window_secs=1800
+            state_dir="''${STATE_DIRECTORY:-/var/lib/media-storage-watchdog}"
+            last_restart_file="$state_dir/last-restart"
+
+            fault=""
+
+            log() {
+              # Single-line, greppable: `journalctl -u media-storage-watchdog | grep FAULT`.
+              echo "media-storage-watchdog: $*"
+            }
+
+            check_mounts() {
+              if ! timeout "$probe_timeout" mountpoint -q /media/storage; then
+                fault="union-not-mounted /media/storage"
+                return 1
+              fi
+              # Every branch dir that currently exists under /media/disks/ is
+              # expected to have its own filesystem mounted onto it (NixOS
+              # only creates the mountpoint directory for a configured
+              # fileSystems entry) -- derived from what's on disk, not from a
+              # hardcoded disk-serial list, so it tracks disk add/remove for
+              # free.
+              for branch in /media/disks/*/; do
+                [ -d "$branch" ] || continue
+                if ! timeout "$probe_timeout" mountpoint -q "$branch"; then
+                  fault="branch-not-mounted ''${branch%/}"
+                  return 1
+                fi
+              done
+              return 0
+            }
+
+            check_ghosts_and_read() {
+              local entries entry sample_file=""
+              # This is exactly the observed failure signature: readdir lists
+              # the entry, lookup (stat) then fails on it.
+              entries=$(timeout "$probe_timeout" find "$probe_dir" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 25) || true
+              if [ -z "$entries" ]; then
+                fault="probe-dir-empty-or-unreadable $probe_dir"
+                return 1
+              fi
+              while IFS= read -r entry; do
+                [ -n "$entry" ] || continue
+                if ! timeout "$probe_timeout" stat "$entry" >/dev/null 2>&1; then
+                  fault="ghost-dentry $entry"
+                  return 1
+                fi
+                if [ -z "$sample_file" ] && [ -f "$entry" ]; then
+                  sample_file="$entry"
+                fi
+              done <<< "$entries"
+
+              # Read probe: catches a union that lists and stats fine but is
+              # wedged on actual I/O. The depth-1 entries under Movies are all
+              # DIRECTORIES (one per film), so the loop above never sets
+              # sample_file — reach one level deeper for a real media file.
+              if [ -z "$sample_file" ]; then
+                sample_file=$(timeout "$probe_timeout" find "$probe_dir" -mindepth 2 -maxdepth 2 -type f 2>/dev/null | head -n 1) || true
+              fi
+              if [ -n "$sample_file" ]; then
+                if ! timeout "$probe_timeout" dd if="$sample_file" of=/dev/null bs=4096 count=1 status=none; then
+                  fault="read-probe-failed $sample_file"
+                  return 1
+                fi
+              fi
+              return 0
+            }
+
+            run_probes() {
+              fault=""
+              check_mounts && check_ghosts_and_read
+            }
+
+            mkdir -p "$state_dir"
+
+            if run_probes; then
+              exit 0
+            fi
+
+            log "FAULT $fault"
+
+            now=$(date +%s)
+            last_restart=0
+            if [ -f "$last_restart_file" ]; then
+              last_restart=$(cat "$last_restart_file")
+            fi
+            elapsed=$((now - last_restart))
+
+            if [ "$elapsed" -lt "$flap_window_secs" ]; then
+              log "FAULT-SUPPRESSED $fault (last restart ''${elapsed}s ago, window ''${flap_window_secs}s)"
+              exit 1
+            fi
+
+            echo "$now" > "$last_restart_file"
+            log "restarting $mount_unit + $nfs_unit for: $fault"
+            # nfsd (and smbd) hold the FUSE mount open, so restarting
+            # media-storage.mount while nfs-server is still up fails "target
+            # is busy" (see the scsi-rescan-and-mount comment above) -- stop
+            # the NFS export first to release the hold, remount the union,
+            # then bring the export back (which re-reads exportfs config).
+            systemctl stop "$nfs_unit" || true
+            systemctl restart "$mount_unit" || true
+            systemctl start "$nfs_unit" || true
+            exportfs -ra 2>/dev/null || true
+
+            if run_probes; then
+              log "RECOVERED $fault"
+              exit 0
+            else
+              log "PERSISTENT-FAULT $fault (still failing after restart)"
+              exit 1
+            fi
+          '';
+        };
       in
       {
         modules.nohang = {
@@ -338,6 +473,37 @@ in {
           timerConfig = {
             OnBootSec = "90s";
             OnUnitActiveSec = "60s";
+            AccuracySec = "10s";
+          };
+        };
+
+        # Ghost-dentry watchdog: catches the OTHER way this pool goes silently
+        # wrong, distinct from media-pool-watchdog above. That one detects the
+        # union being fully unmounted; this one detects the union staying
+        # *mounted* while serving stale/broken views -- readdir lists an
+        # entry that lookup then can't stat (ghost dentry / stale view). Seen
+        # 2026-08-22 (and once 2026-07): mergerfs kept answering, so
+        # media-pool-watchdog's `findmnt` check stayed green, but pharos's
+        # library scans silently broke because listed files 404'd on stat.
+        # The fix both times was restarting the mount + NFS export, so this
+        # automates exactly that and reports whether it worked. Script body
+        # lives in the outer `let` (mediaStorageWatchdogScript) alongside the
+        # other derived host values.
+        systemd.services.media-storage-watchdog = {
+          description = "Detect + heal ghost dentries / stale views on the mergerfs union";
+          after = [ "media-storage.mount" "nfs-server.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${mediaStorageWatchdogScript}/bin/media-storage-watchdog";
+            StateDirectory = "media-storage-watchdog";
+          };
+        };
+        systemd.timers.media-storage-watchdog = {
+          description = "Periodic ghost-dentry / stale-view check";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "2min";
+            OnUnitActiveSec = "2min";
             AccuracySec = "10s";
           };
         };
