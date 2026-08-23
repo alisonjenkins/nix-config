@@ -102,10 +102,7 @@ in {
       # Host-specific configuration
       ({ config, lib, outputs, pkgs, username, ... }:
       let
-        # Exit 0 on battery, 1 while any mains supply is online. Used as an
-        # ExecCondition, where a non-zero exit marks the unit *skipped* rather
-        # than failed — so the OnFailure hook on systemd-hibernate below is
-        # not triggered by the guard itself.
+        # Exit 0 on battery, 1 while any mains supply is online.
         #
         # Globs every power_supply rather than hardcoding ACAD: the Deck's
         # dock/USB-C PD supplies show up under their own names, and charging
@@ -427,29 +424,51 @@ in {
         # the user resumes manually first. Requires the swap LV in
         # disko-config to be marked resumeDevice=true (it is).
         #
-        # 30m balances quick-resume (short put-downs stay in S3) against
-        # bag-safety (the Deck's S3 still draws a few %/hr, so 2h could
-        # noticeably drain before hibernating). Tune as desired.
+        # 30m balances quick-resume (put-downs stay in S3, where waking is
+        # instant and doesn't need the LUKS controller-PIN dance) against
+        # bag-safety: the Deck's S3 draws a few %/hr, so a full charge
+        # survives a 30m window comfortably.
         #
-        # None of this applies on AC: the drain the escalation exists to avoid
-        # doesn't happen while charging, and a plugged-in Deck should stay
-        # awake and reachable. The arm service below therefore skips arming
-        # the RTC alarm entirely when suspending on mains — so the Deck isn't
-        # woken every 30m for nothing — and the hibernate service re-checks,
-        # covering a suspend that started on battery and was plugged in before
-        # the alarm fired.
+        # On AC the hibernation is pointless — nothing is draining — but the
+        # alarm is still armed, because the power state can change while the
+        # Deck is asleep and nothing on a suspended machine can observe that:
+        # in S3 the CPU is halted, so a udev rule on power_supply `online`
+        # only ever runs *after* something else has already woken the system.
+        # The RTC alarm is that something else. Each wake therefore re-checks
+        # the power source and either hibernates (on battery) or goes straight
+        # back to suspend (on AC), which re-arms the alarm for the next check.
+        #
+        # Net effect: unplugging a suspended, plugged-in Deck — putting it in
+        # a bag — is picked up within one interval and hibernates as it would
+        # have on battery, at the cost of a brief wake every 30m while it sits
+        # asleep on the charger.
         systemd.services.auto-hibernate-after-suspend = {
-          description = "Hibernate after extended suspend to save battery";
+          description = "Hibernate an extended suspend, or re-check later if on AC";
           serviceConfig = {
             Type = "oneshot";
-            ExecCondition = lib.getExe onBattery;
             # NB: `systemctl hibernate` returns as soon as logind queues the
             # job, ~24s before the kernel actually attempts the image write,
             # so its exit status says nothing about whether hibernation
             # worked. Failure is handled by the OnFailure hook on
             # systemd-hibernate.service below, which is the unit that does
             # report a real result.
-            ExecStart = "${pkgs.systemd}/bin/systemctl hibernate";
+            ExecStart = lib.getExe (pkgs.writeShellApplication {
+              name = "deck-suspend-escalate";
+              runtimeInputs = [ pkgs.systemd ];
+              text = ''
+                if ${lib.getExe onBattery}; then
+                  systemctl hibernate
+                else
+                  # Still on mains: nothing to save, so drop back into S3.
+                  # Re-entering suspend.target re-arms the timer, so the power
+                  # source is checked again one interval from now. The settle
+                  # delay mirrors hibernate-fallback-suspend below: systemd-sleep
+                  # has only just thawed user.slice on this wake.
+                  sleep 5
+                  systemctl suspend
+                fi
+              '';
+            });
           };
         };
 
@@ -491,34 +510,12 @@ in {
             ExecStart = "${pkgs.systemd}/bin/systemctl suspend";
           };
         };
-        # Arms the timer below on suspend, but only on battery. The timer is
-        # deliberately not `wantedBy = suspend.target` itself: systemd has no
-        # way to express "start this timer unless mains is online", and a
-        # timer unit's own Condition* checks can't read a sysfs *value*.
-        systemd.services.auto-hibernate-arm = {
-          description = "Arm the auto-hibernate timer when suspending on battery";
-          # wantedBy suspend.target (not sleep.target) so this only arms for
-          # suspend, never for a hibernate that is already under way.
-          # suspend.target itself is ordered *after* systemd-suspend.service —
-          # i.e. after resume — so the ordering has to name that service
-          # directly to arm the RTC alarm before the machine goes down.
-          # DefaultDependencies=no keeps the usual basic.target ordering from
-          # deadlocking against the sleep transaction.
-          wantedBy = [ "suspend.target" ];
-          partOf = [ "suspend.target" ];
-          before = [ "systemd-suspend.service" ];
-          unitConfig.DefaultDependencies = false;
-          serviceConfig = {
-            Type = "oneshot";
-            ExecCondition = lib.getExe onBattery;
-            ExecStart = "${pkgs.systemd}/bin/systemctl start auto-hibernate-after-suspend.timer";
-          };
-        };
-
         systemd.timers.auto-hibernate-after-suspend = {
           description = "Trigger hibernate after 30m in suspend";
-          # Started by auto-hibernate-arm.service above, not by suspend.target
-          # directly. partOf stays so a manual resume still cancels it.
+          # Armed on every suspend regardless of power source — the service it
+          # triggers is what decides between hibernating and going back to
+          # sleep. partOf cancels it when the user resumes manually.
+          wantedBy = [ "suspend.target" ];
           partOf = [ "suspend.target" ];
           timerConfig = {
             OnActiveSec = "30m";
