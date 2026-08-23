@@ -24,6 +24,18 @@
   # kglobalshortcutsrc as "none".
   programs.plasma.shortcuts.ksmserver."Lock Session" = [ ];
 
+  # Plugged in, the Deck should stay awake and only blank its panel — it is a
+  # small always-on machine when docked, and the NixOS host config likewise
+  # refuses to auto-hibernate on mains (see the auto-hibernate-arm service in
+  # flake-modules/hosts/ali-steam-deck/default.nix). This covers the Plasma
+  # session — both "Switch to Desktop" and the desktop-mode specialisation;
+  # Gaming Mode's idle sleep is Steam's own timer and is set in its UI.
+  # Battery profiles are left at powerdevil's defaults.
+  programs.plasma.powerdevil.AC = {
+    autoSuspend.action = "nothing";
+    turnOffDisplay.idleTimeout = 600;
+  };
+
   # swayidle comes from the same niri stack and locks the session after 900s
   # idle (and on the `lock` event) via lock-session — which is exactly the
   # lockout above, and it fires regardless of the Plasma settings. Its
