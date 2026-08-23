@@ -26,7 +26,8 @@
 
   # Plugged in, the Deck should stay awake and only blank its panel — it is a
   # small always-on machine when docked, and the NixOS host config likewise
-  # refuses to auto-hibernate on mains (see the auto-hibernate-arm service in
+  # only hibernates a suspend that is running on battery (see
+  # auto-hibernate-after-suspend in
   # flake-modules/hosts/ali-steam-deck/default.nix). This covers the Plasma
   # session — both "Switch to Desktop" and the desktop-mode specialisation;
   # Gaming Mode's idle sleep is Steam's own timer and is set in its UI.
