@@ -110,6 +110,10 @@ in {
             autoVrr = false;
           };
 
+          # Samsung G9 (DP-2) tops out at 120Hz; caps games at 116fps so VRR
+          # stays engaged instead of bouncing off the vsync ceiling.
+          custom.mangohud.displayMaxRefresh = 120;
+
           # Forces OpenAL Soft to stereo output. Without this, OpenAL's
           # PulseAudio backend falls back to mono on the Scarlett 2i2's
           # pro-audio profile (aux0,aux1 channel map is not recognized),
