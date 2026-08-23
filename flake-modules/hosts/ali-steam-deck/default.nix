@@ -411,7 +411,7 @@ in {
         # Jovian manages the power button via its own daemon (powerbuttond)
         services.logind.settings.Login.HandlePowerKey = lib.mkForce "ignore";
 
-        # Auto-hibernate after 30m of suspend so the battery doesn't drain
+        # Auto-hibernate after 4h of suspend so the battery doesn't drain
         # flat when the deck is left suspended (e.g. in a bag). Both the
         # Steam UI Suspend button and KDE powerdevil call plain `suspend`
         # via logind's dbus Suspend() method, which bypasses
@@ -424,10 +424,10 @@ in {
         # the user resumes manually first. Requires the swap LV in
         # disko-config to be marked resumeDevice=true (it is).
         #
-        # 30m balances quick-resume (put-downs stay in S3, where waking is
+        # 4h balances quick-resume (put-downs stay in S3, where waking is
         # instant and doesn't need the LUKS controller-PIN dance) against
         # bag-safety: the Deck's S3 draws a few %/hr, so a full charge
-        # survives a 30m window comfortably.
+        # survives a 4h window comfortably.
         #
         # On AC the hibernation is pointless — nothing is draining — but the
         # alarm is still armed, because the power state can change while the
@@ -440,7 +440,7 @@ in {
         #
         # Net effect: unplugging a suspended, plugged-in Deck — putting it in
         # a bag — is picked up within one interval and hibernates as it would
-        # have on battery, at the cost of a brief wake every 30m while it sits
+        # have on battery, at the cost of a brief wake every 4h while it sits
         # asleep on the charger.
         systemd.services.auto-hibernate-after-suspend = {
           description = "Hibernate an extended suspend, or re-check later if on AC";
@@ -511,14 +511,14 @@ in {
           };
         };
         systemd.timers.auto-hibernate-after-suspend = {
-          description = "Trigger hibernate after 30m in suspend";
+          description = "Trigger hibernate after 4h in suspend";
           # Armed on every suspend regardless of power source — the service it
           # triggers is what decides between hibernating and going back to
           # sleep. partOf cancels it when the user resumes manually.
           wantedBy = [ "suspend.target" ];
           partOf = [ "suspend.target" ];
           timerConfig = {
-            OnActiveSec = "30m";
+            OnActiveSec = "4h";
             AccuracySec = "1m";
             WakeSystem = true;
             RemainAfterElapse = false;
