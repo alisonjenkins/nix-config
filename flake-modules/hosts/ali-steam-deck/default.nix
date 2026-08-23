@@ -100,7 +100,29 @@ in {
       }
 
       # Host-specific configuration
-      ({ config, lib, outputs, pkgs, username, ... }: {
+      ({ config, lib, outputs, pkgs, username, ... }:
+      let
+        # Exit 0 on battery, 1 while any mains supply is online. Used as an
+        # ExecCondition, where a non-zero exit marks the unit *skipped* rather
+        # than failed — so the OnFailure hook on systemd-hibernate below is
+        # not triggered by the guard itself.
+        #
+        # Globs every power_supply rather than hardcoding ACAD: the Deck's
+        # dock/USB-C PD supplies show up under their own names, and charging
+        # over any of them counts as plugged in.
+        onBattery = pkgs.writeShellApplication {
+          name = "deck-on-battery";
+          text = ''
+            for supply in /sys/class/power_supply/*; do
+              [ -r "$supply/type" ] || continue
+              [ "$(cat "$supply/type")" = "Mains" ] || continue
+              if [ "$(cat "$supply/online" 2>/dev/null || echo 0)" = "1" ]; then
+                exit 1
+              fi
+            done
+          '';
+        };
+      in {
         # deploy-rs wraps the system profile in an `activatable-nixos-system`
         # layer, adding a symlink hop. jovian-stubs' steamos-update compares
         # `readlink /run/booted-system/kernel` vs `readlink
@@ -408,10 +430,19 @@ in {
         # 30m balances quick-resume (short put-downs stay in S3) against
         # bag-safety (the Deck's S3 still draws a few %/hr, so 2h could
         # noticeably drain before hibernating). Tune as desired.
+        #
+        # None of this applies on AC: the drain the escalation exists to avoid
+        # doesn't happen while charging, and a plugged-in Deck should stay
+        # awake and reachable. The arm service below therefore skips arming
+        # the RTC alarm entirely when suspending on mains — so the Deck isn't
+        # woken every 30m for nothing — and the hibernate service re-checks,
+        # covering a suspend that started on battery and was plugged in before
+        # the alarm fired.
         systemd.services.auto-hibernate-after-suspend = {
           description = "Hibernate after extended suspend to save battery";
           serviceConfig = {
             Type = "oneshot";
+            ExecCondition = lib.getExe onBattery;
             # NB: `systemctl hibernate` returns as soon as logind queues the
             # job, ~24s before the kernel actually attempts the image write,
             # so its exit status says nothing about whether hibernation
@@ -460,9 +491,34 @@ in {
             ExecStart = "${pkgs.systemd}/bin/systemctl suspend";
           };
         };
+        # Arms the timer below on suspend, but only on battery. The timer is
+        # deliberately not `wantedBy = suspend.target` itself: systemd has no
+        # way to express "start this timer unless mains is online", and a
+        # timer unit's own Condition* checks can't read a sysfs *value*.
+        systemd.services.auto-hibernate-arm = {
+          description = "Arm the auto-hibernate timer when suspending on battery";
+          # wantedBy suspend.target (not sleep.target) so this only arms for
+          # suspend, never for a hibernate that is already under way.
+          # suspend.target itself is ordered *after* systemd-suspend.service —
+          # i.e. after resume — so the ordering has to name that service
+          # directly to arm the RTC alarm before the machine goes down.
+          # DefaultDependencies=no keeps the usual basic.target ordering from
+          # deadlocking against the sleep transaction.
+          wantedBy = [ "suspend.target" ];
+          partOf = [ "suspend.target" ];
+          before = [ "systemd-suspend.service" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            ExecCondition = lib.getExe onBattery;
+            ExecStart = "${pkgs.systemd}/bin/systemctl start auto-hibernate-after-suspend.timer";
+          };
+        };
+
         systemd.timers.auto-hibernate-after-suspend = {
           description = "Trigger hibernate after 30m in suspend";
-          wantedBy = [ "suspend.target" ];
+          # Started by auto-hibernate-arm.service above, not by suspend.target
+          # directly. partOf stays so a manual resume still cancels it.
           partOf = [ "suspend.target" ];
           timerConfig = {
             OnActiveSec = "30m";
