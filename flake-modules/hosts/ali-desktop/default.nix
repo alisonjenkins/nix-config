@@ -189,6 +189,12 @@ in {
         nix.settings.cores = 16;
         nix.settings.max-jobs = 8;
 
+        # Steam's Wayland host capture for Remote Play is opt-in — the client
+        # does not detect Wayland and enable the PipeWire capture path on its
+        # own. Without this, Remote Play connects and carries audio and input
+        # while the video stays black.
+        modules.desktop.gaming.steamExtraFlags = [ "-pipewire" ];
+
         modules.locale.enable = true;
         modules.docker.enable = true;
         modules.docker.enableQemuBinfmt = true;
