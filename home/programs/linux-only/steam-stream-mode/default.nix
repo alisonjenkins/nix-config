@@ -22,20 +22,18 @@ in
 {
   options.custom.steamStreamMode = {
     enable = lib.mkEnableOption ''
-      automatic dynamic-cast targeting for Steam Remote Play.
+      putting the streamed game alone on the captured output for Steam
+      Remote Play.
 
-      Remote Play captures a whole output, so a client receives the entire
-      panel — on an ultrawide most of its pixels are letterbox, and the
-      content is whatever happens to be on screen rather than the game.
+      Remote Play captures a whole output, so a client otherwise receives
+      whatever is on screen rather than the game. niri's dynamic cast target
+      would be the better mechanism, but Steam's ScreenCast request asks for
+      MONITOR sources only — its picker has no "Window" tab, while other
+      clients' pickers do — so no window-scoped source can reach it.
 
-      niri's dynamic cast target is a PipeWire stream that follows one chosen
-      window, offered to portal clients as "niri Dynamic Cast Target". This
-      points it at whichever game Steam is streaming, identified from the pid
-      Steam logs when the game creates its window, so nothing has to be
-      clicked on the host.
-
-      Selecting that source in Steam's picker is a one-off: the client
-      remembers it for later sessions
+      Instead the game window is fullscreened on the streamed output when
+      Steam logs it, identified from the pid Steam reports, so nothing has to
+      be clicked on the host
     '';
 
     output = lib.mkOption {
@@ -72,7 +70,7 @@ in
     (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Cast the streamed game window for Steam Remote Play";
+        Description = "Fullscreen the streamed game for Steam Remote Play";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
