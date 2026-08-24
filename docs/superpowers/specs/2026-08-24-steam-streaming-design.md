@@ -182,6 +182,37 @@ Convert `sunshine-gamescope` and `sunshine-steam-bp` into
 application list stops depending on untracked files. While converting, replace
 the hardcoded `WAYLAND_DISPLAY=wayland-1` with resolution of the real socket.
 
+### 6h. Window layout under a tiling compositor
+
+The portal ScreenCast path in §6a captures a niri *output*, not a window. What
+reaches the client is therefore whatever niri's column layout has placed on that
+output — neighbouring columns and the bar included — and at the output's full
+geometry.
+
+This collides with the tuned desktop setup on this host. `programs.scopebuddy`
+passes `-b -W 2560 -H 1440` deliberately, so that a gamescope game occupies a
+2560-wide borderless box on the 5120x1440 DP-2 panel and the rest of the screen
+stays visible. Capturing DP-2 then yields a 5120x1440 frame that is half game and
+half desktop, which is wrong for a 1280x800 Deck client.
+
+Three mitigations, in preference order:
+
+1. Prefer a window-scoped capture if the portal offers one at selection time,
+   which sidesteps output geometry entirely.
+2. Otherwise, switch the DP-2 mode for the duration of the stream, exactly as
+   the existing Sunshine application entries already do via
+   `niri msg output DP-2 mode ...`, and pair it with a niri window rule that
+   opens the streamed game fullscreen on a dedicated workspace.
+3. Otherwise, fall back to §6d, where the question does not arise.
+
+Note that gamescope's `--backend headless` in §6d creates no Wayland surface at
+all — it renders offscreen, niri never sees a window, and tiling cannot
+intervene. That is a substantive part of why it is the reliable path, not an
+incidental detail.
+
+Confirm at probe time which of the three applies; the answer depends on whether
+the portal's window-scoped mode is offered under niri, which is untested here.
+
 ## 7. Verification protocol
 
 Run a baseline probe **before** any change. From the Deck, start Remote Play and
@@ -218,6 +249,7 @@ Open questions to answer on day one with the hardware:
 3. §7 — baseline probe (steps 1 and 2 first so the probe measures a known tree).
 4. §6a — `-pipewire` flag; re-probe.
 5. §6b — portal pin; re-probe.
-6. §6c / §6d — only if the probes still fail.
-7. §6e — VR runtime switcher.
-8. §8 — Frame readiness checks.
+6. §6h — resolve the capture geometry question raised by the probe.
+7. §6c / §6d — only if the probes still fail.
+8. §6e — VR runtime switcher.
+9. §8 — Frame readiness checks.
