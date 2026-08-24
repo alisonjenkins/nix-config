@@ -2,6 +2,7 @@
   imports = [
     ./easyeffects
     ../../programs/linux-only/steam-command-runner
+    ../../programs/linux-only/sunshine-wrappers
     # Disabled location-based audio settings (desktop doesn't move)
     # ./location-detection
     # ./audio-context
