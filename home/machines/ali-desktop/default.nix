@@ -16,7 +16,7 @@
   # target follows a single window instead, which fixes both: the stream is
   # the game window, at the game window's size.
   custom.steamStreamMode = {
-    enable = false;
+    enable = true;
     output = "DP-2";
     niriPackage = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
   };
