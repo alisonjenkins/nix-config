@@ -188,5 +188,141 @@ class TestFollow(unittest.TestCase):
             self.assertEqual(next(lines), "after truncation\n")
 
 
+def window(wid, pid, app_id="steam_app_2854740"):
+    return {"id": wid, "pid": pid, "app_id": app_id, "title": "Game"}
+
+
+class TestCastLogParsing(unittest.TestCase):
+    """Verbatim lines from ali-desktop's streaming_log.txt."""
+
+    ADD = "[2026-08-24 23:30:46] Adding window 4194306 (4) for process 2331545 and gameID 2854740\n"
+    REMOVE = "[2026-08-24 22:40:02] Removing process 2163386 for gameID 2854740\n"
+    NOISE = "[2026-08-24 23:30:46] Adding window 4194312 to the thing\n"
+
+    def test_add_window_gives_pid_and_game(self):
+        match = stream_mode.ADD_WINDOW_RE.search(self.ADD)
+        self.assertEqual(match.groups(), ("2331545", "2854740"))
+
+    def test_remove_process_gives_pid(self):
+        match = stream_mode.REMOVE_PROC_RE.search(self.REMOVE)
+        self.assertEqual(match.group(1), "2163386")
+
+    def test_noise_ignored(self):
+        self.assertIsNone(stream_mode.ADD_WINDOW_RE.search(self.NOISE))
+
+
+class TestWindowForPid(unittest.TestCase):
+    def test_exact_pid_match(self):
+        windows = [window(1, 100), window(2, 200)]
+        self.assertEqual(stream_mode.window_for_pid(200, windows)["id"], 2)
+
+    def test_falls_back_to_ancestor(self):
+        """Under gamescope the window belongs to an ancestor, not the game."""
+        windows = [window(7, 500)]
+        real_parents = stream_mode.parent_pids
+        stream_mode.parent_pids = lambda pid, limit=8: [400, 500, 600]
+        try:
+            self.assertEqual(stream_mode.window_for_pid(999, windows)["id"], 7)
+        finally:
+            stream_mode.parent_pids = real_parents
+
+    def test_nearest_ancestor_wins(self):
+        windows = [window(7, 500), window(8, 400)]
+        real_parents = stream_mode.parent_pids
+        stream_mode.parent_pids = lambda pid, limit=8: [400, 500]
+        try:
+            self.assertEqual(stream_mode.window_for_pid(999, windows)["id"], 8)
+        finally:
+            stream_mode.parent_pids = real_parents
+
+    def test_no_match_returns_none(self):
+        real_parents = stream_mode.parent_pids
+        stream_mode.parent_pids = lambda pid, limit=8: []
+        try:
+            self.assertIsNone(stream_mode.window_for_pid(999, [window(1, 100)]))
+        finally:
+            stream_mode.parent_pids = real_parents
+
+    def test_parent_pids_handles_comm_with_spaces(self):
+        """/proc/PID/stat comm can contain spaces and parentheses."""
+        self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
+
+
+class TestCast(unittest.TestCase):
+    def setUp(self):
+        self.cast_calls = []
+        self.cleared = []
+        self.windows = [window(7, 500)]
+        self._real = (
+            stream_mode.niri_windows,
+            stream_mode.set_cast_window,
+            stream_mode.cast_monitor,
+            stream_mode.parent_pids,
+        )
+        stream_mode.niri_windows = lambda: self.windows
+        stream_mode.set_cast_window = lambda wid: self.cast_calls.append(wid)
+        stream_mode.cast_monitor = lambda: self.cleared.append(True)
+        stream_mode.parent_pids = lambda pid, limit=8: []
+
+    def tearDown(self):
+        (
+            stream_mode.niri_windows,
+            stream_mode.set_cast_window,
+            stream_mode.cast_monitor,
+            stream_mode.parent_pids,
+        ) = self._real
+
+    def test_casts_the_matching_window(self):
+        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
+        self.assertTrue(cast.target(500, 2854740))
+        self.assertEqual(self.cast_calls, [7])
+
+    def test_retries_until_the_window_appears(self):
+        """Steam logs the pid before niri has the window."""
+        self.windows = []
+        calls = {"n": 0}
+
+        def appearing():
+            calls["n"] += 1
+            return [window(7, 500)] if calls["n"] > 2 else []
+
+        stream_mode.niri_windows = appearing
+        cast = stream_mode.Cast(settle_attempts=5, settle_delay=0)
+        self.assertTrue(cast.target(500, 2854740))
+        self.assertEqual(self.cast_calls, [7])
+
+    def test_gives_up_without_casting_when_no_window_appears(self):
+        self.windows = []
+        cast = stream_mode.Cast(settle_attempts=2, settle_delay=0)
+        self.assertFalse(cast.target(500, 2854740))
+        self.assertEqual(self.cast_calls, [])
+
+    def test_release_falls_back_to_monitor_not_black(self):
+        """Clearing would hand the client an empty stream."""
+        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
+        cast.target(500, 2854740)
+        cast.release(500)
+        self.assertEqual(self.cleared, [True])
+
+    def test_release_clears_only_for_the_casting_game(self):
+        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
+        cast.target(500, 2854740)
+        self.assertFalse(cast.release(999))
+        self.assertEqual(self.cleared, [])
+        self.assertTrue(cast.release(500))
+        self.assertEqual(self.cleared, [True])
+
+    def test_release_is_idempotent(self):
+        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
+        cast.target(500, 2854740)
+        cast.release()
+        cast.release()
+        self.assertEqual(self.cleared, [True])
+
+    def test_release_without_target_does_nothing(self):
+        self.assertFalse(stream_mode.Cast().release())
+        self.assertEqual(self.cleared, [])
+
+
 if __name__ == "__main__":
     unittest.main()
