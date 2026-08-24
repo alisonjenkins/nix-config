@@ -1232,6 +1232,18 @@ in {
                   # backend would never answer. niri.nix pins gnome-keyring
                   # here at normal priority, hence the mkForce.
                   "org.freedesktop.impl.portal.Secret" = lib.mkForce [ "kwallet" ];
+
+                  # ScreenCast resolves only by fall-through today: gtk has no
+                  # implementation, so gnome answers. But
+                  # xdg-desktop-portal-wlr is also in extraPortals and niri
+                  # also speaks wlr-screencopy, leaving the resolution
+                  # ambiguous and able to drift on a portal update. niri
+                  # implements org.gnome.Mutter.ScreenCast, so gnome is
+                  # correct — pin it rather than relying on list order.
+                  # Steam's Remote Play capture goes through this interface,
+                  # so a drift here presents as a black stream with working
+                  # audio and input.
+                  "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
                 };
 
                 # Without a kde section the Plasma session falls through to
