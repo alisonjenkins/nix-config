@@ -3,27 +3,37 @@ let
   cfg = config.modules.vr;
 in
 {
+  imports = [ ./vr-runtime.nix ];
+
   options.modules.vr = {
     enableOpenSourceVR = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Register WiVRn as the OpenXR runtime and OpenComposite as the OpenVR runtime for this user.";
+      description = ''
+        Install the open-source VR stack (WiVRn as the OpenXR runtime,
+        OpenComposite as the OpenVR runtime) and seed it as the initial
+        runtime selection on a machine that has never chosen one.
+
+        This no longer *pins* the active runtime. Both files have to be
+        writable for `vr-runtime` to switch between WiVRn and SteamVR, so
+        home-manager seeds them once and then leaves them alone. A Steam Frame
+        streams PC VR through SteamVR, so the machine has to be able to hold
+        both runtimes and pick between them without a rebuild.
+      '';
     };
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf (pkgs.stdenv.isLinux && cfg.enableOpenSourceVR) {
-      xdg.configFile."openxr/1/active_runtime.json".source =
-        "${pkgs.wivrn}/share/openxr/1/openxr_wivrn.json";
-      # openvrpaths.vrpath is owned by wivrn-server: it overwrites the file
-      # at every startup from OVR_COMPAT_SEARCH_PATH (built into wivrn).
-      # Managing it via home-manager produces a stale symlink that wivrn
-      # silently replaces. The wivrn overlay pins the compat path to
-      # OpenComposite only — wivrn-server will populate the file correctly.
-    })
-    (lib.mkIf (pkgs.stdenv.isLinux && !cfg.enableOpenSourceVR) {
-      xdg.configFile."openxr/1/active_runtime.json".source = ./steamxr_linux64.json;
-      xdg.configFile."openvr/openvrpaths.vrpath".source = ./openvrpaths.vrpath;
-    })
-  ];
+  config = lib.mkIf pkgs.stdenv.isLinux {
+    # Seeds the runtime selection only when nothing has chosen one yet.
+    # Deliberately not xdg.configFile: that produces read-only store symlinks,
+    # which is what left the live state inconsistent — OpenXR resolved to
+    # WiVRn while openvrpaths.vrpath listed SteamVR first, and nothing short
+    # of a rebuild could reconcile them.
+    home.activation.seedVrRuntime = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ ! -e "$HOME/.config/openxr/1/active_runtime.json" ]; then
+        run ${lib.getExe cfg.runtimeSwitcherPackage} \
+          ${if cfg.enableOpenSourceVR then "wivrn" else "steamvr"} || true
+      fi
+    '';
+  };
 }
