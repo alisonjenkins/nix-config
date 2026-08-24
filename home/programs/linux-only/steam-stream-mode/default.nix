@@ -22,7 +22,23 @@ in
 {
   options.custom.steamStreamMode = {
     enable = lib.mkEnableOption ''
-      automatic output mode switching for Steam Remote Play.
+      automatic session supervision for Steam Remote Play.
+
+      Steam is single-instance, so a headless gamescope session and the
+      desktop client cannot coexist and something has to decide which runs.
+      Streaming wins: when a stream starts against the desktop session, the
+      machine flips to headless, and it returns to the desktop client once
+      streaming has been idle for a while.
+
+      The flip costs the client one reconnect, because it kills the very Steam
+      serving the connection. A client *connection* is deliberately not the
+      trigger — a Steam Deck broadcasts on 27036 continuously just by being
+      awake, so triggering on that would kill the desktop client at random.
+
+      The former behaviour, which narrowed the output to match the client
+      instead, does not work and is not what this enables: the PipeWire
+      capture is negotiated when the session starts and does not follow a
+      later mode change
 
       Remote Play captures a whole output rather than a window, so a client
       receives the entire panel scaled into its own screen. On an ultrawide
@@ -62,12 +78,15 @@ in
     };
   };
 
-  config = lib.mkIf (cfg.enable && pkgs.stdenv.isLinux) {
-    home.packages = [ stream-mode ];
+  config = lib.mkIf pkgs.stdenv.isLinux (lib.mkMerge [
+    # The command is useful by hand even where the watcher is not wanted, so
+    # it is installed whenever the module is imported.
+    { home.packages = [ stream-mode ]; }
 
+    (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Match ${cfg.output} to the Steam Remote Play client resolution";
+        Description = "Match ${cfg.output} to the Steam Remote Play client";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
@@ -83,5 +102,6 @@ in
 
       Install.WantedBy = [ "graphical-session.target" ];
     };
-  };
+    })
+  ]);
 }

@@ -146,7 +146,7 @@ class Session:
             log("stream-mode: could not restore mode: {}".format(exc))
 
 
-def follow(path, seek_to_end=True):
+def follow(path, seek_to_end=True, idle_yield=False):
     """Yield lines appended to path, surviving truncation and replacement.
 
     Steam truncates this log on client restart and rotates it to
@@ -155,6 +155,9 @@ def follow(path, seek_to_end=True):
     seek_to_end skips whatever the file already holds, which is what a watcher
     wants on startup: a past session's start line must not be replayed as if
     it were live. Pass False to read from the beginning.
+
+    idle_yield emits None whenever a poll finds nothing, so a caller with a
+    deadline to honour is not blocked until the next line happens to arrive.
     """
     handle = None
     inode = None
@@ -199,6 +202,8 @@ def follow(path, seek_to_end=True):
                 continue
 
             time.sleep(0.25)
+            if idle_yield:
+                yield None
         except OSError:
             if handle is not None:
                 handle.close()
