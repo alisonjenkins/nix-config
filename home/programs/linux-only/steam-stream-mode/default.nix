@@ -68,28 +68,6 @@ in
       '';
     };
 
-    headlessUnit = lib.mkOption {
-      type = lib.types.str;
-      default = "steam-headless.service";
-      description = "User unit providing the headless gamescope session.";
-    };
-
-    revertAfter = lib.mkOption {
-      type = lib.types.int;
-      default = 600;
-      description = ''
-        Seconds of no streaming before the headless session is stopped and the
-        desktop client comes back. Long enough that a reconnect is not treated
-        as the session having gone idle.
-      '';
-    };
-
-    desktopSteamCommand = lib.mkOption {
-      type = lib.types.str;
-      default = "steam";
-      description = "Command used to relaunch the desktop Steam client.";
-    };
-
     logPath = lib.mkOption {
       type = lib.types.str;
       default = "%h/.local/share/Steam/logs/streaming_log.txt";
@@ -108,7 +86,7 @@ in
     (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Flip Steam between desktop and headless for Remote Play";
+        Description = "Match ${cfg.output} to the Steam Remote Play client";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
@@ -116,13 +94,8 @@ in
       Service = {
         # The log need not exist yet: the watcher waits for it rather than
         # failing, so a session that has never streamed still starts cleanly.
-        Environment = [
-          "STREAM_MODE_LOG=${cfg.logPath}"
-          "STREAM_MODE_HEADLESS_UNIT=${cfg.headlessUnit}"
-          "STREAM_MODE_REVERT_AFTER=${toString cfg.revertAfter}"
-          "STREAM_MODE_DESKTOP_STEAM=${cfg.desktopSteamCommand}"
-        ];
-        ExecStart = "${lib.getExe stream-mode} supervise";
+        Environment = [ "STREAM_MODE_LOG=${cfg.logPath}" ];
+        ExecStart = "${lib.getExe stream-mode} watch";
         Restart = "on-failure";
         RestartSec = 5;
       };

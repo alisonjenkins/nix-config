@@ -3,7 +3,6 @@
     ./easyeffects
     ../../programs/linux-only/sunshine-wrappers
     ../../programs/linux-only/steam-stream-mode
-    ../../programs/linux-only/steam-headless
     # Disabled location-based audio settings (desktop doesn't move)
     # ./location-detection
     # ./audio-context
@@ -11,35 +10,17 @@
 
   modules.vr.enableOpenSourceVR = true;
 
-  # Remote Play captures the whole DP-2 output, so without this a Steam Deck
+  # Remote Play captures the whole DP-2 output, so a Steam Deck otherwise
   # receives the 5120x1440 ultrawide letterboxed into 1280x360 of its 800-line
-  # panel. Steam has no prep-command hook, so the switch is driven off its
-  # streaming log instead, which also means it works when nobody is at the
-  # machine to run a command.
-  # Steam is single-instance, so the headless streaming session and the
-  # desktop client cannot coexist. This flips between them: a stream starting
-  # against the desktop session switches the machine to headless, and it
-  # returns once streaming has been idle. Streaming wins, and the client pays
-  # one reconnect for the flip.
+  # panel. The mode is matched to the client when it connects — before Steam
+  # negotiates capture, since the PipeWire stream does not follow a later
+  # change — and restored once streaming has been idle.
+  # Disabled pending a rework: switching the mode mid-session does not work,
+  # and the capture follows the output rather than the game window.
   custom.steamStreamMode = {
-    enable = true;
+    enable = false;
     output = "DP-2";
     niriPackage = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
-  };
-
-  # On-demand headless gamescope Steam session. gamescope --backend headless
-  # presents no Wayland surface, so there is no desktop behind the game and
-  # nothing for niri to tile — the game fills the client's frame by
-  # construction, with no output mode change involved.
-  #
-  # Start with `systemctl --user start steam-headless`, which works over SSH.
-  # It stops the desktop Steam client first, because Steam is single-instance.
-  custom.steamHeadless = {
-    enable = true;
-    # The Steam Deck's panel. Revisit when the Frame's resolution is known.
-    width = 1280;
-    height = 800;
-    refresh = 60;
   };
 
   home.packages = [
