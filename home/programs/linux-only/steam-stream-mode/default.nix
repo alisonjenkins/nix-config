@@ -22,34 +22,20 @@ in
 {
   options.custom.steamStreamMode = {
     enable = lib.mkEnableOption ''
-      automatic session supervision for Steam Remote Play.
+      automatic dynamic-cast targeting for Steam Remote Play.
 
-      Steam is single-instance, so a headless gamescope session and the
-      desktop client cannot coexist and something has to decide which runs.
-      Streaming wins: when a stream starts against the desktop session, the
-      machine flips to headless, and it returns to the desktop client once
-      streaming has been idle for a while.
+      Remote Play captures a whole output, so a client receives the entire
+      panel — on an ultrawide most of its pixels are letterbox, and the
+      content is whatever happens to be on screen rather than the game.
 
-      The flip costs the client one reconnect, because it kills the very Steam
-      serving the connection. A client *connection* is deliberately not the
-      trigger — a Steam Deck broadcasts on 27036 continuously just by being
-      awake, so triggering on that would kill the desktop client at random.
+      niri's dynamic cast target is a PipeWire stream that follows one chosen
+      window, offered to portal clients as "niri Dynamic Cast Target". This
+      points it at whichever game Steam is streaming, identified from the pid
+      Steam logs when the game creates its window, so nothing has to be
+      clicked on the host.
 
-      The former behaviour, which narrowed the output to match the client
-      instead, does not work and is not what this enables: the PipeWire
-      capture is negotiated when the session starts and does not follow a
-      later mode change
-
-      Remote Play captures a whole output rather than a window, so a client
-      receives the entire panel scaled into its own screen. On an ultrawide
-      most of the client's pixels end up as letterbox — a 5120x1440 panel sent
-      to a 1280x800 Steam Deck arrives as 1280x360 of content inside an
-      800-line frame.
-
-      Steam exposes no prep-command hook to hang a mode switch on, but it does
-      log both ends of a session and the resolution the client asked for. This
-      watches that log and matches the output to the client for the duration
-      of a session, restoring the previous mode afterwards
+      Selecting that source in Steam's picker is a one-off: the client
+      remembers it for later sessions
     '';
 
     output = lib.mkOption {
@@ -86,7 +72,7 @@ in
     (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Match ${cfg.output} to the Steam Remote Play client";
+        Description = "Cast the streamed game window for Steam Remote Play";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
