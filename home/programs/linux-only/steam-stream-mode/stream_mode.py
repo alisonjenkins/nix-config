@@ -291,6 +291,20 @@ def clear_cast():
     )
 
 
+def cast_monitor():
+    """Point the dynamic cast at the focused monitor.
+
+    Used instead of clearing when a game exits. niri's dynamic stream goes
+    empty when its target disappears, so clearing mid-session hands the client
+    a black screen; falling back to the monitor leaves the desktop visible,
+    which is what a client expects between games.
+    """
+    subprocess.run(
+        [NIRI, "msg", "action", "set-dynamic-cast-monitor"],
+        check=False,
+    )
+
+
 class Cast:
     """Casts one game window at a time, and clears when that game goes away."""
 
@@ -335,8 +349,8 @@ class Cast:
         if pid is not None and pid != self.game_pid:
             return False
         self.game_pid = None
-        clear_cast()
-        log("stream-mode: cleared the cast target")
+        cast_monitor()
+        log("stream-mode: game gone, cast target fell back to the monitor")
         return True
 
 

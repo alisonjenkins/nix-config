@@ -256,19 +256,19 @@ class TestCast(unittest.TestCase):
         self._real = (
             stream_mode.niri_windows,
             stream_mode.set_cast_window,
-            stream_mode.clear_cast,
+            stream_mode.cast_monitor,
             stream_mode.parent_pids,
         )
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.set_cast_window = lambda wid: self.cast_calls.append(wid)
-        stream_mode.clear_cast = lambda: self.cleared.append(True)
+        stream_mode.cast_monitor = lambda: self.cleared.append(True)
         stream_mode.parent_pids = lambda pid, limit=8: []
 
     def tearDown(self):
         (
             stream_mode.niri_windows,
             stream_mode.set_cast_window,
-            stream_mode.clear_cast,
+            stream_mode.cast_monitor,
             stream_mode.parent_pids,
         ) = self._real
 
@@ -296,6 +296,13 @@ class TestCast(unittest.TestCase):
         cast = stream_mode.Cast(settle_attempts=2, settle_delay=0)
         self.assertFalse(cast.target(500, 2854740))
         self.assertEqual(self.cast_calls, [])
+
+    def test_release_falls_back_to_monitor_not_black(self):
+        """Clearing would hand the client an empty stream."""
+        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
+        cast.target(500, 2854740)
+        cast.release(500)
+        self.assertEqual(self.cleared, [True])
 
     def test_release_clears_only_for_the_casting_game(self):
         cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
