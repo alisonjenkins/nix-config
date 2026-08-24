@@ -8,7 +8,13 @@ with lib; let
   cfg = config.services.audio-usb-reconnect-heal;
 
   # Root, because udev rules run as root; pw-link needs the user's PipeWire.
-  asUser = "${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg cfg.user} --";
+  # `runuser` is deliberately given XDG_RUNTIME_DIR explicitly: neither the
+  # `runuser` nor the `runuser-l` PAM stack on NixOS includes pam_systemd, so
+  # the child inherits no XDG_RUNTIME_DIR and pw-link cannot find the socket.
+  # Without it every call died with "can't connect: Host is down" -- silently,
+  # because the failure was redirected away -- so this service never once
+  # healed a link between being written and 2026-08-24.
+  asUser = "${pkgs.util-linux}/bin/runuser -u ${lib.escapeShellArg cfg.user} -- ${pkgs.coreutils}/bin/env XDG_RUNTIME_DIR=/run/user/\"$uid\"";
 
   udevRules =
     concatMapStringsSep "\n" (d: ''
@@ -137,16 +143,21 @@ in {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "audio-usb-reconnect-heal" ''
           set -u
+          uid=$(${pkgs.coreutils}/bin/id -u ${lib.escapeShellArg cfg.user})
           ${pkgs.coreutils}/bin/sleep ${toString cfg.settleSeconds}
 
           # pw-link is a harmless no-op ("File exists") when the link is
           # already there, so this only ever adds what's missing -- never
-          # tears anything down.
+          # tears anything down. Its stderr is logged rather than discarded:
+          # "File exists" is the expected steady state, anything else means
+          # this service is not doing its job and must not fail silently.
           while read -r out_port in_port; do
             [ -n "$out_port" ] || continue
-            ${asUser} ${pkgs.pipewire}/bin/pw-link "$out_port" "$in_port" >/dev/null 2>&1 \
-              && echo "audio-usb-reconnect-heal: relinked $out_port -> $in_port" \
-              || true
+            if err=$(${asUser} ${pkgs.pipewire}/bin/pw-link "$out_port" "$in_port" 2>&1); then
+              echo "audio-usb-reconnect-heal: relinked $out_port -> $in_port"
+            else
+              echo "audio-usb-reconnect-heal: $out_port -> $in_port: $err"
+            fi
           done <<'EOF'
           ${linkList}
           EOF
