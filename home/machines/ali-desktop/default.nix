@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
     ../../programs/linux-only/steam-command-runner
@@ -28,4 +28,15 @@
     # obs-gamecapture wrap for nearly all games.
     gamescopeSkipPreCommand = false;
   };
+
+  # The module above writes the runner's config; this puts the runner itself
+  # where Steam's launch chain will find it. It intercepts `gamescope` to
+  # apply per-game arguments while keeping the Steam overlay and stop button
+  # working, and only does so under the name `gamescope` from ~/.local/bin,
+  # which precedes the system profile in PATH — installing it via
+  # home.packages would expose it under its own name and never be reached.
+  # Previously a symlink to a debug build inside a working tree, so every
+  # game's launch chain depended on an unpinned binary.
+  home.file.".local/bin/gamescope".source =
+    "${inputs.steam-command-runner.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/steam-command-runner";
 }
