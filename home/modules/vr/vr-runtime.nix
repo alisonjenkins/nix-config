@@ -22,8 +22,11 @@ let
       OPENXR_FILE="$HOME/.config/openxr/1/active_runtime.json"
       OPENVR_FILE="$HOME/.config/openvr/openvrpaths.vrpath"
 
+      # Skipped during home-manager activation, which re-applies the current
+      # runtime to refresh it and must not start or stop services as a side
+      # effect of a rebuild. Also skipped by the test harness.
       svc() {
-        if [ -n "''${VR_RUNTIME_DRY_RUN:-}" ]; then
+        if [ -n "''${VR_RUNTIME_SKIP_SERVICE:-}" ]; then
           return 0
         fi
         systemctl --user "$@" wivrn.service || true

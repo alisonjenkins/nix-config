@@ -30,10 +30,23 @@ in
     # WiVRn while openvrpaths.vrpath listed SteamVR first, and nothing short
     # of a rebuild could reconcile them.
     home.activation.seedVrRuntime = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ ! -e "$HOME/.config/openxr/1/active_runtime.json" ]; then
-        run ${lib.getExe cfg.runtimeSwitcherPackage} \
-          ${if cfg.enableOpenSourceVR then "wivrn" else "steamvr"} || true
-      fi
+      # Re-applies whatever runtime is currently selected, rather than only
+      # seeding when nothing is. Re-applying is what refreshes the store paths
+      # written into openvrpaths.vrpath across a nixpkgs bump, and what lets a
+      # file written by an older revision heal. Seeding alone could never
+      # reach either case, because it skips as soon as the file exists.
+      #
+      # The current selection is read back rather than taken from
+      # enableOpenSourceVR, so a machine switched to SteamVR by hand is not
+      # dragged back to WiVRn by an unrelated rebuild.
+      vrRuntimeStatus="$(VR_RUNTIME_SKIP_SERVICE=1 ${lib.getExe cfg.runtimeSwitcherPackage} status 2>/dev/null || true)"
+      case "$vrRuntimeStatus" in
+        *wivrn*) vrRuntimeTarget=wivrn ;;
+        *steamvr*) vrRuntimeTarget=steamvr ;;
+        *) vrRuntimeTarget=${if cfg.enableOpenSourceVR then "wivrn" else "steamvr"} ;;
+      esac
+      run env VR_RUNTIME_SKIP_SERVICE=1 ${lib.getExe cfg.runtimeSwitcherPackage} \
+        "$vrRuntimeTarget" || true
     '';
   };
 }

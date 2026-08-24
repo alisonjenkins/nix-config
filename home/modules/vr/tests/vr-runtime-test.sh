@@ -16,7 +16,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 export HOME="$TMP"
-export VR_RUNTIME_DRY_RUN=1
+export VR_RUNTIME_SKIP_SERVICE=1
 export VR_RUNTIME_WIVRN_JSON="$TMP/fake-wivrn/openxr_wivrn.json"
 export VR_RUNTIME_STEAMVR_ROOT="$TMP/fake-steam/steamapps/common/SteamVR"
 export VR_RUNTIME_OPENCOMPOSITE_ROOT="$TMP/fake-opencomposite/lib/opencomposite"
