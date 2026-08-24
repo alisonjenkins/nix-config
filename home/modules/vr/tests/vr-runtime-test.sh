@@ -20,6 +20,7 @@ export VR_RUNTIME_DRY_RUN=1
 export VR_RUNTIME_WIVRN_JSON="$TMP/fake-wivrn/openxr_wivrn.json"
 export VR_RUNTIME_STEAMVR_ROOT="$TMP/fake-steam/steamapps/common/SteamVR"
 export VR_RUNTIME_OPENCOMPOSITE_ROOT="$TMP/fake-opencomposite/lib/opencomposite"
+export VR_RUNTIME_STEAM_ROOT="$TMP/fake-steam"
 
 mkdir -p \
   "$(dirname "$VR_RUNTIME_WIVRN_JSON")" \
@@ -59,7 +60,35 @@ doc = json.load(open('$OPENXR'))
 assert doc['runtime'].get('VALVE_runtime_is_steamvr') is True, doc
 " || fail "active_runtime.json is not SteamVR's own shipped manifest"
 
-# 4. config and log paths survive a switch — the Steam library is on a
+# 4. on a virgin file the config and log paths come from the Steam root, not
+#    from the runtime path — deriving them from the runtime wrote
+#    /nix/store/config on the WiVRn branch, where the runtime is OpenComposite
+python3 -c "
+import json
+doc = json.load(open('$OPENVR'))
+assert doc['config'] == ['$TMP/fake-steam/config'], doc['config']
+assert doc['log'] == ['$TMP/fake-steam/logs'], doc['log']
+" || fail "virgin-file config/log did not fall back to the Steam root"
+
+# 5. a file carrying store paths from the buggy revision self-heals rather
+#    than preserving the garbage
+python3 - <<PY || fail "could not seed store-path garbage"
+import json
+q = "$OPENVR"
+doc = json.load(open(q))
+doc["config"] = ["/nix/store/config"]
+doc["log"] = ["/nix/store/logs"]
+json.dump(doc, open(q, "w"), indent=3)
+PY
+"$VR_RUNTIME" steamvr >/dev/null || fail "steamvr switch exited non-zero"
+python3 -c "
+import json
+doc = json.load(open('$OPENVR'))
+assert doc['config'] == ['$TMP/fake-steam/config'], doc['config']
+assert doc['log'] == ['$TMP/fake-steam/logs'], doc['log']
+" || fail "store-path config/log were preserved instead of healed"
+
+# 6. config and log paths survive a switch — the Steam library is on a
 #    separate mount on the real host, so they are not derivable from HOME
 python3 - <<PY || fail "could not seed config/log paths"
 import json
@@ -77,18 +106,18 @@ assert doc['config'] == ['/media/elsewhere/Steam/config'], doc['config']
 assert doc['log'] == ['/media/elsewhere/Steam/logs'], doc['log']
 " || fail "switching clobbered the existing config/log paths"
 
-# 5. switching to wivrn repoints OpenXR at the wivrn runtime
+# 7. switching to wivrn repoints OpenXR at the wivrn runtime
 grep -q "Monado" "$OPENXR" || fail "active_runtime.json does not name Monado"
 
-# 6. the files must be writable, not store symlinks — the whole point
+# 8. the files must be writable, not store symlinks — the whole point
 [ -w "$OPENXR" ] || fail "active_runtime.json is not writable; a switcher cannot work"
 [ -w "$OPENVR" ] || fail "openvrpaths.vrpath is not writable; a switcher cannot work"
 
-# 7. status reflects the last switch
+# 9. status reflects the last switch
 out="$("$VR_RUNTIME" status)"
 grep -qi "wivrn" <<<"$out" || fail "status did not report wivrn: $out"
 
-# 8. an unknown subcommand fails loudly rather than silently doing nothing
+# 10. an unknown subcommand fails loudly rather than silently doing nothing
 if "$VR_RUNTIME" nonsense >/dev/null 2>&1; then
   fail "unknown subcommand exited zero"
 fi

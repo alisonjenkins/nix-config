@@ -16,6 +16,7 @@ let
     text = ''
       WIVRN_JSON="''${VR_RUNTIME_WIVRN_JSON:-${pkgs.wivrn}/share/openxr/1/openxr_wivrn.json}"
       STEAMVR_ROOT="''${VR_RUNTIME_STEAMVR_ROOT:-${cfg.steamvrRoot}}"
+      STEAM_ROOT="''${VR_RUNTIME_STEAM_ROOT:-${cfg.steamRoot}}"
       OPENCOMPOSITE_ROOT="''${VR_RUNTIME_OPENCOMPOSITE_ROOT:-${pkgs.opencomposite}/lib/opencomposite}"
 
       OPENXR_FILE="$HOME/.config/openxr/1/active_runtime.json"
@@ -28,15 +29,15 @@ let
         systemctl --user "$@" wivrn.service || true
       }
 
-      # Rewrites only the runtime list. The config and log paths are preserved
-      # from the existing file because the Steam library on this host lives on
-      # a separate mount, so they are not derivable from $HOME.
+      # Rewrites only the runtime list. Existing config and log paths are kept,
+      # because on this host they point at a separate mount and are not
+      # derivable from $HOME; otherwise they fall back to the Steam root.
       write_openvrpaths() {
         mkdir -p "$(dirname "$OPENVR_FILE")"
-        python3 - "$OPENVR_FILE" "$@" <<'PY'
+        python3 - "$OPENVR_FILE" "$STEAM_ROOT" "$@" <<'PY'
 import json, os, sys
 
-path, *runtimes = sys.argv[1:]
+path, steam_root, *runtimes = sys.argv[1:]
 
 existing = {}
 if os.path.exists(path):
@@ -46,12 +47,28 @@ if os.path.exists(path):
     except (ValueError, OSError):
         existing = {}
 
-steam_root = os.path.dirname(os.path.dirname(os.path.dirname(runtimes[0])))
+
+def keep(paths):
+    """Reuse previously recorded paths, rejecting nonsense.
+
+    A Steam config or log directory is never inside the Nix store. An earlier
+    revision derived these from the runtime path, which on the WiVRn branch is
+    the OpenComposite store path, and so wrote /nix/store/config. Rejecting
+    store paths here means a file written by that revision self-heals on the
+    next switch instead of preserving the garbage forever.
+    """
+    if not isinstance(paths, list) or not paths:
+        return None
+    if any(not isinstance(q, str) or q.startswith("/nix/store/") for q in paths):
+        return None
+    return paths
+
+
 doc = {
-    "config": existing.get("config") or [os.path.join(steam_root, "config")],
+    "config": keep(existing.get("config")) or [os.path.join(steam_root, "config")],
     "external_drivers": existing.get("external_drivers"),
     "jsonid": "vrpathreg",
-    "log": existing.get("log") or [os.path.join(steam_root, "logs")],
+    "log": keep(existing.get("log")) or [os.path.join(steam_root, "logs")],
     "runtime": list(runtimes),
     "version": 1,
 }
@@ -118,6 +135,16 @@ EOF
 in
 {
   options.modules.vr = {
+    steamRoot = lib.mkOption {
+      type = lib.types.str;
+      default = "\${HOME}/.local/share/Steam";
+      description = ''
+        Root of the Steam installation. Supplies the config and log paths
+        recorded in openvrpaths.vrpath when the file does not already carry
+        usable ones.
+      '';
+    };
+
     steamvrRoot = lib.mkOption {
       type = lib.types.str;
       default = "\${HOME}/.local/share/Steam/steamapps/common/SteamVR";
