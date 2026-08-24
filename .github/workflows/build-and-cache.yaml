@@ -1,9 +1,13 @@
 name: Build and Cache Nix Flake
 
 on:
-  push:
-    branches:
-      - main
+  # Deliberately NOT push-to-main: this build saturates the self-hosted
+  # runner's disk, which the k8s node shares with the media server's
+  # postgres. A daytime PR merge kicking it off froze a watch party twice
+  # on 2026-08-24 (pharos T128: 78s SELECTs while nix built). The nightly
+  # 02:00 UTC lock-update chains into this via workflow_run below, so the
+  # cache still refreshes daily; merged-but-unbuilt changes wait for that
+  # (or a manual dispatch) instead of competing with evening playback.
   workflow_dispatch:
     inputs:
       force_push:
