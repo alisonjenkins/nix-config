@@ -30,7 +30,7 @@ let
     runtimeInputs = [ updateProtonRunners ];
     text = ''
       PROTON_RUNNERS=${lib.escapeShellArg protonRunnerLines} update-proton-runners || true
-      exec ${config.programs.steam.package}/bin/steam "$@"
+      exec ${config.programs.steam.package}/bin/steam ${lib.escapeShellArgs gcfg.steamExtraFlags} "$@"
     '';
   };
 
@@ -756,6 +756,24 @@ in
         description = ''
           AWS profile `fetch-rom` authenticates with. Overridable per run via
           AWS_PROFILE.
+        '';
+      };
+
+      steamExtraFlags = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        example = [ "-pipewire" ];
+        description = ''
+          Extra flags passed to the Steam client on every launch, injected by
+          the `steam` shim so that CLI launches, the desktop entry and
+          steam:// handoffs all receive them.
+
+          Wayland hosts need "-pipewire" for Remote Play screen capture; Steam
+          does not detect Wayland and enable the PipeWire capture path on its
+          own. Empty by default because the flags carry costs —
+          "-cef-disable-gpu-compositing" in particular disables GPU
+          acceleration in the Steam UI, and is only wanted where the XWayland
+          CEF race actually appears.
         '';
       };
 
