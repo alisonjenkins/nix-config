@@ -62,9 +62,12 @@ in
     };
   };
 
-  config = lib.mkIf (cfg.enable && pkgs.stdenv.isLinux) {
-    home.packages = [ stream-mode ];
+  config = lib.mkIf pkgs.stdenv.isLinux (lib.mkMerge [
+    # The command is useful by hand even where the watcher is not wanted, so
+    # it is installed whenever the module is imported.
+    { home.packages = [ stream-mode ]; }
 
+    (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
         Description = "Match ${cfg.output} to the Steam Remote Play client resolution";
@@ -83,5 +86,6 @@ in
 
       Install.WantedBy = [ "graphical-session.target" ];
     };
-  };
+    })
+  ]);
 }

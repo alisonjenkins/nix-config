@@ -3,6 +3,7 @@
     ./easyeffects
     ../../programs/linux-only/sunshine-wrappers
     ../../programs/linux-only/steam-stream-mode
+    ../../programs/linux-only/steam-headless
     # Disabled location-based audio settings (desktop doesn't move)
     # ./location-detection
     # ./audio-context
@@ -15,10 +16,33 @@
   # panel. Steam has no prep-command hook, so the switch is driven off its
   # streaming log instead, which also means it works when nobody is at the
   # machine to run a command.
+  #
+  # Disabled: switching the mode mid-session does not work. The PipeWire
+  # capture stream is negotiated when the session starts and does not follow a
+  # later mode change — Steam keeps reporting the old geometry and churns
+  # through renegotiation, which is visible as flicker. Narrowing the output
+  # also does not make a tiled game fill it, because a smaller desktop is
+  # still a desktop. Kept for the manual `stream-mode` command while the
+  # headless-gamescope approach is evaluated.
   custom.steamStreamMode = {
-    enable = true;
+    enable = false;
     output = "DP-2";
     niriPackage = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+  };
+
+  # On-demand headless gamescope Steam session. gamescope --backend headless
+  # presents no Wayland surface, so there is no desktop behind the game and
+  # nothing for niri to tile — the game fills the client's frame by
+  # construction, with no output mode change involved.
+  #
+  # Start with `systemctl --user start steam-headless`, which works over SSH.
+  # It stops the desktop Steam client first, because Steam is single-instance.
+  custom.steamHeadless = {
+    enable = true;
+    # The Steam Deck's panel. Revisit when the Frame's resolution is known.
+    width = 1280;
+    height = 800;
+    refresh = 60;
   };
 
   home.packages = [
