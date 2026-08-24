@@ -206,6 +206,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    steam-command-runner = {
+      # gamescope shim in the Steam launch chain: applies per-game gamescope
+      # arguments while keeping the Steam overlay and stop button working.
+      # Follows nixpkgs_unstable because upstream's own flake tracks
+      # nixpkgs-unstable for its naersk build.
+      url = "github:alisonjenkins/steam-command-runner";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
+
     tmux-sessionizer = {
       url = "github:alisonjenkins/tmux-sessionizer/b9965259166c588479c01328e34f0fbc98fa03a2";
       inputs = {
