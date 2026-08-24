@@ -188,5 +188,60 @@ class TestFollow(unittest.TestCase):
             self.assertEqual(next(lines), "after truncation\n")
 
 
+class TestSupervisor(unittest.TestCase):
+    """Deciding when to flip between the desktop client and headless."""
+
+    def setUp(self):
+        self.calls = []
+        self.active = False
+        self._real_run = stream_mode.subprocess.run
+        self._real_popen = stream_mode.subprocess.Popen
+
+        def fake_run(argv, **kwargs):
+            self.calls.append(argv)
+            if "is-active" in argv:
+                return type("R", (), {"returncode": 0 if self.active else 3})()
+            return type("R", (), {"returncode": 0})()
+
+        stream_mode.subprocess.run = fake_run
+        stream_mode.subprocess.Popen = lambda *a, **k: self.calls.append(("popen", a[0]))
+
+    def tearDown(self):
+        stream_mode.subprocess.run = self._real_run
+        stream_mode.subprocess.Popen = self._real_popen
+
+    def started(self):
+        return [c for c in self.calls if isinstance(c, list) and "start" in c]
+
+    def stopped(self):
+        return [c for c in self.calls if isinstance(c, list) and "stop" in c]
+
+    def test_enters_headless_when_not_already_there(self):
+        self.assertTrue(stream_mode.enter_headless())
+        self.assertEqual(len(self.started()), 1)
+
+    def test_entering_is_a_noop_when_already_headless(self):
+        """A stream against the headless session logs a start line too."""
+        self.active = True
+        self.assertFalse(stream_mode.enter_headless())
+        self.assertEqual(self.started(), [])
+
+    def test_start_is_non_blocking(self):
+        """The unit's ExecStart is the session itself and never returns."""
+        stream_mode.enter_headless()
+        self.assertIn("--no-block", self.started()[0])
+
+    def test_leaving_relaunches_the_desktop_client(self):
+        self.active = True
+        self.assertTrue(stream_mode.leave_headless())
+        self.assertEqual(len(self.stopped()), 1)
+        self.assertIn(("popen", [stream_mode.DESKTOP_STEAM]), self.calls)
+
+    def test_leaving_is_a_noop_when_not_headless(self):
+        self.assertFalse(stream_mode.leave_headless())
+        self.assertEqual(self.stopped(), [])
+        self.assertEqual(self.calls and self.stopped(), [])
+
+
 if __name__ == "__main__":
     unittest.main()

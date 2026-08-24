@@ -16,16 +16,13 @@
   # panel. Steam has no prep-command hook, so the switch is driven off its
   # streaming log instead, which also means it works when nobody is at the
   # machine to run a command.
-  #
-  # Disabled: switching the mode mid-session does not work. The PipeWire
-  # capture stream is negotiated when the session starts and does not follow a
-  # later mode change — Steam keeps reporting the old geometry and churns
-  # through renegotiation, which is visible as flicker. Narrowing the output
-  # also does not make a tiled game fill it, because a smaller desktop is
-  # still a desktop. Kept for the manual `stream-mode` command while the
-  # headless-gamescope approach is evaluated.
+  # Steam is single-instance, so the headless streaming session and the
+  # desktop client cannot coexist. This flips between them: a stream starting
+  # against the desktop session switches the machine to headless, and it
+  # returns once streaming has been idle. Streaming wins, and the client pays
+  # one reconnect for the flip.
   custom.steamStreamMode = {
-    enable = false;
+    enable = true;
     output = "DP-2";
     niriPackage = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
   };

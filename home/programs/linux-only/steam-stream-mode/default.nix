@@ -22,7 +22,23 @@ in
 {
   options.custom.steamStreamMode = {
     enable = lib.mkEnableOption ''
-      automatic output mode switching for Steam Remote Play.
+      automatic session supervision for Steam Remote Play.
+
+      Steam is single-instance, so a headless gamescope session and the
+      desktop client cannot coexist and something has to decide which runs.
+      Streaming wins: when a stream starts against the desktop session, the
+      machine flips to headless, and it returns to the desktop client once
+      streaming has been idle for a while.
+
+      The flip costs the client one reconnect, because it kills the very Steam
+      serving the connection. A client *connection* is deliberately not the
+      trigger — a Steam Deck broadcasts on 27036 continuously just by being
+      awake, so triggering on that would kill the desktop client at random.
+
+      The former behaviour, which narrowed the output to match the client
+      instead, does not work and is not what this enables: the PipeWire
+      capture is negotiated when the session starts and does not follow a
+      later mode change
 
       Remote Play captures a whole output rather than a window, so a client
       receives the entire panel scaled into its own screen. On an ultrawide
@@ -52,6 +68,28 @@ in
       '';
     };
 
+    headlessUnit = lib.mkOption {
+      type = lib.types.str;
+      default = "steam-headless.service";
+      description = "User unit providing the headless gamescope session.";
+    };
+
+    revertAfter = lib.mkOption {
+      type = lib.types.int;
+      default = 600;
+      description = ''
+        Seconds of no streaming before the headless session is stopped and the
+        desktop client comes back. Long enough that a reconnect is not treated
+        as the session having gone idle.
+      '';
+    };
+
+    desktopSteamCommand = lib.mkOption {
+      type = lib.types.str;
+      default = "steam";
+      description = "Command used to relaunch the desktop Steam client.";
+    };
+
     logPath = lib.mkOption {
       type = lib.types.str;
       default = "%h/.local/share/Steam/logs/streaming_log.txt";
@@ -70,7 +108,7 @@ in
     (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Match ${cfg.output} to the Steam Remote Play client resolution";
+        Description = "Flip Steam between desktop and headless for Remote Play";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
@@ -78,8 +116,13 @@ in
       Service = {
         # The log need not exist yet: the watcher waits for it rather than
         # failing, so a session that has never streamed still starts cleanly.
-        Environment = [ "STREAM_MODE_LOG=${cfg.logPath}" ];
-        ExecStart = "${lib.getExe stream-mode} watch";
+        Environment = [
+          "STREAM_MODE_LOG=${cfg.logPath}"
+          "STREAM_MODE_HEADLESS_UNIT=${cfg.headlessUnit}"
+          "STREAM_MODE_REVERT_AFTER=${toString cfg.revertAfter}"
+          "STREAM_MODE_DESKTOP_STEAM=${cfg.desktopSteamCommand}"
+        ];
+        ExecStart = "${lib.getExe stream-mode} supervise";
         Restart = "on-failure";
         RestartSec = 5;
       };

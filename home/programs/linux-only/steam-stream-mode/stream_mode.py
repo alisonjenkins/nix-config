@@ -146,7 +146,7 @@ class Session:
             log("stream-mode: could not restore mode: {}".format(exc))
 
 
-def follow(path, seek_to_end=True):
+def follow(path, seek_to_end=True, idle_yield=False):
     """Yield lines appended to path, surviving truncation and replacement.
 
     Steam truncates this log on client restart and rotates it to
@@ -155,6 +155,9 @@ def follow(path, seek_to_end=True):
     seek_to_end skips whatever the file already holds, which is what a watcher
     wants on startup: a past session's start line must not be replayed as if
     it were live. Pass False to read from the beginning.
+
+    idle_yield emits None whenever a poll finds nothing, so a caller with a
+    deadline to honour is not blocked until the next line happens to arrive.
     """
     handle = None
     inode = None
@@ -199,11 +202,93 @@ def follow(path, seek_to_end=True):
                 continue
 
             time.sleep(0.25)
+            if idle_yield:
+                yield None
         except OSError:
             if handle is not None:
                 handle.close()
                 handle = None
             time.sleep(1.0)
+
+
+# --- Session supervision ---------------------------------------------------
+#
+# Steam is single-instance, so a headless gamescope session and the desktop
+# client cannot coexist; something has to decide which is running. Streaming
+# wins: when a stream starts against the desktop session, the machine flips to
+# headless. That costs the client one reconnect, because the flip kills the
+# very Steam serving the connection, but it is the only unambiguous trigger.
+#
+# A client connection is deliberately *not* the trigger. A Steam Deck
+# broadcasts on 27036 continuously just by being awake and logs a connection
+# whenever it pairs, so triggering on that would kill the desktop client at
+# random.
+
+HEADLESS_UNIT = os.environ.get("STREAM_MODE_HEADLESS_UNIT", "steam-headless.service")
+DESKTOP_STEAM = os.environ.get("STREAM_MODE_DESKTOP_STEAM", "steam")
+REVERT_AFTER = float(os.environ.get("STREAM_MODE_REVERT_AFTER", "600"))
+
+
+def unit_active(unit=HEADLESS_UNIT):
+    result = subprocess.run(
+        ["systemctl", "--user", "is-active", "--quiet", unit],
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def enter_headless():
+    if unit_active():
+        return False
+    log("stream-mode: stream started, switching to the headless session")
+    # --no-block: the unit's ExecStart *is* the session and does not return.
+    subprocess.run(
+        ["systemctl", "--user", "start", "--no-block", HEADLESS_UNIT],
+        check=False,
+    )
+    return True
+
+
+def leave_headless():
+    if not unit_active():
+        return False
+    log("stream-mode: idle, returning to the desktop Steam client")
+    subprocess.run(["systemctl", "--user", "stop", HEADLESS_UNIT], check=False)
+    try:
+        subprocess.Popen(
+            [DESKTOP_STEAM],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        log("stream-mode: could not relaunch the desktop client: {}".format(exc))
+    return True
+
+
+def supervise():
+    log("stream-mode: supervising {} (revert after {:.0f}s idle)".format(LOG, REVERT_AFTER))
+    revert_at = None
+
+    for line in follow(LOG, idle_yield=True):
+        now = time.monotonic()
+
+        if line is None:
+            if revert_at is not None and now >= revert_at:
+                revert_at = None
+                leave_headless()
+            continue
+
+        if START_RE.search(line):
+            # A stream against the headless session logs this too; entering is
+            # a no-op there, and cancelling the timer is what keeps a
+            # reconnect from being treated as the session going idle.
+            revert_at = None
+            enter_headless()
+        elif STOP_RE.search(line):
+            if unit_active():
+                revert_at = now + REVERT_AFTER
 
 
 def watch():
@@ -242,6 +327,10 @@ def main(argv):
         watch()
         return 0
 
+    if len(argv) >= 2 and argv[1] == "supervise":
+        supervise()
+        return 0
+
     if len(argv) == 3 and argv[1] == "match":
         try:
             want_w, want_h = (int(part) for part in argv[2].split("x", 1))
@@ -271,7 +360,7 @@ def main(argv):
         return 0
 
     print(
-        "usage: stream-mode [watch|match WIDTHxHEIGHT|restore|status]",
+        "usage: stream-mode [supervise|watch|match WIDTHxHEIGHT|restore|status]",
         file=sys.stderr,
     )
     return 2
