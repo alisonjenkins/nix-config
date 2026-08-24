@@ -248,80 +248,96 @@ class TestWindowForPid(unittest.TestCase):
         self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
 
 
-class TestCast(unittest.TestCase):
+class TestIsFullscreen(unittest.TestCase):
+    """niri exposes no fullscreen flag and only a toggle action, so state is
+    inferred from geometry — a wrong answer would un-fullscreen the game."""
+
+    def win(self, w, h):
+        return {"id": 1, "layout": {"window_size": [w, h]}}
+
+    def test_window_filling_the_output_is_fullscreen(self):
+        self.assertTrue(stream_mode.is_fullscreen(self.win(5120, 1440), (5120, 1440)))
+
+    def test_tiled_window_is_not(self):
+        self.assertFalse(stream_mode.is_fullscreen(self.win(1277, 1406), (5120, 1440)))
+
+    def test_unknown_output_size_is_not_fullscreen(self):
+        self.assertFalse(stream_mode.is_fullscreen(self.win(5120, 1440), None))
+
+    def test_missing_layout_is_not_fullscreen(self):
+        self.assertFalse(stream_mode.is_fullscreen({"id": 1}, (5120, 1440)))
+
+    def test_float_sizes_compare_equal(self):
+        self.assertTrue(stream_mode.is_fullscreen(self.win(5120.0, 1440.0), (5120, 1440)))
+
+
+class TestStage(unittest.TestCase):
     def setUp(self):
-        self.cast_calls = []
-        self.cleared = []
-        self.windows = [window(7, 500)]
+        self.fullscreened = []
+        self.focused = []
+        self.windows = [
+            {"id": 7, "pid": 500, "app_id": "game", "layout": {"window_size": [1277, 1406]}}
+        ]
         self._real = (
             stream_mode.niri_windows,
-            stream_mode.set_cast_window,
-            stream_mode.cast_monitor,
+            stream_mode.output_logical_size,
+            stream_mode.fullscreen_window,
+            stream_mode.focus_window,
             stream_mode.parent_pids,
         )
         stream_mode.niri_windows = lambda: self.windows
-        stream_mode.set_cast_window = lambda wid: self.cast_calls.append(wid)
-        stream_mode.cast_monitor = lambda: self.cleared.append(True)
+        stream_mode.output_logical_size = lambda name=None: (5120, 1440)
+        stream_mode.fullscreen_window = lambda wid: self.fullscreened.append(wid)
+        stream_mode.focus_window = lambda wid: self.focused.append(wid)
         stream_mode.parent_pids = lambda pid, limit=8: []
 
     def tearDown(self):
         (
             stream_mode.niri_windows,
-            stream_mode.set_cast_window,
-            stream_mode.cast_monitor,
+            stream_mode.output_logical_size,
+            stream_mode.fullscreen_window,
+            stream_mode.focus_window,
             stream_mode.parent_pids,
         ) = self._real
 
-    def test_casts_the_matching_window(self):
-        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
-        self.assertTrue(cast.target(500, 2854740))
-        self.assertEqual(self.cast_calls, [7])
+    def test_fullscreens_and_focuses_the_game(self):
+        stage = stream_mode.Stage(settle_attempts=1, settle_delay=0)
+        self.assertTrue(stage.target(500, 2854740))
+        self.assertEqual(self.fullscreened, [7])
+        self.assertEqual(self.focused, [7])
+
+    def test_does_not_toggle_an_already_fullscreen_game(self):
+        """Toggling here would un-fullscreen it — the exact bug to avoid."""
+        self.windows[0]["layout"]["window_size"] = [5120, 1440]
+        stage = stream_mode.Stage(settle_attempts=1, settle_delay=0)
+        self.assertTrue(stage.target(500, 2854740))
+        self.assertEqual(self.fullscreened, [])
+        self.assertEqual(self.focused, [7])
 
     def test_retries_until_the_window_appears(self):
-        """Steam logs the pid before niri has the window."""
-        self.windows = []
         calls = {"n": 0}
 
         def appearing():
             calls["n"] += 1
-            return [window(7, 500)] if calls["n"] > 2 else []
+            return self.windows if calls["n"] > 2 else []
 
         stream_mode.niri_windows = appearing
-        cast = stream_mode.Cast(settle_attempts=5, settle_delay=0)
-        self.assertTrue(cast.target(500, 2854740))
-        self.assertEqual(self.cast_calls, [7])
+        stage = stream_mode.Stage(settle_attempts=5, settle_delay=0)
+        self.assertTrue(stage.target(500, 2854740))
+        self.assertEqual(self.fullscreened, [7])
 
-    def test_gives_up_without_casting_when_no_window_appears(self):
-        self.windows = []
-        cast = stream_mode.Cast(settle_attempts=2, settle_delay=0)
-        self.assertFalse(cast.target(500, 2854740))
-        self.assertEqual(self.cast_calls, [])
+    def test_gives_up_when_no_window_appears(self):
+        stream_mode.niri_windows = lambda: []
+        stage = stream_mode.Stage(settle_attempts=2, settle_delay=0)
+        self.assertFalse(stage.target(500, 2854740))
+        self.assertEqual(self.fullscreened, [])
 
-    def test_release_falls_back_to_monitor_not_black(self):
-        """Clearing would hand the client an empty stream."""
-        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
-        cast.target(500, 2854740)
-        cast.release(500)
-        self.assertEqual(self.cleared, [True])
-
-    def test_release_clears_only_for_the_casting_game(self):
-        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
-        cast.target(500, 2854740)
-        self.assertFalse(cast.release(999))
-        self.assertEqual(self.cleared, [])
-        self.assertTrue(cast.release(500))
-        self.assertEqual(self.cleared, [True])
-
-    def test_release_is_idempotent(self):
-        cast = stream_mode.Cast(settle_attempts=1, settle_delay=0)
-        cast.target(500, 2854740)
-        cast.release()
-        cast.release()
-        self.assertEqual(self.cleared, [True])
-
-    def test_release_without_target_does_nothing(self):
-        self.assertFalse(stream_mode.Cast().release())
-        self.assertEqual(self.cleared, [])
+    def test_release_only_for_the_staged_game(self):
+        stage = stream_mode.Stage(settle_attempts=1, settle_delay=0)
+        stage.target(500, 2854740)
+        self.assertFalse(stage.release(999))
+        self.assertTrue(stage.release(500))
+        self.assertFalse(stage.release(500))
 
 
 if __name__ == "__main__":

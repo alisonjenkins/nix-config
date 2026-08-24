@@ -11,11 +11,17 @@ Steam keeps reporting the old geometry and churns through renegotiation,
 which shows as flicker — and a smaller desktop is still a desktop, with the
 game still a window on it.
 
-niri's dynamic cast target (25.05+) solves both at once. It is a PipeWire
-stream that follows one chosen window, offered to portal clients as "niri
-Dynamic Cast Target". Casting a window means the stream is the window: its
-size is the window's size, so there is no output geometry to fight and
-nothing else in frame.
+niri's dynamic cast target would solve this — it is a PipeWire stream that
+follows one chosen window — but it cannot be used here. It is offered to
+portal clients under the picker's "Window" tab, and Steam's ScreenCast
+request asks for MONITOR sources only: its picker has no Window tab at all,
+while other clients' pickers do. So no window-scoped source can ever reach
+Steam, whatever the portal configuration.
+
+What is left is to make the monitor show only the game: fullscreen the game
+window on the streamed output. The stream still carries the whole output, so
+an ultrawide still letterboxes on a 16:10 client, but the content is the game
+rather than whatever happened to be on screen.
 
 Steam logs the pid of each game window it starts streaming:
 
@@ -277,36 +283,46 @@ def window_for_pid(pid, windows=None):
     return None
 
 
-def set_cast_window(window_id):
+def output_logical_size(name=OUTPUT):
+    outputs = niri_outputs()
+    logical = (outputs.get(name) or {}).get("logical") or {}
+    width, height = logical.get("width"), logical.get("height")
+    if width is None or height is None:
+        return None
+    return (width, height)
+
+
+def is_fullscreen(window, output_size):
+    """Infer fullscreen by geometry.
+
+    niri exposes no fullscreen flag on windows and offers only a *toggle*
+    action, so a blind toggle would un-fullscreen a game that already is.
+    A window filling its output's logical size is taken as fullscreen.
+    """
+    if output_size is None:
+        return False
+    size = (window.get("layout") or {}).get("window_size")
+    if not size or len(size) != 2:
+        return False
+    return int(size[0]) == int(output_size[0]) and int(size[1]) == int(output_size[1])
+
+
+def fullscreen_window(window_id):
     subprocess.run(
-        [NIRI, "msg", "action", "set-dynamic-cast-window", "--id", str(window_id)],
+        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)],
         check=True,
     )
 
 
-def clear_cast():
+def focus_window(window_id):
     subprocess.run(
-        [NIRI, "msg", "action", "clear-dynamic-cast-target"],
+        [NIRI, "msg", "action", "focus-window", "--id", str(window_id)],
         check=False,
     )
 
 
-def cast_monitor():
-    """Point the dynamic cast at the focused monitor.
-
-    Used instead of clearing when a game exits. niri's dynamic stream goes
-    empty when its target disappears, so clearing mid-session hands the client
-    a black screen; falling back to the monitor leaves the desktop visible,
-    which is what a client expects between games.
-    """
-    subprocess.run(
-        [NIRI, "msg", "action", "set-dynamic-cast-monitor"],
-        check=False,
-    )
-
-
-class Cast:
-    """Casts one game window at a time, and clears when that game goes away."""
+class Stage:
+    """Puts the streamed game alone on the captured output."""
 
     def __init__(self, settle_attempts=10, settle_delay=0.5):
         self.game_pid = None
@@ -318,23 +334,31 @@ class Cast:
         # pid, so this retries rather than resolving once and giving up.
         for _ in range(self.settle_attempts):
             try:
-                window = window_for_pid(pid)
+                windows = niri_windows()
+                window = window_for_pid(pid, windows)
+                output_size = output_logical_size()
             except (subprocess.CalledProcessError, ValueError, OSError) as exc:
-                log("stream-mode: could not query niri windows: {}".format(exc))
+                log("stream-mode: could not query niri: {}".format(exc))
                 return False
+
             if window is not None:
-                try:
-                    set_cast_window(window["id"])
-                except (subprocess.CalledProcessError, OSError) as exc:
-                    log("stream-mode: could not cast window: {}".format(exc))
-                    return False
                 self.game_pid = pid
+                focus_window(window["id"])
+                if is_fullscreen(window, output_size):
+                    log(
+                        "stream-mode: {} (window {}) already fullscreen".format(
+                            window.get("app_id") or "game", window["id"]
+                        )
+                    )
+                    return True
+                try:
+                    fullscreen_window(window["id"])
+                except (subprocess.CalledProcessError, OSError) as exc:
+                    log("stream-mode: could not fullscreen window: {}".format(exc))
+                    return False
                 log(
-                    "stream-mode: casting {} (window {}, pid {}, game {})".format(
-                        window.get("app_id") or window.get("title") or "window",
-                        window["id"],
-                        pid,
-                        game_id,
+                    "stream-mode: fullscreened {} (window {}, pid {}, game {})".format(
+                        window.get("app_id") or "game", window["id"], pid, game_id
                     )
                 )
                 return True
@@ -344,21 +368,21 @@ class Cast:
         return False
 
     def release(self, pid=None):
+        # Nothing to undo: the game's window goes away with the game, and
+        # niri drops its fullscreen state with it.
         if self.game_pid is None:
             return False
         if pid is not None and pid != self.game_pid:
             return False
         self.game_pid = None
-        cast_monitor()
-        log("stream-mode: game gone, cast target fell back to the monitor")
         return True
 
 
 def watch():
-    cast = Cast()
+    stage = Stage()
 
     def bail(_signum, _frame):
-        cast.release()
+        stage.release()
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
@@ -369,18 +393,18 @@ def watch():
         for line in follow(LOG):
             match = ADD_WINDOW_RE.search(line)
             if match:
-                cast.target(int(match.group(1)), int(match.group(2)))
+                stage.target(int(match.group(1)), int(match.group(2)))
                 continue
 
             match = REMOVE_PROC_RE.search(line)
             if match:
-                cast.release(int(match.group(1)))
+                stage.release(int(match.group(1)))
                 continue
 
             if STOP_RE.search(line):
-                cast.release()
+                stage.release()
     finally:
-        cast.release()
+        stage.release()
 
 
 def main(argv):
@@ -411,17 +435,13 @@ def main(argv):
         apply_mode(max(preferred, key=lambda m: m["refresh_rate"]))
         return 0
 
-    if len(argv) == 3 and argv[1] == "cast":
+    if len(argv) == 3 and argv[1] == "stage":
         try:
             pid = int(argv[2])
         except ValueError:
             print("stream-mode: expected a pid", file=sys.stderr)
             return 2
-        return 0 if Cast().target(pid, 0) else 1
-
-    if len(argv) == 2 and argv[1] == "uncast":
-        clear_cast()
-        return 0
+        return 0 if Stage().target(pid, 0) else 1
 
     if len(argv) == 2 and argv[1] == "status":
         _, current = output_state()
@@ -430,7 +450,7 @@ def main(argv):
 
     print(
         "usage: stream-mode "
-        "[watch|cast PID|uncast|match WIDTHxHEIGHT|restore|status]",
+        "[watch|stage PID|match WIDTHxHEIGHT|restore|status]",
         file=sys.stderr,
     )
     return 2

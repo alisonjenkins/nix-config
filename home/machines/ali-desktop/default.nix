@@ -10,11 +10,10 @@
 
   modules.vr.enableOpenSourceVR = true;
 
-  # Remote Play captures a whole output, so a Steam Deck otherwise receives
-  # the 5120x1440 ultrawide letterboxed into 1280x360 of its 800-line panel,
-  # showing whatever is on screen rather than the game. niri's dynamic cast
-  # target follows a single window instead, which fixes both: the stream is
-  # the game window, at the game window's size.
+  # Remote Play captures a whole output and Steam only ever asks the portal
+  # for monitors, so the client sees whatever is on screen. The streamed game
+  # is fullscreened on DP-2 instead, which is the only lever left: the stream
+  # still carries the whole output, but the output shows just the game.
   custom.steamStreamMode = {
     enable = true;
     output = "DP-2";
