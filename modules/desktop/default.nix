@@ -30,6 +30,15 @@ let
     runtimeInputs = [ updateProtonRunners ];
     text = ''
       PROTON_RUNNERS=${lib.escapeShellArg protonRunnerLines} update-proton-runners || true
+
+      # The extra flags suit the desktop session and actively break others.
+      # -pipewire in particular forces portal desktop capture, which inside a
+      # headless gamescope session has no desktop to capture and hands back a
+      # 0x0 stream, hanging the client. Callers that run Steam somewhere other
+      # than the desktop session opt out.
+      if [ -n "''${STEAM_NO_EXTRA_FLAGS:-}" ]; then
+        exec ${config.programs.steam.package}/bin/steam "$@"
+      fi
       exec ${config.programs.steam.package}/bin/steam ${lib.escapeShellArgs gcfg.steamExtraFlags} "$@"
     '';
   };

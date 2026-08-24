@@ -47,6 +47,12 @@ let
           # problem this exists to avoid.
           unset WAYLAND_DISPLAY DISPLAY
 
+          # Suppress the desktop session's Steam flags. -pipewire forces portal
+          # desktop capture, and there is no desktop here — the portal returns
+          # a 0x0 stream ("unknown video format 0x0", "Couldn't import dmabuf")
+          # and the client hangs. Steam must use its gamescope capture path.
+          export STEAM_NO_EXTRA_FLAGS=1
+
           echo "steam-headless: starting ${toString cfg.width}x${toString cfg.height}@${toString cfg.refresh} headless session" >&2
           exec "$GAMESCOPE_BIN" \
             --backend headless \
