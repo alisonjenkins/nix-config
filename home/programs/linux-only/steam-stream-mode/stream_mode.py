@@ -1,20 +1,29 @@
-"""Match a niri output's mode to a Steam Remote Play client's resolution.
+"""Point niri's dynamic cast target at whichever game Steam is streaming.
 
-Steam Remote Play captures a whole output rather than a window, so a client
-receives the entire panel scaled into its own screen. On an ultrawide that
-means most of the client's pixels are letterbox: a 5120x1440 panel sent to a
-1280x800 Steam Deck arrives as 1280x360 of content inside an 800-line frame.
+Steam Remote Play captures a whole output, so a client receives the entire
+panel: on a 5120x1440 ultrawide a 1280x800 Steam Deck gets 1280x360 of
+content inside an 800-line frame, and whatever happens to be on screen rather
+than the game.
 
-Steam has no prep-command hook, so there is nothing to hang a mode switch on.
-It does, however, log both ends of a session and the resolution the client
-asked for, which is enough to drive the switch from outside:
+Narrowing the output does not fix either half. The PipeWire capture is
+negotiated when the session starts and does not follow a later mode change —
+Steam keeps reporting the old geometry and churns through renegotiation,
+which shows as flicker — and a smaller desktop is still a desktop, with the
+game still a window on it.
 
-    >>> Starting desktop stream
-    >>> Capture resolution set to 1280x800
-    >>> Stopped desktop stream
+niri's dynamic cast target (25.05+) solves both at once. It is a PipeWire
+stream that follows one chosen window, offered to portal clients as "niri
+Dynamic Cast Target". Casting a window means the stream is the window: its
+size is the window's size, so there is no output geometry to fight and
+nothing else in frame.
 
-`watch` follows that log and narrows the output to match the client for the
-duration of a session, restoring the previous mode afterwards.
+Steam logs the pid of each game window it starts streaming:
+
+    Adding window 4194306 (4) for process 2331545 and gameID 2854740
+
+which is enough to find the matching niri window and cast it, with no
+interaction on the host — the point being that this has to work when nobody
+is at the machine.
 """
 
 import json
@@ -35,6 +44,8 @@ NIRI = os.environ.get("STREAM_MODE_NIRI", "niri")
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
 RES_RE = re.compile(r">>> Capture resolution set to (\d+)x(\d+)")
+ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
+REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 
 
 def log(message):
@@ -211,35 +222,151 @@ def follow(path, seek_to_end=True, idle_yield=False):
             time.sleep(1.0)
 
 
+# --- Dynamic cast targeting -------------------------------------------------
+
+
+def niri_windows():
+    raw = subprocess.run(
+        [NIRI, "msg", "--json", "windows"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    return json.loads(raw)
+
+
+def parent_pids(pid, limit=8):
+    """Walk up the process tree, nearest ancestor first.
+
+    A game's own pid often owns no niri window: under gamescope or
+    pressure-vessel the window belongs to an ancestor, so the pid Steam logs
+    has to be resolved upwards before giving up.
+    """
+    chain = []
+    current = pid
+    for _ in range(limit):
+        try:
+            with open("/proc/{}/stat".format(current)) as fh:
+                # comm can contain spaces and parentheses; ppid is the field
+                # after the last ')'.
+                fields = fh.read().rpartition(")")[2].split()
+            current = int(fields[1])
+        except (OSError, ValueError, IndexError):
+            break
+        if current <= 1:
+            break
+        chain.append(current)
+    return chain
+
+
+def window_for_pid(pid, windows=None):
+    """Find the niri window belonging to pid, or to its nearest ancestor."""
+    if windows is None:
+        windows = niri_windows()
+
+    by_pid = {}
+    for window in windows:
+        if window.get("pid") is not None:
+            by_pid.setdefault(window["pid"], window)
+
+    if pid in by_pid:
+        return by_pid[pid]
+    for ancestor in parent_pids(pid):
+        if ancestor in by_pid:
+            return by_pid[ancestor]
+    return None
+
+
+def set_cast_window(window_id):
+    subprocess.run(
+        [NIRI, "msg", "action", "set-dynamic-cast-window", "--id", str(window_id)],
+        check=True,
+    )
+
+
+def clear_cast():
+    subprocess.run(
+        [NIRI, "msg", "action", "clear-dynamic-cast-target"],
+        check=False,
+    )
+
+
+class Cast:
+    """Casts one game window at a time, and clears when that game goes away."""
+
+    def __init__(self, settle_attempts=10, settle_delay=0.5):
+        self.game_pid = None
+        self.settle_attempts = settle_attempts
+        self.settle_delay = settle_delay
+
+    def target(self, pid, game_id):
+        # The niri window frequently does not exist yet when Steam logs the
+        # pid, so this retries rather than resolving once and giving up.
+        for _ in range(self.settle_attempts):
+            try:
+                window = window_for_pid(pid)
+            except (subprocess.CalledProcessError, ValueError, OSError) as exc:
+                log("stream-mode: could not query niri windows: {}".format(exc))
+                return False
+            if window is not None:
+                try:
+                    set_cast_window(window["id"])
+                except (subprocess.CalledProcessError, OSError) as exc:
+                    log("stream-mode: could not cast window: {}".format(exc))
+                    return False
+                self.game_pid = pid
+                log(
+                    "stream-mode: casting {} (window {}, pid {}, game {})".format(
+                        window.get("app_id") or window.get("title") or "window",
+                        window["id"],
+                        pid,
+                        game_id,
+                    )
+                )
+                return True
+            time.sleep(self.settle_delay)
+
+        log("stream-mode: no niri window found for pid {} (game {})".format(pid, game_id))
+        return False
+
+    def release(self, pid=None):
+        if self.game_pid is None:
+            return False
+        if pid is not None and pid != self.game_pid:
+            return False
+        self.game_pid = None
+        clear_cast()
+        log("stream-mode: cleared the cast target")
+        return True
+
+
 def watch():
-    session = Session()
+    cast = Cast()
 
     def bail(_signum, _frame):
-        # Leaving the panel narrowed because the service stopped mid-session
-        # would be worse than never having switched.
-        session.restore()
+        cast.release()
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
     signal.signal(signal.SIGINT, bail)
 
-    log("stream-mode: watching {} for {}".format(LOG, OUTPUT))
-    armed = False
+    log("stream-mode: watching {} for streamed game windows".format(LOG))
     try:
         for line in follow(LOG):
-            if START_RE.search(line):
-                armed = True
+            match = ADD_WINDOW_RE.search(line)
+            if match:
+                cast.target(int(match.group(1)), int(match.group(2)))
                 continue
+
+            match = REMOVE_PROC_RE.search(line)
+            if match:
+                cast.release(int(match.group(1)))
+                continue
+
             if STOP_RE.search(line):
-                armed = False
-                session.restore()
-                continue
-            if armed:
-                match = RES_RE.search(line)
-                if match:
-                    session.start(int(match.group(1)), int(match.group(2)))
+                cast.release()
     finally:
-        session.restore()
+        cast.release()
 
 
 def main(argv):
@@ -270,13 +397,26 @@ def main(argv):
         apply_mode(max(preferred, key=lambda m: m["refresh_rate"]))
         return 0
 
+    if len(argv) == 3 and argv[1] == "cast":
+        try:
+            pid = int(argv[2])
+        except ValueError:
+            print("stream-mode: expected a pid", file=sys.stderr)
+            return 2
+        return 0 if Cast().target(pid, 0) else 1
+
+    if len(argv) == 2 and argv[1] == "uncast":
+        clear_cast()
+        return 0
+
     if len(argv) == 2 and argv[1] == "status":
         _, current = output_state()
         print("stream-mode: {} at {}".format(OUTPUT, mode_string(current)))
         return 0
 
     print(
-        "usage: stream-mode [watch|match WIDTHxHEIGHT|restore|status]",
+        "usage: stream-mode "
+        "[watch|cast PID|uncast|match WIDTHxHEIGHT|restore|status]",
         file=sys.stderr,
     )
     return 2

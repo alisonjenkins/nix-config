@@ -10,13 +10,11 @@
 
   modules.vr.enableOpenSourceVR = true;
 
-  # Remote Play captures the whole DP-2 output, so a Steam Deck otherwise
-  # receives the 5120x1440 ultrawide letterboxed into 1280x360 of its 800-line
-  # panel. The mode is matched to the client when it connects — before Steam
-  # negotiates capture, since the PipeWire stream does not follow a later
-  # change — and restored once streaming has been idle.
-  # Disabled pending a rework: switching the mode mid-session does not work,
-  # and the capture follows the output rather than the game window.
+  # Remote Play captures a whole output, so a Steam Deck otherwise receives
+  # the 5120x1440 ultrawide letterboxed into 1280x360 of its 800-line panel,
+  # showing whatever is on screen rather than the game. niri's dynamic cast
+  # target follows a single window instead, which fixes both: the stream is
+  # the game window, at the game window's size.
   custom.steamStreamMode = {
     enable = false;
     output = "DP-2";
