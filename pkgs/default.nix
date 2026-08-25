@@ -51,4 +51,24 @@
   # pkgsi686Linux.steam-display-filter gives the 32-bit build the Steam client
   # needs. See the package for why it exists.
   steam-display-filter = pkgs.callPackage ./steam-display-filter { };
+  # Both ABIs of the display filter under one prefix, laid out for glibc's $LIB
+  # token. Steam is a 32-bit client that spawns 64-bit helpers, and a
+  # single-ABI LD_PRELOAD makes every process of the other ABI print "wrong ELF
+  # class" before ignoring it; "…/$LIB/libsteam-display-filter.so" lets the
+  # loader pick lib or lib64 per process instead.
+  #
+  # Defined unconditionally on purpose. This file is applied as an overlay to
+  # every package set including pkgsi686Linux, and guarding the attribute on
+  # `pkgs.stdenv.hostPlatform` would make the overlay's attribute *names*
+  # depend on pkgs, which cannot be built until those names are known —
+  # infinite recursion. The reference to pkgsi686Linux below is only in the
+  # value, which stays lazy and is never forced from the 32-bit set.
+  steam-display-filter-multiarch =
+    pkgs.runCommand "steam-display-filter-multiarch"
+      { meta.description = "steam-display-filter for both ABIs, laid out for \$LIB"; }
+      ''
+        mkdir -p $out/lib $out/lib64
+        ln -s ${pkgs.pkgsi686Linux.steam-display-filter}/lib/libsteam-display-filter.so $out/lib/
+        ln -s ${pkgs.steam-display-filter}/lib/libsteam-display-filter.so $out/lib64/
+      '';
 }
