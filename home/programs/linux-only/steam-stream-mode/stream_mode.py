@@ -269,9 +269,19 @@ def wait_until_listed(name, timeout=5.0, interval=0.2):
     """
     deadline = time.monotonic() + timeout
     while True:
-        if name in usable_output_names():
+        listed = usable_output_names()
+        if name in listed:
             return True
         if time.monotonic() >= deadline:
+            # Say what niri did report. The same creation succeeds by hand a
+            # minute after login but has been seen to fail during it, and
+            # without the observed list there is no way to tell an output
+            # niri never added from one it added under another name.
+            log(
+                "stream-mode: {} still not listed after {:.0f}s; niri lists {}".format(
+                    name, timeout, sorted(listed) or "nothing"
+                )
+            )
             return False
         time.sleep(interval)
 
