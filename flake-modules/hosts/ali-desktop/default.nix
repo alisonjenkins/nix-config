@@ -166,7 +166,7 @@ in {
           };
       })
 
-      ({ config, pkgs, lib, outputs, ... }: {
+      ({ config, pkgs, lib, outputs, username, ... }: {
         modules.niks3CachePush = {
           enable = true;
           authTokenFile = config.sops.secrets.niks3-token.path;
@@ -428,11 +428,6 @@ in {
           niriVirtualOutputs = true;
 
           gaming = {
-            # Without this a Deck streaming the 1280x800 virtual output
-            # receives DP-2's 5120x1440 shape fitted to 1280 wide — a
-            # 1280x360 letterbox — because Remote Play sizes from the largest
-            # monitor X reports rather than from the stream it was given.
-            steamStreamDisplayFilter = true;
             gpuVendor = "amd";
             cpuTopology = null;  # Let Wine auto-detect; "16:32" string was misparsed as bitmap index 32 (out of range on 32-thread host) → NULL deref in games (e.g. FH6 FHE01)
             enableDxvkStateCache = true;
@@ -767,28 +762,6 @@ in {
         nixpkgs = {
           overlays = [
             self.overlays.lqx-pin-packages
-
-            # libva has to match the mesa forced above, for every consumer and
-            # not just hardware.graphics. mesa's radeonsi VAAPI driver exports
-            # a versioned __vaDriverInit_<VA major.minor>, and libva only probes
-            # down from its own version, so a libva older than the driver finds
-            # no init symbol at all and hardware video vanishes silently.
-            #
-            # Steam is how this surfaced: its FHS root ships the base package
-            # set's libva 2.23, which shadows the matching one that
-            # hardware.graphics.extraPackages32 puts in the same tree. Remote
-            # Play then logged
-            #   libva: VA-API version 1.23.0
-            #   .../radeonsi_drv_video.so has no function __vaDriverInit_1_0
-            # against a mesa 26.2 driver exporting __vaDriverInit_1_24, fell
-            # through every encoder and streamed with no hardware encoding.
-            (_final: prev: {
-              # prev.master is instantiated for the enclosing platform, so this
-              # is the i686 libva inside pkgsi686Linux and the x86_64 one
-              # outside it — both have to move together or the 32-bit Steam
-              # client is left behind, which is the case that broke.
-              libva = prev.master.libva;
-            })
           ];
         };
 
@@ -860,8 +833,22 @@ in {
             });
           in {
             enable = true;
-            package = pkgs.steam.override {
-              buildFHSEnv = args: (pkgs.buildFHSEnv.override {
+            # Steam's FHS root supplies libva from the base package set, which
+            # shadows the matching one hardware.graphics.extraPackages32 puts in
+            # the same tree. mesa is forced to master above, and its radeonsi
+            # VAAPI driver exports __vaDriverInit_1_24, so the base set's libva
+            # 2.23 — which only probes down from __vaDriverInit_1_23 — finds no
+            # init symbol and every hardware encoder fails. Remote Play then
+            # streamed with no hardware encoding at all.
+            #
+            # Scoped to Steam with pkgs.extend rather than overridden globally:
+            # libva sits under ffmpeg, vlc, wine, libreoffice and vtk among
+            # others, and replacing it for the whole system rebuilds all of them
+            # from source for a fault only Steam's private FHS actually has.
+            package = let
+              steamPkgs = pkgs.extend (_final: prev: { libva = prev.master.libva; });
+            in steamPkgs.steam.override {
+              buildFHSEnv = args: (steamPkgs.buildFHSEnv.override {
                 bubblewrap = patchedBwrap;
               }) (args // {
                 extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
@@ -874,6 +861,59 @@ in {
               extraEnv = {
                 # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
                 BWRAP = "${patchedBwrap}/bin/bwrap";
+
+                # Remote Play sizes its capture from the largest monitor X
+                # reports rather than from the PipeWire stream the portal gave
+                # it, so a Deck streaming the 1280x800 virtual output receives
+                # DP-2's 5120x1440 shape fitted to 1280 wide — a 1280x360
+                # letterbox. Selecting the right portal source does not help,
+                # and neither does the RandR primary flag nor the Xinerama head
+                # order; both were set and both were measured being ignored.
+                #
+                # steam-display-filter hides every monitor but the streamed one
+                # while a stream target is published, and does nothing the rest
+                # of the time. It lives here rather than in modules/desktop
+                # because this host already overrides programs.steam.package for
+                # the bubblewrap patch above, and the option takes one
+                # definition. $LIB is left for the loader to expand so the
+                # 32-bit client and its 64-bit helpers each get their own build.
+                #
+                # extest is repeated because the steam module's own LD_PRELOAD
+                # loses to this one rather than merging with it.
+                # Which display APIs Steam actually calls. Its display code is
+                # in stripped libraries that import every RandR entry point,
+                # so the imports say what is linked, not what is consulted —
+                # and two interception points were shipped before that
+                # difference became visible. Empty file, appended per call.
+                # Both under $HOME, not the runtime directory: steamwebhelper
+                # runs in a pressure-vessel container that mounts a filtered
+                # /run/user/<uid>, so neither the target nor a log written
+                # there is visible to it — and it is the process whose view of
+                # the desktop this exists to correct.
+                # Absolute, because buildFHSEnv writes extraEnv values
+                # verbatim — "$HOME/..." arrives at the process as those eight
+                # literal characters and names a file that cannot exist.
+                STEAM_COMMAND_RUNNER_STREAM_TARGET =
+                  "${config.users.users.${username}.home}/.local/state/stream-mode/target.json";
+                STEAM_DISPLAY_FILTER_LOG =
+                  "${config.users.users.${username}.home}/.local/state/stream-mode/filter.log";
+
+                # Both ABIs spelled out rather than one $LIB path. Steam runs
+                # steamwebhelper inside a pressure-vessel container, and
+                # pressure-vessel resolves $LIB from the 32-bit client that
+                # launches it, so it staged only the i686 copy into the
+                # container and the 64-bit helper silently found nothing to
+                # preload. steamwebhelper is the process that loads
+                # steamrt64/steamui.so, which is what reports the desktop
+                # geometry — so the filter was absent from the one process it
+                # needed to be in. Listing both lets pressure-vessel stage
+                # both; the loader skips the wrong-ABI entry per process, at
+                # the cost of a "wrong ELF class" line in the log.
+                LD_PRELOAD = lib.concatStringsSep ":" [
+                  "${pkgs.steam-display-filter-multiarch}/lib/libsteam-display-filter.so"
+                  "${pkgs.steam-display-filter-multiarch}/lib64/libsteam-display-filter.so"
+                  "${pkgs.pkgsi686Linux.extest}/lib/libextest.so"
+                ];
               };
             };
           };
