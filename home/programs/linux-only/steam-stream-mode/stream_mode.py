@@ -364,6 +364,7 @@ class Session:
         self.output = None
         self.client_id = None
         self.streaming = False
+        self.give_up = False
         self.game_pid = None
         self.pending = None
         self.reported_wait = False
@@ -375,6 +376,11 @@ class Session:
     # -- lifecycle
 
     def ensure_output(self, width=None, height=None):
+        # Set when the compositor accepts an output it then refuses to list;
+        # only a niri restart clears that, so retrying is pointless noise.
+        if self.give_up:
+            return False
+
         """Make sure the virtual output exists, adopting one already present.
 
         Called at startup as well as on connect, because the output must
@@ -423,8 +429,22 @@ class Session:
                 return False
             if name is None:
                 return False
-            self.output = name
             enable_output(name)
+            if name not in existing_output_names():
+                # Replacing it did not help: niri is creating virtual outputs
+                # that never appear, which has been seen after a connector
+                # hotplug. Retrying cannot fix that, and doing so every ten
+                # seconds churns the compositor for nothing.
+                remove_virtual_output(name)
+                self.output = None
+                self.give_up = True
+                log(
+                    "stream-mode: niri accepted {} but does not list it; "
+                    "virtual outputs look broken until niri restarts. "
+                    "Not retrying.".format(name)
+                )
+                return False
+            self.output = name
             log("stream-mode: recreated {} at {}x{}".format(name, width, height))
             return True
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -440,6 +460,8 @@ class Session:
         return True
 
     def connect(self, client_id, client_name):
+        # A new client is a reason to try again: niri may have restarted since.
+        self.give_up = False
         self.client_id = client_id
         self.learned = False
         width, height = client_size(client_id, self.clients)
