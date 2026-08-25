@@ -93,35 +93,53 @@ class TestIsFullscreen(unittest.TestCase):
         self.assertFalse(stream_mode.is_fullscreen({"id": 1}, (1280, 800)))
 
 
-class TestWindowForPid(unittest.TestCase):
-    def test_exact_match(self):
-        self.assertEqual(stream_mode.window_for_pid(200, [window(1, 100), window(2, 200)])["id"], 2)
+class TestWindowForGame(unittest.TestCase):
+    GAME = 2854740
+
+    def setUp(self):
+        self._real = stream_mode.parent_pids
+        stream_mode.parent_pids = lambda pid, limit=8: []
+
+    def tearDown(self):
+        stream_mode.parent_pids = self._real
+
+    def test_app_id_wins_over_pid(self):
+        """An X11 game's window belongs to xwayland-satellite, not the game.
+
+        This is the case that failed in practice: the pid walk found nothing
+        because the owning process is unrelated to the game's process tree.
+        """
+        windows = [
+            window(3, 999, app_id="xwayland-satellite"),
+            window(7, 4242, app_id="steam_app_2854740"),
+        ]
+        self.assertEqual(stream_mode.window_for_game(111, self.GAME, windows)["id"], 7)
+
+    def test_exact_pid_match(self):
+        windows = [window(1, 100, app_id="other"), window(2, 200, app_id="other")]
+        self.assertEqual(stream_mode.window_for_game(200, self.GAME, windows)["id"], 2)
 
     def test_falls_back_to_ancestor(self):
-        """Under gamescope the window belongs to an ancestor, not the game."""
-        real = stream_mode.parent_pids
-        stream_mode.parent_pids = lambda pid, limit=8: [400, 500]
-        try:
-            self.assertEqual(stream_mode.window_for_pid(999, [window(7, 500)])["id"], 7)
-        finally:
-            stream_mode.parent_pids = real
+        """gamescope owns the window and is an ancestor of the game."""
+        stream_mode.parent_pids = lambda pid, limit=8: [400, 500] if pid == 999 else []
+        windows = [window(7, 500, app_id="gamescope")]
+        self.assertEqual(stream_mode.window_for_game(999, self.GAME, windows)["id"], 7)
 
     def test_nearest_ancestor_wins(self):
-        real = stream_mode.parent_pids
-        stream_mode.parent_pids = lambda pid, limit=8: [400, 500]
-        try:
-            windows = [window(7, 500), window(8, 400)]
-            self.assertEqual(stream_mode.window_for_pid(999, windows)["id"], 8)
-        finally:
-            stream_mode.parent_pids = real
+        stream_mode.parent_pids = lambda pid, limit=8: [400, 500] if pid == 999 else []
+        windows = [window(7, 500, app_id="a"), window(8, 400, app_id="b")]
+        self.assertEqual(stream_mode.window_for_game(999, self.GAME, windows)["id"], 8)
+
+    def test_finds_a_descendant_window(self):
+        """A game that launches gamescope itself owns a descendant window."""
+        stream_mode.parent_pids = lambda pid, limit=8: [111] if pid == 555 else []
+        windows = [window(9, 555, app_id="gamescope")]
+        self.assertEqual(stream_mode.window_for_game(111, self.GAME, windows)["id"], 9)
 
     def test_no_match(self):
-        real = stream_mode.parent_pids
-        stream_mode.parent_pids = lambda pid, limit=8: []
-        try:
-            self.assertIsNone(stream_mode.window_for_pid(999, [window(1, 100)]))
-        finally:
-            stream_mode.parent_pids = real
+        self.assertIsNone(
+            stream_mode.window_for_game(999, self.GAME, [window(1, 100, app_id="other")])
+        )
 
     def test_parent_pids_handles_comm_with_spaces(self):
         """/proc/PID/stat comm can contain spaces and parentheses."""
