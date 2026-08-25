@@ -201,7 +201,7 @@ class TestSession(unittest.TestCase):
                 "niri_windows",
                 "output_logical_size",
                 "parent_pids",
-                "existing_output_names",
+                "usable_output_names",
                 "enable_output",
                 "load_clients",
                 "save_clients",
@@ -230,7 +230,7 @@ class TestSession(unittest.TestCase):
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
-        stream_mode.existing_output_names = lambda: self.names
+        stream_mode.usable_output_names = lambda: self.names
         self.enabled = []
         stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.load_clients = lambda path=None: {}
@@ -251,7 +251,7 @@ class TestSession(unittest.TestCase):
 
     def test_startup_adopts_an_existing_output(self):
         """It survives a service restart, so it is usually already there."""
-        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
         s = self.session()
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
@@ -451,7 +451,7 @@ class TestOutputLifetime(unittest.TestCase):
             for k in (
                 "create_virtual_output",
                 "enable_output",
-                "existing_output_names",
+                "usable_output_names",
                 "output_logical_size",
                 "load_clients",
                 "publish_target",
@@ -465,7 +465,7 @@ class TestOutputLifetime(unittest.TestCase):
 
         stream_mode.create_virtual_output = create
         stream_mode.enable_output = lambda n: self.enabled.append(n)
-        stream_mode.existing_output_names = lambda: self.names
+        stream_mode.usable_output_names = lambda: self.names
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.publish_target = lambda *a, **k: True
@@ -653,15 +653,18 @@ class TestOutputDetection(unittest.TestCase):
     def tearDown(self):
         stream_mode.niri_outputs, stream_mode.niri_workspaces = self._real
 
-    def test_uses_the_output_list_when_it_has_them(self):
+    def test_usable_means_listed(self):
         stream_mode.niri_outputs = lambda: {"DP-2": {}, "steam": {}}
         stream_mode.niri_workspaces = lambda: []
-        self.assertEqual(stream_mode.existing_output_names(), {"DP-2", "steam"})
+        self.assertEqual(stream_mode.usable_output_names(), {"DP-2", "steam"})
 
-    def test_finds_an_output_only_the_workspaces_mention(self):
+    def test_a_stuck_output_is_taken_but_not_usable(self):
+        """It survives a hotplug as a name only: unlisted, un-enableable, and
+        still blocking creation."""
         stream_mode.niri_outputs = lambda: {}
         stream_mode.niri_workspaces = lambda: [{"output": "steam"}, {"output": "steam"}]
-        self.assertEqual(stream_mode.existing_output_names(), {"steam"})
+        self.assertEqual(stream_mode.taken_output_names(), {"steam"})
+        self.assertEqual(stream_mode.usable_output_names(), set())
 
     def test_survives_either_source_failing(self):
         def boom():
@@ -669,11 +672,11 @@ class TestOutputDetection(unittest.TestCase):
 
         stream_mode.niri_outputs = boom
         stream_mode.niri_workspaces = lambda: [{"output": "steam"}]
-        self.assertEqual(stream_mode.existing_output_names(), {"steam"})
+        self.assertEqual(stream_mode.taken_output_names(), {"steam"})
 
         stream_mode.niri_outputs = lambda: {"DP-2": {}}
         stream_mode.niri_workspaces = boom
-        self.assertEqual(stream_mode.existing_output_names(), {"DP-2"})
+        self.assertEqual(stream_mode.taken_output_names(), {"DP-2"})
 
     def test_empty_when_nothing_answers(self):
         def boom():
@@ -681,7 +684,7 @@ class TestOutputDetection(unittest.TestCase):
 
         stream_mode.niri_outputs = boom
         stream_mode.niri_workspaces = boom
-        self.assertEqual(stream_mode.existing_output_names(), set())
+        self.assertEqual(stream_mode.taken_output_names(), set())
 
 
 class TestStreamInProgress(unittest.TestCase):
@@ -732,10 +735,10 @@ class TestWaitUntilListed(unittest.TestCase):
     """
 
     def setUp(self):
-        self._real = stream_mode.existing_output_names
+        self._real = stream_mode.usable_output_names
 
     def tearDown(self):
-        stream_mode.existing_output_names = self._real
+        stream_mode.usable_output_names = self._real
 
     def test_returns_as_soon_as_it_appears(self):
         calls = {"n": 0}
@@ -744,19 +747,19 @@ class TestWaitUntilListed(unittest.TestCase):
             calls["n"] += 1
             return {"DP-2", stream_mode.OUTPUT_NAME} if calls["n"] > 2 else {"DP-2"}
 
-        stream_mode.existing_output_names = appearing
+        stream_mode.usable_output_names = appearing
         self.assertTrue(
             stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=2, interval=0)
         )
 
     def test_gives_up_when_it_never_appears(self):
-        stream_mode.existing_output_names = lambda: {"DP-2"}
+        stream_mode.usable_output_names = lambda: {"DP-2"}
         self.assertFalse(
             stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=0, interval=0)
         )
 
     def test_does_not_wait_when_already_there(self):
-        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
         start = time.monotonic()
         self.assertTrue(
             stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=5, interval=1)
