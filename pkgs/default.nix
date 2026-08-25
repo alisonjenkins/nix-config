@@ -47,4 +47,8 @@
     python3Packages = pkgs.unstable.python3Packages;
     claude-monitor = pkgs.unstable.claude-monitor;
   };
+  # Built for whichever platform the package set is instantiated for, so
+  # pkgsi686Linux.steam-display-filter gives the 32-bit build the Steam client
+  # needs. See the package for why it exists.
+  steam-display-filter = pkgs.callPackage ./steam-display-filter { };
 }
