@@ -201,6 +201,7 @@ class TestSession(unittest.TestCase):
                 "output_logical_size",
                 "parent_pids",
                 "existing_output_names",
+                "set_output_enabled",
                 "load_clients",
                 "save_clients",
             )
@@ -219,6 +220,8 @@ class TestSession(unittest.TestCase):
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
         stream_mode.existing_output_names = lambda: set()
+        self.enabled = []
+        stream_mode.set_output_enabled = lambda n, e: self.enabled.append((n, e))
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.save_clients = lambda c, path=None: self.saved.append(c)
 
@@ -416,6 +419,96 @@ class TestSession(unittest.TestCase):
         self.assertFalse(s.unstage(999))
         self.assertTrue(s.unstage(500))
         self.assertFalse(s.unstage(500))
+
+
+class TestOutputLifetime(unittest.TestCase):
+    """The output must not collect workspaces when it is not in use.
+
+    A KVM switching away disconnects the physical output; an enabled virtual
+    output is then the only one left, so niri moves every workspace onto it and
+    does not move them back.
+    """
+
+    def setUp(self):
+        self.enabled = []
+        self.created = []
+        self.names = set()
+        self._real = {
+            k: getattr(stream_mode, k)
+            for k in (
+                "create_virtual_output",
+                "set_output_enabled",
+                "existing_output_names",
+                "output_logical_size",
+                "load_clients",
+                "publish_target",
+                "withdraw_target",
+            )
+        }
+        stream_mode.create_virtual_output = lambda w, h, r, name=None: (
+            self.created.append((w, h)) or stream_mode.OUTPUT_NAME
+        )
+        stream_mode.set_output_enabled = lambda n, e: self.enabled.append((n, e))
+        stream_mode.existing_output_names = lambda: self.names
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.load_clients = lambda path=None: {}
+        stream_mode.publish_target = lambda *a, **k: True
+        stream_mode.withdraw_target = lambda: True
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def test_created_disabled_when_not_streaming(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
+    def test_enabled_when_a_stream_starts(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        self.enabled.clear()
+        s.begin_stream()
+        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
+
+    def test_disabled_again_when_the_stream_stops(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        s.begin_stream()
+        self.enabled.clear()
+        s.end_stream()
+        self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, False)])
+
+    def test_watchdog_rebuilds_a_vanished_output(self):
+        """Losing the physical output takes the virtual one with it."""
+        s = stream_mode.Session(stage_timeout=0)
+        self.names = set()
+        s.ensure_output()
+        self.assertEqual(len(self.created), 1)
+
+        # niri still reports nothing: the output is gone.
+        s.last_check = 0.0
+        self.assertTrue(s.watchdog(interval=0))
+        self.assertEqual(len(self.created), 2)
+
+    def test_watchdog_leaves_a_healthy_output_alone(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        self.names = {stream_mode.OUTPUT_NAME}
+        self.assertFalse(s.watchdog(interval=0))
+        self.assertEqual(len(self.created), 1)
+
+    def test_watchdog_is_rate_limited(self):
+        """It runs on every loop iteration, several times a second."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        self.names = set()
+        s.last_check = 0.0
+        s.watchdog(interval=0)
+        before = len(self.created)
+        for _ in range(10):
+            s.watchdog(interval=3600)
+        self.assertEqual(len(self.created), before)
 
 
 class TestStreamTarget(unittest.TestCase):
