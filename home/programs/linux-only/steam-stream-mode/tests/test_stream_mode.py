@@ -294,7 +294,7 @@ class TestSession(unittest.TestCase):
         """A game can start before any connect is seen."""
         s = self.session()
         self.assertTrue(s.request(500, 2854740))
-        self.assertTrue(s.poll())
+        self.assertTrue(s.on_windows(self.windows))
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
 
     def test_teardown_removes_the_output_once(self):
@@ -315,7 +315,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         s.request(500, 2854740)
-        s.poll()
+        s.on_windows(self.windows)
         self.assertFalse(s.idle())
         self.assertEqual(self.removed, [])
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
@@ -324,7 +324,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         s.request(500, 2854740)
-        s.poll()
+        s.on_windows(self.windows)
         s.idle()
         self.assertFalse(s.unstage(500))
 
@@ -351,7 +351,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         self.assertTrue(s.request(500, 2854740))
-        self.assertTrue(s.poll())
+        self.assertTrue(s.on_windows(self.windows))
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [7])
 
@@ -360,7 +360,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         s.request(500, 2854740)
-        s.poll()
+        s.on_windows(self.windows)
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [])
 
@@ -374,11 +374,11 @@ class TestSession(unittest.TestCase):
         s = self.session(stage_timeout=60)
         s.connect(123, "deck")
         s.request(500, 2854740)
-        self.assertFalse(s.poll())
+        self.assertFalse(s.on_windows(self.windows))
         self.assertIsNotNone(s.pending)
 
         self.windows = [window(7, 500)]
-        self.assertTrue(s.poll())
+        self.assertTrue(s.on_windows(self.windows))
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertIsNone(s.pending)
 
@@ -390,7 +390,7 @@ class TestSession(unittest.TestCase):
         s.request(500, 2854740)
         start = __import__("time").monotonic()
         for _ in range(20):
-            s.poll()
+            s.on_windows(self.windows)
         self.assertLess(__import__("time").monotonic() - start, 1.0)
 
     def test_gives_up_once_the_deadline_passes(self):
@@ -398,7 +398,7 @@ class TestSession(unittest.TestCase):
         s = self.session(stage_timeout=0)
         s.connect(123, "deck")
         s.request(500, 2854740)
-        self.assertFalse(s.poll())
+        self.assertFalse(s.on_windows(self.windows))
         self.assertIsNone(s.pending)
         self.assertEqual(self.moved, [])
 
@@ -426,7 +426,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         s.request(500, 2854740)
-        s.poll()
+        s.on_windows(self.windows)
         self.assertFalse(s.unstage(999))
         self.assertTrue(s.unstage(500))
         self.assertFalse(s.unstage(500))
@@ -503,18 +503,22 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
         self.assertIsNone(s.output)
 
-    def test_the_watchdog_leaves_it_absent_while_idle(self):
-        """It is meant to be gone between streams."""
+    def test_an_output_event_while_idle_does_not_resurrect_it(self):
+        """Between streams it is meant to be gone."""
         removed = []
         real = stream_mode.remove_virtual_output
-        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+
+        def remove(n):
+            removed.append(n)
+            self.names.discard(n)
+
+        stream_mode.remove_virtual_output = remove
         try:
             s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             s.ensure_output()
             s.end_stream()
             self.created.clear()
-            s.last_check = 0.0
-            self.assertFalse(s.watchdog(interval=0))
+            self.assertFalse(s.on_outputs_changed({"DP-2"}))
         finally:
             stream_mode.remove_virtual_output = real
         self.assertEqual(self.created, [])
@@ -564,37 +568,22 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
     def test_stops_retrying_when_outputs_never_appear(self):
-        """niri can accept an output and then never list it — seen after a
-        connector hotplug. Retrying churns the compositor every ten seconds
-        and cannot help; only a niri restart clears it.
-        """
+        """niri can accept an output and never list it. Retrying cannot help."""
         removed = []
         real_remove = stream_mode.remove_virtual_output
+        stream_mode.remove_virtual_output = lambda n: removed.append(n)
 
-        def remove(n):
-            removed.append(n)
-            self.names.discard(n)
-
-        stream_mode.remove_virtual_output = remove
-
-        def collide_then_create(w, h, r, name=None):
-            if not self.created:
-                self.created.append((w, h))
-                raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
+        def create_but_never_listed(w, h, r, name=None):
             self.created.append((w, h))
             return stream_mode.OUTPUT_NAME
 
-        stream_mode.create_virtual_output = collide_then_create
+        stream_mode.create_virtual_output = create_but_never_listed
         try:
-            self.names = {"DP-2"}  # nothing is ever listed
             s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             self.assertFalse(s.ensure_output())
             self.assertTrue(s.give_up)
-
             before = len(self.created)
-            for _ in range(5):
-                s.last_check = 0.0
-                s.watchdog(interval=0)
+            self.assertFalse(s.ensure_output())
             self.assertEqual(len(self.created), before)
         finally:
             stream_mode.remove_virtual_output = real_remove
@@ -603,39 +592,126 @@ class TestOutputLifetime(unittest.TestCase):
         """niri may have restarted since giving up."""
         s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.give_up = True
-        self.names = {"DP-2"}
         s.connect(123, "deck")
         self.assertFalse(s.give_up)
         self.assertEqual(len(self.created), 1)
 
-    def test_watchdog_rebuilds_a_vanished_output(self):
+    def test_rebuilds_when_an_event_says_the_output_went_away(self):
+        """Replaces a ten-second watchdog: the compositor says when it goes."""
         s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
         self.assertEqual(len(self.created), 1)
 
-        # The output goes away — a KVM switch takes it with the physical one.
         self.names.discard(stream_mode.OUTPUT_NAME)
-        s.last_check = 0.0
-        self.assertTrue(s.watchdog(interval=0))
+        self.assertTrue(s.on_outputs_changed({"DP-2"}))
         self.assertEqual(len(self.created), 2)
 
-    def test_watchdog_leaves_a_healthy_output_alone(self):
+    def test_an_event_listing_the_output_changes_nothing(self):
         s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
-        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
-        self.assertFalse(s.watchdog(interval=0))
+        self.assertFalse(
+            s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME})
+        )
         self.assertEqual(len(self.created), 1)
 
-    def test_watchdog_is_rate_limited(self):
+    def test_no_output_means_nothing_to_rebuild(self):
         s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.ensure_output()
-        self.names = {"DP-2"}
-        s.last_check = 0.0
-        s.watchdog(interval=0)
-        before = len(self.created)
-        for _ in range(10):
-            s.watchdog(interval=3600)
-        self.assertEqual(len(self.created), before)
+        self.assertFalse(s.on_outputs_changed({"DP-2"}))
+        self.assertEqual(self.created, [])
+
+
+class TestEventDispatch(unittest.TestCase):
+    """Compositor and Steam events drive everything; nothing is polled."""
+
+    class FakeSession:
+        def __init__(self):
+            self.output = "steam"
+            self.streaming = False
+            self.pending = None
+            self.last_windows = []
+            self.calls = []
+
+        def on_windows(self, windows):
+            self.calls.append(("on_windows", len(windows)))
+
+        def on_outputs_changed(self, names):
+            self.calls.append(("on_outputs_changed", sorted(names)))
+
+        def begin_stream(self):
+            self.calls.append(("begin_stream",))
+
+        def request(self, pid, game_id):
+            self.calls.append(("request", pid, game_id))
+
+        def learn(self, w, h):
+            self.calls.append(("learn", w, h))
+
+        def unstage(self, pid=None):
+            self.calls.append(("unstage", pid))
+
+    def setUp(self):
+        self.s = self.FakeSession()
+
+    def test_a_new_window_is_recorded_and_acted_on(self):
+        stream_mode.handle_niri_event(
+            self.s,
+            json.dumps({"WindowOpenedOrChanged": {"window": {"id": 7, "app_id": "gamescope", "pid": 42}}}),
+        )
+        self.assertEqual([w["id"] for w in self.s.last_windows], [7])
+        self.assertIn(("on_windows", 1), self.s.calls)
+
+    def test_a_window_list_replaces_what_is_known(self):
+        self.s.last_windows = [{"id": 1}]
+        stream_mode.handle_niri_event(
+            self.s, json.dumps({"WindowsChanged": {"windows": [{"id": 2}, {"id": 3}]}})
+        )
+        self.assertEqual(sorted(w["id"] for w in self.s.last_windows), [2, 3])
+
+    def test_a_closed_window_is_forgotten(self):
+        self.s.last_windows = [{"id": 1}, {"id": 2}]
+        stream_mode.handle_niri_event(self.s, json.dumps({"WindowClosed": {"id": 1}}))
+        self.assertEqual([w["id"] for w in self.s.last_windows], [2])
+
+    def test_workspace_changes_report_the_outputs(self):
+        stream_mode.handle_niri_event(
+            self.s,
+            json.dumps({"WorkspacesChanged": {"workspaces": [
+                {"output": "DP-2"}, {"output": "steam"}, {"output": None}
+            ]}}),
+        )
+        self.assertIn(("on_outputs_changed", ["DP-2", "steam"]), self.s.calls)
+
+    def test_malformed_events_are_ignored(self):
+        stream_mode.handle_niri_event(self.s, "not json\n")
+        stream_mode.handle_niri_event(self.s, json.dumps({"SomethingElse": {}}))
+        self.assertEqual(self.s.calls, [])
+
+    def test_stream_start_publishes_and_clears_the_removal(self):
+        remove_at = stream_mode.handle_steam_line(
+            self.s, "[x] >>> Starting desktop stream\n", 123.0
+        )
+        self.assertIsNone(remove_at)
+        self.assertIn(("begin_stream",), self.s.calls)
+
+    def test_stream_stop_schedules_the_removal(self):
+        remove_at = stream_mode.handle_steam_line(
+            self.s, "[x] >>> Stopped desktop stream\n", None
+        )
+        self.assertIsNotNone(remove_at)
+        self.assertGreater(remove_at, time.monotonic())
+
+    def test_a_game_window_line_requests_staging(self):
+        stream_mode.handle_steam_line(
+            self.s,
+            "[x] Adding window 4194306 (4) for process 2331545 and gameID 2854740\n",
+            None,
+        )
+        self.assertIn(("request", 2331545, 2854740), self.s.calls)
+
+    def test_an_unrelated_line_changes_nothing(self):
+        remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)
+        self.assertEqual(remove_at, 55.0)
+        self.assertEqual(self.s.calls, [])
 
 
 class TestOutputDetection(unittest.TestCase):
@@ -871,45 +947,3 @@ class TestStreamTarget(unittest.TestCase):
         self.assertEqual(leftovers, [])
 
 
-class TestFollow(unittest.TestCase):
-    def test_partial_line_is_withheld_until_complete(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "log.txt")
-            with open(path, "w") as fh:
-                fh.write(">>> Starting")
-            lines = stream_mode.follow(path, seek_to_end=False)
-            with open(path, "a") as fh:
-                fh.write(" desktop stream\n")
-            self.assertEqual(next(lines), ">>> Starting desktop stream\n")
-
-    def test_reads_appended_lines_and_survives_truncation(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "log.txt")
-            with open(path, "w") as fh:
-                fh.write("preexisting\n")
-
-            # seek_to_end=False so the generator has a deterministic start: it
-            # is lazy, so with the default the seek would not happen until the
-            # first next(), by which time the appended line is already there.
-            lines = stream_mode.follow(path, seek_to_end=False)
-            self.assertEqual(next(lines), "preexisting\n")
-
-            with open(path, "a") as fh:
-                fh.write("first\n")
-            self.assertEqual(next(lines), "first\n")
-
-            with open(path, "w") as fh:
-                fh.write("after truncation\n")
-            self.assertEqual(next(lines), "after truncation\n")
-
-    def test_missing_file_yields_none_rather_than_blocking(self):
-        """The watcher follows two logs; a missing one must not stall the other."""
-        with tempfile.TemporaryDirectory() as tmp:
-            lines = stream_mode.follow(
-                os.path.join(tmp, "absent.txt"), seek_to_end=False, idle_yield=True
-            )
-            self.assertIsNone(next(lines))
-
-
-if __name__ == "__main__":
-    unittest.main()

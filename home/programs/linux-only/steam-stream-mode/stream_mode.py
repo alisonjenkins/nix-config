@@ -36,6 +36,7 @@ made connect unusable as a trigger for the abandoned headless design.
 import json
 import os
 import re
+import select
 import signal
 import subprocess
 import sys
@@ -481,7 +482,7 @@ class Session:
         self.game_pid = None
         self.pending = None
         self.reported_wait = False
-        self.last_check = 0.0
+        self.last_windows = []
         self.learned = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
@@ -613,7 +614,11 @@ class Session:
         created = self.ensure_output(width, height)
         if self.output is not None:
             enable_output(self.output)
-        log("stream-mode: {} connected".format(client_name or client_id))
+        log(
+            "stream-mode: {} connected; output {} at {}x{}".format(
+                client_name or client_id, self.output or "<none>", width, height
+            )
+        )
         return created
 
     def teardown(self):
@@ -637,7 +642,10 @@ class Session:
         size = output_logical_size(self.output) or client_size(
             self.client_id, self.clients
         )
-        return publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
+        published = publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
+        if not published:
+            log("stream-mode: WARNING games will launch at the desktop's size")
+        return published
 
     def end_stream(self):
         """Streaming has stopped: stop redirecting launches, drop the output.
@@ -717,71 +725,47 @@ class Session:
         self.pending = (pid, game_id, time.monotonic() + self.stage_timeout)
         self.reported_wait = False
         log(
-            "stream-mode: game {} starting (pid {}), waiting for its window".format(
-                game_id, pid
-            )
+            "stream-mode: game {} starting (pid {}); will move it to {} when its "
+            "window appears".format(game_id, pid, self.output)
         )
         return True
 
-    def watchdog(self, interval=10.0):
-        """Rebuild the output if it has gone away.
+    def on_windows(self, windows):
+        """React to niri's window list changing.
 
-        Losing the physical output takes the virtual one with it — a KVM
-        switching away leaves niri with no outputs at all — and Steam's
-        remembered capture source stops resolving until it is back.
+        Fed by the compositor's event stream rather than polled: the previous
+        design re-listed windows several times a second and still had to guess
+        a deadline, because a game's window can appear minutes after Steam
+        reports its pid.
         """
-        now = time.monotonic()
-        if now - self.last_check < interval:
-            return False
-        self.last_check = now
-
-        if self.output is None:
-            # Nothing is streaming: the output is meant to be absent.
-            return False
-        if self.output in usable_output_names():
-            return False
-
-        log("stream-mode: {} has gone away, rebuilding".format(self.output))
-        self.output = None
-        return self.ensure_output()
-
-    def poll(self):
-        """Try to place a pending game. Called from the watcher loop."""
         if self.pending is None:
             return False
 
         pid, game_id, deadline = self.pending
 
-        try:
-            windows = niri_windows()
-            window = window_for_game(pid, game_id, windows)
-        except (subprocess.CalledProcessError, ValueError, OSError) as exc:
-            log("stream-mode: could not query niri windows: {}".format(exc))
-            return False
-
+        window = window_for_game(pid, game_id, windows)
         if window is None:
-            if time.monotonic() < deadline:
-                # Say once what is actually on screen. Staying silent until the
-                # deadline hid three separate faults behind "nothing happened".
-                if not self.reported_wait:
-                    self.reported_wait = True
-                    seen = [
-                        "{}({})".format(w.get("app_id") or "?", w.get("pid"))
-                        for w in windows
-                    ]
-                    log(
-                        "stream-mode: no window for steam_app_{} yet; "
-                        "windows are: {}".format(game_id, ", ".join(seen) or "none")
+            if time.monotonic() >= deadline:
+                self.pending = None
+                seen = [
+                    "{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in windows
+                ]
+                log(
+                    "stream-mode: gave up on pid {} / steam_app_{} after {:.0f}s; "
+                    "windows were: {}".format(
+                        pid, game_id, self.stage_timeout, ", ".join(seen) or "none"
                     )
-                return False
-            self.pending = None
-            seen = ["{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in windows]
-            log(
-                "stream-mode: gave up on pid {} / steam_app_{} after {:.0f}s; "
-                "windows were: {}".format(
-                    pid, game_id, self.stage_timeout, ", ".join(seen) or "none"
                 )
-            )
+            elif not self.reported_wait:
+                self.reported_wait = True
+                seen = [
+                    "{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in windows
+                ]
+                log(
+                    "stream-mode: no window for steam_app_{} yet; windows are: {}".format(
+                        game_id, ", ".join(seen) or "none"
+                    )
+                )
             return False
 
         self.pending = None
@@ -800,6 +784,18 @@ class Session:
             )
         )
         return True
+
+    def on_outputs_changed(self, output_names):
+        """React to the set of outputs changing.
+
+        Replaces a ten-second watchdog: the compositor says when an output
+        appears or disappears, so there is nothing to poll for.
+        """
+        if self.output is None or self.output in output_names:
+            return False
+        log("stream-mode: {} has gone away, rebuilding".format(self.output))
+        self.output = None
+        return self.ensure_output()
 
     def _ensure_fullscreen(self, window_id):
         try:
@@ -821,6 +817,7 @@ class Session:
             return False
         if pid is not None and pid != self.game_pid:
             return False
+        log("stream-mode: staged game (pid {}) exited".format(self.game_pid))
         self.game_pid = None
         return True
 
@@ -828,71 +825,41 @@ class Session:
 # --- log following ----------------------------------------------------------
 
 
-def follow(path, seek_to_end=True, idle_yield=False):
-    """Yield lines appended to path, surviving truncation and replacement.
+def spawn_tail(path):
+    """Follow a log without polling.
 
-    Steam truncates these logs on client restart, so a plain read loop silently
-    goes deaf.
-
-    seek_to_end skips whatever the file already holds, which is what a watcher
-    wants on startup: a past session's lines must not be replayed as if live.
-
-    idle_yield emits None whenever a poll finds nothing, so a caller with a
-    deadline to honour is not blocked until the next line arrives.
+    `tail -F` waits on the kernel rather than re-reading, and handles the
+    truncation and replacement Steam does to these files when its client
+    restarts.
     """
-    handle = None
-    inode = None
-    pending = b""
-    # Only the very first open honours seek_to_end. A later reopen means the
-    # file was truncated or replaced, and the lines that triggered it are
-    # exactly the ones worth reading.
-    #
-    # Binary mode deliberately: a text-mode tell() returns an opaque cookie
-    # rather than a byte offset, so comparing it against st_size to detect
-    # truncation does not reliably work.
-    while True:
-        try:
-            if handle is None:
-                handle = open(path, "rb")
-                inode = os.fstat(handle.fileno()).st_ino
-                pending = b""
-                if seek_to_end:
-                    handle.seek(0, os.SEEK_END)
-                    seek_to_end = False
+    return subprocess.Popen(
+        ["tail", "-n", "0", "-F", path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+    )
 
-            chunk = handle.readline()
-            if chunk:
-                pending += chunk
-                if pending.endswith(b"\n"):
-                    line, pending = pending, b""
-                    yield line.decode("utf-8", "replace")
-                continue
 
-            try:
-                stat = os.stat(path)
-            except FileNotFoundError:
-                handle.close()
-                handle = None
-                time.sleep(1.0)
-                if idle_yield:
-                    yield None
-                continue
+def spawn_event_stream():
+    """Subscribe to niri's compositor events.
 
-            if stat.st_ino != inode or stat.st_size < handle.tell():
-                handle.close()
-                handle = None
-                continue
+    The compositor reports window and workspace changes as they happen, which
+    is what staging and output tracking need — previously both were polled,
+    which raced asynchronous creation and rebuilt outputs that already existed.
+    """
+    return subprocess.Popen(
+        [NIRI, "msg", "--json", "event-stream"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+        env=niri_env(),
+    )
 
-            time.sleep(0.25)
-            if idle_yield:
-                yield None
-        except OSError:
-            if handle is not None:
-                handle.close()
-                handle = None
-            time.sleep(1.0)
-            if idle_yield:
-                yield None
+
+def outputs_from_workspaces(workspaces):
+    return {w.get("output") for w in workspaces if w.get("output")}
 
 
 def stream_in_progress(path=None):
@@ -926,76 +893,152 @@ def watch():
     session = Session()
 
     def bail(_signum, _frame):
-        # The output is deliberately left in place: it has to survive a service
-        # restart, or Steam's remembered capture source stops resolving. The
-        # target file is not — a stale one would send desktop launches at an
-        # output nothing is streaming to.
         withdraw_target()
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
     signal.signal(signal.SIGINT, bail)
 
-    log("stream-mode: watching {} and {}".format(CONNECTIONS_LOG, LOG))
-    # Before any client connects: the output must exist for Steam to resolve a
-    # remembered capture source, and a client that connected while this was
-    # not running would otherwise never trigger its creation.
     session.ensure_output()
-    # A target left behind by a previous run would send desktop launches at an
-    # output nothing is streaming to.
     withdraw_target()
     if stream_in_progress():
         log("stream-mode: a stream is already in progress")
         session.begin_stream()
-    streaming = follow(LOG, idle_yield=True)
-    connections = follow(CONNECTIONS_LOG, idle_yield=True)
+
+    log(
+        "stream-mode: state — output={} streaming={} target={}".format(
+            session.output or "<none>",
+            session.streaming,
+            "published" if os.path.exists(TARGET_FILE) else "absent",
+        )
+    )
+
+    procs = {
+        "events": spawn_event_stream(),
+        "stream": spawn_tail(LOG),
+        "clients": spawn_tail(CONNECTIONS_LOG),
+    }
+    log(
+        "stream-mode: watching niri events, {} and {}".format(
+            os.path.basename(LOG), os.path.basename(CONNECTIONS_LOG)
+        )
+    )
+
+    # Only source of periodic work left: the delay before dropping the output
+    # once streaming stops, and the deadline for a game that never appears.
     remove_at = None
 
     try:
         while True:
+            readable = {p.stdout for p in procs.values() if p.stdout}
+            timeout = 1.0 if (remove_at or session.pending) else 30.0
+            ready, _, _ = select.select(list(readable), [], [], timeout)
+
+            for name, proc in list(procs.items()):
+                if proc.poll() is not None:
+                    log("stream-mode: {} reader exited, restarting it".format(name))
+                    procs[name] = (
+                        spawn_event_stream() if name == "events"
+                        else spawn_tail(LOG if name == "stream" else CONNECTIONS_LOG)
+                    )
+
+            for handle in ready:
+                line = handle.readline()
+                if not line:
+                    continue
+
+                if procs["events"].stdout is handle:
+                    handle_niri_event(session, line)
+                elif procs["clients"].stdout is handle:
+                    match = CONNECT_RE.search(line)
+                    if match:
+                        remove_at = None
+                        session.connect(int(match.group(1)), match.group(2))
+                else:
+                    remove_at = handle_steam_line(session, line, remove_at)
+
             now = time.monotonic()
-
-            line = next(connections)
-            if line is not None:
-                match = CONNECT_RE.search(line)
-                if match:
-                    remove_at = None
-                    session.connect(int(match.group(1)), match.group(2))
-
-            line = next(streaming)
-            if line is not None:
-                match = ADD_WINDOW_RE.search(line)
-                if match:
-                    remove_at = None
-                    session.request(int(match.group(1)), int(match.group(2)))
-                    continue
-
-                match = RES_RE.search(line)
-                if match:
-                    session.learn(int(match.group(1)), int(match.group(2)))
-                    continue
-
-                match = REMOVE_PROC_RE.search(line)
-                if match:
-                    session.unstage(int(match.group(1)))
-                    continue
-
-                if START_RE.search(line):
-                    remove_at = None
-                    session.begin_stream()
-                elif STOP_RE.search(line):
-                    remove_at = now + REMOVE_AFTER
-                    session.end_stream()
-
-            session.poll()
-            session.watchdog()
-
-            if remove_at is not None and time.monotonic() >= remove_at:
+            if session.pending and now >= session.pending[2]:
+                # Let the deadline be reported even if no window event arrives.
+                session.on_windows(session.last_windows)
+            if remove_at is not None and now >= remove_at:
                 remove_at = None
-                session.idle()
+                session.end_stream()
     finally:
-        # The output is left in place on purpose; see bail().
+        for proc in procs.values():
+            proc.terminate()
         withdraw_target()
+
+
+def handle_steam_line(session, line, remove_at):
+    """Act on one line of Steam's streaming log. Returns the new remove_at."""
+    match = ADD_WINDOW_RE.search(line)
+    if match:
+        session.request(int(match.group(1)), int(match.group(2)))
+        session.on_windows(session.last_windows)
+        return None
+
+    match = RES_RE.search(line)
+    if match:
+        session.learn(int(match.group(1)), int(match.group(2)))
+        return remove_at
+
+    match = REMOVE_PROC_RE.search(line)
+    if match:
+        session.unstage(int(match.group(1)))
+        return remove_at
+
+    if START_RE.search(line):
+        log("stream-mode: stream started")
+        session.begin_stream()
+        return None
+
+    if STOP_RE.search(line):
+        log("stream-mode: stream stopped, dropping the output in {:.0f}s".format(
+            REMOVE_AFTER
+        ))
+        return time.monotonic() + REMOVE_AFTER
+
+    return remove_at
+
+
+def handle_niri_event(session, line):
+    """Act on one compositor event."""
+    try:
+        event = json.loads(line)
+    except ValueError:
+        return
+
+    if "WindowsChanged" in event:
+        session.last_windows = event["WindowsChanged"].get("windows") or []
+        session.on_windows(session.last_windows)
+        return
+
+    if "WindowOpenedOrChanged" in event:
+        window = event["WindowOpenedOrChanged"].get("window")
+        if window:
+            session.last_windows = [
+                w for w in session.last_windows if w.get("id") != window.get("id")
+            ] + [window]
+            log(
+                "stream-mode: window {} appeared ({}, pid {})".format(
+                    window.get("id"), window.get("app_id") or "?", window.get("pid")
+                )
+            )
+            session.on_windows(session.last_windows)
+        return
+
+    if "WindowClosed" in event:
+        closed = event["WindowClosed"].get("id")
+        session.last_windows = [
+            w for w in session.last_windows if w.get("id") != closed
+        ]
+        return
+
+    if "WorkspacesChanged" in event:
+        outputs = outputs_from_workspaces(event["WorkspacesChanged"].get("workspaces") or [])
+        session.on_outputs_changed(outputs)
+        return
 
 
 def main(argv):
