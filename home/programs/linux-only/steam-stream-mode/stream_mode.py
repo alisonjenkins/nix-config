@@ -292,6 +292,7 @@ class Session:
         self.client_id = None
         self.game_pid = None
         self.pending = None
+        self.reported_wait = False
         self.learned = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
@@ -419,6 +420,12 @@ class Session:
             log("stream-mode: no virtual output, cannot stage game {}".format(game_id))
             return False
         self.pending = (pid, game_id, time.monotonic() + self.stage_timeout)
+        self.reported_wait = False
+        log(
+            "stream-mode: game {} starting (pid {}), waiting for its window".format(
+                game_id, pid
+            )
+        )
         return True
 
     def poll(self):
@@ -437,6 +444,18 @@ class Session:
 
         if window is None:
             if time.monotonic() < deadline:
+                # Say once what is actually on screen. Staying silent until the
+                # deadline hid three separate faults behind "nothing happened".
+                if not self.reported_wait:
+                    self.reported_wait = True
+                    seen = [
+                        "{}({})".format(w.get("app_id") or "?", w.get("pid"))
+                        for w in windows
+                    ]
+                    log(
+                        "stream-mode: no window for steam_app_{} yet; "
+                        "windows are: {}".format(game_id, ", ".join(seen) or "none")
+                    )
                 return False
             self.pending = None
             seen = ["{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in windows]
@@ -449,6 +468,7 @@ class Session:
             return False
 
         self.pending = None
+        self.reported_wait = False
         self.game_pid = pid
         try:
             move_window_to_output(window["id"], self.output)
