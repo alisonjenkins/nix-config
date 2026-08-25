@@ -43,28 +43,6 @@ let
     '';
   };
 
-  # Both ABIs of the display filter under one prefix, laid out for glibc's
-  # $LIB token.
-  #
-  # Steam is a 32-bit client that spawns 64-bit helpers, and a single-ABI
-  # LD_PRELOAD makes every process of the other ABI print "wrong ELF class"
-  # before ignoring it. Preloading "…/$LIB/libsteam-display-filter.so" lets the
-  # loader substitute lib or lib64 per process instead, so each gets the build
-  # it can use and neither complains.
-  #
-  # Joined here rather than in the package set: pkgs/default.nix is applied as
-  # an overlay to every package set including pkgsi686Linux, so a member of it
-  # that reaches for pkgs.pkgsi686Linux recurses into a nested 32-bit set
-  # without terminating.
-  steamDisplayFilterMultiarch =
-    pkgs.runCommand "steam-display-filter-multiarch"
-      { meta.description = "steam-display-filter for both ABIs, laid out for \$LIB"; }
-      ''
-        mkdir -p $out/lib $out/lib64
-        ln -s ${pkgs.pkgsi686Linux.steam-display-filter}/lib/libsteam-display-filter.so $out/lib/
-        ln -s ${pkgs.steam-display-filter}/lib/libsteam-display-filter.so $out/lib64/
-      '';
-
   # Store path a declared ROM will occupy. A fixed-output path is a function of
   # name and hash alone, so rebuilding the same requireFile here reproduces the
   # exact path the consuming package looks for, with no hash-encoded string
@@ -823,31 +801,6 @@ in
         '';
       };
 
-      steamStreamDisplayFilter = mkOption {
-        type = types.bool;
-        default = false;
-        description = ''
-          Show Steam only the monitor being streamed, while a stream is
-          running.
-
-          Remote Play sizes its capture from the largest monitor X reports
-          rather than from the PipeWire stream the portal handed it, so a
-          client streaming a small virtual output receives the desktop
-          monitor's aspect ratio letterboxed into its frame. Selecting the
-          right portal source does not help, and neither does the RandR
-          primary flag nor the Xinerama head order — both were measured being
-          ignored. Only the monitor list moves it.
-
-          Off by default: it preloads a library into Steam, and it is only
-          worth that on a host that streams from a virtual output. Pair it
-          with custom.steamStreamMode, which publishes the target file that
-          tells the filter which monitor to keep and is absent the rest of the
-          time, leaving desktop play untouched.
-
-          x86_64 only, since it preloads a 32-bit build for the Steam client.
-        '';
-      };
-
       shaderCacheBasePath = mkOption {
         type = types.str;
         default = "\${HOME}/.cache";
@@ -1544,31 +1497,6 @@ in
         remotePlay.openFirewall = true;
         dedicatedServer.openFirewall = true;
 
-        # Remote Play sizes its capture from the largest monitor X reports,
-        # not from the PipeWire stream the portal gives it. Measured here: the
-        # portal source was a 1280x800 virtual output, the compositor
-        # negotiated a 1280x800 node and held it, and Steam still announced
-        # "Capture resolution set to 1280x360" — the ultrawide's shape fitted
-        # to the client's width. Setting the RandR primary and reordering the
-        # Xinerama heads were both tried and both ignored.
-        #
-        # steam-display-filter hides every monitor but the streamed one, and
-        # only while a stream target is published, so desktop use is
-        # unaffected. It has to go through extraEnv because the FHS wrapper
-        # replaces LD_PRELOAD outright, which also means extest's entry has to
-        # be repeated here rather than merged — the module's own value loses
-        # to this one.
-        package = mkIf cfg.gaming.steamStreamDisplayFilter (
-          pkgs.steam.override {
-            extraEnv.LD_PRELOAD = lib.concatStringsSep ":" (
-              # Escaped so the loader expands $LIB per ABI; a 32-bit client
-              # and its 64-bit helpers each need their own build.
-              [ "${steamDisplayFilterMultiarch}/\$LIB/libsteam-display-filter.so" ]
-              ++ lib.optional config.programs.steam.extest.enable
-                "${pkgs.pkgsi686Linux.extest}/lib/libextest.so"
-            );
-          }
-        );
         # Steam Input mouse emulation (e.g. Steam Controller trackpad-as-mouse)
         # synthesizes input via the X11 XTEST path, which only reaches XWayland
         # surfaces — never native Wayland clients. extest preloads an
