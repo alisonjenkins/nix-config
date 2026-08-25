@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }: {
+{ config, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
     ../../programs/linux-only/sunshine-wrappers
@@ -12,17 +12,19 @@
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
-  # of content inside its 800-line frame, showing whatever was on screen. A
-  # niri virtual output at the client's own resolution is created on connect
-  # and the game is moved onto it, leaving DP-2 untouched.
+  # of content inside its 800-line frame, showing whatever was on screen. The
+  # niri virtual output declared in custom.niri.virtualOutputs is turned on and
+  # resized for the client, and the game is moved onto it, leaving DP-2 alone.
   custom.steamStreamMode = {
     enable = true;
     # niriPackage is set from the host config, where the patched package the
     # session actually runs is in scope — `niri msg` has to match the running
     # compositor, and virtual output support is a patch rather than upstream.
-    # The Steam Deck's panel; overridden per client once learned.
-    defaultWidth = 1280;
-    defaultHeight = 800;
+    # Taken from the output's own declaration so the watcher cannot resize it
+    # to a shape the output was not declared with.
+    defaultWidth = config.custom.niri.virtualOutputs.steam.width;
+    defaultHeight = config.custom.niri.virtualOutputs.steam.height;
+    refresh = config.custom.niri.virtualOutputs.steam.refresh;
   };
 
   home.packages = [
