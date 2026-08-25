@@ -169,7 +169,7 @@ class TestSession(unittest.TestCase):
         self.fullscreened = []
         self.saved = []
         self.windows = [window(7, 500)]
-        self.next_name = "HEADLESS-2"
+        self.next_name = stream_mode.OUTPUT_NAME
 
         self._real = {
             k: getattr(stream_mode, k)
@@ -182,14 +182,15 @@ class TestSession(unittest.TestCase):
                 "niri_windows",
                 "output_logical_size",
                 "parent_pids",
+                "existing_output_names",
                 "load_clients",
                 "save_clients",
             )
         }
 
-        def create(w, h, r):
+        def create(w, h, r, name=None):
             self.created.append((w, h, r))
-            return self.next_name
+            return name or self.next_name
 
         stream_mode.create_virtual_output = create
         stream_mode.remove_virtual_output = lambda n: self.removed.append(n)
@@ -199,6 +200,7 @@ class TestSession(unittest.TestCase):
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
+        stream_mode.existing_output_names = lambda: set()
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.save_clients = lambda c, path=None: self.saved.append(c)
 
@@ -216,7 +218,7 @@ class TestSession(unittest.TestCase):
             self.created,
             [(stream_mode.DEFAULT_WIDTH, stream_mode.DEFAULT_HEIGHT, stream_mode.DEFAULT_REFRESH)],
         )
-        self.assertEqual(s.output, "HEADLESS-2")
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
     def test_connect_uses_a_learned_size(self):
         stream_mode.load_clients = lambda path=None: {"123": [1920, 1200]}
@@ -235,13 +237,21 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         self.assertTrue(s.teardown())
-        self.assertEqual(self.removed, ["HEADLESS-2"])
+        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
         self.assertFalse(s.teardown())
-        self.assertEqual(self.removed, ["HEADLESS-2"])
+        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
 
     def test_teardown_without_output_does_nothing(self):
         self.assertFalse(self.session().teardown())
         self.assertEqual(self.removed, [])
+
+    def test_a_leftover_output_is_replaced_rather_than_colliding(self):
+        """A crash leaves the output behind; creating it again would collide."""
+        stream_mode.existing_output_names = lambda: {stream_mode.OUTPUT_NAME}
+        s = self.session()
+        self.assertTrue(s.connect(123, "deck"))
+        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
+        self.assertEqual(len(self.created), 1)
 
     def test_missing_name_is_not_treated_as_success(self):
         self.next_name = None
@@ -253,7 +263,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         self.assertTrue(s.stage(500, 2854740))
-        self.assertEqual(self.moved, [(7, "HEADLESS-2")])
+        self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [7])
 
     def test_stage_does_not_toggle_an_already_fullscreen_game(self):
@@ -261,7 +271,7 @@ class TestSession(unittest.TestCase):
         s = self.session()
         s.connect(123, "deck")
         s.stage(500, 2854740)
-        self.assertEqual(self.moved, [(7, "HEADLESS-2")])
+        self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [])
 
     def test_stage_without_an_output_does_nothing(self):
