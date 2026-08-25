@@ -98,6 +98,11 @@ in {
           # workspace to whatever is left — the streaming virtual output —
           # and does not move them back when it returns.
           custom.niri.workspaceOutput = "DP-2";
+          # The window rule for gamescope routes game windows to the "game"
+          # workspace, and a pinned workspace overrides a window's own output
+          # preference — so pinning these would drag a streamed game back to
+          # DP-2 despite gamescope's --prefer-output.
+          custom.niri.workspaceOutputExclude = [ "game" "gaming" ];
 
           custom.niri.extraOutputs = ''
             output "DP-2" {

@@ -6,8 +6,9 @@ let
   # away — a KVM switching away, a monitor sleeping — and is not moved back.
   # Emitted as part of each workspace node, since KDL has no way to attach it
   # afterwards.
-  workspaceHome =
-    lib.optionalString (cfg.workspaceOutput != null)
+  workspaceHome = name:
+    lib.optionalString
+      (cfg.workspaceOutput != null && !(lib.elem name cfg.workspaceOutputExclude))
       ''
         open-on-output "${cfg.workspaceOutput}"'';
 
@@ -17,7 +18,7 @@ let
         lib.concatStringsSep "\n" (
           map (l: if l == "" then l else "    " + l) (lib.splitString "\n" block)
         );
-      blocks = lib.filter (b: b != "") [ body workspaceHome ];
+      blocks = lib.filter (b: b != "") [ body (workspaceHome name) ];
     in
     if blocks == [ ] then
       ''workspace "${name}"''
@@ -76,6 +77,20 @@ in {
         Left unset by default because connector names are machine-specific: a
         laptop's eDP-1 is not a desktop's DP-2, and pinning to an output that
         does not exist would strand the workspaces instead of protecting them.
+      '';
+    };
+
+    workspaceOutputExclude = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "game" "gaming" ];
+      description = ''
+        Named workspaces left unpinned even when workspaceOutput is set.
+
+        A pinned workspace wins over a window's own output preference, so a
+        workspace that game windows are routed to by a window rule will drag
+        them back to the pinned output — which defeats gamescope's
+        --prefer-output when a game is meant to open on a streaming display.
       '';
     };
 
