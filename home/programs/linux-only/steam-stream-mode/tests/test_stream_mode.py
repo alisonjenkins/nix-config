@@ -531,6 +531,8 @@ class TestOutputLifetime(unittest.TestCase):
             if calls["n"] == 1:
                 raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
             self.created.append((w, h))
+            # The replacement is healthy, so niri lists it from now on.
+            self.names = {stream_mode.OUTPUT_NAME}
             return stream_mode.OUTPUT_NAME
 
         stream_mode.create_virtual_output = create
@@ -546,6 +548,46 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
         self.assertEqual(len(self.created), 1)
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+
+    def test_stops_retrying_when_outputs_never_appear(self):
+        """niri can accept an output and then never list it — seen after a
+        connector hotplug. Retrying churns the compositor every ten seconds
+        and cannot help; only a niri restart clears it.
+        """
+        removed = []
+        real_remove = stream_mode.remove_virtual_output
+        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+
+        def collide_then_create(w, h, r, name=None):
+            if not self.created:
+                self.created.append((w, h))
+                raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
+            self.created.append((w, h))
+            return stream_mode.OUTPUT_NAME
+
+        stream_mode.create_virtual_output = collide_then_create
+        try:
+            self.names = set()  # nothing is ever listed
+            s = stream_mode.Session(stage_timeout=0)
+            self.assertFalse(s.ensure_output())
+            self.assertTrue(s.give_up)
+
+            before = len(self.created)
+            for _ in range(5):
+                s.last_check = 0.0
+                s.watchdog(interval=0)
+            self.assertEqual(len(self.created), before)
+        finally:
+            stream_mode.remove_virtual_output = real_remove
+
+    def test_a_new_client_is_worth_another_attempt(self):
+        """niri may have restarted since giving up."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.give_up = True
+        self.names = set()
+        s.connect(123, "deck")
+        self.assertFalse(s.give_up)
+        self.assertEqual(len(self.created), 1)
 
     def test_watchdog_rebuilds_a_vanished_output(self):
         s = stream_mode.Session(stage_timeout=0)
