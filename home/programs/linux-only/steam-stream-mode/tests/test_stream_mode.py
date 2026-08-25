@@ -638,6 +638,91 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(len(self.created), before)
 
 
+class TestOutputDetection(unittest.TestCase):
+    """Existence cannot rest on `niri msg outputs` alone.
+
+    It omits virtual outputs in at least one state: with no physical output
+    attached it returns nothing at all, while the workspaces it reports are
+    still sitting on the virtual one. Believing it made the service decide a
+    perfectly good output did not exist and refuse to stage games onto it.
+    """
+
+    def setUp(self):
+        self._real = (stream_mode.niri_outputs, stream_mode.niri_workspaces)
+
+    def tearDown(self):
+        stream_mode.niri_outputs, stream_mode.niri_workspaces = self._real
+
+    def test_uses_the_output_list_when_it_has_them(self):
+        stream_mode.niri_outputs = lambda: {"DP-2": {}, "steam": {}}
+        stream_mode.niri_workspaces = lambda: []
+        self.assertEqual(stream_mode.existing_output_names(), {"DP-2", "steam"})
+
+    def test_finds_an_output_only_the_workspaces_mention(self):
+        stream_mode.niri_outputs = lambda: {}
+        stream_mode.niri_workspaces = lambda: [{"output": "steam"}, {"output": "steam"}]
+        self.assertEqual(stream_mode.existing_output_names(), {"steam"})
+
+    def test_survives_either_source_failing(self):
+        def boom():
+            raise OSError("niri not answering")
+
+        stream_mode.niri_outputs = boom
+        stream_mode.niri_workspaces = lambda: [{"output": "steam"}]
+        self.assertEqual(stream_mode.existing_output_names(), {"steam"})
+
+        stream_mode.niri_outputs = lambda: {"DP-2": {}}
+        stream_mode.niri_workspaces = boom
+        self.assertEqual(stream_mode.existing_output_names(), {"DP-2"})
+
+    def test_empty_when_nothing_answers(self):
+        def boom():
+            raise OSError("niri not answering")
+
+        stream_mode.niri_outputs = boom
+        stream_mode.niri_workspaces = boom
+        self.assertEqual(stream_mode.existing_output_names(), set())
+
+
+class TestStreamInProgress(unittest.TestCase):
+    """A restart mid-stream must still publish a target."""
+
+    def write(self, tmp, body):
+        path = os.path.join(tmp, "streaming_log.txt")
+        with open(path, "w") as fh:
+            fh.write(body)
+        return path
+
+    def test_started_and_not_stopped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(tmp, "noise\n>>> Starting desktop stream\nmore\n")
+            self.assertTrue(stream_mode.stream_in_progress(path))
+
+    def test_started_then_stopped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(
+                tmp,
+                ">>> Starting desktop stream\n>>> Stopped desktop stream\n",
+            )
+            self.assertFalse(stream_mode.stream_in_progress(path))
+
+    def test_restarted_after_stopping(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(
+                tmp,
+                ">>> Starting desktop stream\n>>> Stopped desktop stream\n"
+                ">>> Starting desktop stream\n",
+            )
+            self.assertTrue(stream_mode.stream_in_progress(path))
+
+    def test_no_markers_at_all(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertFalse(stream_mode.stream_in_progress(self.write(tmp, "noise\n")))
+
+    def test_missing_file(self):
+        self.assertFalse(stream_mode.stream_in_progress("/nonexistent/log.txt"))
+
+
 class TestWaitUntilListed(unittest.TestCase):
     """Creation is asynchronous.
 
