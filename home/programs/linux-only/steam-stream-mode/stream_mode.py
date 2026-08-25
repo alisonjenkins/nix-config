@@ -258,6 +258,23 @@ def withdraw_target():
     return True
 
 
+def wait_until_listed(name, timeout=5.0, interval=0.2):
+    """Wait for a just-created output to show up in niri's output list.
+
+    Creation is asynchronous: niri acknowledges the request and adds the
+    output a moment later, so checking immediately reports it missing. That
+    race made a healthy output look unusable and had the service remove and
+    recreate it in a loop.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        if name in existing_output_names():
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(interval)
+
+
 def existing_output_names():
     try:
         return set(niri_outputs().keys())
@@ -425,7 +442,7 @@ def client_size(client_id, clients):
 class Session:
     """Owns the virtual output and what sits on it, for one client at a time."""
 
-    def __init__(self, stage_timeout=None):
+    def __init__(self, stage_timeout=None, listed_timeout=5.0):
         self.output = None
         self.client_id = None
         self.streaming = False
@@ -437,6 +454,9 @@ class Session:
         self.learned = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
+        # How long to allow a created output to appear. Creation is
+        # asynchronous, so zero means "check once".
+        self.listed_timeout = listed_timeout
 
     # -- lifecycle
 
@@ -501,7 +521,7 @@ class Session:
             if name is None:
                 return False
             enable_output(name)
-            if name not in existing_output_names():
+            if not wait_until_listed(name, timeout=self.listed_timeout):
                 # Replacing it did not help: niri is creating virtual outputs
                 # that never appear, which has been seen after a connector
                 # hotplug. Retrying cannot fix that, and doing so every ten
@@ -525,8 +545,16 @@ class Session:
             log("stream-mode: niri did not report a virtual output name")
             return False
 
-        self.output = name
         enable_output(name)
+        if not wait_until_listed(name, timeout=self.listed_timeout):
+            remove_virtual_output(name)
+            self.give_up = True
+            log(
+                "stream-mode: niri accepted {} but never listed it; virtual "
+                "outputs look broken until niri restarts. Not retrying.".format(name)
+            )
+            return False
+        self.output = name
         log("stream-mode: created {} at {}x{}".format(name, width, height))
         return True
 
