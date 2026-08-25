@@ -295,8 +295,11 @@ class Session:
 
     def connect(self, client_id, client_name):
         if self.output is not None:
-            # Already prepared. A reconnect must not build a second output, and
-            # must not disturb the one the client may already have selected.
+            # Already prepared. A reconnect must not disturb the output the
+            # client may already have selected: Steam resolves its remembered
+            # capture source when a session starts, and a source that has gone
+            # away makes the portal request fail — which it does on Steam's
+            # main loop, stalling it until the watchdog kills the client.
             self.client_id = client_id
             return False
 
@@ -327,6 +330,7 @@ class Session:
         return True
 
     def teardown(self):
+        """Remove the output. Only on shutdown — see `idle`."""
         if self.output is None:
             return False
         name, self.output = self.output, None
@@ -334,6 +338,21 @@ class Session:
         remove_virtual_output(name)
         log("stream-mode: removed {}".format(name))
         return True
+
+    def idle(self):
+        """Called when streaming has been idle; deliberately keeps the output.
+
+        Removing it between sessions is what broke streaming: Steam remembers
+        its capture source and resolves it when the next session starts, so an
+        output that came and went leaves the request failing. Steam issues that
+        request on its main loop, so the failure stalled the loop past its
+        15-second watchdog and the client segfaulted in libtier0.
+
+        The output is cheap to leave in place and its name is fixed, so it
+        stays for the lifetime of the service.
+        """
+        self.game_pid = None
+        return False
 
     # -- learning
 
@@ -552,7 +571,7 @@ def watch():
 
             if remove_at is not None and time.monotonic() >= remove_at:
                 remove_at = None
-                session.teardown()
+                session.idle()
     finally:
         session.teardown()
 
