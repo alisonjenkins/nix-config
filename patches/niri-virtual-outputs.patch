@@ -351,7 +351,7 @@ index 218e532c..fd01f94d 100644
  
  /// Overview information.
 diff --git a/src/backend/headless.rs b/src/backend/headless.rs
-index 9bd97930..2eb3c1f8 100644
+index 9bd97930..fadd636b 100644
 --- a/src/backend/headless.rs
 +++ b/src/backend/headless.rs
 @@ -1,10 +1,15 @@
@@ -373,7 +373,7 @@ index 9bd97930..2eb3c1f8 100644
  
  use anyhow::Context as _;
  use niri_config::OutputName;
-@@ -14,6 +19,7 @@ use smithay::backend::egl::{EGLContext, EGLDisplay};
+@@ -14,11 +19,13 @@ use smithay::backend::egl::{EGLContext, EGLDisplay};
  use smithay::backend::renderer::element::RenderElementStates;
  use smithay::backend::renderer::gles::GlesRenderer;
  use smithay::output::{Mode, Output, PhysicalProperties, Subpixel};
@@ -381,7 +381,13 @@ index 9bd97930..2eb3c1f8 100644
  use smithay::reexports::wayland_protocols::wp::presentation_time::server::wp_presentation_feedback;
  use smithay::utils::Size;
  use smithay::wayland::presentation::Refresh;
-@@ -26,6 +32,10 @@ use crate::utils::{get_monotonic_time, logical_output};
+ 
+ use super::{IpcOutputMap, OutputId, RenderResult};
++use crate::backend::virtual_output::{physical_size_mm, VirtualOutputError, VirtualOutputResult};
+ use crate::niri::{Niri, RedrawState};
+ use crate::render_helpers::{resources, shaders};
+ use crate::utils::{get_monotonic_time, logical_output};
+@@ -26,6 +33,10 @@ use crate::utils::{get_monotonic_time, logical_output};
  pub struct Headless {
      renderer: Option<GlesRenderer>,
      ipc_outputs: Arc<Mutex<IpcOutputMap>>,
@@ -392,7 +398,7 @@ index 9bd97930..2eb3c1f8 100644
  }
  
  impl Headless {
-@@ -33,6 +43,8 @@ impl Headless {
+@@ -33,6 +44,8 @@ impl Headless {
          Self {
              renderer: None,
              ipc_outputs: Default::default(),
@@ -401,7 +407,7 @@ index 9bd97930..2eb3c1f8 100644
          }
      }
  
-@@ -58,6 +70,8 @@ impl Headless {
+@@ -58,6 +71,8 @@ impl Headless {
          Ok(())
      }
  
@@ -410,7 +416,7 @@ index 9bd97930..2eb3c1f8 100644
      pub fn add_output(&mut self, niri: &mut Niri, n: u8, size: (u16, u16)) {
          let connector = format!("headless-{n}");
          let make = "niri".to_string();
-@@ -116,6 +130,116 @@ impl Headless {
+@@ -116,6 +131,125 @@ impl Headless {
          niri.add_output(output, None, false);
      }
  
@@ -423,13 +429,13 @@ index 9bd97930..2eb3c1f8 100644
 +        height: u16,
 +        refresh_rate: u32,
 +        name: Option<String>,
-+    ) -> Result<String, String> {
++    ) -> VirtualOutputResult<String> {
 +        let n = self.output_counter + 1;
 +
 +        let connector = match name {
 +            Some(name) => {
 +                if self.outputs.contains_key(&name) {
-+                    return Err(format!("output \"{name}\" already exists"));
++                    return Err(VirtualOutputError::NameTaken(name));
 +                }
 +                name
 +            }
@@ -450,7 +456,9 @@ index 9bd97930..2eb3c1f8 100644
 +        let output = Output::new(
 +            connector.clone(),
 +            PhysicalProperties {
-+                size: (0, 0).into(),
++                // See `physical_size_mm`: a real `0mm` is honest but gets the
++                // output silently discarded by clients like Steam.
++                size: physical_size_mm(i32::from(width), i32::from(height)),
 +                subpixel: Subpixel::Unknown,
 +                make: make.clone(),
 +                model: model.clone(),
@@ -509,14 +517,21 @@ index 9bd97930..2eb3c1f8 100644
 +
 +    /// Remove a virtual headless output by name.
 +    /// Returns Ok(()) if successful, Err with message if not found or failed.
-+    pub fn remove_virtual_output(&mut self, niri: &mut Niri, name: &str) -> Result<(), String> {
++    pub fn remove_virtual_output(
++        &mut self,
++        niri: &mut Niri,
++        name: &str,
++    ) -> VirtualOutputResult<()> {
 +        let (output, output_id) = self
 +            .outputs
 +            .remove(name)
-+            .ok_or_else(|| format!("output '{}' not found", name))?;
++            .ok_or_else(|| VirtualOutputError::NotFound(name.to_owned()))?;
 +
 +        // Remove from IPC outputs
-+        self.ipc_outputs.lock().unwrap().remove(&output_id);
++        self.ipc_outputs
++            .lock()
++            .map_err(|_| VirtualOutputError::IpcOutputsPoisoned)?
++            .remove(&output_id);
 +
 +        // Remove from niri
 +        niri.remove_output(&output);
@@ -527,7 +542,7 @@ index 9bd97930..2eb3c1f8 100644
      pub fn seat_name(&self) -> String {
          "headless".to_owned()
      }
-@@ -128,10 +252,12 @@ impl Headless {
+@@ -128,10 +262,12 @@ impl Headless {
      }
  
      pub fn render(&mut self, niri: &mut Niri, output: &Output) -> RenderResult {
@@ -541,7 +556,7 @@ index 9bd97930..2eb3c1f8 100644
              Refresh::Unknown,
              0,
              wp_presentation_feedback::Kind::empty(),
-@@ -142,13 +268,50 @@ impl Headless {
+@@ -142,13 +278,50 @@ impl Headless {
              RedrawState::Idle => unreachable!(),
              RedrawState::Queued => (),
              RedrawState::WaitingForVBlank { .. } => unreachable!(),
@@ -596,10 +611,23 @@ index 9bd97930..2eb3c1f8 100644
          RenderResult::Submitted
      }
 diff --git a/src/backend/mod.rs b/src/backend/mod.rs
-index 49fbc6b0..f4843fa7 100644
+index 49fbc6b0..272ceded 100644
 --- a/src/backend/mod.rs
 +++ b/src/backend/mod.rs
-@@ -232,4 +232,44 @@ impl Backend {
+@@ -8,10 +8,12 @@ use smithay::backend::renderer::gles::GlesRenderer;
+ use smithay::output::Output;
+ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
+ 
++use crate::backend::virtual_output::{VirtualOutputError, VirtualOutputResult};
+ use crate::niri::Niri;
+ use crate::utils::id::IdCounter;
+ 
+ pub mod tty;
++pub mod virtual_output;
+ pub use tty::Tty;
+ 
+ pub mod winit;
+@@ -232,4 +234,44 @@ impl Backend {
              panic!("backend is not Headless")
          }
      }
@@ -615,7 +643,7 @@ index 49fbc6b0..f4843fa7 100644
 +        height: u16,
 +        refresh_rate: u32,
 +        name: Option<String>,
-+    ) -> Result<String, String> {
++    ) -> VirtualOutputResult<String> {
 +        match self {
 +            Backend::Headless(headless) => {
 +                headless.create_virtual_output(niri, width, height, refresh_rate, name)
@@ -625,27 +653,27 @@ index 49fbc6b0..f4843fa7 100644
 +            Backend::Tty(tty) => {
 +                tty.create_virtual_output(niri, width, height, refresh_rate, name, false)
 +            }
-+            Backend::Winit(_) => {
-+                Err("virtual outputs are not supported with the Winit backend".into())
-+            }
++            Backend::Winit(_) => Err(VirtualOutputError::UnsupportedBackend("Winit")),
 +        }
 +    }
 +
 +    /// Remove a virtual headless output by name.
 +    ///
 +    /// This works with both the headless backend and the TTY backend.
-+    pub fn remove_virtual_output(&mut self, niri: &mut Niri, name: &str) -> Result<(), String> {
++    pub fn remove_virtual_output(
++        &mut self,
++        niri: &mut Niri,
++        name: &str,
++    ) -> VirtualOutputResult<()> {
 +        match self {
 +            Backend::Headless(headless) => headless.remove_virtual_output(niri, name),
 +            Backend::Tty(tty) => tty.remove_virtual_output(niri, name),
-+            Backend::Winit(_) => {
-+                Err("virtual outputs are not supported with the Winit backend".into())
-+            }
++            Backend::Winit(_) => Err(VirtualOutputError::UnsupportedBackend("Winit")),
 +        }
 +    }
  }
 diff --git a/src/backend/tty.rs b/src/backend/tty.rs
-index 6dd83492..248bdbbc 100644
+index 6dd83492..511df4f0 100644
 --- a/src/backend/tty.rs
 +++ b/src/backend/tty.rs
 @@ -16,7 +16,7 @@ use drm_ffi::drm_mode_modeinfo;
@@ -657,17 +685,18 @@ index 6dd83492..248bdbbc 100644
  use smithay::backend::allocator::dmabuf::Dmabuf;
  use smithay::backend::allocator::format::FormatSet;
  use smithay::backend::allocator::gbm::{GbmAllocator, GbmBufferFlags, GbmDevice};
-@@ -61,8 +61,7 @@ use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
+@@ -61,8 +61,8 @@ use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
  use wayland_protocols::wp::linux_dmabuf::zv1::server::zwp_linux_dmabuf_feedback_v1::TrancheFlags;
  use wayland_protocols::wp::presentation_time::server::wp_presentation_feedback;
  
 -use super::{IpcOutputMap, RenderResult};
 -use crate::backend::OutputId;
 +use super::{IpcOutputMap, OutputId, RenderResult};
++use crate::backend::virtual_output::{physical_size_mm, VirtualOutputError, VirtualOutputResult};
  use crate::frame_clock::FrameClock;
  use crate::niri::{Niri, RedrawState, State};
  use crate::render_helpers::debug::draw_damage;
-@@ -101,6 +100,119 @@ pub struct Tty {
+@@ -101,6 +101,119 @@ pub struct Tty {
      // Whether the debug tinting is enabled.
      debug_tint: bool,
      ipc_outputs: Arc<Mutex<IpcOutputMap>>,
@@ -787,7 +816,7 @@ index 6dd83492..248bdbbc 100644
  }
  
  pub type TtyRenderer<'render> = MultiRenderer<
-@@ -509,6 +621,10 @@ impl Tty {
+@@ -509,6 +622,10 @@ impl Tty {
              update_output_config_on_resume: false,
              debug_tint: false,
              ipc_outputs: Arc::new(Mutex::new(HashMap::new())),
@@ -798,7 +827,7 @@ index 6dd83492..248bdbbc 100644
          })
      }
  
-@@ -551,6 +667,10 @@ impl Tty {
+@@ -551,6 +668,10 @@ impl Tty {
                  warn!("error adding device: {err:?}");
              }
          }
@@ -809,7 +838,33 @@ index 6dd83492..248bdbbc 100644
      }
  
      fn on_udev_event(&mut self, niri: &mut Niri, event: UdevEvent) {
-@@ -1832,7 +1952,15 @@ impl Tty {
+@@ -1604,7 +1725,11 @@ impl Tty {
+             .global_space
+             .outputs()
+             .find(|output| {
+-                let tty_state: &TtyOutputState = output.user_data().get().unwrap();
++                // No TtyOutputState means a virtual output, which no DRM
++                // node or crtc can match.
++                let Some(tty_state) = output.user_data().get::<TtyOutputState>() else {
++                    return false;
++                };
+                 tty_state.node == node && tty_state.crtc == crtc
+             })
+             .cloned();
+@@ -1684,7 +1809,11 @@ impl Tty {
+             .global_space
+             .outputs()
+             .find(|output| {
+-                let tty_state: &TtyOutputState = output.user_data().get().unwrap();
++                // No TtyOutputState means a virtual output, which no DRM
++                // node or crtc can match.
++                let Some(tty_state) = output.user_data().get::<TtyOutputState>() else {
++                    return false;
++                };
+                 tty_state.node == node && tty_state.crtc == crtc
+             })
+             .cloned()
+@@ -1832,7 +1961,15 @@ impl Tty {
          if output_state.unfinished_animations_remain {
              niri.queue_redraw(&output);
          } else {
@@ -826,7 +881,7 @@ index 6dd83492..248bdbbc 100644
          }
      }
  
-@@ -1861,7 +1989,12 @@ impl Tty {
+@@ -1861,7 +1998,12 @@ impl Tty {
  
          let mut rv = RenderResult::Skipped;
  
@@ -840,7 +895,47 @@ index 6dd83492..248bdbbc 100644
          let Some(device) = self.devices.get_mut(&tty_state.node) else {
              error!("missing output device");
              return rv;
-@@ -2235,6 +2368,12 @@ impl Tty {
+@@ -2075,7 +2217,13 @@ impl Tty {
+     }
+ 
+     pub fn get_gamma_size(&self, output: &Output) -> anyhow::Result<u32> {
+-        let tty_state = output.user_data().get::<TtyOutputState>().unwrap();
++        // A virtual output has no crtc and so no gamma ramp. Reached whenever a
++        // gamma-control client enumerates outputs, which must not be able to
++        // bring the compositor down by asking about one.
++        let tty_state = output
++            .user_data()
++            .get::<TtyOutputState>()
++            .context("no gamma on a virtual output")?;
+         let crtc = tty_state.crtc;
+ 
+         let device = self
+@@ -2096,7 +2244,10 @@ impl Tty {
+     }
+ 
+     pub fn set_gamma(&mut self, output: &Output, ramp: Option<Vec<u16>>) -> anyhow::Result<()> {
+-        let tty_state = output.user_data().get::<TtyOutputState>().unwrap();
++        let tty_state = output
++            .user_data()
++            .get::<TtyOutputState>()
++            .context("no gamma on a virtual output")?;
+         let crtc = tty_state.crtc;
+ 
+         let device = self
+@@ -2196,7 +2347,11 @@ impl Tty {
+                     .global_space
+                     .outputs()
+                     .find(|output| {
+-                        let tty_state: &TtyOutputState = output.user_data().get().unwrap();
++                        // No TtyOutputState means a virtual output, which no
++                        // DRM node or crtc can match.
++                        let Some(tty_state) = output.user_data().get::<TtyOutputState>() else {
++                            return false;
++                        };
+                         tty_state.node == *node && tty_state.crtc == crtc
+                     })
+                     .map(logical_output);
+@@ -2235,6 +2390,12 @@ impl Tty {
              }
          }
  
@@ -853,7 +948,7 @@ index 6dd83492..248bdbbc 100644
          let mut guard = self.ipc_outputs.lock().unwrap();
          *guard = ipc_outputs;
          niri.ipc_outputs_changed = true;
-@@ -2244,6 +2383,301 @@ impl Tty {
+@@ -2244,6 +2405,322 @@ impl Tty {
          self.ipc_outputs.clone()
      }
  
@@ -898,13 +993,13 @@ index 6dd83492..248bdbbc 100644
 +        refresh_rate: u32,
 +        name: Option<String>,
 +        declared: bool,
-+    ) -> Result<String, String> {
++    ) -> VirtualOutputResult<String> {
 +        let n = self.virtual_outputs.counter + 1;
 +
 +        let connector = match name {
 +            Some(name) => {
 +                if self.virtual_outputs.outputs.contains_key(&name) {
-+                    return Err(format!("output \"{name}\" already exists"));
++                    return Err(VirtualOutputError::NameTaken(name));
 +                }
 +                name
 +            }
@@ -925,7 +1020,9 @@ index 6dd83492..248bdbbc 100644
 +        let output = Output::new(
 +            connector.clone(),
 +            PhysicalProperties {
-+                size: (0, 0).into(),
++                // See `physical_size_mm`: a real `0mm` is honest but gets the
++                // output silently discarded by clients like Steam.
++                size: physical_size_mm(i32::from(width), i32::from(height)),
 +                subpixel: smithay::output::Subpixel::Unknown,
 +                make: make.clone(),
 +                model: model.clone(),
@@ -1080,6 +1177,18 @@ index 6dd83492..248bdbbc 100644
 +    /// panels — a handheld at 1280x800 and a television at 3840x2160 — without
 +    /// removing and recreating it, which would drop the screencast source a
 +    /// client had already been given.
++    ///
++    /// This does *not* update the output's physical size (see
++    /// `physical_size_mm`) to match the new mode. Smithay's `Output` has no
++    /// way to change `PhysicalProperties` after construction — only
++    /// `change_current_state` for mode/transform/scale/location — and
++    /// `wl_output.geometry` (which carries the physical size) is sent once,
++    /// at bind time, not re-sent on a mode change. Recreating the `Output` to
++    /// pick up a new size would mean a new `wl_global`, defeating the whole
++    /// point of resizing in place above. So a resized declared output keeps
++    /// the physical size it was created with: stale in proportion, but still
++    /// nonzero, which is what actually matters for a client like Steam that
++    /// discards zero-size outputs outright.
 +    fn resize_virtual_outputs(&mut self, niri: &mut Niri) {
 +        let resizes: Vec<(String, ConfiguredMode)> = {
 +            let config = self.config.borrow();
@@ -1134,15 +1243,22 @@ index 6dd83492..248bdbbc 100644
 +
 +    /// Remove a virtual headless output by name.
 +    /// Returns Ok(()) if successful, Err with message if not found.
-+    pub fn remove_virtual_output(&mut self, niri: &mut Niri, name: &str) -> Result<(), String> {
++    pub fn remove_virtual_output(
++        &mut self,
++        niri: &mut Niri,
++        name: &str,
++    ) -> VirtualOutputResult<()> {
 +        let virt = self
 +            .virtual_outputs
 +            .outputs
 +            .remove(name)
-+            .ok_or_else(|| format!("virtual output '{}' not found", name))?;
++            .ok_or_else(|| VirtualOutputError::NotFound(name.to_owned()))?;
 +
 +        // Remove from IPC outputs
-+        self.ipc_outputs.lock().unwrap().remove(&virt.id);
++        self.ipc_outputs
++            .lock()
++            .map_err(|_| VirtualOutputError::IpcOutputsPoisoned)?
++            .remove(&virt.id);
 +
 +        // Only in the layout while enabled; removing it again would panic.
 +        if virt.enabled {
@@ -1155,7 +1271,19 @@ index 6dd83492..248bdbbc 100644
      #[cfg(feature = "xdp-gnome-screencast")]
      pub fn primary_gbm_device(&self) -> Option<GbmDevice<DrmDeviceFd>> {
          // Try to find a device corresponding to the primary render node.
-@@ -2392,6 +2826,8 @@ impl Tty {
+@@ -2286,7 +2763,10 @@ impl Tty {
+         }
+         for (&node, device) in self.devices.iter_mut() {
+             for (&crtc, surface) in device.surfaces.iter_mut() {
+-                let tty_state: &TtyOutputState = output.user_data().get().unwrap();
++                let Some(tty_state) = output.user_data().get::<TtyOutputState>() else {
++                    // A virtual output matches no crtc; nothing to do for it.
++                    continue;
++                };
+                 if tty_state.node == node && tty_state.crtc == crtc {
+                     let word = if enable_vrr { "enabling" } else { "disabling" };
+                     if let Err(err) = surface.compositor.use_vrr(enable_vrr) {
+@@ -2392,6 +2872,8 @@ impl Tty {
          }
          self.update_output_config_on_resume = false;
  
@@ -1164,7 +1292,20 @@ index 6dd83492..248bdbbc 100644
          // Figure out if we should disable laptop panels.
          let disable_laptop_panels = self.should_disable_laptop_panels(niri.is_lid_closed);
          let should_disable = |connector: &str| disable_laptop_panels && is_laptop_panel(connector);
-@@ -3530,8 +3966,150 @@ mod tests {
+@@ -2466,7 +2948,11 @@ impl Tty {
+                     .global_space
+                     .outputs()
+                     .find(|output| {
+-                        let tty_state: &TtyOutputState = output.user_data().get().unwrap();
++                        // No TtyOutputState means a virtual output, which no
++                        // DRM node or crtc can match.
++                        let Some(tty_state) = output.user_data().get::<TtyOutputState>() else {
++                            return false;
++                        };
+                         tty_state.node == node && tty_state.crtc == crtc
+                     })
+                     .cloned();
+@@ -3530,8 +4016,150 @@ mod tests {
      use insta::assert_debug_snapshot;
      use niri_config::output::Modeline;
      use niri_ipc::{HSyncPolarity, VSyncPolarity};
@@ -1227,8 +1368,7 @@ index 6dd83492..248bdbbc 100644
 +        // Not in the layout, so it has no position or size there.
 +        assert!(listed.logical.is_none());
 +    }
- 
--    use crate::backend::tty::{calculate_drm_mode_from_modeline, calculate_mode_cvt};
++
 +    #[test]
 +    fn turning_a_virtual_output_back_on_restores_it() {
 +        let virt = virtual_output(true);
@@ -1243,7 +1383,8 @@ index 6dd83492..248bdbbc 100644
 +        // what makes it usable as a screencast target.
 +        assert!(listed.logical.is_some());
 +    }
-+
+ 
+-    use crate::backend::tty::{calculate_drm_mode_from_modeline, calculate_mode_cvt};
 +    #[test]
 +    fn a_declared_virtual_output_takes_its_size_from_mode() {
 +        // A virtual output has no connector advertising modes, so `mode` is
@@ -1316,6 +1457,172 @@ index 6dd83492..248bdbbc 100644
  
      #[test]
      fn test_calculate_drmmode_from_modeline() {
+diff --git a/src/backend/virtual_output.rs b/src/backend/virtual_output.rs
+new file mode 100644
+index 00000000..c2c90760
+--- /dev/null
++++ b/src/backend/virtual_output.rs
+@@ -0,0 +1,160 @@
++#![deny(clippy::unwrap_used, clippy::expect_used)]
++
++//! Errors from creating and removing virtual outputs, and the shared bits of
++//! how a virtual output presents itself to clients.
++//!
++//! `unwrap` is denied here rather than crate-wide: upstream niri uses it
++//! deliberately in plenty of places, and turning it off everywhere would be a
++//! change to their code, not ours. The virtual output work is what has been
++//! panicking the compositor in practice — twice from unwrapping state a
++//! virtual output does not carry — so the rule is applied where it earns its
++//! keep.
++//!
++//! A dedicated type rather than `String`: these cross the IPC boundary, and a
++//! caller that wants to tell "that name is already taken" from "this backend
++//! cannot do virtual outputs at all" should not have to match on prose. The
++//! `Display` text is what reaches the client, so it stays phrased for a person
++//! reading `niri msg` output.
++
++use std::fmt;
++
++use smithay::utils::{Raw, Size};
++
++/// Why a virtual output could not be created or removed.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum VirtualOutputError {
++    /// An output already exists under this name.
++    ///
++    /// Names are how anything finds a virtual output again, so reusing one
++    /// silently would hand the caller an output it did not create.
++    NameTaken(String),
++
++    /// No virtual output by this name.
++    NotFound(String),
++
++    /// The running backend has no virtual output support.
++    ///
++    /// Winit is nested inside another compositor, which owns the outputs.
++    UnsupportedBackend(&'static str),
++
++    /// The shared IPC output map was left poisoned by a panicking thread.
++    ///
++    /// Reported rather than propagated as a panic: losing the ability to add
++    /// an output is a great deal better than taking the session down with it.
++    IpcOutputsPoisoned,
++}
++
++impl fmt::Display for VirtualOutputError {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            VirtualOutputError::NameTaken(name) => {
++                write!(f, "output \"{name}\" already exists")
++            }
++            VirtualOutputError::NotFound(name) => {
++                write!(f, "virtual output \"{name}\" not found")
++            }
++            VirtualOutputError::UnsupportedBackend(backend) => {
++                write!(
++                    f,
++                    "virtual outputs are not supported with the {backend} backend"
++                )
++            }
++            VirtualOutputError::IpcOutputsPoisoned => {
++                write!(
++                    f,
++                    "the output list is in an inconsistent state; restart niri"
++                )
++            }
++        }
++    }
++}
++
++impl std::error::Error for VirtualOutputError {}
++
++/// Result of an operation on a virtual output.
++pub type VirtualOutputResult<T> = Result<T, VirtualOutputError>;
++
++/// Synthesize a physical size (in millimetres) for a virtual output, given
++/// its pixel dimensions.
++///
++/// A virtual output has no panel, so `0mm x 0mm` is the technically honest
++/// answer — and it is also the wrong one. Clients are free to treat a `0mm`
++/// physical size as "not a real display" and drop the output entirely; Steam
++/// does exactly that, and a virtual output created for Remote Play streaming
++/// simply never showed up in its display list. That broke streaming for
++/// weeks before anyone traced it back to this. Do not "simplify" this back
++/// to `(0, 0)`.
++///
++/// There is no physically correct size to report instead, so this picks a
++/// plausible one: a nominal 96 DPI, the traditional desktop baseline, i.e.
++/// `mm = px * 25.4 / 96`. Kept in integer math as `px * 254 / 960` to avoid
++/// pulling in floating point for a value nothing downstream expects to be
++/// exact.
++pub fn physical_size_mm(width: i32, height: i32) -> Size<i32, Raw> {
++    let mm_from_px = |px: i32| px.saturating_mul(254) / 960;
++    (mm_from_px(width), mm_from_px(height)).into()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn messages_name_the_output_they_are_about() {
++        // These reach the user through `niri msg`, so the name has to survive
++        // into the text rather than being flattened to a generic failure.
++        assert_eq!(
++            VirtualOutputError::NameTaken("steam".to_owned()).to_string(),
++            "output \"steam\" already exists"
++        );
++        assert_eq!(
++            VirtualOutputError::NotFound("steam".to_owned()).to_string(),
++            "virtual output \"steam\" not found"
++        );
++    }
++
++    #[test]
++    fn variants_are_distinguishable_without_reading_prose() {
++        // The reason for the type: a caller can branch on the cause rather
++        // than matching on message text that is free to change.
++        let taken = VirtualOutputError::NameTaken("steam".to_owned());
++        let missing = VirtualOutputError::NotFound("steam".to_owned());
++        assert_ne!(taken, missing);
++        assert!(matches!(taken, VirtualOutputError::NameTaken(_)));
++    }
++
++    #[test]
++    fn a_typical_handheld_mode_gets_a_nonzero_size() {
++        // The whole point: Steam discards an output reporting 0mm x 0mm, and
++        // this is the exact mode that broke Remote Play streaming.
++        let size = physical_size_mm(1280, 800);
++        assert_eq!((size.w, size.h), (338, 211));
++        assert_ne!(size.w, 0);
++        assert_ne!(size.h, 0);
++    }
++
++    #[test]
++    fn a_desktop_sized_mode_gets_a_nonzero_size() {
++        let size = physical_size_mm(1920, 1080);
++        assert_eq!((size.w, size.h), (508, 285));
++    }
++
++    #[test]
++    fn zero_pixels_stays_zero_millimetres() {
++        // There is no plausible nonzero size for a mode with no pixels; this
++        // just documents that the conversion does not divide by zero or
++        // otherwise misbehave at the degenerate input.
++        let size = physical_size_mm(0, 0);
++        assert_eq!((size.w, size.h), (0, 0));
++    }
++
++    #[test]
++    fn conversion_is_roughly_ninety_six_dpi() {
++        // 96 DPI means 96 pixels per 25.4mm. Check the ratio holds within
++        // integer-division rounding rather than pinning exact pixel values,
++        // so this documents the intended DPI rather than just re-asserting
++        // the implementation's arithmetic.
++        let size = physical_size_mm(960, 960);
++        assert_eq!((size.w, size.h), (254, 254));
++    }
++}
 diff --git a/src/cli.rs b/src/cli.rs
 index 308b3127..ab0f957c 100644
 --- a/src/cli.rs
@@ -1409,7 +1716,7 @@ index 1ec51c44..5d08a326 100644
  
      Ok(())
 diff --git a/src/ipc/server.rs b/src/ipc/server.rs
-index db71da6d..c10a7764 100644
+index db71da6d..047ea5ab 100644
 --- a/src/ipc/server.rs
 +++ b/src/ipc/server.rs
 @@ -455,6 +455,52 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
@@ -1444,7 +1751,7 @@ index db71da6d..c10a7764 100644
 +                .map_err(|_| String::from("error creating virtual output"))?;
 +            match result {
 +                Ok(name) => Response::VirtualOutputCreated(name),
-+                Err(e) => return Err(e),
++                Err(err) => return Err(err.to_string()),
 +            }
 +        }
 +        Request::RemoveVirtualOutput { name } => {
@@ -1459,7 +1766,7 @@ index db71da6d..c10a7764 100644
 +                .recv()
 +                .await
 +                .map_err(|_| String::from("error removing virtual output"))?;
-+            result?;
++            result.map_err(|err| err.to_string())?;
 +            Response::Handled
 +        }
      };
@@ -1586,3 +1893,42 @@ index fa44b5cb..390d38f9 100644
      pub fn send_frame_callbacks_on_fallback_timer(&mut self) {
          let _span = tracy_client::span!("Niri::send_frame_callbacks_on_fallback_timer");
  
+diff --git a/src/protocols/foreign_toplevel.rs b/src/protocols/foreign_toplevel.rs
+index f16e5ac9..37c40368 100644
+--- a/src/protocols/foreign_toplevel.rs
++++ b/src/protocols/foreign_toplevel.rs
+@@ -5,11 +5,13 @@ use std::sync::Arc;
+ use arrayvec::ArrayVec;
+ use smithay::output::Output;
+ use smithay::reexports::wayland_protocols::ext::foreign_toplevel_list::v1::server::{
+-    ext_foreign_toplevel_handle_v1::{self, ExtForeignToplevelHandleV1}, ext_foreign_toplevel_list_v1::{self, ExtForeignToplevelListV1},
++    ext_foreign_toplevel_handle_v1::{self, ExtForeignToplevelHandleV1},
++    ext_foreign_toplevel_list_v1::{self, ExtForeignToplevelListV1},
+ };
+ use smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel;
+ use smithay::reexports::wayland_protocols_wlr::foreign_toplevel::v1::server::{
+-    zwlr_foreign_toplevel_handle_v1::{self, ZwlrForeignToplevelHandleV1}, zwlr_foreign_toplevel_manager_v1::{self, ZwlrForeignToplevelManagerV1},
++    zwlr_foreign_toplevel_handle_v1::{self, ZwlrForeignToplevelHandleV1},
++    zwlr_foreign_toplevel_manager_v1::{self, ZwlrForeignToplevelManagerV1},
+ };
+ use smithay::reexports::wayland_server::backend::ClientId;
+ use smithay::reexports::wayland_server::protocol::wl_output::WlOutput;
+@@ -17,15 +19,15 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
+ use smithay::reexports::wayland_server::{
+     Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, Resource,
+ };
+-use smithay::wayland::{Dispatch2, GlobalDispatch2};
+ use smithay::wayland::shell::xdg::{
+-    ToplevelState, ToplevelStateSet, XdgToplevelSurfaceRoleAttributes
++    ToplevelState, ToplevelStateSet, XdgToplevelSurfaceRoleAttributes,
+ };
++use smithay::wayland::{Dispatch2, GlobalDispatch2};
+ 
+ use crate::niri::State;
+ use crate::protocols::EmptyData;
+-use crate::window::mapped::MappedId;
+ use crate::utils::with_toplevel_role_and_current;
++use crate::window::mapped::MappedId;
+ 
+ const EXT_LIST_VERSION: u32 = 1;
+ const WLR_MANAGEMENT_VERSION: u32 = 3;
