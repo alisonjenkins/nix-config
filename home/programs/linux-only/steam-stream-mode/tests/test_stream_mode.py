@@ -259,6 +259,27 @@ class TestSession(unittest.TestCase):
         self.assertFalse(s.teardown())
         self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
 
+    def test_idle_keeps_the_output(self):
+        """Removing it between sessions broke Steam's remembered source.
+
+        Steam resolves that source on its main loop when a session starts; a
+        source that has gone away made the request fail, stalling the loop past
+        its watchdog and segfaulting the client.
+        """
+        s = self.session()
+        s.connect(123, "deck")
+        s.stage(500, 2854740)
+        self.assertFalse(s.idle())
+        self.assertEqual(self.removed, [])
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+
+    def test_idle_clears_the_staged_game(self):
+        s = self.session()
+        s.connect(123, "deck")
+        s.stage(500, 2854740)
+        s.idle()
+        self.assertFalse(s.unstage(500))
+
     def test_teardown_without_output_does_nothing(self):
         self.assertFalse(self.session().teardown())
         self.assertEqual(self.removed, [])
