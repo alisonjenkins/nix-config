@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -207,19 +208,29 @@ class TestSession(unittest.TestCase):
             )
         }
 
+        self.names = {"DP-2"}
+
         def create(w, h, r, name=None):
             self.created.append((w, h, r))
-            return name or self.next_name
+            created = name or self.next_name
+            if created:
+                # niri lists it once created; the service waits for that.
+                self.names.add(created)
+            return created
 
         stream_mode.create_virtual_output = create
-        stream_mode.remove_virtual_output = lambda n: self.removed.append(n)
+        def remove(n):
+            self.removed.append(n)
+            self.names.discard(n)
+
+        stream_mode.remove_virtual_output = remove
         stream_mode.move_window_to_output = lambda wid, out: self.moved.append((wid, out))
         stream_mode.fullscreen_window = lambda wid: self.fullscreened.append(wid)
         stream_mode.focus_window = lambda wid: None
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
-        stream_mode.existing_output_names = lambda: {"DP-2"}
+        stream_mode.existing_output_names = lambda: self.names
         self.enabled = []
         stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.load_clients = lambda path=None: {}
@@ -230,7 +241,7 @@ class TestSession(unittest.TestCase):
             setattr(stream_mode, k, v)
 
     def session(self, stage_timeout=0):
-        return stream_mode.Session(stage_timeout=stage_timeout)
+        return stream_mode.Session(stage_timeout=stage_timeout, listed_timeout=0)
 
     def test_startup_creates_the_output_before_any_connect(self):
         """A client that connected while this was not running never re-triggers."""
@@ -323,7 +334,7 @@ class TestSession(unittest.TestCase):
 
     def test_an_existing_output_of_the_right_size_is_adopted(self):
         """Replacing it is what kept invalidating Steam's remembered source."""
-        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
         s = self.session()
         self.assertFalse(s.connect(123, "deck"))
         self.assertEqual(self.removed, [])
@@ -447,9 +458,12 @@ class TestOutputLifetime(unittest.TestCase):
                 "withdraw_target",
             )
         }
-        stream_mode.create_virtual_output = lambda w, h, r, name=None: (
-            self.created.append((w, h)) or stream_mode.OUTPUT_NAME
-        )
+        def create(w, h, r, name=None):
+            self.created.append((w, h))
+            self.names.add(stream_mode.OUTPUT_NAME)
+            return stream_mode.OUTPUT_NAME
+
+        stream_mode.create_virtual_output = create
         stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.existing_output_names = lambda: self.names
         stream_mode.output_logical_size = lambda name: (1280, 800)
@@ -462,13 +476,13 @@ class TestOutputLifetime(unittest.TestCase):
             setattr(stream_mode, k, v)
 
     def test_enabled_on_creation(self):
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
         self.assertEqual(self.enabled, [stream_mode.OUTPUT_NAME])
 
     def test_enabled_on_connect(self):
         """Steam picks its capture source before any stream is logged."""
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.connect(123, "deck")
         self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
 
@@ -480,7 +494,7 @@ class TestOutputLifetime(unittest.TestCase):
         real = stream_mode.remove_virtual_output
         stream_mode.remove_virtual_output = lambda n: removed.append(n)
         try:
-            s = stream_mode.Session(stage_timeout=0)
+            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             s.ensure_output()
             s.begin_stream()
             s.end_stream()
@@ -495,7 +509,7 @@ class TestOutputLifetime(unittest.TestCase):
         real = stream_mode.remove_virtual_output
         stream_mode.remove_virtual_output = lambda n: removed.append(n)
         try:
-            s = stream_mode.Session(stage_timeout=0)
+            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             s.ensure_output()
             s.end_stream()
             self.created.clear()
@@ -511,7 +525,7 @@ class TestOutputLifetime(unittest.TestCase):
 
         stream_mode.create_virtual_output = collide
         self.names = {"DP-2", stream_mode.OUTPUT_NAME}
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
         self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
@@ -540,7 +554,7 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.remove_virtual_output = lambda n: removed.append(n)
         try:
             self.names = {"DP-2"}  # niri does not list it
-            s = stream_mode.Session(stage_timeout=0)
+            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             self.assertTrue(s.ensure_output())
         finally:
             stream_mode.remove_virtual_output = real_remove
@@ -556,7 +570,12 @@ class TestOutputLifetime(unittest.TestCase):
         """
         removed = []
         real_remove = stream_mode.remove_virtual_output
-        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+
+        def remove(n):
+            removed.append(n)
+            self.names.discard(n)
+
+        stream_mode.remove_virtual_output = remove
 
         def collide_then_create(w, h, r, name=None):
             if not self.created:
@@ -568,7 +587,7 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.create_virtual_output = collide_then_create
         try:
             self.names = {"DP-2"}  # nothing is ever listed
-            s = stream_mode.Session(stage_timeout=0)
+            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
             self.assertFalse(s.ensure_output())
             self.assertTrue(s.give_up)
 
@@ -582,7 +601,7 @@ class TestOutputLifetime(unittest.TestCase):
 
     def test_a_new_client_is_worth_another_attempt(self):
         """niri may have restarted since giving up."""
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.give_up = True
         self.names = {"DP-2"}
         s.connect(123, "deck")
@@ -590,23 +609,25 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(len(self.created), 1)
 
     def test_watchdog_rebuilds_a_vanished_output(self):
-        s = stream_mode.Session(stage_timeout=0)
-        self.names = {"DP-2"}
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
         self.assertEqual(len(self.created), 1)
+
+        # The output goes away — a KVM switch takes it with the physical one.
+        self.names.discard(stream_mode.OUTPUT_NAME)
         s.last_check = 0.0
         self.assertTrue(s.watchdog(interval=0))
         self.assertEqual(len(self.created), 2)
 
     def test_watchdog_leaves_a_healthy_output_alone(self):
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
         self.names = {"DP-2", stream_mode.OUTPUT_NAME}
         self.assertFalse(s.watchdog(interval=0))
         self.assertEqual(len(self.created), 1)
 
     def test_watchdog_is_rate_limited(self):
-        s = stream_mode.Session(stage_timeout=0)
+        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         s.ensure_output()
         self.names = {"DP-2"}
         s.last_check = 0.0
@@ -615,6 +636,47 @@ class TestOutputLifetime(unittest.TestCase):
         for _ in range(10):
             s.watchdog(interval=3600)
         self.assertEqual(len(self.created), before)
+
+
+class TestWaitUntilListed(unittest.TestCase):
+    """Creation is asynchronous.
+
+    niri acknowledges the request and adds the output a moment later, so
+    checking immediately reports it missing — which made a healthy output look
+    unusable and had the service remove and recreate it in a loop.
+    """
+
+    def setUp(self):
+        self._real = stream_mode.existing_output_names
+
+    def tearDown(self):
+        stream_mode.existing_output_names = self._real
+
+    def test_returns_as_soon_as_it_appears(self):
+        calls = {"n": 0}
+
+        def appearing():
+            calls["n"] += 1
+            return {"DP-2", stream_mode.OUTPUT_NAME} if calls["n"] > 2 else {"DP-2"}
+
+        stream_mode.existing_output_names = appearing
+        self.assertTrue(
+            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=2, interval=0)
+        )
+
+    def test_gives_up_when_it_never_appears(self):
+        stream_mode.existing_output_names = lambda: {"DP-2"}
+        self.assertFalse(
+            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=0, interval=0)
+        )
+
+    def test_does_not_wait_when_already_there(self):
+        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        start = time.monotonic()
+        self.assertTrue(
+            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=5, interval=1)
+        )
+        self.assertLess(time.monotonic() - start, 1.0)
 
 
 class TestNiriSocket(unittest.TestCase):
