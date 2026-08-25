@@ -219,7 +219,7 @@ class TestSession(unittest.TestCase):
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
-        stream_mode.existing_output_names = lambda: set()
+        stream_mode.existing_output_names = lambda: {"DP-2"}
         self.enabled = []
         stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.load_clients = lambda path=None: {}
@@ -240,7 +240,7 @@ class TestSession(unittest.TestCase):
 
     def test_startup_adopts_an_existing_output(self):
         """It survives a service restart, so it is usually already there."""
-        stream_mode.existing_output_names = lambda: {stream_mode.OUTPUT_NAME}
+        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
         s = self.session()
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
@@ -323,7 +323,7 @@ class TestSession(unittest.TestCase):
 
     def test_an_existing_output_of_the_right_size_is_adopted(self):
         """Replacing it is what kept invalidating Steam's remembered source."""
-        stream_mode.existing_output_names = lambda: {stream_mode.OUTPUT_NAME}
+        stream_mode.existing_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
         s = self.session()
         self.assertFalse(s.connect(123, "deck"))
         self.assertEqual(self.removed, [])
@@ -434,7 +434,7 @@ class TestOutputLifetime(unittest.TestCase):
     def setUp(self):
         self.enabled = []
         self.created = []
-        self.names = set()
+        self.names = {"DP-2"}
         self._real = {
             k: getattr(stream_mode, k)
             for k in (
@@ -510,7 +510,7 @@ class TestOutputLifetime(unittest.TestCase):
             raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
 
         stream_mode.create_virtual_output = collide
-        self.names = {stream_mode.OUTPUT_NAME}
+        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
@@ -532,14 +532,14 @@ class TestOutputLifetime(unittest.TestCase):
                 raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
             self.created.append((w, h))
             # The replacement is healthy, so niri lists it from now on.
-            self.names = {stream_mode.OUTPUT_NAME}
+            self.names = {"DP-2", stream_mode.OUTPUT_NAME}
             return stream_mode.OUTPUT_NAME
 
         stream_mode.create_virtual_output = create
         real_remove = stream_mode.remove_virtual_output
         stream_mode.remove_virtual_output = lambda n: removed.append(n)
         try:
-            self.names = set()  # niri does not list it
+            self.names = {"DP-2"}  # niri does not list it
             s = stream_mode.Session(stage_timeout=0)
             self.assertTrue(s.ensure_output())
         finally:
@@ -567,7 +567,7 @@ class TestOutputLifetime(unittest.TestCase):
 
         stream_mode.create_virtual_output = collide_then_create
         try:
-            self.names = set()  # nothing is ever listed
+            self.names = {"DP-2"}  # nothing is ever listed
             s = stream_mode.Session(stage_timeout=0)
             self.assertFalse(s.ensure_output())
             self.assertTrue(s.give_up)
@@ -584,14 +584,14 @@ class TestOutputLifetime(unittest.TestCase):
         """niri may have restarted since giving up."""
         s = stream_mode.Session(stage_timeout=0)
         s.give_up = True
-        self.names = set()
+        self.names = {"DP-2"}
         s.connect(123, "deck")
         self.assertFalse(s.give_up)
         self.assertEqual(len(self.created), 1)
 
     def test_watchdog_rebuilds_a_vanished_output(self):
         s = stream_mode.Session(stage_timeout=0)
-        self.names = set()
+        self.names = {"DP-2"}
         s.ensure_output()
         self.assertEqual(len(self.created), 1)
         s.last_check = 0.0
@@ -601,20 +601,78 @@ class TestOutputLifetime(unittest.TestCase):
     def test_watchdog_leaves_a_healthy_output_alone(self):
         s = stream_mode.Session(stage_timeout=0)
         s.ensure_output()
-        self.names = {stream_mode.OUTPUT_NAME}
+        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
         self.assertFalse(s.watchdog(interval=0))
         self.assertEqual(len(self.created), 1)
 
     def test_watchdog_is_rate_limited(self):
         s = stream_mode.Session(stage_timeout=0)
         s.ensure_output()
-        self.names = set()
+        self.names = {"DP-2"}
         s.last_check = 0.0
         s.watchdog(interval=0)
         before = len(self.created)
         for _ in range(10):
             s.watchdog(interval=3600)
         self.assertEqual(len(self.created), before)
+
+
+class TestNiriSocket(unittest.TestCase):
+    """The socket has to be found, not inherited.
+
+    NIRI_SOCKET is captured when the service starts, so after a logout it names
+    a compositor that no longer exists. Every call then fails against a dead
+    socket while a live niri sits alongside it — which had the service and a
+    shell talking to different compositors and disagreeing about which outputs
+    existed.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._env = dict(os.environ)
+        os.environ["XDG_RUNTIME_DIR"] = self.tmp.name
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env)
+        self.tmp.cleanup()
+
+    def touch(self, name):
+        open(os.path.join(self.tmp.name, name), "w").close()
+
+    def test_finds_a_socket_belonging_to_a_live_process(self):
+        self.touch("niri.wayland-1.{}.sock".format(os.getpid()))
+        found = stream_mode.live_niri_socket()
+        self.assertIsNotNone(found)
+        self.assertIn(str(os.getpid()), found)
+
+    def test_ignores_a_socket_whose_process_is_gone(self):
+        # PID 1 exists; use an implausible one that cannot.
+        self.touch("niri.wayland-2.4294967.sock")
+        self.assertIsNone(stream_mode.live_niri_socket())
+
+    def test_prefers_the_live_one_over_a_dead_one(self):
+        self.touch("niri.wayland-2.4294967.sock")
+        self.touch("niri.wayland-1.{}.sock".format(os.getpid()))
+        found = stream_mode.live_niri_socket()
+        self.assertIn(str(os.getpid()), found)
+
+    def test_ignores_unrelated_files(self):
+        self.touch("not-niri.sock")
+        self.touch("niri.sock")
+        self.assertIsNone(stream_mode.live_niri_socket())
+
+    def test_env_keeps_a_socket_that_still_exists(self):
+        path = os.path.join(self.tmp.name, "niri.wayland-1.{}.sock".format(os.getpid()))
+        open(path, "w").close()
+        os.environ["NIRI_SOCKET"] = path
+        self.assertEqual(stream_mode.niri_env()["NIRI_SOCKET"], path)
+
+    def test_env_replaces_a_socket_that_has_gone(self):
+        os.environ["NIRI_SOCKET"] = os.path.join(self.tmp.name, "gone.sock")
+        live = os.path.join(self.tmp.name, "niri.wayland-1.{}.sock".format(os.getpid()))
+        open(live, "w").close()
+        self.assertEqual(stream_mode.niri_env()["NIRI_SOCKET"], live)
 
 
 class TestStreamTarget(unittest.TestCase):
