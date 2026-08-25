@@ -93,6 +93,12 @@ in {
           # feature, so the unpatched package would lack the subcommand.
           custom.steamStreamMode.niriPackage = config.programs.niri.package;
 
+          # Keeps the named workspaces on the ultrawide. The KVM switching
+          # away disconnects DP-2, and without a home output niri moves every
+          # workspace to whatever is left — the streaming virtual output —
+          # and does not move them back when it returns.
+          custom.niri.workspaceOutput = "DP-2";
+
           custom.niri.extraOutputs = ''
             output "DP-2" {
                 variable-refresh-rate

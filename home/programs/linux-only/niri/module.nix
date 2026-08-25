@@ -1,6 +1,32 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.custom.niri;
+
+  # A workspace without a home output is moved elsewhere when its output goes
+  # away — a KVM switching away, a monitor sleeping — and is not moved back.
+  # Emitted as part of each workspace node, since KDL has no way to attach it
+  # afterwards.
+  workspaceHome =
+    lib.optionalString (cfg.workspaceOutput != null)
+      ''
+        open-on-output "${cfg.workspaceOutput}"'';
+
+  mkWorkspace = name: body:
+    let
+      indent = block:
+        lib.concatStringsSep "\n" (
+          map (l: if l == "" then l else "    " + l) (lib.splitString "\n" block)
+        );
+      blocks = lib.filter (b: b != "") [ body workspaceHome ];
+    in
+    if blocks == [ ] then
+      ''workspace "${name}"''
+    else
+      ''
+        workspace "${name}" {
+        ${lib.concatStringsSep "\n" (map indent blocks)}
+        }'';
+
 in {
   options.custom.niri = {
     enable = lib.mkEnableOption "niri window manager configuration";
@@ -33,6 +59,24 @@ in {
       type = lib.types.lines;
       default = "";
       description = "Additional KDL output blocks prepended before the main config.";
+    };
+
+    workspaceOutput = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "DP-2";
+      description = ''
+        Output the named workspaces belong to, as a connector name.
+
+        Without this, losing an output — a KVM switching away, a monitor
+        sleeping — makes niri move every workspace to whatever output is left,
+        and they do not come back when it returns. Naming their home output
+        makes niri restore them on reconnect.
+
+        Left unset by default because connector names are machine-specific: a
+        laptop's eDP-1 is not a desktop's DP-2, and pinning to an output that
+        does not exist would strand the workspaces instead of protecting them.
+      '';
     };
 
     touchpadTap = lib.mkOption {
@@ -185,16 +229,15 @@ in {
           lid-open { spawn "niri" "msg" "output" "eDP-2" "on"; }
       }
 
-      workspace "chat"
-      workspace "terminal"
-      workspace "browser"
-      workspace "game" {
-          layout {
-              gaps 0
-          }
-      }
-      workspace "gaming"
-      workspace "obsidian"
+      ${mkWorkspace "chat" ""}
+      ${mkWorkspace "terminal" ""}
+      ${mkWorkspace "browser" ""}
+      ${mkWorkspace "game" ''
+        layout {
+            gaps 0
+        }''}
+      ${mkWorkspace "gaming" ""}
+      ${mkWorkspace "obsidian" ""}
 
       // Window rules
       window-rule {
