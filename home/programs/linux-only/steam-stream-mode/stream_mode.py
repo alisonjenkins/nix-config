@@ -64,6 +64,11 @@ DEFAULT_REFRESH = int(os.environ.get("STREAM_MODE_DEFAULT_REFRESH", "60"))
 # Long enough that a reconnect is not mistaken for the session ending. Removing
 # the output mid-reconnect would drop the client's remembered capture source.
 REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
+# How long to keep looking for a game's window after Steam reports its pid.
+# Generous because the gap is not a race but a real wait: Proton prefix setup,
+# shader compilation and launchers routinely take minutes before anything is
+# mapped. A five-second budget gave up long before the window existed.
+STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # Fixed rather than niri's generated HEADLESS-N. Steam remembers its capture
 # source by name, and a generated name is sequential: an output removed and
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
@@ -282,14 +287,14 @@ def client_size(client_id, clients):
 class Session:
     """Owns the virtual output and what sits on it, for one client at a time."""
 
-    def __init__(self, settle_attempts=10, settle_delay=0.5):
+    def __init__(self, stage_timeout=None):
         self.output = None
         self.client_id = None
         self.game_pid = None
+        self.pending = None
         self.learned = False
         self.clients = load_clients()
-        self.settle_attempts = settle_attempts
-        self.settle_delay = settle_delay
+        self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
 
     # -- lifecycle
 
@@ -379,52 +384,64 @@ class Session:
 
     # -- placing the game
 
-    def stage(self, pid, game_id):
+    def request(self, pid, game_id):
+        """Note that a game is starting; its window is resolved later.
+
+        Steam logs the pid as soon as it spawns the game, long before a window
+        exists. Waiting here would block the watcher — it follows two logs and
+        has an idle timer to service — so the work is left pending and retried
+        from the main loop.
+        """
         if self.output is None:
+            log(
+                "stream-mode: no virtual output yet, not staging game {}".format(game_id)
+            )
+            return False
+        self.pending = (pid, game_id, time.monotonic() + self.stage_timeout)
+        return True
+
+    def poll(self):
+        """Try to place a pending game. Called from the watcher loop."""
+        if self.pending is None:
             return False
 
-        # The niri window frequently does not exist yet when Steam logs the
-        # pid, so this retries rather than resolving once and giving up.
-        for _ in range(self.settle_attempts):
-            try:
-                window = window_for_game(pid, game_id, niri_windows())
-            except (subprocess.CalledProcessError, ValueError, OSError) as exc:
-                log("stream-mode: could not query niri windows: {}".format(exc))
-                return False
-
-            if window is not None:
-                self.game_pid = pid
-                try:
-                    move_window_to_output(window["id"], self.output)
-                except (subprocess.CalledProcessError, OSError) as exc:
-                    log("stream-mode: could not move window: {}".format(exc))
-                    return False
-                focus_window(window["id"])
-                self._ensure_fullscreen(window["id"])
-                log(
-                    "stream-mode: staged {} (window {}, pid {}, game {}) on {}".format(
-                        window.get("app_id") or "game",
-                        window["id"],
-                        pid,
-                        game_id,
-                        self.output,
-                    )
-                )
-                return True
-            time.sleep(self.settle_delay)
+        pid, game_id, deadline = self.pending
 
         try:
-            seen = [
-                "{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in niri_windows()
-            ]
-        except (subprocess.CalledProcessError, ValueError, OSError):
-            seen = []
+            windows = niri_windows()
+            window = window_for_game(pid, game_id, windows)
+        except (subprocess.CalledProcessError, ValueError, OSError) as exc:
+            log("stream-mode: could not query niri windows: {}".format(exc))
+            return False
+
+        if window is None:
+            if time.monotonic() < deadline:
+                return False
+            self.pending = None
+            seen = ["{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in windows]
+            log(
+                "stream-mode: gave up on pid {} / steam_app_{} after {:.0f}s; "
+                "windows were: {}".format(
+                    pid, game_id, self.stage_timeout, ", ".join(seen) or "none"
+                )
+            )
+            return False
+
+        self.pending = None
+        self.game_pid = pid
+        try:
+            move_window_to_output(window["id"], self.output)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            log("stream-mode: could not move window: {}".format(exc))
+            return False
+        focus_window(window["id"])
+        self._ensure_fullscreen(window["id"])
         log(
-            "stream-mode: no window for pid {} / steam_app_{}; windows were: {}".format(
-                pid, game_id, ", ".join(seen) or "none"
+            "stream-mode: staged {} (window {}, pid {}, game {}) on {}".format(
+                window.get("app_id") or "game", window["id"], pid, game_id, self.output
             )
         )
-        return False
+        return True
 
     def _ensure_fullscreen(self, window_id):
         try:
@@ -551,7 +568,7 @@ def watch():
                 match = ADD_WINDOW_RE.search(line)
                 if match:
                     remove_at = None
-                    session.stage(int(match.group(1)), int(match.group(2)))
+                    session.request(int(match.group(1)), int(match.group(2)))
                     continue
 
                 match = RES_RE.search(line)
@@ -568,6 +585,8 @@ def watch():
                     remove_at = None
                 elif STOP_RE.search(line):
                     remove_at = now + REMOVE_AFTER
+
+            session.poll()
 
             if remove_at is not None and time.monotonic() >= remove_at:
                 remove_at = None

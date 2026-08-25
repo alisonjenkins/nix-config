@@ -70,6 +70,17 @@ in
       description = "Refresh rate advertised by the virtual output.";
     };
 
+    stageTimeout = lib.mkOption {
+      type = lib.types.int;
+      default = 300;
+      description = ''
+        Seconds to keep looking for a game's window after Steam reports its
+        pid. Generous because the gap is a real wait rather than a race:
+        Proton prefix setup, shader compilation and launchers routinely take
+        minutes before anything is mapped.
+      '';
+    };
+
     removeAfter = lib.mkOption {
       type = lib.types.int;
       default = 120;
@@ -121,6 +132,7 @@ in
           "STREAM_MODE_DEFAULT_HEIGHT=${toString cfg.defaultHeight}"
           "STREAM_MODE_DEFAULT_REFRESH=${toString cfg.refresh}"
           "STREAM_MODE_REMOVE_AFTER=${toString cfg.removeAfter}"
+          "STREAM_MODE_STAGE_TIMEOUT=${toString cfg.stageTimeout}"
         ];
         ExecStart = "${lib.getExe stream-mode} watch";
         Restart = "on-failure";
