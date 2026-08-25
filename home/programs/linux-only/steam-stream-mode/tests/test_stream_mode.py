@@ -459,10 +459,31 @@ class TestOutputLifetime(unittest.TestCase):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
 
+    def test_adopts_a_disabled_output_that_already_exists(self):
+        """Disabled outputs are absent from `niri msg outputs`.
+
+        Creating one then collides forever, which is exactly what happened:
+        the service retried every ten seconds and streaming never worked.
+        """
+        def collide(w, h, r, name=None):
+            raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
+
+        stream_mode.create_virtual_output = collide
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.ensure_output())
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+
     def test_created_disabled_when_not_streaming(self):
         s = stream_mode.Session(stage_timeout=0)
         s.ensure_output()
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
+    def test_enabled_when_a_client_connects(self):
+        """Steam picks its capture source before any stream is logged, and a
+        disabled output is not offered to the portal at all."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
 
     def test_enabled_when_a_stream_starts(self):
         s = stream_mode.Session(stage_timeout=0)
