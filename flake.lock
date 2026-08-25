@@ -1802,11 +1802,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787645466,
-        "narHash": "sha256-5c8CG9ljPitHLcPAdmr3Mk+lSQ6QCdP7OdRDUQ8/7w4=",
+        "lastModified": 1787649907,
+        "narHash": "sha256-FkFvw+jVVG8Rh/LdAdwFcywAg6a1pgi2G5TYQ9CYyuE=",
         "ref": "refs/heads/main",
-        "rev": "18f1095f9e0f2030192e2240ef90a0df3a6e4c99",
-        "revCount": 40,
+        "rev": "0a72a408754a3a7af4d5c7e21e9d1716de00b00a",
+        "revCount": 41,
         "type": "git",
         "url": "file:///home/ali/git/steam-command-runner"
       },
