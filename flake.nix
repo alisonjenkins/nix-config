@@ -211,7 +211,11 @@
       # arguments while keeping the Steam overlay and stop button working.
       # Follows nixpkgs_unstable because upstream's own flake tracks
       # nixpkgs-unstable for its naersk build.
-      url = "github:alisonjenkins/steam-command-runner";
+      # TEMPORARY: local checkout while the streaming resolution rewrite is
+      # tested. Restore the github: url and drop this comment once that change
+      # is pushed — a local path makes the flake unevaluable on any other
+      # machine and unreproducible on this one.
+      url = "git+file:///home/ali/git/steam-command-runner";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
