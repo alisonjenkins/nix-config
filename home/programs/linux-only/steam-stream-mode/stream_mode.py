@@ -201,6 +201,12 @@ def create_virtual_output(width, height, refresh, name=None):
 
     The name is passed rather than read back so it stays stable across
     sessions; niri still reports it, which is what is returned.
+
+    A virtual output is usable the moment niri lists it and must never be fed
+    to `niri msg output <name> on/off`. Both directions destroy it: it drops
+    out of `niri msg outputs` for good, stops being offered to the portal, and
+    keeps its name, so it cannot even be recreated. Removing and creating
+    again is the only lifecycle there is.
     """
     name = name or OUTPUT_NAME
     result = subprocess.run(
@@ -322,19 +328,6 @@ def taken_output_names():
     except (subprocess.CalledProcessError, ValueError, OSError):
         pass
     return names
-
-
-def enable_output(name):
-    """Ensure the virtual output is on.
-
-    Only ever used to turn one on. niri's `off` is a one-way door for a
-    virtual output: it is then reported as not connected, disappears from
-    `niri msg outputs`, stops being offered to the portal, and `on` cannot
-    bring it back — while the name stays taken, so it cannot be recreated
-    either. Taking an idle output out of the layout therefore means removing
-    it, which is what `end_stream` does.
-    """
-    subprocess.run([NIRI, "msg", "output", name, "on"], check=False, env=niri_env())
 
 
 def remove_virtual_output(name):
@@ -526,9 +519,6 @@ class Session:
         # back — not by withholding the output.
         if OUTPUT_NAME in usable_output_names():
             self.output = OUTPUT_NAME
-            # Enabled unconditionally: an output left over from a previous run
-            # may be on or off, and the portal only offers it when it is on.
-            enable_output(OUTPUT_NAME)
             log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
             return False
 
@@ -543,7 +533,6 @@ class Session:
             # cannot re-enable, leaving it absent from `niri msg outputs`,
             # unusable, and blocking the name. Enabling and re-checking is what
             # tells the two apart.
-            enable_output(OUTPUT_NAME)
             if OUTPUT_NAME in usable_output_names():
                 self.output = OUTPUT_NAME
                 log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
@@ -562,7 +551,6 @@ class Session:
                 return False
             if name is None:
                 return False
-            enable_output(name)
             if not wait_until_listed(name, timeout=self.listed_timeout):
                 # Replacing it did not help: niri is creating virtual outputs
                 # that never appear, which has been seen after a connector
@@ -587,7 +575,6 @@ class Session:
             log("stream-mode: niri did not report a virtual output name")
             return False
 
-        enable_output(name)
         if not wait_until_listed(name, timeout=self.listed_timeout):
             remove_virtual_output(name)
             self.give_up = True
@@ -622,8 +609,6 @@ class Session:
                 self.output = None
 
         created = self.ensure_output(width, height)
-        if self.output is not None:
-            enable_output(self.output)
         log(
             "stream-mode: {} connected; output {} at {}x{}".format(
                 client_name or client_id, self.output or "<none>", width, height
@@ -642,13 +627,12 @@ class Session:
         return True
 
     def begin_stream(self):
-        """A stream has started: enable the output and say where to render."""
+        """A stream has started: say where to render."""
         self.streaming = True
         if self.output is None:
             self.ensure_output()
         if self.output is None:
             return False
-        enable_output(self.output)
         size = output_logical_size(self.output) or client_size(
             self.client_id, self.clients
         )
