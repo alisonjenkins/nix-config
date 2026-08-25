@@ -505,16 +505,47 @@ class TestOutputLifetime(unittest.TestCase):
             stream_mode.remove_virtual_output = real
         self.assertEqual(self.created, [])
 
-    def test_adopts_a_name_that_is_already_taken(self):
-        """A disabled or otherwise unlisted output still holds its name."""
+    def test_adopts_a_healthy_output_that_already_exists(self):
         def collide(w, h, r, name=None):
             raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
 
         stream_mode.create_virtual_output = collide
+        self.names = {stream_mode.OUTPUT_NAME}
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
         self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
+
+    def test_replaces_an_output_that_holds_its_name_but_is_unusable(self):
+        """An output an earlier revision disabled cannot be re-enabled.
+
+        It stays absent from `niri msg outputs` while blocking the name, so
+        adopting it looped forever: create collides, enable fails, the watchdog
+        sees nothing and tries again.
+        """
+        removed = []
+        calls = {"n": 0}
+
+        def create(w, h, r, name=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
+            self.created.append((w, h))
+            return stream_mode.OUTPUT_NAME
+
+        stream_mode.create_virtual_output = create
+        real_remove = stream_mode.remove_virtual_output
+        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+        try:
+            self.names = set()  # niri does not list it
+            s = stream_mode.Session(stage_timeout=0)
+            self.assertTrue(s.ensure_output())
+        finally:
+            stream_mode.remove_virtual_output = real_remove
+
+        self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
+        self.assertEqual(len(self.created), 1)
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
     def test_watchdog_rebuilds_a_vanished_output(self):
         s = stream_mode.Session(stage_timeout=0)

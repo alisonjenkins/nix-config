@@ -387,6 +387,9 @@ class Session:
 
         if OUTPUT_NAME in existing_output_names():
             self.output = OUTPUT_NAME
+            # Enabled unconditionally: an output left over from a previous run
+            # may be on or off, and the portal only offers it when it is on.
+            enable_output(OUTPUT_NAME)
             log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
             return False
 
@@ -396,12 +399,34 @@ class Session:
         try:
             name = create_virtual_output(width, height, DEFAULT_REFRESH)
         except OutputExists:
-            # Disabled outputs do not appear in `niri msg outputs`, so this is
-            # how a still-present one announces itself.
-            self.output = OUTPUT_NAME
+            # The name is taken. That is either a healthy output this process
+            # did not create, or one an earlier revision disabled — which niri
+            # cannot re-enable, leaving it absent from `niri msg outputs`,
+            # unusable, and blocking the name. Enabling and re-checking is what
+            # tells the two apart.
             enable_output(OUTPUT_NAME)
-            log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
-            return False
+            if OUTPUT_NAME in existing_output_names():
+                self.output = OUTPUT_NAME
+                log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
+                return False
+
+            log(
+                "stream-mode: {} exists but is unusable, replacing it".format(
+                    OUTPUT_NAME
+                )
+            )
+            remove_virtual_output(OUTPUT_NAME)
+            try:
+                name = create_virtual_output(width, height, DEFAULT_REFRESH)
+            except (OutputExists, subprocess.CalledProcessError, OSError) as exc:
+                log("stream-mode: could not replace the virtual output: {}".format(exc))
+                return False
+            if name is None:
+                return False
+            self.output = name
+            enable_output(name)
+            log("stream-mode: recreated {} at {}x{}".format(name, width, height))
+            return True
         except (subprocess.CalledProcessError, OSError) as exc:
             log("stream-mode: could not create a virtual output: {}".format(exc))
             return False
