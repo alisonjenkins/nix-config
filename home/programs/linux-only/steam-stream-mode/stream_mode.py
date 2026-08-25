@@ -125,6 +125,15 @@ def output_logical_size(name):
     return (width, height)
 
 
+class OutputExists(Exception):
+    """niri already has an output under this name.
+
+    A disabled output is absent from `niri msg outputs`, so this is the only
+    way to learn it is still there — and it is the normal case after a stream
+    ends, since the output is disabled rather than removed.
+    """
+
+
 def create_virtual_output(width, height, refresh, name=None):
     """Create a virtual output under a fixed name, returning that name.
 
@@ -140,10 +149,16 @@ def create_virtual_output(width, height, refresh, name=None):
             "--refresh-rate", str(refresh),
             "--name", name,
         ],
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        if "already exists" in (result.stderr or ""):
+            raise OutputExists(name)
+        raise subprocess.CalledProcessError(
+            result.returncode, "niri msg create-virtual-output", result.stdout, result.stderr
+        )
     match = CREATED_RE.search(result.stdout or "")
     return match.group(1) if match else None
 
@@ -380,6 +395,13 @@ class Session:
 
         try:
             name = create_virtual_output(width, height, DEFAULT_REFRESH)
+        except OutputExists:
+            # Disabled outputs do not appear in `niri msg outputs`, so this is
+            # how a still-present one announces itself.
+            self.output = OUTPUT_NAME
+            set_output_enabled(OUTPUT_NAME, self.streaming)
+            log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
+            return False
         except (subprocess.CalledProcessError, OSError) as exc:
             log("stream-mode: could not create a virtual output: {}".format(exc))
             return False
@@ -419,6 +441,12 @@ class Session:
                 self.output = None
 
         created = self.ensure_output(width, height)
+        if self.output is not None:
+            # Steam resolves its capture source when the session starts, which
+            # is after this and before any stream is logged. A disabled output
+            # is not offered to the portal at all, so enabling it later would
+            # be too late for the picker.
+            set_output_enabled(self.output, True)
         log("stream-mode: {} connected".format(client_name or client_id))
         return created
 
