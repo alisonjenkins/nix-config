@@ -12,13 +12,18 @@
   modules.vr.enableOpenSourceVR = true;
 
   # Remote Play captures a whole output and Steam only ever asks the portal
-  # for monitors, so the client sees whatever is on screen. The streamed game
-  # is fullscreened on DP-2 instead, which is the only lever left: the stream
-  # still carries the whole output, but the output shows just the game.
+  # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
+  # of content inside its 800-line frame, showing whatever was on screen. A
+  # niri virtual output at the client's own resolution is created on connect
+  # and the game is moved onto it, leaving DP-2 untouched.
   custom.steamStreamMode = {
     enable = true;
-    output = "DP-2";
-    niriPackage = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+    # niriPackage is set from the host config, where the patched package the
+    # session actually runs is in scope — `niri msg` has to match the running
+    # compositor, and virtual output support is a patch rather than upstream.
+    # The Steam Deck's panel; overridden per client once learned.
+    defaultWidth = 1280;
+    defaultHeight = 800;
   };
 
   home.packages = [
