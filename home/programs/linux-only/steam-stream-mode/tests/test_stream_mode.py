@@ -202,7 +202,6 @@ class TestSession(unittest.TestCase):
                 "output_logical_size",
                 "parent_pids",
                 "usable_output_names",
-                "enable_output",
                 "load_clients",
                 "save_clients",
             )
@@ -231,8 +230,6 @@ class TestSession(unittest.TestCase):
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.parent_pids = lambda pid, limit=8: []
         stream_mode.usable_output_names = lambda: self.names
-        self.enabled = []
-        stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.save_clients = lambda c, path=None: self.saved.append(c)
 
@@ -443,14 +440,12 @@ class TestOutputLifetime(unittest.TestCase):
     """
 
     def setUp(self):
-        self.enabled = []
         self.created = []
         self.names = {"DP-2"}
         self._real = {
             k: getattr(stream_mode, k)
             for k in (
                 "create_virtual_output",
-                "enable_output",
                 "usable_output_names",
                 "output_logical_size",
                 "load_clients",
@@ -464,7 +459,6 @@ class TestOutputLifetime(unittest.TestCase):
             return stream_mode.OUTPUT_NAME
 
         stream_mode.create_virtual_output = create
-        stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.usable_output_names = lambda: self.names
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.load_clients = lambda path=None: {}
@@ -475,16 +469,32 @@ class TestOutputLifetime(unittest.TestCase):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
 
-    def test_enabled_on_creation(self):
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.ensure_output()
-        self.assertEqual(self.enabled, [stream_mode.OUTPUT_NAME])
+    def test_creating_an_output_never_configures_it(self):
+        """`niri msg output <name> on` destroys a virtual output.
 
-    def test_enabled_on_connect(self):
-        """Steam picks its capture source before any stream is logged."""
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.connect(123, "deck")
-        self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
+        Measured on the fork: the output drops out of `niri msg outputs` for
+        good, stops being offered to the portal and keeps its name, so it
+        cannot be recreated either. Creation already leaves it enabled, so the
+        only safe lifecycle is create and remove.
+        """
+        calls = []
+        real_run = stream_mode.subprocess.run
+        # setUp stubs creation out for the Session tests; this one is about
+        # the commands it actually issues, so it needs the real thing.
+        create = self._real["create_virtual_output"]
+
+        def record(argv, **kwargs):
+            calls.append(argv)
+            return real_run(["true"], **kwargs)
+
+        stream_mode.subprocess.run = record
+        try:
+            create(1280, 800, 60)
+        finally:
+            stream_mode.subprocess.run = real_run
+        self.assertTrue(calls)
+        for argv in calls:
+            self.assertNotIn("output", argv, "configured a virtual output")
 
     def test_ending_a_stream_removes_the_output(self):
         """Removed, not disabled: niri cannot re-enable a disabled virtual
@@ -532,7 +542,6 @@ class TestOutputLifetime(unittest.TestCase):
         s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-        self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
 
     def test_replaces_an_output_that_holds_its_name_but_is_unusable(self):
         """An output an earlier revision disabled cannot be re-enabled.
