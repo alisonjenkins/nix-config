@@ -200,18 +200,48 @@ def parent_pids(pid, limit=8):
     return chain
 
 
-def window_for_pid(pid, windows=None):
+def window_for_game(pid, game_id, windows=None):
+    """Find the niri window for a streamed game.
+
+    Steam reports a pid, but which process owns the window varies by how the
+    game runs, and a pid match alone is not enough:
+
+    - X11 titles reach niri through xwayland-satellite, whose process owns the
+      window. That pid is neither the game's nor an ancestor of it, so a pid
+      walk finds nothing. These carry `steam_app_<id>` as their app id, which
+      is the game id Steam already logged.
+    - gamescope owns its own window and is usually an *ancestor* of the game.
+    - a game that launches gamescope itself owns a *descendant* window.
+
+    So app id is tried first as the most direct evidence, then pid in both
+    directions.
+    """
     if windows is None:
         windows = niri_windows()
+
+    wanted_app_id = "steam_app_{}".format(game_id)
+    for window in windows:
+        if (window.get("app_id") or "") == wanted_app_id:
+            return window
+
     by_pid = {}
     for window in windows:
         if window.get("pid") is not None:
             by_pid.setdefault(window["pid"], window)
+
     if pid in by_pid:
         return by_pid[pid]
+
     for ancestor in parent_pids(pid):
         if ancestor in by_pid:
             return by_pid[ancestor]
+
+    # The window may belong to a descendant instead — a game that spawns
+    # gamescope rather than running under one.
+    for window_pid, window in by_pid.items():
+        if pid in parent_pids(window_pid):
+            return window
+
     return None
 
 
@@ -338,7 +368,7 @@ class Session:
         # pid, so this retries rather than resolving once and giving up.
         for _ in range(self.settle_attempts):
             try:
-                window = window_for_pid(pid, niri_windows())
+                window = window_for_game(pid, game_id, niri_windows())
             except (subprocess.CalledProcessError, ValueError, OSError) as exc:
                 log("stream-mode: could not query niri windows: {}".format(exc))
                 return False
@@ -364,7 +394,17 @@ class Session:
                 return True
             time.sleep(self.settle_delay)
 
-        log("stream-mode: no niri window found for pid {} (game {})".format(pid, game_id))
+        try:
+            seen = [
+                "{}({})".format(w.get("app_id") or "?", w.get("pid")) for w in niri_windows()
+            ]
+        except (subprocess.CalledProcessError, ValueError, OSError):
+            seen = []
+        log(
+            "stream-mode: no window for pid {} / steam_app_{}; windows were: {}".format(
+                pid, game_id, ", ".join(seen) or "none"
+            )
+        )
         return False
 
     def _ensure_fullscreen(self, window_id):
