@@ -64,6 +64,11 @@ DEFAULT_REFRESH = int(os.environ.get("STREAM_MODE_DEFAULT_REFRESH", "60"))
 # Long enough that a reconnect is not mistaken for the session ending. Removing
 # the output mid-reconnect would drop the client's remembered capture source.
 REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
+# Fixed rather than niri's generated HEADLESS-N. Steam remembers its capture
+# source by name, and a generated name is sequential: an output removed and
+# recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
+# selection silently stops resolving and the client goes black.
+OUTPUT_NAME = os.environ.get("STREAM_MODE_OUTPUT_NAME", "steam")
 
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
@@ -103,18 +108,20 @@ def output_logical_size(name):
     return (width, height)
 
 
-def create_virtual_output(width, height, refresh):
-    """Create a virtual output and return the name niri assigned it.
+def create_virtual_output(width, height, refresh, name=None):
+    """Create a virtual output under a fixed name, returning that name.
 
-    niri names these itself (HEADLESS-1, HEADLESS-2, ...), so the name has to
-    be read back rather than chosen.
+    The name is passed rather than read back so it stays stable across
+    sessions; niri still reports it, which is what is returned.
     """
+    name = name or OUTPUT_NAME
     result = subprocess.run(
         [
             NIRI, "msg", "create-virtual-output",
             "--width", str(width),
             "--height", str(height),
             "--refresh-rate", str(refresh),
+            "--name", name,
         ],
         check=True,
         capture_output=True,
@@ -122,6 +129,13 @@ def create_virtual_output(width, height, refresh):
     )
     match = CREATED_RE.search(result.stdout or "")
     return match.group(1) if match else None
+
+
+def existing_output_names():
+    try:
+        return set(niri_outputs().keys())
+    except (subprocess.CalledProcessError, ValueError, OSError):
+        return set()
 
 
 def remove_virtual_output(name):
@@ -257,6 +271,12 @@ class Session:
             return False
 
         width, height = client_size(client_id, self.clients)
+        # A crash or a kill leaves the output behind, and creating it again
+        # fails on the name collision. Adopt-and-replace rather than refusing:
+        # the size may have changed since it was made.
+        if OUTPUT_NAME in existing_output_names():
+            log("stream-mode: removing a leftover {}".format(OUTPUT_NAME))
+            remove_virtual_output(OUTPUT_NAME)
         try:
             name = create_virtual_output(width, height, DEFAULT_REFRESH)
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -505,6 +525,8 @@ def main(argv):
     if len(argv) >= 2 and argv[1] == "create":
         width = int(argv[2]) if len(argv) > 2 else DEFAULT_WIDTH
         height = int(argv[3]) if len(argv) > 3 else DEFAULT_HEIGHT
+        if OUTPUT_NAME in existing_output_names():
+            remove_virtual_output(OUTPUT_NAME)
         name = create_virtual_output(width, height, DEFAULT_REFRESH)
         print(name or "")
         return 0 if name else 1
