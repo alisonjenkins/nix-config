@@ -44,3 +44,74 @@ mitigations merged to `home-cluster` 2026-07-01.
 4. **RetroFE hardware validation** (audit #17) — items flagged UNVERIFIED-ON-HARDWARE in `frontend-retrofe.nix` + `design/05-frontend.md` (gamescope nesting/focus, standalone bin names/flags, bundled-layout name, per-game override case-sensitivity). Reconcile the two lists when validated.
 
 `flake check` runs `emudeck-config-paths` (bitrot guard on pinned EmuDeck configs). PS1/PS3 disc ripping → `.#ripping` dev shell.
+
+## Steam Remote Play streaming at the client's resolution
+
+Working as of 2026-08-26: streaming `ali-desktop` → Steam Deck at a true 1280x800,
+with the ultrawide DP-2 still connected and usable. Verified in
+`/media/steam-games-1/Steam/logs/streaming_log.txt`:
+
+```
+SynchronizeClientState(): setting capture size 1280x800
+CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
+>>> Capture resolution set to 1280x800
+```
+
+### How it actually works (took seven attempts to find)
+
+- Steam sizes the encoder from **X geometry**, never from the PipeWire stream the
+  portal hands it. The capture side was always correct at 1280x800.
+- `steamui.so` (`/data/src/steamUI/gamestream/gamestreamsystemlinux.cpp`, emits
+  `Desktop state changed`) **`dlopen`s `libXrandr.so.2` / `libX11.so.6` and resolves
+  by `dlsym`**. A handle-scoped `dlsym` searches only that object, so plain
+  `LD_PRELOAD` interposition never entered its lookup path. This is why six
+  correct-looking interceptions changed nothing — the hooks fired, but from SDL
+  and other PLT-bound callers, never from the gamestream code.
+  `pkgs/steam-display-filter` now interposes `dlsym` itself.
+- Steam's capture size is the **bounding box of every monitor except the primary**,
+  so the streamed output must be *non*-primary. "Set the streaming display as
+  primary" — the usual advice — is backwards and provably does not work here.
+- Steam **discards outputs whose physical size is 0mm x 0mm**, which is what niri
+  reports for virtual outputs. The shim fakes 338mm x 211mm to get the output
+  considered at all.
+
+### Backlog, highest value first
+
+1. **Hook the remaining geometry readers so mid-session arming works.** Today's
+   success required Steam to be *started* with the `steam` output already in X and
+   the filter already armed. In normal use Steam is running before you connect from
+   the Deck, arming happens after, and the desktop reading stays at 5120x1440 —
+   measured: hooks hid DP-2 at `00:14:38.640` and Steam still reported 5120,1440
+   0.8s later. The startup path goes through the hooked `XRRGetScreenResources`; the
+   update path does not. Two unhooked readers that `steamui.so` demonstrably
+   resolves: **`XRRGetScreenResourcesCurrent`** (cached twin of the hooked call) and
+   the legacy RandR 1.1 **`XRRGetScreenInfo` / `XRRConfigCurrentConfiguration` /
+   `XRRConfigSizes`**. Which one carries the number is unproven — measure, do not
+   guess. This is the difference between a demo and something usable.
+2. **Give niri virtual outputs a real physical size.** Fix in the fork
+   (`/home/ali/git/niri`, branch `rebase-feat-virtual`) rather than faking it in the
+   shim: derive mm from the mode at ~96dpi. Removes the shim's main reason to exist
+   and is upstreamable.
+3. **Physical disconnection always worked** because it changes the source of truth —
+   no unfiltered API is left to disagree. Useful as the reference behaviour when
+   judging whether a fix is real: if the filtered path does not match the
+   DP-2-detached path, the filter still has a gap.
+
+### Traps worth not re-learning
+
+- `flog` once did `fopen`/`fclose` per line; at the SDL hooks' rate (~180 lines/s)
+  that stalled Steam's main loop and failed the stream launch with
+  `CSteamEngine::BMainLoop appears to have stalled > 15 seconds`. The log file is
+  held open and repeats collapse. Diagnostics must not cost more than the fault.
+- Interposing `dlsym` makes every hook's own `dlsym(RTLD_NEXT, ...)` resolve to
+  *itself* — unbounded recursion, segfault whose faulting address equals the stack
+  pointer. Internal lookups go through `next_sym()`, and `RTLD_NEXT`/`RTLD_DEFAULT`
+  are never redirected.
+- `RTLD_NEXT` only searches the global scope, and Steam `dlopen`s libX11 without
+  `RTLD_GLOBAL`, so the real function must be found by name via
+  `dlopen(..., RTLD_NOLOAD)` as a fallback. Without it the hooks silently report a
+  zero width.
+- `pkgs/steam-display-filter/dlopen_probe.c` equivalent (kept in the session
+  scratchpad, worth committing) reproduces Steam's `dlopen`+`dlsym` pattern in ~30
+  lines, so shim changes can be checked in seconds instead of by launching Steam and
+  reconnecting a Deck.
