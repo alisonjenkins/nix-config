@@ -94,13 +94,18 @@ in
 
     targetFile = lib.mkOption {
       type = lib.types.str;
-      default = "%t/stream-mode/target.json";
+      default = "%h/.local/state/stream-mode/target.json";
       description = ''
         Where the active streaming target is published while a client is
         streaming. Read by the steam-command-runner gamescope shim, which has
         to know the client's resolution at launch — gamescope fixes its render
         size from -W/-H when it starts. %t is the runtime directory, so a
-        stale target cannot outlive the session.
+        stale target cannot outlive the session — except that it must live
+        under $HOME rather than the runtime directory, because Steam's
+        steamwebhelper runs in a pressure-vessel container that mounts a
+        filtered /run/user/<uid> and cannot see anything written there. The
+        watcher withdraws the file when streaming ends, which is what keeps a
+        stale one from outliving a session now.
       '';
     };
 
