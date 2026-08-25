@@ -188,6 +188,19 @@ def existing_output_names():
         return set()
 
 
+def set_output_enabled(name, enabled):
+    """Turn the virtual output on or off without destroying it.
+
+    Off keeps the name — so Steam's remembered capture source still resolves —
+    while taking it out of the layout, which is what stops niri treating it as
+    somewhere to move workspaces when the physical output disconnects. A KVM
+    switching away would otherwise strand every workspace on it.
+    """
+    subprocess.run(
+        [NIRI, "msg", "output", name, "on" if enabled else "off"], check=False
+    )
+
+
 def remove_virtual_output(name):
     subprocess.run(
         [NIRI, "msg", "remove-virtual-output", name], check=False
@@ -335,9 +348,11 @@ class Session:
     def __init__(self, stage_timeout=None):
         self.output = None
         self.client_id = None
+        self.streaming = False
         self.game_pid = None
         self.pending = None
         self.reported_wait = False
+        self.last_check = 0.0
         self.learned = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
@@ -373,7 +388,15 @@ class Session:
             return False
 
         self.output = name
-        log("stream-mode: created {} at {}x{}".format(name, width, height))
+        # Created disabled: it is only wanted while a client is streaming, and
+        # an enabled output that nothing is using collects workspaces whenever
+        # the physical output goes away.
+        set_output_enabled(name, self.streaming)
+        log(
+            "stream-mode: created {} at {}x{} ({})".format(
+                name, width, height, "on" if self.streaming else "off"
+            )
+        )
         return True
 
     def connect(self, client_id, client_name):
@@ -410,15 +433,26 @@ class Session:
         return True
 
     def begin_stream(self):
-        """A stream has started: tell launching games where to render."""
+        """A stream has started: enable the output and say where to render."""
+        self.streaming = True
         if self.output is None:
             self.ensure_output()
         if self.output is None:
             return False
+        set_output_enabled(self.output, True)
         size = output_logical_size(self.output) or client_size(
             self.client_id, self.clients
         )
         return publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
+
+    def end_stream(self):
+        """Streaming has stopped: take the output back out of the layout."""
+        self.streaming = False
+        withdraw_target()
+        if self.output is not None:
+            set_output_enabled(self.output, False)
+            log("stream-mode: {} disabled until the next stream".format(self.output))
+        return True
 
     def idle(self):
         """Called when streaming has been idle; deliberately keeps the output.
@@ -483,6 +517,27 @@ class Session:
             )
         )
         return True
+
+    def watchdog(self, interval=10.0):
+        """Rebuild the output if it has gone away.
+
+        Losing the physical output takes the virtual one with it — a KVM
+        switching away leaves niri with no outputs at all — and Steam's
+        remembered capture source stops resolving until it is back.
+        """
+        now = time.monotonic()
+        if now - self.last_check < interval:
+            return False
+        self.last_check = now
+
+        if self.output is None:
+            return False
+        if self.output in existing_output_names():
+            return False
+
+        log("stream-mode: {} has gone away, rebuilding".format(self.output))
+        self.output = None
+        return self.ensure_output()
 
     def poll(self):
         """Try to place a pending game. Called from the watcher loop."""
@@ -694,8 +749,10 @@ def watch():
                     session.begin_stream()
                 elif STOP_RE.search(line):
                     remove_at = now + REMOVE_AFTER
+                    session.end_stream()
 
             session.poll()
+            session.watchdog()
 
             if remove_at is not None and time.monotonic() >= remove_at:
                 remove_at = None
