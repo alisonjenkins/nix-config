@@ -226,8 +226,8 @@ class TestSession(unittest.TestCase):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
 
-    def session(self):
-        return stream_mode.Session(settle_attempts=1, settle_delay=0)
+    def session(self, stage_timeout=0):
+        return stream_mode.Session(stage_timeout=stage_timeout)
 
     def test_connect_creates_an_output_at_the_default_size(self):
         s = self.session()
@@ -268,7 +268,8 @@ class TestSession(unittest.TestCase):
         """
         s = self.session()
         s.connect(123, "deck")
-        s.stage(500, 2854740)
+        s.request(500, 2854740)
+        s.poll()
         self.assertFalse(s.idle())
         self.assertEqual(self.removed, [])
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
@@ -276,7 +277,8 @@ class TestSession(unittest.TestCase):
     def test_idle_clears_the_staged_game(self):
         s = self.session()
         s.connect(123, "deck")
-        s.stage(500, 2854740)
+        s.request(500, 2854740)
+        s.poll()
         s.idle()
         self.assertFalse(s.unstage(500))
 
@@ -301,7 +303,8 @@ class TestSession(unittest.TestCase):
     def test_stage_moves_and_fullscreens_on_the_virtual_output(self):
         s = self.session()
         s.connect(123, "deck")
-        self.assertTrue(s.stage(500, 2854740))
+        self.assertTrue(s.request(500, 2854740))
+        self.assertTrue(s.poll())
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [7])
 
@@ -309,33 +312,53 @@ class TestSession(unittest.TestCase):
         self.windows = [window(7, 500, size=(1280, 800))]
         s = self.session()
         s.connect(123, "deck")
-        s.stage(500, 2854740)
+        s.request(500, 2854740)
+        s.poll()
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [])
 
     def test_stage_without_an_output_does_nothing(self):
         s = self.session()
-        self.assertFalse(s.stage(500, 2854740))
+        self.assertFalse(s.request(500, 2854740))
+        self.assertFalse(s.poll())
         self.assertEqual(self.moved, [])
 
-    def test_stage_retries_until_the_window_appears(self):
-        """Steam logs the pid before niri has the window."""
-        calls = {"n": 0}
+    def test_keeps_waiting_while_the_window_does_not_exist(self):
+        """Steam logs the pid minutes before a Proton game maps a window.
 
-        def appearing():
-            calls["n"] += 1
-            return [window(7, 500)] if calls["n"] > 2 else []
-
-        stream_mode.niri_windows = appearing
-        s = stream_mode.Session(settle_attempts=5, settle_delay=0)
+        A five-second budget gave up long before the window existed, which is
+        why staging never happened in practice.
+        """
+        self.windows = []
+        s = self.session(stage_timeout=60)
         s.connect(123, "deck")
-        self.assertTrue(s.stage(500, 2854740))
+        s.request(500, 2854740)
+        self.assertFalse(s.poll())
+        self.assertIsNotNone(s.pending)
 
-    def test_stage_gives_up_when_no_window_appears(self):
-        stream_mode.niri_windows = lambda: []
-        s = stream_mode.Session(settle_attempts=2, settle_delay=0)
+        self.windows = [window(7, 500)]
+        self.assertTrue(s.poll())
+        self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
+        self.assertIsNone(s.pending)
+
+    def test_polling_does_not_block(self):
+        """The watcher follows two logs and an idle timer; it cannot sleep."""
+        self.windows = []
+        s = self.session(stage_timeout=60)
         s.connect(123, "deck")
-        self.assertFalse(s.stage(500, 2854740))
+        s.request(500, 2854740)
+        start = __import__("time").monotonic()
+        for _ in range(20):
+            s.poll()
+        self.assertLess(__import__("time").monotonic() - start, 1.0)
+
+    def test_gives_up_once_the_deadline_passes(self):
+        self.windows = []
+        s = self.session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.request(500, 2854740)
+        self.assertFalse(s.poll())
+        self.assertIsNone(s.pending)
         self.assertEqual(self.moved, [])
 
     def test_learn_records_the_first_resolution_only(self):
@@ -361,7 +384,8 @@ class TestSession(unittest.TestCase):
     def test_unstage_only_for_the_staged_game(self):
         s = self.session()
         s.connect(123, "deck")
-        s.stage(500, 2854740)
+        s.request(500, 2854740)
+        s.poll()
         self.assertFalse(s.unstage(999))
         self.assertTrue(s.unstage(500))
         self.assertFalse(s.unstage(500))
