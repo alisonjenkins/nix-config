@@ -229,6 +229,21 @@ class TestSession(unittest.TestCase):
     def session(self, stage_timeout=0):
         return stream_mode.Session(stage_timeout=stage_timeout)
 
+    def test_startup_creates_the_output_before_any_connect(self):
+        """A client that connected while this was not running never re-triggers."""
+        s = self.session()
+        self.assertTrue(s.ensure_output())
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+
+    def test_startup_adopts_an_existing_output(self):
+        """It survives a service restart, so it is usually already there."""
+        stream_mode.existing_output_names = lambda: {stream_mode.OUTPUT_NAME}
+        s = self.session()
+        self.assertFalse(s.ensure_output())
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+        self.assertEqual(self.created, [])
+        self.assertEqual(self.removed, [])
+
     def test_connect_creates_an_output_at_the_default_size(self):
         s = self.session()
         self.assertTrue(s.connect(123, "ali-steam-deck"))
@@ -244,12 +259,29 @@ class TestSession(unittest.TestCase):
         s.connect(123, "deck")
         self.assertEqual(self.created, [(1920, 1200, stream_mode.DEFAULT_REFRESH)])
 
-    def test_reconnect_does_not_build_a_second_output(self):
-        """A second output would leave the client's selected source stale."""
+    def test_reconnect_reuses_the_output(self):
+        """Recreating it would invalidate the source Steam has remembered."""
         s = self.session()
         s.connect(123, "deck")
         self.assertFalse(s.connect(123, "deck"))
         self.assertEqual(len(self.created), 1)
+        self.assertEqual(self.removed, [])
+
+    def test_connect_rebuilds_only_when_the_size_is_wrong(self):
+        stream_mode.load_clients = lambda path=None: {"123": [1920, 1200]}
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        s = self.session()
+        s.connect(123, "deck")
+        s.connect(123, "deck")
+        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
+        self.assertEqual(self.created[-1], (1920, 1200, stream_mode.DEFAULT_REFRESH))
+
+    def test_staging_creates_the_output_if_none_exists(self):
+        """A game can start before any connect is seen."""
+        s = self.session()
+        self.assertTrue(s.request(500, 2854740))
+        self.assertTrue(s.poll())
+        self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
 
     def test_teardown_removes_the_output_once(self):
         s = self.session()
@@ -286,13 +318,14 @@ class TestSession(unittest.TestCase):
         self.assertFalse(self.session().teardown())
         self.assertEqual(self.removed, [])
 
-    def test_a_leftover_output_is_replaced_rather_than_colliding(self):
-        """A crash leaves the output behind; creating it again would collide."""
+    def test_an_existing_output_of_the_right_size_is_adopted(self):
+        """Replacing it is what kept invalidating Steam's remembered source."""
         stream_mode.existing_output_names = lambda: {stream_mode.OUTPUT_NAME}
         s = self.session()
-        self.assertTrue(s.connect(123, "deck"))
-        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
-        self.assertEqual(len(self.created), 1)
+        self.assertFalse(s.connect(123, "deck"))
+        self.assertEqual(self.removed, [])
+        self.assertEqual(self.created, [])
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
     def test_missing_name_is_not_treated_as_success(self):
         self.next_name = None
@@ -316,12 +349,6 @@ class TestSession(unittest.TestCase):
         s.poll()
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
         self.assertEqual(self.fullscreened, [])
-
-    def test_stage_without_an_output_does_nothing(self):
-        s = self.session()
-        self.assertFalse(s.request(500, 2854740))
-        self.assertFalse(s.poll())
-        self.assertEqual(self.moved, [])
 
     def test_keeps_waiting_while_the_window_does_not_exist(self):
         """Steam logs the pid minutes before a Proton game maps a window.

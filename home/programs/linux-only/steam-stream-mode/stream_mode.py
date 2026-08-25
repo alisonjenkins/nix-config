@@ -298,23 +298,25 @@ class Session:
 
     # -- lifecycle
 
-    def connect(self, client_id, client_name):
+    def ensure_output(self, width=None, height=None):
+        """Make sure the virtual output exists, adopting one already present.
+
+        Called at startup as well as on connect, because the output must
+        outlive this process: Steam remembers its capture source and resolves
+        it when a session starts, so an output that disappears — including
+        across a service restart — leaves that request failing.
+        """
         if self.output is not None:
-            # Already prepared. A reconnect must not disturb the output the
-            # client may already have selected: Steam resolves its remembered
-            # capture source when a session starts, and a source that has gone
-            # away makes the portal request fail — which it does on Steam's
-            # main loop, stalling it until the watchdog kills the client.
-            self.client_id = client_id
             return False
 
-        width, height = client_size(client_id, self.clients)
-        # A crash or a kill leaves the output behind, and creating it again
-        # fails on the name collision. Adopt-and-replace rather than refusing:
-        # the size may have changed since it was made.
         if OUTPUT_NAME in existing_output_names():
-            log("stream-mode: removing a leftover {}".format(OUTPUT_NAME))
-            remove_virtual_output(OUTPUT_NAME)
+            self.output = OUTPUT_NAME
+            log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
+            return False
+
+        if width is None or height is None:
+            width, height = client_size(self.client_id, self.clients)
+
         try:
             name = create_virtual_output(width, height, DEFAULT_REFRESH)
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -325,14 +327,31 @@ class Session:
             return False
 
         self.output = name
+        log("stream-mode: created {} at {}x{}".format(name, width, height))
+        return True
+
+    def connect(self, client_id, client_name):
         self.client_id = client_id
         self.learned = False
-        log(
-            "stream-mode: {} connected, created {} at {}x{}".format(
-                client_name or client_id, name, width, height
-            )
-        )
-        return True
+        width, height = client_size(client_id, self.clients)
+
+        # Resize by replacing, but only if the client actually needs a
+        # different size — recreating it otherwise would invalidate the
+        # capture source Steam has remembered.
+        if self.output is not None:
+            current = output_logical_size(self.output)
+            if current is not None and current != (width, height):
+                log(
+                    "stream-mode: {} is {}x{}, client wants {}x{}; rebuilding".format(
+                        self.output, current[0], current[1], width, height
+                    )
+                )
+                remove_virtual_output(self.output)
+                self.output = None
+
+        created = self.ensure_output(width, height)
+        log("stream-mode: {} connected".format(client_name or client_id))
+        return created
 
     def teardown(self):
         """Remove the output. Only on shutdown — see `idle`."""
@@ -393,9 +412,11 @@ class Session:
         from the main loop.
         """
         if self.output is None:
-            log(
-                "stream-mode: no virtual output yet, not staging game {}".format(game_id)
-            )
+            # A game can start before any connect is seen — a client that
+            # connected while this was not running, for instance.
+            self.ensure_output()
+        if self.output is None:
+            log("stream-mode: no virtual output, cannot stage game {}".format(game_id))
             return False
         self.pending = (pid, game_id, time.monotonic() + self.stage_timeout)
         return True
@@ -541,13 +562,18 @@ def watch():
     session = Session()
 
     def bail(_signum, _frame):
-        session.teardown()
+        # Deliberately does not remove the output: it has to survive a service
+        # restart, or Steam's remembered capture source stops resolving.
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
     signal.signal(signal.SIGINT, bail)
 
     log("stream-mode: watching {} and {}".format(CONNECTIONS_LOG, LOG))
+    # Before any client connects: the output must exist for Steam to resolve a
+    # remembered capture source, and a client that connected while this was
+    # not running would otherwise never trigger its creation.
+    session.ensure_output()
     streaming = follow(LOG, idle_yield=True)
     connections = follow(CONNECTIONS_LOG, idle_yield=True)
     remove_at = None
@@ -592,7 +618,8 @@ def watch():
                 remove_at = None
                 session.idle()
     finally:
-        session.teardown()
+        # The output is left in place on purpose; see bail().
+        pass
 
 
 def main(argv):
