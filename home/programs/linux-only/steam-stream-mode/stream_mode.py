@@ -103,16 +103,77 @@ def log(message):
 # --- niri ------------------------------------------------------------------
 
 
+def live_niri_socket():
+    """Find the socket of a niri that is actually running.
+
+    NIRI_SOCKET is inherited from whenever this service was started, so after
+    a logout it names a compositor that no longer exists — every call then
+    fails against a dead socket while a live niri sits alongside it. That cost
+    a long debugging session, with the service and a shell talking to two
+    different compositors and disagreeing about which outputs existed.
+
+    niri names its socket after the session and its own pid, so a live one can
+    be identified without trusting the environment.
+    """
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+    if not runtime_dir:
+        return None
+
+    best = None
+    try:
+        entries = os.listdir(runtime_dir)
+    except OSError:
+        return None
+
+    for entry in entries:
+        if not (entry.startswith("niri.") and entry.endswith(".sock")):
+            continue
+        # niri.<display>.<pid>.sock
+        parts = entry[:-len(".sock")].split(".")
+        if len(parts) < 3:
+            continue
+        try:
+            pid = int(parts[-1])
+        except ValueError:
+            continue
+        try:
+            os.kill(pid, 0)
+        except (ProcessLookupError, PermissionError, OSError):
+            if not isinstance(sys.exc_info()[1], PermissionError):
+                continue
+        path = os.path.join(runtime_dir, entry)
+        if best is None or pid > best[0]:
+            best = (pid, path)
+
+    return best[1] if best else None
+
+
+def niri_env():
+    """Environment for a niri call, with a socket known to be live."""
+    env = dict(os.environ)
+    socket = env.get("NIRI_SOCKET")
+    if socket and os.path.exists(socket):
+        return env
+    live = live_niri_socket()
+    if live:
+        if socket != live:
+            log("stream-mode: niri socket moved to {}".format(live))
+        env["NIRI_SOCKET"] = live
+    return env
+
+
 def niri_windows():
     raw = subprocess.run(
-        [NIRI, "msg", "--json", "windows"], check=True, capture_output=True, text=True
+        [NIRI, "msg", "--json", "windows"],
+        check=True, capture_output=True, text=True, env=niri_env(),
     ).stdout
     return json.loads(raw)
 
 
 def niri_outputs():
     raw = subprocess.run(
-        [NIRI, "msg", "--json", "outputs"], check=True, capture_output=True, text=True
+        [NIRI, "msg", "--json", "outputs"],
+        check=True, capture_output=True, text=True, env=niri_env(),
     ).stdout
     return json.loads(raw)
 
@@ -152,6 +213,7 @@ def create_virtual_output(width, height, refresh, name=None):
         check=False,
         capture_output=True,
         text=True,
+        env=niri_env(),
     )
     if result.returncode != 0:
         if "already exists" in (result.stderr or ""):
@@ -213,12 +275,12 @@ def enable_output(name):
     either. Taking an idle output out of the layout therefore means removing
     it, which is what `end_stream` does.
     """
-    subprocess.run([NIRI, "msg", "output", name, "on"], check=False)
+    subprocess.run([NIRI, "msg", "output", name, "on"], check=False, env=niri_env())
 
 
 def remove_virtual_output(name):
     subprocess.run(
-        [NIRI, "msg", "remove-virtual-output", name], check=False
+        [NIRI, "msg", "remove-virtual-output", name], check=False, env=niri_env()
     )
 
 
@@ -226,18 +288,21 @@ def move_window_to_output(window_id, output):
     subprocess.run(
         [NIRI, "msg", "action", "move-window-to-monitor", output, "--id", str(window_id)],
         check=True,
+        env=niri_env(),
     )
 
 
 def fullscreen_window(window_id):
     subprocess.run(
-        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)], check=True
+        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)],
+        check=True, env=niri_env(),
     )
 
 
 def focus_window(window_id):
     subprocess.run(
-        [NIRI, "msg", "action", "focus-window", "--id", str(window_id)], check=False
+        [NIRI, "msg", "action", "focus-window", "--id", str(window_id)],
+        check=False, env=niri_env(),
     )
 
 
@@ -391,6 +456,12 @@ class Session:
         if self.output is not None:
             return False
 
+        # Deliberately created even with no physical output attached: streaming
+        # while the KVM is switched to the other machine is a case where the
+        # virtual output is the only one, and should be. Workspaces are kept
+        # off it by giving them a home output (custom.niri.workspaceOutput),
+        # which is what returns them to the physical display when it comes
+        # back — not by withholding the output.
         if OUTPUT_NAME in existing_output_names():
             self.output = OUTPUT_NAME
             # Enabled unconditionally: an output left over from a previous run
