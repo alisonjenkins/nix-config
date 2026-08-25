@@ -94,7 +94,6 @@ RES_RE = re.compile(r">>> Capture resolution set to (\d+)x(\d+)")
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via direct connection")
-CREATED_RE = re.compile(r"Created virtual output:\s*(\S+)")
 
 
 def log(message):
@@ -187,49 +186,49 @@ def output_logical_size(name):
     return (width, height)
 
 
-class OutputExists(Exception):
-    """niri already has an output under this name.
+def set_output_mode(name, width, height, refresh):
+    """Resize the virtual output to a client's panel.
 
-    A disabled output is absent from `niri msg outputs`, so this is the only
-    way to learn it is still there — and it is the normal case after a stream
-    ends, since the output is disabled rather than removed.
+    Resizing rather than replacing: Steam remembers its capture source and
+    resolves it when a session starts, so an output that came and went leaves
+    that request failing — which stalled Steam's main loop past its 15-second
+    watchdog and segfaulted the client.
     """
-
-
-def create_virtual_output(width, height, refresh, name=None):
-    """Create a virtual output under a fixed name, returning that name.
-
-    The name is passed rather than read back so it stays stable across
-    sessions; niri still reports it, which is what is returned.
-
-    A virtual output is usable the moment niri lists it and must never be fed
-    to `niri msg output <name> on/off`. Both directions destroy it: it drops
-    out of `niri msg outputs` for good, stops being offered to the portal, and
-    keeps its name, so it cannot even be recreated. Removing and creating
-    again is the only lifecycle there is.
-    """
-    name = name or OUTPUT_NAME
     result = subprocess.run(
-        [
-            NIRI, "msg", "create-virtual-output",
-            "--width", str(width),
-            "--height", str(height),
-            "--refresh-rate", str(refresh),
-            "--name", name,
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        env=niri_env(),
+        [NIRI, "msg", "output", name, "mode", "{}x{}@{}".format(width, height, refresh)],
+        check=False, capture_output=True, text=True, env=niri_env(),
     )
     if result.returncode != 0:
-        if "already exists" in (result.stderr or ""):
-            raise OutputExists(name)
-        raise subprocess.CalledProcessError(
-            result.returncode, "niri msg create-virtual-output", result.stdout, result.stderr
+        log(
+            "stream-mode: could not set {} to {}x{}@{}: {}".format(
+                name, width, height, refresh, (result.stderr or "").strip()
+            )
         )
-    match = CREATED_RE.search(result.stdout or "")
-    return match.group(1) if match else None
+        return False
+    return True
+
+
+def set_output_enabled(name, enabled):
+    """Take the virtual output in or out of the layout.
+
+    Off between sessions on purpose: an idle output still accepts windows, and
+    is where niri puts the workspaces when the physical output goes away — a
+    KVM switching machines, a monitor sleeping — which emptied the desktop
+    onto it. It stays declared and listed either way, so Steam's remembered
+    capture source keeps resolving.
+    """
+    result = subprocess.run(
+        [NIRI, "msg", "output", name, "on" if enabled else "off"],
+        check=False, capture_output=True, text=True, env=niri_env(),
+    )
+    if result.returncode != 0:
+        log(
+            "stream-mode: could not turn {} {}: {}".format(
+                name, "on" if enabled else "off", (result.stderr or "").strip()
+            )
+        )
+        return False
+    return True
 
 
 def publish_target(output, width, height, refresh=None):
@@ -263,33 +262,6 @@ def withdraw_target():
         return False
     log("stream-mode: withdrew the stream target")
     return True
-
-
-def wait_until_listed(name, timeout=5.0, interval=0.2):
-    """Wait for a just-created output to show up in niri's output list.
-
-    Creation is asynchronous: niri acknowledges the request and adds the
-    output a moment later, so checking immediately reports it missing. That
-    race made a healthy output look unusable and had the service remove and
-    recreate it in a loop.
-    """
-    deadline = time.monotonic() + timeout
-    while True:
-        listed = usable_output_names()
-        if name in listed:
-            return True
-        if time.monotonic() >= deadline:
-            # Say what niri did report. The same creation succeeds by hand a
-            # minute after login but has been seen to fail during it, and
-            # without the observed list there is no way to tell an output
-            # niri never added from one it added under another name.
-            log(
-                "stream-mode: {} still not listed after {:.0f}s; niri lists {}".format(
-                    name, timeout, sorted(listed) or "nothing"
-                )
-            )
-            return False
-        time.sleep(interval)
 
 
 def niri_workspaces():
@@ -328,12 +300,6 @@ def taken_output_names():
     except (subprocess.CalledProcessError, ValueError, OSError):
         pass
     return names
-
-
-def remove_virtual_output(name):
-    subprocess.run(
-        [NIRI, "msg", "remove-virtual-output", name], check=False, env=niri_env()
-    )
 
 
 def move_window_to_output(window_id, output):
@@ -477,11 +443,10 @@ def client_size(client_id, clients):
 class Session:
     """Owns the virtual output and what sits on it, for one client at a time."""
 
-    def __init__(self, stage_timeout=None, listed_timeout=5.0):
+    def __init__(self, stage_timeout=None):
         self.output = None
         self.client_id = None
         self.streaming = False
-        self.give_up = False
         self.game_pid = None
         self.pending = None
         self.reported_wait = False
@@ -489,141 +454,70 @@ class Session:
         self.learned = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
-        # How long to allow a created output to appear. Creation is
-        # asynchronous, so zero means "check once".
-        self.listed_timeout = listed_timeout
 
     # -- lifecycle
 
     def ensure_output(self, width=None, height=None):
-        # Set when the compositor accepts an output it then refuses to list;
-        # only a niri restart clears that, so retrying is pointless noise.
-        if self.give_up:
-            return False
+        """Find the declared virtual output. It is not created here.
 
-        """Make sure the virtual output exists, adopting one already present.
-
-        Called at startup as well as on connect, because the output must
-        outlive this process: Steam remembers its capture source and resolves
-        it when a session starts, so an output that disappears — including
-        across a service restart — leaves that request failing.
+        The output is declared in niri's config
+        (custom.niri.virtualOutputs), so it exists from the moment the
+        compositor starts and outlives this service. That is what Steam needs:
+        it remembers its capture source and resolves it when a session starts,
+        so an output that only appears once a client connects is one Steam can
+        fail to find.
         """
         if self.output is not None:
             return False
 
-        # Deliberately created even with no physical output attached: streaming
-        # while the KVM is switched to the other machine is a case where the
-        # virtual output is the only one, and should be. Workspaces are kept
-        # off it by giving them a home output (custom.niri.workspaceOutput),
-        # which is what returns them to the physical display when it comes
-        # back — not by withholding the output.
-        if OUTPUT_NAME in usable_output_names():
-            self.output = OUTPUT_NAME
-            log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
-            return False
-
-        if width is None or height is None:
-            width, height = client_size(self.client_id, self.clients)
-
-        try:
-            name = create_virtual_output(width, height, DEFAULT_REFRESH)
-        except OutputExists:
-            # The name is taken. That is either a healthy output this process
-            # did not create, or one an earlier revision disabled — which niri
-            # cannot re-enable, leaving it absent from `niri msg outputs`,
-            # unusable, and blocking the name. Enabling and re-checking is what
-            # tells the two apart.
-            if OUTPUT_NAME in usable_output_names():
-                self.output = OUTPUT_NAME
-                log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
-                return False
-
+        if OUTPUT_NAME not in usable_output_names():
             log(
-                "stream-mode: {} exists but is unusable, replacing it".format(
-                    OUTPUT_NAME
-                )
-            )
-            remove_virtual_output(OUTPUT_NAME)
-            try:
-                name = create_virtual_output(width, height, DEFAULT_REFRESH)
-            except (OutputExists, subprocess.CalledProcessError, OSError) as exc:
-                log("stream-mode: could not replace the virtual output: {}".format(exc))
-                return False
-            if name is None:
-                return False
-            if not wait_until_listed(name, timeout=self.listed_timeout):
-                # Replacing it did not help: niri is creating virtual outputs
-                # that never appear, which has been seen after a connector
-                # hotplug. Retrying cannot fix that, and doing so every ten
-                # seconds churns the compositor for nothing.
-                remove_virtual_output(name)
-                self.output = None
-                self.give_up = True
-                log(
-                    "stream-mode: niri accepted {} but does not list it; "
-                    "virtual outputs look broken until niri restarts. "
-                    "Not retrying.".format(name)
-                )
-                return False
-            self.output = name
-            log("stream-mode: recreated {} at {}x{}".format(name, width, height))
-            return True
-        except (subprocess.CalledProcessError, OSError) as exc:
-            log("stream-mode: could not create a virtual output: {}".format(exc))
-            return False
-        if name is None:
-            log("stream-mode: niri did not report a virtual output name")
-            return False
-
-        if not wait_until_listed(name, timeout=self.listed_timeout):
-            remove_virtual_output(name)
-            self.give_up = True
-            log(
-                "stream-mode: niri accepted {} but never listed it; virtual "
-                "outputs look broken until niri restarts. Not retrying.".format(name)
+                "stream-mode: no {} output; niri lists {}. Declare it with "
+                "custom.niri.virtualOutputs and check niri has virtual output "
+                "support.".format(OUTPUT_NAME, sorted(usable_output_names()) or "nothing")
             )
             return False
-        self.output = name
-        log("stream-mode: created {} at {}x{}".format(name, width, height))
+
+        self.output = OUTPUT_NAME
         return True
 
     def connect(self, client_id, client_name):
-        # A new client is a reason to try again: niri may have restarted since.
-        self.give_up = False
+        """A client has connected: size the output for it and turn it on."""
         self.client_id = client_id
         self.learned = False
         width, height = client_size(client_id, self.clients)
 
-        # Resize by replacing, but only if the client actually needs a
-        # different size — recreating it otherwise would invalidate the
-        # capture source Steam has remembered.
-        if self.output is not None:
-            current = output_logical_size(self.output)
-            if current is not None and current != (width, height):
-                log(
-                    "stream-mode: {} is {}x{}, client wants {}x{}; rebuilding".format(
-                        self.output, current[0], current[1], width, height
-                    )
+        self.ensure_output()
+        if self.output is None:
+            log(
+                "stream-mode: {} connected but there is no output to give it".format(
+                    client_name or client_id
                 )
-                remove_virtual_output(self.output)
-                self.output = None
+            )
+            return False
 
-        created = self.ensure_output(width, height)
+        # Resize only when the client actually needs a different size, so a
+        # reconnect from the same client does not disturb the layout.
+        current = output_logical_size(self.output)
+        if current != (width, height):
+            set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+
+        set_output_enabled(self.output, True)
         log(
-            "stream-mode: {} connected; output {} at {}x{}".format(
-                client_name or client_id, self.output or "<none>", width, height
+            "stream-mode: {} connected; {} on at {}x{}".format(
+                client_name or client_id, self.output, width, height
             )
         )
-        return created
+        return True
 
     def teardown(self):
-        """Remove the output. Only on shutdown — see `idle`."""
+        """Turn the output off. Only on shutdown — see `idle`."""
         if self.output is None:
             return False
         name, self.output = self.output, None
         self.game_pid = None
-        remove_virtual_output(name)
-        log("stream-mode: removed {}".format(name))
+        set_output_enabled(name, False)
+        log("stream-mode: turned {} off".format(name))
         return True
 
     def begin_stream(self):
@@ -633,6 +527,9 @@ class Session:
             self.ensure_output()
         if self.output is None:
             return False
+        # On already if a client connected first, but a stream can also be the
+        # first thing seen — after a service restart mid-session, say.
+        set_output_enabled(self.output, True)
         size = output_logical_size(self.output) or client_size(
             self.client_id, self.clients
         )
@@ -642,36 +539,32 @@ class Session:
         return published
 
     def end_stream(self):
-        """Streaming has stopped: stop redirecting launches, drop the output.
+        """Streaming has stopped: stop redirecting launches, park the output.
 
-        Removed rather than disabled, because niri cannot re-enable a disabled
-        virtual output. Leaving it in the layout is not free either: niri moves
-        workspaces onto it when the physical output goes away, which is what
-        emptied the desktop onto it during a KVM switch.
+        Turned off rather than removed. The output is declared in niri's
+        config, so removing it is not ours to do — and Steam remembers its
+        capture source and resolves it when the next session starts, so an
+        output that came and went left that request failing, stalling Steam's
+        main loop past its 15-second watchdog into a segfault in libtier0.
 
-        Recreating it later is safe because the name is fixed — it was a
-        generated, sequential name changing under Steam that broke its
-        remembered capture source before.
+        Off is not merely cosmetic: an enabled output still accepts windows,
+        and niri moves workspaces onto it when the physical output goes away,
+        which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
         withdraw_target()
         if self.output is not None:
             name, self.output = self.output, None
-            remove_virtual_output(name)
-            log("stream-mode: removed {} until the next client".format(name))
+            set_output_enabled(name, False)
+            log("stream-mode: turned {} off until the next client".format(name))
         return True
 
     def idle(self):
-        """Called when streaming has been idle; deliberately keeps the output.
+        """Called when streaming has been idle; the output stays declared.
 
-        Removing it between sessions is what broke streaming: Steam remembers
-        its capture source and resolves it when the next session starts, so an
-        output that came and went leaves the request failing. Steam issues that
-        request on its main loop, so the failure stalled the loop past its
-        15-second watchdog and the client segfaulted in libtier0.
-
-        The output is cheap to leave in place and its name is fixed, so it
-        stays for the lifetime of the service.
+        Nothing to do here now that the output is config-declared: it is
+        turned off when a stream ends, and it is never removed, so Steam's
+        remembered capture source keeps resolving between sessions.
         """
         self.game_pid = None
         return False
@@ -1040,18 +933,20 @@ def main(argv):
         watch()
         return 0
 
-    if len(argv) >= 2 and argv[1] == "create":
+    # `on` and `off` rather than `create` and `remove`: the output is declared
+    # in niri's config and is not this program's to create or destroy.
+    if len(argv) >= 2 and argv[1] == "on":
         width = int(argv[2]) if len(argv) > 2 else DEFAULT_WIDTH
         height = int(argv[3]) if len(argv) > 3 else DEFAULT_HEIGHT
-        if OUTPUT_NAME in taken_output_names():
-            remove_virtual_output(OUTPUT_NAME)
-        name = create_virtual_output(width, height, DEFAULT_REFRESH)
-        print(name or "")
-        return 0 if name else 1
+        if OUTPUT_NAME not in usable_output_names():
+            print("no {} output declared".format(OUTPUT_NAME), file=sys.stderr)
+            return 1
+        set_output_mode(OUTPUT_NAME, width, height, DEFAULT_REFRESH)
+        return 0 if set_output_enabled(OUTPUT_NAME, True) else 1
 
-    if len(argv) == 3 and argv[1] == "remove":
-        remove_virtual_output(argv[2])
-        return 0
+    if len(argv) >= 2 and argv[1] == "off":
+        name = argv[2] if len(argv) > 2 else OUTPUT_NAME
+        return 0 if set_output_enabled(name, False) else 1
 
     if len(argv) == 2 and argv[1] == "status":
         outputs = niri_outputs()

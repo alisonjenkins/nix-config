@@ -72,10 +72,6 @@ class TestLogParsing(unittest.TestCase):
         """
         self.assertIsNone(stream_mode.CONNECT_RE.search(self.BROADCAST))
 
-    def test_created_output_name(self):
-        self.assertEqual(stream_mode.CREATED_RE.search(self.CREATED).group(1), "HEADLESS-2")
-
-
 class TestIsFullscreen(unittest.TestCase):
     """niri offers only a toggle, so a wrong answer un-fullscreens the game."""
 
@@ -182,19 +178,18 @@ class TestLearnedClients(unittest.TestCase):
 
 class TestSession(unittest.TestCase):
     def setUp(self):
-        self.created = []
-        self.removed = []
+        self.modes = []
+        self.enabled = []
         self.moved = []
         self.fullscreened = []
         self.saved = []
         self.windows = [window(7, 500)]
-        self.next_name = stream_mode.OUTPUT_NAME
 
         self._real = {
             k: getattr(stream_mode, k)
             for k in (
-                "create_virtual_output",
-                "remove_virtual_output",
+                "set_output_mode",
+                "set_output_enabled",
                 "move_window_to_output",
                 "fullscreen_window",
                 "focus_window",
@@ -207,22 +202,20 @@ class TestSession(unittest.TestCase):
             )
         }
 
-        self.names = {"DP-2"}
+        # Declared in niri's config, so it is present from the start and is
+        # never created or destroyed by the watcher.
+        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
 
-        def create(w, h, r, name=None):
-            self.created.append((w, h, r))
-            created = name or self.next_name
-            if created:
-                # niri lists it once created; the service waits for that.
-                self.names.add(created)
-            return created
+        def set_mode(name, w, h, r):
+            self.modes.append((name, w, h, r))
+            return True
 
-        stream_mode.create_virtual_output = create
-        def remove(n):
-            self.removed.append(n)
-            self.names.discard(n)
+        def set_enabled(name, enabled):
+            self.enabled.append((name, enabled))
+            return True
 
-        stream_mode.remove_virtual_output = remove
+        stream_mode.set_output_mode = set_mode
+        stream_mode.set_output_enabled = set_enabled
         stream_mode.move_window_to_output = lambda wid, out: self.moved.append((wid, out))
         stream_mode.fullscreen_window = lambda wid: self.fullscreened.append(wid)
         stream_mode.focus_window = lambda wid: None
@@ -238,54 +231,53 @@ class TestSession(unittest.TestCase):
             setattr(stream_mode, k, v)
 
     def session(self, stage_timeout=0):
-        return stream_mode.Session(stage_timeout=stage_timeout, listed_timeout=0)
+        return stream_mode.Session(stage_timeout=stage_timeout)
 
-    def test_startup_creates_the_output_before_any_connect(self):
-        """A client that connected while this was not running never re-triggers."""
+    def test_startup_finds_the_declared_output(self):
         s = self.session()
         self.assertTrue(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
-    def test_startup_adopts_an_existing_output(self):
-        """It survives a service restart, so it is usually already there."""
-        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+    def test_an_undeclared_output_is_reported_not_invented(self):
+        """Without the declaration there is nothing to stream to.
+
+        Creating one here would defeat the point of declaring it: the output
+        has to exist before Steam resolves its remembered capture source, and
+        a service that starts one on demand is always too late.
+        """
+        stream_mode.usable_output_names = lambda: {"DP-2"}
         s = self.session()
         self.assertFalse(s.ensure_output())
-        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-        self.assertEqual(self.created, [])
-        self.assertEqual(self.removed, [])
+        self.assertIsNone(s.output)
+        self.assertEqual(self.modes, [])
+        self.assertEqual(self.enabled, [])
 
-    def test_connect_creates_an_output_at_the_default_size(self):
+    def test_connect_turns_the_output_on(self):
         s = self.session()
         self.assertTrue(s.connect(123, "ali-steam-deck"))
-        self.assertEqual(
-            self.created,
-            [(stream_mode.DEFAULT_WIDTH, stream_mode.DEFAULT_HEIGHT, stream_mode.DEFAULT_REFRESH)],
-        )
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+        self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, True)])
 
-    def test_connect_uses_a_learned_size(self):
+    def test_connect_resizes_to_a_learned_size(self):
         stream_mode.load_clients = lambda path=None: {"123": [1920, 1200]}
         s = self.session()
         s.connect(123, "deck")
-        self.assertEqual(self.created, [(1920, 1200, stream_mode.DEFAULT_REFRESH)])
+        self.assertEqual(
+            self.modes,
+            [(stream_mode.OUTPUT_NAME, 1920, 1200, stream_mode.DEFAULT_REFRESH)],
+        )
 
-    def test_reconnect_reuses_the_output(self):
-        """Recreating it would invalidate the source Steam has remembered."""
+    def test_connect_leaves_a_correctly_sized_output_alone(self):
+        """Resizing needlessly would disturb the layout on every reconnect."""
+        stream_mode.output_logical_size = lambda name: (
+            stream_mode.DEFAULT_WIDTH,
+            stream_mode.DEFAULT_HEIGHT,
+        )
         s = self.session()
         s.connect(123, "deck")
-        self.assertFalse(s.connect(123, "deck"))
-        self.assertEqual(len(self.created), 1)
-        self.assertEqual(self.removed, [])
-
-    def test_connect_rebuilds_only_when_the_size_is_wrong(self):
-        stream_mode.load_clients = lambda path=None: {"123": [1920, 1200]}
-        stream_mode.output_logical_size = lambda name: (1280, 800)
-        s = self.session()
         s.connect(123, "deck")
-        s.connect(123, "deck")
-        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
-        self.assertEqual(self.created[-1], (1920, 1200, stream_mode.DEFAULT_REFRESH))
+        self.assertEqual(self.modes, [])
+        self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, True)] * 2)
 
     def test_staging_creates_the_output_if_none_exists(self):
         """A game can start before any connect is seen."""
@@ -294,16 +286,17 @@ class TestSession(unittest.TestCase):
         self.assertTrue(s.on_windows(self.windows))
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
 
-    def test_teardown_removes_the_output_once(self):
+    def test_teardown_turns_the_output_off_once(self):
         s = self.session()
         s.connect(123, "deck")
         self.assertTrue(s.teardown())
-        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
+        self.assertEqual(self.enabled[-1], (stream_mode.OUTPUT_NAME, False))
+        off = self.enabled.count((stream_mode.OUTPUT_NAME, False))
         self.assertFalse(s.teardown())
-        self.assertEqual(self.removed, [stream_mode.OUTPUT_NAME])
+        self.assertEqual(self.enabled.count((stream_mode.OUTPUT_NAME, False)), off)
 
     def test_idle_keeps_the_output(self):
-        """Removing it between sessions broke Steam's remembered source.
+        """Losing it between sessions broke Steam's remembered source.
 
         Steam resolves that source on its main loop when a session starts; a
         source that has gone away made the request fail, stalling the loop past
@@ -314,7 +307,7 @@ class TestSession(unittest.TestCase):
         s.request(500, 2854740)
         s.on_windows(self.windows)
         self.assertFalse(s.idle())
-        self.assertEqual(self.removed, [])
+        self.assertNotIn((stream_mode.OUTPUT_NAME, False), self.enabled)
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
 
     def test_idle_clears_the_staged_game(self):
@@ -327,22 +320,16 @@ class TestSession(unittest.TestCase):
 
     def test_teardown_without_output_does_nothing(self):
         self.assertFalse(self.session().teardown())
-        self.assertEqual(self.removed, [])
+        self.assertEqual(self.enabled, [])
 
-    def test_an_existing_output_of_the_right_size_is_adopted(self):
-        """Replacing it is what kept invalidating Steam's remembered source."""
-        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
-        s = self.session()
-        self.assertFalse(s.connect(123, "deck"))
-        self.assertEqual(self.removed, [])
-        self.assertEqual(self.created, [])
-        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-
-    def test_missing_name_is_not_treated_as_success(self):
-        self.next_name = None
+    def test_connect_without_a_declared_output_fails_quietly(self):
+        """Nothing to turn on, and nothing this service can do about it."""
+        stream_mode.usable_output_names = lambda: {"DP-2"}
         s = self.session()
         self.assertFalse(s.connect(123, "deck"))
         self.assertIsNone(s.output)
+        self.assertEqual(self.enabled, [])
+        self.assertEqual(self.modes, [])
 
     def test_stage_moves_and_fullscreens_on_the_virtual_output(self):
         s = self.session()
@@ -430,22 +417,28 @@ class TestSession(unittest.TestCase):
 
 
 class TestOutputLifetime(unittest.TestCase):
-    """The output is created once and never disabled.
+    """The output is declared in niri's config, so it is only ever toggled.
 
-    Disabling one does not merely take it out of the layout: niri reports it as
-    not connected, it vanishes from `niri msg outputs`, the portal stops
-    offering it, and `on` cannot bring it back — while the name stays taken, so
-    it cannot be recreated either. Workspaces are kept off it by giving them a
-    home output instead.
+    Creating and removing it was what broke streaming: Steam remembers its
+    capture source and resolves it when a session starts, so an output that
+    came and went left that request failing. Declaring it means it is there
+    before Steam looks, and survives a compositor restart.
+
+    Off between sessions is not cosmetic either: an enabled output still
+    accepts windows, and niri moves workspaces onto it when the physical
+    output goes away, which is what emptied the desktop onto it on a KVM
+    switch.
     """
 
     def setUp(self):
-        self.created = []
-        self.names = {"DP-2"}
+        self.modes = []
+        self.enabled = []
+        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
         self._real = {
             k: getattr(stream_mode, k)
             for k in (
-                "create_virtual_output",
+                "set_output_mode",
+                "set_output_enabled",
                 "usable_output_names",
                 "output_logical_size",
                 "load_clients",
@@ -453,180 +446,82 @@ class TestOutputLifetime(unittest.TestCase):
                 "withdraw_target",
             )
         }
-        def create(w, h, r, name=None):
-            self.created.append((w, h))
-            self.names.add(stream_mode.OUTPUT_NAME)
-            return stream_mode.OUTPUT_NAME
 
-        stream_mode.create_virtual_output = create
+        def set_mode(name, w, h, r):
+            self.modes.append((name, w, h, r))
+            return True
+
+        def set_enabled(name, enabled):
+            self.enabled.append((name, enabled))
+            return True
+
+        stream_mode.set_output_mode = set_mode
+        stream_mode.set_output_enabled = set_enabled
         stream_mode.usable_output_names = lambda: self.names
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.publish_target = lambda *a, **k: True
-        stream_mode.withdraw_target = lambda: True
+        stream_mode.withdraw_target = lambda *a, **k: True
 
     def tearDown(self):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
 
-    def test_creating_an_output_never_configures_it(self):
-        """`niri msg output <name> on` destroys a virtual output.
+    def test_the_watcher_never_creates_or_removes_the_output(self):
+        """Creation and removal belong to the config, not to this service."""
+        for name in ("create_virtual_output", "remove_virtual_output"):
+            self.assertFalse(
+                hasattr(stream_mode, name),
+                "{} should be gone: the output is declared, not managed".format(name),
+            )
 
-        Measured on the fork: the output drops out of `niri msg outputs` for
-        good, stops being offered to the portal and keeps its name, so it
-        cannot be recreated either. Creation already leaves it enabled, so the
-        only safe lifecycle is create and remove.
-        """
-        calls = []
-        real_run = stream_mode.subprocess.run
-        # setUp stubs creation out for the Session tests; this one is about
-        # the commands it actually issues, so it needs the real thing.
-        create = self._real["create_virtual_output"]
-
-        def record(argv, **kwargs):
-            calls.append(argv)
-            return real_run(["true"], **kwargs)
-
-        stream_mode.subprocess.run = record
-        try:
-            create(1280, 800, 60)
-        finally:
-            stream_mode.subprocess.run = real_run
-        self.assertTrue(calls)
-        for argv in calls:
-            self.assertNotIn("output", argv, "configured a virtual output")
-
-    def test_ending_a_stream_removes_the_output(self):
-        """Removed, not disabled: niri cannot re-enable a disabled virtual
-        output, and leaving an idle one in the layout is what let a KVM switch
-        empty the desktop onto it."""
-        removed = []
-        real = stream_mode.remove_virtual_output
-        stream_mode.remove_virtual_output = lambda n: removed.append(n)
-        try:
-            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-            s.ensure_output()
-            s.begin_stream()
-            s.end_stream()
-        finally:
-            stream_mode.remove_virtual_output = real
-        self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
-        self.assertIsNone(s.output)
-
-    def test_an_output_event_while_idle_does_not_resurrect_it(self):
-        """Between streams it is meant to be gone."""
-        removed = []
-        real = stream_mode.remove_virtual_output
-
-        def remove(n):
-            removed.append(n)
-            self.names.discard(n)
-
-        stream_mode.remove_virtual_output = remove
-        try:
-            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-            s.ensure_output()
-            s.end_stream()
-            self.created.clear()
-            self.assertFalse(s.on_outputs_changed({"DP-2"}))
-        finally:
-            stream_mode.remove_virtual_output = real
-        self.assertEqual(self.created, [])
-
-    def test_adopts_a_healthy_output_that_already_exists(self):
-        def collide(w, h, r, name=None):
-            raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
-
-        stream_mode.create_virtual_output = collide
-        self.names = {"DP-2", stream_mode.OUTPUT_NAME}
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        self.assertFalse(s.ensure_output())
-        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-
-    def test_replaces_an_output_that_holds_its_name_but_is_unusable(self):
-        """An output an earlier revision disabled cannot be re-enabled.
-
-        It stays absent from `niri msg outputs` while blocking the name, so
-        adopting it looped forever: create collides, enable fails, the watchdog
-        sees nothing and tries again.
-        """
-        removed = []
-        calls = {"n": 0}
-
-        def create(w, h, r, name=None):
-            calls["n"] += 1
-            if calls["n"] == 1:
-                raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
-            self.created.append((w, h))
-            # The replacement is healthy, so niri lists it from now on.
-            self.names = {"DP-2", stream_mode.OUTPUT_NAME}
-            return stream_mode.OUTPUT_NAME
-
-        stream_mode.create_virtual_output = create
-        real_remove = stream_mode.remove_virtual_output
-        stream_mode.remove_virtual_output = lambda n: removed.append(n)
-        try:
-            self.names = {"DP-2"}  # niri does not list it
-            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-            self.assertTrue(s.ensure_output())
-        finally:
-            stream_mode.remove_virtual_output = real_remove
-
-        self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
-        self.assertEqual(len(self.created), 1)
-        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-
-    def test_stops_retrying_when_outputs_never_appear(self):
-        """niri can accept an output and never list it. Retrying cannot help."""
-        removed = []
-        real_remove = stream_mode.remove_virtual_output
-        stream_mode.remove_virtual_output = lambda n: removed.append(n)
-
-        def create_but_never_listed(w, h, r, name=None):
-            self.created.append((w, h))
-            return stream_mode.OUTPUT_NAME
-
-        stream_mode.create_virtual_output = create_but_never_listed
-        try:
-            s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-            self.assertFalse(s.ensure_output())
-            self.assertTrue(s.give_up)
-            before = len(self.created)
-            self.assertFalse(s.ensure_output())
-            self.assertEqual(len(self.created), before)
-        finally:
-            stream_mode.remove_virtual_output = real_remove
-
-    def test_a_new_client_is_worth_another_attempt(self):
-        """niri may have restarted since giving up."""
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.give_up = True
+    def test_ending_a_stream_turns_the_output_off(self):
+        s = stream_mode.Session(stage_timeout=0)
         s.connect(123, "deck")
-        self.assertFalse(s.give_up)
-        self.assertEqual(len(self.created), 1)
+        s.begin_stream()
+        s.end_stream()
+        self.assertEqual(self.enabled[-1], (stream_mode.OUTPUT_NAME, False))
+        self.assertIsNone(s.output)
+        # Still declared, so Steam's remembered source keeps resolving.
+        self.assertIn(stream_mode.OUTPUT_NAME, self.names)
 
-    def test_rebuilds_when_an_event_says_the_output_went_away(self):
-        """Replaces a ten-second watchdog: the compositor says when it goes."""
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.ensure_output()
-        self.assertEqual(len(self.created), 1)
+    def test_a_stream_can_start_without_a_connect(self):
+        """A service restart mid-session never sees the connect line."""
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertTrue(s.begin_stream())
+        self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
+        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
 
-        self.names.discard(stream_mode.OUTPUT_NAME)
-        self.assertTrue(s.on_outputs_changed({"DP-2"}))
-        self.assertEqual(len(self.created), 2)
+    def test_an_output_event_while_idle_does_not_turn_it_on(self):
+        """Between streams it is meant to be out of the layout."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.end_stream()
+        self.enabled.clear()
+        self.assertFalse(s.on_outputs_changed({"DP-2"}))
+        self.assertEqual(self.enabled, [])
 
     def test_an_event_listing_the_output_changes_nothing(self):
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        s.ensure_output()
-        self.assertFalse(
-            s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME})
-        )
-        self.assertEqual(len(self.created), 1)
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        self.enabled.clear()
+        self.assertFalse(s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME}))
+        self.assertEqual(self.enabled, [])
 
-    def test_no_output_means_nothing_to_rebuild(self):
-        s = stream_mode.Session(stage_timeout=0, listed_timeout=0)
-        self.assertFalse(s.on_outputs_changed({"DP-2"}))
-        self.assertEqual(self.created, [])
+    def test_a_client_with_a_different_panel_resizes_rather_than_replaces(self):
+        """A television and a handheld share one declared output.
+
+        Replacing it would invalidate the capture source the other client had
+        been given, so the size is changed underneath it instead.
+        """
+        stream_mode.load_clients = lambda path=None: {"7": [3840, 2160]}
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(7, "living-room-tv")
+        self.assertEqual(
+            self.modes,
+            [(stream_mode.OUTPUT_NAME, 3840, 2160, stream_mode.DEFAULT_REFRESH)],
+        )
+        self.assertIn(stream_mode.OUTPUT_NAME, self.names)
 
 
 class TestEventDispatch(unittest.TestCase):
@@ -809,47 +704,6 @@ class TestStreamInProgress(unittest.TestCase):
 
     def test_missing_file(self):
         self.assertFalse(stream_mode.stream_in_progress("/nonexistent/log.txt"))
-
-
-class TestWaitUntilListed(unittest.TestCase):
-    """Creation is asynchronous.
-
-    niri acknowledges the request and adds the output a moment later, so
-    checking immediately reports it missing — which made a healthy output look
-    unusable and had the service remove and recreate it in a loop.
-    """
-
-    def setUp(self):
-        self._real = stream_mode.usable_output_names
-
-    def tearDown(self):
-        stream_mode.usable_output_names = self._real
-
-    def test_returns_as_soon_as_it_appears(self):
-        calls = {"n": 0}
-
-        def appearing():
-            calls["n"] += 1
-            return {"DP-2", stream_mode.OUTPUT_NAME} if calls["n"] > 2 else {"DP-2"}
-
-        stream_mode.usable_output_names = appearing
-        self.assertTrue(
-            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=2, interval=0)
-        )
-
-    def test_gives_up_when_it_never_appears(self):
-        stream_mode.usable_output_names = lambda: {"DP-2"}
-        self.assertFalse(
-            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=0, interval=0)
-        )
-
-    def test_does_not_wait_when_already_there(self):
-        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
-        start = time.monotonic()
-        self.assertTrue(
-            stream_mode.wait_until_listed(stream_mode.OUTPUT_NAME, timeout=5, interval=1)
-        )
-        self.assertLess(time.monotonic() - start, 1.0)
 
 
 class TestNiriSocket(unittest.TestCase):
