@@ -201,7 +201,7 @@ class TestSession(unittest.TestCase):
                 "output_logical_size",
                 "parent_pids",
                 "existing_output_names",
-                "set_output_enabled",
+                "enable_output",
                 "load_clients",
                 "save_clients",
             )
@@ -221,7 +221,7 @@ class TestSession(unittest.TestCase):
         stream_mode.parent_pids = lambda pid, limit=8: []
         stream_mode.existing_output_names = lambda: set()
         self.enabled = []
-        stream_mode.set_output_enabled = lambda n, e: self.enabled.append((n, e))
+        stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.save_clients = lambda c, path=None: self.saved.append(c)
 
@@ -422,11 +422,13 @@ class TestSession(unittest.TestCase):
 
 
 class TestOutputLifetime(unittest.TestCase):
-    """The output must not collect workspaces when it is not in use.
+    """The output is created once and never disabled.
 
-    A KVM switching away disconnects the physical output; an enabled virtual
-    output is then the only one left, so niri moves every workspace onto it and
-    does not move them back.
+    Disabling one does not merely take it out of the layout: niri reports it as
+    not connected, it vanishes from `niri msg outputs`, the portal stops
+    offering it, and `on` cannot bring it back — while the name stays taken, so
+    it cannot be recreated either. Workspaces are kept off it by giving them a
+    home output instead.
     """
 
     def setUp(self):
@@ -437,7 +439,7 @@ class TestOutputLifetime(unittest.TestCase):
             k: getattr(stream_mode, k)
             for k in (
                 "create_virtual_output",
-                "set_output_enabled",
+                "enable_output",
                 "existing_output_names",
                 "output_logical_size",
                 "load_clients",
@@ -448,7 +450,7 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.create_virtual_output = lambda w, h, r, name=None: (
             self.created.append((w, h)) or stream_mode.OUTPUT_NAME
         )
-        stream_mode.set_output_enabled = lambda n, e: self.enabled.append((n, e))
+        stream_mode.enable_output = lambda n: self.enabled.append(n)
         stream_mode.existing_output_names = lambda: self.names
         stream_mode.output_logical_size = lambda name: (1280, 800)
         stream_mode.load_clients = lambda path=None: {}
@@ -459,12 +461,52 @@ class TestOutputLifetime(unittest.TestCase):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
 
-    def test_adopts_a_disabled_output_that_already_exists(self):
-        """Disabled outputs are absent from `niri msg outputs`.
+    def test_enabled_on_creation(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.ensure_output()
+        self.assertEqual(self.enabled, [stream_mode.OUTPUT_NAME])
 
-        Creating one then collides forever, which is exactly what happened:
-        the service retried every ten seconds and streaming never worked.
-        """
+    def test_enabled_on_connect(self):
+        """Steam picks its capture source before any stream is logged."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
+
+    def test_ending_a_stream_removes_the_output(self):
+        """Removed, not disabled: niri cannot re-enable a disabled virtual
+        output, and leaving an idle one in the layout is what let a KVM switch
+        empty the desktop onto it."""
+        removed = []
+        real = stream_mode.remove_virtual_output
+        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.ensure_output()
+            s.begin_stream()
+            s.end_stream()
+        finally:
+            stream_mode.remove_virtual_output = real
+        self.assertEqual(removed, [stream_mode.OUTPUT_NAME])
+        self.assertIsNone(s.output)
+
+    def test_the_watchdog_leaves_it_absent_while_idle(self):
+        """It is meant to be gone between streams."""
+        removed = []
+        real = stream_mode.remove_virtual_output
+        stream_mode.remove_virtual_output = lambda n: removed.append(n)
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.ensure_output()
+            s.end_stream()
+            self.created.clear()
+            s.last_check = 0.0
+            self.assertFalse(s.watchdog(interval=0))
+        finally:
+            stream_mode.remove_virtual_output = real
+        self.assertEqual(self.created, [])
+
+    def test_adopts_a_name_that_is_already_taken(self):
+        """A disabled or otherwise unlisted output still holds its name."""
         def collide(w, h, r, name=None):
             raise stream_mode.OutputExists(stream_mode.OUTPUT_NAME)
 
@@ -472,42 +514,13 @@ class TestOutputLifetime(unittest.TestCase):
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.ensure_output())
         self.assertEqual(s.output, stream_mode.OUTPUT_NAME)
-
-    def test_created_disabled_when_not_streaming(self):
-        s = stream_mode.Session(stage_timeout=0)
-        s.ensure_output()
-        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
-
-    def test_enabled_when_a_client_connects(self):
-        """Steam picks its capture source before any stream is logged, and a
-        disabled output is not offered to the portal at all."""
-        s = stream_mode.Session(stage_timeout=0)
-        s.connect(123, "deck")
-        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
-
-    def test_enabled_when_a_stream_starts(self):
-        s = stream_mode.Session(stage_timeout=0)
-        s.ensure_output()
-        self.enabled.clear()
-        s.begin_stream()
-        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
-
-    def test_disabled_again_when_the_stream_stops(self):
-        s = stream_mode.Session(stage_timeout=0)
-        s.ensure_output()
-        s.begin_stream()
-        self.enabled.clear()
-        s.end_stream()
-        self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, False)])
+        self.assertIn(stream_mode.OUTPUT_NAME, self.enabled)
 
     def test_watchdog_rebuilds_a_vanished_output(self):
-        """Losing the physical output takes the virtual one with it."""
         s = stream_mode.Session(stage_timeout=0)
         self.names = set()
         s.ensure_output()
         self.assertEqual(len(self.created), 1)
-
-        # niri still reports nothing: the output is gone.
         s.last_check = 0.0
         self.assertTrue(s.watchdog(interval=0))
         self.assertEqual(len(self.created), 2)
@@ -520,7 +533,6 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(len(self.created), 1)
 
     def test_watchdog_is_rate_limited(self):
-        """It runs on every loop iteration, several times a second."""
         s = stream_mode.Session(stage_timeout=0)
         s.ensure_output()
         self.names = set()

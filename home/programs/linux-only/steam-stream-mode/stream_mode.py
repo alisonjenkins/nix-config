@@ -203,17 +203,17 @@ def existing_output_names():
         return set()
 
 
-def set_output_enabled(name, enabled):
-    """Turn the virtual output on or off without destroying it.
+def enable_output(name):
+    """Ensure the virtual output is on.
 
-    Off keeps the name — so Steam's remembered capture source still resolves —
-    while taking it out of the layout, which is what stops niri treating it as
-    somewhere to move workspaces when the physical output disconnects. A KVM
-    switching away would otherwise strand every workspace on it.
+    Only ever used to turn one on. niri's `off` is a one-way door for a
+    virtual output: it is then reported as not connected, disappears from
+    `niri msg outputs`, stops being offered to the portal, and `on` cannot
+    bring it back — while the name stays taken, so it cannot be recreated
+    either. Taking an idle output out of the layout therefore means removing
+    it, which is what `end_stream` does.
     """
-    subprocess.run(
-        [NIRI, "msg", "output", name, "on" if enabled else "off"], check=False
-    )
+    subprocess.run([NIRI, "msg", "output", name, "on"], check=False)
 
 
 def remove_virtual_output(name):
@@ -399,7 +399,7 @@ class Session:
             # Disabled outputs do not appear in `niri msg outputs`, so this is
             # how a still-present one announces itself.
             self.output = OUTPUT_NAME
-            set_output_enabled(OUTPUT_NAME, self.streaming)
+            enable_output(OUTPUT_NAME)
             log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
             return False
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -410,15 +410,8 @@ class Session:
             return False
 
         self.output = name
-        # Created disabled: it is only wanted while a client is streaming, and
-        # an enabled output that nothing is using collects workspaces whenever
-        # the physical output goes away.
-        set_output_enabled(name, self.streaming)
-        log(
-            "stream-mode: created {} at {}x{} ({})".format(
-                name, width, height, "on" if self.streaming else "off"
-            )
-        )
+        enable_output(name)
+        log("stream-mode: created {} at {}x{}".format(name, width, height))
         return True
 
     def connect(self, client_id, client_name):
@@ -442,11 +435,7 @@ class Session:
 
         created = self.ensure_output(width, height)
         if self.output is not None:
-            # Steam resolves its capture source when the session starts, which
-            # is after this and before any stream is logged. A disabled output
-            # is not offered to the portal at all, so enabling it later would
-            # be too late for the picker.
-            set_output_enabled(self.output, True)
+            enable_output(self.output)
         log("stream-mode: {} connected".format(client_name or client_id))
         return created
 
@@ -467,19 +456,30 @@ class Session:
             self.ensure_output()
         if self.output is None:
             return False
-        set_output_enabled(self.output, True)
+        enable_output(self.output)
         size = output_logical_size(self.output) or client_size(
             self.client_id, self.clients
         )
         return publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
 
     def end_stream(self):
-        """Streaming has stopped: take the output back out of the layout."""
+        """Streaming has stopped: stop redirecting launches, drop the output.
+
+        Removed rather than disabled, because niri cannot re-enable a disabled
+        virtual output. Leaving it in the layout is not free either: niri moves
+        workspaces onto it when the physical output goes away, which is what
+        emptied the desktop onto it during a KVM switch.
+
+        Recreating it later is safe because the name is fixed — it was a
+        generated, sequential name changing under Steam that broke its
+        remembered capture source before.
+        """
         self.streaming = False
         withdraw_target()
         if self.output is not None:
-            set_output_enabled(self.output, False)
-            log("stream-mode: {} disabled until the next stream".format(self.output))
+            name, self.output = self.output, None
+            remove_virtual_output(name)
+            log("stream-mode: removed {} until the next client".format(name))
         return True
 
     def idle(self):
@@ -559,6 +559,7 @@ class Session:
         self.last_check = now
 
         if self.output is None:
+            # Nothing is streaming: the output is meant to be absent.
             return False
         if self.output in existing_output_names():
             return False
