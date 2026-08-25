@@ -62,6 +62,24 @@ in
       description = "Bees deduplication filesystems";
     };
 
+    gcKeepGenerations = lib.mkOption {
+      type = lib.types.nullOr lib.types.ints.positive;
+      default = 20;
+      description = ''
+        How many system generations to keep, trimmed before each scheduled
+        garbage collection. Null keeps every generation the age limit in
+        `nix.gc.options` has not yet retired.
+
+        An age limit alone bounds how old generations get, not how many exist.
+        A host rebuilt several times a day accumulates them faster than 60
+        days retires them, and each one roots its entire closure, so the
+        weekly collection runs on schedule and is permitted to delete almost
+        nothing. ali-desktop reached 104 system generations and a 226 GiB
+        store that way, and only found out when the store exhausted the
+        filesystem's metadata space mid-build.
+      '';
+    };
+
     timezone = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = "Europe/London";
@@ -431,6 +449,31 @@ in
       };
 
       systemd.services.NetworkManager-wait-online.enable = false;
+
+      # Trim old system generations just before the collection that would
+      # otherwise be blocked by them. Ordered ahead of nix-gc rather than run
+      # on its own schedule so the two cannot interleave: releasing roots
+      # while a collection is already tracing them would leave the freed
+      # closures for the following week.
+      systemd.services.nix-gc-trim-generations =
+        lib.mkIf (cfg.gcKeepGenerations != null && config.nix.gc.automatic) {
+          description = "Trim old NixOS system generations";
+          before = [ "nix-gc.service" ];
+          wantedBy = [ "nix-gc.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            # Idle priority throughout: this runs unattended and competes with
+            # whatever the machine is actually being used for, and a slow trim
+            # costs nothing while a stalled desktop is very noticeable.
+            IOSchedulingClass = "idle";
+            Nice = 19;
+          };
+          script = ''
+            ${config.nix.package}/bin/nix-env \
+              --profile /nix/var/nix/profiles/system \
+              --delete-generations +${toString cfg.gcKeepGenerations}
+          '';
+        };
 
       services = {
         fstrim.enable = true;
