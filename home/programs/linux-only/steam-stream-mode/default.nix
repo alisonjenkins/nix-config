@@ -15,49 +15,85 @@ let
     } ''
     mkdir -p $out/bin
     makeWrapper ${raw}/bin/stream-mode $out/bin/stream-mode \
-      --set-default STREAM_MODE_OUTPUT ${lib.escapeShellArg cfg.output} \
       --set-default STREAM_MODE_NIRI ${lib.getExe cfg.niriPackage}
   '';
 in
 {
   options.custom.steamStreamMode = {
     enable = lib.mkEnableOption ''
-      putting the streamed game alone on the captured output for Steam
-      Remote Play.
+      a virtual output sized to the Steam Remote Play client.
 
-      Remote Play captures a whole output, so a client otherwise receives
-      whatever is on screen rather than the game. niri's dynamic cast target
-      would be the better mechanism, but Steam's ScreenCast request asks for
-      MONITOR sources only — its picker has no "Window" tab, while other
-      clients' pickers do — so no window-scoped source can reach it.
+      Remote Play captures a whole output and asks the portal for MONITOR
+      sources only — its picker has no "Window" tab, while other clients'
+      pickers on the same portal do — so no window-scoped source can reach it
+      and an ultrawide is letterboxed into a fraction of the client's frame.
 
-      Instead the game window is fullscreened on the streamed output when
-      Steam logs it, identified from the pid Steam reports, so nothing has to
-      be clicked on the host
+      Instead a niri virtual output is created at the client's resolution when
+      it connects, the streamed game is moved onto it and fullscreened, and it
+      is removed once streaming has been idle. The physical display is never
+      reconfigured.
+
+      Requires niri patched with virtual output support
+      (modules.desktop.niriVirtualOutputs)
     '';
-
-    output = lib.mkOption {
-      type = lib.types.str;
-      default = "DP-2";
-      description = "niri output to switch for the duration of a stream.";
-    };
 
     niriPackage = lib.mkOption {
       type = lib.types.package;
       default = pkgs.niri;
       defaultText = lib.literalExpression "pkgs.niri";
       description = ''
-        niri package supplying `niri msg`. Should match the running
-        compositor: the IPC is versioned with it.
+        niri package supplying `niri msg`. Must be the same build the session
+        runs: the IPC is versioned with it, and virtual output support is a
+        patch rather than an upstream feature.
+      '';
+    };
+
+    defaultWidth = lib.mkOption {
+      type = lib.types.int;
+      default = 1280;
+      description = ''
+        Width used for a client whose resolution has not been learned yet. The
+        real value is recorded from the first session and used from the next
+        connect onwards. 1280x800 is the Steam Deck's panel.
+      '';
+    };
+
+    defaultHeight = lib.mkOption {
+      type = lib.types.int;
+      default = 800;
+      description = "Height used until a client's resolution is learned.";
+    };
+
+    refresh = lib.mkOption {
+      type = lib.types.int;
+      default = 60;
+      description = "Refresh rate advertised by the virtual output.";
+    };
+
+    removeAfter = lib.mkOption {
+      type = lib.types.int;
+      default = 120;
+      description = ''
+        Seconds of no streaming before the virtual output is removed. Long
+        enough that a reconnect is not mistaken for the session ending —
+        removing it mid-reconnect would drop the capture source the client
+        remembers.
       '';
     };
 
     logPath = lib.mkOption {
       type = lib.types.str;
       default = "%h/.local/share/Steam/logs/streaming_log.txt";
+      description = "Steam's host-side streaming log (systemd specifiers).";
+    };
+
+    connectionsLogPath = lib.mkOption {
+      type = lib.types.str;
+      default = "%h/.local/share/Steam/logs/remote_connections.txt";
       description = ''
-        Steam's host-side streaming log. Read as a systemd specifier, so %h
-        expands to the user's home directory.
+        Steam's remote connection log. Client connections are logged here
+        before streaming negotiates, which is the only hook early enough to
+        have the output in place when Steam picks its capture source.
       '';
     };
   };
@@ -70,7 +106,7 @@ in
     (lib.mkIf cfg.enable {
     systemd.user.services.steam-stream-mode = {
       Unit = {
-        Description = "Fullscreen the streamed game for Steam Remote Play";
+        Description = "Virtual output for the Steam Remote Play client";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
@@ -78,7 +114,14 @@ in
       Service = {
         # The log need not exist yet: the watcher waits for it rather than
         # failing, so a session that has never streamed still starts cleanly.
-        Environment = [ "STREAM_MODE_LOG=${cfg.logPath}" ];
+        Environment = [
+          "STREAM_MODE_LOG=${cfg.logPath}"
+          "STREAM_MODE_CONNECTIONS_LOG=${cfg.connectionsLogPath}"
+          "STREAM_MODE_DEFAULT_WIDTH=${toString cfg.defaultWidth}"
+          "STREAM_MODE_DEFAULT_HEIGHT=${toString cfg.defaultHeight}"
+          "STREAM_MODE_DEFAULT_REFRESH=${toString cfg.refresh}"
+          "STREAM_MODE_REMOVE_AFTER=${toString cfg.removeAfter}"
+        ];
         ExecStart = "${lib.getExe stream-mode} watch";
         Restart = "on-failure";
         RestartSec = 5;

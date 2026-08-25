@@ -1,35 +1,36 @@
-"""Point niri's dynamic cast target at whichever game Steam is streaming.
+"""Give Steam Remote Play a virtual output sized to the streaming client.
 
-Steam Remote Play captures a whole output, so a client receives the entire
-panel: on a 5120x1440 ultrawide a 1280x800 Steam Deck gets 1280x360 of
-content inside an 800-line frame, and whatever happens to be on screen rather
-than the game.
+Steam Remote Play captures a whole output, and asks the portal for MONITOR
+sources only — its picker has no "Window" tab, while other clients' pickers on
+the same portal do. So no window-scoped source can reach it, and on a
+5120x1440 ultrawide a 1280x800 Steam Deck otherwise receives about 1280x360 of
+content inside an 800-line frame, showing whatever happens to be on screen.
 
-Narrowing the output does not fix either half. The PipeWire capture is
-negotiated when the session starts and does not follow a later mode change —
-Steam keeps reporting the old geometry and churns through renegotiation,
-which shows as flicker — and a smaller desktop is still a desktop, with the
-game still a window on it.
+Narrowing the physical output does not fix it either: the PipeWire stream is
+negotiated when the session starts and does not follow a later mode change, so
+Steam keeps reporting the original geometry and the renegotiation churn shows
+as flicker.
 
-niri's dynamic cast target would solve this — it is a PipeWire stream that
-follows one chosen window — but it cannot be used here. It is offered to
-portal clients under the picker's "Window" tab, and Steam's ScreenCast
-request asks for MONITOR sources only: its picker has no Window tab at all,
-while other clients' pickers do. So no window-scoped source can ever reach
-Steam, whatever the portal configuration.
+What works is giving Steam a different monitor to capture. niri (patched with
+virtual output support) can create an output at the client's exact resolution,
+which the game is placed on, leaving the physical display untouched.
 
-What is left is to make the monitor show only the game: fullscreen the game
-window on the streamed output. The stream still carries the whole output, so
-an ultrawide still letterboxes on a 16:10 client, but the content is the game
-rather than whatever happened to be on screen.
+The timings come from Steam's own logs:
 
-Steam logs the pid of each game window it starts streaming:
+    remote_connections.txt:
+        Client 1774... (ali-steam-deck) connected via direct connection
+    streaming_log.txt:
+        >>> Starting desktop stream
+        >>> Capture resolution set to 1280x800
+        Adding window 4194306 (4) for process 2331545 and gameID 2854740
+        Removing process 2163386 for gameID 2854740
+        >>> Stopped desktop stream
 
-    Adding window 4194306 (4) for process 2331545 and gameID 2854740
-
-which is enough to find the matching niri window and cast it, with no
-interaction on the host — the point being that this has to work when nobody
-is at the machine.
+The output has to exist *before* a session starts, because Steam selects its
+capture source then — and because a remembered selection naming an output that
+does not exist cannot be honoured. Connect is therefore the trigger, which is
+safe here: creating an output destroys nothing, unlike the Steam restart that
+made connect unusable as a trigger for the abandoned headless design.
 """
 
 import json
@@ -40,150 +41,358 @@ import subprocess
 import sys
 import time
 
-OUTPUT = os.environ.get("STREAM_MODE_OUTPUT", "DP-2")
+NIRI = os.environ.get("STREAM_MODE_NIRI", "niri")
 LOG = os.environ.get(
     "STREAM_MODE_LOG",
     os.path.expanduser("~/.local/share/Steam/logs/streaming_log.txt"),
 )
-NIRI = os.environ.get("STREAM_MODE_NIRI", "niri")
+CONNECTIONS_LOG = os.environ.get(
+    "STREAM_MODE_CONNECTIONS_LOG",
+    os.path.expanduser("~/.local/share/Steam/logs/remote_connections.txt"),
+)
+STATE = os.environ.get(
+    "STREAM_MODE_STATE",
+    os.path.join(
+        os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")),
+        "stream-mode",
+        "clients.json",
+    ),
+)
+DEFAULT_WIDTH = int(os.environ.get("STREAM_MODE_DEFAULT_WIDTH", "1280"))
+DEFAULT_HEIGHT = int(os.environ.get("STREAM_MODE_DEFAULT_HEIGHT", "800"))
+DEFAULT_REFRESH = int(os.environ.get("STREAM_MODE_DEFAULT_REFRESH", "60"))
+# Long enough that a reconnect is not mistaken for the session ending. Removing
+# the output mid-reconnect would drop the client's remembered capture source.
+REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
 
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
 RES_RE = re.compile(r">>> Capture resolution set to (\d+)x(\d+)")
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
+CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via direct connection")
+CREATED_RE = re.compile(r"Created virtual output:\s*(\S+)")
 
 
 def log(message):
     print(message, flush=True)
 
 
-def pick_mode(modes, want_w, want_h):
-    """Choose the mode that best serves a client of want_w x want_h.
-
-    An exact match is always best: the client renders it 1:1 with no
-    resampling at either end.
-
-    Failing that, the aspect ratio matters more than the resolution, because a
-    mismatched ratio is what produces the letterboxing in the first place.
-    Among modes of equally good ratio, prefer the smallest that still covers
-    the client — a larger one only adds encode work and downscale blur — and
-    fall back to the largest when nothing covers it.
-    """
-    if not modes:
-        return None
-
-    exact = [m for m in modes if m["width"] == want_w and m["height"] == want_h]
-    if exact:
-        return max(exact, key=lambda m: m["refresh_rate"])
-
-    target = want_w / want_h
-
-    def score(mode):
-        ratio = mode["width"] / mode["height"]
-        area = mode["width"] * mode["height"]
-        covers = mode["width"] >= want_w and mode["height"] >= want_h
-        return (
-            round(abs(ratio - target), 4),
-            0 if covers else 1,
-            area if covers else -area,
-            -mode["refresh_rate"],
-        )
-
-    return min(modes, key=score)
+# --- niri ------------------------------------------------------------------
 
 
-def mode_string(mode):
-    return "{}x{}@{:.3f}".format(
-        mode["width"], mode["height"], mode["refresh_rate"] / 1000
-    )
-
-
-def niri_outputs():
+def niri_windows():
     raw = subprocess.run(
-        [NIRI, "msg", "--json", "outputs"],
-        check=True,
-        capture_output=True,
-        text=True,
+        [NIRI, "msg", "--json", "windows"], check=True, capture_output=True, text=True
     ).stdout
     return json.loads(raw)
 
 
-def output_state(name=OUTPUT):
-    outputs = niri_outputs()
-    if name not in outputs:
-        raise SystemExit("stream-mode: output {} not found".format(name))
-    out = outputs[name]
-    modes = out.get("modes") or []
-    index = out.get("current_mode")
-    current = modes[index] if index is not None and index < len(modes) else None
-    return modes, current
+def niri_outputs():
+    raw = subprocess.run(
+        [NIRI, "msg", "--json", "outputs"], check=True, capture_output=True, text=True
+    ).stdout
+    return json.loads(raw)
 
 
-def apply_mode(mode, name=OUTPUT):
+def output_logical_size(name):
+    logical = (niri_outputs().get(name) or {}).get("logical") or {}
+    width, height = logical.get("width"), logical.get("height")
+    if width is None or height is None:
+        return None
+    return (width, height)
+
+
+def create_virtual_output(width, height, refresh):
+    """Create a virtual output and return the name niri assigned it.
+
+    niri names these itself (HEADLESS-1, HEADLESS-2, ...), so the name has to
+    be read back rather than chosen.
+    """
+    result = subprocess.run(
+        [
+            NIRI, "msg", "create-virtual-output",
+            "--width", str(width),
+            "--height", str(height),
+            "--refresh-rate", str(refresh),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    match = CREATED_RE.search(result.stdout or "")
+    return match.group(1) if match else None
+
+
+def remove_virtual_output(name):
     subprocess.run(
-        [NIRI, "msg", "output", name, "mode", mode_string(mode)],
+        [NIRI, "msg", "remove-virtual-output", name], check=False
+    )
+
+
+def move_window_to_output(window_id, output):
+    subprocess.run(
+        [NIRI, "msg", "action", "move-window-to-monitor", output, "--id", str(window_id)],
         check=True,
     )
-    log("stream-mode: {} set to {}".format(name, mode_string(mode)))
+
+
+def fullscreen_window(window_id):
+    subprocess.run(
+        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)], check=True
+    )
+
+
+def focus_window(window_id):
+    subprocess.run(
+        [NIRI, "msg", "action", "focus-window", "--id", str(window_id)], check=False
+    )
+
+
+def is_fullscreen(window, output_size):
+    """Infer fullscreen by geometry.
+
+    niri exposes no fullscreen flag on windows and offers only a *toggle*
+    action, so a blind toggle would un-fullscreen a game that already is.
+    """
+    if output_size is None:
+        return False
+    size = (window.get("layout") or {}).get("window_size")
+    if not size or len(size) != 2:
+        return False
+    return int(size[0]) == int(output_size[0]) and int(size[1]) == int(output_size[1])
+
+
+def parent_pids(pid, limit=8):
+    """Walk up the process tree, nearest ancestor first.
+
+    A game's own pid often owns no niri window: under gamescope or
+    pressure-vessel the window belongs to an ancestor.
+    """
+    chain = []
+    current = pid
+    for _ in range(limit):
+        try:
+            with open("/proc/{}/stat".format(current)) as fh:
+                # comm can contain spaces and parentheses; ppid follows the
+                # last ')'.
+                fields = fh.read().rpartition(")")[2].split()
+            current = int(fields[1])
+        except (OSError, ValueError, IndexError):
+            break
+        if current <= 1:
+            break
+        chain.append(current)
+    return chain
+
+
+def window_for_pid(pid, windows=None):
+    if windows is None:
+        windows = niri_windows()
+    by_pid = {}
+    for window in windows:
+        if window.get("pid") is not None:
+            by_pid.setdefault(window["pid"], window)
+    if pid in by_pid:
+        return by_pid[pid]
+    for ancestor in parent_pids(pid):
+        if ancestor in by_pid:
+            return by_pid[ancestor]
+    return None
+
+
+# --- learned client resolutions --------------------------------------------
+
+
+def load_clients(path=None):
+    try:
+        with open(path or STATE) as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_clients(clients, path=None):
+    path = path or STATE
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            json.dump(clients, fh, indent=1)
+            fh.write("\n")
+    except OSError as exc:
+        log("stream-mode: could not persist client sizes: {}".format(exc))
+
+
+def client_size(client_id, clients):
+    """Resolution to build the output at, defaulting until one is learned."""
+    entry = clients.get(str(client_id))
+    if isinstance(entry, list) and len(entry) == 2:
+        return int(entry[0]), int(entry[1])
+    return DEFAULT_WIDTH, DEFAULT_HEIGHT
+
+
+# --- session ----------------------------------------------------------------
 
 
 class Session:
-    """Tracks one streaming session's mode change so it can be undone once."""
+    """Owns the virtual output and what sits on it, for one client at a time."""
 
-    def __init__(self):
-        self.saved = None
+    def __init__(self, settle_attempts=10, settle_delay=0.5):
+        self.output = None
+        self.client_id = None
+        self.game_pid = None
+        self.learned = False
+        self.clients = load_clients()
+        self.settle_attempts = settle_attempts
+        self.settle_delay = settle_delay
 
-    def start(self, want_w, want_h):
-        if self.saved is not None:
-            # Already applied for this session. Steam re-logs the capture
-            # resolution after the output changes under it, and reacting to
-            # that would chase its own tail.
-            return
+    # -- lifecycle
 
-        modes, current = output_state()
-        chosen = pick_mode(modes, want_w, want_h)
-        if chosen is None or current is None:
-            log("stream-mode: no usable mode for {}x{}".format(want_w, want_h))
-            return
-        if (chosen["width"], chosen["height"]) == (current["width"], current["height"]):
-            log("stream-mode: already {}x{}, leaving it".format(want_w, want_h))
-            return
+    def connect(self, client_id, client_name):
+        if self.output is not None:
+            # Already prepared. A reconnect must not build a second output, and
+            # must not disturb the one the client may already have selected.
+            self.client_id = client_id
+            return False
 
-        self.saved = current
-        apply_mode(chosen)
-
-    def restore(self):
-        if self.saved is None:
-            return
-        saved, self.saved = self.saved, None
+        width, height = client_size(client_id, self.clients)
         try:
-            apply_mode(saved)
+            name = create_virtual_output(width, height, DEFAULT_REFRESH)
         except (subprocess.CalledProcessError, OSError) as exc:
-            log("stream-mode: could not restore mode: {}".format(exc))
+            log("stream-mode: could not create a virtual output: {}".format(exc))
+            return False
+        if name is None:
+            log("stream-mode: niri did not report a virtual output name")
+            return False
+
+        self.output = name
+        self.client_id = client_id
+        self.learned = False
+        log(
+            "stream-mode: {} connected, created {} at {}x{}".format(
+                client_name or client_id, name, width, height
+            )
+        )
+        return True
+
+    def teardown(self):
+        if self.output is None:
+            return False
+        name, self.output = self.output, None
+        self.game_pid = None
+        remove_virtual_output(name)
+        log("stream-mode: removed {}".format(name))
+        return True
+
+    # -- learning
+
+    def learn(self, width, height):
+        """Record the resolution the client asked for, once per session.
+
+        Steam re-logs the capture resolution after negotiation with a derived
+        value, so only the first of a session is the client's own.
+        """
+        if self.learned or self.client_id is None:
+            return False
+        self.learned = True
+        key = str(self.client_id)
+        if self.clients.get(key) == [width, height]:
+            return False
+        self.clients[key] = [width, height]
+        save_clients(self.clients)
+        log(
+            "stream-mode: learned {}x{} for client {}; used from next connect".format(
+                width, height, self.client_id
+            )
+        )
+        return True
+
+    # -- placing the game
+
+    def stage(self, pid, game_id):
+        if self.output is None:
+            return False
+
+        # The niri window frequently does not exist yet when Steam logs the
+        # pid, so this retries rather than resolving once and giving up.
+        for _ in range(self.settle_attempts):
+            try:
+                window = window_for_pid(pid, niri_windows())
+            except (subprocess.CalledProcessError, ValueError, OSError) as exc:
+                log("stream-mode: could not query niri windows: {}".format(exc))
+                return False
+
+            if window is not None:
+                self.game_pid = pid
+                try:
+                    move_window_to_output(window["id"], self.output)
+                except (subprocess.CalledProcessError, OSError) as exc:
+                    log("stream-mode: could not move window: {}".format(exc))
+                    return False
+                focus_window(window["id"])
+                self._ensure_fullscreen(window["id"])
+                log(
+                    "stream-mode: staged {} (window {}, pid {}, game {}) on {}".format(
+                        window.get("app_id") or "game",
+                        window["id"],
+                        pid,
+                        game_id,
+                        self.output,
+                    )
+                )
+                return True
+            time.sleep(self.settle_delay)
+
+        log("stream-mode: no niri window found for pid {} (game {})".format(pid, game_id))
+        return False
+
+    def _ensure_fullscreen(self, window_id):
+        try:
+            output_size = output_logical_size(self.output)
+            window = next(
+                (w for w in niri_windows() if w.get("id") == window_id), None
+            )
+        except (subprocess.CalledProcessError, ValueError, OSError):
+            return
+        if window is None or is_fullscreen(window, output_size):
+            return
+        try:
+            fullscreen_window(window_id)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            log("stream-mode: could not fullscreen window: {}".format(exc))
+
+    def unstage(self, pid=None):
+        if self.game_pid is None:
+            return False
+        if pid is not None and pid != self.game_pid:
+            return False
+        self.game_pid = None
+        return True
+
+
+# --- log following ----------------------------------------------------------
 
 
 def follow(path, seek_to_end=True, idle_yield=False):
     """Yield lines appended to path, surviving truncation and replacement.
 
-    Steam truncates this log on client restart and rotates it to
-    streaming_log.previous.txt, so a plain read loop silently goes deaf.
+    Steam truncates these logs on client restart, so a plain read loop silently
+    goes deaf.
 
     seek_to_end skips whatever the file already holds, which is what a watcher
-    wants on startup: a past session's start line must not be replayed as if
-    it were live. Pass False to read from the beginning.
+    wants on startup: a past session's lines must not be replayed as if live.
 
     idle_yield emits None whenever a poll finds nothing, so a caller with a
-    deadline to honour is not blocked until the next line happens to arrive.
+    deadline to honour is not blocked until the next line arrives.
     """
     handle = None
     inode = None
     pending = b""
     # Only the very first open honours seek_to_end. A later reopen means the
     # file was truncated or replaced, and the lines that triggered it are
-    # exactly the ones worth reading — skipping to the end there would lose a
-    # whole session.
-
+    # exactly the ones worth reading.
+    #
     # Binary mode deliberately: a text-mode tell() returns an opaque cookie
     # rather than a byte offset, so comparing it against st_size to detect
     # truncation does not reliably work.
@@ -211,6 +420,8 @@ def follow(path, seek_to_end=True, idle_yield=False):
                 handle.close()
                 handle = None
                 time.sleep(1.0)
+                if idle_yield:
+                    yield None
                 continue
 
             if stat.st_ino != inode or stat.st_size < handle.tell():
@@ -226,185 +437,64 @@ def follow(path, seek_to_end=True, idle_yield=False):
                 handle.close()
                 handle = None
             time.sleep(1.0)
-
-
-# --- Dynamic cast targeting -------------------------------------------------
-
-
-def niri_windows():
-    raw = subprocess.run(
-        [NIRI, "msg", "--json", "windows"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    return json.loads(raw)
-
-
-def parent_pids(pid, limit=8):
-    """Walk up the process tree, nearest ancestor first.
-
-    A game's own pid often owns no niri window: under gamescope or
-    pressure-vessel the window belongs to an ancestor, so the pid Steam logs
-    has to be resolved upwards before giving up.
-    """
-    chain = []
-    current = pid
-    for _ in range(limit):
-        try:
-            with open("/proc/{}/stat".format(current)) as fh:
-                # comm can contain spaces and parentheses; ppid is the field
-                # after the last ')'.
-                fields = fh.read().rpartition(")")[2].split()
-            current = int(fields[1])
-        except (OSError, ValueError, IndexError):
-            break
-        if current <= 1:
-            break
-        chain.append(current)
-    return chain
-
-
-def window_for_pid(pid, windows=None):
-    """Find the niri window belonging to pid, or to its nearest ancestor."""
-    if windows is None:
-        windows = niri_windows()
-
-    by_pid = {}
-    for window in windows:
-        if window.get("pid") is not None:
-            by_pid.setdefault(window["pid"], window)
-
-    if pid in by_pid:
-        return by_pid[pid]
-    for ancestor in parent_pids(pid):
-        if ancestor in by_pid:
-            return by_pid[ancestor]
-    return None
-
-
-def output_logical_size(name=OUTPUT):
-    outputs = niri_outputs()
-    logical = (outputs.get(name) or {}).get("logical") or {}
-    width, height = logical.get("width"), logical.get("height")
-    if width is None or height is None:
-        return None
-    return (width, height)
-
-
-def is_fullscreen(window, output_size):
-    """Infer fullscreen by geometry.
-
-    niri exposes no fullscreen flag on windows and offers only a *toggle*
-    action, so a blind toggle would un-fullscreen a game that already is.
-    A window filling its output's logical size is taken as fullscreen.
-    """
-    if output_size is None:
-        return False
-    size = (window.get("layout") or {}).get("window_size")
-    if not size or len(size) != 2:
-        return False
-    return int(size[0]) == int(output_size[0]) and int(size[1]) == int(output_size[1])
-
-
-def fullscreen_window(window_id):
-    subprocess.run(
-        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)],
-        check=True,
-    )
-
-
-def focus_window(window_id):
-    subprocess.run(
-        [NIRI, "msg", "action", "focus-window", "--id", str(window_id)],
-        check=False,
-    )
-
-
-class Stage:
-    """Puts the streamed game alone on the captured output."""
-
-    def __init__(self, settle_attempts=10, settle_delay=0.5):
-        self.game_pid = None
-        self.settle_attempts = settle_attempts
-        self.settle_delay = settle_delay
-
-    def target(self, pid, game_id):
-        # The niri window frequently does not exist yet when Steam logs the
-        # pid, so this retries rather than resolving once and giving up.
-        for _ in range(self.settle_attempts):
-            try:
-                windows = niri_windows()
-                window = window_for_pid(pid, windows)
-                output_size = output_logical_size()
-            except (subprocess.CalledProcessError, ValueError, OSError) as exc:
-                log("stream-mode: could not query niri: {}".format(exc))
-                return False
-
-            if window is not None:
-                self.game_pid = pid
-                focus_window(window["id"])
-                if is_fullscreen(window, output_size):
-                    log(
-                        "stream-mode: {} (window {}) already fullscreen".format(
-                            window.get("app_id") or "game", window["id"]
-                        )
-                    )
-                    return True
-                try:
-                    fullscreen_window(window["id"])
-                except (subprocess.CalledProcessError, OSError) as exc:
-                    log("stream-mode: could not fullscreen window: {}".format(exc))
-                    return False
-                log(
-                    "stream-mode: fullscreened {} (window {}, pid {}, game {})".format(
-                        window.get("app_id") or "game", window["id"], pid, game_id
-                    )
-                )
-                return True
-            time.sleep(self.settle_delay)
-
-        log("stream-mode: no niri window found for pid {} (game {})".format(pid, game_id))
-        return False
-
-    def release(self, pid=None):
-        # Nothing to undo: the game's window goes away with the game, and
-        # niri drops its fullscreen state with it.
-        if self.game_pid is None:
-            return False
-        if pid is not None and pid != self.game_pid:
-            return False
-        self.game_pid = None
-        return True
+            if idle_yield:
+                yield None
 
 
 def watch():
-    stage = Stage()
+    session = Session()
 
     def bail(_signum, _frame):
-        stage.release()
+        session.teardown()
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
     signal.signal(signal.SIGINT, bail)
 
-    log("stream-mode: watching {} for streamed game windows".format(LOG))
+    log("stream-mode: watching {} and {}".format(CONNECTIONS_LOG, LOG))
+    streaming = follow(LOG, idle_yield=True)
+    connections = follow(CONNECTIONS_LOG, idle_yield=True)
+    remove_at = None
+
     try:
-        for line in follow(LOG):
-            match = ADD_WINDOW_RE.search(line)
-            if match:
-                stage.target(int(match.group(1)), int(match.group(2)))
-                continue
+        while True:
+            now = time.monotonic()
 
-            match = REMOVE_PROC_RE.search(line)
-            if match:
-                stage.release(int(match.group(1)))
-                continue
+            line = next(connections)
+            if line is not None:
+                match = CONNECT_RE.search(line)
+                if match:
+                    remove_at = None
+                    session.connect(int(match.group(1)), match.group(2))
 
-            if STOP_RE.search(line):
-                stage.release()
+            line = next(streaming)
+            if line is not None:
+                match = ADD_WINDOW_RE.search(line)
+                if match:
+                    remove_at = None
+                    session.stage(int(match.group(1)), int(match.group(2)))
+                    continue
+
+                match = RES_RE.search(line)
+                if match:
+                    session.learn(int(match.group(1)), int(match.group(2)))
+                    continue
+
+                match = REMOVE_PROC_RE.search(line)
+                if match:
+                    session.unstage(int(match.group(1)))
+                    continue
+
+                if START_RE.search(line):
+                    remove_at = None
+                elif STOP_RE.search(line):
+                    remove_at = now + REMOVE_AFTER
+
+            if remove_at is not None and time.monotonic() >= remove_at:
+                remove_at = None
+                session.teardown()
     finally:
-        stage.release()
+        session.teardown()
 
 
 def main(argv):
@@ -412,45 +502,31 @@ def main(argv):
         watch()
         return 0
 
-    if len(argv) == 3 and argv[1] == "match":
-        try:
-            want_w, want_h = (int(part) for part in argv[2].split("x", 1))
-        except ValueError:
-            print("stream-mode: expected WIDTHxHEIGHT", file=sys.stderr)
-            return 2
-        modes, _ = output_state()
-        chosen = pick_mode(modes, want_w, want_h)
-        if chosen is None:
-            print("stream-mode: no modes available", file=sys.stderr)
-            return 1
-        apply_mode(chosen)
-        return 0
+    if len(argv) >= 2 and argv[1] == "create":
+        width = int(argv[2]) if len(argv) > 2 else DEFAULT_WIDTH
+        height = int(argv[3]) if len(argv) > 3 else DEFAULT_HEIGHT
+        name = create_virtual_output(width, height, DEFAULT_REFRESH)
+        print(name or "")
+        return 0 if name else 1
 
-    if len(argv) == 2 and argv[1] == "restore":
-        modes, _ = output_state()
-        preferred = [m for m in modes if m.get("is_preferred")]
-        if not preferred:
-            print("stream-mode: no preferred mode to restore", file=sys.stderr)
-            return 1
-        apply_mode(max(preferred, key=lambda m: m["refresh_rate"]))
+    if len(argv) == 3 and argv[1] == "remove":
+        remove_virtual_output(argv[2])
         return 0
-
-    if len(argv) == 3 and argv[1] == "stage":
-        try:
-            pid = int(argv[2])
-        except ValueError:
-            print("stream-mode: expected a pid", file=sys.stderr)
-            return 2
-        return 0 if Stage().target(pid, 0) else 1
 
     if len(argv) == 2 and argv[1] == "status":
-        _, current = output_state()
-        print("stream-mode: {} at {}".format(OUTPUT, mode_string(current)))
+        outputs = niri_outputs()
+        for name, out in outputs.items():
+            logical = out.get("logical") or {}
+            print(
+                "{}: {}x{} ({})".format(
+                    name, logical.get("width"), logical.get("height"), out.get("make")
+                )
+            )
+        print("learned clients: {}".format(load_clients()))
         return 0
 
     print(
-        "usage: stream-mode "
-        "[watch|stage PID|match WIDTHxHEIGHT|restore|status]",
+        "usage: stream-mode [watch|create [W H]|remove NAME|status]",
         file=sys.stderr,
     )
     return 2

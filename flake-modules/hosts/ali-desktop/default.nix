@@ -74,7 +74,7 @@ in {
       inputs.home-manager.nixosModules.home-manager
 
       # Home-manager configuration
-      ({ lib, pkgs, ... }: {
+      ({ config, lib, pkgs, ... }: {
         nixpkgs.overlays = [
           self.overlays._1password
           self.overlays.python-lsp-server-jedi-relax
@@ -87,6 +87,12 @@ in {
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
           imports = [ self.homeModules.home-linux self.homeModules.vr ];
+          # The session's niri, which carries the virtual output patch. `niri
+          # msg` must match the running compositor: the IPC is versioned with
+          # it, and virtual outputs are a patch rather than an upstream
+          # feature, so the unpatched package would lack the subcommand.
+          custom.steamStreamMode.niriPackage = config.programs.niri.package;
+
           custom.niri.extraOutputs = ''
             output "DP-2" {
                 variable-refresh-rate
