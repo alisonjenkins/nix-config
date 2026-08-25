@@ -428,6 +428,11 @@ in {
           niriVirtualOutputs = true;
 
           gaming = {
+            # Without this a Deck streaming the 1280x800 virtual output
+            # receives DP-2's 5120x1440 shape fitted to 1280 wide — a
+            # 1280x360 letterbox — because Remote Play sizes from the largest
+            # monitor X reports rather than from the stream it was given.
+            steamStreamDisplayFilter = true;
             gpuVendor = "amd";
             cpuTopology = null;  # Let Wine auto-detect; "16:32" string was misparsed as bitmap index 32 (out of range on 32-thread host) → NULL deref in games (e.g. FH6 FHE01)
             enableDxvkStateCache = true;
@@ -762,6 +767,28 @@ in {
         nixpkgs = {
           overlays = [
             self.overlays.lqx-pin-packages
+
+            # libva has to match the mesa forced above, for every consumer and
+            # not just hardware.graphics. mesa's radeonsi VAAPI driver exports
+            # a versioned __vaDriverInit_<VA major.minor>, and libva only probes
+            # down from its own version, so a libva older than the driver finds
+            # no init symbol at all and hardware video vanishes silently.
+            #
+            # Steam is how this surfaced: its FHS root ships the base package
+            # set's libva 2.23, which shadows the matching one that
+            # hardware.graphics.extraPackages32 puts in the same tree. Remote
+            # Play then logged
+            #   libva: VA-API version 1.23.0
+            #   .../radeonsi_drv_video.so has no function __vaDriverInit_1_0
+            # against a mesa 26.2 driver exporting __vaDriverInit_1_24, fell
+            # through every encoder and streamed with no hardware encoding.
+            (_final: prev: {
+              # prev.master is instantiated for the enclosing platform, so this
+              # is the i686 libva inside pkgsi686Linux and the x86_64 one
+              # outside it — both have to move together or the 32-bit Steam
+              # client is left behind, which is the case that broke.
+              libva = prev.master.libva;
+            })
           ];
         };
 
