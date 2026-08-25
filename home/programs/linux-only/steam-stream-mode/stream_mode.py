@@ -275,11 +275,35 @@ def wait_until_listed(name, timeout=5.0, interval=0.2):
         time.sleep(interval)
 
 
+def niri_workspaces():
+    raw = subprocess.run(
+        [NIRI, "msg", "--json", "workspaces"],
+        check=True, capture_output=True, text=True, env=niri_env(),
+    ).stdout
+    return json.loads(raw)
+
+
 def existing_output_names():
+    """Names of outputs niri currently has.
+
+    Both sources are needed. `niri msg outputs` omits virtual outputs in at
+    least one state — with no physical output attached it returns nothing at
+    all, while the workspaces it reports are still sitting on the virtual one.
+    Trusting the output list alone made the service decide a perfectly good
+    output did not exist.
+    """
+    names = set()
     try:
-        return set(niri_outputs().keys())
+        names |= set(niri_outputs().keys())
     except (subprocess.CalledProcessError, ValueError, OSError):
-        return set()
+        pass
+    try:
+        names |= {
+            w.get("output") for w in niri_workspaces() if w.get("output")
+        }
+    except (subprocess.CalledProcessError, ValueError, OSError):
+        pass
+    return names
 
 
 def enable_output(name):
@@ -864,6 +888,33 @@ def follow(path, seek_to_end=True, idle_yield=False):
                 yield None
 
 
+def stream_in_progress(path=None):
+    """Is a stream running right now, judged from the log's last marker?
+
+    The start marker may already have passed when this service starts — a
+    restart mid-stream, which happens often while iterating — and nothing
+    would then publish a target until the next stream began.
+    """
+    path = path or LOG
+    try:
+        with open(path, "rb") as fh:
+            # The markers are rare; the tail is enough and the file is large.
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - 200_000))
+            tail = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return False
+
+    last = None
+    for line in tail.splitlines():
+        if START_RE.search(line):
+            last = True
+        elif STOP_RE.search(line):
+            last = False
+    return last is True
+
+
 def watch():
     session = Session()
 
@@ -886,6 +937,9 @@ def watch():
     # A target left behind by a previous run would send desktop launches at an
     # output nothing is streaming to.
     withdraw_target()
+    if stream_in_progress():
+        log("stream-mode: a stream is already in progress")
+        session.begin_stream()
     streaming = follow(LOG, idle_yield=True)
     connections = follow(CONNECTIONS_LOG, idle_yield=True)
     remove_at = None
