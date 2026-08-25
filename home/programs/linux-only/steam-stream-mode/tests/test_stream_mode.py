@@ -418,6 +418,52 @@ class TestSession(unittest.TestCase):
         self.assertFalse(s.unstage(500))
 
 
+class TestStreamTarget(unittest.TestCase):
+    """The gamescope shim reads this to size a launching game."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._real = stream_mode.TARGET_FILE
+        stream_mode.TARGET_FILE = os.path.join(self.tmp.name, "sub", "target.json")
+
+    def tearDown(self):
+        stream_mode.TARGET_FILE = self._real
+        self.tmp.cleanup()
+
+    def read(self):
+        with open(stream_mode.TARGET_FILE) as fh:
+            return json.load(fh)
+
+    def test_publishes_what_the_shim_needs(self):
+        self.assertTrue(stream_mode.publish_target("steam", 1280, 800, 60))
+        self.assertEqual(
+            self.read(), {"output": "steam", "width": 1280, "height": 800, "refresh": 60}
+        )
+
+    def test_refresh_is_optional(self):
+        stream_mode.publish_target("steam", 1280, 800)
+        self.assertNotIn("refresh", self.read())
+
+    def test_withdraw_removes_it(self):
+        stream_mode.publish_target("steam", 1280, 800)
+        self.assertTrue(stream_mode.withdraw_target())
+        self.assertFalse(os.path.exists(stream_mode.TARGET_FILE))
+
+    def test_withdraw_is_idempotent(self):
+        """It runs on shutdown paths that may not have published anything."""
+        self.assertFalse(stream_mode.withdraw_target())
+
+    def test_publish_replaces_atomically(self):
+        """A game launch can read this at any moment; a partial file is worse
+        than a stale one."""
+        stream_mode.publish_target("steam", 1280, 800)
+        stream_mode.publish_target("steam", 1920, 1200)
+        self.assertEqual(self.read()["width"], 1920)
+        leftovers = [f for f in os.listdir(os.path.dirname(stream_mode.TARGET_FILE))
+                     if f.endswith(".new")]
+        self.assertEqual(leftovers, [])
+
+
 class TestFollow(unittest.TestCase):
     def test_partial_line_is_withheld_until_complete(self):
         with tempfile.TemporaryDirectory() as tmp:
