@@ -387,6 +387,15 @@ in {
             };
           };
 
+          # Nested (headless-backend) validation confirmed the mechanism: a
+          # virtual output registers on org.gnome.Mutter.DisplayConfig and
+          # ScreenCast exactly like a physical monitor, and negotiates the
+          # requested resolution. See
+          # docs/superpowers/specs/2026-08-25-niri-virtual-output-streaming-design.md
+          # §5b for the full writeup. Flip back to false to revert to
+          # unpatched upstream niri instantly if this goes bad.
+          niriVirtualOutputs = true;
+
           gaming = {
             gpuVendor = "amd";
             cpuTopology = null;  # Let Wine auto-detect; "16:32" string was misparsed as bitmap index 32 (out of range on 32-thread host) → NULL deref in games (e.g. FH6 FHE01)
