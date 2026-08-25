@@ -878,6 +878,49 @@ index db71da6d..c10a7764 100644
      };
  
      Ok(response)
+diff --git a/src/layout/mod.rs b/src/layout/mod.rs
+index 5df3959a..ef7517b6 100644
+--- a/src/layout/mod.rs
++++ b/src/layout/mod.rs
+@@ -820,6 +820,19 @@ impl<W: LayoutElement> Layout<W> {
+                     primary.clean_up_workspaces();
+                 }
+ 
++                // Every workspace on the primary can belong to the output that
++                // is connecting — a virtual output that held the session while
++                // a physical one was away, with its workspaces pinned back to
++                // that display by open-on-output. Draining them all leaves the
++                // primary with none, which breaks the invariant asserted in
++                // Monitor::verify_invariants and panics the next time anything
++                // indexes workspaces[active_workspace_idx]; in practice, the
++                // screencast render path, taking the session down.
++                if primary.workspaces.is_empty() {
++                    primary.add_workspace_bottom();
++                    primary.active_workspace_idx = 0;
++                }
++
+                 workspaces.reverse();
+ 
+                 let ws_id_to_activate = self.last_active_workspace_id.remove(&output.name());
+diff --git a/src/layout/monitor.rs b/src/layout/monitor.rs
+index f119e619..09994301 100644
+--- a/src/layout/monitor.rs
++++ b/src/layout/monitor.rs
+@@ -1647,7 +1647,13 @@ impl<W: LayoutElement> Monitor<W> {
+             return false;
+         }
+ 
+-        let ws = &self.workspaces[self.active_workspace_idx];
++        // A monitor is supposed to always have a workspace, but a crash here
++        // takes the whole session down, and this runs from the screencast
++        // render path where a transiently empty monitor has been observed.
++        // Refusing to render above the top layer is a harmless answer.
++        let Some(ws) = self.workspaces.get(self.active_workspace_idx) else {
++            return false;
++        };
+         ws.render_above_top_layer()
+     }
+ 
 diff --git a/src/main.rs b/src/main.rs
 index e80992ee..30f13c79 100644
 --- a/src/main.rs
