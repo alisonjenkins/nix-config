@@ -252,6 +252,35 @@ class TestSession(unittest.TestCase):
         self.assertEqual(self.modes, [])
         self.assertEqual(self.enabled, [])
 
+    def test_connect_publishes_the_target_before_enabling_the_output(self):
+        """Order matters: the filter has to be armed before the X event.
+
+        Steam re-reads its monitor list when outputs change, and enabling the
+        output is that change. The display filter consults the published
+        target on every such query and is inert without one, so publishing
+        after enabling would miss the very read it exists to influence.
+        """
+        order = []
+        real_publish = stream_mode.publish_target
+        real_enabled = stream_mode.set_output_enabled
+
+        def publish(*a, **k):
+            order.append("publish")
+            return True
+
+        def enabled(name, on):
+            order.append("enable" if on else "disable")
+            return True
+
+        stream_mode.publish_target = publish
+        stream_mode.set_output_enabled = enabled
+        try:
+            self.session().connect(123, "deck")
+        finally:
+            stream_mode.publish_target = real_publish
+            stream_mode.set_output_enabled = real_enabled
+        self.assertEqual(order, ["publish", "enable"])
+
     def test_connect_turns_the_output_on(self):
         s = self.session()
         self.assertTrue(s.connect(123, "ali-steam-deck"))
