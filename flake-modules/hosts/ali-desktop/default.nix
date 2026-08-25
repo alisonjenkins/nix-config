@@ -761,9 +761,23 @@ in {
             package = pkgs.jdk17;
           };
 
-          niri = {
+          niri = let
+            upstreamNiri = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+            # Rebased QaidVoid/niri feat/virtual — adds `create-virtual-output`
+            # IPC and a `virtual` output kind. Gated behind
+            # modules.desktop.niriVirtualOutputs (off by default) until §5b
+            # nested validation passes; see the patch file's header comment
+            # in patches/niri-virtual-outputs.patch for provenance.
+            patchedNiri = upstreamNiri.overrideAttrs (old: {
+              patches = (old.patches or []) ++ [
+                (self + "/patches/niri-virtual-outputs.patch")
+              ];
+            });
+          in {
             enable = true;
-            package = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+            package = if config.modules.desktop.niriVirtualOutputs
+              then patchedNiri
+              else upstreamNiri;
           };
 
           steam = let
