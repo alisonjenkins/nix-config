@@ -12,6 +12,19 @@ let
       ''
         open-on-output "${cfg.workspaceOutput}"'';
 
+  # `virtual-output` tells the patched niri to create the output itself rather
+  # than wait for a connector that will never appear; `mode` is the only thing
+  # that can say how big it is, since there is no connector advertising modes.
+  mkVirtualOutput = name: o: ''
+    output "${name}" {
+        virtual-output
+        mode "${toString o.width}x${toString o.height}@${toString o.refresh}"${
+          lib.optionalString o.off "\n    off"}
+    }'';
+
+  virtualOutputBlocks =
+    lib.concatStringsSep "\n\n" (lib.mapAttrsToList mkVirtualOutput cfg.virtualOutputs);
+
   mkWorkspace = name: body:
     let
       indent = block:
@@ -60,6 +73,64 @@ in {
       type = lib.types.lines;
       default = "";
       description = "Additional KDL output blocks prepended before the main config.";
+    };
+
+    virtualOutputs = lib.mkOption {
+      default = { };
+      example = {
+        steam = { width = 1280; height = 800; refresh = 90; };
+      };
+      description = ''
+        Headless outputs niri creates itself, keyed by output name.
+
+        These exist for streaming: Remote Play captures a whole output and
+        only ever asks the portal for monitors, so a client is served by
+        giving it an output its own size rather than a slice of the desktop's.
+
+        Declared here rather than created over IPC so they survive a
+        compositor restart and are in place before anything looks for them.
+        They start disabled — an idle output left in the layout is where a KVM
+        switch dumps the desktop — and whatever drives streaming turns one on,
+        resizing it to the client first if need be.
+
+        Requires niri patched with virtual output support
+        (modules.desktop.niriVirtualOutputs).
+      '';
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          width = lib.mkOption {
+            type = lib.types.ints.positive;
+            description = "Width in pixels, before any client resizes it.";
+          };
+
+          height = lib.mkOption {
+            type = lib.types.ints.positive;
+            description = "Height in pixels, before any client resizes it.";
+          };
+
+          refresh = lib.mkOption {
+            type = lib.types.ints.positive;
+            default = 60;
+            description = ''
+              Refresh rate in Hz. It caps the rate a client can be sent at, so
+              it wants to match the client's panel — 90 for an OLED Steam Deck,
+              60 for the LCD one.
+            '';
+          };
+
+          off = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              Keep the output out of the layout until something turns it on.
+
+              On by default: an enabled output with no client attached still
+              takes windows, and is where a KVM switch or a sleeping monitor
+              lands the desktop.
+            '';
+          };
+        };
+      });
     };
 
     workspaceOutput = lib.mkOption {
@@ -113,6 +184,8 @@ in {
       }
 
       ${cfg.extraOutputs}
+
+      ${virtualOutputBlocks}
 
       hotkey-overlay {
           skip-at-startup

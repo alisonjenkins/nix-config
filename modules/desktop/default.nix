@@ -630,7 +630,7 @@ in
       description = ''
         Build niri with the rebased QaidVoid `feat/virtual` patch
         (patches/niri-virtual-outputs.patch), adding
-        `niri msg action create-virtual-output` and a `virtual` output kind.
+        `niri msg create-virtual-output` and a `virtual` output kind.
         Off by default: this patches the compositor that runs the login
         session, and must only be flipped on after nested validation
         (see docs/superpowers/specs/2026-08-25-niri-virtual-output-streaming-design.md

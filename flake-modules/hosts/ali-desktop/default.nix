@@ -111,6 +111,19 @@ in {
             }
           '';
 
+          # The output Remote Play clients are given. Declared rather than
+          # created on demand so it is in place before Steam resolves the
+          # capture source it remembers, and so it survives a niri restart.
+          # Sized for the Steam Deck to begin with; a client with a different
+          # panel is served by resizing it rather than replacing it, which
+          # would invalidate that remembered source.
+          custom.niri.virtualOutputs.steam = {
+            width = 1280;
+            height = 800;
+            # The OLED Deck's panel. Caps the rate the client can be sent at.
+            refresh = 90;
+          };
+
           programs.scopebuddy = {
             enable = true;
             # -O DP-2 required: scopebuddy errors "Primary display not supported!"
@@ -795,6 +808,11 @@ in {
             # modules.desktop.niriVirtualOutputs (off by default) until §5b
             # nested validation passes; see the patch file's header comment
             # in patches/niri-virtual-outputs.patch for provenance.
+            #
+            # The patch is generated, not edited: it is
+            # `git diff e9b215fe HEAD` on the fork's rebase-feat-virtual
+            # branch. Fixes belong there as commits, so they keep their
+            # rationale and their tests; regenerate the patch afterwards.
             patchedNiri = upstreamNiri.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
                 (self + "/patches/niri-virtual-outputs.patch")
