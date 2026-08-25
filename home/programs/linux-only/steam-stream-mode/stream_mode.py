@@ -268,7 +268,7 @@ def wait_until_listed(name, timeout=5.0, interval=0.2):
     """
     deadline = time.monotonic() + timeout
     while True:
-        if name in existing_output_names():
+        if name in usable_output_names():
             return True
         if time.monotonic() >= deadline:
             return False
@@ -283,24 +283,31 @@ def niri_workspaces():
     return json.loads(raw)
 
 
-def existing_output_names():
-    """Names of outputs niri currently has.
+def usable_output_names():
+    """Outputs niri lists — the ones that actually work.
 
-    Both sources are needed. `niri msg outputs` omits virtual outputs in at
-    least one state — with no physical output attached it returns nothing at
-    all, while the workspaces it reports are still sitting on the virtual one.
-    Trusting the output list alone made the service decide a perfectly good
-    output did not exist.
+    A virtual output that has been through a physical output's disconnect
+    survives as a name but comes back permanently not connected: absent from
+    this list, impossible to enable, and only recoverable by removing and
+    making it again.
     """
-    names = set()
     try:
-        names |= set(niri_outputs().keys())
+        return set(niri_outputs().keys())
     except (subprocess.CalledProcessError, ValueError, OSError):
-        pass
+        return set()
+
+
+def taken_output_names():
+    """Names niri will refuse to create, whether or not they work.
+
+    A stuck output still holds its name, and the workspaces sitting on it
+    still report it, so this is wider than the usable set. Keeping the two
+    apart matters: the usable set decides whether to adopt, this one decides
+    whether creating would collide.
+    """
+    names = usable_output_names()
     try:
-        names |= {
-            w.get("output") for w in niri_workspaces() if w.get("output")
-        }
+        names |= {w.get("output") for w in niri_workspaces() if w.get("output")}
     except (subprocess.CalledProcessError, ValueError, OSError):
         pass
     return names
@@ -506,7 +513,7 @@ class Session:
         # off it by giving them a home output (custom.niri.workspaceOutput),
         # which is what returns them to the physical display when it comes
         # back — not by withholding the output.
-        if OUTPUT_NAME in existing_output_names():
+        if OUTPUT_NAME in usable_output_names():
             self.output = OUTPUT_NAME
             # Enabled unconditionally: an output left over from a previous run
             # may be on or off, and the portal only offers it when it is on.
@@ -526,7 +533,7 @@ class Session:
             # unusable, and blocking the name. Enabling and re-checking is what
             # tells the two apart.
             enable_output(OUTPUT_NAME)
-            if OUTPUT_NAME in existing_output_names():
+            if OUTPUT_NAME in usable_output_names():
                 self.output = OUTPUT_NAME
                 log("stream-mode: adopted the existing {} output".format(OUTPUT_NAME))
                 return False
@@ -731,7 +738,7 @@ class Session:
         if self.output is None:
             # Nothing is streaming: the output is meant to be absent.
             return False
-        if self.output in existing_output_names():
+        if self.output in usable_output_names():
             return False
 
         log("stream-mode: {} has gone away, rebuilding".format(self.output))
@@ -999,7 +1006,7 @@ def main(argv):
     if len(argv) >= 2 and argv[1] == "create":
         width = int(argv[2]) if len(argv) > 2 else DEFAULT_WIDTH
         height = int(argv[3]) if len(argv) > 3 else DEFAULT_HEIGHT
-        if OUTPUT_NAME in existing_output_names():
+        if OUTPUT_NAME in taken_output_names():
             remove_virtual_output(OUTPUT_NAME)
         name = create_virtual_output(width, height, DEFAULT_REFRESH)
         print(name or "")
