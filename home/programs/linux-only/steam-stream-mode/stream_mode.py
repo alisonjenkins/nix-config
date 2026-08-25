@@ -502,6 +502,13 @@ class Session:
         if current != (width, height):
             set_output_mode(self.output, width, height, DEFAULT_REFRESH)
 
+        # Published before the output is enabled, not after. Steam re-reads the
+        # monitor list when the X server reports outputs changing, and enabling
+        # this one is that change; the display filter reads this file on every
+        # such query and does nothing while it is absent. Publishing afterwards
+        # would arm the filter just too late to affect the read it was meant
+        # for, leaving Steam sized to the desktop monitor for the session.
+        publish_target(self.output, width, height, DEFAULT_REFRESH)
         set_output_enabled(self.output, True)
         log(
             "stream-mode: {} connected; {} on at {}x{}".format(
