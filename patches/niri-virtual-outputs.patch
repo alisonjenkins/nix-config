@@ -1,9 +1,9 @@
 diff --git a/docs/Virtual-Outputs.md b/docs/Virtual-Outputs.md
 new file mode 100644
-index 00000000..4d0be325
+index 00000000..3159095f
 --- /dev/null
 +++ b/docs/Virtual-Outputs.md
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,171 @@
 +# Virtual Outputs (Headless Displays)
 +
 +Niri supports creating virtual headless outputs that can be used for VNC, screen sharing, or testing purposes. Virtual outputs work similarly to Sway's `create_output` command.
@@ -152,6 +152,16 @@ index 00000000..4d0be325
 +  --refresh-rate <REFRESH_RATE>  Refresh rate in Hz [default: 60]
 +```
 +
++
++Options:
++- `--name <NAME>`: name the output instead of auto-generating `HEADLESS-N`.
++
++A stable name matters to clients that remember a capture source by name. Auto-generated names are sequential, so an output removed and recreated comes back under a different name and the remembered selection silently stops resolving. Creating a named output does not consume a number, so it does not shift later generated names.
++
++```bash
++niri msg create-virtual-output --width 1280 --height 800 --name steam
++# Output: Created virtual output: steam
++```
 +### remove-virtual-output
 +
 +```
@@ -166,10 +176,10 @@ index 00000000..4d0be325
 +- Virtual outputs are not supported when running niri nested in another Wayland compositor (Winit backend)
 +- Virtual outputs are not persisted across niri restarts - you need to recreate them
 diff --git a/niri-ipc/src/lib.rs b/niri-ipc/src/lib.rs
-index 218e532c..a90c9651 100644
+index 218e532c..fd01f94d 100644
 --- a/niri-ipc/src/lib.rs
 +++ b/niri-ipc/src/lib.rs
-@@ -98,6 +98,25 @@ pub enum Request {
+@@ -98,6 +98,31 @@ pub enum Request {
          /// Configuration to apply.
          action: OutputAction,
      },
@@ -184,6 +194,12 @@ index 218e532c..a90c9651 100644
 +        height: Option<u16>,
 +        /// Refresh rate in Hz. Defaults to 60 if not specified.
 +        refresh_rate: Option<u32>,
++        /// Name for the output. Auto-generated (HEADLESS-N) if not specified.
++        ///
++        /// A stable name matters to clients that remember a capture source by
++        /// name: an auto-generated one changes whenever outputs are created
++        /// and removed, silently invalidating the remembered selection.
++        name: Option<String>,
 +    },
 +    /// Remove a virtual headless output by name.
 +    ///
@@ -195,7 +211,7 @@ index 218e532c..a90c9651 100644
      /// Start continuously receiving events from the compositor.
      ///
      /// The compositor should reply with `Reply::Ok(Response::Handled)`, then continuously send
-@@ -165,6 +184,8 @@ pub enum Response {
+@@ -165,6 +190,8 @@ pub enum Response {
      OverviewState(Overview),
      /// Information about screencasts.
      Casts(Vec<Cast>),
@@ -205,7 +221,7 @@ index 218e532c..a90c9651 100644
  
  /// Overview information.
 diff --git a/src/backend/headless.rs b/src/backend/headless.rs
-index 9bd97930..9070ef89 100644
+index 9bd97930..300978e2 100644
 --- a/src/backend/headless.rs
 +++ b/src/backend/headless.rs
 @@ -1,14 +1,20 @@
@@ -261,7 +277,7 @@ index 9bd97930..9070ef89 100644
      pub fn add_output(&mut self, niri: &mut Niri, n: u8, size: (u16, u16)) {
          let connector = format!("headless-{n}");
          let make = "niri".to_string();
-@@ -116,6 +130,102 @@ impl Headless {
+@@ -116,6 +130,116 @@ impl Headless {
          niri.add_output(output, None, false);
      }
  
@@ -273,11 +289,25 @@ index 9bd97930..9070ef89 100644
 +        width: u16,
 +        height: u16,
 +        refresh_rate: u32,
-+    ) -> String {
-+        self.output_counter += 1;
-+        let n = self.output_counter;
++        name: Option<String>,
++    ) -> Result<String, String> {
++        let n = self.output_counter + 1;
 +
-+        let connector = format!("HEADLESS-{n}");
++        let connector = match name {
++            Some(name) => {
++                if self.outputs.contains_key(&name) {
++                    return Err(format!("output \"{name}\" already exists"));
++                }
++                name
++            }
++            None => {
++                // Only consume a counter value when generating a name, so an
++                // explicitly named output does not shift the numbering of
++                // later generated ones.
++                self.output_counter = n;
++                format!("HEADLESS-{n}")
++            }
++        };
 +        let make = "niri".to_string();
 +        let model = "virtual".to_string();
 +        let serial = n.to_string();
@@ -341,7 +371,7 @@ index 9bd97930..9070ef89 100644
 +        let refresh_interval = Duration::from_nanos(1_000_000_000 / u64::from(refresh_rate));
 +        niri.add_output(output, Some(refresh_interval), false);
 +
-+        connector
++        Ok(connector)
 +    }
 +
 +    /// Remove a virtual headless output by name.
@@ -364,7 +394,7 @@ index 9bd97930..9070ef89 100644
      pub fn seat_name(&self) -> String {
          "headless".to_owned()
      }
-@@ -128,10 +238,12 @@ impl Headless {
+@@ -128,10 +252,12 @@ impl Headless {
      }
  
      pub fn render(&mut self, niri: &mut Niri, output: &Output) -> RenderResult {
@@ -378,7 +408,7 @@ index 9bd97930..9070ef89 100644
              Refresh::Unknown,
              0,
              wp_presentation_feedback::Kind::empty(),
-@@ -142,13 +254,49 @@ impl Headless {
+@@ -142,13 +268,49 @@ impl Headless {
              RedrawState::Idle => unreachable!(),
              RedrawState::Queued => (),
              RedrawState::WaitingForVBlank { .. } => unreachable!(),
@@ -432,10 +462,10 @@ index 9bd97930..9070ef89 100644
          RenderResult::Submitted
      }
 diff --git a/src/backend/mod.rs b/src/backend/mod.rs
-index 49fbc6b0..589e1fed 100644
+index 49fbc6b0..66e9874f 100644
 --- a/src/backend/mod.rs
 +++ b/src/backend/mod.rs
-@@ -232,4 +232,39 @@ impl Backend {
+@@ -232,4 +232,40 @@ impl Backend {
              panic!("backend is not Headless")
          }
      }
@@ -450,12 +480,13 @@ index 49fbc6b0..589e1fed 100644
 +        width: u16,
 +        height: u16,
 +        refresh_rate: u32,
++        name: Option<String>,
 +    ) -> Result<String, String> {
 +        match self {
 +            Backend::Headless(headless) => {
-+                Ok(headless.create_virtual_output(niri, width, height, refresh_rate))
++                headless.create_virtual_output(niri, width, height, refresh_rate, name)
 +            }
-+            Backend::Tty(tty) => Ok(tty.create_virtual_output(niri, width, height, refresh_rate)),
++            Backend::Tty(tty) => tty.create_virtual_output(niri, width, height, refresh_rate, name),
 +            Backend::Winit(_) => {
 +                Err("virtual outputs are not supported with the Winit backend".into())
 +            }
@@ -476,7 +507,7 @@ index 49fbc6b0..589e1fed 100644
 +    }
  }
 diff --git a/src/backend/tty.rs b/src/backend/tty.rs
-index 6dd83492..3e44bc9b 100644
+index 6dd83492..6069e70d 100644
 --- a/src/backend/tty.rs
 +++ b/src/backend/tty.rs
 @@ -61,8 +61,7 @@ use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
@@ -548,7 +579,7 @@ index 6dd83492..3e44bc9b 100644
          let Some(device) = self.devices.get_mut(&tty_state.node) else {
              error!("missing output device");
              return rv;
-@@ -2244,6 +2270,135 @@ impl Tty {
+@@ -2244,6 +2270,149 @@ impl Tty {
          self.ipc_outputs.clone()
      }
  
@@ -591,11 +622,25 @@ index 6dd83492..3e44bc9b 100644
 +        width: u16,
 +        height: u16,
 +        refresh_rate: u32,
-+    ) -> String {
-+        self.virtual_outputs.counter += 1;
-+        let n = self.virtual_outputs.counter;
++        name: Option<String>,
++    ) -> Result<String, String> {
++        let n = self.virtual_outputs.counter + 1;
 +
-+        let connector = format!("HEADLESS-{n}");
++        let connector = match name {
++            Some(name) => {
++                if self.virtual_outputs.outputs.contains_key(&name) {
++                    return Err(format!("output \"{name}\" already exists"));
++                }
++                name
++            }
++            None => {
++                // Only consume a counter value when generating a name, so an
++                // explicitly named output does not shift the numbering of
++                // later generated ones.
++                self.virtual_outputs.counter = n;
++                format!("HEADLESS-{n}")
++            }
++        };
 +        let make = "niri".to_string();
 +        let model = "virtual".to_string();
 +        let serial = n.to_string();
@@ -660,7 +705,7 @@ index 6dd83492..3e44bc9b 100644
 +        let refresh_interval = Duration::from_nanos(1_000_000_000 / u64::from(refresh_rate));
 +        niri.add_output(output, Some(refresh_interval), false);
 +
-+        connector
++        Ok(connector)
 +    }
 +
 +    /// Remove a virtual headless output by name.
@@ -685,10 +730,10 @@ index 6dd83492..3e44bc9b 100644
      pub fn primary_gbm_device(&self) -> Option<GbmDevice<DrmDeviceFd>> {
          // Try to find a device corresponding to the primary render node.
 diff --git a/src/cli.rs b/src/cli.rs
-index 308b3127..e3de6b90 100644
+index 308b3127..ab0f957c 100644
 --- a/src/cli.rs
 +++ b/src/cli.rs
-@@ -99,6 +99,29 @@ pub enum Msg {
+@@ -99,6 +99,32 @@ pub enum Msg {
          #[command(subcommand)]
          action: OutputAction,
      },
@@ -706,6 +751,9 @@ index 308b3127..e3de6b90 100644
 +        /// Refresh rate in Hz.
 +        #[arg(long, default_value = "60")]
 +        refresh_rate: u32,
++        /// Name for the output, instead of an auto-generated HEADLESS-N.
++        #[arg(long)]
++        name: Option<String>,
 +    },
 +    /// Remove a virtual headless output.
 +    ///
@@ -719,10 +767,10 @@ index 308b3127..e3de6b90 100644
      EventStream,
      /// Print the version of the running niri instance.
 diff --git a/src/ipc/client.rs b/src/ipc/client.rs
-index 1ec51c44..28b4a766 100644
+index 1ec51c44..5d08a326 100644
 --- a/src/ipc/client.rs
 +++ b/src/ipc/client.rs
-@@ -41,6 +41,16 @@ pub fn handle_msg(mut msg: Msg, json: bool) -> anyhow::Result<()> {
+@@ -41,6 +41,18 @@ pub fn handle_msg(mut msg: Msg, json: bool) -> anyhow::Result<()> {
              output: output.clone(),
              action: action.clone(),
          },
@@ -730,16 +778,18 @@ index 1ec51c44..28b4a766 100644
 +            width,
 +            height,
 +            refresh_rate,
++            name,
 +        } => Request::CreateVirtualOutput {
 +            width: Some(*width),
 +            height: Some(*height),
 +            refresh_rate: Some(*refresh_rate),
++            name: name.clone(),
 +        },
 +        Msg::RemoveVirtualOutput { name } => Request::RemoveVirtualOutput { name: name.clone() },
          Msg::Workspaces => Request::Workspaces,
          Msg::Windows => Request::Windows,
          Msg::Layers => Request::Layers,
-@@ -550,6 +560,31 @@ pub fn handle_msg(mut msg: Msg, json: bool) -> anyhow::Result<()> {
+@@ -550,6 +562,31 @@ pub fn handle_msg(mut msg: Msg, json: bool) -> anyhow::Result<()> {
                  println!();
              }
          }
@@ -772,10 +822,10 @@ index 1ec51c44..28b4a766 100644
  
      Ok(())
 diff --git a/src/ipc/server.rs b/src/ipc/server.rs
-index db71da6d..8fa2c74e 100644
+index db71da6d..c10a7764 100644
 --- a/src/ipc/server.rs
 +++ b/src/ipc/server.rs
-@@ -455,6 +455,50 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
+@@ -455,6 +455,52 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
              let casts = state.casts.casts.values().cloned().collect();
              Response::Casts(casts)
          }
@@ -783,6 +833,7 @@ index db71da6d..8fa2c74e 100644
 +            width,
 +            height,
 +            refresh_rate,
++            name,
 +        } => {
 +            let width = width.unwrap_or(1920);
 +            let height = height.unwrap_or(1080);
@@ -795,6 +846,7 @@ index db71da6d..8fa2c74e 100644
 +                    width,
 +                    height,
 +                    refresh_rate,
++                    name,
 +                );
 +                let _ = tx.send_blocking(result);
 +            });
