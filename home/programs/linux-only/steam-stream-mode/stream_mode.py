@@ -74,6 +74,18 @@ STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
 # selection silently stops resolving and the client goes black.
 OUTPUT_NAME = os.environ.get("STREAM_MODE_OUTPUT_NAME", "steam")
+# Published while a client is streaming, and removed when it stops. Read by
+# the steam-command-runner gamescope shim, which has to know the client's
+# resolution at launch: gamescope fixes its render size from -W/-H when it
+# starts, so a game started with the desktop's geometry is only scaled into
+# the smaller output afterwards and stays letterboxed. Absence means "not
+# streaming", which is what leaves desktop play untouched.
+TARGET_FILE = os.environ.get(
+    "STREAM_MODE_TARGET_FILE",
+    os.path.join(
+        os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "stream-mode", "target.json"
+    ),
+)
 
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
@@ -134,6 +146,39 @@ def create_virtual_output(width, height, refresh, name=None):
     )
     match = CREATED_RE.search(result.stdout or "")
     return match.group(1) if match else None
+
+
+def publish_target(output, width, height, refresh=None):
+    """Announce the display a launching game should render for."""
+    doc = {"output": output, "width": width, "height": height}
+    if refresh is not None:
+        doc["refresh"] = refresh
+    try:
+        os.makedirs(os.path.dirname(TARGET_FILE), exist_ok=True)
+        # Written whole then renamed: the shim reads this from a game launch
+        # that can happen at any moment, and must never see a half-written file.
+        tmp = TARGET_FILE + ".new"
+        with open(tmp, "w") as fh:
+            json.dump(doc, fh)
+            fh.write("\n")
+        os.replace(tmp, TARGET_FILE)
+    except OSError as exc:
+        log("stream-mode: could not publish the stream target: {}".format(exc))
+        return False
+    log("stream-mode: published target {} {}x{}".format(output, width, height))
+    return True
+
+
+def withdraw_target():
+    try:
+        os.remove(TARGET_FILE)
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        log("stream-mode: could not withdraw the stream target: {}".format(exc))
+        return False
+    log("stream-mode: withdrew the stream target")
+    return True
 
 
 def existing_output_names():
@@ -364,6 +409,17 @@ class Session:
         log("stream-mode: removed {}".format(name))
         return True
 
+    def begin_stream(self):
+        """A stream has started: tell launching games where to render."""
+        if self.output is None:
+            self.ensure_output()
+        if self.output is None:
+            return False
+        size = output_logical_size(self.output) or client_size(
+            self.client_id, self.clients
+        )
+        return publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
+
     def idle(self):
         """Called when streaming has been idle; deliberately keeps the output.
 
@@ -582,8 +638,11 @@ def watch():
     session = Session()
 
     def bail(_signum, _frame):
-        # Deliberately does not remove the output: it has to survive a service
-        # restart, or Steam's remembered capture source stops resolving.
+        # The output is deliberately left in place: it has to survive a service
+        # restart, or Steam's remembered capture source stops resolving. The
+        # target file is not — a stale one would send desktop launches at an
+        # output nothing is streaming to.
+        withdraw_target()
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, bail)
@@ -594,6 +653,9 @@ def watch():
     # remembered capture source, and a client that connected while this was
     # not running would otherwise never trigger its creation.
     session.ensure_output()
+    # A target left behind by a previous run would send desktop launches at an
+    # output nothing is streaming to.
+    withdraw_target()
     streaming = follow(LOG, idle_yield=True)
     connections = follow(CONNECTIONS_LOG, idle_yield=True)
     remove_at = None
@@ -629,6 +691,7 @@ def watch():
 
                 if START_RE.search(line):
                     remove_at = None
+                    session.begin_stream()
                 elif STOP_RE.search(line):
                     remove_at = now + REMOVE_AFTER
 
@@ -639,7 +702,7 @@ def watch():
                 session.idle()
     finally:
         # The output is left in place on purpose; see bail().
-        pass
+        withdraw_target()
 
 
 def main(argv):

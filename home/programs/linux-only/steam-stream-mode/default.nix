@@ -92,6 +92,18 @@ in
       '';
     };
 
+    targetFile = lib.mkOption {
+      type = lib.types.str;
+      default = "%t/stream-mode/target.json";
+      description = ''
+        Where the active streaming target is published while a client is
+        streaming. Read by the steam-command-runner gamescope shim, which has
+        to know the client's resolution at launch — gamescope fixes its render
+        size from -W/-H when it starts. %t is the runtime directory, so a
+        stale target cannot outlive the session.
+      '';
+    };
+
     logPath = lib.mkOption {
       type = lib.types.str;
       default = "%h/.local/share/Steam/logs/streaming_log.txt";
@@ -133,6 +145,7 @@ in
           "STREAM_MODE_DEFAULT_REFRESH=${toString cfg.refresh}"
           "STREAM_MODE_REMOVE_AFTER=${toString cfg.removeAfter}"
           "STREAM_MODE_STAGE_TIMEOUT=${toString cfg.stageTimeout}"
+          "STREAM_MODE_TARGET_FILE=${cfg.targetFile}"
         ];
         ExecStart = "${lib.getExe stream-mode} watch";
         Restart = "on-failure";
