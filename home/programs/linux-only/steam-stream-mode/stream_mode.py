@@ -559,11 +559,25 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
+
+        # Off first, target withdrawn second -- the reverse of connect, and for
+        # the same reason. Between the two there is a state where the output
+        # exists and the filter is inert, and Steam re-reads the monitor list
+        # whenever outputs change. Withdrawing first left that window open
+        # until the next client arrived: Steam recomputed its desktop as the
+        # union of both monitors, cached it, and sized the next stream to the
+        # 6400x1440 it had learned while unfiltered.
+        #
+        # The name falls back to the configured one rather than trusting
+        # self.output. A disconnect that arrives when it is already None -- a
+        # second notification, or a restart mid-session -- would otherwise skip
+        # turning the output off entirely and leave it on indefinitely, which
+        # is exactly the state that produced the wrong aspect above.
+        name = self.output if self.output is not None else OUTPUT_NAME
+        self.output = None
+        set_output_enabled(name, False)
         withdraw_target()
-        if self.output is not None:
-            name, self.output = self.output, None
-            set_output_enabled(name, False)
-            log("stream-mode: turned {} off until the next client".format(name))
+        log("stream-mode: turned {} off until the next client".format(name))
         return True
 
     def idle(self):

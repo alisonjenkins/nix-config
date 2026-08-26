@@ -514,6 +514,49 @@ class TestOutputLifetime(unittest.TestCase):
         # Still declared, so Steam's remembered source keeps resolving.
         self.assertIn(stream_mode.OUTPUT_NAME, self.names)
 
+    def test_ending_a_stream_turns_the_output_off_before_disarming(self):
+        """Between the two there must be no window with an output and no target.
+
+        Steam re-reads its monitor list whenever outputs change and caches the
+        result. Withdrawing the target first left it free to recompute with the
+        output still present and the filter inert, so it learned the union of
+        both monitors -- measured as desktop 6400x1440 -- and sized the next
+        stream to that.
+        """
+        order = []
+        stream_mode.set_output_enabled = lambda name, enabled: (
+            order.append(("output", enabled)) or True
+        )
+        stream_mode.withdraw_target = lambda *a, **k: order.append(("target", False))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream()
+        order.clear()
+        s.end_stream()
+
+        self.assertEqual(
+            order,
+            [("output", False), ("target", False)],
+            "the output must go off before the target is withdrawn",
+        )
+
+    def test_ending_a_stream_turns_the_output_off_even_without_one_tracked(self):
+        """A second disconnect, or a restart mid-session, still has to disarm.
+
+        Guarding the whole teardown on self.output meant a disconnect arriving
+        when it was already None skipped turning the output off, leaving it on
+        indefinitely with no target published -- the same inert-but-present
+        state, held open until the next connect.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = None
+        self.enabled.clear()
+
+        s.end_stream()
+
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
         s = stream_mode.Session(stage_timeout=0)
