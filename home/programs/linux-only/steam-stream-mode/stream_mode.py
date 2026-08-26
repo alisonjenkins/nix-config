@@ -75,6 +75,12 @@ STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # react to and it has to be looked for. Slow on purpose: a game outliving Steam
 # by a few seconds costs nothing, and the check reads every process's name.
 STEAM_CHECK_INTERVAL = float(os.environ.get("STREAM_MODE_STEAM_CHECK_INTERVAL", "10"))
+# How long to let a window's geometry settle after moving it to another output
+# before deciding whether it is already fullscreen. Bounded tightly: this runs
+# on the event loop, and a game that takes longer than this to settle is better
+# left alone than acted on from a stale reading.
+FULLSCREEN_SETTLE_TRIES = int(os.environ.get("STREAM_MODE_FULLSCREEN_TRIES", "8"))
+FULLSCREEN_SETTLE_DELAY = float(os.environ.get("STREAM_MODE_FULLSCREEN_DELAY", "0.12"))
 # Fixed rather than niri's generated HEADLESS-N. Steam remembers its capture
 # source by name, and a generated name is sequential: an output removed and
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
@@ -861,20 +867,60 @@ class Session:
         self.output = None
         return self.ensure_output()
 
+    def _settled_window(self, window_id):
+        """Read a window once its geometry has stopped changing.
+
+        Moving a window to another output does not resize it instantly, and
+        niri reports no fullscreen flag -- only geometry -- so a read taken
+        straight after the move can still describe the window as it was on the
+        old output. Deciding from that read is what broke this: a game already
+        fullscreen was measured against the new output, judged not fullscreen,
+        and *toggled*, which turned fullscreen off. Right screen, wrong size,
+        which is exactly how it looked.
+
+        Two identical reads in a row is the signal that the move has landed.
+        """
+        previous = None
+        window = None
+        for _ in range(FULLSCREEN_SETTLE_TRIES):
+            try:
+                window = next(
+                    (w for w in niri_windows() if w.get("id") == window_id), None
+                )
+            except (subprocess.CalledProcessError, ValueError, OSError):
+                return None
+            if window is None:
+                return None
+            size = (window.get("layout") or {}).get("window_size")
+            if size is not None and size == previous:
+                return window
+            previous = size
+            time.sleep(FULLSCREEN_SETTLE_DELAY)
+        return window
+
     def _ensure_fullscreen(self, window_id):
         try:
             output_size = output_logical_size(self.output)
-            window = next(
-                (w for w in niri_windows() if w.get("id") == window_id), None
-            )
         except (subprocess.CalledProcessError, ValueError, OSError):
             return
+        window = self._settled_window(window_id)
         if window is None or is_fullscreen(window, output_size):
             return
         try:
             fullscreen_window(window_id)
         except (subprocess.CalledProcessError, OSError) as exc:
             log("stream-mode: could not fullscreen window: {}".format(exc))
+            return
+        # Say what it was measured against, because the failure mode here is
+        # silent: a wrong answer leaves a game windowed on the streamed output
+        # and nothing in the log explains why.
+        log(
+            "stream-mode: fullscreened window {} ({} -> {})".format(
+                window_id,
+                (window.get("layout") or {}).get("window_size"),
+                list(output_size) if output_size else None,
+            )
+        )
 
     def unstage(self, pid=None):
         if self.game_pid is None:
