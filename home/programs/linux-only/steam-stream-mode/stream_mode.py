@@ -81,6 +81,15 @@ STEAM_CHECK_INTERVAL = float(os.environ.get("STREAM_MODE_STEAM_CHECK_INTERVAL", 
 # left alone than acted on from a stale reading.
 FULLSCREEN_SETTLE_TRIES = int(os.environ.get("STREAM_MODE_FULLSCREEN_TRIES", "8"))
 FULLSCREEN_SETTLE_DELAY = float(os.environ.get("STREAM_MODE_FULLSCREEN_DELAY", "0.12"))
+# When to look again at a window after staging it. A game has been seen on the
+# desktop monitor after a staging that reported success, correcting itself only
+# when the window was next focused -- so the evidence disappears in the act of
+# observing it. These re-read it on a timer instead, spread wide enough to
+# catch both a quick correction and a slow one.
+STAGE_AUDIT_DELAYS = [
+    float(v) for v in
+    os.environ.get("STREAM_MODE_AUDIT_DELAYS", "1,3,10,30").split(",") if v
+]
 # Fixed rather than niri's generated HEADLESS-N. Steam remembers its capture
 # source by name, and a generated name is sequential: an output removed and
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
@@ -338,6 +347,29 @@ def niri_workspaces():
     return json.loads(raw)
 
 
+def window_location(window_id):
+    """Where a window is and how big, as one string for the log.
+
+    Which output a window is on is not on the window itself: it is a property
+    of its workspace, so it takes both listings to answer. Worth the two calls
+    because "it appeared on the wrong monitor and then corrected itself while
+    I looked at it" cannot be diagnosed from the staging line alone.
+    """
+    try:
+        windows = niri_windows()
+        outputs = {ws.get("id"): ws.get("output") for ws in niri_workspaces()}
+    except (subprocess.CalledProcessError, ValueError, OSError) as exc:
+        return "unknown ({})".format(exc)
+
+    window = next((w for w in windows if w.get("id") == window_id), None)
+    if window is None:
+        return "gone"
+    size = (window.get("layout") or {}).get("window_size")
+    return "output={} size={} focused={}".format(
+        outputs.get(window.get("workspace_id")), size, window.get("is_focused")
+    )
+
+
 def usable_output_names():
     """Outputs niri lists — the ones that actually work.
 
@@ -521,6 +553,8 @@ class Session:
         # Reset per session: a new client gets its own Big Picture placement,
         # and the user is free to move it afterwards without it snapping back.
         self.big_picture_placed = False
+        # (deadline, window_id) pairs; see run_due_audits.
+        self.audits = []
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
 
@@ -841,6 +875,11 @@ class Session:
         self.pending = None
         self.reported_wait = False
         self.game_pid = pid
+        log(
+            "stream-mode: window {} before staging: {}".format(
+                window["id"], window_location(window["id"])
+            )
+        )
         try:
             move_window_to_output(window["id"], self.output)
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -849,10 +888,34 @@ class Session:
         focus_window(window["id"])
         self._ensure_fullscreen(window["id"])
         log(
-            "stream-mode: staged {} (window {}, pid {}, game {}) on {}".format(
-                window.get("app_id") or "game", window["id"], pid, game_id, self.output
+            "stream-mode: staged {} (window {}, pid {}, game {}) on {}; now {}".format(
+                window.get("app_id") or "game", window["id"], pid, game_id,
+                self.output, window_location(window["id"])
             )
         )
+        # Look again later, without anybody having to be watching. A game has
+        # been seen on the desktop monitor after a staging that reported
+        # success, correcting itself only when the window was next focused --
+        # which destroys the evidence in the act of observing it.
+        self.audits = [
+            (time.monotonic() + delay, window["id"]) for delay in STAGE_AUDIT_DELAYS
+        ]
+        return True
+
+    def run_due_audits(self, now):
+        """Log where an audited window has ended up, when its time comes."""
+        if not self.audits:
+            return False
+        due = [entry for entry in self.audits if now >= entry[0]]
+        if not due:
+            return False
+        self.audits = [entry for entry in self.audits if now < entry[0]]
+        for _deadline, window_id in due:
+            log(
+                "stream-mode: audit window {}: {}".format(
+                    window_id, window_location(window_id)
+                )
+            )
         return True
 
     def on_outputs_changed(self, output_names):
@@ -1043,7 +1106,10 @@ def watch():
     try:
         while True:
             readable = {p.stdout for p in procs.values() if p.stdout}
-            timeout = 1.0 if (remove_at or session.pending) else 30.0
+            # A pending audit has to wake the loop too, or it would not be
+            # logged until the next event happened to arrive — and the whole
+            # point of auditing is to see what happens when nothing does.
+            timeout = 1.0 if (remove_at or session.pending or session.audits) else 30.0
             ready, _, _ = select.select(list(readable), [], [], timeout)
 
             for name, proc in list(procs.items()):
@@ -1088,6 +1154,7 @@ def watch():
             # is no line to react to. Polled, but only while a game is staged,
             # and slowly -- a game outliving Steam by a few seconds costs
             # nothing, and reading every process's name is not free.
+            session.run_due_audits(now)
             if session.game_pid is not None and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive():
