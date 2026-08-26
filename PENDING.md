@@ -77,17 +77,31 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
 
 ### Backlog, highest value first
 
-1. **Hook the remaining geometry readers so mid-session arming works.** Today's
-   success required Steam to be *started* with the `steam` output already in X and
-   the filter already armed. In normal use Steam is running before you connect from
-   the Deck, arming happens after, and the desktop reading stays at 5120x1440 —
-   measured: hooks hid DP-2 at `00:14:38.640` and Steam still reported 5120,1440
-   0.8s later. The startup path goes through the hooked `XRRGetScreenResources`; the
-   update path does not. Two unhooked readers that `steamui.so` demonstrably
-   resolves: **`XRRGetScreenResourcesCurrent`** (cached twin of the hooked call) and
-   the legacy RandR 1.1 **`XRRGetScreenInfo` / `XRRConfigCurrentConfiguration` /
-   `XRRConfigSizes`**. Which one carries the number is unproven — measure, do not
-   guess. This is the difference between a demo and something usable.
+1. **Confirm mid-session arming now works. NOT YET VERIFIED — needs DP-2 attached.**
+   Streaming has only ever been proven with Steam *started* while the `steam` output
+   was already in X and the filter already armed. In normal use Steam is running
+   before you connect from the Deck, so arming happens afterwards.
+
+   Two things were found and fixed since that gap was written, and both are
+   unverified against a real stream:
+
+   - **`XRRGetScreenResourcesCurrent` is the update-path reader** — no longer a
+     guess. Measured in the filter log during a mid-session arm: it is called,
+     armed, and sees both outputs, where the startup-only `XRRGetScreenResources`
+     is not called again. It is now hooked.
+   - **The shim was filtering Steam's children too.** `LD_PRELOAD` is inherited, so
+     gamescope, pressure-vessel, wine and the game all saw the ultrawide removed
+     while gamescope was simultaneously told `--prefer-output steam`. A mid-session
+     stream wedged during game launch with `BMainLoop appears to have stalled > 15
+     seconds`. Now gated to the `steam`/`steamwebhelper` executables.
+
+   The wedge and the mid-session arm happened in the same run, so which of the two
+   caused it is **not established**. Do not assume the gate fixed it. Next session,
+   with DP-2 back: start Steam with no target published and the `steam` output off,
+   connect the Deck, and read `SynchronizeClientState(): setting capture size`.
+
+   Ground truth for judging any fix: with DP-2 physically detached the capture size
+   is correct with no filtering at all, because nothing is left to disagree.
 2. **Give niri virtual outputs a real physical size.** Fix in the fork
    (`/home/ali/git/niri`, branch `rebase-feat-virtual`) rather than faking it in the
    shim: derive mm from the mode at ~96dpi. Removes the shim's main reason to exist
@@ -111,7 +125,13 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
   `RTLD_GLOBAL`, so the real function must be found by name via
   `dlopen(..., RTLD_NOLOAD)` as a fallback. Without it the hooks silently report a
   zero width.
-- `pkgs/steam-display-filter/dlopen_probe.c` equivalent (kept in the session
-  scratchpad, worth committing) reproduces Steam's `dlopen`+`dlsym` pattern in ~30
-  lines, so shim changes can be checked in seconds instead of by launching Steam and
-  reconnecting a Deck.
+- `pkgs/steam-display-filter/dlopen_probe.c` reproduces Steam's `dlopen`+`dlsym`
+  pattern in ~30 lines, so shim changes can be checked in seconds instead of by
+  launching Steam and reconnecting a Deck. Run it under two names to cover both
+  halves of the process gate; see the comment at the top of the file.
+- Testing this needs **two outputs present**. With DP-2 detached there is nothing to
+  filter and every probe trivially "passes" — a synthetic second output
+  (`niri msg create-virtual-output --name gatetest --width 5120 --height 1440
+  --refresh-rate 60`) stands in, and **must be removed afterwards**
+  (`niri msg remove-virtual-output gatetest`). A stray virtual output left behind
+  once became the focused output when DP-2 disconnected and read as a hung machine.
