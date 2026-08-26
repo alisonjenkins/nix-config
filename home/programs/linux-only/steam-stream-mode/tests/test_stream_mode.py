@@ -533,6 +533,12 @@ class TestOutputLifetime(unittest.TestCase):
                 "load_clients",
                 "publish_target",
                 "withdraw_target",
+                "niri_windows",
+                "fullscreen_window",
+                "move_window_to_output",
+                "steam_is_running",
+                "signal_process",
+                "FULLSCREEN_SETTLE_DELAY",
             )
         }
 
@@ -551,6 +557,9 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.publish_target = lambda *a, **k: True
         stream_mode.withdraw_target = lambda *a, **k: True
+        # The settle exists for a real compositor's timing; waiting for it here
+        # would only make the suite slow.
+        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
 
     def tearDown(self):
         for k, v in self._real.items():
@@ -786,6 +795,44 @@ class TestOutputLifetime(unittest.TestCase):
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.check_steam_alive())
         self.assertEqual(signalled, [])
+
+    def test_a_game_already_fullscreen_is_not_toggled_out_of_it(self):
+        """The reading right after a move still describes the old output.
+
+        niri reports no fullscreen flag, only geometry, and offers only a
+        toggle. Deciding from the stale read measured an already-fullscreen
+        game against the new output, judged it not fullscreen, and toggled --
+        turning fullscreen off. Right screen, wrong dimensions.
+        """
+        reads = [
+            {"id": 5, "layout": {"window_size": [5120, 1440]}},   # stale
+            {"id": 5, "layout": {"window_size": [1280, 800]}},    # resized
+            {"id": 5, "layout": {"window_size": [1280, 800]}},    # settled
+        ]
+        toggled = []
+        stream_mode.niri_windows = lambda: [reads.pop(0) if reads else
+                                            {"id": 5, "layout": {"window_size": [1280, 800]}}]
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.fullscreen_window = lambda wid: toggled.append(wid)
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s._ensure_fullscreen(5)
+
+        self.assertEqual(toggled, [], "a settled fullscreen window must be left alone")
+
+    def test_a_windowed_game_is_still_fullscreened(self):
+        """The settle must not stop it acting when action is needed."""
+        toggled = []
+        stream_mode.niri_windows = lambda: [{"id": 5, "layout": {"window_size": [800, 600]}}]
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.fullscreen_window = lambda wid: toggled.append(wid)
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s._ensure_fullscreen(5)
+
+        self.assertEqual(toggled, [5])
 
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
