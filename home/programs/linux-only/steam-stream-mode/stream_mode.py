@@ -848,15 +848,26 @@ class Session:
         is far worse than leaving one running. SIGTERM rather than SIGKILL, so
         a game that saves on exit still can.
         """
-        if self.game_pid is None or steam_is_running():
+        # Nothing to tidy up unless we are in the middle of something. Steam
+        # not running is the ordinary state between sessions.
+        if self.game_pid is None and not self.streaming:
+            return False
+        if steam_is_running():
             return False
 
         pid, self.game_pid = self.game_pid, None
-        log(
-            "stream-mode: Steam is gone but game pid {} is not; "
-            "asking it to exit".format(pid)
-        )
-        signal_process(pid, signal.SIGTERM)
+        if pid is not None:
+            log(
+                "stream-mode: Steam is gone but game pid {} is not; "
+                "asking it to exit".format(pid)
+            )
+            signal_process(pid, signal.SIGTERM)
+        else:
+            # Previously this only fired with a game staged, so a Steam that
+            # died after its game had already exited left the session standing:
+            # target published, game workspace still on the streamed output,
+            # and nothing to end it. Measured lasting forty minutes.
+            log("stream-mode: Steam is gone; ending the stream it left behind")
         self.end_stream()
         return True
 
@@ -1244,7 +1255,12 @@ def watch():
 
     session.ensure_output()
     withdraw_target()
-    if stream_in_progress():
+    # A start marker with no stop is only evidence of a stream if Steam is
+    # still there to be streaming. Steam that dies mid-stream never writes the
+    # stop marker, so the log stays that way for good -- and this service,
+    # restarted afterwards, read it as a live stream, published a target and
+    # held the game workspace on the streamed output with no Steam at all.
+    if stream_in_progress() and steam_is_running():
         log("stream-mode: a stream is already in progress")
         session.begin_stream()
 
@@ -1325,7 +1341,8 @@ def watch():
             # and slowly -- a game outliving Steam by a few seconds costs
             # nothing, and reading every process's name is not free.
             session.run_due_audits(now)
-            if session.game_pid is not None and now >= next_steam_check:
+            if (session.game_pid is not None or session.streaming) \
+                    and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive():
                     remove_at = None
