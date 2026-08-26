@@ -1375,3 +1375,79 @@ class TestSplashScreens(unittest.TestCase):
         stream_mode.niri_windows = lambda: [self.half_width(127)]
         s.fullscreen_new_arrivals([self.half_width(127)])
         self.assertEqual(self.toggled, [])
+
+
+class TestSteamDeath(unittest.TestCase):
+    """Steam dying mid-stream leaves no stop marker and no tidy-up.
+
+    Measured: Steam exited on a broken IPC pipe at 19:34:24 while a stream was
+    running, so the log ends on a start marker. The service was restarted a
+    few minutes later, read that truncated log, concluded a stream was in
+    progress and re-armed — leaving the game workspace on the streamed output
+    and a target published, with no Steam at all, for forty minutes.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "steam_is_running", "set_output_enabled", "withdraw_target",
+            "workspace_output", "move_workspace_to_output", "usable_output_names",
+            "publish_target", "output_logical_size", "load_clients",
+            "signal_process")}
+        self.enabled = []
+        stream_mode.set_output_enabled = lambda n, e: self.enabled.append((n, e)) or True
+        stream_mode.withdraw_target = lambda *a, **k: True
+        stream_mode.publish_target = lambda *a, **k: True
+        stream_mode.workspace_output = lambda name: "DP-2"
+        stream_mode.move_workspace_to_output = lambda name, out: True
+        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.load_clients = lambda path=None: {}
+        stream_mode.signal_process = lambda pid, sig: True
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def test_a_stream_without_steam_is_not_a_stream(self):
+        """The start marker is not evidence on its own once Steam is gone."""
+        stream_mode.steam_is_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+
+        self.assertTrue(s.check_steam_alive())
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        self.assertFalse(s.streaming)
+
+    def test_a_live_stream_with_steam_running_is_left_alone(self):
+        stream_mode.steam_is_running = lambda: True
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+
+        self.assertFalse(s.check_steam_alive())
+        self.assertTrue(s.streaming)
+
+    def test_idle_with_no_steam_is_the_ordinary_state(self):
+        """Steam is not running most of the time; that is not a fault."""
+        stream_mode.steam_is_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.check_steam_alive())
+        self.assertEqual(self.enabled, [])
+
+    def test_a_start_marker_alone_does_not_mean_a_stream(self):
+        """The log keeps its start marker for good once Steam dies mid-stream."""
+        import tempfile as _t
+        with _t.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
+            fh.write(">>> Starting desktop stream\n")
+            path = fh.name
+        try:
+            self.assertTrue(stream_mode.stream_in_progress(path))
+            # The guard is the conjunction at the call site: a start marker is
+            # only evidence while Steam exists to be doing the streaming.
+            stream_mode.steam_is_running = lambda: False
+            self.assertFalse(
+                stream_mode.stream_in_progress(path) and stream_mode.steam_is_running()
+            )
+        finally:
+            os.unlink(path)
