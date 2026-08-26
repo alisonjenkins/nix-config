@@ -41,6 +41,51 @@ struct target {
     int height;
 };
 
+/*
+ * Only the Steam client itself gets a filtered view of the monitors.
+ *
+ * LD_PRELOAD is inherited by every descendant, and Steam starts a great many:
+ * gamescope, the pressure-vessel container, wine, and the game itself all
+ * arrive here with the shim loaded. None of them need it. The number this
+ * exists to correct is read by the process that maps steamui.so -- the
+ * ubuntu12_32/steam client, which emits "Desktop state changed" -- and
+ * lying to anything else is pure blast radius.
+ *
+ * It is not merely untidy. gamescope is launched with `--prefer-output steam`
+ * and its own -W/-H, so handing it a display list with the ultrawide removed
+ * makes it negotiate against a view that does not match the compositor's,
+ * while the game underneath initialises against the same filtered list. A
+ * stream started this way wedged during game launch with Steam's main loop
+ * stalled.
+ *
+ * Matched on the executable name rather than an environment variable so it
+ * cannot be defeated by the many wrapper layers between the client and the
+ * game, each of which rewrites the environment.
+ */
+static int process_is_steam_client(void)
+{
+    static int cached = -1;
+    char exe[4096];
+    const char *name;
+    ssize_t len;
+
+    if (cached >= 0)
+        return cached;
+
+    len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (len <= 0) {
+        /* Unreadable /proc: stay out of the way rather than guess. */
+        cached = 0;
+        return cached;
+    }
+    exe[len] = '\0';
+
+    name = strrchr(exe, '/');
+    name = name ? name + 1 : exe;
+    cached = strcmp(name, "steam") == 0 || strcmp(name, "steamwebhelper") == 0;
+    return cached;
+}
+
 static const char *target_path(void)
 {
     static char buf[4096];
@@ -102,12 +147,21 @@ static const char *target_path(void)
  */
 static int read_target(struct target *out)
 {
-    const char *path = target_path();
+    const char *path;
     char buf[1024];
     const char *w, *h, *n;
     size_t got;
     FILE *f;
 
+    /*
+     * The single choke point every hook already consults, so gating here
+     * makes the whole shim inert outside the Steam client rather than
+     * needing a check bolted onto each wrapper.
+     */
+    if (!process_is_steam_client())
+        return 0;
+
+    path = target_path();
     if (!path)
         return 0;
 
@@ -190,6 +244,13 @@ static void flog(const char *fmt, ...)
         if (tried)
             return;
         tried = 1;
+        /*
+         * Nothing outside the Steam client is filtered, so nothing outside it
+         * has anything to report. Without this every game, gamescope and
+         * container process opens and writes the shared log too.
+         */
+        if (!process_is_steam_client())
+            return;
         path = getenv("STEAM_DISPLAY_FILTER_LOG");
         if (!path || !*path)
             return;
