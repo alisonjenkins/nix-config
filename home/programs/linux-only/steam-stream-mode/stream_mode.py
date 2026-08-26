@@ -106,6 +106,14 @@ CLIENT_SIZE_RE = re.compile(
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via direct connection")
+# Clients that do not announce themselves the Deck's way.
+#
+# The Android client never logs "connected via direct connection": it
+# authorises by device ID and then sends a streaming request. Matching only the
+# Deck's phrasing left such a client unidentified, so nothing was ever learned
+# for it and it stayed on the default size permanently — which is what a
+# television did on its first connect.
+STREAM_REQUEST_RE = re.compile(r"Received streaming request \d+ with device ID (\d+)")
 
 
 def log(message):
@@ -900,6 +908,14 @@ def watch():
                     if match:
                         remove_at = None
                         session.connect(int(match.group(1)), match.group(2))
+                    else:
+                        match = STREAM_REQUEST_RE.search(line)
+                        # Only when it names a client we are not already
+                        # serving: this line repeats through a session, and
+                        # reconnecting the current client must not restart it.
+                        if match and int(match.group(1)) != session.client_id:
+                            remove_at = None
+                            session.connect(int(match.group(1)), "device")
                 else:
                     remove_at = handle_steam_line(session, line, remove_at)
 

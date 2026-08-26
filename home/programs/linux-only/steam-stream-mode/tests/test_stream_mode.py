@@ -77,6 +77,22 @@ class TestLogParsing(unittest.TestCase):
         "output size: 1280x800, overlay size: 1280x800\n"
     )
 
+    STREAM_REQUEST = (
+        "[2026-08-26 07:53:27] Received streaming request 43269442 with device ID "
+        "9197533723563966756 from 192.168.1.46:34702\n"
+    )
+
+    def test_a_streaming_request_identifies_a_client_too(self):
+        """Not every client announces itself the way the Deck does.
+
+        The Android client never logs "connected via direct connection" — it
+        authorises by device ID and then sends a streaming request. Matching
+        only the Deck's phrasing meant such a client was never identified, so
+        nothing was learned for it and it stayed on the default size for good.
+        """
+        match = stream_mode.STREAM_REQUEST_RE.search(self.STREAM_REQUEST)
+        self.assertEqual(match.group(1), "9197533723563966756")
+
     def test_client_size_is_the_clients_own_panel(self):
         """This is what a client's size has to be learned from.
 
