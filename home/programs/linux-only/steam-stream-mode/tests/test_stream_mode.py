@@ -1165,3 +1165,32 @@ class TestStreamTarget(unittest.TestCase):
         self.assertEqual(leftovers, [])
 
 
+
+
+class TestStagingAudits(unittest.TestCase):
+    """Re-reading a staged window on a timer, so nobody has to be watching."""
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k)
+                      for k in ("window_location", "STAGE_AUDIT_DELAYS")}
+        self.seen = []
+        stream_mode.window_location = lambda wid: "output=steam size=[1280, 800]"
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def test_audits_run_when_due_and_only_once(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.audits = [(100.0, 7), (200.0, 7)]
+
+        self.assertFalse(s.run_due_audits(50.0))
+        self.assertTrue(s.run_due_audits(150.0))
+        self.assertEqual(s.audits, [(200.0, 7)])
+        self.assertTrue(s.run_due_audits(250.0))
+        self.assertEqual(s.audits, [])
+        self.assertFalse(s.run_due_audits(300.0))
+
+    def test_no_audits_is_not_work(self):
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.run_due_audits(1.0))
