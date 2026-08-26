@@ -705,6 +705,43 @@ class TestOutputLifetime(unittest.TestCase):
 
         self.assertEqual(len(moved), 1)
 
+    def test_a_known_client_beats_whatever_size_the_output_is_left_at(self):
+        """The client we are serving decides the size, not leftover state.
+
+        A stream can start without a fresh connect line, and the output keeps
+        whatever mode it was last put in — by the previous client, or by
+        someone testing at the command line. Taking the output's current size
+        in preference to the client's meant a Deck streamed at 1600x900
+        because that is what the output happened to be.
+        """
+        published = []
+        stream_mode.publish_target = lambda o, w, h, r=None: (
+            published.append((w, h)) or True
+        )
+        stream_mode.output_logical_size = lambda name: (1600, 900)
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.client_id = 123
+        s.clients = {"123": [1280, 800]}
+        s.begin_stream()
+
+        self.assertEqual(published[-1], (1280, 800))
+        self.assertIn((stream_mode.OUTPUT_NAME, 1280, 800, stream_mode.DEFAULT_REFRESH),
+                      [(m[0], m[1], m[2], m[3]) for m in self.modes])
+
+    def test_an_unknown_client_falls_back_to_the_outputs_size(self):
+        """With no client there is nothing better to go on."""
+        published = []
+        stream_mode.publish_target = lambda o, w, h, r=None: (
+            published.append((w, h)) or True
+        )
+        stream_mode.output_logical_size = lambda name: (1600, 900)
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.begin_stream()
+
+        self.assertEqual(published[-1], (1600, 900))
+
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
         s = stream_mode.Session(stage_timeout=0)
