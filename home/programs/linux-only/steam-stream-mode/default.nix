@@ -94,7 +94,7 @@ in
 
     targetFile = lib.mkOption {
       type = lib.types.str;
-      default = "%h/.local/state/stream-mode/target.json";
+      default = "%h/.local/state/stream-mode/target";
       description = ''
         Where the active streaming target is published while a client is
         streaming. Read by the steam-command-runner gamescope shim, which has
