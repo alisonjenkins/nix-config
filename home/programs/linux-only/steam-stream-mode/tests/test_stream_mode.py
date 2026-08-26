@@ -742,6 +742,51 @@ class TestOutputLifetime(unittest.TestCase):
 
         self.assertEqual(published[-1], (1600, 900))
 
+    def test_a_game_is_not_left_behind_when_steam_dies(self):
+        """Steam crashing mid-stream orphans the game on the virtual output.
+
+        Steam's client/helper pipe breaks if a stream ends while a game is
+        running, and it exits on a fatal assert without taking the game with
+        it. What is left is a process still rendering to an output nobody can
+        see, which has to be found and killed by hand.
+        """
+        signalled = []
+        stream_mode.steam_is_running = lambda: False
+        stream_mode.signal_process = lambda pid, sig: signalled.append((pid, sig))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream()
+        s.game_pid = 4242
+        self.enabled.clear()
+
+        self.assertTrue(s.check_steam_alive())
+        self.assertEqual(signalled, [(4242, stream_mode.signal.SIGTERM)])
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
+    def test_nothing_is_killed_while_steam_is_alive(self):
+        signalled = []
+        stream_mode.steam_is_running = lambda: True
+        stream_mode.signal_process = lambda pid, sig: signalled.append((pid, sig))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream()
+        s.game_pid = 4242
+
+        self.assertFalse(s.check_steam_alive())
+        self.assertEqual(signalled, [])
+
+    def test_no_game_means_nothing_to_clean_up(self):
+        """Steam not running is the ordinary state between sessions."""
+        signalled = []
+        stream_mode.steam_is_running = lambda: False
+        stream_mode.signal_process = lambda pid, sig: signalled.append((pid, sig))
+
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.check_steam_alive())
+        self.assertEqual(signalled, [])
+
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
         s = stream_mode.Session(stage_timeout=0)

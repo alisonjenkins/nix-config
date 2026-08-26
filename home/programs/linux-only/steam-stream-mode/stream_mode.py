@@ -70,6 +70,11 @@ REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
 # shader compilation and launchers routinely take minutes before anything is
 # mapped. A five-second budget gave up long before the window existed.
 STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
+# How often to check that Steam still exists while a game is staged. Steam
+# dying is silent from here -- its logs simply stop -- so there is nothing to
+# react to and it has to be looked for. Slow on purpose: a game outliving Steam
+# by a few seconds costs nothing, and the check reads every process's name.
+STEAM_CHECK_INTERVAL = float(os.environ.get("STREAM_MODE_STEAM_CHECK_INTERVAL", "10"))
 # Fixed rather than niri's generated HEADLESS-N. Steam remembers its capture
 # source by name, and a generated name is sequential: an output removed and
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
@@ -119,6 +124,35 @@ STREAM_REQUEST_RE = re.compile(r"Received streaming request \d+ with device ID (
 def log(message):
     print(message, flush=True)
 
+
+def steam_is_running():
+    """Whether a Steam client process exists.
+
+    Read from /proc rather than shelling out to pgrep: this is checked on a
+    timer, and the answer decides whether to kill something.
+    """
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open(os.path.join("/proc", entry, "comm")) as fh:
+                if fh.read().strip() == "steam":
+                    return True
+        except OSError:
+            continue
+    return False
+
+
+def signal_process(pid, sig):
+    """Send a signal, treating an already-dead process as success."""
+    try:
+        os.kill(pid, sig)
+    except ProcessLookupError:
+        return True
+    except OSError as exc:
+        log("stream-mode: could not signal {}: {}".format(pid, exc))
+        return False
+    return True
 
 
 # --- niri ------------------------------------------------------------------
@@ -701,6 +735,33 @@ class Session:
         )
         return True
 
+    def check_steam_alive(self):
+        """Clean up a game that Steam left behind when it died.
+
+        Steam's client/helper pipe breaks if a stream ends while a game is
+        running -- measured twice, both times as
+        "CCrossProcessPipe::BWrite: 32 (Broken pipe)" followed by "Fatal
+        assert; application exiting" -- and it exits without taking the game
+        with it. The game keeps rendering to an output nobody is looking at,
+        and has to be found and killed by hand.
+
+        Only ever acts on the game this service staged, and only when no Steam
+        client exists at all, because killing someone's game on a wrong guess
+        is far worse than leaving one running. SIGTERM rather than SIGKILL, so
+        a game that saves on exit still can.
+        """
+        if self.game_pid is None or steam_is_running():
+            return False
+
+        pid, self.game_pid = self.game_pid, None
+        log(
+            "stream-mode: Steam is gone but game pid {} is not; "
+            "asking it to exit".format(pid)
+        )
+        signal_process(pid, signal.SIGTERM)
+        self.end_stream()
+        return True
+
     def place_big_picture(self, windows):
         """Put Steam's own Big Picture window on the streamed output.
 
@@ -928,8 +989,10 @@ def watch():
     )
 
     # Only source of periodic work left: the delay before dropping the output
-    # once streaming stops, and the deadline for a game that never appears.
+    # once streaming stops, the deadline for a game that never appears, and
+    # noticing that Steam has died under a game that has not.
     remove_at = None
+    next_steam_check = 0.0
 
     try:
         while True:
@@ -975,6 +1038,14 @@ def watch():
             if remove_at is not None and now >= remove_at:
                 remove_at = None
                 session.end_stream()
+            # Steam dying is silent from here: its logs simply stop, so there
+            # is no line to react to. Polled, but only while a game is staged,
+            # and slowly -- a game outliving Steam by a few seconds costs
+            # nothing, and reading every process's name is not free.
+            if session.game_pid is not None and now >= next_steam_check:
+                next_steam_check = now + STEAM_CHECK_INTERVAL
+                if session.check_steam_alive():
+                    remove_at = None
     finally:
         for proc in procs.values():
             proc.terminate()
