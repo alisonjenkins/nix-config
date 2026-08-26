@@ -899,6 +899,9 @@ class TestEventDispatch(unittest.TestCase):
         def learn(self, w, h):
             self.calls.append(("learn", w, h))
 
+        def trace(self, window_id, what, layout=None, workspace_id=None):
+            self.calls.append(("trace", window_id, what))
+
         def unstage(self, pid=None):
             self.calls.append(("unstage", pid))
 
@@ -1194,3 +1197,50 @@ class TestStagingAudits(unittest.TestCase):
     def test_no_audits_is_not_work(self):
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.run_due_audits(1.0))
+
+
+class TestEventTracing(unittest.TestCase):
+    """The event stream says when a window moved; polling only says where."""
+
+    class Recorder:
+        def __init__(self):
+            self.audits = [(0.0, 42)]
+            self.workspace_outputs = {}
+            self.last_windows = []
+            self.traced = []
+
+        watched_windows = stream_mode.Session.watched_windows
+        trace = stream_mode.Session.trace
+
+        def on_windows(self, windows):
+            pass
+
+        def on_outputs_changed(self, names):
+            pass
+
+    def setUp(self):
+        self.s = self.Recorder()
+        self._log = stream_mode.log
+        self.lines = []
+        stream_mode.log = self.lines.append
+
+    def tearDown(self):
+        stream_mode.log = self._log
+
+    def test_a_layout_change_for_an_audited_window_is_traced(self):
+        stream_mode.handle_niri_event(self.s, json.dumps(
+            {"WindowLayoutsChanged": {"changes": [[42, {"window_size": [1280, 800]}]]}}
+        ))
+        self.assertTrue(any("trace window 42" in l and "1280" in l for l in self.lines))
+
+    def test_other_windows_are_not_narrated(self):
+        stream_mode.handle_niri_event(self.s, json.dumps(
+            {"WindowLayoutsChanged": {"changes": [[7, {"window_size": [800, 600]}]]}}
+        ))
+        self.assertEqual([l for l in self.lines if "trace" in l], [])
+
+    def test_workspaces_changed_records_the_output_of_each_workspace(self):
+        stream_mode.handle_niri_event(self.s, json.dumps(
+            {"WorkspacesChanged": {"workspaces": [{"id": 3, "output": "steam"}]}}
+        ))
+        self.assertEqual(self.s.workspace_outputs, {3: "steam"})

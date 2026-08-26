@@ -555,6 +555,9 @@ class Session:
         self.big_picture_placed = False
         # (deadline, window_id) pairs; see run_due_audits.
         self.audits = []
+        # workspace id -> output name, kept current from the event stream so a
+        # trace line can say which monitor a window moved to without asking.
+        self.workspace_outputs = {}
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
 
@@ -902,6 +905,32 @@ class Session:
         ]
         return True
 
+    def watched_windows(self):
+        """Windows currently under audit, by id."""
+        return {window_id for _deadline, window_id in self.audits}
+
+    def trace(self, window_id, what, layout=None, workspace_id=None):
+        """Note a compositor event about a window being audited.
+
+        The event stream says exactly when a window moved or was resized,
+        which polling cannot: an audit at +1s and +3s shows a window in two
+        places without saying when or how often it changed in between. Limited
+        to audited windows so this does not narrate the whole desktop.
+        """
+        if window_id not in self.watched_windows():
+            return False
+        size = (layout or {}).get("window_size")
+        where = self.workspace_outputs.get(workspace_id) if workspace_id else None
+        log(
+            "stream-mode: trace window {} {}{}{}".format(
+                window_id,
+                what,
+                " size={}".format(size) if size is not None else "",
+                " output={}".format(where) if where else "",
+            )
+        )
+        return True
+
     def run_due_audits(self, now):
         """Log where an audited window has ended up, when its time comes."""
         if not self.audits:
@@ -1220,7 +1249,16 @@ def handle_niri_event(session, line):
                     window.get("id"), window.get("app_id") or "?", window.get("pid")
                 )
             )
+            session.trace(
+                window.get("id"), "opened or changed",
+                layout=window.get("layout"), workspace_id=window.get("workspace_id"),
+            )
             session.on_windows(session.last_windows)
+        return
+
+    if "WindowLayoutsChanged" in event:
+        for window_id, layout in event["WindowLayoutsChanged"].get("changes") or []:
+            session.trace(window_id, "layout changed", layout=layout)
         return
 
     if "WindowClosed" in event:
@@ -1231,8 +1269,13 @@ def handle_niri_event(session, line):
         return
 
     if "WorkspacesChanged" in event:
-        outputs = outputs_from_workspaces(event["WorkspacesChanged"].get("workspaces") or [])
-        session.on_outputs_changed(outputs)
+        workspaces = event["WorkspacesChanged"].get("workspaces") or []
+        # Which output a window is on is a property of its workspace, so this
+        # map is what lets a trace line name the monitor without asking niri.
+        session.workspace_outputs = {
+            ws.get("id"): ws.get("output") for ws in workspaces
+        }
+        session.on_outputs_changed(outputs_from_workspaces(workspaces))
         return
 
 
