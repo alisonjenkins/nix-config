@@ -1315,3 +1315,63 @@ class TestGameWorkspace(unittest.TestCase):
     def test_returning_without_borrowing_does_nothing(self):
         self.assertFalse(self.session().return_game_workspace())
         self.assertEqual(self.moves, [])
+
+
+class TestSplashScreens(unittest.TestCase):
+    """A game with a splash screen has two windows; staging only catches one.
+
+    Armored Core's splash was staged, fullscreened and closed, and the real
+    window arrived afterwards unmanaged and tiled at half the output's width.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "output_logical_size", "niri_windows", "fullscreen_window",
+            "FULLSCREEN_SETTLE_DELAY")}
+        self.toggled = []
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.fullscreen_window = lambda wid: self.toggled.append(wid)
+        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def session(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.workspace_outputs = {9: stream_mode.OUTPUT_NAME}
+        return s
+
+    def half_width(self, wid):
+        return {"id": wid, "workspace_id": 9, "layout": {"window_size": [640, 766]}}
+
+    def test_a_window_arriving_after_staging_is_still_fullscreened(self):
+        s = self.session()
+        stream_mode.niri_windows = lambda: [self.half_width(127)]
+        s.fullscreen_new_arrivals([self.half_width(127)])
+        self.assertEqual(self.toggled, [127])
+
+    def test_each_window_is_only_forced_once(self):
+        """A game deliberately taken out of fullscreen must stay that way."""
+        s = self.session()
+        stream_mode.niri_windows = lambda: [self.half_width(127)]
+        s.fullscreen_new_arrivals([self.half_width(127)])
+        self.toggled.clear()
+        s.fullscreen_new_arrivals([self.half_width(127)])
+        self.assertEqual(self.toggled, [])
+
+    def test_windows_on_other_outputs_are_left_alone(self):
+        s = self.session()
+        s.workspace_outputs = {9: "DP-2"}
+        stream_mode.niri_windows = lambda: [self.half_width(127)]
+        s.fullscreen_new_arrivals([self.half_width(127)])
+        self.assertEqual(self.toggled, [])
+
+    def test_nothing_happens_when_not_streaming(self):
+        s = self.session()
+        s.streaming = False
+        stream_mode.niri_windows = lambda: [self.half_width(127)]
+        s.fullscreen_new_arrivals([self.half_width(127)])
+        self.assertEqual(self.toggled, [])
