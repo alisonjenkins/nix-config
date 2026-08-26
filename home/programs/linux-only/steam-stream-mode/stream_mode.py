@@ -92,7 +92,17 @@ TARGET_FILE = os.environ.get(
 
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
-RES_RE = re.compile(r">>> Capture resolution set to (\d+)x(\d+)")
+# The client's own panel, relayed into the host's log by the client.
+#
+# This, rather than Steam's ">>> Capture resolution set to WxH": while the
+# display filter is armed the capture resolution is the size we told Steam, so
+# learning from it would only ever confirm our own default back to us and a
+# client with a different panel would never be sized correctly. "output size"
+# comes from the client and is unaffected -- it stays at the client's panel
+# even in logs where the video size had been fitted to the wrong desktop.
+CLIENT_SIZE_RE = re.compile(
+    r"CLIENT: Video size: \d+x\d+, output size: (\d+)x(\d+)"
+)
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via direct connection")
@@ -600,22 +610,43 @@ class Session:
     # -- learning
 
     def learn(self, width, height):
-        """Record the resolution the client asked for, once per session.
+        """Record the client's panel, and use it for this session too.
 
-        Steam re-logs the capture resolution after negotiation with a derived
-        value, so only the first of a session is the client's own.
+        Once per session: the client reports its size repeatedly while
+        streaming and there is nothing to gain from acting on every one.
+
+        Applied immediately rather than only remembered. A client connecting
+        for the first time has nothing to size the output from, so it gets the
+        default; leaving the correction until the next connect would let that
+        whole first session run letterboxed, which is the thing this service
+        exists to prevent. Republished before the resize for the reason connect
+        does the same: the resize is the display change Steam re-reads on, and
+        the filter has to already be reporting the new size when it does.
         """
         if self.learned or self.client_id is None:
             return False
         self.learned = True
         key = str(self.client_id)
-        if self.clients.get(key) == [width, height]:
-            return False
-        self.clients[key] = [width, height]
-        save_clients(self.clients)
+        known = self.clients.get(key) == [width, height]
+        if not known:
+            self.clients[key] = [width, height]
+            save_clients(self.clients)
+            log(
+                "stream-mode: learned {}x{} for client {}".format(
+                    width, height, self.client_id
+                )
+            )
+
+        if self.output is None:
+            return not known
+        if output_logical_size(self.output) == (width, height):
+            return not known
+
+        publish_target(self.output, width, height, DEFAULT_REFRESH)
+        set_output_mode(self.output, width, height, DEFAULT_REFRESH)
         log(
-            "stream-mode: learned {}x{} for client {}; used from next connect".format(
-                width, height, self.client_id
+            "stream-mode: resized {} to {}x{} for this session".format(
+                self.output, width, height
             )
         )
         return True
@@ -893,7 +924,7 @@ def handle_steam_line(session, line, remove_at):
         session.on_windows(session.last_windows)
         return None
 
-    match = RES_RE.search(line)
+    match = CLIENT_SIZE_RE.search(line)
     if match:
         session.learn(int(match.group(1)), int(match.group(2)))
         return remove_at
