@@ -59,8 +59,21 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
 
 ### How it actually works (took seven attempts to find)
 
-- Steam sizes the encoder from **X geometry**, never from the PipeWire stream the
-  portal hands it. The capture side was always correct at 1280x800.
+- Steam sizes the encoder from **its own idea of the desktop**, never from the
+  PipeWire stream the portal hands it. The capture side was always correct at
+  1280x800.
+- **That idea comes from SDL3, not from X.** Disassembling `steamui.so` settles it:
+  the routine that logs `Desktop state changed` calls `SDL_GetDisplays(NULL)`, walks
+  the NULL-terminated array calling `SDL_GetDisplayBounds` on each, unions them with
+  `SDL_GetRectUnion` for the desktop, and keeps the first entry as primary. No Xlib
+  in that path at all. Every RandR hook in the filter was aimed at the wrong layer;
+  they are kept because other Steam code paths do use them, but they do not decide
+  this number. Find the call site again with radare2:
+  `aa; aae; axt <addr of the format string>` — plain `aaa` will not find it, the
+  reference is PC-relative off `edi`.
+- The count argument is **not** consulted — `push 0` immediately before the call.
+  Anything filtering `SDL_GetDisplays` has to terminate the array, not just shorten
+  the count.
 - `steamui.so` (`/data/src/steamUI/gamestream/gamestreamsystemlinux.cpp`, emits
   `Desktop state changed`) **`dlopen`s `libXrandr.so.2` / `libX11.so.6` and resolves
   by `dlsym`**. A handle-scoped `dlsym` searches only that object, so plain
@@ -77,31 +90,33 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
 
 ### Backlog, highest value first
 
-1. **Confirm mid-session arming now works. NOT YET VERIFIED — needs DP-2 attached.**
-   Streaming has only ever been proven with Steam *started* while the `steam` output
-   was already in X and the filter already armed. In normal use Steam is running
-   before you connect from the Deck, so arming happens afterwards.
+1. **Confirm the mid-session path. NOT YET VERIFIED.** Verified working 2026-08-26:
+   a Steam that comes up with the filter already armed streams at a true 1280x800
+   (`capture size 1280x800`, encoder 1280x800, no re-fit). What is still unproven is
+   the Deck connecting to a Steam that has been running for a while, because every
+   successful run so far had the watcher arm before Steam finished starting.
 
-   Two things were found and fixed since that gap was written, and both are
-   unverified against a real stream:
+   Both fixes below target that case, and neither has been exercised by it:
 
-   - **`XRRGetScreenResourcesCurrent` is the update-path reader** — no longer a
-     guess. Measured in the filter log during a mid-session arm: it is called,
-     armed, and sees both outputs, where the startup-only `XRRGetScreenResources`
-     is not called again. It is now hooked.
-   - **The shim was filtering Steam's children too.** `LD_PRELOAD` is inherited, so
-     gamescope, pressure-vessel, wine and the game all saw the ultrawide removed
-     while gamescope was simultaneously told `--prefer-output steam`. A mid-session
-     stream wedged during game launch with `BMainLoop appears to have stalled > 15
-     seconds`. Now gated to the `steam`/`steamwebhelper` executables.
+   - `SDL_GetDisplays(NULL)` is now filtered (the array is terminated, not just the
+     count) — this is what the deciding routine calls.
+   - The watcher now turns the output **off before** withdrawing the target. The
+     reverse order left the output present with the filter inert, and Steam
+     recomputed in that window and cached the union of both monitors (6400x1440),
+     then sized the next stream to it. That is why a mid-session connect stayed
+     wrong even once the display filtering was correct.
 
-   The wedge and the mid-session arm happened in the same run, so which of the two
-   caused it is **not established**. Do not assume the gate fixed it. Next session,
-   with DP-2 back: start Steam with no target published and the `steam` output off,
-   connect the Deck, and read `SynchronizeClientState(): setting capture size`.
+   To test: with Steam running and nothing streaming, confirm the `steam` output is
+   off and no target is published, then connect the Deck without restarting Steam
+   and read `SynchronizeClientState(): setting capture size`.
 
    Ground truth for judging any fix: with DP-2 physically detached the capture size
    is correct with no filtering at all, because nothing is left to disagree.
+
+   A useful trick for forcing Steam to recompute on demand, without a Deck:
+   `niri msg create-virtual-output --name trigger --width 1920 --height 1080
+   --refresh-rate 60` then remove it. Each create/remove makes Steam re-emit
+   `Desktop state changed`, which turns a multi-minute round trip into seconds.
 2. **Give niri virtual outputs a real physical size.** Fix in the fork
    (`/home/ali/git/niri`, branch `rebase-feat-virtual`) rather than faking it in the
    shim: derive mm from the mode at ~96dpi. Removes the shim's main reason to exist
