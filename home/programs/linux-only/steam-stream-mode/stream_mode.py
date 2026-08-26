@@ -120,6 +120,7 @@ def log(message):
     print(message, flush=True)
 
 
+
 # --- niri ------------------------------------------------------------------
 
 
@@ -566,10 +567,22 @@ class Session:
         # On already if a client connected first, but a stream can also be the
         # first thing seen — after a service restart mid-session, say.
         set_output_enabled(self.output, True)
-        size = output_logical_size(self.output) or client_size(
-            self.client_id, self.clients
-        )
-        published = publish_target(self.output, size[0], size[1], DEFAULT_REFRESH)
+
+        # The client we are serving decides the size, in preference to whatever
+        # mode the output was last left in. A stream can start without a fresh
+        # connect line, and the output keeps its previous mode — set for an
+        # earlier client, or by hand at the command line. Preferring the
+        # output's own size meant a Deck streamed at 1600x900 simply because
+        # that is what the output happened to be at the time.
+        if self.client_id is not None:
+            width, height = client_size(self.client_id, self.clients)
+        else:
+            size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
+            width, height = size
+
+        published = publish_target(self.output, width, height, DEFAULT_REFRESH)
+        if output_logical_size(self.output) != (width, height):
+            set_output_mode(self.output, width, height, DEFAULT_REFRESH)
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
