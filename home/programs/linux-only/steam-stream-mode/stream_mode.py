@@ -95,6 +95,19 @@ STAGE_AUDIT_DELAYS = [
 # recreated comes back as HEADLESS-2, HEADLESS-3 and so on, so the remembered
 # selection silently stops resolving and the client goes black.
 OUTPUT_NAME = os.environ.get("STREAM_MODE_OUTPUT_NAME", "steam")
+# The workspace niri's window rules send games to.
+#
+# Games do not arrive on the streamed output by accident of timing -- they are
+# placed by a window rule, `open-on-workspace "game"`, and that workspace lives
+# on the desktop monitor. Chasing each window afterwards was a race against the
+# compositor's own configuration, and it showed: a game appeared on the desktop
+# monitor first, sized as gamescope's 2560 borderless column, and was dragged
+# across and resized a moment later.
+#
+# Moving the workspace instead means the rule and the stream agree rather than
+# fight. It also covers every game the rule matches, not only those whose window
+# this service manages to identify.
+GAME_WORKSPACE = os.environ.get("STREAM_MODE_GAME_WORKSPACE", "game")
 # Published while a client is streaming, and removed when it stops. Read by
 # the steam-display-filter LD_PRELOAD shim, which reports this size to Steam as
 # the whole desktop: Steam sizes its capture from its own idea of the desktop
@@ -347,6 +360,36 @@ def niri_workspaces():
     return json.loads(raw)
 
 
+def workspace_output(name):
+    """Which output a named workspace currently sits on, if it exists."""
+    try:
+        for ws in niri_workspaces():
+            if ws.get("name") == name:
+                return ws.get("output")
+    except (subprocess.CalledProcessError, ValueError, OSError) as exc:
+        log("stream-mode: could not read workspaces: {}".format(exc))
+    return None
+
+
+def move_workspace_to_output(name, output):
+    """Move a named workspace to an output without focusing it.
+
+    --reference names the workspace, so this does not steal focus or disturb
+    what is on screen.
+    """
+    result = subprocess.run(
+        [NIRI, "msg", "action", "move-workspace-to-monitor", output,
+         "--reference", name],
+        capture_output=True, text=True, env=niri_env(),
+    )
+    if result.returncode != 0:
+        log("stream-mode: could not move workspace {} to {}: {}".format(
+            name, output, (result.stderr or "").strip()
+        ))
+        return False
+    return True
+
+
 def window_location(window_id):
     """Where a window is and how big, as one string for the log.
 
@@ -555,6 +598,8 @@ class Session:
         self.big_picture_placed = False
         # (deadline, window_id) pairs; see run_due_audits.
         self.audits = []
+        # Where the game workspace lived before a stream borrowed it.
+        self.game_workspace_home = None
         # workspace id -> output name, kept current from the event stream so a
         # trace line can say which monitor a window moved to without asking.
         self.workspace_outputs = {}
@@ -660,6 +705,9 @@ class Session:
         published = publish_target(self.output, width, height, DEFAULT_REFRESH)
         if output_logical_size(self.output) != (width, height):
             set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+        # Before the game is launched, so its window rule places it correctly
+        # the first time rather than being corrected afterwards.
+        self.borrow_game_workspace()
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
@@ -692,6 +740,9 @@ class Session:
         # second notification, or a restart mid-session -- would otherwise skip
         # turning the output off entirely and leave it on indefinitely, which
         # is exactly the state that produced the wrong aspect above.
+        # Back to its own monitor before the output it is sitting on is turned
+        # off, or niri has to find somewhere for it on our behalf.
+        self.return_game_workspace()
         name = self.output if self.output is not None else OUTPUT_NAME
         self.output = None
         set_output_enabled(name, False)
@@ -903,6 +954,49 @@ class Session:
         self.audits = [
             (time.monotonic() + delay, window["id"]) for delay in STAGE_AUDIT_DELAYS
         ]
+        return True
+
+    def borrow_game_workspace(self):
+        """Bring the workspace niri opens games on to the streamed output.
+
+        The alternative was moving each game window after the fact, which is a
+        race against the compositor's own rule and was losing it visibly: the
+        game appeared on the desktop monitor, sized as gamescope's borderless
+        column for that monitor, and was dragged across a moment later.
+
+        Where it came from is remembered rather than assumed, so a desktop with
+        a different monitor layout gets its own arrangement back.
+        """
+        if self.output is None:
+            return False
+        current = workspace_output(GAME_WORKSPACE)
+        if current is None or current == self.output:
+            return False
+        self.game_workspace_home = current
+        if not move_workspace_to_output(GAME_WORKSPACE, self.output):
+            self.game_workspace_home = None
+            return False
+        log("stream-mode: moved workspace {} from {} to {}".format(
+            GAME_WORKSPACE, current, self.output
+        ))
+        return True
+
+    def return_game_workspace(self):
+        """Put the game workspace back where it was before the stream."""
+        home = self.game_workspace_home
+        self.game_workspace_home = None
+        if home is None:
+            return False
+        if home not in usable_output_names():
+            # The monitor it came from is gone -- a KVM switch, or unplugged
+            # mid-session. Leaving it here beats moving it somewhere invented.
+            log("stream-mode: {} is gone; leaving workspace {} where it is".format(
+                home, GAME_WORKSPACE
+            ))
+            return False
+        if not move_workspace_to_output(GAME_WORKSPACE, home):
+            return False
+        log("stream-mode: returned workspace {} to {}".format(GAME_WORKSPACE, home))
         return True
 
     def watched_windows(self):

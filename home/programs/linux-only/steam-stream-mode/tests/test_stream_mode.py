@@ -254,6 +254,8 @@ class TestSession(unittest.TestCase):
                 "fullscreen_window",
                 "focus_window",
                 "niri_windows",
+                "workspace_output",
+                "move_workspace_to_output",
                 "output_logical_size",
                 "parent_pids",
                 "usable_output_names",
@@ -560,6 +562,11 @@ class TestOutputLifetime(unittest.TestCase):
         # The settle exists for a real compositor's timing; waiting for it here
         # would only make the suite slow.
         stream_mode.FULLSCREEN_SETTLE_DELAY = 0
+        self.workspace_moves = []
+        stream_mode.workspace_output = lambda name: "DP-2"
+        stream_mode.move_workspace_to_output = lambda name, out: (
+            self.workspace_moves.append((name, out)) or True
+        )
 
     def tearDown(self):
         for k, v in self._real.items():
@@ -1244,3 +1251,67 @@ class TestEventTracing(unittest.TestCase):
             {"WorkspacesChanged": {"workspaces": [{"id": 3, "output": "steam"}]}}
         ))
         self.assertEqual(self.s.workspace_outputs, {3: "steam"})
+
+
+class TestGameWorkspace(unittest.TestCase):
+    """niri's own rule opens games on a named workspace; move that instead.
+
+    Chasing each game window was a race against the compositor's
+    configuration, and it lost visibly: the game appeared on the desktop
+    monitor, sized as gamescope's borderless column for that monitor, and was
+    dragged across a moment later.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "workspace_output", "move_workspace_to_output", "usable_output_names")}
+        self.moves = []
+        stream_mode.move_workspace_to_output = lambda name, out: (
+            self.moves.append((name, out)) or True)
+        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def session(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        return s
+
+    def test_it_is_borrowed_for_the_stream_and_given_back(self):
+        stream_mode.workspace_output = lambda name: "DP-2"
+        s = self.session()
+
+        self.assertTrue(s.borrow_game_workspace())
+        self.assertEqual(self.moves, [(stream_mode.GAME_WORKSPACE, stream_mode.OUTPUT_NAME)])
+
+        self.assertTrue(s.return_game_workspace())
+        self.assertEqual(self.moves[-1], (stream_mode.GAME_WORKSPACE, "DP-2"))
+
+    def test_a_workspace_already_there_is_left_alone(self):
+        stream_mode.workspace_output = lambda name: stream_mode.OUTPUT_NAME
+        s = self.session()
+        self.assertFalse(s.borrow_game_workspace())
+        self.assertEqual(self.moves, [])
+
+    def test_a_missing_workspace_is_not_invented(self):
+        stream_mode.workspace_output = lambda name: None
+        s = self.session()
+        self.assertFalse(s.borrow_game_workspace())
+        self.assertEqual(self.moves, [])
+
+    def test_returning_is_skipped_if_the_monitor_has_gone(self):
+        """A KVM switch mid-stream: putting it back somewhere invented is worse."""
+        stream_mode.workspace_output = lambda name: "DP-2"
+        s = self.session()
+        s.borrow_game_workspace()
+        self.moves.clear()
+        stream_mode.usable_output_names = lambda: {stream_mode.OUTPUT_NAME}
+
+        self.assertFalse(s.return_game_workspace())
+        self.assertEqual(self.moves, [])
+
+    def test_returning_without_borrowing_does_nothing(self):
+        self.assertFalse(self.session().return_game_workspace())
+        self.assertEqual(self.moves, [])
