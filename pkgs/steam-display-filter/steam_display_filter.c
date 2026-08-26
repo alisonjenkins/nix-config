@@ -726,6 +726,22 @@ struct sdl_rect {
  * wanted entry is moved to the front and the count shortened rather than a new
  * array being handed back -- the block stays exactly as SDL made it.
  */
+/*
+ * The display id handed to Steam as the streamed output.
+ *
+ * Disassembling steamui.so settles what "Desktop state changed" actually
+ * reads, after a long detour through RandR that was aimed at the wrong layer
+ * entirely. The function calls SDL_GetDisplays(0), walks the list calling
+ * SDL_GetDisplayBounds on each, unions the rectangles with SDL_GetRectUnion
+ * into the "desktop", keeps the first entry as "primary", and frees the list
+ * with SDL_free. There is no Xlib in it. The RandR hooks in this file matter
+ * for other Steam code paths, but not for this number.
+ *
+ * So the two SDL entry points have to agree on which display is being
+ * streamed, and this is what carries that between them.
+ */
+static SDL_DisplayID presented_display;
+
 SDL_DisplayID *SDL_GetDisplays(int *count)
 {
     static SDL_DisplayID *(*real)(int *);
@@ -733,6 +749,7 @@ SDL_DisplayID *SDL_GetDisplays(int *count)
     SDL_DisplayID *displays;
     struct target want;
     int i;
+    int n = 0;
 
     if (!real)
         real = late_sym("SDL_GetDisplays");
@@ -755,34 +772,83 @@ SDL_DisplayID *SDL_GetDisplays(int *count)
                 flog("  display id=%u  <bounds unavailable>", displays[i]);
         }
     }
-    if (!displays || !count || *count <= 1 || !real_bounds)
+    /*
+     * The count is optional, and the caller that matters does not pass one.
+     *
+     * SDL hands back a NULL-terminated array and, separately, a count through
+     * an out-parameter. Steam's desktop-state routine calls
+     * SDL_GetDisplays(NULL) and walks the array until the NULL -- the
+     * disassembly is unambiguous, "push 0" immediately before the call and
+     * "mov eax, [eax + esi*4]" to step it. Bailing out when no count was
+     * supplied handed that routine the unfiltered list, while a different
+     * caller that does pass a count made the log look like the filter was
+     * working. Union 1280x800 with 5120x1440 and you get exactly the
+     * 5120,1440 Steam kept reporting.
+     */
+    if (!displays)
+        return displays;
+    if (count) {
+        n = *count;
+    } else {
+        while (displays[n])
+            n++;
+    }
+    if (n < 1)
         return displays;
     if (!read_target(&want)) {
-        flog("SDL_GetDisplays: leaving %d alone (no target)", *count);
+        flog("SDL_GetDisplays: leaving %d alone (no target)", n);
         return displays;
     }
 
-    for (i = 0; i < *count; i++) {
-        struct sdl_rect r = { 0, 0, 0, 0 };
+    /*
+     * Prefer the display that really is the streamed output.
+     */
+    if (real_bounds) {
+        for (i = 0; i < n; i++) {
+            struct sdl_rect r = { 0, 0, 0, 0 };
 
-        if (!real_bounds(displays[i], &r))
-            continue;
-        if (r.w != want.width || r.h != want.height)
-            continue;
+            if (!real_bounds(displays[i], &r))
+                continue;
+            if (r.w != want.width || r.h != want.height)
+                continue;
+            if (i != 0) {
+                SDL_DisplayID tmp = displays[0];
 
-        if (i != 0) {
-            SDL_DisplayID tmp = displays[0];
-            displays[0] = displays[i];
-            displays[i] = tmp;
+                displays[0] = displays[i];
+                displays[i] = tmp;
+            }
+            break;
         }
-        flog("SDL_GetDisplays: kept id=%u (%dx%d), hid %d other(s)",
-             displays[0], want.width, want.height, *count - 1);
-        *count = 1;
-        return displays;
     }
 
-    flog("SDL_GetDisplays: NO MATCH for %dx%d among %d — leaving all visible",
-         want.width, want.height, *count);
+    /*
+     * Reduce to a single display even when none of them matched.
+     *
+     * SDL enumerates its displays once at startup and does not learn about an
+     * output that appears afterwards. The streaming output is created when the
+     * client connects, so for the whole of a stream that began while Steam was
+     * already running, SDL's list contains only the desktop monitor -- and the
+     * old "leave it alone unless something matches" rule left Steam reading the
+     * ultrawide, which is the mid-session failure this filter kept losing to.
+     *
+     * There is nothing to be gained by declining here. While a stream is
+     * running, exactly one display is being streamed and Steam must be told
+     * about exactly that one, whether or not SDL has noticed it. The identifier
+     * kept is whichever SDL did report; SDL_GetDisplayBounds below answers for
+     * it with the streamed geometry, so the pair stays consistent.
+     */
+    presented_display = displays[0];
+    /*
+     * Terminate the array as well as shortening the count. A caller that was
+     * given no count has nothing else to stop it.
+     */
+    if (n > 1)
+        displays[1] = 0;
+    if (count)
+        *count = 1;
+    flog("SDL_GetDisplays: kept id=%u as %dx%d, hid %d other(s), count=%s",
+         displays[0], want.width, want.height, n - 1,
+         count ? "given" : "NULL");
     return displays;
 }
 
@@ -805,7 +871,30 @@ _Bool SDL_GetDisplayBounds(SDL_DisplayID display, struct sdl_rect *rect)
         return 0;
 
     rc = real(display, rect);
-    if (!rc || !rect || !read_target(&want))
+    if (!rect || !read_target(&want))
+        return rc;
+
+    /*
+     * Answer for the display SDL_GetDisplays presented with the streamed
+     * geometry, whatever SDL believes that display's size to be.
+     *
+     * This is the other half of presenting a stale list as the streamed
+     * output: reporting one display and then handing back the ultrawide's
+     * bounds for it would leave Steam with the same number it started with.
+     * Reported as succeeding even if SDL itself failed -- if SDL cannot
+     * describe the display we just told Steam about, the honest answer is
+     * still the geometry being streamed.
+     */
+    if (presented_display && display == presented_display) {
+        rect->x = 0;
+        rect->y = 0;
+        rect->w = want.width;
+        rect->h = want.height;
+        note("SDL_GetDisplayBounds", want.width, rect->w);
+        return 1;
+    }
+
+    if (!rc)
         return rc;
     if (rect->w != want.width || rect->h != want.height)
         return rc;
