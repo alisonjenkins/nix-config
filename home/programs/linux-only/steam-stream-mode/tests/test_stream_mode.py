@@ -49,8 +49,33 @@ class TestLogParsing(unittest.TestCase):
         self.assertTrue(stream_mode.STOP_RE.search(self.STOP))
         self.assertFalse(stream_mode.START_RE.search(self.STOP))
 
-    def test_capture_resolution(self):
-        self.assertEqual(stream_mode.RES_RE.search(self.RES).groups(), ("1280", "800"))
+    CLIENT_SIZE = (
+        "[2026-08-26 06:41:28][385.926662] CLIENT: Video size: 1280x800, "
+        "output size: 1280x800, overlay size: 1280x800\n"
+    )
+    CLIENT_SIZE_LETTERBOXED = (
+        "[2026-08-26 06:22:53][65.613951] CLIENT: Video size: 1280x360, "
+        "output size: 1280x800, overlay size: 1280x800\n"
+    )
+
+    def test_client_size_is_the_clients_own_panel(self):
+        """This is what a client's size has to be learned from.
+
+        The capture resolution cannot be used: while the display filter is
+        armed it is the size we told Steam, so learning from it means learning
+        our own default back and a client with a different panel never gets
+        sized correctly. "output size" comes from the client and is unaffected
+        -- note it stays 1280x800 in the letterboxed sample below, where the
+        video size had already been fitted to the wrong desktop.
+        """
+        self.assertEqual(
+            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE).groups(),
+            ("1280", "800"),
+        )
+        self.assertEqual(
+            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE_LETTERBOXED).groups(),
+            ("1280", "800"),
+        )
 
     def test_add_window_gives_pid_and_game(self):
         self.assertEqual(
@@ -556,6 +581,44 @@ class TestOutputLifetime(unittest.TestCase):
         s.end_stream()
 
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
+    def test_a_newly_learned_size_is_applied_to_the_running_session(self):
+        """A client whose size is not yet known must not stay at the default.
+
+        The first connect from a new client has nothing to size the output
+        from, so it gets the default. Learning its real panel and only using it
+        "from next connect" leaves that whole session letterboxed, which is the
+        thing this service exists to prevent.
+
+        The target is published before the resize, for the same reason connect
+        does it that way: the resize is the display change Steam re-reads on,
+        and the filter has to be reporting the new size by then.
+        """
+        order = []
+        stream_mode.publish_target = lambda o, w, h, r=None: (
+            order.append(("target", w, h)) or True
+        )
+        stream_mode.set_output_mode = lambda name, w, h, r: (
+            order.append(("mode", w, h)) or True
+        )
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "tv")
+        s.begin_stream()
+        order.clear()
+
+        self.assertTrue(s.learn(1920, 1080))
+        self.assertEqual(order, [("target", 1920, 1080), ("mode", 1920, 1080)])
+
+    def test_learning_the_size_already_in_use_changes_nothing(self):
+        """The common case: a client reconnecting at the size it had before."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream()
+        self.modes.clear()
+
+        s.learn(1280, 800)
+        self.assertEqual(self.modes, [])
 
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
