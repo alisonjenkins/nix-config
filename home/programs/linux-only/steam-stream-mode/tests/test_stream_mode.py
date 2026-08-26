@@ -14,6 +14,25 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import stream_mode  # noqa: E402
 
+_state_dir = None
+
+
+def setUpModule():
+    """Keep the suite away from the real learned-clients file.
+
+    Session.learn() saves through the module-level STATE path, so running the
+    tests rewrote the user's own ~/.local/state/stream-mode/clients.json with
+    fixture clients and threw away the real ones. A test suite must not touch
+    the state of the thing it is testing.
+    """
+    global _state_dir
+    _state_dir = tempfile.TemporaryDirectory()
+    stream_mode.STATE = os.path.join(_state_dir.name, "clients.json")
+
+
+def tearDownModule():
+    _state_dir.cleanup()
+
 
 def window(wid, pid, app_id="steam_app_2854740", size=(1277, 1406)):
     return {
