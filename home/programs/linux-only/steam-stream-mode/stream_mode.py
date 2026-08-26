@@ -477,6 +477,9 @@ class Session:
         self.reported_wait = False
         self.last_windows = []
         self.learned = False
+        # Reset per session: a new client gets its own Big Picture placement,
+        # and the user is free to move it afterwards without it snapping back.
+        self.big_picture_placed = False
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
 
@@ -510,6 +513,7 @@ class Session:
         """A client has connected: size the output for it and turn it on."""
         self.client_id = client_id
         self.learned = False
+        self.big_picture_placed = False
         width, height = client_size(client_id, self.clients)
 
         self.ensure_output()
@@ -684,6 +688,36 @@ class Session:
         )
         return True
 
+    def place_big_picture(self, windows):
+        """Put Steam's own Big Picture window on the streamed output.
+
+        Only game windows were staged, because the Deck launches straight into
+        one. A phone or a television streams the Steam UI itself, and Big
+        Picture opened on the desktop monitor instead — so the client watched
+        whatever happened to be behind it.
+
+        Moved once per session rather than on every window event: niri emits
+        the list on any change, and re-issuing the move each time would fight
+        the user dragging it somewhere else.
+        """
+        if not self.streaming or self.output is None or self.big_picture_placed:
+            return False
+
+        for w in windows:
+            if (w.get("app_id") or "") != "steam":
+                continue
+            if "Big Picture" not in (w.get("title") or ""):
+                continue
+            self.big_picture_placed = True
+            try:
+                move_window_to_output(w["id"], self.output)
+            except (subprocess.CalledProcessError, OSError) as exc:
+                log("stream-mode: could not move Big Picture: {}".format(exc))
+                return False
+            log("stream-mode: moved Big Picture to {}".format(self.output))
+            return True
+        return False
+
     def on_windows(self, windows):
         """React to niri's window list changing.
 
@@ -692,6 +726,8 @@ class Session:
         a deadline, because a game's window can appear minutes after Steam
         reports its pid.
         """
+        self.place_big_picture(windows)
+
         if self.pending is None:
             return False
 

@@ -655,6 +655,56 @@ class TestOutputLifetime(unittest.TestCase):
         s.learn(1280, 800)
         self.assertEqual(self.modes, [])
 
+    def test_big_picture_is_moved_onto_the_streamed_output(self):
+        """Streaming to a phone or TV shows Big Picture, not a game.
+
+        Only game windows were ever staged, because the Deck launches straight
+        into one. A client that streams the Steam UI itself left Big Picture on
+        the desktop monitor and streamed whatever happened to be behind it.
+        """
+        moved = []
+        stream_mode.move_window_to_output = lambda wid, out: moved.append((wid, out))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "tv")
+        s.begin_stream()
+        s.on_windows([
+            window(7, 999, app_id="zen-beta"),
+            {"id": 8, "pid": 42, "app_id": "steam",
+             "title": "Steam Big Picture Mode", "layout": {"window_size": [1280, 800]}},
+        ])
+
+        self.assertEqual(moved, [(8, stream_mode.OUTPUT_NAME)])
+
+    def test_big_picture_is_left_alone_when_not_streaming(self):
+        """It is an ordinary window on the desktop the rest of the time."""
+        moved = []
+        stream_mode.move_window_to_output = lambda wid, out: moved.append((wid, out))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.on_windows([
+            {"id": 8, "pid": 42, "app_id": "steam",
+             "title": "Steam Big Picture Mode", "layout": {"window_size": [1280, 800]}},
+        ])
+
+        self.assertEqual(moved, [])
+
+    def test_big_picture_is_moved_once_not_on_every_event(self):
+        """niri emits a window list on every change; this must not fight it."""
+        moved = []
+        stream_mode.move_window_to_output = lambda wid, out: moved.append((wid, out))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "tv")
+        s.begin_stream()
+        bp = [{"id": 8, "pid": 42, "app_id": "steam",
+               "title": "Steam Big Picture Mode", "layout": {"window_size": [1280, 800]}}]
+        s.on_windows(bp)
+        s.on_windows(bp)
+        s.on_windows(bp)
+
+        self.assertEqual(len(moved), 1)
+
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
         s = stream_mode.Session(stage_timeout=0)
