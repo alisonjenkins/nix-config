@@ -600,6 +600,9 @@ class Session:
         self.audits = []
         # Where the game workspace lived before a stream borrowed it.
         self.game_workspace_home = None
+        # Windows already made to fill the streamed output, so one taken out
+        # of fullscreen on purpose is not dragged back into it.
+        self.fullscreened = set()
         # workspace id -> output name, kept current from the event stream so a
         # trace line can say which monitor a window moved to without asking.
         self.workspace_outputs = {}
@@ -637,6 +640,7 @@ class Session:
         self.client_id = client_id
         self.learned = False
         self.big_picture_placed = False
+        self.fullscreened = set()
         width, height = client_size(client_id, self.clients)
 
         self.ensure_output()
@@ -856,6 +860,48 @@ class Session:
         self.end_stream()
         return True
 
+    def fullscreen_new_arrivals(self, windows):
+        """Fullscreen anything that turns up on the streamed output.
+
+        Staging is one shot: the first window matching a launching game is
+        placed and fullscreened, and then it is done. A game with a splash
+        screen has two windows, and the splash consumes it -- Armored Core's
+        splash was staged, fullscreened, and closed, leaving the real window
+        to arrive afterwards unmanaged and tiled at half the width.
+
+        Rather than trying to tell a splash from a game, anything that appears
+        on the streamed output while a stream is running is made to fill it.
+        During a stream that output has nothing else on it. Once per window,
+        so a game deliberately taken out of fullscreen is not dragged back.
+        """
+        if not self.streaming or self.output is None:
+            return False
+
+        try:
+            output_size = output_logical_size(self.output)
+        except (subprocess.CalledProcessError, ValueError, OSError):
+            return False
+        if output_size is None:
+            return False
+
+        acted = False
+        for w in windows:
+            window_id = w.get("id")
+            if window_id is None or window_id in self.fullscreened:
+                continue
+            if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
+                continue
+            if is_fullscreen(w, output_size):
+                self.fullscreened.add(window_id)
+                continue
+            self.fullscreened.add(window_id)
+            log("stream-mode: window {} arrived on {} not filling it".format(
+                window_id, self.output
+            ))
+            self._ensure_fullscreen(window_id)
+            acted = True
+        return acted
+
     def place_big_picture(self, windows):
         """Put Steam's own Big Picture window on the streamed output.
 
@@ -895,6 +941,7 @@ class Session:
         reports its pid.
         """
         self.place_big_picture(windows)
+        self.fullscreen_new_arrivals(windows)
 
         if self.pending is None:
             return False
