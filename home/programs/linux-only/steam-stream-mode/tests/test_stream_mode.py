@@ -842,7 +842,7 @@ class TestStreamTarget(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self._real = stream_mode.TARGET_FILE
-        stream_mode.TARGET_FILE = os.path.join(self.tmp.name, "sub", "target.json")
+        stream_mode.TARGET_FILE = os.path.join(self.tmp.name, "sub", "target")
 
     def tearDown(self):
         stream_mode.TARGET_FILE = self._real
@@ -850,17 +850,23 @@ class TestStreamTarget(unittest.TestCase):
 
     def read(self):
         with open(stream_mode.TARGET_FILE) as fh:
-            return json.load(fh)
+            return fh.read()
 
-    def test_publishes_what_the_shim_needs(self):
+    def test_publishes_the_size_the_filter_parses(self):
+        """One line, "WIDTHxHEIGHT", and nothing the filter has to parse around.
+
+        The filter hooks SDL, which has no notion of the compositor's output
+        names, so the size is all it can use. Keeping the format this small is
+        also what lets someone on another compositor drive it by hand with
+        STEAM_STREAM_SIZE and no watcher at all.
+        """
         self.assertTrue(stream_mode.publish_target("steam", 1280, 800, 60))
-        self.assertEqual(
-            self.read(), {"output": "steam", "width": 1280, "height": 800, "refresh": 60}
-        )
+        self.assertEqual(self.read().strip(), "1280x800")
 
-    def test_refresh_is_optional(self):
-        stream_mode.publish_target("steam", 1280, 800)
-        self.assertNotIn("refresh", self.read())
+    def test_the_output_name_and_refresh_stay_out_of_the_file(self):
+        stream_mode.publish_target("steam", 1280, 800, 90)
+        self.assertNotIn("steam", self.read())
+        self.assertNotIn("90", self.read())
 
     def test_withdraw_removes_it(self):
         stream_mode.publish_target("steam", 1280, 800)
@@ -876,7 +882,7 @@ class TestStreamTarget(unittest.TestCase):
         than a stale one."""
         stream_mode.publish_target("steam", 1280, 800)
         stream_mode.publish_target("steam", 1920, 1200)
-        self.assertEqual(self.read()["width"], 1920)
+        self.assertEqual(self.read().strip(), "1920x1200")
         leftovers = [f for f in os.listdir(os.path.dirname(stream_mode.TARGET_FILE))
                      if f.endswith(".new")]
         self.assertEqual(leftovers, [])

@@ -76,15 +76,17 @@ STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # selection silently stops resolving and the client goes black.
 OUTPUT_NAME = os.environ.get("STREAM_MODE_OUTPUT_NAME", "steam")
 # Published while a client is streaming, and removed when it stops. Read by
-# the steam-command-runner gamescope shim, which has to know the client's
-# resolution at launch: gamescope fixes its render size from -W/-H when it
-# starts, so a game started with the desktop's geometry is only scaled into
-# the smaller output afterwards and stays letterboxed. Absence means "not
+# the steam-display-filter LD_PRELOAD shim, which reports this size to Steam as
+# the whole desktop: Steam sizes its capture from its own idea of the desktop
+# rather than from the stream the portal gave it, so on a wider monitor the
+# client otherwise receives the desktop's shape letterboxed into its frame.
+# One line, "WIDTHxHEIGHT" -- the filter hooks SDL, which has no notion of the
+# compositor's output names, so the size is all it can use. Absence means "not
 # streaming", which is what leaves desktop play untouched.
 TARGET_FILE = os.environ.get(
     "STREAM_MODE_TARGET_FILE",
     os.path.join(
-        os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "stream-mode", "target.json"
+        os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "stream-mode", "target"
     ),
 )
 
@@ -232,18 +234,23 @@ def set_output_enabled(name, enabled):
 
 
 def publish_target(output, width, height, refresh=None):
-    """Announce the display a launching game should render for."""
-    doc = {"output": output, "width": width, "height": height}
-    if refresh is not None:
-        doc["refresh"] = refresh
+    """Announce the size the display filter should report to Steam.
+
+    Plain "WIDTHxHEIGHT" rather than JSON. The filter needs the streamed size
+    and nothing else -- it stopped matching outputs by name once the only thing
+    it hooks became SDL, which has no notion of the compositor's output names.
+    Keeping the format to one line also means anyone can drive the filter from
+    another compositor by hand, with STEAM_STREAM_SIZE=1280x800 and no watcher
+    at all. The output name and refresh stay in the log line, where they help a
+    person reading it, rather than in a format the filter has to parse.
+    """
     try:
         os.makedirs(os.path.dirname(TARGET_FILE), exist_ok=True)
         # Written whole then renamed: the shim reads this from a game launch
         # that can happen at any moment, and must never see a half-written file.
         tmp = TARGET_FILE + ".new"
         with open(tmp, "w") as fh:
-            json.dump(doc, fh)
-            fh.write("\n")
+            fh.write("{}x{}\n".format(width, height))
         os.replace(tmp, TARGET_FILE)
     except OSError as exc:
         log("stream-mode: could not publish the stream target: {}".format(exc))

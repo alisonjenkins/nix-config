@@ -862,17 +862,15 @@ in {
                 # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
                 BWRAP = "${patchedBwrap}/bin/bwrap";
 
-                # Remote Play sizes its capture from the largest monitor X
-                # reports rather than from the PipeWire stream the portal gave
+                # Remote Play sizes its capture from its own idea of the
+                # desktop rather than from the PipeWire stream the portal gave
                 # it, so a Deck streaming the 1280x800 virtual output receives
                 # DP-2's 5120x1440 shape fitted to 1280 wide — a 1280x360
-                # letterbox. Selecting the right portal source does not help,
-                # and neither does the RandR primary flag nor the Xinerama head
-                # order; both were set and both were measured being ignored.
+                # letterbox. Selecting the right portal source does not help.
                 #
-                # steam-display-filter hides every monitor but the streamed one
-                # while a stream target is published, and does nothing the rest
-                # of the time. It lives here rather than in modules/desktop
+                # steam-display-filter presents the streamed output as the only
+                # display while a stream size is published, and does nothing the
+                # rest of the time. It lives here rather than in modules/desktop
                 # because this host already overrides programs.steam.package for
                 # the bubblewrap patch above, and the option takes one
                 # definition. $LIB is left for the loader to expand so the
@@ -893,8 +891,8 @@ in {
                 # Absolute, because buildFHSEnv writes extraEnv values
                 # verbatim — "$HOME/..." arrives at the process as those eight
                 # literal characters and names a file that cannot exist.
-                STEAM_COMMAND_RUNNER_STREAM_TARGET =
-                  "${config.users.users.${username}.home}/.local/state/stream-mode/target.json";
+                STEAM_STREAM_TARGET =
+                  "${config.users.users.${username}.home}/.local/state/stream-mode/target";
                 STEAM_DISPLAY_FILTER_LOG =
                   "${config.users.users.${username}.home}/.local/state/stream-mode/filter.log";
 
