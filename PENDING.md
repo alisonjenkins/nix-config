@@ -132,18 +132,20 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
   that stalled Steam's main loop and failed the stream launch with
   `CSteamEngine::BMainLoop appears to have stalled > 15 seconds`. The log file is
   held open and repeats collapse. Diagnostics must not cost more than the fault.
-- Interposing `dlsym` makes every hook's own `dlsym(RTLD_NEXT, ...)` resolve to
-  *itself* — unbounded recursion, segfault whose faulting address equals the stack
-  pointer. Internal lookups go through `next_sym()`, and `RTLD_NEXT`/`RTLD_DEFAULT`
-  are never redirected.
-- `RTLD_NEXT` only searches the global scope, and Steam `dlopen`s libX11 without
-  `RTLD_GLOBAL`, so the real function must be found by name via
-  `dlopen(..., RTLD_NOLOAD)` as a fallback. Without it the hooks silently report a
-  zero width.
-- `pkgs/steam-display-filter/dlopen_probe.c` reproduces Steam's `dlopen`+`dlsym`
-  pattern in ~30 lines, so shim changes can be checked in seconds instead of by
-  launching Steam and reconnecting a Deck. Run it under two names to cover both
-  halves of the process gate; see the comment at the top of the file.
+- **Verify through the path Steam uses, or the result means nothing.** `steamui.so`
+  has `DT_NEEDED libSDL3.so.0`, so its calls go through the PLT and `LD_PRELOAD`
+  interposes them. A test that `dlopen`s SDL and resolves with a handle-scoped
+  `dlsym` bypasses the preload and reports "unfiltered" however well the filter
+  works. Six changes were confirmed working through paths Steam does not use, and
+  changed nothing; the first version of the probe repeated the same mistake.
+  `xdpyinfo` was another: it exercises Xinerama, which Steam never calls.
+- `pkgs/steam-display-filter/sdl_probe.c` does it correctly — link it against SDL3
+  and run it under two names to cover both halves of the process gate. Seconds,
+  rather than launching Steam and reconnecting a Deck.
+- If interposing `dlsym` ever looks necessary again: a hook's own
+  `dlsym(RTLD_NEXT, ...)` then resolves to *itself*, which is unbounded recursion
+  and a segfault whose faulting address equals the stack pointer. It is not needed
+  for SDL and the current filter does not do it.
 - Testing this needs **two outputs present**. With DP-2 detached there is nothing to
   filter and every probe trivially "passes" — a synthetic second output
   (`niri msg create-virtual-output --name gatetest --width 5120 --height 1440
