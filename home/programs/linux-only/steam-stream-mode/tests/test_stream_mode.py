@@ -233,7 +233,7 @@ class TestSession(unittest.TestCase):
                 "set_output_mode",
                 "set_output_enabled",
                 "move_window_to_output",
-                "widen_column_to_output",
+                "set_window_fullscreen",
                 "focus_window",
                 "niri_windows",
                 "workspace_output",
@@ -261,7 +261,7 @@ class TestSession(unittest.TestCase):
         stream_mode.set_output_mode = set_mode
         stream_mode.set_output_enabled = set_enabled
         stream_mode.move_window_to_output = lambda wid, out: self.moved.append((wid, out))
-        stream_mode.widen_column_to_output = lambda wid: self.fullscreened.append(wid) or True
+        stream_mode.set_window_fullscreen = lambda wid, on=True: self.fullscreened.append(wid) or True
         stream_mode.focus_window = lambda wid: None
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
@@ -522,7 +522,7 @@ class TestOutputLifetime(unittest.TestCase):
                 "publish_target",
                 "withdraw_target",
                 "niri_windows",
-                "widen_column_to_output",
+                "set_window_fullscreen",
                 "move_window_to_output",
                 "steam_is_running",
                 "signal_process",
@@ -1347,10 +1347,10 @@ class TestSplashScreens(unittest.TestCase):
 
     def setUp(self):
         self._real = {k: getattr(stream_mode, k) for k in (
-            "output_logical_size", "niri_windows", "widen_column_to_output")}
+            "output_logical_size", "niri_windows", "set_window_fullscreen")}
         self.toggled = []
         stream_mode.output_logical_size = lambda name: (1280, 800)
-        stream_mode.widen_column_to_output = lambda wid: self.toggled.append(wid) or True
+        stream_mode.set_window_fullscreen = lambda wid, on=True: self.toggled.append(wid) or True
         
     def tearDown(self):
         for k, v in self._real.items():
@@ -1361,6 +1361,10 @@ class TestSplashScreens(unittest.TestCase):
         s.output = stream_mode.OUTPUT_NAME
         s.streaming = True
         s.workspace_outputs = {9: stream_mode.OUTPUT_NAME}
+        # A game is staged and still running: that is what makes a window
+        # arriving unannounced on the streamed output the game's replacement
+        # rather than something of the desktop's that wandered over.
+        s.game_pid = 4321
         return s
 
     def half_width(self, wid):
@@ -1402,6 +1406,15 @@ class TestSplashScreens(unittest.TestCase):
         s.workspace_outputs = {9: "DP-2"}
         stream_mode.niri_windows = lambda: [self.half_width(127)]
         s.fill_streamed_output([self.half_width(127)])
+        self.assertEqual(self.toggled, [])
+
+    def test_an_unstaged_window_is_left_alone_once_the_game_has_gone(self):
+        """The teardown case: a terminal drifted onto the streamed output 90
+        seconds after the game exited and was resized to fit it."""
+        s = self.session()
+        s.game_pid = None
+        stream_mode.niri_windows = lambda: [self.half_width(3)]
+        self.assertFalse(s.fill_streamed_output([self.half_width(3)]))
         self.assertEqual(self.toggled, [])
 
     def test_nothing_happens_when_not_streaming(self):
@@ -1499,7 +1512,7 @@ class TestFocus(unittest.TestCase):
     def setUp(self):
         self._real = {k: getattr(stream_mode, k) for k in (
             "focus_window", "output_logical_size", "niri_windows",
-            "widen_column_to_output")}
+            "set_window_fullscreen")}
         self.focused = []
         stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
         stream_mode.output_logical_size = lambda name: (1280, 800)
@@ -1518,13 +1531,6 @@ class TestFocus(unittest.TestCase):
     def win(self, wid, focused, size=(1280, 800)):
         return {"id": wid, "workspace_id": 9, "is_focused": focused,
                 "layout": {"window_size": list(size)}}
-
-    def test_widening_a_window_focuses_it(self):
-        """The width actions apply to the focused column, so focus comes first."""
-        s = self.session()
-        stream_mode.niri_windows = lambda: [self.win(9, False, (640, 766))]
-        s.fill_streamed_output([self.win(9, False, (640, 766))])
-        self.assertIn(9, self.focused)
 
     def test_focus_is_taken_back_when_it_is_lost(self):
         s = self.session()
@@ -1562,6 +1568,92 @@ class TestFocus(unittest.TestCase):
         s.fullscreened.add(9)
         self.assertFalse(s.refocus_streamed_window([self.win(9, False)]))
         self.assertEqual(self.focused, [])
+
+
+class TestFullscreenFill(unittest.TestCase):
+    """Fullscreen, not a wide column.
+
+    A maximised column is laid out inside the working area, so anything with
+    an exclusive zone on the streamed output takes its space: the desktop bar
+    reserved 34px and a 1280x800 client got 1280x766 of game with a status bar
+    above it. Fullscreen ignores struts and gaps, which is the only way to
+    cover the output without dictating what else may run on the desktop.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "set_window_fullscreen", "focus_window", "output_logical_size",
+            "workspace_output", "move_workspace_to_output",
+            "usable_output_names")}
+        self.calls = []
+        stream_mode.set_window_fullscreen = lambda wid, on: (
+            self.calls.append((wid, on)) or True)
+        stream_mode.focus_window = lambda wid: True
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def session(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.workspace_outputs = {9: stream_mode.OUTPUT_NAME}
+        return s
+
+    def win(self, wid, size):
+        return {"id": wid, "workspace_id": 9, "is_focused": True,
+                "layout": {"window_size": list(size)}}
+
+    def test_a_staged_window_short_of_the_output_is_fullscreened(self):
+        s = self.session()
+        s.staged_windows.add(9)
+        self.assertTrue(s.fill_streamed_output([self.win(9, (640, 766))]))
+        self.assertEqual(self.calls, [(9, True)])
+
+    def test_a_window_short_only_in_height_is_fullscreened(self):
+        """The bar's exclusive zone costs height alone; width looks correct."""
+        s = self.session()
+        s.staged_windows.add(9)
+        self.assertTrue(s.fill_streamed_output([self.win(9, (1280, 766))]))
+        self.assertEqual(self.calls, [(9, True)])
+
+    def test_a_window_already_covering_the_output_is_left_alone(self):
+        s = self.session()
+        s.staged_windows.add(9)
+        self.assertFalse(s.fill_streamed_output([self.win(9, (1280, 800))]))
+        self.assertEqual(self.calls, [])
+
+    def test_a_window_we_did_not_stage_is_left_alone(self):
+        """A terminal drifted onto the streamed output and was resized to
+        1248px wide. Nothing but the staged game is ours to touch."""
+        s = self.session()
+        self.assertFalse(s.fill_streamed_output([self.win(3, (405, 734))]))
+        self.assertEqual(self.calls, [])
+
+    def test_fullscreening_records_the_window_so_it_can_be_undone(self):
+        s = self.session()
+        s.staged_windows.add(9)
+        s.fill_streamed_output([self.win(9, (640, 766))])
+        self.assertIn(9, s.fullscreened)
+
+    def test_returning_the_workspace_undoes_the_fullscreen(self):
+        """The stream borrows the window's state and gives it back.
+
+        Forcing fullscreen on the desktop monitor is what the niri window rule
+        deliberately stopped doing -- it overrode gamescope's own borderless
+        sizing -- so a game that outlives the stream must not keep it.
+        """
+        stream_mode.workspace_output = lambda name: stream_mode.OUTPUT_NAME
+        stream_mode.usable_output_names = lambda: {"DP-2", stream_mode.OUTPUT_NAME}
+        stream_mode.move_workspace_to_output = lambda name, out: True
+        s = self.session()
+        s.fullscreened.add(9)
+
+        s.return_game_workspace()
+        self.assertEqual(self.calls, [(9, False)])
+        self.assertEqual(s.fullscreened, set())
 
 
 class TestShortOfOutput(unittest.TestCase):
