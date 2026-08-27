@@ -47,6 +47,11 @@ mitigations merged to `home-cluster` 2026-07-01.
 
 ## Steam Remote Play streaming at the client's resolution
 
+**How the components fit together: `docs/steam-remote-play-streaming.md`.** This
+section is the archaeology — what was tried, why it failed, and what must not be
+re-learned. Read the doc first if you are trying to understand the system rather
+than its history.
+
 Working as of 2026-08-26: streaming `ali-desktop` → Steam Deck at a true 1280x800,
 with the ultrawide DP-2 still connected and usable. Verified in
 `/media/steam-games-1/Steam/logs/streaming_log.txt`:
