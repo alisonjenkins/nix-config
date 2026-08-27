@@ -5,7 +5,7 @@
 - Date written: 2026-08-25T00:00:00Z (times below are placeholders — fill in actual UTC times when executing)
 - Host: `ali-desktop`
 - Scope: **only** `/nix`. `/persistence` stays on btrfs, on the same underlying `osvg-persistence` LV, unchanged.
-- This document is a plan. No migration step in it has been run. No config in this repo has been changed. No filesystem has been touched. Every command below that mutates anything is explicitly flagged; the human operator runs those, not the agent (see `infra` skill: live infra changes need explicit go-ahead, and this agent cannot `sudo`).
+- This document is a plan. No migration step in it has been run. No config in this repo has been changed. No filesystem has been touched. Every command below that mutates anything is explicitly flagged; the human operator runs those, not the agent — live changes need an explicit go-ahead, and the agent cannot `sudo` in any case.
 
 ---
 
@@ -217,7 +217,6 @@ Recommended `/nix` mount options instead:
   fsType = "xfs";
   options = [
     "noatime"        # No access-time writes on every read — same rationale as the current btrfs entry
-    "nobarrier"      # OMIT — see note below; do not add this on an NVMe without a battery/UPS-backed write cache
     "logbsize=256k"  # Larger journal buffer for write throughput — same value as steam-games-1, still appropriate: a bigger log buffer helps any XFS workload with many metadata-heavy transactions, which a Nix store (many small file creates during builds/substitution) is a canonical example of
     "nofail"
   ];
@@ -272,7 +271,7 @@ Recommend: **do the bulk sync live**, then a **final short second pass (`rsync -
 
 Reasoning:
 - The Nix store is *close to* immutable during normal desktop use — files under existing store paths are never modified in place (Nix's core invariant), only *added* (new store paths from builds/GC-then-rebuild) or *removed* (GC). A live rsync pass safely captures the vast majority of content without any correctness risk, since it's not racing against in-place mutation.
-- The realistic race is: a new store path gets created *after* the bulk pass started but *before* cutover (e.g. background auto-upgrades, a `nix-shell` pulling something new, systemd timers). A GC running mid-sync is the other edge case — deleting a path rsync already indexed but hasn't copied yet is harmless (rsync just skips or errors harmlessly on a vanished source file with `--ignore-missing-args` behavior for whole-file transfers; worth adding `--ignore-missing-args` to the rsync invocations above to be safe against exactly this).
+- The realistic race is: a new store path gets created *after* the bulk pass started but *before* cutover (e.g. background auto-upgrades, a `nix-shell` pulling something new, systemd timers). A GC running mid-sync is the other edge case — deleting a path rsync already indexed but hasn't copied yet is harmless, but expect it to show up in rsync's **exit status rather than its output**: files vanishing between the file-list build and the transfer make rsync exit **24** ("partial transfer due to vanished source files"). That is expected here and not a failure. No flag suppresses it — `--ignore-missing-args` covers arguments that do not exist when rsync starts, not files that disappear during the run — so treat 24 as success in any wrapper script, and rely on the second pass plus the §4.4 verification to establish that the destination is complete.
 - A short second pass (should complete in minutes, not hours, since rsync's `-H`/`-a` still has to rebuild its hardlink table but the actual data delta is tiny) run right before the offline cutover step in §5 catches that delta with minimal added downtime, versus taking the whole desktop offline for the multi-hour bulk phase.
 - Explicitly **do not** attempt the sync from inside the running system for the *final* cutover copy — that's still done from the live/initrd environment per §5, where `/nix` is guaranteed quiescent (nothing can write to it) and the second pass is the last word before the fstab swap.
 
@@ -288,7 +287,7 @@ find /mnt/nix-xfs-new/store -maxdepth 1 -mindepth 1 | wc -l
 
 # Total logical size comparison — should be close to the uncompressed compsize figure from §2.1,
 # NOT close to the compressed 224.67 GiB btrfs figure (XFS has no compression to shrink it).
-du -sh --apparent-size /mnt/nix-xfs-new/store   # apparent-size counts each hardlinked file once per link, same convention as `du` on the btrfs side normally reports for a heavily-hardlinked tree — compare like-for-like
+du -sh --apparent-size /mnt/nix-xfs-new/store   # --apparent-size reports file sizes rather than allocated blocks, so the figure is comparable to compsize's uncompressed total instead of being inflated by XFS's block rounding. It does not change hardlink accounting: `du` counts each inode once however many links it has (only `--count-links` counts per link), so a heavily-hardlinked store is counted once either side — compare like-for-like
 
 # Hardlink count spot-check: pick several known heavily-shared store paths (e.g. common glibc/openssl
 # derivations) and confirm link counts match between old and new
@@ -434,7 +433,7 @@ Re-run the identical set of measurements post-migration (after the boot in §5.4
 - It rewrites the **entire ~3.6TB LUKS payload**, not just the region backing `/nix` — because LUKS sits *below* LVM in this stack (`nvme3n1p2` → LUKS2 → VG `osvg` → all LVs), this affects `osvg-root`, `osvg-swap`, `osvg-persistence`, `osvg-steam--games--1`, and every other LV in the VG simultaneously, whether or not they're involved in the `/nix` migration at all.
 - Expect this to take a very long time (multi-TB in-place re-encryption/reformat, even if `reencrypt`'s resilience journal makes it interruption-safe) and to be a materially higher-risk operation than anything in §1-§7 above, purely because of blast radius — a problem here risks the *entire* VG, not just the `/nix` LV this plan is otherwise scoped to.
 - Potential benefit (4K sector alignment matching the NVMe's native sector size end-to-end through LUKS, rather than just at the XFS layer per §3.2) is real but secondary — the XFS `-s size=4096` in §3.2 already gets most of the practical alignment benefit for the new `/nix` volume specifically, without touching LUKS at all.
-- **Recommendation: treat this as a separate, later decision, requiring its own explicit go-ahead from the human operator (per the `infra` skill's rule — this is a live-infrastructure mutation with a large, all-LVs blast radius, and this agent must not do it unprompted or bundle it into implicit approval for the `/nix` migration above).** If pursued, do it as its own dated plan document, its own maintenance window, with its own backup-and-rollback story appropriate to a whole-VG operation (which is a materially different risk class than a single-LV filesystem swap).
+- **Recommendation: treat this as a separate, later decision, requiring its own explicit go-ahead from the human operator — this is a live-infrastructure mutation with a large, all-LVs blast radius, and must not be done unprompted or bundled into implicit approval for the `/nix` migration above.** If pursued, do it as its own dated plan document, its own maintenance window, with its own backup-and-rollback story appropriate to a whole-VG operation (which is a materially different risk class than a single-LV filesystem swap).
 
 ---
 
