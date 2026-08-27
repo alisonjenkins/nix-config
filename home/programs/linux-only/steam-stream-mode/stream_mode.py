@@ -75,12 +75,6 @@ STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # react to and it has to be looked for. Slow on purpose: a game outliving Steam
 # by a few seconds costs nothing, and the check reads every process's name.
 STEAM_CHECK_INTERVAL = float(os.environ.get("STREAM_MODE_STEAM_CHECK_INTERVAL", "10"))
-# How long to let a window's geometry settle after moving it to another output
-# before deciding whether it is already fullscreen. Bounded tightly: this runs
-# on the event loop, and a game that takes longer than this to settle is better
-# left alone than acted on from a stale reading.
-FULLSCREEN_SETTLE_TRIES = int(os.environ.get("STREAM_MODE_FULLSCREEN_TRIES", "8"))
-FULLSCREEN_SETTLE_DELAY = float(os.environ.get("STREAM_MODE_FULLSCREEN_DELAY", "0.12"))
 # When to look again at a window after staging it. A game has been seen on the
 # desktop monitor after a staging that reported success, correcting itself only
 # when the window was next focused -- so the evidence disappears in the act of
@@ -91,6 +85,11 @@ FULLSCREEN_SETTLE_DELAY = float(os.environ.get("STREAM_MODE_FULLSCREEN_DELAY", "
 # half the output while niri reports it fullscreen. Bounded so a deliberate
 # switch to something else on the desktop is not fought indefinitely.
 REFOCUS_LIMIT = int(os.environ.get("STREAM_MODE_REFOCUS_LIMIT", "3"))
+# How many times to widen one window. niri opens windows at
+# `default-column-width` -- a proportion of the output, 0.5 here -- so a game
+# arrives at half the streamed output's width. Capped so a window that cannot
+# be widened, such as one with a fixed size, is not fought forever.
+WIDEN_LIMIT = int(os.environ.get("STREAM_MODE_WIDEN_LIMIT", "5"))
 STAGE_AUDIT_DELAYS = [
     float(v) for v in
     os.environ.get("STREAM_MODE_AUDIT_DELAYS", "1,3,10,30").split(",") if v
@@ -456,11 +455,37 @@ def move_window_to_output(window_id, output):
     )
 
 
-def fullscreen_window(window_id):
-    subprocess.run(
-        [NIRI, "msg", "action", "fullscreen-window", "--id", str(window_id)],
-        check=True, env=niri_env(),
+def widen_column_to_output(window_id):
+    """Give a window's column the whole output width.
+
+    niri opens new windows at `default-column-width`, which is a proportion of
+    the output -- 0.5 here, so a game arrives occupying half the streamed
+    output. That is the whole of the "it took half the screen" fault: not
+    gamescope, not focus, and not fullscreen.
+
+    `set-column-width "100%"` rather than `fullscreen-window`: fullscreen is a
+    different mode with different semantics (niri draws a backdrop, the window
+    is told it is fullscreen), and gamescope's own fullscreen is not niri's. It
+    is also a *toggle*, which is how an already-fullscreen window got turned
+    back into a windowed one earlier. Setting a width is idempotent, so it can
+    be applied on every event that says the width is wrong without tracking
+    what was done before.
+
+    The width actions apply to the focused column and take no window id, so the
+    window has to be focused first.
+    """
+    if not focus_window(window_id):
+        return False
+    result = subprocess.run(
+        [NIRI, "msg", "action", "set-column-width", "100%"],
+        capture_output=True, text=True, env=niri_env(),
     )
+    if result.returncode != 0:
+        log("stream-mode: could not widen window {}: {}".format(
+            window_id, (result.stderr or "").strip()
+        ))
+        return False
+    return True
 
 
 def focus_window(window_id):
@@ -482,20 +507,6 @@ def focus_window(window_id):
         ))
         return False
     return True
-
-
-def is_fullscreen(window, output_size):
-    """Infer fullscreen by geometry.
-
-    niri exposes no fullscreen flag on windows and offers only a *toggle*
-    action, so a blind toggle would un-fullscreen a game that already is.
-    """
-    if output_size is None:
-        return False
-    size = (window.get("layout") or {}).get("window_size")
-    if not size or len(size) != 2:
-        return False
-    return int(size[0]) == int(output_size[0]) and int(size[1]) == int(output_size[1])
 
 
 def parent_pids(pid, limit=8):
@@ -624,6 +635,8 @@ class Session:
         self.fullscreened = set()
         # window id -> how many times focus has been taken back for it.
         self.refocus_attempts = {}
+        # window id -> how many times it has been widened to the output.
+        self.widen_attempts = {}
         # workspace id -> output name, kept current from the event stream so a
         # trace line can say which monitor a window moved to without asking.
         self.workspace_outputs = {}
@@ -663,6 +676,7 @@ class Session:
         self.big_picture_placed = False
         self.fullscreened = set()
         self.refocus_attempts = {}
+        self.widen_attempts = {}
         width, height = client_size(client_id, self.clients)
 
         self.ensure_output()
@@ -893,19 +907,17 @@ class Session:
         self.end_stream()
         return True
 
-    def fullscreen_new_arrivals(self, windows):
-        """Fullscreen anything that turns up on the streamed output.
+    def fill_streamed_output(self, windows):
+        """Widen anything on the streamed output that is not filling it.
 
-        Staging is one shot: the first window matching a launching game is
-        placed and fullscreened, and then it is done. A game with a splash
-        screen has two windows, and the splash consumes it -- Armored Core's
-        splash was staged, fullscreened, and closed, leaving the real window
-        to arrive afterwards unmanaged and tiled at half the width.
+        Driven by compositor events rather than a timer: niri reports every
+        window open and every layout change, so a window that opens narrow or
+        is later resized is corrected as it happens.
 
-        Rather than trying to tell a splash from a game, anything that appears
-        on the streamed output while a stream is running is made to fill it.
-        During a stream that output has nothing else on it. Once per window,
-        so a game deliberately taken out of fullscreen is not dragged back.
+        Safe to run on every event because setting a width is idempotent and
+        this only acts when the width is wrong. Attempts are still capped per
+        window, so a window that refuses to widen -- one with a fixed size, say
+        -- is not fought forever, and the budget resets whenever it is right.
         """
         if not self.streaming or self.output is None:
             return False
@@ -917,28 +929,28 @@ class Session:
         if output_size is None:
             return False
 
-        acted = False
         for w in windows:
             window_id = w.get("id")
-            if window_id is None or window_id in self.fullscreened:
+            if window_id is None:
                 continue
             if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
                 continue
-            if is_fullscreen(w, output_size):
-                self.fullscreened.add(window_id)
+            size = (w.get("layout") or {}).get("window_size")
+            if not size or len(size) != 2:
                 continue
-            self.fullscreened.add(window_id)
-            log("stream-mode: window {} arrived on {} not filling it".format(
-                window_id, self.output
+            if int(size[0]) >= int(output_size[0]):
+                self.widen_attempts.pop(window_id, None)
+                continue
+            attempts = self.widen_attempts.get(window_id, 0)
+            if attempts >= WIDEN_LIMIT:
+                continue
+            self.widen_attempts[window_id] = attempts + 1
+            log("stream-mode: window {} is {} on a {} output; widening ({}/{})".format(
+                window_id, size, list(output_size), attempts + 1, WIDEN_LIMIT
             ))
-            self._ensure_fullscreen(window_id)
-            # Focused as well as fullscreened. Only staging did this before,
-            # and staging is the path a splash screen consumes -- so the real
-            # window arrived, was resized to fill the output, and was still
-            # drawn at half of it because gamescope had never been activated.
-            focus_window(window_id)
-            acted = True
-        return acted
+            widen_column_to_output(window_id)
+            return True
+        return False
 
     def refocus_streamed_window(self, windows):
         """Keep the game the focused window while a stream is running.
@@ -1011,7 +1023,7 @@ class Session:
         reports its pid.
         """
         self.place_big_picture(windows)
-        self.fullscreen_new_arrivals(windows)
+        self.fill_streamed_output(windows)
         self.refocus_streamed_window(windows)
 
         if self.pending is None:
@@ -1057,8 +1069,10 @@ class Session:
         except (subprocess.CalledProcessError, OSError) as exc:
             log("stream-mode: could not move window: {}".format(exc))
             return False
+        # Moved and focused only. The width is corrected by
+        # fill_streamed_output when the compositor reports the layout, rather
+        # than guessed at here from a reading taken before the move lands.
         focus_window(window["id"])
-        self._ensure_fullscreen(window["id"])
         log(
             "stream-mode: staged {} (window {}, pid {}, game {}) on {}; now {}".format(
                 window.get("app_id") or "game", window["id"], pid, game_id,
@@ -1170,61 +1184,6 @@ class Session:
         log("stream-mode: {} has gone away, rebuilding".format(self.output))
         self.output = None
         return self.ensure_output()
-
-    def _settled_window(self, window_id):
-        """Read a window once its geometry has stopped changing.
-
-        Moving a window to another output does not resize it instantly, and
-        niri reports no fullscreen flag -- only geometry -- so a read taken
-        straight after the move can still describe the window as it was on the
-        old output. Deciding from that read is what broke this: a game already
-        fullscreen was measured against the new output, judged not fullscreen,
-        and *toggled*, which turned fullscreen off. Right screen, wrong size,
-        which is exactly how it looked.
-
-        Two identical reads in a row is the signal that the move has landed.
-        """
-        previous = None
-        window = None
-        for _ in range(FULLSCREEN_SETTLE_TRIES):
-            try:
-                window = next(
-                    (w for w in niri_windows() if w.get("id") == window_id), None
-                )
-            except (subprocess.CalledProcessError, ValueError, OSError):
-                return None
-            if window is None:
-                return None
-            size = (window.get("layout") or {}).get("window_size")
-            if size is not None and size == previous:
-                return window
-            previous = size
-            time.sleep(FULLSCREEN_SETTLE_DELAY)
-        return window
-
-    def _ensure_fullscreen(self, window_id):
-        try:
-            output_size = output_logical_size(self.output)
-        except (subprocess.CalledProcessError, ValueError, OSError):
-            return
-        window = self._settled_window(window_id)
-        if window is None or is_fullscreen(window, output_size):
-            return
-        try:
-            fullscreen_window(window_id)
-        except (subprocess.CalledProcessError, OSError) as exc:
-            log("stream-mode: could not fullscreen window: {}".format(exc))
-            return
-        # Say what it was measured against, because the failure mode here is
-        # silent: a wrong answer leaves a game windowed on the streamed output
-        # and nothing in the log explains why.
-        log(
-            "stream-mode: fullscreened window {} ({} -> {})".format(
-                window_id,
-                (window.get("layout") or {}).get("window_size"),
-                list(output_size) if output_size else None,
-            )
-        )
 
     def unstage(self, pid=None):
         if self.game_pid is None:
@@ -1475,8 +1434,18 @@ def handle_niri_event(session, line):
         return
 
     if "WindowLayoutsChanged" in event:
-        for window_id, layout in event["WindowLayoutsChanged"].get("changes") or []:
+        changes = event["WindowLayoutsChanged"].get("changes") or []
+        for window_id, layout in changes:
             session.trace(window_id, "layout changed", layout=layout)
+        # A resize is exactly when a window may have stopped filling the
+        # output, so correct it here rather than waiting for some other event.
+        # The layout event carries no workspace, so the known windows are
+        # updated from it and re-examined.
+        for window_id, layout in changes:
+            for w in session.last_windows:
+                if w.get("id") == window_id:
+                    w["layout"] = layout
+        session.fill_streamed_output(session.last_windows)
         return
 
     if "WindowClosed" in event:
