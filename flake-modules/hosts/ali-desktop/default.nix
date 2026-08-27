@@ -98,12 +98,20 @@ in {
           # workspace to whatever is left — the streaming virtual output —
           # and does not move them back when it returns.
           custom.niri.workspaceOutput = "DP-2";
-          # Deliberately not excluding the game workspaces. A pinned workspace
-          # does override gamescope's --prefer-output, but the streamed game is
-          # moved to the streaming output per window afterwards, which is what
-          # keeps a locally played game and a streamed one independent. Leaving
-          # them unpinned would instead strand them on the virtual output when
-          # the KVM takes DP-2 away.
+          # "game" is excluded because the pin wins over everything else. The
+          # streaming service moves that whole workspace to the streamed
+          # output for the duration of a stream, and a pinned workspace is
+          # dragged straight back: the move logged success and the workspace
+          # was on DP-2 again moments later, taking the game with it and
+          # leaving the client watching an empty output.
+          #
+          # Moving the game per window instead does not rescue it -- that was
+          # tried, and the window stays on its workspace when the workspace
+          # goes home. The cost of excluding it is that "game" does not return
+          # to DP-2 by itself after a KVM switch; the service puts it back when
+          # a stream ends, including when it finds it stranded with no
+          # recorded home.
+          custom.niri.workspaceOutputExclude = [ "game" ];
 
           custom.niri.extraOutputs = ''
             output "DP-2" {
