@@ -148,15 +148,30 @@ in {
 
           # pw-link is a harmless no-op ("File exists") when the link is
           # already there, so this only ever adds what's missing -- never
-          # tears anything down. Its stderr is logged rather than discarded:
-          # "File exists" is the expected steady state, anything else means
-          # this service is not doing its job and must not fail silently.
+          # tears anything down.
+          #
+          # Three outcomes, deliberately logged differently. A link that was
+          # already there is the steady state on almost every run and says
+          # nothing worth reading, so it is silent -- logging it as "relinked"
+          # made the log claim work that never happened. A link actually made
+          # is worth a line, because it means something had come adrift. Any
+          # other failure must be loud: it means this service is not doing its
+          # job. stderr is carried into all three rather than discarded on
+          # success, which is what the comment always claimed and the code did
+          # not do.
           while read -r out_port in_port; do
             [ -n "$out_port" ] || continue
             if err=$(${asUser} ${pkgs.pipewire}/bin/pw-link "$out_port" "$in_port" 2>&1); then
-              echo "audio-usb-reconnect-heal: relinked $out_port -> $in_port"
+              if [ -n "$err" ]; then
+                echo "audio-usb-reconnect-heal: linked $out_port -> $in_port: $err"
+              else
+                echo "audio-usb-reconnect-heal: linked $out_port -> $in_port"
+              fi
             else
-              echo "audio-usb-reconnect-heal: $out_port -> $in_port: $err"
+              case "$err" in
+                *"File exists"*) : ;;
+                *) echo "audio-usb-reconnect-heal: could not link $out_port -> $in_port: $err" ;;
+              esac
             fi
           done <<'EOF'
           ${linkList}
