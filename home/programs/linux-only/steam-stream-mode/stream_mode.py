@@ -132,6 +132,12 @@ TARGET_FILE = os.environ.get(
         os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "stream-mode", "target"
     ),
 )
+# The same target, for the one consumer that is compositor-aware. The gamescope
+# shim sets --prefer-output and -r as well as the size, and neither the output
+# name nor the refresh fits in a bare WIDTHxHEIGHT.
+TARGET_JSON_FILE = os.environ.get(
+    "STREAM_MODE_TARGET_JSON_FILE", TARGET_FILE + ".json"
+)
 
 START_RE = re.compile(r">>> Starting desktop stream")
 STOP_RE = re.compile(r">>> Stopped desktop stream")
@@ -324,25 +330,47 @@ def set_output_enabled(name, enabled):
     return True
 
 
-def publish_target(output, width, height, refresh=None):
-    """Announce the size the display filter should report to Steam.
+def _write_atomically(path, contents):
+    """Write a file whole and rename it into place.
 
-    Plain "WIDTHxHEIGHT" rather than JSON. The filter needs the streamed size
-    and nothing else -- it stopped matching outputs by name once the only thing
-    it hooks became SDL, which has no notion of the compositor's output names.
-    Keeping the format to one line also means anyone can drive the filter from
-    another compositor by hand, with STEAM_STREAM_SIZE=1280x800 and no watcher
-    at all. The output name and refresh stay in the log line, where they help a
-    person reading it, rather than in a format the filter has to parse.
+    Both targets are read from a game launch that can happen at any moment, so
+    neither may ever be seen half-written.
     """
+    tmp = path + ".new"
+    with open(tmp, "w") as fh:
+        fh.write(contents)
+    os.replace(tmp, path)
+
+
+def publish_target(output, width, height, refresh=None):
+    """Announce the streamed target to everything that needs it.
+
+    Two files, because the two consumers want different things and neither
+    should have to carry the other's format.
+
+    TARGET_FILE is plain "WIDTHxHEIGHT". The display filter hooks SDL, which
+    has no notion of the compositor's output names, so the size is all it can
+    use -- and keeping it to one line is what lets someone on another
+    compositor drive the filter by hand with STEAM_STREAM_SIZE=1280x800 and no
+    watcher at all. That file is the compositor-agnostic contract.
+
+    TARGET_JSON_FILE carries the same target plus the output name and refresh,
+    for the gamescope shim, which sets --prefer-output and -r as well as the
+    size. It is the only consumer that knows what a compositor output is.
+
+    Publishing just the size was briefly the whole interface, and silently
+    broke the shim: it found no file, took that for "not streaming" as it is
+    designed to, and launched games at the desktop's geometry to be scaled into
+    the streamed output afterwards -- the exact letterboxing it exists to
+    prevent.
+    """
+    payload = {"output": output, "width": width, "height": height}
+    if refresh is not None:
+        payload["refresh"] = refresh
     try:
         os.makedirs(os.path.dirname(TARGET_FILE), exist_ok=True)
-        # Written whole then renamed: the shim reads this from a game launch
-        # that can happen at any moment, and must never see a half-written file.
-        tmp = TARGET_FILE + ".new"
-        with open(tmp, "w") as fh:
-            fh.write("{}x{}\n".format(width, height))
-        os.replace(tmp, TARGET_FILE)
+        _write_atomically(TARGET_FILE, "{}x{}\n".format(width, height))
+        _write_atomically(TARGET_JSON_FILE, json.dumps(payload) + "\n")
     except OSError as exc:
         log("stream-mode: could not publish the stream target: {}".format(exc))
         return False
@@ -351,15 +379,26 @@ def publish_target(output, width, height, refresh=None):
 
 
 def withdraw_target():
-    try:
-        os.remove(TARGET_FILE)
-    except FileNotFoundError:
-        return False
-    except OSError as exc:
-        log("stream-mode: could not withdraw the stream target: {}".format(exc))
-        return False
-    log("stream-mode: withdrew the stream target")
-    return True
+    """Remove both targets, and say so if either was there.
+
+    Both go together: a game launched after a stream ends must not still be
+    sized for a client that has gone. Each is removed independently so a
+    half-published state -- one file present, the other not -- is still
+    cleaned up rather than left behind.
+    """
+    removed = False
+    for path in (TARGET_FILE, TARGET_JSON_FILE):
+        try:
+            os.remove(path)
+            removed = True
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            log("stream-mode: could not withdraw {}: {}".format(path, exc))
+            return False
+    if removed:
+        log("stream-mode: withdrew the stream target")
+    return removed
 
 
 def niri_workspaces():

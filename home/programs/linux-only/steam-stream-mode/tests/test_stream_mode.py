@@ -1089,15 +1089,22 @@ class TestStreamTarget(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self._real = stream_mode.TARGET_FILE
+        self._real_json = stream_mode.TARGET_JSON_FILE
         stream_mode.TARGET_FILE = os.path.join(self.tmp.name, "sub", "target")
+        stream_mode.TARGET_JSON_FILE = stream_mode.TARGET_FILE + ".json"
 
     def tearDown(self):
         stream_mode.TARGET_FILE = self._real
+        stream_mode.TARGET_JSON_FILE = self._real_json
         self.tmp.cleanup()
 
     def read(self):
         with open(stream_mode.TARGET_FILE) as fh:
             return fh.read()
+
+    def read_json(self):
+        with open(stream_mode.TARGET_JSON_FILE) as fh:
+            return json.load(fh)
 
     def test_publishes_the_size_the_filter_parses(self):
         """One line, "WIDTHxHEIGHT", and nothing the filter has to parse around.
@@ -1115,10 +1122,44 @@ class TestStreamTarget(unittest.TestCase):
         self.assertNotIn("steam", self.read())
         self.assertNotIn("90", self.read())
 
+    def test_it_also_publishes_what_the_shim_needs(self):
+        """The gamescope shim needs more than the size.
+
+        It sets --prefer-output from the output name and -r from the refresh,
+        neither of which fits in a bare WIDTHxHEIGHT. The bare file stays the
+        contract the display filter and STEAM_STREAM_SIZE share; this one
+        carries the rest, for the one consumer that is compositor-aware.
+        """
+        self.assertTrue(stream_mode.publish_target("steam", 1280, 800, 90))
+        self.assertEqual(
+            self.read_json(),
+            {"output": "steam", "width": 1280, "height": 800, "refresh": 90},
+        )
+
+    def test_a_target_without_a_refresh_omits_it(self):
+        """The shim treats refresh as optional and skips -r when absent."""
+        stream_mode.publish_target("steam", 1280, 800)
+        self.assertNotIn("refresh", self.read_json())
+
     def test_withdraw_removes_it(self):
         stream_mode.publish_target("steam", 1280, 800)
         self.assertTrue(stream_mode.withdraw_target())
         self.assertFalse(os.path.exists(stream_mode.TARGET_FILE))
+
+    def test_withdraw_removes_both(self):
+        """Both go together, or a game launched after a stream ends is sized
+        for a client that is no longer connected."""
+        stream_mode.publish_target("steam", 1280, 800, 90)
+        stream_mode.withdraw_target()
+        self.assertFalse(os.path.exists(stream_mode.TARGET_FILE))
+        self.assertFalse(os.path.exists(stream_mode.TARGET_JSON_FILE))
+
+    def test_withdraw_reports_removal_when_only_the_json_remains(self):
+        """A half-published state must still be cleaned up and reported."""
+        stream_mode.publish_target("steam", 1280, 800, 90)
+        os.remove(stream_mode.TARGET_FILE)
+        self.assertTrue(stream_mode.withdraw_target())
+        self.assertFalse(os.path.exists(stream_mode.TARGET_JSON_FILE))
 
     def test_withdraw_is_idempotent(self):
         """It runs on shutdown paths that may not have published anything."""
