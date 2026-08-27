@@ -737,7 +737,7 @@ index 49fbc6b0..272ceded 100644
 +    }
  }
 diff --git a/src/backend/tty.rs b/src/backend/tty.rs
-index 6dd83492..511df4f0 100644
+index 6dd83492..3a9ccf2f 100644
 --- a/src/backend/tty.rs
 +++ b/src/backend/tty.rs
 @@ -16,7 +16,7 @@ use drm_ffi::drm_mode_modeinfo;
@@ -1222,7 +1222,7 @@ index 6dd83492..511df4f0 100644
 +                            .outputs
 +                            .0
 +                            .iter()
-+                            .any(|c| c.virtual_output && &&c.name == name)
++                            .any(|c| c.virtual_output && c.name == **name)
 +                })
 +                .map(|(name, _)| name.clone())
 +                .collect()
