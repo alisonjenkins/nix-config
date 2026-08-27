@@ -1260,8 +1260,66 @@ class TestGameWorkspace(unittest.TestCase):
         self.assertEqual(self.moves, [])
 
     def test_returning_without_borrowing_does_nothing(self):
+        stream_mode.workspace_output = lambda name: "DP-2"
         self.assertFalse(self.session().return_game_workspace())
         self.assertEqual(self.moves, [])
+
+    def test_a_stranded_workspace_is_returned_without_a_recorded_home(self):
+        """The reported bug: the game is unreachable on the virtual output.
+
+        Borrowing takes an early exit when the workspace is already on the
+        streamed output, which is the state a service restart mid-stream
+        leaves behind. That exit recorded no home, so returning had nowhere
+        to go and silently did nothing -- and every later stream re-entered
+        the same exit, so the workspace never came back at all.
+        """
+        stream_mode.workspace_output = lambda name: stream_mode.OUTPUT_NAME
+        s = self.session()
+        self.assertIsNone(s.game_workspace_home)
+
+        self.assertTrue(s.return_game_workspace())
+        self.assertEqual(self.moves, [(stream_mode.GAME_WORKSPACE, "DP-2")])
+
+    def test_a_stranded_workspace_picks_its_home_deterministically(self):
+        """Several candidates: pick one by a stable rule, not by set order."""
+        stream_mode.workspace_output = lambda name: stream_mode.OUTPUT_NAME
+        stream_mode.usable_output_names = lambda: {
+            "HDMI-A-1", "DP-2", stream_mode.OUTPUT_NAME,
+        }
+        s = self.session()
+
+        self.assertTrue(s.return_game_workspace())
+        self.assertEqual(self.moves, [(stream_mode.GAME_WORKSPACE, "DP-2")])
+
+    def test_a_workspace_elsewhere_is_not_dragged_home(self):
+        """No recorded home and not stranded either: leave it where it is."""
+        stream_mode.workspace_output = lambda name: "HDMI-A-1"
+        s = self.session()
+
+        self.assertFalse(s.return_game_workspace())
+        self.assertEqual(self.moves, [])
+
+    def test_a_stranded_workspace_with_nowhere_to_go_is_left_alone(self):
+        """Only the streamed output exists -- inventing a home is worse."""
+        stream_mode.workspace_output = lambda name: stream_mode.OUTPUT_NAME
+        stream_mode.usable_output_names = lambda: {stream_mode.OUTPUT_NAME}
+        s = self.session()
+
+        self.assertFalse(s.return_game_workspace())
+        self.assertEqual(self.moves, [])
+
+    def test_a_recorded_home_beats_the_fallback(self):
+        """A real home was observed; do not second-guess it."""
+        stream_mode.workspace_output = lambda name: "HDMI-A-1"
+        stream_mode.usable_output_names = lambda: {
+            "HDMI-A-1", "DP-2", stream_mode.OUTPUT_NAME,
+        }
+        s = self.session()
+        self.assertTrue(s.borrow_game_workspace())
+        self.moves.clear()
+
+        self.assertTrue(s.return_game_workspace())
+        self.assertEqual(self.moves, [(stream_mode.GAME_WORKSPACE, "HDMI-A-1")])
 
 
 class TestSplashScreens(unittest.TestCase):
