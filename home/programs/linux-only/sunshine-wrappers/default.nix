@@ -45,6 +45,13 @@ let
           ;;
       esac
 
+      # This Steam runs inside a headless gamescope session, where the flags
+      # tuned for the desktop session are wrong. -pipewire in particular forces
+      # portal desktop capture, and there is no desktop here to capture: the
+      # portal hands back a 0x0 stream and the client hangs. The Steam wrapper
+      # in modules/desktop honours this variable by execing Steam without them.
+      export STEAM_NO_EXTRA_FLAGS=1
+
       # Backgrounded, matching the script this replaces: Sunshine launches
       # this as a detached command and the wrapper is expected to return
       # immediately rather than stay attached to the gamescope session.
@@ -62,7 +69,17 @@ let
     runtimeInputs = with pkgs; [ coreutils util-linux ];
     text = ''
       ${resolveWayland}
-      exec setsid steam steam://open/bigpicture
+
+      # Backgrounded rather than exec'd, for the same reason as
+      # sunshine-gamescope: Sunshine runs this as a detached command and
+      # expects it to return. `exec` kept the wrapper attached until Steam
+      # exited, which is a session Sunshine thinks is still starting.
+      #
+      # No STEAM_NO_EXTRA_FLAGS here, deliberately. This opens Big Picture in
+      # the desktop session — the same session the extra flags are tuned for —
+      # so if this is what starts Steam, it should start with them. The opt-out
+      # exists for Steam launched somewhere with no desktop to capture.
+      setsid steam steam://open/bigpicture &
     '';
   };
 in
