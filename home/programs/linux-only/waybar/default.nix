@@ -1,4 +1,22 @@
-{ config, pkgs, ... }: {
+{ config, lib, pkgs, ... }:
+let
+  # Virtual outputs exist to be streamed to a remote client, and the desktop
+  # status bar is not part of what that client asked for. Waybar with no
+  # `output` key renders on every output, so the bar was appearing on the
+  # streamed output and reserving 34px of exclusive zone there — a 1280x800
+  # Steam Deck received 1280x766 of game with a status bar above it.
+  #
+  # Derived from the declared virtual outputs rather than hardcoding a name,
+  # so a second one cannot be added without also being excluded here.
+  virtualOutputNames = lib.attrNames (config.custom.niri.virtualOutputs or { });
+
+  # Omitted entirely when there is nothing to exclude: waybar reads an empty
+  # `output` list as "no outputs", which would hide the bar everywhere.
+  outputExclusions = lib.optionalAttrs (virtualOutputNames != [ ]) {
+    output = map (name: "!${name}") virtualOutputNames;
+  };
+in
+{
   home.packages =
     if pkgs.stdenv.isLinux
     then
@@ -28,7 +46,7 @@
     #     '' + builtins.readFile ./style.css) else '''';
 
     settings = [
-      {
+      (outputExclusions // {
         layer = "top";
         position = "top";
         height = 0;
@@ -241,7 +259,7 @@
           tooltip-padding = 8;
           on-click = "${pkgs.cpupower-gui}/bin/cpupower-gui";
         };
-      }
+      })
     ];
   };
 }
