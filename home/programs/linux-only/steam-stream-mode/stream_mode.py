@@ -1684,7 +1684,7 @@ def main(argv):
         return 0
 
     print(
-        "usage: stream-mode [watch|create [W H]|remove NAME|status]",
+        "usage: stream-mode [watch|on [W H]|off [NAME]|status]",
         file=sys.stderr,
     )
     return 2
