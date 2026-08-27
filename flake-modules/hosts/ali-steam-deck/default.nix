@@ -172,6 +172,10 @@ in {
             # compile break.
             let
               fixGamescope = baseGs: baseGs.overrideAttrs (old: {
+                # Grafted from the unstable-packages overlay's own gamescope,
+                # so this also carries the streaming-client zpos fix applied
+                # there (overlays/default.nix) -- one patch, both places it's
+                # needed.
                 inherit (final.unstable.gamescope) patches postPatch;
                 mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Denable_tests=false" ];
               });
