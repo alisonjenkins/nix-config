@@ -38,7 +38,7 @@ mount | grep -E 'nixroot|osvg-nix\b'
 # 2. Does the running NixOS config reference either device anywhere?
 grep -rn "nixroot\|osvg-nix\b\|osvg/nix\b" /etc/nixos 2>/dev/null
 grep -rn "nixroot\|osvg[-/]nix\b" /home/ali/git/personal/nix-config \
-  --include='*.nix' -- ':!*/hosts/*/hardware-configuration.nix' 2>/dev/null || true
+  --include='*.nix' --exclude='hardware-configuration.nix' 2>/dev/null || true
 grep -rn "nixroot\|osvg[-/]nix\b" /home/ali/git/personal/nix-config/flake-modules/hosts/ali-desktop/
 
 # 3. LVM metadata: creation/modification time, tags, any active/open count
