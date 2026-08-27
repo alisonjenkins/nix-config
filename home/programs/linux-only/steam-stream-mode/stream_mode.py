@@ -1149,12 +1149,40 @@ class Session:
         ))
         return True
 
+    def fallback_workspace_home(self):
+        """Somewhere to put the game workspace when no home was recorded.
+
+        Sorted rather than any member of the set, so a desktop with two
+        monitors gets the same answer every time instead of one that follows
+        set iteration order.
+        """
+        candidates = usable_output_names() - {self.output, OUTPUT_NAME}
+        return sorted(candidates)[0] if candidates else None
+
     def return_game_workspace(self):
-        """Put the game workspace back where it was before the stream."""
+        """Put the game workspace back where it was before the stream.
+
+        Falls back to any other output when no home was recorded but the
+        workspace is sitting on the streamed one. Borrowing takes an early
+        exit when the workspace is already there -- the state a service
+        restart mid-stream leaves behind -- and that exit records no home, so
+        this used to find None and silently do nothing. The game was then
+        stranded on an output that gets turned off, with every later stream
+        re-entering the same early exit, and no way to reach it.
+        """
         home = self.game_workspace_home
         self.game_workspace_home = None
         if home is None:
-            return False
+            where = workspace_output(GAME_WORKSPACE)
+            if where != (self.output if self.output is not None else OUTPUT_NAME):
+                return False
+            home = self.fallback_workspace_home()
+            if home is None:
+                return False
+            log(
+                "stream-mode: workspace {} was left on {} with no recorded "
+                "home; returning it to {}".format(GAME_WORKSPACE, where, home)
+            )
         if home not in usable_output_names():
             # The monitor it came from is gone -- a KVM switch, or unplugged
             # mid-session. Leaving it here beats moving it somewhere invented.
