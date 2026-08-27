@@ -67,8 +67,10 @@ in
       default = 20;
       description = ''
         How many system generations to keep, trimmed before each scheduled
-        garbage collection. Null keeps every generation the age limit in
-        `nix.gc.options` has not yet retired.
+        garbage collection. Null disables count-based trimming entirely,
+        leaving generations to whatever `nix.gc.options` retires — an age
+        limit by default (`--delete-older-than 60d`), but a host that
+        overrides those options without one keeps every generation forever.
 
         An age limit alone bounds how old generations get, not how many exist.
         A host rebuilt several times a day accumulates them faster than 60
