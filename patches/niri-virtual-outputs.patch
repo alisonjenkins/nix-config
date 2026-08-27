@@ -335,17 +335,16 @@ index 48572f6e..447dee5f 100644
              variable_refresh_rate: None,
              background_color: None,
 diff --git a/niri-ipc/src/lib.rs b/niri-ipc/src/lib.rs
-index 218e532c..c0d58189 100644
+index 218e532c..d0d2acc2 100644
 --- a/niri-ipc/src/lib.rs
 +++ b/niri-ipc/src/lib.rs
-@@ -98,6 +98,31 @@ pub enum Request {
+@@ -98,6 +98,30 @@ pub enum Request {
          /// Configuration to apply.
          action: OutputAction,
      },
 +    /// Create a new virtual headless output.
 +    ///
-+    /// This only works when niri is running with the headless backend (e.g. with
-+    /// `NIRI_BACKEND=headless`).
++    /// Works on the TTY and headless backends. Not supported under Winit.
 +    CreateVirtualOutput {
 +        /// Width in pixels. Defaults to 1920 if not specified.
 +        width: Option<u16>,
@@ -362,7 +361,7 @@ index 218e532c..c0d58189 100644
 +    },
 +    /// Remove a virtual headless output by name.
 +    ///
-+    /// This only works when niri is running with the headless backend.
++    /// Works on the TTY and headless backends. Not supported under Winit.
 +    RemoveVirtualOutput {
 +        /// Name of the output to remove (e.g. "HEADLESS-1").
 +        name: String,
@@ -370,7 +369,7 @@ index 218e532c..c0d58189 100644
      /// Start continuously receiving events from the compositor.
      ///
      /// The compositor should reply with `Reply::Ok(Response::Handled)`, then continuously send
-@@ -165,6 +190,8 @@ pub enum Response {
+@@ -165,6 +189,8 @@ pub enum Response {
      OverviewState(Overview),
      /// Information about screencasts.
      Casts(Vec<Cast>),
@@ -379,7 +378,7 @@ index 218e532c..c0d58189 100644
  }
  
  /// Overview information.
-@@ -306,6 +333,28 @@ pub enum Action {
+@@ -306,6 +332,28 @@ pub enum Action {
          #[cfg_attr(feature = "clap", arg(long))]
          id: Option<u64>,
      },
@@ -409,7 +408,7 @@ index 218e532c..c0d58189 100644
      #[cfg_attr(
          feature = "clap",
 diff --git a/src/backend/headless.rs b/src/backend/headless.rs
-index 9bd97930..fadd636b 100644
+index 9bd97930..f7c647d0 100644
 --- a/src/backend/headless.rs
 +++ b/src/backend/headless.rs
 @@ -1,10 +1,15 @@
@@ -614,7 +613,7 @@ index 9bd97930..fadd636b 100644
              Refresh::Unknown,
              0,
              wp_presentation_feedback::Kind::empty(),
-@@ -142,13 +278,50 @@ impl Headless {
+@@ -142,13 +278,57 @@ impl Headless {
              RedrawState::Idle => unreachable!(),
              RedrawState::Queued => (),
              RedrawState::WaitingForVBlank { .. } => unreachable!(),
@@ -642,7 +641,14 @@ index 9bd97930..fadd636b 100644
 +        let token = niri
 +            .event_loop
 +            .insert_source(timer, move |_, _, data| {
-+                let output_state = data.niri.output_state.get_mut(&output_clone).unwrap();
++                // The output can be removed while this timer is still pending,
++                // and the callback then runs against state that has already
++                // been dropped. Unwrapping there took the whole compositor
++                // down; there is simply nothing left to redraw, so let the
++                // timer go.
++                let Some(output_state) = data.niri.output_state.get_mut(&output_clone) else {
++                    return TimeoutAction::Drop;
++                };
 +                output_state.frame_callback_sequence =
 +                    output_state.frame_callback_sequence.wrapping_add(1);
 +
@@ -1682,17 +1688,16 @@ index 00000000..c2c90760
 +    }
 +}
 diff --git a/src/cli.rs b/src/cli.rs
-index 308b3127..ab0f957c 100644
+index 308b3127..e4622f8e 100644
 --- a/src/cli.rs
 +++ b/src/cli.rs
-@@ -99,6 +99,32 @@ pub enum Msg {
+@@ -99,6 +99,31 @@ pub enum Msg {
          #[command(subcommand)]
          action: OutputAction,
      },
 +    /// Create a virtual headless output.
 +    ///
-+    /// This only works when niri is running with the headless backend
-+    /// (e.g. with `NIRI_BACKEND=headless`).
++    /// Works on the TTY and headless backends. Not supported under Winit.
 +    CreateVirtualOutput {
 +        /// Width in pixels.
 +        #[arg(long, default_value = "1920")]
@@ -1709,7 +1714,7 @@ index 308b3127..ab0f957c 100644
 +    },
 +    /// Remove a virtual headless output.
 +    ///
-+    /// This only works when niri is running with the headless backend.
++    /// Works on the TTY and headless backends. Not supported under Winit.
 +    RemoveVirtualOutput {
 +        /// Name of the output to remove (e.g. "HEADLESS-1").
 +        #[arg()]
@@ -1802,10 +1807,10 @@ index 1ec51c44..5d08a326 100644
  
      Ok(())
 diff --git a/src/ipc/server.rs b/src/ipc/server.rs
-index db71da6d..047ea5ab 100644
+index db71da6d..72e3ae23 100644
 --- a/src/ipc/server.rs
 +++ b/src/ipc/server.rs
-@@ -455,6 +455,52 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
+@@ -455,6 +455,62 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
              let casts = state.casts.casts.values().cloned().collect();
              Response::Casts(casts)
          }
@@ -1818,6 +1823,16 @@ index db71da6d..047ea5ab 100644
 +            let width = width.unwrap_or(1920);
 +            let height = height.unwrap_or(1080);
 +            let refresh_rate = refresh_rate.unwrap_or(60);
++
++            // Rejected rather than clamped: both backends turn this into a
++            // frame interval with 1_000_000_000 / refresh_rate, so a zero from
++            // any client on the socket divides by zero and takes the whole
++            // compositor down with it. A zero-hertz output has no sensible
++            // meaning to substitute either.
++            if refresh_rate == 0 {
++                return Err(String::from("refresh rate must be at least 1 Hz"));
++            }
++
 +            let (tx, rx) = async_channel::bounded(1);
 +
 +            ctx.event_loop.insert_idle(move |state| {
