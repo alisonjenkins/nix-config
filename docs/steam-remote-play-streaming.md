@@ -217,6 +217,21 @@ window is never told it is fullscreen. `warn_if_short_of_output` exists to make
 that failure loud instead of silent: it logs once per window when a widened
 window does not exactly equal the output.
 
+**Anything reserving an exclusive zone on the streamed output takes its space
+too**, and this is the failure the guard actually caught first. Waybar has no
+`output` key by default and renders on every output, so it appeared on the
+virtual output and reserved 34px there — the Deck received 1280x766 of game
+with a desktop status bar above it. `home/programs/linux-only/waybar` now
+excludes every declared virtual output.
+
+The diagnostic trap is worth naming, because it cost a wrong theory: the
+shortfall looks exactly like the maximize-versus-fullscreen gap, and is not.
+**Read the horizontal loss to tell them apart.** Gaps and borders are
+symmetric, so they cost width as well as height; a layer-shell bar costs height
+only. The streamed window lost 0 horizontally and 34 vertically, which ruled
+out gaps and borders — and therefore ruled out fullscreen as the fix — before
+any code was changed.
+
 ## Testing without fooling yourself
 
 The traps here are unusually good at producing false passes. In short:
