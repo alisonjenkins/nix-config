@@ -32,6 +32,16 @@ let
         systemctl --user "$@" wivrn.service || true
       }
 
+      # Puts a manifest at $OPENXR_FILE by renaming rather than copying onto
+      # it. That path may still be a symlink into the Nix store from when it
+      # was managed by xdg.configFile, and `cp` onto a symlink writes through
+      # it -- into a read-only store, so the switch fails and the file can
+      # never heal itself. Renaming replaces the link.
+      install_openxr() {
+        cp --no-preserve=mode "$1" "$OPENXR_FILE.new"
+        mv -f "$OPENXR_FILE.new" "$OPENXR_FILE"
+      }
+
       # Rewrites only the runtime list. Existing config and log paths are kept,
       # because on this host they point at a separate mount and are not
       # derivable from $HOME; otherwise they fall back to the Steam root.
@@ -67,25 +77,40 @@ def keep(paths):
     return paths
 
 
+external = existing.get("external_drivers")
+if not isinstance(external, list):
+    # vrpathreg expects a list here. Carrying a missing key through as JSON
+    # null broke consumers that assume an array, and the manifest this
+    # replaced shipped [].
+    external = []
+
 doc = {
     "config": keep(existing.get("config")) or [os.path.join(steam_root, "config")],
-    "external_drivers": existing.get("external_drivers"),
+    "external_drivers": external,
     "jsonid": "vrpathreg",
     "log": keep(existing.get("log")) or [os.path.join(steam_root, "logs")],
     "runtime": list(runtimes),
     "version": 1,
 }
 
-with open(path, "w") as fh:
+# Written beside the target and renamed over it, never opened for writing in
+# place. This path may still be a symlink into the Nix store from when it was
+# managed by xdg.configFile; opening that with "w" follows the link and fails
+# on a read-only store, so the file could never heal itself. Renaming replaces
+# the symlink instead of chasing it, and is atomic for anything reading
+# concurrently -- wivrn-server rewrites this file at every startup.
+tmp = path + ".new"
+with open(tmp, "w") as fh:
     json.dump(doc, fh, indent=3)
     fh.write("\n")
+os.replace(tmp, path)
 PY
       }
 
       case "''${1:-status}" in
         wivrn)
           mkdir -p "$(dirname "$OPENXR_FILE")"
-          cp --no-preserve=mode "$WIVRN_JSON" "$OPENXR_FILE"
+          install_openxr "$WIVRN_JSON"
           # wivrn-server rewrites openvrpaths.vrpath at every startup from its
           # built-in OVR_COMPAT_SEARCH_PATH, so OpenComposite is written here
           # only as a sane resting state — wivrn owns the file while running.
@@ -100,9 +125,9 @@ PY
           # VALVE_runtime_is_steamvr. Prefer it over a hand-written one so the
           # manifest stays correct across SteamVR updates.
           if [ -f "$STEAMVR_ROOT/steamxr_linux64.json" ]; then
-            cp --no-preserve=mode "$STEAMVR_ROOT/steamxr_linux64.json" "$OPENXR_FILE"
+            install_openxr "$STEAMVR_ROOT/steamxr_linux64.json"
           else
-            cat > "$OPENXR_FILE" <<EOF
+            cat > "$OPENXR_FILE.new" <<EOF
 {
   "file_format_version": "1.0.0",
   "runtime": {
@@ -112,6 +137,7 @@ PY
   }
 }
 EOF
+            mv -f "$OPENXR_FILE.new" "$OPENXR_FILE"
           fi
           write_openvrpaths "$STEAMVR_ROOT" "$OPENCOMPOSITE_ROOT"
           echo "vr-runtime: now steamvr"
