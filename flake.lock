@@ -1802,17 +1802,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1787649907,
+        "lastModified": 1787865699,
         "narHash": "sha256-FkFvw+jVVG8Rh/LdAdwFcywAg6a1pgi2G5TYQ9CYyuE=",
-        "ref": "refs/heads/main",
-        "rev": "0a72a408754a3a7af4d5c7e21e9d1716de00b00a",
-        "revCount": 41,
-        "type": "git",
-        "url": "file:///home/ali/git/steam-command-runner"
+        "owner": "alisonjenkins",
+        "repo": "steam-command-runner",
+        "rev": "46de76c9b4f051381fe51ed6f1a216129b823e49",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/ali/git/steam-command-runner"
+        "owner": "alisonjenkins",
+        "repo": "steam-command-runner",
+        "type": "github"
       }
     },
     "stylix": {
