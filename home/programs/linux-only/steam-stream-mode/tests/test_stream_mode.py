@@ -1451,3 +1451,80 @@ class TestSteamDeath(unittest.TestCase):
             )
         finally:
             os.unlink(path)
+
+
+class TestFocus(unittest.TestCase):
+    """gamescope draws at the size it was last activated with.
+
+    A game sat fullscreen by niri's geometry and was still drawn at half the
+    output for eight minutes, with focused=False in every audit. Tapping the
+    window fixed it instantly, which is what focusing it does.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "focus_window", "output_logical_size", "niri_windows",
+            "fullscreen_window", "FULLSCREEN_SETTLE_DELAY")}
+        self.focused = []
+        stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        stream_mode.fullscreen_window = lambda wid: None
+        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def session(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.workspace_outputs = {9: stream_mode.OUTPUT_NAME}
+        return s
+
+    def win(self, wid, focused, size=(1280, 800)):
+        return {"id": wid, "workspace_id": 9, "is_focused": focused,
+                "layout": {"window_size": list(size)}}
+
+    def test_a_window_the_sweep_fullscreens_is_also_focused(self):
+        s = self.session()
+        stream_mode.niri_windows = lambda: [self.win(9, False, (640, 766))]
+        s.fullscreen_new_arrivals([self.win(9, False, (640, 766))])
+        self.assertIn(9, self.focused)
+
+    def test_focus_is_taken_back_when_it_is_lost(self):
+        s = self.session()
+        s.fullscreened.add(9)
+        self.assertTrue(s.refocus_streamed_window([self.win(9, False)]))
+        self.assertEqual(self.focused, [9])
+
+    def test_a_focused_window_is_left_alone(self):
+        s = self.session()
+        s.fullscreened.add(9)
+        self.assertFalse(s.refocus_streamed_window([self.win(9, True)]))
+        self.assertEqual(self.focused, [])
+
+    def test_it_gives_up_rather_than_fighting_forever(self):
+        """Switching to something else on the desktop must eventually win."""
+        s = self.session()
+        s.fullscreened.add(9)
+        for _ in range(stream_mode.REFOCUS_LIMIT + 3):
+            s.refocus_streamed_window([self.win(9, False)])
+        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+
+    def test_regaining_focus_resets_the_budget(self):
+        s = self.session()
+        s.fullscreened.add(9)
+        s.refocus_streamed_window([self.win(9, False)])
+        s.refocus_streamed_window([self.win(9, True)])
+        self.focused.clear()
+        for _ in range(stream_mode.REFOCUS_LIMIT + 2):
+            s.refocus_streamed_window([self.win(9, False)])
+        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+
+    def test_nothing_is_focused_when_not_streaming(self):
+        s = self.session()
+        s.streaming = False
+        s.fullscreened.add(9)
+        self.assertFalse(s.refocus_streamed_window([self.win(9, False)]))
+        self.assertEqual(self.focused, [])

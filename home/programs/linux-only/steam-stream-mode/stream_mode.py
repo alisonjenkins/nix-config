@@ -86,6 +86,11 @@ FULLSCREEN_SETTLE_DELAY = float(os.environ.get("STREAM_MODE_FULLSCREEN_DELAY", "
 # when the window was next focused -- so the evidence disappears in the act of
 # observing it. These re-read it on a timer instead, spread wide enough to
 # catch both a quick correction and a slow one.
+# How many times to take focus back for one window. gamescope draws at the
+# size it was last activated with, so a game that never gets focus is drawn at
+# half the output while niri reports it fullscreen. Bounded so a deliberate
+# switch to something else on the desktop is not fought indefinitely.
+REFOCUS_LIMIT = int(os.environ.get("STREAM_MODE_REFOCUS_LIMIT", "3"))
 STAGE_AUDIT_DELAYS = [
     float(v) for v in
     os.environ.get("STREAM_MODE_AUDIT_DELAYS", "1,3,10,30").split(",") if v
@@ -459,10 +464,24 @@ def fullscreen_window(window_id):
 
 
 def focus_window(window_id):
-    subprocess.run(
+    """Focus a window, and say so if it did not work.
+
+    This used to discard both the exit status and the error. Focus turned out
+    to matter more than it looks: gamescope renders its contents at the size
+    it was given until something activates it, so a game could sit fullscreen
+    by niri's geometry and still be drawn at half the output. Tapping the
+    window fixed it instantly, which is the same thing this does.
+    """
+    result = subprocess.run(
         [NIRI, "msg", "action", "focus-window", "--id", str(window_id)],
-        check=False, env=niri_env(),
+        capture_output=True, text=True, env=niri_env(),
     )
+    if result.returncode != 0:
+        log("stream-mode: could not focus window {}: {}".format(
+            window_id, (result.stderr or "").strip()
+        ))
+        return False
+    return True
 
 
 def is_fullscreen(window, output_size):
@@ -603,6 +622,8 @@ class Session:
         # Windows already made to fill the streamed output, so one taken out
         # of fullscreen on purpose is not dragged back into it.
         self.fullscreened = set()
+        # window id -> how many times focus has been taken back for it.
+        self.refocus_attempts = {}
         # workspace id -> output name, kept current from the event stream so a
         # trace line can say which monitor a window moved to without asking.
         self.workspace_outputs = {}
@@ -641,6 +662,7 @@ class Session:
         self.learned = False
         self.big_picture_placed = False
         self.fullscreened = set()
+        self.refocus_attempts = {}
         width, height = client_size(client_id, self.clients)
 
         self.ensure_output()
@@ -910,8 +932,45 @@ class Session:
                 window_id, self.output
             ))
             self._ensure_fullscreen(window_id)
+            # Focused as well as fullscreened. Only staging did this before,
+            # and staging is the path a splash screen consumes -- so the real
+            # window arrived, was resized to fill the output, and was still
+            # drawn at half of it because gamescope had never been activated.
+            focus_window(window_id)
             acted = True
         return acted
+
+    def refocus_streamed_window(self, windows):
+        """Keep the game the focused window while a stream is running.
+
+        Focus is asked for once when a window arrives, but it does not always
+        stick: another window opening, or a splash closing, takes it back, and
+        the game is then drawn at whatever size it last thought it had. This
+        re-asserts it, at most a few times per window, so a genuine attempt to
+        focus something else on the desktop is not fought indefinitely.
+        """
+        if not self.streaming or self.output is None:
+            return False
+
+        for w in windows:
+            window_id = w.get("id")
+            if window_id is None or window_id not in self.fullscreened:
+                continue
+            if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
+                continue
+            if w.get("is_focused"):
+                self.refocus_attempts.pop(window_id, None)
+                continue
+            attempts = self.refocus_attempts.get(window_id, 0)
+            if attempts >= REFOCUS_LIMIT:
+                continue
+            self.refocus_attempts[window_id] = attempts + 1
+            log("stream-mode: window {} on {} lost focus; taking it back ({}/{})".format(
+                window_id, self.output, attempts + 1, REFOCUS_LIMIT
+            ))
+            focus_window(window_id)
+            return True
+        return False
 
     def place_big_picture(self, windows):
         """Put Steam's own Big Picture window on the streamed output.
@@ -953,6 +1012,7 @@ class Session:
         """
         self.place_big_picture(windows)
         self.fullscreen_new_arrivals(windows)
+        self.refocus_streamed_window(windows)
 
         if self.pending is None:
             return False
