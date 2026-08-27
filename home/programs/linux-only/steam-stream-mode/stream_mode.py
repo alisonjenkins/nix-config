@@ -75,6 +75,12 @@ STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
 # react to and it has to be looked for. Slow on purpose: a game outliving Steam
 # by a few seconds costs nothing, and the check reads every process's name.
 STEAM_CHECK_INTERVAL = float(os.environ.get("STREAM_MODE_STEAM_CHECK_INTERVAL", "10"))
+# How long to wait before restarting a reader that has exited, and the ceiling
+# that wait grows to. A compositor restart takes the event stream with it and
+# every immediate respawn dies at once: 587 restarts in 45 seconds during one
+# relog, which is a busy loop rather than a retry.
+READER_BACKOFF_MIN = float(os.environ.get("STREAM_MODE_READER_BACKOFF_MIN", "0.25"))
+READER_BACKOFF_MAX = float(os.environ.get("STREAM_MODE_READER_BACKOFF_MAX", "5"))
 # When to look again at a window after staging it. A game has been seen on the
 # desktop monitor after a staging that reported success, correcting itself only
 # when the window was next focused -- so the evidence disappears in the act of
@@ -1307,6 +1313,17 @@ def spawn_tail(path):
     )
 
 
+def next_reader_backoff(current):
+    """How long to wait before the next restart of a reader that keeps dying.
+
+    Doubles from READER_BACKOFF_MIN to a ceiling, so a compositor that is
+    away for a while is retried a few times a minute rather than thousands of
+    times a minute. The ceiling is low because the reader is how every window
+    event arrives: being slow to reconnect costs real responsiveness.
+    """
+    return min(max(current * 2, READER_BACKOFF_MIN), READER_BACKOFF_MAX)
+
+
 def spawn_event_stream():
     """Subscribe to niri's compositor events.
 
@@ -1400,28 +1417,58 @@ def watch():
     # noticing that Steam has died under a game that has not.
     remove_at = None
     next_steam_check = 0.0
+    # Per reader: when it may next be restarted, and how long the wait has
+    # grown to. Both reset once a reader delivers a line.
+    restart_at = {name: 0.0 for name in procs}
+    backoff = {name: 0.0 for name in procs}
 
     try:
         while True:
-            readable = {p.stdout for p in procs.values() if p.stdout}
+            # A reader that has exited is left out. Its stdout sits at EOF and
+            # would be reported readable immediately, every iteration, which
+            # turns waiting for a compositor to come back into a busy loop --
+            # 587 restarts in 45 seconds during one relog.
+            readable = {
+                p.stdout for p in procs.values()
+                if p.stdout and p.poll() is None
+            }
             # A pending audit has to wake the loop too, or it would not be
             # logged until the next event happened to arrive — and the whole
             # point of auditing is to see what happens when nothing does.
             timeout = 1.0 if (remove_at or session.pending or session.audits) else 30.0
+            if len(readable) < len(procs):
+                # Something is waiting to be restarted; wake for it.
+                timeout = min(timeout, READER_BACKOFF_MAX)
             ready, _, _ = select.select(list(readable), [], [], timeout)
 
+            now = time.monotonic()
             for name, proc in list(procs.items()):
-                if proc.poll() is not None:
-                    log("stream-mode: {} reader exited, restarting it".format(name))
-                    procs[name] = (
-                        spawn_event_stream() if name == "events"
-                        else spawn_tail(LOG if name == "stream" else CONNECTIONS_LOG)
-                    )
+                if proc.poll() is None:
+                    continue
+                if now < restart_at[name]:
+                    continue
+                backoff[name] = next_reader_backoff(backoff[name])
+                restart_at[name] = now + backoff[name]
+                log("stream-mode: {} reader exited, restarting it in {:.2f}s".format(
+                    name, backoff[name]
+                ))
+                procs[name] = (
+                    spawn_event_stream() if name == "events"
+                    else spawn_tail(LOG if name == "stream" else CONNECTIONS_LOG)
+                )
 
             for handle in ready:
                 line = handle.readline()
                 if not line:
                     continue
+
+                # A reader that delivered a line is working; forget that it
+                # ever failed, so a later outage starts from a short wait
+                # rather than the ceiling the last one reached.
+                for name, proc in procs.items():
+                    if proc.stdout is handle:
+                        backoff[name] = 0.0
+                        break
 
                 if procs["events"].stdout is handle:
                     handle_niri_event(session, line)

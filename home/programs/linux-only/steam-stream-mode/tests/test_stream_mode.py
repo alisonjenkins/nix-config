@@ -1570,6 +1570,36 @@ class TestFocus(unittest.TestCase):
         self.assertEqual(self.focused, [])
 
 
+class TestReaderBackoff(unittest.TestCase):
+    """A reader that keeps dying must not be respawned at full speed.
+
+    A relog takes niri's event stream with it, and every immediate respawn
+    died at once: 587 restarts in 45 seconds, which is a busy loop wearing a
+    retry's clothes.
+    """
+
+    def test_the_first_wait_is_the_minimum(self):
+        self.assertEqual(
+            stream_mode.next_reader_backoff(0.0), stream_mode.READER_BACKOFF_MIN
+        )
+
+    def test_it_doubles(self):
+        first = stream_mode.next_reader_backoff(0.0)
+        self.assertEqual(stream_mode.next_reader_backoff(first), first * 2)
+
+    def test_it_stops_at_the_ceiling(self):
+        delay = 0.0
+        for _ in range(50):
+            delay = stream_mode.next_reader_backoff(delay)
+        self.assertEqual(delay, stream_mode.READER_BACKOFF_MAX)
+
+    def test_the_ceiling_is_low_enough_to_stay_responsive(self):
+        """The reader is how every window event arrives; a long wait costs
+        real responsiveness, so this is a deliberate ceiling rather than an
+        arbitrary one."""
+        self.assertLessEqual(stream_mode.READER_BACKOFF_MAX, 10)
+
+
 class TestFullscreenFill(unittest.TestCase):
     """Fullscreen, not a wide column.
 
