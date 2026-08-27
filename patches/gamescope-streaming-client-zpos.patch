@@ -1,0 +1,18 @@
+--- a/src/steamcompmgr.cpp
++++ b/src/steamcompmgr.cpp
+@@ -2214,7 +2214,14 @@
+ 		layer->zpos = g_zposOverride;
+ 	}
+
+-	if ( w->isOverlay || w->isSteamStreamingClient )
++	// Upstream unconditionally promotes the streaming client to overlay zpos,
++	// which puts it above the Quick Access Menu and the on-screen keyboard
++	// (both zpos g_zposOverride) whenever the streaming client is also the
++	// focused/base window (w == scaleW) -- exactly the case while a stream
++	// is the thing on screen. Only promote it when it is *not* the base
++	// window, matching how isOverlay is already scoped implicitly by never
++	// being scaleW in practice. See ValveSoftware/gamescope#1997.
++	if ( w->isOverlay || ( w->isSteamStreamingClient && w != scaleW ) )
+ 	{
+ 		layer->zpos = g_zposOverlay;
+ 	}

@@ -1,4 +1,5 @@
 { inputs
+, self
 , ...
 }:
 let
@@ -301,6 +302,21 @@ in
               EOF
               chmod +x "$out/bin/umu-run"
             '';
+          });
+
+          # Upstream promotes the streaming client (isSteamStreamingClient) to
+          # overlay zpos unconditionally, so it paints over the Quick Access
+          # Menu and the on-screen keyboard (both override zpos) whenever it
+          # is also the focused/base window -- i.e. exactly while a Remote
+          # Play / Big Picture stream is what's on screen. Same fix on every
+          # host that runs gamescope: the Steam Deck (Gaming Mode) and every
+          # desktop that streams out of Big Picture (programs.gamescope.package
+          # in modules/desktop-base pulls this same pkgs.unstable.gamescope).
+          # See https://github.com/ValveSoftware/gamescope/issues/1997.
+          gamescope = mprev.gamescope.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [
+              (self + "/patches/gamescope-streaming-client-zpos.patch")
+            ];
           });
 
           # QIDI Studio's AppImage reaches libsoup-3 through webkitgtk_4_1, but
