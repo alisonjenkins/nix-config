@@ -180,7 +180,12 @@ static void flog(const char *fmt, ...)
     static unsigned long repeats;
 
     char msg[512];
-    struct timespec ts;
+    /* Zeroed because tv_nsec is printed whether or not clock_gettime
+     * succeeds. Reading it uninitialised is undefined behaviour, and the
+     * visible form of it -- garbage milliseconds beside a "??:??:??" stamp --
+     * would be actively misleading in a log whose whole purpose is ordering
+     * these lines against Steam's own. */
+    struct timespec ts = {0};
     struct tm tm;
     char stamp[32];
     va_list ap;
