@@ -203,34 +203,62 @@ Each degrades independently, which is why diagnosing this is tractable at all:
 a wrong capture size implicates the filter, a wrong window placement implicates
 the watcher, and the two symptoms do not overlap.
 
-## Known weakness
+## Covering the output
 
-`set-column-width "100%"` maximises the column rather than fullscreening the
-window. On the `game` workspace (`gaps 0`, borders off) this produces exactly
-the output size — but it is a workaround chosen for its *shape*, not its
-correctness: it is idempotent and needs no state, whereas
-`fullscreen-window` is a toggle and niri exposes no fullscreen state to read
-first (niri-wm/niri#2836, #338).
+`set_window_fullscreen(window_id, True)` — genuine fullscreen, not a maximised
+column. This matters because **a column is laid out inside the working area**,
+so anything reserving an exclusive zone on the streamed output takes its space.
+The desktop bar (noctalia here) renders on every output by default and reserved
+34px on the virtual one, so a client asking for 1280x800 received 1280x766 of
+game with a status bar above it. Fullscreen ignores struts, gaps and borders,
+and needs no cooperation from whatever else runs on the desktop.
 
-It silently stops matching the output the moment gaps are non-zero, and the
-window is never told it is fullscreen. `warn_if_short_of_output` exists to make
-that failure loud instead of silent: it logs once per window when a widened
-window does not exactly equal the output.
+Getting there took two false starts, both worth not repeating:
 
-**Anything reserving an exclusive zone on the streamed output takes its space
-too**, and this is the failure the guard actually caught first. Waybar has no
-`output` key by default and renders on every output, so it appeared on the
-virtual output and reserved 34px there — the Deck received 1280x766 of game
-with a desktop status bar above it. `home/programs/linux-only/waybar` now
-excludes every declared virtual output.
+- **A maximised column** (`set-column-width "100%"`) was chosen because it is
+  idempotent and needs no state. It gets the width right and can never get the
+  height right against an exclusive zone.
+- **`fullscreen-window`** is upstream niri's only option and is a *toggle*,
+  with no fullscreen state exposed to read first (niri-wm/niri#2836, #338).
+  Inferring the state from geometry once turned an already-fullscreen game back
+  into a windowed one.
 
-The diagnostic trap is worth naming, because it cost a wrong theory: the
-shortfall looks exactly like the maximize-versus-fullscreen gap, and is not.
-**Read the horizontal loss to tell them apart.** Gaps and borders are
-symmetric, so they cost width as well as height; a layer-shell bar costs height
-only. The streamed window lost 0 horizontally and 34 vertically, which ruled
-out gaps and borders — and therefore ruled out fullscreen as the fix — before
-any code was changed.
+`patches/niri-virtual-outputs.patch` therefore adds `set-window-fullscreen`,
+which says what the state should be. The layout layer already took a bool
+(`Layout::set_fullscreen`); only the IPC surface was missing. Being idempotent,
+it can be sent on every event reporting the wrong size without tracking what
+was already done — the property the column-width workaround was picked for in
+the first place, now with correct geometry.
+
+The window is taken **back out** of fullscreen when the game workspace returns
+to its own monitor, so a game outliving the stream does not keep it. The niri
+window rule deliberately does not force fullscreen on games, because that
+overrode gamescope's own borderless sizing; the stream borrows that state and
+gives it back.
+
+`warn_if_short_of_output` remains as the guard: it logs once per window when a
+window still does not exactly equal the output.
+
+### Telling a shortfall's causes apart
+
+Worth knowing, because it cost a wrong theory: a window short of the output
+looks the same whatever the cause. **Read the horizontal loss.** Gaps and
+borders are symmetric, so they cost width as well as height; a layer-shell
+exclusive zone costs height only. The streamed window lost 0 horizontally and
+34 vertically, which ruled out gaps and borders before any code changed — and
+pointed at the bar rather than at the window's sizing mode.
+
+## What gets touched
+
+Only the staged game, and — while a game is staged — anything else that arrives
+on the streamed output, because a game with a splash screen replaces its window
+after staging has happened and the replacement matches nothing by name.
+
+Acting on whatever sat on the output regardless once resized a terminal that
+drifted there ninety seconds *after* the game exited. A staged game's pid is
+cleared on exit, and that is what separates the two cases. The distinction
+matters more now than it did: the same mistake that produced an oddly wide
+terminal would now produce a fullscreen one.
 
 ## Testing without fooling yourself
 
