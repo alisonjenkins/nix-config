@@ -200,6 +200,35 @@ index 00000000..d194b57e
 +
 +- Virtual outputs are not supported when running niri nested in another Wayland compositor (Winit backend)
 +- Virtual outputs created over IPC are not persisted across niri restarts — declare them in the config if you need them to come back
+diff --git a/niri-config/src/binds.rs b/niri-config/src/binds.rs
+index e1a6a546..d3550ae4 100644
+--- a/niri-config/src/binds.rs
++++ b/niri-config/src/binds.rs
+@@ -154,6 +154,9 @@ pub enum Action {
+     FullscreenWindow,
+     #[knuffel(skip)]
+     FullscreenWindowById(u64),
++    SetWindowFullscreen(#[knuffel(argument)] bool),
++    #[knuffel(skip)]
++    SetWindowFullscreenById(u64, bool),
+     ToggleWindowedFullscreen,
+     #[knuffel(skip)]
+     ToggleWindowedFullscreenById(u64),
+@@ -436,6 +439,14 @@ impl From<niri_ipc::Action> for Action {
+             niri_ipc::Action::CloseWindow { id: Some(id) } => Self::CloseWindowById(id),
+             niri_ipc::Action::FullscreenWindow { id: None } => Self::FullscreenWindow,
+             niri_ipc::Action::FullscreenWindow { id: Some(id) } => Self::FullscreenWindowById(id),
++            niri_ipc::Action::SetWindowFullscreen {
++                id: None,
++                is_fullscreen,
++            } => Self::SetWindowFullscreen(is_fullscreen),
++            niri_ipc::Action::SetWindowFullscreen {
++                id: Some(id),
++                is_fullscreen,
++            } => Self::SetWindowFullscreenById(id, is_fullscreen),
+             niri_ipc::Action::ToggleWindowedFullscreen { id: None } => {
+                 Self::ToggleWindowedFullscreen
+             }
 diff --git a/niri-config/src/lib.rs b/niri-config/src/lib.rs
 index f026f9bc..cd69427a 100644
 --- a/niri-config/src/lib.rs
@@ -306,7 +335,7 @@ index 48572f6e..447dee5f 100644
              variable_refresh_rate: None,
              background_color: None,
 diff --git a/niri-ipc/src/lib.rs b/niri-ipc/src/lib.rs
-index 218e532c..fd01f94d 100644
+index 218e532c..c0d58189 100644
 --- a/niri-ipc/src/lib.rs
 +++ b/niri-ipc/src/lib.rs
 @@ -98,6 +98,31 @@ pub enum Request {
@@ -350,6 +379,35 @@ index 218e532c..fd01f94d 100644
  }
  
  /// Overview information.
+@@ -306,6 +333,28 @@ pub enum Action {
+         #[cfg_attr(feature = "clap", arg(long))]
+         id: Option<u64>,
+     },
++    /// Set fullscreen on a window.
++    ///
++    /// Unlike `FullscreenWindow`, this says what the state should be rather than
++    /// asking for it to be flipped, so it is idempotent and safe to send without
++    /// knowing the current state — which the IPC does not expose.
++    #[cfg_attr(
++        feature = "clap",
++        clap(about = "Set fullscreen on the focused window")
++    )]
++    SetWindowFullscreen {
++        /// Id of the window to set the fullscreen state of.
++        ///
++        /// If `None`, uses the focused window.
++        #[cfg_attr(feature = "clap", arg(long))]
++        id: Option<u64>,
++        /// Whether the window should be fullscreen.
++        #[cfg_attr(
++            feature = "clap",
++            arg(long, action = clap::ArgAction::Set, default_value_t = true)
++        )]
++        is_fullscreen: bool,
++    },
+     /// Toggle windowed (fake) fullscreen on a window.
+     #[cfg_attr(
+         feature = "clap",
 diff --git a/src/backend/headless.rs b/src/backend/headless.rs
 index 9bd97930..fadd636b 100644
 --- a/src/backend/headless.rs
@@ -1660,6 +1718,34 @@ index 308b3127..ab0f957c 100644
      /// Start continuously receiving events from the compositor.
      EventStream,
      /// Print the version of the running niri instance.
+diff --git a/src/input/mod.rs b/src/input/mod.rs
+index 50db88fc..74141eed 100644
+--- a/src/input/mod.rs
++++ b/src/input/mod.rs
+@@ -872,6 +872,23 @@ impl State {
+                     self.niri.queue_redraw_all();
+                 }
+             }
++            Action::SetWindowFullscreen(is_fullscreen) => {
++                let focus = self.niri.layout.focus().map(|m| m.window.clone());
++                if let Some(window) = focus {
++                    self.niri.layout.set_fullscreen(&window, is_fullscreen);
++                    // FIXME: granular
++                    self.niri.queue_redraw_all();
++                }
++            }
++            Action::SetWindowFullscreenById(id, is_fullscreen) => {
++                let window = self.niri.layout.windows().find(|(_, m)| m.id().get() == id);
++                let window = window.map(|(_, m)| m.window.clone());
++                if let Some(window) = window {
++                    self.niri.layout.set_fullscreen(&window, is_fullscreen);
++                    // FIXME: granular
++                    self.niri.queue_redraw_all();
++                }
++            }
+             Action::ToggleWindowedFullscreen => {
+                 let focus = self.niri.layout.focus().map(|m| m.window.clone());
+                 if let Some(window) = focus {
 diff --git a/src/ipc/client.rs b/src/ipc/client.rs
 index 1ec51c44..5d08a326 100644
 --- a/src/ipc/client.rs
