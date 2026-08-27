@@ -28,10 +28,13 @@ in
       pickers on the same portal do — so no window-scoped source can reach it
       and an ultrawide is letterboxed into a fraction of the client's frame.
 
-      Instead a niri virtual output is created at the client's resolution when
-      it connects, the streamed game is moved onto it and fullscreened, and it
-      is removed once streaming has been idle. The physical display is never
-      reconfigured.
+      Instead a niri virtual output — declared in the compositor's config, not
+      created here — is sized to the client and enabled when it connects, the
+      streamed game is moved onto it and fullscreened, and it is turned off
+      again once streaming has been idle. It is never removed: Steam remembers
+      its capture source and resolves it when a session starts, so an output
+      that came and went left that request failing. The physical display is
+      never reconfigured.
 
       Requires niri patched with virtual output support
       (modules.desktop.niriVirtualOutputs)
