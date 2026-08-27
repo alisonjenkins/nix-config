@@ -13,7 +13,10 @@ fail() {
 }
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+# chmod first: one case deliberately makes a directory read-only to stand in
+# for the Nix store, and an assertion failing inside it would otherwise leave
+# a temp directory that cannot be removed.
+trap 'chmod -R u+rwX "$TMP" 2>/dev/null || true; rm -rf "$TMP"' EXIT
 
 export HOME="$TMP"
 export VR_RUNTIME_SKIP_SERVICE=1
@@ -113,11 +116,37 @@ grep -q "Monado" "$OPENXR" || fail "active_runtime.json does not name Monado"
 [ -w "$OPENXR" ] || fail "active_runtime.json is not writable; a switcher cannot work"
 [ -w "$OPENVR" ] || fail "openvrpaths.vrpath is not writable; a switcher cannot work"
 
-# 9. status reflects the last switch
+# 9. external_drivers is a list, never JSON null — vrpathreg consumers assume
+#    an array, and the pinned manifest this replaced shipped []
+python3 -c "
+import json
+doc = json.load(open('$OPENVR'))
+assert isinstance(doc['external_drivers'], list), doc['external_drivers']
+" || fail "external_drivers is not a list"
+
+# 10. a read-only symlink standing in for leftover xdg.configFile management
+#     is replaced, not written through. Writing through it lands in the Nix
+#     store, fails, and leaves the file permanently unhealable.
+readonly_target="$TMP/store-like/active_runtime.json"
+mkdir -p "$TMP/store-like"
+echo '{"runtime":{"name":"stale"}}' > "$readonly_target"
+chmod 444 "$readonly_target"
+chmod 555 "$TMP/store-like"
+rm -f "$OPENXR"
+ln -s "$readonly_target" "$OPENXR"
+"$VR_RUNTIME" wivrn >/dev/null 2>&1 || fail "switch failed with a read-only symlink in place"
+if [ -L "$OPENXR" ]; then
+  fail "the symlink was followed instead of replaced"
+fi
+grep -q "Monado" "$OPENXR" || fail "the replaced manifest does not name Monado"
+grep -q "stale" "$readonly_target" || fail "the read-only target was written through"
+chmod 755 "$TMP/store-like"
+
+# 11. status reflects the last switch
 out="$("$VR_RUNTIME" status)"
 grep -qi "wivrn" <<<"$out" || fail "status did not report wivrn: $out"
 
-# 10. an unknown subcommand fails loudly rather than silently doing nothing
+# 12. an unknown subcommand fails loudly rather than silently doing nothing
 if "$VR_RUNTIME" nonsense >/dev/null 2>&1; then
   fail "unknown subcommand exited zero"
 fi
