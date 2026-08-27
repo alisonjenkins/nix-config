@@ -1462,6 +1462,12 @@ def handle_steam_line(session, line, remove_at):
         log("stream-mode: stream stopped, dropping the output in {:.0f}s".format(
             REMOVE_AFTER
         ))
+        # The workspace comes back now rather than with the output. Dropping
+        # the output is delayed so a reconnect does not have to rebuild it,
+        # but a game left running by Stop Streaming must not spend that delay
+        # on a display nobody is watching and nobody can reach. A reconnect
+        # inside the delay borrows it again on the next start marker.
+        session.return_game_workspace()
         return time.monotonic() + REMOVE_AFTER
 
     return remove_at

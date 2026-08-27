@@ -856,6 +856,10 @@ class TestEventDispatch(unittest.TestCase):
         def unstage(self, pid=None):
             self.calls.append(("unstage", pid))
 
+        def return_game_workspace(self):
+            self.calls.append(("return_game_workspace",))
+            return True
+
     def setUp(self):
         self.s = self.FakeSession()
 
@@ -906,6 +910,18 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertIsNotNone(remove_at)
         self.assertGreater(remove_at, time.monotonic())
+
+    def test_stream_stop_returns_the_game_workspace_at_once(self):
+        """Stop Streaming from the tray leaves a running game behind.
+
+        The output stays on for a grace period so a reconnect does not have
+        to rebuild it, but the game must not spend that period on a display
+        nobody is looking at and nobody can reach.
+        """
+        stream_mode.handle_steam_line(
+            self.s, "[x] >>> Stopped desktop stream\n", None
+        )
+        self.assertIn(("return_game_workspace",), self.s.calls)
 
     def test_a_game_window_line_requests_staging(self):
         stream_mode.handle_steam_line(
