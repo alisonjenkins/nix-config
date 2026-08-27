@@ -637,6 +637,9 @@ class Session:
         self.refocus_attempts = {}
         # window id -> how many times it has been widened to the output.
         self.widen_attempts = {}
+        # Windows already reported as not covering the output, so the warning
+        # is made once rather than on every event.
+        self.size_warned = set()
         # workspace id -> output name, kept current from the event stream so a
         # trace line can say which monitor a window moved to without asking.
         self.workspace_outputs = {}
@@ -677,6 +680,7 @@ class Session:
         self.fullscreened = set()
         self.refocus_attempts = {}
         self.widen_attempts = {}
+        self.size_warned = set()
         width, height = client_size(client_id, self.clients)
 
         self.ensure_output()
@@ -907,6 +911,37 @@ class Session:
         self.end_stream()
         return True
 
+    def warn_if_short_of_output(self, window_id, size, output_size):
+        """Say so when a widened window still does not cover the output.
+
+        Widening maximises the column, which is not the same as fullscreen:
+        the docs are explicit that a maximised column still leaves room for
+        gaps and struts, and the window keeps its borders. Here the game
+        workspace sets `gaps 0` and the window rule turns borders off, so a
+        maximised column comes out exactly the output's size -- but that is a
+        property of the configuration rather than of what this asks for.
+
+        Change the gaps, or land a game on a workspace that has them, and the
+        stream quietly gains a border that nothing would otherwise report.
+        Niri exposes no fullscreen state to ask for instead (niri-wm/niri#2836)
+        and offers only a toggle to set it (#338), so this cannot be made exact
+        -- but it can at least stop being silent.
+        """
+        if tuple(int(v) for v in size) == tuple(int(v) for v in output_size):
+            self.size_warned.discard(window_id)
+            return False
+        if window_id in self.size_warned:
+            return False
+        self.size_warned.add(window_id)
+        log(
+            "stream-mode: window {} is {} on a {} output after widening; "
+            "the client will see the difference as a border. Gaps or borders "
+            "on this workspace would explain it.".format(
+                window_id, list(size), list(output_size)
+            )
+        )
+        return True
+
     def fill_streamed_output(self, windows):
         """Widen anything on the streamed output that is not filling it.
 
@@ -940,6 +975,7 @@ class Session:
                 continue
             if int(size[0]) >= int(output_size[0]):
                 self.widen_attempts.pop(window_id, None)
+                self.warn_if_short_of_output(window_id, size, output_size)
                 continue
             attempts = self.widen_attempts.get(window_id, 0)
             if attempts >= WIDEN_LIMIT:

@@ -1488,3 +1488,46 @@ class TestFocus(unittest.TestCase):
         s.fullscreened.add(9)
         self.assertFalse(s.refocus_streamed_window([self.win(9, False)]))
         self.assertEqual(self.focused, [])
+
+
+class TestShortOfOutput(unittest.TestCase):
+    """Maximising is not fullscreen; on a gapped workspace it falls short.
+
+    The game workspace sets gaps 0 and the rule turns borders off, so a
+    maximised column happens to equal the output exactly. That is a property
+    of the configuration, not of what the service asks for, so a change to it
+    should be visible rather than silently costing the client a border.
+    """
+
+    def setUp(self):
+        self._log = stream_mode.log
+        self.lines = []
+        stream_mode.log = self.lines.append
+
+    def tearDown(self):
+        stream_mode.log = self._log
+
+    def warnings(self):
+        return [l for l in self.lines if "after widening" in l]
+
+    def test_an_exact_match_says_nothing(self):
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.warn_if_short_of_output(1, [1280, 800], (1280, 800)))
+        self.assertEqual(self.warnings(), [])
+
+    def test_falling_short_is_reported_once(self):
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertTrue(s.warn_if_short_of_output(1, [1248, 768], (1280, 800)))
+        self.assertFalse(s.warn_if_short_of_output(1, [1248, 768], (1280, 800)))
+        self.assertEqual(len(self.warnings()), 1)
+
+    def test_a_short_height_counts_too(self):
+        """Only the width is corrected, so a short height would go unnoticed."""
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertTrue(s.warn_if_short_of_output(1, [1280, 768], (1280, 800)))
+
+    def test_becoming_exact_rearms_the_warning(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.warn_if_short_of_output(1, [1248, 768], (1280, 800))
+        s.warn_if_short_of_output(1, [1280, 800], (1280, 800))
+        self.assertTrue(s.warn_if_short_of_output(1, [1248, 768], (1280, 800)))
