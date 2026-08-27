@@ -132,24 +132,6 @@ class TestLogParsing(unittest.TestCase):
         """
         self.assertIsNone(stream_mode.CONNECT_RE.search(self.BROADCAST))
 
-class TestIsFullscreen(unittest.TestCase):
-    """niri offers only a toggle, so a wrong answer un-fullscreens the game."""
-
-    def test_window_filling_the_output(self):
-        self.assertTrue(
-            stream_mode.is_fullscreen(window(1, 2, size=(1280, 800)), (1280, 800))
-        )
-
-    def test_tiled_window(self):
-        self.assertFalse(stream_mode.is_fullscreen(window(1, 2), (1280, 800)))
-
-    def test_unknown_output_size(self):
-        self.assertFalse(stream_mode.is_fullscreen(window(1, 2), None))
-
-    def test_missing_layout(self):
-        self.assertFalse(stream_mode.is_fullscreen({"id": 1}, (1280, 800)))
-
-
 class TestWindowForGame(unittest.TestCase):
     GAME = 2854740
 
@@ -251,7 +233,7 @@ class TestSession(unittest.TestCase):
                 "set_output_mode",
                 "set_output_enabled",
                 "move_window_to_output",
-                "fullscreen_window",
+                "widen_column_to_output",
                 "focus_window",
                 "niri_windows",
                 "workspace_output",
@@ -279,7 +261,7 @@ class TestSession(unittest.TestCase):
         stream_mode.set_output_mode = set_mode
         stream_mode.set_output_enabled = set_enabled
         stream_mode.move_window_to_output = lambda wid, out: self.moved.append((wid, out))
-        stream_mode.fullscreen_window = lambda wid: self.fullscreened.append(wid)
+        stream_mode.widen_column_to_output = lambda wid: self.fullscreened.append(wid) or True
         stream_mode.focus_window = lambda wid: None
         stream_mode.niri_windows = lambda: self.windows
         stream_mode.output_logical_size = lambda name: (1280, 800)
@@ -422,15 +404,19 @@ class TestSession(unittest.TestCase):
         self.assertEqual(self.enabled, [])
         self.assertEqual(self.modes, [])
 
-    def test_stage_moves_and_fullscreens_on_the_virtual_output(self):
+    def test_stage_moves_the_window_to_the_virtual_output(self):
+        """Staging places and focuses; the width is corrected from events.
+
+        Sizing here meant deciding from a reading taken before the move had
+        landed, which is how an already-sized window got resized wrongly.
+        """
         s = self.session()
         s.connect(123, "deck")
         self.assertTrue(s.request(500, 2854740))
         self.assertTrue(s.on_windows(self.windows))
         self.assertEqual(self.moved, [(7, stream_mode.OUTPUT_NAME)])
-        self.assertEqual(self.fullscreened, [7])
 
-    def test_stage_does_not_toggle_an_already_fullscreen_game(self):
+    def test_stage_does_not_resize_the_window_itself(self):
         self.windows = [window(7, 500, size=(1280, 800))]
         s = self.session()
         s.connect(123, "deck")
@@ -536,11 +522,10 @@ class TestOutputLifetime(unittest.TestCase):
                 "publish_target",
                 "withdraw_target",
                 "niri_windows",
-                "fullscreen_window",
+                "widen_column_to_output",
                 "move_window_to_output",
                 "steam_is_running",
                 "signal_process",
-                "FULLSCREEN_SETTLE_DELAY",
             )
         }
 
@@ -559,9 +544,6 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.load_clients = lambda path=None: {}
         stream_mode.publish_target = lambda *a, **k: True
         stream_mode.withdraw_target = lambda *a, **k: True
-        # The settle exists for a real compositor's timing; waiting for it here
-        # would only make the suite slow.
-        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
         self.workspace_moves = []
         stream_mode.workspace_output = lambda name: "DP-2"
         stream_mode.move_workspace_to_output = lambda name, out: (
@@ -802,44 +784,6 @@ class TestOutputLifetime(unittest.TestCase):
         s = stream_mode.Session(stage_timeout=0)
         self.assertFalse(s.check_steam_alive())
         self.assertEqual(signalled, [])
-
-    def test_a_game_already_fullscreen_is_not_toggled_out_of_it(self):
-        """The reading right after a move still describes the old output.
-
-        niri reports no fullscreen flag, only geometry, and offers only a
-        toggle. Deciding from the stale read measured an already-fullscreen
-        game against the new output, judged it not fullscreen, and toggled --
-        turning fullscreen off. Right screen, wrong dimensions.
-        """
-        reads = [
-            {"id": 5, "layout": {"window_size": [5120, 1440]}},   # stale
-            {"id": 5, "layout": {"window_size": [1280, 800]}},    # resized
-            {"id": 5, "layout": {"window_size": [1280, 800]}},    # settled
-        ]
-        toggled = []
-        stream_mode.niri_windows = lambda: [reads.pop(0) if reads else
-                                            {"id": 5, "layout": {"window_size": [1280, 800]}}]
-        stream_mode.output_logical_size = lambda name: (1280, 800)
-        stream_mode.fullscreen_window = lambda wid: toggled.append(wid)
-
-        s = stream_mode.Session(stage_timeout=0)
-        s.output = stream_mode.OUTPUT_NAME
-        s._ensure_fullscreen(5)
-
-        self.assertEqual(toggled, [], "a settled fullscreen window must be left alone")
-
-    def test_a_windowed_game_is_still_fullscreened(self):
-        """The settle must not stop it acting when action is needed."""
-        toggled = []
-        stream_mode.niri_windows = lambda: [{"id": 5, "layout": {"window_size": [800, 600]}}]
-        stream_mode.output_logical_size = lambda name: (1280, 800)
-        stream_mode.fullscreen_window = lambda wid: toggled.append(wid)
-
-        s = stream_mode.Session(stage_timeout=0)
-        s.output = stream_mode.OUTPUT_NAME
-        s._ensure_fullscreen(5)
-
-        self.assertEqual(toggled, [5])
 
     def test_a_stream_can_start_without_a_connect(self):
         """A service restart mid-session never sees the connect line."""
@@ -1225,6 +1169,9 @@ class TestEventTracing(unittest.TestCase):
         def on_outputs_changed(self, names):
             pass
 
+        def fill_streamed_output(self, windows):
+            return False
+
     def setUp(self):
         self.s = self.Recorder()
         self._log = stream_mode.log
@@ -1326,13 +1273,11 @@ class TestSplashScreens(unittest.TestCase):
 
     def setUp(self):
         self._real = {k: getattr(stream_mode, k) for k in (
-            "output_logical_size", "niri_windows", "fullscreen_window",
-            "FULLSCREEN_SETTLE_DELAY")}
+            "output_logical_size", "niri_windows", "widen_column_to_output")}
         self.toggled = []
         stream_mode.output_logical_size = lambda name: (1280, 800)
-        stream_mode.fullscreen_window = lambda wid: self.toggled.append(wid)
-        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
-
+        stream_mode.widen_column_to_output = lambda wid: self.toggled.append(wid) or True
+        
     def tearDown(self):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
@@ -1350,30 +1295,46 @@ class TestSplashScreens(unittest.TestCase):
     def test_a_window_arriving_after_staging_is_still_fullscreened(self):
         s = self.session()
         stream_mode.niri_windows = lambda: [self.half_width(127)]
-        s.fullscreen_new_arrivals([self.half_width(127)])
+        s.fill_streamed_output([self.half_width(127)])
         self.assertEqual(self.toggled, [127])
 
-    def test_each_window_is_only_forced_once(self):
-        """A game deliberately taken out of fullscreen must stay that way."""
+    def test_it_stops_after_a_few_attempts(self):
+        """A window that cannot be widened must not be fought forever.
+
+        Setting a width is idempotent, so this can run on every event that
+        says the width is wrong -- but a window with a fixed size would then
+        be retried endlessly.
+        """
         s = self.session()
         stream_mode.niri_windows = lambda: [self.half_width(127)]
-        s.fullscreen_new_arrivals([self.half_width(127)])
+        for _ in range(stream_mode.WIDEN_LIMIT + 3):
+            s.fill_streamed_output([self.half_width(127)])
+        self.assertEqual(len(self.toggled), stream_mode.WIDEN_LIMIT)
+
+    def test_a_window_that_widens_resets_the_budget(self):
+        s = self.session()
+        full = {"id": 127, "workspace_id": 9,
+                "layout": {"window_size": [1280, 800]}}
+        stream_mode.niri_windows = lambda: [self.half_width(127)]
+        s.fill_streamed_output([self.half_width(127)])
+        s.fill_streamed_output([full])
         self.toggled.clear()
-        s.fullscreen_new_arrivals([self.half_width(127)])
-        self.assertEqual(self.toggled, [])
+        for _ in range(stream_mode.WIDEN_LIMIT + 2):
+            s.fill_streamed_output([self.half_width(127)])
+        self.assertEqual(len(self.toggled), stream_mode.WIDEN_LIMIT)
 
     def test_windows_on_other_outputs_are_left_alone(self):
         s = self.session()
         s.workspace_outputs = {9: "DP-2"}
         stream_mode.niri_windows = lambda: [self.half_width(127)]
-        s.fullscreen_new_arrivals([self.half_width(127)])
+        s.fill_streamed_output([self.half_width(127)])
         self.assertEqual(self.toggled, [])
 
     def test_nothing_happens_when_not_streaming(self):
         s = self.session()
         s.streaming = False
         stream_mode.niri_windows = lambda: [self.half_width(127)]
-        s.fullscreen_new_arrivals([self.half_width(127)])
+        s.fill_streamed_output([self.half_width(127)])
         self.assertEqual(self.toggled, [])
 
 
@@ -1464,13 +1425,11 @@ class TestFocus(unittest.TestCase):
     def setUp(self):
         self._real = {k: getattr(stream_mode, k) for k in (
             "focus_window", "output_logical_size", "niri_windows",
-            "fullscreen_window", "FULLSCREEN_SETTLE_DELAY")}
+            "widen_column_to_output")}
         self.focused = []
         stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
         stream_mode.output_logical_size = lambda name: (1280, 800)
-        stream_mode.fullscreen_window = lambda wid: None
-        stream_mode.FULLSCREEN_SETTLE_DELAY = 0
-
+        
     def tearDown(self):
         for k, v in self._real.items():
             setattr(stream_mode, k, v)
@@ -1486,10 +1445,11 @@ class TestFocus(unittest.TestCase):
         return {"id": wid, "workspace_id": 9, "is_focused": focused,
                 "layout": {"window_size": list(size)}}
 
-    def test_a_window_the_sweep_fullscreens_is_also_focused(self):
+    def test_widening_a_window_focuses_it(self):
+        """The width actions apply to the focused column, so focus comes first."""
         s = self.session()
         stream_mode.niri_windows = lambda: [self.win(9, False, (640, 766))]
-        s.fullscreen_new_arrivals([self.win(9, False, (640, 766))])
+        s.fill_streamed_output([self.win(9, False, (640, 766))])
         self.assertIn(9, self.focused)
 
     def test_focus_is_taken_back_when_it_is_lost(self):
