@@ -51,17 +51,36 @@ Filter to `isResolved == false`. `isOutdated == true` means the code it was
 anchored to has since changed; still answer it, but check whether the point
 already got fixed.
 
-## Triage before touching code
+## Triage against the current branch
 
 Each comment is a claim, not an instruction. Verify it technically first;
 agreeing with a wrong suggestion because a reviewer made it is a failure mode.
-See `superpowers:receiving-code-review`. Sort each thread into:
+See `superpowers:receiving-code-review`.
 
-- **Real defect** → fix it, one atomic commit per finding.
-- **Correct but out of scope** → say so, open an issue, do not widen the PR.
-- **Wrong or based on a misreading** → say why, with the evidence. Do not
-  silently comply and do not silently ignore.
-- **Question** → answer it; no code change.
+The branch has usually moved since the comment was written, so read the current
+state of the file and the code around it before deciding anything. Then sort
+each thread into one of five:
+
+- **Already addressed**. A later commit fixed it. Reply with the commit sha and
+  resolve.
+- **Real defect**. Fix it, one atomic commit per finding.
+- **Correct but out of scope**. Say so, open an issue, do not widen the PR.
+- **Wrong or based on a misreading**. Say why, citing the line. Do not silently
+  comply and do not silently ignore.
+- **Needs a decision from the user**. A genuine design choice, not a defect.
+  Surface it and stop; do not guess on their behalf.
+
+## Reporting back
+
+Whatever gets posted, tell the user what happened, one entry per thread:
+
+| | |
+|---|---|
+| **Comment** | reviewer, `file_path:line`, one line on what they said |
+| **Verdict** | Already addressed / Fixed / Out of scope / Rejected / Needs your decision |
+| **Detail** | what changed, with `file_path:line`, or why the comment does not hold |
+
+Close with the counts and anything still waiting on them.
 
 ## Replying
 
@@ -75,6 +94,14 @@ gh pr comment <number> --body "..."     # only for PR-wide replies
 ```
 
 Keep it to what changed and why, or why it did not. One reply per thread.
+
+These replies go onto a public PR under the user's name, and a rejection lands
+in front of the reviewer you are disagreeing with, so apply the `writing`
+skill. No "great catch", no "you're absolutely right", no apology padding
+around a rejection. State what the code does, cite the line, let that carry it.
+
+Where the verdict is **Needs a decision from the user**, draft the reply but do
+not post it. That thread is theirs to answer.
 
 ## Fixing and pushing
 
