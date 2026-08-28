@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use when committing, amending, splitting or reordering changes, opening / updating / reviewing / merging a pull request, choosing a merge strategy, branching, or setting up an isolated worktree — including "commit this", "push it", "open a PR". Carries the atomic-commit and never-squash mandate, the commit message format, and routes to commit, PR and worktree guidance.
+description: Use when committing, amending, splitting or reordering changes, opening / updating / reviewing / merging a pull request, choosing a merge strategy, branching, or setting up an isolated worktree — including "commit this", "push it", "open a PR". Also when review lands on your own PR — watching or waiting for a review, answering review comments, replying to or resolving review threads, addressing requested changes from a human or a bot. Carries the atomic-commit and never-squash mandate, the commit message format, and routes to commit, PR, review-response and worktree guidance.
 ---
 
 # Git
@@ -40,4 +40,5 @@ workflow a tool or another skill suggests.
 |---|---|
 | Writing a commit message, splitting a large change | [commit-messages.md](commit-messages.md) |
 | Opening, updating, reviewing, or merging a PR | [pr-workflow.md](pr-workflow.md) |
+| Watching for review on your PR, replying to or resolving threads | [pr-review-responses.md](pr-review-responses.md) |
 | Isolating feature work from the current checkout | [worktrees.md](worktrees.md) |

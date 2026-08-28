@@ -54,5 +54,8 @@ say so in one line rather than manufacturing findings.
 | An uncommitted or unpushed diff, including your own | [diff-review.md](diff-review.md) |
 | A pull request, with comments to post | [pr-review.md](pr-review.md) |
 
+Receiving review on a PR of your own is the other direction — that is the
+`git` skill's `pr-review-responses.md`, not this one.
+
 The bundled `/code-review` command runs a deeper multi-pass review with
 verification; prefer it for a whole branch or PR rather than reimplementing it.
