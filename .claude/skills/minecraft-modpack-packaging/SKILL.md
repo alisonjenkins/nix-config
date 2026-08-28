@@ -16,24 +16,24 @@ paths:
 
 Two patterns ship Minecraft modpacks as Nix-built OCI images:
 
-- `pkgs/create-sky-colonies-server` — vanilla pattern. The publisher releases a "Server Pack" zip; we `fetchurl` it and overlay perf mods + JVM args + entrypoint. Used for any modpack whose publisher ships a pre-installed server tree.
-- `pkgs/create-arkana-aeronautics-server` — manifest-driven pattern with bisection. Modpack ships only a CurseForge "manifest pack" (manifest.json + overrides/, no jars), so we resolve every mod via cfwidget+mediafilez into `arkana-mods.nix`, run the NeoForge installer at first boot to populate `/data/libraries`, and bisect mod groups to find what coexists.
+- `pkgs/create-sky-colonies-server`: vanilla pattern. The publisher releases a "Server Pack" zip; we `fetchurl` it and overlay perf mods + JVM args + entrypoint. Used for any modpack whose publisher ships a pre-installed server tree.
+- `pkgs/create-arkana-aeronautics-server`: manifest-driven pattern with bisection. Modpack ships only a CurseForge "manifest pack" (manifest.json + overrides/, no jars), so we resolve every mod via cfwidget+mediafilez into `arkana-mods.nix`, run the NeoForge installer at first boot to populate `/data/libraries`, and bisect mod groups to find what coexists.
 
 The bisection workflow is the part worth knowing. `pkgs/minecraft-modpack-tools` ships generic helpers (`dep-tree` is the only one currently); `pkgs/create-arkana-aeronautics-server` keeps the modpack-specific pieces (`group-classifier.py`, `bisect.sh`, `generate-arkana-mods.sh`).
 
 ## When to bisect
 
-Whenever a modpack's overlay (extra mods we add on top) requires a Create / NeoForge / library version newer than what the base modpack ships. Bumping a single core lib often cascades into mod-construction or registry-init NPEs across 5-15 unrelated mods that were tuned to the older API. Bisecting identifies which Arkana mods stay compatible with the bumped floor — keep those, disable the rest.
+Whenever a modpack's overlay (extra mods we add on top) requires a Create / NeoForge / library version newer than what the base modpack ships. Bumping a single core lib often cascades into mod-construction or registry-init NPEs across 5-15 unrelated mods that were tuned to the older API. Bisecting identifies which Arkana mods stay compatible with the bumped floor: keep those, disable the rest.
 
 ## The four files that drive composition
 
-- `arkana-mods.nix` — auto-generated from the modpack's manifest.json. **Don't hand-edit.** Regenerate with `generate-arkana-mods.sh /path/to/manifest.json arkana-mods.nix` after a modpack version bump.
-- `arkana-mods-extras.nix` — three lists:
-  - `replacements` — newer file-IDs swapped for entries in `arkana-mods.nix` whose Arkana version is incompatible with our bumped floor. Set `alwaysInclude = true` for replacements that are part of the floor itself (Create 6.0.10 is the only one today). Replacements without `alwaysInclude` only apply when their `origProjectID`'s group is enabled.
-  - `skipped` — discontinued mods with no live file on CurseForge. Always dropped server-side; client zip strips manifest entries so the launcher doesn't error on import.
-  - `disabled` — mods that boot-fail under our bumped floor. Always dropped, even when their group is enabled. Includes a `reason` and `phase` field for the next person debugging.
-- `arkana-groups.nix` — auto-classified by `group-classifier.py` from arkana-mods.nix filenames. Pure regex pattern matching; hand-tweak the classifier rules when bisect surfaces a misclassified mod (e.g. `gtbcs_spell_lib` originally landed in `core-libs` but hard-deps `irons_spellbooks` so it moved to `irons-spells`).
-- `overlays.nix` — Aeronautics + Sable + companions + library mods we add on top of Arkana. Each entry can carry `requiresGroup = "<name>"` so libraries (e.g. AeroBlender needs the `world` group's aether + terrablender) only ship when their dependents would actually load.
+- `arkana-mods.nix`: auto-generated from the modpack's manifest.json. **Don't hand-edit.** Regenerate with `generate-arkana-mods.sh /path/to/manifest.json arkana-mods.nix` after a modpack version bump.
+- `arkana-mods-extras.nix`: three lists:
+  - `replacements`: newer file-IDs swapped for entries in `arkana-mods.nix` whose Arkana version is incompatible with our bumped floor. Set `alwaysInclude = true` for replacements that are part of the floor itself (Create 6.0.10 is the only one today). Replacements without `alwaysInclude` only apply when their `origProjectID`'s group is enabled.
+  - `skipped`: discontinued mods with no live file on CurseForge. Always dropped server-side; client zip strips manifest entries so the launcher doesn't error on import.
+  - `disabled`: mods that boot-fail under our bumped floor. Always dropped, even when their group is enabled. Includes a `reason` and `phase` field for the next person debugging.
+- `arkana-groups.nix`: auto-classified by `group-classifier.py` from arkana-mods.nix filenames. Pure regex pattern matching; hand-tweak the classifier rules when bisect surfaces a misclassified mod (e.g. `gtbcs_spell_lib` originally landed in `core-libs` but hard-deps `irons_spellbooks` so it moved to `irons-spells`).
+- `overlays.nix`: Aeronautics + Sable + companions + library mods we add on top of Arkana. Each entry can carry `requiresGroup = "<name>"` so libraries (e.g. AeroBlender needs the `world` group's aether + terrablender) only ship when their dependents would actually load.
 
 ## The bisect loop
 
@@ -48,7 +48,7 @@ nix build --impure --expr '
   in pkgs.create-arkana-aeronautics-server.override {
        enabledArkanaGroups = [ "core-libs" "apothic" "irons-spells" ... ];
      }'
-# Build is gated by an installPhase dep-tree check — fails before docker
+# Build is gated by an installPhase dep-tree check, fails before docker
 # layering if any required dep is missing or out-of-version-range. Surfaces
 # blockers in seconds, not multi-minute boot cycles.
 nix run .#dep-tree -- /nix/store/<server-tree-path>
@@ -81,12 +81,12 @@ docker run --rm -v /tmp/mods:/out --entrypoint /bin/sh \
 python3 pkgs/minecraft-modpack-tools/find-mod-bumps.py /tmp
 ```
 
-**Caveats — the tool's check is permissive:**
+**Caveats: the tool's check is permissive.**
 - Forward/reverse uses declared `mods.toml` `versionRange` only. Mods commonly declare open ranges (`[0.10,)`); these admit any newer lib on paper but the dependent's bytecode may reference classes the new lib removed → runtime `NoClassDefFoundError` / `MixinTransformerError`. **Always boot-test after applying bumps.**
-- Tool prints `no compatible newer version found` for a dependent when its newer published versions declare a lib `versionRange` excluding the current lib version. That's the **lockstep bump signal** — bump lib + dependent together. Confirmed safe bundles: sophisticated-family (core + storage + backpacks + 2 create-integrations), familiarslib 1.7 + alshanex_familiars v4, irons_spellbooks family (spellbooks + jewelry + gtbcs_spell_lib + aces_spell_utils).
+- Tool prints `no compatible newer version found` for a dependent when its newer published versions declare a lib `versionRange` excluding the current lib version. That's the **lockstep bump signal**: bump lib + dependent together. Confirmed safe bundles: sophisticated-family (core + storage + backpacks + 2 create-integrations), familiarslib 1.7 + alshanex_familiars v4, irons_spellbooks family (spellbooks + jewelry + gtbcs_spell_lib + aces_spell_utils).
 - Known-bad ABI bumps (will drop mods): `relics 0.12.4` removes `IRelicItem`/`IRenderableCurio`/`ExperienceAddEvent` used by arcane_abilities, reliquified_lenders_cataclysm, reliquified_ars_nouveau; `azurelib 3.1.8` moves `AzureLib` class used by crystal_chronicles, cataclysm_spellbooks; `twilightforest 4.8` MixinTransformerError; `moonlight 3.0.7` major.
 - **Ignore NeoForge in-game `OUTDATED` reports.** NF string-compares `version=` against Modrinth's `forge_updates.json` `promos` which auto-publishes versions with `+mod` / `+mc1.21.1` metadata suffixes. Use `find-mod-bumps` for ground truth.
-- `lionfishapi 2.7-fix-fix` drops `IAnimatedEntity` — `arkana-mods-extras.nix` pins 2.6. Comment in extras explains; don't bump.
+- `lionfishapi 2.7-fix-fix` drops `IAnimatedEntity`, so `arkana-mods-extras.nix` pins 2.6. Comment in extras explains; don't bump.
 - cfwidget's fileID sort isn't strictly version-sorted; watch for downgrades (`jeresources 1.6.0.17 → .12`).
 
 **Shipping a bump round:**
@@ -99,7 +99,7 @@ python3 pkgs/minecraft-modpack-tools/find-mod-bumps.py /tmp
 
 ## Known issue: OpenLoader datapack path
 
-`entrypoint.sh` symlinks `/data/openloader/data/` → `/opt/server/openloader/data/` for the OpenLoader mod to pick up shipped datapacks (move-spawners, rare-pixie-villages, ensure-vanilla-tags). **OpenLoader 21.1.5 actually scans `/data/config/openloader/packs/` instead** — the old path is ignored. Server-side datapacks silently don't load. Confirmed via `docker logs` showing `[Open Loader/]: Located 0 packs.`. Fix pending: symlink to the new path or write `/data/config/openloader/options.json` with `additional_locations: ["openloader/data"]` from the entrypoint.
+`entrypoint.sh` symlinks `/data/openloader/data/` → `/opt/server/openloader/data/` for the OpenLoader mod to pick up shipped datapacks (move-spawners, rare-pixie-villages, ensure-vanilla-tags). **OpenLoader 21.1.5 actually scans `/data/config/openloader/packs/` instead**, so the old path is ignored. Server-side datapacks silently don't load. Confirmed via `docker logs` showing `[Open Loader/]: Located 0 packs.`. Fix pending: symlink to the new path or write `/data/config/openloader/options.json` with `additional_locations: ["openloader/data"]` from the entrypoint.
 
 ## Crash-pattern triage
 
@@ -107,6 +107,6 @@ python3 pkgs/minecraft-modpack-tools/find-mod-bumps.py /tmp
 |---|---|---|
 | `Mod X requires Y N.N or above` | dep-resolution | bump in `replacements`, or move Y into an enabled group |
 | `Attempted to load class net/minecraft/client/...` | class-load | mod is client-only; add to `clientOnlyProjectIDs` in `default.nix` |
-| `failed injection check, (0/N) succeeded` mixin | mod-construction | mod's mixin targets removed/renamed API on the bumped Create / NeoForge — bump the mod or `disabled` it |
-| `Trying to access unbound value: ResourceKey[...]` | registry-init | `DeferredHolder` resolved before its registry runs; usually a mod's mixin firing during another mod's RegisterEvent. Hard to fix without bumping the mixin source — usually `disabled` |
-| `Cannot get config value before config is loaded` | common-setup | mod calls config.get from FMLCommonSetupEvent; NeoForge 21.1.x lifecycle incompatibility — `disabled` |
+| `failed injection check, (0/N) succeeded` mixin | mod-construction | mod's mixin targets removed/renamed API on the bumped Create / NeoForge; bump the mod or `disabled` it |
+| `Trying to access unbound value: ResourceKey[...]` | registry-init | `DeferredHolder` resolved before its registry runs; usually a mod's mixin firing during another mod's RegisterEvent. Hard to fix without bumping the mixin source, so usually `disabled` |
+| `Cannot get config value before config is loaded` | common-setup | mod calls config.get from FMLCommonSetupEvent; NeoForge 21.1.x lifecycle incompatibility, `disabled` |
