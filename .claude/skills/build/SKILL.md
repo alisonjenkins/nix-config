@@ -7,7 +7,7 @@ argument-hint: "[host|group ...]"
 disable-model-invocation: true
 ---
 
-# /build — build configs, never activate
+# /build: build configs, never activate
 
 ## Resolve targets
 
@@ -25,7 +25,7 @@ disable-model-invocation: true
 
 | host | attr set | arch | deploy node |
 |---|---|---|---|
-| ali-desktop | nixosConfigurations | x86_64-linux | yes (root@100.127.142.30 — this machine) |
+| ali-desktop | nixosConfigurations | x86_64-linux | yes (root@100.127.142.30, this machine) |
 | ali-framework-laptop | nixosConfigurations | x86_64-linux | yes |
 | ali-steam-deck | nixosConfigurations | x86_64-linux | yes |
 | ali-work-laptop | nixosConfigurations | x86_64-linux | yes |
@@ -44,11 +44,11 @@ disable-model-invocation: true
 | ali | homeConfigurations | x86_64-linux | no |
 | deck | homeConfigurations | x86_64-linux | no |
 
-Ground truth for deploy nodes is `flake-modules/deploy.nix` — trust it over this table.
+Ground truth for deploy nodes is `flake-modules/deploy.nix`; trust it over this table.
 
 Arch rules:
 - darwin hosts: buildable only on a darwin machine. On Linux: refuse with that reason.
-- aarch64-linux hosts: build fine on ali-desktop via qemu binfmt — expect 2-5x slower; say so up front.
+- aarch64-linux hosts: build fine on ali-desktop via qemu binfmt, but expect 2-5x slower; say so up front.
 
 ## Build commands (sequential, one host at a time)
 
@@ -82,8 +82,8 @@ Hard rules: never `git commit`/`git push`. Never sudo. Never activate.
 
 | host | result | time | notes |
 
-Then **Fixes made**: file → one-line what/why each. Remind user fixes are uncommitted —
-review and commit yourself.
+Then **Fixes made**: file → one-line what/why each. Remind user fixes are uncommitted,
+so review and commit yourself.
 
 To activate the current host: user runs `just boot`/`just test`/`just switch` themselves
-(needs sudo) — or `/deploy ali-desktop` (root-over-ssh, no local sudo needed).
+(needs sudo), or `/deploy ali-desktop` (root-over-ssh, no local sudo needed).
