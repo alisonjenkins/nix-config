@@ -70,6 +70,16 @@ REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
 # shader compilation and launchers routinely take minutes before anything is
 # mapped. A five-second budget gave up long before the window existed.
 STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
+# How long a connected client has to actually start a stream before the
+# target is withdrawn again. connect() publishes the target as soon as a
+# client connects, before any stream has started, so the display filter is
+# already armed if one does. A client that opens the app and only browses --
+# or disconnects without Steam ever logging it -- leaves no
+# ">>> Starting"/"Stopped desktop stream" marker for end_stream() to react
+# to, and the target would otherwise stay published, sizing every later
+# desktop launch to that client's panel, until something else happens to
+# restart this service.
+CONNECT_TIMEOUT = float(os.environ.get("STREAM_MODE_CONNECT_TIMEOUT", "45"))
 # How often to check that Steam still exists while a game is staged. Steam
 # dying is silent from here -- its logs simply stop -- so there is nothing to
 # react to and it has to be looked for. Slow on purpose: a game outliving Steam
@@ -693,6 +703,9 @@ class Session:
         self.workspace_outputs = {}
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
+        # monotonic deadline by which a connected client must have started a
+        # stream, or None when no connect is awaiting one. See CONNECT_TIMEOUT.
+        self.connect_deadline = None
 
     # -- lifecycle
 
@@ -755,6 +768,13 @@ class Session:
         # for, leaving Steam sized to the desktop monitor for the session.
         publish_target(self.output, width, height, DEFAULT_REFRESH)
         set_output_enabled(self.output, True)
+        # Only while nothing is streaming yet: a reconnect from the client
+        # already being served must not impose a deadline on a session that
+        # is running fine, and end_stream()/begin_stream() are what govern
+        # the target once a stream is under way.
+        self.connect_deadline = (
+            None if self.streaming else time.monotonic() + CONNECT_TIMEOUT
+        )
         log(
             "stream-mode: {} connected; {} on at {}x{}".format(
                 client_name or client_id, self.output, width, height
@@ -768,6 +788,7 @@ class Session:
             return False
         name, self.output = self.output, None
         self.game_pid = None
+        self.connect_deadline = None
         set_output_enabled(name, False)
         log("stream-mode: turned {} off".format(name))
         return True
@@ -775,6 +796,8 @@ class Session:
     def begin_stream(self):
         """A stream has started: say where to render."""
         self.streaming = True
+        # A stream starting is what the deadline was waiting for.
+        self.connect_deadline = None
         if self.output is None:
             self.ensure_output()
         if self.output is None:
@@ -819,6 +842,7 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
+        self.connect_deadline = None
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -1474,7 +1498,8 @@ def watch():
             # A pending audit has to wake the loop too, or it would not be
             # logged until the next event happened to arrive — and the whole
             # point of auditing is to see what happens when nothing does.
-            timeout = 1.0 if (remove_at or session.pending or session.audits) else 30.0
+            pending_work = remove_at or session.pending or session.audits or session.connect_deadline
+            timeout = 1.0 if pending_work else 30.0
             if len(readable) < len(procs):
                 # Something is waiting to be restarted; wake for it.
                 timeout = min(timeout, READER_BACKOFF_MAX)
@@ -1533,6 +1558,12 @@ def watch():
                 session.on_windows(session.last_windows)
             if remove_at is not None and now >= remove_at:
                 remove_at = None
+                session.end_stream()
+            if session.connect_deadline is not None and now >= session.connect_deadline:
+                log(
+                    "stream-mode: client connected but never started streaming; "
+                    "withdrawing the target"
+                )
                 session.end_stream()
             # Steam dying is silent from here: its logs simply stop, so there
             # is no line to react to. Polled, but only while a game is staged,
