@@ -247,13 +247,24 @@ in {
             max-free = 100 * 1024 * 1024 * 1024;
             auto-optimise-store = lib.mkForce true;
 
-            # This node also runs the k3s control plane (apiserver + etcd).
-            # Default max-jobs=auto (16) x cores=0 (all) lets the GHA nix
-            # builder oversubscribe every core, driving loadavg ~10 and
-            # starving etcd/apiserver. Cap to <=2 concurrent builds x 4 cores
-            # = 8 cores max, leaving the other 8 for the control plane.
+            # This node also runs the k3s control plane (apiserver + etcd),
+            # jellyfin, and pharos itself. vcpu bumped 16 -> 44; measured
+            # steady-state cost of everything that ISN'T a nix build
+            # (k3s-server + containerd + cilium-agent + pharos + prometheus +
+            # promtail) is well under 2 cores in practice, so the old 50%
+            # reservation was far more conservative than the control plane
+            # actually needs -- but it still needs real burst room (jellyfin
+            # transcode spikes, etcd write bursts), so keep an absolute
+            # reserve rather than scaling the old ratio.
+            #
+            # Optimising for per-item queue latency over raw concurrency: a
+            # PR's build finishing fast matters more than many PRs limping
+            # along in parallel, and Renovate automerge now means several
+            # PRs can land back-to-back. 2 concurrent builds x 16 cores each
+            # = 32 core budget, leaving 12 cores (~27%) for everything else.
+            # Was 2 x 4 = 8 under the old 16-vCPU ceiling.
             max-jobs = 2;
-            cores = 4;
+            cores = 16;
           };
         };
 
