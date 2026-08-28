@@ -14,7 +14,7 @@ mixed into a logic commit, that is itself a finding (see the `git` skill).
 
 ## Order of passes
 
-1. Read the diff once for intent — what is this change supposed to do?
+1. Read the diff once for intent: what is this change supposed to do?
 2. Read each hunk against that intent. Anything that does not serve it is
    either scope creep or a bug.
 3. Read the *surroundings* of each hunk. Most real defects are in the
@@ -26,4 +26,4 @@ mixed into a logic commit, that is itself a finding (see the `git` skill).
 
 The same rubric, with one addition: check that you actually ran the
 verification you are about to claim. Quote the command output. If a step was
-skipped, say which and why — see `superpowers:verification-before-completion`.
+skipped, say which and why; see `superpowers:verification-before-completion`.

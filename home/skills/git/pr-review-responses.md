@@ -6,7 +6,7 @@ the `review` skill.
 
 ## Watching for a review
 
-There is no push notification for a review — poll. Ask before starting a long
+There is no push notification for a review; poll. Ask before starting a long
 watch, and say what interval you chose.
 
 ```
@@ -19,7 +19,7 @@ gh pr checks <number> --watch          # checks only, blocks until they settle
 leaves unresolved line comments without submitting a verdict, so poll the
 thread list too (below) rather than `reviewDecision` alone.
 
-Poll on the order of minutes, not seconds — a human review takes as long as it
+Poll on the order of minutes, not seconds; a human review takes as long as it
 takes. In Claude Code, a `/loop` with a several-minute interval or a scheduled
 wake-up is the right shape; a tight `sleep` loop in one shell command is not,
 it burns the session and cannot be interrupted.
@@ -48,12 +48,12 @@ query($owner:String!,$repo:String!,$pr:Int!){
 is the numeric **comment** id needed to reply. They are not interchangeable.
 
 Filter to `isResolved == false`. `isOutdated == true` means the code it was
-anchored to has since changed — still answer it, but check whether the point
+anchored to has since changed; still answer it, but check whether the point
 already got fixed.
 
 ## Triage before touching code
 
-Each comment is a claim, not an instruction. Verify it technically first —
+Each comment is a claim, not an instruction. Verify it technically first;
 agreeing with a wrong suggestion because a reviewer made it is a failure mode.
 See `superpowers:receiving-code-review`. Sort each thread into:
 
@@ -70,7 +70,7 @@ cannot follow it:
 
 ```
 gh api -X POST repos/{owner}/{repo}/pulls/{number}/comments/{comment_id}/replies \
-  -f body="Fixed in <sha> — ..."
+  -f body="Fixed in <sha>: ..."
 gh pr comment <number> --body "..."     # only for PR-wide replies
 ```
 
@@ -79,7 +79,7 @@ Keep it to what changed and why, or why it did not. One reply per thread.
 ## Fixing and pushing
 
 - One commit per finding, per the atomic-commit mandate in the parent skill.
-- Never force-push a branch under review without confirming — it detaches
+- Never force-push a branch under review without confirming; it detaches
   outdated comments and destroys the reviewer's place.
 - Reference the fixing commit sha in the reply so the reviewer can jump to it.
 
@@ -97,7 +97,7 @@ mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){
 
 Resolve a thread only when the point is actually settled: the fix is pushed,
 or the reviewer agreed with your answer. Never resolve a thread to clear the
-board — a resolved-but-unanswered thread hides work the reviewer asked for.
+board; a resolved-but-unanswered thread hides work the reviewer asked for.
 Threads where you disagreed stay open until the reviewer closes them.
 
 ## Re-requesting review
@@ -114,6 +114,6 @@ check you believe is unrelated must still be named, not ignored.
 ## Bot reviewers
 
 Automated reviewers (CodeRabbit, Copilot, linters) post the same thread
-structure and are handled the same way — but their findings are unverified by
+structure and are handled the same way, but their findings are unverified by
 definition. Apply the same triage; a bot nit that does not survive
 verification gets a one-line reply saying so, not a change.

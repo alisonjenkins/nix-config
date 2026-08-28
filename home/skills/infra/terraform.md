@@ -10,7 +10,7 @@ terraform state show <resource>
 terraform output [-json]
 ```
 
-`terraform apply` mutates live infrastructure — **ask first**, and show the
+`terraform apply` mutates live infrastructure, so **ask first**, and show the
 plan output you are asking about. Never `-auto-approve` on someone's behalf.
 
 ## Registry lookup

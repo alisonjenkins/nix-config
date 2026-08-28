@@ -2,11 +2,11 @@
 
 ## Credentials
 
-Credentials come from `aws-vault`, and the profiles use assume-role — so a
+Credentials come from `aws-vault`, and the profiles use assume-role, so a
 bare `aws` or `AWS_PROFILE=` will fail, because assume-role needs a credential
 source that only aws-vault supplies. Prefix the command rather than exporting a
 session, and be aware that a bare `aws-vault exec` may be intercepted and
-backgrounded — use the `AWS_VAULT=` prefix form when driving it from a script
+backgrounded; use the `AWS_VAULT=` prefix form when driving it from a script
 or agent session. Ask which profile to use if it is not obvious.
 
 Always confirm which account and region a command will hit before running it.
@@ -19,7 +19,7 @@ aws <service> describe-* / list-* / get-*   --output json
 ```
 
 Read-only calls are fine unprompted. Anything that creates, modifies, or
-deletes a resource — or that costs money — needs the user's agreement first,
+deletes a resource, or that costs money, needs the user's agreement first,
 and belongs in the Terraform repo rather than the CLI.
 
 ## Debugging access denials

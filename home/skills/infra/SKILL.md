@@ -8,10 +8,10 @@ description: Use when deploying, changing cluster or cloud state, debugging a ru
 ## The rule
 
 **Infrastructure as code first.** Propose the change in the IaC repo and let
-CI/CD apply it. Mutating live infrastructure directly — cloud consoles, ad-hoc
-`kubectl edit`, `aws` writes — is sometimes acceptable for personal infra, but
-**always ask the user for permission first**. Never mutate live infra
-unprompted.
+CI/CD apply it. Mutating live infrastructure directly, such as cloud consoles,
+ad-hoc `kubectl edit`, or `aws` writes, is sometimes acceptable for personal
+infra, but **always ask the user for permission first**. Never mutate live
+infra unprompted.
 
 Reading live state is always fine and is usually the right first step: check
 what is actually deployed before proposing a change to what should be.

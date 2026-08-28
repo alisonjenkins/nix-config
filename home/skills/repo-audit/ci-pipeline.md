@@ -5,7 +5,7 @@ Run via `scripts/checks/ci-pipeline.sh <target>`.
 ## Criteria
 
 - Every required branch-protection status check (see `branch-protection.md`)
-  corresponds to a job that actually exists in the current CI config — checked
+  corresponds to a job that actually exists in the current CI config, checked
   both directions: no stale required check, and no CI job that plainly should
   be required but isn't.
 - Workflow permissions are least-privilege: no default
@@ -31,7 +31,7 @@ checks list (shared read with `branch-protection.sh`, not re-fetched).
 ## GitLab
 
 `.gitlab-ci.yml` equivalent checks (job names, `permissions`-equivalent via
-CI/CD job token scoping) — v1 stub, reports "unsupported forge" for the
+CI/CD job token scoping); v1 stub, reports "unsupported forge" for the
 GitLab-specific pieces; the file-presence/caching heuristics that only need
 the YAML (not a forge API) still run.
 
@@ -40,5 +40,5 @@ the YAML (not a forge API) still run.
 `--fix` proposes adding `permissions: contents: read` at the workflow level
 and adding a cache step for the detected ecosystem, each shown as a diff and
 confirmed individually. It does not add or remove required-status-check
-entries itself — that's `branch-protection.sh`'s job; this check only flags
+entries itself; that's `branch-protection.sh`'s job, and this check only flags
 the mismatch.

@@ -6,7 +6,7 @@ description: Use when you are about to make a third attempt at the same failure,
 # Consulting a stronger model
 
 This session runs on a fast model. Hard problems are handled by consulting a
-stronger one and acting on what it says — not by grinding.
+stronger one and acting on what it says, not by grinding.
 
 ## When to consult
 
@@ -16,7 +16,7 @@ out of ideas.
 
 - **Third attempt at the same failure**, where the first two changed something
   real and the symptom is unchanged.
-- **Two hypotheses disproved and no third to hand.** Not two guesses — two
+- **Two hypotheses disproved and no third to hand.** Not two guesses: two
   hypotheses you actually tested.
 - **A decision that is hard to undo**: picking a dependency, a data format, a
   schema, a module boundary, or anything whose blast radius is more than a
@@ -27,8 +27,8 @@ out of ideas.
   report is the trigger; do not wait for a third.
 
 Also consult when the cost of being wrong is high and the work is
-irreversible — a migration, a destructive operation, anything touching live
-infrastructure — even on the first attempt.
+irreversible: a migration, a destructive operation, anything touching live
+infrastructure, even on the first attempt.
 
 ## When not to consult
 
@@ -40,7 +40,7 @@ infrastructure — even on the first attempt.
 - **Anything answerable by reading a file you have not read yet.** Reading is
   cheaper than consulting by a wide margin. Read first, every time.
 - **Reassurance.** "I think this is right but I would like it confirmed" is not
-  a trigger. Verify it instead — run the test, check the output.
+  a trigger. Verify it instead: run the test, check the output.
 
 Consulting is not free: the consultant reloads the whole memory hierarchy on
 every spawn. Two unnecessary consults cost more than the session saved by
@@ -50,7 +50,7 @@ running on a fast model in the first place.
 
 The consultant sees **none of this conversation**. Everything it knows comes
 from what you write, and a thin brief produces a confident wrong answer. The
-format is in [brief.md](brief.md) — use it every time; it takes a minute and it
+format is in [brief.md](brief.md). Use it every time; it takes a minute and it
 is the whole difference between a useful consult and a wasted one.
 
 ## When a consult fails or comes back empty
@@ -67,7 +67,7 @@ tier in a loop.
 ## Acting on the answer
 
 - The consultant returns a decision, not code. Implementing it is your job.
-- **It may tell you the question was wrong** — that you were debugging the wrong
+- **It may tell you the question was wrong**: that you were debugging the wrong
   layer, or solving a problem the user does not have. That is the most valuable
   kind of answer. Take it, do not argue past it.
 - **Do not accept it blindly either.** It worked from your brief, and your brief
@@ -79,7 +79,7 @@ tier in a loop.
 ## Related
 
 - `superpowers:systematic-debugging` and the `debugging` skill for the method
-  that should have run *before* the third attempt — most consults are avoidable
+  that should have run *before* the third attempt. Most consults are avoidable
   by probing the right layer the first time.
 - The `requirements` skill when the reason you are stuck is that the ask was
   never clear. Consulting will not fix an unclear requirement.

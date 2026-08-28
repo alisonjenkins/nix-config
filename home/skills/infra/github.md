@@ -25,7 +25,7 @@ gh pr review <number> --approve|--comment|--request-changes --body "..."
 gh pr merge <number> --rebase
 ```
 
-Merge strategy is not a free choice — see the `git` skill. Never `--squash`.
+Merge strategy is not a free choice; see the `git` skill. Never `--squash`.
 
 ## Search and API
 

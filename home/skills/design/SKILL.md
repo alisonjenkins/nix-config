@@ -1,6 +1,6 @@
 ---
 name: design
-description: Use when deciding how to structure a change — where a responsibility belongs, whether to add a parameter or a new function, whether to reach for inheritance or composition, how to split a module that does two things, or when a change is touching far more files than its size suggests it should. Also for reviewing the shape of an existing design, untangling coupling, and deciding what to make configurable. Covers coupling, cohesion, orthogonality, global and shared state, inheritance vs delegation, and keeping decisions reversible.
+description: Use when deciding how to structure a change: where a responsibility belongs, whether to add a parameter or a new function, whether to reach for inheritance or composition, how to split a module that does two things, or when a change is touching far more files than its size suggests it should. Also for reviewing the shape of an existing design, untangling coupling, and deciding what to make configurable. Covers coupling, cohesion, orthogonality, global and shared state, inheritance vs delegation, and keeping decisions reversible.
 ---
 
 # Design
@@ -12,7 +12,7 @@ should be.
 
 **Is what you are leaving behind easier to change than what you found?**
 
-That is the whole criterion. Not shorter, not cleverer, not more general —
+That is the whole criterion. Not shorter, not cleverer, not more general, just
 easier to change. Every rule below is a way of getting there, and where a rule
 conflicts with that criterion in a specific case, the criterion wins.
 
@@ -31,7 +31,7 @@ business logic.
 
 The diagnostic is cheap and you already have it: **if a small change touches
 many files, the design is coupled, not the change big.** When you notice that,
-say so — do not silently absorb the cost and move on. Fixing it may be out of
+say so; do not silently absorb the cost and move on. Fixing it may be out of
 scope, but noticing it out loud is never out of scope.
 
 Cohesion is the same property from the inside: things that change together
@@ -47,7 +47,7 @@ two modules.
 - **Putting the logic where the data is convenient** rather than where the
   responsibility is. Convenience now, coupling forever.
 - **Using the same type for two different concepts.** Two IDs, a validated and
-  an unvalidated string, cents and dollars — same representation, different
+  an unvalidated string, cents and dollars: same representation, different
   meaning. See [data-and-state.md](data-and-state.md).
 - **Deciding something irreversibly to save an hour.** See
   [reversibility.md](reversibility.md).
@@ -66,7 +66,7 @@ two modules.
   skill. A design cannot be judged easier-to-change without knowing what is
   expected to change.
 - Writing the code once the shape is settled: the `programming` skill.
-- Testability is a design signal, not a testing afterthought — a thing that is
+- Testability is a design signal, not a testing afterthought: a thing that is
   hard to test is usually coupled. The `testing` skill covers what to do about
   it.
 - Judging someone else's shape: the `review` skill.
@@ -74,4 +74,4 @@ two modules.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 14, 17-19, 44-55. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 14, 17-19, 44-55. Full tip list: https://pragprog.com/tips/

@@ -2,7 +2,7 @@
 
 ## There are no final decisions
 
-Every architectural choice you make will be wrong eventually — the database,
+Every architectural choice you make will be wrong eventually: the database,
 the cloud vendor, the framework, the message format. Design so that being wrong
 costs a module rather than a rewrite.
 
@@ -14,7 +14,7 @@ in your domain code, the decision has become permanent.
 
 A technology's popularity is not evidence that it fits this problem. Ask what
 it costs to remove before asking what it does. New dependency, new runtime, new
-build step, new failure mode — each needs a reason specific to the problem in
+build step, new failure mode: each needs a reason specific to the problem in
 front of you.
 
 The counterpart is equally true: refusing something because it is new is also
@@ -55,4 +55,4 @@ becomes a magic number that someone doubles in an incident and never reverts.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 18-21, 55, 79. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 18-21, 55, 79. Full tip list: https://pragprog.com/tips/

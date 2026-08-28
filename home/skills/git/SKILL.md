@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use when committing, amending, splitting or reordering changes, opening / updating / reviewing / merging a pull request, choosing a merge strategy, branching, or setting up an isolated worktree — including "commit this", "push it", "open a PR". Also when review lands on your own PR — watching or waiting for a review, answering review comments, replying to or resolving review threads, addressing requested changes from a human or a bot. Carries the atomic-commit and never-squash mandate, the commit message format, and routes to commit, PR, review-response and worktree guidance.
+description: Use when committing, amending, splitting or reordering changes, opening / updating / reviewing / merging a pull request, choosing a merge strategy, branching, or setting up an isolated worktree, including "commit this", "push it", "open a PR". Also when review lands on your own PR: watching or waiting for a review, answering review comments, replying to or resolving review threads, addressing requested changes from a human or a bot. Carries the atomic-commit and never-squash mandate, the commit message format, and routes to commit, PR, review-response and worktree guidance.
 ---
 
 # Git
@@ -23,7 +23,7 @@ workflow a tool or another skill suggests.
 
 - Commit or push only when asked. If work lands on the default branch, branch
   first.
-- Interactive git (`rebase -i`, `add -i`) is unavailable in agent sessions —
+- Interactive git (`rebase -i`, `add -i`) is unavailable in agent sessions;
   achieve the same result with non-interactive commands.
 - Before amending or rebasing anything already pushed, confirm with the user;
   rewriting published history is not reversible for anyone who pulled it.
@@ -31,8 +31,8 @@ workflow a tool or another skill suggests.
   and not raw REST where `gh` has a subcommand.
 - Ignore entries go in the checked-in `.gitignore` by default, so everyone
   working on the repo gets them. Reserve `.git/info/exclude` for genuinely
-  personal files — a local work queue, scratch notes — or when the user asks
-  for a local-only exclude.
+  personal files, such as a local work queue or scratch notes, or when the
+  user asks for a local-only exclude.
 
 ## Routing
 
