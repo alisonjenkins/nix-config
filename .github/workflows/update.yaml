@@ -44,7 +44,9 @@ jobs:
           # pull_request (pr-check.yaml) — a direct push here can never
           # satisfy it. Go through a PR instead, and let it auto-merge once
           # flake-check passes.
-          branch="flake-update-${{ github.run_id }}"
+          # run_attempt makes a manual rerun (same run_id) use a fresh branch
+          # instead of colliding with the previous attempt's still-open PR.
+          branch="flake-update-${{ github.run_id }}-${{ github.run_attempt }}"
           git fetch origin main
           git checkout -B "$branch" origin/main
           nix flake update --commit-lock-file
@@ -60,3 +62,23 @@ jobs:
             --head "$branch")
           echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
           gh pr merge --rebase --auto --delete-branch "$pr_url"
+
+          # --auto only arms auto-merge and returns immediately, so without
+          # this the job would report success even when flake-check fails
+          # and the PR is left open. Poll until it actually merges or closes.
+          for _ in $(seq 1 60); do
+            state=$(gh pr view "$pr_url" --json state -q .state)
+            case "$state" in
+              MERGED)
+                echo "::notice::$pr_url merged"
+                exit 0
+                ;;
+              CLOSED)
+                echo "::error::$pr_url closed without merging"
+                exit 1
+                ;;
+            esac
+            sleep 30
+          done
+          echo "::error::$pr_url did not merge within timeout"
+          exit 1
