@@ -1,22 +1,36 @@
 { ... }: {
-  flake.nixosModules.home-kvm-hypervisor-1-disko-config = { lib, ... }: {
+  flake.nixosModules.home-kvm-hypervisor-1-disko-config = { ... }: {
     disko.devices = {
-      disk = lib.genAttrs [ "1" "2" ] (
-        id: {
+      # Kernel NVMe enumeration (nvme0n1/nvme1n1/nvme2n1) is not stable across
+      # this host's NVMe controllers/PCIe topology — it already drifted once
+      # (observed after the EPYC board swap: both boot disks re-enumerated,
+      # and a third, unrelated Samsung 960 PRO ended up occupying the
+      # "nvme1n1" slot the old /dev/nvme${id}n1 template assumed was a boot
+      # disk). disko derives `boot.loader.grub.devices` from these paths, so
+      # a stale path here means grub-install silently targets the wrong
+      # disk on the next deploy. by-id paths key off the drive's own
+      # serial, so they survive any future re-enumeration. Mapping below
+      # was cross-checked against the ALREADY-WRITTEN on-disk PARTLABELs
+      # (`1-grub`/`1-esp`/`1-os_raid1` etc, via `lsblk -o PARTLABEL`) rather
+      # than assumed from current device names — id "1" and "2" are kept
+      # exactly as before so those labels stay correct without a relabel.
+      disk = {
+        "1" = {
           type = "disk";
-          device = "/dev/nvme${id}n1";
+          # Crucial CT1000P3PSSD8, serial 240746DD9716 (currently nvme2n1).
+          device = "/dev/disk/by-id/nvme-CT1000P3PSSD8_240746DD9716";
           content = {
             type = "gpt";
             partitions = {
               boot = {
                 size = "1M";
                 type = "EF02"; # for grub MBR
-                label = "${id}-grub";
+                label = "1-grub";
               };
               ESP = {
                 size = "4000M";
                 type = "EF00";
-                label = "${id}-esp";
+                label = "1-esp";
                 content = {
                   type = "mdraid";
                   name = "boot";
@@ -24,7 +38,7 @@
               };
               mdadm = {
                 size = "100%";
-                label = "${id}-os_raid1";
+                label = "1-os_raid1";
                 content = {
                   type = "mdraid";
                   name = "os_raid1";
@@ -32,8 +46,40 @@
               };
             };
           };
-        }
-      );
+        };
+        "2" = {
+          type = "disk";
+          # Crucial CT1000P3PSSD8, serial 240746DDA3ED (currently nvme0n1).
+          device = "/dev/disk/by-id/nvme-CT1000P3PSSD8_240746DDA3ED";
+          content = {
+            type = "gpt";
+            partitions = {
+              boot = {
+                size = "1M";
+                type = "EF02"; # for grub MBR
+                label = "2-grub";
+              };
+              ESP = {
+                size = "4000M";
+                type = "EF00";
+                label = "2-esp";
+                content = {
+                  type = "mdraid";
+                  name = "boot";
+                };
+              };
+              mdadm = {
+                size = "100%";
+                label = "2-os_raid1";
+                content = {
+                  type = "mdraid";
+                  name = "os_raid1";
+                };
+              };
+            };
+          };
+        };
+      };
       mdadm = {
         boot = {
           type = "mdadm";
