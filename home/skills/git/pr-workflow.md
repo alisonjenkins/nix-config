@@ -20,7 +20,9 @@
 - Reviewing someone else's PR, or your own diff: use the `review` skill.
 - Receiving review feedback: verify each point technically before implementing
   it. Agreeing with a wrong suggestion because it came from a reviewer is a
-  failure mode, not politeness. See `superpowers:receiving-code-review`.
+  failure mode, not politeness. See `superpowers:receiving-code-review`, and
+  [pr-review-responses.md](pr-review-responses.md) for watching, replying and
+  resolving threads.
 
 ## Checks
 
