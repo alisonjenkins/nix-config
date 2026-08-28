@@ -84,6 +84,21 @@ in
       '';
     };
 
+    connectTimeout = lib.mkOption {
+      type = lib.types.int;
+      default = 45;
+      description = ''
+        Seconds a connected client has to start an actual stream before the
+        published target is withdrawn again. A connect publishes the target
+        immediately, before any stream has started, so the display filter is
+        armed if one does — but a client that only browses the library, or
+        disconnects without Steam logging it, never emits a start or stop
+        marker for the watcher to react to. Without this the target would
+        stay published indefinitely, sizing every later desktop launch to
+        that client's panel.
+      '';
+    };
+
     removeAfter = lib.mkOption {
       type = lib.types.int;
       default = 120;
@@ -153,6 +168,7 @@ in
           "STREAM_MODE_DEFAULT_REFRESH=${toString cfg.refresh}"
           "STREAM_MODE_REMOVE_AFTER=${toString cfg.removeAfter}"
           "STREAM_MODE_STAGE_TIMEOUT=${toString cfg.stageTimeout}"
+          "STREAM_MODE_CONNECT_TIMEOUT=${toString cfg.connectTimeout}"
           "STREAM_MODE_TARGET_FILE=${cfg.targetFile}"
         ];
         ExecStart = "${lib.getExe stream-mode} watch";
