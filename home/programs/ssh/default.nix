@@ -16,13 +16,13 @@
   sops.secrets = lib.mkIf workIdentity {
     "id_work_pub" = {
       sopsFile = workIdentitySecretsFile;
-      mode = "0644";
+      mode = "0600";
       path = "${config.home.homeDirectory}/.ssh/id_work.pub";
     };
 
     "id_work_rsa_pub" = {
       sopsFile = workIdentitySecretsFile;
-      mode = "0644";
+      mode = "0600";
       path = "${config.home.homeDirectory}/.ssh/id_work_rsa.pub";
     };
   };
@@ -31,8 +31,7 @@
     ".ssh/id_personal.pub.source" = {
       source = ./id_personal.pub;
       onChange = ''
-        cp ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
-        chmod 644 ~/.ssh/id_personal.pub
+        install -m 600 ~/.ssh/id_personal.pub.source ~/.ssh/id_personal.pub
       '';
     };
 
