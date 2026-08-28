@@ -64,7 +64,9 @@ each thread into one of five:
 - **Already addressed**. A later commit fixed it. Reply with the commit sha and
   resolve.
 - **Real defect**. Fix it, one atomic commit per finding.
-- **Correct but out of scope**. Say so, open an issue, do not widen the PR.
+- **Correct but out of scope**. Say so and do not widen the PR. Ask the user
+  how they want it carried: an issue, a follow-up PR, a note in the backlog, or
+  nothing. Do not open an issue on your own initiative.
 - **Wrong or based on a misreading**. Say why, citing the line. Do not silently
   comply and do not silently ignore.
 - **Needs a decision from the user**. A genuine design choice, not a defect.
