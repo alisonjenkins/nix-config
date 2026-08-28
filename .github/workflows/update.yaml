@@ -38,6 +38,10 @@ jobs:
       - name: Update flake
         env:
           GH_TOKEN: ${{ github.token }}
+          # Unauthenticated github: input fetches share the runner's IP and
+          # hit GitHub's unauth API rate limit (60/hr) fast with ~15+ inputs
+          # -> "API rate limit exceeded" 403s. Authenticate nix's own fetcher.
+          NIX_CONFIG: "access-tokens = github.com=${{ github.token }}"
         run: |
           set -euo pipefail
           # main requires the "flake-check" status check, which only runs on
