@@ -802,9 +802,6 @@ class Session:
             self.ensure_output()
         if self.output is None:
             return False
-        # On already if a client connected first, but a stream can also be the
-        # first thing seen — after a service restart mid-session, say.
-        set_output_enabled(self.output, True)
 
         # The client we are serving decides the size, in preference to whatever
         # mode the output was last left in. A stream can start without a fresh
@@ -818,9 +815,19 @@ class Session:
             size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
             width, height = size
 
+        # Published and resized before the output is enabled, not after --
+        # the same ordering connect() uses and for the same reason: enabling
+        # an off output is the change Steam re-reads its monitor list on, and
+        # the display filter has to already be reporting the new size when it
+        # does. This output can already be on (a client connected first) or
+        # off (a stream starting after the connect-timeout withdrew the
+        # target, or a service restart mid-session with no fresh connect
+        # line) -- enabling first left the second case sized to whatever the
+        # output happened to be at, or unfiltered outright.
         published = publish_target(self.output, width, height, DEFAULT_REFRESH)
         if output_logical_size(self.output) != (width, height):
             set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+        set_output_enabled(self.output, True)
         # Before the game is launched, so its window rule places it correctly
         # the first time rather than being corrected afterwards.
         self.borrow_game_workspace()
