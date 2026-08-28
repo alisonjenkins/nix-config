@@ -1,12 +1,12 @@
 ---
 name: programming
-description: Use when writing, changing, fixing, debugging or refactoring code in any language — including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, and input validation and secrets.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, and input validation and secrets.
 ---
 
 # Programming
 
 General rules first. Then read the per-language file for whatever you are
-actually editing — it carries the toolchain, idioms, and traps for that
+actually editing: it carries the toolchain, idioms, and traps for that
 language.
 
 ## General rules
@@ -32,18 +32,18 @@ language.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
   retry count, buffer size) gets a name and a one-line justification.
 - **Don't program by coincidence.** If you cannot say *why* it works, it does
-  not work yet — it happens to pass. Code that was arrived at by permuting
+  not work yet, it only happens to pass. Code that was arrived at by permuting
   until the test went green is the most expensive kind to own, because the
   next person, including you, will assume it was reasoned. Understand the
   mechanism, or say plainly that you have not.
 - **Name well; rename when needed.** A name that no longer describes what the
-  thing does is a defect, not cosmetics — it actively misleads every reader
+  thing does is a defect, not cosmetics: it actively misleads every reader
   after you. Renaming the thing you are already changing is part of the change,
   not scope creep; renaming things you are not otherwise touching is.
 - **Don't live with broken windows.** A known-wrong thing left in place
   licenses the next one, and the decay compounds faster than anyone expects.
   Fix it if it is in reach, and if it is genuinely out of scope, record it
-  where it will be found — never step over it silently.
+  where it will be found; never step over it silently.
 - **Treat reluctance as a signal.** When you find yourself circling a change
   without starting it, the usual cause is that the requirement is unclear or
   the design is wrong, not that the work is unpleasant. Stop and re-read the
@@ -69,14 +69,14 @@ Read the file matching what you are editing. If several apply, read each.
 | `*.py`, `pyproject.toml` | [languages/python.md](languages/python.md) |
 | `*.nix`, `flake.nix` | [languages/nix.md](languages/nix.md) |
 | `*.ts`, `*.tsx`, `*.js`, `package.json` | [languages/typescript.md](languages/typescript.md) |
-| `*.sh`, `*.bash`, or a shell snippet embedded anywhere else — a hook, a CI step, a Nix string, a systemd unit | [languages/shell.md](languages/shell.md) |
+| `*.sh`, `*.bash`, or a shell snippet embedded anywhere else, such as a hook, a CI step, a Nix string, a systemd unit | [languages/shell.md](languages/shell.md) |
 
 ## Related
 
-- The ask itself being unclear — it named a solution rather than a problem, or
+- The ask itself being unclear: it named a solution rather than a problem, or
   you are about to guess which of two readings was meant: the `requirements`
   skill, before any of this.
-- Deciding what shape the change should be — where a responsibility belongs,
+- Deciding what shape the change should be: where a responsibility belongs,
   whether to split a module, why a small change is touching many files: the
   `design` skill. Reach for it before writing when the structure is in
   question, not after.

@@ -13,14 +13,14 @@ description: Use when adding or changing a test, fixing a failing or flaky test,
 3. Refactor with the test green.
 
 Discipline detail for the full TDD workflow lives in
-`superpowers:test-driven-development` — invoke that skill rather than
+`superpowers:test-driven-development`, invoke that skill rather than
 restating it here. This file covers what to test and how to judge a test.
 
 ## What testing is for
 
 **Not finding bugs.** Bugs are what testing catches; feedback on the design is
 what it is *for*. A thing that is hard to test is telling you something
-structural — too many collaborators, hidden state, work fused to I/O — and the
+structural: too many collaborators, hidden state, work fused to I/O. The
 fix is to the code, not to the test. Elaborate setup is a design finding.
 The `design` skill covers what to do about it.
 
@@ -48,8 +48,8 @@ Three consequences:
   between test cases. Inject the clock and the RNG.
 - **It covers states, not lines.** Line coverage of two booleans can hit 100%
   while three of their four combinations are never exercised. Ask which states
-  and which boundaries the test visits — empty, one, many, maximum, error —
-  not what percentage the tool reports.
+  and which boundaries the test visits, such as empty, one, many, maximum,
+  and error, not what percentage the tool reports.
 
 ## Mocking policy
 
@@ -69,7 +69,7 @@ Build success is not test success, and a passing test suite you did not run is
 not evidence. See `superpowers:verification-before-completion`.
 
 Verifying a fix to *running* software is a harder problem than running a test
-suite — the environment you verify in has to match the one the user runs, and
+suite, because the environment you verify in has to match the one the user runs, and
 plenty of signals report success while the fix never applied. The `debugging`
 family's `verifying-a-fix.md` covers that case.
 

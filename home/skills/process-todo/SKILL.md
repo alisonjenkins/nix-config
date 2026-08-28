@@ -15,7 +15,7 @@ Work the open items in `todo.md` at the repo root, recording completions in `don
 
 ## 2. Scaffold (only with permission)
 
-If `todo.md` does not exist, **ask the user before creating anything** — never silently scaffold. On approval create:
+If `todo.md` does not exist, **ask the user before creating anything**: never silently scaffold. On approval create:
 
 ```markdown
 # TODO
@@ -29,7 +29,7 @@ Then make both files invisible to git **without touching the checked-in `.gitign
 
 - Append `todo.md` and `done.md` to `<root>/.git/info/exclude`, skipping any line already present.
 - Self-heal: if the files already exist but are neither git-tracked (`git ls-files --error-unmatch <file>` fails) nor excluded (`git check-ignore <file>` fails), offer to add the exclude entries.
-- If a file IS git-tracked, the repo has deliberately committed it — leave tracking alone and do not add exclude entries.
+- If a file IS git-tracked, the repo has deliberately committed it, so leave tracking alone and do not add exclude entries.
 
 ## 3. Process items
 
@@ -38,7 +38,7 @@ Then make both files invisible to git **without touching the checked-in `.gitign
 - Ambiguous or underspecified item: ask the user, don't guess.
 - Empty `# TODO` section: report there is nothing to do and stop.
 
-**Invariant:** top-level section headers in `todo.md` stay in place even when their sections empty out. Remove completed items only — never headers.
+**Invariant:** top-level section headers in `todo.md` stay in place even when their sections empty out. Remove completed items only, never headers.
 
 ## 4. Record completions
 
@@ -52,7 +52,11 @@ Entry format (exact):
 
 Example: `- 2026-06-10T14:03:22Z — Rotate the sops age key`
 
-The timestamp comes from `date -u +%Y-%m-%dT%H:%M:%SZ` run at the moment of completion — never fabricated, reused from another entry, or truncated below second precision.
+The em dash is the literal delimiter of this file format, so it stays. Every
+existing `done.md` entry uses it, and the prose rule against em dashes in the
+`writing` skill does not reach a data format.
+
+The timestamp comes from `date -u +%Y-%m-%dT%H:%M:%SZ` run at the moment of completion; never fabricated, reused from another entry, or truncated below second precision.
 
 ## 5. Compaction
 
@@ -76,7 +80,8 @@ If `gh repo view` succeeds and an item requires code changes:
 
 - Do the work on a branch, not the default branch.
 - Propose it as a pull request (delegate to the pr-creator agent).
-- Mark the item done only when the work is complete; if the PR is the deliverable, the done.md entry should reference it (e.g. `— Fix flaky retry test (PR #42)`).
+- Mark the item done only when the work is complete; if the PR is the deliverable, the done.md entry should reference it, for example
+  `- 2026-06-10T14:03:22Z — Fix flaky retry test (PR #42)`.
 
 ## 7. Final report
 

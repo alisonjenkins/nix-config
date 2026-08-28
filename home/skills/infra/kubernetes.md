@@ -1,6 +1,6 @@
 # Kubernetes
 
-Read freely. **Ask before mutating** — this is live infrastructure, and the
+Read freely. **Ask before mutating**: this is live infrastructure, and the
 declarative source of truth is the GitOps repo, not the cluster.
 
 ## Inspect
@@ -38,7 +38,7 @@ kubectl exec -it <pod> [-n ns] -- <command>
 
 A reconciler can deadlock itself: its own safety precondition blocks the very
 remediation it is waiting to perform. Recovery then means doing manually,
-once, the step the controller was supposed to automate — and afterwards fixing
+once, the step the controller was supposed to automate, and afterwards fixing
 the precondition so it cannot recur.
 
 Client and server halves of a tool are versioned separately. Skew between them

@@ -12,7 +12,7 @@
 
 `flake-modules/lib.nix` reads `home/skills/` and exposes each directory as
 `flake.lib.skills.<name>`. Adding a directory there is the whole registration
-step — no consumer needs editing.
+step, and no consumer needs editing.
 
 `home/programs/claude-code/default.nix` then assembles `allSkills`:
 
@@ -42,13 +42,13 @@ from the same flake output:
 ```
 
 Note it links whole **directories**. Linking a single `SKILL.md` would silently
-drop every child file — the skill would load and its routing table would point
+drop every child file: the skill would load and its routing table would point
 at nothing.
 
 ## After adding a skill
 
 1. `git add` it. Flakes ignore untracked files, and the error does not say so.
-2. `just build <hostname>` — proves it evaluates.
+2. `just build <hostname>`: proves it evaluates.
 3. `just switch`, then start a **new** session: the listing is built at
    startup.
 4. Confirm it is there and that it fires from a phrase you would really use,

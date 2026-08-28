@@ -8,14 +8,14 @@ description: Use before starting work when the request names a solution rather t
 ## If you got here and the ask was clear
 
 Say so in one line and carry on. This skill is invoked on a cheap check, so it
-will sometimes fire on a request that was fine — that is the intended cost.
+will sometimes fire on a request that was fine; that is the intended cost.
 Do **not** manufacture a clarifying question to justify having read it. An
 unnecessary question costs the user a round trip; an unnecessary read costs
 nothing.
 
 ## Nobody knows exactly what they want
 
-Not because they are careless — because wanting something precise requires
+Not because they are careless, but because wanting something precise requires
 seeing something concrete first. A request is the start of a feedback loop, not
 a specification. Expect the real requirement to become visible once there is
 something to react to, and design the first cut to be cheap to react against.
@@ -30,7 +30,7 @@ underneath is "the page takes four seconds". Find the requirement, because:
 
 - the proposed solution may not address it (the four seconds may be one slow
   query, not repeated work);
-- the requirement is stable and the solution is not — it survives the next
+- the requirement is stable and the solution is not, so it survives the next
   three refactors;
 - solving the stated solution instead of the stated problem is the most common
   way to deliver something correct and useless.
@@ -45,7 +45,7 @@ reaffirm it.
 
 ## Ask or assume?
 
-The default is **assume, state, proceed** — this is a working mandate, not a
+The default is **assume, state, proceed**. This is a working mandate, not a
 style preference. Blocking on a question costs the user a round trip and
 usually delivers nothing.
 
@@ -74,7 +74,7 @@ answer is frequently "nothing, nobody ever needed that".
 Write down the rule, not today's answer to the rule. "Only admins may delete"
 is a requirement; `if user.id == 1` is a hardcoded snapshot of it that will be
 wrong the first time the org chart changes. Where the rule can be expressed as
-data or configuration, express it there — see the `design` skill's
+data or configuration, express it there; see the `design` skill's
 `reversibility.md`.
 
 ## Keep the words stable
@@ -82,7 +82,7 @@ data or configuration, express it there — see the `design` skill's
 Use the project's own vocabulary and use one term per concept. If the codebase
 says *tenant*, do not introduce *customer* for the same thing in a new module,
 a comment, or a commit message. Where a term is genuinely ambiguous in the
-project, pin it once — in the module doc or the repo's own docs — and then use
+project, pin it once, in the module doc or the repo's own docs, and then use
 it consistently rather than re-explaining it at each site.
 
 ## Related
@@ -96,4 +96,4 @@ it consistently rather than re-explaining it at each site.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 75-81. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 75-81. Full tip list: https://pragprog.com/tips/

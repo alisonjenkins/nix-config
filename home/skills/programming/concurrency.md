@@ -17,7 +17,7 @@ In descending order of preference:
 
 1. **Do not share.** Give each worker its own data; combine the results at the
    end. Immutable values can be shared freely because there is nothing to race.
-2. **Pass messages.** Channels, queues, actors — one owner per piece of state,
+2. **Pass messages.** Channels, queues, actors: one owner per piece of state,
    and everyone else asks it to act. The ownership rule then holds by
    construction rather than by everyone remembering the convention.
 3. **Lock.** Correct, and the easiest to get subtly wrong: a lock forgotten on
@@ -30,7 +30,7 @@ possible span, and never call out to code you do not control while holding one.
 ## Analyse the workflow before adding concurrency
 
 Concurrency pays only where there is genuine waiting or genuine parallelism to
-exploit. Map what actually depends on what first — the dependency graph is what
+exploit. Map what actually depends on what first: the dependency graph is what
 determines the possible speed-up, not the number of tasks you can spawn.
 
 Concurrency added without that analysis buys contention, a harder debugging
@@ -40,7 +40,7 @@ story, and no throughput.
 
 **Random, intermittent, or load-dependent failures are concurrency issues until
 proven otherwise.** A test that passes alone and fails in the suite, a bug that
-only appears on the fast machine, a "flaky" integration — these are almost never
+only appears on the fast machine, a "flaky" integration: these are almost never
 flakiness. They are a race that is being reported honestly.
 
 Do not retry past it. Find the shared state.
@@ -51,4 +51,4 @@ what to distrust when the symptom will not reproduce.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 56-59. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 56-59. Full tip list: https://pragprog.com/tips/

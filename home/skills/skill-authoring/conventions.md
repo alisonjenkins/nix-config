@@ -8,7 +8,7 @@
 - Lowercase, hyphenated, no prefix scheme. `git`, not `my-git-workflow`.
 - Check for collisions before choosing: bundled commands (`/skills`, `/doctor`,
   `/code-review`, `/init`, `/run`) win arguments you did not intend. A personal
-  skill overrides a bundled skill of the same name — which is occasionally what
+  skill overrides a bundled skill of the same name, which is occasionally what
   you want and usually not.
 
 ## Writing the description
@@ -18,7 +18,7 @@ it is the entire basis on which the model decides to load the skill. Treat it
 as a matching surface, not a summary.
 
 - **Key use case first.** Text is truncated at 1,536 characters, and under
-  budget pressure descriptions are dropped least-used-first — front-load.
+  budget pressure descriptions are dropped least-used-first, so front-load.
 - **Include the words a user would actually say**, including the tool names
   (`kubectl`, `gh`, `cargo`) and the file extensions.
 - For a family parent, include trigger vocabulary for **every child**.
@@ -31,7 +31,7 @@ as a matching surface, not a summary.
   unprompted on "commit this" because its description said "use when
   committing", while `programming` sat unused through an entire Nix debugging
   session because it said "use when writing or refactoring code, or when
-  unsure of the idiom" — and the model was neither writing nor unsure.
+  unsure of the idiom," and the model was neither writing nor unsure.
 - **Cover the broken case.** Most code work arrives as "this is broken, fix
   it", not "write me a feature". A description that only names the greenfield
   verbs excludes the common path.
@@ -46,12 +46,12 @@ Make a **family** when:
 - Several existing skills share trigger vocabulary and would otherwise each
   pay for a full description in the listing.
 
-Keep it a **leaf** when it has a distinct trigger and no siblings —
+Keep it a **leaf** when it has a distinct trigger and no siblings:
 `process-todo` and `mcp-builder` are correctly standalone.
 
 ## These files run on machines you are not sitting at
 
-A shared skill is deployed to every machine the user works from — different
+A shared skill is deployed to every machine the user works from: different
 distributions, different package managers, macOS as well as Linux. Guidance
 that silently assumes otherwise breaks where you cannot see it.
 
@@ -60,7 +60,7 @@ that silently assumes otherwise breaks where you cannot see it.
   the next.
 - Never assume a tool is installed. Prefer the portable built-in; for shell
   tools, probe with `command -v` and give the fallback. Call out naming quirks
-  where they exist — `fd` is packaged as `fdfind` on Debian and Ubuntu, and
+  where they exist: `fd` is packaged as `fdfind` on Debian and Ubuntu, and
   macOS ships BSD rather than GNU userland.
 - Keep wording tool- and path-agnostic in anything shared. Machine-specific
   detail belongs in that machine's own configuration or in memory, not here.

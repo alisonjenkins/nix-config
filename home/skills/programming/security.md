@@ -17,7 +17,7 @@ is surface. The most reliable security work is deleting things.
 ## Least privilege
 
 Grant the narrowest permission that works, for the shortest time that works.
-A process, a token, a database user, a service account, a container — each gets
+A process, a token, a database user, a service account, a container: each gets
 what it needs for its job and nothing for anyone else's. Escalating later is
 cheap; discovering that everything ran as root is not.
 
@@ -35,7 +35,7 @@ wrote to disk.
   enumerate what is malicious.
 - Never build a query, a command line, a path, or markup by string
   concatenation with untrusted data. Use the parameterised form the library
-  offers — every single time, including "just this once for a script".
+  offers, every single time, including "just this once for a script".
 
 ## Secrets
 
@@ -56,4 +56,4 @@ do not silently bump one past a major boundary while doing something else.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 72-73. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 72-73. Full tip list: https://pragprog.com/tips/

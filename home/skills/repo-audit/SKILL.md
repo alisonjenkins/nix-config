@@ -1,6 +1,6 @@
 ---
 name: repo-audit
-description: Use when checking or fixing a git repository's hygiene — branch protection, secret scanning and push protection, dependency updates (renovate/dependabot), CI pipeline health, release management (release-please etc.), pre-commit hooks, or a Nix dev shell/packages flake. Works against any repo (path or owner/repo) on any forge (GitHub today, GitLab stubbed) via `scripts/audit.sh`. Carries the audit criteria per topic and the fix-confirmation rule.
+description: Use when checking or fixing a git repository's hygiene, covering branch protection, secret scanning and push protection, dependency updates (renovate/dependabot), CI pipeline health, release management (release-please etc.), pre-commit hooks, or a Nix dev shell/packages flake. Works against any repo (path or owner/repo) on any forge (GitHub today, GitLab stubbed) via `scripts/audit.sh`. Carries the audit criteria per topic and the fix-confirmation rule.
 ---
 
 # Repo audit
@@ -19,7 +19,7 @@ scripts/audit.sh <target> [topic] [--fix]
 - `[topic]`: one of `branch-protection`, `secret-scanning`, `dependency-updates`,
   `ci-pipeline`, `release-management`, `pre-commit`, `dev-shell`. Omit to run
   all seven.
-- `--fix`: after reporting, offer to apply each finding — **one at a time**,
+- `--fix`: after reporting, offer to apply each finding, **one at a time**,
   with an explicit y/n prompt per change. Never batch-apply without review;
   this mirrors the "always ask before mutating live infra" rule in the `infra`
   skill. Answering "n" skips that finding and moves on; nothing is applied
@@ -33,8 +33,8 @@ apply, and touches nothing.
 - Idempotent: re-running against an already-compliant repo reports all-pass,
   never re-applies anything.
 - Resolve tools (`gh`, `jq`, `git`) through the `nix-shell` shebang on each
-  script, not ambient `PATH` — these scripts run on machines with no global
-  package pool.
+  script, not ambient `PATH`, because these scripts run on machines with no
+  global package pool.
 - A repo whose forge isn't supported yet (GitLab today; anything without a
   forge at all, e.g. CodeCommit) gets a clear "unsupported forge" report for
   the forge-dependent topics, not an error. The local-repo-only topics

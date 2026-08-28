@@ -4,7 +4,7 @@
 
 Example-based tests check the cases you thought of. Property-based tests
 generate cases you did not, and shrink any failure to the smallest input that
-still reproduces it — which is usually the bug stated in its clearest form.
+still reproduces it, which is usually the bug stated in its clearest form.
 
 Reach for it when:
 
@@ -12,8 +12,8 @@ Reach for it when:
   date arithmetic, anything taking arbitrary text or bytes);
 - there is a rule that must hold for *all* inputs, not just the three in the
   ticket;
-- you are fixing a boundary bug and suspect there are siblings — off-by-one,
-  empty, exactly-one, maximum, negative zero, non-ASCII.
+- you are fixing a boundary bug and suspect there are siblings, such as
+  off-by-one, empty, exactly-one, maximum, negative zero, non-ASCII.
 
 Keep example tests too. They document intent and pin the specific regression;
 properties cover the space between them.
@@ -32,7 +32,7 @@ input. Four shapes cover most real cases:
   against the old implementation you are replacing. Ideal for optimisations
   and rewrites, where "same answer as before" *is* the specification.
 - **Idempotence.** `f(f(x)) == f(x)`. Normalisation, deduplication, and
-  anything that touches an external system — which the `programming` skill
+  anything that touches an external system, which the `programming` skill
   already requires to be idempotent, so this tests a rule you already hold.
 
 If no property comes to mind, that is a finding about the code: a function
@@ -45,7 +45,7 @@ contract.
   input the system can never receive is noise; encode the precondition in the
   generator, not in a skipped assertion.
 - **Reproduce the failure before fixing it.** Every library prints the failing
-  seed or case — pin it as a plain example test so the regression stays covered
+  seed or case; pin it as a plain example test so the regression stays covered
   after the generator moves on.
 - **Watch the runtime.** Properties run hundreds of cases; a slow function
   under a property is a slow test suite. Lower the case count for expensive
@@ -56,8 +56,9 @@ JavaScript `fast-check`.
 
 ## Test your tests: saboteurs
 
-A green suite is only evidence if it can go red. Deliberately break the code —
-invert a condition, drop a line, return a constant — and confirm a test fails.
+A green suite is only evidence if it can go red. Deliberately break the code,
+such as inverting a condition, dropping a line, or returning a constant, then
+confirm a test fails.
 If nothing does, the test was decorative.
 
 This is the positive control the `debugging` skill argues for, applied to your
@@ -70,4 +71,4 @@ problem.
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition
-(Thomas & Hunt) — tips 71, 92. Full tip list: https://pragprog.com/tips/
+(Thomas & Hunt), tips 71, 92. Full tip list: https://pragprog.com/tips/

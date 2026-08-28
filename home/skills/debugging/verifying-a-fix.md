@@ -6,7 +6,7 @@ including reasons that will bring them back.
 ## Verify in the environment the user actually uses
 
 A fix that sets or defaults an environment variable must be checked in a shell
-that matches how the program is really launched — not the agent's shell, and
+that matches how the program is really launched, not the agent's shell, and
 not a test run that happens to clear the variable.
 
 - If the login session already exports the variable, a "set default" mechanism
@@ -14,7 +14,7 @@ not a test run that happens to clear the variable.
   A default only applies where nothing has set the value already; overriding
   needs an explicit override, not a default.
 - Beware **single-instance applications**. Launching one while an old instance
-  is running hands off to that old, unfixed process — and you will observe and
+  is running hands off to that old, unfixed process, and you will observe and
   log the old behaviour. Fully exit it first.
 
 ## Verify the setting reached the right process
@@ -35,5 +35,5 @@ failure.
 ## State the evidence
 
 Report what you ran and what it printed. "Should work now" is not a result. If
-a check was skipped, say which and why — see
+a check was skipped, say which and why: see
 `superpowers:verification-before-completion`.

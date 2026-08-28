@@ -26,8 +26,8 @@ on a different repo, it belongs in a skill. A memory records that it happened
 once; a skill changes what happens by default.
 
 The test is whether the correction survives its context. "Ask before mutating
-live infrastructure" and "probe `sudo -n` before deferring" generalise — they
-go in a family. "This host has 3.8GB of RAM" does not — that stays a memory.
+live infrastructure" and "probe `sudo -n` before deferring" generalise, so they
+go in a family. "This host has 3.8GB of RAM" does not, so that stays a memory.
 
 Put it in the narrowest place that still catches the case: a language file
 beats the family parent, and the family parent beats an always-loaded
@@ -73,7 +73,7 @@ Existing families: `programming`, `testing`, `git`, `review`, `infra`,
 
 ## Related skills
 
-- `/skill-creator` — scaffolds a new skill directory interactively. Claude Code
+- `/skill-creator`: scaffolds a new skill directory interactively. Claude Code
   only; it is set to `name-only` so this family carries its triggers.
-- `superpowers:writing-skills` — the authoring discipline and how to verify a
+- `superpowers:writing-skills`: the authoring discipline and how to verify a
   skill actually works before deploying it.

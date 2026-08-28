@@ -20,7 +20,7 @@ gh pr view <number> --json commits --jq '.commits[].messageHeadline'
 ```
 
 Each commit should be atomic and individually revertable. A series where the
-middle commits do not build is a finding — it defeats bisection.
+middle commits do not build is a finding because it defeats bisection.
 
 ## Posting comments
 
@@ -28,7 +28,7 @@ middle commits do not build is a finding — it defeats bisection.
 - Severity-ordered; lead with correctness.
 - Distinguish blocking from optional explicitly. An unlabelled nit reads as a
   blocker and wastes a round trip.
-- Approve, request changes, or comment — do not leave a review ambiguous.
+- Approve, request changes, or comment; do not leave a review ambiguous.
 
 ```
 gh pr review <number> --comment --body "..."

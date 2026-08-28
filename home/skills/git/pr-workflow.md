@@ -7,7 +7,7 @@
    only your commits.
 3. `gh pr create` with a body that says what changed and why, and what was
    verified (with the command output that proves it).
-4. Keep the atomic commits — do not flatten them when pushing.
+4. Keep the atomic commits; do not flatten them when pushing.
 
 ## Merging
 

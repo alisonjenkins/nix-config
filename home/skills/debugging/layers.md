@@ -5,7 +5,7 @@ are looking. Measure at the layer closest to the real resource.
 
 ## Across a virtualisation or container boundary
 
-Host-reported statistics about a guest are frequently meaningless — especially
+Host-reported statistics about a guest are frequently meaningless, especially
 where memory is pinned, pre-allocated, or passed through. The host reports what
 it handed over, not what is being used. **Measure inside the guest.**
 
@@ -19,7 +19,7 @@ explicitly.
 ## Across a userspace/hardware boundary
 
 An application-level graph can show every node correctly wired while the
-hardware state machine underneath is stuck — a device in a suspended power
+hardware state machine underneath is stuck: a device in a suspended power
 state, a link down, a queue frozen. The software view is describing its own
 intent, not the hardware's state. Read the hardware's own state.
 
