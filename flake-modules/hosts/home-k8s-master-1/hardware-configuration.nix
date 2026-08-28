@@ -18,7 +18,21 @@
     # covers the virtio set; dm-snapshot stays for LVM.
     boot.initrd.availableKernelModules = [ "xhci_pci" "sd_mod" ];
     boot.initrd.kernelModules = [ "dm-snapshot" ];
-    boot.kernelPackages = pkgs.linuxPackages_latest;
+    # Pinned off linuxPackages_latest (was 7.1.7, floated to 7.2): Linux 7.2
+    # removed strncpy() entirely, and the legacy proprietary nvidia driver
+    # (nvidiaPackages.legacy_580 -- the only track that supports the
+    # passed-through GTX 1070/Pascal for NVENC transcode; open-gpu-kernel-modules
+    # only supports Turing+) still calls it directly in os-interface.c, so it
+    # fails to build against 7.2+. 7.1.10 is a small patch bump from the
+    # previously-running 7.1.7, still pre-strncpy-removal, same nixpkgs
+    # channel as everything else (not the nixpkgs_old/24.11 branch).
+    #
+    # TEMPORARY. Tracked in alisonjenkins/nix-config#226. The scheduled
+    # canary in .github/workflows/nvidia-kernel-canary.yml builds
+    # nvidiaPackages.legacy_580 against linuxPackages_latest weekly and
+    # fails the moment that combination works again -- that's the signal to
+    # revert this back to pkgs.linuxPackages_latest and close the issue.
+    boot.kernelPackages = pkgs.linuxKernel.packages.linux_7_1;
     boot.kernelPatches = [
       {
         name = "enable-netkit";

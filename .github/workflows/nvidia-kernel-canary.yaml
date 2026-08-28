@@ -1,0 +1,47 @@
+name: nvidia legacy driver / latest kernel canary
+
+# Tracks alisonjenkins/nix-config#226: home-k8s-master-1 pins
+# boot.kernelPackages away from linuxPackages_latest because the legacy
+# nvidia driver (nvidiaPackages.legacy_580 -- the only track that supports
+# its passed-through GTX 1070/Pascal for NVENC transcode) fails to build
+# against Linux 7.2+, which removed strncpy() entirely.
+#
+# This builds that exact broken combination on a schedule, with INVERTED
+# pass/fail: the build is expected to keep failing every week until nvidia
+# ships a fix, and a naive "red on build failure" design would mean a
+# standing weekly failure notification forever -- worthless as a signal.
+# Instead this job goes GREEN while the build still fails (expected, no
+# news) and RED the one time it starts succeeding (the actual signal to
+# revert home-k8s-master-1's pin in hardware-configuration.nix back to
+# linuxPackages_latest and close issue #226).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # weekly, Monday 03:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  canary:
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 60
+    # Backstop matching every other self-hosted workflow here, even though
+    # this one has no pull_request trigger to begin with.
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+      - name: Build nvidia legacy_580 against linuxPackages_latest (inverted pass/fail)
+        run: |
+          if nix build .#nvidia-kernel-canary --no-link; then
+            echo "::error::nvidia legacy_580 now builds against linuxPackages_latest -- revert home-k8s-master-1's kernel pin (hardware-configuration.nix) and close nix-config#226."
+            exit 1
+          fi
+          echo "Still broken against linuxPackages_latest, as expected -- see nix-config#226. This is fine, not a real failure."
+          exit 0

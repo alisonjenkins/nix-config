@@ -21,6 +21,16 @@ in
       # exposed/buildable on x86_64-linux, where CI compiles + caches it.
       lib.optionalAttrs (system == "x86_64-linux") {
         camoufox-browser = (pkgsFor system).camoufox-browser;
+
+        # Canary for alisonjenkins/nix-config#226: home-k8s-master-1 pins
+        # boot.kernelPackages to linux_7_1 because the legacy nvidia driver
+        # (the only track supporting its passed-through GTX 1070/Pascal)
+        # fails to build against linuxPackages_latest since Linux 7.2 removed
+        # strncpy(). This builds the EXACT broken combination on a schedule
+        # (.github/workflows/nvidia-kernel-canary.yaml) — the moment it
+        # starts succeeding is the signal that nvidia/nixpkgs shipped a fix
+        # and home-k8s-master-1's pin can be reverted.
+        nvidia-kernel-canary = (pkgsFor system).linuxPackages_latest.nvidiaPackages.legacy_580;
       };
   };
 }
