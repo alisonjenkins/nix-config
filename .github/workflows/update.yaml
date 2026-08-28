@@ -8,22 +8,25 @@ on:
     types: [update-flake-lock]
 
 jobs:
-  build:
+  update:
     # Self-hosted NixOS runner: it already has Nix, so no installer action is
-    # needed. It also removes the version-skew hazard that forced a pin here —
-    # the host's Nix is the same build the machines being updated run, so
+    # needed. It also removes the version-skew hazard that forced a pin here.
+    # The host's Nix is the same build the machines being updated run, so
     # nested `follows` serialise identically and flake.lock stops churning
     # between CI and local `nix flake update`.
     runs-on: home-nix-builder-amd64
     timeout-minutes: 60
     # Backstop: never run fork-PR code on the home self-hosted runner, even if
     # a `pull_request` trigger is added here by mistake. Inert for schedule and
-    # dispatch events (github.event.pull_request is null → null != true → true).
+    # dispatch events, where github.event.pull_request is null, so null != true
+    # is true.
     if: ${{ github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: write
       pull-requests: write
       id-token: write
+    outputs:
+      pr_url: ${{ steps.open_pr.outputs.pr_url }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure host Nix
@@ -31,25 +34,51 @@ jobs:
         with:
           extra-tools: gh
       - uses: DeterminateSystems/flake-checker-action@v13
+      # A PR opened with the built-in GITHUB_TOKEN does not start the
+      # `pull_request` workflows that produce the required "flake-check"
+      # status, so the nightly could never satisfy branch protection on its
+      # own and sat waiting for a human. A GitHub App installation token is
+      # a distinct actor, so pr-check.yaml runs unattended. This deliberately
+      # does not touch the fork-PR approval policy, which still gates real
+      # outside contributors away from the self-hosted runner.
+      - name: Check the App credentials are configured
+        env:
+          APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_ID}" ]; then
+            echo "::error::AUTOMATION_APP_ID / AUTOMATION_APP_PRIVATE_KEY are not set. See .github/workflows/README-automation-app.md"
+            exit 1
+          fi
+      - name: Mint an App token
+        id: app_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
       - name: Setup git
         run: |
           git config --global user.name 'Github Actions'
           git config --global user.email 'alisonjenkins-gha@users.noreply.github.com'
-      - name: Update flake
+      - name: Update flake and open a PR
+        id: open_pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
           # Unauthenticated github: input fetches share the runner's IP and
-          # hit GitHub's unauth API rate limit (60/hr) fast with ~15+ inputs
-          # -> "API rate limit exceeded" 403s. Authenticate nix's own fetcher.
+          # hit GitHub's unauth API rate limit of 60/hr fast with 15+ inputs,
+          # giving "API rate limit exceeded" 403s. Authenticate nix's own
+          # fetcher. github.token is enough here and is not the App token,
+          # because this only reads public repos.
           NIX_CONFIG: "access-tokens = github.com=${{ github.token }}"
         run: |
           set -euo pipefail
           # main requires the "flake-check" status check, which only runs on
-          # pull_request (pr-check.yaml) — a direct push here can never
-          # satisfy it. Go through a PR instead, and let it auto-merge once
+          # pull_request via pr-check.yaml, so a direct push here can never
+          # satisfy it. Go through a PR instead and let it auto-merge once
           # flake-check passes.
-          # run_attempt makes a manual rerun (same run_id) use a fresh branch
-          # instead of colliding with the previous attempt's still-open PR.
+          # run_attempt makes a manual rerun, which reuses the run_id, take a
+          # fresh branch instead of colliding with the previous attempt's
+          # still-open PR.
           branch="flake-update-${{ github.run_id }}-${{ github.run_attempt }}"
           git fetch origin main
           git checkout -B "$branch" origin/main
@@ -64,25 +93,57 @@ jobs:
             --body "Automated nightly \`nix flake update\`." \
             --base main \
             --head "$branch")
-          echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
           gh pr merge --rebase --auto --delete-branch "$pr_url"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+          echo "::notice::opened $pr_url and armed auto-merge"
 
+  # Separate job, and deliberately not on the self-hosted runner. flake-check
+  # runs on home-nix-builder-amd64 too, so waiting there meant this job held a
+  # runner slot that its own required check was queued for. The wait needs
+  # nothing but gh, so it belongs on a hosted runner.
+  wait_for_merge:
+    needs: update
+    if: ${{ needs.update.outputs.pr_url != '' }}
+    runs-on: ubuntu-latest
+    # Poll budget below is 60 minutes; give the job a little more so a
+    # timeout is reported by the script with its own message rather than
+    # killed by the runner.
+    timeout-minutes: 70
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Mint an App token
+        id: app_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+      - name: Wait for auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          PR_URL: ${{ needs.update.outputs.pr_url }}
+        run: |
+          set -euo pipefail
           # --auto only arms auto-merge and returns immediately, so without
-          # this the job would report success even when flake-check fails
-          # and the PR is left open. Poll until it actually merges or closes.
-          for _ in $(seq 1 60); do
-            state=$(gh pr view "$pr_url" --json state -q .state)
+          # this the workflow would report success even when flake-check fails
+          # and the PR is left open. Poll until it merges or closes.
+          # 120 attempts at 30s is 60 minutes, chosen to cover flake-check
+          # queueing behind a busy home-nix-builder-amd64 rather than the
+          # check's own runtime, which is minutes.
+          for _ in $(seq 1 120); do
+            state=$(gh pr view "$PR_URL" --json state -q .state)
             case "$state" in
               MERGED)
-                echo "::notice::$pr_url merged"
+                echo "::notice::$PR_URL merged"
                 exit 0
                 ;;
               CLOSED)
-                echo "::error::$pr_url closed without merging"
+                echo "::error::$PR_URL closed without merging"
                 exit 1
                 ;;
             esac
             sleep 30
           done
-          echo "::error::$pr_url did not merge within timeout"
+          echo "::error::$PR_URL did not merge within timeout"
           exit 1
