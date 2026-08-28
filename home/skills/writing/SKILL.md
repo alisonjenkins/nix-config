@@ -1,6 +1,6 @@
 ---
 name: writing
-description: Use when drafting or editing prose a person will read. A PR comment or review reply, a commit body, a README, a design doc, a report, a release note, a message to a colleague. Also when asked to tighten text, cut the fluff, de-slop it, or make it stop sounding AI-generated. Carries the plain-speech rules, the punctuation and formatting house style, the AI tells to strip, and the voice checks that keep edited text from reading sterile.
+description: Use when drafting or editing prose a person will read. A PR comment or review reply, a commit body, a README, a design doc, a report, a release note, a message to a colleague. Also when asked to tighten text, cut the fluff, de-slop it, make it stop sounding AI-generated, or make it easier to read. Carries the accessibility baseline of writing for a dyslexic reader with ADHD, the plain-speech rules, the punctuation and formatting house style, the AI tells to strip, and the voice checks that keep edited text from reading sterile.
 ---
 
 # Writing
@@ -23,6 +23,29 @@ the text into the other. Check for both.
    bolded labels that restate the line. Reads generated.
 2. **Sterile.** Every pattern removed, nothing left. No opinion, uniform
    sentence length, no specifics. Reads generated for the opposite reason.
+
+## Write for a dyslexic reader with ADHD
+
+Assume the reader is dyslexic and has ADHD. This is the default audience, not
+an accommodation added on request. It costs nothing for anyone else, and it
+rules out most of what makes technical writing hard to get through.
+
+- **Front-load the point.** First sentence of a section says the conclusion.
+  Reasoning follows it. A reader who stops after one line still got the answer.
+- **Short paragraphs.** Three or four lines. A wall of text is where attention
+  is lost, and where a dyslexic reader loses their place on the return sweep.
+- **Break it up.** Headings, lists and tables give the eye somewhere to land
+  and make the structure scannable without reading every word.
+- **Subject and verb near the start of the sentence.** A chain of subordinate
+  clauses before the main point forces a re-read.
+- **Use the same word for the same thing every time.** Synonym cycling makes
+  the reader stop and check whether two words mean two things.
+- **Expand an acronym on first use**, then use it consistently.
+- **Bold the anchors, not decoration.** A few words in bold help someone
+  skimming find the load-bearing part. Bold on everything helps nobody.
+
+The plain-speech rules below serve the same reader. Concrete words, active
+voice and one idea per sentence are all easier to decode than the alternative.
 
 ## Plain speech
 
