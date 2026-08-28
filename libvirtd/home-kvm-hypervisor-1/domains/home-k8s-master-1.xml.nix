@@ -15,7 +15,17 @@
          leaves ~27 GiB for the host. Cold power-cycle to apply: virsh destroy && virsh start. -->
     <memory unit='KiB'>159383552</memory>
     <currentMemory unit='KiB'>159383552</currentMemory>
-    <vcpu placement='static'>16</vcpu>
+    <!-- 44 of 64 host threads (was 16). Host is EPYC 7543P, 32c/64t; the other
+         two running guests are lightly loaded on their own allocations
+         (download-server-1 ~29% of 6, home-storage-server-1 ~12% of 8) and
+         stay untouched at 6 + 8. home-vpn-gateway-1 stays active=false
+         (download-server-1 already covers that role) so its 2 are not
+         reserved. Remaining budget: 64 - 6 - 8 - 44 = 6 threads held back for
+         host/hypervisor overhead (virtqemud, and home-storage-server-1's
+         virtio-blk backend, which runs as host CPU time outside its guest's
+         own vcpu accounting). Cold power-cycle to apply: virsh destroy &&
+         virsh start. -->
+    <vcpu placement='static'>44</vcpu>
     <!-- Dedicated disk I/O threads: virtio-blk work (etcd fsyncs especially)
          runs off the vCPU threads instead of stealing guest time. -->
     <iothreads>2</iothreads>
@@ -35,7 +45,7 @@
       <smm state='on'/>
     </features>
     <cpu mode='host-passthrough' check='none' migratable='on'>
-      <topology sockets='1' cores='16' threads='1'/>
+      <topology sockets='1' cores='44' threads='1'/>
     </cpu>
     <cputune>
       <shares>4096</shares>
@@ -153,8 +163,8 @@
         <source bridge='br0'/>
         <model type='virtio'/>
         <!-- vhost multiqueue: one queue per vCPU so NIC softirq spreads across
-             all 16 instead of serialising on one. -->
-        <driver name='vhost' queues='16'/>
+             all 44 instead of serialising on one. -->
+        <driver name='vhost' queues='44'/>
         <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
       </interface>
       <!-- Second NIC on the isolated jumbo (MTU 9000) br-storage bridge. Carries
