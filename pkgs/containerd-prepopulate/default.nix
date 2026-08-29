@@ -7,5 +7,5 @@
   pname = "containerd-prepopulate";
   version = "0.1.0";
   src = ./.;
-  vendorHash = "sha256-Crh6iKsZ+qc35JleOb5eANQljzMnKfKvQA10H/2U0uM=";
+  vendorHash = "sha256-Lx0ZdReJLHTcmx1vFw2BN4AVJFtuZdk7hMx7tYAsw44=";
 }
