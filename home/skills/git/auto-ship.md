@@ -41,9 +41,9 @@ query($owner:String!,$repo:String!,$pr:Int!){
     pullRequest(number:$pr){
       headRefOid
       reviewDecision
-      reviewRequests(first:10){nodes{requestedReviewer{
+      reviewRequests(first:50){nodes{requestedReviewer{
         ... on User{login} ... on Bot{login}}}}
-      reviews(first:50){nodes{author{login} state submittedAt commit{oid}}}
+      reviews(last:50){nodes{author{login} state submittedAt commit{oid}}}
       reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated
         comments(first:20){nodes{databaseId author{login} body}}}}}}}' \
   -F owner=<owner> -F repo=<repo> -F pr=<number>
@@ -88,7 +88,8 @@ wastes a cycle. Each poll cycle, after pushing fixes:
    `reviewRequests`, one is pending — wait for the next poll instead of
    requesting again.
 3. Otherwise compare Copilot's most recent review's commit against
-   `headRefOid`. If they match, Copilot has already reviewed the current
+   `headRefOid` — `reviews(last:50)` returns oldest-first, so take the
+   *last* entry from Copilot in the list, not the first. If they match, Copilot has already reviewed the current
    head — nothing to do. If Copilot's latest review predates the current
    head (you've pushed since), request another pass:
    ```
