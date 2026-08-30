@@ -785,9 +785,12 @@ in {
         # cpuFreqGovernor is overridden by PPD when active, but kept as fallback.
         systemd.services.ppd-set-balanced = {
           description = "Set power-profiles-daemon to balanced profile";
+          # power-profiles-daemon.service is After=multi-user.target (WantedBy=graphical.target
+          # upstream) — wantedBy multi-user.target here would create an ordering cycle
+          # (multi-user.target -> ppd-set-balanced -> power-profiles-daemon -> multi-user.target).
           after = [ "power-profiles-daemon.service" ];
           requires = [ "power-profiles-daemon.service" ];
-          wantedBy = [ "multi-user.target" ];
+          wantedBy = [ "graphical.target" ];
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
