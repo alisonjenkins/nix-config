@@ -44,10 +44,15 @@ query($owner:String!,$repo:String!,$pr:Int!){
       reviewRequests(first:10){nodes{requestedReviewer{
         ... on User{login} ... on Bot{login}}}}
       reviews(first:50){nodes{author{login} state submittedAt commit{oid}}}
-      reviewThreads(first:100){nodes{id isResolved isOutdated
+      reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated
         comments(first:20){nodes{databaseId author{login} body}}}}}}}' \
   -F owner=<owner> -F repo=<repo> -F pr=<number>
 ```
+
+If `pageInfo.hasNextPage` is true, page through with `reviewThreads(first:100,
+after:$cursor)` before trusting the thread list for anything — most PRs never
+hit 100 threads, but the merge gate below reads this list, and a truncated
+page could hide unresolved threads past the first 100 and merge prematurely.
 
 ## 5. Triage and fix
 
@@ -73,10 +78,12 @@ that flag set to `false`. Don't assume either way; check before requesting,
 since requesting again while it's still mid-review is a no-op that just
 wastes a cycle. Each poll cycle, after pushing fixes:
 
-1. Find Copilot's login from the `reviews` you already fetched — filter
-   `author.login` for one containing `copilot` (bot logins vary by
-   installation; don't hardcode one). Skip this section if no such reviewer
-   exists on the PR.
+1. Find Copilot's login from the `reviews` *and* `reviewRequests` you already
+   fetched — filter for a login containing `copilot` in either list (bot
+   logins vary by installation; don't hardcode one). Checking `reviews` alone
+   misses the case where Copilot has been requested but hasn't submitted its
+   first review yet. Skip this section if no such reviewer exists in either
+   list.
 2. Check whether a re-review is already outstanding: if that login appears in
    `reviewRequests`, one is pending — wait for the next poll instead of
    requesting again.
