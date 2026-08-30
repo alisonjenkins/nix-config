@@ -44,7 +44,7 @@ query($owner:String!,$repo:String!,$pr:Int!){
       reviewRequests(first:50){nodes{requestedReviewer{
         ... on User{login} ... on Bot{login}}}}
       reviews(last:50){nodes{author{login} state submittedAt commit{oid}}}
-      reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated
+      reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated path line
         comments(first:20){nodes{databaseId author{login} body}}}}}}}' \
   -F owner=<owner> -F repo=<repo> -F pr=<number>
 ```
@@ -56,14 +56,16 @@ page could hide unresolved threads past the first 100 and merge prematurely.
 
 ## 5. Triage and fix
 
-For every unresolved thread, follow "Triage against the current branch" and
-"Replying" in [pr-review-responses.md](pr-review-responses.md): verify each
-claim, fix real defects (one atomic commit per finding, pushed), reply in the
-thread citing what changed or why it doesn't hold, then resolve. A thread only
-counts as done once it has both a reply and `isResolved: true` — resolving
-without replying hides the finding instead of settling it. Push fixes as a
-normal `git push`; force-push only with the confirmation the parent skill
-requires.
+For every unresolved thread, follow "Triage against the current branch",
+"Replying" and "Resolving threads" in
+[pr-review-responses.md](pr-review-responses.md): sort each thread into one
+of the five triage outcomes, fix real defects (one atomic commit per finding,
+pushed), and reply citing what changed or why it doesn't hold. Resolve only
+the outcomes that settle the point — already addressed, fixed, out of scope
+with the user's call on how it's carried. A thread you rejected as wrong
+stays **open**, replied but unresolved, until the reviewer closes it; do not
+resolve it yourself just to clear the board. Push fixes as a normal
+`git push`; force-push only with the confirmation the parent skill requires.
 
 Stop and surface to the user, do not guess: any thread sorted as "Needs a
 decision from the user" in the triage table, or a check failure that looks
@@ -104,7 +106,8 @@ wastes a cycle. Each poll cycle, after pushing fixes:
 
 All of these, not just checks green:
 
-- Every review thread `isResolved: true`.
+- Every review thread is either `isResolved: true`, or open only because it
+  was rejected in step 5 and is waiting on the reviewer, not on you.
 - No thread left in "Needs a decision from the user" state.
 - `reviewDecision` is not `CHANGES_REQUESTED` (bots that only leave comments
   without a formal review don't set this — thread resolution is the real
