@@ -66,10 +66,12 @@ unrelated to this change.
 
 ## 6. Copilot re-review
 
-GitHub Copilot's PR review bot does not automatically re-run after you push
-fixes — it has to be re-requested, and requesting it again while it's still
-mid-review is a no-op that just wastes a cycle. Each poll cycle, after
-pushing fixes:
+Whether GitHub Copilot's PR review bot auto-reruns after you push fixes is
+not reliable — it depends on the repo's `copilot_code_review` ruleset
+(`review_on_push`), but has been observed to re-review on push even with
+that flag set to `false`. Don't assume either way; check before requesting,
+since requesting again while it's still mid-review is a no-op that just
+wastes a cycle. Each poll cycle, after pushing fixes:
 
 1. Find Copilot's login from the `reviews` you already fetched — filter
    `author.login` for one containing `copilot` (bot logins vary by
@@ -85,6 +87,10 @@ pushing fixes:
    ```
    gh pr edit <number> --add-reviewer <copilot-login>
    ```
+   This call has been observed to return success while leaving
+   `requested_reviewers` empty even when a request was genuinely needed —
+   treat it as best-effort, not confirmation. Re-check on the next poll
+   cycle rather than assuming the request landed.
 
 ## 7. Merge gate
 
