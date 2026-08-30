@@ -43,7 +43,7 @@ query($owner:String!,$repo:String!,$pr:Int!){
       reviewDecision
       reviewRequests(first:10){nodes{requestedReviewer{
         ... on User{login} ... on Bot{login}}}}
-      reviews(first:50){nodes{author{login} state submittedAt commits{nodes{commit{oid}}}}}
+      reviews(first:50){nodes{author{login} state submittedAt commit{oid}}}
       reviewThreads(first:100){nodes{id isResolved isOutdated
         comments(first:20){nodes{databaseId author{login} body}}}}}}}' \
   -F owner=<owner> -F repo=<repo> -F pr=<number>
