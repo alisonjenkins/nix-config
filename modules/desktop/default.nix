@@ -1117,7 +1117,9 @@ in
         "vm.watermark_scale_factor" = 50;           # Balance between memory availability and disk caching (was 125, default is 10)
 
         # Scheduler optimizations for gaming
-        "kernel.sched_child_runs_first" = 0;        # Parent process runs first (better for game launchers)
+        # kernel.sched_child_runs_first dropped: not a real knob under
+        # CachyOS's scheduler (no /proc/sys/kernel/sched_child_runs_first —
+        # that's a legacy CFS-only tunable), was silently a no-op.
         "kernel.sched_autogroup_enabled" = 1;       # Enable automatic process grouping for better desktop responsiveness
         "kernel.sched_cfs_bandwidth_slice_us" = 500; # Reduce CFS bandwidth slice for lower latency
       })
