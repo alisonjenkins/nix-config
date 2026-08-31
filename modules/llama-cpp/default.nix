@@ -173,13 +173,25 @@ in
         }
       ) enabledInstances;
 
-      networking.firewall.extraCommands = lib.mkIf (enabledInstances != { } && cfg.allowedIPs != [ ]) (
-        lib.concatMapStringsSep "\n" (ip:
-          lib.concatMapStringsSep "\n" (port:
-            "iptables -A nixos-fw -p tcp --dport ${toString port} -s ${ip} -j nixos-fw-accept"
-          ) allPorts
-        ) cfg.allowedIPs
-      );
+      # extraCommands (iptables) vs extraInputRules (nftables): only one is
+      # wired up by the active firewall backend, so pick by that rather than
+      # setting both — the unused one would silently do nothing.
+      networking.firewall.extraCommands =
+        lib.mkIf (enabledInstances != { } && cfg.allowedIPs != [ ] && !config.networking.nftables.enable) (
+          lib.concatMapStringsSep "\n" (ip:
+            lib.concatMapStringsSep "\n" (port:
+              "iptables -A nixos-fw -p tcp --dport ${toString port} -s ${ip} -j nixos-fw-accept"
+            ) allPorts
+          ) cfg.allowedIPs
+        );
+      networking.firewall.extraInputRules =
+        lib.mkIf (enabledInstances != { } && cfg.allowedIPs != [ ] && config.networking.nftables.enable) (
+          lib.concatMapStringsSep "\n" (ip:
+            lib.concatMapStringsSep "\n" (port:
+              "ip saddr ${ip} tcp dport ${toString port} accept"
+            ) allPorts
+          ) cfg.allowedIPs
+        );
 
       environment.persistence.${config.modules.base.impermanencePersistencePath}.directories =
         lib.mkIf config.modules.base.enableImpermanence [
