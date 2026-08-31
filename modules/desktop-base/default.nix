@@ -25,6 +25,17 @@ in
 
     networking.nftables.enable = true;
 
+    # SSDP (UPnP discovery): a router's reply to a multicast M-SEARCH arrives
+    # as unicast from a different source address than the multicast
+    # destination the request was sent to, so conntrack never marks it
+    # "related" — it lands on our ephemeral src port, not 1900, so
+    # allowedUDPPorts (which only matches dest port) can't allow it. Allow by
+    # the reply's source port instead. Not scoped to a LAN subnet since these
+    # are laptops that roam networks.
+    networking.firewall.extraInputRules = ''
+      udp sport 1900 accept comment "SSDP (UPnP discovery) replies"
+    '';
+
     environment.systemPackages = with pkgs; [
       age
       arrpc
