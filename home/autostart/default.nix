@@ -25,6 +25,25 @@ in {
         '';
       };
 
+      # keybase-gui's wrapper does a pre-flight check for the kbfsfuse
+      # client and exits non-zero if it isn't detected yet at autostart
+      # time (race with kbfsfuse startup), which makes
+      # app-keybase@autostart.service fail every login:
+      #   Could not find kbfsfuse client in keybase status.
+      #   Set NIX_SKIP_KEYBASE_CHECKS=1 if you want to skip this check.
+      # The wrapper's own error message names the fix.
+      keybase-skip-checks = pkgs.stdenvNoCC.mkDerivation {
+        name = "keybase-skip-checks";
+        version = "0.0.1";
+        dontUnpack = true;
+        installPhase = ''
+          cp "${pkgs.keybase-gui}/share/applications/keybase.desktop" keybase.desktop
+          ${pkgs.gnused}/bin/sed -i 's#^Exec=#Exec=env NIX_SKIP_KEYBASE_CHECKS=1 #' keybase.desktop
+          mkdir -p "$out/share/applications"
+          cp keybase.desktop "$out/share/applications/keybase.desktop"
+        '';
+      };
+
       signal-gpu-accel = pkgs.stdenvNoCC.mkDerivation {
         name = "signal-gpu-accel";
         version = "0.0.1";
@@ -49,7 +68,7 @@ in {
       ".config/autostart/discord.desktop".source = "${pkgs.discord}/share/applications/discord.desktop";
       ".config/autostart/element-desktop.desktop".source = "${pkgs.element}/share/applications/element-desktop.desktop";
       ".config/autostart/ghostty.desktop".source = "${pkgs.ghostty}/share/applications/com.mitchellh.ghostty.desktop";
-      ".config/autostart/keybase.desktop".source = "${pkgs.keybase-gui}/share/applications/keybase.desktop";
+      ".config/autostart/keybase.desktop".source = "${keybase-skip-checks}/share/applications/keybase.desktop";
       ".config/autostart/obsidian.desktop".source = "${pkgs.obsidian}/share/applications/obsidian.desktop";
       ".config/autostart/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
       ".local/share/applications/signal.desktop".source = "${signal-gpu-accel}/share/applications/signal.desktop";
