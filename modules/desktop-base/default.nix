@@ -23,6 +23,8 @@ in
       Option "DRI" "3"
     '';
 
+    networking.nftables.enable = true;
+
     environment.systemPackages = with pkgs; [
       age
       arrpc
