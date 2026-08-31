@@ -491,6 +491,10 @@ in {
         # only software volume stage on the playback path.
         hardware.scarlettMixer.enable = true;
 
+        # Full PowerPlay unlock for overclocking/undervolting, overriding
+        # modules/base's more conservative default.
+        modules.base.amdgpuPPFeatureMask = "0xffffffff";
+
         boot = {
           bootspec.enableValidation = true;
           # kernelPackages = pkgs.linuxPackages-rt_latest;
@@ -502,7 +506,6 @@ in {
 
           kernelParams = [
             # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
-            "amdgpu.ppfeaturemask=0xffffffff"  # Enable all PowerPlay features
             "amdgpu.gpu_recovery=1"            # Enable GPU recovery
             "amdgpu.dc=1"                      # Enable Display Core (DC)
             "amdgpu.dpm=1"                     # Enable Dynamic Power Management

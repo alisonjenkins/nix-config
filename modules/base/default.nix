@@ -106,6 +106,18 @@ in
       description = "Enable CachyOS kernel overlay. Only needed on hosts using CachyOS kernel packages.";
     };
 
+    amdgpuPPFeatureMask = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "0xfff7ffff";
+      description = ''
+        Value for the amdgpu.ppfeaturemask kernel param (PowerPlay feature
+        bitmask). Null omits the param entirely. Single source of truth so
+        hosts overriding it (e.g. for overclocking/undervolting) don't end
+        up with two conflicting amdgpu.ppfeaturemask= entries on the kernel
+        cmdline.
+      '';
+    };
+
     pcr15Value = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -205,10 +217,9 @@ in
         };
 
         kernelParams = [
-          "amdgpu.ppfeaturemask=0xfff7ffff"
           "hibernate=lz4"
           "preempt=full"
-        ];
+        ] ++ lib.optional (cfg.amdgpuPPFeatureMask != null) "amdgpu.ppfeaturemask=${cfg.amdgpuPPFeatureMask}";
 
         kernel = {
           sysctl = {
