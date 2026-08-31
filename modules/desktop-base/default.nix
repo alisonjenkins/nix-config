@@ -164,6 +164,12 @@ in
         openFirewall = true;
       };
 
+      # avahi (above) is the mDNS responder here; without this,
+      # systemd-resolved runs its own mDNS responder in parallel and both
+      # answer the same queries — "Detected another IPv4 mDNS stack running
+      # on this host" in the avahi-daemon log, and unreliable .local lookups.
+      resolved.settings.Resolve.MulticastDNS = lib.mkDefault "no";
+
       flatpak = {
         enable = lib.mkDefault true;
         # Nyrna and Sober only publish x86_64 builds on flathub. On aarch64
