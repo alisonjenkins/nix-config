@@ -1043,10 +1043,10 @@ in {
             # Re-enabled nix-managed settings 2026-08-31 after a GPU ring hang
             # (amdgpu ring gfx_0.0.0 timeout -> MODE1 reset -> VRAM lost ->
             # Xwayland/niri session death) during a game session. -80mV was
-            # never confirmed as the cause (see memory/forza-horizon-6-linux.md
-            # Bug 3), but backing the undervolt off by 5mV from the live
-            # GUI-set -75mV is cheap insurance. Bump toward 0 further if it
-            # happens again.
+            # never confirmed as the cause of a prior, unrelated round of
+            # Forza Horizon 6 crashes, but backing the undervolt off by 5mV
+            # from the live GUI-set -75mV is cheap insurance. Bump toward 0
+            # further if it happens again.
             settings = {
               apply_settings_timer = 5;
               daemon = {
