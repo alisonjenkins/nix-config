@@ -36,6 +36,11 @@ in
       udp sport 1900 accept comment "SSDP (UPnP discovery) replies"
     '';
 
+    # `sudo -A` (e.g. from an agent's shell tool with no controlling tty)
+    # uses this askpass helper, which pops a GUI password prompt instead of
+    # failing outright.
+    environment.sessionVariables.SUDO_ASKPASS = "${pkgs.kdePackages.ksshaskpass}/bin/ksshaskpass";
+
     environment.systemPackages = with pkgs; [
       age
       arrpc
@@ -78,6 +83,7 @@ in
       just
       keybase
       keyutils
+      kdePackages.ksshaskpass
       kodi-wayland
       libkrb5
       libpng
