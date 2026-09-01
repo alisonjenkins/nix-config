@@ -36,9 +36,14 @@ in
     # UDP source ports are trivially spoofable, so also restrict the source
     # address to private/CGNAT ranges (any network an IGD could plausibly be
     # on) rather than trusting sport=1900 alone. Not scoped to one specific
-    # LAN subnet since these are laptops that roam networks.
+    # LAN subnet since these are laptops that roam networks. IPv6 is
+    # currently disabled on every host this applies to (modules.base.
+    # enableIPv6 defaults false, unset by every desktop-base host), so the
+    # ip6 variant is inert today — kept so enabling IPv6 later doesn't
+    # silently regress this to IPv4-only.
     networking.firewall.extraInputRules = ''
       ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10 } udp sport 1900 udp dport 1024-65535 accept comment "SSDP (UPnP discovery) replies"
+      ip6 saddr { fe80::/10, fc00::/7 } udp sport 1900 udp dport 1024-65535 accept comment "SSDP (UPnP discovery) replies (IPv6)"
     '';
 
     # `sudo -A` (e.g. from an agent's shell tool with no controlling tty)
