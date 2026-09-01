@@ -51,7 +51,7 @@ fn query_window(args: &QueryArgs) -> Result<(chrono::DateTime<Utc>, chrono::Date
 /// Resolves LGTM credentials from `--auth-profile` via secretspec, or
 /// no credentials at all when the flag is omitted (unauthenticated
 /// query — the default for a local, unsecured Loki/Prometheus). See
-/// docs/adr/0006-secretspec-credential-resolution.md: the resolved
+/// pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md: the resolved
 /// secret value never becomes a CLI argument, so it never appears in
 /// anything an LLM-driven invocation of `sift` could observe.
 fn resolve_auth(args: &QueryArgs) -> Result<auth::Auth, String> {
@@ -92,14 +92,24 @@ fn run_prometheus(args: &QueryArgs) -> Result<(), String> {
     let events = platform::prometheus::fetch(
         &args.url,
         &args.query,
-        start.timestamp(),
-        now.timestamp(),
+        fractional_unix_secs(start),
+        fractional_unix_secs(now),
         60,
         &auth,
     )
     .map_err(|e| e.to_string())?;
 
     emit(&events, args)
+}
+
+/// Converts to a fractional-second Unix timestamp — plain
+/// `.timestamp()` truncates to whole seconds, which would silently
+/// narrow the query window sent to Prometheus by up to ~1s at each
+/// edge.
+fn fractional_unix_secs(dt: chrono::DateTime<Utc>) -> f64 {
+    #[allow(clippy::arithmetic_side_effects)] // timestamp_subsec_nanos() is bounded to [0, 1_999_999_999], so this stays far below f64's precision limits.
+    let subsec = f64::from(dt.timestamp_subsec_nanos()) / 1_000_000_000.0;
+    dt.timestamp() as f64 + subsec
 }
 
 fn emit(events: &[Event], args: &QueryArgs) -> Result<(), String> {

@@ -69,6 +69,17 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
                 .parse()
                 .map_err(|_| PrometheusError::MalformedValue(value_str.clone()))?;
 
+            // A syntactically valid but out-of-range JSON number
+            // literal (e.g. an exponent overflow) deserializes to
+            // ±inf, and floor()/`as i64` below would otherwise
+            // silently saturate that to a plausible-looking timestamp
+            // instead of reporting it as malformed.
+            if !unix_seconds_float.is_finite() {
+                return Err(PrometheusError::MalformedTimestamp(
+                    unix_seconds_float.to_string(),
+                ));
+            }
+
             // Prometheus timestamps are float seconds since epoch and
             // can carry sub-second precision (e.g. 1725000000.123) —
             // split into whole seconds and a nanosecond remainder
@@ -122,12 +133,15 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
 
 /// Queries a Prometheus/Mimir instance's `/api/v1/query_range` endpoint
 /// and returns parsed events. Not unit-tested directly, same rationale
-/// as `loki::fetch`.
+/// as `loki::fetch`. `start_unix_secs`/`end_unix_secs` are fractional —
+/// Prometheus's query API accepts a fractional-second Unix timestamp,
+/// and passing whole seconds would narrow the caller's query window by
+/// up to ~1s at each edge.
 pub fn fetch(
     base_url: &str,
     query: &str,
-    start_unix_secs: i64,
-    end_unix_secs: i64,
+    start_unix_secs: f64,
+    end_unix_secs: f64,
     step_secs: u64,
     auth: &Auth,
 ) -> Result<Vec<Event>, PrometheusError> {
@@ -241,6 +255,24 @@ mod tests {
 
         assert_eq!(events[0].timestamp.timestamp(), -2);
         assert_eq!(events[0].timestamp.timestamp_subsec_nanos(), 750_000_000);
+    }
+
+    #[test]
+    fn rejects_a_non_finite_timestamp() {
+        // 1e400 is syntactically valid JSON (exponent overflow), but
+        // serde_json itself already rejects it during deserialization
+        // ("number out of range") rather than producing f64::INFINITY
+        // — so unix_seconds_float can never actually be non-finite by
+        // the time parse_query_range_response's own body runs. The
+        // `is_finite()` guard there stays as defense-in-depth (e.g.
+        // against a future, more lenient float deserializer) but this
+        // regression test documents the real, current failure path:
+        // Copilot-review finding on PR #253.
+        let body = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[1e400,"1"]]}]}}"#;
+
+        let result = parse_query_range_response(body);
+
+        assert!(matches!(result, Err(PrometheusError::Parse(_))));
     }
 
     #[test]
