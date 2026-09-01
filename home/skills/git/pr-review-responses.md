@@ -4,6 +4,18 @@ Covers the receiving end: watching for a review to land, answering each
 thread, fixing what is real, and resolving threads. For *giving* a review, use
 the `review` skill.
 
+A fixed finding is not a closed finding. Fixing the code addresses the
+defect; replying and resolving addresses the review. Both are required,
+every wave, before moving on to the next thing — never "fix now, reply
+later." A multi-wave polling loop (bot reviewers re-review after every
+push) makes skipping the reply/resolve step easy to not notice, because
+nothing breaks: tests still pass, the branch still looks green. The
+backlog is invisible until someone checks the PR's Conversation tab and
+finds a stack of unresolved threads sitting behind commits that already
+fixed them. If you catch yourself fixing a second wave of findings
+without having replied to and resolved the first wave's threads, stop
+and close out the backlog before continuing.
+
 ## Watching for a review
 
 There is no push notification for a review; poll. Ask before starting a long
@@ -26,6 +38,15 @@ it burns the session and cannot be interrupted.
 
 Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), or when the user says so.
+
+`gh pr view --json reviews` (or `-q '.reviews[-1].body'`) is a cheap way to
+notice that a *new wave* landed — it returns the reviewer's rendered summary,
+which is convenient for a poll loop's wakeup check. It is **not** a substitute
+for the thread list below: the summary body does not carry `isResolved`,
+thread ids, or comment ids, so triaging from it alone and never touching the
+GraphQL query is how a fix gets made without the thread it addresses ever
+being replied to or resolved. Treat a summary-body poll as a trigger to go
+read the actual threads, not as the triage source itself.
 
 ## Reading the threads
 
@@ -111,6 +132,11 @@ not post it. That thread is theirs to answer.
 - Never force-push a branch under review without confirming; it detaches
   outdated comments and destroys the reviewer's place.
 - Reference the fixing commit sha in the reply so the reviewer can jump to it.
+- The commit is not the last step. Before moving on to anything else — the
+  next wave, a different task, ending the turn — reply to and resolve every
+  thread the commit addressed. If you are about to push a fix without the
+  matching reply+resolve queued in the same unit of work, that is the
+  anti-pattern this skill exists to prevent.
 
 ## Resolving threads
 
