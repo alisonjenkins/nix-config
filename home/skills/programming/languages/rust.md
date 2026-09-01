@@ -8,7 +8,8 @@
 - `cargo clippy --all-targets -- -D warnings` and `cargo fmt --check` are the
   bar; run both before claiming a change is done.
 - `cargo flamegraph` for profiling, `criterion` for benchmarking,
-  `std::simd`/`is_x86_feature_detected!` for vectorization,
+  portable SIMD (`std::simd`, where the toolchain supports it) or
+  `is_x86_feature_detected!` for vectorization,
   `Cow<'a, T>`/borrowed `&str`/`&[T]` and the `bytes`/`zerocopy` crates for
   zero-copy. See `../performance.md` before reaching for any of these.
 
