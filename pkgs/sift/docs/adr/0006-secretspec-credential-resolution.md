@@ -41,7 +41,7 @@ async under the hood), commits the project to a `secretspec.toml`
 schema file, and its multi-backend/multi-profile design looked
 disproportionate for what looked at the time like "one optional
 bearer token." That rejection was reversed once the actual requirement
-was stated: multi-team, multi-backend (1Password + AWS SSM/Secrets
+was stated: multi-backend (1Password + AWS SSM/Secrets
 Manager + Azure Key Vault), profile-scoped, LLM-opaque credential
 resolution is precisely the problem secretspec's declare/resolve split
 solves — it stopped being "a heavyweight tool for one flag" and became
