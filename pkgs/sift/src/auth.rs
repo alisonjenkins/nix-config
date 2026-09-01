@@ -1,5 +1,6 @@
 use secrecy::{ExposeSecret, SecretString};
 use secretspec::{NamedResolution, Secrets};
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 const BEARER_TOKEN_SECRET: &str = "LGTM_BEARER_TOKEN";
@@ -44,7 +45,7 @@ impl Auth {
     }
 
     pub fn from_secretspec_profile(profile: &str) -> Result<Self, AuthError> {
-        let mut secrets = Secrets::load().map_err(|e| AuthError::LoadSpec(Box::new(e)))?;
+        let mut secrets = resolve_secrets()?;
         secrets.set_profile(profile);
         let secrets = secrets.with_reason("sift LGTM query");
 
@@ -83,6 +84,38 @@ impl Auth {
     }
 }
 
+/// Locates `secretspec.toml`, in priority order: an explicit
+/// `SIFT_SECRETSPEC_TOML` override, then the Nix-installed copy next to
+/// the running binary, then cwd-based discovery (walking up from the
+/// working directory, same as `Secrets::load()`'s default).
+///
+/// The installed-copy step exists because a packaged `sift` binary's
+/// cwd has no reason to contain `secretspec.toml` — cwd discovery alone
+/// only works when running from a checkout of this repo (which is what
+/// this module's own tests rely on). See default.nix's `postInstall`,
+/// which places the file at `$out/share/sift/secretspec.toml`.
+fn resolve_secrets() -> Result<Secrets, AuthError> {
+    if let Ok(path) = std::env::var("SIFT_SECRETSPEC_TOML") {
+        return Secrets::load_from(Path::new(&path)).map_err(|e| AuthError::LoadSpec(Box::new(e)));
+    }
+    if let Some(installed) = installed_secretspec_toml_path() {
+        if installed.is_file() {
+            return Secrets::load_from(&installed).map_err(|e| AuthError::LoadSpec(Box::new(e)));
+        }
+    }
+    Secrets::load().map_err(|e| AuthError::LoadSpec(Box::new(e)))
+}
+
+/// `None` if the running binary's own path can't be determined —
+/// callers fall through to cwd-based discovery in that case rather
+/// than treating it as fatal.
+fn installed_secretspec_toml_path() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let bin_dir = exe.parent()?;
+    let install_root = bin_dir.parent()?;
+    Some(install_root.join("share").join("sift").join("secretspec.toml"))
+}
+
 fn resolve_optional(
     secrets: &Secrets,
     profile: &str,
@@ -115,7 +148,24 @@ mod tests {
 
     #[test]
     fn secretspec_toml_parses_and_validates() {
-        Secrets::load().expect("pkgs/sift/secretspec.toml should load and validate");
+        // Exercises resolve_secrets()'s full priority chain, not
+        // Secrets::load() directly — during `cargo test` there's no
+        // installed $out/share/sift/secretspec.toml next to the test
+        // binary, so this still falls through to cwd-based discovery,
+        // but it's the real code path rather than a bypass of it.
+        resolve_secrets().expect("pkgs/sift/secretspec.toml should load and validate");
+    }
+
+    #[test]
+    fn installed_secretspec_toml_path_is_relative_to_the_running_binary() {
+        // A loose sanity check: whatever current_exe() resolves to
+        // during `cargo test`, the computed path should end with
+        // share/sift/secretspec.toml, matching default.nix's
+        // postInstall layout — not asserting the path exists (it
+        // won't, in a dev/test build).
+        let path = installed_secretspec_toml_path()
+            .expect("current_exe() should resolve during cargo test");
+        assert!(path.ends_with("share/sift/secretspec.toml"));
     }
 
     #[test]
@@ -126,7 +176,7 @@ mod tests {
         // Missing — "no value" and "misconfigured" must stay
         // distinguishable. secretspec.toml binds the default profile
         // to the `env` provider specifically so this stays resolvable.
-        let mut secrets = Secrets::load().expect("secretspec.toml should load");
+        let mut secrets = resolve_secrets().expect("secretspec.toml should load");
         secrets.set_profile("default");
         let secrets = secrets.with_reason("auth.rs unit test");
 
