@@ -61,8 +61,11 @@ pub fn histogram(events: &[Event], bucket: Duration) -> HistogramResult {
     let mut counts: BTreeMap<i64, usize> = BTreeMap::new();
 
     for event in events {
-        #[allow(clippy::arithmetic_side_effects)] // timestamp() is a real calendar second count, far below i64::MAX for any event this tool will ever see; bucket_seconds is >= 1 by construction above.
-        let bucket_index = event.timestamp.timestamp() / bucket_seconds;
+        // div_euclid, not `/` — plain integer division truncates
+        // toward zero, which puts a pre-epoch event like -1s into
+        // bucket 0 instead of the preceding bucket. div_euclid is
+        // floor division, correct for both signs.
+        let bucket_index = event.timestamp.timestamp().div_euclid(bucket_seconds);
         let entry = counts.entry(bucket_index).or_insert(0);
         *entry = entry.saturating_add(1);
     }
@@ -172,6 +175,24 @@ mod tests {
 
         assert_eq!(result.buckets.len(), 2);
         assert_eq!(result.buckets[0].count, 2);
+        assert_eq!(result.buckets[1].count, 1);
+    }
+
+    #[test]
+    fn a_pre_epoch_event_falls_in_the_preceding_bucket_not_bucket_zero() {
+        // Plain `/` truncates toward zero, so -1i64 / 60 == 0 — that
+        // would put a 1-second-before-epoch event in the same bucket
+        // as epoch itself. div_euclid is floor division: -1 belongs to
+        // the bucket starting at -60, not 0. Regression test for the
+        // Copilot-review finding.
+        let events = vec![event_at(-1), event_at(0)];
+
+        let result = histogram(&events, Duration::from_secs(60));
+
+        assert_eq!(result.buckets.len(), 2);
+        assert_eq!(result.buckets[0].bucket_start.timestamp(), -60);
+        assert_eq!(result.buckets[0].count, 1);
+        assert_eq!(result.buckets[1].bucket_start.timestamp(), 0);
         assert_eq!(result.buckets[1].count, 1);
     }
 
