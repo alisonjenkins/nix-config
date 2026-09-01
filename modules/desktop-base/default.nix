@@ -33,9 +33,12 @@ in
     # the reply's source port instead, restricted to unprivileged destination
     # ports (1024-65535 — SSDP client sockets don't bind low ports) so this
     # can't be used to bypass the firewall for a well-known service port.
-    # Not scoped to a LAN subnet since these are laptops that roam networks.
+    # UDP source ports are trivially spoofable, so also restrict the source
+    # address to private/CGNAT ranges (any network an IGD could plausibly be
+    # on) rather than trusting sport=1900 alone. Not scoped to one specific
+    # LAN subnet since these are laptops that roam networks.
     networking.firewall.extraInputRules = ''
-      udp sport 1900 udp dport 1024-65535 accept comment "SSDP (UPnP discovery) replies"
+      ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10 } udp sport 1900 udp dport 1024-65535 accept comment "SSDP (UPnP discovery) replies"
     '';
 
     # `sudo -A` (e.g. from an agent's shell tool with no controlling tty)
