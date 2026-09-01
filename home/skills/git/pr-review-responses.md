@@ -5,16 +5,18 @@ thread, fixing what is real, and resolving threads. For *giving* a review, use
 the `review` skill.
 
 A fixed finding is not a closed finding. Fixing the code addresses the
-defect; replying and resolving addresses the review. Both are required,
-every wave, before moving on to the next thing — never "fix now, reply
-later." A multi-wave polling loop (bot reviewers re-review after every
-push) makes skipping the reply/resolve step easy to not notice, because
-nothing breaks: tests still pass, the branch still looks green. The
-backlog is invisible until someone checks the PR's Conversation tab and
-finds a stack of unresolved threads sitting behind commits that already
-fixed them. If you catch yourself fixing a second wave of findings
-without having replied to and resolved the first wave's threads, stop
-and close out the backlog before continuing.
+defect; replying addresses the review — every wave, before moving on to
+the next thing, never "fix now, reply later." Resolving is not automatic
+alongside the reply: resolve only once the point is actually settled (see
+"Resolving threads" below), and leave a thread you disagree with open
+until the reviewer closes it. A multi-wave polling loop (bot reviewers
+re-review after every push) makes skipping the reply step easy to not
+notice, because nothing breaks: tests still pass, the branch still looks
+green. The backlog is invisible until someone checks the PR's
+Conversation tab and finds a stack of un-replied-to threads sitting
+behind commits that already fixed them. If you catch yourself fixing a
+second wave of findings without having replied to the first wave's
+threads, stop and close out the backlog before continuing.
 
 ## Watching for a review
 
@@ -39,13 +41,13 @@ it burns the session and cannot be interrupted.
 Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), or when the user says so.
 
-`gh pr view --json reviews` (or `-q '.reviews[-1].body'`) is a cheap way to
-notice that a *new wave* landed — it returns the reviewer's rendered summary,
-which is convenient for a poll loop's wakeup check. It is **not** a substitute
-for the thread list below: the summary body does not carry `isResolved`,
-thread ids, or comment ids, so triaging from it alone and never touching the
-GraphQL query is how a fix gets made without the thread it addresses ever
-being replied to or resolved. Treat a summary-body poll as a trigger to go
+`gh pr view <number> --json reviews -q '.reviews[-1].body'` is a cheap way to
+notice that a *new wave* landed — it returns the reviewer's plain-text summary
+body, which is convenient for a poll loop's wakeup check. It is **not** a
+substitute for the thread list below: the summary body does not carry
+`isResolved`, thread ids, or comment ids, so triaging from it alone and never
+touching the GraphQL query is how a fix gets made without the thread it
+addresses ever being replied to. Treat a summary-body poll as a trigger to go
 read the actual threads, not as the triage source itself.
 
 ## Reading the threads
@@ -133,10 +135,11 @@ not post it. That thread is theirs to answer.
   outdated comments and destroys the reviewer's place.
 - Reference the fixing commit sha in the reply so the reviewer can jump to it.
 - The commit is not the last step. Before moving on to anything else — the
-  next wave, a different task, ending the turn — reply to and resolve every
-  thread the commit addressed. If you are about to push a fix without the
-  matching reply+resolve queued in the same unit of work, that is the
-  anti-pattern this skill exists to prevent.
+  next wave, a different task, ending the turn — reply to every thread the
+  commit addressed, and resolve each one that's actually settled (fixed and
+  the reply posted; not one you're still disputing). If you are about to
+  push a fix without the matching reply queued in the same unit of work,
+  that is the anti-pattern this skill exists to prevent.
 
 ## Resolving threads
 
