@@ -26,7 +26,7 @@ hand:
 
 - Rust: `cargo clippy --all-targets -- -D warnings` with the project's
   current `[lints.clippy]` table (or lack of one — a missing guard-rail
-  table is itself a finding, see `rust.md`).
+  table is itself a finding, see `programming/languages/rust.md`).
 - Python: `mypy --strict` (or the project's current mode), `ruff check`.
 - TypeScript: `tsc --noEmit` with the project's current `tsconfig.json`
   strictness, the linter.
@@ -71,7 +71,7 @@ occurrence as a separate finding buries the few that are genuinely urgent
 under noise and makes the report unusable.
 
 - **Group by rule, not by occurrence.** One finding: "no `[lints.clippy]`
-  deny table in any of the 6 crates; `rg -c unwrap\\(\\) src/` shows 340
+  deny table in any of the 6 crates; `rg -c 'unwrap\(\)' src/` shows 340
   call sites that would need triage once it's added" — not 340 findings.
 - **Severity still applies** (see `SKILL.md`'s rubric ordering): a systemic
   gap in error handling on a request path ranks above a missing newtype on
