@@ -71,8 +71,9 @@ say which.
   usable on Framework too with a modern SDK and `<LangVersion>` set high
   enough — see the Toolchain note above.
 - **Distinct types for identifiers that must not be mixed up**, even
-  without a language-native newtype: a `readonly record struct CustomerId(Guid
-  Value)` (Core+) or a small `readonly struct` wrapper (either runtime) so
+  without a language-native newtype: a `readonly record struct
+  CustomerId(Guid Value)` (see the Toolchain note on LangVersion for
+  Framework) or a small `readonly struct` wrapper (either runtime) so
   `void F(CustomerId customerId, OrderId orderId)` rejects a swapped call at
   compile time — plain `Guid`/`Guid` would not. See `defensive.md`'s
   "distinct domain concepts" rule.
