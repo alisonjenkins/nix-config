@@ -1,4 +1,4 @@
-# ADR 0004: Deny unwrap/expect/panic; one error enum per fallible function
+# ADR 0004: Deny unwrap/expect/panic; one error enum per fallible function in the platform/reduce layers
 
 ## Status
 
@@ -25,10 +25,20 @@ caller couldn't tell a connection failure from a truncated read.
 `Cargo.toml` carries a `[lints.clippy]` deny table: `unwrap_used`,
 `expect_used`, `unwrap_in_result`, `panic`, `indexing_slicing`,
 `arithmetic_side_effects`, `unreachable`, `todo`, `unimplemented`,
-`get_unwrap`. Every fallible function gets its own `thiserror` enum with
-one variant per call site that can fail (`LokiError`, `PrometheusError`,
-etc. in `src/platform/*.rs`) — no `#[from]` collapsing two distinct sites
-that happen to share an underlying error type.
+`get_unwrap`. Every fallible function in the platform and reduction
+layers (`src/platform/*.rs`, `src/reduce/*.rs`) gets its own `thiserror`
+enum with one variant per call site that can fail (`LokiError`,
+`PrometheusError`, `HistogramError`, ...) — no `#[from]` collapsing two
+distinct sites that happen to share an underlying error type.
+
+`src/main.rs`'s CLI-glue functions (`query_window`, `run_loki`,
+`run_prometheus`, `emit`) are the one deliberate exception: they collapse
+every error into `Result<_, String>` because their only consumer is the
+top-level `eprintln`-and-exit-code handler in `main()` — there is no
+caller left to match on a variant. Introducing an enum there would add
+ceremony without a corresponding caller to benefit from it. The policy
+applies to every layer with a real caller to serve; the outermost
+display boundary is exempt by design, not by oversight.
 
 Arithmetic uses checked/saturating alternatives
 (`saturating_add`/`checked_mul`/`checked_sub_signed`/`div_euclid`/
