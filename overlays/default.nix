@@ -230,6 +230,18 @@ in
           nativeCheckInputs = [];
         });
       })
+      # textual's test_log_from_worker is timing-flaky in the sandbox: it
+      # asserts a message logged from a `@work(thread=True)` worker reached
+      # the log by the time `call_after_refresh(self.exit)` fires, which
+      # races the worker thread rather than waiting on it. Pulled in via
+      # posting.
+      (python-final: python-prev: {
+        textual = python-prev.textual.overridePythonAttrs (old: {
+          disabledTests = (old.disabledTests or []) ++ [
+            "test_log_from_worker"
+          ];
+        });
+      })
     ];
 
     # Re-sign fish after build on Darwin.
