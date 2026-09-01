@@ -10,9 +10,9 @@ the next thing, never "fix now, reply later." Resolving is not automatic
 alongside the reply: resolve only once the point is actually settled (see
 "Resolving threads" below), and leave a thread you disagree with open
 until the reviewer closes it. A multi-wave polling loop (bot reviewers
-re-review after every push) makes skipping the reply step easy to not
-notice, because nothing breaks: tests still pass, the branch still looks
-green. The backlog is invisible until someone checks the PR's
+re-review after every push) makes the reply step easy to miss, because
+nothing breaks: tests still pass, the branch still looks green. The
+backlog is invisible until someone checks the PR's
 Conversation tab and finds a stack of un-replied-to threads sitting
 behind commits that already fixed them. If you catch yourself fixing a
 second wave of findings without having replied to the first wave's
@@ -42,8 +42,9 @@ Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), or when the user says so.
 
 `gh pr view <number> --json reviews -q '.reviews[-1].body'` is a cheap way to
-notice that a *new wave* landed — it returns the reviewer's plain-text summary
-body, which is convenient for a poll loop's wakeup check. It is **not** a
+notice that a *new wave* landed — it returns the review's raw, unrendered
+body field (which can itself contain Markdown), convenient for a poll loop's
+wakeup check. It is **not** a
 substitute for the thread list below: the summary body does not carry
 `isResolved`, thread ids, or comment ids, so triaging from it alone and never
 touching the GraphQL query is how a fix gets made without the thread it
