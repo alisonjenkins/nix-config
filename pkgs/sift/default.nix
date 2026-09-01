@@ -12,7 +12,7 @@ rustPlatform.buildRustPackage {
   doCheck = true;
 
   meta = {
-    description = "Reduces Datadog/Grafana-LGTM observability output before it reaches an LLM context";
+    description = "Reduces Grafana LGTM (Loki/Prometheus/Mimir) observability output before it reaches an LLM context";
     license = lib.licenses.mit;
     maintainers = [ ];
     mainProgram = "sift";
