@@ -6,6 +6,10 @@ CLI flag. See `pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md`
 for why, and `pkgs/sift/docs/adr/0007-credential-caching-and-memory-hygiene.md` for
 how repeated `sift` calls avoid repeated 1Password prompts.
 
+1Password is the primary/recommended source for this team — a shared
+vault means everyone resolves the same credential the same way, without
+anyone handling the raw value themselves.
+
 ## The short version
 
 1. `pkgs/sift/secretspec.toml` declares what secrets exist
@@ -20,26 +24,60 @@ how repeated `sift` calls avoid repeated 1Password prompts.
    provider into the outbound request's `Authorization` header inside
    sift's own process.
 
-## Using an existing profile
+## 1Password (recommended): the `team` profile
 
-Two examples ship in `secretspec.toml`: `personal` (1Password) and
-`work` (AWS SSM Parameter Store). To use one, put the actual value into
-that backend under the exact secret name:
+`secretspec.toml` ships `--auth-profile team`, bound to a shared vault
+(`onepassword://Sift` by default — rename it to your team's actual
+vault name in `secretspec.toml`'s `[providers]` table).
 
-**1Password (`personal` profile):**
+**One-time setup, by whoever owns the vault:**
 
 ```bash
 op signin
-op item create --category=password --vault=Personal \
-  --title=LGTM_BEARER_TOKEN password=<your-real-token>
+op item create --category=password --vault=Sift \
+  --title=LGTM_BEARER_TOKEN password=<the-real-token>
 ```
 
-secretspec's 1Password provider reads by item title matching the secret
-name (`LGTM_BEARER_TOKEN`), from the vault named in
-`secretspec.toml`'s `[providers]` table (`Personal` by default — change
-it to match your own vault).
+secretspec's 1Password provider reads by item title matching the
+secret name exactly (`LGTM_BEARER_TOKEN`), from the vault named in the
+provider URI. Repeat for `LGTM_BASIC_AUTH_USER`/`LGTM_BASIC_AUTH_PASSWORD`
+if the target uses Basic Auth instead of a bearer token.
 
-**AWS SSM (`work` profile):**
+**Everyone else, once they have vault access:**
+
+```bash
+sift lgtm logs '{app="checkout"}' --url https://loki.example.com --auth-profile team
+```
+
+The first call per person prompts 1Password's normal device-approval
+flow (desktop app or `op signin`); ADR 0007's caching means that's at
+most once per 30-minute window, not once per `sift` call.
+
+### CI / headless / no human to approve a prompt
+
+Use a [1Password service account](https://developer.1password.com/docs/service-accounts/)
+instead of a human's session — it authenticates non-interactively, with
+no device-approval prompt at all, scoped to read-only access on just
+the vault(s) you grant it:
+
+```bash
+export OP_SERVICE_ACCOUNT_TOKEN="ops_..."
+sift lgtm logs '{app="checkout"}' --url https://loki.example.com --auth-profile team
+```
+
+secretspec's 1Password provider picks up `OP_SERVICE_ACCOUNT_TOKEN`
+from the environment automatically — no `secretspec.toml` change
+needed. This is the right setup for a CI pipeline or any unattended
+`sift` invocation.
+
+### Your own vault instead of the shared one
+
+Use `--auth-profile personal` (bound to `onepassword://Personal` by
+default) for a credential that's yours alone, not something the whole
+team resolves the same way. Same `op item create` pattern as above,
+just against your own vault.
+
+## AWS SSM Parameter Store: the `work` profile
 
 ```bash
 AWS_PROFILE=<your-profile> aws ssm put-parameter \
@@ -55,13 +93,7 @@ from `--auth-profile`. Adjust the region in `secretspec.toml`'s
 parameter actually lives; add `?prefix=/myteam` to that URI instead if
 you want a different path prefix than the default template.
 
-Then:
-
-```bash
-sift lgtm logs '{app="checkout"}' --url https://loki.example.com --auth-profile work
-```
-
-## Adding your own profile
+## Adding your own profile (e.g. Azure Key Vault)
 
 Add a new `[profiles.<name>]` section to `secretspec.toml`, declaring
 the same three (optional) secrets, plus a `[profiles.<name>.defaults]`
@@ -94,8 +126,8 @@ Real per-secret provider overrides are also possible (put `providers =
 
 Delete the cache entry directly from the OS keyring (secretspec's cache
 key format is `secretspec/cache/{project}/{profile}/{key}`, e.g.
-`secretspec/cache/sift/personal/LGTM_BEARER_TOKEN`), or just wait out
-the `max_age` window — the next resolution re-fetches from the
+`secretspec/cache/sift/team/LGTM_BEARER_TOKEN`), or just wait out the
+`max_age` window — the next resolution re-fetches from the
 authoritative provider automatically once the cached entry expires.
 
 ## Verifying a profile without querying anything
