@@ -28,9 +28,13 @@ lint's operator-syntax trigger — see ADR 0004) and builds the `Event`
 timestamp from both parts.
 
 `src/platform/prometheus.rs`'s `parse_query_range_response` splits the
-float seconds via `.trunc()`/`.fract() * 1_000_000_000.0` under a
-narrowly `#[allow(clippy::arithmetic_side_effects)]`-scoped block,
-justified by the bounded input range (a real query timestamp).
+float seconds via `.floor()` and a subtraction (not `.trunc()`/
+`.fract()` — those give a negative remainder for a pre-epoch
+timestamp, which would wrap on the `as u32` cast; `floor()` keeps the
+remainder in `[0.0, 1.0)` regardless of sign), then
+`remainder * 1_000_000_000.0` under a narrowly
+`#[allow(clippy::arithmetic_side_effects)]`-scoped block, justified by
+the bounded input range (a real query timestamp).
 
 Both modules carry a `preserves_sub_second_timestamp_precision` regression
 test.
