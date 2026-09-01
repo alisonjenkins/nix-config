@@ -25,6 +25,12 @@ to be usable now.
 - No duplication of `debugging`'s method, `infra`'s ask-before-mutating rule,
   or `programming/observability.md`'s instrumentation conventions — all three
   are cross-referenced, not restated.
+- A raw query against a real observability platform can return thousands of
+  lines and blow through a session's context for what should be a one-line
+  answer ("which error dominates," "did this regress vs an hour ago"). Ship
+  tooling that reduces platform output to what an investigation actually
+  needs *before* it reaches Claude, not guidance alone asking Claude to
+  remember to do that by hand every time.
 
 ## Non-goals
 
@@ -49,12 +55,17 @@ home/skills/observability/
   platforms/
     datadog.md              — pup CLI + logs/APM/metrics/monitors
     grafana-lgtm.md           — LogQL/PromQL/TraceQL/Grafana API + Prometheus
+
+pkgs/obs-cli/                — Rust CLI: reduces platform output before Claude sees it
 ```
 
 This mirrors the existing family pattern (`programming/languages/*.md` for
 the one per-language dimension, flat by-concern files alongside it): platform
 is the one dimension here, so it gets its own subdirectory; investigation
-method and improvement practice are by-concern and stay flat.
+method and improvement practice are by-concern and stay flat. `obs-cli` is a
+new package under `pkgs/`, following this repo's existing convention for
+custom software, not part of the skill directory itself — the skill files
+teach when and how to reach for it.
 
 ## Division of responsibility
 
@@ -172,21 +183,91 @@ confuse with this one.
   present, gets its own note since that's the common personal-infra shape.
 - No hardcoded instance URLs/auth — generic query/API guidance only.
 
+### `pkgs/obs-cli` — token-efficient analysis tooling
+
+A single Rust binary (`obs`), one CLI with subcommands per platform, sharing
+one reduction engine so the four reduction techniques are implemented once
+and available everywhere instead of duplicated per platform:
+
+```
+obs datadog logs    <query>  [--mode ...] [--group-by ...] ...
+obs datadog metrics <query>  [--mode ...] ...
+obs datadog traces  <query>  [--mode ...] ...
+obs lgtm logs        <logql>  [--mode ...] ...   # Loki
+obs lgtm metrics     <promql> [--mode ...] ...   # Mimir/Prometheus
+obs lgtm traces      <traceql>[--mode ...] ...   # Tempo
+```
+
+Shared flags across every query subcommand:
+- `--mode aggregate|topn|histogram|diff|raw` — **`raw` is never the
+  default**; an explicit opt-in with a hard row cap, so "give me everything"
+  stays possible without it silently becoming the common path.
+  - `aggregate`: group-by counts (e.g. per error type, per status code).
+  - `topn`: the N most significant contributors plus a total count.
+  - `histogram`: time-bucketed rate/count instead of a flat event list.
+  - `diff`: current window against a baseline window, suppressing
+    steady-state noise, surfacing only what changed.
+- `--group-by <field>`, `--top <n>`, `--bucket <duration>`,
+  `--baseline <duration>` — mode-specific parameters.
+- `--format json|table` — compact by default; JSON for further piping,
+  table for direct reading. Never pretty-printed raw API responses.
+
+Auth/config is read from existing credential storage (this repo's sops-nix
+secrets, or the ambient Datadog/Grafana env the work environment already
+provides) — never hardcoded, per `security.md`. Output is deliberately
+lossy: it answers "what does this query need to tell an investigator," which
+is the whole reduction goal, not "reproduce the platform's UI in a
+terminal."
+
+Building this is real software, not skill prose — it follows the
+`programming` skill in full: `rust.md`'s guard rails (deny-by-default
+panic-class lints, `[lints.clippy]`), one error enum per fallible function
+(a distinct variant per HTTP call, per parse step, per auth failure — this
+tool talks to two different external APIs, so error-site precision matters
+for its own debuggability), `tracing` for its own structured logging (this
+observability tool follows `observability.md` on itself), and `testing`'s
+TDD loop with the platform HTTP clients behind a trait/interface so the
+reduction logic (aggregate/top-N/histogram/diff) is unit-testable against
+fixture responses without hitting a real Datadog/Grafana instance in CI.
+
 ## Validation
 
-This produces skill content, not code — no test suite. Validation is the
-`skill-authoring` discipline: confirm the parent's description carries
-trigger vocabulary for every child (platform names, "alert", "dashboard",
-"SLO", "cardinality", "Datadog", "Grafana", "Loki", "Prometheus", "LGTM"),
-confirm no content duplicates what `debugging`/`infra`/
-`programming/observability.md` already own, and a read-through for the usual
-placeholder/contradiction/scope check before this spec is considered done.
+Two different kinds of validation for two different kinds of deliverable:
+
+- **Skill content** (`home/skills/observability/`): the `skill-authoring`
+  discipline — confirm the parent's description carries trigger vocabulary
+  for every child (platform names, "alert", "dashboard", "SLO",
+  "cardinality", "Datadog", "Grafana", "Loki", "Prometheus", "LGTM"),
+  confirm no content duplicates what `debugging`/`infra`/
+  `programming/observability.md` already own, and a read-through for the
+  usual placeholder/contradiction/scope check.
+- **`obs-cli`**: real code, real tests. `cargo test` covering the reduction
+  engine against fixture data for all four modes, `cargo clippy --all-targets
+  -- -D warnings` clean, and `just build` (or the equivalent package build)
+  succeeding before this is considered done — per the `testing` and
+  `programming` skills, not a special exemption for being "just a helper
+  tool."
 
 ## Open questions for the implementation plan
 
 None blocking — the four sub-areas of `improving.md`, the platform split,
-and the cost-control content are all settled. The implementation plan should
-decide file-by-file writing order (parent + routing first, so each child can
-be reviewed against a stable routing table) and whether `platforms/*.md`
-needs its own further split later if either grows past what one file should
-carry (see `skill-authoring/context-budget.md`).
+the cost-control content, and `obs-cli`'s shape (unified Rust CLI, four
+reduction modes, per-platform subcommands) are all settled. The
+implementation plan should decide:
+
+- **Sequencing**: skill docs and `obs-cli` are different kinds of work
+  (markdown authoring vs a real Rust package with its own test suite) —
+  the plan should treat them as separate phases/PRs rather than one
+  monolithic change, the same way the `programming` skill's observability/
+  performance additions each landed as their own atomic PR. Whether skill
+  docs land before, after, or interleaved with `obs-cli` is the plan's call;
+  the skill files can reference `obs-cli` by name before it exists (the
+  `programming` skill family already has precedent for a doc referencing a
+  not-yet-built follow-up in `PENDING.md`).
+- File-by-file writing order for the skill docs (parent + routing first, so
+  each child can be reviewed against a stable routing table).
+- Whether `platforms/*.md` needs its own further split later if either grows
+  past what one file should carry (see `skill-authoring/context-budget.md`).
+- `obs-cli`'s exact HTTP client trait boundary and fixture format for the
+  reduction-engine tests — a design-level decision, not architecture, left
+  to the plan/implementation.
