@@ -32,11 +32,13 @@
   `exc_info=True`.
 - f-strings for formatting; `logging` for output, never `print`, except in a
   CLI whose output *is* the product.
-- Structured logging: `structlog` where the project already has it,
-  otherwise stdlib `logging` with a JSON formatter — pass fields as
-  `logger.info("order_failed", order_id=order_id, reason=reason)` kwargs, not
-  an f-string. `contextvars` for request/job-scoped correlation IDs so they
-  appear on every line without threading a parameter through every call. See
+- Structured logging: `structlog` where the project already has it —
+  `logger.info("order_failed", order_id=order_id, reason=reason)` kwargs.
+  Stdlib `logging` does not accept arbitrary kwargs as fields (they raise
+  `TypeError`); pass fields via `extra={"order_id": order_id, "reason":
+  reason}` instead, with a JSON formatter that reads them off the record.
+  `contextvars` for request/job-scoped correlation IDs so they appear on
+  every line without threading a parameter through every call. See
   `../observability.md` for what belongs in a log line and at what level.
 
 ## Scripts
