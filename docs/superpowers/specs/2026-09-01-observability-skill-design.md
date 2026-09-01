@@ -34,9 +34,13 @@ to be usable now.
 
 ## Non-goals
 
-- Incident-response process (paging rotations, postmortem templates,
-  comms during an outage). Out of scope; a candidate for a future skill if it
-  becomes a recurring need.
+- Paging rotations and live incident comms (who gets paged, how a
+  channel/bridge is run during an active outage). Out of scope; a
+  candidate for a future skill if it becomes a recurring need.
+  **Postmortem practice itself — reconstructing what happened from
+  observability data, blameless write-up, action-item tracking — is
+  in scope**, covered by `postmortems.md`; this exclusion is narrower
+  than the original draft, which lumped postmortems in with paging.
 - Hardcoded instance URLs, API keys, or org-specific dashboard IDs. Per the
   shared-machine portability rule, that detail belongs in memory or local
   config, never in a skill file that ships to every machine.
@@ -52,6 +56,8 @@ home/skills/observability/
   SKILL.md                 — purpose, cross-references, routing table
   investigation.md         — platform-agnostic investigation method
   improving.md              — closing gaps, alert/dashboard design, SLOs, cost
+  coverage.md                — finding what needs monitoring, spotting gaps
+  postmortems.md              — reconstructing an incident, blameless write-up
   platforms/
     datadog.md              — pup CLI + logs/APM/metrics/monitors
     grafana-lgtm.md           — LogQL/PromQL/TraceQL/Grafana API + Prometheus
@@ -79,11 +85,11 @@ teach when and how to reach for it.
 
 ### `SKILL.md`
 Standard family parent: one-paragraph purpose, the division-of-responsibility
-table above (condensed), and the routing table (by-concern: investigation vs
-improving; by-platform: datadog vs grafana-lgtm). Description explicitly
-states the negative case — not for instrumenting your own code, not for
-deploying/mutating infrastructure — since both neighbours are easy to
-confuse with this one.
+table above (condensed), and the routing table (by-concern: investigation,
+improving, coverage, postmortems; by-platform: datadog vs grafana-lgtm).
+Description explicitly states the negative case — not for instrumenting your
+own code, not for deploying/mutating infrastructure — since both neighbours
+are easy to confuse with this one.
 
 ### `investigation.md`
 - **Symptom-first triage.** Start from what's actually reported (latency,
@@ -155,6 +161,107 @@ confuse with this one.
     on top of the readability angle `programming/observability.md` already
     covers.
 
+### `coverage.md`
+
+Proactive, not reactive: finding what *should* be monitored before an
+investigation ever needs it, across a VM/host or a set of cloud resources
+making up a system. Distinct from `improving.md`'s "closing gaps found
+during investigation" — that's reactive (an investigation already hit the
+dead end); this is the audit that finds the dead end before anyone falls
+into it.
+
+- **Enumerate before you check coverage.** You cannot know what's
+  unmonitored without first knowing what exists. Don't hand-roll resource
+  enumeration — lean on existing inventory tooling:
+  - **Host/VM level**: `systemctl list-units` for running services,
+    `osquery` (SQL-queryable OS state, including a `systemd_units`
+    table and listening sockets) for a scriptable structured inventory
+    beyond what `systemctl` alone gives you.
+  - **Cloud resources**: `terraform state list` (or `terraform show
+    -json`) when the system is IaC-managed — the fastest, most accurate
+    inventory of what's *supposed* to exist, and ties directly into
+    `infra`'s "IaC is the source of truth" principle. CloudQuery or
+    Steampipe (SQL-queryable cloud-provider APIs) for a live inventory
+    independent of IaC state, useful for catching drift — a resource
+    that exists in the cloud but not in Terraform state is itself a
+    finding, the observability-adjacent cousin of `infra/kubernetes.md`'s
+    "a `kubectl apply` outside GitOps is lost on next reconcile."
+- **Cross-reference against instrumentation, per platform:**
+  - **Datadog** ships real coverage tooling for this already — Software
+    Catalog and Universal Service Monitoring surface services with no
+    telemetry/SLOs/monitors, Resource Catalog and Cloud Security Posture
+    Management do the same for cloud resources. Use these directly
+    before reaching for anything else; they only see what Datadog was
+    already pointed at, so a resource entirely outside Datadog's reach
+    still needs the enumeration step above to be found at all.
+  - **Grafana/Prometheus** has no packaged equivalent. Cross-reference
+    Prometheus's own target list (`/api/v1/targets`) against the
+    enumerated resource/service list by hand, and treat an absent `up`
+    series for an expected target as a gap in its own right — not just
+    "no data," an actual finding (see `investigation.md`'s "distrust the
+    dashboard": a target that was never scraped and a target that's
+    failing to scrape both show as missing data, so confirm which one
+    you're looking at before reporting either as healthy or as down).
+- **Report gaps the same way as any other finding** (`investigation.md`'s
+  "reporting a finding" format): what was enumerated, what coverage was
+  found or missing for each, ranked by what a gap there would actually
+  cost if it went unnoticed during an incident — a missing alert on a
+  primary database's connection pool ranks above a missing dashboard
+  panel for a background batch job.
+- **Tooling**: no existing tool does the full enumerate → cross-reference
+  → report loop across both cloud resources and host services for both
+  Datadog and Grafana/Prometheus (confirmed by research before writing
+  this section — see the design conversation). `sift audit` (see
+  `pkgs/sift`) is the fast-follow that closes this: reusing existing
+  enumeration tooling (Terraform state, CloudQuery/Steampipe, osquery)
+  rather than reinventing inventory, adding only the coverage
+  cross-reference and gap-report layer this file describes.
+
+### `postmortems.md`
+
+Full postmortem practice: reconstructing what happened, writing it up
+blamelessly, and tracking the resulting action items. Paging rotations and
+live incident comms stay out of scope (see Non-goals) — this file starts
+once the incident is over and the question becomes "what happened and what
+do we do about it."
+
+- **Reconstruction is `investigation.md`'s method, applied after the
+  fact, for the whole incident rather than one symptom.** Build the full
+  timeline by pulling the same correlation thread (trace ID → traces →
+  logs) across the entire incident window, not just the first anomaly
+  found — an incident with one root cause commonly has multiple visible
+  symptoms across different services, and a postmortem that stops at the
+  first one found produces an incomplete or wrong root cause.
+- **Distrust the dashboard applies retroactively too.** A metric that
+  looked fine during the incident because its query was scoped wrong or
+  its time range defaulted somewhere unhelpful needs re-checking with
+  the benefit of hindsight — `investigation.md`'s false-signal checks are
+  not a one-time gate you clear during the incident, they're worth
+  re-running when building the postmortem timeline itself.
+- **Blameless means the timeline explains *what* the system and its
+  operators did and why it made sense at the time, not who to fault.** A
+  postmortem that names an individual as the cause has usually stopped
+  one level too shallow — "engineer X pushed a bad config" is an
+  observation, not a root cause; the root cause is whatever let a bad
+  config reach production undetected (missing validation, missing
+  staging parity, missing alert on the exact signal that would have
+  caught it — which is itself a `coverage.md`-style gap worth naming
+  explicitly in the postmortem's follow-up items).
+- **Action items are gap-closing, and they route to the file that owns
+  the gap.** A missing instrumentation signal found while reconstructing
+  the timeline routes to `programming/observability.md` (write the
+  instrumentation) via `improving.md`'s "closing gaps" section; a missing
+  alert or monitoring coverage routes to `coverage.md`/`improving.md`'s
+  alert-design section. The postmortem's job is to *find and route* the
+  gap, not to re-derive how to fix it — this file does not duplicate
+  either of those files' content.
+- **A postmortem with no unresolved action items is a red flag, not a
+  clean bill of health.** If reconstructing an incident revealed nothing
+  worth fixing, either the reconstruction stopped too early or the
+  incident really was pure bad luck with no systemic contributor — the
+  latter is rare enough that it deserves stating explicitly rather than
+  silently assumed.
+
 ### `platforms/datadog.md`
 - Logs: search/explorer syntax patterns, facets, log-based metrics.
 - APM/traces: service maps, trace search, flame graphs, span analysis.
@@ -196,7 +303,20 @@ sift datadog traces  <query>  [--mode ...] ...
 sift lgtm logs        <logql>  [--mode ...] ...   # Loki
 sift lgtm metrics     <promql> [--mode ...] ...   # Mimir/Prometheus
 sift lgtm traces      <traceql>[--mode ...] ...   # Tempo
+sift audit vm                  [--format ...] ...   # coverage.md's host-level gap audit
+sift audit aws                 [--format ...] ...   # coverage.md's cloud-resource gap audit
 ```
+
+`sift audit` is `coverage.md`'s tooling: it does not re-implement resource
+enumeration — it shells out to or wraps existing inventory tooling
+(`terraform state list`/`show -json`, CloudQuery or Steampipe, `osquery`)
+and adds only the coverage cross-reference and gap-report layer, since
+research confirmed no existing tool does that full loop across both cloud
+resources and host services for both Datadog and Grafana/Prometheus. Not
+part of the reduction engine below — it's a different kind of query
+(enumerate-and-compare, not query-and-reduce a time-series/log platform) —
+and is scoped as a fast-follow after the core reduction-engine MVP, same as
+Datadog/Tempo support (see the implementation plan's fast-follow section).
 
 Shared flags across every query subcommand:
 - `--mode aggregate|topn|histogram|diff|raw` — **`raw` is never the
@@ -226,9 +346,13 @@ panic-class lints, `[lints.clippy]`), one error enum per fallible function
 tool talks to two different external APIs, so error-site precision matters
 for its own debuggability), `tracing` for its own structured logging (this
 observability tool follows `observability.md` on itself), and `testing`'s
-TDD loop with the platform HTTP clients behind a trait/interface so the
-reduction logic (aggregate/top-N/histogram/diff) is unit-testable against
-fixture responses without hitting a real Datadog/Grafana instance in CI.
+TDD loop with each platform client split into a thin network-fetch function
+and a pure parse function, so the parse logic (and the reduction logic
+downstream of it: aggregate/top-N/histogram/diff) is unit-testable against
+fixture responses without hitting a real Datadog/Grafana instance in CI —
+resolved in the implementation plan as a fetch/parse split rather than a
+full trait abstraction, since one implementation per platform doesn't need
+the extra indirection (YAGNI).
 
 ## Validation
 
@@ -237,9 +361,10 @@ Two different kinds of validation for two different kinds of deliverable:
 - **Skill content** (`home/skills/observability/`): the `skill-authoring`
   discipline — confirm the parent's description carries trigger vocabulary
   for every child (platform names, "alert", "dashboard", "SLO",
-  "cardinality", "Datadog", "Grafana", "Loki", "Prometheus", "LGTM"),
-  confirm no content duplicates what `debugging`/`infra`/
-  `programming/observability.md` already own, and a read-through for the
+  "cardinality", "Datadog", "Grafana", "Loki", "Prometheus", "LGTM",
+  "coverage", "audit", "postmortem", "incident"), confirm no content
+  duplicates what `debugging`/`infra`/`programming/observability.md`
+  already own, and a read-through for the
   usual placeholder/contradiction/scope check.
 - **`sift`**: real code, real tests. `cargo test` covering the reduction
   engine against fixture data for all four modes, `cargo clippy --all-targets
