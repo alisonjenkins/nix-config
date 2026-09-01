@@ -37,8 +37,12 @@ test.
 
 ## Consequences
 
-- `histogram` mode's bucketing is accurate to the platform's native
-  timestamp resolution rather than being silently second-quantized.
+- `Event.timestamp` itself carries the platform's native sub-second
+  resolution end to end. `histogram` mode's bucketing
+  (`src/reduce/histogram.rs`) currently buckets at whole-second
+  granularity (`DateTime::timestamp()`, `Duration::as_secs()`) regardless
+  of that stored precision — a real gap, not yet Fast-follow-tracked, for
+  anyone building a sub-second histogram on top of `Event`.
 - Any new platform module (Fast-follow: Datadog, Tempo) must check its
   API's native timestamp format for the same class of precision loss
   before assuming integer-seconds parsing is sufficient — this ADR is the
