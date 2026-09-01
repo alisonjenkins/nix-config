@@ -60,7 +60,7 @@
   or unstructured `log.Println` — `slog.Error("order failed", "order_id",
   orderID, "err", err)` fields, not an interpolated string. See
   `../observability.md`.
-- `go test -bench` (with `testing.B`) for benchmarking, `pprof`
+- `go test -bench=. ./...` (with `testing.B`) for benchmarking, `pprof`
   (`go tool pprof`, or `net/http/pprof` for a running service) for
   profiling. See `../performance.md` before reaching for either.
 
@@ -69,8 +69,10 @@
   propagate its error: `sync.WaitGroup` for fire-and-collect,
   `golang.org/x/sync/errgroup` when any goroutine's error should cancel the
   others. A `go func() { ... }()` with no channel, `WaitGroup`, or context
-  tied to it is a leak or a silently swallowed panic waiting to happen —
-  this is Go's form of `rust.md`'s "every spawn has an owner" rule.
+  tied to it is a leak waiting to happen, and any error it returns
+  internally has nowhere to go and is silently dropped (a panic itself is
+  never silent — an unrecovered one crashes the whole process) — this is
+  Go's form of `rust.md`'s "every spawn has an owner" rule.
 - A goroutine that can run indefinitely takes a `context.Context` and
   selects on `ctx.Done()`, so cancelling the context actually stops it.
 - Protect shared state with a `sync.Mutex`/`sync.RWMutex` held for the
