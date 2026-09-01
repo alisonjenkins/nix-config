@@ -52,10 +52,25 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
             // split into whole seconds and a nanosecond remainder
             // rather than truncating the fractional part away, the
             // same precision loss `platform::loki` had before its fix.
-            let seconds = unix_seconds_float.trunc() as i64;
+            let whole_seconds = unix_seconds_float.trunc() as i64;
             let fractional_seconds = unix_seconds_float.fract();
-            #[allow(clippy::arithmetic_side_effects)] // fract() is in [0.0, 1.0), so this product stays within [0.0, 1_000_000_000.0) and fits u32 after truncation.
-            let subsec_nanos = (fractional_seconds * 1_000_000_000.0).round() as u32;
+            #[allow(clippy::arithmetic_side_effects)] // fract() is in [0.0, 1.0), so this product stays within [0.0, 1_000_000_000.0] and fits u32 after rounding.
+            let rounded_subsec_nanos = (fractional_seconds * 1_000_000_000.0).round() as u32;
+
+            // round() on a fract() close to 1.0 can produce exactly
+            // 1_000_000_000, which Utc::timestamp_opt rejects as an
+            // invalid nanosecond field — carry it into the next second
+            // instead of passing it through.
+            let (seconds, subsec_nanos) = if rounded_subsec_nanos == 1_000_000_000 {
+                (
+                    whole_seconds
+                        .checked_add(1)
+                        .ok_or_else(|| PrometheusError::MalformedValue(value_str.clone()))?,
+                    0,
+                )
+            } else {
+                (whole_seconds, rounded_subsec_nanos)
+            };
 
             let timestamp = Utc
                 .timestamp_opt(seconds, subsec_nanos)
@@ -156,6 +171,20 @@ mod tests {
             (123_000_000_i64 - i64::from(nanos)).abs() < 1000,
             "expected ~123_000_000 subsec nanos, got {nanos}"
         );
+    }
+
+    #[test]
+    fn carries_a_fractional_second_that_rounds_up_to_a_whole_second() {
+        // fract() here is 0.9999999995, which * 1_000_000_000 rounds to
+        // exactly 1_000_000_000 — an invalid nanosecond field on its
+        // own second. Regression test for the Copilot-review finding:
+        // this used to make Utc::timestamp_opt return None.
+        let body = r#"{"data":{"result":[{"metric":{},"values":[[1.9999999995,"1"]]}]}}"#;
+
+        let events = parse_query_range_response(body).unwrap();
+
+        assert_eq!(events[0].timestamp.timestamp(), 2);
+        assert_eq!(events[0].timestamp.timestamp_subsec_nanos(), 0);
     }
 
     #[test]
