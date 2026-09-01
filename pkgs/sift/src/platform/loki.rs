@@ -1,3 +1,4 @@
+use crate::auth::Auth;
 use crate::event::Event;
 use chrono::{TimeZone, Utc};
 use serde::Deserialize;
@@ -98,18 +99,18 @@ pub fn fetch(
     start_unix_ns: i64,
     end_unix_ns: i64,
     limit: usize,
+    auth: &Auth,
 ) -> Result<Vec<Event>, LokiError> {
     let client = reqwest::blocking::Client::new();
-    let response = client
+    let request = client
         .get(format!("{base_url}/loki/api/v1/query_range"))
         .query(&[
             ("query", query.to_string()),
             ("start", start_unix_ns.to_string()),
             ("end", end_unix_ns.to_string()),
             ("limit", limit.to_string()),
-        ])
-        .send()
-        .map_err(LokiError::RequestFailed)?;
+        ]);
+    let response = auth.apply(request).send().map_err(LokiError::RequestFailed)?;
 
     let status = response.status();
     if !status.is_success() {

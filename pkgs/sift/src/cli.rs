@@ -37,6 +37,16 @@ pub struct QueryArgs {
     #[arg(long, env = "SIFT_LGTM_URL")]
     pub url: String,
 
+    /// secretspec profile to resolve LGTM credentials from (e.g.
+    /// "work", "home") — resolved via secretspec.toml's provider
+    /// bindings (1Password, AWS SSM/Secrets Manager, Azure Key Vault,
+    /// ...). Omit for an unauthenticated query. The resolved secret
+    /// value itself is never a CLI argument or printed anywhere — only
+    /// this profile name crosses the command line. See
+    /// pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md
+    #[arg(long, env = "SIFT_LGTM_AUTH_PROFILE")]
+    pub auth_profile: Option<String>,
+
     /// Reduction mode
     #[arg(long, value_enum, default_value = "aggregate")]
     pub mode: Mode,

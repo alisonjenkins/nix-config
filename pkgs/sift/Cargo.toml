@@ -17,6 +17,7 @@ humantime = "2"
 thiserror = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
+secretspec = { version = "0.20", default-features = false, features = ["awssm", "awsps", "akv"] }
 
 [lints.clippy]
 unwrap_used = "deny"
