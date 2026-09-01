@@ -32,6 +32,12 @@
   `exc_info=True`.
 - f-strings for formatting; `logging` for output, never `print`, except in a
   CLI whose output *is* the product.
+- Structured logging: `structlog` where the project already has it,
+  otherwise stdlib `logging` with a JSON formatter — pass fields as
+  `logger.info("order_failed", order_id=order_id, reason=reason)` kwargs, not
+  an f-string. `contextvars` for request/job-scoped correlation IDs so they
+  appear on every line without threading a parameter through every call. See
+  `../observability.md` for what belongs in a log line and at what level.
 
 ## Scripts
 - A utility script resolves its own tools — a `nix-shell` shebang or a devshell
