@@ -18,7 +18,7 @@
   language's equivalent of Rust's `unwrap_used` deny: a lint turning a
   silently-ignorable failure into a build-time one. Never `_ = f()` to
   silence it; handle or explicitly propagate the error instead.
-- `go vet -race` (or `go test -race`) in CI for anything with goroutines or
+- `go test -race` in CI for anything with goroutines or
   shared state. The race detector finds real races that only manifest under
   specific interleavings — treat a race it reports as a bug, not a flaky
   test, and see `concurrency.md`.
