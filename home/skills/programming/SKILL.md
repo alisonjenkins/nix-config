@@ -1,6 +1,6 @@
 ---
 name: programming
-description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, input validation and secrets, observability (logging, tracing, structured log fields, correlation IDs, instrumenting new code so behaviour can be read from its output instead of guessed at), and performance work — profiling, benchmarking, and SIMD/vectorization.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs and their config files, including .NET Framework and .NET Core/5+. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript, shell, Go and C#/.NET, plus assertions and crash-early behaviour, thread-safety and shared state, input validation and secrets, observability (logging, tracing, structured log fields, correlation IDs, instrumenting new code so behaviour can be read from its output instead of guessed at), and performance work — profiling, benchmarking, and SIMD/vectorization.
 ---
 
 # Programming
@@ -72,6 +72,8 @@ Read the file matching what you are editing. If several apply, read each.
 | `*.nix`, `flake.nix` | [languages/nix.md](languages/nix.md) |
 | `*.ts`, `*.tsx`, `*.js`, `package.json` | [languages/typescript.md](languages/typescript.md) |
 | `*.sh`, `*.bash`, or a shell snippet embedded anywhere else, such as a hook, a CI step, a Nix string, a systemd unit | [languages/shell.md](languages/shell.md) |
+| `*.go`, `go.mod` | [languages/go.md](languages/go.md) |
+| `*.cs`, `*.csproj`, `*.sln`, .NET Framework or .NET Core/5+ | [languages/csharp.md](languages/csharp.md) |
 
 ## Related
 
