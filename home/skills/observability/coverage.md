@@ -55,7 +55,9 @@ ranks above a missing dashboard panel for a background batch job.
 
 ## Tooling
 
-No existing tool does the full enumerate → cross-reference → report
+No existing tool found during research (CloudQuery, Steampipe,
+cloud-custodian, Prowler, driftctl, osquery, Datadog's own coverage
+features) does the full enumerate → cross-reference → report
 loop across both cloud resources and host services for both Datadog and
 Grafana/Prometheus. `sift audit vm` / `sift audit aws` (see the `sift`
 package) is the fast-follow that closes this: reusing existing
