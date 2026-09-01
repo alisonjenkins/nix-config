@@ -32,7 +32,11 @@ fn main() -> ExitCode {
     }
 }
 
-fn run_loki(args: &QueryArgs) -> Result<(), String> {
+/// Computes the (start, now) query window from `--since`, shared by
+/// every platform's fetch — the parse-duration-then-subtract logic is
+/// identical regardless of which platform's timestamp format the
+/// caller ends up needing it in.
+fn query_window(args: &QueryArgs) -> Result<(chrono::DateTime<Utc>, chrono::DateTime<Utc>), String> {
     let since = humantime::parse_duration(&args.since)
         .map_err(|e| format!("invalid --since {:?}: {e}", args.since))?;
     let now = Utc::now();
@@ -40,7 +44,11 @@ fn run_loki(args: &QueryArgs) -> Result<(), String> {
     let start = now
         .checked_sub_signed(since_duration)
         .ok_or_else(|| format!("--since {:?} underflows the current time", args.since))?;
+    Ok((start, now))
+}
 
+fn run_loki(args: &QueryArgs) -> Result<(), String> {
+    let (start, now) = query_window(args)?;
     let start_ns = i64_seconds_to_nanos(start.timestamp())?;
     let end_ns = i64_seconds_to_nanos(now.timestamp())?;
 
@@ -52,13 +60,7 @@ fn run_loki(args: &QueryArgs) -> Result<(), String> {
 }
 
 fn run_prometheus(args: &QueryArgs) -> Result<(), String> {
-    let since = humantime::parse_duration(&args.since)
-        .map_err(|e| format!("invalid --since {:?}: {e}", args.since))?;
-    let now = Utc::now();
-    let since_duration = chrono::Duration::from_std(since).map_err(|e| e.to_string())?;
-    let start = now
-        .checked_sub_signed(since_duration)
-        .ok_or_else(|| format!("--since {:?} underflows the current time", args.since))?;
+    let (start, now) = query_window(args)?;
 
     info!(query = %args.query, url = %args.url, "querying Prometheus/Mimir");
     let events = platform::prometheus::fetch(
