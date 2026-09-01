@@ -100,9 +100,9 @@ say which.
 - `DateTime` has no reliable timezone identity — `DateTime.Now` vs
   `DateTime.UtcNow` plus an ambiguous `Kind` is a recurring source of
   off-by-timezone bugs. Prefer `DateTimeOffset` for anything crossing a
-  process or serialization boundary; the `times: ISO8601 UTC` rule (see
-  the parent `programming` mandate) means `DateTimeOffset.UtcNow` at the
-  point a timestamp is produced, not a local `DateTime` converted later.
+  process or serialization boundary — store and log timestamps as UTC,
+  produced with `DateTimeOffset.UtcNow` at the point they're created, not
+  a local `DateTime` converted later.
 - LINQ's deferred execution: an `IEnumerable<T>` built from `.Where()`/
   `.Select()` re-runs the whole pipeline on every enumeration and on every
   side-effecting source (a DB query, a stream read) — materialize with
