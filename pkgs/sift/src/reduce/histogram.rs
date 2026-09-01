@@ -39,7 +39,12 @@ pub fn parse_bucket_duration(input: &str) -> Result<Duration, HistogramError> {
 }
 
 pub fn histogram(events: &[Event], bucket: Duration) -> HistogramResult {
-    let bucket_seconds = bucket.as_secs().max(1) as i64;
+    // `bucket` is normally produced by parse_bucket_duration, which
+    // already rejects a seconds count too large for i64 — but
+    // histogram() is a public fn any caller can invoke directly with
+    // an arbitrary Duration, so clamp defensively rather than wrap
+    // negative on the `as i64` cast.
+    let bucket_seconds = bucket.as_secs().min(i64::MAX as u64).max(1) as i64;
     let mut counts: BTreeMap<i64, usize> = BTreeMap::new();
 
     for event in events {
@@ -120,5 +125,19 @@ mod tests {
         assert_eq!(result.buckets.len(), 2);
         assert_eq!(result.buckets[0].count, 2);
         assert_eq!(result.buckets[1].count, 1);
+    }
+
+    #[test]
+    fn does_not_wrap_negative_for_a_bucket_duration_that_bypasses_parse_bucket_duration() {
+        // histogram() is public and callable with any Duration, not
+        // just one that went through parse_bucket_duration's i64
+        // guard. Regression test for the Copilot-review finding: this
+        // used to panic or bucket with a wrapped-negative bucket size.
+        let events = vec![event_at(0)];
+
+        let result = histogram(&events, Duration::from_secs(u64::MAX));
+
+        assert_eq!(result.buckets.len(), 1);
+        assert_eq!(result.buckets[0].count, 1);
     }
 }
