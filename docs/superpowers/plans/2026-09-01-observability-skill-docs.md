@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the `observability` skill family (investigation method + improvement practice + Datadog/Grafana-LGTM-Prometheus platform guidance) to `home/skills/`, wired into the existing `programming`/`debugging`/`infra`/`review` skills without duplicating any of them.
+**Goal:** Add the `observability` skill family (investigation method, improvement practice, proactive coverage auditing, postmortem practice, and Datadog/Grafana-LGTM-Prometheus platform guidance) to `home/skills/`, wired into the existing `programming`/`debugging`/`infra`/`review` skills without duplicating any of them.
 
 **Architecture:** A new family directory `home/skills/observability/` following the established family pattern (parent `SKILL.md` with routing table, flat by-concern children, one `platforms/` subdirectory for the one per-platform dimension — mirroring `programming/languages/*.md`). Each file is markdown only; there is no code in this plan (the `sift` CLI it references is a separate plan/package and does not need to exist yet).
 
@@ -27,11 +27,13 @@
 - Create: `home/skills/observability/SKILL.md`
 - Create: `home/skills/observability/investigation.md` (stub — one line, replaced in Task 2)
 - Create: `home/skills/observability/improving.md` (stub — one line, replaced in Task 3)
-- Create: `home/skills/observability/platforms/datadog.md` (stub — one line, replaced in Task 4)
-- Create: `home/skills/observability/platforms/grafana-lgtm.md` (stub — one line, replaced in Task 5)
+- Create: `home/skills/observability/coverage.md` (stub — one line, replaced in Task 4)
+- Create: `home/skills/observability/postmortems.md` (stub — one line, replaced in Task 5)
+- Create: `home/skills/observability/platforms/datadog.md` (stub — one line, replaced in Task 6)
+- Create: `home/skills/observability/platforms/grafana-lgtm.md` (stub — one line, replaced in Task 7)
 
 **Interfaces:**
-- Produces: the routing table other tasks' files are linked from. Tasks 2–5 each replace their stub file's single placeholder line with real content; they do not touch `SKILL.md` again.
+- Produces: the routing table other tasks' files are linked from. Tasks 2–7 each replace their stub file's single placeholder line with real content; they do not touch `SKILL.md` again.
 
 Stubs exist so `just build ali-desktop` (which evaluates the whole flake, including every file under `home/skills/`) succeeds after this task even though the child content isn't written yet — an unresolved markdown link target isn't a Nix eval error, but writing real files now (even one-line ones) means every subsequent task's diff is additive-only, never "create," which keeps each task's diff focused on its own content.
 
@@ -45,6 +47,16 @@ Stubs exist so `just build ali-desktop` (which evaluates the whole flake, includ
 `home/skills/observability/improving.md`:
 ```markdown
 # Improving observability
+```
+
+`home/skills/observability/coverage.md`:
+```markdown
+# Finding what needs monitoring
+```
+
+`home/skills/observability/postmortems.md`:
+```markdown
+# Postmortems
 ```
 
 `home/skills/observability/platforms/datadog.md`:
@@ -62,15 +74,17 @@ Stubs exist so `just build ali-desktop` (which evaluates the whole flake, includ
 ```markdown
 ---
 name: observability
-description: Use when debugging or investigating a live/production system's performance or reliability through an observability platform (Datadog, Grafana/LGTM — Loki, Tempo, Mimir, or a directly-run Prometheus), including reading dashboards, querying logs/traces/metrics, or improving alerting/dashboards/SLOs/cost. Not for instrumenting your own code (see the programming skill's observability.md) and not for deploying or mutating infrastructure (see the infra skill).
+description: Use when debugging or investigating a live/production system's performance or reliability through an observability platform (Datadog, Grafana/LGTM — Loki, Tempo, Mimir, or a directly-run Prometheus), including reading dashboards, querying logs/traces/metrics, improving alerting/dashboards/SLOs/cost, auditing a system (a VM or a set of cloud resources) for monitoring coverage gaps, or writing a postmortem after an incident. Not for instrumenting your own code (see the programming skill's observability.md) and not for deploying or mutating infrastructure (see the infra skill).
 ---
 
 # Observability
 
 This family teaches how to investigate a live system through an
-observability platform, and how to improve observability itself
-(close gaps, design better alerts and dashboards, control cost) as a
-deliberate activity rather than a side effect of firefighting.
+observability platform, how to proactively find what isn't monitored
+yet, how to reconstruct and write up an incident afterward, and how to
+improve observability itself (close gaps, design better alerts and
+dashboards, control cost) as a deliberate activity rather than a side
+effect of firefighting.
 
 ## What this is not
 
@@ -95,6 +109,8 @@ deliberate activity rather than a side effect of firefighting.
 |---|---|
 | Investigating a performance or reliability problem on a live system | [investigation.md](investigation.md) |
 | Closing an instrumentation gap, designing an alert or dashboard, defining an SLO, or controlling log/metric/trace cost | [improving.md](improving.md) |
+| Finding out what isn't monitored yet — auditing a VM/host or a set of cloud resources for coverage gaps before an investigation needs them | [coverage.md](coverage.md) |
+| Reconstructing an incident after the fact and writing it up | [postmortems.md](postmortems.md) |
 
 ## Platform routing
 
@@ -114,6 +130,8 @@ deliberate activity rather than a side effect of firefighting.
 - Reducing a platform's raw output before it reaches Claude's context
   (aggregate/top-N/histogram/diff instead of a raw dump): the `sift`
   CLI, referenced from `investigation.md` and both platform files.
+- Paging rotations and live incident comms are out of scope for this
+  family — `postmortems.md` starts once the incident is over.
 ```
 
 - [ ] **Step 3: Verify the build**
@@ -456,7 +474,190 @@ git commit -m "feat(observability-skill): write improving.md"
 
 ---
 
-### Task 4: Write `platforms/datadog.md`
+### Task 4: Write `coverage.md`
+
+**Files:**
+- Modify: `home/skills/observability/coverage.md` (replace the Task 1 stub)
+
+**Interfaces:**
+- Consumes: `investigation.md`'s "reporting a finding" format (Task 2, referenced for how to report a gap) and its "distrust the dashboard" section (Task 2, referenced for the absent-`up`-series caveat).
+- Produces: nothing consumed by later tasks in this plan.
+
+- [ ] **Step 1: Write the file**
+
+```markdown
+# Finding what needs monitoring
+
+Proactive, not reactive: finding what *should* be monitored before an
+investigation ever needs it, across a VM/host or a set of cloud
+resources making up a system. Distinct from `improving.md`'s "closing
+gaps found during investigation" — that's reactive, triggered by an
+investigation that already hit a dead end; this is the audit that finds
+the dead end before anyone falls into it.
+
+## Enumerate before you check coverage
+
+You cannot know what's unmonitored without first knowing what exists.
+Don't hand-roll resource enumeration — lean on existing inventory
+tooling:
+
+- **Host/VM level**: `systemctl list-units` for running services;
+  `osquery` (SQL-queryable OS state, including a `systemd_units` table
+  and listening sockets) for a scriptable structured inventory beyond
+  what `systemctl` alone gives you.
+- **Cloud resources**: `terraform state list` (or `terraform show
+  -json`) when the system is IaC-managed — the fastest, most accurate
+  inventory of what's *supposed* to exist, and ties directly into
+  `infra`'s "IaC is the source of truth" principle. CloudQuery or
+  Steampipe (SQL-queryable cloud-provider APIs) for a live inventory
+  independent of IaC state, useful for catching drift — a resource that
+  exists in the cloud but not in Terraform state is itself a finding,
+  the observability-adjacent cousin of `infra/kubernetes.md`'s "a
+  `kubectl apply` outside GitOps is lost on next reconcile."
+
+## Cross-reference against instrumentation, per platform
+
+- **Datadog** ships real coverage tooling for this already — Software
+  Catalog and Universal Service Monitoring surface services with no
+  telemetry/SLOs/monitors, Resource Catalog and Cloud Security Posture
+  Management do the same for cloud resources. Use these directly before
+  reaching for anything else; they only see what Datadog was already
+  pointed at, so a resource entirely outside Datadog's reach still
+  needs the enumeration step above to be found at all.
+- **Grafana/Prometheus** has no packaged equivalent. Cross-reference
+  Prometheus's own target list (`/api/v1/targets`) against the
+  enumerated resource/service list by hand, and treat an absent `up`
+  series for an expected target as a gap in its own right — not just
+  "no data," an actual finding (see `investigation.md`'s "distrust the
+  dashboard": a target that was never scraped and a target that's
+  failing to scrape both show as missing data, so confirm which one
+  you're looking at before reporting either as healthy or as down).
+
+## Report gaps the same way as any other finding
+
+Use `investigation.md`'s "reporting a finding" format: what was
+enumerated, what coverage was found or missing for each, ranked by what
+a gap there would actually cost if it went unnoticed during an
+incident — a missing alert on a primary database's connection pool
+ranks above a missing dashboard panel for a background batch job.
+
+## Tooling
+
+No existing tool does the full enumerate → cross-reference → report
+loop across both cloud resources and host services for both Datadog and
+Grafana/Prometheus. `sift audit vm` / `sift audit aws` (see the `sift`
+package) is the fast-follow that closes this: reusing existing
+enumeration tooling (Terraform state, CloudQuery/Steampipe, osquery)
+rather than reinventing inventory, adding only the coverage
+cross-reference and gap-report layer described above.
+```
+
+- [ ] **Step 2: Verify the build**
+
+Run: `just build ali-desktop`
+Expected: succeeds (exit 0).
+
+- [ ] **Step 3: Verify no restatement of `investigation.md`'s reporting format**
+
+Run: `grep -c "Not yet confirmed\|checkout-service jumped" home/skills/observability/coverage.md`
+Expected: 0 — confirms the file references the reporting format by name
+rather than copying `investigation.md`'s worked example into a second
+file.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add home/skills/observability/coverage.md
+git commit -m "feat(observability-skill): write coverage.md"
+```
+
+---
+
+### Task 5: Write `postmortems.md`
+
+**Files:**
+- Modify: `home/skills/observability/postmortems.md` (replace the Task 1 stub)
+
+**Interfaces:**
+- Consumes: `investigation.md`'s method and "reporting a finding"/"distrust the dashboard" sections (Task 2, applied retroactively to a whole incident); `improving.md`'s "closing gaps" section (Task 3, referenced for where action items route); `coverage.md`'s framing (Task 4, referenced for the specific case of a missing-monitor action item).
+- Produces: nothing consumed by later tasks in this plan.
+
+- [ ] **Step 1: Write the file**
+
+```markdown
+# Postmortems
+
+Full postmortem practice: reconstructing what happened, writing it up
+blamelessly, and tracking the resulting action items. Paging rotations
+and live incident comms stay out of scope — this file starts once the
+incident is over and the question becomes "what happened and what do we
+do about it."
+
+## Reconstruction is investigation, applied after the fact, for the whole incident
+
+`investigation.md`'s method — symptom-first triage, correlating across
+signals, distrusting the dashboard — applies here too, but for the
+entire incident window rather than one symptom. Build the full timeline
+by pulling the same correlation thread (trace ID → traces → logs)
+across the whole window, not just the first anomaly found — an incident
+with one root cause commonly has multiple visible symptoms across
+different services, and a postmortem that stops at the first one found
+produces an incomplete or wrong root cause.
+
+`investigation.md`'s "distrust the dashboard" checks apply retroactively
+too: a metric that looked fine during the incident because its query
+was scoped wrong or its time range defaulted somewhere unhelpful needs
+re-checking with the benefit of hindsight, not trusted just because
+nobody caught the problem with it at the time.
+
+## Blameless means explaining what made sense at the time, not who to fault
+
+A postmortem that names an individual as the cause has usually stopped
+one level too shallow. "Engineer X pushed a bad config" is an
+observation, not a root cause — the root cause is whatever let a bad
+config reach production undetected: missing validation, missing staging
+parity, missing alert on the exact signal that would have caught it
+(which is itself a `coverage.md`-style gap worth naming explicitly in
+the postmortem's follow-up items).
+
+## Action items are gap-closing, and they route to the file that owns the gap
+
+A missing instrumentation signal found while reconstructing the
+timeline routes to `programming/observability.md` (write the
+instrumentation) via `improving.md`'s "closing gaps" section; a missing
+alert or monitoring coverage routes to `coverage.md` or `improving.md`'s
+alert-design section. The postmortem's job is to *find and route* the
+gap, not to re-derive how to fix it — this file does not duplicate
+either of those files' content.
+
+## A postmortem with no unresolved action items is a red flag
+
+If reconstructing an incident revealed nothing worth fixing, either the
+reconstruction stopped too early or the incident really was pure bad
+luck with no systemic contributor — the latter is rare enough that it
+deserves stating explicitly rather than silently assumed.
+```
+
+- [ ] **Step 2: Verify the build**
+
+Run: `just build ali-desktop`
+Expected: succeeds (exit 0).
+
+- [ ] **Step 3: Verify no restatement of `investigation.md`'s method definitions**
+
+Run: `grep -c "reproduce\|probe the layer\|positive control" home/skills/observability/postmortems.md`
+Expected: 0 — same check as Task 2 Step 3, applied to this file.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add home/skills/observability/postmortems.md
+git commit -m "feat(observability-skill): write postmortems.md"
+```
+
+---
+
+### Task 6: Write `platforms/datadog.md`
 
 **Files:**
 - Modify: `home/skills/observability/platforms/datadog.md` (replace the Task 1 stub)
@@ -580,7 +781,7 @@ git commit -m "feat(observability-skill): write platforms/datadog.md"
 
 ---
 
-### Task 5: Write `platforms/grafana-lgtm.md`
+### Task 7: Write `platforms/grafana-lgtm.md`
 
 **Files:**
 - Modify: `home/skills/observability/platforms/grafana-lgtm.md` (replace the Task 1 stub)
@@ -697,12 +898,12 @@ git commit -m "feat(observability-skill): write platforms/grafana-lgtm.md"
 
 ---
 
-### Task 6: Final self-review pass and PR
+### Task 8: Final self-review pass and PR
 
 **Files:** none created or modified — verification only.
 
 **Interfaces:**
-- Consumes: every file from Tasks 1–5.
+- Consumes: every file from Tasks 1–7.
 - Produces: nothing; terminal task of this plan.
 
 - [ ] **Step 1: Run the full build one more time from a clean state**
@@ -712,8 +913,8 @@ Expected: succeeds (exit 0).
 
 - [ ] **Step 2: Confirm every routing table entry resolves**
 
-Run: `for f in investigation.md improving.md platforms/datadog.md platforms/grafana-lgtm.md; do test -f "home/skills/observability/$f" && echo "OK: $f" || echo "MISSING: $f"; done`
-Expected: four `OK:` lines, no `MISSING:` lines.
+Run: `for f in investigation.md improving.md coverage.md postmortems.md platforms/datadog.md platforms/grafana-lgtm.md; do test -f "home/skills/observability/$f" && echo "OK: $f" || echo "MISSING: $f"; done`
+Expected: six `OK:` lines, no `MISSING:` lines.
 
 - [ ] **Step 3: Confirm the description states the negative case**
 
@@ -728,7 +929,7 @@ git push -u origin docs/observability-skill-implementation
 gh pr create --title "feat(observability-skill): add investigation and improvement skill family" --body "$(cat <<'EOF'
 ## Summary
 - Implements docs/superpowers/specs/2026-09-01-observability-skill-design.md's skill-docs half (the sift CLI is a separate plan/PR).
-- Adds home/skills/observability/: SKILL.md (routing), investigation.md (platform-agnostic method), improving.md (gap-closing, alert/dashboard design incl. anti-flapping/exception-based/priority-routing/cause-over-symptom, SLOs, cost control), platforms/datadog.md, platforms/grafana-lgtm.md (LGTM + Prometheus).
+- Adds home/skills/observability/: SKILL.md (routing), investigation.md (platform-agnostic method), improving.md (gap-closing, alert/dashboard design incl. anti-flapping/exception-based/priority-routing/cause-over-symptom, SLOs, cost control), coverage.md (proactive monitoring-gap audits across a VM or cloud resources), postmortems.md (full postmortem practice), platforms/datadog.md, platforms/grafana-lgtm.md (LGTM + Prometheus).
 - Cross-references debugging, infra, and programming/observability.md throughout instead of duplicating them.
 
 ## Test plan
@@ -739,7 +940,7 @@ EOF
 )"
 ```
 
-Note: this task assumes Tasks 1–5 were committed on a branch named
+Note: this task assumes Tasks 1–7 were committed on a branch named
 `docs/observability-skill-implementation`, branched from an up-to-date
 `main` (`git fetch origin main && git checkout -b
 docs/observability-skill-implementation origin/main` before Task 1). If
