@@ -124,7 +124,8 @@ least-portable tool here; use it last, not first.
   (`-Rpass=loop-vectorize` for LLVM-based compilers) before assuming
   intrinsics are needed at all.
 - **Prefer a portable abstraction over target-specific intrinsics** when the
-  language has one: Rust's `std::simd` (portable-simd) or a crate like `wide`
+  language has one: Rust's portable SIMD (`std::simd`, where the toolchain
+  supports it) or a crate like `wide`
   before hand-written `_mm256_*` AVX2 intrinsics; a runtime-dispatched crate
   (`multiversion`, `simdeez`-style) when the binary must run on machines with
   different instruction set extensions. Hand-written per-ISA intrinsics are a
