@@ -9,8 +9,8 @@ that apply now.
 
 ## Scope before reading
 
-Pick the boundary explicitly before starting — a whole repo, one crate/
-package, one directory — and say what it is. "Audit the codebase" with no
+Pick the boundary explicitly before starting — a whole repo, one
+crate/package, one directory — and say what it is. "Audit the codebase" with no
 scope produces either a shallow pass over everything or an exhaustive pass
 that never finishes; neither is useful. Identify which languages are present
 and load the matching per-language file(s) from `programming` for each, plus
@@ -71,8 +71,9 @@ occurrence as a separate finding buries the few that are genuinely urgent
 under noise and makes the report unusable.
 
 - **Group by rule, not by occurrence.** One finding: "no `[lints.clippy]`
-  deny table in any of the 6 crates; `rg -c 'unwrap\(\)' src/` shows 340
-  call sites that would need triage once it's added" — not 340 findings.
+  deny table in any of the 6 crates; `rg -c 'unwrap\(\)' src/ | awk -F:
+  '{s+=$2} END {print s}'` shows 340 call sites (summed across files) that
+  would need triage once it's added" — not 340 findings.
 - **Severity still applies** (see `SKILL.md`'s rubric ordering): a systemic
   gap in error handling on a request path ranks above a missing newtype on
   an internal helper.
