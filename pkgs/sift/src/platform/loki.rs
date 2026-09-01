@@ -16,14 +16,22 @@ pub enum LokiError {
     Parse(#[from] serde_json::Error),
     #[error("Loki log entry had a non-numeric or malformed timestamp: {0:?}")]
     MalformedTimestamp(String),
+    #[error("Loki query_range reported status {status:?}: {message}")]
+    ApiError { status: String, message: String },
 }
 
 #[derive(Debug, Deserialize)]
 struct QueryRangeResponse {
-    data: QueryRangeData,
+    status: String,
+    #[serde(default)]
+    data: Option<QueryRangeData>,
+    #[serde(rename = "errorType", default)]
+    error_type: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct QueryRangeData {
     result: Vec<StreamResult>,
 }
@@ -40,8 +48,19 @@ struct StreamResult {
 pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, LokiError> {
     let parsed: QueryRangeResponse = serde_json::from_str(body)?;
 
+    if parsed.status != "success" {
+        let message = parsed
+            .error
+            .or(parsed.error_type)
+            .unwrap_or_else(|| "no error message provided".to_string());
+        return Err(LokiError::ApiError {
+            status: parsed.status,
+            message,
+        });
+    }
+
     let mut events = Vec::new();
-    for stream in parsed.data.result {
+    for stream in parsed.data.unwrap_or_default().result {
         for [ns_timestamp, line] in stream.values {
             let nanos: i64 = ns_timestamp
                 .parse()
@@ -110,7 +129,12 @@ pub fn fetch(
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::panic
+    )]
     use super::*;
 
     const SAMPLE_RESPONSE: &str = r#"{
@@ -142,7 +166,7 @@ mod tests {
 
     #[test]
     fn preserves_sub_second_timestamp_precision() {
-        let body = r#"{"data":{"result":[{"stream":{},"values":[["1725000000123456789","x"]]}]}}"#;
+        let body = r#"{"status":"success","data":{"result":[{"stream":{},"values":[["1725000000123456789","x"]]}]}}"#;
 
         let events = parse_query_range_response(body).unwrap();
 
@@ -158,8 +182,27 @@ mod tests {
 
     #[test]
     fn rejects_a_non_numeric_timestamp() {
-        let bad = r#"{"data":{"result":[{"stream":{},"values":[["not-a-number","x"]]}]}}"#;
+        let bad = r#"{"status":"success","data":{"result":[{"stream":{},"values":[["not-a-number","x"]]}]}}"#;
         let result = parse_query_range_response(bad);
         assert!(matches!(result, Err(LokiError::MalformedTimestamp(_))));
+    }
+
+    #[test]
+    fn surfaces_loki_api_level_error_status_and_message() {
+        // A 200 response body can still carry status="error" — this
+        // used to fall through to a generic serde JSON-parse failure
+        // and discard Loki's structured error message. Regression test
+        // for the Copilot-review finding.
+        let body = r#"{"status":"error","errorType":"bad_data","error":"parse error: unexpected character"}"#;
+
+        let result = parse_query_range_response(body);
+
+        match result {
+            Err(LokiError::ApiError { status, message }) => {
+                assert_eq!(status, "error");
+                assert_eq!(message, "parse error: unexpected character");
+            }
+            other => panic!("expected LokiError::ApiError, got {other:?}"),
+        }
     }
 }
