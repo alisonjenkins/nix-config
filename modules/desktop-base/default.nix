@@ -30,10 +30,12 @@ in
     # destination the request was sent to, so conntrack never marks it
     # "related" — it lands on our ephemeral src port, not 1900, so
     # allowedUDPPorts (which only matches dest port) can't allow it. Allow by
-    # the reply's source port instead. Not scoped to a LAN subnet since these
-    # are laptops that roam networks.
+    # the reply's source port instead, restricted to ephemeral destination
+    # ports (SSDP client sockets don't bind low/privileged ports) so this
+    # can't be used to bypass the firewall for a well-known service port.
+    # Not scoped to a LAN subnet since these are laptops that roam networks.
     networking.firewall.extraInputRules = ''
-      udp sport 1900 accept comment "SSDP (UPnP discovery) replies"
+      udp sport 1900 udp dport 1024-65535 accept comment "SSDP (UPnP discovery) replies"
     '';
 
     # `sudo -A` (e.g. from an agent's shell tool with no controlling tty)
