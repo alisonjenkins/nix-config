@@ -416,13 +416,21 @@ in
             })
           ];
 
-          # mcp-nixos test_read_text_file is flaky: picks a random text file
-          # from /nix/store and asserts the substring "Error" doesn't appear
-          # in the read result. Any store file containing the word "Error"
-          # (e.g. python source defining error classes) fails it.
           mcp-nixos = mprev.mcp-nixos.overridePythonAttrs (old: {
             disabledTests = (old.disabledTests or []) ++ [
+              # Flaky: picks a random text file from /nix/store and asserts
+              # the substring "Error" doesn't appear in the read result. Any
+              # store file containing the word "Error" (e.g. python source
+              # defining error classes) fails it.
               "test_read_text_file"
+              # tests/test_env_file_safety.py: each spawns a subprocess that
+              # imports mcp_nixos.server fresh. That import reaches out over
+              # the network (fastmcp/mcp client init), which the build
+              # sandbox blocks, so the subprocess hangs until its 60s
+              # internal timeout kills it and the test fails/hangs the build.
+              "test_startup_survives_non_utf8_dotenv"
+              "test_explicit_fastmcp_env_file_is_preserved"
+              "test_default_fastmcp_env_file_points_to_devnull"
             ];
           });
         })
