@@ -55,10 +55,15 @@ pub fn histogram(events: &[Event], bucket: Duration) -> HistogramResult {
             #[allow(clippy::arithmetic_side_effects)] // same bound as above: bucket_index * bucket_seconds stays far below i64::MAX.
             let bucket_start_secs = bucket_index * bucket_seconds;
             HistogramBucket {
+                // bucket_start_secs is a product of two real, bounded
+                // i64 values, so this can't fail in practice — but a
+                // deterministic sentinel (not the current wall clock)
+                // keeps a hypothetical failure visibly wrong rather
+                // than silently plausible.
                 bucket_start: Utc
                     .timestamp_opt(bucket_start_secs, 0)
                     .single()
-                    .unwrap_or_else(Utc::now),
+                    .unwrap_or(DateTime::<Utc>::MIN_UTC),
                 count,
             }
         })
