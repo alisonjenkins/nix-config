@@ -53,7 +53,9 @@ pub struct QueryArgs {
     #[arg(long, default_value = "5m")]
     pub bucket: String,
 
-    /// Baseline lookback duration for diff mode, e.g. "1h"
+    /// Baseline lookback duration for diff mode, e.g. "1h" (not yet
+    /// wired: diff mode is implemented in reduce::diff but not callable
+    /// from the CLI yet — see pkgs/sift/docs/adr/0003)
     #[arg(long, default_value = "1h")]
     pub baseline: String,
 
