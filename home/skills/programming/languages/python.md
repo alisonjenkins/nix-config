@@ -5,6 +5,10 @@
   devshell. Do not `pip install` into the user profile.
 - Format with `ruff format`, lint with `ruff check`. Type-check with `mypy`
   where the project already has annotations.
+- `py-spy` or `scalene` for profiling, `pyperf`/`pytest-benchmark` for
+  benchmarking, `numpy` vectorized ops over a manual Python loop for
+  data-parallel work. See `../performance.md` before reaching for any of
+  these.
 - Guard rail: on a new project (or a module you can annotate fully), run
   `mypy --strict` rather than the default permissive mode — Python's type
   system only catches what you've told it to check, so an unannotated
