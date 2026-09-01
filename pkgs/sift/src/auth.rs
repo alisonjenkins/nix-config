@@ -27,7 +27,7 @@ pub enum AuthError {
 /// passes a profile *name* on the command line — the resolved plaintext
 /// value never appears in a CLI argument, so it never reaches anything
 /// an LLM-driven invocation of `sift` could observe. See
-/// docs/adr/0006-secretspec-credential-resolution.md.
+/// pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md.
 #[derive(Default)]
 pub struct Auth {
     /// Wrapped in `SecretString` (zeroized on drop, `Debug`-redacted) —

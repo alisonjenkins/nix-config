@@ -2,8 +2,8 @@
 
 `sift` resolves LGTM (Loki/Prometheus) credentials via
 [secretspec](https://secretspec.dev), never via a raw token typed into a
-CLI flag. See `docs/adr/0006-secretspec-credential-resolution.md` for
-why, and `docs/adr/0007-credential-caching-and-memory-hygiene.md` for
+CLI flag. See `pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md`
+for why, and `pkgs/sift/docs/adr/0007-credential-caching-and-memory-hygiene.md` for
 how repeated `sift` calls avoid repeated 1Password prompts.
 
 ## The short version
