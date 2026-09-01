@@ -23,8 +23,19 @@ pub struct HistogramResult {
 }
 
 pub fn parse_bucket_duration(input: &str) -> Result<Duration, HistogramError> {
-    humantime::parse_duration(input)
-        .map_err(|e| HistogramError::InvalidBucketDuration(input.to_string(), e.to_string()))
+    let duration = humantime::parse_duration(input)
+        .map_err(|e| HistogramError::InvalidBucketDuration(input.to_string(), e.to_string()))?;
+
+    // histogram() casts bucket.as_secs() to i64; a duration whose
+    // seconds don't fit would wrap to a negative bucket size there.
+    if i64::try_from(duration.as_secs()).is_err() {
+        return Err(HistogramError::InvalidBucketDuration(
+            input.to_string(),
+            "duration exceeds i64::MAX seconds".to_string(),
+        ));
+    }
+
+    Ok(duration)
 }
 
 pub fn histogram(events: &[Event], bucket: Duration) -> HistogramResult {
@@ -79,6 +90,16 @@ mod tests {
     #[test]
     fn rejects_an_invalid_duration_string() {
         let result = parse_bucket_duration("not-a-duration");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_a_duration_whose_seconds_overflow_i64() {
+        // humantime parses this fine as a u64-second Duration, but
+        // histogram() later casts .as_secs() to i64, which would wrap
+        // negative for a value this large. Regression test for the
+        // Copilot-review finding.
+        let result = parse_bucket_duration("500000000000y");
         assert!(result.is_err());
     }
 
