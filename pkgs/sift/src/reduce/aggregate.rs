@@ -16,7 +16,8 @@ pub fn aggregate(events: &[Event], group_by: &str) -> AggregateResult {
             .get(group_by)
             .cloned()
             .unwrap_or_else(|| "<missing>".to_string());
-        *counts.entry(key).or_insert(0) += 1;
+        let entry = counts.entry(key).or_insert(0);
+        *entry = entry.saturating_add(1);
     }
     let total = events.len();
     AggregateResult { counts, total }
@@ -24,6 +25,7 @@ pub fn aggregate(events: &[Event], group_by: &str) -> AggregateResult {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
     use super::*;
     use chrono::Utc;
 
