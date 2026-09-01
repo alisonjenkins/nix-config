@@ -73,7 +73,8 @@ bars in `memcpy`/`alloc`/a constructor is the signal, not a guess.
   object) when it only reads the data forces every caller to copy, whether or
   not that caller already owns something borrowable. Take `&str`/`&[T]` (or
   the language's equivalent read-only view) and let the few callers that
-  truly need ownership clone at their own call site — see `rust.md`'s
+  truly need ownership clone at their own call site — see
+  `languages/rust.md`'s
   "prefer borrowed parameters" idiom, which is this rule's Rust-specific
   form.
 - **Parse or deserialize into views over the original buffer, not fresh
