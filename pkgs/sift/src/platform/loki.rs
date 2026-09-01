@@ -94,7 +94,10 @@ pub fn fetch(
 
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().unwrap_or_default();
+        let body = match response.text() {
+            Ok(body) => body,
+            Err(read_err) => format!("<failed to read error response body: {read_err}>"),
+        };
         return Err(LokiError::Status {
             status: status.as_u16(),
             body,
