@@ -56,13 +56,13 @@ home/skills/observability/
     datadog.md              — pup CLI + logs/APM/metrics/monitors
     grafana-lgtm.md           — LogQL/PromQL/TraceQL/Grafana API + Prometheus
 
-pkgs/obs-cli/                — Rust CLI: reduces platform output before Claude sees it
+pkgs/sift/                — Rust CLI: reduces platform output before Claude sees it
 ```
 
 This mirrors the existing family pattern (`programming/languages/*.md` for
 the one per-language dimension, flat by-concern files alongside it): platform
 is the one dimension here, so it gets its own subdirectory; investigation
-method and improvement practice are by-concern and stay flat. `obs-cli` is a
+method and improvement practice are by-concern and stay flat. `sift` is a
 new package under `pkgs/`, following this repo's existing convention for
 custom software, not part of the skill directory itself — the skill files
 teach when and how to reach for it.
@@ -183,19 +183,19 @@ confuse with this one.
   present, gets its own note since that's the common personal-infra shape.
 - No hardcoded instance URLs/auth — generic query/API guidance only.
 
-### `pkgs/obs-cli` — token-efficient analysis tooling
+### `pkgs/sift` — token-efficient analysis tooling
 
-A single Rust binary (`obs`), one CLI with subcommands per platform, sharing
+A single Rust binary (`sift`), one CLI with subcommands per platform, sharing
 one reduction engine so the four reduction techniques are implemented once
 and available everywhere instead of duplicated per platform:
 
 ```
-obs datadog logs    <query>  [--mode ...] [--group-by ...] ...
-obs datadog metrics <query>  [--mode ...] ...
-obs datadog traces  <query>  [--mode ...] ...
-obs lgtm logs        <logql>  [--mode ...] ...   # Loki
-obs lgtm metrics     <promql> [--mode ...] ...   # Mimir/Prometheus
-obs lgtm traces      <traceql>[--mode ...] ...   # Tempo
+sift datadog logs    <query>  [--mode ...] [--group-by ...] ...
+sift datadog metrics <query>  [--mode ...] ...
+sift datadog traces  <query>  [--mode ...] ...
+sift lgtm logs        <logql>  [--mode ...] ...   # Loki
+sift lgtm metrics     <promql> [--mode ...] ...   # Mimir/Prometheus
+sift lgtm traces      <traceql>[--mode ...] ...   # Tempo
 ```
 
 Shared flags across every query subcommand:
@@ -241,7 +241,7 @@ Two different kinds of validation for two different kinds of deliverable:
   confirm no content duplicates what `debugging`/`infra`/
   `programming/observability.md` already own, and a read-through for the
   usual placeholder/contradiction/scope check.
-- **`obs-cli`**: real code, real tests. `cargo test` covering the reduction
+- **`sift`**: real code, real tests. `cargo test` covering the reduction
   engine against fixture data for all four modes, `cargo clippy --all-targets
   -- -D warnings` clean, and `just build` (or the equivalent package build)
   succeeding before this is considered done — per the `testing` and
@@ -251,23 +251,23 @@ Two different kinds of validation for two different kinds of deliverable:
 ## Open questions for the implementation plan
 
 None blocking — the four sub-areas of `improving.md`, the platform split,
-the cost-control content, and `obs-cli`'s shape (unified Rust CLI, four
+the cost-control content, and `sift`'s shape (unified Rust CLI, four
 reduction modes, per-platform subcommands) are all settled. The
 implementation plan should decide:
 
-- **Sequencing**: skill docs and `obs-cli` are different kinds of work
+- **Sequencing**: skill docs and `sift` are different kinds of work
   (markdown authoring vs a real Rust package with its own test suite) —
   the plan should treat them as separate phases/PRs rather than one
   monolithic change, the same way the `programming` skill's observability/
   performance additions each landed as their own atomic PR. Whether skill
-  docs land before, after, or interleaved with `obs-cli` is the plan's call;
-  the skill files can reference `obs-cli` by name before it exists (the
+  docs land before, after, or interleaved with `sift` is the plan's call;
+  the skill files can reference `sift` by name before it exists (the
   `programming` skill family already has precedent for a doc referencing a
   not-yet-built follow-up in `PENDING.md`).
 - File-by-file writing order for the skill docs (parent + routing first, so
   each child can be reviewed against a stable routing table).
 - Whether `platforms/*.md` needs its own further split later if either grows
   past what one file should carry (see `skill-authoring/context-budget.md`).
-- `obs-cli`'s exact HTTP client trait boundary and fixture format for the
+- `sift`'s exact HTTP client trait boundary and fixture format for the
   reduction-engine tests — a design-level decision, not architecture, left
   to the plan/implementation.
