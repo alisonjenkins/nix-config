@@ -4,8 +4,10 @@
 - Node and package manager come from the flake devshell. Lockfile is committed
   and authoritative; never regenerate it as a side effect of another change.
 - `tsc --noEmit` clean is the bar, alongside the project's linter.
-- `clinic.js`/`0x` for profiling, `tinybench`/`mitata` for benchmarking. See
-  `../performance.md` before reaching for either.
+- `clinic.js`/`0x` for profiling, `tinybench`/`mitata` for benchmarking,
+  `ArrayBuffer`/`TypedArray` views (`subarray`, not `slice`) over copying
+  binary data for zero-copy. See `../performance.md` before reaching for any
+  of these.
 - Guard rail: enable `noUncheckedIndexedAccess` in `tsconfig.json`. Without it,
   `arr[i]`/`obj[key]` types as the value type, not `T | undefined` — the
   equivalent of Rust's unchecked indexing panic, except here it's a silent
