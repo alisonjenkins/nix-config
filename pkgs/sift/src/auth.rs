@@ -1,3 +1,4 @@
+use secrecy::{ExposeSecret, SecretString};
 use secretspec::{NamedResolution, Secrets};
 use thiserror::Error;
 
@@ -29,8 +30,12 @@ pub enum AuthError {
 /// docs/adr/0006-secretspec-credential-resolution.md.
 #[derive(Default)]
 pub struct Auth {
-    pub bearer_token: Option<String>,
-    pub basic_auth: Option<(String, String)>,
+    /// Wrapped in `SecretString` (zeroized on drop, `Debug`-redacted) —
+    /// the actual bearer credential, not just an identifier.
+    pub bearer_token: Option<SecretString>,
+    /// `user` is an identifier (e.g. a Grafana Cloud instance ID), not
+    /// secret material — only `password` is wrapped.
+    pub basic_auth: Option<(String, SecretString)>,
 }
 
 impl Auth {
@@ -43,9 +48,11 @@ impl Auth {
         secrets.set_profile(profile);
         let secrets = secrets.with_reason("sift LGTM query");
 
-        let bearer_token = resolve_optional(&secrets, profile, BEARER_TOKEN_SECRET)?;
+        let bearer_token =
+            resolve_optional(&secrets, profile, BEARER_TOKEN_SECRET)?.map(SecretString::from);
         let basic_auth_user = resolve_optional(&secrets, profile, BASIC_AUTH_USER_SECRET)?;
-        let basic_auth_password = resolve_optional(&secrets, profile, BASIC_AUTH_PASSWORD_SECRET)?;
+        let basic_auth_password = resolve_optional(&secrets, profile, BASIC_AUTH_PASSWORD_SECRET)?
+            .map(SecretString::from);
 
         let basic_auth = match (basic_auth_user, basic_auth_password) {
             (Some(user), Some(password)) => Some((user, password)),
@@ -58,16 +65,19 @@ impl Auth {
         })
     }
 
+    /// Exposes the wrapped plaintext only for the span of this call —
+    /// building the request's auth headers — rather than holding an
+    /// unwrapped copy anywhere in `Auth` itself.
     pub fn apply(
         &self,
         builder: reqwest::blocking::RequestBuilder,
     ) -> reqwest::blocking::RequestBuilder {
         let builder = match &self.bearer_token {
-            Some(token) => builder.bearer_auth(token),
+            Some(token) => builder.bearer_auth(token.expose_secret()),
             None => builder,
         };
         match &self.basic_auth {
-            Some((user, password)) => builder.basic_auth(user, Some(password)),
+            Some((user, password)) => builder.basic_auth(user, Some(password.expose_secret())),
             None => builder,
         }
     }
