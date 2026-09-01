@@ -65,8 +65,15 @@ fn resolve_auth(args: &QueryArgs) -> Result<auth::Auth, String> {
 
 fn run_loki(args: &QueryArgs) -> Result<(), String> {
     let (start, now) = query_window(args)?;
-    let start_ns = i64_seconds_to_nanos(start.timestamp())?;
-    let end_ns = i64_seconds_to_nanos(now.timestamp())?;
+    // timestamp_nanos_opt(), not timestamp()*1_000_000_000 — the
+    // latter drops the sub-second component of the query window
+    // itself, silently narrowing it by up to ~1s at each edge.
+    let start_ns = start
+        .timestamp_nanos_opt()
+        .ok_or_else(|| format!("start timestamp {start} overflows i64 nanoseconds"))?;
+    let end_ns = now
+        .timestamp_nanos_opt()
+        .ok_or_else(|| format!("end timestamp {now} overflows i64 nanoseconds"))?;
     let auth = resolve_auth(args)?;
 
     info!(query = %args.query, url = %args.url, "querying Loki");
@@ -93,14 +100,6 @@ fn run_prometheus(args: &QueryArgs) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     emit(&events, args)
-}
-
-/// Converts a unix-second timestamp to nanoseconds for Loki's API,
-/// which expects nanosecond-precision start/end query parameters.
-fn i64_seconds_to_nanos(seconds: i64) -> Result<i64, String> {
-    seconds
-        .checked_mul(1_000_000_000)
-        .ok_or_else(|| format!("timestamp {seconds} overflows when converted to nanoseconds"))
 }
 
 fn emit(events: &[Event], args: &QueryArgs) -> Result<(), String> {
