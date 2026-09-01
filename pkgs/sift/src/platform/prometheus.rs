@@ -1,3 +1,4 @@
+use crate::auth::Auth;
 use crate::event::Event;
 use chrono::{TimeZone, Utc};
 use serde::Deserialize;
@@ -128,16 +129,19 @@ pub fn fetch(
     start_unix_secs: i64,
     end_unix_secs: i64,
     step_secs: u64,
+    auth: &Auth,
 ) -> Result<Vec<Event>, PrometheusError> {
     let client = reqwest::blocking::Client::new();
-    let response = client
+    let request = client
         .get(format!("{base_url}/api/v1/query_range"))
         .query(&[
             ("query", query.to_string()),
             ("start", start_unix_secs.to_string()),
             ("end", end_unix_secs.to_string()),
             ("step", step_secs.to_string()),
-        ])
+        ]);
+    let response = auth
+        .apply(request)
         .send()
         .map_err(PrometheusError::RequestFailed)?;
 

@@ -1,3 +1,4 @@
+mod auth;
 mod cli;
 mod event;
 mod output;
@@ -47,20 +48,38 @@ fn query_window(args: &QueryArgs) -> Result<(chrono::DateTime<Utc>, chrono::Date
     Ok((start, now))
 }
 
+/// Resolves LGTM credentials from `--auth-profile` via secretspec, or
+/// no credentials at all when the flag is omitted (unauthenticated
+/// query — the default for a local, unsecured Loki/Prometheus). See
+/// docs/adr/0006-secretspec-credential-resolution.md: the resolved
+/// secret value never becomes a CLI argument, so it never appears in
+/// anything an LLM-driven invocation of `sift` could observe.
+fn resolve_auth(args: &QueryArgs) -> Result<auth::Auth, String> {
+    match &args.auth_profile {
+        Some(profile) => {
+            auth::Auth::from_secretspec_profile(profile).map_err(|e| e.to_string())
+        }
+        None => Ok(auth::Auth::none()),
+    }
+}
+
 fn run_loki(args: &QueryArgs) -> Result<(), String> {
     let (start, now) = query_window(args)?;
     let start_ns = i64_seconds_to_nanos(start.timestamp())?;
     let end_ns = i64_seconds_to_nanos(now.timestamp())?;
+    let auth = resolve_auth(args)?;
 
     info!(query = %args.query, url = %args.url, "querying Loki");
-    let events = platform::loki::fetch(&args.url, &args.query, start_ns, end_ns, args.limit)
-        .map_err(|e| e.to_string())?;
+    let events =
+        platform::loki::fetch(&args.url, &args.query, start_ns, end_ns, args.limit, &auth)
+            .map_err(|e| e.to_string())?;
 
     emit(&events, args)
 }
 
 fn run_prometheus(args: &QueryArgs) -> Result<(), String> {
     let (start, now) = query_window(args)?;
+    let auth = resolve_auth(args)?;
 
     info!(query = %args.query, url = %args.url, "querying Prometheus/Mimir");
     let events = platform::prometheus::fetch(
@@ -69,6 +88,7 @@ fn run_prometheus(args: &QueryArgs) -> Result<(), String> {
         start.timestamp(),
         now.timestamp(),
         60,
+        &auth,
     )
     .map_err(|e| e.to_string())?;
 
