@@ -1,6 +1,6 @@
 # Observability-driven development
 
-The goal is that a failure or a wrong result can be explained by reading
+The goal is that a failure or a wrong result can be explained by reading the
 output the program already produced, not by re-running it under a debugger,
 adding print statements, or guessing from the code what must have happened.
 Instrumentation is not a nice-to-have added after something breaks; it is

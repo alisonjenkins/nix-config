@@ -102,7 +102,7 @@ decision at each site rather than an accident of syntax.
   `#[instrument]` on a function turns it into a span with its arguments as
   structured fields for free, and a span nests correctly across an `.await`
   point where a bare log line loses the call stack. Pass fields as
-  `tracing::info!(order_id = %order_id, "order failed")` structured key-value
+  `tracing::error!(order_id = %order_id, "order failed")` structured key-value
   pairs, not a `format!`'d message. See `../observability.md` for what belongs
   in a log line and at what level.
 
