@@ -14,11 +14,16 @@ say which.
   a modern `.csproj` even on Framework, but an older codebase may use
   `packages.config` — check which before assuming `dotnet restore` alone
   covers it.
-- `dotnet --version`/`msbuild -version` to confirm which runtime a project
-  actually targets before assuming a Core-only feature (nullable reference
+- Check the project's `<TargetFramework>` and `<LangVersion>` in its
+  `.csproj` before assuming a newer language feature (nullable reference
   types, records, `required` members, top-level statements) is available —
-  Framework projects are commonly pinned to an older C# language version
-  even when the installed SDK supports newer syntax.
+  these are compiler/LangVersion features, not strictly Core-only, and can
+  work on Framework with a modern SDK and an explicit `<LangVersion>`
+  override, but a Framework project is commonly still pinned to an older
+  language version even when the installed SDK supports newer syntax.
+  `dotnet --version`/`msbuild -version` only reports the installed
+  SDK/MSBuild version, not what the project itself targets — checking that
+  tells you nothing about which language features this project can use.
 
 ## Guard rails (mandatory)
 - **`<Nullable>enable</Nullable>`** in every `.csproj` that can have it
@@ -60,9 +65,11 @@ say which.
   this is C#'s form of `defensive.md`'s "finish what you start." A `Dispose`
   called manually at the end of a long method is skipped by the first early
   return or exception; `using` is not.
-- Records (`record`/`record struct`, Core+ only) for immutable domain data;
-  `init`-only properties over public mutable setters when the type
-  represents a value rather than an entity with a lifecycle.
+- Records (`record`/`record struct`) for immutable domain data; `init`-only
+  properties over public mutable setters when the type represents a value
+  rather than an entity with a lifecycle. C# 9+/10+ language features, so
+  usable on Framework too with a modern SDK and `<LangVersion>` set high
+  enough — see the Toolchain note above.
 - **Distinct types for identifiers that must not be mixed up**, even
   without a language-native newtype: a `readonly record struct CustomerId(Guid
   Value)` (Core+) or a small `readonly struct` wrapper (either runtime) so
