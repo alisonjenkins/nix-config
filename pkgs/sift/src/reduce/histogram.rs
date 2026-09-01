@@ -27,13 +27,14 @@ pub fn parse_bucket_duration(input: &str) -> Result<Duration, HistogramError> {
         .map_err(|e| HistogramError::InvalidBucketDuration(input.to_string(), e.to_string()))?;
 
     // histogram() only buckets at whole-second granularity
-    // (bucket.as_secs()); silently accepting "500ms" or "0s" here
-    // would round it up to a 1s bucket without telling the caller
-    // their requested resolution was discarded.
-    if duration.as_secs() == 0 {
+    // (bucket.as_secs()) — silently accepting "0s"/"500ms" (as_secs()
+    // == 0) or "1500ms" (as_secs() == 1 but a nonzero subsec_nanos())
+    // would discard the caller's requested sub-second resolution
+    // without telling them.
+    if duration.as_secs() == 0 || duration.subsec_nanos() != 0 {
         return Err(HistogramError::InvalidBucketDuration(
             input.to_string(),
-            "duration must be at least 1 second (sub-second buckets are not supported)"
+            "duration must be a whole number of seconds, at least 1s (sub-second buckets are not supported)"
                 .to_string(),
         ));
     }
@@ -141,6 +142,19 @@ mod tests {
     #[test]
     fn rejects_a_zero_second_bucket_duration() {
         let result = parse_bucket_duration("0s");
+        assert!(matches!(
+            result,
+            Err(HistogramError::InvalidBucketDuration(_, _))
+        ));
+    }
+
+    #[test]
+    fn rejects_a_bucket_duration_with_a_nonzero_fractional_second() {
+        // as_secs() == 1 here, so the earlier as_secs()==0 check alone
+        // would miss this — histogram() would still silently bucket
+        // it as a whole 1s, discarding the 500ms the caller asked for.
+        // Regression test for the Copilot-review finding.
+        let result = parse_bucket_duration("1500ms");
         assert!(matches!(
             result,
             Err(HistogramError::InvalidBucketDuration(_, _))
