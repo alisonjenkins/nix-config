@@ -72,6 +72,18 @@ decision at each site rather than an accident of syntax.
 ## Idioms
 - Errors: `thiserror` for library error enums, `anyhow` only at the binary
   edge. Every `?` boundary that crosses a subsystem gets `.context(...)`.
+- **One error enum per fallible function, one variant per failure site.** A
+  function with three `?`s that can fail three different ways gets an error
+  enum with three variants, not one variant wrapping a boxed source. Each
+  variant carries the context specific to that site (the path that failed to
+  open, the field that failed to parse) so a caller — or a stack trace reader
+  months later — can tell which line failed from the variant alone, without
+  re-deriving it from a shared message string. Name variants after the
+  operation, not the underlying error type (`ConfigRead { path: PathBuf,
+  source: io::Error }`, not `Io(io::Error)`), and use `#[from]` only when a
+  site is genuinely the sole source of that underlying error type in the
+  function — otherwise two call sites collapse into one variant and the
+  traceback ambiguity this rule exists to prevent comes right back.
 - No `unwrap()`/`expect()` outside tests and `main`, and when used in `main`,
   the message says what the operator should do about it.
 - Prefer borrowed parameters (`&str`, `&[T]`) and return owned types. Clone
