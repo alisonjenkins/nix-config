@@ -34,9 +34,11 @@
   pipeable and its diagnostics stay visible either way.
 - A systemd unit's stdout/stderr already land in the journal with unit,
   timestamp and PID attached — do not hand-roll a log file and a rotation
-  scheme on top of that. Structure a line so it filters well:
-  `echo "event=disk_check status=fail path=$path" >&2` beats a free-text
-  sentence for the same reason it does in any other language — see
+  scheme on top of that. Structure a line so it filters well, quoting any
+  field that can contain whitespace or shell metacharacters (a path, a
+  filename) so `key=value` parsing downstream does not split on it:
+  `printf 'event=disk_check status=fail path=%q\n' "$path" >&2` beats a
+  free-text sentence for the same reason it does in any other language — see
   `../observability.md`.
 - On failure, echo the failing command and the value that made it fail before
   exiting non-zero — `set -e` stops the script but tells no one why.

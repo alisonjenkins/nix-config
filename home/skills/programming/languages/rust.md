@@ -101,7 +101,11 @@ decision at each site rather than an accident of syntax.
 - `tracing`, not `log` or `println!`, for anything beyond a throwaway binary:
   `#[instrument]` on a function turns it into a span with its arguments as
   structured fields for free, and a span nests correctly across an `.await`
-  point where a bare log line loses the call stack. Pass fields as
+  point where a bare log line loses the call stack. `#[instrument]` records
+  *every* argument by default, including a secret, token, or a large payload
+  — use `#[instrument(skip(password, body))]` or list the specific fields to
+  keep (`fields(order_id = %order_id)`) for anything that shouldn't land in
+  a log sink verbatim; see `security.md` on secrets. Pass fields as
   `tracing::error!(order_id = %order_id, "order failed")` structured key-value
   pairs, not a `format!`'d message. See `../observability.md` for what belongs
   in a log line and at what level.
