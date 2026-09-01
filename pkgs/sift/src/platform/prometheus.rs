@@ -80,6 +80,16 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
                 ));
             }
 
+            // A large but finite value (e.g. 1e19) would otherwise
+            // silently saturate to i64::MAX/MIN on the `as i64` cast
+            // below, producing a plausible-looking timestamp instead
+            // of reporting the malformed input.
+            if unix_seconds_float < i64::MIN as f64 || unix_seconds_float > i64::MAX as f64 {
+                return Err(PrometheusError::MalformedTimestamp(
+                    unix_seconds_float.to_string(),
+                ));
+            }
+
             // Prometheus timestamps are float seconds since epoch and
             // can carry sub-second precision (e.g. 1725000000.123) —
             // split into whole seconds and a nanosecond remainder
@@ -273,6 +283,23 @@ mod tests {
         let result = parse_query_range_response(body);
 
         assert!(matches!(result, Err(PrometheusError::Parse(_))));
+    }
+
+    #[test]
+    fn rejects_a_finite_but_out_of_i64_range_timestamp() {
+        // 1e19 is well within f64's range (serde_json accepts it fine,
+        // unlike 1e400) but far beyond i64::MAX seconds — floor() as
+        // i64 would otherwise silently saturate to i64::MAX instead of
+        // reporting this as malformed. Regression test for the
+        // Copilot-review finding.
+        let body = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[1e19,"1"]]}]}}"#;
+
+        let result = parse_query_range_response(body);
+
+        assert!(matches!(
+            result,
+            Err(PrometheusError::MalformedTimestamp(_))
+        ));
     }
 
     #[test]
