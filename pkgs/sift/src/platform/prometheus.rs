@@ -18,14 +18,22 @@ pub enum PrometheusError {
     MalformedValue(String),
     #[error("Prometheus/Mimir sample had a timestamp that could not be constructed: {0:?}")]
     MalformedTimestamp(String),
+    #[error("Prometheus/Mimir query_range reported status {status:?}: {message}")]
+    ApiError { status: String, message: String },
 }
 
 #[derive(Debug, Deserialize)]
 struct QueryRangeResponse {
-    data: QueryRangeData,
+    status: String,
+    #[serde(default)]
+    data: Option<QueryRangeData>,
+    #[serde(rename = "errorType", default)]
+    error_type: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct QueryRangeData {
     result: Vec<MatrixResult>,
 }
@@ -42,8 +50,19 @@ struct MatrixResult {
 pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusError> {
     let parsed: QueryRangeResponse = serde_json::from_str(body)?;
 
+    if parsed.status != "success" {
+        let message = parsed
+            .error
+            .or(parsed.error_type)
+            .unwrap_or_else(|| "no error message provided".to_string());
+        return Err(PrometheusError::ApiError {
+            status: parsed.status,
+            message,
+        });
+    }
+
     let mut events = Vec::new();
-    for series in parsed.data.result {
+    for series in parsed.data.unwrap_or_default().result {
         for (unix_seconds_float, value_str) in series.values {
             let value: f64 = value_str
                 .parse()
@@ -54,9 +73,16 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
             // split into whole seconds and a nanosecond remainder
             // rather than truncating the fractional part away, the
             // same precision loss `platform::loki` had before its fix.
-            let whole_seconds = unix_seconds_float.trunc() as i64;
-            let fractional_seconds = unix_seconds_float.fract();
-            #[allow(clippy::arithmetic_side_effects)] // fract() is in [0.0, 1.0), so this product stays within [0.0, 1_000_000_000.0] and fits u32 after rounding.
+            //
+            // floor() (not trunc()) is required so this stays correct
+            // for a timestamp before the epoch: fract() on a negative
+            // float is itself negative, which would wrap to a huge
+            // value on the `as u32` cast below. floor()-then-subtract
+            // keeps the remainder in [0.0, 1.0) regardless of sign.
+            let whole_seconds = unix_seconds_float.floor() as i64;
+            #[allow(clippy::arithmetic_side_effects)] // whole_seconds is unix_seconds_float.floor(), so this difference stays within [0.0, 1.0).
+            let fractional_seconds = unix_seconds_float - whole_seconds as f64;
+            #[allow(clippy::arithmetic_side_effects)] // fractional_seconds is in [0.0, 1.0), so this product stays within [0.0, 1_000_000_000.0] and fits u32 after rounding.
             let rounded_subsec_nanos = (fractional_seconds * 1_000_000_000.0).round() as u32;
 
             // round() on a fract() close to 1.0 can produce exactly
@@ -133,7 +159,12 @@ pub fn fetch(
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::panic
+    )]
     use super::*;
 
     const SAMPLE_RESPONSE: &str = r#"{
@@ -165,7 +196,7 @@ mod tests {
 
     #[test]
     fn preserves_sub_second_timestamp_precision() {
-        let body = r#"{"data":{"result":[{"metric":{},"values":[[1725000000.123,"1"]]}]}}"#;
+        let body = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[1725000000.123,"1"]]}]}}"#;
 
         let events = parse_query_range_response(body).unwrap();
 
@@ -186,12 +217,26 @@ mod tests {
         // exactly 1_000_000_000 — an invalid nanosecond field on its
         // own second. Regression test for the Copilot-review finding:
         // this used to make Utc::timestamp_opt return None.
-        let body = r#"{"data":{"result":[{"metric":{},"values":[[1.9999999995,"1"]]}]}}"#;
+        let body = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[1.9999999995,"1"]]}]}}"#;
 
         let events = parse_query_range_response(body).unwrap();
 
         assert_eq!(events[0].timestamp.timestamp(), 2);
         assert_eq!(events[0].timestamp.timestamp_subsec_nanos(), 0);
+    }
+
+    #[test]
+    fn handles_a_pre_epoch_timestamp_correctly() {
+        // trunc()/fract() would have given whole_seconds=-1,
+        // fract()=-0.25 here, and casting -0.25 * 1e9 to u32 wraps to
+        // a huge value instead of erroring. floor()-based splitting
+        // must produce -2 whole seconds with a 0.75s remainder.
+        let body = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[-1.25,"1"]]}]}}"#;
+
+        let events = parse_query_range_response(body).unwrap();
+
+        assert_eq!(events[0].timestamp.timestamp(), -2);
+        assert_eq!(events[0].timestamp.timestamp_subsec_nanos(), 750_000_000);
     }
 
     #[test]
@@ -202,8 +247,27 @@ mod tests {
 
     #[test]
     fn rejects_a_non_numeric_value() {
-        let bad = r#"{"data":{"result":[{"metric":{},"values":[[1725000000,"not-a-number"]]}]}}"#;
+        let bad = r#"{"status":"success","data":{"result":[{"metric":{},"values":[[1725000000,"not-a-number"]]}]}}"#;
         let result = parse_query_range_response(bad);
         assert!(matches!(result, Err(PrometheusError::MalformedValue(_))));
+    }
+
+    #[test]
+    fn surfaces_prometheus_api_level_error_status_and_message() {
+        // A 200 response body can still carry status="error" — this
+        // used to fall through to a generic serde JSON-parse failure
+        // and discard the server's structured error message.
+        // Regression test for the Copilot-review finding.
+        let body = r#"{"status":"error","errorType":"bad_data","error":"invalid parameter"}"#;
+
+        let result = parse_query_range_response(body);
+
+        match result {
+            Err(PrometheusError::ApiError { status, message }) => {
+                assert_eq!(status, "error");
+                assert_eq!(message, "invalid parameter");
+            }
+            other => panic!("expected PrometheusError::ApiError, got {other:?}"),
+        }
     }
 }
