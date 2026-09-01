@@ -1,6 +1,6 @@
 ---
 name: observability
-description: Use when debugging or investigating a live/production system's performance or reliability through an observability platform (Datadog, Grafana/LGTM — Loki, Tempo, Mimir, or a directly-run Prometheus), including reading dashboards, querying logs/traces/metrics, improving alerting/dashboards/SLOs/cost, auditing a system (a VM or a set of cloud resources) for monitoring coverage gaps, or writing a postmortem after an incident. Not for instrumenting your own code (see the programming skill's observability.md) and not for deploying or mutating infrastructure (see the infra skill).
+description: Use when investigating a live system's performance or reliability via Datadog or Grafana/LGTM (Loki, Tempo, Mimir, or Prometheus) - dashboards, logs/traces/metrics, alert/dashboard/SLO/cost improvements, auditing a VM or cloud resources for monitoring gaps, or writing a postmortem. Not for instrumenting your own code (see programming's observability.md) or deploying/mutating infrastructure (see infra).
 ---
 
 # Observability
