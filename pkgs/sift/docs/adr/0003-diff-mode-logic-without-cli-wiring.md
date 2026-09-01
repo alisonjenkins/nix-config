@@ -42,6 +42,6 @@ compile time.
 - The Fast-follow task that wires this up only needs to: (1) design the
   `--baseline`-window fetch (likely a second `platform::*::fetch()` call
   using `query_window()`'s `start` as the new window's end), (2) call
-  `reduce::diff(&baseline_events, ¤t_events, &args.group_by)`, (3)
+  `reduce::diff(&baseline_events, &current_events, &args.group_by)`, (3)
   remove the two `#[allow(dead_code)]` attributes now that real callers
   exist. No changes to `diff.rs` itself should be needed.
