@@ -55,7 +55,7 @@ pub struct QueryArgs {
 
     /// Baseline lookback duration for diff mode, e.g. "1h" (not yet
     /// wired: diff mode is implemented in reduce::diff but not callable
-    /// from the CLI yet — see pkgs/sift/docs/adr/0003)
+    /// from the CLI yet — see pkgs/sift/docs/adr/0003-diff-mode-logic-without-cli-wiring.md)
     #[arg(long, default_value = "1h")]
     pub baseline: String,
 
