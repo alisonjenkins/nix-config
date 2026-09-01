@@ -7,6 +7,9 @@
   a system-wide `rustup`. `nix develop` before `cargo`.
 - `cargo clippy --all-targets -- -D warnings` and `cargo fmt --check` are the
   bar; run both before claiming a change is done.
+- `cargo flamegraph` for profiling, `criterion` for benchmarking,
+  `std::simd`/`is_x86_feature_detected!` for vectorization. See
+  `../performance.md` before reaching for any of these.
 
 ## Guard rails (mandatory)
 

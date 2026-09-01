@@ -1,6 +1,6 @@
 ---
 name: programming
-description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, input validation and secrets, and observability — logging, tracing, structured log fields, correlation IDs, and instrumenting new code so behaviour can be read from its output instead of guessed at.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh and their config files. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript and shell, plus assertions and crash-early behaviour, thread-safety and shared state, input validation and secrets, observability (logging, tracing, structured log fields, correlation IDs, instrumenting new code so behaviour can be read from its output instead of guessed at), and performance work — profiling, benchmarking, and SIMD/vectorization.
 ---
 
 # Programming
@@ -59,6 +59,7 @@ Independent of language. Read the one that matches what the change involves.
 | Threads, async tasks, workers, locks, shared or cached state, an intermittent failure | [concurrency.md](concurrency.md) |
 | Untrusted input, a query or command built from data, permissions, tokens or secrets, a dependency bump | [security.md](security.md) |
 | Any new code path, log line, error, retry, or state transition — anything that should be answerable from output later instead of re-derived by guessing | [observability.md](observability.md) |
+| Making something faster, profiling, benchmarking, or a SIMD/vectorization change | [performance.md](performance.md) |
 
 ## Per-language routing
 

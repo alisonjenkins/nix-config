@@ -7,6 +7,8 @@
   single most common shell bug.
 - `shellcheck` clean. In Nix, `writeShellApplication` runs it for you — prefer
   it over `writeShellScriptBin`.
+- `hyperfine` for benchmarking a CLI/process; `perf` for profiling a
+  long-running one. See `../performance.md` before reaching for either.
 
 ## Portability
 - These scripts run on several machines. Do not assume a tool exists or sits
