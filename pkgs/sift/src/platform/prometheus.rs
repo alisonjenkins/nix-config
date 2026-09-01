@@ -16,6 +16,8 @@ pub enum PrometheusError {
     Parse(#[from] serde_json::Error),
     #[error("Prometheus/Mimir sample had a non-numeric value: {0:?}")]
     MalformedValue(String),
+    #[error("Prometheus/Mimir sample had a timestamp that could not be constructed: {0:?}")]
+    MalformedTimestamp(String),
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,9 +65,9 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
             // instead of passing it through.
             let (seconds, subsec_nanos) = if rounded_subsec_nanos == 1_000_000_000 {
                 (
-                    whole_seconds
-                        .checked_add(1)
-                        .ok_or_else(|| PrometheusError::MalformedValue(value_str.clone()))?,
+                    whole_seconds.checked_add(1).ok_or_else(|| {
+                        PrometheusError::MalformedTimestamp(unix_seconds_float.to_string())
+                    })?,
                     0,
                 )
             } else {
@@ -75,7 +77,9 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, PrometheusEr
             let timestamp = Utc
                 .timestamp_opt(seconds, subsec_nanos)
                 .single()
-                .ok_or_else(|| PrometheusError::MalformedValue(value_str.clone()))?;
+                .ok_or_else(|| {
+                    PrometheusError::MalformedTimestamp(unix_seconds_float.to_string())
+                })?;
 
             events.push(Event {
                 timestamp,
@@ -113,7 +117,10 @@ pub fn fetch(
 
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().unwrap_or_default();
+        let body = match response.text() {
+            Ok(body) => body,
+            Err(read_err) => format!("<failed to read error response body: {read_err}>"),
+        };
         return Err(PrometheusError::Status {
             status: status.as_u16(),
             body,
