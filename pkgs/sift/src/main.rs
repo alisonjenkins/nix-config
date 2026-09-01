@@ -1,4 +1,5 @@
 mod event;
+mod output;
 mod platform;
 mod reduce;
 
