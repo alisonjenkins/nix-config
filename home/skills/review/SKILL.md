@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when reviewing a diff, a pull request, or your own work before committing or handing it over, including "look over this change", "is this right", or checking for bugs you introduced. Carries the rubric for judging a diff, severity ordering, how to phrase a finding so it is actionable, and how to verify a finding is real before reporting it.
+description: Use when reviewing a diff, a pull request, or your own work before committing or handing it over, including "look over this change", "is this right", or checking for bugs you introduced. Also use when auditing an existing codebase or module against current conventions — "review this codebase", "does this project follow our standards", "check this against the programming skill" — with no diff to anchor against. Carries the rubric for judging code (including conformance with the `programming` skill's language and by-concern guidance), severity ordering, how to phrase a finding so it is actionable, and how to verify a finding is real before reporting it.
 ---
 
 # Review
@@ -13,6 +13,26 @@ crash that follows. If you cannot construct it, you have a question, not a
 finding; ask it as a question.
 
 Ranked most severe first. Correctness beats style, always.
+
+## Standard to judge against
+
+Load the `programming` skill before judging anything: its general rules,
+the per-language file for whatever language is under review, and whichever
+by-concern files apply to what the code does (`defensive.md` for input and
+error paths, `concurrency.md` for anything threaded or async, `security.md`
+for untrusted input or secrets, `observability.md` for logging/tracing,
+`performance.md` for a claimed optimisation, SIMD, or a benchmark). A
+convention documented there — no `unwrap()` outside tests, one error enum
+per fallible function, structured log fields, profile-then-benchmark before
+a perf change — is not a style opinion to weigh against taste; treat a
+violation of it the same as any other rubric finding, at the severity the
+violated rule implies (a missing error-context propagation is Correctness or
+Boundaries, not Simplification).
+
+This applies whether the code under review arrived as a diff or already
+existed before these rules were written — see
+[codebase-audit.md](codebase-audit.md) for reviewing existing code with no
+diff to anchor against.
 
 ## Rubric
 
@@ -53,6 +73,7 @@ say so in one line rather than manufacturing findings.
 |---|---|
 | An uncommitted or unpushed diff, including your own | [diff-review.md](diff-review.md) |
 | A pull request, with comments to post | [pr-review.md](pr-review.md) |
+| An existing codebase or module, with no diff to anchor against — checking it against current conventions | [codebase-audit.md](codebase-audit.md) |
 
 Receiving review on a PR of your own is the other direction; that is the
 `git` skill's `pr-review-responses.md`, not this one.
