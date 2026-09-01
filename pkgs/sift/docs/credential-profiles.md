@@ -2,7 +2,9 @@
 
 `sift` resolves LGTM (Loki/Prometheus) credentials via
 [secretspec](https://secretspec.dev), never via a raw token typed into a
-CLI flag. See `docs/adr/0006-secretspec-credential-resolution.md` for why.
+CLI flag. See `docs/adr/0006-secretspec-credential-resolution.md` for
+why, and `docs/adr/0007-credential-caching-and-memory-hygiene.md` for
+how repeated `sift` calls avoid repeated 1Password prompts.
 
 ## The short version
 
@@ -67,7 +69,7 @@ block naming which provider alias to use:
 
 ```toml
 [providers]
-azure_kv = "akv://my-vault-name"
+azure_kv = { uri = "akv://my-vault-name", cache = { provider = "local_cache", max_age = "30m" } }
 
 [profiles.staging]
 LGTM_BEARER_TOKEN = { required = false, description = "..." }
@@ -79,9 +81,22 @@ providers = ["azure_kv"]
 ```
 
 Then `sift ... --auth-profile staging` resolves from that Azure Key
-Vault. Real per-secret provider overrides are also possible (put
-`providers = [...]` directly on one secret instead of the whole
-profile's `defaults`) — see secretspec's own docs for the full schema.
+Vault. The `cache = { provider = "local_cache", max_age = "30m" }`
+wrapper is optional but recommended for any provider that can prompt a
+human (1Password's device approval is the main one) — it reuses the
+existing `local_cache` alias (backed by the OS keyring, not a file; see
+ADR 0007) so repeated `sift` calls within the window don't re-prompt.
+Real per-secret provider overrides are also possible (put `providers =
+[...]` directly on one secret instead of the whole profile's
+`defaults`) — see secretspec's own docs for the full schema.
+
+## If a cached value goes stale before its TTL expires
+
+Delete the cache entry directly from the OS keyring (secretspec's cache
+key format is `secretspec/cache/{project}/{profile}/{key}`, e.g.
+`secretspec/cache/sift/personal/LGTM_BEARER_TOKEN`), or just wait out
+the `max_age` window — the next resolution re-fetches from the
+authoritative provider automatically once the cached entry expires.
 
 ## Verifying a profile without querying anything
 
