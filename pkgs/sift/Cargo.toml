@@ -1,0 +1,31 @@
+[package]
+name = "sift"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "sift"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "blocking", "rustls-tls"] }
+chrono = { version = "0.4", features = ["serde"] }
+humantime = "2"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+unwrap_in_result = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "deny"
+unreachable = "deny"
+todo = "deny"
+unimplemented = "deny"
+get_unwrap = "deny"
