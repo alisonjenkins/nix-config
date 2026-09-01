@@ -11,3 +11,4 @@ and implementation plan these decisions came out of.
 - [0003: Implement `reduce::diff` fully, defer its CLI wiring](0003-diff-mode-logic-without-cli-wiring.md)
 - [0004: Deny unwrap/expect/panic; one error enum per fallible function in the platform/reduce layers](0004-strict-error-handling-and-lint-policy.md)
 - [0005: Preserve sub-second timestamp precision per platform](0005-subsecond-timestamp-precision.md)
+- [0006: Resolve LGTM credentials via secretspec, never as a raw CLI value](0006-secretspec-credential-resolution.md)
