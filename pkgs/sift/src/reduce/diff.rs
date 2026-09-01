@@ -2,6 +2,13 @@ use crate::event::Event;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
+// Not yet wired into the CLI (no two-window query support in main.rs
+// yet — see reduce/mod.rs's comment and the sift-cli plan's Fast-follow
+// section), so nothing in this binary currently constructs these or
+// calls diff(). Fully implemented and tested; the dead-code allow is
+// scoped to exactly these three items, not the module, so the compiler
+// will flag anything genuinely new left unused.
+#[allow(dead_code)]
 #[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct DiffEntry {
     pub key: String,
@@ -10,11 +17,13 @@ pub struct DiffEntry {
     pub delta: i64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, PartialEq)]
 pub struct DiffResult {
     pub entries: Vec<DiffEntry>,
 }
 
+#[allow(dead_code)]
 pub fn diff(baseline: &[Event], current: &[Event], group_by: &str) -> DiffResult {
     let count_by = |events: &[Event]| -> BTreeMap<String, usize> {
         let mut counts: BTreeMap<String, usize> = BTreeMap::new();
