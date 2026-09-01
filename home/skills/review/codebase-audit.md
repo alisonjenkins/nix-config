@@ -82,5 +82,6 @@ under noise and makes the report unusable.
   must be rewritten in one sitting. Say which findings block shipping
   something today versus which are worth a tracked follow-up, and let the
   user decide the backlog; do not silently downgrade a real defect to
-  "someday," and do not open a tracking issue on your own initiative — see
-  `SKILL.md`'s "correct but out of scope" triage bucket.
+  "someday," and do not open a tracking issue on your own initiative — the
+  same "correct but out of scope" handling the `git` skill's
+  `pr-review-responses.md` uses for review findings applies here too.
