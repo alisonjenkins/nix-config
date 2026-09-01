@@ -6,8 +6,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum LokiError {
-    #[error("requesting Loki query_range: {0}")]
-    Request(#[from] reqwest::Error),
+    #[error("sending Loki query_range request: {0}")]
+    RequestFailed(reqwest::Error),
+    #[error("reading Loki query_range response body: {0}")]
+    ResponseReadFailed(reqwest::Error),
     #[error("Loki returned status {status}: {body}")]
     Status { status: u16, body: String },
     #[error("parsing Loki query_range response: {0}")]
@@ -44,10 +46,14 @@ pub fn parse_query_range_response(body: &str) -> Result<Vec<Event>, LokiError> {
             let nanos: i64 = ns_timestamp
                 .parse()
                 .map_err(|_| LokiError::MalformedTimestamp(ns_timestamp.clone()))?;
-            #[allow(clippy::arithmetic_side_effects)] // Loki timestamps are nanoseconds since epoch as returned by the platform; division by 1_000_000_000 cannot overflow.
-            let seconds = nanos / 1_000_000_000;
+            // div_euclid/rem_euclid, not `/`/`%`, so a full nanosecond
+            // timestamp keeps its sub-second precision instead of being
+            // truncated to whole seconds — two log lines a few
+            // nanoseconds apart must not collapse to the same instant.
+            let seconds = nanos.div_euclid(1_000_000_000);
+            let nanos_remainder = nanos.rem_euclid(1_000_000_000) as u32;
             let timestamp = Utc
-                .timestamp_opt(seconds, 0)
+                .timestamp_opt(seconds, nanos_remainder)
                 .single()
                 .ok_or_else(|| LokiError::MalformedTimestamp(ns_timestamp.clone()))?;
 
@@ -83,7 +89,8 @@ pub fn fetch(
             ("end", end_unix_ns.to_string()),
             ("limit", limit.to_string()),
         ])
-        .send()?;
+        .send()
+        .map_err(LokiError::RequestFailed)?;
 
     let status = response.status();
     if !status.is_success() {
@@ -94,7 +101,7 @@ pub fn fetch(
         });
     }
 
-    let body = response.text()?;
+    let body = response.text().map_err(LokiError::ResponseReadFailed)?;
     parse_query_range_response(&body)
 }
 
@@ -128,6 +135,16 @@ mod tests {
         assert_eq!(events[0].labels.get("level"), Some(&"error".to_string()));
         assert_eq!(events[0].body, Some("connection timeout".to_string()));
         assert_eq!(events[0].value, None);
+    }
+
+    #[test]
+    fn preserves_sub_second_timestamp_precision() {
+        let body = r#"{"data":{"result":[{"stream":{},"values":[["1725000000123456789","x"]]}]}}"#;
+
+        let events = parse_query_range_response(body).unwrap();
+
+        assert_eq!(events[0].timestamp.timestamp(), 1725000000);
+        assert_eq!(events[0].timestamp.timestamp_subsec_nanos(), 123456789);
     }
 
     #[test]
