@@ -28,3 +28,15 @@
   where `$dir` could be empty. Guard with `[[ -n "$dir" ]]`.
 - Anything touching an external system is idempotent and safe to re-run.
 - Timestamps in output are ISO8601 UTC.
+
+## Observability
+- Log to stderr (`>&2`), not stdout, so a script's actual output stays
+  pipeable and its diagnostics stay visible either way.
+- A systemd unit's stdout/stderr already land in the journal with unit,
+  timestamp and PID attached — do not hand-roll a log file and a rotation
+  scheme on top of that. Structure a line so it filters well:
+  `echo "event=disk_check status=fail path=$path" >&2` beats a free-text
+  sentence for the same reason it does in any other language — see
+  `../observability.md`.
+- On failure, echo the failing command and the value that made it fail before
+  exiting non-zero — `set -e` stops the script but tells no one why.

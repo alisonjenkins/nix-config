@@ -27,6 +27,12 @@
 - `async`/`await` throughout; a floating promise is a bug — await it or
   explicitly `void` it with a comment.
 - Prefer named exports; default exports make renames invisible in diffs.
+- Structured logging (`pino` server-side; the project's existing logger
+  otherwise) with fields as an object, not a template string:
+  `logger.error({ orderId, reason }, "order failed")`. `console.log` is a
+  debugging leftover, not shippable instrumentation — it has no levels and no
+  structure. See `../observability.md` for what belongs in a log line and at
+  what level.
 
 ## Browser / UI
 - No CDN or external-host assets in artifacts or embedded pages — inline CSS
