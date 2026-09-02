@@ -11,19 +11,24 @@ language.
 
 ## General rules
 
-- **Match the surrounding code.** Comment density, naming style, error
-  handling, and file layout come from the neighbours, not from your defaults.
-  A diff that reads like the rest of the file is worth more than one that is
-  independently prettier.
-- **Default to no comments.** Well-named identifiers already say what the
-  code does; a comment restating that is noise. Write one only when the *why*
-  is non-obvious — a hidden constraint, a subtle invariant, a workaround for a
-  specific bug, behaviour that would surprise a reader — and drop it if
-  removing it would not confuse a future reader. Never comment what the code
-  does, reference the current task, fix, caller, or issue number (`used by
-  X`, `added for the Y flow`, `handles the case from issue #123`), or leave a
-  `// removed` marker for deleted code. Describing *why* a workaround exists
-  is fine and expected; citing the ticket that prompted it is not.
+- **Match the surrounding code — except comment density.** Naming style,
+  error handling, and file layout come from the neighbours, not from your
+  defaults. A diff that reads like the rest of the file is worth more than
+  one that is independently prettier. Comment density is the one exception:
+  a file full of comment noise is not a convention to match, it is the thing
+  the next rule fixes. Do not add comments just because the file already has
+  many.
+- **Default to no comments.** This overrides "match the surrounding code"
+  above — an over-commented neighbour is never a reason to add more. Well-
+  named identifiers already say what the code does; a comment restating that
+  is noise. Write one only when the *why* is non-obvious — a hidden
+  constraint, a subtle invariant, a workaround for a specific bug, behaviour
+  that would surprise a reader — and drop it if removing it would not
+  confuse a future reader. Never comment what the code does, reference the
+  current task, fix, caller, or issue number (`used by X`, `added for the Y
+  flow`, `handles the case from issue #123`), or leave a `// removed` marker
+  for deleted code. Describing *why* a workaround exists is fine and
+  expected; citing the ticket that prompted it is not.
 - **Comments earn their place, then get out of the way.** One short line,
   plain words, the constraint stated directly — no multi-line blocks, no
   restating in a second sentence what the first already said. Same bar as the
