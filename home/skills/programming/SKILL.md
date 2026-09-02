@@ -15,9 +15,13 @@ language.
   handling, and file layout come from the neighbours, not from your defaults.
   A diff that reads like the rest of the file is worth more than one that is
   independently prettier.
-- **Comment why, not what.** The code says what. A comment earns its place by
-  recording a decision, a constraint, or a trap that the next reader would
-  otherwise re-derive.
+- **Default to no comments.** Well-named identifiers already say what the
+  code does; a comment restating that is noise. Write one only when the *why*
+  is non-obvious — a hidden constraint, a subtle invariant, a workaround for a
+  specific bug, behaviour that would surprise a reader — and drop it if
+  removing it would not confuse a future reader. Never comment what the code
+  does, reference the current task/fix/caller/issue, or leave a `// removed`
+  marker for deleted code.
 - **Errors carry context.** Never discard an error to satisfy a type. Either
   handle it, or propagate it with enough context that the log line alone
   identifies the failing operation and its inputs.
