@@ -64,6 +64,16 @@ language.
   without starting it, the usual cause is that the requirement is unclear or
   the design is wrong, not that the work is unpleasant. Stop and re-read the
   requirement before pushing through.
+- **Delegating code work to a sub-agent means naming this skill in its
+  prompt.** A freshly spawned sub-agent gets no skill listing at all — it
+  cannot discover `programming` on its own, and skips every rule here
+  silently if not told. State it by exact name (`invoke the programming
+  skill, then read its languages/rust.md` for Rust work, and so on for
+  whichever per-language file applies) in the prompt you hand it. Once
+  invoked, disclosure inside the sub-agent works exactly as it does here:
+  the sub-agent reads this body, then follows the routing table to whichever
+  child file the work needs — nothing about running as a sub-agent changes
+  that mechanism.
 
 ## By-concern routing
 
