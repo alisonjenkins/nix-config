@@ -22,6 +22,11 @@ language.
   removing it would not confuse a future reader. Never comment what the code
   does, reference the current task/fix/caller/issue, or leave a `// removed`
   marker for deleted code.
+- **Comments earn their place, then get out of the way.** One short line,
+  plain words, the constraint stated directly — no multi-line blocks, no
+  restating in a second sentence what the first already said. Same bar as the
+  `writing` skill's dyslexia/ADHD baseline: short sentences, no dense wall of
+  text to parse before the point lands.
 - **Errors carry context.** Never discard an error to satisfy a type. Either
   handle it, or propagate it with enough context that the log line alone
   identifies the failing operation and its inputs.
