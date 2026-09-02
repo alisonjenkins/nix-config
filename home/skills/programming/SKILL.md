@@ -20,8 +20,10 @@ language.
   is non-obvious — a hidden constraint, a subtle invariant, a workaround for a
   specific bug, behaviour that would surprise a reader — and drop it if
   removing it would not confuse a future reader. Never comment what the code
-  does, reference the current task/fix/caller/issue, or leave a `// removed`
-  marker for deleted code.
+  does, reference the current task, fix, caller, or issue number (`used by
+  X`, `added for the Y flow`, `handles the case from issue #123`), or leave a
+  `// removed` marker for deleted code. Describing *why* a workaround exists
+  is fine and expected; citing the ticket that prompted it is not.
 - **Comments earn their place, then get out of the way.** One short line,
   plain words, the constraint stated directly — no multi-line blocks, no
   restating in a second sentence what the first already said. Same bar as the
