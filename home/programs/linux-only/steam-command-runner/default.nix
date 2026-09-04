@@ -89,7 +89,9 @@ in
     };
 
     games = lib.mkOption {
-      type = lib.types.attrsOf (pkgs.formats.toml { }).type;
+      type = lib.types.attrsOf (lib.types.submodule {
+        freeformType = (pkgs.formats.toml { }).type;
+      });
       default = { };
       example = {
         "553850" = {
@@ -110,6 +112,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = lib.all (appId: builtins.match "[0-9]+" appId != null) (lib.attrNames cfg.games);
+        message =
+          "programs.steamCommandRunner.games is keyed by Steam AppID (digits only) — "
+          + "got: ${toString (lib.filter (appId: builtins.match "[0-9]+" appId == null) (lib.attrNames cfg.games))}";
+      }
+    ];
+
     xdg.configFile =
       { "steam-command-runner/config.toml".source =
         (pkgs.formats.toml { }).generate "steam-command-runner-config.toml" tomlConfig;
