@@ -111,13 +111,15 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (let
+    invalidAppIds = lib.filter (appId: builtins.match "[0-9]+" appId == null) (lib.attrNames cfg.games);
+  in {
     assertions = [
       {
-        assertion = lib.all (appId: builtins.match "[0-9]+" appId != null) (lib.attrNames cfg.games);
+        assertion = invalidAppIds == [ ];
         message =
           "programs.steamCommandRunner.games is keyed by Steam AppID (digits only) — "
-          + "got: ${toString (lib.filter (appId: builtins.match "[0-9]+" appId == null) (lib.attrNames cfg.games))}";
+          + "got: ${toString invalidAppIds}";
       }
     ];
 
@@ -129,5 +131,5 @@ in
         "steam-command-runner/games/${appId}.toml"
         { source = (pkgs.formats.toml { }).generate "steam-command-runner-game-${appId}.toml" gameConfig; }
       ) cfg.games;
-  };
+  });
 }
