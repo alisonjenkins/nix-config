@@ -285,8 +285,8 @@ in {
         # command it runs both name the physical disk, not a reassignable
         # kernel node.
         services.udev.extraRules = ''
-          ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
-          ACTION=="add", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ENV{ID_SERIAL_SHORT}!="WD-WCAZAC311606", ENV{ID_SERIAL_SHORT}!="S2RXJ9AB908545", RUN+="${pkgs.hdparm}/bin/hdparm -q -B 254 -S 0 /dev/disk/by-id/ata-$env{ID_SERIAL}"
+          ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ENV{DEVTYPE}=="disk", ATTR{queue/scheduler}="bfq"
+          ACTION=="add", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ENV{DEVTYPE}=="disk", ENV{ID_SERIAL_SHORT}!="WD-WCAZAC311606", ENV{ID_SERIAL_SHORT}!="S2RXJ9AB908545", RUN+="${pkgs.hdparm}/bin/hdparm -q -B 254 -S 0 /dev/disk/by-id/ata-$env{ID_SERIAL}"
         '';
 
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
