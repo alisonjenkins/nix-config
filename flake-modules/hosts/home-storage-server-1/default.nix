@@ -253,8 +253,40 @@ in {
         # Put the rotational pool disks on BFQ (the 16+ HBA-passthrough SATA
         # disks are sd*; the virtio system disk vda is excluded by the sd[a-z]
         # match; rotational==1 excludes any SSD). See boot.kernelModules above.
+        #
+        # Second rule: force every disk's Advanced Power Management to level
+        # 254 (max performance, standby still permitted) and disable the ATA
+        # standby timer outright (-S 0). This is NOT a power-saving spindown —
+        # it's the opposite: several drives in this pool ship with a vendor
+        # default APM level of 128, which lets the drive aggressively
+        # load/unload (park) its heads on every few seconds of idle. Read
+        # live off the fleet (2026-09-04): the Seagate laptop/desktop drives
+        # (ST5000LM000, ST3000DM008 x2) were already at 221k-336k head-load
+        # cycles from this alone — well past what a drive this age should
+        # have racked up from actual use. -B 254 -S 0 is the standard fix:
+        # it stops the idle-unload thrashing (less mechanical wear, and
+        # marginally less power than constant park/unpark) while never
+        # letting a disk actually spin down, so NFS clients never see a
+        # spin-up stall. Two exceptions this can't reach, matched by their
+        # stable ID_SERIAL_SHORT (not the kernel name, which can reassign
+        # sdX letters across a reboot or rescan) rather than guessed at
+        # further: WD-WCAZAC311606 is sdh, a WDC WD20EARX (WD Green) with no
+        # ATA APM feature exposed at all — its head-parking comes from an
+        # internal "IntelliPark"/idle3 timer that only wdidle3/idle3-tools
+        # can reprogram, and doing that safely needs the drive quiesced
+        # first. S2RXJ9AB908545 is sdj, a Samsung HN-M101MBB that already
+        # reports APM "disabled" yet still racks up load cycles — its
+        # parking isn't APM-controlled either. Both are already flagged for
+        # replacement on other grounds (pending/reallocated sectors);
+        # revisit this with that work instead of fighting each vendor's
+        # firmware individually. The RUN target itself uses the by-id path
+        # (built from ID_SERIAL, the same value /dev/disk/by-id/ata-* is
+        # named from) rather than /dev/%k, so the command it logs and the
+        # command it runs both name the physical disk, not a reassignable
+        # kernel node.
         services.udev.extraRules = ''
           ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+          ACTION=="add", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ENV{ID_SERIAL_SHORT}!="WD-WCAZAC311606", ENV{ID_SERIAL_SHORT}!="S2RXJ9AB908545", RUN+="${pkgs.hdparm}/bin/hdparm -q -B 254 -S 0 /dev/disk/by-id/ata-$env{ID_SERIAL}"
         '';
 
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
