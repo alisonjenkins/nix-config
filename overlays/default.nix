@@ -401,6 +401,27 @@ in
                 igraph = skipChecks python-prev.igraph;
               })
           ];
+
+          # uhk-agent copies its bundled firmware docs from the Nix store into
+          # ~/.config/uhk-agent/smart-macro-docs on every launch, mirroring the
+          # store's read-only directory mode onto the copy. On the next
+          # firmware doc version bump the app tries to overwrite files inside
+          # that now-read-only dir and dies on an unhandled promise rejection
+          # before ever creating its window:
+          #
+          #   EACCES: permission denied, unlink
+          #   '.../smart-macro-docs/.../<file>'
+          #
+          # No window, no error dialog — looks like the app just won't open.
+          # Force the whole cache tree writable before every launch so this
+          # can't recur on the next doc update.
+          uhk-agent = mprev.uhk-agent.overrideAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ mprev.makeWrapper ];
+            postFixup = (old.postFixup or "") + ''
+              wrapProgram $out/bin/uhk-agent \
+                --run 'chmod -R u+w "$HOME/.config/uhk-agent/smart-macro-docs" 2>/dev/null || true'
+            '';
+          });
         })
       ];
     };
