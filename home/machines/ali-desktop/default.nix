@@ -30,6 +30,10 @@
 
   home.packages = [
     pkgs.nbt-studio
+    # Provides uhk-switch-keymap, used by the pre_launch/post_exit hooks
+    # below. The gamescope shim below is symlinked separately by name
+    # rather than exposed via this package, so this doesn't duplicate it.
+    inputs.steam-command-runner.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
@@ -46,6 +50,15 @@
     # of skipping preCommand under gamescope would silently drop the
     # obs-gamecapture wrap for nearly all games.
     gamescopeSkipPreCommand = false;
+
+    # Follows the active game with the matching UHK keymap: HD2's stratagem
+    # macros while it's running, back to the daily-driver QWERTY keymap on
+    # exit. uhk-switch-keymap auto-discovers the connected UHK, so this
+    # doesn't need a device id.
+    games."553850" = {
+      hooks.pre_launch.command = "uhk-switch-keymap HD2";
+      hooks.post_exit.command = "uhk-switch-keymap QWR";
+    };
   };
 
   # The module above writes the runner's config; this puts the runner itself

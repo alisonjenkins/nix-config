@@ -87,10 +87,36 @@ in
       default = true;
       description = "Skip `preCommand` when launching under Gamescope.";
     };
+
+    games = lib.mkOption {
+      type = lib.types.attrsOf (pkgs.formats.toml { }).type;
+      default = { };
+      example = {
+        "553850" = {
+          hooks.pre_launch.command = "uhk-switch-keymap HD2";
+          hooks.post_exit.command = "uhk-switch-keymap QWR";
+        };
+      };
+      description = ''
+        Per-game overrides, keyed by Steam AppID. Each attrset is written
+        verbatim as TOML to
+        `~/.config/steam-command-runner/games/<appid>.toml` — field names
+        match `GameConfig` in the runner's own source
+        (`src/config/game.rs`: `hooks.pre_launch`/`hooks.post_exit`,
+        `mode`, `proton`, `env`, `launch_args`, ...), not this module's own
+        camelCase option names.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    xdg.configFile."steam-command-runner/config.toml".source =
-      (pkgs.formats.toml { }).generate "steam-command-runner-config.toml" tomlConfig;
+    xdg.configFile =
+      { "steam-command-runner/config.toml".source =
+        (pkgs.formats.toml { }).generate "steam-command-runner-config.toml" tomlConfig;
+      }
+      // lib.mapAttrs' (appId: gameConfig: lib.nameValuePair
+        "steam-command-runner/games/${appId}.toml"
+        { source = (pkgs.formats.toml { }).generate "steam-command-runner-game-${appId}.toml" gameConfig; }
+      ) cfg.games;
   };
 }
