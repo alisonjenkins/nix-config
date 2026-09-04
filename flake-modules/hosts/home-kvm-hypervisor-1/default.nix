@@ -168,6 +168,26 @@ in {
         # 50% is a safe ceiling, not a throughput limit.
         zramSwap.memoryPercent = lib.mkForce 50;
 
+        # This host is on 24/7 hosting passthrough VMs, so idle draw dominates
+        # its power bill. schedutil ramps with load instead of pinning a fixed
+        # frequency, so burst workloads (transcode, storage IOPS) still get
+        # full clock — unlike "powersave", which would cap every core at its
+        # minimum P-state regardless of load.
+        powerManagement.cpuFreqGovernor = "schedutil";
+
+        # Deliberately NOT running `powertop --auto-tune`: it is a blanket
+        # tool and PCIe ASPM lives in the link's config space, not the bound
+        # driver, so it would still land on VFIO-unbound passthrough links —
+        # the SAS3008 HBA has documented ASPM-triggered SCSI resets, and
+        # Intel's own tuning guide says disable ASPM on latency-sensitive
+        # NICs (this host's ixgbe carries the storage-VM's NFS traffic). It
+        # would also re-tune the boot NVMe's power states, fighting the
+        # `no-read/write-workqueue` latency tuning already applied via
+        # crypttabExtraOpts below. USB autosuspend, the one tunable auto-tune
+        # would apply without touching PCIe/storage link power, is already
+        # this kernel's default (verified: /sys/module/usbcore/parameters/
+        # autosuspend reads 2 with no cmdline override) — nothing to add.
+
         console.keyMap = "us";
 
         environment = {
