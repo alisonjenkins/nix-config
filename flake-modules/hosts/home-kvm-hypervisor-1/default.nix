@@ -182,8 +182,8 @@ in {
         # Intel's own tuning guide says disable ASPM on latency-sensitive
         # NICs (this host's ixgbe carries the storage-VM's NFS traffic). It
         # would also re-tune the boot NVMe's power states, fighting the
-        # `no-read/write-workqueue` latency tuning already applied via
-        # crypttabExtraOpts below. USB autosuspend, the one tunable auto-tune
+        # `no-read/write-workqueue` latency tuning already applied above via
+        # crypttabExtraOpts. USB autosuspend, the one tunable auto-tune
         # would apply without touching PCIe/storage link power, is already
         # this kernel's default (verified: /sys/module/usbcore/parameters/
         # autosuspend reads 2 with no cmdline override) — nothing to add.
