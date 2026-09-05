@@ -270,7 +270,7 @@ let
     macros = patchedBaseMacros ++ withAccess.macros;
   };
 
-  secretsFile = ../../../secrets/ali-desktop/uhk-keymaps.yaml;
+  secretsFile = ../../../../secrets/ali-desktop/uhk-keymaps.yaml;
 in
 {
   options.programs.uhkKeymaps = {
@@ -278,6 +278,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+
     sops.secrets = {
       "uhk-keymaps/old_email" = { sopsFile = secretsFile; key = "old_email"; };
       "uhk-keymaps/personal_email" = { sopsFile = secretsFile; key = "personal_email"; };
