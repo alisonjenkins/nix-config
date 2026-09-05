@@ -4,6 +4,7 @@
     ../../programs/linux-only/steam-command-runner
     ../../programs/linux-only/sunshine-wrappers
     ../../programs/linux-only/steam-stream-mode
+    ../../programs/linux-only/uhk-keymaps
     # Disabled location-based audio settings (desktop doesn't move)
     # ./location-detection
     # ./audio-context
@@ -60,6 +61,8 @@
       hooks.post_exit.command = "uhk-switch-keymap QWR";
     };
   };
+
+  programs.uhkKeymaps.enable = true;
 
   # The module above writes the runner's config; this puts the runner itself
   # where Steam's launch chain will find it. It intercepts `gamescope` to
