@@ -87,6 +87,8 @@ in {
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
           imports = [ self.homeModules.home-linux self.homeModules.vr ];
+
+          home.packages = [ pkgs.lmstudio ];
           # The session's niri, which carries the virtual output patch. `niri
           # msg` must match the running compositor: the IPC is versioned with
           # it, and virtual outputs are a patch rather than an upstream
