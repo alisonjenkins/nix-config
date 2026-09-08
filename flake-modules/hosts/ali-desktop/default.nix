@@ -1063,6 +1063,11 @@ in {
             # from the live GUI-set -75mV is cheap insurance. Bump toward 0
             # further if it happens again.
             settings = {
+              # Current schema version for lact 0.10.x. Without it the daemon
+              # migrates from 0 and then tries to write the migrated file
+              # back, which fails on the read-only store symlink and
+              # crash-loops the service.
+              version = 7;
               apply_settings_timer = 5;
               daemon = {
                 admin_group = "wheel";
