@@ -350,6 +350,7 @@ in
           inputs.fenix.overlays.default
           outputs.overlays.additions
           outputs.overlays.linux-firmware
+          outputs.overlays.lsfg-vk
           outputs.overlays.master-packages
           outputs.overlays.modifications
           outputs.overlays.stable-packages
