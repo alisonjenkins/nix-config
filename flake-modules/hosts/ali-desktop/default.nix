@@ -151,6 +151,19 @@ in {
             autoVrr = false;
           };
 
+          # Frame generation as a power saver: cap the game at 60 in its own
+          # settings, present 120 on the G9. lsfg-vk forces V-Sync itself, so
+          # VRR stays off for these games (VRR is unsupported by the layer).
+          programs.lsfg-vk = {
+            enable = true;
+            profiles."Helldivers 2 2x [Performance]" = {
+              active_in = [ "helldivers2.exe" ];
+              multiplier = 2;
+              flow_scale = 0.75;
+              performance_mode = true;
+            };
+          };
+
           # Samsung G9 (DP-2) tops out at 120Hz; caps games at 116fps so VRR
           # stays engaged instead of bouncing off the vsync ceiling.
           custom.mangohud.displayMaxRefresh = 120;
