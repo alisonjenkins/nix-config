@@ -639,16 +639,17 @@ in
       });
   };
 
-  lsfg-vk = final: prev: {
-    lsfg-vk-ui = final.stdenv.mkDerivation rec {
+  lsfg-vk = final: _prev: {
+    lsfg-vk-ui = final.stdenv.mkDerivation (finalAttrs: {
       pname = "lsfg-vk";
-      version = "2.0-dev-unstable-2026-01-18";
+      version = "2.0.0";
 
-      src = final.fetchFromGitHub {
-        owner = "PancakeTAS";
-        repo = "lsfg-vk";
-        rev = "14904b9f3d78aea692bff0d330ce403ae0e74766";
-        hash = "sha256-yF8GuclZ5WaFvQkXH6iJmUuj5cgFglh9Ttre/DrD5Yg=";
+      # Upstream left GitHub for its own forge with the 2.0.0 release; the
+      # GitHub repo is an archived pointer only.
+      src = final.fetchgit {
+        url = "https://git.lsfg-vk.dev/lsfg-vk.git";
+        rev = "2333707d55b68ddd8066fd95404c3b7d07e00d3a";
+        hash = "sha256-vp0/adJdVV73C2RFjcEE90KjWiZJQhiqqOlYQ89RG+Y=";
       };
 
       nativeBuildInputs = with final; [
@@ -665,33 +666,37 @@ in
       ];
 
       cmakeFlags = [
+        "-DLSFGVK_BUILD_LAYER=ON"
         "-DLSFGVK_BUILD_UI=ON"
-        "-DLSFGVK_BUILD_VK_LAYER=ON"
         "-DLSFGVK_BUILD_CLI=ON"
-        "-DLSFGVK_INSTALL_XDG_FILES=ON"
+        "-DLSFGVK_MANAGED=ON"
+        "-DLSFGVK_LAYER_LIBRARY_PATH=${placeholder "out"}/lib/liblsfg-vk-layer.so"
       ];
 
-      # Fix the Vulkan layer JSON to use absolute library path and add required functions
+      # The lsfg-vk-flake NixOS module links the manifest by its 1.x name.
       postInstall = ''
-        # Fix library path to absolute
-        substituteInPlace $out/share/vulkan/implicit_layer.d/VkLayer_LSFGVK_frame_generation.json \
-          --replace-fail '"library_path": "liblsfg-vk-layer.so"' '"library_path": "'$out'/lib/liblsfg-vk-layer.so"'
+        ln -s VkLayer_LSFGVK_frame_generation.json \
+          $out/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
+      '';
 
-        # Add the functions section required by Vulkan loader
-        substituteInPlace $out/share/vulkan/implicit_layer.d/VkLayer_LSFGVK_frame_generation.json \
-          --replace-fail '"disable_environment": {' '"functions": { "vkNegotiateLoaderLayerInterfaceVersion": "vkNegotiateLoaderLayerInterfaceVersion" }, "disable_environment": {'
-
-        # Create symlink with old filename for NixOS module compatibility
-        ln -s VkLayer_LSFGVK_frame_generation.json $out/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
+      # The vendored vulkan.hpp DynamicLoader dlopens libvulkan by bare
+      # soname, which has no system search path to resolve against here.
+      # Inside a game the loader has already mapped it, but the CLI's
+      # healthcheck/benchmark and the layer's own frame-gen device do not.
+      postPatch = ''
+        substituteInPlace thirdparty/vulkan/vulkan.hpp \
+          --replace-fail 'dlopen( "libvulkan.so"' 'dlopen( "${final.vulkan-loader}/lib/libvulkan.so"' \
+          --replace-fail 'dlopen( "libvulkan.so.1"' 'dlopen( "${final.vulkan-loader}/lib/libvulkan.so.1"'
       '';
 
       meta = with final.lib; {
-        description = "Linux Shader Function Generator for Vulkan - Version 2.0";
-        homepage = "https://github.com/PancakeTAS/lsfg-vk";
-        license = licenses.unfree; # Update if you know the actual license
+        description = "Lossless Scaling Frame Generation on Linux";
+        homepage = "https://lsfg-vk.dev";
+        license = licenses.cc-by-nc-nd-40;
         platforms = platforms.linux;
+        mainProgram = "lsfg-vk-ui";
       };
-    };
+    });
   };
 
   luajitPackages = _final: prev: {
