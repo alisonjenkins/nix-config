@@ -24,48 +24,19 @@
       shape — gh/GraphQL queries, web searches, log trawls. Prefer running
       these in the background (run_in_background) so the main loop is not
       blocked waiting on them.
-    - Pick the sub-agent model by difficulty: "sonnet" for routine mechanical
-      work, "haiku" for trivial enumeration/extraction. The main loop stays on
-      the big model, reserved for voice, scope, and judgement.
-    - Code reading stays inline: Read/Grep/Glob used to understand code you are
-      working on are cheap and belong in the main loop — never route ordinary
-      exploration through a sub-agent. Delegate a search sweep only when you
-      need the conclusion (not the file contents) AND it spans many files or
-      areas you will not otherwise open.
-    - When you DO delegate a read-only search/exploration sweep, prefer the
-      Explore (or Plan) sub-agent over general-purpose: Explore/Plan skip
-      CLAUDE.md + git status at startup, so they cost far less per spawn than a
-      general-purpose agent that loads the full memory hierarchy. Reach for
-      general-purpose only when the sweep needs tools Explore lacks (edits,
-      writes, MCP mutations).
+    - Default the sub-agent model to "haiku"; step up to "sonnet" only when
+      the task needs judgement, multi-step reasoning, or code changes. The
+      main loop stays on the big model, reserved for voice, scope, and
+      judgement.
     - Fast local search keeps inline reading cheap: the built-in Grep tool
       already uses ripgrep and works on every machine — make it the default for
       content search. At the shell, use `rg` (content) and `fd` (file/dir
       names) when present, but do not assume they are installed or at any fixed
       path: probe with `command -v` first, fall back to `grep -r` / `find`, and
       note `fd` may be packaged as `fdfind` on Debian/Ubuntu.
-    - Sub-agent prompts must be self-contained: include every path, ID, query,
-      and the exact output format — the sub-agent cannot see this conversation.
-    - Name the relevant skills in the sub-agent prompt. A sub-agent receives NO
-      skill listing, so it cannot discover a skill on its own — but it can
-      invoke one by exact name. You know why you are spawning it, so inject
-      only what that task needs: "invoke the `programming` skill, then read its
-      languages/rust.md" for code work, "invoke `testing`" for tests, and so on.
-      Skip this only for Explore/Plan sweeps, which are read-only.
-    - Escalate instead of grinding. The session runs on a fast model; hard
-      problems are handled by consulting a stronger one via the `consult-opus`
-      agent, which may escalate further itself. Consult when ANY of these is
-      true, without waiting to feel stuck: a third attempt at the same failure;
-      two hypotheses tested and disproved with no third; a decision that picks
-      a dependency, data format or module boundary; the same file read three
-      times without the picture resolving; the user reporting the same thing
-      still broken twice; or an irreversible operation, on the first attempt.
-      Invoke the `consulting` skill for the brief format — the consultant sees
-      none of the conversation, so a thin brief buys a confident wrong answer.
-      Do NOT consult for mechanical volume, for something the user already
-      decided, or for anything answerable by reading a file first.
-    - Cap the sub-agent's reply length explicitly (e.g. "return at most 30
-      lines: one line per PR — number, state, mergeable").
+    - Invoke the `delegation` skill before spawning a sub-agent: it carries
+      the model-tier decision test, when NOT to delegate at all, Explore vs
+      general-purpose, and how to write a self-contained prompt.
     - Never delegate: user-facing judgement, irreversible actions, or work
       whose context cannot be compressed into a prompt.
   '';
