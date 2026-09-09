@@ -30,7 +30,7 @@ jobs:
         uses: ./.github/actions/setup-host-nix
         with:
           extra-tools: gh
-      - uses: DeterminateSystems/flake-checker-action@v13
+      - uses: DeterminateSystems/flake-checker-action@v14
       - name: Setup git
         run: |
           git config --global user.name 'Github Actions'
