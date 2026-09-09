@@ -100,14 +100,15 @@
     { layer = "fn5"; key = "6"; name = "E/AT-12 Anti-Tank Emplacement"; code = "KIJLLL"; }
   ];
 
-  # The thumb cluster only has 4 keys, all already spoken for (Fn, Mod,
-  # Space, Fn2) -- there's no physical key left to hold for Fn3/Fn4/Fn5.
-  # UHK layers nest: a key ON the Fn layer can itself hold-switch into
-  # another layer. The second key comes from the leftmost column (outside
-  # the WASD block) so index/middle/ring stay on WASD while reaching it.
+  # First attempt chorded Fn3/4/5 through the Fn layer (hold Fn, then hold a
+  # second key) -- clumsy under game pressure. Remapped on the real device to
+  # single dedicated hold-keys straight off base, confirmed against a live
+  # export: base module 1 index 0 (grave/backtick), 13 (left Ctrl) and 20
+  # (ISO key left of Z) hold directly into Fn3/Fn4/Fn5, same as Fn/Mod/Fn2's
+  # own base-layer hold keys.
   layerAccess = [
-    { layer = "fn"; index = 13; target = "fn3"; } # key left of A (Ctrl on base, unused on Fn)
-    { layer = "fn"; index = 7; target = "fn4"; } # Tab
-    { layer = "fn"; index = 26; target = "fn5"; } # key left of Z (2nd Ctrl on base, unused on Fn)
+    { layer = "base"; index = 0; target = "fn3"; } # grave/backtick
+    { layer = "base"; index = 13; target = "fn4"; } # key left of A (Ctrl on base)
+    { layer = "base"; index = 20; target = "fn5"; } # ISO key left of Z (2nd Ctrl on base)
   ];
 }

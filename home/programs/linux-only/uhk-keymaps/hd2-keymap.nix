@@ -9,7 +9,11 @@ let
   module1Len = lib.length (findModule (findLayer qwr "fn") 1).keyActions;
 
   initialLayerModule1 = {
-    fn = (findModule (findLayer qwr "fn") 1).keyActions;
+    base = (findModule (findLayer qwr "base") 1).keyActions;
+    # Index 13 held the base layer's Ctrl through to Fn (chorded Fn3 access,
+    # since dropped -- see stratagems.nix's layerAccess comment); left blank
+    # to match the live device rather than leaking an unused Ctrl passthrough.
+    fn = setKeyAction (findModule (findLayer qwr "fn") 1).keyActions 13 { keyActionType = "none"; };
     fn2 = (findModule (findLayer qwr "fn2") 1).keyActions;
     fn3 = noneActions module1Len;
     fn4 = noneActions module1Len;
@@ -35,16 +39,26 @@ let
     { layerModule1 = initialLayerModule1; macros = [ ]; macroCount = lib.length baseConfig.macros; }
     stratagems;
 
+  # Each access entry needs the hold action set twice: once on the layer it's
+  # held FROM (base), and once on the target layer itself at the same
+  # physical index -- confirmed against the live device, which mirrors how
+  # Fn/Mod/Fn2's own hold keys self-reference on every layer they appear on,
+  # so re-holding the same physical key keeps the target layer active.
   withAccess = lib.foldl'
-    (acc: a: acc // {
-      layerModule1 = acc.layerModule1 // {
-        ${a.layer} = setKeyAction acc.layerModule1.${a.layer} a.index {
+    (acc: a:
+      let
+        action = {
           keyActionType = "switchLayer";
           layer = a.target;
           switchLayerMode = "hold";
         };
-      };
-    })
+      in
+      acc // {
+        layerModule1 = acc.layerModule1 // {
+          ${a.layer} = setKeyAction acc.layerModule1.${a.layer} a.index action;
+          ${a.target} = setKeyAction acc.layerModule1.${a.target} a.index action;
+        };
+      })
     stratagemFold
     layerAccess;
 
