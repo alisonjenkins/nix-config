@@ -54,7 +54,7 @@ in {
       self.nixosModules.base
       self.nixosModules.camera-resume
       self.nixosModules.desktop
-      self.nixosModules.docker
+      self.nixosModules.podman
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
@@ -242,8 +242,8 @@ in {
         modules.desktop.gaming.steamExtraFlags = [ "-pipewire" ];
 
         modules.locale.enable = true;
-        modules.docker.enable = true;
-        modules.docker.enableQemuBinfmt = true;
+        modules.podman.enable = true;
+        modules.podman.enableQemuBinfmt = true;
         modules.rocm.enable = true;
         modules.tts.enable = true;
 
@@ -548,12 +548,13 @@ in {
         environment = {
           pathsToLink = [ "/share/zsh" ];
 
-          # Persist the rootful Docker data root across reboots (impermanence tmpfs
-          # root) so kind clusters and pulled images survive. Merged with the base
-          # module's persistence directory list.
+          # Persist the rootful Podman data root across reboots (impermanence
+          # tmpfs root) so pulled images and containers survive. Merged with
+          # the base module's persistence directory list. Path matches
+          # modules/podman's graphroot setting.
           persistence."/persistence".directories = [
             {
-              directory = "/var/lib/docker";
+              directory = "/var/lib/containers/storage";
               user = "root";
               group = "root";
               mode = "0710";
@@ -607,7 +608,6 @@ in {
             # towers) that QIDI's fork drops. From unstable for the newer QIDI
             # printer profiles.
             unstable.orca-slicer
-            docker
             protontricks
             proton-vpn
             qbittorrent
