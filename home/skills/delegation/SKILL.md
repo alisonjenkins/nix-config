@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning any sub-agent (Agent tool), or when deciding whether a batch of similar calls belongs in the main loop at all — picks the model tier (haiku vs sonnet vs escalate), when to delegate in the first place, Explore vs general-purpose, background execution, self-contained prompts, and what must never be delegated.
+description: Use before spawning any sub-agent (Agent tool), or when deciding whether a batch of similar calls belongs in the main loop at all — picks the sub-agent model tier (haiku vs sonnet), when to delegate in the first place, Explore vs general-purpose, background execution, self-contained prompts, and what must never be delegated. Not for escalating to a stronger model when stuck — see the `consulting` skill for that.
 ---
 
 # Delegation
