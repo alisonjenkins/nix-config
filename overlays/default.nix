@@ -446,6 +446,21 @@ in
                 checkPhase = "true";
                 nativeCheckInputs = [];
               });
+
+              # cyclopts (fastmcp's CLI dep) spawns pexpect subprocesses to
+              # drive an interactive zsh completion session in its test
+              # suite. There's no real TTY in the Nix sandbox, so the zsh
+              # completion tests hang until pexpect.TIMEOUT:
+              #   FAILED tests/completion/test_behavior.py::test_behavior[zsh-...]
+              #   FAILED tests/completion/test_zsh.py::test_...
+              # 12 tests fail this way every time; skip checks entirely.
+              cyclopts = python-prev.cyclopts.overridePythonAttrs (_: {
+                doCheck = false;
+                dontCheck = true;
+                installCheckPhase = "true";
+                checkPhase = "true";
+                nativeCheckInputs = [];
+              });
             })
           ];
 
