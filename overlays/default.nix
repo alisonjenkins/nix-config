@@ -604,7 +604,7 @@ in
       # Fetch the source using builtins only (no prev.* packages) to avoid recursion.
       # The SRI hash from fetchFromGitHub is compatible with builtins.fetchTarball.
       systemdSrc = if systemdVersion != null && systemdHash != null then
-        builtins.fetchTarball {
+        fetchTarball {
           url = "https://github.com/systemd/systemd/archive/v${systemdVersion}.tar.gz";
           sha256 = systemdHash;
         }
