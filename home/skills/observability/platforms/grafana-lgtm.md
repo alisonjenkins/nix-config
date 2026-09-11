@@ -74,9 +74,10 @@ hasn't landed in Mimir's remote-write ingestion path yet.
 ## Reducing output before it reaches you
 
 A raw LogQL/PromQL/TraceQL query can return far more than an
-investigation needs. Reach for `sift lgtm logs`/`sift lgtm
-metrics`/`sift lgtm traces` (see the `sift` package) for an aggregated,
-top-N, histogram, or baseline-diff view instead of raw output — the
+investigation needs. Reach for
+`sift lgtm logs`/`sift lgtm metrics`/`sift lgtm traces` (see the `sift`
+package) for an aggregated, top-N, histogram, or baseline-diff view
+instead of raw output — the
 same `--mode` flags as `sift datadog` (aggregate/topn/histogram/diff),
 since `sift` shares one reduction engine across both platforms. `sift`
 defaults away from a raw dump; ask for `--mode raw` explicitly when you
