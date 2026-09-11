@@ -36,6 +36,7 @@ was too brief for the game to register reliably).
 | Key | Stratagem | Code |
 |---|---|---|
 | 1 | Orbital 120mm HE Barrage | LLKJLK |
+| 2 | M-102 Fast Recon Vehicle | JKLKLKI |
 | 3 | Orbital 380mm HE Barrage | LKIIJKK |
 | Q | SOS Beacon | IKLI |
 | W | Orbital Walking Barrage | LKLKLK |
