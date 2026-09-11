@@ -17,7 +17,7 @@ query speed and for how much you're charged to search it.
 A log-based metric (a count or measurement derived from a log query,
 tracked over time without re-searching the raw logs) is worth creating
 once a specific log search becomes something you check repeatedly —
-that's a `improving.md` "close the gap" moment: a search you keep
+that's an `../improving.md` "close the gap" moment: a search you keep
 re-running by hand is a metric you haven't created yet.
 
 ## APM / traces
@@ -79,9 +79,9 @@ normal session with `pup` on `PATH`.
 ## Reducing output before it reaches you
 
 A raw `pup` log search or trace search can return far more than an
-investigation needs to answer one question. Reach for `sift datadog
-logs`/`sift datadog metrics`/`sift datadog traces` (see the `sift`
-package) for an aggregated, top-N, histogram, or baseline-diff view
+investigation needs to answer one question. Reach for
+`sift datadog logs`/`sift datadog metrics`/`sift datadog traces` (see
+the `sift` package) for an aggregated, top-N, histogram, or baseline-diff view
 instead of raw output — `--mode aggregate` to group by facet/error type,
 `--mode topn` for the biggest contributors, `--mode histogram` for a
 time-bucketed rate, `--mode diff` against a baseline window. `sift`
