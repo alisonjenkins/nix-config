@@ -14,6 +14,7 @@
     { layer = "fn"; key = "1"; name = "Orbital 120mm HE Barrage"; code = "LLKJLK"; }
     { layer = "fn"; key = "W"; name = "Orbital Walking Barrage"; code = "LKLKLK"; }
     { layer = "fn"; key = "3"; name = "Orbital 380mm HE Barrage"; code = "LKIIJKK"; }
+    { layer = "fn"; key = "2"; name = "M-102 Fast Recon Vehicle"; code = "JKLKLKI"; }
     { layer = "fn"; key = "F"; name = "Orbital Napalm Barrage"; code = "LLKJLI"; }
     { layer = "fn"; key = "R"; name = "Orbital Laser"; code = "LKILK"; }
     { layer = "fn"; key = "Z"; name = "Orbital Railcannon Strike"; code = "LIKKL"; }
