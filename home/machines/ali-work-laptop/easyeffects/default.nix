@@ -14,10 +14,12 @@
       (builtins.readDir profilesDir)
     else {};
 
+  # EasyEffects 8.x reads presets from ~/.local/share/easyeffects/, not
+  # ~/.config/easyeffects/ (the 7.x path).
   profileFileAttrs = lib.mapAttrs' (
     filename: _:
       lib.nameValuePair
-      ".config/easyeffects/output/${filename}"
+      ".local/share/easyeffects/output/${filename}"
       {source = profilesDir + "/${filename}";}
   ) profileFiles;
 in {
@@ -26,6 +28,6 @@ in {
   home.file =
     profileFileAttrs
     // {
-      ".config/easyeffects/output/.keep".text = "";
+      ".local/share/easyeffects/output/.keep".text = "";
     };
 }
