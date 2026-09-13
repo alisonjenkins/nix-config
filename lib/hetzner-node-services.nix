@@ -447,6 +447,9 @@
           --kube-apiserver-arg=audit-log-maxage=30 \
           --kube-apiserver-arg=audit-log-maxbackup=10 \
           --kube-apiserver-arg=audit-log-maxsize=100 \
+          --kube-apiserver-arg=service-account-issuer=$IRSA_OIDC_ISSUER \
+          --kube-apiserver-arg=service-account-signing-key-file=/etc/rancher/k3s/irsa-signing-key.pem \
+          --kube-apiserver-arg=service-account-key-file=/etc/rancher/k3s/irsa-signing-key.pem \
           --kubelet-arg=streaming-connection-idle-timeout=5m \
           --kubelet-arg=tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305 \
           --write-kubeconfig-mode=0400
