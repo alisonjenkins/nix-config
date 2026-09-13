@@ -25,7 +25,7 @@ with lib; let
     fi
 
     ${concatStringsSep "\n" (mapAttrsToList (name: value: ''
-        ${pkgs.alsa-utils}/bin/amixer -q -c "$card" sset ${escapeShellArg name} ${toString value} \
+        ${pkgs.alsa-utils}/bin/amixer -q -c "$card" sset ${escapeShellArg name} ${escapeShellArg (toString value)} \
           || echo "scarlett-mixer: failed to set ${name}" >&2
       '')
       cfg.controls)}
