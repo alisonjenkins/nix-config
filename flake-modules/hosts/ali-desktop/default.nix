@@ -503,8 +503,20 @@ in {
         };
 
         # Pin the Scarlett's internal mixer matrix to unity so PipeWire is the
-        # only software volume stage on the playback path.
-        hardware.scarlettMixer.enable = true;
+        # only software volume stage on the playback path. Also duplicate the
+        # mic onto capture channel 2: only XLR/Line Input 1 (DSP 1) has a mic
+        # connected, so capture channel 2 was reading DSP 2 -- an empty jack,
+        # not the mic -- and any stereo consumer downstream (EasyEffects'
+        # denoiser chain included) got real audio on the left and true
+        # silence on the right. Root-caused via a stronger-model consult
+        # after two failed PipeWire-level workarounds; verified against
+        # /proc/asound and a raw amixer read on this exact card before
+        # applying. Fixing it here, below PipeWire entirely, fixes every
+        # consumer (EasyEffects, raw capture, OBS) at once.
+        hardware.scarlettMixer = {
+          enable = true;
+          controls."PCM 02" = "DSP 1";
+        };
 
         # Full PowerPlay unlock for overclocking/undervolting, overriding
         # modules/base's more conservative default.

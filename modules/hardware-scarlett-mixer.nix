@@ -53,7 +53,11 @@ in {
     };
 
     controls = mkOption {
-      type = types.attrsOf types.int;
+      # Gains are raw integers; routing/mode controls (e.g. a capture mux
+      # enum like "PCM 02" = "DSP 1") are matched by name via `amixer sset`,
+      # so a string works identically to an int here -- `toString` in
+      # setControls already handles both.
+      type = types.attrsOf (types.either types.int types.str);
       default = {
         # The device's internal mixer matrix sits below anything PipeWire can
         # see: PCM 1/2 -> Mixer Input 01/02 -> Monitor Mix A/B -> Analogue Out
