@@ -14,10 +14,14 @@
       (builtins.readDir profilesDir)
     else {};
 
+  # EasyEffects 8.x reads presets from ~/.local/share/easyeffects/, not
+  # ~/.config/easyeffects/ (the 7.x path) -- confirmed via a stronger-model
+  # consult while debugging an unrelated mic issue tonight; the installed
+  # version here is 8.2.4.
   profileFileAttrs = lib.mapAttrs' (
     filename: _:
       lib.nameValuePair
-      ".config/easyeffects/output/${filename}"
+      ".local/share/easyeffects/output/${filename}"
       {source = profilesDir + "/${filename}";}
   ) profileFiles;
 in {
@@ -26,7 +30,7 @@ in {
   home.file =
     profileFileAttrs
     // {
-      ".config/easyeffects/output/.keep".text = "";
+      ".local/share/easyeffects/output/.keep".text = "";
 
       # EasyEffects' mic chain used to emit voice on the LEFT channel only.
       # Looked exactly like a denoiser (deepfilternet / rnnoise) zeroing the
