@@ -75,3 +75,27 @@ def test_load_sofa_rejects_missing_datasets(tmp_path: Path):
 
     with pytest.raises(SofaFormatError):
         load_sofa(path)
+
+
+def test_load_sofa_rejects_missing_sampling_rate(tmp_path: Path):
+    path = tmp_path / "no_rate.sofa"
+    with h5py.File(path, "w") as f:
+        f.create_dataset("Data.IR", data=np.zeros((2, 2, TAPS)))
+        pos_ds = f.create_dataset("SourcePosition", data=np.zeros((2, 3)))
+        pos_ds.attrs["Units"] = b"degree, degree, metre"
+
+    with pytest.raises(SofaFormatError):
+        load_sofa(path)
+
+
+def test_load_sofa_rejects_wrong_source_position_shape(tmp_path: Path):
+    path = tmp_path / "bad_shape.sofa"
+    with h5py.File(path, "w") as f:
+        f.create_dataset("Data.IR", data=np.zeros((2, 2, TAPS)))
+        f.create_dataset("Data.SamplingRate", data=np.array([FS]))
+        # Missing the radius column: (M, 2) instead of (M, 3).
+        pos_ds = f.create_dataset("SourcePosition", data=np.zeros((2, 2)))
+        pos_ds.attrs["Units"] = b"degree, degree, metre"
+
+    with pytest.raises(SofaFormatError):
+        load_sofa(path)
