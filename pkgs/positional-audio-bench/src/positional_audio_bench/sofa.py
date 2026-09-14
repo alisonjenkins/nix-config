@@ -60,14 +60,20 @@ class HRIRSet:
 
 def load_sofa(path: Path) -> HRIRSet:
     with h5py.File(path, "r") as f:
-        if "Data.IR" not in f or "SourcePosition" not in f:
-            raise SofaFormatError(f"{path}: missing Data.IR/SourcePosition — not a SimpleFreeFieldHRIR file")
+        required = ("Data.IR", "SourcePosition", "Data.SamplingRate")
+        missing = [name for name in required if name not in f]
+        if missing:
+            raise SofaFormatError(f"{path}: missing {', '.join(missing)} — not a SimpleFreeFieldHRIR file")
 
         ir = np.asarray(f["Data.IR"], dtype=np.float64)  # (M, R, N)
         if ir.ndim != 3 or ir.shape[1] != 2:
             raise SofaFormatError(f"{path}: Data.IR shape {ir.shape}, expected (M, 2, N) two-receiver HRIR")
 
         positions = np.asarray(f["SourcePosition"], dtype=np.float64)  # (M, 3)
+        if positions.ndim != 2 or positions.shape[1] != 3:
+            raise SofaFormatError(
+                f"{path}: SourcePosition shape {positions.shape}, expected (M, 3) azimuth/elevation/radius"
+            )
         if positions.shape[0] != ir.shape[0]:
             raise SofaFormatError(
                 f"{path}: SourcePosition has {positions.shape[0]} rows, Data.IR has {ir.shape[0]}"
