@@ -16,7 +16,9 @@ let
 in
 {
   perSystem = { system, ... }: {
-    packages =
+    packages = {
+      positional-audio-bench = (pkgsFor system).positional-audio-bench;
+    } //
       # camoufox-browser is a from-source patched-Firefox build (heavy); only
       # exposed/buildable on x86_64-linux, where CI compiles + caches it.
       lib.optionalAttrs (system == "x86_64-linux") {
