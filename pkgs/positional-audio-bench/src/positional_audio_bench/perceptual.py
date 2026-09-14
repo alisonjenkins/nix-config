@@ -37,11 +37,6 @@ FRONT_BUCKETS = {"F", "FR", "FL"}
 BACK_BUCKETS = {"B", "BR", "BL"}
 
 
-def nearest_bucket(azimuth_deg: float) -> str:
-    az = azimuth_deg % 360.0
-    return min(COMPASS_BUCKETS, key=lambda b: min(abs(BUCKET_AZIMUTH_DEG[b] - az), 360 - abs(BUCKET_AZIMUTH_DEG[b] - az)))
-
-
 def bucket_distance_deg(a: str, b: str) -> float:
     diff = abs(BUCKET_AZIMUTH_DEG[a] - BUCKET_AZIMUTH_DEG[b])
     return min(diff, 360 - diff)
