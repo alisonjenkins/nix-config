@@ -44,6 +44,18 @@ def test_match_rejects_empty_measurements():
         match({}, subjects=_subjects())
 
 
+def test_match_rejects_parameter_with_no_data():
+    subjects = [Subject(id=1, d={"fossa_height": None}), Subject(id=2, d={"fossa_height": None})]
+    with pytest.raises(ValueError):
+        match({"fossa_height": 1.5}, subjects=subjects)
+
+
+def test_match_rejects_parameter_with_zero_variance():
+    subjects = [Subject(id=1, d={"fossa_height": 1.5}), Subject(id=2, d={"fossa_height": 1.5})]
+    with pytest.raises(ValueError):
+        match({"fossa_height": 1.5}, subjects=subjects)
+
+
 def test_load_subjects_returns_hutubs_population():
     subjects = load_subjects()
     assert len(subjects) == 96
