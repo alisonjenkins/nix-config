@@ -6,12 +6,12 @@ let
   bluetoothMacs = {
     sonyHeadset = "88:C9:E8:06:5E:9C";
   };
-  # The binaural spatializer's output is pinned straight to the Scarlett
-  # with node.dont-reconnect (see binauralSurround below), so nothing
-  # re-links it automatically if it ever drops. Both known ways that
-  # happens (see services.audio-context-suspend and
-  # services.audio-usb-reconnect-heal below) share this one list of links
-  # to restore.
+  # The binaural spatializer's output is pinned to the Scarlett via
+  # `target.object` (see binauralSurround below). Session policy normally
+  # re-links it on its own, but as a fallback in case a relink is ever
+  # missed, both known ways the underlying node can drop (see
+  # services.audio-context-suspend and services.audio-usb-reconnect-heal
+  # below) share this one list of links to restore.
   binauralOutputLinks = let
     scarlettOut = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
   in [
