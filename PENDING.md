@@ -34,6 +34,43 @@ now exists (key `niks3_token`). Per-host status:
 Server-side niks3 push failures (504 during GC / 503 from B2) are tracked in the `niks3-cache` memory;
 mitigations merged to `home-cluster` 2026-07-01.
 
+## positional-audio-bench follow-ups
+
+**Usage + how to swap HRTF datasets: `docs/positional-audio-bench.md`.**
+`pkgs/positional-audio-bench` implemented (2026-09-14): objective localization
+benchmark for `modules.desktop.pipewire.binauralSurround` — ITD/ILD/front-back
+scoring via GCC-PHAT + a Woodworth (elevation-corrected) ground truth, `tune`/
+`regress`/`sweep-datasets`/`live-verify` CLI, wired into `nix flake check`
+(`flake-modules/positional-audio-bench.nix`, MIT KEMAR + pure defaults only).
+Baseline on the defaults: mean ITD error 3.0 deg, max 15.0 deg @ 105 az/0 el,
+front-back discrimination 8.0 dB.
+
+1. **Alternate HRTF datasets not yet fetched.** `sweep-datasets` accepts any
+   `LABEL=PATH` SOFA file, but no `pkgs/positional-audio-bench/datasets.nix`
+   exists for CIPIC/SADIE II/ARI/HUTUBS — their license terms (redistribution
+   into the Nix store / binary cache) weren't verified in the session that
+   built this. Confirm per-dataset terms, then wire `fetchurl`/`fetchzip`
+   derivations for a representative subject each.
+2. **RBJ biquad math unverified against PipeWire's actual SPA filter-chain
+   implementation.** `biquad.py` implements the standard RBJ cookbook
+   formulas and is unit-tested against its own frequency response, but was
+   never diffed against SPA's `bq_*` plugin source — if they use a different
+   Q/gain convention, `tune`/`regress` would score against subtly wrong
+   coefficients without any test catching it.
+3. **`live-verify` (drives real `pw-cat`/`pw-record`) is untested against
+   real hardware** — written against the expected `pw-cat --target`/
+   `--channels` flag behavior, never run against an actual PipeWire session.
+   First real run on `ali-desktop` (`just audio-bench-live ali-desktop
+   <monitor-port>`) should be treated as its actual first test.
+4. **Front-back score interpretation caveat worth remembering:** it scores
+   the HRIR's *spectral cue content* (log-spectral distance between a
+   direction and its mirror), not whether a specific listener's brain can
+   decode that cue — a generic KEMAR HRTF can score fine here while still
+   being genuinely hard to localize front/back for an individual whose own
+   pinna differs from the dummy head's. That's why `sweep-datasets` exists:
+   trying alternate HRTF sets is the next lever if the KEMAR default keeps
+   scoring reasonably but still sounds wrong.
+
 ## emulation module follow-ups
 
 `modules/emulation` implemented + audited (6-dimension adversarial audit; do-now + robustness findings fixed) but **disabled by default** — no host sets `modules.emulation.enable`. Follow-ups, highest value first:
