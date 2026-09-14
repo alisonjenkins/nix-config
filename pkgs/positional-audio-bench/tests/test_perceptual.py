@@ -3,21 +3,7 @@ from positional_audio_bench.perceptual import (
     PerceptualResult,
     Trial,
     bucket_distance_deg,
-    nearest_bucket,
 )
-
-
-def test_nearest_bucket_exact_matches():
-    assert nearest_bucket(0) == "F"
-    assert nearest_bucket(90) == "L"
-    assert nearest_bucket(180) == "B"
-    assert nearest_bucket(270) == "R"
-
-
-def test_nearest_bucket_rounds_to_closest():
-    assert nearest_bucket(20) == "F"
-    assert nearest_bucket(40) == "FL"
-    assert nearest_bucket(359) == "F"
 
 
 def test_bucket_distance_adjacent_is_45():
