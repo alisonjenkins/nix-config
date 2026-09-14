@@ -84,6 +84,9 @@ def run_perceptual_test(
     num_trials: int,
     seed: int | None = None,
 ) -> PerceptualResult:
+    if num_trials <= 0:
+        raise ValueError(f"num_trials must be positive, got {num_trials}")
+
     rng = random.Random(seed)
     burst = make_test_burst(fs=hrir.sample_rate)
     trials: list[Trial] = []
