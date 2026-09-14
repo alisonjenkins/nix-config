@@ -63,7 +63,15 @@ def _play_and_capture(playback_file: Path, capture_file: Path, sink_name: str, o
         # raises before reaching here — without this, the record_proc would
         # leak and keep holding the monitor port for every run after it.
         record_proc.terminate()
-        record_proc.wait(timeout=5)
+        try:
+            record_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            # Escalate rather than let this raise here: a TimeoutExpired at
+            # this point would replace whatever exception is already
+            # propagating from the try body (the actually informative one)
+            # with a confusing "recorder didn't die" instead.
+            record_proc.kill()
+            record_proc.wait(timeout=5)
 
 
 def run_live_verify(
