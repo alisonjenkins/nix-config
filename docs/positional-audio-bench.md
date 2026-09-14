@@ -79,31 +79,52 @@ nix run .#positional-audio-bench -- sweep-datasets \
   --dataset mine=/path/to/your_own_measurement.sofa
 ```
 
-Each `--dataset LABEL=PATH` is a label and a path to a SOFA file. There is no
-`pkgs/positional-audio-bench/datasets.nix` fetching alternate datasets yet —
-CIPIC, SADIE II, ARI and HUTUBS license terms were not checked before this
-was written, so nothing from them is packaged into the Nix store. Get a SOFA
-file yourself and point `--dataset` at it:
+Each `--dataset LABEL=PATH` is a label and a path to a SOFA file.
 
-1. **Pick a closer-matching public dataset.** CIPIC, SADIE II, ARI and HUTUBS
-   each publish per-subject SOFA files (CIPIC in particular documents pinna
-   size per subject, so you can pick a subject closer to your own ear shape
-   than KEMAR's "normal pinna" default). Download the ones you want to try
-   and check their license before redistributing them anywhere.
-2. **Or measure your own HRTF.** A few university labs and consumer tools
-   (e.g. a phone-camera-based estimator, or an in-ear-mic sweep measurement)
-   produce a personalized SOFA file. That is the only way to actually match
-   your pinna, rather than pick the closest stand-in.
-3. **Run `sweep-datasets`** with your candidates alongside the current KEMAR
-   file. The front-back discrimination column is the one to watch — a
-   personalized or better-matched set should score higher there, not just on
-   mean ITD error, which is dominated by head size rather than pinna shape.
-4. **Adopt the winner.** Point
-   `modules.desktop.pipewire.binauralSurround.hrirFile` at the new SOFA
-   file's Nix store path (package it under `pkgs/` the way `libmysofa`'s
-   bundled files are referenced today, so the path is reproducible), then
-   re-measure `compensationEq` for it — a different HRIR has different
-   coloration, so the old EQ curve does not carry over.
+`pkgs/positional-audio-bench/datasets.nix` packages two CIPIC (UC Davis)
+subjects — the only one of CIPIC/SADIE II/ARI/HUTUBS with an unambiguous
+redistribution grant covering a public binary cache. Subjects 021 and 165 are
+documented KEMAR mannequin variants with small and large pinnae
+respectively, the closest thing to a size-matched dummy head without
+measuring your own:
+
+```sh
+nix build .#positional-audio-bench  # or reference pkgs.positional-audio-bench-datasets in a config
+```
+
+`pkgs.positional-audio-bench-datasets.cipic-021-small-pinna` and
+`.cipic-165-large-pinna` are the store paths.
+
+**Measured result (2026-09-14, against ali-desktop's real config, both with
+and without `compensationEq` applied — the EQ made no measurable difference
+either way):**
+
+| Dataset | Mean ITD err | Max ITD err | Front-back |
+|---|---|---|---|
+| KEMAR normal pinna (current default) | 3.0° | 15.0° | 8.6 dB |
+| CIPIC 021, small pinna | 4.3° | 37.6° | 6.2 dB |
+| CIPIC 165, large pinna | 4.1° | 22.1° | 7.2 dB |
+
+**KEMAR won on every axis.** Neither CIPIC mannequin beat it, including on
+front-back — the metric this was supposed to help with. Matching pinna
+*size* doesn't help, because these are still generic mannequins, not your
+actual ears; CIPIC's older (2001) measurement setup may also just be lower
+fidelity than the bundled KEMAR set's. **Conclusion: swapping among
+available generic dummy-head datasets is not the fix.** If `compensationEq`
+tuning and this dataset swap both land at "no improvement," the ceiling for
+a generic HRTF has likely been reached, and only a personalized,
+individually-measured HRTF has a real shot at improving front-back further.
+
+If you still want to try a dataset this doesn't package (SADIE II, ARI,
+HUTUBS, or a specific CIPIC subject — the license terms above are notes
+specific to CIPIC, check any other source's license before packaging it),
+get the SOFA file yourself and point `--dataset` at it directly; no need to
+add it to `datasets.nix` for an ad-hoc comparison.
+
+To adopt a winner: point
+`modules.desktop.pipewire.binauralSurround.hrirFile` at the new SOFA file's
+Nix store path, then re-measure `compensationEq` for it — a different HRIR
+has different coloration, so the old EQ curve does not carry over.
 
 ## Adding a dataset to the Nix store properly
 
@@ -117,7 +138,10 @@ the license permits it first — some of these datasets are research-use-only.
 
 ## Known gaps
 
-- No alternate datasets packaged yet (see above).
+- Only CIPIC 021/165 packaged so far (see above); SADIE II/ARI/HUTUBS
+  license terms were checked but nothing from them fetched, since CIPIC
+  already covers the "generic dummy head, different pinna size" comparison
+  and it came out negative.
 - The RBJ biquad math in `biquad.py` matches the standard cookbook formulas
   and is unit-tested against its own frequency response, but has not been
   diffed against PipeWire SPA's actual `bq_lowshelf`/`bq_peaking`/

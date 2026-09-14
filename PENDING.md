@@ -45,12 +45,17 @@ scoring via GCC-PHAT + a Woodworth (elevation-corrected) ground truth, `tune`/
 Baseline on the defaults: mean ITD error 3.0 deg, max 15.0 deg @ 105 az/0 el,
 front-back discrimination 8.6 dB.
 
-1. **Alternate HRTF datasets not yet fetched.** `sweep-datasets` accepts any
-   `LABEL=PATH` SOFA file, but no `pkgs/positional-audio-bench/datasets.nix`
-   exists for CIPIC/SADIE II/ARI/HUTUBS — their license terms (redistribution
-   into the Nix store / binary cache) weren't verified in the session that
-   built this. Confirm per-dataset terms, then wire `fetchurl`/`fetchzip`
-   derivations for a representative subject each.
+1. ~~Alternate HRTF datasets not yet fetched.~~ **Resolved 2026-09-14**:
+   checked licenses for CIPIC/SADIE II/ARI/HUTUBS — only CIPIC (UC Davis) has
+   an unambiguous redistribution grant. Packaged subjects 021 (small pinna)
+   and 165 (large pinna) in `pkgs/positional-audio-bench/datasets.nix` and
+   ran `sweep-datasets` against ali-desktop's real config: **KEMAR (default)
+   beat both CIPIC variants on every metric**, including front-back
+   discrimination (8.6 dB vs 6.2/7.2 dB) — matching pinna size alone doesn't
+   help, and CIPIC's older measurement setup may just be lower fidelity.
+   Swapping among generic dummy-head datasets is a dead end; the next lever
+   is a personalized/individually-measured HRTF, not another mannequin.
+   See `docs/positional-audio-bench.md` for the full table.
 2. ~~RBJ biquad math unverified against PipeWire's actual SPA filter-chain
    implementation.~~ **Resolved 2026-09-14**: diffed against
    `spa/plugins/audioconvert/biquad.c` in the pipewire source. SPA's
