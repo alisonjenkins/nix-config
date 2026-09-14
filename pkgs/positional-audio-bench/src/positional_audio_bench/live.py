@@ -107,7 +107,7 @@ def run_live_verify(
                 )
             left, right = captured[:, 0], captured[:, 1]
 
-            max_tau = 1.2 * localization.max_woodworth_itd_seconds()
+            max_tau = localization.gcc_phat_search_window_seconds()
             measured_itd = localization.gcc_phat(left, right, capture_fs, max_tau=max_tau)
             itd_error = localization.itd_angular_error_deg(measured_itd, azimuth_deg)
             ild_low = localization.band_rms_db_ratio(left, right, capture_fs, *scoring.ILD_LOW_BAND_HZ)

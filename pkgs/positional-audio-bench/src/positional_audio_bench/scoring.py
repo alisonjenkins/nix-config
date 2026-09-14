@@ -88,11 +88,7 @@ def score_point(
     left, right = binauralize(hrir, azimuth_deg, elevation_deg, burst, eq_stages)
     fs = hrir.sample_rate
 
-    # 20% headroom over the Woodworth max: a real HRIR's actual peak lag can
-    # run slightly past the idealized-sphere bound (pinna/torso effects), and
-    # clipping the GCC-PHAT search window any tighter risks silently cutting
-    # off the true peak and returning a shorter, wrong lag instead.
-    max_tau = 1.2 * localization.max_woodworth_itd_seconds(head_radius_m, localization.SPEED_OF_SOUND_M_S)
+    max_tau = localization.gcc_phat_search_window_seconds(head_radius_m, localization.SPEED_OF_SOUND_M_S)
     measured_itd = localization.gcc_phat(left, right, fs, max_tau=max_tau)
     itd_error = localization.itd_angular_error_deg(measured_itd, azimuth_deg, elevation_deg, head_radius_m)
 
