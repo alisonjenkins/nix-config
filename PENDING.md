@@ -69,15 +69,36 @@ front-back discrimination 8.6 dB.
    real hardware** — written against the expected `pw-cat --target`/
    `--channels` flag behavior, never run against an actual PipeWire session.
    First real run on `ali-desktop` (`just audio-bench-live ali-desktop
-   <monitor-port>`) should be treated as its actual first test.
-4. **Front-back score interpretation caveat worth remembering:** it scores
-   the HRIR's *spectral cue content* (log-spectral distance between a
-   direction and its mirror), not whether a specific listener's brain can
-   decode that cue — a generic KEMAR HRTF can score fine here while still
-   being genuinely hard to localize front/back for an individual whose own
-   pinna differs from the dummy head's. That's why `sweep-datasets` exists:
-   trying alternate HRTF sets is the next lever if the KEMAR default keeps
-   scoring reasonably but still sounds wrong.
+   <monitor-port>`) should be treated as its actual first test. Same is true
+   of `perceptual-test`'s `pw-cat --playback` calls.
+4. **Front-back score interpretation caveat, upgraded 2026-09-14 after an
+   independent sanity-check review (Fable) caught this properly:** the
+   score is *spectral cue strength*, not *fit to a specific listener*.
+   Scoring two generic (non-personalized) datasets against each other, as
+   the CIPIC comparison above does, is fair. Scoring a **personalized**
+   candidate (e.g. from `match-subject`) this way is not — a well-matched
+   personal HRTF can legitimately score *lower* while localizing better,
+   because the listener's brain is listening for cues shaped like their own
+   pinna, not for maximally distinct cues in the abstract. `sweep-datasets`
+   on a personalization candidate only catches broken/corrupted data now;
+   `perceptual-test` (added 2026-09-14: a blind forced-choice compass-
+   direction test through headphones, reports front-back confusion rate) is
+   the only part of the tool that can actually validate personalization.
+5. **Personalization via nearest-neighbour anthropometric matching, added
+   2026-09-14**: `positional-audio-bench match-subject` matches a
+   listener's own pinna measurements (fossa height, pinna height, pinna
+   width by default — the three HUTUBS parameters large enough to
+   self-measure without the error swamping the signal) against 96 real
+   HUTUBS subjects (CC BY 4.0, vendored in
+   `pkgs/positional-audio-bench/src/positional_audio_bench/data/`), zero
+   cost, an afternoon of measurement. Chosen over a DIY acoustic
+   measurement rig (~$150-400, a weekend, open tools exist: RWTH Aachen's
+   Open-HRTF, York's XR-HRTFs) or Genelec Aural ID (~€600, photo-based,
+   confirmed to export a portable SOFA file — most commercial options
+   don't) as the cheapest first experiment; try those if this doesn't pan
+   out. Not yet run against a real person's measurements — the matcher and
+   its 54-test suite are verified, but no one has gone through
+   measure → match → fetch → `perceptual-test` end to end yet.
 
 ## emulation module follow-ups
 
