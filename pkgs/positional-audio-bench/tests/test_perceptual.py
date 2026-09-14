@@ -1,9 +1,31 @@
+import numpy as np
 import pytest
 from positional_audio_bench.perceptual import (
     PerceptualResult,
     Trial,
     bucket_distance_deg,
+    run_perceptual_test,
 )
+from positional_audio_bench.sofa import HRIRSet
+
+
+def _dummy_hrir() -> HRIRSet:
+    return HRIRSet(
+        positions=np.array([[0.0, 0.0, 1.0]]),
+        ir_left=np.zeros((1, 8)),
+        ir_right=np.zeros((1, 8)),
+        sample_rate=48000.0,
+    )
+
+
+def test_run_perceptual_test_rejects_zero_trials():
+    with pytest.raises(ValueError):
+        run_perceptual_test(_dummy_hrir(), eq_stages=[], num_trials=0)
+
+
+def test_run_perceptual_test_rejects_negative_trials():
+    with pytest.raises(ValueError):
+        run_perceptual_test(_dummy_hrir(), eq_stages=[], num_trials=-1)
 
 
 def test_bucket_distance_adjacent_is_45():
