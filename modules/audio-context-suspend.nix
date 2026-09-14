@@ -29,13 +29,21 @@ in {
         Cycling a card's profile (below) tears down and recreates that
         card's ALSA nodes to clear a stuck SUSPENDED playback substream.
         Any filter-chain node pinned to the old node with
-        `node.dont-reconnect = true` (to stop it re-targeting the session
-        default -- see `binauralSurround`) is not relinked by PipeWire on
-        its own once its target reappears: `dont-reconnect` suppresses
-        exactly that. Confirmed on ali-desktop, 2026-08-21: this resume
-        hook's own profile cycle silently dropped the binaural
-        spatializer's output link to the Scarlett, leaving a
-        healthy-looking graph with no sound.
+        `node.dont-reconnect = true` is not relinked by PipeWire on its own
+        once its target reappears: `dont-reconnect` suppresses exactly
+        that. Confirmed on ali-desktop, 2026-08-21: this resume hook's own
+        profile cycle silently dropped the binaural spatializer's output
+        link to the Scarlett, leaving a healthy-looking graph with no
+        sound.
+
+        `binauralSurround` itself no longer sets `node.dont-reconnect`
+        (removed 2026-09-14: it also blocked the *first* link attempt at
+        boot, which always loses the race against WirePlumber's ALSA
+        monitor -- see `binauralOutputLinks` below), so session policy
+        should now re-link it on its own after a profile cycle too. This
+        list stays as a fallback for that path and for any future
+        dont-reconnect-pinned node, not because it is currently
+        load-bearing for the binaural sink.
       '';
       default = [];
       example = literalExpression ''
