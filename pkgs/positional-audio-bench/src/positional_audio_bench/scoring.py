@@ -168,7 +168,10 @@ def run_sweep(
         for az in azimuths_deg
         if az % 180 != 90
     ]
-    frontback_score = float(np.mean(frontback_scores)) if frontback_scores else 0.0
+    # None, not 0.0, when the grid has no non-degenerate mirror pairs (e.g.
+    # azimuths_deg = (90, 270) only): 0.0 would look like a real, catastrophic
+    # score rather than an undefined one for this grid.
+    frontback_score = float(np.mean(frontback_scores)) if frontback_scores else None
 
     return SweepResult(
         points=points,
