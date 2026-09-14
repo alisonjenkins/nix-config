@@ -455,6 +455,16 @@ arkana-publish-arm64 tag image="ghcr.io/alisonjenkins/create-arkana-aeronautics-
     echo "Multi-arch published: {{image}}:{{tag}} + {{image}}:latest"
     crane manifest "{{image}}:{{tag}}" | head -40
 
+# Drive the real, running binaural 7.1 chain (modules.desktop.pipewire.binauralSurround)
+# and score its captured output — needs a live desktop session with the
+# output device attached; NOT for CI (see flake-modules/positional-audio-bench.nix
+# for the offline regression check that runs in `nix flake check` instead).
+# Usage: just audio-bench-live ali-desktop <monitor-port-name>
+audio-bench-live host output_monitor:
+    nix run .#positional-audio-bench -- live-verify \
+        --host {{host}} \
+        --output-monitor {{output_monitor}}
+
 alias b := boot
 alias B := build
 alias s := switch
