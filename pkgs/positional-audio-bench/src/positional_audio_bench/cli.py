@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import nixconfig, scoring
+from .biquad import BiquadStage
 from .sofa import load_sofa
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ def _add_config_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--flake-ref", type=str, default=".", help="Flake reference for --host (default: .)")
 
 
-def _load_config(args: argparse.Namespace) -> tuple[dict[str, float], list]:
+def _load_config(args: argparse.Namespace) -> tuple[dict[str, float], list[BiquadStage]]:
     if args.config_json is not None:
         return nixconfig.load_binaural_config(args.config_json)
     return nixconfig.load_binaural_config_from_host(args.host, args.flake_ref)
