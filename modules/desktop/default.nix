@@ -6,6 +6,8 @@ let
   cfg = config.modules.desktop;
   gcfg = cfg.gaming;
 
+  binauralSurroundDefaults = import ./binaural-surround-defaults.nix;
+
   # Launch-time Proton runner updater (see options.modules.desktop.gaming.protonRunners).
   protonRunnersActive = gcfg.enable && gcfg.protonRunners.enable;
 
@@ -579,7 +581,7 @@ in
               };
             };
           });
-          default = [ ];
+          default = binauralSurroundDefaults.compensationEq;
           description = ''
             Biquad filters applied to the binaural output, in order, to undo the
             HRIR's own colouration.
@@ -604,16 +606,7 @@ in
 
         angles = mkOption {
           type = types.attrsOf types.int;
-          default = {
-            FL = 30;
-            FR = 330;
-            FC = 0;
-            LFE = 0;
-            RL = 150;
-            RR = 210;
-            SL = 90;
-            SR = 270;
-          };
+          default = binauralSurroundDefaults.angles;
           description = ''
             Azimuth in degrees for each of the eight speaker positions.
             Measured counter-clockwise from straight ahead, so 90 is hard left
