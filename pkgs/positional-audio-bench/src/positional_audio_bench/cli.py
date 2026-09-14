@@ -40,7 +40,8 @@ def _print_report(result: scoring.SweepResult, dataset_label: str) -> None:
         f"max {result.max_itd_error_deg:.1f} deg @ "
         f"{result.max_itd_error_at[0]:.0f} az / {result.max_itd_error_at[1]:.0f} el"
     )
-    print(f"Front-back discrimination: {result.frontback_score_db:.1f} dB")
+    frontback = "N/A (not measured by live-verify)" if result.frontback_score_db is None else f"{result.frontback_score_db:.1f} dB"
+    print(f"Front-back discrimination: {frontback}")
 
 
 def cmd_tune(args: argparse.Namespace) -> int:

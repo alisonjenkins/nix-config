@@ -53,7 +53,9 @@ class AnglePoint:
 @dataclasses.dataclass(frozen=True)
 class SweepResult:
     points: list[AnglePoint]
-    frontback_score_db: float
+    # None only from live.run_live_verify, which can't guarantee a speaker
+    # layout has front/back mirror channel pairs to measure.
+    frontback_score_db: float | None
     mean_itd_error_deg: float
     max_itd_error_deg: float
     max_itd_error_at: tuple[float, float]

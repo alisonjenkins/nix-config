@@ -123,12 +123,21 @@ def run_live_verify(
                 )
             )
 
+    if not points:
+        raise RuntimeError(
+            f"no usable channels in angles config {angles!r} — expected at least one of "
+            f"{[c for c in CHANNEL_ORDER if c != 'LFE']}"
+        )
+
     errors = [p.itd_error_deg for p in points]
-    max_idx = int(np.argmax(errors)) if errors else 0
+    max_idx = int(np.argmax(errors))
     return scoring.SweepResult(
         points=points,
-        frontback_score_db=0.0,  # front/back mirror channels aren't guaranteed to exist in a speaker layout
-        mean_itd_error_deg=float(np.mean(errors)) if errors else 0.0,
-        max_itd_error_deg=float(errors[max_idx]) if errors else 0.0,
-        max_itd_error_at=(points[max_idx].azimuth_deg, points[max_idx].elevation_deg) if points else (0.0, 0.0),
+        # Not measured here: front/back mirror channels aren't guaranteed to
+        # exist in a speaker layout. None, not 0.0 — a hardcoded 0.0 would be
+        # indistinguishable from a genuinely catastrophic measured score.
+        frontback_score_db=None,
+        mean_itd_error_deg=float(np.mean(errors)),
+        max_itd_error_deg=float(errors[max_idx]),
+        max_itd_error_at=(points[max_idx].azimuth_deg, points[max_idx].elevation_deg),
     )
