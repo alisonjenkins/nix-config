@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "positional-audio-bench"
+version = "0.1.0"
+description = "Objective localization benchmark for the binaural 7.1 HRTF chain"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "h5py", "soundfile"]
+
+[project.scripts]
+positional-audio-bench = "positional_audio_bench.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/positional_audio_bench"]
