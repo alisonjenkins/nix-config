@@ -99,6 +99,12 @@ def run_live_verify(
             _play_and_capture(playback_file, capture_file, sink_name, output_monitor, duration_s)
 
             captured, capture_fs = sf.read(capture_file, dtype="float64", always_2d=True)
+            if captured.shape[0] < 0.5 * duration_s * capture_fs:
+                raise RuntimeError(
+                    f"channel {channel}: captured {captured.shape[0]} frames, expected roughly "
+                    f"{int(duration_s * capture_fs)} — output-monitor {output_monitor!r} is probably wrong "
+                    "(pw-cat --record likely never attached to a real source)"
+                )
             left, right = captured[:, 0], captured[:, 1]
 
             max_tau = 1.2 * localization.max_woodworth_itd_seconds()
