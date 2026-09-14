@@ -28,7 +28,7 @@
         ''
           # Baseline measured on 2026-09-14 with these exact defaults: mean
           # ITD error 3.0 deg, max 15.0 deg @ 105 az/0 el, front-back
-          # discrimination 8.0 dB. Thresholds below leave headroom for
+          # discrimination 8.6 dB. Thresholds below leave headroom for
           # incidental sweep-grid changes while still catching a real
           # regression (e.g. an angles/HRIR change that widens the max error
           # past the 20s, or an EQ that flattens the pinna band toward 0 dB).

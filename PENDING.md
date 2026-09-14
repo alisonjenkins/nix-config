@@ -43,7 +43,7 @@ scoring via GCC-PHAT + a Woodworth (elevation-corrected) ground truth, `tune`/
 `regress`/`sweep-datasets`/`live-verify` CLI, wired into `nix flake check`
 (`flake-modules/positional-audio-bench.nix`, MIT KEMAR + pure defaults only).
 Baseline on the defaults: mean ITD error 3.0 deg, max 15.0 deg @ 105 az/0 el,
-front-back discrimination 8.0 dB.
+front-back discrimination 8.6 dB.
 
 1. **Alternate HRTF datasets not yet fetched.** `sweep-datasets` accepts any
    `LABEL=PATH` SOFA file, but no `pkgs/positional-audio-bench/datasets.nix`

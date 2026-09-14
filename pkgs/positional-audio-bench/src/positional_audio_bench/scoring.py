@@ -156,10 +156,19 @@ def run_sweep(
     # assumes the source stays in the horizontal plane the pinna-cue model
     # was reasoned about; off-axis elevations get their own confusion
     # geometry that this metric doesn't attempt to capture in v1.
+    #
+    # Excludes azimuths where the mirror (180 - az) lands back on az itself
+    # (az % 180 == 90, i.e. az = 90 or 270): those are the interaural poles,
+    # directly left/right, where front and back genuinely collapse to the
+    # same physical point. front_back_score there always returns exactly
+    # 0.0 regardless of chain quality — not a low score, a meaningless one —
+    # and including it would drag the aggregate down with pure noise. 0 and
+    # 180 (dead ahead/behind) stay in: they're a real, non-degenerate mirror
+    # pair and carry real information.
     frontback_scores = [
         front_back_score(hrir, az, 0.0, burst, eq_stages)
         for az in azimuths_deg
-        if az != 0.0 and az != 180.0
+        if az % 180 != 90
     ]
     frontback_score = float(np.mean(frontback_scores)) if frontback_scores else 0.0
 
