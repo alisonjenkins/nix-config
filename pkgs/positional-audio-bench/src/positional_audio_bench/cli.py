@@ -98,6 +98,11 @@ def cmd_sweep_datasets(args: argparse.Namespace) -> int:
         result = scoring.run_sweep(hrir, eq_stages)
         rows.append((label, result))
 
+    # Ranked by mean ITD error, ascending — the primary metric, and the one
+    # that's always defined (unlike front-back, which can be None for a
+    # degenerate azimuth grid).
+    rows.sort(key=lambda row: row[1].mean_itd_error_deg)
+
     print(f"{'Dataset':<20} {'Mean ITD err':>13} {'Max ITD err':>12} {'Front-back':>11}")
     for label, result in rows:
         frontback = "N/A" if result.frontback_score_db is None else f"{result.frontback_score_db:.1f}"
