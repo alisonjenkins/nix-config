@@ -72,9 +72,14 @@ def load_subjects() -> list[Subject]:
 
 def _population_stats(subjects: list[Subject], param: str) -> tuple[float, float]:
     values: list[float] = [d for s in subjects if (d := s.d[param]) is not None]
+    if not values:
+        raise ValueError(f"no subject has a value for {param!r}")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    return mean, math.sqrt(variance)
+    std = math.sqrt(variance)
+    if std == 0:
+        raise ValueError(f"{param!r} is constant across the population (std=0) — cannot z-score against it")
+    return mean, std
 
 
 @dataclasses.dataclass(frozen=True)
