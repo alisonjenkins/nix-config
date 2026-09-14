@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import sys
@@ -117,6 +118,72 @@ def cmd_live_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_perceptual_test(args: argparse.Namespace) -> int:
+    from . import perceptual
+
+    _, eq_stages = _load_config(args)
+    hrir = load_sofa(args.hrir)
+    result = perceptual.run_perceptual_test(hrir, eq_stages, num_trials=args.trials, seed=args.seed)
+
+    print(f"\nExact-bucket accuracy: {result.exact_bucket_accuracy * 100:.0f}%")
+    print(f"Mean direction error: {result.mean_bucket_error_deg:.0f} deg")
+    print(f"Front-back confusion rate: {result.front_back_confusion_rate * 100:.0f}%")
+
+    if args.report is not None:
+        args.report.write_text(
+            json.dumps(
+                {
+                    "exact_bucket_accuracy": result.exact_bucket_accuracy,
+                    "mean_bucket_error_deg": result.mean_bucket_error_deg,
+                    "front_back_confusion_rate": result.front_back_confusion_rate,
+                    "trials": [dataclasses.asdict(t) for t in result.trials],
+                }
+            )
+        )
+    return 0
+
+
+def cmd_match_subject(args: argparse.Namespace) -> int:
+    from . import subject_match
+
+    measurements = {
+        "fossa_height": args.fossa_height,
+        "pinna_height": args.pinna_height,
+        "pinna_width": args.pinna_width,
+    }
+    for name, value in args.measure:
+        measurements[name] = value
+    measurements = {k: v for k, v in measurements.items() if v is not None}
+
+    results = subject_match.match(measurements, top_n=args.top_n)
+
+    print(f"Matched on: {', '.join(measurements)}")
+    print(f"{'HUTUBS subject':>15} {'Distance':>10}")
+    for r in results:
+        print(f"{r.subject_id:>15} {r.distance:>10.3f}")
+
+    if results:
+        winner = results[0].subject_id
+        print(
+            f"\nFetch the winner's SOFA file with, e.g.:\n"
+            f"  nix store prefetch-file https://sofacoustics.org/data/database/hutubs/pp{winner}_HRIRs_measured.sofa\n"
+            f"then score it: positional-audio-bench sweep-datasets --dataset hutubs-{winner}=<fetched-path> ...\n"
+            f"This only checks data quality, not whether it actually localizes better for you — "
+            f"that needs a real listening test (see the `perceptual-test` command)."
+        )
+    return 0
+
+
+def _measure_arg(value: str) -> tuple[str, float]:
+    if "=" not in value:
+        raise argparse.ArgumentTypeError("expected NAME=VALUE, e.g. cavum_concha_height=1.9")
+    name, raw_value = value.split("=", 1)
+    try:
+        return name, float(raw_value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"expected a number for {name!r}, got {raw_value!r}") from e
+
+
 def _dataset_arg(value: str) -> tuple[str, str]:
     if "=" not in value:
         raise argparse.ArgumentTypeError("expected LABEL=PATH")
@@ -158,6 +225,36 @@ def build_parser() -> argparse.ArgumentParser:
     live_verify.add_argument("--sink-name", type=str, default="effect_input.binaural71")
     live_verify.add_argument("--output-monitor", type=str, required=True, help="Monitor port name to record from")
     live_verify.set_defaults(func=cmd_live_verify)
+
+    perceptual_test = sub.add_parser(
+        "perceptual-test",
+        help="Blind forced-choice localization test through headphones (manual/local only, not for CI)",
+    )
+    _add_config_args(perceptual_test)
+    perceptual_test.add_argument("--trials", type=int, default=20)
+    perceptual_test.add_argument("--seed", type=int, default=None, help="Fix the trial order for a repeatable run")
+    perceptual_test.add_argument("--report", type=Path, default=None, help="Write per-trial results as JSON")
+    perceptual_test.set_defaults(func=cmd_perceptual_test)
+
+    match_subject = sub.add_parser(
+        "match-subject",
+        help="Find the closest-matching real human ear in HUTUBS to your own pinna measurements",
+    )
+    match_subject.add_argument("--fossa-height", type=float, help="cm — see docs for how to measure")
+    match_subject.add_argument("--pinna-height", type=float, help="cm")
+    match_subject.add_argument("--pinna-width", type=float, help="cm")
+    match_subject.add_argument(
+        "--measure",
+        action="append",
+        type=_measure_arg,
+        default=[],
+        metavar="NAME=VALUE",
+        help="Additional HUTUBS parameter (cavum_concha_height, cymba_concha_height, cavum_concha_width, "
+        "intertragal_incisure, cavum_concha_depth_down, cavum_concha_depth_back, crus_of_helix_depth) — "
+        "only worth providing if you have calipers, not just a ruler",
+    )
+    match_subject.add_argument("--top-n", type=int, default=3)
+    match_subject.set_defaults(func=cmd_match_subject)
 
     return parser
 

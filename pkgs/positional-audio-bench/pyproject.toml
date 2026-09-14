@@ -14,3 +14,4 @@ positional-audio-bench = "positional_audio_bench.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/positional_audio_bench"]
+artifacts = ["src/positional_audio_bench/data/*.json", "src/positional_audio_bench/data/*.md"]
