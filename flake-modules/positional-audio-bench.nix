@@ -8,17 +8,18 @@
 # `sweep-datasets` run, not part of this check.
 { self, ... }:
 {
-  perSystem = { pkgs, ... }:
+  perSystem = { pkgs, system, ... }:
     let
       defaults = import (self + "/modules/desktop/binaural-surround-defaults.nix");
       configJson = pkgs.writeText "binaural-surround-defaults.json" (builtins.toJSON defaults);
       hrir = "${pkgs.libmysofa}/share/libmysofa/MIT_KEMAR_normal_pinna.sofa";
-      # Not sourced from the pkgs/ overlay (self.overlays) — perSystem's
-      # default `pkgs` here doesn't have it applied, and this package's own
-      # dependencies (python3Packages, makeWrapper, pipewire) are all
-      # plain nixpkgs, so callPackage-ing it directly avoids depending on
-      # the overlay wiring at all.
-      positional-audio-bench = pkgs.callPackage (self + "/pkgs/positional-audio-bench") { };
+      # The exact same derivation `nix build .#positional-audio-bench`
+      # produces (flake-modules/packages.nix), not a second callPackage of
+      # the same source — two independent callPackages against different
+      # python3Packages sets (e.g. one pinned to pkgs.unstable, one not)
+      # could silently score with different numpy/scipy versions than what
+      # users actually run, undermining the whole point of a fixed baseline.
+      positional-audio-bench = self.packages.${system}.positional-audio-bench;
     in
     {
       checks.positional-audio-bench = pkgs.runCommand "positional-audio-bench-regress"
