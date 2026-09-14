@@ -52,3 +52,14 @@ def test_run_sweep_with_eq_stage_still_completes():
 
     assert len(result.points) == len(azimuths)
     assert result.mean_itd_error_deg < 5.0
+
+
+def test_run_sweep_frontback_score_is_none_for_degenerate_grid():
+    # 90/270 are the interaural poles: their mirror (180 - az) lands back on
+    # az itself, so there are no non-degenerate mirror pairs in this grid.
+    azimuths = (90, 270)
+    hrir = _ideal_woodworth_hrir(azimuths)
+
+    result = scoring.run_sweep(hrir, eq_stages=[], azimuths_deg=azimuths, elevations_deg=(0.0,))
+
+    assert result.frontback_score_db is None

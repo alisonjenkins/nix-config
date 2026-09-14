@@ -76,7 +76,9 @@ def cmd_regress(args: argparse.Namespace) -> int:
         failures.append(
             f"max ITD error {result.max_itd_error_deg:.1f} deg exceeds threshold {args.max_itd_error_deg}"
         )
-    if result.frontback_score_db < args.min_frontback_score:
+    if result.frontback_score_db is None:
+        failures.append("front-back score undefined for this azimuth sweep (no non-degenerate mirror pairs)")
+    elif result.frontback_score_db < args.min_frontback_score:
         failures.append(
             f"front-back score {result.frontback_score_db:.1f} dB below threshold {args.min_frontback_score}"
         )
@@ -98,10 +100,8 @@ def cmd_sweep_datasets(args: argparse.Namespace) -> int:
 
     print(f"{'Dataset':<20} {'Mean ITD err':>13} {'Max ITD err':>12} {'Front-back':>11}")
     for label, result in rows:
-        print(
-            f"{label:<20} {result.mean_itd_error_deg:13.1f} {result.max_itd_error_deg:12.1f} "
-            f"{result.frontback_score_db:11.1f}"
-        )
+        frontback = "N/A" if result.frontback_score_db is None else f"{result.frontback_score_db:.1f}"
+        print(f"{label:<20} {result.mean_itd_error_deg:13.1f} {result.max_itd_error_deg:12.1f} {frontback:>11}")
     return 0
 
 
