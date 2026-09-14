@@ -80,6 +80,21 @@ def max_woodworth_itd_seconds(
     return (head_radius_m / speed_of_sound) * (math.pi / 2 + 1.0)
 
 
+# 20% headroom over the Woodworth max: a real HRIR's actual peak lag can run
+# slightly past the idealized-sphere bound (pinna/torso effects), and
+# clipping the GCC-PHAT search window any tighter risks cutting off the true
+# peak and returning a shorter, wrong lag instead. Shared by the offline
+# (scoring.py) and live (live.py) paths so a future retune only happens once.
+GCC_PHAT_SEARCH_WINDOW_HEADROOM = 1.2
+
+
+def gcc_phat_search_window_seconds(
+    head_radius_m: float = KEMAR_HEAD_RADIUS_M,
+    speed_of_sound: float = SPEED_OF_SOUND_M_S,
+) -> float:
+    return GCC_PHAT_SEARCH_WINDOW_HEADROOM * max_woodworth_itd_seconds(head_radius_m, speed_of_sound)
+
+
 def itd_to_lateral_angle_deg(
     itd_seconds: float,
     head_radius_m: float = KEMAR_HEAD_RADIUS_M,
