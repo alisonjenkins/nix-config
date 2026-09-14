@@ -20,3 +20,9 @@ definitions Algazi/Duda/Thompson/Avendano defined for the CIPIC database
 (d1-d8 identical; HUTUBS adds d9 = cavum concha depth (back), d10 = crus of
 helix depth). See `AntrhopometricMeasures.pdf` in the same source archive
 for the full parameter list and diagram.
+
+Subjects 1/96 and 22/88 have byte-identical measurement rows. Verified
+against the upstream `AntrhopometricMeasures.csv` directly (2026-09-14) —
+this is present in the published source data itself, not a conversion
+artifact, so it isn't deduplicated here; doing so would misrepresent the
+dataset as shipped.
