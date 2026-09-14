@@ -51,12 +51,15 @@ front-back discrimination 8.0 dB.
    into the Nix store / binary cache) weren't verified in the session that
    built this. Confirm per-dataset terms, then wire `fetchurl`/`fetchzip`
    derivations for a representative subject each.
-2. **RBJ biquad math unverified against PipeWire's actual SPA filter-chain
-   implementation.** `biquad.py` implements the standard RBJ cookbook
-   formulas and is unit-tested against its own frequency response, but was
-   never diffed against SPA's `bq_*` plugin source — if they use a different
-   Q/gain convention, `tune`/`regress` would score against subtly wrong
-   coefficients without any test catching it.
+2. ~~RBJ biquad math unverified against PipeWire's actual SPA filter-chain
+   implementation.~~ **Resolved 2026-09-14**: diffed against
+   `spa/plugins/audioconvert/biquad.c` in the pipewire source. SPA's
+   `bq_lowshelf`/`bq_highshelf` use `alpha = sin(w0)/(2*Q)`, same as the
+   peaking filter — not the RBJ cookbook's separate shelf-slope (`S`)
+   formula. `biquad.py` already matched this exactly, so no change was
+   needed; a PR review had flagged the shelf formula as suspicious purely
+   from the textbook cookbook, without checking the real source, which is
+   exactly the gap this item was tracking.
 3. **`live-verify` (drives real `pw-cat`/`pw-record`) is untested against
    real hardware** — written against the expected `pw-cat --target`/
    `--channels` flag behavior, never run against an actual PipeWire session.
