@@ -1897,11 +1897,22 @@ in
                         # default that lands the output on whichever effects
                         # sink is chained in front of it, feeding the graph
                         # back into itself and suspending the hardware.
-                        # `target.object` + `node.dont-reconnect` make the
-                        # link fixed.
+                        # `target.object` pins the link to the Scarlett
+                        # specifically, which session policy keeps honouring
+                        # on every relink -- including the first one. Not
+                        # `node.dont-reconnect`: that also blocks the first
+                        # link attempt, which always loses the race against
+                        # WirePlumber's ALSA monitor (this module loads inside
+                        # PipeWire core, before WirePlumber has even connected
+                        # and created the Scarlett's node), so target
+                        # resolution fails, dont-reconnect forbids retrying,
+                        # and module-filter-chain tears the whole node down
+                        # within about a second of creating it. Confirmed via
+                        # `PIPEWIRE_DEBUG=3` on ali-desktop, 2026-09-14: "error:
+                        # target not found" followed immediately by node
+                        # destroy, every single boot.
                         "node.target" = bs.outputNode;
                         "target.object" = bs.outputNode;
-                        "node.dont-reconnect" = true;
                       });
                     };
                   }
