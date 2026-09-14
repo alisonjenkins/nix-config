@@ -50,15 +50,20 @@ def _play_and_capture(playback_file: Path, capture_file: Path, sink_name: str, o
             str(capture_file),
         ]
     )
-    time.sleep(0.2)  # let the recorder attach before playback starts
-    subprocess.run(
-        ["pw-cat", "--playback", "--target", sink_name, str(playback_file)],
-        check=True,
-        timeout=duration_s + 5,
-    )
-    time.sleep(capture_duration - duration_s)
-    record_proc.terminate()
-    record_proc.wait(timeout=5)
+    try:
+        time.sleep(0.2)  # let the recorder attach before playback starts
+        subprocess.run(
+            ["pw-cat", "--playback", "--target", sink_name, str(playback_file)],
+            check=True,
+            timeout=duration_s + 5,
+        )
+        time.sleep(capture_duration - duration_s)
+    finally:
+        # A bad sink/monitor name fails the playback subprocess.run and
+        # raises before reaching here — without this, the record_proc would
+        # leak and keep holding the monitor port for every run after it.
+        record_proc.terminate()
+        record_proc.wait(timeout=5)
 
 
 def run_live_verify(
