@@ -64,8 +64,12 @@ just ami <hostname> [region] [bucket]
 # Build specific host configuration
 nix build ".#nixosConfigurations.<hostname>.config.system.build.toplevel"
 
-# Check flake
+# Check flake (slow: evaluates every host's toplevel + builds all `checks`)
 nix flake check
+
+# Fast sanity check for routine iteration (modules/overlays/devShells/packages
+# only, no host evaluation) -- same script CI's flake-check job runs
+just check
 
 # Show flake outputs
 nix flake show
