@@ -4,11 +4,19 @@ let
 in
 {
   # NixOS VM tests for AMI configurations.
-  # Run with: nix build .#checks.x86_64-linux.karpenter-node-ami
-  #       or: nix build .#checks.aarch64-linux.karpenter-node-ami
+  #
+  # Deliberately under `packages`, not `checks`: `nix flake check` only
+  # evaluates packages (confirms they're derivations), it does not build
+  # them -- unlike `checks`, which it builds unconditionally on every run.
+  # A full NixOS VM test boots a real QEMU machine and is far too slow to
+  # run on every flake check; this way it still builds on demand exactly
+  # like a check would, just never gets pulled in by a routine one.
+  #
+  # Run with: nix build .#karpenter-node-ami
+  #       or: nix build .#packages.aarch64-linux.karpenter-node-ami
   perSystem = { system, pkgs, ... }:
     lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
-      checks.karpenter-node-ami = pkgs.testers.runNixOSTest {
+      packages.karpenter-node-ami = pkgs.testers.runNixOSTest {
         name = "karpenter-node-ami";
 
         nodes.machine = { config, pkgs, lib, ... }:
