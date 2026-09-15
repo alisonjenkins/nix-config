@@ -36,15 +36,16 @@
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
     nix-cachyos-kernel = {
-      # Pinned to CachyOS 7.1.3 rev. Earlier belief that CachyOS 7 had a
-      # dm-crypt EINVAL regression was wrong — the real cause was
-      # `luks.cryptoModules = mkForce [...]` in modules/base/default.nix
-      # stripping xts.ko from the initrd. With default cryptoModules (xts,
-      # cbc, aesni-intel auto-included from the NixOS default list), LUKS
-      # opens fine. Kept as a rev pin (not branch-following) so
-      # upstream Hydra/Garnix caches keep hitting — following nixpkgs
-      # forces full LTO rebuild from source.
-      url = "github:xddxdd/nix-cachyos-kernel/0e6a9807df99b634b2fb49729b02d15a17aabc46";
+      # Earlier belief that CachyOS 7 had a dm-crypt EINVAL regression was
+      # wrong — the real cause was `luks.cryptoModules = mkForce [...]` in
+      # modules/base/default.nix stripping xts.ko from the initrd. With
+      # default cryptoModules (xts, cbc, aesni-intel auto-included from the
+      # NixOS default list), LUKS opens fine. Kept as a rev pin (not
+      # branch-following) so upstream Hydra/Garnix caches keep hitting —
+      # following nixpkgs forces full LTO rebuild from source. Rev tracks
+      # upstream's `release` branch, which upstream only advances once its
+      # own Hydra CI has built and cached that revision.
+      url = "github:xddxdd/nix-cachyos-kernel/444d135dde71c1de547cf7bfd73e67145e67aebb";
     };
     niks3 = {
       # Pinned to v1.7.0 to match the server running in aws-k3s.
