@@ -20,19 +20,17 @@
         betterUploadButton.enable = true;
         biggerStreamPreview.enable = true;
         callTimer.enable = true;
-        clearURLs.enable = true;
+        clearUrls.enable = true;
         copyEmojiMarkdown.enable = true;
         copyFileContents.enable = true;
         disableCallIdle.enable = true;
         dontRoundMyTimestamps.enable = true;
         fakeNitro.enable = true;
-        favoriteGifSearch.enable = true;
         fixCodeblockGap.enable = true;
         fixImagesQuality.enable = true;
         fixSpotifyEmbeds.enable = true;
         fixYoutubeEmbeds.enable = true;
         forceOwnerCrown.enable = true;
-        friendsSince.enable = true;
         fullSearchContext.enable = true;
         gameActivityToggle.enable = true;
         gifPaste.enable = true;
@@ -45,7 +43,7 @@
         messageLogger.enable = true;
         noF1.enable = true;
         pictureInPicture.enable = true;
-        pinDMs.enable = true;
+        pinDms.enable = true;
         platformIndicators.enable = true;
         previewMessage.enable = true;
         quickReply.enable = true;
@@ -75,15 +73,10 @@
         whoReacted.enable = true;
         youtubeAdblock.enable = true;
 
-        betterNotesBox = {
-          enable = true;
-          noSpellCheck = true;
-        };
-
         replaceGoogleSearch = {
           enable = true;
           customEngineName = "DuckDuckGo";
-          customEngineURL = "https://duckduckgo.com";
+          customEngineUrl = "https://duckduckgo.com";
         };
 
         showMeYourName = {
