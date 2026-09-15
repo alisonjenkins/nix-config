@@ -4,10 +4,15 @@ let
 in
 {
   # NixOS VM tests for Hetzner Karpenter node images.
-  # Run with: nix build .#checks.x86_64-linux.hetzner-karpenter-node
+  #
+  # Deliberately under `packages`, not `checks` -- see the identical note in
+  # ami-tests.nix: `nix flake check` only evaluates packages, it builds
+  # checks unconditionally, and a full VM boot is too slow for a routine run.
+  #
+  # Run with: nix build .#hetzner-karpenter-node
   perSystem = { system, pkgs, ... }:
     lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
-      checks.hetzner-karpenter-node = pkgs.testers.runNixOSTest {
+      packages.hetzner-karpenter-node = pkgs.testers.runNixOSTest {
         name = "hetzner-karpenter-node";
 
         nodes.machine = { config, pkgs, lib, ... }: {
