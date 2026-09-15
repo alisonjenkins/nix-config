@@ -181,9 +181,9 @@ in {
           # -L` confirmed no such entry under ALSA), so RecordingDevice and
           # PlaybackDevice are left for Audacity's own device picker rather
           # than guessed at here.
-          programs.audacityPatch = {
+          programs.audacity = {
             enable = true;
-            settings.AudioIO.Host = "ALSA";
+            audioIO.host = "ALSA";
           };
 
           # Forces OpenAL Soft to stereo output. Without this, OpenAL's
