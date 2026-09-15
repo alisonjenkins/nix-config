@@ -4,6 +4,16 @@ set export
 list:
     @just --list
 
+# Fast sanity check: reusable outputs only (modules, overlays, devShells,
+# packages), no host evaluation. Same script PR check CI runs. Plain `nix
+# flake check` also evaluates every nixosConfigurations.*.toplevel across
+# every host (there's no flag to skip that) plus builds every `checks`
+# entry -- both genuinely slow here, which is why this exists and why CI
+# doesn't use `nix flake check` either. Run this for routine iteration;
+# reach for `nix flake check` only when you actually want the full sweep.
+check:
+    .github/scripts/pr-check-x86_64-linux.sh
+
 # Build the config this system and switch on next boot
 boot:
     #!/usr/bin/env bash
