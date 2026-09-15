@@ -1,6 +1,7 @@
 { ... }: {
   imports = [
     # ./stasis
+    ./audacity
     ./davmail
     ./firefox
     ./fuzzel

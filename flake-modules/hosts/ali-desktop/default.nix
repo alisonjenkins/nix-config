@@ -168,6 +168,24 @@ in {
           # stays engaged instead of bouncing off the vsync ceiling.
           custom.mangohud.displayMaxRefresh = 120;
 
+          # Audacity's "JACK Audio Connection Kit" host routes through
+          # pipewire-jack, which needs exact buffer/quantum agreement with
+          # the whole PipeWire graph -- another app causing a quantum
+          # renegotiation shows up to Audacity as a false "dropout detected"
+          # even with no real PipeWire xrun (confirmed: nothing in
+          # `journalctl --user -u pipewire` during a reproduced dropout).
+          # ALSA (via pipewire-alsa) is the more mature emulation path and
+          # doesn't have this failure mode. Only Host is patched here:
+          # PipeWire's ALSA plugin exposes one generic "pipewire"/"default"
+          # PCM, not per-app named sources like "Easy Effects Source" (`aplay
+          # -L` confirmed no such entry under ALSA), so RecordingDevice and
+          # PlaybackDevice are left for Audacity's own device picker rather
+          # than guessed at here.
+          programs.audacityPatch = {
+            enable = true;
+            settings.AudioIO.Host = "ALSA";
+          };
+
           # Forces OpenAL Soft to stereo output. Without this, OpenAL's
           # PulseAudio backend falls back to mono on the Scarlett 2i2's
           # pro-audio profile (aux0,aux1 channel map is not recognized),
