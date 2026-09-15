@@ -140,7 +140,7 @@
     };
 
     nixcord = {
-      url = "github:kaylorben/nixcord/a8802dc23e112f98196a7daa68f0e246c7a0ea64";
+      url = "github:kaylorben/nixcord/9b9512d27c139dc4d0f7c0b2b6b1b82c43944ca9";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
