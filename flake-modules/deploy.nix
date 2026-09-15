@@ -1,6 +1,27 @@
-{ inputs, self, ... }: {
+{ inputs, self, ... }:
+let
+  lib = inputs.nixpkgs.lib;
+  allDeployChecks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
+in {
   flake = {
-    checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) inputs.deploy-rs.lib;
+    # deploy-rs's own deployChecks bundles "deploy-schema" (cheap: validates
+    # the deploy.nodes structure, no host evaluation) with "deploy-activate"
+    # (expensive: realizes EVERY node's activation profile, which pulls in
+    # that host's full system closure -- for this repo's ~10 nodes, that's
+    # effectively building the whole fleet). `nix flake check` builds
+    # everything under `checks` unconditionally, so leaving deploy-activate
+    # wired in here means a routine flake check silently does a full-fleet
+    # build every time -- confirmed live: building it alone ran this machine
+    # out of RAM. Keep only deploy-schema in the default check sweep;
+    # deploy-activate (and everything else deployChecks produces) stays
+    # available on demand via the full un-filtered deployChecks below.
+    checks = builtins.mapAttrs
+      (system: checks: lib.filterAttrs (name: _: name != "deploy-activate") checks)
+      allDeployChecks;
+
+    # Un-filtered deployChecks, including the expensive deploy-activate:
+    # `nix build .#deployChecks.<system>.deploy-activate` to run it by hand.
+    deployChecks = allDeployChecks;
 
     deploy = {
       nodes = {
