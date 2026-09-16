@@ -157,7 +157,9 @@ in {
           programs.lsfg-vk = {
             enable = true;
             profiles."Helldivers 2 2x [Performance]" = {
-              active_in = [ "helldivers2.exe" ];
+              # Disabled: active_in emptied so the profile no longer matches
+              # helldivers2.exe. Settings kept for easy re-enable.
+              active_in = [ ];
               multiplier = 2;
               flow_scale = 0.75;
               performance_mode = true;
