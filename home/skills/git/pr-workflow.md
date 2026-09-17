@@ -9,6 +9,23 @@
    verified (with the command output that proves it).
 4. Keep the atomic commits; do not flatten them when pushing.
 
+## Fixing feedback on your own, unmerged PR
+
+- When the fix addresses something *this PR itself introduced* (a review
+  comment, a bug you find while iterating), commit it as
+  `git commit --fixup=<sha>` targeting the commit that introduced it, not a
+  plain new commit. Push normally — do not `rebase --autosquash` unless
+  asked; the fixups stay as their own visible commits, still reflecting the
+  atomic-commit mandate.
+- If the fix addresses something that predates this PR (a pre-existing bug
+  you noticed in passing), use a normal commit instead — it's not part of
+  this PR's own history to keep legible.
+- Keep the PR title and description in sync with the PR's actual current
+  state as it evolves across review rounds — not just what was true when it
+  was opened. After a round of fixup commits that changes scope (new
+  behavior, a renamed thing, a dropped approach), update both with
+  `gh pr edit`.
+
 ## Merging
 
 - `gh pr merge --rebase` first choice.
