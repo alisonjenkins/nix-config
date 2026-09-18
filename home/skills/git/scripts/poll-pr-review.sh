@@ -85,12 +85,20 @@ while :; do
     echo "error: failed to fetch review threads via GraphQL (auth or network issue?)" >&2
     exit 1
   fi
-  pageinfo_line="$(grep '^__PAGEINFO__	' <<<"$page_tsv")" || true
-  page_rows="$(grep -v '^__PAGEINFO__	' <<<"$page_tsv")" || true
+  pageinfo_line="$(grep $'^__PAGEINFO__\t' <<<"$page_tsv")" || true
+  page_rows="$(grep -v $'^__PAGEINFO__\t' <<<"$page_tsv")" || true
   threads_tsv+="$page_rows"$'\n'
+  if [[ -z "$pageinfo_line" ]]; then
+    echo "error: page $page_count of the reviewThreads query had no __PAGEINFO__ sentinel (API/jq output changed?); refusing to silently treat this as the last page" >&2
+    exit 1
+  fi
   hasnext=""
   cursor=""
   IFS=$'\t' read -r _ hasnext cursor <<<"$pageinfo_line"
+  if [[ "$hasnext" == "true" && -z "$cursor" ]]; then
+    echo "error: page $page_count reported hasNextPage=true with an empty endCursor; refusing to re-fetch the same page forever" >&2
+    exit 1
+  fi
   [[ "$hasnext" == "true" ]] || break
   page_after="$cursor"
 done
