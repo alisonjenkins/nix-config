@@ -41,13 +41,17 @@ it burns the session and cannot be interrupted.
 Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), or when the user says so.
 
-`gh pr view <number> --json reviews -q '.reviews[-1].body'` is a cheap way to
-notice that a *new wave* landed — it returns the review's raw, unrendered
-body field (which can itself contain Markdown), convenient for a poll loop's
-wakeup check. It is **not** a
-substitute for the thread list below: the summary body does not carry
-`isResolved`, thread ids, or comment ids, so triaging from it alone and never
-touching the GraphQL query is how a fix gets made without the thread it
+`gh pr view <number> --json reviews -q '.reviews | sort_by(.submittedAt) | .[-1].body'`
+is a cheap way to notice that a *new wave* landed — it returns the review's
+raw, unrendered body field (which can itself contain Markdown), convenient
+for a poll loop's wakeup check. **Always `sort_by(.submittedAt)` first** —
+`.reviews[-1]` alone is array order, not chronological order, and a later
+review can sort earlier in the raw array (confirmed: a review submitted
+after an intervening one still landed earlier in `.reviews`), so bare `[-1]`
+can silently point at a stale review and skip the actual latest one. This is
+**not** a substitute for the thread list below: the summary body does not
+carry `isResolved`, thread ids, or comment ids, so triaging from it alone and
+never touching the GraphQL query is how a fix gets made without the thread it
 addresses ever being replied to. Treat a summary-body poll as a trigger to go
 read the actual threads, not as the triage source itself.
 
