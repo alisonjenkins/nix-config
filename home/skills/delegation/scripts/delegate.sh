@@ -5,8 +5,8 @@ usage() {
   echo "usage: $0 <task> [profile] [skill[,skill...]]" >&2
   echo "valid profiles: read, write-workdir, write-and-test" >&2
   echo "skill: one or more comma-separated Claude skill names to hand to" >&2
-  echo "  the delegate, each resolved from ./.claude/skills/<skill> then" >&2
-  echo "  ~/.claude/skills/<skill>" >&2
+  echo "  the delegate, each resolved from the project's .claude/skills/<skill>" >&2
+  echo "  (found via the git toplevel, not \$PWD) then ~/.claude/skills/<skill>" >&2
 }
 
 if [[ $# -lt 1 || $# -gt 3 ]]; then
@@ -124,6 +124,12 @@ if [[ -n "$skills_arg" ]]; then
   skill_dirs=()
   missing_skills=()
   for name in "${skill_names[@]}"; do
+    # Trim surrounding whitespace (a space after the comma, e.g.
+    # "programming, testing", is a natural way to write the list) and
+    # skip empty entries (a trailing comma, or "a,,b").
+    name="${name#"${name%%[![:space:]]*}"}"
+    name="${name%"${name##*[![:space:]]}"}"
+    [[ -z "$name" ]] && continue
     if [[ -d "$project_skills_root/$name" ]]; then
       skill_dirs+=("$project_skills_root/$name")
     elif [[ -n "$effective_user_skills_root" && -d "$effective_user_skills_root/$name" ]]; then

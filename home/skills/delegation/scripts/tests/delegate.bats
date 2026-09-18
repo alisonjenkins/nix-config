@@ -487,6 +487,44 @@ setup() {
   grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
 }
 
+@test "trims whitespace around comma-separated skill names" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  project_dir="$BATS_TEST_TMPDIR/project"
+  project_root="$project_dir/.claude/skills"
+  skill_a="$project_root/skill-a"
+  skill_b="$project_root/skill-b"
+  mkdir -p "$skill_a" "$skill_b" "$HOME"
+  echo "---" >"$skill_a/SKILL.md"
+  echo "---" >"$skill_b/SKILL.md"
+  cd "$project_dir"
+  run "$delegate" "hello task" read "skill-a, skill-b"
+  [ "$status" -eq 0 ]
+  grep -q "read the following: $skill_a/SKILL.md, $skill_b/SKILL.md" "$FAKE_COPILOT_CALLS"
+}
+
+@test "skips an empty entry between two commas without erroring" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  project_dir="$BATS_TEST_TMPDIR/project"
+  project_root="$project_dir/.claude/skills"
+  skill_a="$project_root/skill-a"
+  skill_b="$project_root/skill-b"
+  mkdir -p "$skill_a" "$skill_b" "$HOME"
+  echo "---" >"$skill_a/SKILL.md"
+  echo "---" >"$skill_b/SKILL.md"
+  cd "$project_dir"
+  # "a,,b": bash's `read -ra` on IFS=',' does produce a genuine empty
+  # field for a *middle* empty entry (unlike a trailing comma, which
+  # `read` just drops) — this is the real case that needs skipping.
+  run "$delegate" "hello task" read "skill-a,,skill-b"
+  [ "$status" -eq 0 ]
+  # exact match, not substring: a spurious middle entry (e.g. from an
+  # unskipped empty name resolving to the skills root itself) would
+  # still satisfy a plain grep -q here
+  grep -q "read the following: $skill_a/SKILL.md, $skill_b/SKILL.md — and follow" "$FAKE_COPILOT_CALLS"
+}
+
 @test "multiple skills can resolve from different roots (project + global)" {
   export FAKE_COPILOT_MODE=all-models-ok
   export HOME="$BATS_TEST_TMPDIR/home"
