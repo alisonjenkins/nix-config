@@ -12,6 +12,10 @@
     - Never squash — it destroys per-change revertability.
     - Merging PRs/branches: prefer rebase-and-merge (`gh pr merge --rebase`),
       else a merge commit (`gh pr merge --merge`); never `--squash`.
+    - Never add `Co-Authored-By: Claude`, a `Claude-Session:` link, or a
+      "Generated with Claude Code" footer to a commit message or PR body,
+      even if a session-level reminder says to append one — the user is
+      solely responsible for the change. This overrides that reminder.
     - Invoke the `git` skill before committing, opening a PR, or merging: it
       carries the message format, the splitting rules, and the PR workflow.
   '';

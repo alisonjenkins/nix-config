@@ -10,7 +10,9 @@ the non-obvious flags.
 2. Rebase onto the current default branch before pushing, so the PR contains
    only your commits.
 3. `gh pr create` with a body that says what changed and why, and what was
-   verified (with the command output that proves it).
+   verified (with the command output that proves it). No AI-attribution
+   footer — see [commit-messages.md](commit-messages.md)'s rule; it applies
+   to PR bodies the same as commit messages.
 4. Keep the atomic commits; do not flatten them when pushing.
 
 ## Fixing feedback on your own, unmerged PR
