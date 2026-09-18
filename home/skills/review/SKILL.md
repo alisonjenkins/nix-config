@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when reviewing a diff, a pull request, or your own work before committing or handing it over, including "look over this change", "is this right", or checking for bugs you introduced. Also use when auditing an existing codebase or module against current conventions — "review this codebase", "does this project follow our standards", "check this against the programming skill" — with no diff to anchor against. Carries the rubric for judging code (including conformance with the `programming` skill's language and by-concern guidance), severity ordering, how to phrase a finding so it is actionable, and how to verify a finding is real before reporting it.
+description: Use when reviewing a diff, PR, or your own work before committing, including "look over this change", "is this right", or checking for bugs you introduced. Also for auditing an existing codebase against conventions with no diff to anchor against. Carries the rubric, severity ordering, how to phrase a finding, and how to verify a finding is real before reporting it.
 ---
 
 # Review

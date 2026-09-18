@@ -47,7 +47,8 @@ at nothing.
 
 ## After adding a skill
 
-1. `git add` it. Flakes ignore untracked files, and the error does not say so.
+1. `git add` it — flakes ignore untracked files (see the `testing` skill's
+   `languages/nix.md`).
 2. `just build <hostname>`: proves it evaluates.
 3. `just switch`, then start a **new** session: the listing is built at
    startup.

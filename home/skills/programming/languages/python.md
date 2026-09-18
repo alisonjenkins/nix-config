@@ -5,11 +5,8 @@
   devshell. Do not `pip install` into the user profile.
 - Format with `ruff format`, lint with `ruff check`. Type-check with `mypy`
   where the project already has annotations.
-- `py-spy` or `scalene` for profiling, `pyperf`/`pytest-benchmark` for
-  benchmarking, `numpy` vectorized ops over a manual Python loop for
-  data-parallel work, `memoryview`/`mmap` over slicing/reading into a new
-  `bytes` object for zero-copy. See `../performance.md` before reaching for
-  any of these.
+- Profiling/benchmarking/vectorization/zero-copy tools: see
+  `../performance.md`'s tool table before reaching for any of these.
 - Guard rail: on a new project (or a module you can annotate fully), run
   `mypy --strict` rather than the default permissive mode — Python's type
   system only catches what you've told it to check, so an unannotated
@@ -23,15 +20,9 @@
   `shell=True` with interpolated values.
 - Dataclasses (or pydantic, if the project already uses it) instead of dicts
   for structured data that crosses a function boundary.
-- `typing.NewType` for identifiers/values that must not be mixed up despite
-  sharing a primitive type: `CustomerId = NewType("CustomerId", str)`.
-  `def f(customer_id: CustomerId, order_id: OrderId)` then makes a swapped
-  call a `mypy` error — plain `str`/`str` would not catch it, and this only helps
-  under `mypy --strict` (see Toolchain above); it is erased at runtime like
-  all Python type hints, so it is a static guard rail, not a validation one.
-  Mandatory at any function boundary taking two or more same-typed values that
-  mean different things — see `defensive.md`'s "distinct domain concepts"
-  rule.
+- `CustomerId = NewType("CustomerId", str)`, not a bare `str` — mandatory per
+  `defensive.md`'s "distinct domain concepts" rule; only caught under `mypy
+  --strict` (see Toolchain above), erased at runtime.
 - Catch the specific exception. A bare `except Exception` needs a comment
   saying why the broad catch is correct and must re-raise or log with
   `exc_info=True`.

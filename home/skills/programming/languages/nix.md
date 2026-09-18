@@ -27,8 +27,8 @@ assuming a convention. Common patterns you'll run into:
   servers alike; a core-count limit, kernel parameter, or hardware workaround
   that suits one machine is wrong for the others. Ask which hosts a setting
   should apply to before putting it somewhere shared.
-- New or renamed files must be `git add`ed before building — flakes only see
-  tracked files, and the failure looks like "file does not exist".
+- New or renamed files must be `git add`ed before building — see the
+  `testing` skill's `languages/nix.md` for why and the fuller build ladder.
 - `symlinkJoin` merges directory *contents*. To keep each input as its own
   named directory, use `linkFarm`. Mixing these up silently flattens trees.
 - **A lambda default on a module argument does not make it optional.** Writing
@@ -47,7 +47,6 @@ assuming a convention. Common patterns you'll run into:
   `final.stdenv.hostPlatform.system`.
 
 ## Build loop
-Build (no activation) → temporary activation → permanent switch → remote
-deploy, in increasing order of commitment. See the `infra` skill's `nix.md`
-for the actual commands (own or repo-wrapped) and check for a project-local
-workflow skill for host/module/secret scaffolding conventions.
+See the `testing` skill's `languages/nix.md` for the eval/build/activation/VM
+ladder, and the `infra` skill's `nix.md` for deploy commands; check for a
+project-local workflow skill for host/module/secret scaffolding conventions.

@@ -1,6 +1,6 @@
 ---
 name: requirements
-description: Use before starting work when the request names a solution rather than a problem ("add caching", "make it faster", "clean this up", "refactor this", "it should just work"), when a term in it could mean two things, when you are about to guess which reading was meant, or when you cannot say in one sentence what goes wrong today and for whom. Also when a constraint looks like it makes the task impossible. Covers separating the problem from the proposed solution, marking constraints as given versus assumed, deciding which assumption to state and proceed on versus which question actually blocks, and keeping terms consistent.
+description: Use before starting work when the request names a solution not a problem ("add caching", "make it faster", "clean this up", "refactor this"), a term could mean two things, you are about to guess which reading was meant, or you cannot say in one sentence what is wrong today and for whom. Also when a constraint looks impossible. Covers assumption vs blocking question, keeping terms consistent.
 ---
 
 # Requirements

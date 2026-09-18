@@ -1,6 +1,6 @@
 ---
 name: infra
-description: Use when deploying, changing cluster or cloud state, debugging a running service or a failed activation, or reaching for kubectl, terraform, aws, gh, deploy-rs, nixos-rebuild or just switch/deploy. Carries the infrastructure-as-code-first rule and when asking permission is required before touching live systems, and routes to per-tool guidance for Nix deployment, Kubernetes, Terraform, AWS and the GitHub CLI.
+description: Use when deploying, changing cluster or cloud state, debugging a running service or a failed activation, or reaching for kubectl, terraform, aws, gh, deploy-rs, nixos-rebuild, darwin-rebuild, home-manager switch, or just switch/deploy. Also AccessDenied/IAM debugging. Carries the infrastructure-as-code-first rule and when asking permission is required before touching live systems, and routes to per-tool guidance for Nix deployment, Kubernetes, Terraform, AWS and the GitHub CLI.
 ---
 
 # Infrastructure

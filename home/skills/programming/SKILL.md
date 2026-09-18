@@ -1,6 +1,6 @@
 ---
 name: programming
-description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs and their config files, including .NET Framework and .NET Core/5+. Carries the conventions that apply everywhere (naming, comments, error handling, scope, matching the surrounding code) and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript, shell, Go and C#/.NET, plus assertions and crash-early behaviour, thread-safety and shared state, input validation and secrets, observability (logging, tracing, structured log fields, correlation IDs, instrumenting new code so behaviour can be read from its output instead of guessed at), and performance work — profiling, benchmarking, and SIMD/vectorization.
+description: Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET), plus assertions, thread-safety, input validation/secrets, observability, and performance/profiling.
 ---
 
 # Programming
@@ -65,15 +65,7 @@ language.
   the design is wrong, not that the work is unpleasant. Stop and re-read the
   requirement before pushing through.
 - **Delegating code work to a sub-agent means naming this skill in its
-  prompt.** A freshly spawned sub-agent gets no skill listing at all — it
-  cannot discover `programming` on its own, and skips every rule here
-  silently if not told. State it by exact name (`invoke the programming
-  skill, then read its languages/rust.md` for Rust work, and so on for
-  whichever per-language file applies) in the prompt you hand it. Once
-  invoked, disclosure inside the sub-agent works exactly as it does here:
-  the sub-agent reads this body, then follows the routing table to whichever
-  child file the work needs — nothing about running as a sub-agent changes
-  that mechanism.
+  prompt** — see the `delegation` skill for why and how.
 
 ## By-concern routing
 

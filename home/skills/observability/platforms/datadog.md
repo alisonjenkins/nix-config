@@ -69,13 +69,6 @@ to confirm the current surface rather than assuming a remembered flag is
 still correct; asserting a flag from memory as fact is exactly the kind
 of unverifiable claim this skill avoids.
 
-This repo also ships `claude-dd` — a wrapper that loads the
-`pup-claude` plugin (49 agents, ~14 skills purpose-built around `pup`)
-on top of the normal `claude` session. Reach for it when a task needs
-deep `pup`-specific tooling beyond what this file covers; nothing in
-this file or `../investigation.md` depends on it, and both work in a
-normal session with `pup` on `PATH`.
-
 ## Reducing output before it reaches you
 
 A raw `pup` log search or trace search can return far more than an

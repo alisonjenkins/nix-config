@@ -2,25 +2,13 @@
 
 Check for a repo-local wrapper first (`just`, `Makefile`, `bin/`, a `flake.nix`
 app); many Nix configs alias the raw commands below behind their own verbs.
-If one exists, prefer it; it may carry repo-specific pre/post steps. Otherwise
-use the underlying tools directly, in increasing order of commitment:
+If one exists, prefer it; it may carry repo-specific pre/post steps.
 
-```
-nixos-rebuild build --flake .#<host>     # build only, no activation
-nixos-rebuild test --flake .#<host>      # activate temporarily; reverts on reboot
-nixos-rebuild boot --flake .#<host>      # set for next boot
-nixos-rebuild switch --flake .#<host>    # activate now, permanently
-```
-
-nix-darwin and standalone home-manager don't have the full verb set above;
-neither has a bootloader-staged `boot`, and neither has a reboot-reverting
-`test`:
-- nix-darwin: `darwin-rebuild build --flake .#<host>` /
-  `darwin-rebuild switch --flake .#<host>` (switch activates immediately,
-  permanently; there is no temporary/reverting mode).
-- standalone home-manager: `home-manager build --flake .#<user>@<host>` /
-  `home-manager switch --flake .#<user>@<host>`; note the flake target is
-  `<user>@<host>`, not `<host>`.
+For the build/test/boot/switch command ladder (`nixos-rebuild` vs
+`darwin-rebuild` vs `home-manager`, what reverts on reboot and what doesn't),
+the `git add`-before-build gotcha, and the `nix flake check` cross-host
+caveat, see the `testing` skill's `languages/nix.md` — this file only adds
+what's specific to *deploying*, below.
 
 Remote machines: check what the repo uses for remote deploy (deploy-rs,
 `nixos-rebuild --target-host`, colmena, morph, ...); don't assume any one of
@@ -28,16 +16,12 @@ these by default.
 
 ## Rules
 
-- `git add` new files before building. Flakes ignore untracked files and the
-  error does not say so.
 - Build before deploying, to prove the closure evaluates and compiles without
   touching the target first.
 - If the deploy tool has automatic rollback on failed activation (deploy-rs
   does), remember it only covers *activation* failures; a change that breaks
   *boot* will not roll back. For those, use a temporary `test`-style
   activation or a VM build first.
-- `nix flake check` may fail from the wrong host when an input only evaluates
-  on another platform. Skipping it is legitimate; say that you skipped it.
 - Before assuming `sudo` is unavailable, **probe it**: `sudo -n true`, or
   `ssh -o BatchMode=yes <host> 'sudo -n true'`. Servers are often deliberately
   configured passwordless for remote operations, and deferring to the user on

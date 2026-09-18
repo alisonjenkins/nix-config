@@ -1,5 +1,9 @@
 # Pull requests
 
+For `gh pr`/`gh issue` command syntax, see the `infra` skill's `github.md`
+cheat sheet. Below covers only what that sheet doesn't: the workflow order and
+the non-obvious flags.
+
 ## Opening
 
 1. Branch off the default branch; never commit to it directly.
@@ -43,5 +47,6 @@
 
 ## Checks
 
-`gh pr checks <number>` before asking for a merge. A red check that you believe
-is unrelated still needs to be named explicitly, not ignored.
+Run `gh pr checks` (see `infra/github.md`) before asking for a merge. A red
+check that you believe is unrelated still needs to be named explicitly, not
+ignored.

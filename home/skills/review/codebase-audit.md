@@ -58,10 +58,8 @@ existing code instead of new lines, weighted toward what a lint cannot catch:
   hand-rolled `time.time()` timing loop instead of a real harness, SIMD or
   manual vectorization with no comment explaining the aliasing/alignment
   assumption that makes it sound — `performance.md`.
-- **Domain primitives collapsed into bare types**: two same-typed function
-  parameters that mean different things (`customer_id: str, order_id: str`)
-  with nothing stopping them being swapped — `defensive.md`'s "distinct
-  domain concepts" rule and its per-language mechanism.
+- **Domain primitives collapsed into bare types** — `defensive.md`'s
+  "distinct domain concepts" rule and its per-language mechanism.
 
 ## Reporting without drowning the reader
 

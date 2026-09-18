@@ -7,6 +7,17 @@ profile says the bottleneck is data-parallel scalar work. Skipping straight to
 "this should be faster" produces code that is harder to read and not
 measurably faster — the worst of both.
 
+## Tools per language
+
+| Language | Profiling | Benchmarking | SIMD/vectorization | Zero-copy |
+|---|---|---|---|---|
+| Rust | `cargo flamegraph` | `criterion` | `std::simd`, `is_x86_feature_detected!` | `Cow<'a, T>`, borrowed `&str`/`&[T]`, `bytes`/`zerocopy` crates |
+| Python | `py-spy`, `scalene` | `pyperf`, `pytest-benchmark` | `numpy` vectorized ops | `memoryview`, `mmap` |
+| TypeScript/Node | `clinic.js`, `0x` | `tinybench`, `mitata` | — | `ArrayBuffer`/`TypedArray` views (`subarray`, not `slice`) |
+| Shell | `perf` | `hyperfine` | — | — |
+| Go | `pprof` (`go tool pprof`, `net/http/pprof`) | `go test -bench=.` (`testing.B`) | — | — |
+| C# | `dotnet-trace`, PerfView | `BenchmarkDotNet` | — | `Span<T>`/`Memory<T>` |
+
 ## Profiling first
 
 Never optimise from a guess about which function is slow. Guesses are wrong
@@ -63,90 +74,46 @@ guess again.
 
 ## Zero-copy
 
-The cheapest speedup available is the copy you never make. Before reaching
-for a faster algorithm or SIMD, check whether the hot path is dominated by
-allocation and memcpy rather than actual computation — a profile with wide
-bars in `memcpy`/`alloc`/a constructor is the signal, not a guess.
+Apply only once a profile shows wide bars in `memcpy`/`alloc`/a constructor —
+not as a default style.
 
-- **Borrow across a boundary instead of cloning to satisfy the type system.**
-  A function that takes owned data (`String`, `Vec<T>`, a fully materialized
-  object) when it only reads the data forces every caller to copy, whether or
-  not that caller already owns something borrowable. Take `&str`/`&[T]` (or
-  the language's equivalent read-only view) and let the few callers that
-  truly need ownership clone at their own call site — see
-  `languages/rust.md`'s
-  "prefer borrowed parameters" idiom, which is this rule's Rust-specific
-  form.
-- **Parse or deserialize into views over the original buffer, not fresh
-  allocations per field**, when the source buffer already outlives the
-  parsed result: a `&str` slice into the original JSON/log buffer instead of
-  a `String` copy per field, a struct of offsets into a `mmap`'d file instead
-  of reading it into owned buffers first. This is the difference between an
-  O(1) parse and an O(n) one for anything dominated by string/byte
-  extraction. It has a real cost: the view now carries the source buffer's
-  lifetime, and the source cannot be freed, mutated, or reused for another
-  read while a view into it is still alive — worth it exactly when the
-  buffer's lifetime already covers the view's use, not when it forces the
-  buffer to be kept alive artificially.
-- **Reuse a buffer across iterations instead of allocating one per call**,
-  in any hot loop that produces output of a bounded or predictable size:
-  clear and refill a `Vec`/`bytearray`/`ArrayBuffer` rather than constructing
-  a new one each pass. This is what a "no allocation in the steady state"
-  design looks like in practice, and it is a much larger win than it looks —
-  allocator and GC pressure often dominate a hot loop more than the
-  work happening inside it.
-- **Memory-map large files read sequentially or randomly-accessed by
-  section**, instead of reading the whole file into a heap buffer first,
-  when the access pattern does not need the entire file resident at once.
-  The OS page cache then does the buffering, and repeated reads of the same
-  region cost nothing after the first fault.
-- **Zero-copy is a lifetime/ownership tradeoff, not a free win — benchmark
-  it.** A borrowed/mapped/reused-buffer version can lose to a straightforward
-  copy when the "zero-copy" path adds indirection, defeats the compiler's
-  ability to keep the data in registers, or forces awkward lifetime
-  threading that pushes complexity onto every caller. Apply this after
-  profiling shows copying is the actual cost, and confirm the win with a
-  benchmark (see Benchmarking above) rather than assuming "avoids a copy"
-  always means "faster."
+- Borrow across a boundary (`&str`/`&[T]`) instead of cloning to satisfy the
+  type system; let only the callers that truly need ownership clone at their
+  own call site — see `languages/rust.md`'s "prefer borrowed parameters".
+- Parse or deserialize into views over the original buffer (a `&str` slice
+  into the source, a struct of offsets into a `mmap`'d file), not fresh
+  allocations per field, when the source buffer already outlives the parsed
+  result. The view then carries the source's lifetime — the source cannot be
+  freed, mutated, or reused while the view is alive.
+- Reuse a buffer across iterations instead of allocating one per call, in any
+  hot loop with bounded/predictable output size.
+- Memory-map large files instead of reading them fully into a heap buffer
+  first, when the access pattern doesn't need the whole file resident.
+- Benchmark it. A borrowed/mapped/reused-buffer version can lose to a plain
+  copy when it adds indirection or forces awkward lifetime threading —
+  confirm the win (see Benchmarking above) rather than assuming it.
 
 ## SIMD
 
-Reach for SIMD only once profiling has identified a hot, data-parallel,
-branch-light scalar loop — summing, comparing, transforming a large
-contiguous buffer of primitives — and a benchmark confirms the scalar version
-is actually the bottleneck at the relevant input size. It is the highest-cost,
-least-portable tool here; use it last, not first.
+Reach for it only once profiling has identified a hot, data-parallel,
+branch-light scalar loop and a benchmark confirms the scalar version is the
+bottleneck at the relevant input size. Highest-cost, least-portable tool
+here; use it last.
 
-- **Prefer the compiler's auto-vectorizer before hand-writing intrinsics.**
-  A tight scalar loop over a `&[f32]`/contiguous array with no data-dependent
-  branching and no aliasing between input and output slices auto-vectorizes
-  under `-O3`/`--release` in most compilers without any code change. Check
-  the generated assembly or the compiler's vectorization report
-  (`-Rpass=loop-vectorize` for LLVM-based compilers) before assuming
-  intrinsics are needed at all.
-- **Prefer a portable abstraction over target-specific intrinsics** when the
-  language has one: Rust's portable SIMD (`std::simd`, where the toolchain
-  supports it) or a crate like `wide`
-  before hand-written `_mm256_*` AVX2 intrinsics; a runtime-dispatched crate
-  (`multiversion`, `simdeez`-style) when the binary must run on machines with
-  different instruction set extensions. Hand-written per-ISA intrinsics are a
-  last resort for the specific hot loop that measurably needs them, gated
-  behind a runtime CPU-feature check (`is_x86_feature_detected!` or
-  equivalent) with a scalar fallback — never assume the deploy target has
-  AVX2/NEON/etc.
-- **Aliasing and alignment are the correctness traps, not the speed traps.**
-  SIMD loads/stores over unaligned or overlapping memory are undefined
-  behaviour or silently wrong in exactly the way that passes a quick manual
-  test and fails on a different input size or a different CPU. Use the
-  language's checked/aligned load functions, not a raw pointer cast, unless
-  you have specifically verified alignment.
-- **Benchmark the vectorized version against the scalar one on the actual
-  target CPU**, not a different machine's ISA — a SIMD width or instruction
-  latency difference between, say, an AVX2 dev laptop and an AVX-512 or ARM
-  NEON deploy target can flip which version is actually faster.
+- Prefer the compiler's auto-vectorizer before hand-writing intrinsics — check
+  the generated assembly or vectorization report (`-Rpass=loop-vectorize` for
+  LLVM) before assuming intrinsics are needed at all.
+- Prefer a portable abstraction (Rust's `std::simd`, a `wide`/runtime-dispatch
+  crate) over target-specific intrinsics. Hand-written per-ISA intrinsics are
+  a last resort, gated behind a runtime CPU-feature check
+  (`is_x86_feature_detected!` or equivalent) with a scalar fallback — never
+  assume the deploy target has AVX2/NEON/etc.
+- Use the language's checked/aligned load functions, not a raw pointer cast,
+  unless alignment is specifically verified — unaligned/overlapping SIMD
+  access is UB or silently wrong, and the failure mode is passing on one
+  input size/CPU and breaking on another.
+- Benchmark the vectorized version against the scalar one on the actual
+  target CPU, not a different machine's ISA.
 - Document the assumption that made vectorization valid (no aliasing, no
   cross-lane data dependency, the specific ISA feature required) as a comment
-  at the site — this is exactly the kind of non-obvious constraint that
-  `programming`'s "comment why, not what" rule exists for, because the next
-  editor who changes the loop's data dependency will silently reintroduce a
-  correctness bug the original benchmark never tested for.
+  at the site, per `programming`'s "comment why, not what" rule.

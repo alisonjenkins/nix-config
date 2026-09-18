@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check and NixOS VM tests. Carries the TDD loop, what makes a test worth having, mocking policy, property-based testing and how to check the suite can actually go red, and routes to per-language guidance for Rust, Python, Nix and TypeScript/JavaScript.
+description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check, NixOS VM tests, bats, go test. Carries the TDD loop, mocking policy, property-based testing, and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript, shell and Go.
 ---
 
 # Testing
@@ -82,3 +82,5 @@ family's `verifying-a-fix.md` covers that case.
 | Python (`pytest`) | [languages/python.md](languages/python.md) |
 | Nix (`nix flake check`, NixOS VM tests) | [languages/nix.md](languages/nix.md) |
 | TypeScript / JavaScript | [languages/typescript.md](languages/typescript.md) |
+| Shell scripts (`bats`, fixture-driven fake CLIs) | [languages/shell.md](languages/shell.md) |
+| Go (`go test`, `go test -race`) | [languages/go.md](languages/go.md) |

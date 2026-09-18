@@ -1,6 +1,6 @@
 ---
 name: writing
-description: Use when drafting or editing prose a person will read. A PR comment or review reply, a commit body, a README, a design doc, a report, a release note, a message to a colleague. Also when asked to tighten text, cut the fluff, de-slop it, make it stop sounding AI-generated, or make it easier to read. Carries the accessibility baseline of writing for a dyslexic reader with ADHD, the plain-speech rules, the punctuation and formatting house style, the AI tells to strip, and the voice checks that keep edited text from reading sterile.
+description: Use when drafting or editing prose a person will read: a PR comment, review reply, commit body, README, design doc, report, release note, or message to a colleague. Also when asked to tighten text, cut fluff, de-slop it, or make it easier to read. Carries the accessibility baseline, plain-speech rules, punctuation/formatting house style, AI tells to strip, and voice checks.
 ---
 
 # Writing
@@ -85,7 +85,9 @@ Removing tells is half the job. The other half:
 
 - **No em dashes.** House rule. Use a period or a comma. Do not substitute
   parentheses, en dashes, or a hyphen standing in for a dash. If a thought
-  needs separation, end the sentence.
+  needs separation, end the sentence. This applies to user-facing deliverables
+  (docs, PRs, messages to a person); it does not require retrofitting em dashes
+  already present in internal skill/instruction files.
 - **Colons before a list or an example only.** Not as a mid-sentence
   connector.
 - **Straight quotes**, not curly.
