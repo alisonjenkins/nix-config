@@ -30,6 +30,24 @@ setup() {
   [[ "$output" == *"must be numeric"* ]]
 }
 
+@test "rejects owner/repo with no slash" {
+  run "$script" 319 ownerrepo
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be exactly 'owner/repo'"* ]]
+}
+
+@test "rejects owner/repo with an extra slash" {
+  run "$script" 319 owner/repo/extra
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be exactly 'owner/repo'"* ]]
+}
+
+@test "rejects owner/repo with a trailing slash and empty repo" {
+  run "$script" 319 owner/
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be exactly 'owner/repo'"* ]]
+}
+
 @test "reports (none) for unresolved threads and suppressed findings when both are empty" {
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
@@ -99,6 +117,20 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"first distinct finding"* ]]
   [[ "$output" == *"second distinct finding"* ]]
+}
+
+@test "a header as the very last line of input (EOF, no next line at all) doesn't inherit a stale bullet from an earlier record" {
+  # No trailing newline after the second header: getline hits true EOF
+  # there, which (unchecked) leaves awk's nextline holding whatever it
+  # was last set to -- the first record's bullet -- and would wrongly
+  # pair it with this unrelated second location.
+  printf '**src/first.sh:1**\n* bullet for first\n**src/second.sh:2**' \
+    >"$FAKE_GH_FIXTURES/review-bodies.txt"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"src/first.sh:1"* ]]
+  [[ "$output" == *"bullet for first"* ]]
+  [[ "$output" != *"src/second.sh:2"* ]]
 }
 
 @test "ignores a **file:line** header with no following bullet line" {
