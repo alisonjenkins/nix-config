@@ -10,6 +10,7 @@ args=("$@")
 
 is_graphql_threads=0
 is_graphql_reply=0
+is_graphql_status=0
 is_reviews_list=0
 is_pr_view=0
 is_pr_checks=0
@@ -25,6 +26,10 @@ for ((i = 0; i < ${#args[@]}; i++)); do
         is_graphql_threads=0
         is_graphql_reply=1
         ;;
+      *statusCheckRollup*)
+        is_graphql_threads=0
+        is_graphql_status=1
+        ;;
     esac
   fi
 done
@@ -35,7 +40,23 @@ elif [[ "${args[0]:-}" == "pr" && "${args[1]:-}" == "checks" ]]; then
   is_pr_checks=1
 fi
 
-if [[ $is_graphql_reply -eq 1 ]]; then
+if [[ $is_graphql_status -eq 1 ]]; then
+  if [[ -f "$fixtures/graphql-status-fails" ]]; then
+    echo "fake-gh: simulated GraphQL failure (auth/network)" >&2
+    exit 1
+  fi
+  has_after=0
+  for ((i = 0; i < ${#args[@]}; i++)); do
+    if [[ "${args[$i]}" == "-F" && "${args[$((i + 1))]:-}" == after=* ]]; then
+      has_after=1
+    fi
+  done
+  if [[ $has_after -eq 1 && -f "$fixtures/pr-status-page2.json" ]]; then
+    cat "$fixtures/pr-status-page2.json"
+  else
+    cat "$fixtures/pr-status.json"
+  fi
+elif [[ $is_graphql_reply -eq 1 ]]; then
   printf '%s\n' "${args[@]}" >"$fixtures/graphql-reply-capture.txt"
   if [[ -f "$fixtures/graphql-reply-fails" ]]; then
     echo "fake-gh: simulated GraphQL failure (auth/network)" >&2
