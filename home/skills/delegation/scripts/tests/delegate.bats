@@ -11,7 +11,7 @@ add_dir_of() {
 
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
-  delegate="$script_dir/../scripts/delegate.sh"
+  delegate="$script_dir/../delegate.sh"
   export PATH="$script_dir:$PATH"
   export FAKE_COPILOT_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_COPILOT_CALLS"
@@ -252,7 +252,7 @@ setup() {
 }
 
 @test "reset-credits-cooldown.sh clears an existing cooldown" {
-  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  reset_script="$script_dir/../reset-credits-cooldown.sh"
   mkdir -p "$DELEGATE_STATE_DIR"
   cooldown_file="$DELEGATE_STATE_DIR/credits-exhausted-until"
   echo "$(( $(date +%s) + 3600 ))" >"$cooldown_file"
@@ -263,7 +263,7 @@ setup() {
 }
 
 @test "reset-credits-cooldown.sh is a no-op, not an error, when there's nothing to clear" {
-  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  reset_script="$script_dir/../reset-credits-cooldown.sh"
   run "$reset_script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"nothing to clear"* ]]
@@ -271,7 +271,7 @@ setup() {
 
 @test "reset-credits-cooldown.sh unblocks a subsequent delegate.sh call for the account limit being raised" {
   export FAKE_COPILOT_MODE=all-models-ok
-  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  reset_script="$script_dir/../reset-credits-cooldown.sh"
   mkdir -p "$DELEGATE_STATE_DIR"
   echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
 

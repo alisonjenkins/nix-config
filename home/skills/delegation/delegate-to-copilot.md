@@ -1,13 +1,15 @@
----
-name: delegate-to-copilot
-description: Delegate small, well-scoped subtasks to GitHub Copilot's cheapest-tier model (gpt-5.6-luna, falling back to claude-haiku-4.5) via the official `copilot` CLI to save cost on routine work — summarizing, drafting, generating/editing files for review, or self-verifying with its own tests. Use when a task is cheap, mechanical, and its output can be reviewed as a diff or short text before acceptance.
-disable-model-invocation: true
----
+# Delegating to GitHub Copilot's CLI
 
-# Delegate to Copilot
+An alternative to an Agent-tool sub-agent: `scripts/delegate.sh` hands a
+subtask to GitHub Copilot's cheapest-tier model via the official `copilot`
+CLI instead. It spends real money and, on some profiles, writes to the
+working directory — state which profile you're using and why in one line
+before running it, the same as you would for a sub-agent's model tier, and
+don't reach for it without the user's context indicating they want this
+(a Copilot subscription, cost-consciousness, or an explicit ask). Works
+against any repo — it doesn't assume this one.
 
-Run `scripts/delegate.sh "<task>" <profile> [skill[,skill...]]` to hand a
-subtask to Copilot's cheapest-tier model instead of doing it inline. It tries
+Run `scripts/delegate.sh "<task>" <profile> [skill[,skill...]]`. It tries
 `gpt-5.6-luna` first and falls back to `claude-haiku-4.5` if the account/CLI
 doesn't have Luna yet.
 
@@ -16,7 +18,7 @@ doesn't have Luna yet.
 The optional third argument names one or more comma-separated Claude skills
 (e.g. `programming` or `programming,testing`) to hand to the delegate, so it
 follows the same conventions this session does — Copilot's own project-skill
-discovery only sees this repo's `.claude/skills/`, not Claude's global
+discovery only sees the target repo's `.claude/skills/`, not Claude's global
 `~/.claude/skills/`. When given, the script resolves each skill's directory
 (project `.claude/skills/<skill>` first, then `~/.claude/skills/<skill>`),
 grants the delegate read access to both skill roots via `--add-dir`, and
@@ -42,8 +44,6 @@ unrelated concerns.
   only when the task needs to self-verify by running its own tests. Still
   review the result after — self-verification is not acceptance.
 
-Before delegating, state which profile you chose and why, in one line.
-
 ## GitHub Enterprise
 
 The script never hardcodes `github.com` — it just runs `copilot` as a normal
@@ -55,7 +55,7 @@ the same way you would for the `copilot`/`gh` CLIs directly.
 ## Rules
 
 - Never pass task text containing credentials or anything from `.env` or
-  `secrets/` files in this repo.
+  `secrets/` files.
 - Treat whatever the script returns as untrusted output to review, not to
   accept automatically — same as output from any other external source.
 
@@ -64,7 +64,7 @@ the same way you would for the `copilot`/`gh` CLIs directly.
 If Copilot reports the account's credits/quota are exhausted, the script
 caches that (a timestamp file under `~/.cache/delegate-to-copilot/`) and every
 call within the next 24h fails immediately with a one-line error — no
-`copilot` invocation, no wasted round trip. Don't retry this skill in a loop
+`copilot` invocation, no wasted round trip. Don't retry this in a loop
 expecting it to recover; wait for the cooldown, or run
 `scripts/reset-credits-cooldown.sh` if the account's limit got raised or the
 billing period reset before the cooldown would have lapsed on its own —
