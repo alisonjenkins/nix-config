@@ -141,6 +141,11 @@ if [[ -n "$skills_arg" ]]; then
     fi
   done
 
+  if [[ ${#skill_dirs[@]} -eq 0 && ${#missing_skills[@]} -eq 0 ]]; then
+    echo "error: no valid skill names found in '$skills_arg' (blank, or only commas/whitespace)" >&2
+    exit 1
+  fi
+
   if [[ ${#missing_skills[@]} -gt 0 ]]; then
     joined_missing="$(IFS=,; echo "${missing_skills[*]}")"
     echo "error: skill(s) '$joined_missing' not found in $project_skills_root or $user_skills_root" >&2
@@ -148,11 +153,16 @@ if [[ -n "$skills_arg" ]]; then
   fi
 
   [[ -d "$project_skills_root" ]] && copilot_extra_args+=(--add-dir "$project_skills_root")
-  [[ -n "$effective_user_skills_root" ]] && copilot_extra_args+=(--add-dir "$effective_user_skills_root")
+  if [[ -n "$effective_user_skills_root" ]]; then
+    copilot_extra_args+=(--add-dir "$effective_user_skills_root")
+    skill_roots_desc="$project_skills_root and $effective_user_skills_root"
+  else
+    skill_roots_desc="$project_skills_root"
+  fi
 
   skill_md_list="$(printf '%s/SKILL.md, ' "${skill_dirs[@]}")"
   skill_md_list="${skill_md_list%, }"
-  task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $project_skills_root and $effective_user_skills_root — read those too (e.g. their own SKILL.md and any files they route to) whenever one routes you to another. Then: $task"
+  task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $skill_roots_desc — read those too (e.g. their own SKILL.md and any files they route to) whenever one routes you to another. Then: $task"
 fi
 
 # gpt-5.6-luna is the preferred model: cheapest tier, when the account has
