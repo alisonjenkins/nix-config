@@ -130,8 +130,14 @@ Close with the counts and anything still waiting on them.
 
 ## Replying
 
-Reply inside the thread, not as a new top-level comment, or the reviewer
-cannot follow it:
+For a whole wave of threads, `scripts/reply-threads.sh` replies to (and
+optionally resolves) all of them in one GraphQL call, keyed by the
+**thread** id `poll-pr-review.sh` already prints — no separate comment-id
+lookup, and no REST reply-per-comment calls each silently creating their
+own empty review. Feed it `thread_id<TAB>yes|no<TAB>body` lines, one per
+thread, `yes`/`no` meaning resolve or not.
+
+For a single reply, or without the script:
 
 ```
 gh api -X POST repos/{owner}/{repo}/pulls/{number}/comments/{comment_id}/replies \
@@ -163,7 +169,8 @@ not post it. That thread is theirs to answer.
 
 ## Resolving threads
 
-Only GraphQL can resolve:
+`reply-threads.sh`'s `yes` column resolves as part of the same call. Only
+GraphQL can resolve at all; without the script:
 
 ```
 gh api graphql -f query='
