@@ -46,6 +46,12 @@ if [[ $is_graphql_threads -eq 1 ]]; then
       cat "$fixtures/threads-page1.tsv"
       printf '__PAGEINFO__\ttrue\tCURSOR1\n'
     fi
+  elif [[ -f "$fixtures/no-pageinfo-sentinel" ]]; then
+    cat "$fixtures/threads.tsv"
+    # deliberately omit the __PAGEINFO__ row
+  elif [[ -f "$fixtures/hasnext-empty-cursor" ]]; then
+    cat "$fixtures/threads.tsv"
+    printf '__PAGEINFO__\ttrue\t\n'
   else
     cat "$fixtures/threads.tsv"
     printf '__PAGEINFO__\tfalse\t\n'

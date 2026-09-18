@@ -157,6 +157,20 @@ EOF
   [[ "$output" == *"[1002] other/file.sh:2 (thread THREAD_2)"* ]]
 }
 
+@test "fails loudly instead of silently truncating when the __PAGEINFO__ sentinel is missing" {
+  touch "$FAKE_GH_FIXTURES/no-pageinfo-sentinel"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no __PAGEINFO__ sentinel"* ]]
+}
+
+@test "fails loudly instead of looping forever on hasNextPage=true with an empty cursor" {
+  touch "$FAKE_GH_FIXTURES/hasnext-empty-cursor"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"empty endCursor"* ]]
+}
+
 @test "fails loudly instead of misreporting (none) when the GraphQL call fails" {
   touch "$FAKE_GH_FIXTURES/graphql-fails"
   run "$script" 319 owner/repo
