@@ -76,8 +76,15 @@ rebase_output="$(git rebase "origin/$default_branch" 2>&1)" && rebase_status=0 |
 echo "$rebase_output"
 
 if [[ $rebase_status -ne 0 ]]; then
-  echo "error: rebase stopped, likely on a conflict — resolve it, then 'git rebase --continue'" >&2
-  echo "  (or 'git rebase --abort' to give up and go back to before this ran)" >&2
+  if rebase_dir="$(git rev-parse -q --git-path rebase-merge 2>/dev/null)" && [[ -d "$rebase_dir" ]]; then
+    echo "error: rebase stopped, likely on a conflict — resolve it, then 'git rebase --continue'" >&2
+    echo "  (or 'git rebase --abort' to give up and go back to before this ran)" >&2
+  elif rebase_dir="$(git rev-parse -q --git-path rebase-apply 2>/dev/null)" && [[ -d "$rebase_dir" ]]; then
+    echo "error: rebase stopped, likely on a conflict — resolve it, then 'git rebase --continue'" >&2
+    echo "  (or 'git rebase --abort' to give up and go back to before this ran)" >&2
+  else
+    echo "error: git rebase failed before starting (see the output above) — no rebase is in progress, so there's nothing to --continue or --abort" >&2
+  fi
   exit 1
 fi
 
