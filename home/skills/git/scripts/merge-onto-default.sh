@@ -51,7 +51,6 @@ if [[ "$current_branch" == "$default_branch" ]]; then
   exit 1
 fi
 
-echo "== rebasing $current_branch onto origin/$default_branch =="
 if ! "$script_dir/rebase-onto-default.sh"; then
   echo "error: rebase failed — resolve it before merging (see above)" >&2
   exit 1
