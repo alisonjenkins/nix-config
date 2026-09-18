@@ -355,6 +355,11 @@ setup() {
   [ "$status" -eq 0 ]
   grep -q "add_dir=$project_root	" "$FAKE_COPILOT_CALLS"
   grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
+  # $HOME/.claude/skills doesn't exist here, so no user skills root got
+  # staged — the prompt must not dangle a trailing "and " with nothing
+  # after it (empty effective_user_skills_root interpolated in)
+  grep -q "sibling directories under $project_root — read those too" "$FAKE_COPILOT_CALLS"
+  ! grep -q "and  —" "$FAKE_COPILOT_CALLS"
   grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
 }
 
@@ -457,6 +462,17 @@ setup() {
   run "$delegate" "hello task" read no-such-skill
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
+  [ ! -s "$FAKE_COPILOT_CALLS" ]
+}
+
+@test "a skills arg that's only commas/whitespace errors clearly instead of building an empty prompt" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  mkdir -p "$HOME" "$BATS_TEST_TMPDIR/project"
+  cd "$BATS_TEST_TMPDIR/project"
+  run "$delegate" "hello task" read " , ,"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no valid skill names found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
 }
 
