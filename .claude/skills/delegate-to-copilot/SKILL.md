@@ -57,5 +57,7 @@ If Copilot reports the account's credits/quota are exhausted, the script
 caches that (a timestamp file under `~/.cache/delegate-to-copilot/`) and every
 call within the next 24h fails immediately with a one-line error — no
 `copilot` invocation, no wasted round trip. Don't retry this skill in a loop
-expecting it to recover; wait for the cooldown, or delete the cache file the
-error names if credits were topped up already.
+expecting it to recover; wait for the cooldown, or run
+`scripts/reset-credits-cooldown.sh` if the account's limit got raised or the
+billing period reset before the cooldown would have lapsed on its own —
+it's a no-op, safe to run any time, whether or not a cooldown is active.

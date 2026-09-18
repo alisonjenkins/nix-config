@@ -176,7 +176,7 @@ setup() {
   run "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"credits were reported exhausted"* ]]
-  [[ "$output" == *"$DELEGATE_STATE_DIR/credits-exhausted-until"* ]]
+  [[ "$output" == *"reset-credits-cooldown.sh"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
 }
 
@@ -216,6 +216,42 @@ setup() {
   [ "$status" -eq 1 ]
   cooldown_until="$(<"$DELEGATE_STATE_DIR/credits-exhausted-until")"
   [ "$cooldown_until" -le "$(( before + 5 + 2 ))" ]
+}
+
+@test "reset-credits-cooldown.sh clears an existing cooldown" {
+  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  mkdir -p "$DELEGATE_STATE_DIR"
+  cooldown_file="$DELEGATE_STATE_DIR/credits-exhausted-until"
+  echo "$(( $(date +%s) + 3600 ))" >"$cooldown_file"
+  run "$reset_script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"cleared: $cooldown_file"* ]]
+  [ ! -f "$cooldown_file" ]
+}
+
+@test "reset-credits-cooldown.sh is a no-op, not an error, when there's nothing to clear" {
+  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  run "$reset_script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to clear"* ]]
+}
+
+@test "reset-credits-cooldown.sh unblocks a subsequent delegate.sh call for the account limit being raised" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  reset_script="$script_dir/../scripts/reset-credits-cooldown.sh"
+  mkdir -p "$DELEGATE_STATE_DIR"
+  echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
+
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [ ! -s "$FAKE_COPILOT_CALLS" ]
+
+  run "$reset_script"
+  [ "$status" -eq 0 ]
+
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
 }
 
 @test "no skill arg: no --add-dir and task is passed through unchanged" {
