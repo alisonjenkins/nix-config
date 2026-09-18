@@ -26,9 +26,9 @@ the text into the other. Check for both.
 
 ## Write for a dyslexic reader with ADHD
 
-This is the default audience, not an accommodation on request. It costs
-nothing for anyone else and rules out most of what makes technical writing
-hard to get through.
+Assume dyslexia and ADHD as the default audience, not an accommodation on
+request. It costs nothing for anyone else and rules out most of what makes
+technical writing hard to get through.
 
 - **Front-load the point.** First sentence of a section says the conclusion.
   Reasoning follows it. A reader who stops after one line still got the answer.
