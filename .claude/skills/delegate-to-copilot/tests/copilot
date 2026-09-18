@@ -26,8 +26,9 @@ done
 
 if [[ -n "${FAKE_COPILOT_CALLS:-}" ]]; then
   add_dir_joined="$(IFS=,; echo "${add_dirs[*]:-}")"
-  printf 'task=%s\tmodel=%s\tsilent=%s\tno_ask_user=%s\tallow_tool=%s\tadd_dir=%s\n' \
-    "$task" "$model" "$silent" "$no_ask_user" "$allow_tool" "$add_dir_joined" >>"$FAKE_COPILOT_CALLS"
+  printf 'task=%s\tmodel=%s\tsilent=%s\tno_ask_user=%s\tallow_tool=%s\tadd_dir=%s\tgh_host=%s\tcopilot_gh_host=%s\n' \
+    "$task" "$model" "$silent" "$no_ask_user" "$allow_tool" "$add_dir_joined" \
+    "${GH_HOST:-}" "${COPILOT_GH_HOST:-}" >>"$FAKE_COPILOT_CALLS"
 fi
 
 # Lets tests prove a granted --add-dir is actually usable *during* the
