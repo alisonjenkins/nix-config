@@ -55,12 +55,7 @@ ranks above a missing dashboard panel for a background batch job.
 
 ## Tooling
 
-No existing tool found during research (CloudQuery, Steampipe,
-cloud-custodian, Prowler, driftctl, osquery, Datadog's own coverage
-features) does the full enumerate → cross-reference → report
-loop across both cloud resources and host services for both Datadog and
-Grafana/Prometheus. `sift audit vm` / `sift audit aws` (see the `sift`
-package) is the fast-follow that closes this: reusing existing
-enumeration tooling (Terraform state, CloudQuery/Steampipe, osquery)
-rather than reinventing inventory, adding only the coverage
-cross-reference and gap-report layer described above.
+`sift audit vm|aws` runs the enumerate → cross-reference → report loop
+above automatically, once it exists (`pkgs/sift`, no `audit` subcommand
+yet as of this writing — check before assuming it's there). Until then,
+do the three steps above by hand.
