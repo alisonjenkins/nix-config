@@ -24,8 +24,8 @@ fi
 # actually calling copilot is a wasted round trip every time. Cache it
 # and skip straight to a one-line error, no copilot call, until the
 # cooldown lapses. DELEGATE_CREDITS_COOLDOWN_SECONDS overrides the
-# default 24h guess at the reset cadence; delete the state file (path is
-# in the error message) to force a real retry sooner.
+# default 24h guess at the reset cadence; run reset-credits-cooldown.sh
+# to clear it early (e.g. the account's limit got raised).
 credits_state_dir="${DELEGATE_STATE_DIR:-${XDG_CACHE_HOME:-${HOME:-}/.cache}/delegate-to-copilot}"
 credits_cooldown_file="$credits_state_dir/credits-exhausted-until"
 credits_cooldown_seconds="${DELEGATE_CREDITS_COOLDOWN_SECONDS:-86400}"
@@ -35,7 +35,8 @@ if [[ -n "${HOME:-}" && -f "$credits_cooldown_file" ]]; then
   now="$(date +%s)"
   if [[ "$cooldown_until" =~ ^[0-9]+$ ]] && (( now < cooldown_until )); then
     until_human="$(date -d "@$cooldown_until" -Iseconds 2>/dev/null || date -r "$cooldown_until" 2>/dev/null || echo "$cooldown_until")"
-    echo "error: copilot credits were reported exhausted on the last attempt; skipping until $until_human without calling copilot. Delete $credits_cooldown_file to retry now." >&2
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    echo "error: copilot credits were reported exhausted on the last attempt; skipping until $until_human without calling copilot. Run $script_dir/reset-credits-cooldown.sh to clear this early (e.g. if the limit got raised)." >&2
     exit 1
   fi
 fi
