@@ -23,6 +23,8 @@ setup() {
   run "$delegate"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
+  [[ "$output" == *"[profile]"* ]]
+  [[ "$output" == *"profile defaults to 'read'"* ]]
   [[ "$output" == *"valid profiles: read, write-workdir, write-and-test"* ]]
 }
 
