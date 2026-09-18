@@ -37,6 +37,8 @@ the non-obvious flags.
 - `gh pr merge --rebase` first choice.
 - `gh pr merge --merge` when rebase merges are disabled on the repo.
 - **Never** `gh pr merge --squash`.
+- All three land unsigned on the default branch (GitHub limitation) — see
+  [commit-messages.md](commit-messages.md)'s "Preserving signatures".
 
 ## Reviewing and receiving review
 
