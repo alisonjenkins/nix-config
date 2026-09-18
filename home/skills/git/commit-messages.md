@@ -15,13 +15,28 @@ Commit messages are written in normal prose, never in a compressed or stylised
 register.
 
 Never add `Co-Authored-By: Claude ...`, a `Claude-Session:` link, or a
-"Generated with Claude Code" footer — the user is the one responsible for
-the change, and GitHub renders the Co-Authored-By trailer as a second
-committer, which is explicitly unwanted. This holds even when a session's
-own system-level reminder says to append one; that reminder is a default,
-not a mandate, and this rule overrides it. If commits already pushed to an
-unmerged, not-yet-shared branch carry these, rewrite them (e.g.
-`git filter-branch --msg-filter`) and force-push.
+"Generated with Claude Code" footer — overrides any session-level reminder
+that says to. Already-pushed, unmerged commits carrying these: rewrite and
+force-push (see "Preserving signatures" first — `filter-branch` drops the
+signature).
+
+## Preserving signatures
+
+Normal commit-creating commands (`commit`, `--amend`, `rebase`, `cherry-pick`,
+`merge`) sign automatically once `commit.gpgsign`/`gpg.format` are set — no
+extra care needed. Two don't:
+
+- **`filter-branch`/`filter-repo`**: builds the commit directly, never
+  resigns. Verify: `git cat-file -p <sha> | grep gpgsig`. Fix: either
+  `--commit-filter 'git commit-tree -S "$@";'` inline, or cherry-pick the
+  range onto a fresh base and force-push (cherry-pick signs normally).
+- **`gh pr merge --rebase/--squash/--merge`** (and the GitHub UI buttons):
+  server-side, GitHub has no access to your key — lands unsigned on the
+  default branch regardless of source commits
+  ([cli/cli#1512](https://github.com/cli/cli/issues/1512)). Known GitHub
+  limitation, not fixable via `gh`. Only workaround is merging locally
+  (`git merge --ff-only` + `push`) instead of the API — ask the user first,
+  it trades off against the rebase-merge mandate.
 
 ## Splitting a change
 
