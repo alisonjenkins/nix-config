@@ -28,8 +28,9 @@ if [[ -n "${2:-}" ]]; then
   owner="${2%%/*}"
   repo="${2##*/}"
 else
-  owner="$(gh repo view --json owner -q .owner.login)"
-  repo="$(gh repo view --json name -q .name)"
+  name_with_owner="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+  owner="${name_with_owner%%/*}"
+  repo="${name_with_owner##*/}"
 fi
 
 if ! [[ "$pr_number" =~ ^[0-9]+$ ]]; then
@@ -118,14 +119,17 @@ if [[ $thread_count -eq 0 ]]; then
 fi
 echo
 
+# --- Fetch every review once; reused below for both the suppressed-findings
+# scan and the verdict, instead of hitting the API twice for the same data.
+reviews_json="$(gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate)"
+
 # --- Suppressed / "previously missed" findings: body-only prose, no thread ---
 # Copilot's review body wraps these as "**path:line**" headers followed by
 # "* finding text" bullets inside a collapsed "Suppressed comments" section.
 # They never get a comment id, so gh api .../comments will never show them —
 # reading every review's raw body is the only way to see them at all.
 echo "-- Suppressed/previously-missed findings across all reviews (dedup) --"
-suppressed="$(gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate \
-  --jq '.[] | select(.body != "") | .body' \
+suppressed="$(jq -r '.[] | select(.body != "") | .body' <<<"$reviews_json" \
   | awk '
     /^\*\*[^*]+:[0-9]+\*\*$/ {
       loc = substr($0, 3, length($0) - 4)
@@ -157,8 +161,7 @@ echo
 # --- Latest review verdict (chronological, not array order) ---
 echo "-- Latest review verdict --"
 # shellcheck disable=SC2016 # single-quoted on purpose: $r below is a jq variable, not a shell one
-gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate \
-  --jq 'sort_by(.submitted_at) | map(select(.body != "")) | last as $r
+jq -r 'sort_by(.submitted_at) | map(select(.body != "")) | last as $r
     | if $r == null then "(no review with a summary yet)"
       else "[\($r.submitted_at)] \($r.user.login) on \($r.commit_id[0:8]): " + ($r.body | split("\n")[0])
-      end'
+      end' <<<"$reviews_json"

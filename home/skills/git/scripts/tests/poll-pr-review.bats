@@ -8,8 +8,7 @@ setup() {
   mkdir -p "$FAKE_GH_FIXTURES"
   # defaults: no unresolved threads, no suppressed findings, one verdict line
   : >"$FAKE_GH_FIXTURES/threads.tsv"
-  : >"$FAKE_GH_FIXTURES/review-bodies.txt"
-  echo "[2026-01-01T00:00:00Z] someone on abcdef12: ### verdict" >"$FAKE_GH_FIXTURES/verdict-line.txt"
+  echo "### verdict" >"$FAKE_GH_FIXTURES/review-bodies.txt"
 }
 
 @test "no args prints usage and exits 1" {
@@ -179,6 +178,14 @@ EOF
   [[ "$output" != *"Suppressed"* ]]
 }
 
+@test "fetches the reviews list exactly once, reusing it for both suppressed findings and the verdict" {
+  export FAKE_GH_COUNT_REVIEWS_CALLS=1
+  run "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  count="$(cat "$FAKE_GH_FIXTURES/reviews-list-call-count")"
+  [ "$count" = "1" ]
+}
+
 @test "shows the precomputed verdict line" {
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
@@ -186,7 +193,7 @@ EOF
 }
 
 @test "reports no review yet instead of crashing on a PR with no reviews" {
-  echo "(no review with a summary yet)" >"$FAKE_GH_FIXTURES/verdict-line.txt"
+  : >"$FAKE_GH_FIXTURES/review-bodies.txt"
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"(no review with a summary yet)"* ]]
