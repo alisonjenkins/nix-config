@@ -7,6 +7,7 @@ setup() {
   export FAKE_COPILOT_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_COPILOT_CALLS"
   export DELEGATE_RETRY_BASE_DELAY=0
+  export DELEGATE_STATE_DIR="$BATS_TEST_TMPDIR/state"
 }
 
 @test "no args prints usage and exits 1" {
@@ -156,6 +157,67 @@ setup() {
   [[ "$output" == *"exceeded your premium request quota"* ]]
 }
 
+@test "credits exhaustion writes a future cooldown timestamp to the state file" {
+  export FAKE_COPILOT_MODE=credits-exhausted
+  before="$(date +%s)"
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  cooldown_file="$DELEGATE_STATE_DIR/credits-exhausted-until"
+  [ -f "$cooldown_file" ]
+  cooldown_until="$(<"$cooldown_file")"
+  [[ "$cooldown_until" =~ ^[0-9]+$ ]]
+  [ "$cooldown_until" -gt "$before" ]
+}
+
+@test "a cached cooldown short-circuits before ever calling copilot" {
+  mkdir -p "$DELEGATE_STATE_DIR"
+  echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
+  export FAKE_COPILOT_MODE=all-models-ok
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"credits were reported exhausted"* ]]
+  [[ "$output" == *"$DELEGATE_STATE_DIR/credits-exhausted-until"* ]]
+  [ ! -s "$FAKE_COPILOT_CALLS" ]
+}
+
+@test "an expired cooldown does not short-circuit, and calls copilot normally" {
+  mkdir -p "$DELEGATE_STATE_DIR"
+  echo "$(( $(date +%s) - 10 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
+  export FAKE_COPILOT_MODE=all-models-ok
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
+}
+
+@test "a malformed cooldown file is ignored rather than blocking forever" {
+  mkdir -p "$DELEGATE_STATE_DIR"
+  echo "not-a-timestamp" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
+  export FAKE_COPILOT_MODE=all-models-ok
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
+}
+
+@test "cooldown state defaults to \$HOME/.cache when DELEGATE_STATE_DIR is unset" {
+  unset DELEGATE_STATE_DIR
+  export HOME="$BATS_TEST_TMPDIR/home"
+  mkdir -p "$HOME"
+  export FAKE_COPILOT_MODE=credits-exhausted
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [ -f "$HOME/.cache/delegate-to-copilot/credits-exhausted-until" ]
+}
+
+@test "DELEGATE_CREDITS_COOLDOWN_SECONDS controls how long the cooldown lasts" {
+  export FAKE_COPILOT_MODE=credits-exhausted
+  export DELEGATE_CREDITS_COOLDOWN_SECONDS=5
+  before="$(date +%s)"
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  cooldown_until="$(<"$DELEGATE_STATE_DIR/credits-exhausted-until")"
+  [ "$cooldown_until" -le "$(( before + 5 + 2 ))" ]
+}
+
 @test "no skill arg: no --add-dir and task is passed through unchanged" {
   export FAKE_COPILOT_MODE=all-models-ok
   run "$delegate" "hello task" read
@@ -176,7 +238,7 @@ setup() {
   run "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
   grep -q "add_dir=$project_root$" "$FAKE_COPILOT_CALLS"
-  grep -q "read $skill_dir/SKILL.md and follow its instructions" "$FAKE_COPILOT_CALLS"
+  grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
   grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
 }
 
@@ -222,7 +284,7 @@ setup() {
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
   staged_root="${call_line##*add_dir=}"
-  [[ "$call_line" == *"read $staged_root/globalskill/SKILL.md and follow its instructions"* ]]
+  [[ "$call_line" == *"read the following: $staged_root/globalskill/SKILL.md"* ]]
 }
 
 @test "resolves the project skill root from the git toplevel, not just \$PWD" {
@@ -237,7 +299,7 @@ setup() {
   cd "$repo_root/sub/deeper"
   run "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
-  grep -q "read $skill_dir/SKILL.md and follow its instructions" "$FAKE_COPILOT_CALLS"
+  grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
 }
 
 @test "project skill takes precedence over a same-named global skill" {
@@ -252,7 +314,7 @@ setup() {
   cd "$project_dir"
   run "$delegate" "hello task" read dupskill
   [ "$status" -eq 0 ]
-  grep -q "read $project_skill/SKILL.md and follow its instructions" "$FAKE_COPILOT_CALLS"
+  grep -q "read the following: $project_skill/SKILL.md" "$FAKE_COPILOT_CALLS"
 }
 
 @test "cleans up the staged skills copy after running" {
@@ -279,6 +341,54 @@ setup() {
   cd "$BATS_TEST_TMPDIR/project"
   run "$delegate" "hello task" read no-such-skill
   [ "$status" -eq 1 ]
-  [[ "$output" == *"skill 'no-such-skill' not found"* ]]
+  [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
+  [ ! -s "$FAKE_COPILOT_CALLS" ]
+}
+
+@test "accepts multiple comma-separated skills and reads all of them" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  project_dir="$BATS_TEST_TMPDIR/project"
+  project_root="$project_dir/.claude/skills"
+  skill_a="$project_root/skill-a"
+  skill_b="$project_root/skill-b"
+  mkdir -p "$skill_a" "$skill_b" "$HOME"
+  echo "---" >"$skill_a/SKILL.md"
+  echo "---" >"$skill_b/SKILL.md"
+  cd "$project_dir"
+  run "$delegate" "hello task" read skill-a,skill-b
+  [ "$status" -eq 0 ]
+  grep -q "read the following: $skill_a/SKILL.md, $skill_b/SKILL.md" "$FAKE_COPILOT_CALLS"
+  grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
+}
+
+@test "multiple skills can resolve from different roots (project + global)" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  project_dir="$BATS_TEST_TMPDIR/project"
+  project_skill="$project_dir/.claude/skills/project-skill"
+  global_skill="$HOME/.claude/skills/global-skill"
+  mkdir -p "$project_skill" "$global_skill"
+  echo "---" >"$project_skill/SKILL.md"
+  echo "---" >"$global_skill/SKILL.md"
+  cd "$project_dir"
+  run "$delegate" "hello task" read project-skill,global-skill
+  [ "$status" -eq 0 ]
+
+  call_line="$(cat "$FAKE_COPILOT_CALLS")"
+  [[ "$call_line" == *"read the following: $project_skill/SKILL.md, "*"/global-skill/SKILL.md"* ]]
+}
+
+@test "lists all missing skills together when several are unknown" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export HOME="$BATS_TEST_TMPDIR/home"
+  project_dir="$BATS_TEST_TMPDIR/project"
+  project_root="$project_dir/.claude/skills"
+  mkdir -p "$project_root/known" "$HOME"
+  echo "---" >"$project_root/known/SKILL.md"
+  cd "$project_dir"
+  run "$delegate" "hello task" read known,missing-one,missing-two
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"skill(s) 'missing-one,missing-two' not found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
 }
