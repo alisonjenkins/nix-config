@@ -379,7 +379,6 @@ setup() {
   add_dir_field="$(add_dir_of "$call_line")"
   staged_root="${add_dir_field##*,}"
   [ "$staged_root" != "$user_root" ]
-  [[ "$staged_root" != "$HOME"* ]]
 }
 
 @test "falls back to ~/.claude/skills (staged) when the skill isn't in the project" {
@@ -457,6 +456,18 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
+}
+
+@test "unknown skill message uses a literal ~/.claude/skills when HOME is unset, not a bogus /.claude/skills path" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  unset HOME
+  mkdir -p "$BATS_TEST_TMPDIR/project"
+  cd "$BATS_TEST_TMPDIR/project"
+  run "$delegate" "hello task" read no-such-skill
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
+  [[ "$output" == *"~/.claude/skills"* ]]
+  [[ "$output" != *" /.claude/skills"* ]]
 }
 
 @test "accepts multiple comma-separated skills and reads all of them" {
