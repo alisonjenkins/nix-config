@@ -32,7 +32,24 @@ if [[ $is_graphql_threads -eq 1 ]]; then
     echo "fake-gh: simulated GraphQL failure (auth/network)" >&2
     exit 1
   fi
-  cat "$fixtures/threads.tsv"
+  has_after=0
+  for ((i = 0; i < ${#args[@]}; i++)); do
+    if [[ "${args[$i]}" == "-F" && "${args[$((i + 1))]:-}" == after=* ]]; then
+      has_after=1
+    fi
+  done
+  if [[ -f "$fixtures/threads-page1.tsv" ]]; then
+    if [[ $has_after -eq 1 ]]; then
+      cat "$fixtures/threads-page2.tsv"
+      printf '__PAGEINFO__\tfalse\t\n'
+    else
+      cat "$fixtures/threads-page1.tsv"
+      printf '__PAGEINFO__\ttrue\tCURSOR1\n'
+    fi
+  else
+    cat "$fixtures/threads.tsv"
+    printf '__PAGEINFO__\tfalse\t\n'
+  fi
 elif [[ $is_reviews_body_scan -eq 1 ]]; then
   cat "$fixtures/review-bodies.txt"
 elif [[ $is_reviews_verdict -eq 1 ]]; then
