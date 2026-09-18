@@ -8,7 +8,10 @@ non-obvious flags.
 
 1. Branch off the default branch; never commit to it directly.
 2. Rebase onto the current default branch before pushing, so the PR contains
-   only your commits.
+   only your commits: `scripts/rebase-onto-default.sh [--push]` detects the
+   default branch, fetches, rebases, and reports what happened (including
+   commits dropped as already-applied) in one call instead of the
+   fetch/rebase/inspect sequence by hand.
 3. `gh pr create` with a body that says what changed and why, and what was
    verified (with the command output that proves it). No AI-attribution
    footer — see [commit-messages.md](commit-messages.md)'s rule; it applies
