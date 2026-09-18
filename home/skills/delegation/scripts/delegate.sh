@@ -106,12 +106,16 @@ trap cleanup_staged_skills EXIT
 if [[ -n "$skills_arg" ]]; then
   project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   project_skills_root="$project_root/.claude/skills"
-  user_skills_root="${HOME:-}/.claude/skills"
+  # A literal "~/..." here is for messages only when HOME is unset — never
+  # dereferenced as a real path, since the staging step below is itself
+  # HOME-gated.
+  user_skills_root="${HOME:+$HOME/.claude/skills}"
+  user_skills_root="${user_skills_root:-~/.claude/skills}"
   effective_user_skills_root=""
 
-  if [[ -n "${HOME:-}" && -d "$user_skills_root" ]]; then
-    staged_user_skills_root="$(mktemp -d)"
-    cp -rL "$user_skills_root/." "$staged_user_skills_root/"
+  if [[ -n "${HOME:-}" && -d "$HOME/.claude/skills" ]]; then
+    staged_user_skills_root="$(mktemp -d "${TMPDIR:-/tmp}/delegate-to-copilot-skills.XXXXXXXX")"
+    cp -rL "$HOME/.claude/skills/." "$staged_user_skills_root/"
     chmod -R u+w "$staged_user_skills_root"
     effective_user_skills_root="$staged_user_skills_root"
   fi
