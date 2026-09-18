@@ -26,11 +26,24 @@ fi
 # cooldown lapses. DELEGATE_CREDITS_COOLDOWN_SECONDS overrides the
 # default 24h guess at the reset cadence; run reset-credits-cooldown.sh
 # to clear it early (e.g. the account's limit got raised).
-credits_state_dir="${DELEGATE_STATE_DIR:-${XDG_CACHE_HOME:-${HOME:-}/.cache}/delegate-to-copilot}"
-credits_cooldown_file="$credits_state_dir/credits-exhausted-until"
+#
+# credits_state_dir is empty (not "/.cache/...") when none of
+# DELEGATE_STATE_DIR, XDG_CACHE_HOME, or HOME are set — gate on that,
+# not specifically on HOME, so an explicit DELEGATE_STATE_DIR/
+# XDG_CACHE_HOME still works in a HOME-less environment.
+if [[ -n "${DELEGATE_STATE_DIR:-}" ]]; then
+  credits_state_dir="$DELEGATE_STATE_DIR"
+elif [[ -n "${XDG_CACHE_HOME:-}" ]]; then
+  credits_state_dir="$XDG_CACHE_HOME/delegate-to-copilot"
+elif [[ -n "${HOME:-}" ]]; then
+  credits_state_dir="$HOME/.cache/delegate-to-copilot"
+else
+  credits_state_dir=""
+fi
+credits_cooldown_file="${credits_state_dir:+$credits_state_dir/credits-exhausted-until}"
 credits_cooldown_seconds="${DELEGATE_CREDITS_COOLDOWN_SECONDS:-86400}"
 
-if [[ -n "${HOME:-}" && -f "$credits_cooldown_file" ]]; then
+if [[ -n "$credits_state_dir" && -f "$credits_cooldown_file" ]]; then
   cooldown_until="$(<"$credits_cooldown_file")"
   now="$(date +%s)"
   if [[ "$cooldown_until" =~ ^[0-9]+$ ]] && (( now < cooldown_until )); then
@@ -199,7 +212,7 @@ if [[ $status -eq 2 ]]; then
   echo "error: copilot CLI kept failing with a transient-looking error after $retry_max attempts (possible outage):" >&2
 elif [[ $status -eq 1 ]] && is_credits_exhausted "$call_output"; then
   echo "error: copilot CLI reports exhausted credits/quota — top up or wait for the reset, retrying or switching models won't help:" >&2
-  if [[ -n "${HOME:-}" ]]; then
+  if [[ -n "$credits_state_dir" ]]; then
     mkdir -p "$credits_state_dir" 2>/dev/null &&
       echo "$(( $(date +%s) + credits_cooldown_seconds ))" >"$credits_cooldown_file" 2>/dev/null || true
   fi

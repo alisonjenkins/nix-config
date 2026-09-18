@@ -241,6 +241,51 @@ setup() {
   [ -f "$HOME/.cache/delegate-to-copilot/credits-exhausted-until" ]
 }
 
+@test "DELEGATE_STATE_DIR still caches when HOME is unset" {
+  unset HOME
+  export FAKE_COPILOT_MODE=credits-exhausted
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [ -f "$DELEGATE_STATE_DIR/credits-exhausted-until" ]
+}
+
+@test "DELEGATE_STATE_DIR cooldown still short-circuits when HOME is unset" {
+  mkdir -p "$DELEGATE_STATE_DIR"
+  echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
+  unset HOME
+  export FAKE_COPILOT_MODE=all-models-ok
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"credits were reported exhausted"* ]]
+  [ ! -s "$FAKE_COPILOT_CALLS" ]
+}
+
+@test "XDG_CACHE_HOME is used when set and DELEGATE_STATE_DIR/HOME are not" {
+  unset DELEGATE_STATE_DIR HOME
+  export XDG_CACHE_HOME="$BATS_TEST_TMPDIR/xdg-cache"
+  mkdir -p "$XDG_CACHE_HOME"
+  export FAKE_COPILOT_MODE=credits-exhausted
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [ -f "$XDG_CACHE_HOME/delegate-to-copilot/credits-exhausted-until" ]
+}
+
+@test "with none of DELEGATE_STATE_DIR/XDG_CACHE_HOME/HOME set, delegate.sh still works, just without caching" {
+  unset DELEGATE_STATE_DIR HOME XDG_CACHE_HOME
+  export FAKE_COPILOT_MODE=credits-exhausted
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"exhausted credits/quota"* ]]
+}
+
+@test "reset-credits-cooldown.sh fails clearly when no state dir can be resolved" {
+  unset DELEGATE_STATE_DIR HOME XDG_CACHE_HOME
+  reset_script="$script_dir/../reset-credits-cooldown.sh"
+  run "$reset_script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can't tell where"* ]]
+}
+
 @test "DELEGATE_CREDITS_COOLDOWN_SECONDS controls how long the cooldown lasts" {
   export FAKE_COPILOT_MODE=credits-exhausted
   export DELEGATE_CREDITS_COOLDOWN_SECONDS=5
