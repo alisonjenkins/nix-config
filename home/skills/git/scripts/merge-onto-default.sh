@@ -31,6 +31,11 @@ if [[ -z "$current_branch" ]]; then
   exit 1
 fi
 
+if ! git remote get-url origin >/dev/null 2>&1; then
+  echo "error: no 'origin' remote configured" >&2
+  exit 1
+fi
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/default-branch.sh
 source "$script_dir/lib/default-branch.sh"

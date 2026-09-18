@@ -44,6 +44,18 @@ feature_branch_with_commit() {
   [[ "$output" == *"detached HEAD"* ]]
 }
 
+@test "no origin remote errors clearly (checked before default-branch detection)" {
+  cd "$BATS_TEST_TMPDIR"
+  git init -q noremote
+  cd noremote
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  git commit -q --allow-empty -m init
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no 'origin' remote"* ]]
+}
+
 @test "already on the default branch errors clearly" {
   run "$script"
   [ "$status" -eq 1 ]
