@@ -42,30 +42,58 @@ echo
 
 # --- Unresolved review-thread comments: the authoritative, repliable set ---
 echo "-- Unresolved review threads (repliable) --"
-# Captured into a variable and checked explicitly rather than piped straight
-# into the while loop via process substitution: a process substitution's
-# exit status isn't checked by the enclosing command under set -e, so a
-# GraphQL auth/network failure would otherwise print nothing, the loop
-# would run zero iterations, and the script would misreport "(none)"
-# instead of failing loudly.
-# shellcheck disable=SC2016 # single-quoted on purpose: $owner/$repo/$pr below are GraphQL variables, not shell ones
-if ! threads_tsv="$(gh api graphql -f query='
-  query($owner:String!,$repo:String!,$pr:Int!){
-    repository(owner:$owner,name:$repo){
-      pullRequest(number:$pr){
-        reviewThreads(first:100){
-          nodes{
-            id isResolved isOutdated path line
-            comments(first:1){nodes{databaseId author{login} body}}}}}}}' \
-  -F owner="$owner" -F repo="$repo" -F pr="$pr_number" \
-  --jq '.data.repository.pullRequest.reviewThreads.nodes[]
-    | select(.isResolved == false)
-    | [.id, (.isOutdated|tostring), .path, (.line|tostring),
-       (.comments.nodes[0].databaseId|tostring), .comments.nodes[0].author.login,
-       .comments.nodes[0].body] | @tsv')"; then
-  echo "error: failed to fetch review threads via GraphQL (auth or network issue?)" >&2
-  exit 1
-fi
+# Paginated: reviewThreads(first:100) alone would silently truncate a PR
+# with more than 100 threads. Each page's jq output ends with a
+# "__PAGEINFO__\t<hasNextPage>\t<endCursor>" sentinel row; loop until
+# hasNextPage is false, capped at max_pages so a schema/API change that
+# breaks pageInfo can't spin this forever.
+threads_tsv=""
+page_after=""
+page_count=0
+max_pages=20
+while :; do
+  page_count=$((page_count + 1))
+  if [[ $page_count -gt $max_pages ]]; then
+    echo "error: review threads pagination exceeded $max_pages pages ($((max_pages * 100)) threads); aborting rather than looping forever" >&2
+    exit 1
+  fi
+  query_args=(-F owner="$owner" -F repo="$repo" -F pr="$pr_number")
+  [[ -n "$page_after" ]] && query_args+=(-F after="$page_after")
+  # Captured into a variable and checked explicitly rather than piped
+  # straight into a while loop via process substitution: a process
+  # substitution's exit status isn't checked by the enclosing command
+  # under set -e, so a GraphQL auth/network failure would otherwise print
+  # nothing and misreport "(none)" instead of failing loudly.
+  # shellcheck disable=SC2016 # single-quoted on purpose: $owner/$repo/$pr/$after below are GraphQL variables, not shell ones
+  if ! page_tsv="$(gh api graphql -f query='
+    query($owner:String!,$repo:String!,$pr:Int!,$after:String){
+      repository(owner:$owner,name:$repo){
+        pullRequest(number:$pr){
+          reviewThreads(first:100, after:$after){
+            pageInfo{hasNextPage endCursor}
+            nodes{
+              id isResolved isOutdated path line
+              comments(first:1){nodes{databaseId author{login} body}}}}}}}' \
+    "${query_args[@]}" \
+    --jq '.data.repository.pullRequest.reviewThreads as $rt
+      | ($rt.nodes[]
+        | select(.isResolved == false)
+        | [.id, (.isOutdated|tostring), .path, (.line|tostring),
+           (.comments.nodes[0].databaseId|tostring), .comments.nodes[0].author.login,
+           .comments.nodes[0].body] | @tsv),
+        ("__PAGEINFO__\t" + ($rt.pageInfo.hasNextPage|tostring) + "\t" + ($rt.pageInfo.endCursor // ""))')"; then
+    echo "error: failed to fetch review threads via GraphQL (auth or network issue?)" >&2
+    exit 1
+  fi
+  pageinfo_line="$(grep '^__PAGEINFO__	' <<<"$page_tsv")" || true
+  page_rows="$(grep -v '^__PAGEINFO__	' <<<"$page_tsv")" || true
+  threads_tsv+="$page_rows"$'\n'
+  hasnext=""
+  cursor=""
+  IFS=$'\t' read -r _ hasnext cursor <<<"$pageinfo_line"
+  [[ "$hasnext" == "true" ]] || break
+  page_after="$cursor"
+done
 
 thread_count=0
 while IFS=$'\t' read -r thread_id is_outdated path line comment_id author body; do

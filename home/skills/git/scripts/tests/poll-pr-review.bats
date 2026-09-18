@@ -146,6 +146,17 @@ EOF
   [ "$(grep -c '^(none)$' <<<"$output")" -eq 2 ]
 }
 
+@test "pages through unresolved threads past the first 100 (pageInfo.hasNextPage)" {
+  printf 'THREAD_1\tfalse\tsome/file.sh\t1\t1001\talice\tpage one finding\n' \
+    >"$FAKE_GH_FIXTURES/threads-page1.tsv"
+  printf 'THREAD_2\tfalse\tother/file.sh\t2\t1002\tbob\tpage two finding\n' \
+    >"$FAKE_GH_FIXTURES/threads-page2.tsv"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[1001] some/file.sh:1 (thread THREAD_1)"* ]]
+  [[ "$output" == *"[1002] other/file.sh:2 (thread THREAD_2)"* ]]
+}
+
 @test "fails loudly instead of misreporting (none) when the GraphQL call fails" {
   touch "$FAKE_GH_FIXTURES/graphql-fails"
   run "$script" 319 owner/repo
