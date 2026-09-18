@@ -28,6 +28,10 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 done
 
 if [[ $is_graphql_threads -eq 1 ]]; then
+  if [[ -f "$fixtures/graphql-fails" ]]; then
+    echo "fake-gh: simulated GraphQL failure (auth/network)" >&2
+    exit 1
+  fi
   cat "$fixtures/threads.tsv"
 elif [[ $is_reviews_body_scan -eq 1 ]]; then
   cat "$fixtures/review-bodies.txt"

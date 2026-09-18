@@ -42,16 +42,14 @@ echo
 
 # --- Unresolved review-thread comments: the authoritative, repliable set ---
 echo "-- Unresolved review threads (repliable) --"
-thread_count=0
+# Captured into a variable and checked explicitly rather than piped straight
+# into the while loop via process substitution: a process substitution's
+# exit status isn't checked by the enclosing command under set -e, so a
+# GraphQL auth/network failure would otherwise print nothing, the loop
+# would run zero iterations, and the script would misreport "(none)"
+# instead of failing loudly.
 # shellcheck disable=SC2016 # single-quoted on purpose: $owner/$repo/$pr below are GraphQL variables, not shell ones
-while IFS=$'\t' read -r thread_id is_outdated path line comment_id author body; do
-  [[ -z "$thread_id" ]] && continue
-  thread_count=$((thread_count + 1))
-  outdated_note=""
-  [[ "$is_outdated" == "true" ]] && outdated_note=" [outdated: code has changed since]"
-  echo "[$comment_id] $path:$line (thread $thread_id)$outdated_note"
-  echo "  $author: $(head -c 300 <<<"$body" | tr '\n' ' ')"
-done < <(gh api graphql -f query='
+if ! threads_tsv="$(gh api graphql -f query='
   query($owner:String!,$repo:String!,$pr:Int!){
     repository(owner:$owner,name:$repo){
       pullRequest(number:$pr){
@@ -64,7 +62,20 @@ done < <(gh api graphql -f query='
     | select(.isResolved == false)
     | [.id, (.isOutdated|tostring), .path, (.line|tostring),
        (.comments.nodes[0].databaseId|tostring), .comments.nodes[0].author.login,
-       .comments.nodes[0].body] | @tsv')
+       .comments.nodes[0].body] | @tsv')"; then
+  echo "error: failed to fetch review threads via GraphQL (auth or network issue?)" >&2
+  exit 1
+fi
+
+thread_count=0
+while IFS=$'\t' read -r thread_id is_outdated path line comment_id author body; do
+  [[ -z "$thread_id" ]] && continue
+  thread_count=$((thread_count + 1))
+  outdated_note=""
+  [[ "$is_outdated" == "true" ]] && outdated_note=" [outdated: code has changed since]"
+  echo "[$comment_id] $path:$line (thread $thread_id)$outdated_note"
+  echo "  $author: $(head -c 300 <<<"$body" | tr '\n' ' ')"
+done <<<"$threads_tsv"
 
 if [[ $thread_count -eq 0 ]]; then
   echo "(none)"
