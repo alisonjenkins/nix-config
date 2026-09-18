@@ -21,6 +21,10 @@ fi
 
 pr_number="$1"
 if [[ -n "${2:-}" ]]; then
+  if ! [[ "$2" =~ ^[^/]+/[^/]+$ ]]; then
+    echo "error: [owner/repo] must be exactly 'owner/repo', got '$2'" >&2
+    exit 1
+  fi
   owner="${2%%/*}"
   repo="${2##*/}"
 else
@@ -78,8 +82,11 @@ suppressed="$(gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate \
   | awk '
     /^\*\*[^*]+:[0-9]+\*\*$/ {
       loc = substr($0, 3, length($0) - 4)
-      getline nextline
-      if (nextline ~ /^\* /) {
+      # getline returns 0 at EOF and -1 on error; unchecked, nextline
+      # keeps its previous value, so a header at the very end of input
+      # could wrongly inherit a bullet line from an earlier record.
+      got = (getline nextline)
+      if (got > 0 && nextline ~ /^\* /) {
         text = substr(nextline, 3)
         key = loc "\x1f" text
         if (!(key in seen)) {

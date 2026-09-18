@@ -42,16 +42,24 @@ Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), or when the user says so.
 
 `scripts/poll-pr-review.sh <pr-number> [owner/repo]` is the preferred wakeup
-check: it lists every currently-unresolved review thread (via GraphQL, with
-comment ids), every suppressed/"previously missed" finding mentioned across
-*all* reviews' body text deduplicated (these never get a thread or comment
-id — see the "Copilot's review-summary format" note under Bot reviewers
-below), and the true chronologically-latest verdict line, in one pass. It
+check: it lists currently-unresolved review threads (via GraphQL, with
+comment ids — capped at the first 100 threads; a PR with more than that
+needs the script's GraphQL query extended with pagination, it doesn't
+paginate today), every suppressed/"previously missed" finding mentioned
+across *all* reviews' body text deduplicated (these never get a thread or
+comment id — see the "Copilot's review-summary format" note under Bot
+reviewers below), and the true chronologically-latest verdict line, in one
+pass. It
 exists because a "just check `.reviews[-1]`" poll missed a real, mergeable
 finding this way: `.reviews[-1]` is array order, not chronological order,
 and a later review can sort earlier in the raw array (confirmed: a review
 submitted after an intervening one still landed earlier in `.reviews`) — the
-script always resolves the latest by `sort_by(.submitted_at)`. It also
+script always resolves the latest by `sort_by(.submitted_at)` — the REST
+`gh api` field name, snake_case; note this is a *different* field name than
+the `gh pr view --json reviews` example below, which uses `submittedAt`
+(camelCase) because `gh pr view`'s `--json` translates REST fields to
+camelCase. Copying one selector onto the other API silently sorts on a
+field that doesn't exist and produces no error, just a wrong order. It also
 catches suppressed-only findings that a "read the latest review" poll would
 never revisit once a later review buries them, which is exactly how a real
 arithmetic-validation bug shipped to `main` unfixed on this session's own
