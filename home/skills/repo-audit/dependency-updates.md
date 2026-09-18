@@ -30,12 +30,6 @@ ID, best effort, not fatal if unreadable.
 
 Dependabot: `.github/dependabot.yml`, parsed for `package-ecosystem` entries.
 
-## GitLab
-
-File-presence and ecosystem-coverage checks are forge-independent and run
-unchanged. GitLab's built-in dependency scanning status is a separate,
-unimplemented check in v1 (`lib/gitlab.sh` stub).
-
 ## Fixing
 
 `--fix` scaffolds a minimal `renovate.json` (`{"extends": ["config:recommended",

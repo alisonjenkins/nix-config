@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning any sub-agent (Agent tool), or when deciding whether a batch of similar calls belongs in the main loop at all — picks the sub-agent model tier (haiku vs sonnet), when to delegate in the first place, Explore vs general-purpose, background execution, self-contained prompts, and what must never be delegated. Also routes to delegating a subtask to GitHub Copilot's CLI (`copilot`, Copilot delegate, Luna model) as an alternative to a sub-agent. Not for escalating to a stronger model when stuck — see the `consulting` skill for that.
+description: Use before spawning a sub-agent (Agent tool), or deciding whether a batch of similar calls belongs in the main loop — picks model tier (haiku vs sonnet), when to delegate, Explore vs general-purpose, background execution, self-contained prompts, what never to delegate. Also routes to delegating via GitHub Copilot CLI (`copilot`, Luna model). Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -55,13 +55,9 @@ Sonnet-shaped work:
   prompt — if you can't fully specify "correct" up front, the sub-agent needs
   judgement to fill the gap, which means sonnet.
 
-Getting the tier wrong is not symmetric. Sonnet doing haiku-shaped work merely
-costs more. Haiku hitting a judgement call it can't make either produces a
-wrong answer silently, or bounces back through you for a retry — which costs
-more than running the whole thing on sonnet would have. When a batch mixes
-trivial items with a few judgement calls, split it (haiku for the
-mechanical slice, sonnet for the rest) rather than guessing which tier covers
-the whole thing.
+When a batch mixes trivial items with a few judgement calls, split it (haiku
+for the mechanical slice, sonnet for the rest) rather than guessing which
+tier covers the whole thing.
 
 ## Explore vs general-purpose
 
@@ -89,15 +85,6 @@ Everything above is about picking a *model tier* for an Agent-tool sub-agent.
 When the target is GitHub Copilot's own `copilot` CLI instead — a genuinely
 external, paid delegate, not a sub-agent — read
 [delegate-to-copilot.md](delegate-to-copilot.md).
-
-## Escalating instead of grinding
-
-Hard problems — not high-volume ones — go the other direction: to a stronger
-model via the `consult-opus` agent. See the `consulting` skill for the
-trigger list and brief format. Do not confuse the two: this skill picks a
-*cheaper* tier for mechanical volume; `consulting` picks a *stronger* tier for
-a problem this session is stuck on. They are opposite moves and neither
-substitutes for the other.
 
 ## Never delegate
 

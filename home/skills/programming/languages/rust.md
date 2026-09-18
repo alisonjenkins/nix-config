@@ -1,17 +1,16 @@
 # Rust
 
 ## Toolchain
-- Projects here build with **Nix**: `crate2nix` for the crate graph and
-  `dockerTools` for images. Do not add a `Dockerfile`.
-- The dev toolchain comes from the flake devshell (`rust-overlay`), never from
-  a system-wide `rustup`. `nix develop` before `cargo`.
+- If the repo is Nix-based, it likely builds via `crate2nix` (crate graph) and
+  `dockerTools` (images) rather than a `Dockerfile` — check for a `flake.nix`
+  before adding one.
+- Likewise, check whether the dev toolchain comes from a flake devshell
+  (`rust-overlay`) before assuming a system-wide `rustup`; if there's a
+  `flake.nix`, run `nix develop` before `cargo`.
 - `cargo clippy --all-targets -- -D warnings` and `cargo fmt --check` are the
   bar; run both before claiming a change is done.
-- `cargo flamegraph` for profiling, `criterion` for benchmarking,
-  portable SIMD (`std::simd`, where the toolchain supports it) or
-  `is_x86_feature_detected!` for vectorization,
-  `Cow<'a, T>`/borrowed `&str`/`&[T]` and the `bytes`/`zerocopy` crates for
-  zero-copy. See `../performance.md` before reaching for any of these.
+- Profiling/benchmarking/SIMD/zero-copy tools: see `../performance.md`'s
+  tool table before reaching for any of these.
 
 ## Guard rails (mandatory)
 
@@ -93,15 +92,9 @@ decision at each site rather than an accident of syntax.
   the message says what the operator should do about it.
 - Prefer borrowed parameters (`&str`, `&[T]`) and return owned types. Clone
   when it makes the lifetime story simple; measure before optimising it away.
-- **Newtypes over bare `String`/`u64`/`i32` for any identifier or measurement
-  that must not be mixed up with another of the same underlying type** —
-  `struct CustomerId(String)`, `struct OrderId(String)`, not two `String`
-  parameters. `fn f(customer_id: CustomerId, order_id: OrderId)` makes a
-  swapped-argument call a compile error instead of a runtime bug. Mandatory
-  at any function boundary taking two or more same-typed values that mean
-  different things — see `defensive.md`'s "distinct domain concepts" rule.
-  A `#[derive(...)]`'d unit struct is zero-cost; there is no runtime reason
-  not to.
+- `struct CustomerId(String)`, not a bare `String` — mandatory per
+  `defensive.md`'s "distinct domain concepts" rule; a derived unit struct is
+  zero-cost.
 - `#[derive(Debug)]` on everything that can appear in an error path.
 - `tracing`, not `log` or `println!`, for anything beyond a throwaway binary:
   `#[instrument]` on a function turns it into a span with its arguments as

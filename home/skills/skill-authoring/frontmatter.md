@@ -39,17 +39,12 @@ them runs it differently.
 
 ## Subagents
 
-A subagent receives **no skill listing**. It sees only: its own system prompt,
-the task message, the instructions-file hierarchy, git status, and the full
-content of skills named in its `skills:` frontmatter list. So:
+A subagent receives **no skill listing** (see the `delegation` skill for the
+general rule and how the parent injects one by name). Specific to a
+subagent's own frontmatter *definition* (not an ad-hoc delegation prompt):
 
 - Guidance a subagent must have goes in its `skills:` list, since a
   description it cannot see will never fire.
-- For an ad-hoc subagent with no definition of its own, the **parent injects**:
-  name the skill in the delegation prompt. A subagent can invoke a skill by
-  exact name even though none are listed to it, and the parent knows what the
-  task needs, so it sends only the relevant one rather than preloading
-  everything. This is the cheaper half of the same idea as `skills:`.
 - `disable-model-invocation: true` skills **cannot** be preloaded this way.
 - `Explore` and `Plan` skip the instructions hierarchy entirely, which is why
   they are cheap for read-only sweeps.

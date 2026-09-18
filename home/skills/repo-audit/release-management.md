@@ -27,12 +27,6 @@ Run via `scripts/checks/release-management.sh <target>`.
 or semantic-release workflow; `gh release list` to confirm releases have
 actually been cut recently (not just configured once and abandoned).
 
-## GitLab
-
-Not implemented in v1: `lib/gitlab.sh` stub; check reports "unsupported
-forge" for the "did it actually publish" verification (needs the forge API),
-but the local file/commit-convention checks still run.
-
 ## Fixing
 
 `--fix` scaffolds a minimal release-please workflow + config (GitHub) after

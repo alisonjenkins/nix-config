@@ -1,5 +1,8 @@
 # Reviewing a pull request
 
+For basic `gh pr` command syntax, see the `infra` skill's `github.md` cheat
+sheet. Below are the specific field sets and flags this workflow needs.
+
 ## Resolving the target
 
 A PR number given by the user always wins over the checked-out branch. With no
@@ -15,9 +18,10 @@ If neither resolves, ask which PR. Do not guess.
 
 ```
 gh pr view <number> --json title,body,files,reviews,mergeable,statusCheckRollup
-gh pr diff <number>
-gh pr checks <number>
 ```
+
+Then `gh pr diff <number>` and `gh pr checks <number>` (plain, see
+`infra/github.md`).
 
 Read the PR description first, then the diff against it. A diff that does more
 than the description claims is a finding regardless of code quality.
@@ -52,10 +56,8 @@ middle commits do not build is a finding because it defeats bisection.
   blocker and wastes a round trip.
 - Approve, request changes, or comment; do not leave a review ambiguous.
 
-```
-gh pr review <number> --comment --body "..."
-gh pr review <number> --request-changes --body "..."
-```
+Use `gh pr review --comment|--request-changes --body "..."` (see
+`infra/github.md`).
 
 Findings are prose someone else reads, so apply the `writing` skill before
 posting. The tells this kind of text attracts: "it is important to note that",

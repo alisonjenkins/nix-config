@@ -70,13 +70,9 @@ say which.
   rather than an entity with a lifecycle. C# 9+/10+ language features, so
   usable on Framework too with a modern SDK and `<LangVersion>` set high
   enough — see the Toolchain note above.
-- **Distinct types for identifiers that must not be mixed up**, even
-  without a language-native newtype: a `readonly record struct
-  CustomerId(Guid Value)` (see the Toolchain note on LangVersion for
-  Framework) or a small `readonly struct` wrapper (either runtime) so
-  `void F(CustomerId customerId, OrderId orderId)` rejects a swapped call at
-  compile time — plain `Guid`/`Guid` would not. See `defensive.md`'s
-  "distinct domain concepts" rule.
+- `readonly record struct CustomerId(Guid Value)`, not a bare `Guid` —
+  mandatory per `defensive.md`'s "distinct domain concepts" rule (see the
+  Toolchain note on LangVersion for Framework).
 - `CultureInfo.InvariantCulture` for any string comparison, parse, or
   formatting that is not user-facing display text — `ToUpper()`/`ToLower()`/
   `string.Compare` under the current culture silently produce different
@@ -132,8 +128,7 @@ say which.
   rather than baked into a string. See `../observability.md`.
 
 ## Performance
-- `BenchmarkDotNet` for benchmarking — never a hand-rolled `Stopwatch` loop,
-  which misses JIT warm-up and GC effects that a real harness accounts for.
-  `dotnet-trace`/PerfView for profiling. `Span<T>`/`Memory<T>` over
-  allocating a new array/`string` slice for zero-copy work on contiguous
-  data. See `../performance.md` before reaching for any of these.
+- Profiling/benchmarking/zero-copy tools: see `../performance.md`'s tool
+  table before reaching for any of these. Never a hand-rolled `Stopwatch`
+  loop for benchmarking — it misses JIT warm-up and GC effects a real
+  harness accounts for.

@@ -1,6 +1,6 @@
 ---
 name: consulting
-description: Use when you are about to make a third attempt at the same failure, when two hypotheses are disproved and you have no third, when a decision picks a dependency, data format or module boundary that will be hard to undo, when you have read the same file three times without the picture resolving, or when the user has told you twice that the same thing is still broken. Covers when to escalate to a stronger model, how to write a brief for one that cannot see this conversation, what to do when the escalation fails, and what not to escalate.
+description: Use on a third attempt at the same failure, when two hypotheses are disproved with no third, when a decision picks a dependency, data format or module boundary hard to undo, when you have read the same file three times without it resolving, or the user says the same thing is still broken twice. Covers escalating to a stronger model, writing a brief for it, and what not to escalate.
 ---
 
 # Consulting a stronger model

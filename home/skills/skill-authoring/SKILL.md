@@ -59,9 +59,6 @@ This is the whole disclosure mechanism, and it is why the parent's description
 must carry trigger keywords for **every** child: the parent is the only thing
 in the listing, so if it does not fire, no child is ever reached.
 
-Existing families: `programming`, `testing`, `git`, `review`, `infra`,
-`documents`, `web-ui`, and this one.
-
 ## Routing
 
 | Doing | Read |

@@ -19,21 +19,13 @@ Run via `scripts/checks/ci-pipeline.sh <target>`.
   A repo whose CI is entirely push/tag/schedule/dispatch-triggered can never
   satisfy a required status check on a PR, which silently breaks both branch
   protection and Renovate automerge-on-green: they'd wait forever on a status
-  that never reports, not fail loudly. Caught this the hard way while wiring up
-  `dependency-updates.md`'s automerge requirement.
+  that never reports, not fail loudly.
 
 ## GitHub
 
 Reads `.github/workflows/*.yaml` and `.github/workflows/*.yml`, plus
 `gh api repos/{owner}/{repo}/branches/{branch}/protection` for the required
 checks list (shared read with `branch-protection.sh`, not re-fetched).
-
-## GitLab
-
-`.gitlab-ci.yml` equivalent checks (job names, `permissions`-equivalent via
-CI/CD job token scoping); v1 stub, reports "unsupported forge" for the
-GitLab-specific pieces; the file-presence/caching heuristics that only need
-the YAML (not a forge API) still run.
 
 ## Fixing
 

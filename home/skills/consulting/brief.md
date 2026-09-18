@@ -61,10 +61,8 @@ What a good answer looks like, and how long it may be.
 
 ## Naming skills
 
-The consultant gets **no skill listing** and cannot discover a skill on its own,
-though it can invoke one by exact name. Name the ones this problem needs, such
-as `invoke the debugging skill and read its false-signals.md`, following the
-same rule that already applies to any subagent prompt.
+Name the skills this problem needs in the brief, e.g. `invoke the debugging
+skill and read its false-signals.md` — see the `delegation` skill for why.
 
 ## The test
 

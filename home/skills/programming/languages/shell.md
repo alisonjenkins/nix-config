@@ -7,17 +7,18 @@
   single most common shell bug.
 - `shellcheck` clean. In Nix, `writeShellApplication` runs it for you — prefer
   it over `writeShellScriptBin`.
-- `hyperfine` for benchmarking a CLI/process; `perf` for profiling a
-  long-running one. See `../performance.md` before reaching for either.
+- Profiling/benchmarking tools: see `../performance.md`'s tool table before
+  reaching for either.
 
 ## Portability
 - These scripts run on several machines. Do not assume a tool exists or sits
   at a fixed path: probe with `command -v` and fall back.
   - `rg` → `grep -r`; `fd` → `find` (and note Debian packages it as `fdfind`).
 - For anything beyond coreutils, resolve the tool through a `nix-shell`
-  shebang or a devshell rather than trusting `PATH`. This machine has no global
-  package pool, so an assumed tool fails with "command not found" or silently
-  runs a mismatched version.
+  shebang or a devshell rather than trusting `PATH`. Check first whether the
+  target machine has a global package pool at all — on one that doesn't, an
+  assumed tool fails with "command not found" or silently runs a mismatched
+  version.
 - A diagnostic or one-shot utility is a **directory, not a loose file**: a
   `flake.nix` whose `devShells.default` provides the dependencies, plus the
   script, which invokes its analysis through `nix develop`. Applies to anything

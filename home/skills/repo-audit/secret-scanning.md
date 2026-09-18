@@ -23,12 +23,6 @@ CI scanner presence: grep workflow YAML under `.github/workflows/` for a
 gitleaks or trufflehog action/step, and confirm that job is in the required
 status checks list (cross-references `branch-protection.md`).
 
-## GitLab
-
-Not implemented in v1: forge-native part reports "unsupported forge"; the
-CI-scanner-in-pipeline part still runs (it's a file-inspection check, not a
-forge API call) against `.gitlab-ci.yml`.
-
 ## Fixing
 
 `--fix` enables forge-native scanning/push-protection via API where

@@ -18,10 +18,8 @@
   language's equivalent of Rust's `unwrap_used` deny: a lint turning a
   silently-ignorable failure into a build-time one. Never `_ = f()` to
   silence it; handle or explicitly propagate the error instead.
-- `go test -race` in CI for anything with goroutines or
-  shared state. The race detector finds real races that only manifest under
-  specific interleavings — treat a race it reports as a bug, not a flaky
-  test, and see `concurrency.md`.
+- Race detection for anything with goroutines or shared state: see the
+  `testing` skill's `languages/go.md`.
 - `gosec` (or the security rules in `golangci-lint`) for anything handling
   untrusted input, file paths, or subprocess arguments — see `security.md`.
 
@@ -47,11 +45,8 @@
   should ask for the minimal interface it needs (`io.Reader`, not `*os.File`),
   and its return type should be the concrete type callers can act on
   without a type assertion.
-- **Named types over bare `string`/`int` for identifiers that must not be
-  mixed up** — `type CustomerID string`, `type OrderID string`, not two
-  bare `string` parameters. `func f(customerID CustomerID, orderID
-  OrderID)` makes a swapped call a compile error. Zero runtime cost; see
-  `defensive.md`'s "distinct domain concepts" rule.
+- `type CustomerID string`, not a bare `string` — mandatory per
+  `defensive.md`'s "distinct domain concepts" rule; zero runtime cost.
 - `context.Context` is the first parameter of any function that can block,
   call out to another service, or needs a deadline/cancellation — never
   stored in a struct field, never `context.TODO()` outside a genuine
@@ -60,9 +55,8 @@
   or unstructured `log.Println` — `slog.Error("order failed", "order_id",
   orderID, "err", err)` fields, not an interpolated string. See
   `../observability.md`.
-- `go test -bench=. ./...` (with `testing.B`) for benchmarking, `pprof`
-  (`go tool pprof`, or `net/http/pprof` for a running service) for
-  profiling. See `../performance.md` before reaching for either.
+- Profiling/benchmarking tools: see `../performance.md`'s tool table before
+  reaching for either.
 
 ## Concurrency
 - Every goroutine has an owner that can observe when it's done and

@@ -1,6 +1,6 @@
 ---
 name: observability
-description: Use when investigating a live system's performance or reliability via Datadog or Grafana/LGTM (Loki, Tempo, Mimir, or Prometheus) - dashboards, logs/traces/metrics, alert/dashboard/SLO/cost improvements, auditing a VM or cloud resources for monitoring gaps, or writing a postmortem. Not for instrumenting your own code (see programming's observability.md) or deploying/mutating infrastructure (see infra).
+description: Use when investigating a live system's performance or reliability via Datadog or Grafana/LGTM (Loki, Tempo, Mimir, or Prometheus) - dashboards, logs/traces/metrics, alert/dashboard/SLO/cost improvements, auditing a VM or cloud resources for monitoring gaps, or writing a postmortem. Covers LogQL/PromQL/TraceQL queries, Alertmanager rules, the `pup` and `sift` CLIs. Not for instrumenting your own code (see programming's observability.md) or deploying/mutating infrastructure (see infra).
 ---
 
 # Observability
@@ -47,12 +47,6 @@ effect of firefighting.
 
 ## Related
 
-- The general debugging method this family applies through a
-  platform's tools: the `debugging` skill.
-- Asking before mutating a live system — creating or editing a
-  monitor, dashboard, or alert: the `infra` skill.
-- Writing the instrumentation an investigation finds missing: the
-  `programming` skill's [observability.md](../programming/observability.md).
 - Reducing a platform's raw output before it reaches Claude's context
   (aggregate/top-N/histogram/diff instead of a raw dump): the `sift`
   CLI, referenced from `investigation.md` and both platform files.
