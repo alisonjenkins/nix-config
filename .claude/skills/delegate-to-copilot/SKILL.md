@@ -44,6 +44,14 @@ unrelated concerns.
 
 Before delegating, state which profile you chose and why, in one line.
 
+## GitHub Enterprise
+
+The script never hardcodes `github.com` — it just runs `copilot` as a normal
+child process, so any `GH_HOST` or `COPILOT_GH_HOST` already exported in your
+shell (for a GitHub Enterprise Cloud data-residency host or a GHE Server
+instance) is inherited automatically. Nothing to configure here; set those
+the same way you would for the `copilot`/`gh` CLIs directly.
+
 ## Rules
 
 - Never pass task text containing credentials or anything from `.env` or

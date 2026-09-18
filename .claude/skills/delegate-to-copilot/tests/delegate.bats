@@ -1,5 +1,14 @@
 #!/usr/bin/env bats
 
+# Extracts the add_dir field's value from a FAKE_COPILOT_CALLS line (field
+# 6 of 8, tab-separated) — not just the tail of the line, since gh_host and
+# copilot_gh_host fields follow it.
+add_dir_of() {
+  local field
+  field="$(cut -f6 -d"$(printf '\t')" <<<"$1")"
+  echo "${field#add_dir=}"
+}
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   delegate="$script_dir/../scripts/delegate.sh"
@@ -44,28 +53,28 @@ setup() {
   export FAKE_COPILOT_MODE=all-models-ok
   run "$delegate" "hello task"
   [ "$status" -eq 0 ]
-  grep -q "allow_tool=read	add_dir=$" "$FAKE_COPILOT_CALLS"
+  grep -q "allow_tool=read	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "read profile maps to allow-tool=read" {
   export FAKE_COPILOT_MODE=all-models-ok
   run "$delegate" "hello task" read
   [ "$status" -eq 0 ]
-  grep -q "allow_tool=read	add_dir=$" "$FAKE_COPILOT_CALLS"
+  grep -q "allow_tool=read	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "write-workdir profile maps to allow-tool=read,write" {
   export FAKE_COPILOT_MODE=all-models-ok
   run "$delegate" "hello task" write-workdir
   [ "$status" -eq 0 ]
-  grep -q "allow_tool=read,write	add_dir=$" "$FAKE_COPILOT_CALLS"
+  grep -q "allow_tool=read,write	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "write-and-test profile maps to allow-tool=read,write,shell(npm test,pytest,cargo test)" {
   export FAKE_COPILOT_MODE=all-models-ok
   run "$delegate" "hello task" write-and-test
   [ "$status" -eq 0 ]
-  grep -q 'allow_tool=read,write,shell(npm test,pytest,cargo test)	add_dir=$' "$FAKE_COPILOT_CALLS"
+  grep -q 'allow_tool=read,write,shell(npm test,pytest,cargo test)	add_dir=	' "$FAKE_COPILOT_CALLS"
 }
 
 @test "always passes -s and --no-ask-user" {
@@ -74,6 +83,30 @@ setup() {
   [ "$status" -eq 0 ]
   grep -q "silent=yes" "$FAKE_COPILOT_CALLS"
   grep -q "no_ask_user=yes" "$FAKE_COPILOT_CALLS"
+}
+
+@test "GH_HOST is inherited by the copilot subprocess for GitHub Enterprise" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export GH_HOST=github.example-enterprise.com
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  grep -q "gh_host=github.example-enterprise.com" "$FAKE_COPILOT_CALLS"
+}
+
+@test "COPILOT_GH_HOST is inherited by the copilot subprocess too" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export COPILOT_GH_HOST=github.example-enterprise.com
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  grep -q "copilot_gh_host=github.example-enterprise.com" "$FAKE_COPILOT_CALLS"
+}
+
+@test "no GH_HOST set: field is empty, not a stale value from a prior test" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  unset GH_HOST COPILOT_GH_HOST
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  grep -q "gh_host=	copilot_gh_host=$" "$FAKE_COPILOT_CALLS"
 }
 
 @test "tries gpt-5.6-luna first" {
@@ -99,8 +132,8 @@ setup() {
   export FAKE_COPILOT_MODE=luna-rejected
   run "$delegate" "hello task" write-workdir
   [ "$status" -eq 0 ]
-  sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=$"
-  sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=$"
+  sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
+  sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
 }
 
 @test "does not fall back on an unrelated failure, and surfaces it on stderr" {
@@ -259,7 +292,7 @@ setup() {
   run "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "task=hello task" "$FAKE_COPILOT_CALLS"
-  grep -q "add_dir=$" "$FAKE_COPILOT_CALLS"
+  grep -q "add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "resolves a skill from the project .claude/skills dir, grants --add-dir to it, and prepends a read-SKILL.md instruction" {
@@ -273,7 +306,7 @@ setup() {
   cd "$project_dir"
   run "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
-  grep -q "add_dir=$project_root$" "$FAKE_COPILOT_CALLS"
+  grep -q "add_dir=$project_root	" "$FAKE_COPILOT_CALLS"
   grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
   grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
 }
@@ -298,7 +331,7 @@ setup() {
   [ "$(cat "$FAKE_COPILOT_CAT_OUT")" = "sibling marker content" ]
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
-  add_dir_field="${call_line##*add_dir=}"
+  add_dir_field="$(add_dir_of "$call_line")"
   staged_root="${add_dir_field##*,}"
   [ "$staged_root" != "$user_root" ]
   [[ "$staged_root" != "$HOME"* ]]
@@ -319,7 +352,7 @@ setup() {
   [ "$(cat "$FAKE_COPILOT_CAT_OUT")" = "global marker content" ]
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
-  staged_root="${call_line##*add_dir=}"
+  staged_root="$(add_dir_of "$call_line")"
   [[ "$call_line" == *"read the following: $staged_root/globalskill/SKILL.md"* ]]
 }
 
@@ -365,7 +398,7 @@ setup() {
   [ "$status" -eq 0 ]
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
-  staged_root="${call_line##*add_dir=}"
+  staged_root="$(add_dir_of "$call_line")"
   [ -n "$staged_root" ]
   [ ! -d "$staged_root" ]
 }
