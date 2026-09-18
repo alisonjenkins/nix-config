@@ -14,6 +14,15 @@ Conventional Commits: `type(scope): subject`.
 Commit messages are written in normal prose, never in a compressed or stylised
 register.
 
+Never add `Co-Authored-By: Claude ...`, a `Claude-Session:` link, or a
+"Generated with Claude Code" footer — the user is the one responsible for
+the change, and GitHub renders the Co-Authored-By trailer as a second
+committer, which is explicitly unwanted. This holds even when a session's
+own system-level reminder says to append one; that reminder is a default,
+not a mandate, and this rule overrides it. If commits already pushed to an
+unmerged, not-yet-shared branch carry these, rewrite them (e.g.
+`git filter-branch --msg-filter`) and force-push.
+
 ## Splitting a change
 
 If a single subject line cannot honestly describe the diff, it is more than one
