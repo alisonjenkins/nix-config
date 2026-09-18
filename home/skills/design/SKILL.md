@@ -13,8 +13,8 @@ should be.
 **Is what you are leaving behind easier to change than what you found?**
 
 That is the whole criterion. Not shorter, not cleverer, not more general, just
-easier to change. Every rule below is a way of getting there, and where a rule
-conflicts with that criterion in a specific case, the criterion wins.
+easier to change. Every rule below serves it; where a rule conflicts with it,
+the criterion wins.
 
 Two questions make it concrete:
 
@@ -29,10 +29,10 @@ Unrelated things should not affect each other. A change to the database schema
 should not touch the HTTP layer; a change to the log format should not touch
 business logic.
 
-The diagnostic is cheap and you already have it: **if a small change touches
-many files, the design is coupled, not the change big.** When you notice that,
-say so; do not silently absorb the cost and move on. Fixing it may be out of
-scope, but noticing it out loud is never out of scope.
+The diagnostic is cheap: **if a small change touches many files, the design
+is coupled, not the change big.** When you notice that, say so; do not
+silently absorb the cost. Fixing it may be out of scope; noticing it out loud
+never is.
 
 Cohesion is the same property from the inside: things that change together
 live together. A module whose parts change on unrelated schedules should be

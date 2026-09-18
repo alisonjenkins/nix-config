@@ -12,16 +12,14 @@ description: Use when adding or changing a test, fixing a failing or flaky test,
 2. Write the smallest implementation that makes it pass.
 3. Refactor with the test green.
 
-Discipline detail for the full TDD workflow lives in
-`superpowers:test-driven-development`, invoke that skill rather than
-restating it here. This file covers what to test and how to judge a test.
+The full TDD workflow lives in `superpowers:test-driven-development`; invoke
+that skill. This file covers what to test and how to judge a test.
 
 ## What testing is for
 
-**Not finding bugs.** Bugs are what testing catches; feedback on the design is
-what it is *for*. A thing that is hard to test is telling you something
-structural: too many collaborators, hidden state, work fused to I/O. The
-fix is to the code, not to the test. Elaborate setup is a design finding.
+**Not finding bugs.** Testing catches bugs; it is *for* design feedback. Hard
+to test means something structural: too many collaborators, hidden state, work
+fused to I/O. Fix the code, not the test. Elaborate setup is a design finding.
 The `design` skill covers what to do about it.
 
 Three consequences:
@@ -29,12 +27,12 @@ Three consequences:
 - **A test is the first user of your code.** Write the call site you wish
   existed, then make it exist. An API that is awkward from a test is awkward
   from everywhere.
-- **Design to test.** Testability is a constraint you accept while designing,
-  not a property you retrofit afterwards. Injecting the clock, the RNG and the
-  I/O boundary costs nothing up front and is expensive to add later.
+- **Design to test.** Testability is a design constraint, not a retrofit.
+  Injecting the clock, the RNG and the I/O boundary costs nothing up front and
+  is expensive to add later.
 - **Find bugs once.** Any bug a human had to find gets a test that would have
-  caught it, before the fix lands. Finding it a second time means the first
-  fix bought nothing.
+  caught it, before the fix lands. Finding it twice means the first fix bought
+  nothing.
 
 ## What makes a test worth having
 
@@ -48,8 +46,8 @@ Three consequences:
   between test cases. Inject the clock and the RNG.
 - **It covers states, not lines.** Line coverage of two booleans can hit 100%
   while three of their four combinations are never exercised. Ask which states
-  and which boundaries the test visits, such as empty, one, many, maximum,
-  and error, not what percentage the tool reports.
+  and boundaries the test visits (empty, one, many, maximum, error), not what
+  percentage the tool reports.
 
 ## Mocking policy
 
@@ -57,21 +55,21 @@ Prefer the real thing. Mock only what you cannot run: paid third-party APIs,
 hardware, and genuinely slow external systems. A mock that mirrors your own
 code's structure will keep passing after that code breaks.
 
-For a client/server system, the honest test drives a real server process and a
-real client and asserts on the observable exchange, rather than mocking the
-transport on both sides.
+For a client/server system, drive a real server process with a real client and
+assert on the observable exchange, rather than mocking the transport on both
+sides.
 
 ## Verification before claiming completion
 
-Never report a change as working on the strength of "the code looks right".
-Run the test, quote the result, and say plainly if something was skipped.
-Build success is not test success, and a passing test suite you did not run is
-not evidence. See `superpowers:verification-before-completion`.
+Never report a change as working because "the code looks right". Run the test,
+quote the result, and say plainly if something was skipped. Build success is
+not test success, and a passing suite you did not run is not evidence. See
+`superpowers:verification-before-completion`.
 
-Verifying a fix to *running* software is a harder problem than running a test
-suite, because the environment you verify in has to match the one the user runs, and
-plenty of signals report success while the fix never applied. The `debugging`
-family's `verifying-a-fix.md` covers that case.
+Verifying a fix to *running* software is harder than running a test suite: the
+environment must match the one the user runs, and many signals report success
+while the fix never applied. The `debugging` family's `verifying-a-fix.md`
+covers that case.
 
 ## Routing
 

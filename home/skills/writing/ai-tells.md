@@ -64,7 +64,7 @@ line, and let that carry it.
 
 ## Formatting
 
-Covered in the parent skill under punctuation and formatting. The short
-version: no em dashes and no hyphen or parenthesis standing in for one, colons
-only before a list or example, sentence case headings, straight quotes, no
-decorative emoji, no bolded label that restates the line beneath it.
+Covered in the parent skill. Short version: no em dashes (nor a hyphen or
+parenthesis standing in for one), colons only before a list or example,
+sentence case headings, straight quotes, no decorative emoji, no bolded label
+that restates the line beneath it.

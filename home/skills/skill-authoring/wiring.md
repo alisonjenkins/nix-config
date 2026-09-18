@@ -11,8 +11,8 @@
 ## The Nix wiring
 
 `flake-modules/lib.nix` reads `home/skills/` and exposes each directory as
-`flake.lib.skills.<name>`. Adding a directory there is the whole registration
-step, and no consumer needs editing.
+`flake.lib.skills.<name>`. Adding a directory is the whole registration step;
+no consumer needs editing.
 
 `home/programs/claude-code/default.nix` then assembles `allSkills`:
 
@@ -23,12 +23,12 @@ step, and no consumer needs editing.
   merging their contents is correct.
 
 **This distinction is load-bearing.** `symlinkJoin` merges directory
-*contents*: pointing it at a skill directory flattens that skill into the root,
+*contents*: pointed at a skill directory it flattens that skill into the root,
 one arbitrary `SKILL.md` wins, and every skill's `scripts/`, `reference/`, and
 `examples/` collide. The symptom is skills that silently do not exist.
 
-`home.file` does not remove files a previous generation created, so after
-changing the layout, delete stale directories in `~/.claude/skills/` by hand.
+`home.file` does not remove files a previous generation created, so after a
+layout change, delete stale directories in `~/.claude/skills/` by hand.
 
 ## opencode
 
@@ -41,9 +41,9 @@ from the same flake output:
 ) inputs.self.lib.skills
 ```
 
-Note it links whole **directories**. Linking a single `SKILL.md` would silently
-drop every child file: the skill would load and its routing table would point
-at nothing.
+It links whole **directories**. Linking a single `SKILL.md` would silently drop
+every child file: the skill would load with a routing table pointing at
+nothing.
 
 ## After adding a skill
 
@@ -52,5 +52,5 @@ at nothing.
 2. `just build <hostname>`: proves it evaluates.
 3. `just switch`, then start a **new** session: the listing is built at
    startup.
-4. Confirm it is there and that it fires from a phrase you would really use,
-   not from typing its name.
+4. Confirm it is there and fires from a phrase you would really use, not from
+   typing its name.

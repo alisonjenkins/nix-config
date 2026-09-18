@@ -39,6 +39,5 @@ gh api repos/{owner}/{repo}/... [--jq '.field']
 gh api graphql -f query='...'
 ```
 
-A run of five or more bulk `gh`/GraphQL calls of the same shape should be
-delegated to a sub-agent in the background rather than ground out in the main
-loop.
+Delegate a run of five or more same-shape `gh`/GraphQL calls to a background
+sub-agent rather than grinding them in the main loop.

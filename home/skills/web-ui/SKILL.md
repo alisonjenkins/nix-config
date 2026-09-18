@@ -16,15 +16,15 @@ page.
 
 ## Availability
 
-These leaves ship with Claude Code. In another runtime they may not be
-installed, so check before relying on one, and say so rather than improvising.
+These leaves ship with Claude Code. Another runtime may lack them: check
+before relying on one, and say so rather than improvising.
 
 ## Choosing
 
 - Design first, then build: `frontend-design` decides what it should look
   like, `web-artifacts-builder` produces the shippable single file.
-- `webapp-testing` is verification, not authoring; reach for it when the
-  question is "does this actually work in a browser", and pair it with the
-  `testing` skill's rules on what makes an assertion worth having.
-- For charts and dashboards specifically, the bundled `/dataviz` skill owns
-  the palette and chart-form rules; use it before writing chart code.
+- `webapp-testing` is verification, not authoring: use it when the question
+  is "does this actually work in a browser", paired with the `testing`
+  skill's rules on what makes an assertion worth having.
+- Charts and dashboards: the bundled `/dataviz` skill owns the palette and
+  chart-form rules; use it before writing chart code.

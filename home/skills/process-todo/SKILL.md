@@ -52,11 +52,11 @@ Entry format (exact):
 
 Example: `- 2026-06-10T14:03:22Z — Rotate the sops age key`
 
-The em dash is the literal delimiter of this file format, so it stays. Every
-existing `done.md` entry uses it, and the prose rule against em dashes in the
-`writing` skill does not reach a data format.
+The em dash is the literal delimiter of this format, so it stays: every
+existing `done.md` entry uses it, and the `writing` skill's em-dash rule does
+not reach a data format.
 
-The timestamp comes from `date -u +%Y-%m-%dT%H:%M:%SZ` run at the moment of completion; never fabricated, reused from another entry, or truncated below second precision.
+The timestamp comes from `date -u +%Y-%m-%dT%H:%M:%SZ` run at completion; never fabricated, reused from another entry, or truncated below second precision.
 
 ## 5. Compaction
 
@@ -80,7 +80,7 @@ If `gh repo view` succeeds and an item requires code changes:
 
 - Do the work on a branch, not the default branch.
 - Propose it as a pull request (delegate to the pr-creator agent).
-- Mark the item done only when the work is complete; if the PR is the deliverable, the done.md entry should reference it, for example
+- Mark the item done only when the work is complete; if the PR is the deliverable, the done.md entry references it, e.g.
   `- 2026-06-10T14:03:22Z — Fix flaky retry test (PR #42)`.
 
 ## 7. Final report

@@ -5,8 +5,8 @@
   runner.
 - Test the module's exported contract. Rendering internals and private helpers
   are not the promise.
-- For UI, Testing Library queries by role and accessible name — those assert
-  the thing a user (and a screen reader) can actually reach.
+- For UI, Testing Library queries by role and accessible name — they assert
+  what a user (and a screen reader) can reach.
 - Async assertions use the runner's `await expect(...).resolves/rejects`; a
   bare floating promise in a test silently passes.
 - Fake timers for debounce/throttle logic; never `sleep` in a test.

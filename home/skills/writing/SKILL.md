@@ -26,9 +26,9 @@ the text into the other. Check for both.
 
 ## Write for a dyslexic reader with ADHD
 
-Assume the reader is dyslexic and has ADHD. This is the default audience, not
-an accommodation added on request. It costs nothing for anyone else, and it
-rules out most of what makes technical writing hard to get through.
+This is the default audience, not an accommodation on request. It costs
+nothing for anyone else and rules out most of what makes technical writing
+hard to get through.
 
 - **Front-load the point.** First sentence of a section says the conclusion.
   Reasoning follows it. A reader who stops after one line still got the answer.
@@ -44,8 +44,8 @@ rules out most of what makes technical writing hard to get through.
 - **Bold the anchors, not decoration.** A few words in bold help someone
   skimming find the load-bearing part. Bold on everything helps nobody.
 
-The plain-speech rules below serve the same reader. Concrete words, active
-voice and one idea per sentence are all easier to decode than the alternative.
+The plain-speech rules below serve the same reader: concrete words, active
+voice and one idea per sentence are easier to decode.
 
 ## Plain speech
 
@@ -83,24 +83,23 @@ Removing tells is half the job. The other half:
 
 ## Punctuation and formatting
 
-- **No em dashes.** House rule. Use a period or a comma. Do not substitute
-  parentheses, en dashes, or a hyphen standing in for a dash. If a thought
-  needs separation, end the sentence. This applies to user-facing deliverables
-  (docs, PRs, messages to a person); it does not require retrofitting em dashes
-  already present in internal skill/instruction files.
+- **No em dashes.** House rule. Use a period or a comma, not parentheses, en
+  dashes, or a hyphen standing in for a dash. If a thought needs separation,
+  end the sentence. Applies to user-facing deliverables (docs, PRs, messages
+  to a person); no need to retrofit em dashes already in internal
+  skill/instruction files.
 - **Colons before a list or an example only.** Not as a mid-sentence
   connector.
 - **Straight quotes**, not curly.
 - **Sentence case headings.** No decorative emoji in headings or bullets.
-- **Bold sparingly.** Not on every proper noun. A bold lead-in that names an
-  item and is followed by genuinely new detail is fine. A bold label that
-  restates the line that follows it is a tell, so write that as prose.
+- **Bold sparingly.** Not on every proper noun. A bold lead-in followed by
+  new detail is fine. A bold label that restates the line after it is a tell;
+  write that as prose.
 
 ## Self-audit
 
-Before handing text over, ask the question directly: what about this is
-obviously AI generated? Fix what the answer names. Then check the text still
-has a point of view.
+Before handing text over, ask: what about this is obviously AI generated? Fix
+what the answer names. Then check the text still has a point of view.
 
 ## Routing
 

@@ -1,84 +1,75 @@
 # Grafana / LGTM + Prometheus
 
 Covers Loki (logs), Grafana (dashboards/API), Tempo (traces), and
-Mimir/Prometheus (metrics) — the LGTM stack plus a directly-run
-Prometheus, which is common enough in a self-hosted setup to need its
-own operational notes even though it shares a query language with
-Mimir. For the general investigation method, see `../investigation.md`;
-this file is the how, not a second copy of the order.
+Mimir/Prometheus (metrics): the LGTM stack plus a directly-run
+Prometheus, common enough self-hosted to need its own notes despite
+sharing a query language with Mimir. The investigation method is
+`../investigation.md`; this file is the how.
 
 ## Loki (LogQL)
 
 A LogQL query is a label selector (`{app="checkout"}`) piped through
 filters and parsers (`|= "error"`, `| json`, `| logfmt`). The label
-selector is the expensive/indexed part — keep labels low-cardinality
-(service name, environment, not a user ID or request ID) and do
-high-cardinality filtering inside the pipe, parsed from the log line
-itself at query time. This is `../improving.md`'s cardinality-discipline
-section applied specifically to Loki: a high-cardinality label doesn't
-just cost more here, it's the one thing Loki's design assumes you won't
-do, and doing it anyway degrades every query against that stream.
+selector is the indexed part: keep labels low-cardinality (service
+name, environment, not user or request ID) and do high-cardinality
+filtering inside the pipe, parsed from the line at query time. This is
+`../improving.md`'s cardinality discipline applied to Loki: a
+high-cardinality label doesn't just cost more, it's the one thing
+Loki's design assumes you won't do, and it degrades every query against
+that stream.
 
-`count_over_time`, `rate`, and `sum by (...)` turn a raw log stream
-query into an aggregate — reach for these before pulling raw lines when
-the question is "how many" or "what's the trend," not "show me the
-specific lines."
+`count_over_time`, `rate`, and `sum by (...)` turn a stream query into
+an aggregate; use them before pulling raw lines when the question is
+"how many" or "what's the trend," not "show me the lines."
 
 ## Grafana (dashboards / API)
 
-The Grafana HTTP API (`/api/dashboards/`, `/api/datasources/`) supports
-reading and writing dashboards as JSON. Prefer reading an existing
-dashboard's JSON model to understand its query/panel structure before
-building a new one from scratch — dashboards-as-code (checking the JSON
-into version control) is the mutation-safe way to iterate on one; a
-change made only through the UI is the same "not landed in the repo of
-record" problem `infra/kubernetes.md` describes for a `kubectl apply`
-made outside GitOps. Creating or editing a dashboard, alert rule, or
-data source is a mutation — see the `infra` skill for the
+The Grafana HTTP API (`/api/dashboards/`, `/api/datasources/`) reads
+and writes dashboards as JSON. Read an existing dashboard's JSON model
+before building a new one. Dashboards-as-code (JSON in version control)
+is the mutation-safe way to iterate; a UI-only change is the "not
+landed in the repo of record" problem `infra/kubernetes.md` describes
+for a `kubectl apply` outside GitOps. Creating or editing a dashboard,
+alert rule, or data source is a mutation; see `infra` for the
 ask-before-mutating rule.
 
 ## Tempo (TraceQL)
 
 TraceQL queries traces by span attributes (`{ span.http.status_code =
-500 }`), similar in spirit to LogQL's label-then-filter shape but over
-spans instead of log lines. Grafana's exemplars feature links a
-Prometheus/Mimir metric data point directly to the Tempo trace that
-contributed to it — the LGTM-stack equivalent of Datadog's related
-traces, and `../investigation.md`'s "pull the correlation-ID thread"
-step should reach for it before a manual trace-ID search.
+500 }`), LogQL's label-then-filter shape over spans instead of lines.
+Grafana exemplars link a Prometheus/Mimir data point to the Tempo trace
+behind it: the LGTM equivalent of Datadog's related traces, and what
+`../investigation.md`'s "pull the correlation-ID thread" step should
+reach for before a manual trace-ID search.
 
 ## Mimir / Prometheus (PromQL)
 
-Both speak PromQL, but they are operationally distinct:
+Both speak PromQL but are operationally distinct:
 
 - **Mimir** is Prometheus-compatible long-term storage, typically fed by
   remote-write from one or more Prometheus instances (or scraped
-  directly in an Agent-mode setup). Multi-tenant, built for retention
-  beyond what a single Prometheus instance holds locally.
+  directly in Agent mode). Multi-tenant, built for retention beyond a
+  single Prometheus.
 - **A directly-run Prometheus** has its own scrape targets and service
-  discovery (who it's pulling metrics from and how it finds them) and
-  its own paired **Alertmanager** — Prometheus doesn't have Datadog-style
-  "monitors" living in the same product; alerting rules live in
-  Prometheus itself and fire to Alertmanager, which handles routing,
-  grouping, and silencing. Apply `../improving.md`'s alert-design section
-  (sustained-condition thresholds via `for:`, hysteresis, exception-based
-  alerting) to Prometheus alerting rules the same way as any other
+  discovery (who it pulls from and how it finds them) and a paired
+  **Alertmanager**. There are no Datadog-style "monitors" in-product:
+  alerting rules live in Prometheus and fire to Alertmanager, which
+  routes, groups, and silences. Apply `../improving.md`'s alert-design
+  section (sustained-condition thresholds via `for:`, hysteresis,
+  exception-based alerting) to Prometheus rules as to any other
   platform's monitors.
 
-When a local Prometheus feeds a Mimir instance via remote-write (the
-common personal-infrastructure shape), query against Mimir for anything
-beyond Prometheus's own local retention window, and against the local
-Prometheus directly for anything about scrape health or recent data that
-hasn't landed in Mimir's remote-write ingestion path yet.
+When a local Prometheus feeds Mimir via remote-write (the common
+personal-infra shape), query Mimir for anything beyond Prometheus's
+local retention, and the local Prometheus for scrape health or recent
+data not yet ingested by Mimir.
 
 ## Reducing output before it reaches you
 
-A raw LogQL/PromQL/TraceQL query can return far more than an
-investigation needs. Reach for
-`sift lgtm logs`/`sift lgtm metrics`/`sift lgtm traces` (see the `sift`
-package) for an aggregated, top-N, histogram, or baseline-diff view
-instead of raw output — the
-same `--mode` flags as `sift datadog` (aggregate/topn/histogram/diff),
-since `sift` shares one reduction engine across both platforms. `sift`
-defaults away from a raw dump; ask for `--mode raw` explicitly when you
-actually need every line.
+A raw LogQL/PromQL/TraceQL query returns far more than an investigation
+needs. Use `sift lgtm logs`/`sift lgtm metrics`/`sift lgtm traces` (the
+`sift` package) for an aggregated, top-N, histogram, or baseline-diff
+view; the `--mode` flags match `sift datadog`
+(aggregate/topn/histogram/diff) since both share one reduction engine.
+`sift` defaults away from a raw dump; pass `--mode raw` when you need
+every line.

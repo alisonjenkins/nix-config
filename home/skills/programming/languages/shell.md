@@ -7,8 +7,7 @@
   single most common shell bug.
 - `shellcheck` clean. In Nix, `writeShellApplication` runs it for you — prefer
   it over `writeShellScriptBin`.
-- Profiling/benchmarking tools: see `../performance.md`'s tool table before
-  reaching for either.
+- Profiling/benchmarking tools: see `../performance.md`'s tool table first.
 
 ## Portability
 - These scripts run on several machines. Do not assume a tool exists or sits
@@ -16,12 +15,12 @@
   - `rg` → `grep -r`; `fd` → `find` (and note Debian packages it as `fdfind`).
 - For anything beyond coreutils, resolve the tool through a `nix-shell`
   shebang or a devshell rather than trusting `PATH`. Check first whether the
-  target machine has a global package pool at all — on one that doesn't, an
+  target machine has a global package pool at all; on one that doesn't, an
   assumed tool fails with "command not found" or silently runs a mismatched
   version.
 - A diagnostic or one-shot utility is a **directory, not a loose file**: a
   `flake.nix` whose `devShells.default` provides the dependencies, plus the
-  script, which invokes its analysis through `nix develop`. Applies to anything
+  script, which runs its analysis through `nix develop`. Applies to anything
   needing tracing tools, or Python with numeric or data libraries.
 - No GNU-only flags when the script may run on macOS (`sed -i` differs; use a
   temp file or `perl -pi -e`).
@@ -36,12 +35,12 @@
 - Log to stderr (`>&2`), not stdout, so a script's actual output stays
   pipeable and its diagnostics stay visible either way.
 - A systemd unit's stdout/stderr already land in the journal with unit,
-  timestamp and PID attached — do not hand-roll a log file and a rotation
-  scheme on top of that. Structure a line so it filters well, quoting any
-  field that can contain whitespace or shell metacharacters (a path, a
-  filename) so `key=value` parsing downstream does not split on it:
+  timestamp and PID attached; do not hand-roll a log file and rotation scheme
+  on top. Structure a line so it filters well, quoting any field that can
+  contain whitespace or shell metacharacters (a path, a filename) so
+  `key=value` parsing downstream does not split on it:
   `printf 'event=disk_check status=fail path=%q\n' "$path" >&2` beats a
-  free-text sentence for the same reason it does in any other language — see
+  free-text sentence for the same reason it does in any other language; see
   `../observability.md`.
 - On failure, echo the failing command and the value that made it fail before
-  exiting non-zero — `set -e` stops the script but tells no one why.
+  exiting non-zero; `set -e` stops the script but tells no one why.

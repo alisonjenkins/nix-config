@@ -19,26 +19,24 @@ scripts/audit.sh <target> [topic] [--fix]
 - `[topic]`: one of `branch-protection`, `secret-scanning`, `dependency-updates`,
   `ci-pipeline`, `release-management`, `pre-commit`, `dev-shell`. Omit to run
   all seven.
-- `--fix`: after reporting, offer to apply each finding, **one at a time**,
-  with an explicit y/n prompt per change. Never batch-apply without review;
-  this mirrors the "always ask before mutating live infra" rule in the `infra`
-  skill. Answering "n" skips that finding and moves on; nothing is applied
-  silently.
+- `--fix`: after reporting, offer to apply each finding **one at a time**
+  with a y/n prompt per change. Never batch-apply without review (mirrors the
+  "ask before mutating live infra" rule in `infra`). "n" skips that finding;
+  nothing is applied silently.
 
-Default (no `--fix`) is read-only: it reports findings and the diff it would
-apply, and touches nothing.
+Without `--fix` it is read-only: reports findings plus the diff it would
+apply, touches nothing.
 
 ## Working rules
 
 - Idempotent: re-running against an already-compliant repo reports all-pass,
   never re-applies anything.
-- Resolve tools (`gh`, `jq`, `git`) through the `nix-shell` shebang on each
-  script, not ambient `PATH`, because these scripts run on machines with no
-  global package pool.
-- A repo whose forge isn't supported yet (GitLab today; anything without a
-  forge at all, e.g. CodeCommit) gets a clear "unsupported forge" report for
-  the forge-dependent topics, not an error. The local-repo-only topics
-  (pre-commit, dev-shell) still run regardless of forge.
+- Resolve tools (`gh`, `jq`, `git`) through each script's `nix-shell`
+  shebang, not ambient `PATH`: these run on machines with no global package
+  pool.
+- An unsupported forge (GitLab today; no forge at all, e.g. CodeCommit) gets
+  an "unsupported forge" report for the forge-dependent topics, not an error.
+  Local-only topics (pre-commit, dev-shell) still run.
 
 ## Routing
 

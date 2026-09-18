@@ -3,8 +3,8 @@
 ## When it beats examples
 
 Example-based tests check the cases you thought of. Property-based tests
-generate cases you did not, and shrink any failure to the smallest input that
-still reproduces it, which is usually the bug stated in its clearest form.
+generate cases you did not, and shrink any failure to the smallest reproducing
+input, usually the bug in its clearest form.
 
 Reach for it when:
 
@@ -20,24 +20,22 @@ properties cover the space between them.
 
 ## Choosing a property
 
-The hard part is not the library, it is naming a rule that is true for every
-input. Four shapes cover most real cases:
+The hard part is naming a rule true for every input, not the library. Four
+shapes cover most cases:
 
 - **Round-trip.** `decode(encode(x)) == x`. The highest value per line of test
-  code you will ever write. Applies to serialisation, escaping, compression,
-  URL and path handling.
+  code. Applies to serialisation, escaping, compression, URL and path handling.
 - **Invariant.** Something true of the output regardless of input: the result
   is sorted; length is preserved; the total is unchanged; no field is null.
 - **Oracle.** Compare against a slower, obviously-correct implementation, or
   against the old implementation you are replacing. Ideal for optimisations
   and rewrites, where "same answer as before" *is* the specification.
 - **Idempotence.** `f(f(x)) == f(x)`. Normalisation, deduplication, and
-  anything that touches an external system, which the `programming` skill
-  already requires to be idempotent, so this tests a rule you already hold.
+  anything touching an external system (which the `programming` skill already
+  requires to be idempotent, so this tests a rule you already hold).
 
-If no property comes to mind, that is a finding about the code: a function
-whose contract cannot be stated over all inputs usually has an unclear
-contract.
+If no property comes to mind, that is a finding about the code: a contract that
+cannot be stated over all inputs is usually unclear.
 
 ## Practical notes
 
@@ -56,17 +54,15 @@ JavaScript `fast-check`.
 
 ## Test your tests: saboteurs
 
-A green suite is only evidence if it can go red. Deliberately break the code,
-such as inverting a condition, dropping a line, or returning a constant, then
-confirm a test fails.
-If nothing does, the test was decorative.
+A green suite is only evidence if it can go red. Deliberately break the code
+(invert a condition, drop a line, return a constant), then confirm a test
+fails. If nothing does, the test was decorative.
 
-This is the positive control the `debugging` skill argues for, applied to your
-own harness. Do it whenever you write a test for something you cannot easily
-run, and whenever a suite has been green for a suspiciously long time through
-real changes. Mutation-testing tools automate it, but doing it by hand on the
-one function you care about takes a minute and catches the same class of
-problem.
+This is the `debugging` skill's positive control, applied to your own harness.
+Do it whenever you write a test for something you cannot easily run, and
+whenever a suite has stayed green suspiciously long through real changes.
+Mutation-testing tools automate it, but doing it by hand on the one function
+you care about takes a minute and catches the same class of problem.
 
 ## Source
 

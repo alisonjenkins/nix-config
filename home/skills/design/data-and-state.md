@@ -13,11 +13,10 @@ to mock.
 
 ## Give distinct concepts distinct types
 
-Whenever two values share a representation but mean different things, that is
-a modelling gap, not a detail to fix later — recognising it is a design
-question. The mechanical fix (wrap each in its own type per language) is the
-`programming` skill's [defensive.md](../programming/defensive.md), which
-this rule defers to.
+Two values sharing a representation but meaning different things is a
+modelling gap, not a detail for later; recognising it is a design question.
+The mechanical fix (a wrapper type per language) is the `programming`
+skill's [defensive.md](../programming/defensive.md).
 
 ## Don't hoard state, pass it around
 
@@ -53,10 +52,9 @@ the global is for.
 ## Configuration is external data, not code
 
 Anything that varies between environments, deployments, or users is data.
-Values that would otherwise be edited-and-redeployed belong in configuration,
-but see [reversibility.md](reversibility.md) for where that stops paying,
-because configuration that nobody ever changes is just a harder-to-read
-constant.
+Values that would otherwise be edited-and-redeployed belong in configuration;
+see [reversibility.md](reversibility.md) for where that stops paying, since
+configuration nobody changes is a harder-to-read constant.
 
 ## Source
 

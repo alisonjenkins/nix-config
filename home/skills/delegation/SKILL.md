@@ -6,8 +6,8 @@ description: Use before spawning a sub-agent (Agent tool), or deciding whether a
 # Delegation
 
 The main loop runs on a fast, capable model reserved for voice, scope, and
-judgement. Anything that doesn't need those three belongs on a cheaper model
-in a sub-agent, not ground through inline.
+judgement. Anything that needs none of those belongs on a cheaper model in a
+sub-agent, not ground through inline.
 
 ## When to delegate at all
 
@@ -16,20 +16,20 @@ web searches, log trawls, per-file mechanical edits, dependency-bump
 enumeration. Prefer running these in the background (`run_in_background`) so
 the main loop isn't blocked waiting.
 
-Code reading stays inline: Read/Grep/Glob used to understand code you are
-about to work on are cheap and belong in the main loop — never route ordinary
+Code reading stays inline: Read/Grep/Glob to understand code you are about to
+work on are cheap and belong in the main loop — never route ordinary
 exploration through a sub-agent. Delegate a search sweep only when you need
 the *conclusion*, not the file contents, AND it spans many files or areas you
-won't otherwise open yourself.
+won't otherwise open.
 
 ## Picking the model: default to haiku
 
 Default every delegated task to **haiku**. Step up to **sonnet** only when the
 task itself — not the batch it's part of — requires judgement: picking which
-of several ambiguous candidates is correct, multi-step reasoning across steps,
-synthesizing a conclusion from heterogeneous sources, or writing/editing code.
-When genuinely unsure which tier, that uncertainty is itself evidence the task
-needs judgement — pick sonnet.
+of several ambiguous candidates is correct, multi-step reasoning, synthesizing
+a conclusion from heterogeneous sources, or writing/editing code. Unsure which
+tier? That uncertainty is itself evidence the task needs judgement — pick
+sonnet.
 
 **The test:** could a competent but literal-minded assistant, with no
 discretion, get this right by following your instructions exactly? If yes,
@@ -47,44 +47,42 @@ Haiku-shaped work (default here unless the task itself says otherwise):
 - Format conversion against a fixed, unambiguous schema.
 
 Sonnet-shaped work:
-- Anything that involves writing or editing code beyond a mechanical,
-  fully-specified substitution.
-- Judging *which* result among several plausible ones is the right one.
+- Writing or editing code beyond a mechanical, fully-specified substitution.
+- Judging *which* of several plausible results is the right one.
 - Any step whose output feeds a decision rather than a report.
-- A sweep whose success criteria can't be written down completely in the
-  prompt — if you can't fully specify "correct" up front, the sub-agent needs
-  judgement to fill the gap, which means sonnet.
+- A sweep whose success criteria can't be fully written down in the prompt —
+  if you can't specify "correct" up front, the sub-agent needs judgement to
+  fill the gap, which means sonnet.
 
 When a batch mixes trivial items with a few judgement calls, split it (haiku
-for the mechanical slice, sonnet for the rest) rather than guessing which
-tier covers the whole thing.
+for the mechanical slice, sonnet for the rest) rather than guessing one tier
+for the whole thing.
 
 ## Explore vs general-purpose
 
-When delegating a read-only search/exploration sweep, prefer the Explore (or
-Plan) sub-agent over general-purpose: Explore/Plan skip CLAUDE.md and git
-status at startup, so they cost far less per spawn than a general-purpose
-agent that loads the full memory hierarchy. Reach for general-purpose only
-when the sweep needs tools Explore lacks (edits, writes, MCP mutations).
+For a read-only search/exploration sweep, prefer the Explore (or Plan)
+sub-agent over general-purpose: Explore/Plan skip CLAUDE.md and git status at
+startup, so they cost far less per spawn than a general-purpose agent loading
+the full memory hierarchy. Use general-purpose only when the sweep needs tools
+Explore lacks (edits, writes, MCP mutations).
 
 ## Writing the prompt
 
-- Sub-agent prompts must be self-contained: include every path, ID, query,
-  and the exact output format — the sub-agent cannot see this conversation.
+- Sub-agent prompts must be self-contained: every path, ID, query, and the
+  exact output format — the sub-agent cannot see this conversation.
 - Name the relevant skills in the prompt. A sub-agent gets no skill listing,
-  so it cannot discover a skill on its own — but it can invoke one by exact
-  name. Inject only what that task needs: "invoke the `programming` skill,
-  then read its languages/rust.md" for code work, "invoke `testing`" for
-  tests, and so on. Skip this for Explore/Plan sweeps, which are read-only.
+  so it cannot discover a skill — but it can invoke one by exact name. Inject
+  only what the task needs: "invoke the `programming` skill, then read its
+  languages/rust.md" for code work, "invoke `testing`" for tests, and so on.
+  Skip this for Explore/Plan sweeps, which are read-only.
 - Cap the reply length explicitly (e.g. "return at most 30 lines: one line
   per PR — number, state, mergeable").
 
 ## Delegating outside the Agent tool
 
-Everything above is about picking a *model tier* for an Agent-tool sub-agent.
-When the target is GitHub Copilot's own `copilot` CLI instead — a genuinely
-external, paid delegate, not a sub-agent — read
-[delegate-to-copilot.md](delegate-to-copilot.md).
+Everything above picks a *model tier* for an Agent-tool sub-agent. When the
+target is GitHub Copilot's own `copilot` CLI — an external, paid delegate, not
+a sub-agent — read [delegate-to-copilot.md](delegate-to-copilot.md).
 
 ## Never delegate
 
