@@ -29,28 +29,10 @@ Follow [pr-workflow.md](pr-workflow.md) step 1-4. Push, `gh pr create`.
 Follow the "Watching for a review" section of
 [pr-review-responses.md](pr-review-responses.md): poll on the order of
 minutes via `/loop` or a scheduled wake-up, not a tight sleep loop. Each
-cycle, pull both the thread list and check status:
-
-```
-gh pr checks <number>
-gh api graphql -f query='
-query($owner:String!,$repo:String!,$pr:Int!){
-  repository(owner:$owner,name:$repo){
-    pullRequest(number:$pr){
-      headRefOid
-      reviewDecision
-      reviewRequests(first:50){nodes{requestedReviewer{
-        ... on User{login} ... on Bot{login}}}}
-      reviews(last:50){nodes{author{login} state submittedAt commit{oid}}}
-      reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated path line
-        comments(first:20){nodes{databaseId author{login} body}}}}}}}' \
-  -F owner=<owner> -F repo=<repo> -F pr=<number>
-```
-
-If `pageInfo.hasNextPage` is true, page through with `reviewThreads(first:100,
-after:$cursor)` before trusting the thread list. Most PRs never hit 100
-threads, but the merge gate below reads this list; a truncated page could hide
-unresolved threads and merge prematurely.
+cycle: `scripts/pr-status.sh <number> [owner/repo]` — one call for checks,
+`reviewDecision`, `mergeable`/`mergeStateStatus`, the paginated unresolved
+thread list, and the latest review with a summary, instead of separately
+running `gh pr checks` plus a hand-typed GraphQL query.
 
 ## 5. Triage and fix
 
@@ -77,18 +59,18 @@ has been observed to re-review on push even with that flag `false`. Don't
 assume either way; check before requesting, since requesting mid-review is a
 no-op that wastes a cycle. Each poll cycle, after pushing fixes:
 
-1. Find Copilot's login from the `reviews` *and* `reviewRequests` already
-   fetched — a login containing `copilot` in either list (bot logins vary by
-   installation; don't hardcode one). `reviews` alone misses the case where
-   Copilot was requested but hasn't submitted its first review yet. Skip this
-   section if no such reviewer exists in either list.
-2. If that login appears in `reviewRequests`, a re-review is already pending —
-   wait for the next poll instead of requesting again.
-3. Otherwise compare Copilot's most recent review's commit against
-   `headRefOid` — `reviews(last:50)` returns oldest-first, so take Copilot's
-   *last* entry, not the first. If they match, Copilot has reviewed the
-   current head — nothing to do. If its latest review predates the head
-   (you've pushed since), request another pass:
+1. Find Copilot's login in `pr-status.sh`'s `reviewRequests=` line, or as a
+   login containing `copilot` among `latestReviews`' authors (bot logins vary
+   by installation; don't hardcode one). `latestReviews` alone misses the
+   case where Copilot was requested but hasn't submitted its first review
+   yet. Skip this section if no such reviewer exists in either place.
+2. If that login appears in `reviewRequests=`, a re-review is already
+   pending — wait for the next poll instead of requesting again.
+3. Otherwise compare Copilot's entry in `latestReviews` (already the latest
+   per author, no oldest-first array-order footgun to work around) against
+   `head=`. If they match, Copilot has reviewed the current head — nothing
+   to do. If its review predates the head (you've pushed since), request
+   another pass:
    ```
    gh pr edit <number> --add-reviewer <copilot-login>
    ```
@@ -99,7 +81,7 @@ no-op that wastes a cycle. Each poll cycle, after pushing fixes:
 
 ## 7. Merge gate
 
-All of these, not just checks green:
+All of these, not just checks green (`pr-status.sh` reports all of them):
 
 - Every review thread is either `isResolved: true`, or open only because it
   was rejected in step 5 and is waiting on the reviewer, not on you.
@@ -107,19 +89,16 @@ All of these, not just checks green:
 - `reviewDecision` is not `CHANGES_REQUESTED` (bots that only leave comments
   without a formal review don't set this — thread resolution is the real
   signal for them).
-- `gh pr checks <number>` all passing, or a named, explained exception the
+- `checks=` is not pending or failing, or a named, explained exception the
   user already accepted.
 
-Once satisfied, enable auto-merge rather than merging immediately; GitHub
-merges the moment any still-pending required check finishes:
-
-```
-gh pr merge <number> --auto --rebase
-```
-
-Fall back to `--auto --merge` if rebase merges are disabled. Never `--squash`
-(parent skill mandate). If auto-merge is not enabled on the repo
-(`gh pr merge --auto` errors), merge directly once checks are green.
+Once satisfied: `scripts/merge-onto-default.sh` — rebases locally, gates on
+the PR's checks itself, and pushes straight to the default branch,
+signatures intact (see [pr-workflow.md](pr-workflow.md)'s Merging section).
+Only fall back to `gh pr merge --rebase`/`--merge` (never `--squash`) if it's
+rejected because the repo requires merging via a pull request — that lands
+unsigned regardless of the source commits, so ask the user first if that
+matters for this repo.
 
 ## Stopping conditions
 
