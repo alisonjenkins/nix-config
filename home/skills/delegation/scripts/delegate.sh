@@ -3,6 +3,8 @@ set -euo pipefail
 
 usage() {
   echo "usage: $0 <task> [profile] [skill[,skill...]]" >&2
+  echo "profile defaults to 'read'; give it explicitly to also pass skill," >&2
+  echo "  since skill is strictly the 3rd positional argument" >&2
   echo "valid profiles: read, write-workdir, write-and-test" >&2
   echo "skill: one or more comma-separated Claude skill names to hand to" >&2
   echo "  the delegate, each resolved from the project's .claude/skills/<skill>" >&2

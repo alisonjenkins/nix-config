@@ -9,9 +9,12 @@ don't reach for it without the user's context indicating they want this
 (a Copilot subscription, cost-consciousness, or an explicit ask). Works
 against any repo — it doesn't assume this one.
 
-Run `scripts/delegate.sh "<task>" <profile> [skill[,skill...]]`. It tries
+Run `scripts/delegate.sh "<task>" [profile] [skill[,skill...]]`. It tries
 `gpt-5.6-luna` first and falls back to `claude-haiku-4.5` if the account/CLI
-doesn't have Luna yet.
+doesn't have Luna yet. `profile` defaults to `read` when omitted — but since
+`skill` is strictly the third positional argument, pass `profile` explicitly
+whenever you also want to pass a skill (e.g. `delegate.sh "<task>" read
+programming`, not `delegate.sh "<task>" programming`).
 
 ## Passing a Claude skill
 
