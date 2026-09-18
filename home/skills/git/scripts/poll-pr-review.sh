@@ -102,6 +102,9 @@ echo
 
 # --- Latest review verdict (chronological, not array order) ---
 echo "-- Latest review verdict --"
+# shellcheck disable=SC2016 # single-quoted on purpose: $r below is a jq variable, not a shell one
 gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate \
-  --jq 'sort_by(.submitted_at) | map(select(.body != "")) | last
-    | "[\(.submitted_at)] \(.user.login) on \(.commit_id[0:8]): " + (.body | split("\n")[0])'
+  --jq 'sort_by(.submitted_at) | map(select(.body != "")) | last as $r
+    | if $r == null then "(no review with a summary yet)"
+      else "[\($r.submitted_at)] \($r.user.login) on \($r.commit_id[0:8]): " + ($r.body | split("\n")[0])
+      end'

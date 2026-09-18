@@ -119,3 +119,10 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[2026-01-01T00:00:00Z] someone on abcdef12: ### verdict"* ]]
 }
+
+@test "reports no review yet instead of crashing on a PR with no reviews" {
+  echo "(no review with a summary yet)" >"$FAKE_GH_FIXTURES/verdict-line.txt"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(no review with a summary yet)"* ]]
+}
