@@ -26,9 +26,10 @@ Normal commit-creating commands (`commit`, `--amend`, `rebase`, `cherry-pick`,
 don't:
 
 - **`filter-branch`/`filter-repo`**: builds the commit directly, never
-  resigns. Verify: `git cat-file -p <sha> | grep gpgsig`. Fix: either
-  `--commit-filter 'git commit-tree -S "$@";'` inline, or cherry-pick the
-  range onto a fresh base and force-push (cherry-pick signs normally).
+  resigns. Verify: `scripts/verify-signed.sh <range>` (e.g.
+  `origin/main..HEAD`). Fix: either `--commit-filter 'git commit-tree -S
+  "$@";'` inline, or cherry-pick the range onto a fresh base and
+  force-push (cherry-pick signs normally).
 - **`gh pr merge --rebase/--squash/--merge`** (and the GitHub UI buttons):
   server-side, GitHub has no access to your key, so the result lands unsigned
   on the default branch regardless of source commits
