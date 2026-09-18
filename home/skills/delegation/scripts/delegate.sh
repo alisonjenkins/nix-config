@@ -21,6 +21,24 @@ if ! command -v copilot >/dev/null 2>&1; then
   exit 1
 fi
 
+# DELEGATE_RETRY_MAX, DELEGATE_RETRY_BASE_DELAY, and
+# DELEGATE_CREDITS_COOLDOWN_SECONDS all end up in `(( ))` arithmetic
+# contexts; a non-integer override would abort the whole script under
+# set -e at whatever moment it's first used, rather than degrading
+# gracefully. Validate once, up front, and fall back to the default with
+# a warning instead.
+numeric_env_or_default() {
+  local var_name="$1" default="$2" value="${!1:-}"
+  if [[ -z "$value" ]]; then
+    printf '%s' "$default"
+  elif [[ "$value" =~ ^[0-9]+$ ]]; then
+    printf '%s' "$value"
+  else
+    echo "warning: $var_name='$value' is not a non-negative integer; using default $default" >&2
+    printf '%s' "$default"
+  fi
+}
+
 # Credit/quota exhaustion is account-wide and doesn't clear until the
 # billing period resets, so a fresh invocation re-discovering that by
 # actually calling copilot is a wasted round trip every time. Cache it
@@ -43,7 +61,7 @@ else
   credits_state_dir=""
 fi
 credits_cooldown_file="${credits_state_dir:+$credits_state_dir/credits-exhausted-until}"
-credits_cooldown_seconds="${DELEGATE_CREDITS_COOLDOWN_SECONDS:-86400}"
+credits_cooldown_seconds="$(numeric_env_or_default DELEGATE_CREDITS_COOLDOWN_SECONDS 86400)"
 
 if [[ -n "$credits_state_dir" && -f "$credits_cooldown_file" ]]; then
   cooldown_until="$(<"$credits_cooldown_file")"
@@ -174,8 +192,8 @@ fallback_model="claude-haiku-4.5"
 # A Copilot outage looks like a network/server error, not a model rejection —
 # retrying the same model with backoff is the right response, per this repo's
 # tenacity mandate (retry transient failures before giving up).
-retry_max="${DELEGATE_RETRY_MAX:-3}"
-retry_base_delay="${DELEGATE_RETRY_BASE_DELAY:-2}"
+retry_max="$(numeric_env_or_default DELEGATE_RETRY_MAX 3)"
+retry_base_delay="$(numeric_env_or_default DELEGATE_RETRY_BASE_DELAY 2)"
 
 is_transient() {
   # No \b: GNU grep treats it as a word boundary, but that's a GNU

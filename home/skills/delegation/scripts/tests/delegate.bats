@@ -298,6 +298,40 @@ setup() {
   [ "$cooldown_until" -le "$(( before + 5 + 2 ))" ]
 }
 
+@test "a non-integer DELEGATE_CREDITS_COOLDOWN_SECONDS warns and falls back to the default instead of crashing" {
+  export FAKE_COPILOT_MODE=credits-exhausted
+  export DELEGATE_CREDITS_COOLDOWN_SECONDS=abc
+  before="$(date +%s)"
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"warning: DELEGATE_CREDITS_COOLDOWN_SECONDS='abc'"* ]]
+  cooldown_until="$(<"$DELEGATE_STATE_DIR/credits-exhausted-until")"
+  # falls back to the 86400s default, not a crash and not treating "abc" as 0
+  [ "$cooldown_until" -ge "$(( before + 86400 - 2 ))" ]
+}
+
+@test "a non-integer DELEGATE_RETRY_MAX warns and falls back to the default instead of aborting under set -e" {
+  export FAKE_COPILOT_MODE=outage-persistent
+  export DELEGATE_RETRY_MAX=nope
+  run "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"warning: DELEGATE_RETRY_MAX='nope'"* ]]
+  [[ "$output" == *"possible outage"* ]]
+  # default retry_max is 3
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 3 ]
+}
+
+@test "a non-integer DELEGATE_RETRY_BASE_DELAY warns and falls back to the default" {
+  export FAKE_COPILOT_MODE=outage-then-ok
+  export FAKE_COPILOT_OUTAGE_COUNTER="$BATS_TEST_TMPDIR/outage-counter"
+  export FAKE_COPILOT_OUTAGE_SUCCEED_ON=2
+  export DELEGATE_RETRY_BASE_DELAY=negative-two
+  run "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning: DELEGATE_RETRY_BASE_DELAY='negative-two'"* ]]
+  [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
+}
+
 @test "reset-credits-cooldown.sh clears an existing cooldown" {
   reset_script="$script_dir/../reset-credits-cooldown.sh"
   mkdir -p "$DELEGATE_STATE_DIR"
