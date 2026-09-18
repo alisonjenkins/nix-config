@@ -163,6 +163,26 @@ feature_branch_with_commit() {
   }
 }
 
+@test "a rebase that fails before starting (dirty tree) doesn't suggest --continue/--abort" {
+  feature_branch_with_commit "one"
+
+  git switch -q main
+  echo "main-advance" >main2.txt
+  git add main2.txt
+  git commit -q -m "main-advance"
+  git push -q origin main
+  git switch -q feature
+
+  # Dirty the tree so `git rebase` refuses to even start.
+  echo "uncommitted" >>feature.txt
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no rebase is in progress"* ]]
+  [[ "$output" != *"then 'git rebase --continue'"* ]]
+  [[ "$output" != *"'git rebase --abort' to give up"* ]]
+}
+
 @test "falls back to probing origin for main when origin/HEAD isn't set" {
   git remote set-head origin --delete
   feature_branch_with_commit "one"
