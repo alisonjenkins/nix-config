@@ -146,6 +146,14 @@ EOF
   [ "$(grep -c '^(none)$' <<<"$output")" -eq 2 ]
 }
 
+@test "fails loudly instead of misreporting (none) when the GraphQL call fails" {
+  touch "$FAKE_GH_FIXTURES/graphql-fails"
+  run "$script" 319 owner/repo
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"failed to fetch review threads via GraphQL"* ]]
+  [[ "$output" != *"Suppressed"* ]]
+}
+
 @test "shows the precomputed verdict line" {
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
