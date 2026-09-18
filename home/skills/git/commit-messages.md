@@ -34,9 +34,10 @@ don't:
   server-side, GitHub has no access to your key, so the result lands unsigned
   on the default branch regardless of source commits
   ([cli/cli#1512](https://github.com/cli/cli/issues/1512)). Known limitation,
-  not fixable via `gh`. Only workaround: merge locally (`git merge --ff-only`
-  + `push`) instead of the API — ask the user first, it trades off against
-  the rebase-merge mandate.
+  not fixable via `gh`. Default to `scripts/merge-onto-default.sh` instead —
+  it rebases locally and pushes directly (fast-forward, no new commit
+  objects, signatures intact) — and only fall back to the API merge, with
+  the user's OK, when it's rejected (branch protection requires a PR).
 
 ## Splitting a change
 

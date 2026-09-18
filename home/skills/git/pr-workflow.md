@@ -35,11 +35,17 @@ non-obvious flags.
 
 ## Merging
 
-- `gh pr merge --rebase` first choice.
-- `gh pr merge --merge` when rebase merges are disabled on the repo.
-- **Never** `gh pr merge --squash`.
-- All three land unsigned on the default branch (GitHub limitation) — see
-  [commit-messages.md](commit-messages.md)'s "Preserving signatures".
+- **Try `scripts/merge-onto-default.sh` first.** It rebases locally onto
+  the default branch and pushes directly there — a true fast-forward,
+  same commit objects, signatures intact. GitHub auto-marks the PR
+  merged once its commits land on the default branch this way.
+- If it's rejected (branch protection requires a PR — the script says
+  so plainly), fall back to `gh pr merge --rebase`, or `--merge` if
+  rebase merges are disabled. **Never** `--squash`. Ask the user first
+  if signed history on the default branch matters for this repo: both
+  fallbacks land unsigned regardless of the source commits (GitHub
+  limitation) — see [commit-messages.md](commit-messages.md)'s
+  "Preserving signatures".
 
 ## Reviewing and receiving review
 

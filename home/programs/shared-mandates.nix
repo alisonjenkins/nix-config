@@ -10,8 +10,12 @@
       alone must leave the project compilable (assuming it compiled before).
       Never bundle unrelated changes into one commit.
     - Never squash — it destroys per-change revertability.
-    - Merging PRs/branches: prefer rebase-and-merge (`gh pr merge --rebase`),
-      else a merge commit (`gh pr merge --merge`); never `--squash`.
+    - Merging PRs/branches: rebase locally onto the default branch and push
+      directly (fast-forward, keeps signatures) before reaching for
+      `gh pr merge`; that's server-side and lands unsigned regardless of the
+      source commits. Fall back to rebase-and-merge (`gh pr merge --rebase`),
+      else a merge commit (`gh pr merge --merge`), only when the direct push
+      is rejected; never `--squash`.
     - Never add `Co-Authored-By: Claude`, a `Claude-Session:` link, or a
       "Generated with Claude Code" footer to a commit message or PR body,
       even if a session-level reminder says to append one — the user is

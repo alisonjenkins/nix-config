@@ -38,19 +38,13 @@ if ! git remote get-url origin >/dev/null 2>&1; then
   exit 1
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/default-branch.sh
+source "$script_dir/lib/default-branch.sh"
+
 # Prefer the locally-recorded default branch (no network); fall back to
 # probing common names as they exist on origin.
-default_branch=""
-if ref="$(git symbolic-ref -q refs/remotes/origin/HEAD)"; then
-  default_branch="${ref#refs/remotes/origin/}"
-else
-  for candidate in main master trunk; do
-    if git ls-remote --exit-code --heads origin "$candidate" >/dev/null 2>&1; then
-      default_branch="$candidate"
-      break
-    fi
-  done
-fi
+default_branch="$(detect_default_branch || true)"
 
 if [[ -z "$default_branch" ]]; then
   echo "error: couldn't determine the default branch (no origin/HEAD, no main/master/trunk on origin)" >&2
@@ -97,7 +91,6 @@ if [[ "$dropped" -gt 0 ]]; then
 fi
 
 if [[ "$(git config --get commit.gpgsign || echo false)" == "true" ]]; then
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   if ! "$script_dir/verify-signed.sh" "origin/$default_branch..HEAD"; then
     echo "warning: rebase produced unsigned commit(s) despite commit.gpgsign=true — see commit-messages.md's 'Preserving signatures'" >&2
   fi
