@@ -71,10 +71,13 @@ if [[ "$(git config --get commit.gpgsign || echo false)" == "true" ]]; then
   fi
 fi
 
-pr_info="$(gh pr view --json number,headRefOid --jq '[.number,.headRefOid]|@tsv' 2>&1)" || pr_info=""
-if [[ -z "$pr_info" ]]; then
-  echo "error: no open PR found for $current_branch — open one first" >&2
+# stderr kept separate from stdout: mixing them into pr_info would break
+# the TSV parse below on any warning, and could turn a transient `gh`
+# error into a false "no PR" read that then force-pushes unexpectedly.
+if ! pr_info="$(gh pr view --json number,headRefOid --jq '[.number,.headRefOid]|@tsv' 2>/dev/null)" || [[ -z "$pr_info" ]]; then
+  echo "error: no open PR found for $current_branch, or 'gh pr view' failed — open one first" >&2
   echo "  (this script gates the direct push on that PR's checks; without one there's nothing to gate on)" >&2
+  gh pr view --json number,headRefOid >&2 2>&1 || true
   exit 1
 fi
 IFS=$'\t' read -r pr_number pr_head_sha <<<"$pr_info"

@@ -130,14 +130,16 @@ feature_branch_with_commit() {
   git add feature.txt
   git commit -q --no-gpg-sign -m one
 
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
   run "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"unsigned"* ]]
+
   run git ls-remote origin refs/heads/main
-  original_main="${output%%$'\t'*}"
-  run git rev-parse main
-  # main on the remote is untouched -- confirm nothing was pushed
-  [ "$original_main" != "" ]
+  after_main="${output%%$'\t'*}"
+  [ "$before_main" = "$after_main" ]
 }
 
 @test "no open PR found errors clearly instead of pushing ungated" {
@@ -145,13 +147,16 @@ feature_branch_with_commit() {
   touch "$FAKE_GH_FIXTURES/no-pr"
   feature_branch_with_commit "one"
 
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
   run "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no open PR found"* ]]
+
   run git ls-remote origin refs/heads/main
-  original_main="${output%%$'\t'*}"
-  run git rev-parse main
-  [ "$original_main" != "" ]
+  after_main="${output%%$'\t'*}"
+  [ "$before_main" = "$after_main" ]
 }
 
 @test "refuses to push when the PR's checks fail" {
