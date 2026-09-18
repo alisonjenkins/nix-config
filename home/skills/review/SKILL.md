@@ -22,17 +22,15 @@ by-concern files apply to what the code does (`defensive.md` for input and
 error paths, `concurrency.md` for anything threaded or async, `security.md`
 for untrusted input or secrets, `observability.md` for logging/tracing,
 `performance.md` for a claimed optimisation, SIMD, or a benchmark). A
-convention documented there — no `unwrap()` outside tests, one error enum
+convention documented there (no `unwrap()` outside tests, one error enum
 per fallible function, structured log fields, profile-then-benchmark before
-a perf change — is not a style opinion to weigh against taste; treat a
-violation of it the same as any other rubric finding, at the severity the
-violated rule implies (a missing error-context propagation is Correctness or
-Boundaries, not Simplification).
+a perf change) is not a style opinion; treat a violation as any other
+rubric finding, at the severity the rule implies (a missing error-context
+propagation is Correctness or Boundaries, not Simplification).
 
-This applies whether the code under review arrived as a diff or already
-existed before these rules were written — see
-[codebase-audit.md](codebase-audit.md) for reviewing existing code with no
-diff to anchor against.
+This applies whether the code arrived as a diff or predates the rules; see
+[codebase-audit.md](codebase-audit.md) for existing code with no diff to
+anchor against.
 
 ## Rubric
 

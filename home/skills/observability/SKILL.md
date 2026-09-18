@@ -5,29 +5,25 @@ description: Use when investigating a live system's performance or reliability v
 
 # Observability
 
-This family teaches how to investigate a live system through an
-observability platform, how to proactively find what isn't monitored
-yet, how to reconstruct and write up an incident afterward, and how to
-improve observability itself (close gaps, design better alerts and
-dashboards, control cost) as a deliberate activity rather than a side
-effect of firefighting.
+Investigating a live system through an observability platform, finding
+what isn't monitored yet, reconstructing and writing up an incident, and
+improving observability itself (closing gaps, alert and dashboard
+design, cost control) as deliberate work rather than a side effect of
+firefighting.
 
 ## What this is not
 
-- **Not instrumenting your own code.** Writing log fields, choosing a
-  level, adding a span — that's `programming`'s
-  [observability.md](../programming/observability.md). This family is
-  the other end of the same loop: an investigation here that hits a
-  missing signal hands off to that file to add it.
+- **Not instrumenting your own code.** Log fields, levels, spans:
+  `programming`'s [observability.md](../programming/observability.md).
+  An investigation here that hits a missing signal hands off to that
+  file to add it.
 - **Not deploying or mutating infrastructure.** Creating or editing a
-  monitor, dashboard, or alert is a mutation of a live system — `infra`
-  owns "ask before mutating live infrastructure"; this family points
-  back to it rather than restating the rule.
+  monitor, dashboard, or alert mutates a live system; `infra` owns the
+  ask-before-mutating rule.
 - **Not the general debugging method.** `debugging` carries reproduce,
-  probe the layer closest to the fault, positive control, and distrust
-  of a green signal (`debugging/false-signals.md`). This family applies
-  that method through a specific platform's tools — it does not
-  redefine it.
+  probe the closest layer, positive control, and distrust of a green
+  signal (`debugging/false-signals.md`). This family applies that
+  method through a platform's tools.
 
 ## By-concern routing
 
@@ -50,5 +46,5 @@ effect of firefighting.
 - Reducing a platform's raw output before it reaches Claude's context
   (aggregate/top-N/histogram/diff instead of a raw dump): the `sift`
   CLI, referenced from `investigation.md` and both platform files.
-- Paging rotations and live incident comms are out of scope for this
-  family — `postmortems.md` starts once the incident is over.
+- Paging rotations and live incident comms are out of scope;
+  `postmortems.md` starts once the incident is over.

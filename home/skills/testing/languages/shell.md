@@ -22,21 +22,20 @@ mocking shell internals.
 ## Fixture CLI shims
 
 A fixture is a same-named executable placed ahead of the real tool on
-`PATH`, so the script under test cannot tell it isn't talking to the real
-`gh`/`copilot`. It reads its behaviour from files the test drops in a temp
-dir (e.g. `FAKE_GH_FIXTURES`), not from hardcoded output, so each test can
-set up a different response without editing the shim.
+`PATH`, so the script under test cannot tell it from the real `gh`/`copilot`.
+It reads its behaviour from files the test drops in a temp dir (e.g.
+`FAKE_GH_FIXTURES`), not hardcoded output, so each test can set up a
+different response without editing the shim.
 
 - `home/skills/git/scripts/tests/gh` — fake `gh`, driven by
   `FAKE_GH_FIXTURES/*.tsv`/`*.txt` fixture files.
 - `home/skills/delegation/scripts/tests/copilot` — fake `copilot` CLI.
 
-Write a new shim the same way: a thin executable script matching the real
-tool's invocation shape, reading canned output from a fixture file the test
-controls, never hitting the network. This is the shell-script equivalent of
-`testing`'s general mocking policy — mock only what you cannot run (a paid
-external API here), and mirror the *interface*, not your own code's
-internal structure.
+Write a new shim the same way: a thin executable matching the real tool's
+invocation shape, reading canned output from a fixture file the test controls,
+never hitting the network. This is `testing`'s general mocking policy for
+shell — mock only what you cannot run (a paid external API here), and mirror
+the *interface*, not your own code's internal structure.
 
 ## Hand-rolled harness (no bats)
 
@@ -44,6 +43,5 @@ When a project can't add a `bats` dependency, a plain-bash harness works:
 `home/skills/repo-audit/scripts/tests/harness.sh` defines `assert_eq`,
 `assert_exit`, `assert_contains` and a pass/fail counter, sourced by each
 `scripts/tests/*.test.sh` file; `run-all.sh` drives them all and reports a
-summary. Prefer `bats` when it's available — clearer per-test output and
-`run`/`$status`/`$output` capture — and fall back to this pattern only when
-it isn't.
+summary. Prefer `bats` when available (clearer per-test output,
+`run`/`$status`/`$output` capture); fall back to this only when it isn't.

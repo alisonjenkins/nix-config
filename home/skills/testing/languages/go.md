@@ -4,8 +4,8 @@
   in, want T }` looped with `t.Run(tt.name, ...)`) are the idiomatic shape
   for multiple cases of the same function.
 - **`go test -race` in CI for anything with goroutines or shared state.**
-  The race detector finds real races that only manifest under specific
-  interleavings — treat a race it reports as a bug, not a flaky test. See
+  It finds real races that only manifest under specific interleavings — a
+  reported race is a bug, not a flaky test. See
   `../../programming/languages/go.md`'s `concurrency.md` for the underlying
   discipline (goroutine ownership, context cancellation, mutex scope).
 - `t.Parallel()` for independent subtests once they're race-clean; a test

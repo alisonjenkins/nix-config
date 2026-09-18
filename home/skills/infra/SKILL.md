@@ -8,20 +8,19 @@ description: Use when deploying, changing cluster or cloud state, debugging a ru
 ## The rule
 
 **Infrastructure as code first.** Propose the change in the IaC repo and let
-CI/CD apply it. Mutating live infrastructure directly, such as cloud consoles,
-ad-hoc `kubectl edit`, or `aws` writes, is sometimes acceptable for personal
-infra, but **always ask the user for permission first**. Never mutate live
-infra unprompted.
+CI/CD apply it. Direct mutation (cloud consoles, ad-hoc `kubectl edit`, `aws`
+writes) is sometimes acceptable for personal infra, but **always ask the user
+first**. Never mutate live infra unprompted.
 
-Reading live state is always fine and is usually the right first step: check
-what is actually deployed before proposing a change to what should be.
+Reading live state is always fine and usually the right first step: check
+what is deployed before proposing a change to what should be.
 
 ## Working rules
 
-- **Idempotence.** Check current state before mutating. Every operation should
-  be safe to re-run.
-- **Retry transient failures** with backoff before giving up. When a subtask is
-  genuinely unrecoverable, deliver the rest and report the gap explicitly.
+- **Idempotence.** Check current state before mutating. Every operation is
+  safe to re-run.
+- **Retry transient failures** with backoff before giving up. When a subtask
+  is unrecoverable, deliver the rest and report the gap.
 - Timestamps in reports and logs are ISO8601 UTC.
 - Prefer machine-and-human-readable output (`--json`, `-o json`, markdown
   tables) over free-form dumps.

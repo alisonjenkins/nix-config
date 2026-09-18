@@ -10,9 +10,9 @@ stronger one and acting on what it says, not by grinding.
 
 ## When to consult
 
-Escalate when **any** of these holds. They are countable on purpose: a model
-that is stuck is the worst judge of whether it is stuck, so do not wait to feel
-out of ideas.
+Escalate when **any** of these holds. They are countable on purpose: a stuck
+model is the worst judge of whether it is stuck, so do not wait to feel out of
+ideas.
 
 - **Third attempt at the same failure**, where the first two changed something
   real and the symptom is unchanged.
@@ -22,36 +22,35 @@ out of ideas.
   schema, a module boundary, or anything whose blast radius is more than a
   handful of files.
 - **The same file read three or more times** in one task without the picture
-  resolving. Re-reading is what looks like progress while making none.
-- **The user has said the same thing is still broken twice.** Their second
+  resolving. Re-reading looks like progress while making none.
+- **The user has said the same thing is still broken twice.** The second
   report is the trigger; do not wait for a third.
 
-Also consult when the cost of being wrong is high and the work is
-irreversible: a migration, a destructive operation, anything touching live
-infrastructure, even on the first attempt.
+Also consult when being wrong is costly and the work is irreversible: a
+migration, a destructive operation, anything touching live infrastructure,
+even on the first attempt.
 
 ## When not to consult
 
 - **Mechanical work.** Volume is not difficulty. A hundred repetitive edits are
-  a job for this session or a cheap subagent, not for a consultant.
+  a job for this session or a cheap subagent, not a consultant.
 - **Anything the user has already decided.** Their decision is the input, not
-  the question. Consulting to get a second opinion on it wastes the consult and
-  ignores them.
+  the question. A second opinion on it wastes the consult and ignores them.
 - **Anything answerable by reading a file you have not read yet.** Reading is
-  cheaper than consulting by a wide margin. Read first, every time.
+  far cheaper than consulting. Read first, every time.
 - **Reassurance.** "I think this is right but I would like it confirmed" is not
-  a trigger. Verify it instead: run the test, check the output.
+  a trigger. Verify instead: run the test, check the output.
 
 Consulting is not free: the consultant reloads the whole memory hierarchy on
-every spawn. Two unnecessary consults cost more than the session saved by
-running on a fast model in the first place.
+every spawn. Two unnecessary consults cost more than running on a fast model
+saved.
 
 ## Writing the brief
 
-The consultant sees **none of this conversation**. Everything it knows comes
-from what you write, and a thin brief produces a confident wrong answer. The
-format is in [brief.md](brief.md). Use it every time; it takes a minute and it
-is the whole difference between a useful consult and a wasted one.
+The consultant sees **none of this conversation**. It knows only what you
+write, and a thin brief produces a confident wrong answer. The format is in
+[brief.md](brief.md). Use it every time; it takes a minute and is the whole
+difference between a useful consult and a wasted one.
 
 ## When a consult fails or comes back empty
 
@@ -62,24 +61,24 @@ tier in a loop.
    tier below.
 2. **Say so in your reply.** "The stronger consult was unavailable; this is my
    own conclusion" is honest and actionable. Reporting a decision as though a
-   stronger model had confirmed it is not.
+   stronger model confirmed it is not.
 
 ## Acting on the answer
 
 - The consultant returns a decision, not code. Implementing it is your job.
-- **It may tell you the question was wrong**: that you were debugging the wrong
+- **It may tell you the question was wrong**: you were debugging the wrong
   layer, or solving a problem the user does not have. That is the most valuable
   kind of answer. Take it, do not argue past it.
 - **Do not accept it blindly either.** It worked from your brief, and your brief
-  was incomplete. If its answer contradicts something you actually observed, say
-  so and check which of you is wrong rather than picking by rank.
+  was incomplete. If its answer contradicts something you observed, say so and
+  check which of you is wrong rather than picking by rank.
 - Tell the user you consulted, and what came back. It changes what happens next
   and they should not have to infer it.
 
 ## Related
 
 - `superpowers:systematic-debugging` and the `debugging` skill for the method
-  that should have run *before* the third attempt. Most consults are avoidable
+  that should have run *before* the third attempt. Most consults are avoided
   by probing the right layer the first time.
-- The `requirements` skill when the reason you are stuck is that the ask was
-  never clear. Consulting will not fix an unclear requirement.
+- The `requirements` skill when you are stuck because the ask was never clear.
+  Consulting will not fix an unclear requirement.

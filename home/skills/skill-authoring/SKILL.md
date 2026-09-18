@@ -8,8 +8,8 @@ description: Use when adding, editing, splitting or reorganising a skill, decidi
 ## Should this be a skill?
 
 A skill earns its place when the same instructions, checklist, or procedure
-keeps getting pasted into chat, or when a section of an instructions file has
-grown from *facts* into a *procedure*.
+keeps getting pasted into chat, or when an instructions-file section has grown
+from *facts* into a *procedure*.
 
 - **Facts about the project** → instructions file (`CLAUDE.md`, `AGENTS.md`).
   Always in context, so keep it short.
@@ -21,18 +21,16 @@ grown from *facts* into a *procedure*.
 
 ## Corrections belong here, not only in memory
 
-When the user corrects how you work, and the correction would hold next month
-on a different repo, it belongs in a skill. A memory records that it happened
-once; a skill changes what happens by default.
+A correction that would hold next month on a different repo belongs in a
+skill. A memory records that it happened once; a skill changes the default.
 
 The test is whether the correction survives its context. "Ask before mutating
 live infrastructure" and "probe `sudo -n` before deferring" generalise, so they
-go in a family. "This host has 3.8GB of RAM" does not, so that stays a memory.
+go in a family. "This host has 3.8GB of RAM" does not, so it stays a memory.
 
-Put it in the narrowest place that still catches the case: a language file
-beats the family parent, and the family parent beats an always-loaded
-instructions file. Reserve the instructions file for rules that must hold even
-when no skill is loaded.
+Put it in the narrowest place that still catches the case: language file over
+family parent, family parent over always-loaded instructions file. Reserve the
+instructions file for rules that must hold even when no skill is loaded.
 
 ## The family pattern
 
@@ -47,17 +45,17 @@ skills/<family>/
   languages/<lang>.md
 ```
 
-The parent holds what is true regardless of variant. Each child holds one
-variant's specifics. The parent ends with a routing table so the model knows
-which child to read and when:
+The parent holds what is true regardless of variant; each child holds one
+variant's specifics. The parent ends with a routing table saying which child
+to read and when:
 
 | Working in | Read |
 |---|---|
 | `*.rs`, `Cargo.toml` | [languages/rust.md](languages/rust.md) |
 
-This is the whole disclosure mechanism, and it is why the parent's description
-must carry trigger keywords for **every** child: the parent is the only thing
-in the listing, so if it does not fire, no child is ever reached.
+This is the whole disclosure mechanism, and why the parent's description must
+carry trigger keywords for **every** child: only the parent is in the listing,
+so if it does not fire, no child is reached.
 
 ## Routing
 

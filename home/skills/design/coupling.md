@@ -25,7 +25,7 @@ you are navigating someone else's object graph.
 The rule of thumb: **talk only to your immediate neighbours**: your own
 fields, your parameters, and things you just created.
 
-Honest exceptions, which are not violations:
+Exceptions that are not violations:
 - Fluent builders and chained iterators / streams, where every call returns the
   same type by design (`items.iter().filter(..).map(..).collect()`).
 - Chains inside a single module over its own private types, so no external

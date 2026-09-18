@@ -3,15 +3,14 @@
 ## Credentials
 
 Find out how credentials are supplied (aws-vault, SSO, static env vars, an
-instance/task role, etc.) before assuming a bare `aws` command works — a
-profile that uses assume-role needs a credential source a bare `aws` or
-`AWS_PROFILE=` won't provide on its own. For example, with aws-vault, prefix
-the command rather than exporting a session, and be aware that a bare
-`aws-vault exec` may be intercepted and backgrounded; use the `AWS_VAULT=`
-prefix form when driving it from a script or agent session. Ask which profile
-to use if it is not obvious.
+instance/task role) before assuming a bare `aws` command works: an
+assume-role profile needs a credential source that bare `aws` or
+`AWS_PROFILE=` won't provide. With aws-vault, prefix the command rather than
+exporting a session; a bare `aws-vault exec` may be intercepted and
+backgrounded, so use the `AWS_VAULT=` prefix form from a script or agent
+session. Ask which profile to use if it is not obvious.
 
-Always confirm which account and region a command will hit before running it.
+Confirm which account and region a command will hit before running it.
 
 ## Reading
 
@@ -21,17 +20,17 @@ aws <service> describe-* / list-* / get-*   --output json
 ```
 
 Read-only calls are fine unprompted. Anything that creates, modifies, or
-deletes a resource, or that costs money, needs the user's agreement first,
-and belongs in the Terraform repo rather than the CLI.
+deletes a resource, or costs money, needs the user's agreement first and
+belongs in the Terraform repo, not the CLI.
 
 ## Debugging access denials
 
-An `AccessDenied` is answered by evidence, not guesswork: find the actual call
-in CloudTrail, then read the identity's attached policies and the resource
-policy, and the trust policy if the failure is on `sts:AssumeRole` or
+Answer an `AccessDenied` with evidence, not guesswork: find the call in
+CloudTrail, then read the identity's attached policies and the resource
+policy, plus the trust policy if the failure is on `sts:AssumeRole` or
 `AssumeRoleWithWebIdentity` (the usual shape for GitHub OIDC in CI).
 
 ## Cost
 
-Provisioning large instances, GPU capacity, or anything without a cost control
-is a decision for the user, not a default.
+Large instances, GPU capacity, or anything without a cost control is the
+user's decision, not a default.

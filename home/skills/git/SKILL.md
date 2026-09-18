@@ -16,8 +16,8 @@ description: Use when committing, amending, splitting or reordering changes, ope
   (`gh pr merge --rebase`). If rebase merges are unavailable or disallowed,
   use a merge commit (`gh pr merge --merge`). Never `gh pr merge --squash`.
 
-These three are user mandates, not preferences. They override any default
-workflow a tool or another skill suggests.
+User mandates, not preferences: they override any default a tool or another
+skill suggests.
 
 ## Working rules
 
@@ -25,14 +25,13 @@ workflow a tool or another skill suggests.
   first.
 - Interactive git (`rebase -i`, `add -i`) is unavailable in agent sessions;
   achieve the same result with non-interactive commands.
-- Before amending or rebasing anything already pushed, confirm with the user;
-  rewriting published history is not reversible for anyone who pulled it.
+- Confirm with the user before amending or rebasing anything already pushed;
+  rewriting published history is irreversible for anyone who pulled it.
 - Use the `gh` CLI for anything GitHub-side (PRs, issues, API), not the web UI
   and not raw REST where `gh` has a subcommand.
 - Ignore entries go in the checked-in `.gitignore` by default, so everyone
-  working on the repo gets them. Reserve `.git/info/exclude` for genuinely
-  personal files, such as a local work queue or scratch notes, or when the
-  user asks for a local-only exclude.
+  gets them. Reserve `.git/info/exclude` for genuinely personal files (a local
+  work queue, scratch notes) or when the user asks for a local-only exclude.
 
 ## Routing
 

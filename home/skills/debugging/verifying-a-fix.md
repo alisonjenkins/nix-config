@@ -6,13 +6,13 @@ including reasons that will bring them back.
 ## Verify in the environment the user actually uses
 
 A fix that sets or defaults an environment variable must be checked in a shell
-that matches how the program is really launched, not the agent's shell, and
-not a test run that happens to clear the variable.
+matching how the program is really launched: not the agent's shell, and not a
+test run that happens to clear the variable.
 
 - If the login session already exports the variable, a "set default" mechanism
   is a **no-op**. Check `echo $VAR` in a plain login shell before believing it.
-  A default only applies where nothing has set the value already; overriding
-  needs an explicit override, not a default.
+  A default only applies where nothing has set the value; overriding needs an
+  explicit override, not a default.
 - Beware **single-instance applications**. Launching one while an old instance
   is running hands off to that old, unfixed process, and you will observe and
   log the old behaviour. Fully exit it first.
@@ -24,7 +24,7 @@ Environment variables placed before a wrapper command are inherited by the
 separator decides which process gets them.
 
 Inspect the target process's actual environment (`/proc/<pid>/environ`) rather
-than inferring from behaviour.
+than inferring it from behaviour.
 
 ## Positive control
 

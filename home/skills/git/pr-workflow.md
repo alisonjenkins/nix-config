@@ -1,8 +1,8 @@
 # Pull requests
 
-For `gh pr`/`gh issue` command syntax, see the `infra` skill's `github.md`
-cheat sheet. Below covers only what that sheet doesn't: the workflow order and
-the non-obvious flags.
+For `gh pr`/`gh issue` syntax, see the `infra` skill's `github.md` cheat
+sheet. This covers only what that sheet doesn't: workflow order and
+non-obvious flags.
 
 ## Opening
 
@@ -17,20 +17,18 @@ the non-obvious flags.
 
 ## Fixing feedback on your own, unmerged PR
 
-- When the fix addresses something *this PR itself introduced* (a review
-  comment, a bug you find while iterating), commit it as
-  `git commit --fixup=<sha>` targeting the commit that introduced it, not a
-  plain new commit. Push normally — do not `rebase --autosquash` unless
-  asked; the fixups stay as their own visible commits, still reflecting the
-  atomic-commit mandate.
-- If the fix addresses something that predates this PR (a pre-existing bug
-  you noticed in passing), use a normal commit instead — it's not part of
-  this PR's own history to keep legible.
-- Keep the PR title and description in sync with the PR's actual current
-  state as it evolves across review rounds — not just what was true when it
-  was opened. After a round of fixup commits that changes scope (new
-  behavior, a renamed thing, a dropped approach), update both with
-  `gh pr edit`.
+- A fix for something *this PR itself introduced* (a review comment, a bug
+  found while iterating): `git commit --fixup=<sha>` targeting the commit
+  that introduced it, not a plain new commit. Push normally — no
+  `rebase --autosquash` unless asked; the fixups stay as visible commits,
+  still honouring the atomic-commit mandate.
+- A fix for something that predates this PR (a pre-existing bug noticed in
+  passing): a normal commit — it's not part of this PR's history to keep
+  legible.
+- Keep the PR title and description in sync with the PR's current state
+  across review rounds, not just what was true at opening. After fixup
+  commits that change scope (new behavior, a rename, a dropped approach),
+  update both with `gh pr edit`.
 
 ## Merging
 
@@ -44,7 +42,7 @@ the non-obvious flags.
 
 - Reviewing someone else's PR, or your own diff: use the `review` skill.
 - Receiving review feedback: verify each point technically before implementing
-  it. Agreeing with a wrong suggestion because it came from a reviewer is a
+  it. Agreeing with a wrong suggestion because a reviewer made it is a
   failure mode, not politeness. See `superpowers:receiving-code-review`, and
   [pr-review-responses.md](pr-review-responses.md) for watching, replying and
   resolving threads.
@@ -52,5 +50,4 @@ the non-obvious flags.
 ## Checks
 
 Run `gh pr checks` (see `infra/github.md`) before asking for a merge. A red
-check that you believe is unrelated still needs to be named explicitly, not
-ignored.
+check you believe is unrelated must still be named, not ignored.

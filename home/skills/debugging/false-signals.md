@@ -1,7 +1,7 @@
 # Signals that lie
 
-Each of these has reported "fine" while the system was broken. When one of
-them is your only evidence, go and get better evidence.
+Each of these has reported "fine" while the system was broken. When one is
+your only evidence, get better evidence.
 
 ## Process and service state
 
@@ -21,8 +21,8 @@ them is your only evidence, go and get better evidence.
   or bytes actually flow end to end.
 - **L2 reachability is not L3/L4 reachability.** ARP resolving proves nothing
   about whether traffic is passing; a stateful firewall or killswitch can drop
-  everything after ARP succeeds. Test with the protocol you actually care
-  about, not `ping`.
+  everything after ARP succeeds. Test with the protocol you care about, not
+  `ping`.
 
 ## Storage and mounts
 
@@ -36,8 +36,8 @@ them is your only evidence, go and get better evidence.
 
 - **A parser can reject one value and silently discard the whole section.**
   The only evidence may be a single terse log line. After any config change,
-  grep the daemon's log for its rejection message rather than concluding it
-  worked because nothing else errored.
+  grep the daemon's log for its rejection message; "nothing else errored" is
+  not proof it worked.
 - **A flag's name is not its behaviour.** A flag can encode an assumption from
   a different topology and do nothing, or the exact opposite of what it says.
   Verify the effect, not the intent.
@@ -48,15 +48,14 @@ them is your only evidence, go and get better evidence.
   intermittent and load-dependent failures are concurrency issues until proven
   otherwise: a test that passes alone and fails in the suite, a bug that only
   appears on the faster machine, an import that fails one time in twenty. The
-  retry that makes it go away is the signal being suppressed, not the fault
-  being fixed. Go and find the shared state: the `programming` skill's
-  `concurrency.md` covers where it hides.
-- **Not reproducing is not evidence of absence.** It is evidence that your
-  reproduction is missing a condition: load, ordering, a cold cache, a
-  different clock, a second client.
+  retry that makes it go away suppresses the signal; it does not fix the
+  fault. Find the shared state: the `programming` skill's `concurrency.md`
+  covers where it hides.
+- **Not reproducing is not evidence of absence.** It means your reproduction
+  is missing a condition: load, ordering, a cold cache, a different clock, a
+  second client.
 
 ## The general form
 
-If the signal you are trusting is produced by something *other than* the thing
-that is broken, it is not evidence. Find the probe that touches the broken
-object itself.
+A signal produced by something *other than* the broken thing is not evidence.
+Find the probe that touches the broken object itself.

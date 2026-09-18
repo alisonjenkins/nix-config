@@ -6,22 +6,21 @@ The [agentskills.io](https://agentskills.io) spec allows exactly six fields:
 
     name  description  license  compatibility  metadata  allowed-tools
 
-Everything else is a Claude Code extension. Shared skills in this repo, the
-families under `home/skills/`, are linked into both
-Claude Code and opencode, so they use **spec fields only**. That constraint is
-what keeps them usable outside Claude Code. Claude-Code-only behaviour belongs
-in settings (`skillOverrides`) or in a skill that is already Claude-Code
-specific, such as a project skill under `.claude/skills/`.
+Everything else is a Claude Code extension. Shared skills in this repo (the
+families under `home/skills/`) are linked into both Claude Code and opencode,
+so they use **spec fields only**; that is what keeps them usable outside Claude
+Code. Claude-Code-only behaviour belongs in settings (`skillOverrides`) or in
+an already Claude-Code-specific skill, such as a project skill under
+`.claude/skills/`.
 
 Uploading a skill with a non-spec field to claude.ai or the Skills API fails
 with `Unexpected key(s) in SKILL.md frontmatter`.
 
 The one tolerated exception on a shared skill is `argument-hint`: it is
-cosmetic, other runtimes ignore unknown keys, and nothing about the skill's
-behaviour depends on it. Never put a *behavioural* extension on a shared
-skill, such as `paths`, `context`, `disable-model-invocation`, or
-`user-invocable`: those change what the skill does, so a runtime that ignores
-them runs it differently.
+cosmetic, other runtimes ignore unknown keys, and no behaviour depends on it.
+Never put a *behavioural* extension on a shared skill (`paths`, `context`,
+`disable-model-invocation`, `user-invocable`): those change what the skill
+does, so a runtime that ignores them runs it differently.
 
 ## Fields worth knowing
 
@@ -39,12 +38,12 @@ them runs it differently.
 
 ## Subagents
 
-A subagent receives **no skill listing** (see the `delegation` skill for the
-general rule and how the parent injects one by name). Specific to a
-subagent's own frontmatter *definition* (not an ad-hoc delegation prompt):
+A subagent receives **no skill listing** (the `delegation` skill has the
+general rule and how the parent injects one by name). For a subagent's own
+frontmatter *definition* (not an ad-hoc delegation prompt):
 
-- Guidance a subagent must have goes in its `skills:` list, since a
-  description it cannot see will never fire.
+- Guidance a subagent must have goes in its `skills:` list; a description it
+  cannot see will never fire.
 - `disable-model-invocation: true` skills **cannot** be preloaded this way.
 - `Explore` and `Plan` skip the instructions hierarchy entirely, which is why
   they are cheap for read-only sweeps.

@@ -5,9 +5,9 @@ description: Use when asked to produce, read, edit or extract from a real docume
 
 # Documents
 
-This family exists so the specialist document skills stay out of the baseline
-listing until they are relevant. Each one below is a full skill: **invoke it**
-rather than trying to do the work from this page.
+This family keeps the specialist document skills out of the baseline listing
+until relevant. Each entry below is a full skill: **invoke it** rather than
+working from this page.
 
 | The ask | Invoke |
 |---|---|
@@ -20,15 +20,15 @@ rather than trying to do the work from this page.
 
 ## Availability
 
-These leaves ship with Claude Code. In another runtime they may not be
-installed, so check before promising a `.docx`, and say plainly that the format
-is unavailable rather than improvising a substitute.
+These leaves ship with Claude Code. Another runtime may lack them: check
+before promising a `.docx`, and say the format is unavailable rather than
+improvising a substitute.
 
 ## Choosing
 
-- The **file format asked for** decides the first four. If the user says
-  "report" without a format, ask before generating a binary file.
-- `doc-coauthoring` is about the *process* (drafting alongside the user), not
-  a format; it composes with the format skills rather than replacing them.
-- None of these are for source code, config files, or markdown in a repo.
-  That is ordinary editing; see the `programming` skill.
+- The **file format asked for** decides the first four. "Report" with no
+  format: ask before generating a binary file.
+- `doc-coauthoring` is a *process* (drafting alongside the user), not a
+  format; it composes with the format skills.
+- None of these cover source code, config files, or markdown in a repo. That
+  is ordinary editing; see `programming`.

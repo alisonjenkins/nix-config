@@ -5,35 +5,31 @@ description: Use when writing, changing, fixing, debugging or refactoring code i
 
 # Programming
 
-General rules first. Then read the per-language file for whatever you are
-actually editing: it carries the toolchain, idioms, and traps for that
-language.
+General rules first. Then read the per-language file for what you are
+editing: toolchain, idioms, and traps.
 
 ## General rules
 
 - **Match the surrounding code — except comment density.** Naming style,
-  error handling, and file layout come from the neighbours, not from your
-  defaults. A diff that reads like the rest of the file is worth more than
-  one that is independently prettier. Comment density is the one exception:
-  a file full of comment noise is not a convention to match, it is the thing
-  the next rule fixes. Do not add comments just because the file already has
-  many.
-- **Default to no comments.** This overrides "match the surrounding code"
-  above — an over-commented neighbour is never a reason to add more. Well-
-  named identifiers already say what the code does; a comment restating that
-  is noise. Write one only when the *why* is non-obvious — a hidden
-  constraint, a subtle invariant, a workaround for a specific bug, behaviour
-  that would surprise a reader — and drop it if removing it would not
-  confuse a future reader. Never comment what the code does, reference the
-  current task, fix, caller, or issue number (`used by X`, `added for the Y
-  flow`, `handles the case from issue #123`), or leave a `// removed` marker
-  for deleted code. Describing *why* a workaround exists is fine and
-  expected; citing the ticket that prompted it is not.
+  error handling, and file layout come from the neighbours, not your
+  defaults. A diff that reads like the rest of the file beats one that is
+  independently prettier. Comment density is the exception: a file full of
+  comment noise is not a convention to match. Do not add comments because the
+  file already has many.
+- **Default to no comments.** This overrides "match the surrounding code":
+  an over-commented neighbour is never a reason to add more. Well-named
+  identifiers already say what the code does; a comment restating that is
+  noise. Write one only when the *why* is non-obvious — a hidden constraint,
+  a subtle invariant, a workaround for a specific bug, behaviour that would
+  surprise a reader — and drop it if its absence would not confuse a future
+  reader. Never comment what the code does, reference the current task, fix,
+  caller, or issue number (`used by X`, `added for the Y flow`, `handles the
+  case from issue #123`), or leave a `// removed` marker for deleted code.
+  Explaining *why* a workaround exists is fine; citing the ticket is not.
 - **Comments earn their place, then get out of the way.** One short line,
   plain words, the constraint stated directly — no multi-line blocks, no
-  restating in a second sentence what the first already said. Same bar as the
-  `writing` skill's dyslexia/ADHD baseline: short sentences, no dense wall of
-  text to parse before the point lands.
+  second sentence restating the first. Same bar as the `writing` skill's
+  dyslexia/ADHD baseline.
 - **Errors carry context.** Never discard an error to satisfy a type. Either
   handle it, or propagate it with enough context that the log line alone
   identifies the failing operation and its inputs.
@@ -47,23 +43,21 @@ language.
   checks current state before mutating, and is safe to re-run.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
   retry count, buffer size) gets a name and a one-line justification.
-- **Don't program by coincidence.** If you cannot say *why* it works, it does
-  not work yet, it only happens to pass. Code that was arrived at by permuting
-  until the test went green is the most expensive kind to own, because the
-  next person, including you, will assume it was reasoned. Understand the
-  mechanism, or say plainly that you have not.
-- **Name well; rename when needed.** A name that no longer describes what the
-  thing does is a defect, not cosmetics: it actively misleads every reader
-  after you. Renaming the thing you are already changing is part of the change,
-  not scope creep; renaming things you are not otherwise touching is.
+- **Don't program by coincidence.** If you cannot say *why* it works, it only
+  happens to pass. Code arrived at by permuting until the test went green is
+  the most expensive kind to own: the next person, including you, will assume
+  it was reasoned. Understand the mechanism, or say plainly that you have not.
+- **Name well; rename when needed.** A name that no longer describes the thing
+  is a defect, not cosmetics: it misleads every later reader. Renaming the
+  thing you are already changing is part of the change; renaming things you
+  are not otherwise touching is scope creep.
 - **Don't live with broken windows.** A known-wrong thing left in place
-  licenses the next one, and the decay compounds faster than anyone expects.
-  Fix it if it is in reach, and if it is genuinely out of scope, record it
-  where it will be found; never step over it silently.
-- **Treat reluctance as a signal.** When you find yourself circling a change
-  without starting it, the usual cause is that the requirement is unclear or
-  the design is wrong, not that the work is unpleasant. Stop and re-read the
-  requirement before pushing through.
+  licenses the next one, and the decay compounds. Fix it if in reach; if
+  genuinely out of scope, record it where it will be found. Never step over
+  it silently.
+- **Treat reluctance as a signal.** Circling a change without starting it
+  usually means the requirement is unclear or the design is wrong, not that
+  the work is unpleasant. Re-read the requirement before pushing through.
 - **Delegating code work to a sub-agent means naming this skill in its
   prompt** — see the `delegation` skill for why and how.
 
@@ -95,17 +89,15 @@ Read the file matching what you are editing. If several apply, read each.
 
 ## Related
 
-- The ask itself being unclear: it named a solution rather than a problem, or
-  you are about to guess which of two readings was meant: the `requirements`
-  skill, before any of this.
-- Deciding what shape the change should be: where a responsibility belongs,
-  whether to split a module, why a small change is touching many files: the
-  `design` skill. Reach for it before writing when the structure is in
-  question, not after.
+- The ask is unclear (it named a solution rather than a problem, or you are
+  about to guess between two readings): the `requirements` skill, before any
+  of this.
+- Deciding the shape of the change (where a responsibility belongs, whether
+  to split a module, why a small change touches many files): the `design`
+  skill, before writing, not after.
 - Finding out *why* something is broken, before writing the fix: the
-  `debugging` skill. This one covers writing the change; that one covers
-  locating the fault and deciding which evidence to trust. Both apply to a bug
-  fix, in that order.
+  `debugging` skill. That one locates the fault and decides which evidence to
+  trust; this one writes the change. A bug fix uses both, in that order.
 - Tests for the code you are writing: the `testing` skill.
 - Committing the result: the `git` skill.
 - Reviewing a finished diff: the `review` skill.
