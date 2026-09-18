@@ -35,10 +35,13 @@ non-obvious flags.
 
 ## Merging
 
-- **Try `scripts/merge-onto-default.sh` first.** It rebases locally onto
-  the default branch and pushes directly there — a true fast-forward,
-  same commit objects, signatures intact. GitHub auto-marks the PR
-  merged once its commits land on the default branch this way.
+- **Try `scripts/merge-onto-default.sh` first.** Needs an open PR (gates
+  on its checks via `gh pr checks --watch`, whatever the repo has —
+  none assumed). Rebases locally, re-pushes to refresh CI if that moved
+  HEAD, waits for checks, then pushes straight to the default branch —
+  fast-forward, signatures intact. GitHub auto-marks the PR merged.
+  CI wait is often minutes — run in the background or with a raised
+  timeout.
 - If it's rejected (branch protection requires a PR — the script says
   so plainly), fall back to `gh pr merge --rebase`, or `--merge` if
   rebase merges are disabled. **Never** `--squash`. Ask the user first

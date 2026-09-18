@@ -11,6 +11,8 @@ args=("$@")
 is_graphql_threads=0
 is_reviews_body_scan=0
 is_reviews_verdict=0
+is_pr_view=0
+is_pr_checks=0
 
 for ((i = 0; i < ${#args[@]}; i++)); do
   case "${args[$i]}" in
@@ -23,9 +25,16 @@ for ((i = 0; i < ${#args[@]}; i++)); do
     case "$next" in
       *"sort_by(.submitted_at)"*) is_reviews_verdict=1 ;;
       *"select(.body"*) is_reviews_body_scan=1 ;;
+      *"headRefOid"*) is_pr_view=1 ;;
     esac
   fi
 done
+
+if [[ "${args[0]:-}" == "pr" && "${args[1]:-}" == "view" ]]; then
+  is_pr_view=1
+elif [[ "${args[0]:-}" == "pr" && "${args[1]:-}" == "checks" ]]; then
+  is_pr_checks=1
+fi
 
 if [[ $is_graphql_threads -eq 1 ]]; then
   if [[ -f "$fixtures/graphql-fails" ]]; then
@@ -60,6 +69,24 @@ elif [[ $is_reviews_body_scan -eq 1 ]]; then
   cat "$fixtures/review-bodies.txt"
 elif [[ $is_reviews_verdict -eq 1 ]]; then
   cat "$fixtures/verdict-line.txt"
+elif [[ $is_pr_view -eq 1 ]]; then
+  if [[ -f "$fixtures/no-pr" ]]; then
+    echo "fake-gh: no pull requests found for branch" >&2
+    exit 1
+  fi
+  pr_number="$(cat "$fixtures/pr-number.txt" 2>/dev/null || echo 1)"
+  pr_head_sha="$(cat "$fixtures/pr-head-sha.txt" 2>/dev/null || echo "")"
+  printf '%s\t%s\n' "$pr_number" "$pr_head_sha"
+elif [[ $is_pr_checks -eq 1 ]]; then
+  if [[ -f "$fixtures/checks-no-checks" ]]; then
+    echo "no checks reported on the branch" >&2
+    exit 1
+  elif [[ -f "$fixtures/checks-fail" ]]; then
+    echo "some-check	fail	0	url"
+    exit 1
+  else
+    echo "some-check	pass	0	url"
+  fi
 else
   echo "fake-gh: unrecognized invocation: ${args[*]}" >&2
   exit 2

@@ -7,6 +7,14 @@
 # signed (see commit-messages.md's "Preserving signatures"). Falls back
 # to reporting that gap plainly, rather than silently accepting it, when
 # the direct push is rejected (e.g. branch protection requires a PR).
+#
+# Requires an open PR for the branch: a default branch with required
+# status checks enforces them on direct pushes too, so this gates on the
+# PR's checks first via `gh pr checks --watch` (whatever checks the repo
+# actually has — none assumed).
+#
+# `--watch` blocks until CI settles, often several minutes — run this in
+# the background or with a raised timeout.
 set -euo pipefail
 
 usage() {
@@ -59,6 +67,32 @@ fi
 if [[ "$(git config --get commit.gpgsign || echo false)" == "true" ]]; then
   if ! "$script_dir/verify-signed.sh" "origin/$default_branch..HEAD"; then
     echo "error: refusing to merge — commit(s) ahead of $default_branch are unsigned (see above)" >&2
+    exit 1
+  fi
+fi
+
+pr_info="$(gh pr view --json number,headRefOid --jq '[.number,.headRefOid]|@tsv' 2>&1)" || pr_info=""
+if [[ -z "$pr_info" ]]; then
+  echo "error: no open PR found for $current_branch — open one first" >&2
+  echo "  (this script gates the direct push on that PR's checks; without one there's nothing to gate on)" >&2
+  exit 1
+fi
+IFS=$'\t' read -r pr_number pr_head_sha <<<"$pr_info"
+
+local_head_sha="$(git rev-parse HEAD)"
+if [[ "$local_head_sha" != "$pr_head_sha" ]]; then
+  echo "== rebase moved HEAD — pushing $current_branch to update PR #$pr_number before checking CI =="
+  git push --force-with-lease origin "$current_branch"
+fi
+
+echo "== waiting for PR #$pr_number's checks =="
+checks_output="$(gh pr checks "$pr_number" --watch 2>&1)" && checks_status=0 || checks_status=$?
+echo "$checks_output"
+if [[ $checks_status -ne 0 ]]; then
+  if [[ "$checks_output" == *"no checks reported"* ]]; then
+    echo "== no checks configured on this PR — nothing to gate on, proceeding =="
+  else
+    echo "error: refusing to push — PR #$pr_number's checks did not all pass (see above)" >&2
     exit 1
   fi
 fi

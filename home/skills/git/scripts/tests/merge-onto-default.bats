@@ -3,6 +3,12 @@
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   script="$script_dir/../merge-onto-default.sh"
+  export PATH="$script_dir:$PATH"
+  export FAKE_GH_FIXTURES="$BATS_TEST_TMPDIR/fixtures"
+  mkdir -p "$FAKE_GH_FIXTURES"
+  # Default: a PR exists, checks pass. pr-head-sha stays unset so every
+  # test also exercises the re-push-before-checking path, harmlessly.
+  echo 1 >"$FAKE_GH_FIXTURES/pr-number.txt"
 
   origin="$BATS_TEST_TMPDIR/origin.git"
   git init -q --bare "$origin"
@@ -132,6 +138,49 @@ feature_branch_with_commit() {
   run git rev-parse main
   # main on the remote is untouched -- confirm nothing was pushed
   [ "$original_main" != "" ]
+}
+
+@test "no open PR found errors clearly instead of pushing ungated" {
+  rm "$FAKE_GH_FIXTURES/pr-number.txt"
+  touch "$FAKE_GH_FIXTURES/no-pr"
+  feature_branch_with_commit "one"
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no open PR found"* ]]
+  run git ls-remote origin refs/heads/main
+  original_main="${output%%$'\t'*}"
+  run git rev-parse main
+  [ "$original_main" != "" ]
+}
+
+@test "refuses to push when the PR's checks fail" {
+  touch "$FAKE_GH_FIXTURES/checks-fail"
+  feature_branch_with_commit "one"
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"checks did not all pass"* ]]
+  [[ "$output" != *"pushing feature onto"* ]]
+}
+
+@test "proceeds when the PR has no checks configured at all" {
+  touch "$FAKE_GH_FIXTURES/checks-no-checks"
+  feature_branch_with_commit "one"
+
+  run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to gate on, proceeding"* ]]
+  [[ "$output" == *"signatures intact"* ]]
+}
+
+@test "re-pushes the branch to update the PR before checking CI when the rebase moved HEAD" {
+  feature_branch_with_commit "one"
+  echo stale-sha >"$FAKE_GH_FIXTURES/pr-head-sha.txt"
+
+  run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"pushing feature to update PR #1 before checking CI"* ]]
 }
 
 @test "a protected branch (rejected direct push) reports the gh pr merge fallback plainly" {
