@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning any sub-agent (Agent tool), or when deciding whether a batch of similar calls belongs in the main loop at all — picks the sub-agent model tier (haiku vs sonnet), when to delegate in the first place, Explore vs general-purpose, background execution, self-contained prompts, and what must never be delegated. Not for escalating to a stronger model when stuck — see the `consulting` skill for that.
+description: Use before spawning any sub-agent (Agent tool), or when deciding whether a batch of similar calls belongs in the main loop at all — picks the sub-agent model tier (haiku vs sonnet), when to delegate in the first place, Explore vs general-purpose, background execution, self-contained prompts, and what must never be delegated. Also routes to delegating a subtask to GitHub Copilot's CLI (`copilot`, Copilot delegate, Luna model) as an alternative to a sub-agent. Not for escalating to a stronger model when stuck — see the `consulting` skill for that.
 ---
 
 # Delegation
@@ -83,6 +83,13 @@ when the sweep needs tools Explore lacks (edits, writes, MCP mutations).
 - Cap the reply length explicitly (e.g. "return at most 30 lines: one line
   per PR — number, state, mergeable").
 
+## Delegating outside the Agent tool
+
+Everything above is about picking a *model tier* for an Agent-tool sub-agent.
+When the target is GitHub Copilot's own `copilot` CLI instead — a genuinely
+external, paid delegate, not a sub-agent — read
+[delegate-to-copilot.md](delegate-to-copilot.md).
+
 ## Escalating instead of grinding
 
 Hard problems — not high-volume ones — go the other direction: to a stronger
@@ -103,3 +110,5 @@ compressed into a prompt.
   volume to a cheaper one.
 - `programming`, `testing`, `git`, and other skills: name them explicitly in
   a sub-agent prompt when the delegated task needs their guidance.
+- [delegate-to-copilot.md](delegate-to-copilot.md): delegating to GitHub
+  Copilot's CLI instead of an Agent-tool sub-agent.
