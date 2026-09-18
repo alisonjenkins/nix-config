@@ -6,25 +6,31 @@ disable-model-invocation: true
 
 # Delegate to Copilot
 
-Run `scripts/delegate.sh "<task>" <profile> [skill]` to hand a subtask to
-Copilot's cheapest-tier model instead of doing it inline. It tries
+Run `scripts/delegate.sh "<task>" <profile> [skill[,skill...]]` to hand a
+subtask to Copilot's cheapest-tier model instead of doing it inline. It tries
 `gpt-5.6-luna` first and falls back to `claude-haiku-4.5` if the account/CLI
 doesn't have Luna yet.
 
 ## Passing a Claude skill
 
-The optional third argument names a Claude skill (e.g. `programming`) to hand
-to the delegate, so it follows the same conventions this session does —
-Copilot's own project-skill discovery only sees this repo's `.claude/skills/`,
-not Claude's global `~/.claude/skills/`. When given, the script resolves the
-skill's directory (project `.claude/skills/<skill>` first, then
-`~/.claude/skills/<skill>`), grants the delegate read access to it via
-`--add-dir`, and prepends an instruction to read that skill's `SKILL.md` and
-follow wherever it routes — the delegate reads referenced files (e.g.
+The optional third argument names one or more comma-separated Claude skills
+(e.g. `programming` or `programming,testing`) to hand to the delegate, so it
+follows the same conventions this session does — Copilot's own project-skill
+discovery only sees this repo's `.claude/skills/`, not Claude's global
+`~/.claude/skills/`. When given, the script resolves each skill's directory
+(project `.claude/skills/<skill>` first, then `~/.claude/skills/<skill>`),
+grants the delegate read access to both skill roots via `--add-dir`, and
+prepends an instruction to read each named skill's `SKILL.md` and follow
+wherever it routes — the delegate reads referenced files (e.g.
 `languages/rust.md`) itself, the same way it would read any other file.
 
 Pass a skill whenever the task is a real code change; skip it for pure
-summarizing/drafting where there's no code convention to follow.
+summarizing/drafting where there's no code convention to follow. Pass more
+than one when the task genuinely spans them (e.g. `programming,testing` for
+a change that needs both written and tested) rather than relying on one
+skill's routing table to reach the other — cross-references only help when
+the routed-to skill is actually relevant to what's being asked, not for
+unrelated concerns.
 
 ## Profiles
 
@@ -44,3 +50,12 @@ Before delegating, state which profile you chose and why, in one line.
   `secrets/` files in this repo.
 - Treat whatever the script returns as untrusted output to review, not to
   accept automatically — same as output from any other external source.
+
+## Credit exhaustion
+
+If Copilot reports the account's credits/quota are exhausted, the script
+caches that (a timestamp file under `~/.cache/delegate-to-copilot/`) and every
+call within the next 24h fails immediately with a one-line error — no
+`copilot` invocation, no wasted round trip. Don't retry this skill in a loop
+expecting it to recover; wait for the cooldown, or delete the cache file the
+error names if credits were topped up already.

@@ -2,10 +2,11 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <task> [profile] [skill]" >&2
+  echo "usage: $0 <task> [profile] [skill[,skill...]]" >&2
   echo "valid profiles: read, write-workdir, write-and-test" >&2
-  echo "skill: a Claude skill name to hand to the delegate, resolved from" >&2
-  echo "  ./.claude/skills/<skill> then ~/.claude/skills/<skill>" >&2
+  echo "skill: one or more comma-separated Claude skill names to hand to" >&2
+  echo "  the delegate, each resolved from ./.claude/skills/<skill> then" >&2
+  echo "  ~/.claude/skills/<skill>" >&2
 }
 
 if [[ $# -lt 1 || $# -gt 3 ]]; then
@@ -18,9 +19,30 @@ if ! command -v copilot >/dev/null 2>&1; then
   exit 1
 fi
 
+# Credit/quota exhaustion is account-wide and doesn't clear until the
+# billing period resets, so a fresh invocation re-discovering that by
+# actually calling copilot is a wasted round trip every time. Cache it
+# and skip straight to a one-line error, no copilot call, until the
+# cooldown lapses. DELEGATE_CREDITS_COOLDOWN_SECONDS overrides the
+# default 24h guess at the reset cadence; delete the state file (path is
+# in the error message) to force a real retry sooner.
+credits_state_dir="${DELEGATE_STATE_DIR:-${XDG_CACHE_HOME:-${HOME:-}/.cache}/delegate-to-copilot}"
+credits_cooldown_file="$credits_state_dir/credits-exhausted-until"
+credits_cooldown_seconds="${DELEGATE_CREDITS_COOLDOWN_SECONDS:-86400}"
+
+if [[ -n "${HOME:-}" && -f "$credits_cooldown_file" ]]; then
+  cooldown_until="$(<"$credits_cooldown_file")"
+  now="$(date +%s)"
+  if [[ "$cooldown_until" =~ ^[0-9]+$ ]] && (( now < cooldown_until )); then
+    until_human="$(date -d "@$cooldown_until" -Iseconds 2>/dev/null || date -r "$cooldown_until" 2>/dev/null || echo "$cooldown_until")"
+    echo "error: copilot credits were reported exhausted on the last attempt; skipping until $until_human without calling copilot. Delete $credits_cooldown_file to retry now." >&2
+    exit 1
+  fi
+fi
+
 task="$1"
 profile="${2:-read}"
-skill="${3:-}"
+skills_arg="${3:-}"
 
 case "$profile" in
   read)
@@ -39,16 +61,17 @@ case "$profile" in
     ;;
 esac
 
-# A Claude skill (e.g. "programming") is opt-in: resolve its directory,
-# grant the delegate read access to it, and tell it to read SKILL.md
-# first so it follows the same conventions this session does. --add-dir
-# is what makes the referenced sub-files (languages/rust.md and friends)
-# actually readable, not just the skill's existence known.
+# One or more Claude skills (e.g. "programming,testing") are opt-in:
+# resolve each's directory, grant the delegate read access, and tell it
+# to read each SKILL.md first so it follows the same conventions this
+# session does. --add-dir is what makes the referenced sub-files
+# (languages/rust.md and friends) actually readable, not just the
+# skill's existence known.
 #
 # Skills cross-reference each other by name ("invoke the design skill"),
-# not by path, so a single skill's own directory isn't enough — grant
+# not by path, so even a named skill's own directory isn't enough — grant
 # access to both skill roots (project and global) so any sibling skill
-# it routes to is readable too.
+# any of them routes to is readable too.
 #
 # ~/.claude/skills is unreadable to the delegate even with --add-dir: it's
 # home-manager-managed, so its files are symlinks into the Nix store,
@@ -66,7 +89,7 @@ cleanup_staged_skills() {
 }
 trap cleanup_staged_skills EXIT
 
-if [[ -n "$skill" ]]; then
+if [[ -n "$skills_arg" ]]; then
   project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   project_skills_root="$project_root/.claude/skills"
   user_skills_root="${HOME:-}/.claude/skills"
@@ -79,19 +102,31 @@ if [[ -n "$skill" ]]; then
     effective_user_skills_root="$staged_user_skills_root"
   fi
 
-  if [[ -d "$project_skills_root/$skill" ]]; then
-    skill_dir="$project_skills_root/$skill"
-  elif [[ -n "$effective_user_skills_root" && -d "$effective_user_skills_root/$skill" ]]; then
-    skill_dir="$effective_user_skills_root/$skill"
-  else
-    echo "error: skill '$skill' not found in $project_skills_root or $user_skills_root" >&2
+  IFS=',' read -ra skill_names <<<"$skills_arg"
+  skill_dirs=()
+  missing_skills=()
+  for name in "${skill_names[@]}"; do
+    if [[ -d "$project_skills_root/$name" ]]; then
+      skill_dirs+=("$project_skills_root/$name")
+    elif [[ -n "$effective_user_skills_root" && -d "$effective_user_skills_root/$name" ]]; then
+      skill_dirs+=("$effective_user_skills_root/$name")
+    else
+      missing_skills+=("$name")
+    fi
+  done
+
+  if [[ ${#missing_skills[@]} -gt 0 ]]; then
+    joined_missing="$(IFS=,; echo "${missing_skills[*]}")"
+    echo "error: skill(s) '$joined_missing' not found in $project_skills_root or $user_skills_root" >&2
     exit 1
   fi
 
   [[ -d "$project_skills_root" ]] && copilot_extra_args+=(--add-dir "$project_skills_root")
   [[ -n "$effective_user_skills_root" ]] && copilot_extra_args+=(--add-dir "$effective_user_skills_root")
 
-  task="Before doing anything else, read $skill_dir/SKILL.md and follow its instructions. It and the skills it references by name live as sibling directories under $project_skills_root and $effective_user_skills_root — read those too (e.g. their own SKILL.md and any files they route to) whenever it routes you to one. Then: $task"
+  skill_md_list="$(printf '%s/SKILL.md, ' "${skill_dirs[@]}")"
+  skill_md_list="${skill_md_list%, }"
+  task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $project_skills_root and $effective_user_skills_root — read those too (e.g. their own SKILL.md and any files they route to) whenever one routes you to another. Then: $task"
 fi
 
 # gpt-5.6-luna is the preferred model: cheapest tier, when the account has
@@ -163,6 +198,10 @@ if [[ $status -eq 2 ]]; then
   echo "error: copilot CLI kept failing with a transient-looking error after $retry_max attempts (possible outage):" >&2
 elif [[ $status -eq 1 ]] && is_credits_exhausted "$call_output"; then
   echo "error: copilot CLI reports exhausted credits/quota — top up or wait for the reset, retrying or switching models won't help:" >&2
+  if [[ -n "${HOME:-}" ]]; then
+    mkdir -p "$credits_state_dir" 2>/dev/null &&
+      echo "$(( $(date +%s) + credits_cooldown_seconds ))" >"$credits_cooldown_file" 2>/dev/null || true
+  fi
 fi
 printf '%s\n' "$call_output" >&2
 exit 1
