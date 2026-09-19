@@ -65,6 +65,21 @@ otherwise breaks where you cannot see it.
 - Keep wording tool- and path-agnostic in anything shared. Machine-specific
   detail belongs in that machine's own configuration or in memory, not here.
 
+## Match the form to the failure
+
+Plain prose holds up until the model is under pressure to skip it. Pick the
+form by what actually gets violated, not by habit:
+
+| Failure mode | Form that holds |
+|---|---|
+| A rule gets rationalized away under pressure | A flat prohibition plus a table of excuse → why it doesn't count |
+| Output arrives in the wrong shape | A positive template of the right shape, not a description of the wrong one |
+| A required element gets silently dropped | A REQUIRED-field checklist, not a paragraph that mentions it once |
+| Behaviour should depend on a condition | State the condition as an observable predicate, not "when appropriate" |
+
+If a rule must hold 100% of the time, a skill is the wrong place for it —
+only moving the check into a hook removes the chance to rationalize past it.
+
 ## Body
 
 - Keep `SKILL.md` under 500 lines; move detail into sibling files and link

@@ -66,6 +66,11 @@ quote the result, and say plainly if something was skipped. Build success is
 not test success, and a passing suite you did not run is not evidence. See
 `superpowers:verification-before-completion`.
 
+| Excuse | Why it doesn't hold |
+|---|---|
+| "The code looks right, a test would just confirm it" | Looking right and being right are exactly the gap tests exist to catch |
+| "I already ran this before the last edit" | The last edit is what's unverified; re-run after every change that could affect the result |
+
 Verifying a fix to *running* software is harder than running a test suite: the
 environment must match the one the user runs, and many signals report success
 while the fix never applied. The `debugging` family's `verifying-a-fix.md`

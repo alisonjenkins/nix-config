@@ -56,6 +56,11 @@ or would make the whole deliverable useless if wrong. Everything else:
 2. For the part that does, pick the reading a careful colleague would pick.
 3. State the assumption where the user will see it, in one line.
 
+| Excuse | Why it doesn't hold |
+|---|---|
+| "Asking is safer, I'll just check" | An unneeded question costs the user a round trip; assume-state-proceed is the default for a reason |
+| "This is basically what they'd want anyway" | If it's genuinely that low-stakes, that's the case for proceeding — state the assumption, don't skip stating it |
+
 When you do have to ask, ask about the *problem*, not the implementation.
 "Should this apply to archived records too?" is answerable; "should I use a
 hash map or a btree?" is your job.

@@ -19,6 +19,11 @@ description: Use when committing, amending, splitting or reordering changes, ope
 User mandates, not preferences: they override any default a tool or another
 skill suggests.
 
+| Excuse | Why it doesn't hold |
+|---|---|
+| "This squash is basically one atomic change already" | Then it was one commit to begin with; squashing elsewhere still destroys other commits' reverts |
+| "The user obviously wants this committed" | Confidence isn't the bar — commit only when asked, every time; asking first costs one line |
+
 ## Working rules
 
 - Commit or push only when asked. If work lands on the default branch, branch
