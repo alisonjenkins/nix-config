@@ -12,8 +12,8 @@ description: Use when adding or changing a test, fixing a failing or flaky test,
 2. Write the smallest implementation that makes it pass.
 3. Refactor with the test green.
 
-The full TDD workflow lives in `superpowers:test-driven-development`; invoke
-that skill. This file covers what to test and how to judge a test.
+That's the whole loop — no separate discipline to invoke. The rest of this
+file covers what to test and how to judge a test.
 
 ## What testing is for
 
@@ -63,8 +63,10 @@ sides.
 
 Never report a change as working because "the code looks right". Run the test,
 quote the result, and say plainly if something was skipped. Build success is
-not test success, and a passing suite you did not run is not evidence. See
-`superpowers:verification-before-completion`.
+not test success, and a passing suite you did not run is not evidence. The
+claim needs the matching evidence: "tests pass" needs this run's output, not
+a previous one; "bug fixed" needs the original symptom retested, not just
+changed code you assume works.
 
 | Excuse | Why it doesn't hold |
 |---|---|
