@@ -1,6 +1,6 @@
 ---
 name: observability
-description: Use when investigating a live system's performance or reliability via Datadog or Grafana/LGTM (Loki, Tempo, Mimir, or Prometheus) - dashboards, logs/traces/metrics, alert/dashboard/SLO/cost improvements, auditing a VM or cloud resources for monitoring gaps, or writing a postmortem. Covers LogQL/PromQL/TraceQL queries, Alertmanager rules, the `pup` and `sift` CLIs. Not for instrumenting your own code (see programming's observability.md) or deploying/mutating infrastructure (see infra).
+description: Use when investigating a live system's performance or reliability via Datadog or Grafana/LGTM (Loki, Tempo, Mimir, or Prometheus): dashboards, logs/traces/metrics, alert/dashboard/SLO/cost improvements, coverage gaps, or a postmortem. Covers LogQL/PromQL/TraceQL, Alertmanager rules, the `pup` and `sift` CLIs. Not for instrumenting your own code (see programming) or deploying/mutating infrastructure (see infra).
 ---
 
 # Observability
