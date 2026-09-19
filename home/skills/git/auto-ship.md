@@ -27,12 +27,15 @@ Follow [pr-workflow.md](pr-workflow.md) step 1-4. Push, `gh pr create`.
 ## 4. Poll for review
 
 Follow the "Watching for a review" section of
-[pr-review-responses.md](pr-review-responses.md): poll on the order of
-minutes via `/loop` or a scheduled wake-up, not a tight sleep loop. Each
-cycle: `scripts/pr-status.sh <number> [owner/repo]` — one call for checks,
-`reviewDecision`, `mergeable`/`mergeStateStatus`, the paginated unresolved
-thread list, and the latest review with a summary, instead of separately
-running `gh pr checks` plus a hand-typed GraphQL query.
+[pr-review-responses.md](pr-review-responses.md): run
+`scripts/watch-pr.sh <number> [owner/repo]` via `run_in_background`/a
+Monitor — it keeps the branch rebased and only wakes you on real activity, a
+rebase conflict, or 24h idle, with no model turn spent per tick. When it
+wakes you, `scripts/pr-status.sh <number> [owner/repo]` gives the full
+picture in one call — checks, `reviewDecision`, `mergeable`/
+`mergeStateStatus`, the paginated unresolved thread list, and the latest
+review with a summary — instead of separately running `gh pr checks` plus a
+hand-typed GraphQL query.
 
 ## 5. Triage and fix
 

@@ -31,13 +31,24 @@ gh pr checks <number> --watch          # checks only, blocks until they settle
 leaves unresolved line comments without a verdict, so poll the thread list
 too (below), not `reviewDecision` alone.
 
-Poll on the order of minutes, not seconds; a human review takes as long as it
-takes. In Claude Code, use a `/loop` with a several-minute interval or a
-scheduled wake-up; a tight `sleep` loop in one shell command burns the session
-and cannot be interrupted.
+**Poll without spending a model turn per tick.** In Claude Code,
+`scripts/watch-pr.sh <pr-number> [owner/repo]` run via `run_in_background`
+(or a Monitor) does the whole loop in bash: keeps the branch rebased onto
+the default branch every tick (no model needed for a clean rebase), and
+exits — waking you — only when a cheap `gh pr view` fingerprint actually
+changes, a rebase conflict needs judgement, or 24h passes idle. A
+ScheduleWakeup/`/loop` tick, by contrast, is a full model turn even when
+nothing changed; reserve it for when no background-execution mechanism is
+available. Either way, back off exponentially rather than a fixed interval —
+start at 1 minute, ~1.5x per empty tick, capped at 15 minutes — since most of
+a review's wait time is spent doing nothing (`watch-pr.sh` does this
+internally; a manual loop should too). A user-specified interval overrides
+the ramp and stays fixed at whatever they asked for.
 
 Stop watching when the PR is merged or closed, when changes are requested (you
-now have work to do), or when the user says so.
+now have work to do), **24 hours pass with no new activity** (report that and
+hand back to the user rather than polling indefinitely), or when the user
+says so.
 
 `scripts/poll-pr-review.sh <pr-number> [owner/repo]` is the preferred wakeup
 check. In one pass it lists unresolved review threads (via GraphQL, paginated
