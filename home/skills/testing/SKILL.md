@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying that a change actually works before saying it does. Covers cargo test, pytest, vitest/jest, nix flake check, NixOS VM tests, bats, go test. Carries the TDD loop, mocking policy, property-based testing, and routes to per-language guidance for Rust, Python, Nix, TypeScript/JavaScript, shell and Go.
+description: Use when adding or changing a test, fixing a failing or flaky test, deciding whether something is testable, or verifying a change by running its tests before saying it works. Not for verifying a fix to already-running software (see debugging). Covers cargo test, pytest, vitest/jest, nix flake check, NixOS VM tests, bats, go test. Carries the TDD loop, mocking policy, property-based testing.
 ---
 
 # Testing
