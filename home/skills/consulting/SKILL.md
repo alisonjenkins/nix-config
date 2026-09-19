@@ -12,7 +12,9 @@ stronger one and acting on what it says, not by grinding.
 
 Escalate when **any** of these holds. They are countable on purpose: a stuck
 model is the worst judge of whether it is stuck, so do not wait to feel out of
-ideas.
+ideas. The specific counts (third attempt, two hypotheses, three reads) are
+starting values, not measured thresholds — adjust them from experience if a
+particular kind of task consistently escalates too early or too late.
 
 - **Third attempt at the same failure**, where the first two changed something
   real and the symptom is unchanged.
