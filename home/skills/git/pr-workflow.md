@@ -30,8 +30,12 @@ non-obvious flags.
   legible.
 - Keep the PR title and description in sync with the PR's current state
   across review rounds, not just what was true at opening. After fixup
-  commits that change scope (new behavior, a rename, a dropped approach),
-  update both with `gh pr edit`.
+  commits that change scope (new behavior, a rename, a dropped approach):
+  `scripts/pr-description.sh pull <number>` writes the current title/body
+  to local files (under `.git/`, not the repo tree) so editing the body is
+  an Edit-tool diff, not retyping the whole description into a `gh pr edit`
+  heredoc; `scripts/pr-description.sh push <number>` writes both back via
+  `--body-file`.
 
 ## Merging
 
