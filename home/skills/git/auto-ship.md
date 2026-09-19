@@ -103,6 +103,6 @@ matters for this repo.
 ## Stopping conditions
 
 Stop the loop and hand back to the user on: a thread needing their decision,
-an unrelated red check, a force-push that would be needed, merge conflicts
-`gh pr create`/`gh pr merge` can't resolve on their own, or being asked to
-stop.
+an unrelated red check, a force-push that would be needed, a merge conflict
+neither side of which is clearly superseded (see
+[merge-conflicts.md](merge-conflicts.md)), or being asked to stop.

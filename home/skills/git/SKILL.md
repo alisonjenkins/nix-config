@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use when committing, amending, splitting or reordering changes, opening/updating/reviewing/merging a PR, merge strategy, branching, or worktree setup ("commit this", "push it", "open a PR"). Also: review threads, resolve, Copilot re-review, auto-merge, ship this, fixup commits, .gitignore vs .git/info/exclude. Carries atomic-commit/never-squash mandate, commit message format; routes to commit, PR, review-response, auto-ship, worktree guides.
+description: Use when committing, amending, splitting or reordering changes, opening/updating/reviewing/merging a PR, merge strategy, branching, or worktree setup ("commit this", "push it", "open a PR"). Also: review threads, resolve, Copilot re-review, auto-merge, ship this, fixup commits, merge/rebase conflicts, .gitignore vs .git/info/exclude. Carries atomic-commit/never-squash mandate, commit message format; routes to commit, PR, review-response, auto-ship, worktree guides.
 ---
 
 # Git
@@ -48,3 +48,4 @@ skill suggests.
 | Triaging a GitHub Copilot review specifically | [copilot-reviews.md](copilot-reviews.md) |
 | Running commit → branch → PR → review loop → auto-merge unattended | [auto-ship.md](auto-ship.md) |
 | Isolating feature work from the current checkout | [worktrees.md](worktrees.md) |
+| Resolving a merge or rebase conflict | [merge-conflicts.md](merge-conflicts.md) |
