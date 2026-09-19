@@ -71,5 +71,3 @@ so if it does not fire, no child is reached.
 
 - `/skill-creator`: scaffolds a new skill directory interactively. Claude Code
   only; it is set to `name-only` so this family carries its triggers.
-- `superpowers:writing-skills`: the authoring discipline and how to verify a
-  skill actually works before deploying it.

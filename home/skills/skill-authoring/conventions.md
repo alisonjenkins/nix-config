@@ -98,6 +98,6 @@ say plainly it's superseded and why; never leave it presented as live.
   them from the body, saying what each contains.
 - Write instructions, not prose about instructions. The reader is executing.
 - Reference sibling files by relative path; reference other skills by name
-  (`superpowers:writing-skills`) rather than restating their content.
+  (`testing`) rather than restating their content.
 - Never duplicate what another skill owns. A pointer that costs one line beats
   a paragraph that will drift out of sync.
