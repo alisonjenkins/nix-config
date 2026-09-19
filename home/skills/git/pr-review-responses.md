@@ -98,8 +98,10 @@ fixed.
 ## Triage against the current branch
 
 Each comment is a claim, not an instruction. Verify it technically first;
-agreeing with a wrong suggestion because a reviewer made it is a failure mode.
-See `superpowers:receiving-code-review`.
+agreeing with a wrong suggestion because a reviewer made it is a failure
+mode. When several threads are related, understand all of them before
+implementing any — partial understanding produces a wrong fix for the
+first one you touch.
 
 The branch has usually moved since the comment was written, so read the
 current file and surrounding code before deciding anything. Then sort each
