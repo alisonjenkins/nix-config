@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, or when a delegated result came back wrong or incomplete. Covers model tier and cost/speed (haiku vs sonnet vs opus vs fable), Explore vs general-purpose, background execution, self-contained prompts. Also routes to GitHub Copilot CLI delegation (`copilot`, Luna). Not for escalating to a stronger model — see `consulting`.
+description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, and Copilot CLI delegation. Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -59,6 +59,41 @@ work on are cheap and belong in the main loop — never route ordinary
 exploration through a sub-agent. Delegate a search sweep only when you need
 the *conclusion*, not the file contents, AND it spans many files or areas you
 won't otherwise open.
+
+## Running sub-agents in parallel
+
+Multiple `Agent` calls in **one message** run concurrently; one per message
+runs sequentially.
+
+- **Give each agent a disjoint scope.** One independent problem domain per
+  agent — a specific file, subsystem, or query — not an overlapping one;
+  agents with overlapping scope duplicate each other's work.
+- **Reads fan out, writes don't.** Parallelize independent investigations or
+  lookups freely. Parallel *implementation* agents editing real code
+  conflict with each other — serialize those, or isolate each in its own
+  worktree ([git/worktrees.md](../git/worktrees.md)).
+- **Size the fan-out to the task, not habit**: ~1 agent for simple fact-
+  finding, 2-4 for a comparison across sources, 10+ only for genuinely broad
+  research — [Anthropic's own multi-agent research
+  system](https://www.anthropic.com/engineering/multi-agent-research-system)
+  measured over-fanning simple queries as the main early failure mode.
+- **Don't fan out** when a subtask depends on another's output, would race
+  on a shared file or resource, is exploratory (you don't yet know what's
+  broken — sequential probing beats parallel guessing), or is short enough
+  that spawn overhead dominates.
+- **Cost vs. speed**: parallel spawns don't share total cost with serial —
+  same aggregate tokens either way, just compressed into less wall-clock.
+  Anthropic measured up to 90% less wall-clock against roughly 15x the token
+  spend of a single agent for genuinely parallel research. It's a speed
+  lever, not a cost lever, and each spawn still pays its own overhead (see
+  above) with no cache sharing between siblings.
+- **Hard cap**: Claude Code defaults to 20 concurrent sub-agents
+  (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, configurable, version-gated —
+  check current behaviour if this matters). The main-loop context budget
+  binds first in practice — every result lands in your context, so N
+  detailed replies can refill the window you were trying to protect. Cap
+  each reply length (see "Writing the prompt") more aggressively the wider
+  the fan-out.
 
 ## Picking the model: default to haiku
 
