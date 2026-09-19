@@ -5,9 +5,10 @@ description: Use when something is broken, failing intermittently, behaving diff
 
 # Debugging
 
-Use `superpowers:systematic-debugging` for the overall discipline: reproduce
-first, form a hypothesis, change one thing. This family covers the part that
-discipline does not: **which evidence to trust.**
+Debugging is a loop: reproduce, hypothesize, change one thing, verify. This
+family's
+contribution is the part that loop doesn't cover on its own: **which evidence
+to trust.**
 
 ## The method
 
