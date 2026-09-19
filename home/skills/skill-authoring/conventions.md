@@ -80,6 +80,18 @@ form by what actually gets violated, not by habit:
 If a rule must hold 100% of the time, a skill is the wrong place for it —
 only moving the check into a hook removes the chance to rationalize past it.
 
+## Match specificity to fragility
+
+A fragile, mechanical sequence (a migration, a deploy, a multi-step git dance
+with an easy-to-lose invariant like commit signing) wants a literal script or
+an exact command, not room to improvise. An open-ended task (a review, a
+design call) wants heuristics and judgement, not a rigid script that won't
+fit the actual case. Pick per task, not once per skill.
+
+Don't leave dated "before/after" advice in a body — a model with no sense of
+when it was written reads it as current fact. Delete superseded guidance, or
+say plainly it's superseded and why; never leave it presented as live.
+
 ## Body
 
 - Keep `SKILL.md` under 500 lines; move detail into sibling files and link
