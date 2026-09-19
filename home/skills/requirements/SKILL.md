@@ -91,10 +91,11 @@ consistently rather than re-explaining it at each site.
 
 ## Related
 
-- The interactive discovery loop, when the user wants to explore a feature's
-  shape together before any code: `superpowers:brainstorming`. This skill
-  judges and sharpens a request that has arrived; that one elicits one that
-  has not.
+- **Exploring a feature's shape together**, when the user wants to co-design
+  before any code: one question at a time, propose 2-3 approaches with a
+  recommendation, get their approval section by section before starting.
+  This skill judges and sharpens a request that has already arrived; the
+  co-design loop above elicits one that hasn't.
 - Turning the settled requirement into a structure: the `design` skill.
 
 ## Source
