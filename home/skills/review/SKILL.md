@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when reviewing a diff, PR, or your own work before committing, including "look over this change", "is this right", or checking for bugs you introduced. Also for auditing an existing codebase against conventions with no diff to anchor against. Carries the rubric, severity ordering, how to phrase a finding, and how to verify a finding is real before reporting it.
+description: Use when reviewing a diff, PR, or your own work before committing, including "look over this change", "is this right", or checking for bugs you introduced. Also for auditing an existing codebase against conventions with no diff to anchor against. Not for replying to review comments or resolving threads on your own PR (see git). Carries the rubric, severity ordering, how to phrase a finding, and how to verify a finding is real before reporting it.
 ---
 
 # Review
