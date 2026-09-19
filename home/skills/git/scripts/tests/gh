@@ -15,6 +15,7 @@ is_reviews_list=0
 is_pr_view=0
 is_pr_view_title=0
 is_pr_view_body=0
+is_pr_view_fingerprint=0
 is_pr_checks=0
 is_pr_edit=0
 
@@ -45,6 +46,9 @@ if [[ "${args[0]:-}" == "pr" && "${args[1]:-}" == "view" ]]; then
         title) is_pr_view_title=1 ;;
         body) is_pr_view_body=1 ;;
       esac
+      if [[ "${args[$((i + 1))]:-}" == *reviewDecision* && "${args[$((i + 1))]:-}" == *updatedAt* ]]; then
+        is_pr_view_fingerprint=1
+      fi
     fi
   done
 elif [[ "${args[0]:-}" == "pr" && "${args[1]:-}" == "checks" ]]; then
@@ -151,6 +155,25 @@ elif [[ $is_pr_edit -eq 1 ]]; then
       cp "${args[$((i + 1))]}" "$fixtures/pr-edit-body-file-capture.txt"
     fi
   done
+elif [[ $is_pr_view_fingerprint -eq 1 ]]; then
+  if [[ -f "$fixtures/fingerprint-fails" ]]; then
+    echo "fake-gh: simulated gh pr view failure" >&2
+    exit 1
+  fi
+  if [[ -f "$fixtures/fingerprint-stderr-noise" ]]; then
+    echo "fake-gh: harmless stderr noise $RANDOM" >&2
+  fi
+  count_file="$fixtures/fingerprint-call-count"
+  count="$(cat "$count_file" 2>/dev/null || echo 0)"
+  count=$((count + 1))
+  echo "$count" >"$count_file"
+  if [[ -f "$fixtures/fingerprint-sequence.tsv" ]]; then
+    line_count="$(wc -l <"$fixtures/fingerprint-sequence.tsv")"
+    use_line=$((count > line_count ? line_count : count))
+    sed -n "${use_line}p" "$fixtures/fingerprint-sequence.tsv"
+  else
+    printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t0\n'
+  fi
 elif [[ $is_pr_view -eq 1 ]]; then
   if [[ -f "$fixtures/no-pr" ]]; then
     echo "fake-gh: no pull requests found for branch" >&2

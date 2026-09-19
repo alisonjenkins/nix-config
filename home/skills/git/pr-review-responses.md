@@ -36,8 +36,11 @@ too (below), not `reviewDecision` alone.
 (or a Monitor) does the whole loop in bash: keeps the branch rebased onto
 the default branch every tick (no model needed for a clean rebase), and
 exits — waking you — only when a cheap `gh pr view` fingerprint actually
-changes, a rebase conflict needs judgement, or 24h passes idle. A
-ScheduleWakeup/`/loop` tick, by contrast, is a full model turn even when
+changes, a rebase conflict needs judgement, or 24h passes idle. It needs
+exclusive use of its checkout for the whole run — give it its own worktree
+if you'll keep working on something else in the meantime, or its next tick
+rebases whatever you switched to and fails. A ScheduleWakeup/`/loop` tick,
+by contrast, is a full model turn even when
 nothing changed; reserve it for when no background-execution mechanism is
 available. Either way, back off exponentially rather than a fixed interval —
 start at 1 minute, ~1.5x per empty tick, capped at 15 minutes — since most of
