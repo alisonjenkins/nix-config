@@ -21,6 +21,12 @@ mixed into a logic commit, that is itself a finding (see the `git` skill).
    interaction with unchanged code, not inside the new lines.
 4. Ask what is missing: the error path, the test, the caller that also needed
    updating.
+5. Check spec adherence separately from correctness: is this actually what
+   was asked — the `requirements` skill's one-sentence problem statement, or
+   the PR description — no more and no less? A diff can be correct for its
+   inputs and still solve the wrong problem, or the right one plus an
+   unrequested rewrite alongside it; that's easy to miss when it's folded
+   into Correctness or Scope instead of checked on its own.
 
 ## Reviewing your own work
 
