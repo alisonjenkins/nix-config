@@ -35,5 +35,5 @@ failure.
 ## State the evidence
 
 Report what you ran and what it printed. "Should work now" is not a result. If
-a check was skipped, say which and why: see
-`superpowers:verification-before-completion`.
+a check was skipped, say which and why — same discipline as `testing`'s
+verification section, applied here to a running fix instead of a test suite.

@@ -32,4 +32,5 @@ mixed into a logic commit, that is itself a finding (see the `git` skill).
 
 The same rubric, with one addition: check that you actually ran the
 verification you are about to claim. Quote the command output. If a step was
-skipped, say which and why; see `superpowers:verification-before-completion`.
+skipped, say which and why — see `testing`'s "Verification before claiming
+completion".
