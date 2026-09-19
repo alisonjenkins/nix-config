@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: Use when adding, editing, splitting or reorganising a skill, deciding whether something should be a skill at all, or working out why a skill is not firing when it should. Carries the family pattern used here, how to write a description that actually matches, which frontmatter fields are portable versus Claude-Code-only, what a skill costs in context, and how skills get installed from this repo.
+description: Use when adding, editing, splitting or reorganising a skill, deciding whether something should be a skill at all, or working out why a skill is not firing when it should. Carries the family pattern used here, how to write a description that actually matches, portable frontmatter, what a skill costs in context, how to test that it actually fires and works, and how skills get installed from this repo.
 ---
 
 # Skill authoring
@@ -65,6 +65,7 @@ so if it does not fire, no child is reached.
 | Frontmatter fields, and which survive outside Claude Code | [frontmatter.md](frontmatter.md) |
 | What a skill costs in context, and how to make it cost less | [context-budget.md](context-budget.md) |
 | Installing a skill from this repo (Nix wiring, opencode) | [wiring.md](wiring.md) |
+| Checking a description actually fires, or a skill actually changes the outcome | [testing-a-skill.md](testing-a-skill.md) |
 
 ## Related skills
 
