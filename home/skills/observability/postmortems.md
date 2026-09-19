@@ -37,6 +37,16 @@ section; missing alert or monitoring coverage routes to `coverage.md`
 or `improving.md`'s alert-design section. The postmortem *finds and
 routes* the gap; it does not re-derive the fix.
 
+## Spanning multiple sessions or agents
+
+Write each phase's findings to a file as you go — timeline, hypotheses
+ruled out, current best explanation — rather than keeping it in chat state.
+A resumed session or a different agent picking this up reads the file, not
+your memory (see the `handoff` skill for the same idea applied to any
+long-running task). Stop for the user's confirmation before applying a
+mitigation, and again before the permanent fix — both are moments where a
+wrong guess does the most damage.
+
 ## A postmortem with no unresolved action items is a red flag
 
 If reconstruction revealed nothing worth fixing, either it stopped too
