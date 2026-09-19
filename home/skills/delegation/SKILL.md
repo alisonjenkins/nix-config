@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning a sub-agent (Agent tool), or deciding whether a batch of similar calls belongs in the main loop — picks model tier (haiku vs sonnet), when to delegate, Explore vs general-purpose, background execution, self-contained prompts, what never to delegate. Also routes to delegating via GitHub Copilot CLI (`copilot`, Luna model). Not for escalating to a stronger model — see `consulting`.
+description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, or when a delegated result came back wrong or incomplete. Covers model tier (haiku vs sonnet), Explore vs general-purpose, background execution, self-contained prompts. Also routes to GitHub Copilot CLI delegation (`copilot`, Luna). Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -61,10 +61,20 @@ for the whole thing.
 ## Explore vs general-purpose
 
 For a read-only search/exploration sweep, prefer the Explore (or Plan)
-sub-agent over general-purpose: Explore/Plan skip CLAUDE.md and git status at
-startup, so they cost far less per spawn than a general-purpose agent loading
-the full memory hierarchy. Use general-purpose only when the sweep needs tools
-Explore lacks (edits, writes, MCP mutations).
+sub-agent over general-purpose: per [Claude Code's own
+docs](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup),
+Explore/Plan skip CLAUDE.md and git status at startup, while a
+general-purpose agent pays for the full memory hierarchy on every spawn. Use
+general-purpose only when the sweep needs tools Explore lacks (edits, writes,
+MCP mutations).
+
+## When a delegated result comes back wrong or incomplete
+
+Don't patch it by hand and move on — that fixes this one result, not the next
+one. Re-check the tier: a wrong result from a haiku-tiered task is often
+evidence the task needed judgement after all (see the test above), so redo it
+at sonnet rather than retrying the same tier. A wrong result at the right tier
+means the prompt was underspecified — fix the prompt, not just the output.
 
 ## Writing the prompt
 
