@@ -9,6 +9,44 @@ unless the user's context indicates they want this (a Copilot subscription,
 cost-consciousness, or an explicit ask). Works against any repo — it doesn't
 assume this one.
 
+## Cost/speed/intelligence vs. a Claude sub-agent
+
+Since 2026-06 Copilot bills per-token in AI Credits ($0.01/credit) for
+usage-based plans, so its models compare directly in $/MTok (million
+tokens) with the delegation skill's own table. Checked 2026-09-19 — see
+[GitHub's models-and-pricing
+docs](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing)
+and verify current numbers there, since this will drift. Legacy annual-plan
+subscribers who didn't move to usage billing are still on the older
+premium-request-multiplier system instead — that plan doesn't get new
+models like Luna, so if an account is on it this table doesn't apply and
+`delegate.sh`'s "premium request quota" error match (below) is the live
+failure mode, not a leftover from before the billing change:
+
+| Model | Input / output per MTok (million tokens) | vs. Claude Haiku 4.5 ($1/$5) |
+|---|---|---|
+| `gpt-5.6-luna` (this script's default) | $0.20 / $1.20 | ~5x cheaper |
+| `gpt-5.4-nano`, `mai-code-1.1-flash` | ~$0.20 / ~$1.20-1.25 | ~5x cheaper |
+| `gpt-5-mini` | $0.25 / $2.00 | ~2.5x cheaper |
+| Claude models via Copilot | same as Anthropic's own API | no markup |
+
+`gpt-5.6-luna` is genuinely the cheapest model in the lineup, not a stale
+claim — and per [Artificial Analysis](https://artificialanalysis.ai/)
+(fetched 2026-09-19) it's also faster
+(~125 tok/s vs. Haiku's ~94) and scores slightly higher on their intelligence
+index (22 vs. 18) than Haiku 4.5. On raw cost/speed/capability numbers alone,
+Luna beats a Claude Agent-tool sub-agent at the same job.
+
+What the numbers don't capture: a Claude sub-agent shares this session's tool
+access, skill injection, and structured output conventions natively: Copilot
+delegation is an external CLI call with its own profile system, no shared
+context, and output that must be reviewed as untrusted (see "Rules" below).
+Prefer a Claude sub-agent by default for anything needing tight integration
+with this session's tools or skills; reach for `delegate.sh` when the task is
+self-contained enough to hand off as plain text (a summarization, a
+well-specified mechanical edit, a draft) and either cost is the binding
+constraint or the user's context calls for it.
+
 Run `scripts/delegate.sh "<task>" [profile] [skill[,skill...]]`. It tries the
 preferred model first and falls back to a stable default if the account/CLI
 rejects it; see the script header (`delegate.sh`) for the current order.

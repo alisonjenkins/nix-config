@@ -35,11 +35,16 @@ is the whole case for
 delegating aggressively rather than defaulting every call to whatever tier
 the main loop runs on.
 
-GitHub Copilot CLI delegation (below) is priced differently — a Copilot
-subscription's premium-request quota, not per-token — so it isn't directly
-comparable to this table; see GitHub's own [premium request
-docs](https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests)
-for its multipliers, which also change.
+GitHub Copilot CLI delegation (below) moved to the same unit as this table —
+since 2026-06 Copilot bills per-token in "AI Credits" ($0.01/credit) instead
+of premium-request multipliers, so its models are directly $/MTok comparable
+to Claude's, not a separate currency. Claude models cost the same through
+Copilot as through Anthropic's own API — no markup. See
+[delegate-to-copilot.md](delegate-to-copilot.md) for the comparison and when
+it beats an Agent-tool sub-agent on price. (The multiplier system still
+exists for legacy annual-plan subscribers who didn't move to usage billing,
+but that plan doesn't get new models — check which billing mode an account
+is on before assuming either applies.)
 
 ## When to delegate at all
 
@@ -163,9 +168,13 @@ means the prompt was underspecified — fix the prompt, not just the output.
 
 ## Delegating outside the Agent tool
 
-Everything above picks a *model tier* for an Agent-tool sub-agent. When the
-target is GitHub Copilot's own `copilot` CLI — an external, paid delegate, not
-a sub-agent — read [delegate-to-copilot.md](delegate-to-copilot.md).
+Everything above picks a *model tier* for an Agent-tool sub-agent. GitHub
+Copilot's own `copilot` CLI is a separate, external delegate with its
+cheapest model (`gpt-5.6-luna`) priced below even Haiku and, on public
+benchmarks, comparably fast and capable — read
+[delegate-to-copilot.md](delegate-to-copilot.md) for the actual numbers and
+when that beats a Claude sub-agent instead of assuming Claude tiers are
+always the cheaper or only option.
 
 ## Never delegate
 
