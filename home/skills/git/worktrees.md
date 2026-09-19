@@ -4,6 +4,15 @@ Use a worktree when feature work needs isolation from the current checkout:
 long-running changes, anything that would otherwise force you to stash, or
 parallel agent sessions on the same repo.
 
+## Native tool first
+
+Check for a native worktree tool before running raw `git worktree` commands —
+an `EnterWorktree`/`ExitWorktree` tool, a `/worktree` command, or similar, if
+your environment has one. It handles directory placement, branch creation,
+and cleanup, and the harness can track state it creates that a manual `git
+worktree add` leaves invisible to it. Fall back to the commands below only
+when no native tool is available.
+
 ```
 git worktree list
 git worktree add ../<repo>-<feature> -b <feature>
@@ -40,5 +49,3 @@ Then check both trees are as you expect with `git -C <main> status` and
 - Worktrees share the object store, so they are cheap, but they do **not**
   share untracked files, build outputs, or `.env` files. Anything ignored must
   be recreated in the new tree.
-
-See also `superpowers:using-git-worktrees` for the full workflow.
