@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, or when a delegated result came back wrong or incomplete. Covers model tier (haiku vs sonnet), Explore vs general-purpose, background execution, self-contained prompts. Also routes to GitHub Copilot CLI delegation (`copilot`, Luna). Not for escalating to a stronger model — see `consulting`.
+description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, or when a delegated result came back wrong or incomplete. Covers model tier and cost/speed (haiku vs sonnet vs opus vs fable), Explore vs general-purpose, background execution, self-contained prompts. Also routes to GitHub Copilot CLI delegation (`copilot`, Luna). Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -9,12 +9,50 @@ The main loop runs on a fast, capable model reserved for voice, scope, and
 judgement. Anything that needs none of those belongs on a cheaper model in a
 sub-agent, not ground through inline.
 
+## Cost and speed by tier
+
+Snapshot from [claude.com/pricing](https://claude.com/pricing), checked
+2026-09-19 — verify current numbers there before quoting them, since prices
+change and this table will drift:
+
+| Tier | Input / output per MTok (million tokens) | Roughly vs. Haiku |
+|---|---|---|
+| Haiku 4.5 | $1 / $5 | 1x — the fastest tier |
+| Sonnet 5 | $2 / $10 | ~2x |
+| Opus 5 | $5 / $25 | ~5x |
+| Fable 5.1 | $10 / $50 | ~10x |
+
+Haiku is the cheapest and fastest tier. Per that same pricing page, Opus's
+base speed is not fast — it has an optional "fast mode" at double its own
+price for roughly 2.5x the speed — and Fable is priced and positioned for
+long-running agentic work, not quick bulk calls.
+
+The gap compounds with volume: 50 haiku-tiered calls cost roughly what 25
+sonnet-tiered ones would (Sonnet's ~2x table ratio) for work that doesn't
+need sonnet's judgement — or 10 opus-tiered ones (~5x), if that's the
+comparison at hand. That gap, not a stylistic preference for cheap models,
+is the whole case for
+delegating aggressively rather than defaulting every call to whatever tier
+the main loop runs on.
+
+GitHub Copilot CLI delegation (below) is priced differently — a Copilot
+subscription's premium-request quota, not per-token — so it isn't directly
+comparable to this table; see GitHub's own [premium request
+docs](https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests)
+for its multipliers, which also change.
+
 ## When to delegate at all
 
-Delegate any run of ~5+ bulk calls of the same shape: `gh`/GraphQL queries,
-web searches, log trawls, per-file mechanical edits, dependency-bump
-enumeration. Prefer running these in the background (`run_in_background`) so
-the main loop isn't blocked waiting.
+The cost and speed gap above means the bar for delegating is lower than it
+feels: even a handful of clearly mechanical calls (not just runs of 5+) can
+be worth a haiku sub-agent, since haiku-tier cost is close to negligible and
+`run_in_background` hides the wall-clock cost from the main loop. The
+counterweight is spawn overhead, not per-call cost: a sub-agent pays for
+`CLAUDE.md`, git status, and its tool schemas on every spawn
+(general-purpose; Explore/Plan skip the first two — see below), so a batch
+of 1-2 calls often isn't worth a fresh spawn even at haiku prices. Bulk
+`gh`/GraphQL queries, web searches, log trawls, per-file mechanical edits,
+and dependency-bump enumeration are the shapes that clear that bar.
 
 Code reading stays inline: Read/Grep/Glob to understand code you are about to
 work on are cheap and belong in the main loop — never route ordinary
@@ -64,7 +102,7 @@ For a read-only search/exploration sweep, prefer the Explore (or Plan)
 sub-agent over general-purpose: per [Claude Code's own
 docs](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup),
 Explore/Plan skip CLAUDE.md and git status at startup, while a
-general-purpose agent pays for the full memory hierarchy on every spawn. Use
+general-purpose agent pays for both on every spawn. Use
 general-purpose only when the sweep needs tools Explore lacks (edits, writes,
 MCP mutations).
 
