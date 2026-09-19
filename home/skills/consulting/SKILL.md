@@ -79,8 +79,8 @@ tier in a loop.
 
 ## Related
 
-- `superpowers:systematic-debugging` and the `debugging` skill for the method
-  that should have run *before* the third attempt. Most consults are avoided
-  by probing the right layer the first time.
+- The `debugging` skill for the method that should have run *before* the
+  third attempt. Most consults are avoided by probing the right layer the
+  first time.
 - The `requirements` skill when you are stuck because the ask was never clear.
   Consulting will not fix an unclear requirement.
