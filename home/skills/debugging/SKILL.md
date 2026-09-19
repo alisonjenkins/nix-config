@@ -30,11 +30,12 @@ discipline does not: **which evidence to trust.**
 - **Don't panic.** Under pressure, slow down and read what is actually
   reported: the whole message, the whole stack trace, the timestamps. Do not
   start changing things. The answer is usually already in the output, unread.
-- **Suspect yourself first.** The OS, the compiler and a widely-used library
-  are almost certainly not broken; your most recent change almost certainly is.
-  Work outward: your change, your code, your configuration, your dependencies,
-  and only then the platform. If you do conclude a third party is at fault,
-  you need the reproduction to prove it.
+- **Start with your change, work outward.** Your change, your code, your
+  configuration, your dependencies, and only then the platform — cheapest and
+  most likely first, not "the platform is never at fault." Third-party bugs
+  are real (a networking layer, a driver, a storage tool can all genuinely be
+  broken); the point is escalating with a reproduction in hand, not ruling the
+  platform out as a suspect on principle.
 - **Fix the problem, not the blame.** Whether the fault is yours, a library's
   or the user's is irrelevant until it is fixed, and deciding early narrows the
   search to the wrong place. Note it afterwards if it matters.
