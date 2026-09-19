@@ -33,8 +33,22 @@ does, so a runtime that ignores them runs it differently.
 | `user-invocable: false` | Only the model can invoke it. Background knowledge you should not have to type. CC-only. |
 | `allowed-tools` | Tools pre-approved for the invoking turn. Spec field. |
 | `context: fork` | Runs the skill in a subagent; its body never enters the main context. Needs an actionable task, not guidelines. CC-only. |
+| `agent` | Which subagent type runs a `context: fork` skill. CC-only. |
+| `background` | Runs a `context: fork` skill in the background instead of blocking. CC-only. |
+| `hooks` | Registers session-scoped hooks for as long as this skill stays invoked. CC-only. |
+| `disallowed-tools` | Blocks specific tools for the invoking turn; complement to `allowed-tools`. CC-only. |
 | `argument-hint` / `arguments` | Autocomplete hint and `$name` substitution. CC-only. |
 | `model` / `effort` | Override for the turn the skill is active. CC-only. |
+
+## Dynamic context injection (CC-only)
+
+A `` !`cmd` `` inline, or a fenced ` ```! ` block, runs *before* the body
+reaches the model; a non-zero exit aborts the skill load. Disabled repo-wide
+by `disableSkillShellExecution`. Useful for a project skill that needs live
+state — `git status --short`, the current host list — instead of asking the
+model to go fetch it. It is CC-only body syntax, not frontmatter: never rely
+on it in a shared family skill also linked into opencode, since another
+runtime will show the literal command text instead of running it.
 
 ## Subagents
 

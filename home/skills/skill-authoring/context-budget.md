@@ -42,3 +42,11 @@ In descending order of effect:
 
 `paths:` is *not* on this list: it gates automatic activation, not listing
 cost.
+
+## Surviving compaction
+
+Compaction carries each already-invoked skill forward at up to 5,000 tokens
+per skill and 25,000 combined across all invoked skills, dropping the oldest
+first. Another reason to keep a family's `SKILL.md` itself small: it is what
+survives longest into a long session, after the children it links to are
+long gone.
