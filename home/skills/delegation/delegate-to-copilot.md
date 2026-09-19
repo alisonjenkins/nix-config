@@ -47,6 +47,29 @@ self-contained enough to hand off as plain text (a summarization, a
 well-specified mechanical edit, a draft) and either cost is the binding
 constraint or the user's context calls for it.
 
+## Separately metered Claude and Copilot allowances
+
+When Claude and Copilot draw from separate allowances the user values
+unevenly — a work seat with its own fixed monthly quota for each, priced or
+capped independently of the other — prefer `delegate.sh` (Luna) over a
+Claude haiku sub-agent for haiku-shaped work specifically, to conserve the
+Claude allowance for sonnet/opus-tier judgement work it can't be substituted
+for. This is a policy for that account shape, not a universal default: on a
+single pooled per-token budget (Anthropic's API billed directly, or a
+personal account with no separate Copilot allowance to protect), the cost
+argument above still favors Luna on raw price, but there's no allowance to
+conserve, so weigh it against the integration cost in "What the numbers
+don't capture" instead of defaulting to Copilot automatically.
+
+GitHub Copilot's free individual plan (checked 2026-09-19,
+https://github.com/features/copilot/plans) gives 2,000 completions and only **50
+chat requests per month**, and includes CLI access — but 50/month is too
+small to substitute for routine haiku-tier delegation volume; a single
+multi-call delegation task can burn a meaningful fraction of it. Useful for
+occasional, light Copilot CLI use on a personal account, not as an
+allowance-preservation strategy the way a work seat's larger usage-based
+quota is.
+
 Run `scripts/delegate.sh "<task>" [profile] [skill[,skill...]]`. It tries the
 preferred model first and falls back to a stable default if the account/CLI
 rejects it; see the script header (`delegate.sh`) for the current order.

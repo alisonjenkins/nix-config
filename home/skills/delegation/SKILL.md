@@ -109,6 +109,11 @@ a conclusion from heterogeneous sources, or writing/editing code. Unsure which
 tier? That uncertainty is itself evidence the task needs judgement — pick
 sonnet.
 
+Before defaulting to haiku, check whether Copilot's `delegate.sh` (Luna) is
+the better fit instead — see delegate-to-copilot.md's "Separately metered
+Claude and Copilot allowances" when the account has independent quotas for
+each and Claude's is the one worth conserving.
+
 **The test:** could a competent but literal-minded assistant, with no
 discretion, get this right by following your instructions exactly? If yes,
 haiku. If correctness depends on interpreting ambiguity, weighing trade-offs,
