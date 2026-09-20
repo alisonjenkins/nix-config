@@ -10,6 +10,7 @@ url=""
 method="GET"
 max_time=""
 body=""
+want_http_code=0
 args=("$@")
 i=0
 while [[ $i -lt ${#args[@]} ]]; do
@@ -27,6 +28,12 @@ while [[ $i -lt ${#args[@]} ]]; do
       max_time="${args[$((i + 1))]}"
       i=$((i + 2))
       ;;
+    -w)
+      # Only the one format backend_ready() actually uses is supported:
+      # body followed by a trailing "\n<code>" line.
+      [[ "${args[$((i + 1))]}" == *'%{http_code}'* ]] && want_http_code=1
+      i=$((i + 2))
+      ;;
     -H)
       i=$((i + 2))
       ;;
@@ -39,6 +46,15 @@ while [[ $i -lt ${#args[@]} ]]; do
       ;;
   esac
 done
+
+# Appends "\n<code>" after a /health body when -w was requested, matching
+# curl's own -w '\n%{http_code}' output shape exactly (backend_ready()
+# parses the response by splitting on the last newline).
+emit_health() {
+  local status_json="$1" code="$2"
+  echo "$status_json"
+  ((want_http_code)) && echo "$code"
+}
 
 printf 'url=%s\tmethod=%s\tmax_time=%s\tbody=%s\n' "$url" "$method" "$max_time" "$body" >>"$calls_log"
 
@@ -63,11 +79,21 @@ fi
 if [[ "$method" == "GET" && "$url" == */health ]]; then
   case "${FAKE_CURL_MODE:-}" in
     health-ok)
-      echo '{"status":"ok"}'
+      emit_health '{"status":"ok"}' 200
       exit 0
       ;;
     health-loading)
-      echo '{"status":"loading"}'
+      emit_health '{"status":"loading"}' 200
+      exit 0
+      ;;
+    health-503-loading)
+      # A /health route that genuinely exists but reports not-ready via a
+      # real non-2xx status — llama-server does this while loading. curl
+      # itself still succeeds (a response arrived); only its HTTP status
+      # is non-2xx. This must NOT be treated the same as "no /health route
+      # at all" (a real 404) — regression for the bug where `curl -f`
+      # made any non-2xx look identical to "route doesn't exist".
+      emit_health '{"status":"loading"}' 503
       exit 0
       ;;
     health-loading-then-ok)
@@ -76,16 +102,17 @@ if [[ "$method" == "GET" && "$url" == */health ]]; then
       count="$(($(cat "$counter_file" 2>/dev/null || echo 0) + 1))"
       echo "$count" >"$counter_file"
       if ((count >= ok_on)); then
-        echo '{"status":"ok"}'
+        emit_health '{"status":"ok"}' 200
       else
-        echo '{"status":"loading"}'
+        emit_health '{"status":"loading"}' 200
       fi
       exit 0
       ;;
     *)
-      # No /health route on this fake backend by default — matches
-      # curl -f's behavior on a real 404: nonzero exit, no output.
-      exit 22
+      # No /health route on this fake backend by default — matches a real
+      # 404: curl itself succeeds (exit 0), body empty, code 404.
+      emit_health "" 404
+      exit 0
       ;;
   esac
 fi
@@ -114,7 +141,6 @@ if [[ "${FAKE_CURL_MODE:-}" == "chat-timeout" ]]; then
   echo "curl: (28) Operation timed out" >&2
   exit 28
 fi
-
 if [[ "${FAKE_CURL_MODE:-}" == "chat-loading-then-ok" ]]; then
   counter_file="${FAKE_CURL_CHAT_COUNTER:?FAKE_CURL_CHAT_COUNTER must be set}"
   ok_on="${FAKE_CURL_CHAT_OK_ON:?FAKE_CURL_CHAT_OK_ON must be set}"

@@ -441,6 +441,38 @@ TOML
   [ "$(cat "$FAKE_CURL_HEALTH_COUNTER")" -ge 3 ]
 }
 
+@test "reachable and /health-ok but the trial completion isn't ready yet: keeps polling until it truly is" {
+  # Reproduces a second real gap found live: on a Vulkan-accelerated
+  # llama-server build, /health reported ok several seconds before the
+  # server could actually serve a completion (still uploading weights to
+  # VRAM / compiling shaders) — /health alone isn't sufficient, only a
+  # real trial request proves it.
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=chat-loading-then-ok
+  export FAKE_CURL_CHAT_COUNTER="$BATS_TEST_TMPDIR/chat-counter"
+  export FAKE_CURL_CHAT_OK_ON=3
+  export LOCAL_LLM_READY_INTERVAL=0.1
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$FAKE_CURL_CHAT_COUNTER")" -ge 3 ]
+}
+
+@test "a real /health route reporting not-ready via a non-2xx status is not treated as a missing route" {
+  # Regression: curl -f treats ANY non-2xx as a failure indistinguishable
+  # from "connection refused" or "404, no such route" — a real /health
+  # route (llama-server does exactly this) can legitimately answer 503
+  # with a status body while loading. Falling back to /v1/models in that
+  # case would defeat the whole point of checking /health at all, since
+  # /v1/models answers 200 even while loading.
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=health-503-loading
+  export LOCAL_LLM_READY_TIMEOUT=1
+  export LOCAL_LLM_READY_INTERVAL=0.3
+  run "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"did not become ready within 1s"* ]]
+}
+
 @test "a backend with no /health route falls back to the plain /v1/models check" {
   # The mock runtime and mlx_lm.server don't implement /health — this is
   # the pre-existing behavior for them, confirmed explicitly rather than

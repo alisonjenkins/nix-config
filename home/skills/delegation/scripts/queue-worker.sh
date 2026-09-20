@@ -124,13 +124,47 @@ fitting_profiles() {
 # refused) — runtimes without a /health route (the mock server,
 # mlx_lm.server) still work the old way.
 backend_ready() {
-  local url="$1" health_body status
-  if health_body="$(curl -sS --max-time 1 -f "$url/health" 2>/dev/null)"; then
-    status="$(jq -r '.status // empty' <<<"$health_body" 2>/dev/null)"
-    [[ "$status" == "ok" ]]
-    return
+  local url="$1" model="$2" health_response http_code health_body status
+
+  # Cheap gate first: skip the real trial request below entirely while
+  # nothing is listening yet, or /health itself already says not-ready.
+  # No `-f`: it treats ANY non-2xx as a curl failure, indistinguishable
+  # from "connection refused" or "no route at all" — a real /health route
+  # legitimately answers 503 with a body while loading, and `-f` would
+  # discard that response and wrongly fall through to the /v1/models
+  # branch below (weaker: llama-server's /v1/models answers 200 even
+  # while still loading, the exact false-positive this whole mechanism
+  # exists to avoid). Read the status code and body explicitly instead,
+  # and only fall back to /v1/models when /health is genuinely absent
+  # (curl itself failed to connect, or a 404) rather than on any
+  # not-yet-ok response from a route that does exist.
+  if health_response="$(curl -sS --max-time 1 -w '\n%{http_code}' "$url/health" 2>/dev/null)"; then
+    http_code="${health_response##*$'\n'}"
+    health_body="${health_response%$'\n'*}"
+    if [[ "$http_code" == "404" ]]; then
+      curl -sS --max-time 1 "$url/v1/models" >/dev/null 2>&1 || return 1
+    else
+      status="$(jq -r '.status // empty' <<<"$health_body" 2>/dev/null)"
+      [[ "$status" == "ok" ]] || return 1
+    fi
+  else
+    curl -sS --max-time 1 "$url/v1/models" >/dev/null 2>&1 || return 1
   fi
-  curl -sS --max-time 1 "$url/v1/models" >/dev/null 2>&1
+
+  # Definitive check: confirmed live that a Vulkan-accelerated
+  # llama-server's /health can report "ok" several seconds before it can
+  # actually serve a completion (shader compilation / weight upload to
+  # VRAM still in progress) — only a real, if trivial, trial request
+  # proves it's actually ready, not just that its HTTP thread is up.
+  # "model" is required: some OpenAI-compatible servers reject a request
+  # without it, which would otherwise make this probe never succeed.
+  local body request_body
+  request_body="$(jq -nc --arg model "$model" \
+    '{model: $model, messages: [{role: "user", content: "ping"}], max_tokens: 1}')"
+  body="$(curl -sS --max-time 3 -X POST "$url/v1/chat/completions" \
+    -H 'Content-Type: application/json' \
+    -d "$request_body" 2>/dev/null)" || return 1
+  jq -e '.choices[0]' <<<"$body" >/dev/null 2>&1
 }
 
 write_result() {
@@ -385,7 +419,7 @@ process_switch_job() {
   sleep 0.1 # let a fast-crashing process actually exit before the first check
 
   local elapsed=0
-  until backend_ready "http://localhost:$port"; do
+  until backend_ready "http://localhost:$port" "$model"; do
     if ! kill -0 "$new_pid" 2>/dev/null; then
       write_result "$job_id" 1 "" "profile '$profile_name' exited before becoming ready — see $log_file"
       return
