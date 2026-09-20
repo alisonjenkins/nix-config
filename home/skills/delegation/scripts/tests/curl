@@ -42,7 +42,9 @@ done
 
 printf 'url=%s\tmethod=%s\tmax_time=%s\tbody=%s\n' "$url" "$method" "$max_time" "$body" >>"$calls_log"
 
-base="${url%/v1/*}"
+base="${url%/health}"
+base="${base%/v1/models}"
+base="${base%/v1/chat/completions}"
 up_list="${FAKE_CURL_UP:-}"
 is_up=0
 IFS=',' read -ra up_arr <<<"$up_list"
@@ -56,6 +58,36 @@ done
 if [[ "$is_up" -eq 0 ]]; then
   echo "curl: (7) Failed to connect to $base" >&2
   exit 7
+fi
+
+if [[ "$method" == "GET" && "$url" == */health ]]; then
+  case "${FAKE_CURL_MODE:-}" in
+    health-ok)
+      echo '{"status":"ok"}'
+      exit 0
+      ;;
+    health-loading)
+      echo '{"status":"loading"}'
+      exit 0
+      ;;
+    health-loading-then-ok)
+      counter_file="${FAKE_CURL_HEALTH_COUNTER:?FAKE_CURL_HEALTH_COUNTER must be set}"
+      ok_on="${FAKE_CURL_HEALTH_OK_ON:?FAKE_CURL_HEALTH_OK_ON must be set}"
+      count="$(($(cat "$counter_file" 2>/dev/null || echo 0) + 1))"
+      echo "$count" >"$counter_file"
+      if ((count >= ok_on)); then
+        echo '{"status":"ok"}'
+      else
+        echo '{"status":"loading"}'
+      fi
+      exit 0
+      ;;
+    *)
+      # No /health route on this fake backend by default — matches
+      # curl -f's behavior on a real 404: nonzero exit, no output.
+      exit 22
+      ;;
+  esac
 fi
 
 if [[ "$method" == "GET" ]]; then

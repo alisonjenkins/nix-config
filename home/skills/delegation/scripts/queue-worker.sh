@@ -113,6 +113,26 @@ fitting_profiles() {
   echo "${fits[*]}"
 }
 
+# A profile is "ready" once it can actually serve a chat completion, not
+# just once it accepts connections — llama-server's /v1/models answers
+# HTTP 200 while the model is still loading in the background, so a bare
+# reachability check on it reports ready too early (confirmed live: a
+# delegate-to-local.sh call right after switch-local-profile.sh returned
+# hit a 503 "Loading model"). /health distinguishes loading from ready
+# ({"status": "ok"}); fall back to the plain /v1/models reachability
+# check only when /health doesn't exist at all (a 404, or connection
+# refused) — runtimes without a /health route (the mock server,
+# mlx_lm.server) still work the old way.
+backend_ready() {
+  local url="$1" health_body status
+  if health_body="$(curl -sS --max-time 1 -f "$url/health" 2>/dev/null)"; then
+    status="$(jq -r '.status // empty' <<<"$health_body" 2>/dev/null)"
+    [[ "$status" == "ok" ]]
+    return
+  fi
+  curl -sS --max-time 1 "$url/v1/models" >/dev/null 2>&1
+}
+
 write_result() {
   local job_id="$1" exit_code="$2" output="$3" stderr_text="$4"
   jq -nc --argjson exit_code "$exit_code" --arg output "$output" --arg stderr "$stderr_text" \
@@ -365,7 +385,7 @@ process_switch_job() {
   sleep 0.1 # let a fast-crashing process actually exit before the first check
 
   local elapsed=0
-  until curl -sS --max-time 1 "http://localhost:$port/v1/models" >/dev/null 2>&1; do
+  until backend_ready "http://localhost:$port"; do
     if ! kill -0 "$new_pid" 2>/dev/null; then
       write_result "$job_id" 1 "" "profile '$profile_name' exited before becoming ready — see $log_file"
       return

@@ -151,10 +151,17 @@ never mutates state, so it doesn't need to queue.
 
 - **`switch-local-profile.sh <name>`** — submits a `switch` job: stop
   whatever's running, launch the named profile, wait
-  (`LOCAL_LLM_READY_TIMEOUT`, default 120s) until it actually answers.
-  Loading a model is the one place allowed to be slow — run it deliberately
-  before a stretch of work, not per delegated task. Records the active
-  profile (name, url, model, pid) to `$LOCAL_LLM_STATE_DIR/active-profile.json`.
+  (`LOCAL_LLM_READY_TIMEOUT`, default 120s) until it's actually ready to
+  serve a request — checked against `/health` (`{"status": "ok"}`) when the
+  runtime has one, not just whether the port accepts connections: confirmed
+  live against a real llama-server that `/v1/models` answers 200 while the
+  model is still loading in the background, so a bare reachability check
+  reports ready before a chat call would actually succeed. Runtimes with no
+  `/health` route (the mock server, `mlx_lm.server`) fall back to the
+  `/v1/models` check as before. Loading a model is the one place allowed to
+  be slow — run it deliberately before a stretch of work, not per delegated
+  task. Records the active profile (name, url, model, pid) to
+  `$LOCAL_LLM_STATE_DIR/active-profile.json`.
   **Checks the requested profile actually fits alongside whatever else is
   using the GPU** (a game) instead of refusing outright just because the GPU
   is busy: it reads free VRAM (total minus used, on the DRM device with the

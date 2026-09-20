@@ -409,6 +409,48 @@ TOML
   [[ "$output" == *"$LOCAL_LLM_STATE_DIR/fast.log"* ]]
 }
 
+@test "a backend with /health reporting ok is treated as ready immediately" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=health-ok
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+}
+
+@test "a backend with /health stuck reporting loading never becomes ready" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=health-loading
+  export LOCAL_LLM_READY_TIMEOUT=1
+  export LOCAL_LLM_READY_INTERVAL=0.3
+  run "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"did not become ready within 1s"* ]]
+}
+
+@test "a backend that reports loading then ok becomes ready only once it actually says ok" {
+  # Reproduces the real bug this fixed: llama-server's /v1/models answers
+  # 200 while the model is still loading in the background, so a bare
+  # reachability check reported ready before a chat call would actually
+  # succeed. /health distinguishes the two.
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=health-loading-then-ok
+  export FAKE_CURL_HEALTH_COUNTER="$BATS_TEST_TMPDIR/health-counter"
+  export FAKE_CURL_HEALTH_OK_ON=3
+  export LOCAL_LLM_READY_INTERVAL=0.1
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$FAKE_CURL_HEALTH_COUNTER")" -ge 3 ]
+}
+
+@test "a backend with no /health route falls back to the plain /v1/models check" {
+  # The mock runtime and mlx_lm.server don't implement /health — this is
+  # the pre-existing behavior for them, confirmed explicitly rather than
+  # just relying on every other test happening not to set FAKE_CURL_MODE.
+  export FAKE_CURL_UP="http://localhost:8080"
+  unset FAKE_CURL_MODE
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+}
+
 @test "defaults port to 8080 when the profile omits it" {
   cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
 [no-port]
