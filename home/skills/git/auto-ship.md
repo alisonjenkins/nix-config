@@ -86,6 +86,14 @@ no-op that wastes a cycle. Each poll cycle, after pushing fixes:
 
 All of these, not just checks green (`pr-status.sh` reports all of them):
 
+- No bot reviewer (Copilot or otherwise) is still in `reviewRequests=` —
+  requested but not yet submitted against the current head. This is
+  independent of `reviewDecision` and thread count: a freshly-requested
+  review has neither yet, and looks clean by every other signal purely
+  because it hasn't spoken. See "Copilot review state" in
+  [copilot-reviews.md](copilot-reviews.md). A review that finished with zero
+  findings ("done, clean") is not the same as one that hasn't started — the
+  former clears this condition, the latter blocks the merge.
 - Every review thread is either `isResolved: true`, or open only because it
   was rejected in step 5 and is waiting on the reviewer, not on you.
 - No thread left in "Needs a decision from the user" state.

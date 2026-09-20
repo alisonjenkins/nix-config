@@ -1,3 +1,36 @@
+# Copilot review state: pending, done, or clean
+
+Before triaging anything, know which of three states Copilot's review is in.
+Confusing "hasn't reviewed yet" with "reviewed and found nothing" is what
+causes a merge to land before Copilot's feedback shows up.
+
+- **Pending (mid-review).** Copilot's login appears in `pr-status.sh`'s
+  `reviewRequests=` field. It was requested (on PR open, or by re-request
+  after a push) but has not submitted a review against the current head yet.
+  Copilot review is not instant — it commonly takes on the order of a few
+  minutes. **Never merge while Copilot's login is in `reviewRequests=`.** This
+  is a hard merge-gate condition (see step 7 of [auto-ship.md](auto-ship.md)),
+  not just the re-review-request check in step 6 — a PR with zero unresolved
+  threads and `reviewDecision` not `CHANGES_REQUESTED` still looks mergeable
+  by every other signal if Copilot simply hasn't spoken yet.
+- **Done, with feedback.** Copilot's entry in `latestReviews` has
+  `commit.oid == head` (from `pr-status.sh`'s `head=`) and its login is no
+  longer in `reviewRequests=`. Triage its threads and any suppressed findings
+  as usual (see the format section below).
+- **Done, clean ("no further feedback").** Same as above, but the review left
+  zero unresolved threads for that review and zero suppressed bullets in its
+  body. Copilot's own wording for a clean pass varies by installation (seen:
+  "no issues found", "no further comments", or a body that's just the
+  collapsed `<details>` block reading `Comments generated: 0 new`) — match on
+  the *absence* of findings (thread count + suppressed-bullet count both
+  zero), not on grepping for one exact phrase that could change format. This
+  state satisfies the merge gate; don't hold the merge waiting for a second
+  Copilot pass that was never coming.
+
+Check pending-vs-done first, every poll cycle, before reading review bodies —
+a body from a stale review (submitted before the current head) is not
+"clean", it's just old.
+
 # Copilot's review-summary format
 
 GitHub Copilot's PR reviewer (`copilot-pull-request-reviewer`) wraps its
