@@ -138,22 +138,44 @@ meaningful difference on either backend at this model size.
 
 **17x is not the normal Vulkan/ROCm gap on RDNA4** — independent benchmarks
 (llama.cpp discussion #21043, digtvbg.com) report Vulkan only ~35-42% faster
-than ROCm on RDNA4 cards generally. The actual cause is a specific, already
-publicly identified upstream bug: **rocBLASLt on gfx1201 looks up the wrong
-Tensile kernel solution file (`gfx1200.dat` instead of `gfx1201.dat`)**,
-falling back to a generic/unoptimized kernel path instead of RDNA4-tuned
-ones (`ROCm/rocm-libraries#7192`). A fix ("solution library per gfx",
-`ROCm/rocm-libraries#4781`) landed upstream around 2026-03-02 — **but is not
-in any ROCm 7.2.x release**, including nixpkgs' current `rocmPackages` set
-(7.2.3). This matches our symptom exactly: it runs and produces correct
-output, just at fallback-kernel speed, rather than crashing.
+than ROCm on RDNA4 cards generally, so this needed a real explanation, not a
+guess. First guess (rocBLASLt looking up the wrong Tensile kernel file,
+`ROCm/rocm-libraries#7192`) turned out to be wrong and is retracted below —
+confirmed with an actual kernel trace instead.
 
-**This is a bigger practical blocker than the GPU-idle bug ever was**, but
-also the more temporary one — it's a specific packaging-lag bug with a known
-fix already merged upstream, not a fundamental RDNA4/ROCm limitation. Worth
-re-testing once nixpkgs picks up a ROCm release containing that fix; until
-then, Vulkan remains the right default here on throughput grounds, not just
-the idle-clock concern.
+**Confirmed root cause via `rocprofv3 --kernel-trace`** (not rocBLAS's own
+`ROCBLAS_LAYER`/`ROCBLAS_LOG_*` env vars, which produced no output — those
+only fire for library GEMM calls, and none happened here): **100% of GPU
+time is in ggml's own hand-written HIP kernels**
+(`mul_mat_vec_q`/`mul_mat_vec_f`), not hipBLAS, rocBLAS, or hipBLASLt at all.
+Single-token decode in llama.cpp never calls the BLAS libraries — those are
+only used for large-batch prompt processing — so the rocBLASLt Tensile-file
+bug (real, but a different, still-open issue, `#7192`) isn't even reachable
+by this workload. The dominant kernel
+(`mul_mat_vec_q<(ggml_type)12,...>`, the model's Q4_K weight type) took
+576ms total across 1815 calls (~318µs average) — high for a small
+matrix-vector op. This is a **ggml/llama.cpp kernel-tuning gap for gfx1201**,
+not a ROCm system-library bug: RDNA4 uses Wave32 (confirmed in the trace —
+"Wave Size: 32"), and ggml's HIP kernels have historically been tuned
+against older RDNA/CDNA hardware; RDNA4-specific tuning is recent, ongoing
+upstream work (see `ggml-org/llama.cpp` discussion #21043, "Squeezing Every
+Token/s from the R9700").
+
+**Not something to fix here.** Correcting a gap like this means patching
+ggml's own HIP kernel launch parameters/tuning for gfx1201 — real GPU
+kernel engineering upstream, not a nixpkgs packaging or ROCm-version issue.
+No rebuild of our own tooling helps. `nix-config` should track upstream
+llama.cpp releases for RDNA4 tuning improvements rather than attempt a local
+patch. Vulkan remains the right default here on throughput grounds — this
+is a bigger, and less temporary, practical blocker than the GPU-idle bug.
+
+**Diagnostic note for future reference**: getting a real kernel trace on
+NixOS needed `rocprofv3` (`rocmPackages.rocprofiler-sdk`), not the legacy
+`rocprof` (`rocmPackages.rocprofiler`) — the latter's internal Python
+tooling hardcodes `/bin/ls`, which doesn't exist on NixOS, and fails with an
+unhelpful traceback. `rocprofv3`'s syntax also differs
+(`rocprofv3 --kernel-trace -d <dir> -o <name> -f csv -- <cmd> [args]`, `--`
+required before the traced command).
 
 ## Verdict for `home/skills/delegation`
 
