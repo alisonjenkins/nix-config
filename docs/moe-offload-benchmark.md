@@ -12,18 +12,20 @@ ROCm, which was already rejected for this GPU; see
 | Project | Credible? | Works on this hardware? |
 |---|---|---|
 | **AirLLM** (layer-by-layer disk streaming) | Real, actively maintained (v3.0, June 2026) | **No** — CUDA/Apple-MLX/CPU only, no AMD/Vulkan support anywhere. Also genuinely slow regardless: well under 1 tok/s on a 70B model even where it does run, disk-bandwidth-bound. |
-| **PowerInfer** (SJTU — hot/cold neuron GPU/CPU split) | Real, actively maintained | **No, not without reopening a closed decision** — AMD support exists but is ROCm-only, and ROCm was already rejected on this exact RDNA4 GPU for a driver-maturity bug (GPU never idles after HIP inference). |
-| **ktransformers** (Tsinghua — MoE expert offload for DeepSeek-scale models) | Real, very actively maintained (DeepSeek-V4-Flash support added May 2026) | **No, same ROCm-only blocker** as PowerInfer. |
+| **PowerInfer** (SJTU — hot/cold neuron GPU/CPU split) | Real, actively maintained | **Reopened and tested** (`docs/powerinfer-rocm-benchmark.md`) — the ROCm idle-bug blocker has a confirmed fix (`-DGGML_HIP_GRAPHS=OFF`). Built and ran for real: correct output, no idle-bug regression, but ~9x slower than plain Vulkan full-GPU offload on a model that already fits. Same verdict as `--cpu-moe` below, now via a second, independent technique. |
+| **ktransformers** (Tsinghua — MoE expert offload for DeepSeek-scale models) | Real, very actively maintained (DeepSeek-V4-Flash support added May 2026) | **No — not a ROCm blocker this time, a scale mismatch.** Its whole value proposition is running 400GB+ MoE models (DeepSeek-V3/R1 class) via CPU expert-offload; there's no small-model path to meaningfully test, unlike PowerInfer's 7B. Also pins PyTorch-ROCm 6.2.4 against our ROCm 7.2.3, recommends conda over nix, and its ROCm docs only mention RDNA3 (7900 XTX) — RDNA4 is untested territory on top of the scale problem. Not pursued: even if it built, there is nothing to run it against here. |
 | **llama.cpp's own `--cpu-moe`/`--n-cpu-moe`/`--override-tensor`** | Ships in the exact llama-server already built and tested this session | **Yes — no new tooling needed.** Backend-agnostic tensor placement, not CUDA-specific code. |
 | mmap-based lazy loading | Real | Already the default in llama.cpp, already in use — not a distinct technique to adopt. |
 
-**Verdict: skip AirLLM/PowerInfer/ktransformers for this machine.** Every
-other credible option in this space is CUDA-only or ROCm-only, and this
-GPU's practical path is Vulkan. `llama.cpp`'s native MoE-offload flags,
-already present on the build wired into `flake-modules/hosts/ali-desktop/default.nix`,
-are the actual answer — confirmed by direct benchmark, not just by reading
-the docs (which skew CUDA-heavy and don't call out Vulkan explicitly
-either way).
+**Verdict: skip AirLLM/PowerInfer/ktransformers for this machine.** AirLLM has
+no AMD path at all. PowerInfer's ROCm blocker was later resolved and it was
+actually benchmarked (see above) — still not worth adopting, on throughput
+grounds rather than compatibility ones. ktransformers targets a scale
+(400GB+ MoE models) with nothing feasible to test it against here. For
+day-to-day use, `llama.cpp`'s native MoE-offload flags, already present on
+the build wired into `flake-modules/hosts/ali-desktop/default.nix`, are the
+actual answer — confirmed by direct benchmark, not just by reading the docs
+(which skew CUDA-heavy and don't call out Vulkan explicitly either way).
 
 ## Live benchmark: does `--cpu-moe` actually work on Vulkan, and is it worth it?
 
