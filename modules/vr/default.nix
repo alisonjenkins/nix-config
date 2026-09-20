@@ -267,21 +267,24 @@ in
         script = ''
           # Root patterns as a bash array, one per Nix list entry, so a root
           # containing a space (e.g. "/media/Steam Games/Steam") survives as
-          # one token. Expanded via `compgen -G`, which globs a pattern and
-          # prints one match per line -- unlike unquoted `$pattern` in a
-          # `for`/array-append, it never falls back to IFS word-splitting on
-          # the literal (pre-glob) part of the path.
+          # one token. This unit's bash has no programmable-completion
+          # support, so `compgen` isn't available to glob each pattern in
+          # isolation -- instead, IFS is cleared before the unquoted
+          # `$pattern` expansion below, which stops word-splitting on the
+          # literal path while still letting pathname expansion match `*`.
+          shopt -s nullglob
           patterns=(
           ${lib.concatMapStringsSep "\n" (root:
             "  ${lib.escapeShellArg "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"}"
           ) cfg.steamLibraryRoots}
           )
           launchers=()
+          old_ifs="$IFS"
+          IFS=
           for pattern in "''${patterns[@]}"; do
-            while IFS= read -r launcher; do
-              launchers+=( "$launcher" )
-            done < <(compgen -G "$pattern" || true)
+            launchers+=( $pattern )
           done
+          IFS="$old_ifs"
           for launcher in "''${launchers[@]}"; do
             [ -e "$launcher" ] || continue
             # Checks for the `ep` flags specifically, not just the capability
