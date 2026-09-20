@@ -283,7 +283,12 @@ in
             done < <(compgen -G "$pattern" || true)
           done
           for launcher in "''${launchers[@]}"; do
-            if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -q cap_sys_nice; then
+            [ -e "$launcher" ] || continue
+            # Checks for the `ep` flags specifically, not just the capability
+            # name: a plain `grep cap_sys_nice` also matches Valve's own
+            # `cap_sys_nice+eip`, which would leave the crash-prone
+            # inheritable bit in place instead of correcting it to `ep`.
+            if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -qE 'cap_sys_nice[+=]ep($|[[:space:],])'; then
               ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
             fi
           done
