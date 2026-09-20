@@ -6,13 +6,13 @@ let
   bluetoothMacs = {
     sonyHeadset = "88:C9:E8:06:5E:9C";
   };
-  # The binaural spatializer's output is pinned to the Scarlett via
-  # `target.object` (see binauralSurround below). Session policy normally
-  # re-links it on its own, but as a fallback in case a relink is ever
-  # missed, both known ways the underlying node can drop (see
-  # services.audio-context-suspend and services.audio-usb-reconnect-heal
-  # below) share this one list of links to restore.
-  binauralOutputLinks = let
+  # The binaural spatializer's input and output are both pinned via
+  # `node.dont-reconnect`/`target.object` (see binauralSurround below).
+  # Session policy normally re-links them on its own, but as a fallback in
+  # case a relink is ever missed, every known way either link can drop (see
+  # services.audio-context-suspend, services.audio-usb-reconnect-heal, and
+  # modules.vr.extraRelinkPorts below) shares this one list to restore.
+  binauralLinks = let
     scarlettOut = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
   in [
     {
@@ -22,6 +22,17 @@ let
     {
       output = "effect_output.binaural71:output_FR";
       input = "${scarlettOut}:playback_FR";
+    }
+    # Broke 2026-09-20: WiVRn headset connect/disconnect churned nodes fast
+    # enough to race WirePlumber's policy linker and drop this one instead,
+    # which neither of the above services was watching for.
+    {
+      output = "easyeffects_sink:monitor_FL";
+      input = "effect_input.binaural71:playback_FL";
+    }
+    {
+      output = "easyeffects_sink:monitor_FR";
+      input = "effect_input.binaural71:playback_FR";
     }
   ];
 in {
@@ -397,6 +408,7 @@ in {
               offset_y = 0.75;
             }
           ];
+          extraRelinkPorts = binauralLinks;
         };
 
         modules.desktop = {
@@ -480,7 +492,7 @@ in {
           # Covers the 2026-08-21 case: this resume hook's own SUSPENDED-pcm
           # fix (cycling the Scarlett's card profile) recreates the card's
           # PipeWire nodes, which the dont-reconnect link doesn't survive.
-          relinkPorts = binauralOutputLinks;
+          relinkPorts = binauralLinks;
         };
 
         # Covers the 2026-08-19 case: the Scarlett sits behind a USB switch
@@ -502,7 +514,7 @@ in {
               productId = "8219";
             }
           ];
-          expectedLinks = binauralOutputLinks;
+          expectedLinks = binauralLinks;
         };
 
         # S3 drops VBUS to the root hubs, so the OBSBOT re-enumerates on every
