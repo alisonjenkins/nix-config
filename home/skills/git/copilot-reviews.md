@@ -17,9 +17,11 @@ guaranteed) — use whichever login actually shows up in `reviewRequests=` or
   threads and `reviewDecision` not `CHANGES_REQUESTED` still looks mergeable
   by every other signal if Copilot simply hasn't spoken yet.
 - **Done, with feedback.** Copilot's entry in `latestReviews.nodes[]` has
-  `commit.oid == head` (from `pr-status.sh`'s `head=`) and its login is no
-  longer in `reviewRequests=`. Triage its threads and any suppressed findings
-  as usual (see the format section below).
+  `commit.oid` starting with `pr-status.sh`'s `head=` (that field prints only
+  the first 8 characters of `headRefOid`, so compare as a prefix, not
+  equality) and its login is no longer in `reviewRequests=`. Triage its
+  threads and any suppressed findings as usual (see the format section
+  below).
 - **Done, clean ("no further feedback").** Same as above, but this review
   generated zero comments of its own (`Comments generated: 0 new` in the
   body, or zero comments with `pull_request_review_id` equal to this
