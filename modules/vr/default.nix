@@ -112,7 +112,6 @@ let
           ;;
         *"'remove'"*source*)
           if ! has_wivrn_source; then
-            local alsa_source
             alsa_source="$(${pactl} list short sources 2>/dev/null | grep -m1 'alsa_input\.' | cut -f2)" || true
             if [ -n "''${alsa_source:-}" ]; then
               echo "WiVRn source disappeared — restoring default mic"
