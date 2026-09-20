@@ -223,6 +223,17 @@ in
         linker and drop an unrelated link elsewhere in the graph.
       '';
     };
+    steamLibraryRoots = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "/home/*/.local/share/Steam" ];
+      description = ''
+        Glob roots to search for a SteamVR install
+        (`steamapps/common/SteamVR`), used to grant `vrcompositor-launcher`
+        `cap_sys_nice` so SteamVR's own setup step is a no-op. Extend per
+        host with any additional Steam library folder (e.g. a second drive)
+        Steam is configured to install into.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -232,6 +243,54 @@ in
         pkgs.unstable.wayvr
         pkgs.xr-video-player
       ];
+
+      # SteamVR's own bin/vrsetup.sh checks vrcompositor-launcher for
+      # cap_sys_nice (needed for async reprojection) and, if missing, shows
+      # "SteamVR requires superuser access to finish setup" and runs
+      # `pkexec setcap CAP_SYS_NICE=eip`. That fails every time here (no
+      # polkit agent answers pkexec from inside Steam's pressure-vessel
+      # relaunch), so SteamVR reports "setup is incomplete" and Steam Link
+      # from the Quest sees SteamVR as not installed properly.
+      #
+      # Pre-granting the capability outside the sandbox makes vrsetup.sh's
+      # own getcap check pass and skip pkexec entirely. Using `+ep` rather
+      # than Valve's own `=eip` is deliberate: the inheritable flag in `eip`
+      # is what triggers a known vrcompositor crash/graphics-reset bug
+      # (nixpkgs#92798, ValveSoftware/SteamVR-for-Linux#440), and `ep` alone
+      # still reads as "has cap_sys_nice" to vrsetup.sh's substring check.
+      systemd.services.steamvr-setcap = {
+        description = "Grant SteamVR's vrcompositor-launcher cap_sys_nice";
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          shopt -s nullglob
+          for launcher in ${lib.concatMapStringsSep " " (root:
+            "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"
+          ) cfg.steamLibraryRoots}; do
+            if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -q cap_sys_nice; then
+              ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
+            fi
+          done
+        '';
+        wantedBy = [ "multi-user.target" ];
+      };
+
+      # Re-runs the grant whenever SteamVR (re)installs vrcompositor-launcher
+      # -- a Steam update replaces the binary and drops the capability along
+      # with it -- without waiting for the next reboot.
+      systemd.paths = lib.listToAttrs (lib.imap0 (i: root: {
+        name = "steamvr-setcap-watch-${toString i}";
+        value = {
+          description = "Watch for a (re)installed SteamVR at ${root}";
+          wantedBy = [ "multi-user.target" ];
+          pathConfig = {
+            PathExistsGlob = "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher";
+            Unit = "steamvr-setcap.service";
+          };
+        };
+      }) cfg.steamLibraryRoots);
     })
 
     (lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
