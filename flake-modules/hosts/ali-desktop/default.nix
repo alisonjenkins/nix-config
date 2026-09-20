@@ -424,6 +424,9 @@ in {
             }
           ];
           extraRelinkPorts = binauralLinks;
+          # This host's SteamVR install lives on the second Steam library,
+          # not ~/.local/share/Steam (see programs.steam.package below).
+          steamLibraryRoots = [ "/media/steam-games-1/Steam" ];
         };
 
         modules.desktop = {
