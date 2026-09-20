@@ -17,21 +17,25 @@ causes a merge to land before Copilot's feedback shows up.
   `commit.oid == head` (from `pr-status.sh`'s `head=`) and its login is no
   longer in `reviewRequests=`. Triage its threads and any suppressed findings
   as usual (see the format section below).
-- **Done, clean ("no further feedback").** Same as above, but the review left
-  zero unresolved threads for that review and zero suppressed bullets in its
-  body. Copilot's own wording for a clean pass varies by installation (seen:
-  "no issues found", "no further comments", or a body that's just the
-  collapsed `<details>` block reading `Comments generated: 0 new`) — match on
-  the *absence* of findings (thread count + suppressed-bullet count both
-  zero), not on grepping for one exact phrase that could change format. This
-  state satisfies the merge gate; don't hold the merge waiting for a second
+- **Done, clean ("no further feedback").** Same as above, but this review
+  generated zero comments of its own (`Comments generated: 0 new` in the
+  body, or zero comments with `pull_request_review_id` equal to this
+  review's id) and zero suppressed bullets in its body. Check the review's
+  own comment count, not overall thread resolution — a thread can be
+  resolved for reasons unrelated to Copilot (another reviewer's thread, or
+  one resolved after the fact), so "zero unresolved threads on the PR" is
+  not a reliable stand-in for "this review found nothing." Copilot's wording
+  for a clean pass otherwise varies by installation (seen: "no issues
+  found", "no further comments") — match on the comment/suppressed counts,
+  not on grepping for one exact phrase that could change format. This state
+  satisfies the merge gate; don't hold the merge waiting for a second
   Copilot pass that was never coming.
 
 Check pending-vs-done first, every poll cycle, before reading review bodies —
 a body from a stale review (submitted before the current head) is not
 "clean", it's just old.
 
-# Copilot's review-summary format
+## Copilot's review-summary format
 
 GitHub Copilot's PR reviewer (`copilot-pull-request-reviewer`) wraps its
 findings in a collapsed `<details><summary>Review details</summary>` block in
