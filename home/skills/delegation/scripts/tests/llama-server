@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake `llama-server` test double for switch-local-profile.bats. Logs its
+# argv and either exits immediately (FAKE_RUNTIME_MODE=exit-immediately, to
+# simulate a crash on startup) or stays "loaded" until killed.
+echo "$*" >>"${FAKE_RUNTIME_CALLS:?FAKE_RUNTIME_CALLS must be set}"
+if [[ "${FAKE_RUNTIME_MODE:-}" == "exit-immediately" ]]; then
+  exit 1
+fi
+exec sleep 3600
