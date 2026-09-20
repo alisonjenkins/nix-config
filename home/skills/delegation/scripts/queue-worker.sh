@@ -24,6 +24,7 @@ echo "$$" >"$pidfile"
 trap 'rm -f "$pidfile"' EXIT
 
 idle_timeout="$(numeric_env_or_default LOCAL_LLM_QUEUE_IDLE_TIMEOUT 600)"
+sweep_stale_results "$state_dir"
 
 # Prints "<used_bytes> <total_bytes>" for the DRM device with the largest
 # VRAM pool, or "unknown unknown" if it can't be determined on this
@@ -508,4 +509,5 @@ while :; do
     stop) process_stop_job "$job_json" "$job_id" ;;
     *) write_result "$job_id" 1 "" "unknown job type '$job_type'" ;;
   esac
+  sweep_stale_results "$state_dir"
 done

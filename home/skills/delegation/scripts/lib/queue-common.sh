@@ -4,6 +4,31 @@
 # editor/shellcheck tooling: this file is not meant to be executed directly,
 # and inherits the sourcing script's `set` options.
 
+# Deletes .result files older than LOCAL_LLM_RESULT_MAX_AGE_SECONDS
+# (default 1800s) from $1/results. A caller that gives up waiting
+# (submit_and_wait's own timeout) leaves its job's eventual result behind —
+# nobody's left waiting on it, so nothing else would ever delete it
+# otherwise. Uses stat's own mtime rather than `find -mmin` (minute
+# granularity, awkward to test deterministically) for a plain integer
+# seconds-since-epoch comparison.
+sweep_stale_results() {
+  local state_dir="$1" max_age_seconds now f mtime age
+  max_age_seconds="$(numeric_env_or_default LOCAL_LLM_RESULT_MAX_AGE_SECONDS 1800)"
+  max_age_seconds="${max_age_seconds%.*}"
+  now="$(date +%s)"
+  for f in "$state_dir/results"/*.result; do
+    [[ -e "$f" ]] || continue
+    mtime="$(stat -c%Y "$f" 2>/dev/null || stat -f%m "$f" 2>/dev/null)" || continue
+    age=$((now - mtime))
+    # `|| true`: under `set -e`, a false `((...))` has exit status 1, which
+    # would otherwise abort this whole function on the common case (a
+    # fresh-enough file, nothing to delete) instead of just continuing the
+    # loop — the same class of bug already fixed for active_reservation_for
+    # and model_size_bytes's callers elsewhere in this file/queue-worker.sh.
+    { ((age > max_age_seconds)) && rm -f "$f"; } || true
+  done
+}
+
 numeric_env_or_default() {
   local var_name="$1" default_value="$2" value="${!1:-}"
   if [[ -z "$value" ]]; then
