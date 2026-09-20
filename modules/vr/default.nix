@@ -288,7 +288,7 @@ in
             # name: a plain `grep cap_sys_nice` also matches Valve's own
             # `cap_sys_nice+eip`, which would leave the crash-prone
             # inheritable bit in place instead of correcting it to `ep`.
-            if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -qE 'cap_sys_nice[+=]ep($|[[:space:],])'; then
+            if ! ${pkgs.libcap}/bin/getcap "$launcher" | ${pkgs.gnugrep}/bin/grep -qE 'cap_sys_nice[+=]ep($|[[:space:],])'; then
               ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
             fi
           done
