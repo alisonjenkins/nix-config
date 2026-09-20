@@ -48,6 +48,19 @@ a review's wait time is spent doing nothing (`watch-pr.sh` does this
 internally; a manual loop should too). A user-specified interval overrides
 the ramp and stays fixed at whatever they asked for.
 
+**`watch-pr.sh` is single-shot, not a persistent daemon.** It detects ONE
+change (or one of `NEEDS_ATTENTION`/`PR_CLOSED`/`PR_MERGED`/`IDLE_TIMEOUT`),
+prints it, and exits — it does not loop back and keep watching on its own.
+Launching it with `run_in_background` and moving on (`&disown` or
+equivalent, no follow-up) means its exit is silently missed: nothing
+surfaces the moment it fires, and any review activity after that point goes
+unnoticed until something else prompts a manual `pr-status.sh` check —
+observed in practice losing an entire round of Copilot feedback this way.
+Either await its background-task completion notification directly (don't
+detach without a plan to notice), or use a Monitor on it, and **relaunch it
+again immediately** every time it exits for a reason other than
+PR-closed/merged — one launch only covers one event.
+
 If falling back to `ScheduleWakeup` (no background execution available),
 pass this ramp's numbers explicitly (`delaySeconds: 60` on the first tick,
 ×1.5 per empty tick, capped at 900) — do not reach for that tool's generic
