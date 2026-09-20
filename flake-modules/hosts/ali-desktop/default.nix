@@ -99,7 +99,22 @@ in {
         home-manager.users.${specialArgs.username} = {
           imports = [ self.homeModules.home-linux self.homeModules.vr ];
 
-          home.packages = [ pkgs.lmstudio ];
+          home.packages = [
+            pkgs.lmstudio
+            # nixpkgs' plain llama-cpp is CPU-only — this GPU (RX 9070, RDNA4)
+            # needs the Vulkan override to actually offload layers via
+            # --n-gpu-layers. Verified live: this exact override is cached on
+            # cache.nixos.org (no compile), and the resulting llama-server
+            # links libggml-vulkan.so.0 + libvulkan.so.1. ROCm was considered
+            # and rejected as the default here (see
+            # home/skills/delegation/delegate-to-local.md and
+            # docs/powerinfer-rocm-benchmark.md) — RDNA4 ROCm 7.2's HIP
+            # inference has a known GPU-never-idles bug; a mitigation
+            # (-DGGML_HIP_GRAPHS=OFF) was confirmed live to fix it, but
+            # nixpkgs' rocmSupport override doesn't set that flag. Vulkan
+            # (RADV) has no such issue here and needs no extra flags.
+            (pkgs.llama-cpp.override { vulkanSupport = true; })
+          ];
           # The session's niri, which carries the virtual output patch. `niri
           # msg` must match the running compositor: the IPC is versioned with
           # it, and virtual outputs are a patch rather than an upstream
