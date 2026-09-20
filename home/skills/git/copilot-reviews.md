@@ -5,7 +5,7 @@ Confusing "hasn't reviewed yet" with "reviewed and found nothing" is what
 causes a merge to land before Copilot's feedback shows up. Copilot's login
 varies by installation (`copilot-pull-request-reviewer` is common but not
 guaranteed) — use whichever login actually shows up in `reviewRequests=` or
-`latestReviews.author.login` for this repo, don't hardcode one.
+`latestReviews.nodes[].author.login` for this repo, don't hardcode one.
 
 - **Pending (mid-review).** Copilot's login appears in `pr-status.sh`'s
   `reviewRequests=` field. It was requested (on PR open, or by re-request
@@ -16,7 +16,7 @@ guaranteed) — use whichever login actually shows up in `reviewRequests=` or
   not just the re-review-request check in step 6 — a PR with zero unresolved
   threads and `reviewDecision` not `CHANGES_REQUESTED` still looks mergeable
   by every other signal if Copilot simply hasn't spoken yet.
-- **Done, with feedback.** Copilot's entry in `latestReviews` has
+- **Done, with feedback.** Copilot's entry in `latestReviews.nodes[]` has
   `commit.oid == head` (from `pr-status.sh`'s `head=`) and its login is no
   longer in `reviewRequests=`. Triage its threads and any suppressed findings
   as usual (see the format section below).
