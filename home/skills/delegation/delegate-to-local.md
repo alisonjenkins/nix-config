@@ -3,10 +3,11 @@
 An alternative to a Claude sub-agent or `delegate-to-copilot.md` for
 zero-marginal-cost, no-cloud-dependency delegation: `scripts/delegate-to-local.sh`
 sends a subtask to a model running on your own hardware via an
-OpenAI-compatible chat-completions endpoint (`llama-server`, Ollama, LM
-Studio, and similar all expose this same shape at `/v1/chat/completions`).
-Works from any machine that has a local endpoint reachable — it doesn't
-assume any particular host or GPU.
+OpenAI-compatible chat-completions endpoint. The chosen runtime per platform
+(below) is llama.cpp on Linux and MLX on macOS, but the script itself only
+assumes the standard OpenAI-compatible shape at `/v1/models` and
+`/v1/chat/completions` — any server speaking that (Ollama, LM Studio, ...)
+works too, and it doesn't hardcode any particular host or GPU.
 
 ## What this can and can't do
 
@@ -29,14 +30,28 @@ mechanical, well-specified tasks (the same "haiku-shaped work" bar the
 has no known alignment/safety training (avoid "abliterated"/uncensored
 community finetunes for that reason).
 
-## Setup: one endpoint per machine
+## Chosen runtime: llama.cpp on Linux, MLX on macOS
 
-Any OpenAI-compatible local server works. `llama-server` (from llama.cpp)
-with the Vulkan backend is a reasonable default on Linux with an AMD GPU —
-more reliable today than ROCm on younger RDNA hardware, which can have
-driver-maturity gotchas (e.g. a HIP backend that doesn't idle the GPU after
-inference on some RDNA4 cards). On Apple Silicon, MLX (via `mlx-lm` or LM
-Studio's MLX engine) is typically faster than llama.cpp's Metal backend.
+Decided over Ollama-everywhere for raw per-platform speed, accepting the
+cost of two setups to maintain instead of one:
+
+- **Linux (AMD GPU)**: `llama-server` (from llama.cpp) with the **Vulkan**
+  backend, not ROCm — more reliable today than ROCm on younger RDNA
+  hardware, which can have driver-maturity gotchas (e.g. a HIP backend that
+  doesn't idle the GPU after inference on some RDNA4 cards). Binds to
+  `localhost:8080` by default, matching `delegate-to-local.sh`'s first probe
+  candidate — no `--port` needed.
+- **macOS (Apple Silicon)**: `mlx_lm.server` (from the `mlx-lm` Python
+  package — a fixed installed CLI once set up in a venv/pipx, not a
+  per-invocation venv) — typically 10-20% faster than llama.cpp's Metal
+  backend. Also binds to `localhost:8080` by default (the same port as
+  llama-server, which is fine since only one runtime runs per host), exposes
+  the same `/v1/models` and `/v1/chat/completions` shapes with no
+  deviations. Its own docs call it "not recommended for production, only
+  basic security checks" — bind it to localhost only, never expose the
+  port. No first-party launchd unit exists yet for keeping it running
+  headless across logins/reboots; that needs writing by hand if you want it
+  always-on rather than started manually per session.
 
 Model choice is a per-machine hardware tradeoff (VRAM/unified-memory budget
 vs. tokens/sec vs. capability), not something this doc hardcodes — pick the
