@@ -265,11 +265,12 @@ in
         # after a Steam update needs this unit back to inactive once done.
         serviceConfig.Type = "oneshot";
         script = ''
-          shopt -s nullglob
           # Root patterns as a bash array, one per Nix list entry, so a root
           # containing a space (e.g. "/media/Steam Games/Steam") survives as
-          # one token; word-splitting only re-applies where `*` legitimately
-          # needs to glob-expand, when filling $launchers below.
+          # one token. Expanded via `compgen -G`, which globs a pattern and
+          # prints one match per line -- unlike unquoted `$pattern` in a
+          # `for`/array-append, it never falls back to IFS word-splitting on
+          # the literal (pre-glob) part of the path.
           patterns=(
           ${lib.concatMapStringsSep "\n" (root:
             "  ${lib.escapeShellArg "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"}"
@@ -277,7 +278,9 @@ in
           )
           launchers=()
           for pattern in "''${patterns[@]}"; do
-            launchers+=( $pattern )
+            while IFS= read -r launcher; do
+              launchers+=( "$launcher" )
+            done < <(compgen -G "$pattern" || true)
           done
           for launcher in "''${launchers[@]}"; do
             if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -q cap_sys_nice; then
