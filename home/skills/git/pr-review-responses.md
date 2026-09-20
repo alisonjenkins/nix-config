@@ -95,6 +95,18 @@ Rules the script encodes:
 - **Scan every review's body for suppressed findings, not just the
   latest.** A body-only finding in an earlier review is never resurfaced by
   a "read the latest review" poll once a later review buries it.
+- **Never take the verdict body's literal first line.** For a bot reviewer
+  like Copilot, that line is an HTML marker comment
+  (`<!-- ccr-overview-v2 -->`) — a `split("\n")[0]` extraction silently
+  hides the actual verdict (e.g. `### Needs a closer look`, plus its
+  explanation paragraph) several lines further down, several review cycles
+  in a row, with no error and no obviously-wrong output — the script still
+  prints *something*, just the wrong line. Found live: real "needs a
+  closer look" feedback went unnoticed this way. Filter out `<!--`
+  comments and `##` headings, keep everything from the first real content
+  line up to `**Review effort**`/`<details>` (Copilot's fixed
+  end-of-summary markers), same as `pr-status.sh` and `poll-pr-review.sh`
+  now both do.
 
 Without the script (a different machine, or before it's installed), the
 manual equivalent is

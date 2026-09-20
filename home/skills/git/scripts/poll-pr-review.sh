@@ -159,9 +159,25 @@ fi
 echo
 
 # --- Latest review verdict (chronological, not array order) ---
+# The body's literal first line is near-useless for bots like Copilot's
+# reviewer — it's an HTML marker comment (<!-- ccr-overview-v2 -->), with
+# the actual verdict ("### Needs a closer look", plus its explanation
+# paragraph) several lines further down. `split("\n")[0]` alone silently
+# hid every such verdict behind that comment; the awk filter below skips
+# comment/heading noise and stops before the trailing metadata
+# (**Review effort**, <details>) instead.
 echo "-- Latest review verdict --"
-# shellcheck disable=SC2016 # single-quoted on purpose: $r below is a jq variable, not a shell one
-jq -r 'sort_by(.submitted_at) | map(select(.body != "")) | last as $r
-    | if $r == null then "(no review with a summary yet)"
-      else "[\($r.submitted_at)] \($r.user.login) on \($r.commit_id[0:8]): " + ($r.body | split("\n")[0])
-      end' <<<"$reviews_json"
+latest_review_json="$(jq -c 'sort_by(.submitted_at) | map(select(.body != "")) | last' <<<"$reviews_json")"
+if [[ "$latest_review_json" == "null" ]]; then
+  echo "(no review with a summary yet)"
+else
+  jq -r '"[\(.submitted_at)] \(.user.login) on \(.commit_id[0:8]):"' <<<"$latest_review_json"
+  jq -r '.body' <<<"$latest_review_json" | awk '
+    /^<!--/ { next }
+    /^##[^#]/ { next }
+    /^\*\*Review effort/ { exit }
+    /^<details/ { exit }
+    /^$/ { if (started) print; next }
+    { started = 1; print }
+  '
+fi

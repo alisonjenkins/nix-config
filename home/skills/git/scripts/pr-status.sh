@@ -157,9 +157,26 @@ fi
 echo
 
 # --- Latest review with a summary body ---
+# The body's literal first line is near-useless for bots like Copilot's
+# reviewer — it's an HTML marker comment (<!-- ccr-overview-v2 -->), with
+# the actual verdict ("### Needs a closer look", plus its explanation
+# paragraph) several lines further down. `split("\n")[0]` alone silently
+# hid every such verdict behind that comment; the awk filter below skips
+# comment/heading noise and stops before the trailing metadata
+# (**Review effort**, <details>) instead.
 echo "-- Latest review verdict --"
-jq -r '.data.repository.pullRequest.latestReviews.nodes
-    | map(select(.body != "")) | sort_by(.submittedAt) | last as $r
-    | if $r == null then "(no review with a summary yet)"
-      else "[\($r.submittedAt)] \($r.author.login) on \($r.commit.oid[0:8]): " + ($r.body | split("\n")[0])
-      end' <<<"$scalar_json"
+latest_review_json="$(jq -c '.data.repository.pullRequest.latestReviews.nodes
+    | map(select(.body != "")) | sort_by(.submittedAt) | last' <<<"$scalar_json")"
+if [[ "$latest_review_json" == "null" ]]; then
+  echo "(no review with a summary yet)"
+else
+  jq -r '"[\(.submittedAt)] \(.author.login) on \(.commit.oid[0:8]):"' <<<"$latest_review_json"
+  jq -r '.body' <<<"$latest_review_json" | awk '
+    /^<!--/ { next }
+    /^##[^#]/ { next }
+    /^\*\*Review effort/ { exit }
+    /^<details/ { exit }
+    /^$/ { if (started) print; next }
+    { started = 1; print }
+  '
+fi
