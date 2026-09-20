@@ -113,6 +113,38 @@ the same problem plain offload does; it's trading GPU-underuse for the
 ability to run models that are otherwise VRAM-bound, at a real cost when that
 tradeoff isn't needed.
 
+## Vulkan vs. ROCm, same model, same full-GPU-offload config
+
+The PowerInfer benchmark above compares two different *techniques* (sparse
+split vs. full offload), not the two GPU backends directly. A same-model,
+same-config, backend-only comparison — `TheBloke/Llama-2-7B-GGUF` Q4_K_M,
+`--n-gpu-layers 99`, `--ctx-size 2048`, `temperature 0`, on `llama.cpp`
+itself (not PowerInfer):
+
+| Backend | Generation | Prompt eval |
+|---|---|---|
+| Vulkan (default) | 119.0 tok/s | 560.2 tok/s |
+| Vulkan (`--flash-attn off`) | 117.9 tok/s | 391.8 tok/s |
+| Vulkan (`--cache-type-k/v q8_0`) | 113.9 tok/s | 404.5 tok/s |
+| ROCm (default) | **6.5 tok/s** | 58.5 tok/s |
+| ROCm (`--flash-attn off`) | 6.5 tok/s | 24.2 tok/s |
+| ROCm (`-fit off`, forcing explicit `-ngl`) | 6.9 tok/s | 62.7 tok/s |
+
+**Vulkan is ~17x faster than ROCm on this exact hardware for this exact
+workload.** Confirmed the ROCm run genuinely loaded the model onto the GPU
+(8.5GB VRAM resident, not a silent CPU fallback) — this is real GPU
+execution, just slow. Almost certainly nixpkgs' ROCm 7.2.3 hipBLAS/rocBLAS
+having immature or unoptimized GEMM kernels for gfx1201 — RDNA4 is very new
+hardware, and ROCm kernel-level tuning typically lags new architectures by
+months, independent of whether the backend "works" at all. Flash attention
+and KV-cache quantization made no meaningful difference on either backend at
+this model size.
+
+**This is a bigger practical blocker than the GPU-idle bug ever was.** Even
+with the idle-bug mitigated, ROCm on this card is currently not
+competitive with Vulkan on raw throughput — reinforcing, independent of the
+PowerInfer/`--cpu-moe` findings above, that Vulkan is the right default here.
+
 ## Verdict for `home/skills/delegation`
 
 - **Don't adopt PowerInfer for any model that already fits on this GPU** — same
