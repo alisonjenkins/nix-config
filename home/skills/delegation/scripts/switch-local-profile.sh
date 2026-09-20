@@ -7,7 +7,7 @@ set -euo pipefail
 
 usage() {
   echo "usage: $0 <profile-name>" >&2
-  echo "env: LOCAL_LLM_PROFILES_FILE (profiles.json location override)," >&2
+  echo "env: LOCAL_LLM_PROFILES_FILE (profiles.toml location override)," >&2
   echo "     LOCAL_LLM_STATE_DIR (state/log location override)," >&2
   echo "     LOCAL_LLM_READY_TIMEOUT (seconds to wait for the model to load, default 120)," >&2
   echo "     LOCAL_LLM_READY_INTERVAL (seconds between readiness checks, default 1)" >&2
@@ -18,9 +18,9 @@ if [[ $# -ne 1 ]]; then
   exit 1
 fi
 
-for bin in curl jq; do
+for bin in curl jq yq; do
   if ! command -v "$bin" >/dev/null 2>&1; then
-    echo "error: '$bin' not found on PATH — required to manage a local profile." >&2
+    echo "error: '$bin' not found on PATH — required to manage a local profile (yq: mikefarah/yq, parses profiles.toml)." >&2
     exit 1
   fi
 done
@@ -47,16 +47,22 @@ ready_interval="$(numeric_env_or_default LOCAL_LLM_READY_INTERVAL 1)"
 if [[ -n "${LOCAL_LLM_PROFILES_FILE:-}" ]]; then
   profiles_file="$LOCAL_LLM_PROFILES_FILE"
 elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-  profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.json"
+  profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.toml"
 elif [[ -n "${HOME:-}" ]]; then
-  profiles_file="$HOME/.config/delegate-to-local/profiles.json"
+  profiles_file="$HOME/.config/delegate-to-local/profiles.toml"
 else
-  echo "error: none of LOCAL_LLM_PROFILES_FILE, XDG_CONFIG_HOME, or HOME are set — can't tell where profiles.json lives." >&2
+  echo "error: none of LOCAL_LLM_PROFILES_FILE, XDG_CONFIG_HOME, or HOME are set — can't tell where profiles.toml lives." >&2
   exit 1
 fi
 
 if [[ ! -f "$profiles_file" ]]; then
   echo "error: profiles file not found: $profiles_file — see ../delegate-to-local.md for its schema." >&2
+  exit 1
+fi
+
+if ! profiles_json="$(yq -p toml -o json '.' "$profiles_file" 2>&1)"; then
+  echo "error: failed to parse $profiles_file as TOML:" >&2
+  echo "$profiles_json" >&2
   exit 1
 fi
 
@@ -73,8 +79,8 @@ fi
 mkdir -p "$state_dir"
 active_file="$state_dir/active-profile.json"
 
-if ! profile_json="$(jq -e --arg name "$profile_name" '.[$name]' "$profiles_file" 2>/dev/null)" || [[ "$profile_json" == "null" ]]; then
-  available="$(jq -r 'keys | join(", ")' "$profiles_file" 2>/dev/null || echo "(unreadable profiles file)")"
+if ! profile_json="$(jq -e --arg name "$profile_name" '.[$name]' <<<"$profiles_json" 2>/dev/null)" || [[ "$profile_json" == "null" ]]; then
+  available="$(jq -r 'keys | join(", ")' <<<"$profiles_json" 2>/dev/null || echo "(unreadable profiles file)")"
   echo "error: profile '$profile_name' not found in $profiles_file — available: $available" >&2
   exit 1
 fi

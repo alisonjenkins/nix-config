@@ -6,16 +6,21 @@ setup() {
   export PATH="$script_dir:$PATH"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_CURL_CALLS"
-  export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.json"
+  export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.toml"
   export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
   mkdir -p "$LOCAL_LLM_STATE_DIR"
   unset FAKE_CURL_UP FAKE_CURL_MODE
-  cat >"$LOCAL_LLM_PROFILES_FILE" <<'JSON'
-{
-  "fast": {"runtime": "llama-server", "model": "/models/fast.gguf", "description": "quick profile"},
-  "quality": {"runtime": "mlx-lm", "model": "/models/quality", "description": "bigger profile"}
-}
-JSON
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
+[fast]
+runtime = "llama-server"
+model = "/models/fast.gguf"
+description = "quick profile"
+
+[quality]
+runtime = "mlx-lm"
+model = "/models/quality"
+description = "bigger profile"
+TOML
 }
 
 @test "missing profiles file exits 1" {
@@ -26,10 +31,10 @@ JSON
 }
 
 @test "malformed profiles file exits 1" {
-  echo "not json" >"$LOCAL_LLM_PROFILES_FILE"
+  printf 'not = valid = toml =\n' >"$LOCAL_LLM_PROFILES_FILE"
   run "$list"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not valid JSON"* ]]
+  [[ "$output" == *"not valid TOML"* ]]
 }
 
 @test "lists all profiles with no active marker when nothing is active" {

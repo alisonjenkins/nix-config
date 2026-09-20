@@ -5,37 +5,34 @@ setup() {
   switch="$script_dir/../switch-local-profile.sh"
   orig_path="$PATH"
   export PATH="$script_dir:$PATH"
-  export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.json"
+  export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.toml"
   export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/curl-calls.log"
   export FAKE_RUNTIME_CALLS="$BATS_TEST_TMPDIR/runtime-calls.log"
   : >"$FAKE_CURL_CALLS"
   : >"$FAKE_RUNTIME_CALLS"
   unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL
-  cat >"$LOCAL_LLM_PROFILES_FILE" <<'JSON'
-{
-  "fast": {
-    "runtime": "llama-server",
-    "model": "/models/fast.gguf",
-    "port": 8080,
-    "launch_args": ["--ctx-size", "8192"],
-    "description": "quick profile"
-  },
-  "quality": {
-    "runtime": "mlx-lm",
-    "model": "/models/quality",
-    "port": 8081,
-    "description": "bigger, slower profile"
-  },
-  "broken-runtime": {
-    "runtime": "something-else",
-    "model": "/models/x"
-  },
-  "missing-model": {
-    "runtime": "llama-server"
-  }
-}
-JSON
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
+[fast]
+runtime = "llama-server"
+model = "/models/fast.gguf"
+port = 8080
+launch_args = ["--ctx-size", "8192"]
+description = "quick profile"
+
+[quality]
+runtime = "mlx-lm"
+model = "/models/quality"
+port = 8081
+description = "bigger, slower profile"
+
+[broken-runtime]
+runtime = "something-else"
+model = "/models/x"
+
+[missing-model]
+runtime = "llama-server"
+TOML
 }
 
 active_file() {
@@ -69,6 +66,13 @@ teardown() {
   run "$switch" "fast"
   [ "$status" -eq 1 ]
   [[ "$output" == *"profiles file not found"* ]]
+}
+
+@test "malformed TOML in the profiles file exits 1" {
+  printf 'not = valid = toml =\n' >"$LOCAL_LLM_PROFILES_FILE"
+  run "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"failed to parse"*"as TOML"* ]]
 }
 
 @test "profile missing the model field exits 1" {
@@ -150,9 +154,11 @@ teardown() {
 }
 
 @test "defaults port to 8080 when the profile omits it" {
-  cat >"$LOCAL_LLM_PROFILES_FILE" <<'JSON'
-{"no-port": {"runtime": "llama-server", "model": "/models/x.gguf"}}
-JSON
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
+[no-port]
+runtime = "llama-server"
+model = "/models/x.gguf"
+TOML
   export FAKE_CURL_UP="http://localhost:8080"
   run "$switch" "no-port"
   [ "$status" -eq 0 ]

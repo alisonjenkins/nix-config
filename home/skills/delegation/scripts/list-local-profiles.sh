@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Lists profiles declared in profiles.json (see ../delegate-to-local.md),
+# Lists profiles declared in profiles.toml (see ../delegate-to-local.md),
 # marking whichever one the state file says is active and whether that
 # active one is actually still responding. Never loads or unloads
 # anything — read-only.
 set -euo pipefail
 
-for bin in curl jq; do
+for bin in curl jq yq; do
   if ! command -v "$bin" >/dev/null 2>&1; then
-    echo "error: '$bin' not found on PATH." >&2
+    echo "error: '$bin' not found on PATH (yq: mikefarah/yq, parses profiles.toml)." >&2
     exit 1
   fi
 done
@@ -15,11 +15,11 @@ done
 if [[ -n "${LOCAL_LLM_PROFILES_FILE:-}" ]]; then
   profiles_file="$LOCAL_LLM_PROFILES_FILE"
 elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-  profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.json"
+  profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.toml"
 elif [[ -n "${HOME:-}" ]]; then
-  profiles_file="$HOME/.config/delegate-to-local/profiles.json"
+  profiles_file="$HOME/.config/delegate-to-local/profiles.toml"
 else
-  echo "error: none of LOCAL_LLM_PROFILES_FILE, XDG_CONFIG_HOME, or HOME are set — can't tell where profiles.json lives." >&2
+  echo "error: none of LOCAL_LLM_PROFILES_FILE, XDG_CONFIG_HOME, or HOME are set — can't tell where profiles.toml lives." >&2
   exit 1
 fi
 
@@ -28,8 +28,9 @@ if [[ ! -f "$profiles_file" ]]; then
   exit 1
 fi
 
-if ! jq -e . "$profiles_file" >/dev/null 2>&1; then
-  echo "error: $profiles_file is not valid JSON." >&2
+if ! profiles_json="$(yq -p toml -o json '.' "$profiles_file" 2>&1)"; then
+  echo "error: $profiles_file is not valid TOML:" >&2
+  echo "$profiles_json" >&2
   exit 1
 fi
 
@@ -63,4 +64,4 @@ while IFS=$'\t' read -r name model description; do
     fi
   fi
   printf '%s%s\t%s%s\t%s\n' "$marker" "$name" "$model" "$status" "$description"
-done < <(jq -r 'to_entries[] | [.key, (.value.model // "?"), (.value.description // "")] | @tsv' "$profiles_file")
+done < <(jq -r 'to_entries[] | [.key, (.value.model // "?"), (.value.description // "")] | @tsv' <<<"$profiles_json")

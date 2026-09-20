@@ -67,27 +67,31 @@ would go stale within months.
 
 ## Profiles
 
-A profile names a runtime + model + launch settings. Declared in a JSON file
-at `$LOCAL_LLM_PROFILES_FILE`, else `$XDG_CONFIG_HOME/delegate-to-local/profiles.json`,
-else `$HOME/.config/delegate-to-local/profiles.json`:
+A profile names a runtime + model + launch settings. Declared in a TOML file
+at `$LOCAL_LLM_PROFILES_FILE`, else `$XDG_CONFIG_HOME/delegate-to-local/profiles.toml`,
+else `$HOME/.config/delegate-to-local/profiles.toml` — one `[name]` table per
+profile:
 
-```json
-{
-  "fast": {
-    "runtime": "llama-server",
-    "model": "/home/you/models/qwen3.5-9b-instruct-q4_k_m.gguf",
-    "port": 8080,
-    "launch_args": ["--ctx-size", "8192"],
-    "description": "quick mechanical edits"
-  },
-  "quality": {
-    "runtime": "llama-server",
-    "model": "/home/you/models/gpt-oss-20b-q4.gguf",
-    "launch_args": ["--ctx-size", "16384"],
-    "description": "harder reasoning, slower to load and run"
-  }
-}
+```toml
+[fast]
+runtime = "llama-server"
+model = "/home/you/models/qwen3.5-9b-instruct-q4_k_m.gguf"
+port = 8080
+launch_args = ["--ctx-size", "8192"]
+description = "quick mechanical edits"
+
+[quality]
+runtime = "llama-server"
+model = "/home/you/models/gpt-oss-20b-q4.gguf"
+launch_args = ["--ctx-size", "16384"]
+description = "harder reasoning, slower to load and run"
 ```
+
+The scripts parse it via `yq` (mikefarah/yq — `yq -p toml -o json`), so `yq`
+is a dependency alongside `curl`/`jq` for `switch-local-profile.sh` and
+`list-local-profiles.sh`. `delegate-to-local.sh` and `stop-local-profile.sh`
+never touch profiles.toml directly — they only read the active-profile state
+file (still plain JSON, since nothing hand-edits it).
 
 - `runtime` (required) — `llama-server` or `mlx-lm`.
 - `model` (required) — a path (llama-server) or path/repo id (`mlx_lm.server`).
