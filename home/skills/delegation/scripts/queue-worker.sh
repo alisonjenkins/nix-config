@@ -244,11 +244,16 @@ process_switch_job() {
     return
   fi
 
-  local runtime model port launch_args
+  local runtime model port
   runtime="$(jq -r '.runtime // empty' <<<"$profile_json")"
   model="$(jq -r '.model // empty' <<<"$profile_json")"
   port="$(jq -r '.port // 8080' <<<"$profile_json")"
-  readarray -t launch_args < <(jq -r '.launch_args[]? // empty' <<<"$profile_json")
+  # readarray is bash 4+ only — macOS's default /usr/bin/env bash is 3.2,
+  # which this needs to run on (the mlx-lm/MLX profiles).
+  local launch_args=() arg
+  while IFS= read -r arg; do
+    [[ -n "$arg" ]] && launch_args+=("$arg")
+  done < <(jq -r '.launch_args[]? // empty' <<<"$profile_json")
   if [[ -z "$runtime" || -z "$model" ]]; then
     write_result "$job_id" 1 "" "profile '$profile_name' is missing required field 'runtime' or 'model' in $profiles_file"
     return

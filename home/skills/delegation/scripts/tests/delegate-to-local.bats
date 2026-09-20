@@ -184,11 +184,6 @@ teardown() {
     fi
   done
   [ "$worker_count" -eq 1 ]
-  # No manual kill here: teardown() already stops this test's specific
-  # worker via the pid it recorded in its own pidfile — an unscoped
-  # `kill "$(pgrep -f queue-worker.sh)"` here would kill every match
-  # machine-wide, the same real-user-process hazard the comment above
-  # already says this code doesn't have.
 }
 
 @test "a single call with no LOCAL_LLM_RESERVE_SECONDS creates no reservation" {
