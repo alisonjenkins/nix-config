@@ -5,6 +5,10 @@ let
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   pw-link = "${pkgs.pipewire}/bin/pw-link";
 
+  # Space-delimited "output-port input-port" pairs, one per line, matching
+  # the format services.audio-usb-reconnect-heal uses for the same purpose.
+  extraRelinkList = lib.concatMapStringsSep "\n" (l: "${l.output} ${l.input}") cfg.extraRelinkPorts;
+
   # Script that watches PipeWire for wivrn.sink appearing/disappearing.
   # On connect: links the audio sink's monitor to wivrn.sink so audio plays
   #             on both local output and VR headset, and switches default
@@ -46,6 +50,22 @@ let
     }
 
     trap cleanup EXIT
+
+    # WiVRn sink/source appearing or disappearing churns PipeWire nodes fast
+    # enough to race WirePlumber's own policy linker, which can drop an
+    # unrelated dont-reconnect-pinned link elsewhere in the graph (seen
+    # 2026-09-20: an EasyEffects filter chain's input link died this way,
+    # killing all desktop audio, and nothing else was watching for it).
+    # pw-link is a no-op when the link already exists, so this is safe to
+    # run on every event.
+    reassert_extra_links() {
+      while read -r out_port in_port; do
+        [ -n "$out_port" ] || continue
+        ${pw-link} "$out_port" "$in_port" 2>/dev/null || true
+      done <<'EXTRALINKS'
+${extraRelinkList}
+EXTRALINKS
+    }
 
     setup_vr_audio() {
       AUDIO_SINK="$(find_audio_sink)"
@@ -120,6 +140,7 @@ let
           fi
           ;;
       esac
+      reassert_extra_links
     done < <(${pactl} subscribe 2>/dev/null)
   '';
 in
@@ -172,6 +193,28 @@ in
         }
       ];
       description = "Encoder configuration (split into slices for parallel encoding)";
+    };
+    extraRelinkPorts = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule {
+        options = {
+          output = lib.mkOption {
+            type = lib.types.str;
+            description = "Source port, as `node:port`.";
+          };
+          input = lib.mkOption {
+            type = lib.types.str;
+            description = "Destination port, as `node:port`.";
+          };
+        };
+      });
+      default = [];
+      description = ''
+        PipeWire port links to reassert (idempotent `pw-link`, no-op if
+        already present) whenever the WiVRn audio monitor sees a WiVRn
+        sink or source appear or disappear. WiVRn's headset connect/
+        disconnect churns nodes fast enough to race WirePlumber's policy
+        linker and drop an unrelated link elsewhere in the graph.
+      '';
     };
   };
 
