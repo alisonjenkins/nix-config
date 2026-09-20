@@ -102,29 +102,53 @@ file (still plain JSON, since nothing hand-edits it).
   context-size, quantization flags).
 - `description` (optional) — shown by `list-local-profiles.sh`.
 
-## Scripts
+## One worker, one queue
 
-- **`switch-local-profile.sh <name>`** — stops whatever profile is currently
-  running, launches the named one, and waits (`LOCAL_LLM_READY_TIMEOUT`,
-  default 120s) until it actually answers before returning. This is the one
-  place that's allowed to be slow — run it deliberately when you're about to
-  do a stretch of work with a specific profile, not per delegated task.
-  Records the active profile (name, url, model, pid) to
-  `$LOCAL_LLM_STATE_DIR/active-profile.json`.
+`delegate-to-local.sh`, `switch-local-profile.sh`, and `stop-local-profile.sh`
+don't touch the model or `active-profile.json` themselves — they submit a job
+(`chat`/`switch`/`stop`) to `queue-worker.sh` and block until it answers.
+The worker processes jobs **strictly one at a time, in submission order**,
+so however many of these run concurrently (multiple Claude Code sessions,
+several parallel sub-agents, a switch racing a delegate call), none of them
+ever race the model or each other:
+
+- A `switch` while chat jobs are already queued runs *after* them, not
+  instead of them — nothing gets the model pulled out from under it mid-call.
+- Two `delegate-to-local.sh` calls that land at the same instant get served
+  in order, not garbled together against a runtime that may not handle
+  concurrent requests well.
+- Two Claude sessions starting cold at the same moment can't end up with two
+  worker processes — an `mkdir`-based lock (portable, no `flock` dependency)
+  ensures exactly one wins the race to start it.
+
+The worker is **never started by hand**: each of the three client scripts
+lazily starts one if the pidfile shows none alive, then submits its job.
+It exits itself after `LOCAL_LLM_QUEUE_IDLE_TIMEOUT` idle seconds (default
+600) rather than running forever unattended — the next call respawns it.
+`list-local-profiles.sh` is the one script that stays direct/read-only; it
+never mutates state, so it doesn't need to queue.
+
+- **`switch-local-profile.sh <name>`** — submits a `switch` job: stop
+  whatever's running, launch the named profile, wait
+  (`LOCAL_LLM_READY_TIMEOUT`, default 120s) until it actually answers.
+  Loading a model is the one place allowed to be slow — run it deliberately
+  before a stretch of work, not per delegated task. Records the active
+  profile (name, url, model, pid) to `$LOCAL_LLM_STATE_DIR/active-profile.json`.
 - **`list-local-profiles.sh`** — prints every declared profile, marks which
   one the state file says is active, and live-checks whether that active one
-  is actually still responding. Read-only; never loads or unloads anything.
-- **`stop-local-profile.sh`** — stops the active profile and clears the
-  state file, to free VRAM/unified memory when you're done. No-op, safe to
-  run any time.
-- **`delegate-to-local.sh "<task>"`** — sends the task to whichever profile
-  is currently active. Never loads or switches a profile itself (too slow
-  for a per-call operation) — it only reads the state file, does one
-  liveness check, and posts the request.
+  is actually still responding. Read-only; never loads, unloads, or queues.
+- **`stop-local-profile.sh`** — submits a `stop` job: stops the active
+  profile and clears the state file, to free VRAM/unified memory when
+  you're done. No-op, safe to run any time.
+- **`delegate-to-local.sh "<task>"`** — submits a `chat` job for whichever
+  profile is currently active. Never loads or switches a profile itself.
 
-`LOCAL_LLM_STATE_DIR` (all four scripts) overrides the state location,
-falling back to `$XDG_CACHE_HOME/delegate-to-local/` then
-`$HOME/.cache/delegate-to-local/`.
+`LOCAL_LLM_STATE_DIR` (all four scripts, plus the worker) overrides the
+state/queue location, falling back to `$XDG_CACHE_HOME/delegate-to-local/`
+then `$HOME/.cache/delegate-to-local/`. `LOCAL_LLM_QUEUE_TIMEOUT` on each
+client caps how long it waits in the queue (60s for delegate/stop,
+`LOCAL_LLM_READY_TIMEOUT + 60s` for switch, since that wait has to cover the
+model's own load time too).
 
 ## Usage
 

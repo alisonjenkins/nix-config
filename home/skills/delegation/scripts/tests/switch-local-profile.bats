@@ -11,6 +11,7 @@ setup() {
   export FAKE_RUNTIME_CALLS="$BATS_TEST_TMPDIR/runtime-calls.log"
   : >"$FAKE_CURL_CALLS"
   : >"$FAKE_RUNTIME_CALLS"
+  export LOCAL_LLM_QUEUE_IDLE_TIMEOUT=2
   unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL
   cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
 [fast]
@@ -44,6 +45,11 @@ teardown() {
   if [[ -f "$(active_file)" ]]; then
     pid="$(jq -r '.pid // empty' "$(active_file)" 2>/dev/null || true)"
     [[ -n "$pid" ]] && kill -9 "$pid" 2>/dev/null || true
+  fi
+  worker_pidfile="$LOCAL_LLM_STATE_DIR/queue-worker.pid"
+  if [[ -f "$worker_pidfile" ]]; then
+    worker_pid="$(<"$worker_pidfile")"
+    [[ -n "$worker_pid" ]] && kill -9 "$worker_pid" 2>/dev/null || true
   fi
 }
 

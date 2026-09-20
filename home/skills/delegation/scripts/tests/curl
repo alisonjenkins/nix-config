@@ -74,6 +74,26 @@ if [[ "${FAKE_CURL_MODE:-}" == "chat-error" ]]; then
   exit 22
 fi
 
+# A timeout/connection failure has no HTTP response at all — curl reports
+# it on stderr with nothing on stdout, unlike chat-error above (which
+# simulates an HTTP-level error --fail-with-body still captures a body
+# for). Exit 28 matches curl's own "Operation timed out" code.
+if [[ "${FAKE_CURL_MODE:-}" == "chat-timeout" ]]; then
+  echo "curl: (28) Operation timed out" >&2
+  exit 28
+fi
+
+if [[ "${FAKE_CURL_MODE:-}" == "chat-loading-then-ok" ]]; then
+  counter_file="${FAKE_CURL_CHAT_COUNTER:?FAKE_CURL_CHAT_COUNTER must be set}"
+  ok_on="${FAKE_CURL_CHAT_OK_ON:?FAKE_CURL_CHAT_OK_ON must be set}"
+  count="$(($(cat "$counter_file" 2>/dev/null || echo 0) + 1))"
+  echo "$count" >"$counter_file"
+  if ((count < ok_on)); then
+    echo '{"error":{"message":"Loading model","type":"unavailable_error","code":503}}'
+    exit 22
+  fi
+fi
+
 model_field="$(jq -r '.model' <<<"$body")"
 task_content="$(jq -r '.messages[0].content' <<<"$body")"
 jq -n --arg c "response for model=$model_field: $task_content" '{choices: [{message: {content: $c}}]}'

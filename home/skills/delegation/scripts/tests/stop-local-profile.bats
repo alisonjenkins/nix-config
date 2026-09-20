@@ -5,6 +5,15 @@ setup() {
   stop="$script_dir/../stop-local-profile.sh"
   export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
   mkdir -p "$LOCAL_LLM_STATE_DIR"
+  export LOCAL_LLM_QUEUE_IDLE_TIMEOUT=2
+}
+
+teardown() {
+  local worker_pidfile="$LOCAL_LLM_STATE_DIR/queue-worker.pid" worker_pid
+  if [[ -f "$worker_pidfile" ]]; then
+    worker_pid="$(<"$worker_pidfile")"
+    [[ -n "$worker_pid" ]] && kill -9 "$worker_pid" 2>/dev/null || true
+  fi
 }
 
 active_file() {
