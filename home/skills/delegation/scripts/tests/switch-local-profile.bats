@@ -17,20 +17,34 @@ setup() {
   # (fail-open) rather than this machine's live, non-deterministic state.
   # Tests targeting the busy-check itself override this to a fake tree.
   export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/no-such-drm/card*/device"
-  unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL LOCAL_LLM_FORCE_SWITCH
-  cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
+  unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL \
+    LOCAL_LLM_FORCE_SWITCH LOCAL_LLM_VRAM_OVERHEAD_FRACTION LOCAL_LLM_VRAM_BUFFER_MB
+
+  # Real (sparse — instant to create, no real disk use) model files so the
+  # fit-check has an actual size to measure. fast.gguf ~4GiB, quality/ ~12GiB.
+  mkdir -p "$BATS_TEST_TMPDIR/models/quality"
+  truncate -s 4G "$BATS_TEST_TMPDIR/models/fast.gguf"
+  truncate -s 12G "$BATS_TEST_TMPDIR/models/quality/weights.safetensors"
+
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<TOML
 [fast]
 runtime = "llama-server"
-model = "/models/fast.gguf"
+model = "$BATS_TEST_TMPDIR/models/fast.gguf"
 port = 8080
 launch_args = ["--ctx-size", "8192"]
 description = "quick profile"
 
 [quality]
 runtime = "mlx-lm"
-model = "/models/quality"
+model = "$BATS_TEST_TMPDIR/models/quality"
 port = 8081
 description = "bigger, slower profile"
+
+[repo-model]
+runtime = "llama-server"
+model = "some-org/some-repo-not-downloaded-yet"
+port = 8082
+description = "model size can't be determined locally"
 
 [broken-runtime]
 runtime = "something-else"
@@ -146,40 +160,56 @@ TOML
   [ "$output" = "mock response from mock-model: real end to end" ]
 }
 
-@test "refuses to load a profile when the GPU is already busy (a game running)" {
-  fake_drm_vram 8000000000 16000000000 # 50% used
-  export FAKE_CURL_UP="http://localhost:8080"
-  run "$switch" "fast"
+@test "refuses to load a profile whose model won't fit in free VRAM, and suggests one that would" {
+  fake_drm_vram 10737418240 17179869184 # 10GiB used of 16GiB -> 6GiB free
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality" # needs ~15GiB (12GiB * 1.2 + 512MiB) -- doesn't fit in 6GiB free
   [ "$status" -eq 1 ]
-  [[ "$output" == *"GPU appears busy (50% VRAM used, threshold 40%)"* ]]
+  [[ "$output" == *"profile 'quality' needs ~"*"of VRAM but only ~"*"is free right now"* ]]
+  [[ "$output" == *"profiles that would fit instead: fast"* ]] # fast needs ~5.3GiB, fits in 6GiB
   [[ "$output" == *"LOCAL_LLM_FORCE_SWITCH=1"* ]]
   [ ! -f "$(active_file)" ]
   [ ! -s "$FAKE_RUNTIME_CALLS" ] # never even tried to launch anything
 }
 
-@test "proceeds normally when the GPU is idle" {
-  fake_drm_vram 100000000 16000000000 # <1% used
+@test "refuses and reports no alternatives when nothing declared would fit either" {
+  fake_drm_vram 17079869184 17179869184 # ~100MiB free
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no other declared profile would fit right now either"* ]]
+}
+
+@test "proceeds normally when the requested profile's model fits in free VRAM" {
+  fake_drm_vram 8589934592 17179869184 # 8GiB used -> 8GiB free, fast needs ~5.3GiB
   export FAKE_CURL_UP="http://localhost:8080"
   run "$switch" "fast"
   [ "$status" -eq 0 ]
 }
 
-@test "LOCAL_LLM_FORCE_SWITCH=1 overrides a busy-GPU refusal" {
-  fake_drm_vram 8000000000 16000000000 # 50% used
-  export FAKE_CURL_UP="http://localhost:8080"
+@test "LOCAL_LLM_FORCE_SWITCH=1 overrides a doesn't-fit refusal" {
+  fake_drm_vram 10737418240 17179869184 # 6GiB free -- quality doesn't fit
+  export FAKE_CURL_UP="http://localhost:8081"
   export LOCAL_LLM_FORCE_SWITCH=1
-  run "$switch" "fast"
+  run "$switch" "quality"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"profile 'fast' active"* ]]
+  [[ "$output" == *"profile 'quality' active"* ]]
 }
 
-@test "a custom LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT is honored" {
-  fake_drm_vram 1000000000 16000000000 # ~6% used
+@test "a higher LOCAL_LLM_VRAM_OVERHEAD_FRACTION can push a previously-fitting profile over the edge" {
+  fake_drm_vram 10737418240 17179869184 # 6GiB free -- fits fast at the default 0.2 overhead
   export FAKE_CURL_UP="http://localhost:8080"
-  export LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT=5
+  export LOCAL_LLM_VRAM_OVERHEAD_FRACTION=1.0 # required becomes 4GiB*2 + 512MiB =~ 8.5GiB
   run "$switch" "fast"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"GPU appears busy (6% VRAM used, threshold 5%)"* ]]
+  [[ "$output" == *"profile 'fast' needs ~"* ]]
+}
+
+@test "a model whose size can't be determined (bare repo id) fails open and proceeds" {
+  fake_drm_vram 17079869184 17179869184 # ~100MiB free -- would refuse anything measurable
+  export FAKE_CURL_UP="http://localhost:8082"
+  run "$switch" "repo-model"
+  [ "$status" -eq 0 ]
 }
 
 @test "picks the largest-VRAM device across multiple GPUs, not just the first one" {
@@ -187,12 +217,12 @@ TOML
   # not shadow the real, mostly-idle dGPU (card1) with far more VRAM —
   # this exact ordering (small device sorts first) is what a real machine
   # with an iGPU + dGPU looks like.
-  fake_drm_vram_second_device card0 400000000 500000000 # 80% of a tiny 512MB device
-  fake_drm_vram_second_device card1 1000000000 16000000000 # ~6% of the real 16GB card
+  fake_drm_vram_second_device card0 400000000 500000000 # 80% used of a tiny 512MB device
+  fake_drm_vram_second_device card1 1000000000 17179869184 # tiny fraction of the real 16GiB card
   export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/fake-drm/card*/device"
   export FAKE_CURL_UP="http://localhost:8080"
   run "$switch" "fast"
-  [ "$status" -eq 0 ] # judged against card1's ~6%, not card0's 80%
+  [ "$status" -eq 0 ] # judged against card1's huge free space, not card0's near-full 512MB
 }
 
 @test "cannot determine VRAM usage (no sysfs data): fails open and proceeds" {
@@ -202,11 +232,24 @@ TOML
   [ "$status" -eq 0 ]
 }
 
-@test "the mock runtime is exempt from the GPU-busy check" {
+@test "a stat failure on one file in a directory model doesn't kill the worker under set -e" {
+  # Regression for a real bug: model_size_bytes() returning non-zero on an
+  # unstat-able file (this test's fake stat, simulating a file that vanished
+  # mid-scan) used to abort the whole queue-worker.sh script under `set -e`
+  # via the bare `candidate_bytes="$(model_size_bytes ...)"` assignment —
+  # fixed with `|| true` at both call sites.
+  touch "$BATS_TEST_TMPDIR/models/quality/UNSTATABLE.bin"
+  fake_drm_vram 17079869184 17179869184 # ~100MiB free -- forces the fit check to actually run
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality"
+  [ "$status" -eq 0 ] # unknown size for this profile's own model -> fails open
+}
+
+@test "the mock runtime is exempt from the fit check" {
   if ! command -v python3 >/dev/null 2>&1; then
     skip "python3 not on PATH"
   fi
-  fake_drm_vram 8000000000 16000000000 # 50% used — would refuse llama-server/mlx-lm
+  fake_drm_vram 17079869184 17179869184 # ~100MiB free -- would refuse llama-server/mlx-lm
   cat >"$LOCAL_LLM_PROFILES_FILE" <<TOML
 [test]
 runtime = "mock"
@@ -229,7 +272,7 @@ TOML
   [ "$(jq -r .url "$(active_file)")" = "http://localhost:8080" ]
   [ "$(jq -r .model "$(active_file)")" = "fake-model-8080" ]
 
-  grep -q -- "-m /models/fast.gguf --port 8080 --ctx-size 8192" "$FAKE_RUNTIME_CALLS"
+  grep -q -- "-m $BATS_TEST_TMPDIR/models/fast.gguf --port 8080 --ctx-size 8192" "$FAKE_RUNTIME_CALLS"
 
   pid="$(jq -r .pid "$(active_file)")"
   kill -0 "$pid" # still running afterward, the delegate can talk to it

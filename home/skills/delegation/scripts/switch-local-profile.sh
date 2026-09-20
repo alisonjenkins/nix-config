@@ -18,8 +18,9 @@ usage() {
   echo "     LOCAL_LLM_READY_TIMEOUT (seconds to wait for the model to load, default 120)," >&2
   echo "     LOCAL_LLM_READY_INTERVAL (seconds between readiness checks, default 1)," >&2
   echo "     LOCAL_LLM_QUEUE_TIMEOUT (seconds to wait in the queue plus load time, default 180)," >&2
-  echo "     LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT (refuse to load above this VRAM-used %, default 40)," >&2
-  echo "     LOCAL_LLM_FORCE_SWITCH=1 (skip the GPU-busy safety check)" >&2
+  echo "     LOCAL_LLM_VRAM_OVERHEAD_FRACTION (extra VRAM to budget beyond model size, default 0.2)," >&2
+  echo "     LOCAL_LLM_VRAM_BUFFER_MB (flat VRAM buffer on top of that, default 512)," >&2
+  echo "     LOCAL_LLM_FORCE_SWITCH=1 (skip the fits-in-free-VRAM safety check)" >&2
 }
 
 if [[ $# -ne 1 ]]; then
@@ -64,14 +65,17 @@ ready_interval="$(numeric_env_or_default LOCAL_LLM_READY_INTERVAL 1)"
 # model's own load time, so it defaults comfortably above ready_timeout
 # rather than a small fixed number.
 queue_timeout="$(numeric_env_or_default LOCAL_LLM_QUEUE_TIMEOUT "$((${ready_timeout%.*} + 60))")"
-gpu_busy_threshold="$(numeric_env_or_default LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT 40)"
+vram_overhead_fraction="$(numeric_env_or_default LOCAL_LLM_VRAM_OVERHEAD_FRACTION 0.2)"
+vram_buffer_mb="$(numeric_env_or_default LOCAL_LLM_VRAM_BUFFER_MB 512)"
+vram_buffer_bytes="$((${vram_buffer_mb%.*} * 1024 * 1024))"
 force_switch="${LOCAL_LLM_FORCE_SWITCH:-0}"
 
 ensure_queue_worker_running "$state_dir" "$script_dir"
 
 job_json="$(jq -nc --arg profile "$profile_name" --arg profiles_file "$profiles_file" \
   --argjson ready_timeout "$ready_timeout" --argjson ready_interval "$ready_interval" \
-  --argjson gpu_busy_threshold "$gpu_busy_threshold" --arg force_switch "$force_switch" \
-  '{type: "switch", profile: $profile, profiles_file: $profiles_file, ready_timeout: $ready_timeout, ready_interval: $ready_interval, gpu_busy_threshold: $gpu_busy_threshold, force_switch: $force_switch}')"
+  --argjson vram_overhead_fraction "$vram_overhead_fraction" --argjson vram_buffer_bytes "$vram_buffer_bytes" \
+  --arg force_switch "$force_switch" \
+  '{type: "switch", profile: $profile, profiles_file: $profiles_file, ready_timeout: $ready_timeout, ready_interval: $ready_interval, vram_overhead_fraction: $vram_overhead_fraction, vram_buffer_bytes: $vram_buffer_bytes, force_switch: $force_switch}')"
 
 submit_and_wait "$state_dir" "$job_json" "$queue_timeout"

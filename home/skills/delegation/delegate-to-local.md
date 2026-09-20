@@ -120,7 +120,7 @@ port = 8199
 `scripts/switch-local-profile.sh test` then `scripts/delegate-to-local.sh
 "..."` exercises everything except actual inference — useful for verifying
 a change to the queue/worker machinery itself without risking a real load.
-It's exempt from the GPU-busy check (see below) since it never touches the
+It's exempt from the fit check (see below) since it never touches the
 GPU.
 
 ## One worker, one queue
@@ -155,18 +155,26 @@ never mutates state, so it doesn't need to queue.
   Loading a model is the one place allowed to be slow — run it deliberately
   before a stretch of work, not per delegated task. Records the active
   profile (name, url, model, pid) to `$LOCAL_LLM_STATE_DIR/active-profile.json`.
-  **Refuses to load a real model onto a GPU that's already doing real work**
-  (a game): before launching, it checks VRAM usage on the DRM device with
-  the largest VRAM pool (picks the real dGPU over a tiny iGPU/display-only
-  one if the machine has both) and refuses above
-  `LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT` (default 40 — idle desktop use with
-  a compositor/browser open commonly sits in the high teens, so tune this to
-  comfortably above your own idle baseline, not down at it).
-  `LOCAL_LLM_FORCE_SWITCH=1` skips the check for when you're sure it's fine.
-  The `mock` runtime (below) is exempt — it never touches the GPU. If VRAM
-  usage can't be determined at all (no AMD sysfs — e.g. Nvidia, or macOS
-  unified memory isn't covered by this check yet), it fails **open** and
-  proceeds, rather than blocking somewhere the check can't see.
+  **Checks the requested profile actually fits alongside whatever else is
+  using the GPU** (a game) instead of refusing outright just because the GPU
+  is busy: it reads free VRAM (total minus used, on the DRM device with the
+  largest VRAM pool — picks the real dGPU over a tiny iGPU/display-only one
+  if the machine has both) and the profile's own model size (the `.gguf`
+  file, or the total of a directory for `mlx_lm.server`), and only refuses
+  if that model plus a safety margin (`LOCAL_LLM_VRAM_OVERHEAD_FRACTION`,
+  default `0.2` — extra headroom for KV cache/activations, scaled with model
+  size — plus `LOCAL_LLM_VRAM_BUFFER_MB`, default `512`, a flat buffer)
+  wouldn't fit in what's free. A small profile can still load next to a game
+  using the rest of the card; a big one gets refused only when it genuinely
+  wouldn't fit. On refusal, it scans every *other* declared, non-`mock`
+  profile and names whichever ones *would* fit right now, so switching to a
+  smaller profile instead is a real, offered option, not just "no."
+  `LOCAL_LLM_FORCE_SWITCH=1` skips the check entirely for when you're sure
+  it's fine. The `mock` runtime (below) is always exempt — it never touches
+  the GPU. If VRAM usage or the model's size can't be determined at all (no
+  AMD sysfs — e.g. Nvidia, or macOS unified memory isn't covered yet; or the
+  model is a bare HF repo id not downloaded locally), it fails **open** and
+  proceeds, rather than blocking on data the check can't see.
 - **`list-local-profiles.sh`** — prints every declared profile, marks which
   one the state file says is active, and live-checks whether that active one
   is actually still responding. Read-only; never loads, unloads, or queues.

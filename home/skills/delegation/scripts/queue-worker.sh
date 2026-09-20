@@ -25,18 +25,17 @@ trap 'rm -f "$pidfile"' EXIT
 
 idle_timeout="$(numeric_env_or_default LOCAL_LLM_QUEUE_IDLE_TIMEOUT 600)"
 
-# Percentage of VRAM currently in use, or "unknown" if it can't be
-# determined on this platform. AMDGPU sysfs today (matches
-# detect-local-hardware.sh's approach) — works without rocm-smi or any
-# userspace tool installed. LOCAL_LLM_DRM_GLOB overrides the probed path,
-# for testing against a fake sysfs tree.
-gpu_busy_percent() {
+# Prints "<used_bytes> <total_bytes>" for the DRM device with the largest
+# VRAM pool, or "unknown unknown" if it can't be determined on this
+# platform. AMDGPU sysfs today (matches detect-local-hardware.sh's
+# approach) — works without rocm-smi or any userspace tool installed.
+# LOCAL_LLM_DRM_GLOB overrides the probed path, for testing against a fake
+# sysfs tree. A machine can expose several DRM devices (a real dGPU plus a
+# tiny display-only one) — picking the largest VRAM pool, not whichever
+# sorts first, is what actually matters: that's the one a model loads onto.
+gpu_vram_bytes() {
   local drm_glob="${LOCAL_LLM_DRM_GLOB:-/sys/class/drm/card*/device}"
   local dev_dir used total best_total=-1 best_used=0
-  # A machine can expose several DRM devices (a real dGPU plus a tiny
-  # display-only one) — pick the one with the largest VRAM pool, since
-  # that's the one a model would actually load onto, not just whichever
-  # sorts first.
   # shellcheck disable=SC2231 # word-splitting the glob is the intended behavior here
   for dev_dir in $drm_glob; do
     [[ -f "$dev_dir/mem_info_vram_used" && -f "$dev_dir/mem_info_vram_total" ]] || continue
@@ -48,10 +47,70 @@ gpu_busy_percent() {
     fi
   done
   if [[ "$best_total" -gt 0 ]]; then
-    awk -v u="$best_used" -v t="$best_total" 'BEGIN{printf "%.0f", (u/t)*100}'
+    echo "$best_used $best_total"
   else
-    echo "unknown"
+    echo "unknown unknown"
   fi
+}
+
+# Size in bytes of a model path: a single GGUF file, or the total of every
+# file under a directory (mlx_lm.server models are a directory of
+# safetensors). Empty output — not "0" — means "couldn't tell" (a bare HF
+# repo id, or a path that doesn't exist locally yet), which callers must
+# treat as "can't fit-check this one," not "zero bytes."
+model_size_bytes() {
+  local path="$1"
+  if [[ -f "$path" ]]; then
+    stat -c%s "$path" 2>/dev/null || stat -f%z "$path" 2>/dev/null || true
+    return
+  fi
+  if [[ -d "$path" ]]; then
+    local total=0 f sz
+    while IFS= read -r -d '' f; do
+      sz="$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null)" || return
+      [[ "$sz" =~ ^[0-9]+$ ]] || return
+      total=$((total + sz))
+    done < <(find "$path" -type f -print0 2>/dev/null)
+    echo "$total"
+  fi
+}
+
+human_bytes() {
+  awk -v b="$1" 'BEGIN{
+    if (b >= 1073741824) printf "%.1fGiB", b/1073741824
+    else if (b >= 1048576) printf "%.0fMiB", b/1048576
+    else printf "%dB", b
+  }'
+}
+
+# VRAM bytes a profile needs: model size plus a proportional overhead
+# fraction (KV cache, activations — scales roughly with model size) plus a
+# flat buffer (driver/runtime baseline).
+required_vram_bytes() {
+  local model_bytes="$1" overhead_fraction="$2" buffer_bytes="$3"
+  awk -v m="$model_bytes" -v f="$overhead_fraction" -v b="$buffer_bytes" 'BEGIN{printf "%.0f", m*(1+f)+b}'
+}
+
+# Comma-separated names of every OTHER declared, non-mock profile whose
+# model would fit in $free_bytes, so a refusal can offer real alternatives
+# instead of just saying no.
+fitting_profiles() {
+  local profiles_json="$1" exclude_name="$2" free_bytes="$3" overhead_fraction="$4" buffer_bytes="$5"
+  local name candidate_runtime candidate_model candidate_bytes candidate_required
+  local fits=()
+  while IFS=$'\t' read -r name candidate_runtime candidate_model; do
+    [[ "$name" == "$exclude_name" ]] && continue
+    [[ "$candidate_runtime" == "mock" ]] && continue
+    # `|| true`: model_size_bytes legitimately returns non-zero on an unstat-
+    # able file, and a bare assignment from its output would otherwise abort
+    # the whole script under `set -e`.
+    candidate_bytes="$(model_size_bytes "$candidate_model")" || true
+    [[ "$candidate_bytes" =~ ^[0-9]+$ ]] || continue
+    candidate_required="$(required_vram_bytes "$candidate_bytes" "$overhead_fraction" "$buffer_bytes")"
+    ((candidate_required <= free_bytes)) && fits+=("$name")
+  done < <(jq -r 'to_entries[] | [.key, (.value.runtime // ""), (.value.model // "")] | @tsv' <<<"$profiles_json")
+  local IFS=,
+  echo "${fits[*]}"
 }
 
 write_result() {
@@ -117,13 +176,14 @@ process_chat_job() {
 
 process_switch_job() {
   local job_json="$1" job_id="$2"
-  local profile_name profiles_file ready_timeout ready_interval gpu_busy_threshold force_switch
+  local profile_name profiles_file ready_timeout ready_interval force_switch overhead_fraction buffer_bytes
   profile_name="$(jq -r '.profile // empty' <<<"$job_json")"
   profiles_file="$(jq -r '.profiles_file // empty' <<<"$job_json")"
   ready_timeout="$(jq -r '.ready_timeout // 120' <<<"$job_json")"
   ready_interval="$(jq -r '.ready_interval // 1' <<<"$job_json")"
-  gpu_busy_threshold="$(jq -r '.gpu_busy_threshold // 40' <<<"$job_json")"
   force_switch="$(jq -r '.force_switch // "0"' <<<"$job_json")"
+  overhead_fraction="$(jq -r '.vram_overhead_fraction // 0.2' <<<"$job_json")"
+  buffer_bytes="$(jq -r '.vram_buffer_bytes // 536870912' <<<"$job_json")"
 
   if [[ ! -f "$profiles_file" ]]; then
     write_result "$job_id" 1 "" "profiles file not found: $profiles_file"
@@ -167,16 +227,39 @@ process_switch_job() {
     return
   fi
 
-  # Safety gate: don't load a real model onto a GPU that's already doing
-  # real work (a game). The mock runtime never touches the GPU, so it's
-  # exempt; an explicit force_switch skips the check for someone who's
-  # already sure it's fine.
+  # Safety gate: don't load a real model that won't actually fit alongside
+  # whatever else is using the GPU (a game) — check free VRAM against this
+  # profile's own footprint, not a flat "GPU looks busy" threshold, so a
+  # small model can still load next to a game that's using the rest. The
+  # mock runtime never touches the GPU, so it's exempt; force_switch skips
+  # the check entirely for someone who's already sure it's fine. Unknown
+  # VRAM or unknown model size (a bare HF repo id, nothing downloaded yet)
+  # both fail *open* — proceed — rather than block on data the check can't
+  # see.
   if [[ "$runtime" != "mock" && "$force_switch" != "1" ]]; then
-    local busy_pct
-    busy_pct="$(gpu_busy_percent)"
-    if [[ "$busy_pct" =~ ^[0-9]+$ ]] && ((busy_pct >= gpu_busy_threshold)); then
-      write_result "$job_id" 1 "" "GPU appears busy (${busy_pct}% VRAM used, threshold ${gpu_busy_threshold}%) — refusing to load '$profile_name' to avoid crashing whatever's using the GPU (e.g. a game). Set LOCAL_LLM_FORCE_SWITCH=1 to override if you're sure it's safe."
-      return
+    local vram_used vram_total
+    read -r vram_used vram_total <<<"$(gpu_vram_bytes)"
+    if [[ "$vram_used" =~ ^[0-9]+$ && "$vram_total" =~ ^[0-9]+$ ]]; then
+      local free_bytes model_bytes
+      free_bytes=$((vram_total - vram_used))
+      model_bytes="$(model_size_bytes "$model")" || true
+      if [[ "$model_bytes" =~ ^[0-9]+$ ]]; then
+        local required_bytes
+        required_bytes="$(required_vram_bytes "$model_bytes" "$overhead_fraction" "$buffer_bytes")"
+        if ((free_bytes < required_bytes)); then
+          local alternatives msg
+          alternatives="$(fitting_profiles "$profiles_json" "$profile_name" "$free_bytes" "$overhead_fraction" "$buffer_bytes")"
+          msg="profile '$profile_name' needs ~$(human_bytes "$required_bytes") of VRAM but only ~$(human_bytes "$free_bytes") is free right now (something else — a game? — is using the rest)."
+          if [[ -n "$alternatives" ]]; then
+            msg="$msg profiles that would fit instead: $alternatives."
+          else
+            msg="$msg no other declared profile would fit right now either."
+          fi
+          msg="$msg set LOCAL_LLM_FORCE_SWITCH=1 to load '$profile_name' anyway."
+          write_result "$job_id" 1 "" "$msg"
+          return
+        fi
+      fi
     fi
   fi
 

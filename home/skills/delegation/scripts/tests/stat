@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Fake stat: fails for any path containing UNSTATABLE (simulating a file
+# that vanished or became unreadable between `find` listing it and the
+# stat call), delegates to the real stat for everything else. Only exists
+# to test that a stat failure inside model_size_bytes() doesn't kill the
+# whole queue-worker.sh under `set -e` (a caller must guard the call with
+# `|| true`, not assume it always succeeds).
+#
+# Strips this script's own directory out of PATH before delegating —
+# whatever prepended it there (a test harness invocation, an already-
+# contaminated $PATH) may still be in effect, and re-resolving "stat"
+# through an unfiltered PATH would just find this same fake again,
+# recursing forever instead of reaching the real binary.
+for arg in "$@"; do
+  [[ "$arg" == *UNSTATABLE* ]] && exit 1
+done
+self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+clean_path=""
+IFS=: read -ra parts <<<"$PATH"
+for p in "${parts[@]}"; do
+  [[ "$p" == "$self_dir" ]] && continue
+  clean_path="${clean_path:+$clean_path:}$p"
+done
+PATH="$clean_path" exec stat "$@"
