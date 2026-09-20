@@ -2,7 +2,10 @@
 
 Before triaging anything, know which of three states Copilot's review is in.
 Confusing "hasn't reviewed yet" with "reviewed and found nothing" is what
-causes a merge to land before Copilot's feedback shows up.
+causes a merge to land before Copilot's feedback shows up. Copilot's login
+varies by installation (`copilot-pull-request-reviewer` is common but not
+guaranteed) — use whichever login actually shows up in `reviewRequests=` or
+`latestReviews.author.login` for this repo, don't hardcode one.
 
 - **Pending (mid-review).** Copilot's login appears in `pr-status.sh`'s
   `reviewRequests=` field. It was requested (on PR open, or by re-request
