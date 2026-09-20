@@ -260,15 +260,26 @@ in
       # still reads as "has cap_sys_nice" to vrsetup.sh's substring check.
       systemd.services.steamvr-setcap = {
         description = "Grant SteamVR's vrcompositor-launcher cap_sys_nice";
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
+        # No RemainAfterExit: a systemd.path trigger issues a plain `start`,
+        # which is a no-op on an already-active(exited) unit, so re-running
+        # after a Steam update needs this unit back to inactive once done.
+        serviceConfig.Type = "oneshot";
         script = ''
           shopt -s nullglob
-          for launcher in ${lib.concatMapStringsSep " " (root:
-            "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"
-          ) cfg.steamLibraryRoots}; do
+          # Root patterns as a bash array, one per Nix list entry, so a root
+          # containing a space (e.g. "/media/Steam Games/Steam") survives as
+          # one token; word-splitting only re-applies where `*` legitimately
+          # needs to glob-expand, when filling $launchers below.
+          patterns=(
+          ${lib.concatMapStringsSep "\n" (root:
+            "  ${lib.escapeShellArg "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"}"
+          ) cfg.steamLibraryRoots}
+          )
+          launchers=()
+          for pattern in "''${patterns[@]}"; do
+            launchers+=( $pattern )
+          done
+          for launcher in "''${launchers[@]}"; do
             if ! ${pkgs.libcap}/bin/getcap "$launcher" | grep -q cap_sys_nice; then
               ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
             fi
