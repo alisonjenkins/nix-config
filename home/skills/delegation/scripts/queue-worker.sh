@@ -25,6 +25,35 @@ trap 'rm -f "$pidfile"' EXIT
 
 idle_timeout="$(numeric_env_or_default LOCAL_LLM_QUEUE_IDLE_TIMEOUT 600)"
 
+# Percentage of VRAM currently in use, or "unknown" if it can't be
+# determined on this platform. AMDGPU sysfs today (matches
+# detect-local-hardware.sh's approach) — works without rocm-smi or any
+# userspace tool installed. LOCAL_LLM_DRM_GLOB overrides the probed path,
+# for testing against a fake sysfs tree.
+gpu_busy_percent() {
+  local drm_glob="${LOCAL_LLM_DRM_GLOB:-/sys/class/drm/card*/device}"
+  local dev_dir used total best_total=-1 best_used=0
+  # A machine can expose several DRM devices (a real dGPU plus a tiny
+  # display-only one) — pick the one with the largest VRAM pool, since
+  # that's the one a model would actually load onto, not just whichever
+  # sorts first.
+  # shellcheck disable=SC2231 # word-splitting the glob is the intended behavior here
+  for dev_dir in $drm_glob; do
+    [[ -f "$dev_dir/mem_info_vram_used" && -f "$dev_dir/mem_info_vram_total" ]] || continue
+    used="$(cat "$dev_dir/mem_info_vram_used" 2>/dev/null || true)"
+    total="$(cat "$dev_dir/mem_info_vram_total" 2>/dev/null || true)"
+    if [[ "$used" =~ ^[0-9]+$ && "$total" =~ ^[0-9]+$ && "$total" -gt "$best_total" ]]; then
+      best_total="$total"
+      best_used="$used"
+    fi
+  done
+  if [[ "$best_total" -gt 0 ]]; then
+    awk -v u="$best_used" -v t="$best_total" 'BEGIN{printf "%.0f", (u/t)*100}'
+  else
+    echo "unknown"
+  fi
+}
+
 write_result() {
   local job_id="$1" exit_code="$2" output="$3" stderr_text="$4"
   jq -nc --argjson exit_code "$exit_code" --arg output "$output" --arg stderr "$stderr_text" \
@@ -88,11 +117,13 @@ process_chat_job() {
 
 process_switch_job() {
   local job_json="$1" job_id="$2"
-  local profile_name profiles_file ready_timeout ready_interval
+  local profile_name profiles_file ready_timeout ready_interval gpu_busy_threshold force_switch
   profile_name="$(jq -r '.profile // empty' <<<"$job_json")"
   profiles_file="$(jq -r '.profiles_file // empty' <<<"$job_json")"
   ready_timeout="$(jq -r '.ready_timeout // 120' <<<"$job_json")"
   ready_interval="$(jq -r '.ready_interval // 1' <<<"$job_json")"
+  gpu_busy_threshold="$(jq -r '.gpu_busy_threshold // 40' <<<"$job_json")"
+  force_switch="$(jq -r '.force_switch // "0"' <<<"$job_json")"
 
   if [[ ! -f "$profiles_file" ]]; then
     write_result "$job_id" 1 "" "profiles file not found: $profiles_file"
@@ -125,14 +156,28 @@ process_switch_job() {
   case "$runtime" in
     llama-server) cmd=(llama-server -m "$model" --port "$port" "${launch_args[@]}") ;;
     mlx-lm) cmd=(mlx_lm.server --model "$model" --port "$port" "${launch_args[@]}") ;;
+    mock) cmd=(python3 "$script_dir/mock-llm-server.py" --port "$port" --model "$model" "${launch_args[@]}") ;;
     *)
-      write_result "$job_id" 1 "" "profile '$profile_name' has unknown runtime '$runtime' — expected 'llama-server' or 'mlx-lm'"
+      write_result "$job_id" 1 "" "profile '$profile_name' has unknown runtime '$runtime' — expected 'llama-server', 'mlx-lm', or 'mock'"
       return
       ;;
   esac
   if ! command -v "${cmd[0]}" >/dev/null 2>&1; then
     write_result "$job_id" 1 "" "'${cmd[0]}' not found on PATH — required to run profile '$profile_name' (runtime: $runtime)."
     return
+  fi
+
+  # Safety gate: don't load a real model onto a GPU that's already doing
+  # real work (a game). The mock runtime never touches the GPU, so it's
+  # exempt; an explicit force_switch skips the check for someone who's
+  # already sure it's fine.
+  if [[ "$runtime" != "mock" && "$force_switch" != "1" ]]; then
+    local busy_pct
+    busy_pct="$(gpu_busy_percent)"
+    if [[ "$busy_pct" =~ ^[0-9]+$ ]] && ((busy_pct >= gpu_busy_threshold)); then
+      write_result "$job_id" 1 "" "GPU appears busy (${busy_pct}% VRAM used, threshold ${gpu_busy_threshold}%) — refusing to load '$profile_name' to avoid crashing whatever's using the GPU (e.g. a game). Set LOCAL_LLM_FORCE_SWITCH=1 to override if you're sure it's safe."
+      return
+    fi
   fi
 
   local active_file="$state_dir/active-profile.json"

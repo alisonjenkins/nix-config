@@ -93,14 +93,35 @@ is a dependency alongside `curl`/`jq` for `switch-local-profile.sh` and
 never touch profiles.toml directly — they only read the active-profile state
 file (still plain JSON, since nothing hand-edits it).
 
-- `runtime` (required) — `llama-server` or `mlx-lm`.
-- `model` (required) — a path (llama-server) or path/repo id (`mlx_lm.server`).
+- `runtime` (required) — `llama-server`, `mlx-lm`, or `mock` (see below).
+- `model` (required) — a path (llama-server) or path/repo id (`mlx_lm.server`);
+  any string for `mock`, echoed back in the response.
 - `port` (optional, default `8080`) — only matters if you want to run a
   quick manual comparison; normally leave it at the default, since exactly
   one profile runs at a time.
 - `launch_args` (optional) — extra CLI args appended verbatim (e.g.
   context-size, quantization flags).
 - `description` (optional) — shown by `list-local-profiles.sh`.
+
+## Testing the pipeline without a real model
+
+`scripts/mock-llm-server.py` is a tiny stdlib-only Python `http.server`
+speaking the same `/v1/models`/`/v1/chat/completions` shape, for exercising
+the real switch/queue/worker/delegate pipeline (real processes, real HTTP,
+real concurrency) with no GPU and no model weights involved:
+
+```toml
+[test]
+runtime = "mock"
+model = "mock-model"
+port = 8199
+```
+
+`scripts/switch-local-profile.sh test` then `scripts/delegate-to-local.sh
+"..."` exercises everything except actual inference — useful for verifying
+a change to the queue/worker machinery itself without risking a real load.
+It's exempt from the GPU-busy check (see below) since it never touches the
+GPU.
 
 ## One worker, one queue
 
@@ -134,6 +155,18 @@ never mutates state, so it doesn't need to queue.
   Loading a model is the one place allowed to be slow — run it deliberately
   before a stretch of work, not per delegated task. Records the active
   profile (name, url, model, pid) to `$LOCAL_LLM_STATE_DIR/active-profile.json`.
+  **Refuses to load a real model onto a GPU that's already doing real work**
+  (a game): before launching, it checks VRAM usage on the DRM device with
+  the largest VRAM pool (picks the real dGPU over a tiny iGPU/display-only
+  one if the machine has both) and refuses above
+  `LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT` (default 40 — idle desktop use with
+  a compositor/browser open commonly sits in the high teens, so tune this to
+  comfortably above your own idle baseline, not down at it).
+  `LOCAL_LLM_FORCE_SWITCH=1` skips the check for when you're sure it's fine.
+  The `mock` runtime (below) is exempt — it never touches the GPU. If VRAM
+  usage can't be determined at all (no AMD sysfs — e.g. Nvidia, or macOS
+  unified memory isn't covered by this check yet), it fails **open** and
+  proceeds, rather than blocking somewhere the check can't see.
 - **`list-local-profiles.sh`** — prints every declared profile, marks which
   one the state file says is active, and live-checks whether that active one
   is actually still responding. Read-only; never loads, unloads, or queues.

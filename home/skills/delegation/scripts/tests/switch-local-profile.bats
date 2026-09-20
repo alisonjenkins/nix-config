@@ -12,7 +12,12 @@ setup() {
   : >"$FAKE_CURL_CALLS"
   : >"$FAKE_RUNTIME_CALLS"
   export LOCAL_LLM_QUEUE_IDLE_TIMEOUT=2
-  unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL
+  # This machine may have a real GPU with real sysfs VRAM stats — point the
+  # busy-check at a nonexistent path by default so tests read "unknown"
+  # (fail-open) rather than this machine's live, non-deterministic state.
+  # Tests targeting the busy-check itself override this to a fake tree.
+  export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/no-such-drm/card*/device"
+  unset FAKE_CURL_UP FAKE_CURL_MODE FAKE_RUNTIME_MODE LOCAL_LLM_READY_TIMEOUT LOCAL_LLM_READY_INTERVAL LOCAL_LLM_FORCE_SWITCH
   cat >"$LOCAL_LLM_PROFILES_FILE" <<'TOML'
 [fast]
 runtime = "llama-server"
@@ -38,6 +43,26 @@ TOML
 
 active_file() {
   echo "$LOCAL_LLM_STATE_DIR/active-profile.json"
+}
+
+# Points LOCAL_LLM_DRM_GLOB at a fake sysfs tree reporting the given
+# used/total VRAM in bytes.
+fake_drm_vram() {
+  local used="$1" total="$2" dev_dir="$BATS_TEST_TMPDIR/fake-drm/card0/device"
+  mkdir -p "$dev_dir"
+  echo "$used" >"$dev_dir/mem_info_vram_used"
+  echo "$total" >"$dev_dir/mem_info_vram_total"
+  export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/fake-drm/card*/device"
+}
+
+# Adds a second fake DRM device — for asserting the busy-check picks the
+# device with the largest VRAM pool (the real dGPU) over a tiny secondary
+# one (an iGPU or display-only device), not just whichever sorts first.
+fake_drm_vram_second_device() {
+  local card_name="$1" used="$2" total="$3" dev_dir="$BATS_TEST_TMPDIR/fake-drm/$card_name/device"
+  mkdir -p "$dev_dir"
+  echo "$used" >"$dev_dir/mem_info_vram_used"
+  echo "$total" >"$dev_dir/mem_info_vram_total"
 }
 
 teardown() {
@@ -100,6 +125,97 @@ teardown() {
   PATH="$orig_path" run "$switch" "fast"
   [ "$status" -eq 1 ]
   [[ "$output" == *"'llama-server' not found on PATH"* ]]
+}
+
+@test "the mock runtime works end to end against a real process and real HTTP, no fakes" {
+  if ! command -v python3 >/dev/null 2>&1; then
+    skip "python3 not on PATH"
+  fi
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<TOML
+[test]
+runtime = "mock"
+model = "mock-model"
+port = 8199
+TOML
+  PATH="$orig_path" run "$switch" "test"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'test' active: mock-model on port 8199"* ]]
+
+  PATH="$orig_path" run "$script_dir/../delegate-to-local.sh" "real end to end"
+  [ "$status" -eq 0 ]
+  [ "$output" = "mock response from mock-model: real end to end" ]
+}
+
+@test "refuses to load a profile when the GPU is already busy (a game running)" {
+  fake_drm_vram 8000000000 16000000000 # 50% used
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"GPU appears busy (50% VRAM used, threshold 40%)"* ]]
+  [[ "$output" == *"LOCAL_LLM_FORCE_SWITCH=1"* ]]
+  [ ! -f "$(active_file)" ]
+  [ ! -s "$FAKE_RUNTIME_CALLS" ] # never even tried to launch anything
+}
+
+@test "proceeds normally when the GPU is idle" {
+  fake_drm_vram 100000000 16000000000 # <1% used
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+}
+
+@test "LOCAL_LLM_FORCE_SWITCH=1 overrides a busy-GPU refusal" {
+  fake_drm_vram 8000000000 16000000000 # 50% used
+  export FAKE_CURL_UP="http://localhost:8080"
+  export LOCAL_LLM_FORCE_SWITCH=1
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'fast' active"* ]]
+}
+
+@test "a custom LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT is honored" {
+  fake_drm_vram 1000000000 16000000000 # ~6% used
+  export FAKE_CURL_UP="http://localhost:8080"
+  export LOCAL_LLM_GPU_BUSY_THRESHOLD_PERCENT=5
+  run "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"GPU appears busy (6% VRAM used, threshold 5%)"* ]]
+}
+
+@test "picks the largest-VRAM device across multiple GPUs, not just the first one" {
+  # A tiny secondary/display-only device reporting high usage (card0) must
+  # not shadow the real, mostly-idle dGPU (card1) with far more VRAM —
+  # this exact ordering (small device sorts first) is what a real machine
+  # with an iGPU + dGPU looks like.
+  fake_drm_vram_second_device card0 400000000 500000000 # 80% of a tiny 512MB device
+  fake_drm_vram_second_device card1 1000000000 16000000000 # ~6% of the real 16GB card
+  export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/fake-drm/card*/device"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$switch" "fast"
+  [ "$status" -eq 0 ] # judged against card1's ~6%, not card0's 80%
+}
+
+@test "cannot determine VRAM usage (no sysfs data): fails open and proceeds" {
+  export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/nothing-here/card*/device"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$switch" "fast"
+  [ "$status" -eq 0 ]
+}
+
+@test "the mock runtime is exempt from the GPU-busy check" {
+  if ! command -v python3 >/dev/null 2>&1; then
+    skip "python3 not on PATH"
+  fi
+  fake_drm_vram 8000000000 16000000000 # 50% used — would refuse llama-server/mlx-lm
+  cat >"$LOCAL_LLM_PROFILES_FILE" <<TOML
+[test]
+runtime = "mock"
+model = "mock-model"
+port = 8198
+TOML
+  PATH="$orig_path" run "$switch" "test"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'test' active: mock-model on port 8198"* ]]
 }
 
 @test "successful switch launches the runtime, waits for readiness, and records active state" {
