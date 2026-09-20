@@ -133,17 +133,27 @@ itself (not PowerInfer):
 **Vulkan is ~17x faster than ROCm on this exact hardware for this exact
 workload.** Confirmed the ROCm run genuinely loaded the model onto the GPU
 (8.5GB VRAM resident, not a silent CPU fallback) — this is real GPU
-execution, just slow. Almost certainly nixpkgs' ROCm 7.2.3 hipBLAS/rocBLAS
-having immature or unoptimized GEMM kernels for gfx1201 — RDNA4 is very new
-hardware, and ROCm kernel-level tuning typically lags new architectures by
-months, independent of whether the backend "works" at all. Flash attention
-and KV-cache quantization made no meaningful difference on either backend at
-this model size.
+execution, just slow. Flash attention and KV-cache quantization made no
+meaningful difference on either backend at this model size.
 
-**This is a bigger practical blocker than the GPU-idle bug ever was.** Even
-with the idle-bug mitigated, ROCm on this card is currently not
-competitive with Vulkan on raw throughput — reinforcing, independent of the
-PowerInfer/`--cpu-moe` findings above, that Vulkan is the right default here.
+**17x is not the normal Vulkan/ROCm gap on RDNA4** — independent benchmarks
+(llama.cpp discussion #21043, digtvbg.com) report Vulkan only ~35-42% faster
+than ROCm on RDNA4 cards generally. The actual cause is a specific, already
+publicly identified upstream bug: **rocBLASLt on gfx1201 looks up the wrong
+Tensile kernel solution file (`gfx1200.dat` instead of `gfx1201.dat`)**,
+falling back to a generic/unoptimized kernel path instead of RDNA4-tuned
+ones (`ROCm/rocm-libraries#7192`). A fix ("solution library per gfx",
+`ROCm/rocm-libraries#4781`) landed upstream around 2026-03-02 — **but is not
+in any ROCm 7.2.x release**, including nixpkgs' current `rocmPackages` set
+(7.2.3). This matches our symptom exactly: it runs and produces correct
+output, just at fallback-kernel speed, rather than crashing.
+
+**This is a bigger practical blocker than the GPU-idle bug ever was**, but
+also the more temporary one — it's a specific packaging-lag bug with a known
+fix already merged upstream, not a fundamental RDNA4/ROCm limitation. Worth
+re-testing once nixpkgs picks up a ROCm release containing that fix; until
+then, Vulkan remains the right default here on throughput grounds, not just
+the idle-clock concern.
 
 ## Verdict for `home/skills/delegation`
 
