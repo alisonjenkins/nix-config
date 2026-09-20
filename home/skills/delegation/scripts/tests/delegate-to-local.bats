@@ -191,6 +191,40 @@ teardown() {
   # already says this code doesn't have.
 }
 
+@test "a single call with no LOCAL_LLM_RESERVE_SECONDS creates no reservation" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ ! -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
+}
+
+@test "LOCAL_LLM_RESERVE_SECONDS records a reservation for the active profile" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  export LOCAL_LLM_RESERVE_SECONDS=120
+  export LOCAL_LLM_RESERVE_REASON="a batch of edits"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
+  [ "$(jq -r .profile "$LOCAL_LLM_STATE_DIR/reservation.json")" = "fast" ]
+  [ "$(jq -r .reason "$LOCAL_LLM_STATE_DIR/reservation.json")" = "a batch of edits" ]
+  now="$(date +%s)"
+  expires="$(jq -r .expires_at "$LOCAL_LLM_STATE_DIR/reservation.json")"
+  [ "$((expires - now))" -ge 110 ]
+  [ "$((expires - now))" -le 121 ]
+}
+
+@test "a failed call does not create or renew a reservation" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  export FAKE_CURL_MODE=chat-error
+  export LOCAL_LLM_RESERVE_SECONDS=120
+  run "$delegate" "hello task"
+  [ "$status" -eq 3 ]
+  [ ! -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
+}
+
 @test "endpoint reachable but the chat completion call itself fails exits 3" {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"

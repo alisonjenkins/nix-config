@@ -191,6 +191,42 @@ client caps how long it waits in the queue (60s for delegate/stop,
 `LOCAL_LLM_READY_TIMEOUT + 60s` for switch, since that wait has to cover the
 model's own load time too).
 
+## Coordinating across sessions: reservations
+
+The queue prevents *corruption* (racing operations), but two Claude sessions
+can still have conflicting *intent* — one wants `fast` loaded, another wants
+`quality`. Without anything more, they'd just keep switching each other's
+profile out from under one another. A **reservation** lets a session that's
+about to make many calls protect the active profile for a while, so the
+other session sees that and can choose to wait, fall back to
+`delegate-to-copilot.md` or a Claude sub-agent, or force it if it really
+needs to.
+
+Reservations are **opt-in and self-renewing** — there's no separate
+reserve/release step:
+
+- A single `delegate-to-local.sh` call with no `LOCAL_LLM_RESERVE_SECONDS`
+  set never reserves anything. It's always fine for another session to
+  switch away immediately after — that's the default, matching "just one
+  call is fine to preempt."
+- Set `LOCAL_LLM_RESERVE_SECONDS=N` (and optionally `LOCAL_LLM_RESERVE_REASON`)
+  when you intend a batch, not a single call. Each successful call renews
+  the reservation for another `N` seconds. As long as calls keep coming
+  within that window, the profile stays protected; once they stop, it
+  **lapses on its own** shortly after the batch actually finishes — nothing
+  has to explicitly release it.
+- While a reservation is active, `switch-local-profile.sh` and
+  `stop-local-profile.sh` both refuse (exit 1) rather than preempt it,
+  naming the reason and how long it has left, and suggesting the fallback:
+  "Consider delegate-to-copilot.md or a Claude sub-agent meanwhile, wait it
+  out, or set `LOCAL_LLM_FORCE_SWITCH=1` to preempt it anyway."
+  `LOCAL_LLM_FORCE_SWITCH=1` always overrides, same as the fit check above.
+- `list-local-profiles.sh` shows an active reservation (reason + time
+  remaining) next to the active profile, so checking before you switch is
+  a normal read, not a guess.
+- A successful switch or stop clears any reservation — it was for the
+  profile that's now gone, so there's nothing left to protect.
+
 ## Usage
 
 ```
@@ -208,6 +244,10 @@ scripts/stop-local-profile.sh          # when done, to free the hardware
   profile actually active, instead of silently running against whatever is
   loaded. Use this when a task assumed a specific profile ("run this against
   `quality`") so a stale `fast` load doesn't silently answer instead.
+- `LOCAL_LLM_RESERVE_SECONDS` / `LOCAL_LLM_RESERVE_REASON` — protect the
+  active profile from being switched away for this long after each call
+  (see "Coordinating across sessions" above). Set it when you intend many
+  calls, not for a single one — unset/`0` (the default) reserves nothing.
 
 ## Exit codes: this is the graceful-degradation contract
 

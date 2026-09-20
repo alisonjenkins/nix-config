@@ -52,13 +52,32 @@ if [[ -n "$active_file" && -f "$active_file" ]] && active_json="$(jq -e . "$acti
   active_url="$(jq -r '.url // empty' <<<"$active_json")"
 fi
 
+reservation_note=""
+reservation_file="${state_dir:+$state_dir/reservation.json}"
+if [[ -n "$reservation_file" && -f "$reservation_file" ]] && reservation_json="$(jq -e . "$reservation_file" 2>/dev/null)"; then
+  res_profile="$(jq -r '.profile // empty' <<<"$reservation_json")"
+  # A reservation names the profile it protects — stale state after a
+  # switch (the reservation file only gets cleared by a successful
+  # switch/stop, per delegate-to-local.md) could otherwise leave a
+  # reservation for a DIFFERENT, no-longer-active profile on disk, which
+  # would misleadingly show up against whatever profile is active now.
+  if [[ -n "$active_name" && "$res_profile" == "$active_name" ]]; then
+    res_expires="$(jq -r '.expires_at // 0' <<<"$reservation_json")"
+    res_now="$(date +%s)"
+    if [[ "$res_expires" =~ ^[0-9]+$ ]] && ((res_expires > res_now)); then
+      res_reason="$(jq -r '.reason // "no reason given"' <<<"$reservation_json")"
+      reservation_note=" — reserved ~$((res_expires - res_now))s more ($res_reason)"
+    fi
+  fi
+fi
+
 while IFS=$'\t' read -r name model description; do
   marker="  "
   status=""
   if [[ "$name" == "$active_name" ]]; then
     marker="* "
     if [[ -n "$active_url" ]] && curl -sS --max-time 1 "$active_url/v1/models" >/dev/null 2>&1; then
-      status=" (active, responding)"
+      status=" (active, responding$reservation_note)"
     else
       status=" (active, but not responding — it may have crashed)"
     fi

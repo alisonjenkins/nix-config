@@ -120,12 +120,45 @@ write_result() {
   mv "$state_dir/results/$job_id.result.tmp" "$state_dir/results/$job_id.result"
 }
 
+reservation_file() { echo "$state_dir/reservation.json"; }
+
+# Records/renews an opt-in reservation: a delegate-to-local.sh caller who
+# intends many calls, not just one, sets LOCAL_LLM_RESERVE_SECONDS so a
+# switch away from this profile gets refused (see process_switch_job) until
+# the reservation expires. Self-expiring by design — no separate release
+# step: it lapses on its own once calls stop renewing it, shortly after a
+# batch finishes.
+renew_reservation() {
+  local profile="$1" reason="$2" seconds="$3" now expires
+  now="$(date +%s)"
+  expires=$((now + seconds))
+  jq -nc --arg profile "$profile" --arg reason "$reason" --argjson expires "$expires" \
+    '{profile: $profile, reason: $reason, expires_at: $expires}' >"$(reservation_file).tmp"
+  mv "$(reservation_file).tmp" "$(reservation_file)"
+}
+
+# Prints the active reservation JSON if one exists, is for $1, and hasn't
+# expired yet — empty otherwise (none, expired, or for a different profile,
+# which happens once someone has already switched away).
+active_reservation_for() {
+  local profile="$1" f now
+  f="$(reservation_file)"
+  [[ -f "$f" ]] || return
+  local reservation_json
+  reservation_json="$(jq -e . "$f" 2>/dev/null)" || return
+  now="$(date +%s)"
+  jq -e --arg profile "$profile" --argjson now "$now" \
+    'select(.profile == $profile and .expires_at > $now)' <<<"$reservation_json" 2>/dev/null || true
+}
+
 process_chat_job() {
   local job_json="$1" job_id="$2"
-  local task model_override expect_profile
+  local task model_override expect_profile reserve_seconds reserve_reason
   task="$(jq -r '.task // empty' <<<"$job_json")"
   model_override="$(jq -r '.model_override // empty' <<<"$job_json")"
   expect_profile="$(jq -r '.expect_profile // empty' <<<"$job_json")"
+  reserve_seconds="$(jq -r '.reserve_seconds // 0' <<<"$job_json")"
+  reserve_reason="$(jq -r '.reserve_reason // empty' <<<"$job_json")"
 
   local active_file="$state_dir/active-profile.json" active_json
   if [[ ! -f "$active_file" ]] || ! active_json="$(jq -e . "$active_file" 2>/dev/null)"; then
@@ -171,6 +204,11 @@ process_chat_job() {
     write_result "$job_id" 3 "" "unexpected response shape from $base_url — raw body: $response"
     return
   fi
+
+  if [[ "$reserve_seconds" =~ ^[0-9]+$ ]] && ((reserve_seconds > 0)); then
+    renew_reservation "$active_profile" "$reserve_reason" "$reserve_seconds"
+  fi
+
   write_result "$job_id" 0 "$reply" ""
 }
 
@@ -178,6 +216,10 @@ process_switch_job() {
   local job_json="$1" job_id="$2"
   local profile_name profiles_file ready_timeout ready_interval force_switch overhead_fraction buffer_bytes
   profile_name="$(jq -r '.profile // empty' <<<"$job_json")"
+  if [[ -z "$profile_name" || "$profile_name" == */* || "$profile_name" == "." || "$profile_name" == ".." ]]; then
+    write_result "$job_id" 1 "" "invalid profile name '$profile_name' — it's used to build paths like \$state_dir/\$profile_name.log, so it can't contain '/' or be '.'/'..'"
+    return
+  fi
   profiles_file="$(jq -r '.profiles_file // empty' <<<"$job_json")"
   ready_timeout="$(jq -r '.ready_timeout // 120' <<<"$job_json")"
   ready_interval="$(jq -r '.ready_interval // 1' <<<"$job_json")"
@@ -209,6 +251,10 @@ process_switch_job() {
   readarray -t launch_args < <(jq -r '.launch_args[]? // empty' <<<"$profile_json")
   if [[ -z "$runtime" || -z "$model" ]]; then
     write_result "$job_id" 1 "" "profile '$profile_name' is missing required field 'runtime' or 'model' in $profiles_file"
+    return
+  fi
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then
+    write_result "$job_id" 1 "" "profile '$profile_name' has invalid port '$port' in $profiles_file — must be a number 1-65535"
     return
   fi
 
@@ -264,6 +310,35 @@ process_switch_job() {
   fi
 
   local active_file="$state_dir/active-profile.json"
+  local old_profile=""
+  if [[ -f "$active_file" ]]; then
+    old_profile="$(jq -r '.profile // empty' "$active_file" 2>/dev/null || true)"
+  fi
+
+  # Coordination gate: a delegate-to-local.sh caller doing many calls can
+  # protect the currently active profile from being switched away
+  # mid-batch (LOCAL_LLM_RESERVE_SECONDS). A single call never reserves
+  # anything, so it's always fine to preempt. force_switch overrides.
+  if [[ -n "$old_profile" && "$force_switch" != "1" ]]; then
+    local reservation
+    # `|| true`: active_reservation_for legitimately returns 1 (via jq -e /
+    # `return`) whenever there's no active reservation — the common case —
+    # and a bare `x=$(fn)` assignment aborts the whole script under set -e
+    # when fn returns non-zero, since the assignment itself becomes the
+    # simple command whose exit status triggers errexit.
+    reservation="$(active_reservation_for "$old_profile")" || true
+    if [[ -n "$reservation" ]]; then
+      local reason expires_at now remaining
+      reason="$(jq -r '.reason // "no reason given"' <<<"$reservation")"
+      expires_at="$(jq -r '.expires_at' <<<"$reservation")"
+      now="$(date +%s)"
+      remaining=$((expires_at - now))
+      ((remaining < 0)) && remaining=0
+      write_result "$job_id" 1 "" "profile '$old_profile' is reserved for ~${remaining}s more ($reason) — refusing to switch to '$profile_name'. Consider delegate-to-copilot.md or a Claude sub-agent meanwhile, wait it out, or set LOCAL_LLM_FORCE_SWITCH=1 to preempt it anyway."
+      return
+    fi
+  fi
+
   if [[ -f "$active_file" ]]; then
     local old_pid
     old_pid="$(jq -r '.pid // empty' "$active_file" 2>/dev/null || true)"
@@ -303,11 +378,15 @@ process_switch_job() {
   discovered_model="$(curl -sS --max-time 1 "http://localhost:$port/v1/models" 2>/dev/null | jq -er '.data[0].id' 2>/dev/null || echo "$model")"
   jq -nc --arg profile "$profile_name" --arg url "http://localhost:$port" --arg model "$discovered_model" --argjson pid "$new_pid" \
     '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$active_file"
+  rm -f "$(reservation_file)" # any reservation was for the profile we just replaced
   write_result "$job_id" 0 "profile '$profile_name' active: $discovered_model on port $port (pid $new_pid)" ""
 }
 
 process_stop_job() {
-  local job_id="$1"
+  local job_json="$1" job_id="$2"
+  local force_switch
+  force_switch="$(jq -r '.force_switch // "0"' <<<"$job_json")"
+
   local active_file="$state_dir/active-profile.json"
   if [[ ! -f "$active_file" ]]; then
     write_result "$job_id" 0 "nothing to stop: no active profile recorded" ""
@@ -317,6 +396,21 @@ process_stop_job() {
   local profile pid output
   profile="$(jq -r '.profile // "unknown"' "$active_file" 2>/dev/null || echo unknown)"
   pid="$(jq -r '.pid // empty' "$active_file" 2>/dev/null || true)"
+
+  if [[ "$force_switch" != "1" ]]; then
+    local reservation
+    reservation="$(active_reservation_for "$profile")" || true
+    if [[ -n "$reservation" ]]; then
+      local reason expires_at now remaining
+      reason="$(jq -r '.reason // "no reason given"' <<<"$reservation")"
+      expires_at="$(jq -r '.expires_at' <<<"$reservation")"
+      now="$(date +%s)"
+      remaining=$((expires_at - now))
+      ((remaining < 0)) && remaining=0
+      write_result "$job_id" 1 "" "profile '$profile' is reserved for ~${remaining}s more ($reason) — refusing to stop it. Wait it out, or set LOCAL_LLM_FORCE_SWITCH=1 to stop it anyway."
+      return
+    fi
+  fi
   if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
     kill "$pid" 2>/dev/null || true
     for _ in $(seq 1 10); do
@@ -328,7 +422,7 @@ process_stop_job() {
   else
     output="profile '$profile' was recorded active but its process ($pid) was already gone"
   fi
-  rm -f "$active_file"
+  rm -f "$active_file" "$(reservation_file)"
   write_result "$job_id" 0 "$output" ""
 }
 
@@ -352,7 +446,7 @@ while :; do
   case "$job_type" in
     chat) process_chat_job "$job_json" "$job_id" ;;
     switch) process_switch_job "$job_json" "$job_id" ;;
-    stop) process_stop_job "$job_id" ;;
+    stop) process_stop_job "$job_json" "$job_id" ;;
     *) write_result "$job_id" 1 "" "unknown job type '$job_type'" ;;
   esac
 done

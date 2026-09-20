@@ -52,11 +52,44 @@ model = "/models/x"
 
 [missing-model]
 runtime = "llama-server"
+
+["evil/../name"]
+runtime = "llama-server"
+model = "/models/x.gguf"
+port = 8083
+
+[bad-port]
+runtime = "llama-server"
+model = "/models/x.gguf"
+port = "not-a-number"
 TOML
 }
 
 active_file() {
   echo "$LOCAL_LLM_STATE_DIR/active-profile.json"
+}
+
+reservation_file() {
+  echo "$LOCAL_LLM_STATE_DIR/reservation.json"
+}
+
+reserve() {
+  local profile="$1" seconds="$2" reason="${3:-batch work}"
+  mkdir -p "$LOCAL_LLM_STATE_DIR"
+  jq -nc --arg profile "$profile" --arg reason "$reason" --argjson expires "$(($(date +%s) + seconds))" \
+    '{profile: $profile, reason: $reason, expires_at: $expires}' >"$(reservation_file)"
+}
+
+write_active() {
+  # Default pid is a sentinel almost certainly not a live process — never
+  # $$ (the test's own pid): teardown() does `kill -9 "$pid"` on whatever's
+  # recorded here, and that would kill the test itself. Pass a real pid
+  # explicitly (e.g. a backgrounded `sleep`) only for tests that actually
+  # need a genuinely killable process.
+  local pid="${4:-999999999}"
+  mkdir -p "$LOCAL_LLM_STATE_DIR"
+  jq -nc --arg profile "$1" --arg url "$2" --arg model "$3" --argjson pid "$pid" \
+    '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$(active_file)"
 }
 
 # Points LOCAL_LLM_DRM_GLOB at a fake sysfs tree reporting the given
@@ -130,6 +163,21 @@ teardown() {
   run "$switch" "broken-runtime"
   [ "$status" -eq 1 ]
   [[ "$output" == *"unknown runtime 'something-else'"* ]]
+}
+
+@test "a profile name containing a path separator is rejected before touching the filesystem" {
+  run "$switch" "evil/../name"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"invalid profile name"* ]]
+  [ ! -e "$LOCAL_LLM_STATE_DIR/../name.log" ]
+  [ ! -s "$FAKE_RUNTIME_CALLS" ]
+}
+
+@test "a non-numeric port is rejected" {
+  run "$switch" "bad-port"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"invalid port 'not-a-number'"* ]]
+  [ ! -s "$FAKE_RUNTIME_CALLS" ]
 }
 
 @test "runtime binary not on PATH exits 1" {
@@ -259,6 +307,49 @@ TOML
   PATH="$orig_path" run "$switch" "test"
   [ "$status" -eq 0 ]
   [[ "$output" == *"profile 'test' active: mock-model on port 8198"* ]]
+}
+
+@test "refuses to switch away from a profile with an active reservation" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  reserve "fast" 120 "big batch of edits"
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"profile 'fast' is reserved for ~"* ]]
+  [[ "$output" == *"big batch of edits"* ]]
+  [[ "$output" == *"delegate-to-copilot.md or a Claude sub-agent"* ]]
+  [[ "$output" == *"LOCAL_LLM_FORCE_SWITCH=1"* ]]
+  [ "$(jq -r .profile "$(active_file)")" = "fast" ] # untouched
+}
+
+@test "LOCAL_LLM_FORCE_SWITCH=1 overrides an active reservation" {
+  sleep 3600 </dev/null >/dev/null 2>&1 &
+  old_pid=$!
+  write_active "fast" "http://localhost:8080" "fake-model-8080" "$old_pid"
+  reserve "fast" 120 "big batch of edits"
+  export FAKE_CURL_UP="http://localhost:8081"
+  export LOCAL_LLM_FORCE_SWITCH=1
+  run "$switch" "quality"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'quality' active"* ]]
+  [ ! -f "$(reservation_file)" ] # cleared along with the profile it protected
+  kill -9 "$old_pid" 2>/dev/null || true
+}
+
+@test "an expired reservation does not block a switch" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  reserve "fast" -100 "long finished"
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality"
+  [ "$status" -eq 0 ]
+}
+
+@test "a reservation for a profile that's already been replaced doesn't block a switch" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  reserve "quality" 120 "stale — quality isn't even loaded" # active is fast, not quality
+  export FAKE_CURL_UP="http://localhost:8081"
+  run "$switch" "quality"
+  [ "$status" -eq 0 ]
 }
 
 @test "successful switch launches the runtime, waits for readiness, and records active state" {

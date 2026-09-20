@@ -34,7 +34,11 @@ usage() {
   echo "     LOCAL_LLM_EXPECT_PROFILE (fail with exit 4 if this profile isn't the active one)," >&2
   echo "     LOCAL_LLM_STATE_DIR (queue/state location override)," >&2
   echo "     LOCAL_LLM_QUEUE_TIMEOUT (seconds to wait for the queue, default 60)," >&2
-  echo "     LOCAL_LLM_CHAT_TIMEOUT (seconds to wait for the chat completion itself, default 300)" >&2
+  echo "     LOCAL_LLM_CHAT_TIMEOUT (seconds to wait for the chat completion itself, default 300)," >&2
+  echo "     LOCAL_LLM_RESERVE_SECONDS (protect the active profile from being switched away for this" >&2
+  echo "       long after each call — set it when you intend many calls, not for a single one;" >&2
+  echo "       unset/0 means this call doesn't protect anything, the default)," >&2
+  echo "     LOCAL_LLM_RESERVE_REASON (shown to whoever's switch gets refused because of the reservation)" >&2
   echo "exit codes: 1 usage/config error, 2 no profile active/reachable" >&2
   echo "  (fall back to another delegate), 3 the call itself failed, 4 wrong profile active" >&2
 }
@@ -104,7 +108,17 @@ mkdir -p "$state_dir"
 ensure_queue_worker_running "$state_dir" "$script_dir"
 
 queue_timeout="$(numeric_env_or_default LOCAL_LLM_QUEUE_TIMEOUT 60)"
+reserve_seconds="${LOCAL_LLM_RESERVE_SECONDS:-0}"
+if ! [[ "$reserve_seconds" =~ ^[0-9]+$ ]]; then
+  # The worker only renews reservations for integer values (it checks
+  # ^[0-9]+$) — a decimal here would silently disable the reservation
+  # rather than protecting the profile as the caller intended.
+  echo "warning: \$LOCAL_LLM_RESERVE_SECONDS='$reserve_seconds' is not a non-negative integer; using 0 (no reservation)" >&2
+  reserve_seconds=0
+fi
+reserve_reason="${LOCAL_LLM_RESERVE_REASON:-batch work via delegate-to-local.sh (pid $$)}"
 job_json="$(jq -nc --arg task "$task" --arg model "${LOCAL_LLM_MODEL:-}" --arg expect "${LOCAL_LLM_EXPECT_PROFILE:-}" \
-  '{type: "chat", task: $task, model_override: $model, expect_profile: $expect}')"
+  --argjson reserve_seconds "$reserve_seconds" --arg reserve_reason "$reserve_reason" \
+  '{type: "chat", task: $task, model_override: $model, expect_profile: $expect, reserve_seconds: $reserve_seconds, reserve_reason: $reserve_reason}')"
 
 submit_and_wait "$state_dir" "$job_json" "$queue_timeout"

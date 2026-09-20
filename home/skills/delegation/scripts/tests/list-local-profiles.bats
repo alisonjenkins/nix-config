@@ -69,3 +69,30 @@ TOML
   [ "$status" -eq 0 ]
   [ ! -s "$FAKE_CURL_CALLS" ]
 }
+
+@test "a reservation for a different profile than the active one is not shown" {
+  # Regression: reservation.json and active-profile.json are independent
+  # files — a stale reservation left over from a profile that's since been
+  # switched away from (the reservation only gets cleared by a successful
+  # switch/stop) must not be misattributed to whatever's active now.
+  jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid 1 \
+    '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$LOCAL_LLM_STATE_DIR/active-profile.json"
+  jq -nc --arg profile "quality" --arg reason "old batch" --argjson expires "$(($(date +%s) + 120))" \
+    '{profile: $profile, reason: $reason, expires_at: $expires}' >"$LOCAL_LLM_STATE_DIR/reservation.json"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$list"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"* fast"*"(active, responding)"* ]]
+  [[ "$output" != *"reserved"* ]]
+}
+
+@test "a reservation for the active profile is shown" {
+  jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid 1 \
+    '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$LOCAL_LLM_STATE_DIR/active-profile.json"
+  jq -nc --arg profile "fast" --arg reason "big batch" --argjson expires "$(($(date +%s) + 120))" \
+    '{profile: $profile, reason: $reason, expires_at: $expires}' >"$LOCAL_LLM_STATE_DIR/reservation.json"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$list"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"reserved"*"big batch"* ]]
+}
