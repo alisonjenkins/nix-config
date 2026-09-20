@@ -28,7 +28,12 @@ base model shipped with, nothing added on top. Reserve it for genuinely
 mechanical, well-specified tasks (the same "haiku-shaped work" bar the
 `delegation` SKILL.md uses), and never feed it untrusted input if the model
 has no known alignment/safety training (avoid "abliterated"/uncensored
-community finetunes for that reason).
+community finetunes for that reason). **Model size matters more than it
+might seem**: tested live (`docs/local-model-capabilities.md`), a 0.5B model
+confidently called `rm -rf /` "safe and effective" and fully complied with a
+one-line prompt injection, while a 3B model of the same family correctly
+refused both — and was *faster* on this GPU. Below ~3B, treat any advice- or
+judgment-shaped output as unverified, not just "weaker."
 
 **One model at a time — hardware isn't sized for more.** These machines can't
 hold two loaded models at once, and loading one takes real time (seconds to
