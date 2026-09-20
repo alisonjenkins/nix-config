@@ -48,6 +48,16 @@ a review's wait time is spent doing nothing (`watch-pr.sh` does this
 internally; a manual loop should too). A user-specified interval overrides
 the ramp and stays fixed at whatever they asked for.
 
+If falling back to `ScheduleWakeup` (no background execution available),
+pass this ramp's numbers explicitly (`delaySeconds: 60` on the first tick,
+×1.5 per empty tick, capped at 900) — do not reach for that tool's generic
+20-30 minute idle-tick default. Watching a PR review is "actively polling
+external state the harness can't notify you about," which that tool's own
+guidance says to pace from how fast the state actually changes, not the
+no-signal idle case. A stale-but-open Copilot review (see "Copilot review
+state" in [copilot-reviews.md](copilot-reviews.md)) is exactly the kind of
+activity a 20-minute-first-tick poll misses or badly delays reacting to.
+
 Stop watching when the PR is merged or closed, when changes are requested (you
 now have work to do), **24 hours pass with no new activity** (report that and
 hand back to the user rather than polling indefinitely), or when the user
