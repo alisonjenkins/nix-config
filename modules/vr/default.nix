@@ -299,20 +299,24 @@ in
         wantedBy = [ "multi-user.target" ];
       };
 
-      # Re-runs the grant whenever SteamVR (re)installs vrcompositor-launcher
-      # -- a Steam update replaces the binary and drops the capability along
-      # with it -- without waiting for the next reboot.
-      systemd.paths = lib.listToAttrs (lib.imap0 (i: root: {
-        name = "steamvr-setcap-watch-${toString i}";
-        value = {
-          description = "Watch for a (re)installed SteamVR at ${root}";
-          wantedBy = [ "multi-user.target" ];
-          pathConfig = {
-            PathExistsGlob = "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher";
-            Unit = "steamvr-setcap.service";
-          };
+      # Re-runs the grant periodically, so a Steam update that replaces
+      # vrcompositor-launcher (and drops the capability along with it) gets
+      # picked back up without waiting for a reboot. Deliberately a timer,
+      # not a systemd.path PathExistsGlob watch: that's level-triggered, and
+      # with the service's RemainAfterExit dropped above (needed so a path
+      # trigger's plain `start` actually re-executes it) it re-fires the
+      # instant the service goes back to inactive and the file still exists
+      # -- a tight self-retrigger loop that hits systemd's default
+      # StartLimitBurst (5 starts/10s) and fails permanently. A cheap,
+      # idempotent check every few minutes has no such failure mode.
+      systemd.timers.steamvr-setcap = {
+        description = "Periodically re-apply SteamVR's vrcompositor-launcher cap_sys_nice";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "2min";
+          OnUnitActiveSec = "10min";
         };
-      }) cfg.steamLibraryRoots);
+      };
     })
 
     (lib.mkIf (cfg.enable && cfg.enableOpenSourceVR) {
