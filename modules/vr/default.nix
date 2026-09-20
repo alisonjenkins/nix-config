@@ -57,8 +57,12 @@ let
     # 2026-09-20: an EasyEffects filter chain's input link died this way,
     # killing all desktop audio, and nothing else was watching for it).
     # pw-link is a no-op when the link already exists, so this is safe to
-    # run on every event.
+    # run after every WiVRn sink/source appear/disappear.
     reassert_extra_links() {
+      # Terminator and payload must stay flush left: this function is nested
+      # inside the outer script, whose least-indented line sets this whole
+      # multi-line string's dedent amount to 0, so anything indented here
+      # would survive Nix's dedent and break heredoc termination.
       while read -r out_port in_port; do
         [ -n "$out_port" ] || continue
         ${pw-link} "$out_port" "$in_port" 2>/dev/null || true
@@ -117,18 +121,21 @@ EXTRALINKS
             sleep 1
             setup_vr_audio
           fi
+          reassert_extra_links
           ;;
         *"'remove'"*sink*)
           if $LINKED && ! has_wivrn_sink; then
             echo "WiVRn sink disappeared"
             teardown_vr_audio
           fi
+          reassert_extra_links
           ;;
         *"'new'"*source*)
           if has_wivrn_source; then
             echo "WiVRn source appeared — switching default mic"
             ${pactl} set-default-source wivrn.source 2>/dev/null || true
           fi
+          reassert_extra_links
           ;;
         *"'remove'"*source*)
           if ! has_wivrn_source; then
@@ -138,9 +145,9 @@ EXTRALINKS
               ${pactl} set-default-source "$alsa_source" 2>/dev/null || true
             fi
           fi
+          reassert_extra_links
           ;;
       esac
-      reassert_extra_links
     done < <(${pactl} subscribe 2>/dev/null)
   '';
 in
