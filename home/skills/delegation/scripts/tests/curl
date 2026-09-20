@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Fake `curl` test double for delegate-to-local.bats. Logs each call to
+# $FAKE_CURL_CALLS and fabricates responses based on $FAKE_CURL_UP (a
+# comma-separated list of base URLs that are "up") and $FAKE_CURL_MODE.
+set -euo pipefail
+
+calls_log="${FAKE_CURL_CALLS:?FAKE_CURL_CALLS must be set}"
+
+url=""
+method="GET"
+max_time=""
+body=""
+args=("$@")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+  arg="${args[$i]}"
+  case "$arg" in
+    -X)
+      method="${args[$((i + 1))]}"
+      i=$((i + 2))
+      ;;
+    -d)
+      body="${args[$((i + 1))]}"
+      i=$((i + 2))
+      ;;
+    --max-time)
+      max_time="${args[$((i + 1))]}"
+      i=$((i + 2))
+      ;;
+    -H)
+      i=$((i + 2))
+      ;;
+    http*)
+      url="$arg"
+      i=$((i + 1))
+      ;;
+    *)
+      i=$((i + 1))
+      ;;
+  esac
+done
+
+printf 'url=%s\tmethod=%s\tmax_time=%s\tbody=%s\n' "$url" "$method" "$max_time" "$body" >>"$calls_log"
+
+base="${url%/v1/*}"
+up_list="${FAKE_CURL_UP:-}"
+is_up=0
+IFS=',' read -ra up_arr <<<"$up_list"
+for u in "${up_arr[@]}"; do
+  if [[ "$u" == "$base" ]]; then
+    is_up=1
+    break
+  fi
+done
+
+if [[ "$is_up" -eq 0 ]]; then
+  echo "curl: (7) Failed to connect to $base" >&2
+  exit 7
+fi
+
+if [[ "$method" == "GET" ]]; then
+  if [[ "${FAKE_CURL_MODE:-}" == "malformed-models" ]]; then
+    echo "not json"
+    exit 0
+  fi
+  port="${base##*:}"
+  printf '{"data":[{"id":"fake-model-%s"}]}\n' "$port"
+  exit 0
+fi
+
+# POST /v1/chat/completions
+if [[ "${FAKE_CURL_MODE:-}" == "chat-error" ]]; then
+  echo '{"error":"boom"}'
+  exit 22
+fi
+
+model_field="$(jq -r '.model' <<<"$body")"
+task_content="$(jq -r '.messages[0].content' <<<"$body")"
+jq -n --arg c "response for model=$model_field: $task_content" '{choices: [{message: {content: $c}}]}'

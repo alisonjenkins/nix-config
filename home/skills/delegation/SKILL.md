@@ -1,6 +1,6 @@
 ---
 name: delegation
-description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, and Copilot CLI delegation. Not for escalating to a stronger model — see `consulting`.
+description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -181,6 +181,13 @@ benchmarks, comparably fast and capable — read
 when that beats a Claude sub-agent instead of assuming Claude tiers are
 always the cheaper or only option.
 
+A third option, for zero-marginal-cost text-only work with no cloud
+dependency: a model running on your own hardware via an OpenAI-compatible
+endpoint. It has no tool-use loop (text in, text out — it cannot read/edit
+files or run commands itself) and weaker capability/no cloud safety layer
+compared to Haiku or Copilot's Luna, so it fits a narrower slice of
+haiku-shaped work. See [delegate-to-local.md](delegate-to-local.md).
+
 ## Never delegate
 
 User-facing judgement, irreversible actions, or work whose context cannot be
@@ -194,3 +201,5 @@ compressed into a prompt.
   a sub-agent prompt when the delegated task needs their guidance.
 - [delegate-to-copilot.md](delegate-to-copilot.md): delegating to GitHub
   Copilot's CLI instead of an Agent-tool sub-agent.
+- [delegate-to-local.md](delegate-to-local.md): delegating to a
+  locally-hosted model over an OpenAI-compatible endpoint.
