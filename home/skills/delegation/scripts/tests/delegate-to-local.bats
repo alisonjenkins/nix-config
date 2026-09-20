@@ -3,10 +3,20 @@
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   delegate="$script_dir/../delegate-to-local.sh"
+  reset_cache="$script_dir/../reset-local-cache.sh"
   export PATH="$script_dir:$PATH"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_CURL_CALLS"
-  unset LOCAL_LLM_URL LOCAL_LLM_MODEL LOCAL_LLM_PROBE_TIMEOUT FAKE_CURL_UP FAKE_CURL_MODE
+  # Isolated per-test cache dir — never the real $HOME/.cache, so tests
+  # can't leak a cached endpoint into each other or into a real machine's
+  # cache.
+  export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
+  unset LOCAL_LLM_URL LOCAL_LLM_MODEL LOCAL_LLM_PROBE_TIMEOUT LOCAL_LLM_NO_CACHE \
+    FAKE_CURL_UP FAKE_CURL_MODE XDG_CACHE_HOME
+}
+
+cache_file() {
+  echo "$LOCAL_LLM_STATE_DIR/detected-endpoint.json"
 }
 
 @test "no args prints usage and exits 1" {
@@ -60,6 +70,7 @@ setup() {
   [[ "$output" == *"http://localhost:9999"* ]]
   [[ "$output" != *"http://localhost:8080"* ]]
   [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 1 ]
+  [ ! -f "$(cache_file)" ]
 }
 
 @test "auto-detects the first reachable default candidate, skipping dead ones first" {
@@ -142,4 +153,111 @@ setup() {
   run "$delegate" "hello task"
   [ "$status" -eq 0 ]
   [ "$output" = "response for model=fake-model-8080: hello task" ]
+}
+
+@test "a successful auto-detection writes a cache file" {
+  export FAKE_CURL_UP="http://localhost:11434"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ -f "$(cache_file)" ]
+  [ "$(jq -r .base_url "$(cache_file)")" = "http://localhost:11434" ]
+  [ "$(jq -r .model "$(cache_file)")" = "fake-model-11434" ]
+}
+
+@test "a warm cache skips probing entirely on the next call" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  : >"$FAKE_CURL_CALLS"
+
+  run "$delegate" "second task"
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 1 ]
+  grep -q "url=http://localhost:8080/v1/chat/completions" "$FAKE_CURL_CALLS"
+  [ "$output" = "response for model=fake-model-8080: second task" ]
+}
+
+@test "LOCAL_LLM_NO_CACHE forces a fresh probe even with a warm cache" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  : >"$FAKE_CURL_CALLS"
+
+  export LOCAL_LLM_NO_CACHE=1
+  run "$delegate" "second task"
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 2 ]
+  sed -n '1p' "$FAKE_CURL_CALLS" | grep -q "url=http://localhost:8080/v1/models"
+}
+
+@test "explicit LOCAL_LLM_URL never reads or writes the cache" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  cached_before="$(cat "$(cache_file)")"
+
+  export FAKE_CURL_UP="http://localhost:8080,http://localhost:11434"
+  export LOCAL_LLM_URL="http://localhost:11434"
+  run "$delegate" "second task"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"fake-model-11434"* ]]
+  [ "$(cat "$(cache_file)")" = "$cached_before" ]
+}
+
+@test "self-heals when the cached endpoint stops responding: invalidates and re-probes" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  : >"$FAKE_CURL_CALLS"
+
+  # 8080 no longer answers at all (server moved to 11434)
+  export FAKE_CURL_UP="http://localhost:11434"
+  run "$delegate" "second task"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning: cached endpoint http://localhost:8080 stopped responding"* ]]
+  [[ "$output" == *"response for model=fake-model-11434: second task"* ]]
+  [ "$(jq -r .base_url "$(cache_file)")" = "http://localhost:11434" ]
+}
+
+@test "self-heal exits 2 when re-probing after a stale cache finds nothing either" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+
+  export FAKE_CURL_UP=""
+  run "$delegate" "second task"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no local model endpoint reachable"* ]]
+}
+
+@test "reset-local-cache.sh clears an existing cache" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ -f "$(cache_file)" ]
+
+  run "$reset_cache"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"cleared: $(cache_file)"* ]]
+  [ ! -f "$(cache_file)" ]
+}
+
+@test "reset-local-cache.sh is a no-op, not an error, when there's nothing to clear" {
+  run "$reset_cache"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to clear"* ]]
+}
+
+@test "reset-local-cache.sh forces the next call to re-probe" {
+  export FAKE_CURL_UP="http://localhost:8080"
+  run "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+
+  run "$reset_cache"
+  [ "$status" -eq 0 ]
+
+  : >"$FAKE_CURL_CALLS"
+  run "$delegate" "second task"
+  [ "$status" -eq 0 ]
+  sed -n '1p' "$FAKE_CURL_CALLS" | grep -q "url=http://localhost:8080/v1/models"
 }

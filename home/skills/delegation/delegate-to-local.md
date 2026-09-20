@@ -59,16 +59,46 @@ one of those default servers is running. Set `LOCAL_LLM_URL`/`LOCAL_LLM_MODEL`
 explicitly only to skip auto-detection (e.g. a non-default port, or a server
 that needs a specific model name).
 
+## Cache
+
+Auto-detection is skipped after the first successful call: the detected
+endpoint and model are cached to
+`$LOCAL_LLM_STATE_DIR/detected-endpoint.json` (falling back to
+`$XDG_CACHE_HOME/delegate-to-local/` then `$HOME/.cache/delegate-to-local/`,
+same resolution order `delegate-to-copilot.md`'s credits cooldown uses), so
+a repeat invocation on the same machine goes straight to the chat call — no
+probing overhead on every delegated task.
+
+Two ways to bust it:
+
+- **Automatic**: if a cached endpoint stops answering (server restarted on a
+  different port, or stopped), the chat call fails, the script invalidates
+  the cache, re-probes once, and retries — self-healing without a separate
+  step. A warning on stderr says this happened.
+- **Manual**: run `scripts/reset-local-cache.sh` to clear the cache
+  explicitly — needed when the same endpoint is still up but now serving a
+  different model, since that case has no failed request to trigger
+  self-healing. No-op, safe to run any time, with or without a cache
+  present. `LOCAL_LLM_NO_CACHE=1` forces a one-off fresh probe (and refreshes
+  the cache) without clearing it first.
+
+An explicit `LOCAL_LLM_URL` bypasses the cache entirely in both directions —
+it's neither read nor written — since you've already told the script where
+to look.
+
 ## Usage
 
 ```
 scripts/delegate-to-local.sh "<task>"
 ```
 
-- `LOCAL_LLM_URL` — skip auto-detection, use only this endpoint.
+- `LOCAL_LLM_URL` — skip auto-detection and the cache, use only this
+  endpoint.
 - `LOCAL_LLM_MODEL` — skip model auto-discovery, request this model name.
 - `LOCAL_LLM_PROBE_TIMEOUT` — seconds allotted per candidate during
   auto-detection (default `0.5`).
+- `LOCAL_LLM_NO_CACHE` — skip a warm cache and force a fresh probe.
+- `LOCAL_LLM_STATE_DIR` — cache location override.
 
 ## Exit codes: this is the graceful-degradation contract
 
