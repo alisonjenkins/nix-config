@@ -33,3 +33,4 @@ $ sudo nixos-rebuild switch --flake .#host
 
 # Docs
 * [Fix broken Nix store on ali-desktop](./docs/ali-desktop-fix-broken-nix-store.md)
+* [Declarative Beat Saber mods](./docs/beatsaber-mods.md)
