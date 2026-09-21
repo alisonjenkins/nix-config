@@ -29,11 +29,15 @@ let
         # mode switch would leave both plugins loaded at once instead of
         # the mutually-exclusive set upstream requires.
         rm -f "$game_dir/BepInEx/plugins/SubmersedVR.dll" "$game_dir/BepInEx/plugins/VREnhancements.dll"
+        # --no-owner --no-group: the payload is owned by the nix build user,
+        # not whoever launches Steam. `-a` (which includes -o/-g) tries to
+        # chown to that uid/gid, fails as a non-root user, and rsync's
+        # nonzero exit trips `set -e` — aborting the whole game launch.
         # --chmod: copying a read-only nix store tree with plain -a would
         # land every file read-only in $game_dir, and BepInEx writes its own
         # log and rewrites BepInEx/config/BepInEx.cfg on every launch —
         # both need to stay writable.
-        rsync -a --checksum --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
+        rsync -a --no-owner --no-group --checksum --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
         echo "subnautica-vr-mod-sync: synced ${cfg.mode} mod payload into $game_dir" >&2
       fi
 
