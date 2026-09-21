@@ -44,8 +44,10 @@ let
             raise SystemExit(0)
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as fh:
+    tmp_path = f"{path}.new"
+    with open(tmp_path, "w") as fh:
         fh.write("\n".join(lines) + "\n")
+    os.replace(tmp_path, path)
   '';
 in
 {
