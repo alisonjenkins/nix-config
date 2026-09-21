@@ -1,6 +1,52 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.vr;
+
+  seedVrMonitorMimeDefaultScript = pkgs.writeText "seed-vrmonitor-mime-default.py" ''
+    import os
+
+    path = os.path.expanduser("~/.config/mimeapps.list")
+    key = "x-scheme-handler/vrmonitor"
+    # Steam names the handler after whichever SteamVR install it last
+    # launched; list both so xdg-open has a candidate either way.
+    value = "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"
+
+    lines = []
+    if os.path.exists(path):
+        with open(path) as fh:
+            lines = fh.read().splitlines()
+
+    section = "[Default Applications]"
+    section_start = None
+    for i, line in enumerate(lines):
+        if line.strip() == section:
+            section_start = i
+            break
+
+    if section_start is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append(section)
+        lines.append(f"{key}={value}")
+    else:
+        section_end = len(lines)
+        for i in range(section_start + 1, len(lines)):
+            if lines[i].startswith("["):
+                section_end = i
+                break
+        already_set = any(
+            lines[i].split("=", 1)[0] == key
+            for i in range(section_start + 1, section_end)
+        )
+        if not already_set:
+            lines.insert(section_start + 1, f"{key}={value}")
+        else:
+            raise SystemExit(0)
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        fh.write("\n".join(lines) + "\n")
+  '';
 in
 {
   imports = [ ./vr-runtime.nix ];
@@ -67,51 +113,7 @@ in
     # touches a key that's already there, so it doesn't fight whatever wrote
     # the rest of the file.
     home.activation.seedVrMonitorMimeDefault = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.python3}/bin/python3 - <<'PY'
-      import os
-
-      path = os.path.expanduser("~/.config/mimeapps.list")
-      key = "x-scheme-handler/vrmonitor"
-      # Steam names the handler after whichever SteamVR install it last
-      # launched; list both so xdg-open has a candidate either way.
-      value = "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"
-
-      lines = []
-      if os.path.exists(path):
-          with open(path) as fh:
-              lines = fh.read().splitlines()
-
-      section = "[Default Applications]"
-      section_start = None
-      for i, line in enumerate(lines):
-          if line.strip() == section:
-              section_start = i
-              break
-
-      if section_start is None:
-          if lines and lines[-1].strip():
-              lines.append("")
-          lines.append(section)
-          lines.append(f"{key}={value}")
-      else:
-          section_end = len(lines)
-          for i in range(section_start + 1, len(lines)):
-              if lines[i].startswith("["):
-                  section_end = i
-                  break
-          already_set = any(
-              lines[i].split("=", 1)[0] == key
-              for i in range(section_start + 1, section_end)
-          )
-          if not already_set:
-              lines.insert(section_start + 1, f"{key}={value}")
-          else:
-              raise SystemExit(0)
-
-      os.makedirs(os.path.dirname(path), exist_ok=True)
-      with open(path, "w") as fh:
-          fh.write("\n".join(lines) + "\n")
-      PY
+      run ${pkgs.python3}/bin/python3 ${seedVrMonitorMimeDefaultScript}
     '';
   };
 }
