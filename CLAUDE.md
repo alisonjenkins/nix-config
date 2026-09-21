@@ -162,6 +162,10 @@ Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enab
 
 Lives in the **`minecraft-modpack-packaging`** skill (`.claude/skills/minecraft-modpack-packaging/SKILL.md`) — `create-sky-colonies-server` (vanilla) + `create-arkana-aeronautics-server` (manifest+bisection) patterns, the bisect loop, mod-version bumping (`find-mod-bumps`), composition files, crash triage. Auto-loads when working on `pkgs/create-*-server` / `pkgs/minecraft-modpack-tools`.
 
+### Beat Saber mod install
+
+Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SKILL.md`) — `pkgs/beatsaber-mods` (BeatMods-resolved mod payload) + `home/modules/beatsaber` (symlink placement + `beatsaber-patch-mods`), how to add/remove a mod, bump the pinned game version, and debug BSIPA/symlink issues. Auto-loads when working on `pkgs/beatsaber-mods` / `home/modules/beatsaber`.
+
 ### Dev workflows + pending work
 
 - **How to** modify configs / add hosts / modules / flake-modules / secrets → the **`nix-config-workflows`** skill (`.claude/skills/nix-config-workflows/SKILL.md`), auto-loads for that work.
