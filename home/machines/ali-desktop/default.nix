@@ -18,6 +18,7 @@
     # and the steam-command-runner shim log showing the real launched exe path.
     steamLibraryPath = "/media/steam-games-1/SteamLibrary";
   };
+  modules.beatsaber.enable = true;
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
