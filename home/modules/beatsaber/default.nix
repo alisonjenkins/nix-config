@@ -49,10 +49,17 @@ let
   cfg = config.modules.beatsaber;
 
   # Bash snippet: populates a `gameDirs` array with every steamLibraryRoots
-  # glob pattern that currently resolves to a directory. Shared between the
-  # activation's copy step and beatsaber-patch-mods so both agree on "where is
-  # the game" without duplicating the glob-expansion dance (same pattern as
-  # modules/vr's steamvr-setcap unit).
+  # entry that both resolves to a directory AND already looks like a real
+  # Beat Saber install. Shared between the activation's copy step and
+  # beatsaber-patch-mods so both agree on "where is the game" without
+  # duplicating the check (same pattern as modules/vr's steamvr-setcap unit)
+  # -- and, critically, so neither one can independently forget it: Steam
+  # can leave a "steamapps/common/Beat Saber" placeholder dir around from an
+  # aborted/pending install of an app that isn't actually Beat Saber's, and
+  # a plain glob/path match hits that just as happily as the real thing
+  # (this bit us once: an empty placeholder under ~/.local/share/Steam got
+  # populated with mod files while the real install sat under a second
+  # library). Every consumer of $gameDirs can assume each entry is real.
   findGameDirs = ''
     shopt -s nullglob
     patterns=(
@@ -60,15 +67,25 @@ let
       "  ${lib.escapeShellArg "${root}/steamapps/common/Beat Saber"}"
     ) cfg.steamLibraryRoots}
     )
-    gameDirs=()
+    candidates=()
     old_ifs="$IFS"
     IFS=
     for pattern in "''${patterns[@]}"; do
       # shellcheck disable=SC2206 # unquoted on purpose: IFS is cleared above
       # so this performs pathname expansion without word-splitting the result.
-      gameDirs+=( $pattern )
+      candidates+=( $pattern )
     done
     IFS="$old_ifs"
+
+    gameDirs=()
+    for candidate in "''${candidates[@]}"; do
+      [ -d "$candidate" ] || continue
+      if [ ! -e "$candidate/Beat Saber_Data" ] && [ ! -e "$candidate/Beat Saber.exe" ]; then
+        echo "Warning: [beatsaber] $candidate doesn't look like a real Beat Saber install (no Beat Saber.exe/Beat Saber_Data) -- skipping" >&2
+        continue
+      fi
+      gameDirs+=( "$candidate" )
+    done
   '';
 
   patchModsScript = pkgs.writeShellApplication {
@@ -141,18 +158,6 @@ in
       fi
 
       for gameDir in "''${gameDirs[@]}"; do
-        [ -d "$gameDir" ] || continue
-        # Steam can leave a "steamapps/common/Beat Saber" placeholder dir
-        # around from an aborted/pending install of an app that isn't
-        # actually Beat Saber's -- the glob above matches it just as
-        # happily as the real thing. Refuse to touch a dir that doesn't
-        # already look like the real install (this bit us once: an empty
-        # placeholder under ~/.local/share/Steam got populated with mod
-        # symlinks while the real install sat under a second library).
-        if [ ! -e "$gameDir/Beat Saber_Data" ] && [ ! -e "$gameDir/Beat Saber.exe" ]; then
-          echo "Warning: [beatsaber] $gameDir doesn't look like a real Beat Saber install (no Beat Saber.exe/Beat Saber_Data) -- skipping" >&2
-          continue
-        fi
         for src in ${lib.escapeShellArg cfg.package}/*; do
           [ -e "$src" ] || continue
           name="$(basename "$src")"
