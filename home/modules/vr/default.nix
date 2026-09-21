@@ -5,7 +5,7 @@ let
   seedVrMonitorMimeDefaultScript = pkgs.writeText "seed-vrmonitor-mime-default.py" ''
     import os
 
-    path = os.path.expanduser("~/.config/mimeapps.list")
+    path = "${config.xdg.configHome}/mimeapps.list"
     key = "x-scheme-handler/vrmonitor"
     # Steam names the handler after whichever SteamVR install it last
     # launched; list both so xdg-open has a candidate either way.
