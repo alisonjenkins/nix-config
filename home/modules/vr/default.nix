@@ -17,9 +17,12 @@ let
         # A single call, not exists()-then-getmtime(): that pair has its own
         # TOCTOU window (the file can vanish between the two), which would
         # raise FileNotFoundError and crash the whole activation script --
-        # worse than the race this function exists to detect.
+        # worse than the race this function exists to detect. st_mtime_ns
+        # rather than getmtime()'s float seconds: a double's precision
+        # leaves only microsecond-ish resolution at current Unix timestamps,
+        # coarser than what the filesystem actually tracks.
         try:
-            return os.path.getmtime(path)
+            return os.stat(path).st_mtime_ns
         except FileNotFoundError:
             return None
 
