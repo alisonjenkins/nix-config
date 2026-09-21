@@ -13,14 +13,27 @@ let
     name = "subnautica-vr-mod-sync";
     runtimeInputs = [ pkgs.rsync ];
     text = ''
+      if [ "$#" -eq 0 ]; then
+        echo "subnautica-vr-mod-sync: usage: subnautica-vr-mod-sync <command> [args...]" >&2
+        echo "subnautica-vr-mod-sync: set this as a Steam launch option, e.g. \"subnautica-vr-mod-sync %command%\"" >&2
+        exit 1
+      fi
+
       game_dir="${cfg.steamLibraryPath}/steamapps/common/Subnautica"
 
       if [ ! -d "$game_dir" ]; then
         echo "subnautica-vr-mod-sync: Subnautica not found at $game_dir, skipping mod sync" >&2
       else
-        # -a from a read-only nix store path: file/dir modes land read-only
-        # in $game_dir too, which is fine, BepInEx only ever reads these.
-        rsync -a --checksum ${modPackage}/ "$game_dir"/
+        # Both mods' plugin DLLs, removed unconditionally before syncing:
+        # rsync alone only ever adds or updates files, so without this a
+        # mode switch would leave both plugins loaded at once instead of
+        # the mutually-exclusive set upstream requires.
+        rm -f "$game_dir/BepInEx/plugins/SubmersedVR.dll" "$game_dir/BepInEx/plugins/VREnhancements.dll"
+        # --chmod: copying a read-only nix store tree with plain -a would
+        # land every file read-only in $game_dir, and BepInEx writes its own
+        # log and rewrites BepInEx/config/BepInEx.cfg on every launch —
+        # both need to stay writable.
+        rsync -a --checksum --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
         echo "subnautica-vr-mod-sync: synced ${cfg.mode} mod payload into $game_dir" >&2
       fi
 
@@ -48,11 +61,18 @@ in
         mutually exclusive, not stackable:
 
         - `submersed`: SubmersedVR — real motion-controller support, SteamVR
-          only, explicitly WIP/unpolished upstream.
+          only, explicitly WIP/unpolished upstream. Overwrites the game's own
+          `SteamVR.dll`/`SteamVR_Actions.dll` and controller binding JSON.
         - `enhancements`: Subnautica VR Enhancements — comfort/QoL fixes
           (HUD, PDA placement, subtitles, cursor, walk speed) for the
           original gamepad/keyboard-driven native VR mode. More polished,
           no motion controllers.
+
+        Switching from `submersed` to `enhancements` does not restore the
+        overwritten SteamVR DLLs/bindings — the sync is an overlay, not a
+        snapshot-and-restore. Use Steam's "Verify integrity of game files" on
+        Subnautica to restore the originals after switching away from
+        `submersed`.
       '';
     };
 
