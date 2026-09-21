@@ -149,8 +149,11 @@ in
     # the one line into the live, still-mutable file -- idempotent, and never
     # touches a key that's already there, so it doesn't fight whatever wrote
     # the rest of the file.
+    # Best-effort: a failed seed (e.g. exhausting its concurrent-write
+    # retries) shouldn't fail the whole home-manager activation over a QoL
+    # default, so || true rather than letting `run` propagate the exit code.
     home.activation.seedVrMonitorMimeDefault = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.python3}/bin/python3 ${seedVrMonitorMimeDefaultScript}
+      run ${pkgs.python3}/bin/python3 ${seedVrMonitorMimeDefaultScript} || true
     '';
   };
 }
