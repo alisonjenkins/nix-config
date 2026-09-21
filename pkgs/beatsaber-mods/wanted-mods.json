@@ -15,5 +15,9 @@
   "Camera2",
   "HitScoreVisualizer",
   "BetterSongList",
-  "CustomSabersLite"
+  "CustomSabersLite",
+  "PracticePlugin",
+  "MappingExtensions",
+  "Vivify",
+  "BeatSaverUpdater"
 ]
