@@ -11,7 +11,10 @@ let
 
   syncScript = pkgs.writeShellApplication {
     name = "subnautica-vr-mod-sync";
-    runtimeInputs = [ pkgs.rsync ];
+    runtimeInputs = [
+      pkgs.rsync
+      pkgs.coreutils
+    ];
     text = ''
       if [ "$#" -eq 0 ]; then
         echo "subnautica-vr-mod-sync: usage: subnautica-vr-mod-sync <command> [args...]" >&2
