@@ -3,9 +3,10 @@
 # pkgs/beatsaber-mods — see that package for how to add a mod.
 #
 # Placement is two steps:
-#   1. Symlink activation (below) — the payload's top-level entries
+#   1. Copy activation (below) — the payload's top-level entries
 #      (Plugins/, Libs/, IPA/, ...) mirror the game's own install-dir layout
-#      1:1, so installing is symlinking each into the live Steam install.
+#      1:1, so installing is merge-copying each into the live Steam install
+#      (not symlinking — see the longer comment further down for why).
 #      Runs on every home-manager switch.
 #   2. `beatsaber-patch-mods` (below) — BSIPA's zip does NOT ship a
 #      pre-built winhttp.dll; it ships IPA.exe, which has to be run ONCE
@@ -49,7 +50,7 @@ let
 
   # Bash snippet: populates a `gameDirs` array with every steamLibraryRoots
   # glob pattern that currently resolves to a directory. Shared between the
-  # activation symlinker and beatsaber-patch-mods so both agree on "where is
+  # activation's copy step and beatsaber-patch-mods so both agree on "where is
   # the game" without duplicating the glob-expansion dance (same pattern as
   # modules/vr's steamvr-setcap unit).
   findGameDirs = ''

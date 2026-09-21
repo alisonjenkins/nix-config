@@ -164,7 +164,7 @@ Lives in the **`minecraft-modpack-packaging`** skill (`.claude/skills/minecraft-
 
 ### Beat Saber mod install
 
-Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SKILL.md`) — `pkgs/beatsaber-mods` (BeatMods-resolved mod payload) + `home/modules/beatsaber` (symlink placement + `beatsaber-patch-mods`), how to add/remove a mod, bump the pinned game version, and debug BSIPA/symlink issues. Auto-loads when working on `pkgs/beatsaber-mods` / `home/modules/beatsaber`.
+Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SKILL.md`) — `pkgs/beatsaber-mods` (BeatMods-resolved mod payload) + `home/modules/beatsaber` (merge-copy placement + `beatsaber-patch-mods`), how to add/remove a mod, bump the pinned game version, and debug BSIPA/install issues. Auto-loads when working on `pkgs/beatsaber-mods` / `home/modules/beatsaber`.
 
 ### Dev workflows + pending work
 

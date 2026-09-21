@@ -2,8 +2,11 @@
 # resolved (with dependencies) against the BeatMods API into
 # beatsaber-mods.nix by generate-mods.py, and unzipped here into a tree that
 # mirrors the game's own install directory layout (Plugins/, Libs/, IPA/,
-# UserData/, ...). home/modules/beatsaber symlinks that tree's top-level
-# entries into the live Steam install.
+# UserData/, ...). home/modules/beatsaber merge-copies that tree's
+# top-level entries into the live Steam install (not symlinked — BSIPA
+# writes new files inside the tree at runtime, and the .NET CLR resolves a
+# running exe's own location through symlinks, both of which break against
+# a symlink-based install).
 #
 # gameVersion is pinned to 1.40.8, not the current default Beat Saber
 # release: most of the mod ecosystem (ScoreSaber, BeatLeader, Chroma,
