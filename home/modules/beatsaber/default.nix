@@ -20,11 +20,29 @@
 #      instead. Run it by hand after the first switch, and again if you
 #      ever see BSIPA "not installed" in-game.
 #
-# Deliberately NOT xdg.configFile / a store symlink for the whole dir: the
-# game (and other mods, e.g. downloaded custom songs under UserData/) needs
-# to keep writing into that same tree, which a read-only store symlink would
-# break. Same reasoning as modules/emulation/content.nix's
-# symlinkActivationFor and home/modules/vr's seedVrRuntime.
+# Deliberately NOT xdg.configFile, and deliberately NOT symlinks at all
+# (tried both, in that order, against a real install):
+#
+# - A single top-level symlink per entry breaks BSIPA outright: it writes
+#   new files under IPA/ at runtime (IPA/Backups/, IPA/Pending/), and a
+#   directory that's ITSELF a symlink into the read-only nix store makes
+#   those writes fail ("Access to the path ... is denied").
+# - Making directories real+writable but symlinking the individual FILES
+#   inside (a `cp -rs` farm) still breaks IPA.exe specifically: the .NET
+#   CLR resolves a running executable's OWN location by following
+#   symlinks, so IPA.exe (a symlink to /nix/store/...) computes its write
+#   paths as "Z:\nix\store\...\IPA\Backups\..." — the store again — even
+#   though it was invoked as "$gameDir/IPA.exe".
+#
+# So the payload is plain-copied (`cp -rf`) into the game install, then
+# chmod u+w'd. This is the same thing BSIPA's own "extract the zip into
+# the game folder" manual-install instructions do; the nix store just
+# supplies the pinned, hashed source for the copy instead of a hand-
+# downloaded zip. Costs real disk (a few MB of mod DLLs, not GBs) instead
+# of dedup'd store space — worth it for a payload something executes.
+# copy is a merge, not a sync: files the payload doesn't mention (a mod's
+# own runtime state, e.g. UserData/, or user-downloaded custom songs) are
+# never touched or pruned.
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.beatsaber;
@@ -123,11 +141,40 @@ in
 
       for gameDir in "''${gameDirs[@]}"; do
         [ -d "$gameDir" ] || continue
-        run mkdir -p "$gameDir"
+        # Steam can leave a "steamapps/common/Beat Saber" placeholder dir
+        # around from an aborted/pending install of an app that isn't
+        # actually Beat Saber's -- the glob above matches it just as
+        # happily as the real thing. Refuse to touch a dir that doesn't
+        # already look like the real install (this bit us once: an empty
+        # placeholder under ~/.local/share/Steam got populated with mod
+        # symlinks while the real install sat under a second library).
+        if [ ! -e "$gameDir/Beat Saber_Data" ] && [ ! -e "$gameDir/Beat Saber.exe" ]; then
+          echo "Warning: [beatsaber] $gameDir doesn't look like a real Beat Saber install (no Beat Saber.exe/Beat Saber_Data) -- skipping" >&2
+          continue
+        fi
         for src in ${lib.escapeShellArg cfg.package}/*; do
           [ -e "$src" ] || continue
-          run ln -sfn "$src" "$gameDir/$(basename "$src")" \
-            || echo "Warning: [beatsaber] symlink failed for $src -> $gameDir" >&2
+          name="$(basename "$src")"
+          # Earlier switches (symlink-based, before this became a plain
+          # copy) may have left "$gameDir/$name" as a bare symlink into an
+          # old store path. Clear it first -- otherwise `cp` would follow
+          # it and try to write through into the read-only store.
+          if [ -L "$gameDir/$name" ]; then
+            run rm "$gameDir/$name"
+          fi
+          if [ -d "$src" ]; then
+            # Directory: merge-copy so files the payload doesn't mention
+            # (mod runtime state, user data) are left alone; -f overwrites
+            # only the files we DO ship, on every switch.
+            run mkdir -p "$gameDir/$name"
+            run cp -rf "$src"/. "$gameDir/$name/" \
+              && run chmod -R u+w "$gameDir/$name" \
+              || echo "Warning: [beatsaber] copy failed for $src -> $gameDir/$name" >&2
+          else
+            run cp -f "$src" "$gameDir/$name" \
+              && run chmod u+w "$gameDir/$name" \
+              || echo "Warning: [beatsaber] copy failed for $src -> $gameDir" >&2
+          fi
         done
       done
     '';
