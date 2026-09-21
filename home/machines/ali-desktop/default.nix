@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }: {
+{ config, lib, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
     ../../programs/linux-only/steam-command-runner
@@ -11,7 +11,13 @@
   ];
 
   modules.vr.enableOpenSourceVR = true;
-  modules.subnauticaVR.enable = true;
+  modules.subnauticaVR = {
+    enable = true;
+    # Subnautica lives on the secondary Steam library on this host, not the
+    # module's ~/.local/share/Steam default — confirmed via appmanifest_264710.acf
+    # and the steam-command-runner shim log showing the real launched exe path.
+    steamLibraryPath = "/media/steam-games-1/SteamLibrary";
+  };
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
@@ -60,6 +66,44 @@
     games."553850" = {
       hooks.pre_launch.command = "uhk-switch-keymap HD2";
       hooks.post_exit.command = "uhk-switch-keymap QWR";
+    };
+
+    # Subnautica (264710): syncs the subnautica-vr-mods payload (see
+    # modules.subnauticaVR above) before every launch. hooks.pre_launch
+    # waits for the sync to finish (steam-command-runner's own `wait = true`
+    # default) before continuing — not for it to succeed; a failed hook is
+    # logged and the launch proceeds regardless, so a sync failure needs
+    # checking for in the runner's own log, not assumed caught here.
+    # gamescope_enabled = false: hooks only fire via the gamescope-shim
+    # launch path (src/shim/gamescope.rs), which always execs the real
+    # gamescope binary once Steam's routed the launch through it —
+    # gamescope_enabled only gates whether the configured gamescopeArgs
+    # (HD2's ultrawide/HDR/FSR tuning) get applied, not whether gamescope
+    # runs at all. So this still wraps Subnautica in a bare, argument-less
+    # gamescope rather than skipping it — harmless here, since SteamVR's own
+    # OpenVR compositor renders straight to the headset, bypassing gamescope
+    # entirely; gamescope only ever sees the flatscreen mirror window.
+    games."264710" = {
+      gamescope_enabled = false;
+      hooks.pre_launch.command = "subnautica-vr-mod-sync";
+      # SubmersedVR checks the active XR runtime at startup and refuses to
+      # initialize (silently, past a log line) on anything it doesn't
+      # recognize as SteamVR — a Quest 2 heads on this as an Oculus runtime
+      # without this flag, per upstream's README. Confirmed live: BepInEx's
+      # own log showed "SubmersedVR only supports SteamVR!" until this was
+      # added.
+      game_args = "-vrmode openvr";
+      # subnautica-vr-mod-sync's own WINEDLLOVERRIDES export only applies
+      # when it execs the game itself; a pre_launch hook doesn't exec
+      # anything, so the override has to be set here instead. Composed
+      # from the global env the same way the script composes its own
+      # runtime WINEDLLOVERRIDES, so a global override set above isn't
+      # silently clobbered by this per-game one.
+      env.WINEDLLOVERRIDES =
+        let
+          globalOverride = config.programs.steamCommandRunner.env.WINEDLLOVERRIDES or "";
+        in
+        "winhttp=n,b" + lib.optionalString (globalOverride != "") ";${globalOverride}";
     };
   };
 
