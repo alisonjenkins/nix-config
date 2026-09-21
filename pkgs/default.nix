@@ -52,6 +52,7 @@
     python3Packages = pkgs.unstable.python3Packages;
   };
   positional-audio-bench-datasets = pkgs.callPackage ./positional-audio-bench/datasets.nix { };
+  subnautica-vr-mods = pkgs.callPackage ./subnautica-vr-mods { };
   # Built for whichever platform the package set is instantiated for, so
   # pkgsi686Linux.steam-display-filter gives the 32-bit build the Steam client
   # needs. See the package for why it exists.
