@@ -8,22 +8,29 @@
 # running exe's own location through symlinks, both of which break against
 # a symlink-based install).
 #
-# gameVersion is pinned to 1.40.8, not the current default Beat Saber
-# release: most of the mod ecosystem (ScoreSaber, BeatLeader, Chroma,
+# gameVersion is pinned (currently 1.40.8, not the current default Beat
+# Saber release): most of the mod ecosystem (ScoreSaber, BeatLeader, Chroma,
 # NoodleExtensions, Heck, PlaylistManager) lags the game by months and
 # wasn't verified for anything newer at the time this was pinned. 1.40.8 is
 # Steam's `legacy1.40.8_unity_v2021.3.16f1` beta branch — the nearest
 # actually-downloadable legacy build to where BeatMods coverage is good.
-# Bumping this requires re-running generate-mods.py against the new
-# version and checking BeatMods still covers every wanted mod first.
+#
+# The pin lives ONLY in beatsaber-mods.nix's `gameVersion` field (set by
+# generate-mods.py from the version it was actually run against) — not
+# duplicated as an argument here, so there's no way for this derivation's
+# reported version to drift from what the resolved mod set was actually
+# built for. Bumping the version means re-running generate-mods.py against
+# the new one (after checking BeatMods still covers every wanted mod) and
+# committing the regenerated file; there's nothing to override here.
 #
 # To add a mod: browse https://beatmods.com/mods for the target
 # gameVersion, add its name to wanted-mods.json, then re-run:
 #   python3 generate-mods.py <game-version> wanted-mods.json beatsaber-mods.nix
 # and commit the regenerated beatsaber-mods.nix.
-{ stdenvNoCC, fetchurl, unzip, gameVersion ? "1.40.8" }:
+{ stdenvNoCC, fetchurl, unzip }:
 let
-  mods = import ./beatsaber-mods.nix { inherit fetchurl; };
+  generated = import ./beatsaber-mods.nix { inherit fetchurl; };
+  inherit (generated) gameVersion mods;
 in
 stdenvNoCC.mkDerivation {
   pname = "beatsaber-mods";
