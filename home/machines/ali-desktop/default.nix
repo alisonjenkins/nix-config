@@ -18,7 +18,17 @@
     # and the steam-command-runner shim log showing the real launched exe path.
     steamLibraryPath = "/media/steam-games-1/SteamLibrary";
   };
-  modules.beatsaber.enable = true;
+  modules.beatsaber = {
+    enable = true;
+    # Beat Saber (appid 620980) lives in the secondary library folder, not
+    # the default ~/.local/share/Steam (that one holds a different library,
+    # see modules.vr.steamLibraryRoots below -- two libraries on the same
+    # drive). Overrides the module default entirely, so list both.
+    steamLibraryRoots = [
+      "${config.home.homeDirectory}/.local/share/Steam"
+      "/media/steam-games-1/SteamLibrary"
+    ];
+  };
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
