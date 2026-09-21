@@ -295,6 +295,24 @@ in
               ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
             fi
           done
+
+          # Clears vrserver's IPC shared-memory segment when it's orphaned
+          # (e.g. by a `kill -9`/SIGKILL of Steam instead of a clean exit):
+          # a stale segment blocks the next vrserver from attaching and
+          # SteamVR surfaces "encountered a critical error" with no other
+          # sign of what's wrong. Guarded on no vrserver process existing,
+          # since this timer also fires while a VR session is legitimately
+          # running.
+          if ! ${pkgs.procps}/bin/pgrep -x vrserver >/dev/null; then
+            for shm in /dev/shm/u*-ValveIPCSharedObj-SteamVR; do
+              # -f: only a regular file, not a directory or other non-file
+              # match a less-trusted actor could plant in world-writable
+              # /dev/shm -- rm -f still errors (and fails the oneshot) on
+              # a directory, so the type check has to happen first.
+              [ -f "$shm" ] || continue
+              rm -f "$shm"
+            done
+          fi
         '';
         wantedBy = [ "multi-user.target" ];
       };
