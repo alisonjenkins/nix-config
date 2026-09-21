@@ -35,7 +35,7 @@ let
                 section_end = i
                 break
         already_set = any(
-            lines[i].strip().split("=", 1)[0] == key
+            lines[i].strip().split("=", 1)[0].strip() == key
             for i in range(section_start + 1, section_end)
         )
         if not already_set:
