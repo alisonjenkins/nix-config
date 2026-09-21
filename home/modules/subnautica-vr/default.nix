@@ -41,7 +41,9 @@ let
       # game dir; Wine only loads it in place of the system DLL when told to
       # via WINEDLLOVERRIDES, and only once, not always (winhttp is also a
       # normal Windows system DLL other overrides may already be listing).
-      export WINEDLLOVERRIDES="winhttp=n,b''${WINEDLLOVERRIDES:+,$WINEDLLOVERRIDES}"
+      # Entries are `;`-separated; `,` is only for the dll/mode list within
+      # one entry (winhttp=n,b itself), not between entries.
+      export WINEDLLOVERRIDES="winhttp=n,b''${WINEDLLOVERRIDES:+;$WINEDLLOVERRIDES}"
       exec "$@"
     '';
   };
