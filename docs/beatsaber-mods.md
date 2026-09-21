@@ -11,13 +11,11 @@ how to use it, and the one manual step it can't do for you.
 Game version **1.40.8** (Steam beta branch `legacy1.40.8_unity_v2021.3.16f1`),
 not the current release — see "Why an old game version" below.
 
-Mods: `BSIPA`, `SongCore`, `BeatSaverDownloader`, `ScoreSaber`, `BeatLeader`,
-`PlaylistManager`, `Chroma`, `NoodleExtensions`, `Heck`, `Camera2`,
-`HitScoreVisualizer`, `BetterSongList`, `CustomSabersLite`, `GottaGoFast`,
-`RandomSongPlayer`, `MenuSelector`, `Enhancements`, plus whatever each of
-those pulls in as a dependency. The authoritative list is
-`pkgs/beatsaber-mods/wanted-mods.json` (top-level only — dependencies aren't
-listed there, they're resolved automatically).
+Mods: see `pkgs/beatsaber-mods/wanted-mods.json` for the authoritative,
+current top-level list (dependencies aren't listed there, they're resolved
+automatically — `pkgs/beatsaber-mods/beatsaber-mods.nix`'s header comment
+has the full resolved count). Keeping the list here too would just go stale
+every time a mod is added or removed.
 
 ## Setup (once)
 
