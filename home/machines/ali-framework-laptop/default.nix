@@ -5,6 +5,8 @@
     ./audio-context
   ];
 
+  modules.beatsaber.enable = true;
+
   home.packages = [
     pkgs.nbt-studio
   ];

@@ -68,6 +68,7 @@ in {
         home-manager.users.${specialArgs.username} = {
           imports = [
             self.homeModules.home-linux
+            self.homeModules.beatsaber
             inputs.framework-inputmodule-rs-flake.homeManagerModules.default
             {
               services.inputmodule-control = {
