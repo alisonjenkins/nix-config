@@ -16,11 +16,12 @@ let
       pkgs.coreutils
     ];
     text = ''
-      if [ "$#" -eq 0 ]; then
-        echo "subnautica-vr-mod-sync: usage: subnautica-vr-mod-sync <command> [args...]" >&2
-        echo "subnautica-vr-mod-sync: set this as a Steam launch option, e.g. \"subnautica-vr-mod-sync %command%\"" >&2
-        exit 1
-      fi
+      # Two ways to call this: with a command to exec (a Steam launch option,
+      # "subnautica-vr-mod-sync %command%" — syncs, then sets
+      # WINEDLLOVERRIDES and execs the game), or with none (a
+      # steam-command-runner `hooks.pre_launch` command — syncs only, and
+      # WINEDLLOVERRIDES comes from that game's own `env` config instead,
+      # since a pre_launch hook doesn't exec the game itself).
 
       game_dir="${cfg.steamLibraryPath}/steamapps/common/Subnautica"
 
@@ -48,6 +49,11 @@ let
         # of every file on every launch for no gain.
         rsync -a --no-owner --no-group --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
         echo "subnautica-vr-mod-sync: synced ${cfg.mode} mod payload into $game_dir" >&2
+      fi
+
+      if [ "$#" -eq 0 ]; then
+        echo "subnautica-vr-mod-sync: no command given, sync only" >&2
+        exit 0
       fi
 
       # BepInEx.Subnautica's doorstop injects via a winhttp.dll placed in the
