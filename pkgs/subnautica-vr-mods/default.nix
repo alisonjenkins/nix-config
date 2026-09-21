@@ -78,7 +78,11 @@ stdenvNoCC.mkDerivation {
 
   meta = {
     description = "Subnautica VR mod payload (BepInEx + ${mode}), synced onto a Steam-managed install";
-    homepage = "https://github.com/Okabintaro/SubmersedVR";
+    homepage =
+      if mode == "submersed" then
+        "https://github.com/Okabintaro/SubmersedVR"
+      else
+        "https://github.com/IWhoI/SubnauticaVREnhancements";
     license = lib.licenses.unfree; # redistributes third-party mod binaries verbatim
     platforms = lib.platforms.all;
   };
