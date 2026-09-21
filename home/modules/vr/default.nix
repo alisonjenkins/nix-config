@@ -10,25 +10,26 @@ let
     # Steam names the handler after whichever SteamVR install it last
     # launched; list both so xdg-open has a candidate either way.
     value = "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"
-
-    lines = []
-    if os.path.exists(path):
-        with open(path) as fh:
-            lines = fh.read().splitlines()
-
     section = "[Default Applications]"
-    section_start = None
-    for i, line in enumerate(lines):
-        if line.strip() == section:
-            section_start = i
-            break
 
-    if section_start is None:
-        if lines and lines[-1].strip():
-            lines.append("")
-        lines.append(section)
-        lines.append(f"{key}={value}")
-    else:
+
+    def mtime():
+        return os.path.getmtime(path) if os.path.exists(path) else None
+
+
+    def seed(lines):
+        """Returns the new line list, or None if the key is already set."""
+        section_start = None
+        for i, line in enumerate(lines):
+            if line.strip() == section:
+                section_start = i
+                break
+
+        if section_start is None:
+            if lines and lines[-1].strip():
+                lines.append("")
+            return lines + [section, f"{key}={value}"]
+
         section_end = len(lines)
         for i in range(section_start + 1, len(lines)):
             if lines[i].strip().startswith("["):
@@ -38,16 +39,38 @@ let
             lines[i].strip().split("=", 1)[0].strip() == key
             for i in range(section_start + 1, section_end)
         )
-        if not already_set:
-            lines.insert(section_start + 1, f"{key}={value}")
-        else:
-            raise SystemExit(0)
+        if already_set:
+            return None
+        return lines[: section_start + 1] + [f"{key}={value}"] + lines[section_start + 1 :]
 
+
+    # Another process (Thunderbird, a GTK "always open with" pick, ...) can
+    # write this same file between our read and our write. Re-checking mtime
+    # right before the atomic rename, and retrying from a fresh read if it
+    # moved, keeps that window effectively zero without needing every writer
+    # to cooperate with a lock -- which they don't.
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp_path = f"{path}.new"
-    with open(tmp_path, "w") as fh:
-        fh.write("\n".join(lines) + "\n")
-    os.replace(tmp_path, path)
+    for _attempt in range(5):
+        before = mtime()
+        lines = []
+        if os.path.exists(path):
+            with open(path) as fh:
+                lines = fh.read().splitlines()
+
+        new_lines = seed(lines)
+        if new_lines is None:
+            break
+
+        tmp_path = f"{path}.new"
+        with open(tmp_path, "w") as fh:
+            fh.write("\n".join(new_lines) + "\n")
+
+        if mtime() == before:
+            os.replace(tmp_path, path)
+            break
+        os.remove(tmp_path)
+    else:
+        raise SystemExit("seed-vrmonitor-mime-default: gave up after 5 concurrent-write retries")
   '';
 in
 {
