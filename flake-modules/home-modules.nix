@@ -10,6 +10,7 @@
     themes = import ../home/themes;
     autostart = import ../home/autostart;
     vr = import ../home/modules/vr;
+    subnautica-vr = import ../home/modules/subnautica-vr;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
