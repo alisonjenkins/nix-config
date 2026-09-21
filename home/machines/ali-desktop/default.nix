@@ -11,6 +11,7 @@
   ];
 
   modules.vr.enableOpenSourceVR = true;
+  modules.subnauticaVR.enable = true;
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
