@@ -31,11 +31,11 @@ let
     else:
         section_end = len(lines)
         for i in range(section_start + 1, len(lines)):
-            if lines[i].startswith("["):
+            if lines[i].strip().startswith("["):
                 section_end = i
                 break
         already_set = any(
-            lines[i].split("=", 1)[0] == key
+            lines[i].strip().split("=", 1)[0] == key
             for i in range(section_start + 1, section_end)
         )
         if not already_set:
