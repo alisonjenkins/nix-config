@@ -142,7 +142,8 @@ in
         Glob roots to search for the Beat Saber install
         (`steamapps/common/Beat Saber`). Extend per host with any additional
         Steam library folder (e.g. a second drive) Steam is configured to
-        install into. The first root where the game is actually found wins.
+        install into. Every root that resolves to a real install (not just
+        the first) gets the mod payload placed into it.
       '';
     };
   };
