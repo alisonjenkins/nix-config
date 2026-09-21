@@ -14,7 +14,14 @@ let
 
 
     def mtime():
-        return os.path.getmtime(path) if os.path.exists(path) else None
+        # A single call, not exists()-then-getmtime(): that pair has its own
+        # TOCTOU window (the file can vanish between the two), which would
+        # raise FileNotFoundError and crash the whole activation script --
+        # worse than the race this function exists to detect.
+        try:
+            return os.path.getmtime(path)
+        except FileNotFoundError:
+            return None
 
 
     def seed(lines):
@@ -53,9 +60,11 @@ let
     for _attempt in range(5):
         before = mtime()
         lines = []
-        if os.path.exists(path):
+        try:
             with open(path) as fh:
                 lines = fh.read().splitlines()
+        except FileNotFoundError:
+            pass
 
         new_lines = seed(lines)
         if new_lines is None:
