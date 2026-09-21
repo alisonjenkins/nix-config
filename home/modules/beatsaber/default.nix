@@ -45,6 +45,8 @@ let
     old_ifs="$IFS"
     IFS=
     for pattern in "''${patterns[@]}"; do
+      # shellcheck disable=SC2206 # unquoted on purpose: IFS is cleared above
+      # so this performs pathname expansion without word-splitting the result.
       gameDirs+=( $pattern )
     done
     IFS="$old_ifs"
