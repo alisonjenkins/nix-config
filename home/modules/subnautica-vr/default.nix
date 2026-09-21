@@ -40,7 +40,13 @@ let
         # land every file read-only in $game_dir, and BepInEx writes its own
         # log and rewrites BepInEx/config/BepInEx.cfg on every launch —
         # both need to stay writable.
-        rsync -a --no-owner --no-group --checksum --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
+        #
+        # No --checksum: -a's default quick check (size + mtime, and -a
+        # preserves mtime via -t) already tells a changed nix store path
+        # apart from an already-synced one, since the store is content-
+        # addressed and immutable. --checksum would force a full read+hash
+        # of every file on every launch for no gain.
+        rsync -a --no-owner --no-group --chmod=Du=rwx,Fu=rw ${modPackage}/ "$game_dir"/
         echo "subnautica-vr-mod-sync: synced ${cfg.mode} mod payload into $game_dir" >&2
       fi
 
