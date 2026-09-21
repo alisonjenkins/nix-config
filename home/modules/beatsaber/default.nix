@@ -70,7 +70,11 @@ let
           continue
         fi
         echo "beatsaber-patch-mods: running IPA.exe in $gameDir via protontricks (appid ${cfg.steamAppId})"
-        if ! protontricks-launch --appid ${cfg.steamAppId} "$gameDir/IPA.exe" -n; then
+        # IPA.exe finds the game executable via its OWN working directory,
+        # not an argument -- protontricks-launch doesn't cd into it first,
+        # so it fails with "Could not locate game executable" if run from
+        # anywhere else.
+        if ! ( cd "$gameDir" && protontricks-launch --appid ${cfg.steamAppId} "$gameDir/IPA.exe" -n ); then
           echo "beatsaber-patch-mods: protontricks-launch failed for $gameDir" >&2
           status=1
         fi
