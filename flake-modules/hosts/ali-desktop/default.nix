@@ -97,7 +97,7 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr ];
+          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber ];
 
           home.packages = [
             pkgs.lmstudio
