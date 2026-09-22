@@ -61,6 +61,12 @@ let
   # populated with mod files while the real install sat under a second
   # library). Every consumer of $gameDirs can assume each entry is real.
   findGameDirs = ''
+    # This snippet is inlined straight into the home-manager activation
+    # script alongside other, unrelated steps -- not run in a subshell -- so
+    # a `shopt` here would otherwise leak into everything that runs after
+    # it. Save and restore the exact prior state (shopt -p, not a bare
+    # shopt -u: nullglob might already have been on for some other reason).
+    beatsaber_nullglob_state="$(shopt -p nullglob)"
     shopt -s nullglob
     patterns=(
     ${lib.concatMapStringsSep "\n" (root:
@@ -76,6 +82,7 @@ let
       candidates+=( $pattern )
     done
     IFS="$old_ifs"
+    eval "$beatsaber_nullglob_state"
 
     gameDirs=()
     for candidate in "''${candidates[@]}"; do
