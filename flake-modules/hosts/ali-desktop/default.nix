@@ -77,6 +77,7 @@ in {
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
       self.nixosModules.nohang
+      self.nixosModules.opentrack
       self.nixosModules.uresourced
       self.nixosModules.virtual-cameras
       self.nixosModules.plymouth
@@ -258,6 +259,10 @@ in {
         modules.desktop-local-k8s.enable = true;
         modules.desktop-media.enable = true;
         modules.virtual-cameras.enable = true;
+        modules.opentrack = {
+          enable = true;
+          virtualCameraIndex = 4;
+        };
         modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;
