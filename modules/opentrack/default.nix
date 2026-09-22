@@ -17,7 +17,7 @@ with lib; let
     text = ''
       feeder="virtual-camera@${toString cfg.virtualCameraIndex}.service"
       systemctl --user start "$feeder"
-      trap 'systemctl --user stop "$feeder"' EXIT
+      trap 'systemctl --user stop "$feeder" || true' EXIT
       opentrack
     '';
   };
@@ -45,12 +45,12 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = config.modules.virtual-cameras.enable;
+        assertion = config.modules.virtual-cameras.enable or false;
         message = "modules.opentrack requires modules.virtual-cameras.enable = true -- opentrack reads a loopback slot, never the real camera device.";
       }
       {
-        assertion = cfg.virtualCameraIndex <= config.modules.virtual-cameras.count;
-        message = "modules.opentrack.virtualCameraIndex (${toString cfg.virtualCameraIndex}) exceeds modules.virtual-cameras.count (${toString config.modules.virtual-cameras.count}).";
+        assertion = cfg.virtualCameraIndex <= (config.modules.virtual-cameras.count or 0);
+        message = "modules.opentrack.virtualCameraIndex (${toString cfg.virtualCameraIndex}) exceeds modules.virtual-cameras.count (${toString (config.modules.virtual-cameras.count or 0)}).";
       }
     ];
 
