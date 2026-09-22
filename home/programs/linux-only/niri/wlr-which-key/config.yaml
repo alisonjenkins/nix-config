@@ -96,6 +96,16 @@ menu:
     desc: Lock
     cmd: "lock-session 0 1"
 
+  - key: "o"
+    desc: OBS
+    submenu:
+      - key: "s"
+        desc: Start Stream
+        cmd: obs-start-stream
+      - key: "x"
+        desc: Stop Stream
+        cmd: obs-stop-stream
+
   - key: "g"
     desc: Games
     submenu:
