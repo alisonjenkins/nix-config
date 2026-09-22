@@ -30,6 +30,7 @@ CDN = "https://beatmods.com/cdn/mod"
 USER_AGENT = "nix-config-beatsaber-mods/1.0 (+https://github.com/)"
 RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2.0
+REQUEST_TIMEOUT_SECONDS = 30
 
 
 def _request(url):
@@ -43,7 +44,7 @@ def _urlopen_retrying(url):
     last_error = None
     for attempt in range(1, RETRIES + 1):
         try:
-            return urllib.request.urlopen(_request(url))
+            return urllib.request.urlopen(_request(url), timeout=REQUEST_TIMEOUT_SECONDS)
         except urllib.error.HTTPError as e:
             if e.code < 500:
                 raise
