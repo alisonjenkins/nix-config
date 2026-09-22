@@ -61,6 +61,7 @@
     (pkgs.writeShellScriptBin ''obs-webcam-bg'' ''
       ${pkgs.obs-do}/bin/obs-do set-scene "Webcam BG"
     '')
+  ] ++ lib.optionals pkgs.stdenv.isLinux [
     (pkgs.writeShellScriptBin ''obs-start-stream'' ''
       set -euo pipefail
       if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
