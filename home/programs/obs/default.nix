@@ -72,7 +72,7 @@
       ${pkgs.obs-do}/bin/obs-do --wait-for-obs 30 start-stream
     '')
     (pkgs.writeShellScriptBin ''obs-stop-stream'' ''
-      ${pkgs.obs-do}/bin/obs-do stop-stream
+      ${pkgs.obs-do}/bin/obs-do --wait-for-obs 30 stop-stream
     '')
   ];
 }
