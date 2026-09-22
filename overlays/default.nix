@@ -44,6 +44,15 @@ let
         override = args: patch (origOverride args);
       };
     };
+
+  # Narrow source scoped to patches/ only: `self + "/path"` points into the
+  # single store path Nix copies for the WHOLE flake tree, so any commit
+  # anywhere in the repo changes that path's hash and invalidates every
+  # derivation that patches off of it (gamescope/niri/bubblewrap rebuild from
+  # source on every switch even when the patch itself is untouched).
+  # builtins.path re-hashes just this subdirectory, so only a change under
+  # patches/ triggers a rebuild.
+  patchesDir = builtins.path { path = self + "/patches"; name = "nix-config-patches"; };
 in
 {
   # This one brings our custom packages from the 'pkgs' directory
@@ -327,7 +336,7 @@ in
           # See https://github.com/ValveSoftware/gamescope/issues/1997.
           gamescope = mprev.gamescope.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [
-              (self + "/patches/gamescope-streaming-client-zpos.patch")
+              "${patchesDir}/gamescope-streaming-client-zpos.patch"
             ];
           });
 

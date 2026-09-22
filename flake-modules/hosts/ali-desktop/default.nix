@@ -3,6 +3,14 @@ let
   system = "x86_64-linux";
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
+  # Narrow source scoped to patches/ only: `self + "/path"` points into the
+  # single store path Nix copies for the WHOLE flake tree, so any commit
+  # anywhere in the repo changes that path's hash and invalidates every
+  # derivation that patches off of it (niri/bubblewrap rebuild from source on
+  # every switch even when the patch itself is untouched). builtins.path
+  # re-hashes just this subdirectory, so only a change under patches/
+  # triggers a rebuild.
+  patchesDir = builtins.path { path = self + "/patches"; name = "nix-config-patches"; };
   bluetoothMacs = {
     sonyHeadset = "88:C9:E8:06:5E:9C";
   };
@@ -898,7 +906,7 @@ in {
             # rationale and their tests; regenerate the patch afterwards.
             patchedNiri = upstreamNiri.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
-                (self + "/patches/niri-virtual-outputs.patch")
+                "${patchesDir}/niri-virtual-outputs.patch"
               ];
             });
           in {
@@ -911,7 +919,7 @@ in {
           steam = let
             patchedBwrap = pkgs.bubblewrap.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
-                (self + "/patches/bubblewrap-allow-caps.patch")
+                "${patchesDir}/bubblewrap-allow-caps.patch"
               ];
             });
           in {
