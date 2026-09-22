@@ -61,5 +61,17 @@
     (pkgs.writeShellScriptBin ''obs-webcam-bg'' ''
       ${pkgs.obs-do}/bin/obs-do set-scene "Webcam BG"
     '')
+    (pkgs.writeShellScriptBin ''obs-start-stream'' ''
+      set -euo pipefail
+      if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
+        ${pkgs.obs-studio}/bin/obs --disable-shutdown-check &
+        until ${pkgs.procps}/bin/pgrep -x obs >/dev/null; do sleep 0.5; done
+        sleep 3
+      fi
+      ${pkgs.obs-do}/bin/obs-do start-stream
+    '')
+    (pkgs.writeShellScriptBin ''obs-stop-stream'' ''
+      ${pkgs.obs-do}/bin/obs-do stop-stream
+    '')
   ];
 }
