@@ -255,9 +255,11 @@ in
 
     # obs-do 0.1.13 only exposes toggle-stream, so a which-key "start
     # streaming" binding has no way to avoid toggling the wrong direction
-    # if a stream is already live. Pull in start-stream/stop-stream from
-    # our fork's PR (https://github.com/jonhoo/obs-do/pull/81) — they
-    # check StreamStatus.active before mutating. Cherry-picked onto the
+    # if a stream is already live. Pull in start-stream/stop-stream, plus
+    # --wait-for-obs (retries the websocket connection with backoff
+    # instead of failing immediately, so a launcher script doesn't need
+    # its own sleep/poll loop), from our fork's PR
+    # (https://github.com/jonhoo/obs-do/pull/81). Cherry-picked onto the
     # v0.1.13 tag rather than upstream main: main's Cargo.lock has since
     # drifted from the release nixpkgs pins, which mismatches nixpkgs'
     # cargoHash for the vendor derivation. Drop this override once the
@@ -266,8 +268,8 @@ in
       src = final.fetchFromGitHub {
         owner = "alisonjenkins";
         repo = "obs-do";
-        rev = "af0cbee609a8766d9e8debea976c0bc8c044bdb1";
-        hash = "sha256-kIrDhpDBZnNtI8Wz9x6yXPacGrCEuyTJA68nytQGwVY=";
+        rev = "c10babf764dc557d4da48d660e36f4f6f1c4bdde";
+        hash = "sha256-jVGpSw4paL+95u/O8Kvy3wVl00a7blpWspDxByiNbhA=";
       };
     });
 
