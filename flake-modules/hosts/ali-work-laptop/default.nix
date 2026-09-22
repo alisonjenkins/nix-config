@@ -151,13 +151,18 @@ in {
             # "192.168.x.x"
           ];
           instances = {
-            # Single smart model — Qwen3-32B Dense, Q5_K_M ~21.6 GiB
-            # All 32B params active every token
-            # Speculative decoding with Qwen3-0.6B draft → ~2-3x tok/s boost
+            # Single smart model — Qwen3.6-27B Dense, UD-Q5_K_XL ~18.7 GiB
+            # All 27B params active every token. Supersedes Qwen3-32B (see
+            # pkgs/llama-models for why) as of 2026-09-22.
+            # Speculative decoding via Qwen3-0.6B draft is NOT wired below
+            # (no --model-draft flag) despite the aspiration in earlier
+            # comments here — and qwen3-0-6b-q8-0's tokenizer was picked to
+            # match Qwen3-32B, not confirmed compatible with Qwen3.6's
+            # tokenizer, so don't wire it without re-checking that first.
             # Flash attention + q4_0 KV cache for speed
             default = {
               enable = true;
-              model = pkgs.llama-models.qwen3-32b-q5-k-m.modelFile;
+              model = pkgs.llama-models.qwen3-6-27b-ud-q5-k-xl.modelFile;
               port = 8080;
               extraFlags = [
                 "--gpu-layers" "999" "--ctx-size" "131072"

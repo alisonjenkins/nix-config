@@ -79,17 +79,23 @@ in
     ];
   };
 
-  # Single smart model — Qwen3-32B Dense
-  # All 32B params active every token, Q5_K_M ~21.6 GiB
-  # Near GPT-4o on coding/reasoning benchmarks
-  qwen3-32b-q5-k-m = mkGgufModel {
-    pname = "qwen3-32b-q5-k-m";
-    primaryFile = "Qwen3-32B-Q5_K_M.gguf";
+  # Single smart model — Qwen3.6-27B Dense
+  # All 27B params active every token, UD-Q5_K_XL ~18.7 GiB. Supersedes
+  # Qwen3-32B (this repo's previous pick for this slot): newer (April 2026),
+  # smaller, and per web research (SWE-bench Verified 77.2, ties Sonnet 4.6
+  # on the AA Agentic Index) — those specific numbers are unverified
+  # secondhand claims, not re-run here; treat as "worth trying," not proven,
+  # until re-benchmarked the way docs/local-model-capabilities.md did for the
+  # 0.5B/3B comparison. Verified to exist on HF with this exact quant + hash
+  # 2026-09-22.
+  qwen3-6-27b-ud-q5-k-xl = mkGgufModel {
+    pname = "qwen3.6-27b-ud-q5-k-xl";
+    primaryFile = "Qwen3.6-27B-UD-Q5_K_XL.gguf";
     files = [
       {
-        name = "Qwen3-32B-Q5_K_M.gguf";
-        url = "https://huggingface.co/unsloth/Qwen3-32B-GGUF/resolve/main/Qwen3-32B-Q5_K_M.gguf";
-        hash = "sha256-vJa6a8XtfXhUDSyn/mYjTHG4IUgElsasjRLYxAZClEY=";
+        name = "Qwen3.6-27B-UD-Q5_K_XL.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.6-27B-GGUF/resolve/main/Qwen3.6-27B-UD-Q5_K_XL.gguf";
+        hash = "sha256-rDEKvyiVqjlxIbrWwL6JRmr0Hw8WBqIcETGxEO6xnQ4=";
       }
     ];
   };
@@ -110,7 +116,10 @@ in
   };
 
   # Speculative decoding draft model — Qwen3-0.6B
-  # Same tokenizer as Qwen3-32B, Q8_0 ~0.6 GiB
+  # Q8_0 ~0.6 GiB. Was picked to share Qwen3-32B's tokenizer for speculative
+  # decoding; not currently wired to any instance (no --model-draft flag
+  # anywhere), and not confirmed tokenizer-compatible with the Qwen3.6-27B
+  # dense pick that replaced Qwen3-32B above — re-check before wiring it up.
   qwen3-0-6b-q8-0 = mkGgufModel {
     pname = "qwen3-0.6b-q8-0";
     primaryFile = "Qwen3-0.6B-Q8_0.gguf";
