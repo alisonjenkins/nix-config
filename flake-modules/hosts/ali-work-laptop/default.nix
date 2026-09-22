@@ -155,8 +155,11 @@ in {
             # All 27B params active every token. Supersedes Qwen3-32B (see
             # pkgs/llama-models for why) as of 2026-09-22.
             # Speculative decoding via Qwen3-0.6B draft is NOT wired below
-            # (no --model-draft flag) despite the aspiration in earlier
-            # comments here — and qwen3-0-6b-q8-0's tokenizer was picked to
+            # (this instance passes no --model-draft flag; the modules/llama-cpp
+            # module has no option for one either — that flag is only used by
+            # modules/llama-swap/darwin.nix's config, a different module)
+            # despite the aspiration in earlier comments here — and
+            # qwen3-0-6b-q8-0's tokenizer was picked to
             # match Qwen3-32B, not confirmed compatible with Qwen3.6's
             # tokenizer, so don't wire it without re-checking that first.
             # Flash attention + q4_0 KV cache for speed

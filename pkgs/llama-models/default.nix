@@ -175,9 +175,11 @@ in
 
   # Speculative decoding draft model — Qwen3-0.6B
   # Q8_0 ~0.6 GiB. Was picked to share Qwen3-32B's tokenizer for speculative
-  # decoding; not currently wired to any instance (no --model-draft flag
-  # anywhere), and not confirmed tokenizer-compatible with the Qwen3.6-27B
-  # dense pick that replaced Qwen3-32B above — re-check before wiring it up.
+  # decoding; not currently wired to any configured modules.llama-cpp instance
+  # (that module has no --model-draft option — unlike modules/llama-swap/darwin.nix,
+  # a different module, which does pass one), and not confirmed
+  # tokenizer-compatible with the Qwen3.6-27B dense pick that replaced
+  # Qwen3-32B above — re-check before wiring it up.
   qwen3-0-6b-q8-0 = mkGgufModel {
     pname = "qwen3-0.6b-q8-0";
     primaryFile = "Qwen3-0.6B-Q8_0.gguf";
