@@ -112,6 +112,12 @@ menu:
       - key: "b"
         desc: Balder's Gate 3
         cmd: steam steam://rungameid/1086940
+      - key: "g"
+        desc: Golf With Your Friends
+        cmd: steam steam://rungameid/431240
+      - key: "h"
+        desc: Helldivers 2
+        cmd: steam steam://rungameid/553850
       - key: "m"
         desc: Minecraft
         submenu:
@@ -130,3 +136,6 @@ menu:
       - key: "r"
         desc: Risk of Rain 2
         cmd: steam steam://rungameid/632360
+      - key: "v"
+        desc: Valheim
+        cmd: steam steam://rungameid/892970
