@@ -45,7 +45,11 @@ let
   # a regenerate picks up 0.8.2 (or newer) on its own.
   #
   # Gated on gameVersion so a future bump doesn't silently keep installing
-  # a DLL built for a game version it was never verified against.
+  # a DLL built for a game version it was never verified against, and on
+  # BetterSongSearch still being wanted so dropping it from
+  # wanted-mods.json actually removes it instead of this override
+  # resurrecting it.
+  betterSongSearchWanted = lib.any (m: m.name == "BetterSongSearch") mods;
   betterSongSearchOverride = assert lib.assertMsg (gameVersion == "1.40.8")
     "pkgs/beatsaber-mods: betterSongSearchOverride is pinned to a DLL built for 1.40.8 -- check BeatMods coverage for ${gameVersion} and drop or update this override";
   fetchurl {
@@ -73,8 +77,10 @@ stdenvNoCC.mkDerivation {
       echo "installing ${m.name} ${m.version}"
       unzip -o -q ${m.zip} -d $out
     '') mods)}
-    mkdir -p "$out/Plugins"
-    unzip -o -q ${betterSongSearchOverride} -d "$out/Plugins"
+    ${lib.optionalString betterSongSearchWanted ''
+      mkdir -p "$out/Plugins"
+      unzip -o -q ${betterSongSearchOverride} -d "$out/Plugins"
+    ''}
     runHook postInstall
   '';
 
