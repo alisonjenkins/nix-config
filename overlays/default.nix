@@ -253,6 +253,24 @@ in
       })
     ];
 
+    # obs-do 0.1.13 only exposes toggle-stream, so a which-key "start
+    # streaming" binding has no way to avoid toggling the wrong direction
+    # if a stream is already live. Pull in start-stream/stop-stream from
+    # our fork's PR (https://github.com/jonhoo/obs-do/pull/81) — they
+    # check StreamStatus.active before mutating. Cherry-picked onto the
+    # v0.1.13 tag rather than upstream main: main's Cargo.lock has since
+    # drifted from the release nixpkgs pins, which mismatches nixpkgs'
+    # cargoHash for the vendor derivation. Drop this override once the
+    # PR merges upstream and nixpkgs picks up a release containing it.
+    obs-do = prev.obs-do.overrideAttrs (_old: {
+      src = final.fetchFromGitHub {
+        owner = "alisonjenkins";
+        repo = "obs-do";
+        rev = "af0cbee609a8766d9e8debea976c0bc8c044bdb1";
+        hash = "sha256-kIrDhpDBZnNtI8Wz9x6yXPacGrCEuyTJA68nytQGwVY=";
+      };
+    });
+
     # Re-sign fish after build on Darwin.
     # Nix's fixup phase runs install_name_tool to rewrite library paths, which
     # invalidates the original code signature. Corporate AV tools then SIGKILL
