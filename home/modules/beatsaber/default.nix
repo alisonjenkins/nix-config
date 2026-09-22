@@ -66,7 +66,12 @@ let
     # a `shopt` here would otherwise leak into everything that runs after
     # it. Save and restore the exact prior state (shopt -p, not a bare
     # shopt -u: nullglob might already have been on for some other reason).
-    beatsaber_nullglob_state="$(shopt -p nullglob)"
+    # `shopt -p nullglob` exits 1 when nullglob is OFF (its normal state
+    # here), and `var=$(cmd)` propagates that under the activation script's
+    # `set -e` -- which killed every switch before the copy loop even ran.
+    # The `|| true` keeps the printed restore string while swallowing the
+    # status; the string is correct regardless of the exit code.
+    beatsaber_nullglob_state="$(shopt -p nullglob || true)"
     shopt -s nullglob
     patterns=(
     ${lib.concatMapStringsSep "\n" (root:
