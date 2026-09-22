@@ -31,6 +31,19 @@
 let
   generated = import ./beatsaber-mods.nix { inherit fetchurl; };
   inherit (generated) gameVersion mods;
+
+  # BeatMods still serves BetterSongSearch 0.8.1 as "verified" for
+  # gameVersion=1.40.8, but 0.8.1 only targets 1.39.1+/1.29.1 — its Harmony
+  # patches silently no-op the in-game search UI on 1.40.8 (no exception,
+  # the search tab just never appears). Upstream's fix is 0.8.2, built with
+  # a dedicated DLL for the 1.39.1-1.40.8 range, which BeatMods hasn't
+  # re-verified for 1.40.8 yet, so generate-mods.py can't see it. Drop this
+  # override once a regenerate picks up 0.8.2 (or newer) on its own.
+  betterSongSearchOverride = fetchurl {
+    url = "https://github.com/kinsi55/BeatSaber_BetterSongSearch/releases/download/v0.8.2/BetterSongSearch.dll";
+    name = "BetterSongSearch-0.8.2.dll";
+    sha256 = "09ae4a8d1bca7bfa46c0002d889581f279541c1c913fbca83e8037b7a4e37685";
+  };
 in
 stdenvNoCC.mkDerivation {
   pname = "beatsaber-mods";
@@ -51,6 +64,7 @@ stdenvNoCC.mkDerivation {
       echo "installing ${m.name} ${m.version}"
       unzip -o -q ${m.zip} -d $out
     '') mods)}
+    install -m444 ${betterSongSearchOverride} "$out/Plugins/BetterSongSearch.dll"
     runHook postInstall
   '';
 
