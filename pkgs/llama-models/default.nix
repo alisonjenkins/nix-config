@@ -51,8 +51,31 @@ in
     ];
   };
 
-  # Workhorse / interactive coding — Qwen3-Coder 30B-A3B MoE
-  # 30B total, 3B active, Q4_K_S ~16.3 GiB, ~98 tok/s on Strix Halo
+  # Workhorse / interactive coding — Qwen3-Coder-Next, 80B total/3B active MoE
+  # UD-Q4_K_XL ~46.2 GiB. Supersedes Qwen3-Coder-30B-A3B (kept below as the
+  # lighter fallback for hardware that can't fit ~46 GiB): same 3B active
+  # params so similar tok/s, but per unsloth/Qwen docs claims quality closer
+  # to models with 10-20x the active params. Verified to exist on HF with
+  # this exact quant + hash 2026-09-22; the "closer to bigger models" framing
+  # is vendor/web-research claims, not independently re-benchmarked here —
+  # re-run the docs/local-model-capabilities.md probes before trusting it for
+  # judgment-shaped work.
+  qwen3-coder-next-ud-q4-k-xl = mkGgufModel {
+    pname = "qwen3-coder-next-ud-q4-k-xl";
+    primaryFile = "Qwen3-Coder-Next-UD-Q4_K_XL.gguf";
+    files = [
+      {
+        name = "Qwen3-Coder-Next-UD-Q4_K_XL.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/resolve/main/Qwen3-Coder-Next-UD-Q4_K_XL.gguf";
+        hash = "sha256-S7k/CgIh70/5Y8qQlN9inI39+rw7T92FwaLkwGJPzjY=";
+      }
+    ];
+  };
+
+  # Lighter workhorse fallback — Qwen3-Coder 30B-A3B MoE
+  # 30B total, 3B active, Q4_K_S ~16.3 GiB, ~98 tok/s on Strix Halo. Use this
+  # instead of qwen3-coder-next-ud-q4-k-xl on hardware that can't spare
+  # ~46 GiB (e.g. the RX 9070 XT's 16 GiB VRAM on ali-desktop).
   qwen3-coder-30b-a3b-q4-k-s = mkGgufModel {
     pname = "qwen3-coder-30b-a3b-q4-k-s";
     primaryFile = "Qwen3-Coder-30B-A3B-Instruct-Q4_K_S.gguf";
