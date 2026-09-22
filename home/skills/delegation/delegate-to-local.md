@@ -70,6 +70,14 @@ finetune. Re-check current model releases and benchmarks periodically; this
 space moves fast enough that any specific model/quant recommendation here
 would go stale within months.
 
+This repo's own current picks (declarative GGUF pins with real HF hashes,
+not just an illustration) live in `pkgs/llama-models` — a "single smart
+model" and "workhorse coder" pick sized for a single GPU/APU, plus a bigger
+MoE "orchestrator" and a "fast agent" MoE for hardware with more headroom.
+Last refreshed 2026-09-22; check its per-entry comments (and re-run
+`docs/local-model-capabilities.md`'s safety/injection probes on any new
+candidate) before trusting a pin as still current.
+
 ## Profiles
 
 A profile names a runtime + model + launch settings. Declared in a TOML file
