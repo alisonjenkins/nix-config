@@ -294,12 +294,6 @@ in {
         nix.settings.cores = 16;
         nix.settings.max-jobs = 8;
 
-        # Steam's Wayland host capture for Remote Play is opt-in — the client
-        # does not detect Wayland and enable the PipeWire capture path on its
-        # own. Without this, Remote Play connects and carries audio and input
-        # while the video stays black.
-        modules.desktop.gaming.steamExtraFlags = [ "-pipewire" ];
-
         modules.locale.enable = true;
         modules.docker.enable = true;
         modules.docker.enableQemuBinfmt = true;
@@ -513,6 +507,11 @@ in {
             dxvkHud = "0";  # Disable HUD for performance (use "fps" or "compiler" for debugging)
             enableLargeAddressAware = true;
             shaderCacheBasePath = "/media/storage1/.shader-cache";  # Different physical disk (nvme2n1 xfs) from game install (nvme3n1 btrfs 95% full) — avoids I/O queue contention causing texture-stream stutter
+            # Steam's Wayland host capture for Remote Play is opt-in — the
+            # client does not detect Wayland and enable the PipeWire capture
+            # path on its own. Without this, Remote Play connects and carries
+            # audio and input while the video stays black.
+            steamExtraFlags = [ "-pipewire" ];
           };
         };
 
