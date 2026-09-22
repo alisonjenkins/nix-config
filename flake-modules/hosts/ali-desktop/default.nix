@@ -110,6 +110,9 @@ in {
 
           home.packages = [
             pkgs.lmstudio
+            # Required by home/skills/delegation/scripts/switch-local-profile.sh
+            # and list-local-profiles.sh (mikefarah/yq, parses profiles.toml).
+            pkgs.yq-go
             # nixpkgs' plain llama-cpp is CPU-only — this GPU (RX 9070, RDNA4)
             # needs the Vulkan override to actually offload layers via
             # --n-gpu-layers. Verified live: this exact override is cached on
