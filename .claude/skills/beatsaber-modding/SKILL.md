@@ -30,8 +30,8 @@ Two pieces:
 ## Adding or removing a mod
 
 1. Browse <https://beatmods.com/mods> for the pinned game version (see
-   `gameVersion` default in `pkgs/beatsaber-mods/default.nix`) and note the
-   mod's exact `name` as BeatMods lists it.
+   `gameVersion` in `pkgs/beatsaber-mods/beatsaber-mods.nix`, generated —
+   not hand-edited) and note the mod's exact `name` as BeatMods lists it.
 2. Edit `pkgs/beatsaber-mods/wanted-mods.json` — this is the **top-level**
    wanted list only; do not add a mod's dependencies by hand, the generator
    resolves those.
@@ -40,9 +40,10 @@ Two pieces:
    cd pkgs/beatsaber-mods
    python3 generate-mods.py <game-version> wanted-mods.json beatsaber-mods.nix
    ```
-   `<game-version>` must match `default.nix`'s `gameVersion` default (or pass
-   `.override { gameVersion = ...; }` when building). Needs network; not run
-   inside the Nix sandbox, same reason `generate-arkana-mods.sh` isn't (see
+   `<game-version>` becomes the new `gameVersion` baked into the regenerated
+   `beatsaber-mods.nix` — there's no separate override to keep in sync, the
+   package reads it straight from that file. Needs network; not run inside
+   the Nix sandbox, same reason `generate-arkana-mods.sh` isn't (see
    `minecraft-modpack-packaging` skill).
 4. Rebuild and check every mod you expect is actually in the output:
    ```bash
@@ -74,8 +75,9 @@ their authors last verified against, not the current one. Before bumping:
 2. Confirm the version is actually installable — Steam only ships specific
    pinned beta branches (Beat Saber → Properties → Betas), not every point
    release. Check the branch list matches before committing to a version.
-3. Update `gameVersion`'s default in `pkgs/beatsaber-mods/default.nix`,
-   regenerate (step 3 above), rebuild, commit.
+3. Regenerate against the new version (step 3 above — this is what actually
+   updates `gameVersion`, in the generated `beatsaber-mods.nix`), rebuild,
+   commit.
 4. Switch the Steam beta branch by hand — this repo doesn't (and can't)
    drive Steam's branch selection.
 
