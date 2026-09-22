@@ -65,24 +65,11 @@
       set -euo pipefail
       if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
         ${pkgs.obs-studio}/bin/obs --disable-shutdown-check &
-        for _ in $(seq 1 30); do
-          ${pkgs.procps}/bin/pgrep -x obs >/dev/null && break
-          sleep 0.5
-        done
-        if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
-          echo "obs-start-stream: OBS did not start within 15s" >&2
-          exit 1
-        fi
       fi
-
-      # obs-websocket may not be up yet right after the OBS process
-      # appears, so retry with backoff instead of a fixed sleep.
-      for _ in $(seq 1 20); do
-        ${pkgs.obs-do}/bin/obs-do start-stream && exit 0
-        sleep 1
-      done
-      echo "obs-start-stream: obs-do start-stream did not succeed within 20s" >&2
-      exit 1
+      # --wait-for-obs retries the websocket connection with backoff
+      # instead of us polling for the OBS process and then guessing
+      # how long its websocket server takes to come up.
+      ${pkgs.obs-do}/bin/obs-do --wait-for-obs 30 start-stream
     '')
     (pkgs.writeShellScriptBin ''obs-stop-stream'' ''
       ${pkgs.obs-do}/bin/obs-do stop-stream
