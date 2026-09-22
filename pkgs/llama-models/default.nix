@@ -138,6 +138,41 @@ in
     ];
   };
 
+  # ali-desktop delegate-to-local "fast" tier — Qwen3-8B Dense
+  # Q6_K ~6.26 GiB. Sized for the RX 9070 XT's 16 GiB VRAM alongside the
+  # "quality" tier below (only one loaded at a time — see
+  # home/skills/delegation/delegate-to-local.md), leaving plenty of headroom
+  # for context. Verified to exist on HF with this exact quant + hash
+  # 2026-09-22.
+  qwen3-8b-q6-k = mkGgufModel {
+    pname = "qwen3-8b-q6-k";
+    primaryFile = "Qwen3-8B-Q6_K.gguf";
+    files = [
+      {
+        name = "Qwen3-8B-Q6_K.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q6_K.gguf";
+        hash = "sha256-Dq7HGP3qsPQp36DsSBwJA4iBH15jeF3bWCKS9O88OCc=";
+      }
+    ];
+  };
+
+  # ali-desktop delegate-to-local "quality" tier — Qwen3.6-27B Dense
+  # UD-Q3_K_XL ~13.5 GiB. The largest Qwen3.6-27B quant that leaves usable
+  # headroom (~2.5 GiB) for KV cache/context on a 16 GiB card — Q4_K_S/M
+  # (~14.7-15.7 GiB) leaves too little. Verified to exist on HF with this
+  # exact quant + hash 2026-09-22.
+  qwen3-6-27b-ud-q3-k-xl = mkGgufModel {
+    pname = "qwen3.6-27b-ud-q3-k-xl";
+    primaryFile = "Qwen3.6-27B-UD-Q3_K_XL.gguf";
+    files = [
+      {
+        name = "Qwen3.6-27B-UD-Q3_K_XL.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.6-27B-GGUF/resolve/main/Qwen3.6-27B-UD-Q3_K_XL.gguf";
+        hash = "sha256-z/Si2mtTUKU/V9xveYUW4BlYFvkMGWw/e9P9VVVmMt0=";
+      }
+    ];
+  };
+
   # Speculative decoding draft model — Qwen3-0.6B
   # Q8_0 ~0.6 GiB. Was picked to share Qwen3-32B's tokenizer for speculative
   # decoding; not currently wired to any instance (no --model-draft flag
