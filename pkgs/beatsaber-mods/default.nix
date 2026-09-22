@@ -35,14 +35,18 @@ let
   # BeatMods still serves BetterSongSearch 0.8.1 as "verified" for
   # gameVersion=1.40.8, but 0.8.1 only targets 1.39.1+/1.29.1 — its Harmony
   # patches silently no-op the in-game search UI on 1.40.8 (no exception,
-  # the search tab just never appears). Upstream's fix is 0.8.2, built with
-  # a dedicated DLL for the 1.39.1-1.40.8 range, which BeatMods hasn't
-  # re-verified for 1.40.8 yet, so generate-mods.py can't see it. Drop this
-  # override once a regenerate picks up 0.8.2 (or newer) on its own.
+  # the search tab just never appears). Upstream's fix is 0.8.2, which
+  # ships two DLLs of the same name under one release: a top-level
+  # BetterSongSearch.dll built for 1.42.0+ (crashes with a
+  # TypeLoadException on 1.40.8), and a second one packed inside
+  # BetterSongSearch_for_1.39.1_to_1.40.8.zip built for this game's range
+  # — that's the one this needs. BeatMods hasn't re-verified 0.8.2 for
+  # 1.40.8 yet, so generate-mods.py can't see it. Drop this override once
+  # a regenerate picks up 0.8.2 (or newer) on its own.
   betterSongSearchOverride = fetchurl {
-    url = "https://github.com/kinsi55/BeatSaber_BetterSongSearch/releases/download/v0.8.2/BetterSongSearch.dll";
-    name = "BetterSongSearch-0.8.2.dll";
-    sha256 = "09ae4a8d1bca7bfa46c0002d889581f279541c1c913fbca83e8037b7a4e37685";
+    url = "https://github.com/kinsi55/BeatSaber_BetterSongSearch/releases/download/v0.8.2/BetterSongSearch_for_1.39.1_to_1.40.8.zip";
+    name = "BetterSongSearch-0.8.2-for-1.39.1-to-1.40.8.zip";
+    sha256 = "ea3e67505988a426791b6919f6448eed2bd34ef41ca1c6bc304fafd0e6b7b35f";
   };
 in
 stdenvNoCC.mkDerivation {
@@ -64,7 +68,7 @@ stdenvNoCC.mkDerivation {
       echo "installing ${m.name} ${m.version}"
       unzip -o -q ${m.zip} -d $out
     '') mods)}
-    install -m444 ${betterSongSearchOverride} "$out/Plugins/BetterSongSearch.dll"
+    unzip -o -q ${betterSongSearchOverride} -d "$out/Plugins"
     runHook postInstall
   '';
 
