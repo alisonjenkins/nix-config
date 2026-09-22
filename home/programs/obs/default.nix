@@ -65,7 +65,14 @@
       set -euo pipefail
       if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
         ${pkgs.obs-studio}/bin/obs --disable-shutdown-check &
-        until ${pkgs.procps}/bin/pgrep -x obs >/dev/null; do sleep 0.5; done
+        for _ in $(seq 1 30); do
+          ${pkgs.procps}/bin/pgrep -x obs >/dev/null && break
+          sleep 0.5
+        done
+        if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
+          echo "obs-start-stream: OBS did not start within 15s" >&2
+          exit 1
+        fi
         sleep 3
       fi
       ${pkgs.obs-do}/bin/obs-do start-stream
