@@ -27,7 +27,7 @@
 # gameVersion, add its name to wanted-mods.json, then re-run:
 #   python3 generate-mods.py <game-version> wanted-mods.json beatsaber-mods.nix
 # and commit the regenerated beatsaber-mods.nix.
-{ stdenvNoCC, fetchurl, unzip }:
+{ lib, stdenvNoCC, fetchurl, unzip }:
 let
   generated = import ./beatsaber-mods.nix { inherit fetchurl; };
   inherit (generated) gameVersion mods;
@@ -43,7 +43,12 @@ let
   # — that's the one this needs. BeatMods hasn't re-verified 0.8.2 for
   # 1.40.8 yet, so generate-mods.py can't see it. Drop this override once
   # a regenerate picks up 0.8.2 (or newer) on its own.
-  betterSongSearchOverride = fetchurl {
+  #
+  # Gated on gameVersion so a future bump doesn't silently keep installing
+  # a DLL built for a game version it was never verified against.
+  betterSongSearchOverride = assert lib.assertMsg (gameVersion == "1.40.8")
+    "pkgs/beatsaber-mods: betterSongSearchOverride is pinned to a DLL built for 1.40.8 -- check BeatMods coverage for ${gameVersion} and drop or update this override";
+  fetchurl {
     url = "https://github.com/kinsi55/BeatSaber_BetterSongSearch/releases/download/v0.8.2/BetterSongSearch_for_1.39.1_to_1.40.8.zip";
     name = "BetterSongSearch-0.8.2-for-1.39.1-to-1.40.8.zip";
     sha256 = "ea3e67505988a426791b6919f6448eed2bd34ef41ca1c6bc304fafd0e6b7b35f";
@@ -68,6 +73,7 @@ stdenvNoCC.mkDerivation {
       echo "installing ${m.name} ${m.version}"
       unzip -o -q ${m.zip} -d $out
     '') mods)}
+    mkdir -p "$out/Plugins"
     unzip -o -q ${betterSongSearchOverride} -d "$out/Plugins"
     runHook postInstall
   '';
