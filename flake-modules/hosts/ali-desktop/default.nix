@@ -886,6 +886,37 @@ in {
           };
         };
 
+        # PPD's "balanced" profile lets amd_pstate clock down between bursts;
+        # under a concurrent game + SteamVR/Steam Link video+audio encode load
+        # that's enough scheduling latency to starve the audio jitter buffer,
+        # heard as crackle on the headset (repeated CAudioJitterBuffer
+        # fade-out/fade-in in driver_vrlink.txt). Rather than running
+        # "performance" at all times on a 24/7 machine, poll for vrserver and
+        # only hold performance while a VR session is actually active.
+        systemd.services.steamvr-power-profile = {
+          description = "Bump power-profiles-daemon to performance while SteamVR is running";
+          after = [ "power-profiles-daemon.service" ];
+          requires = [ "power-profiles-daemon.service" ];
+          serviceConfig.Type = "oneshot";
+          script = ''
+            target=balanced
+            if ${pkgs.procps}/bin/pgrep -x vrserver >/dev/null; then
+              target=performance
+            fi
+            current="$(${pkgs.power-profiles-daemon}/bin/powerprofilesctl get)"
+            [ "$current" = "$target" ] || ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set "$target"
+          '';
+        };
+
+        systemd.timers.steamvr-power-profile = {
+          description = "Poll for SteamVR to switch power-profiles-daemon performance/balanced";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "15s";
+            OnUnitActiveSec = "5s";
+          };
+        };
+
         programs = {
           java = {
             enable = true;
