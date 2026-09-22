@@ -73,9 +73,16 @@
           echo "obs-start-stream: OBS did not start within 15s" >&2
           exit 1
         fi
-        sleep 3
       fi
-      ${pkgs.obs-do}/bin/obs-do start-stream
+
+      # obs-websocket may not be up yet right after the OBS process
+      # appears, so retry with backoff instead of a fixed sleep.
+      for _ in $(seq 1 20); do
+        ${pkgs.obs-do}/bin/obs-do start-stream && exit 0
+        sleep 1
+      done
+      echo "obs-start-stream: obs-do start-stream did not succeed within 20s" >&2
+      exit 1
     '')
     (pkgs.writeShellScriptBin ''obs-stop-stream'' ''
       ${pkgs.obs-do}/bin/obs-do stop-stream
