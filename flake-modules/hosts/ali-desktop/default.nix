@@ -823,6 +823,7 @@ in {
 
           firewall = {
             allowedTCPPorts = [
+              22 # SSH over tailnet
               # 29087
             ];
           };
