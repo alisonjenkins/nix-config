@@ -1,0 +1,126 @@
+diff --git a/src/dbus/freedesktop_login1.rs b/src/dbus/freedesktop_login1.rs
+--- a/src/dbus/freedesktop_login1.rs
++++ b/src/dbus/freedesktop_login1.rs
+@@ -4,6 +4,7 @@
+
+ pub enum Login1ToNiri {
+     LidClosedChanged(bool),
++    SessionUnlockRequested,
+ }
+
+ pub fn start(
+@@ -12,6 +13,7 @@
+     let conn = zbus::blocking::Connection::system()?;
+
+     let async_conn = conn.inner().clone();
++    let unlock_to_niri = to_niri.clone();
+     let future = async move {
+         let proxy = fdo::PropertiesProxy::new(
+             &async_conn,
+@@ -101,5 +103,80 @@
+         .spawn(future, "monitor login1 property changes");
+     task.detach();
+
++    // logind's own idea of "unlocked" (loginctl unlock-session, or a
++    // polkit-driven session switch) is otherwise a dead end here: niri only
++    // ever writes LockedHint on logind (see update_locked_hint), it never
++    // reads the Unlock signal logind emits back. Without this, a session
++    // niri considers locked stays that way regardless of what logind thinks,
++    // because the only path out is the ext-session-lock-v1 client (swaylock)
++    // itself calling unlock_and_destroy after a successful local PAM check.
++    let unlock_conn = conn.inner().clone();
++    let unlock_future = async move {
++        let Ok(session_id) = std::env::var("XDG_SESSION_ID") else {
++            warn!("env var 'XDG_SESSION_ID' is unset; logind Unlock signal won't be watched");
++            return;
++        };
++
++        let manager = zbus::Proxy::new(
++            &unlock_conn,
++            "org.freedesktop.login1",
++            "/org/freedesktop/login1",
++            "org.freedesktop.login1.Manager",
++        )
++        .await;
++        let manager = match manager {
++            Ok(x) => x,
++            Err(err) => {
++                warn!("error creating login1 Manager proxy: {err:?}");
++                return;
++            }
++        };
++
++        let session_path: zbus::zvariant::OwnedObjectPath =
++            match manager.call("GetSession", &(session_id.as_str())).await {
++                Ok(x) => x,
++                Err(err) => {
++                    warn!("error calling GetSession({session_id}): {err:?}");
++                    return;
++                }
++            };
++
++        let session = zbus::Proxy::new(
++            &unlock_conn,
++            "org.freedesktop.login1",
++            session_path,
++            "org.freedesktop.login1.Session",
++        )
++        .await;
++        let session = match session {
++            Ok(x) => x,
++            Err(err) => {
++                warn!("error creating login1 Session proxy: {err:?}");
++                return;
++            }
++        };
++
++        let mut unlock_signal = match session.receive_signal("Unlock").await {
++            Ok(x) => x,
++            Err(err) => {
++                warn!("error subscribing to login1 Session Unlock: {err:?}");
++                return;
++            }
++        };
++
++        while unlock_signal.next().await.is_some() {
++            trace!("login1 session Unlock signal received");
++            if let Err(err) = unlock_to_niri.send(Login1ToNiri::SessionUnlockRequested) {
++                warn!("error sending session unlock request to niri: {err:?}");
++                return;
++            }
++        }
++    };
++
++    conn.inner()
++        .executor()
++        .spawn(unlock_future, "watch login1 session Unlock signal")
++        .detach();
++
+     Ok(conn)
+ }
+diff --git a/src/niri.rs b/src/niri.rs
+--- a/src/niri.rs
++++ b/src/niri.rs
+@@ -2328,10 +2328,18 @@
+
+     #[cfg(feature = "dbus")]
+     pub fn on_login1_msg(&mut self, msg: Login1ToNiri) {
+-        let Login1ToNiri::LidClosedChanged(is_closed) = msg;
+-
+-        trace!("login1 lid {}", if is_closed { "closed" } else { "opened" });
+-        self.set_lid_closed(is_closed);
++        match msg {
++            Login1ToNiri::LidClosedChanged(is_closed) => {
++                trace!("login1 lid {}", if is_closed { "closed" } else { "opened" });
++                self.set_lid_closed(is_closed);
++            }
++            Login1ToNiri::SessionUnlockRequested => {
++                trace!("login1 requested session unlock");
++                self.niri.unlock();
++                self.niri.activate_monitors(&mut self.backend);
++                self.niri.notify_activity();
++            }
++        }
+     }
+
+     #[cfg(feature = "dbus")]

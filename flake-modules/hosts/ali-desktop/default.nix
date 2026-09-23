@@ -946,6 +946,12 @@ in {
             patchedNiri = upstreamNiri.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
                 "${patchesDir}/niri-virtual-outputs.patch"
+                # Independent of virtual outputs: makes niri react to
+                # logind's own Unlock signal (loginctl unlock-session), which
+                # it otherwise only ever writes (LockedHint) and never reads.
+                # See patches/niri-remote-unlock.patch for the mechanism and
+                # why the ext-session-lock-v1 client itself couldn't be used.
+                "${patchesDir}/niri-remote-unlock.patch"
               ];
             });
           in {
