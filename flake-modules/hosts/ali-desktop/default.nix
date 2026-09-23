@@ -1044,6 +1044,21 @@ in {
                 STEAM_DISPLAY_FILTER_LOG =
                   "${config.users.users.${username}.home}/.local/state/stream-mode/filter.log";
 
+                # extest's absolute-axis calibration otherwise takes the
+                # largest connected output, which is always DP-2, not the
+                # smaller client-sized virtual output Remote Play actually
+                # streams — see patches/extest-remote-play-relative-motion.patch.
+                # Steam doesn't communicate which output it's streaming to
+                # anywhere extest could read: Remote Play's input path never
+                # touches xdg-desktop-portal's RemoteDesktop interface (it
+                # goes straight through XTEST/uinput), so there is no portal
+                # or Steam-side signal to consume here at all — this is the
+                # only output the config ever declares for Remote Play to
+                # target, taken from its own declaration rather than a fresh
+                # literal so a rename only has to happen in one place.
+                EXTEST_TARGET_OUTPUT = lib.head (lib.attrNames
+                  config.home-manager.users.${username}.custom.niri.virtualOutputs);
+
                 # Both ABIs spelled out rather than one $LIB path. Steam runs
                 # steamwebhelper inside a pressure-vessel container, and
                 # pressure-vessel resolves $LIB from the 32-bit client that

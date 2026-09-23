@@ -39,3 +39,104 @@ diff --git a/src/lib.rs b/src/lib.rs
      dev.emit(&events).unwrap();
      1
  }
+diff --git a/src/wayland.rs b/src/wayland.rs
+--- a/src/wayland.rs
++++ b/src/wayland.rs
+@@ -1,3 +1,6 @@
++use std::collections::HashMap;
++
++use wayland_client::backend::ObjectId;
+ use wayland_client::{
+     delegate_noop,
+     protocol::{wl_output, wl_registry},
+@@ -18,10 +21,21 @@
+ struct OutputData {
+     wl_outputs: Vec<wl_output::WlOutput>,
+     output_man: Option<ZxdgOutputManagerV1>,
+-    max_size: DisplaySize
++    output_names: HashMap<ObjectId, String>,
++    max_size: DisplaySize,
++    target_name: Option<String>,
++    target_size: Option<DisplaySize>,
+ }
+
+-/// Returns the largest dimensions of the detected monitors
++/// Returns the dimensions of the output named by EXTEST_TARGET_OUTPUT, or
++/// the largest detected monitor when unset or not (yet) present.
++///
++/// Remote Play's host process starts before a client-sized virtual output
++/// it is meant to target exists, and that output is smaller than a real
++/// monitor even once it does, so the largest-output default always
++/// calibrates the absolute axis to the wrong one -- every position Steam
++/// sends, scaled against the advertised axis range, then lands on the real
++/// monitor libinput maps that range across instead of the intended output.
+ #[must_use]
+ pub fn get_axes_range() -> DisplaySize {
+     let conn = Connection::connect_to_env().unwrap();
+@@ -29,25 +43,28 @@
+     let mut queue = conn.new_event_queue();
+     let handle = queue.handle();
+     display.get_registry(&handle, ());
+-    let mut data = OutputData::default();
++    let mut data = OutputData {
++        target_name: std::env::var("EXTEST_TARGET_OUTPUT").ok(),
++        ..Default::default()
++    };
+     queue.roundtrip(&mut data).unwrap();
+
+     for output in data.wl_outputs.iter() {
+         data.output_man
+             .as_ref()
+             .unwrap()
+-            .get_xdg_output(output, &handle, ());
++            .get_xdg_output(output, &handle, output.id());
+     }
+     queue.roundtrip(&mut data).unwrap();
+-    data.max_size
++    data.target_size.unwrap_or(data.max_size)
+ }
+
+-impl Dispatch<zxdg_output_v1::ZxdgOutputV1, ()> for OutputData {
++impl Dispatch<zxdg_output_v1::ZxdgOutputV1, ObjectId> for OutputData {
+     fn event(
+         state: &mut Self,
+         _: &zxdg_output_v1::ZxdgOutputV1,
+         event: zxdg_output_v1::Event,
+-        _: &(),
++        output_id: &ObjectId,
+         _: &Connection,
+         _: &QueueHandle<OutputData>,
+     ) {
+@@ -55,11 +72,31 @@
+             println!("detected display with width {width} and height {height}");
+             state.max_size.width = i32::max(width, state.max_size.width);
+             state.max_size.height = i32::max(height, state.max_size.height);
++
++            if state.target_name.is_some()
++                && state.target_name.as_deref() == state.output_names.get(output_id).map(String::as_str)
++            {
++                state.target_size = Some(DisplaySize { width, height });
++            }
++        }
++    }
++}
++
++impl Dispatch<wl_output::WlOutput, ()> for OutputData {
++    fn event(
++        state: &mut Self,
++        proxy: &wl_output::WlOutput,
++        event: wl_output::Event,
++        _: &(),
++        _: &Connection,
++        _: &QueueHandle<OutputData>,
++    ) {
++        if let wl_output::Event::Name { name } = event {
++            state.output_names.insert(proxy.id(), name);
+         }
+     }
+ }
+
+-delegate_noop!(OutputData: ignore wl_output::WlOutput);
+ delegate_noop!(OutputData: ZxdgOutputManagerV1);
+ impl Dispatch<wl_registry::WlRegistry, ()> for OutputData {
+     fn event(
