@@ -205,6 +205,12 @@ in {
           hostName = "home-kvm-hypervisor-1";
           networkmanager.enable = lib.mkForce false;
           useDHCP = false;
+
+          firewall = {
+            allowedTCPPorts = [
+              22 # SSH over tailnet
+            ];
+          };
         };
 
         programs = {
