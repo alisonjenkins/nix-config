@@ -40,6 +40,9 @@ in {
         console.keyMap = "us";
         networking.hostName = "home-k8s-server-1";
         networking.networkmanager.enable = true;
+        networking.firewall.allowedTCPPorts = [
+          22 # SSH over tailnet
+        ];
         programs.zsh.enable = true;
         services.logrotate.checkConfig = false;
         time.timeZone = "Europe/London";
