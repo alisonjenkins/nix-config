@@ -1056,8 +1056,14 @@ in {
                 # only output the config ever declares for Remote Play to
                 # target, taken from its own declaration rather than a fresh
                 # literal so a rename only has to happen in one place.
-                EXTEST_TARGET_OUTPUT = lib.head (lib.attrNames
-                  config.home-manager.users.${username}.custom.niri.virtualOutputs);
+                EXTEST_TARGET_OUTPUT =
+                  let
+                    virtualOutputNames = lib.attrNames
+                      config.home-manager.users.${username}.custom.niri.virtualOutputs;
+                  in
+                  assert lib.assertMsg (virtualOutputNames == [ "steam" ])
+                    "EXTEST_TARGET_OUTPUT assumes custom.niri.virtualOutputs declares exactly one output named \"steam\"; got ${builtins.toJSON virtualOutputNames}. Pick the intended one explicitly instead of silently taking the first.";
+                  lib.head virtualOutputNames;
 
                 # Both ABIs spelled out rather than one $LIB path. Steam runs
                 # steamwebhelper inside a pressure-vessel container, and
