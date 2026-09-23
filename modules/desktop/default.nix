@@ -1489,6 +1489,10 @@ in
 
       steam = mkIf cfg.gaming.enable {
         enable = true;
+        # allowedTCPPorts/allowedUDPPorts are global, so this covers LAN and
+        # tailnet alike. Auto-discovery is LAN broadcast only and doesn't
+        # cross Tailscale — add tailnet hosts by IP/MagicDNS name manually in
+        # the Steam Link app.
         remotePlay.openFirewall = true;
         dedicatedServer.openFirewall = true;
 
