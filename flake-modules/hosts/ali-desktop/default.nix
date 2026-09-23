@@ -153,9 +153,17 @@ in {
           # recorded home.
           custom.niri.workspaceOutputExclude = [ "game" ];
 
+          # DP-2's position is pinned so the output layout is the same every
+          # session. extest's Remote Play input mapping
+          # (patches/extest-remote-play-relative-motion.patch) follows live
+          # output geometry and stays correct if outputs move; the pin only
+          # keeps the coordinates it logs predictable when debugging. Comments
+          # stay out of the KDL string: KDL uses //, and a # fails the whole
+          # config.
           custom.niri.extraOutputs = ''
             output "DP-2" {
                 variable-refresh-rate
+                position x=0 y=0
             }
           '';
 
@@ -967,17 +975,21 @@ in {
                 "${patchesDir}/bubblewrap-allow-caps.patch"
               ];
             });
-            # Remote Play's mouse input arrives as XTestFakeMotionEvent
-            # (absolute) only, even once a game has grabbed the pointer for
-            # camera look -- Steam never calls the relative variant. See
-            # patches/extest-remote-play-relative-motion.patch for the
-            # mechanism (deriving a delta from consecutive absolute
-            # positions) and why it can't be fixed on the niri or gamescope
-            # side.
+            # Remote Play input reaches niri through extest. niri never maps
+            # an absolute libinput device to a specific output (its own
+            # backend_ext.rs FIXME), so positions are computed in global
+            # (all-outputs) coordinates. Desktop-mode streams send absolute
+            # positions only; game-mode streams send real relative motion.
+            # Why: docs/adr/0006-extest-remote-play-input.md and
+            # docs/adr/0007-remote-play-game-mode.md.
             patchedExtest = pkgs.pkgsi686Linux.extest.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
                 "${patchesDir}/extest-remote-play-relative-motion.patch"
               ];
+              # The patch's #[cfg(test)] unit tests are the only place the
+              # bounding-box math and target-offset math are checked without
+              # a live Wayland session; make `nix build` actually run them.
+              doCheck = true;
             });
           in {
             enable = true;

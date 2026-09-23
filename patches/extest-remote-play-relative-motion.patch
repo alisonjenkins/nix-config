@@ -6,14 +6,28 @@ diff --git a/src/lib.rs b/src/lib.rs
 
  mod wayland;
 -use wayland::get_axes_range;
-+use wayland::{get_axes_range, watch_target_output, DisplaySize};
++use wayland::{get_axes_range, watch_layout, DisplaySize};
 
  use evdev::{
      uinput::{VirtualDevice, VirtualDeviceBuilder},
-@@ -20,40 +20,64 @@
+@@ -11,6 +11,7 @@
+ };
+ use once_cell::sync::Lazy;
+ use std::ffi::{c_int, c_uint, c_ulong};
++use std::sync::atomic::{AtomicBool, Ordering};
+ use std::sync::Mutex;
+
+ // Opaque type
+@@ -20,42 +21,114 @@
      _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
  }
 
++/// Highest absolute value for an axis spanning `len` pixels. libinput scales
++/// by `(max - min + 1)`, so `len - 1` is what maps positions 1:1.
++fn axis_max(len: i32) -> i32 {
++    len.saturating_sub(1).max(0)
++}
++
 +fn build_device(size: DisplaySize) -> VirtualDevice {
 +    VirtualDeviceBuilder::new()
 +        .unwrap()
@@ -35,12 +49,12 @@ diff --git a/src/lib.rs b/src/lib.rs
 +        .unwrap()
 +        .with_absolute_axis(&UinputAbsSetup::new(
 +            AbsoluteAxisType::ABS_X,
-+            AbsInfo::new(0, 0, size.width, 0, 0, 1),
++            AbsInfo::new(0, 0, axis_max(size.width), 0, 0, 1),
 +        ))
 +        .unwrap()
 +        .with_absolute_axis(&UinputAbsSetup::new(
 +            AbsoluteAxisType::ABS_Y,
-+            AbsInfo::new(0, 0, size.height, 0, 0, 1),
++            AbsInfo::new(0, 0, axis_max(size.height), 0, 0, 1),
 +        ))
 +        .unwrap()
 +        .build()
@@ -48,14 +62,17 @@ diff --git a/src/lib.rs b/src/lib.rs
 +}
 +
 +// uinput has no way to change an absolute axis's declared range once the
-+// device exists, and the target output named by EXTEST_TARGET_OUTPUT may
-+// not exist yet, or may still be at a stale size, whenever this library
-+// first initializes -- steamwebhelper starts well before any Remote Play
-+// client connects and enables it. So the axis range can't just be
-+// calibrated once: a background thread keeps watching the target output's
-+// real geometry and rebuilds the whole device (dropping and recreating the
-+// uinput node) every time it actually changes, which self-corrects shortly
-+// after whatever the first, possibly-wrong calibration was.
++// device exists, and the layout named by EXTEST_TARGET_OUTPUT may not
++// exist yet, or may still be at a stale size, whenever this library first
++// initializes -- steamwebhelper starts well before any Remote Play client
++// connects and enables it. So the axis range can't just be calibrated
++// once: a background thread keeps watching every output's real geometry
++// and rebuilds the whole device (dropping and recreating the uinput node)
++// whenever the *bounding box of every output* actually changes size --
++// niri's absolute-pointer fallback always scales across that box
++// regardless of which output the device is meant for (see wayland.rs's
++// module doc on LayoutUpdate for why), so that box's size is what the
++// declared axis range has to track, not the target output's own size.
  static DEVICE: Lazy<Mutex<VirtualDevice>> = Lazy::new(|| {
 -    let size = get_axes_range();
 -    Mutex::new(
@@ -94,12 +111,35 @@ diff --git a/src/lib.rs b/src/lib.rs
 +
 +    if let Ok(target_name) = std::env::var("EXTEST_TARGET_OUTPUT") {
 +        std::thread::spawn(move || {
-+            watch_target_output(target_name, |size| {
-+                *DEVICE.lock().unwrap() = build_device(size);
-+                // The old device's last position was in the old coordinate
-+                // system; carrying it over would compute one huge, wrong
-+                // delta against the first position reported in the new one.
-+                *LAST_ABS_POS.lock().unwrap() = None;
++            let mut last_bbox_size: Option<DisplaySize> = None;
++            watch_layout(target_name, move |update| {
++                let bbox_size = DisplaySize {
++                    width: update.bbox.width,
++                    height: update.bbox.height,
++                };
++                if last_bbox_size != Some(bbox_size) {
++                    last_bbox_size = Some(bbox_size);
++                    *DEVICE.lock().unwrap() = build_device(bbox_size);
++                    // The old device's last position was in the old
++                    // coordinate system; carrying it over would compute
++                    // one huge, wrong delta against the first position
++                    // reported in the new one.
++                    *LAST_ABS_POS.lock().unwrap() = None;
++                }
++
++                // Only the axis *range* needs a device rebuild -- landing a
++                // position on the target output within that range is a
++                // plain offset+clamp applied per event, no uinput call
++                // involved, so it updates independently and immediately
++                // even when the bounding box itself hasn't changed size
++                // (the target output moving within an unchanged box, for
++                // instance).
++                *TARGET_MAPPING.lock().unwrap() = update.target.map(|target| TargetMapping {
++                    offset_x: target.x - update.bbox.x,
++                    offset_y: target.y - update.bbox.y,
++                    max_x: (target.width - 1).max(0),
++                    max_y: (target.height - 1).max(0),
++                });
 +            });
 +        });
 +    }
@@ -107,25 +147,85 @@ diff --git a/src/lib.rs b/src/lib.rs
 +    device
  });
 
++/// Where a target-local position (0..width, 0..height) lands inside the
++/// axis range `DEVICE`'s absolute axes are currently calibrated to --
++/// derived from the target output's position relative to the bounding box
++/// of every output, per `wayland.rs`'s `LayoutUpdate`. `None` when
++/// EXTEST_TARGET_OUTPUT is unset, or the target doesn't exist (yet):
++/// XTestFakeMotionEvent then emits positions unchanged, matching extest's
++/// original (non-Remote-Play) behaviour exactly.
++#[derive(Copy, Clone)]
++struct TargetMapping {
++    offset_x: i32,
++    offset_y: i32,
++    max_x: i32,
++    max_y: i32,
++}
++static TARGET_MAPPING: Mutex<Option<TargetMapping>> = Mutex::new(None);
++
  #[no_mangle]
-@@ -134,6 +158,14 @@
+ pub extern "C" fn XTestFakeKeyEvent(
+     _: *mut Display,
+@@ -118,6 +191,16 @@
      1
  }
 
-+// Steam's Remote Play client only ever calls XTestFakeMotionEvent (absolute),
-+// even for a game that has grabbed the pointer for camera look, which needs
-+// relative deltas to see any motion at all. XTestFakeRelativeMotionEvent
-+// above works fine -- Steam just never calls it over Remote Play. Deriving a
-+// delta from consecutive absolute positions and emitting it alongside is the
-+// only way to get real camera-look motion out of that input stream.
++// Whether Steam ever actually calls the real relative-motion XTest entry
++// point over Remote Play was never measured, only assumed from "camera
++// look didn't move before this patch" -- which turned out to be fully
++// explained by absolute positions landing on the wrong output instead
++// (see the design doc). If Steam does call this, XTestFakeMotionEvent's
++// own synthesized deltas below would double up with these. Logged once,
++// not silently, so the next live session settles it either way instead
++// of leaving it an assumption again.
++static SAW_REAL_RELATIVE_MOTION: AtomicBool = AtomicBool::new(false);
++
+ #[no_mangle]
+ pub extern "C" fn XTestFakeRelativeMotionEvent(
+     _: *mut Display,
+@@ -125,6 +208,13 @@
+     y: c_int,
+     _: c_ulong,
+ ) -> c_int {
++    if !SAW_REAL_RELATIVE_MOTION.swap(true, Ordering::Relaxed) {
++        eprintln!(
++            "extest: XTestFakeRelativeMotionEvent called for the first time -- \
++             the caller does use real relative motion, not just absolute"
++        );
++    }
++
+     let mut dev = DEVICE.lock().unwrap();
+     let events = [
+         InputEvent::new_now(EventType::RELATIVE, RelativeAxisType::REL_X.0, x),
+@@ -134,6 +224,15 @@
+     1
+ }
+
++// Steam's Remote Play client is assumed (not yet measured, see
++// SAW_REAL_RELATIVE_MOTION above) to only ever call XTestFakeMotionEvent
++// (absolute), even for a game that has grabbed the pointer for camera
++// look, which needs relative deltas to see any motion at all. Deriving a
++// delta from consecutive absolute positions and emitting it alongside is
++// the only way to get real camera-look motion out of that input stream if
++// so.
 +static LAST_ABS_POS: Mutex<Option<(i32, i32)>> = Mutex::new(None);
 +
  #[no_mangle]
  pub extern "C" fn XTestFakeMotionEvent(
      _: *mut Display,
-@@ -143,10 +175,21 @@
+@@ -142,11 +241,87 @@
+     y: c_int,
      _: c_ulong,
  ) -> c_int {
++    let mapping = *TARGET_MAPPING.lock().unwrap();
++    let (x, y) = match mapping {
++        Some(m) => (
++            m.offset_x + x.clamp(0, m.max_x),
++            m.offset_y + y.clamp(0, m.max_y),
++        ),
++        None => (x, y),
++    };
++
      let mut dev = DEVICE.lock().unwrap();
 -    let events = [
 +    let mut events = vec![
@@ -146,6 +246,62 @@ diff --git a/src/lib.rs b/src/lib.rs
      dev.emit(&events).unwrap();
      1
  }
++
++#[cfg(test)]
++mod tests {
++    use super::wayland::{LayoutUpdate, Rect};
++
++    // Mirrors the mapping computed in DEVICE's watch_layout callback --
++    // duplicated here as plain values rather than extracted into a shared
++    // function, since extracting it would need TargetMapping to be
++    // constructible from outside this module for the test to assert on;
++    // simplest to just recompute it the same way and compare fields.
++    fn map(update: LayoutUpdate, local: (i32, i32)) -> Option<(i32, i32)> {
++        let target = update.target?;
++        let offset_x = target.x - update.bbox.x;
++        let offset_y = target.y - update.bbox.y;
++        let max_x = (target.width - 1).max(0);
++        let max_y = (target.height - 1).max(0);
++        Some((offset_x + local.0.clamp(0, max_x), offset_y + local.1.clamp(0, max_y)))
++    }
++
++    #[test]
++    fn origin_of_target_maps_to_its_own_global_position() {
++        let update = LayoutUpdate {
++            bbox: Rect { x: 0, y: 0, width: 8000, height: 1800 },
++            target: Some(Rect { x: 5120, y: 0, width: 2880, height: 1800 }),
++        };
++        assert_eq!(map(update, (0, 0)), Some((5120, 0)));
++    }
++
++    #[test]
++    fn bottom_right_of_target_stays_within_its_own_bounds() {
++        let update = LayoutUpdate {
++            bbox: Rect { x: 0, y: 0, width: 8000, height: 1800 },
++            target: Some(Rect { x: 5120, y: 0, width: 2880, height: 1800 }),
++        };
++        assert_eq!(map(update, (2879, 1799)), Some((5120 + 2879, 1799)));
++        // Out-of-range local input (a stale client resolution, a client
++        // bug) clamps instead of spilling onto the next output.
++        assert_eq!(map(update, (5000, 5000)), Some((5120 + 2879, 1799)));
++    }
++
++    #[test]
++    fn no_target_means_no_mapping() {
++        let update = LayoutUpdate {
++            bbox: Rect { x: 0, y: 0, width: 5120, height: 1440 },
++            target: None,
++        };
++        assert_eq!(map(update, (100, 100)), None);
++    }
++
++    #[test]
++    fn axis_max_is_the_last_pixel() {
++        assert_eq!(super::axis_max(2682), 2681);
++        assert_eq!(super::axis_max(1), 0);
++        assert_eq!(super::axis_max(0), 0);
++    }
++}
 diff --git a/src/wayland.rs b/src/wayland.rs
 --- a/src/wayland.rs
 +++ b/src/wayland.rs
@@ -156,7 +312,7 @@ diff --git a/src/wayland.rs b/src/wayland.rs
  use wayland_client::{
      delegate_noop,
      protocol::{wl_output, wl_registry},
-@@ -8,7 +11,7 @@
+@@ -8,20 +11,74 @@
  };
 
 
@@ -165,8 +321,57 @@ diff --git a/src/wayland.rs b/src/wayland.rs
  pub struct DisplaySize {
      pub width: i32,
      pub height: i32
-@@ -16,12 +19,15 @@
+ }
 
++/// An output's position and size in the compositor's global (multi-monitor)
++/// coordinate space, in logical pixels -- what `xdg_output`'s
++/// `logical_position`/`logical_size` report.
++#[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
++pub struct Rect {
++    pub x: i32,
++    pub y: i32,
++    pub width: i32,
++    pub height: i32,
++}
++
++impl Rect {
++    fn is_complete(self) -> bool {
++        self.width > 0 && self.height > 0
++    }
++
++    /// The smallest rectangle containing both `self` and `other`. Same
++    /// semantics as niri's own `Rectangle::merge`, which is what
++    /// `global_bounding_rectangle()` folds over every enabled output with
++    /// to get the rectangle libinput's absolute-axis scaling lands on (see
++    /// `on_pointer_motion_absolute`'s fallback path in niri's
++    /// `src/input/mod.rs`) -- this has to match it exactly, or the mapping
++    /// in `lib.rs` computes the wrong offset.
++    #[must_use]
++    pub fn merge(self, other: Rect) -> Rect {
++        let x = self.x.min(other.x);
++        let y = self.y.min(other.y);
++        let right = (self.x + self.width).max(other.x + other.width);
++        let bottom = (self.y + self.height).max(other.y + other.height);
++        Rect {
++            x,
++            y,
++            width: right - x,
++            height: bottom - y,
++        }
++    }
++}
++
++/// What extest needs to know to land an absolute position on a specific
++/// output: the bounding rectangle niri's absolute-pointer fallback scales
++/// across (every enabled output, unconditionally -- see the module-level
++/// doc comment below `LayoutUpdate` for why), and the target output's own
++/// rectangle within it, when it exists.
++#[derive(Copy, Clone, Default, PartialEq, Eq)]
++pub struct LayoutUpdate {
++    pub bbox: Rect,
++    pub target: Option<Rect>,
++}
++
  #[derive(Default)]
  struct OutputData {
 -    wl_outputs: Vec<wl_output::WlOutput>,
@@ -177,14 +382,16 @@ diff --git a/src/wayland.rs b/src/wayland.rs
  }
 
 -/// Returns the largest dimensions of the detected monitors
-+/// Returns the largest dimensions of the detected monitors, as a one-shot
-+/// snapshot. Used only for the very first calibration before a persistent
-+/// watcher (see `watch_target_output`) can correct it, or when no target
-+/// output is configured at all.
++/// Returns the largest dimensions of the detected monitors. Used only as
++/// the very first device calibration before a persistent watcher (see
++/// `watch_layout`) can correct it, and as the only calibration when no
++/// target output is configured at all -- extest's original behaviour
++/// (Steam Controller trackpad-as-mouse on the real monitor), which this
++/// patch does not otherwise change.
  #[must_use]
  pub fn get_axes_range() -> DisplaySize {
      let conn = Connection::connect_to_env().unwrap();
-@@ -32,27 +38,30 @@
+@@ -32,27 +89,30 @@
      let mut data = OutputData::default();
      queue.roundtrip(&mut data).unwrap();
 
@@ -222,7 +429,7 @@ diff --git a/src/wayland.rs b/src/wayland.rs
              state.max_size.width = i32::max(width, state.max_size.width);
              state.max_size.height = i32::max(height, state.max_size.height);
          }
-@@ -77,12 +86,185 @@
+@@ -77,12 +137,256 @@
          } = event
          {
              if interface == wl_output::WlOutput::interface().name {
@@ -241,56 +448,80 @@ diff --git a/src/wayland.rs b/src/wayland.rs
      }
  }
 +
-+// -- Persistent target-output watcher, used only when EXTEST_TARGET_OUTPUT
-+// is set. --
++// -- Persistent layout watcher, used only when EXTEST_TARGET_OUTPUT is set.
++// --
 +//
-+// get_axes_range() above is a one-shot snapshot: fine for the "largest
-+// connected output" fallback, wrong for a specific named output that may
-+// not exist yet (Remote Play's host process starts before the virtual
-+// output it targets is enabled) or may still be at a stale size (the
-+// output exists but hasn't been resized to the connecting client's panel
-+// yet). uinput exposes no way to change an absolute axis's declared range
-+// on a live device, so the fix is to keep watching and rebuild the whole
-+// device whenever the target's actual logical size changes, rather than
-+// calibrating once and hoping the timing worked out.
-+
-+struct TargetWatcherData {
++// Steam Remote Play's mouse input arrives as XTestFakeMotionEvent with
++// coordinates local to the client's own panel, which extest turns into
++// uinput ABS_X/ABS_Y. niri's libinput backend never maps an absolute
++// device to a specific output -- `NiriInputDevice::output` returns `None`
++// unconditionally for every `libinput::Device` (niri's own
++// `src/input/backend_ext.rs`, with its own `// FIXME: Allow specifying the
++// output per-device?`) -- so `on_pointer_motion_absolute` always falls
++// back to scaling the raw axis value across the bounding rectangle of
++// *every enabled output* and adding that rectangle's own top-left corner
++// (`compute_absolute_location(&event, None).or_else(|| { ... bbox ... })`
++// in niri's `src/input/mod.rs`). Calibrating extest's declared axis range
++// to the target output's own size -- an earlier version of this patch --
++// changes what *fraction* of the streamed area lands across the whole
++// desktop; it does not stop positions from landing outside the target
++// output, because libinput normalises the declared range away before
++// niri ever sees it (`absinfo_scale_axis` divides by the range). The only
++// way to land a position on a specific output is to compute that
++// output's actual place in the *whole* layout and emit already-global
++// coordinates -- which needs every output's position and size, not just
++// the target's.
++struct LayoutWatcherData {
 +    output_man: Option<ZxdgOutputManagerV1>,
++    // A GlobalRemove event only gives the registry's numeric global name,
++    // not the wl_output object id -- this is the only way to find out
++    // which output that was. Outputs on this host really do come and go:
++    // the target virtual output is toggled on/off between Remote Play
++    // sessions, which niri implements as adding/removing the wl_output
++    // global outright, not just resizing it.
++    names_by_global: HashMap<u32, ObjectId>,
 +    output_names: HashMap<ObjectId, String>,
-+    // Compositors are free to send LogicalSize before Name for the same
-+    // output during the initial burst; caching every size seen, keyed by
-+    // output, means whichever event completes the match (either order)
-+    // can still find it, instead of only ever checking on LogicalSize.
-+    latest_sizes: HashMap<ObjectId, DisplaySize>,
-+    pending_outputs: Vec<wl_output::WlOutput>,
++    geometries: HashMap<ObjectId, Rect>,
++    pending_outputs: Vec<(u32, wl_output::WlOutput)>,
 +    target_name: String,
-+    last_reported: Option<DisplaySize>,
-+    on_change: Box<dyn FnMut(DisplaySize) + Send>,
++    last_reported: Option<LayoutUpdate>,
++    on_change: Box<dyn FnMut(LayoutUpdate) + Send>,
 +}
 +
-+fn maybe_report_target(state: &mut TargetWatcherData, output_id: &ObjectId) {
-+    let is_target = state
-+        .output_names
-+        .get(output_id)
-+        .is_some_and(|name| *name == state.target_name);
-+    if !is_target {
-+        return;
-+    }
-+    let Some(&size) = state.latest_sizes.get(output_id) else {
++fn recompute_and_report(state: &mut LayoutWatcherData) {
++    let bbox = state
++        .geometries
++        .values()
++        .filter(|rect| rect.is_complete())
++        .copied()
++        .reduce(Rect::merge);
++    let Some(bbox) = bbox else {
 +        return;
 +    };
-+    if state.last_reported != Some(size) {
-+        state.last_reported = Some(size);
-+        (state.on_change)(size);
++
++    let target = state
++        .output_names
++        .iter()
++        .find(|(_, name)| **name == state.target_name)
++        .and_then(|(id, _)| state.geometries.get(id))
++        .copied()
++        .filter(|rect| rect.is_complete());
++
++    let update = LayoutUpdate { bbox, target };
++    if state.last_reported != Some(update) {
++        state.last_reported = Some(update);
++        (state.on_change)(update);
 +    }
 +}
 +
-+/// Runs forever on the calling thread, invoking `on_change` with the named
-+/// output's current logical size every time it changes -- including the
-+/// output not existing yet (nothing is called until it appears), appearing
-+/// later, or being resized. Intended to be run on a dedicated background
-+/// thread; never returns except on an unrecoverable Wayland error.
-+pub fn watch_target_output(target_name: String, on_change: impl FnMut(DisplaySize) + Send + 'static) {
++/// Runs forever on the calling thread, invoking `on_change` every time the
++/// global output layout changes in a way that affects where a position
++/// for `target_name` should land -- including the target not existing yet
++/// (nothing is called until it appears), appearing later, moving, being
++/// resized, or another output changing in a way that reshapes the
++/// bounding rectangle. Intended to run on a dedicated background thread;
++/// never returns except on an unrecoverable Wayland error.
++pub fn watch_layout(target_name: String, on_change: impl FnMut(LayoutUpdate) + Send + 'static) {
 +    let conn = match Connection::connect_to_env() {
 +        Ok(conn) => conn,
 +        Err(err) => {
@@ -303,10 +534,11 @@ diff --git a/src/wayland.rs b/src/wayland.rs
 +    let handle = queue.handle();
 +    display.get_registry(&handle, ());
 +
-+    let mut data = TargetWatcherData {
++    let mut data = LayoutWatcherData {
 +        output_man: None,
++        names_by_global: HashMap::new(),
 +        output_names: HashMap::new(),
-+        latest_sizes: HashMap::new(),
++        geometries: HashMap::new(),
 +        pending_outputs: Vec::new(),
 +        target_name,
 +        last_reported: None,
@@ -337,77 +569,123 @@ diff --git a/src/wayland.rs b/src/wayland.rs
 +    }
 +}
 +
-+impl Dispatch<zxdg_output_v1::ZxdgOutputV1, ObjectId> for TargetWatcherData {
++impl Dispatch<zxdg_output_v1::ZxdgOutputV1, ObjectId> for LayoutWatcherData {
 +    fn event(
 +        state: &mut Self,
 +        _: &zxdg_output_v1::ZxdgOutputV1,
 +        event: zxdg_output_v1::Event,
 +        output_id: &ObjectId,
 +        _: &Connection,
-+        _: &QueueHandle<TargetWatcherData>,
++        _: &QueueHandle<LayoutWatcherData>,
 +    ) {
-+        let zxdg_output_v1::Event::LogicalSize { width, height } = event else {
-+            return;
-+        };
-+        state
-+            .latest_sizes
-+            .insert(output_id.clone(), DisplaySize { width, height });
-+        maybe_report_target(state, output_id);
++        {
++            let rect = state.geometries.entry(output_id.clone()).or_default();
++            match event {
++                zxdg_output_v1::Event::LogicalPosition { x, y } => {
++                    rect.x = x;
++                    rect.y = y;
++                }
++                zxdg_output_v1::Event::LogicalSize { width, height } => {
++                    rect.width = width;
++                    rect.height = height;
++                }
++                _ => return,
++            }
++        }
++        recompute_and_report(state);
 +    }
 +}
 +
-+impl Dispatch<wl_output::WlOutput, ()> for TargetWatcherData {
++impl Dispatch<wl_output::WlOutput, ()> for LayoutWatcherData {
 +    fn event(
 +        state: &mut Self,
 +        proxy: &wl_output::WlOutput,
 +        event: wl_output::Event,
 +        _: &(),
 +        _: &Connection,
-+        _: &QueueHandle<TargetWatcherData>,
++        _: &QueueHandle<LayoutWatcherData>,
 +    ) {
 +        if let wl_output::Event::Name { name } = event {
-+            let output_id = proxy.id();
-+            state.output_names.insert(output_id.clone(), name);
-+            maybe_report_target(state, &output_id);
++            state.output_names.insert(proxy.id(), name);
++            recompute_and_report(state);
 +        }
 +    }
 +}
 +
-+delegate_noop!(TargetWatcherData: ZxdgOutputManagerV1);
-+impl Dispatch<wl_registry::WlRegistry, ()> for TargetWatcherData {
++delegate_noop!(LayoutWatcherData: ZxdgOutputManagerV1);
++impl Dispatch<wl_registry::WlRegistry, ()> for LayoutWatcherData {
 +    fn event(
 +        state: &mut Self,
 +        registry: &wl_registry::WlRegistry,
 +        event: wl_registry::Event,
 +        _: &(),
 +        _: &Connection,
-+        handle: &QueueHandle<TargetWatcherData>,
++        handle: &QueueHandle<LayoutWatcherData>,
 +    ) {
-+        let wl_registry::Event::Global {
-+            name,
-+            interface,
-+            version,
-+        } = event
-+        else {
-+            return;
-+        };
-+
-+        if interface == wl_output::WlOutput::interface().name {
-+            let bind_version = version.min(wl_output::WlOutput::interface().version);
-+            let output: wl_output::WlOutput = registry.bind(name, bind_version, handle, ());
-+            match &state.output_man {
-+                Some(man) => {
-+                    man.get_xdg_output(&output, handle, output.id());
++        match event {
++            wl_registry::Event::Global {
++                name,
++                interface,
++                version,
++            } => {
++                if interface == wl_output::WlOutput::interface().name {
++                    let bind_version = version.min(wl_output::WlOutput::interface().version);
++                    let output: wl_output::WlOutput = registry.bind(name, bind_version, handle, ());
++                    state.names_by_global.insert(name, output.id());
++                    match &state.output_man {
++                        Some(man) => {
++                            man.get_xdg_output(&output, handle, output.id());
++                        }
++                        None => state.pending_outputs.push((name, output)),
++                    }
++                } else if interface == ZxdgOutputManagerV1::interface().name && version >= 3 {
++                    let bind_version = version.min(ZxdgOutputManagerV1::interface().version);
++                    let man: ZxdgOutputManagerV1 = registry.bind(name, bind_version, handle, ());
++                    for (_, output) in state.pending_outputs.drain(..) {
++                        man.get_xdg_output(&output, handle, output.id());
++                    }
++                    state.output_man = Some(man);
 +                }
-+                None => state.pending_outputs.push(output),
 +            }
-+        } else if interface == ZxdgOutputManagerV1::interface().name && version >= 3 {
-+            let bind_version = version.min(ZxdgOutputManagerV1::interface().version);
-+            let man: ZxdgOutputManagerV1 = registry.bind(name, bind_version, handle, ());
-+            for output in state.pending_outputs.drain(..) {
-+                man.get_xdg_output(&output, handle, output.id());
++            wl_registry::Event::GlobalRemove { name } => {
++                if let Some(id) = state.names_by_global.remove(&name) {
++                    state.geometries.remove(&id);
++                    state.output_names.remove(&id);
++                    recompute_and_report(state);
++                }
 +            }
-+            state.output_man = Some(man);
++            _ => {}
 +        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn merge_side_by_side_matches_niri_bounding_rectangle() {
++        // DP-2 at (0,0) 5120x1440, steam at (5120,0) 2880x1800 -- the
++        // layout observed live this session.
++        let dp2 = Rect { x: 0, y: 0, width: 5120, height: 1440 };
++        let steam = Rect { x: 5120, y: 0, width: 2880, height: 1800 };
++        let bbox = dp2.merge(steam);
++        assert_eq!(bbox, Rect { x: 0, y: 0, width: 8000, height: 1800 });
++    }
++
++    #[test]
++    fn merge_is_commutative() {
++        let a = Rect { x: -100, y: 20, width: 300, height: 50 };
++        let b = Rect { x: 0, y: 0, width: 50, height: 50 };
++        assert_eq!(a.merge(b), b.merge(a));
++    }
++
++    #[test]
++    fn incomplete_rect_is_excluded_from_bbox() {
++        // A newly-bound output with only Name or only LogicalPosition
++        // seen so far, size still 0x0, must not corrupt the bounding
++        // rectangle before its LogicalSize arrives.
++        assert!(!Rect::default().is_complete());
++        assert!(Rect { x: 0, y: 0, width: 1, height: 1 }.is_complete());
 +    }
 +}
