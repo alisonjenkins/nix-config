@@ -64,7 +64,7 @@
   ] ++ lib.optionals pkgs.stdenv.isLinux [
     (pkgs.writeShellScriptBin ''obs-start-stream'' ''
       set -euo pipefail
-      if ! ${pkgs.procps}/bin/pgrep -x obs >/dev/null; then
+      if ! ${pkgs.procps}/bin/pgrep -x '(obs|\.obs-wrapped)' >/dev/null; then
         ${pkgs.obs-studio}/bin/obs --disable-shutdown-check &
       fi
       # --wait-for-obs retries the websocket connection with backoff
