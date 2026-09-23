@@ -333,6 +333,21 @@ in
           # process tree gives it up. buildCommand, not postFixup: umu-launcher
           # is a runCommand, and stdenv skips every other phase when
           # buildCommand is set.
+          # aws-sam-cli's test_toml_invalid_file_name reads `samconfig.toml`
+          # from the shared `tempfile.gettempdir()` expecting it to be absent
+          # (so a SamConfigFileReadException is raised). Its sibling
+          # test_toml_invalid_syntax writes exactly `samconfig.toml` into the
+          # same dir. Under pytest-xdist's parallel workers the two race: the
+          # file exists when the first test reads it, no exception is raised,
+          # and the single assertion fails the whole build (6953 pass). It's a
+          # test-isolation bug, not a real regression — disable it. Drop when
+          # upstream namespaces the temp file per-test.
+          aws-sam-cli = mprev.aws-sam-cli.overridePythonAttrs (old: {
+            disabledTests = (old.disabledTests or []) ++ [
+              "test_toml_invalid_file_name"
+            ];
+          });
+
           umu-launcher = mprev.umu-launcher.overrideAttrs (old: {
             buildCommand = (old.buildCommand or "") + ''
               realUmu=$(readlink -f "$out/bin/umu-run")
