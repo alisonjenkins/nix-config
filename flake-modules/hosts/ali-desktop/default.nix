@@ -967,6 +967,18 @@ in {
                 "${patchesDir}/bubblewrap-allow-caps.patch"
               ];
             });
+            # Remote Play's mouse input arrives as XTestFakeMotionEvent
+            # (absolute) only, even once a game has grabbed the pointer for
+            # camera look -- Steam never calls the relative variant. See
+            # patches/extest-remote-play-relative-motion.patch for the
+            # mechanism (deriving a delta from consecutive absolute
+            # positions) and why it can't be fixed on the niri or gamescope
+            # side.
+            patchedExtest = pkgs.pkgsi686Linux.extest.overrideAttrs (old: {
+              patches = (old.patches or []) ++ [
+                "${patchesDir}/extest-remote-play-relative-motion.patch"
+              ];
+            });
           in {
             enable = true;
             # Steam's FHS root supplies libva from the base package set, which
@@ -1046,7 +1058,7 @@ in {
                 LD_PRELOAD = lib.concatStringsSep ":" [
                   "${pkgs.steam-display-filter-multiarch}/lib/libsteam-display-filter.so"
                   "${pkgs.steam-display-filter-multiarch}/lib64/libsteam-display-filter.so"
-                  "${pkgs.pkgsi686Linux.extest}/lib/libextest.so"
+                  "${patchedExtest}/lib/libextest.so"
                 ];
               };
             };

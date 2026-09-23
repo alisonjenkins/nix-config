@@ -1,0 +1,41 @@
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -56,6 +56,14 @@
+     )
+ });
+
++// Steam's Remote Play client only ever calls XTestFakeMotionEvent (absolute),
++// even for a game that has grabbed the pointer for camera look, which needs
++// relative deltas to see any motion at all. XTestFakeRelativeMotionEvent
++// below works fine -- Steam just never calls it over Remote Play. Deriving a
++// delta from consecutive absolute positions and emitting it alongside is the
++// only way to get real camera-look motion out of that input stream.
++static LAST_ABS_POS: Mutex<Option<(i32, i32)>> = Mutex::new(None);
++
+ #[no_mangle]
+ pub extern "C" fn XTestFakeKeyEvent(
+     _: *mut Display,
+@@ -143,10 +151,21 @@
+     _: c_ulong,
+ ) -> c_int {
+     let mut dev = DEVICE.lock().unwrap();
+-    let events = [
++    let mut events = vec![
+         InputEvent::new_now(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, x),
+         InputEvent::new_now(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, y),
+     ];
++
++    let mut last_pos = LAST_ABS_POS.lock().unwrap();
++    if let Some((last_x, last_y)) = *last_pos {
++        let (dx, dy) = (x - last_x, y - last_y);
++        if dx != 0 || dy != 0 {
++            events.push(InputEvent::new_now(EventType::RELATIVE, RelativeAxisType::REL_X.0, dx));
++            events.push(InputEvent::new_now(EventType::RELATIVE, RelativeAxisType::REL_Y.0, dy));
++        }
++    }
++    *last_pos = Some((x, y));
++
+     dev.emit(&events).unwrap();
+     1
+ }
