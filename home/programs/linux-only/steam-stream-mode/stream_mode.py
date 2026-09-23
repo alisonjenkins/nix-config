@@ -166,11 +166,13 @@ ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gam
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via (?:direct|indirect) connection")
 # A client on the same LAN as the host logs "indirect" for a moment before
-# upgrading to "direct" a couple seconds later; both match, and connect() is
-# idempotent for a client already being served, so the double-fire is
-# harmless. A client with no direct path at all (relayed the whole session,
-# e.g. off-LAN over Tailscale) never logs "direct" and previously never
-# turned the output on for that reason.
+# upgrading to "direct" a couple seconds later, so both match here. connect()
+# re-runs its per-session setup (resizing, re-enabling the output) on the
+# second, immediate connect() for the same client, which is harmless since
+# nothing has changed yet at that point -- not idempotence, just an early
+# no-op. A client with no direct path at all (relayed the whole session, e.g.
+# off-LAN over Tailscale) never logs "direct" and previously never turned the
+# output on for that reason.
 # Clients that do not announce themselves the Deck's way.
 #
 # The Android client never logs "connected via direct connection": it
