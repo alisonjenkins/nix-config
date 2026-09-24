@@ -173,6 +173,10 @@ CLIENT_SIZE_SETTLE = float(os.environ.get("STREAM_MODE_CLIENT_SIZE_SETTLE", "10"
 GAME_STREAM_RE = re.compile(r">>> Switching video stream from \S+ to GameOverlay_MovieStream_\d+")
 GAME_CAPTURE_RE = re.compile(r">>> Capture method set to Game ")
 CAPTURE_STALL = float(os.environ.get("STREAM_MODE_CAPTURE_STALL", "5"))
+# How much of a log to scan on start for a session or connection still open.
+# Steam rotates these logs at about 1 MB; a 200 KB window lost a session's
+# start marker after roughly 110 minutes of the ~1.8 KB/min keep-alive lines.
+LOG_SCAN_BYTES = 2_000_000
 CAPTURE_NUDGE_LIMIT = int(os.environ.get("STREAM_MODE_CAPTURE_NUDGE_LIMIT", "3"))
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
@@ -1814,7 +1818,7 @@ def stream_in_progress(path=None):
             # The markers are rare; the tail is enough and the file is large.
             fh.seek(0, os.SEEK_END)
             size = fh.tell()
-            fh.seek(max(0, size - 200_000))
+            fh.seek(max(0, size - LOG_SCAN_BYTES))
             tail = fh.read().decode("utf-8", "replace")
     except OSError:
         return False
@@ -1841,7 +1845,7 @@ def connected_client(path=None):
         with open(path, "rb") as fh:
             fh.seek(0, os.SEEK_END)
             size = fh.tell()
-            fh.seek(max(0, size - 200_000))
+            fh.seek(max(0, size - LOG_SCAN_BYTES))
             tail = fh.read().decode("utf-8", "replace")
     except OSError:
         return None
