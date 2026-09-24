@@ -215,6 +215,7 @@ in {
           # Samsung G9 (DP-2) tops out at 120Hz; caps games at 116fps so VRR
           # stays engaged instead of bouncing off the vsync ceiling.
           custom.mangohud.displayMaxRefresh = 120;
+          custom.mangohud.firstVulkanLayer = true;
 
           # Audacity's "JACK Audio Connection Kit" host routes through
           # pipewire-jack, which needs exact buffer/quantum agreement with
