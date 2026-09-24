@@ -1783,15 +1783,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1788555359,
-        "narHash": "sha256-QWqgNvDcoHJA1/eZqyQWY2aPFBfGVVT6Pm3HmTJN27M=",
+        "lastModified": 1790214567,
+        "narHash": "sha256-PMAgT4H9e90XIB+0jRxEsACzm1og2djp2B25WXu85hQ=",
         "owner": "alisonjenkins",
         "repo": "steam-command-runner",
-        "rev": "4260376e1c94ce5c512d51d73a48427c2a068e31",
+        "rev": "c653e0ba7b043a612aa3f6dee8ecf4972630c393",
         "type": "github"
       },
       "original": {
         "owner": "alisonjenkins",
+        "ref": "feat/stream-aware-launch",
         "repo": "steam-command-runner",
         "type": "github"
       }

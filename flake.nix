@@ -212,7 +212,10 @@
       # arguments while keeping the Steam overlay and stop button working.
       # Follows nixpkgs_unstable because upstream's own flake tracks
       # nixpkgs-unstable for its naersk build.
-      url = "github:alisonjenkins/steam-command-runner";
+      # On the stream-aware-launch branch until
+      # alisonjenkins/steam-command-runner#5 merges; back to the default
+      # branch then.
+      url = "github:alisonjenkins/steam-command-runner/feat/stream-aware-launch";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
 
