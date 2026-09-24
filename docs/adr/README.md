@@ -28,6 +28,7 @@ something is wrong.
 | [0008](0008-steam-libva.md) | Give Steam a newer libva, and only Steam | Accepted |
 | [0009](0009-gamescope-capabilities-and-bubblewrap.md) | Let bubblewrap run under gamescope's capabilities | Accepted |
 | [0010](0010-niri-config-kdl.md) | Keep comments out of niri's KDL, validate the built config | Accepted |
+| [0011](0011-mangohud-first-vulkan-layer.md) | Put MangoHud first in the Vulkan layer chain | Accepted |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)

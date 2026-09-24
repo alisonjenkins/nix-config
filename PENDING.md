@@ -222,14 +222,9 @@ freely. These are what the live test surfaced.
    running, Steam's Friends List takes focus and Steam records it. On stream
    start, stream-mode should re-adopt a running game's window, fullscreen it and
    focus it.
-4. **MangoHud missing from the stream.** Steam captures frames in its overlay
-   layer, which sits before MangoHud in the Vulkan chain, so the HUD is drawn
-   after capture: visible on the host, missing on the client. A Vulkan loader
-   settings file (`~/.config/vulkan/loader_settings.d/vk_loader_settings.json`)
-   listing MangoHud first, then `unordered_layer_location`, puts it nearest the
-   application (verified with `VK_LOADER_DEBUG=layer`). Pending: in-game test,
-   then generate the file from the installed MangoHud package in home-manager
-   and write an ADR.
+4. ~~**MangoHud missing from the stream.**~~ Done 2026-09-24:
+   `custom.mangohud.firstVulkanLayer` (docs/adr/0011). Confirmed on the Mac
+   client.
 5. **HD2 left at half width.** On one launch the game window stayed a half
    width tile instead of fullscreen on the streamed output. Game capture hides
    this on the client, but the game renders at the tile's size. Check why

@@ -22,6 +22,7 @@ from reasoning about what the client showed instead of what Steam logged.
 | Game letterboxed on the client | Display filter armed? `cat ~/.local/state/stream-mode/target` | [0003](adr/0003-steam-display-filter.md) |
 | Overview keeps opening | Hot corner on the virtual output: [niri config valid?](#is-niris-config-actually-loaded) | [0002](adr/0002-virtual-output-for-remote-play.md) |
 | A niri config change had no effect | [niri config valid?](#is-niris-config-actually-loaded) | [0010](adr/0010-niri-config-kdl.md) |
+| MangoHud on the host but not in the stream | `VK_LOADER_DEBUG=layer vulkaninfo --summary`: MangoHud must be inserted last | [0011](adr/0011-mangohud-first-vulkan-layer.md) |
 | No hardware encoding | `grep 'Capture method' streaming_log.txt` should end `+ VAAPI H264` | [0008](adr/0008-steam-libva.md) |
 | Game dies at launch with `bwrap: Unexpected capabilities` | bubblewrap patch or the umu wrapper missing | [0009](adr/0009-gamescope-capabilities-and-bubblewrap.md) |
 
