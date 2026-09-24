@@ -144,7 +144,7 @@ TARGET_JSON_FILE = os.environ.get(
 # mark Steam swapping between desktop and game capture, several times a
 # session; read as the end, a swap into game capture tore the stream down two
 # minutes later. These two pair exactly, once per session.
-START_RE = re.compile(r"Streaming started to ")
+START_RE = re.compile(r"Streaming started to (.+?) at ")
 STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
 # The client's own panel, relayed into the host's log by the client.
 #
@@ -865,6 +865,9 @@ class Session:
         self.max_fps = None
         self.reported_output = None
         self.settle_at = None
+        # client name -> id, from connect lines; the stream-start line names
+        # its client but carries no id.
+        self.known_clients = {}
         # Reset per session: a new client gets its own Big Picture placement,
         # and the user is free to move it afterwards without it snapping back.
         self.big_picture_placed = False
@@ -929,6 +932,8 @@ class Session:
     def connect(self, client_id, client_name):
         """A client has connected: size the output for it and turn it on."""
         self.client_id = client_id
+        if client_name:
+            self.known_clients[client_name] = client_id
         self.max_capture = None
         self.max_fps = None
         self.reported_output = None
@@ -998,8 +1003,24 @@ class Session:
         log("stream-mode: turned {} off".format(name))
         return True
 
-    def begin_stream(self):
-        """A stream has started: say where to render."""
+    def begin_stream(self, client_name=None):
+        """A stream has started: say where to render.
+
+        client_name is the one Steam names in "Streaming started to", which is
+        the client actually streaming. The last client to connect need not
+        be: the Deck connected and the Mac reconnected in the same second, the
+        Deck streamed, and its size was saved as the Mac's.
+        """
+        streaming_id = self.known_clients.get(client_name)
+        if streaming_id is not None and streaming_id != self.client_id:
+            log("stream-mode: streaming to {}, not the last client to connect".format(client_name))
+            self.client_id = streaming_id
+        # "Maximum capture" follows this line, so the last session's limit
+        # must not stand in for this one's.
+        self.max_capture = None
+        self.max_fps = None
+        self.reported_output = None
+        self.settle_at = None
         self.streaming = True
         clear_gamescope_atoms()
         if self.output is None:
@@ -1137,9 +1158,20 @@ class Session:
     # -- learning
 
     def note_max_capture(self, width, height, fps=None):
-        """The client's resolution and frame rate limit for this session."""
+        """The client's resolution and frame rate limit for this session.
+
+        Applied at once: it arrives just after the stream starts, which was
+        sized from the remembered limit, and unlike the client's window size
+        it is not an echo of our own output.
+        """
         self.max_capture = (width, height)
         self.max_fps = fps
+        if not self.streaming or self.output is None or self.client_id is None:
+            return False
+        target = client_size(self.client_id, self.clients, self.max_capture)
+        refresh = client_refresh(self.client_id, self.clients, self.max_fps)
+        publish_target(self.output, target[0], target[1], refresh)
+        return self.apply_mode(target[0], target[1], refresh)
 
     def note_client_output(self, width, height, now=None):
         """The client reported its size; act on it once it has settled.
@@ -1960,9 +1992,10 @@ def handle_steam_line(session, line, remove_at):
         session.unstage(int(match.group(1)))
         return remove_at
 
-    if START_RE.search(line):
+    match = START_RE.search(line)
+    if match:
         log("stream-mode: stream started")
-        session.begin_stream()
+        session.begin_stream(match.group(1))
         return None
 
     if STOP_RE.search(line):

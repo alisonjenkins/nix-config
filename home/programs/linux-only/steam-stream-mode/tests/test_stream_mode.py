@@ -1026,6 +1026,46 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
         self.assertIsNone(s.client_id)
 
+    def test_the_stream_belongs_to_the_client_it_names(self):
+        """The last client to connect is not necessarily the one streaming.
+
+        The Deck connected and the Mac reconnected in the same second; the
+        Deck streamed, and its 1280x800 was saved as the Mac's size.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(222, "ali-steam-deck")
+        s.connect(111, "ali-mba")
+        s.begin_stream("ali-steam-deck")
+        self.assertEqual(s.client_id, 222)
+
+    def test_an_unknown_streaming_name_keeps_the_current_client(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(111, "ali-mba")
+        s.begin_stream("someone-else")
+        self.assertEqual(s.client_id, 111)
+
+    def test_the_limit_resizes_the_output_as_soon_as_it_arrives(self):
+        """'Streaming started to' comes before 'Maximum capture'.
+
+        So the stream starts at the remembered size, and the limit has to be
+        applied when it arrives, not ten seconds later when the client's
+        window settles.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.clients = {"123": {"output": [2880, 1800]}}
+        s.connect(123, "mac")
+        s.begin_stream("mac")
+        self.modes.clear()
+        s.note_max_capture(2880, 1080, 60.0)
+        self.assertEqual(self.modes, [(stream_mode.OUTPUT_NAME, 1728, 1080, 60)])
+
+    def test_a_new_stream_forgets_the_last_sessions_limit(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "mac")
+        s.note_max_capture(2880, 1080, 60.0)
+        s.begin_stream("mac")
+        self.assertIsNone(s.max_capture)
+
     def test_a_config_reload_mid_stream_restores_the_clients_mode(self):
         """niri drops IPC output changes when it reloads its config.
 
@@ -1193,8 +1233,9 @@ class TestEventDispatch(unittest.TestCase):
         def on_outputs_changed(self, names):
             self.calls.append(("on_outputs_changed", sorted(names)))
 
-        def begin_stream(self):
+        def begin_stream(self, client_name=None):
             self.calls.append(("begin_stream",))
+            self.streaming_to = client_name
 
         def request(self, pid, game_id):
             self.calls.append(("request", pid, game_id))
@@ -1270,6 +1311,7 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertIsNone(remove_at)
         self.assertIn(("begin_stream",), self.s.calls)
+        self.assertEqual(self.s.streaming_to, "ali-mba")
 
     def test_stream_stop_schedules_the_removal(self):
         remove_at = stream_mode.handle_steam_line(
