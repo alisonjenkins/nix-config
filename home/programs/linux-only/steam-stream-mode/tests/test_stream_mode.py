@@ -942,6 +942,42 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
         self.assertIsNone(s.client_id)
 
+    def test_a_config_reload_mid_stream_restores_the_clients_mode(self):
+        """niri drops IPC output changes when it reloads its config.
+
+        A switch that touched config.kdl turned the output off and back to its
+        declared 1280x800@90 under a running session.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "mac")
+        s.note_max_capture(2880, 1080, 60.0)
+        s.clients = {"123": {"output": [2880, 1800], "max_capture": [2880, 1080]}}
+        s.begin_stream()
+        self.modes.clear()
+        self.enabled.clear()
+        stream_mode.output_logical_size = lambda name: (1280, 800)
+        self.assertTrue(s.reassert_output())
+        self.assertEqual(self.modes, [(stream_mode.OUTPUT_NAME, 1728, 1080, 60)])
+        self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
+
+    def test_a_config_reload_keeps_the_only_output_on(self):
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            self.assertTrue(s.reassert_output())
+            self.assertIn((stream_mode.OUTPUT_NAME, True), self.enabled)
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_a_config_reload_leaves_an_idle_output_alone(self):
+        stream_mode.other_active_outputs = lambda name: {"DP-2"}
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            self.assertFalse(s.reassert_output())
+            self.assertEqual(self.enabled, [])
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
     def test_a_stream_readopts_a_game_still_running(self):
         """Reconnecting to a running game streamed the Friends List.
 
@@ -1079,6 +1115,9 @@ class TestEventDispatch(unittest.TestCase):
         def request(self, pid, game_id):
             self.calls.append(("request", pid, game_id))
 
+        def reassert_output(self):
+            self.calls.append(("reassert_output",))
+
         def note_client_output(self, w, h):
             self.calls.append(("note_client_output", w, h))
 
@@ -1126,6 +1165,15 @@ class TestEventDispatch(unittest.TestCase):
             ]}}),
         )
         self.assertIn(("on_outputs_changed", ["DP-2", "steam"]), self.s.calls)
+
+    def test_a_config_reload_reasserts_the_output(self):
+        stream_mode.handle_niri_event(self.s, json.dumps({"ConfigLoaded": {"failed": False}}))
+        self.assertEqual(self.s.calls, [("reassert_output",)])
+
+    def test_a_failed_config_reload_changes_nothing(self):
+        """niri keeps the old config, and with it our changes."""
+        stream_mode.handle_niri_event(self.s, json.dumps({"ConfigLoaded": {"failed": True}}))
+        self.assertEqual(self.s.calls, [])
 
     def test_malformed_events_are_ignored(self):
         stream_mode.handle_niri_event(self.s, "not json\n")

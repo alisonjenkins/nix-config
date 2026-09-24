@@ -1031,6 +1031,29 @@ class Session:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
 
+    def reassert_output(self):
+        """Put the output back after niri reloaded its config.
+
+        niri drops changes made over IPC on every reload and re-applies the
+        declared output: `off`, at the declared mode. A switch that touched
+        config.kdl turned the output off under a running session, and with
+        the monitor off that left niri with no outputs at all.
+        """
+        if self.streaming or self.client_id is not None:
+            self.output = OUTPUT_NAME
+            if self.client_id is not None:
+                width, height = client_size(self.client_id, self.clients, self.max_capture)
+                refresh = client_refresh(self.client_id, self.clients, self.max_fps)
+                self.apply_mode(width, height, refresh)
+            set_output_enabled(OUTPUT_NAME, True)
+            log("stream-mode: niri reloaded its config; restored {}".format(OUTPUT_NAME))
+            return True
+        if other_active_outputs(OUTPUT_NAME) == set():
+            set_output_enabled(OUTPUT_NAME, True)
+            log("stream-mode: niri reloaded its config; kept {} on, it is the only output".format(OUTPUT_NAME))
+            return True
+        return False
+
     def readopt_running_game(self):
         """Stage a game that is still running from an earlier stream.
 
@@ -1894,6 +1917,13 @@ def handle_niri_event(session, line):
     try:
         event = json.loads(line)
     except ValueError:
+        return
+
+    if "ConfigLoaded" in event:
+        # Also sent once on subscribing, which covers a watcher started while
+        # niri has no outputs.
+        if not (event["ConfigLoaded"] or {}).get("failed"):
+            session.reassert_output()
         return
 
     if "WindowsChanged" in event:
