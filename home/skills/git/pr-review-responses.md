@@ -40,7 +40,10 @@ exits — waking you — only when a cheap `gh pr view` fingerprint actually
 changes, a rebase conflict needs judgement, or 24h passes idle. It needs
 exclusive use of its checkout for the whole run — give it its own worktree
 if you'll keep working on something else in the meantime, or its next tick
-rebases whatever you switched to and fails. A ScheduleWakeup/`/loop` tick,
+rebases whatever you switched to and fails. It treats the review state on
+its first tick as the baseline; set `WATCH_PR_TRIAGED_REVIEWS=<count you
+triaged>` (`gh pr view <n> --json reviews -q '.reviews|length'`) so a review
+that landed after your triage wakes you instead of being swallowed. A ScheduleWakeup/`/loop` tick,
 by contrast, is a full model turn even when
 nothing changed; reserve it for when no background-execution mechanism is
 available. Either way, back off exponentially rather than a fixed interval —

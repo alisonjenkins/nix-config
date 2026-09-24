@@ -19,16 +19,13 @@ non-obvious flags.
 4. Keep the atomic commits; do not flatten them when pushing.
 5. **Start the review watch immediately after `gh pr create` succeeds** —
    don't wait to be told, and don't ask first. Run
-   `scripts/pr-status.sh <number> [owner/repo]` once first: `watch-pr.sh`
-   treats whatever review state exists on its first tick as the baseline and
-   never reports it, so a review that lands instantly (Copilot auto-review)
-   would be missed. Then launch `scripts/watch-pr.sh <number> [owner/repo]`
-   via `run_in_background` (or a Monitor) per "Watching for a review" in
-   [pr-review-responses.md](pr-review-responses.md), and tell the user it is
-   running. The script rebases the checked-out branch every tick, so if the
-   session will keep working on another branch, run it from its own worktree.
-   It is single-shot: relaunch it on every exit except PR closed or merged.
-   Skip only if the user said not to watch this PR. This applies to
+   `scripts/pr-status.sh <number> [owner/repo]` once first and triage
+   whatever it shows (`watch-pr.sh` never reports state that exists on its
+   first tick, so an instant Copilot auto-review would otherwise be missed),
+   then launch the watch as described in "Watching for a review" in
+   [pr-review-responses.md](pr-review-responses.md), passing the review
+   count you triaged as `WATCH_PR_TRIAGED_REVIEWS`. Tell the user it is
+   running. Skip only if the user said not to watch this PR. This applies to
    a PR opened by any route, including one delegated to the `pr-creator`
    agent: a sub-agent's background task dies with it, so the agent that
    receives its report starts the watch itself.
