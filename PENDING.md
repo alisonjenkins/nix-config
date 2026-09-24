@@ -203,13 +203,12 @@ Game-mode streaming works end to end (docs/adr/0007): the shim launches the
 game without gamescope, Steam captures `Game Vulkan`, and camera look turns
 freely. These are what the live test surfaced.
 
-1. **Wrong learned client size.** `~/.local/state/stream-mode/clients.json`
-   holds `4470x1676` for the Mac client, about 2.67:1, not its 16:10 panel.
-   Every stream sizes the output to that, and games following the display get
-   a stretched aspect. Find which `streaming_log.txt` line `learn()` took it
-   from (probably the Mac client's window after a resize, not its screen), fix
-   the parsing or ignore sizes that change mid-session, then correct or delete
-   the entry.
+1. ~~**Wrong learned client size.**~~ Fixed 2026-09-24, not yet live-tested
+   (docs/adr/0012). The first `output size` was our own output echoed back.
+   stream-mode now waits for the size to settle and fits it inside the
+   client's `Maximum capture`. Check after the next Mac session that
+   `clients.json` holds `{"output": [2880, 1800], ...}` and the output is
+   1728x1080.
 2. **Games render at their own configured resolution.** Without gamescope
    nothing forces the render size to match the stream (steam-command-runner
    ADR 0006 only applies under gamescope). HD2 was set to 1440x900 by hand as
