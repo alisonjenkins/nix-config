@@ -220,10 +220,11 @@ freely. These are what the live test surfaced.
 4. ~~**MangoHud missing from the stream.**~~ Done 2026-09-24:
    `custom.mangohud.firstVulkanLayer` (docs/adr/0011). Confirmed on the Mac
    client.
-5. **HD2 left at half width.** On one launch the game window stayed a half
-   width tile instead of fullscreen on the streamed output. Game capture hides
-   this on the client, but the game renders at the tile's size. Check why
-   `fill_streamed_output` did not act.
+5. ~~**HD2 left at half width.**~~ Root-caused 2026-09-24, fixed in 5a148cae,
+   not yet live-tested. stream-mode took `>>> Stopped desktop stream` as the
+   end of the stream, but Steam logs it on every swap into game capture, so
+   two minutes into each game-mode stream it un-fullscreened the game. Seen
+   live at 09:20 as a stretched picture.
 6. ~~**The shim's decision line is invisible by default.**~~ Done 2026-09-24:
    every launch writes a timestamped decision line to
    `~/.steam-command-runner-shim.log` (runner `bc720b0`), docs corrected.
