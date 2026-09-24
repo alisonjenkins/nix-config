@@ -77,6 +77,14 @@
     games."553850" = {
       hooks.pre_launch.command = "uhk-switch-keymap HD2";
       hooks.post_exit.command = "uhk-switch-keymap QWR";
+      # HD2's Stingray engine takes no resolution argument, so a streamed
+      # launch rewrites its saved resolution to the client's for the run and
+      # puts it back on exit (runner ADR 0011).
+      stream_resolution_rules = [{
+        file = "{prefix}/drive_c/users/steamuser/AppData/Roaming/Arrowhead/Helldivers2/user_settings.config";
+        pattern = "(?m)^(\\s*(?:screen|render)_resolution = \\[\\s*)\\d+(\\s+)\\d+";
+        replacement = "\${1}{width}\${2}{height}";
+      }];
     };
 
     # Subnautica (264710): syncs the subnautica-vr-mods payload (see
