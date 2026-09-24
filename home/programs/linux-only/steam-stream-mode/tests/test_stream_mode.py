@@ -180,6 +180,30 @@ class TestWindowForGame(unittest.TestCase):
             stream_mode.window_for_game(999, self.GAME, [window(1, 100, app_id="other")])
         )
 
+    def test_wine_tray_window_is_not_the_game(self):
+        """Wine's systray fallback shares the game's app id but is 160x20.
+
+        Picking it fullscreened a blank window and Steam streamed that.
+        """
+        windows = [
+            window(121, 4242, size=(160, 20)),
+            window(120, 4242, size=(1341, 1642)),
+        ]
+        self.assertEqual(stream_mode.window_for_game(111, self.GAME, windows)["id"], 120)
+
+    def test_a_tiled_window_wins_over_a_floating_one(self):
+        dialog = window(121, 4242, size=(800, 600))
+        dialog["is_floating"] = True
+        windows = [dialog, window(120, 4242)]
+        self.assertEqual(stream_mode.window_for_game(111, self.GAME, windows)["id"], 120)
+
+    def test_a_floating_game_is_still_the_game(self):
+        """niri floated FH6, whose first window was a 622x302 splash; skipping
+        floating windows left it unstaged at 1272x717."""
+        game = window(278, 4242, size=(1272, 717))
+        game["is_floating"] = True
+        self.assertEqual(stream_mode.window_for_game(111, self.GAME, [game])["id"], 278)
+
     def test_parent_pids_handles_comm_with_spaces(self):
         """/proc/PID/stat comm can contain spaces and parentheses."""
         self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
@@ -1464,6 +1488,25 @@ class TestSplashScreens(unittest.TestCase):
         stream_mode.niri_windows = lambda: [self.half_width(127)]
         s.fill_streamed_output([self.half_width(127)])
         self.assertEqual(self.toggled, [])
+
+    def test_a_tiny_helper_window_is_not_fullscreened(self):
+        s = self.session()
+        tray = {"id": 121, "workspace_id": 9, "layout": {"window_size": [160, 20]}}
+        self.assertFalse(s.fill_streamed_output([tray]))
+        self.assertEqual(self.toggled, [])
+
+    def test_a_floating_game_is_tiled_then_fullscreened(self):
+        tiled = []
+        real = stream_mode.move_window_to_tiling
+        stream_mode.move_window_to_tiling = lambda wid: tiled.append(wid) or True
+        try:
+            s = self.session()
+            floating = dict(self.half_width(121), is_floating=True)
+            self.assertTrue(s.fill_streamed_output([floating]))
+        finally:
+            stream_mode.move_window_to_tiling = real
+        self.assertEqual(tiled, [121])
+        self.assertEqual(self.toggled, [121])
 
 
 class TestSteamDeath(unittest.TestCase):

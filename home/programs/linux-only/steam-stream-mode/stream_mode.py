@@ -518,6 +518,20 @@ def move_window_to_output(window_id, output):
     )
 
 
+def move_window_to_tiling(window_id):
+    """Take a window out of the floating layer, so fullscreen covers the output."""
+    result = subprocess.run(
+        [NIRI, "msg", "action", "move-window-to-tiling", "--id", str(window_id)],
+        capture_output=True, text=True, env=niri_env(),
+    )
+    if result.returncode != 0:
+        log("stream-mode: could not tile window {}: {}".format(
+            window_id, (result.stderr or "").strip()
+        ))
+        return False
+    return True
+
+
 def set_window_fullscreen(window_id, is_fullscreen=True):
     """Put a window in or out of fullscreen, by id.
 
@@ -594,6 +608,27 @@ def parent_pids(pid, limit=8):
     return chain
 
 
+# Smaller than any game renders; Wine's systray fallback window is 160x20.
+HELPER_WINDOW_MAX = (320, 240)
+
+
+def is_helper_window(window):
+    """A popup or tray window that shares the game's app id but is not the game.
+
+    Wine shows its own tray window when a game (HD2's GameGuard) adds a tray
+    icon, with the game's `steam_app_<id>` app id. Treating it as the game
+    fullscreened a blank window, and Steam streamed that instead of the game.
+
+    Judged by size alone. Floating is no sign: niri floats a game whose first
+    window is a fixed-size splash, and FH6 then stayed a floating 1272x717
+    window on the streamed output, never staged or fullscreened.
+    """
+    size = (window.get("layout") or {}).get("window_size")
+    if not size or len(size) != 2:
+        return False
+    return int(size[0]) < HELPER_WINDOW_MAX[0] or int(size[1]) < HELPER_WINDOW_MAX[1]
+
+
 def window_for_game(pid, game_id, windows=None):
     """Find the niri window for a streamed game.
 
@@ -612,6 +647,9 @@ def window_for_game(pid, game_id, windows=None):
     """
     if windows is None:
         windows = niri_windows()
+    # A tiled window before a floating one: a game's dialog floats beside it.
+    windows = sorted((w for w in windows if not is_helper_window(w)),
+                     key=lambda w: bool(w.get("is_floating")))
 
     wanted_app_id = "steam_app_{}".format(game_id)
     for window in windows:
@@ -1070,6 +1108,8 @@ class Session:
                 continue
             if window_id not in self.staged_windows and self.game_pid is None:
                 continue
+            if is_helper_window(w):
+                continue
             if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
                 continue
             size = (w.get("layout") or {}).get("window_size")
@@ -1087,6 +1127,8 @@ class Session:
                 "fullscreening ({}/{})".format(
                     window_id, size, list(output_size), attempts + 1, WIDEN_LIMIT
                 ))
+            if w.get("is_floating"):
+                move_window_to_tiling(window_id)
             if set_window_fullscreen(window_id, True):
                 self.fullscreened.add(window_id)
             return True
