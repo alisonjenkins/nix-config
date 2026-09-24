@@ -18,10 +18,13 @@ non-obvious flags.
    to PR bodies the same as commit messages.
 4. Keep the atomic commits; do not flatten them when pushing.
 5. **Start the review watch immediately after `gh pr create` succeeds** —
-   don't wait to be told, and don't ask first. Launch
-   `scripts/watch-pr.sh <number> [owner/repo]` via `run_in_background` (or a
-   Monitor) per "Watching for a review" in
-   [pr-review-responses.md](pr-review-responses.md), then tell the user it is
+   don't wait to be told, and don't ask first. Run
+   `scripts/pr-status.sh <number> [owner/repo]` once first: `watch-pr.sh`
+   treats whatever review state exists on its first tick as the baseline and
+   never reports it, so a review that lands instantly (Copilot auto-review)
+   would be missed. Then launch `scripts/watch-pr.sh <number> [owner/repo]`
+   via `run_in_background` (or a Monitor) per "Watching for a review" in
+   [pr-review-responses.md](pr-review-responses.md), and tell the user it is
    running. The script rebases the checked-out branch every tick, so if the
    session will keep working on another branch, run it from its own worktree.
    It is single-shot: relaunch it on every exit except PR closed or merged.
