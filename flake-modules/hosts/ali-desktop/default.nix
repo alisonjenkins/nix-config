@@ -1011,6 +1011,16 @@ in {
               # steam-stream-mode's state directory: the published stream target
               # and the display filter's log live here.
               streamModeState = "${config.users.users.${username}.home}/.local/state/stream-mode";
+              # The one output the config declares for Remote Play, taken from
+              # its own declaration so a rename happens in one place.
+              remotePlayOutput =
+                let
+                  virtualOutputNames = lib.attrNames
+                    config.home-manager.users.${username}.custom.niri.virtualOutputs;
+                in
+                assert lib.assertMsg (virtualOutputNames == [ "steam" ])
+                  "Remote Play assumes custom.niri.virtualOutputs declares exactly one output named \"steam\"; got ${builtins.toJSON virtualOutputNames}. Pick the intended one explicitly instead of silently taking the first.";
+                lib.head virtualOutputNames;
             in steamPkgs.steam.override {
               buildFHSEnv = args: (steamPkgs.buildFHSEnv.override {
                 bubblewrap = patchedBwrap;
@@ -1070,18 +1080,12 @@ in {
                 # anywhere extest could read: Remote Play's input path never
                 # touches xdg-desktop-portal's RemoteDesktop interface (it
                 # goes straight through XTEST/uinput), so there is no portal
-                # or Steam-side signal to consume here at all — this is the
-                # only output the config ever declares for Remote Play to
-                # target, taken from its own declaration rather than a fresh
-                # literal so a rename only has to happen in one place.
-                EXTEST_TARGET_OUTPUT =
-                  let
-                    virtualOutputNames = lib.attrNames
-                      config.home-manager.users.${username}.custom.niri.virtualOutputs;
-                  in
-                  assert lib.assertMsg (virtualOutputNames == [ "steam" ])
-                    "EXTEST_TARGET_OUTPUT assumes custom.niri.virtualOutputs declares exactly one output named \"steam\"; got ${builtins.toJSON virtualOutputNames}. Pick the intended one explicitly instead of silently taking the first.";
-                  lib.head virtualOutputNames;
+                # or Steam-side signal to consume here at all.
+                EXTEST_TARGET_OUTPUT = remotePlayOutput;
+                # Steam's own streaming variables carry the client's size but
+                # not our output's name, which the shim needs when the target
+                # file is absent.
+                STEAM_COMMAND_RUNNER_STREAM_OUTPUT = remotePlayOutput;
 
                 # Both ABIs spelled out rather than one $LIB path. Steam runs
                 # steamwebhelper inside a pressure-vessel container, and
