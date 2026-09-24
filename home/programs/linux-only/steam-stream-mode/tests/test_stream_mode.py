@@ -942,6 +942,27 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
         self.assertIsNone(s.client_id)
 
+    def test_a_stream_readopts_a_game_still_running(self):
+        """Reconnecting to a running game streamed the Friends List.
+
+        connect() forgets which windows were staged, and Steam logs nothing
+        new for a game that is already up, so the game was never re-focused
+        and Steam recorded whatever had focus.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.game_pid, s.game_id = os.getpid(), 553850
+        s.connect(123, "mac")
+        s.begin_stream()
+        self.assertEqual(s.pending[:2], (os.getpid(), 553850))
+
+    def test_a_stream_does_not_readopt_an_exited_game(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.game_pid, s.game_id = 2 ** 22 + 12345, 553850
+        s.connect(123, "mac")
+        s.begin_stream()
+        self.assertIsNone(s.pending)
+        self.assertIsNone(s.game_pid)
+
     def test_the_only_output_is_left_on(self):
         """With the monitor off, turning this off leaves niri with nothing.
 

@@ -844,6 +844,7 @@ class Session:
         self.client_id = None
         self.streaming = False
         self.game_pid = None
+        self.game_id = None
         self.pending = None
         self.reported_wait = False
         self.last_windows = []
@@ -1025,9 +1026,24 @@ class Session:
         # Before the game is launched, so its window rule places it correctly
         # the first time rather than being corrected afterwards.
         self.borrow_game_workspace()
+        self.readopt_running_game()
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
+
+    def readopt_running_game(self):
+        """Stage a game that is still running from an earlier stream.
+
+        Steam logs nothing new for a game that is already up, so without this
+        a reconnect left it unfocused and Steam streamed the Friends List.
+        """
+        if self.game_pid is None or self.game_id is None or self.pending:
+            return False
+        if not os.path.exists("/proc/{}".format(self.game_pid)):
+            self.game_pid = None
+            return False
+        log("stream-mode: game {} is still running; staging it again".format(self.game_id))
+        return self.request(self.game_pid, self.game_id)
 
     def end_stream(self):
         """Streaming has stopped: stop redirecting launches, park the output.
@@ -1430,6 +1446,7 @@ class Session:
         self.pending = None
         self.reported_wait = False
         self.game_pid = pid
+        self.game_id = game_id
         log(
             "stream-mode: window {} before staging: {}".format(
                 window["id"], window_location(window["id"])
