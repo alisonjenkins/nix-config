@@ -1783,11 +1783,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790244996,
-        "narHash": "sha256-Zsk0dzxQW/FLSdSc1Ozv4bLXieFoqR2/HgGODW/IEtk=",
+        "lastModified": 1790250540,
+        "narHash": "sha256-Gw6T5NFACXpqsZyM0W9m/ze7DmtKXYSWqATpxi7/0sA=",
         "owner": "alisonjenkins",
         "repo": "steam-command-runner",
-        "rev": "10199dc3bfa346d801cea0dd5eb6fb06bde91f12",
+        "rev": "c722098a672222849ebd59a8069cbfb53eec910d",
         "type": "github"
       },
       "original": {
