@@ -17,10 +17,13 @@ let
   # that can say how big it is, since there is no connector advertising modes.
   # Hot corners are off because a streaming client's cursor parks in a corner
   # and keeps opening the overview.
+  # scale 1: niri otherwise guesses 1.5 for a virtual output, so games got a
+  # logical 1152x720 window on a 1728x1080 mode and rendered upscaled.
   mkVirtualOutput = name: o: ''
     output "${name}" {
         virtual-output
         mode "${toString o.width}x${toString o.height}@${toString o.refresh}"
+        scale 1
         hot-corners {
             off
         }${lib.optionalString o.off "\n    off"}
