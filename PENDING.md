@@ -265,6 +265,20 @@ freely. These are what the live test surfaced.
    `Game Vulkan` 0.2s after returning). The automatic trigger has not fired
    live since the fix: capture starts took 2 to 17s, and earlier short
    timers broke a starting capture twice.
+13. **A layout swap can leave a mouse button held.** Moving focus off the
+   game switches Steam Input to the Desktop layout, where R2 and the right
+   trackpad are left click. R2 held across the swap at 13:21 left BTN_LEFT
+   down on extest's device (`event258`), and in HD2 A stopped selecting while
+   everything else worked. Only Steam's process can write that device; an
+   output mode step did not make extest rebuild it. Released by switching to
+   the Desktop layout and pressing R2 once. Every stall nudge risks this.
+   Find a way to release held buttons after a nudge, or detect it (the
+   EVIOCGKEY read in the session scratchpad works as a probe).
+14. **Game capture can freeze after a rebind.** At 13:29:53 Steam re-bound
+   `Game Vulkan` after a focus return, then kept sending about 2.7 Mbit/s of
+   the same picture while HD2 rendered normally (two screenshots differed).
+   Another focus away and back fixed it at 13:31:39. Nothing in Steam's log
+   marks the freeze, so stream-mode cannot detect it yet.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
