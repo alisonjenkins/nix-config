@@ -56,10 +56,10 @@ def window(wid, pid, app_id="steam_app_2854740", size=(1277, 1406)):
 class TestLogParsing(unittest.TestCase):
     """Verbatim lines from ali-desktop's Steam logs."""
 
-    START = "[2026-08-24 22:39:48][308.657953] >>> Starting desktop stream\n"
+    START = "[2026-08-24 22:39:48][308.657953] Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\n"
     RES = "[2026-08-24 22:39:48][308.792672] >>> Capture resolution set to 1280x800\n"
     RES_DERIVED = "[2026-08-24 22:39:48][308.923932] >>> Capture resolution set to 1280x360\n"
-    STOP = "[2026-08-24 22:40:02][322.711832] >>> Stopped desktop stream\n"
+    STOP = "[2026-08-24 22:40:02][322.711832] PipeWire: Deinitializing streaming\n"
     ADD = "[2026-08-24 23:30:46] Adding window 4194306 (4) for process 2331545 and gameID 2854740\n"
     REMOVE = "[2026-08-24 22:40:02] Removing process 2163386 for gameID 2854740\n"
     CONNECT = (
@@ -76,6 +76,20 @@ class TestLogParsing(unittest.TestCase):
         self.assertTrue(stream_mode.START_RE.search(self.START))
         self.assertTrue(stream_mode.STOP_RE.search(self.STOP))
         self.assertFalse(stream_mode.START_RE.search(self.STOP))
+
+    def test_a_capture_switch_is_not_a_stream_ending(self):
+        """Steam logs these whenever it swaps desktop and game capture.
+
+        Read as the end of the stream, a switch into game capture scheduled a
+        teardown two minutes later: HD2 was taken out of fullscreen mid-game,
+        captured at half width, and its picture stretched.
+        """
+        for line in (
+            "[2026-09-24 09:17:59][2311.673512] >>> Stopped desktop stream\n",
+            "[2026-09-24 08:03:28][183.099188] >>> Starting desktop stream\n",
+        ):
+            self.assertFalse(stream_mode.STOP_RE.search(line))
+            self.assertFalse(stream_mode.START_RE.search(line))
 
     CLIENT_SIZE = (
         "[2026-08-26 06:41:28][385.926662] CLIENT: Video size: 1280x800, "
@@ -1222,14 +1236,14 @@ class TestEventDispatch(unittest.TestCase):
 
     def test_stream_start_publishes_and_clears_the_removal(self):
         remove_at = stream_mode.handle_steam_line(
-            self.s, "[x] >>> Starting desktop stream\n", 123.0
+            self.s, "[x] Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\n", 123.0
         )
         self.assertIsNone(remove_at)
         self.assertIn(("begin_stream",), self.s.calls)
 
     def test_stream_stop_schedules_the_removal(self):
         remove_at = stream_mode.handle_steam_line(
-            self.s, "[x] >>> Stopped desktop stream\n", None
+            self.s, "[x] PipeWire: Deinitializing streaming\n", None
         )
         self.assertIsNotNone(remove_at)
         self.assertGreater(remove_at, time.monotonic())
@@ -1242,7 +1256,7 @@ class TestEventDispatch(unittest.TestCase):
         nobody is looking at and nobody can reach.
         """
         stream_mode.handle_steam_line(
-            self.s, "[x] >>> Stopped desktop stream\n", None
+            self.s, "[x] PipeWire: Deinitializing streaming\n", None
         )
         self.assertIn(("return_game_workspace",), self.s.calls)
 
@@ -1335,14 +1349,14 @@ class TestStreamInProgress(unittest.TestCase):
 
     def test_started_and_not_stopped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = self.write(tmp, "noise\n>>> Starting desktop stream\nmore\n")
+            path = self.write(tmp, "noise\nStreaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\nmore\n")
             self.assertTrue(stream_mode.stream_in_progress(path))
 
     def test_started_then_stopped(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = self.write(
                 tmp,
-                ">>> Starting desktop stream\n>>> Stopped desktop stream\n",
+                "Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\nPipeWire: Deinitializing streaming\n",
             )
             self.assertFalse(stream_mode.stream_in_progress(path))
 
@@ -1350,8 +1364,8 @@ class TestStreamInProgress(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = self.write(
                 tmp,
-                ">>> Starting desktop stream\n>>> Stopped desktop stream\n"
-                ">>> Starting desktop stream\n",
+                "Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\nPipeWire: Deinitializing streaming\n"
+                "Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\n",
             )
             self.assertTrue(stream_mode.stream_in_progress(path))
 
@@ -1963,7 +1977,7 @@ class TestSteamDeath(unittest.TestCase):
         """The log keeps its start marker for good once Steam dies mid-stream."""
         import tempfile as _t
         with _t.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
-            fh.write(">>> Starting desktop stream\n")
+            fh.write("Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\n")
             path = fh.name
         try:
             self.assertTrue(stream_mode.stream_in_progress(path))

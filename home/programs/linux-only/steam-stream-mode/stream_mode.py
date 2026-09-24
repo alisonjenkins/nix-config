@@ -20,11 +20,11 @@ The timings come from Steam's own logs:
     remote_connections.txt:
         Client 1774... (ali-steam-deck) connected via direct connection
     streaming_log.txt:
-        >>> Starting desktop stream
+        Streaming started to ali-steam-deck at 0.0.0.0:0, ...
         >>> Capture resolution set to 1280x800
         Adding window 4194306 (4) for process 2331545 and gameID 2854740
         Removing process 2163386 for gameID 2854740
-        >>> Stopped desktop stream
+        PipeWire: Deinitializing streaming
 
 The output has to exist *before* a session starts, because Steam selects its
 capture source then — and because a remembered selection naming an output that
@@ -140,8 +140,12 @@ TARGET_JSON_FILE = os.environ.get(
     "STREAM_MODE_TARGET_JSON_FILE", TARGET_FILE + ".json"
 )
 
-START_RE = re.compile(r">>> Starting desktop stream")
-STOP_RE = re.compile(r">>> Stopped desktop stream")
+# The session, not the video source. ">>> Starting/Stopped desktop stream"
+# mark Steam swapping between desktop and game capture, several times a
+# session; read as the end, a swap into game capture tore the stream down two
+# minutes later. These two pair exactly, once per session.
+START_RE = re.compile(r"Streaming started to ")
+STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
 # The client's own panel, relayed into the host's log by the client.
 #
 # This, rather than Steam's ">>> Capture resolution set to WxH": while the
