@@ -213,11 +213,10 @@ freely. These are what the live test surfaced.
    so sizing the output right (item 1) may be enough for them; for exclusive
    fullscreen, investigate Wine/Proton display-mode overrides. Needs a survey
    of a few games before choosing.
-3. **Reconnect to a running game streams the Friends List.** A new stream
-   session resets stream-mode's managed-window list. When the game is already
-   running, Steam's Friends List takes focus and Steam records it. On stream
-   start, stream-mode should re-adopt a running game's window, fullscreen it and
-   focus it.
+3. ~~**Reconnect to a running game streams the Friends List.**~~ Fixed
+   2026-09-24, not yet live-tested: a stream start stages the last game again
+   if its pid is still alive. Gap: a stream-mode restart in between forgets
+   the game, so a reconnect after a `just switch` mid-game is not covered.
 4. ~~**MangoHud missing from the stream.**~~ Done 2026-09-24:
    `custom.mangohud.firstVulkanLayer` (docs/adr/0011). Confirmed on the Mac
    client.
