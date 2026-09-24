@@ -167,6 +167,13 @@ MAX_CAPTURE_RE = re.compile(r"Maximum capture: (\d+)x(\d+)(?: ([\d.]+) FPS)?")
 # echo is how a Mac got learned as 4470x1676 and kept it. Measured: the echo
 # held for 7s, a transitional size for 2s.
 CLIENT_SIZE_SETTLE = float(os.environ.get("STREAM_MODE_CLIENT_SIZE_SETTLE", "10"))
+# Steam switching the stream to the game's overlay, and that capture actually
+# starting. Normally about two seconds apart; once it never started, and the
+# stream stayed black until focus moved off the game and back.
+GAME_STREAM_RE = re.compile(r">>> Switching video stream from \S+ to GameOverlay_MovieStream_\d+")
+GAME_CAPTURE_RE = re.compile(r">>> Capture method set to Game ")
+CAPTURE_STALL = float(os.environ.get("STREAM_MODE_CAPTURE_STALL", "5"))
+CAPTURE_NUDGE_LIMIT = int(os.environ.get("STREAM_MODE_CAPTURE_NUDGE_LIMIT", "3"))
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via (?:direct|indirect) connection")
@@ -868,6 +875,10 @@ class Session:
         # client name -> id, from connect lines; the stream-start line names
         # its client but carries no id.
         self.known_clients = {}
+        # When to nudge a game capture that has not started, and how many
+        # nudges it has had. See CAPTURE_STALL.
+        self.capture_deadline = None
+        self.capture_nudges = 0
         # Reset per session: a new client gets its own Big Picture placement,
         # and the user is free to move it afterwards without it snapping back.
         self.big_picture_placed = False
@@ -1062,6 +1073,42 @@ class Session:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
 
+    def game_capture_requested(self, now=None):
+        """Steam moved the stream to the game's overlay; expect frames soon."""
+        self.capture_deadline = (time.monotonic() if now is None else now) + CAPTURE_STALL
+        self.capture_nudges = 0
+
+    def game_capture_started(self):
+        self.capture_deadline = None
+
+    def check_game_capture(self, now):
+        """Move focus off the game and back when its capture has stalled.
+
+        Steam binds game capture when the recorded window changes, and a
+        rebind is what got a stalled capture going. Bounded, because a
+        capture that never starts should not have focus bounced forever.
+        """
+        if self.capture_deadline is None or now < self.capture_deadline:
+            return False
+        if self.capture_nudges >= CAPTURE_NUDGE_LIMIT:
+            log("stream-mode: game capture never started; giving up on nudging it")
+            self.capture_deadline = None
+            return False
+        game = next((w for w in self.last_windows
+                     if self.belongs_to_game(w) and not is_helper_window(w)), None)
+        other = next((w for w in self.last_windows
+                      if game is not None and w.get("id") != game.get("id")), None)
+        if game is None or other is None:
+            self.capture_deadline = None
+            return False
+        self.capture_nudges += 1
+        self.capture_deadline = now + CAPTURE_STALL
+        log("stream-mode: game capture has not started; moving focus off window {} "
+            "and back ({}/{})".format(game["id"], self.capture_nudges, CAPTURE_NUDGE_LIMIT))
+        focus_window(other["id"])
+        focus_window(game["id"])
+        return True
+
     def reassert_output(self):
         """Put the output back after niri reloaded its config.
 
@@ -1113,6 +1160,7 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
+        self.capture_deadline = None
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -1886,6 +1934,7 @@ def watch():
             # point of auditing is to see what happens when nothing does.
             pending_work = any((
                 remove_at, session.pending, session.audits, session.settle_at,
+                session.capture_deadline,
             ))
             timeout = 1.0 if pending_work else 30.0
             if len(readable) < len(procs):
@@ -1956,6 +2005,7 @@ def watch():
             # costs nothing, and reading every process's name is not free.
             session.run_due_audits(now)
             session.settle_client_output(now)
+            session.check_game_capture(now)
             if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive():
@@ -1977,6 +2027,14 @@ def handle_steam_line(session, line, remove_at):
     match = CLIENT_SIZE_RE.search(line)
     if match:
         session.note_client_output(int(match.group(1)), int(match.group(2)))
+        return remove_at
+
+    if GAME_STREAM_RE.search(line):
+        session.game_capture_requested()
+        return remove_at
+
+    if GAME_CAPTURE_RE.search(line):
+        session.game_capture_started()
         return remove_at
 
     match = MAX_CAPTURE_RE.search(line)

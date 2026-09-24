@@ -248,6 +248,68 @@ class TestWindowForGame(unittest.TestCase):
         self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
 
 
+class TestStalledGameCapture(unittest.TestCase):
+    """Steam switched to game capture and never delivered a frame.
+
+    At 10:54:16 the stream moved to GameOverlay_MovieStream for HD2 while its
+    window was still growing from 640x766 to 1280x800, and no "Capture method
+    set to Game" followed for six minutes: a black stream. Moving focus off
+    the game and back made Steam bind again, and capture started at once.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in ("focus_window",)}
+        self.focused = []
+        stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def session(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.game_pid, s.game_id = 4321, 553850
+        s.workspace_outputs = {9: stream_mode.OUTPUT_NAME}
+        s.last_windows = [
+            {"id": 227, "app_id": "steam_app_553850", "workspace_id": 9,
+             "is_focused": True, "layout": {"window_size": [1282, 802]}},
+            {"id": 5, "app_id": "md.obsidian.Obsidian", "workspace_id": 2},
+        ]
+        return s
+
+    def test_a_stalled_capture_gets_a_focus_nudge(self):
+        s = self.session()
+        s.game_capture_requested(now=0)
+        self.assertFalse(s.check_game_capture(stream_mode.CAPTURE_STALL - 1))
+        self.assertTrue(s.check_game_capture(stream_mode.CAPTURE_STALL))
+        self.assertEqual(self.focused, [5, 227])
+
+    def test_a_capture_that_starts_is_left_alone(self):
+        s = self.session()
+        s.game_capture_requested(now=0)
+        s.game_capture_started()
+        self.assertFalse(s.check_game_capture(100))
+        self.assertEqual(self.focused, [])
+
+    def test_the_nudge_gives_up_after_a_few_tries(self):
+        s = self.session()
+        s.game_capture_requested(now=0)
+        now = 0
+        for _ in range(stream_mode.CAPTURE_NUDGE_LIMIT + 3):
+            now += stream_mode.CAPTURE_STALL
+            s.check_game_capture(now)
+        self.assertEqual(len(self.focused), 2 * stream_mode.CAPTURE_NUDGE_LIMIT)
+
+    def test_no_game_window_means_no_nudge(self):
+        s = self.session()
+        s.last_windows = [s.last_windows[1]]
+        s.game_capture_requested(now=0)
+        self.assertFalse(s.check_game_capture(stream_mode.CAPTURE_STALL))
+        self.assertEqual(self.focused, [])
+
+
 class TestSetOutputMode(unittest.TestCase):
     """X clients see each virtual output mode change one change late.
 
@@ -1243,6 +1305,12 @@ class TestEventDispatch(unittest.TestCase):
         def reassert_output(self):
             self.calls.append(("reassert_output",))
 
+        def game_capture_requested(self, now=None):
+            self.calls.append(("game_capture_requested",))
+
+        def game_capture_started(self):
+            self.calls.append(("game_capture_started",))
+
         def note_client_output(self, w, h):
             self.calls.append(("note_client_output", w, h))
 
@@ -1353,6 +1421,19 @@ class TestEventDispatch(unittest.TestCase):
         self.assertEqual(
             self.s.calls,
             [("note_max_capture", 2880, 1080, 60.0), ("note_client_output", 2880, 1800)],
+        )
+
+    def test_game_capture_lines_arm_and_clear_the_stall_check(self):
+        stream_mode.handle_steam_line(
+            self.s,
+            "[x] >>> Switching video stream from Desktop_MovieStream to GameOverlay_MovieStream_1961662\n",
+            None,
+        )
+        stream_mode.handle_steam_line(
+            self.s, "[x] >>> Capture method set to Game Vulkan NV12 + VAAPI H264\n", None
+        )
+        self.assertEqual(
+            self.s.calls, [("game_capture_requested",), ("game_capture_started",)]
         )
 
     def test_an_unrelated_line_changes_nothing(self):
