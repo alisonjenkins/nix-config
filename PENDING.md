@@ -248,6 +248,16 @@ freely. These are what the live test surfaced.
    09:01, when a niri config reload turned the output off (now reasserted on
    `ConfigLoaded`, 484a897e). Confirmed it does not recover on its own: the
    desktop capture stayed `Black Frame` while game capture worked.
+11. **X sees virtual output mode changes one change late.** Measured
+   2026-09-24: after `niri msg output steam mode 1726x1080@60` then
+   `1728x1080@60`, `xrandr` on `:0` reported 1728 then 1726. HD2 read the
+   stale 1280x800 and sized its borderless window to it. stream-mode works
+   around it by stepping through refresh+1 (4a1dea45). Suspected
+   cause, not confirmed: `resize_virtual_outputs` in
+   `patches/niri-virtual-outputs.patch` calls `change_current_state`, which
+   sends `wl_output.done`, before `output_resized` updates the logical size,
+   so xwayland-satellite applies the old size on each `done`. Fix it in the
+   patch and drop the workaround.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
