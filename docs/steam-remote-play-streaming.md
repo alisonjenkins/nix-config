@@ -101,7 +101,7 @@ holding state, and it is the only one that decides anything.
 
 | Source | Watched for |
 |---|---|
-| `streaming_log.txt` | `>>> Starting/Stopped desktop stream`, `CLIENT: Video size: …, output size: WxH`, `Adding window … for process … and gameID …` |
+| `streaming_log.txt` | `Streaming started to <client>` and `PipeWire: Deinitializing streaming` (session start and end), `Maximum capture: WxH FPS`, `CLIENT: Video size: …, output size: WxH`, `Adding window … for process … and gameID …`. Not `>>> Starting/Stopped desktop stream`: those mark Steam swapping between desktop and game capture, several times a session |
 | `connections_log.txt` | `Client N (name) connected via direct connection`, `Received streaming request N with device ID N` |
 | `niri --json event-stream` | `WindowOpenedOrChanged`, `WindowLayoutsChanged`, `WorkspacesChanged`, `WindowClosed` |
 
