@@ -20,6 +20,8 @@ stream_mode.XPROP = "/nonexistent/xprop"
 # Reads the live compositor. None means "unknown", which never forces a mode.
 real_output_refresh = stream_mode.output_refresh
 stream_mode.output_refresh = lambda name: None
+# Unknown, which keeps the plain turn-it-off behaviour.
+stream_mode.other_active_outputs = lambda name: None
 
 _state_dir = None
 
@@ -144,6 +146,16 @@ class TestLogParsing(unittest.TestCase):
         constantly.
         """
         self.assertIsNone(stream_mode.CONNECT_RE.search(self.BROADCAST))
+
+    def test_disconnect_names_the_client(self):
+        for reason in ("ping timeout", "disconnecting all", "told us it was offline"):
+            line = (
+                "[2026-09-24 08:35:19] Client 11334438332915102515 (ali-mba) "
+                "disconnected: {}\n".format(reason)
+            )
+            match = stream_mode.DISCONNECT_RE.search(line)
+            self.assertEqual(match.group(1), "11334438332915102515")
+        self.assertIsNone(stream_mode.DISCONNECT_RE.search(self.CONNECT))
 
 class TestWindowForGame(unittest.TestCase):
     GAME = 2854740
@@ -913,6 +925,66 @@ class TestOutputLifetime(unittest.TestCase):
 
         self.assertFalse(s.check_steam_alive())
         self.assertEqual(signalled, [])
+
+    def test_a_client_disconnecting_before_streaming_disarms(self):
+        """Replaces a 45-second connect timeout.
+
+        The timeout withdrew the target while the client was still connected
+        and browsing. A game launched from the client after that raced the
+        target being republished at stream start, and the shim wrapped it in
+        gamescope. Steam logs every disconnect, so that is the signal.
+        """
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "mac")
+        self.enabled.clear()
+        self.assertFalse(s.disconnect(999))
+        self.assertTrue(s.disconnect(123))
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        self.assertIsNone(s.client_id)
+
+    def test_the_only_output_is_left_on(self):
+        """With the monitor off, turning this off leaves niri with nothing.
+
+        Steam restarted then fails to open its login window and never shows
+        up for Remote Play. A Steam shutdown logs a disconnect, so this path
+        runs on every Steam restart.
+        """
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            self.enabled.clear()
+            s.disconnect(123)
+            self.assertNotIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_the_output_goes_off_while_the_monitor_is_on(self):
+        stream_mode.other_active_outputs = lambda name: {"DP-2"}
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            self.enabled.clear()
+            s.disconnect(123)
+            self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_a_disconnect_mid_stream_leaves_the_stop_marker_in_charge(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "mac")
+        s.begin_stream()
+        self.enabled.clear()
+        self.assertFalse(s.disconnect(123))
+        self.assertEqual(self.enabled, [])
+
+    def test_steam_dying_with_a_client_connected_disarms(self):
+        """A crash is the one way to lose a client without a disconnect line."""
+        stream_mode.steam_is_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "mac")
+        self.assertTrue(s.check_steam_alive())
+        self.assertIsNone(s.client_id)
 
     def test_no_game_means_nothing_to_clean_up(self):
         """Steam not running is the ordinary state between sessions."""

@@ -71,16 +71,6 @@ REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
 # shader compilation and launchers routinely take minutes before anything is
 # mapped. A five-second budget gave up long before the window existed.
 STAGE_TIMEOUT = float(os.environ.get("STREAM_MODE_STAGE_TIMEOUT", "300"))
-# How long a connected client has to actually start a stream before the
-# target is withdrawn again. connect() publishes the target as soon as a
-# client connects, before any stream has started, so the display filter is
-# already armed if one does. A client that opens the app and only browses --
-# or disconnects without Steam ever logging it -- leaves no
-# ">>> Starting"/"Stopped desktop stream" marker for end_stream() to react
-# to, and the target would otherwise stay published, sizing every later
-# desktop launch to that client's panel, until something else happens to
-# restart this service.
-CONNECT_TIMEOUT = float(os.environ.get("STREAM_MODE_CONNECT_TIMEOUT", "45"))
 # How often to check that Steam still exists while a game is staged. Steam
 # dying is silent from here -- its logs simply stop -- so there is nothing to
 # react to and it has to be looked for. Slow on purpose: a game outliving Steam
@@ -176,6 +166,9 @@ CLIENT_SIZE_SETTLE = float(os.environ.get("STREAM_MODE_CLIENT_SIZE_SETTLE", "10"
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via (?:direct|indirect) connection")
+# Logged for every connect, with reasons such as "ping timeout",
+# "disconnecting all" (Steam shutting down) and "told us it was offline".
+DISCONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) disconnected: ")
 # A client on the same LAN as the host logs "indirect" for a moment before
 # upgrading to "direct" a couple seconds later, so both match here. connect()
 # re-runs its per-session setup (resizing, re-enabling the output) on the
@@ -559,6 +552,15 @@ def usable_output_names():
         return set()
 
 
+def other_active_outputs(name):
+    """Enabled outputs besides name. niri reports a disabled one without a logical."""
+    try:
+        outputs = niri_outputs()
+    except (subprocess.CalledProcessError, ValueError, OSError):
+        return None
+    return {n for n, o in outputs.items() if n != name and (o or {}).get("logical")}
+
+
 def taken_output_names():
     """Names niri will refuse to create, whether or not they work.
 
@@ -878,9 +880,6 @@ class Session:
         self.workspace_outputs = {}
         self.clients = load_clients()
         self.stage_timeout = STAGE_TIMEOUT if stage_timeout is None else stage_timeout
-        # monotonic deadline by which a connected client must have started a
-        # stream, or None when no connect is awaiting one. See CONNECT_TIMEOUT.
-        self.connect_deadline = None
 
     # -- lifecycle
 
@@ -953,13 +952,6 @@ class Session:
         # for, leaving Steam sized to the desktop monitor for the session.
         publish_target(self.output, width, height, refresh)
         set_output_enabled(self.output, True)
-        # Only while nothing is streaming yet: a reconnect from the client
-        # already being served must not impose a deadline on a session that
-        # is running fine, and end_stream()/begin_stream() are what govern
-        # the target once a stream is under way.
-        self.connect_deadline = (
-            None if self.streaming else time.monotonic() + CONNECT_TIMEOUT
-        )
         log(
             "stream-mode: {} connected; {} on at {}x{}".format(
                 client_name or client_id, self.output, width, height
@@ -967,13 +959,30 @@ class Session:
         )
         return True
 
+    def disconnect(self, client_id):
+        """The client has gone: disarm, unless a stream is still winding down.
+
+        The target stays published for as long as the client is connected,
+        because a game launched from the client starts before the stream
+        does and the shim reads the target at launch. A 45-second connect
+        timeout withdrew it from a client still browsing, and the next launch
+        from it went through gamescope. Mid-stream, the stop marker and its
+        grace period already govern the teardown.
+        """
+        if client_id != self.client_id:
+            return False
+        self.client_id = None
+        if self.streaming:
+            return False
+        log("stream-mode: client {} disconnected".format(client_id))
+        return self.end_stream()
+
     def teardown(self):
         """Turn the output off. Only on shutdown — see `idle`."""
         if self.output is None:
             return False
         name, self.output = self.output, None
         self.game_pid = None
-        self.connect_deadline = None
         set_output_enabled(name, False)
         log("stream-mode: turned {} off".format(name))
         return True
@@ -981,8 +990,6 @@ class Session:
     def begin_stream(self):
         """A stream has started: say where to render."""
         self.streaming = True
-        # A stream starting is what the deadline was waiting for.
-        self.connect_deadline = None
         clear_gamescope_atoms()
         if self.output is None:
             self.ensure_output()
@@ -1036,7 +1043,6 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
-        self.connect_deadline = None
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -1056,6 +1062,14 @@ class Session:
         self.return_game_workspace()
         name = self.output if self.output is not None else OUTPUT_NAME
         self.output = None
+        # Left on when it is the only output. With the monitor off, niri
+        # would have none at all, and a Steam restarted then fails to open
+        # its login window ("Failed to create fallback output window,
+        # bailing"), stays logged off and is invisible to every client.
+        if other_active_outputs(name) == set():
+            withdraw_target()
+            log("stream-mode: left {} on, it is the only output".format(name))
+            return True
         set_output_enabled(name, False)
         withdraw_target()
         log("stream-mode: turned {} off until the next client".format(name))
@@ -1168,6 +1182,10 @@ class Session:
         )
         return True
 
+    def is_live(self):
+        """A client connected, a stream running, or a game staged."""
+        return self.client_id is not None or self.streaming or self.game_pid is not None
+
     def check_steam_alive(self):
         """Clean up a game that Steam left behind when it died.
 
@@ -1185,11 +1203,13 @@ class Session:
         """
         # Nothing to tidy up unless we are in the middle of something. Steam
         # not running is the ordinary state between sessions.
-        if self.game_pid is None and not self.streaming:
+        if not self.is_live():
             return False
         if steam_is_running():
             return False
 
+        # A crash is the one way a client goes without a disconnect line.
+        self.client_id = None
         pid, self.game_pid = self.game_pid, None
         if pid is not None:
             log(
@@ -1725,8 +1745,7 @@ def watch():
             # logged until the next event happened to arrive — and the whole
             # point of auditing is to see what happens when nothing does.
             pending_work = any((
-                remove_at, session.pending, session.audits,
-                session.connect_deadline, session.settle_at,
+                remove_at, session.pending, session.audits, session.settle_at,
             ))
             timeout = 1.0 if pending_work else 30.0
             if len(readable) < len(procs):
@@ -1767,9 +1786,12 @@ def watch():
                     handle_niri_event(session, line)
                 elif procs["clients"].stdout is handle:
                     match = CONNECT_RE.search(line)
+                    gone = DISCONNECT_RE.search(line)
                     if match:
                         remove_at = None
                         session.connect(int(match.group(1)), match.group(2))
+                    elif gone:
+                        session.disconnect(int(gone.group(1)))
                     else:
                         match = STREAM_REQUEST_RE.search(line)
                         # Only when it names a client we are not already
@@ -1788,20 +1810,13 @@ def watch():
             if remove_at is not None and now >= remove_at:
                 remove_at = None
                 session.end_stream()
-            if session.connect_deadline is not None and now >= session.connect_deadline:
-                log(
-                    "stream-mode: client connected but never started streaming; "
-                    "withdrawing the target"
-                )
-                session.end_stream()
             # Steam dying is silent from here: its logs simply stop, so there
-            # is no line to react to. Polled, but only while a game is staged,
-            # and slowly -- a game outliving Steam by a few seconds costs
-            # nothing, and reading every process's name is not free.
+            # is no line to react to. Polled, but only while a client or game
+            # is live, and slowly -- a game outliving Steam by a few seconds
+            # costs nothing, and reading every process's name is not free.
             session.run_due_audits(now)
             session.settle_client_output(now)
-            if (session.game_pid is not None or session.streaming) \
-                    and now >= next_steam_check:
+            if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive():
                     remove_at = None
