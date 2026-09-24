@@ -5,6 +5,7 @@ Run: python3 -m unittest discover -s tests -v
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -13,6 +14,9 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import stream_mode  # noqa: E402
+
+# begin_stream() clears atoms on the real X root; never let a test reach it.
+stream_mode.XPROP = "/nonexistent/xprop"
 
 _state_dir = None
 
@@ -1507,6 +1511,70 @@ class TestSplashScreens(unittest.TestCase):
             stream_mode.move_window_to_tiling = real
         self.assertEqual(tiled, [121])
         self.assertEqual(self.toggled, [121])
+
+
+class TestGamescopeAtoms(unittest.TestCase):
+    """gamescope leaves GAMESCOPE_* atoms on the host X root. Steam then acts
+    as if it runs inside gamescope, reads focus from GAMESCOPE_FOCUSED_APP,
+    gets app id 0, and flips the stream between game and desktop mode."""
+
+    ROOT = (
+        "_NET_ACTIVE_WINDOW(WINDOW): window id # 0x6e00001\n"
+        "GAMESCOPE_COMPOSITE_FORCE(CARDINAL) = 0\n"
+        "GAMESCOPE_DISPLAY_HDR_ENABLED(CARDINAL) = 1\n"
+        "GAMESCOPE_RESHADE_EFFECT(UTF8_STRING) = \n"
+        "GAMESCOPE_RESHADE_EFFECT(UTF8_STRING) = \n"
+    )
+
+    def setUp(self):
+        self._real_run = stream_mode.subprocess.run
+        self.calls = []
+
+        def fake_run(args, **_kwargs):
+            self.calls.append(list(args))
+            stdout = self.ROOT if args[-1] == "-root" else ""
+            return subprocess.CompletedProcess(args, 0, stdout=stdout, stderr="")
+
+        stream_mode.subprocess.run = fake_run
+
+    def tearDown(self):
+        stream_mode.subprocess.run = self._real_run
+
+    def test_removes_each_gamescope_atom_once(self):
+        removed = stream_mode.clear_gamescope_atoms()
+        self.assertEqual(removed, [
+            "GAMESCOPE_COMPOSITE_FORCE",
+            "GAMESCOPE_DISPLAY_HDR_ENABLED",
+            "GAMESCOPE_RESHADE_EFFECT",
+        ])
+        removes = [c[-1] for c in self.calls if "-remove" in c]
+        self.assertEqual(removes, removed)
+
+    def test_leaves_other_atoms_alone(self):
+        stream_mode.clear_gamescope_atoms()
+        self.assertFalse(any("_NET_ACTIVE_WINDOW" in c for c in self.calls))
+
+    def test_only_successful_removals_are_reported(self):
+        real_fake = stream_mode.subprocess.run
+
+        def one_removal_fails(args, **kwargs):
+            result = real_fake(args, **kwargs)
+            if args[-1] == "GAMESCOPE_DISPLAY_HDR_ENABLED":
+                return subprocess.CompletedProcess(args, 1, stdout="", stderr="BadAtom")
+            return result
+
+        stream_mode.subprocess.run = one_removal_fails
+        self.assertEqual(stream_mode.clear_gamescope_atoms(), [
+            "GAMESCOPE_COMPOSITE_FORCE",
+            "GAMESCOPE_RESHADE_EFFECT",
+        ])
+
+    def test_an_unreachable_x_server_is_not_fatal(self):
+        def failing_run(args, **_kwargs):
+            raise OSError("xprop not found")
+
+        stream_mode.subprocess.run = failing_run
+        self.assertEqual(stream_mode.clear_gamescope_atoms(), [])
 
 
 class TestSteamDeath(unittest.TestCase):

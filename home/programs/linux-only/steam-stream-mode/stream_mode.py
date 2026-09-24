@@ -43,6 +43,7 @@ import sys
 import time
 
 NIRI = os.environ.get("STREAM_MODE_NIRI", "niri")
+XPROP = os.environ.get("STREAM_MODE_XPROP", "xprop")
 LOG = os.environ.get(
     "STREAM_MODE_LOG",
     os.path.expanduser("~/.local/share/Steam/logs/streaming_log.txt"),
@@ -416,6 +417,50 @@ def withdraw_target():
             return False
     if removed:
         log("stream-mode: withdrew the stream target")
+    return removed
+
+
+def clear_gamescope_atoms():
+    """Remove GAMESCOPE_* atoms from the host X root window.
+
+    gamescope opens the host display to copy its cursor and leaves these
+    behind. Steam then acts as if it runs inside gamescope, reads focus from
+    GAMESCOPE_FOCUSED_APP, gets app id 0, and flips a stream between game and
+    desktop mode. Returns the atoms removed.
+    """
+    try:
+        listing = subprocess.run(
+            [XPROP, "-root"], capture_output=True, text=True, timeout=5
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log("stream-mode: could not read the X root to clear gamescope atoms: {}".format(exc))
+        return []
+    if listing.returncode != 0:
+        log("stream-mode: xprop -root failed: {}".format((listing.stderr or "").strip()))
+        return []
+
+    names = sorted({
+        line.split("(", 1)[0].split(":", 1)[0].strip()
+        for line in listing.stdout.splitlines()
+        if line.startswith("GAMESCOPE_")
+    })
+    removed = []
+    for name in names:
+        try:
+            result = subprocess.run(
+                [XPROP, "-root", "-remove", name],
+                capture_output=True, text=True, timeout=5,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            log("stream-mode: could not remove {}: {}".format(name, exc))
+            continue
+        if result.returncode != 0:
+            log("stream-mode: could not remove {}: {}".format(
+                name, (result.stderr or "").strip()))
+            continue
+        removed.append(name)
+    if removed:
+        log("stream-mode: removed stale gamescope atoms: {}".format(", ".join(removed)))
     return removed
 
 
@@ -844,6 +889,7 @@ class Session:
         self.streaming = True
         # A stream starting is what the deadline was waiting for.
         self.connect_deadline = None
+        clear_gamescope_atoms()
         if self.output is None:
             self.ensure_output()
         if self.output is None:

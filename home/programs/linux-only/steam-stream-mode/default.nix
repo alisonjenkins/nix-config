@@ -15,7 +15,8 @@ let
     } ''
     mkdir -p $out/bin
     makeWrapper ${raw}/bin/stream-mode $out/bin/stream-mode \
-      --set-default STREAM_MODE_NIRI ${lib.getExe cfg.niriPackage}
+      --set-default STREAM_MODE_NIRI ${lib.getExe cfg.niriPackage} \
+      --set-default STREAM_MODE_XPROP ${lib.getExe pkgs.xprop}
   '';
 in
 {
