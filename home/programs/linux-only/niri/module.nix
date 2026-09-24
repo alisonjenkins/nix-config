@@ -15,11 +15,15 @@ let
   # `virtual-output` tells the patched niri to create the output itself rather
   # than wait for a connector that will never appear; `mode` is the only thing
   # that can say how big it is, since there is no connector advertising modes.
+  # Hot corners are off because a streaming client's cursor parks in a corner
+  # and keeps opening the overview.
   mkVirtualOutput = name: o: ''
     output "${name}" {
         virtual-output
-        mode "${toString o.width}x${toString o.height}@${toString o.refresh}"${
-          lib.optionalString o.off "\n    off"}
+        mode "${toString o.width}x${toString o.height}@${toString o.refresh}"
+        hot-corners {
+            off
+        }${lib.optionalString o.off "\n    off"}
     }'';
 
   virtualOutputBlocks =
