@@ -4,8 +4,12 @@ How the host streams to a Steam Deck (or a TV, or a phone) at *that client's*
 resolution, while a 5120x1440 ultrawide stays connected and usable.
 
 This document is the map. Each component's own comments carry the detail; what
-is written down here is the part no single file can tell you — how the five
+is written down here is the part no single file can tell you — how the
 pieces fit together, and which of the couplings between them are load-bearing.
+
+Why each piece is the way it is, with the evidence, is in the decision records
+under [`adr/`](adr/README.md). When something is wrong, start with
+[`remote-play-troubleshooting.md`](remote-play-troubleshooting.md).
 
 ## The problem
 
@@ -35,7 +39,9 @@ several wrong turns. See `PENDING.md` for the full archaeology.
 | Output declaration | `home/programs/linux-only/niri/module.nix` | Declares the `steam` output in niri's config, disabled |
 | Watcher | `home/programs/linux-only/steam-stream-mode/` | Reacts to stream and compositor events; owns all state |
 | SDL filter | `pkgs/steam-display-filter/` | Makes Steam see one display, sized to the stream |
-| Host wiring | `flake-modules/hosts/ali-desktop/default.nix` | `LD_PRELOAD` + `STEAM_STREAM_TARGET` into Steam's environment |
+| Host wiring | `flake-modules/hosts/ali-desktop/default.nix` | `LD_PRELOAD` and the target paths into Steam's environment |
+| Input shim | `patches/extest-remote-play-relative-motion.patch` | Turns Steam's XTEST input into a uinput device mapped onto the streamed output ([ADR 0006](adr/0006-extest-remote-play-input.md)) |
+| Launch shim | steam-command-runner, installed as `~/.local/bin/gamescope` | Launches streamed games without gamescope, so Steam can stream them in game mode ([ADR 0007](adr/0007-remote-play-game-mode.md)) |
 
 ### 1. niri virtual-output patch
 
@@ -117,10 +123,12 @@ arrives as a streaming request with a device ID.
    output with `move-workspace-to-monitor --reference`. Games are pinned to
    that workspace by a niri window rule, so moving the workspace moves every
    game, present and future, without per-window handling.
-5. As windows appear, `fill_streamed_output` widens the game's column to
-   `set-column-width "100%"`, and `refocus_streamed_window` focuses it.
+5. As windows appear, `fill_streamed_output` fullscreens the game with
+   `set-window-fullscreen`, and `refocus_streamed_window` focuses it.
    Both idempotent, both capped (`WIDEN_LIMIT`, `REFOCUS_LIMIT`) so a window
-   that genuinely cannot be corrected does not loop forever.
+   that genuinely cannot be corrected does not loop forever. Floating windows
+   and anything under 320x240 are skipped, so a helper window such as Wine's
+   tray window is never mistaken for the game.
 6. `learn` records the client's real size from `CLIENT: Video size: …, output
    size: WxH` for next time.
 
@@ -170,7 +178,27 @@ the loader picks the right one per process.
 
 - `LD_PRELOAD` — the multiarch filter (and `extest`, repeated because the Steam
   module's own `LD_PRELOAD` would otherwise be overwritten)
-- `STEAM_STREAM_TARGET` — the path the watcher publishes to and the filter reads
+- `STEAM_STREAM_TARGET` — the size file the watcher publishes and the filter reads
+- `STEAM_COMMAND_RUNNER_STREAM_TARGET` — the JSON target the launch shim reads.
+  Without it the shim looks in `/run/user`, which Steam's container cannot see,
+  and never notices a stream ([ADR 0004](adr/0004-stream-target-files.md))
+- `EXTEST_TARGET_OUTPUT` — the streamed output's name, taken from its
+  declaration
+
+## Game mode
+
+The client only captures the mouse, and sends relative motion for camera look,
+when Steam streams in **game mode**. In desktop mode it sends absolute
+positions confined to its own window, and camera look stops at the edge.
+
+Steam enters game mode only when it can find, foreground and capture the game
+window on its own X display. Four things used to prevent that: gamescope
+hiding the window on a nested display, stale `GAMESCOPE_*` atoms on `:0`, an
+anti-cheat helper claiming the window through the other-architecture overlay,
+and Wine's tray window being fullscreened as the game. The launch shim handles
+the first and third, the watcher the second and fourth. The full account,
+including every approach that failed, is
+[ADR 0007](adr/0007-remote-play-game-mode.md).
 
 ## How the couplings actually work
 
@@ -278,7 +306,10 @@ The traps here are unusually good at producing false passes. In short:
   --refresh-rate 60`, then remove it. Each create/remove makes Steam re-emit
   `Desktop state changed`.
 - The watcher's own behaviour is covered by `tests/test_stream_mode.py`
-  (117 tests), which runs against a temporary state directory.
+  (145 tests), which runs against a temporary state directory:
+  `python3 -m unittest home/programs/linux-only/steam-stream-mode/tests/test_stream_mode.py`.
+- Read the stream mode from `streaming_log.txt`, never from the picture. See
+  [`remote-play-troubleshooting.md`](remote-play-troubleshooting.md).
 
 `PENDING.md` carries the longer list, including the diagnostics that once cost
 more than the fault they were diagnosing.
