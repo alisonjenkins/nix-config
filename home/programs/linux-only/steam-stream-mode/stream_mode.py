@@ -1768,9 +1768,21 @@ def spawn_tail(path):
         ["tail", "-n", "0", "-F", path],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
-        bufsize=1,
+        bufsize=0,
     )
+
+
+def read_line(handle):
+    """One line from an unbuffered reader pipe, as text.
+
+    The pipes are unbuffered on purpose. A buffered reader's readline() takes
+    a whole chunk from the pipe and keeps the lines after the first, so
+    select() sees an empty pipe and those lines wait for the next write. A
+    Deck stream's stop marker arrived in such a burst and was never acted on.
+    Unbuffered, readline() takes one line and leaves the rest where select()
+    can see them.
+    """
+    return handle.readline().decode("utf-8", "replace")
 
 
 def next_reader_backoff(current):
@@ -1795,8 +1807,7 @@ def spawn_event_stream():
         [NIRI, "msg", "--json", "event-stream"],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
-        bufsize=1,
+        bufsize=0,
         env=niri_env(),
     )
 
@@ -1963,7 +1974,7 @@ def watch():
                 )
 
             for handle in ready:
-                line = handle.readline()
+                line = read_line(handle)
                 if not line:
                     continue
 

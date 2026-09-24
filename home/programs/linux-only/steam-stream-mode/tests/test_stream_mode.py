@@ -310,6 +310,36 @@ class TestStalledGameCapture(unittest.TestCase):
         self.assertEqual(self.focused, [])
 
 
+class TestLogReaders(unittest.TestCase):
+    """Lines that arrive together must each wake the loop.
+
+    A buffered text pipe read a whole chunk on the first readline(), kept
+    the rest in Python's buffer, and select() then saw an empty pipe. The
+    stop marker of a Deck stream arrived in such a burst and was never acted
+    on.
+    """
+
+    def test_a_burst_of_lines_stays_visible_to_select(self):
+        import select
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "log.txt")
+            open(path, "w").close()
+            proc = stream_mode.spawn_tail(path)
+            try:
+                time.sleep(0.5)
+                with open(path, "a") as fh:
+                    fh.write("first\nsecond\n")
+                ready, _, _ = select.select([proc.stdout], [], [], 5)
+                self.assertTrue(ready)
+                self.assertEqual(stream_mode.read_line(proc.stdout), "first\n")
+                ready, _, _ = select.select([proc.stdout], [], [], 1)
+                self.assertTrue(ready, "the second line was stranded in a buffer")
+                self.assertEqual(stream_mode.read_line(proc.stdout), "second\n")
+            finally:
+                proc.kill()
+                proc.wait()
+
+
 class TestSetOutputMode(unittest.TestCase):
     """X clients see each virtual output mode change one change late.
 
