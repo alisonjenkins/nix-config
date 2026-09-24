@@ -213,9 +213,9 @@ freely. These are what the live test surfaced.
    so sizing the output right (item 1) may be enough for them; for exclusive
    fullscreen, investigate Wine/Proton display-mode overrides. Needs a survey
    of a few games before choosing.
-3. ~~**Reconnect to a running game streams the Friends List.**~~ Fixed
-   2026-09-24, not yet live-tested: a stream start stages the last game again
-   if its pid is still alive. Gap: a stream-mode restart in between forgets
+3. ~~**Reconnect to a running game streams the Friends List.**~~ Done
+   2026-09-24, live-confirmed 10:32: a stream start stages the last game again
+   if its pid is still alive, and Steam went straight back to `Game Vulkan`. Gap: a stream-mode restart in between forgets
    the game, so a reconnect after a `just switch` mid-game is not covered.
 4. ~~**MangoHud missing from the stream.**~~ Done 2026-09-24:
    `custom.mangohud.firstVulkanLayer` (docs/adr/0011). Confirmed on the Mac
@@ -261,8 +261,10 @@ freely. These are what the live test surfaced.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
-   captured `Game Vulkan NV12`. The focus fix (841f94bd) and the reconnect
-   re-staging (item 3) are not yet live-tested.
+   captured `Game Vulkan NV12`. 10:31 on the full set of fixes: no manual
+   steps from launch to game capture, two full missions without a teardown
+   (item 5), X and niri agreeing on 1728x1080 (item 11 workaround), and a
+   mid-game reconnect restored the game (item 3).
 
 ### Traps worth not re-learning
 
