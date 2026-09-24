@@ -30,6 +30,7 @@ something is wrong.
 | [0010](0010-niri-config-kdl.md) | Keep comments out of niri's KDL, validate the built config | Accepted |
 | [0011](0011-mangohud-first-vulkan-layer.md) | Put MangoHud first in the Vulkan layer chain | Accepted |
 | [0012](0012-size-output-from-client-reports.md) | Size the streamed output from what the client reports | Accepted |
+| [0013](0013-disarm-on-client-disconnect.md) | Disarm on client disconnect, and never leave niri without an output | Accepted |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)

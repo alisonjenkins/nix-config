@@ -16,6 +16,10 @@ from reasoning about what the client showed instead of what Steam logged.
 | Camera stops turning at the edge of the client window | [Stream mode](#which-mode-is-the-stream-in). Desktop mode means absolute mouse. | [0007](adr/0007-remote-play-game-mode.md) |
 | Stream shows the whole desktop, not just the game | [Stream mode](#which-mode-is-the-stream-in), then [the shim's decision](#did-the-shim-launch-the-game-directly) | [0007](adr/0007-remote-play-game-mode.md) |
 | Video frozen on one frame, input still works | [Which process Steam captures](#which-process-is-steam-capturing) | [0007](adr/0007-remote-play-game-mode.md) |
+| Stream is a near-black rectangle | `grep 'Capture method' streaming_log.txt`: `Desktop Black Frame` that never becomes `Game Vulkan` or `PipeWire`, after `no more input formats` earlier in the log, means Steam's capture died. Restart Steam | PENDING.md item 9 |
+| Client can't start a stream, host log shows nothing | No `connected`/`streaming request` line in `remote_connections.txt` means the client never reached Steam. Restart the client | |
+| Game went through gamescope while streaming | Target withdrawn before launch? `journalctl --user -u steam-stream-mode \| grep -E 'published\|withdrew'` | [0013](adr/0013-disarm-on-client-disconnect.md) |
+| Aspect stretched or wrong size | `cat ~/.local/state/stream-mode/clients.json`; `grep -E 'Maximum capture\|output size' streaming_log.txt` | [0012](adr/0012-size-output-from-client-reports.md) |
 | Stream is a white or grey window | [Focus and helper windows](#which-window-has-focus) | [0005](adr/0005-stream-mode-owns-stream-state.md) |
 | Stream flips between game and desktop mode | [`GAMESCOPE_*` atoms on `:0`](#gamescope-atoms-on-the-host-display) | [0007](adr/0007-remote-play-game-mode.md) |
 | Clicks land on the wrong monitor | [extest loaded and current](#is-the-current-extest-loaded) | [0006](adr/0006-extest-remote-play-input.md) |

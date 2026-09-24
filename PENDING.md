@@ -203,12 +203,9 @@ Game-mode streaming works end to end (docs/adr/0007): the shim launches the
 game without gamescope, Steam captures `Game Vulkan`, and camera look turns
 freely. These are what the live test surfaced.
 
-1. ~~**Wrong learned client size.**~~ Fixed 2026-09-24, not yet live-tested
-   (docs/adr/0012). The first `output size` was our own output echoed back.
-   stream-mode now waits for the size to settle and fits it inside the
-   client's `Maximum capture`. Check after the next Mac session that
-   `clients.json` holds `{"output": [2880, 1800], ...}` and the output is
-   1728x1080.
+1. ~~**Wrong learned client size.**~~ Done 2026-09-24 (docs/adr/0012).
+   Confirmed live: `set steam to 1728x1080@60`, then
+   `Capture method set to Game Vulkan NV12`, `Capture resolution set to 1728x1080`.
 2. **Games render at their own configured resolution.** Without gamescope
    nothing forces the render size to match the stream (steam-command-runner
    ADR 0006 only applies under gamescope). HD2 was set to 1440x900 by hand as
@@ -233,17 +230,20 @@ freely. These are what the live test surfaced.
    shows in `~/.steam-command-runner-shim.log`, and only with `shim_debug`.
    Always write that one line to the log file, and correct the docs that say
    it reaches the journal (runner ADR 0007, docs/remote-play-troubleshooting.md).
-7. **No outputs at all when DP-2 is off.** stream-mode turns the idle `steam`
-   output off. With DP-2 also off niri has zero outputs, and a Steam restart
-   then fails to open its login window
-   (`DesktopLoginWindow_uid0: Failed to create fallback output window, bailing`),
-   stays logged off, and is invisible to Remote Play clients. Keep the virtual
-   output on when it is the only output, or at least document it in the
-   troubleshooting guide.
+7. ~~**No outputs at all when DP-2 is off.**~~ Done 2026-09-24
+   (docs/adr/0013): the output stays on when it is the only one.
 8. **lsfg-vk layer fails to load.** Every Vulkan app logs
    `Failed to find 'vkGetInstanceProcAddr' in layer ".../lsfg-vk-2.0.0/lib/liblsfg-vk-layer.so"`.
    Present with or without the loader settings file, so unrelated to item 4,
    but frame generation is probably not working anywhere.
+9. **Steam's desktop capture dies when the output goes off under it.** Steam
+   keeps a PipeWire capture of the output open after a stream stops. When
+   stream-mode turned the output off (08:20:41 on 2026-09-24) it logged
+   `PipeWire stream state error: no more input formats`, and every later
+   stream was `Desktop Black Frame` until Steam restarted. ADR 0013 keeps the
+   output on while the monitor is off, but with DP-2 on the output still goes
+   off. Test whether the capture recovers when the output comes back; if
+   not, keep it on until Steam releases the capture.
 
 ### Traps worth not re-learning
 
