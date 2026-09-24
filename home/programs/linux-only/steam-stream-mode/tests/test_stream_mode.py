@@ -248,6 +248,36 @@ class TestWindowForGame(unittest.TestCase):
         self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
 
 
+class TestSetOutputMode(unittest.TestCase):
+    """X clients see each virtual output mode change one change late.
+
+    xwayland-satellite kept reporting the previous size: after the output was
+    set back to 1728x1080, HD2 read 1280x800 from X and sized its borderless
+    window to that. A second change that only differs in refresh carries the
+    size through.
+    """
+
+    def setUp(self):
+        self._real = (stream_mode.subprocess.run, stream_mode.niri_env)
+        self.calls = []
+
+        def fake_run(args, **_kwargs):
+            self.calls.append(list(args))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        stream_mode.subprocess.run = fake_run
+        stream_mode.niri_env = lambda: {}
+
+    def tearDown(self):
+        stream_mode.subprocess.run, stream_mode.niri_env = self._real
+
+    def test_the_real_mode_is_set_last_after_a_refresh_step(self):
+        self.assertTrue(stream_mode.set_output_mode("steam", 1728, 1080, 60))
+        self.assertEqual(
+            [c[-1] for c in self.calls], ["1728x1080@61", "1728x1080@60"]
+        )
+
+
 class TestConnectedClient(unittest.TestCase):
     """A restart forgot the client, and a launch before the stream went through gamescope."""
 
