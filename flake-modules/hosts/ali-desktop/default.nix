@@ -1007,6 +1007,9 @@ in {
             # from source for a fault only Steam's private FHS actually has.
             package = let
               steamPkgs = pkgs.extend (_final: prev: { libva = prev.master.libva; });
+              # steam-stream-mode's state directory: the published stream target
+              # and the display filter's log live here.
+              streamModeState = "${config.users.users.${username}.home}/.local/state/stream-mode";
             in steamPkgs.steam.override {
               buildFHSEnv = args: (steamPkgs.buildFHSEnv.override {
                 bubblewrap = patchedBwrap;
@@ -1051,10 +1054,12 @@ in {
                 # Absolute, because buildFHSEnv writes extraEnv values
                 # verbatim — "$HOME/..." arrives at the process as those eight
                 # literal characters and names a file that cannot exist.
-                STEAM_STREAM_TARGET =
-                  "${config.users.users.${username}.home}/.local/state/stream-mode/target";
-                STEAM_DISPLAY_FILTER_LOG =
-                  "${config.users.users.${username}.home}/.local/state/stream-mode/filter.log";
+                STEAM_STREAM_TARGET = "${streamModeState}/target";
+                STEAM_DISPLAY_FILTER_LOG = "${streamModeState}/filter.log";
+                # The gamescope shim's own default is $XDG_RUNTIME_DIR, where
+                # the watcher stopped publishing for the reason above, so
+                # without this it never sees a stream.
+                STEAM_COMMAND_RUNNER_STREAM_TARGET = "${streamModeState}/target.json";
 
                 # extest's absolute-axis calibration otherwise takes the
                 # largest connected output, which is always DP-2, not the
