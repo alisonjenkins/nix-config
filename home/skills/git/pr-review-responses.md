@@ -39,12 +39,15 @@ the default branch every tick (no model needed for a clean rebase), and
 exits — waking you — only when a cheap `gh pr view` fingerprint actually
 changes, a rebase conflict needs judgement, or 24h passes idle. It needs
 exclusive use of its checkout for the whole run — give it its own worktree
-if you'll keep working on something else in the meantime, or its next tick
-rebases whatever you switched to and fails. It treats the review state on
+if you'll keep working in this one in the meantime, or its next tick fails:
+it rebases whatever you switched to, and a rebase refuses a tree with
+uncommitted edits (`NEEDS_ATTENTION`). It treats the review state on
 its first tick as the baseline; set `WATCH_PR_TRIAGED_REVIEWS=<count you
 triaged>` (`gh pr view <n> --json reviews -q '.reviews|length'`) so a review
-that landed after your triage wakes you instead of being swallowed. A ScheduleWakeup/`/loop` tick,
-by contrast, is a full model turn even when
+that landed after your triage wakes you instead of being swallowed. Re-triage
+and pass the fresh count on every relaunch: a stale count differs from the
+current one and wakes you again immediately, in a loop. A
+ScheduleWakeup/`/loop` tick, by contrast, is a full model turn even when
 nothing changed; reserve it for when no background-execution mechanism is
 available. Either way, back off exponentially rather than a fixed interval —
 start at 1 minute, ~1.5x per empty tick, capped at 15 minutes — since most of
