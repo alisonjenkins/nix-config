@@ -310,6 +310,106 @@ class TestStalledGameCapture(unittest.TestCase):
         self.assertEqual(self.focused, [])
 
 
+class TestVirtualGamepads(unittest.TestCase):
+    """A gamepad Steam creates mid-game has to be announced again.
+
+    SDL, inside Proton, only uses a Steam virtual gamepad listed in
+    virtualgamepadinfo.txt, and checks when the device appears. On a Deck
+    reconnect Steam created "pad 0" at 11:47:26 and listed it later, so HD2
+    kept the old pad and ignored the controller. Touching the node made SDL
+    look again, and the controls came back without a relaunch.
+    """
+
+    INFO = (
+        "[slot 0]\nname=Steam Deck Controller\nVID=0x28de\nPID=0x1205\n"
+        "handle=0x000000ff34504ad8\ntype=steam\n"
+        "[slot 2]\nname=#controller_xbox360\nVID=0x045e\nPID=0x028e\n"
+        "handle=0x00545e28e1e02487\ntype=xbox360\n"
+    )
+
+    def sysfs(self, tmp, event, name, virtual=True):
+        base = os.path.join(tmp, "devices", "virtual" if virtual else "pci0000:00", "input", event)
+        os.makedirs(os.path.join(base, "device"))
+        with open(os.path.join(base, "device", "name"), "w") as fh:
+            fh.write(name + "\n")
+        os.makedirs(os.path.join(tmp, "class"), exist_ok=True)
+        os.symlink(base, os.path.join(tmp, "class", event))
+
+    def test_the_listed_slots_are_read(self):
+        self.assertEqual(stream_mode.gamepad_slots(self.INFO), {0, 2})
+
+    def test_only_steams_virtual_pads_are_found(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.sysfs(tmp, "event257", "Microsoft X-Box 360 pad 0")
+            self.sysfs(tmp, "event256", "Microsoft X-Box 360 pad 1")
+            self.sysfs(tmp, "event12", "Microsoft X-Box 360 pad 3", virtual=False)
+            self.sysfs(tmp, "event5", "Keyboard passthrough")
+            self.assertEqual(
+                stream_mode.steam_virtual_pads(os.path.join(tmp, "class")),
+                {0: "/dev/input/event257", 1: "/dev/input/event256"},
+            )
+
+    def test_a_pad_in_use_is_left_alone(self):
+        """Touching a pad the game has open made Proton add it again.
+
+        At 12:08 a restart re-announced the pad HD2 was using, winedevice
+        opened it a second time, and the controls stopped until the next
+        touch. Only a pad nothing has open needs announcing.
+        """
+        touched = []
+        real = (stream_mode.steam_virtual_pads, stream_mode.touch_device,
+                stream_mode.device_in_use)
+        stream_mode.steam_virtual_pads = lambda root=None: {0: "/dev/input/event257"}
+        stream_mode.touch_device = lambda path: touched.append(path) or True
+        stream_mode.device_in_use = lambda path: True
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                info = os.path.join(tmp, "virtualgamepadinfo.txt")
+                with open(info, "w") as fh:
+                    fh.write(self.INFO)
+                s = stream_mode.Session(stage_timeout=0)
+                s.gamepad_info_path = info
+                self.assertFalse(s.check_gamepad_info())
+                self.assertEqual(touched, [])
+        finally:
+            (stream_mode.steam_virtual_pads, stream_mode.touch_device,
+             stream_mode.device_in_use) = real
+
+    def test_device_in_use_sees_an_open_node(self):
+        with tempfile.NamedTemporaryFile() as fh:
+            self.assertTrue(stream_mode.device_in_use(fh.name))
+        self.assertFalse(stream_mode.device_in_use("/nonexistent/event999"))
+
+    def test_listed_pads_are_touched_when_the_info_changes(self):
+        touched = []
+        real = (stream_mode.steam_virtual_pads, stream_mode.touch_device,
+                stream_mode.device_in_use)
+        stream_mode.device_in_use = lambda path: False
+        stream_mode.steam_virtual_pads = lambda root=None: {
+            0: "/dev/input/event257", 1: "/dev/input/event256"}
+        stream_mode.touch_device = lambda path: touched.append(path) or True
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                info = os.path.join(tmp, "virtualgamepadinfo.txt")
+                with open(info, "w") as fh:
+                    fh.write(self.INFO)
+                s = stream_mode.Session(stage_timeout=0)
+                s.gamepad_info_path = info
+                self.assertTrue(s.check_gamepad_info())
+                self.assertEqual(touched, ["/dev/input/event257"])
+                touched.clear()
+                self.assertFalse(s.check_gamepad_info(), "unchanged file, nothing to do")
+                self.assertEqual(touched, [])
+        finally:
+            (stream_mode.steam_virtual_pads, stream_mode.touch_device,
+             stream_mode.device_in_use) = real
+
+    def test_a_missing_info_file_is_quiet(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.gamepad_info_path = "/nonexistent/virtualgamepadinfo.txt"
+        self.assertFalse(s.check_gamepad_info())
+
+
 class TestLogReaders(unittest.TestCase):
     """Lines that arrive together must each wake the loop.
 

@@ -177,6 +177,10 @@ CAPTURE_STALL = float(os.environ.get("STREAM_MODE_CAPTURE_STALL", "5"))
 # Steam rotates these logs at about 1 MB; a 200 KB window lost a session's
 # start marker after roughly 110 minutes of the ~1.8 KB/min keep-alive lines.
 LOG_SCAN_BYTES = 2_000_000
+GAMEPAD_INFO = os.environ.get(
+    "STREAM_MODE_VIRTUAL_GAMEPAD_INFO",
+    os.path.expanduser("~/.local/share/Steam/config/virtualgamepadinfo.txt"),
+)
 CAPTURE_NUDGE_LIMIT = int(os.environ.get("STREAM_MODE_CAPTURE_NUDGE_LIMIT", "3"))
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
@@ -582,6 +586,88 @@ def other_active_outputs(name):
     return {n for n, o in outputs.items() if n != name and (o or {}).get("logical")}
 
 
+GAMEPAD_SLOT_RE = re.compile(r"^\[slot (\d+)\]", re.MULTILINE)
+# Steam's virtual gamepads are uinput devices named for their slot, the same
+# slot number virtualgamepadinfo.txt uses.
+STEAM_PAD_NAME_RE = re.compile(r"^Microsoft X-Box 360 pad (\d+)$")
+
+
+def gamepad_slots(info_text):
+    """Slots Steam lists in virtualgamepadinfo.txt."""
+    return {int(n) for n in GAMEPAD_SLOT_RE.findall(info_text)}
+
+
+def steam_virtual_pads(root="/sys/class/input"):
+    """Steam's virtual gamepads: slot -> device node.
+
+    Only uinput devices, under /devices/virtual: a physical Xbox 360 pad
+    carries the same name.
+    """
+    pads = {}
+    try:
+        entries = os.listdir(root)
+    except OSError:
+        return pads
+    for event in entries:
+        if not event.startswith("event"):
+            continue
+        base = os.path.join(root, event)
+        if "/devices/virtual/" not in os.path.realpath(base):
+            continue
+        try:
+            with open(os.path.join(base, "device", "name")) as fh:
+                match = STEAM_PAD_NAME_RE.match(fh.read().strip())
+        except OSError:
+            continue
+        if match:
+            pads[int(match.group(1))] = "/dev/input/" + event
+    return pads
+
+
+def device_in_use(path):
+    """Does any process we can see have this device node open?
+
+    A pad the game already has must not be announced again: Proton adds it
+    a second time and the game loses the controller it was using.
+    """
+    try:
+        target = os.stat(path)
+    except OSError:
+        return False
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        fd_dir = "/proc/{}/fd".format(pid)
+        try:
+            fds = os.listdir(fd_dir)
+        except OSError:
+            continue
+        for fd in fds:
+            try:
+                st = os.stat(os.path.join(fd_dir, fd))
+            except OSError:
+                continue
+            if (st.st_dev, st.st_ino) == (target.st_dev, target.st_ino):
+                return True
+    return False
+
+
+def touch_device(path):
+    """Update a device node's timestamps, which inotify reports as IN_ATTRIB.
+
+    SDL treats IN_ATTRIB on /dev/input as a device that may now be usable,
+    because permissions are applied after a node appears; that re-check is
+    what picks up a Steam gamepad it rejected on arrival. Needs only write
+    access to the node, which the seat's uaccess ACL already gives.
+    """
+    try:
+        os.utime(path, None)
+    except OSError as exc:
+        log("stream-mode: could not re-announce {}: {}".format(path, exc))
+        return False
+    return True
+
+
 def taken_output_names():
     """Names niri will refuse to create, whether or not they work.
 
@@ -883,6 +969,10 @@ class Session:
         # nudges it has had. See CAPTURE_STALL.
         self.capture_deadline = None
         self.capture_nudges = 0
+        # See check_gamepad_info. None until first read, so a watcher started
+        # mid-game re-announces the listed pads once.
+        self.gamepad_info_path = GAMEPAD_INFO
+        self.gamepad_info_mtime = None
         # Reset per session: a new client gets its own Big Picture placement,
         # and the user is free to move it afterwards without it snapping back.
         self.big_picture_placed = False
@@ -1112,6 +1202,39 @@ class Session:
         focus_window(other["id"])
         focus_window(game["id"])
         return True
+
+    def check_gamepad_info(self):
+        """Re-announce Steam's listed virtual gamepads when the list changes.
+
+        SDL inside Proton uses a Steam virtual gamepad only once Steam lists
+        it in virtualgamepadinfo.txt, and decides when the device appears. A
+        client reconnecting mid-game gets a new pad that Steam lists after
+        creating it, so SDL rejected it and the game kept the dead one: the
+        camera worked through the mouse, nothing else did. Touching the node
+        makes SDL look again now that the pad is listed. Only pads nothing
+        has open: Proton adds a touched pad again even when it already has
+        it, and the game then loses the one it was using.
+        """
+        try:
+            mtime = os.stat(self.gamepad_info_path).st_mtime
+        except OSError:
+            return False
+        if mtime == self.gamepad_info_mtime:
+            return False
+        self.gamepad_info_mtime = mtime
+        try:
+            with open(self.gamepad_info_path) as fh:
+                slots = gamepad_slots(fh.read())
+        except OSError:
+            return False
+        pads = steam_virtual_pads()
+        touched = [
+            pads[slot] for slot in sorted(slots)
+            if slot in pads and not device_in_use(pads[slot]) and touch_device(pads[slot])
+        ]
+        if touched:
+            log("stream-mode: re-announced Steam gamepads {}".format(", ".join(touched)))
+        return bool(touched)
 
     def reassert_output(self):
         """Put the output back after niri reloaded its config.
@@ -1947,9 +2070,12 @@ def watch():
             # A pending audit has to wake the loop too, or it would not be
             # logged until the next event happened to arrive — and the whole
             # point of auditing is to see what happens when nothing does.
+            # A connected client can hand Steam a new gamepad at any moment;
+            # see check_gamepad_info.
             pending_work = any((
                 remove_at, session.pending, session.audits, session.settle_at,
-                session.capture_deadline,
+                session.capture_deadline, session.client_id is not None,
+                session.streaming,
             ))
             timeout = 1.0 if pending_work else 30.0
             if len(readable) < len(procs):
@@ -2021,6 +2147,7 @@ def watch():
             session.run_due_audits(now)
             session.settle_client_output(now)
             session.check_game_capture(now)
+            session.check_gamepad_info()
             if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive():
