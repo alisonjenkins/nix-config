@@ -243,7 +243,15 @@ freely. These are what the live test surfaced.
    stream was `Desktop Black Frame` until Steam restarted. ADR 0013 keeps the
    output on while the monitor is off, but with DP-2 on the output still goes
    off. Test whether the capture recovers when the output comes back; if
-   not, keep it on until Steam releases the capture.
+   not, keep it on until Steam releases the capture. Seen again 2026-09-24
+   09:01, when a niri config reload turned the output off (now reasserted on
+   `ConfigLoaded`, 484a897e). Confirmed it does not recover on its own: the
+   desktop capture stayed `Black Frame` while game capture worked.
+10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
+   restart mid-connection stream-mode adopted the Mac, the shim launched HD2
+   directly, the output was 1728x1080@60, and once HD2 had focus Steam
+   captured `Game Vulkan NV12`. The focus fix (841f94bd) and the reconnect
+   re-staging (item 3) are not yet live-tested.
 
 ### Traps worth not re-learning
 
