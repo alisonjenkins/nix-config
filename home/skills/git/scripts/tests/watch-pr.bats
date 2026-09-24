@@ -220,6 +220,16 @@ SPY
   [[ "$output" == *"triaged 0 review(s)"* ]]
 }
 
+@test "a non-numeric WATCH_PR_TRIAGED_REVIEWS is ignored with a warning, not treated as a mismatch" {
+  printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
+    >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
+  WATCH_PR_TRIAGED_REVIEWS=abc run "$script" 1
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WATCH_PR_TRIAGED_REVIEWS='abc' is not a non-negative integer"* ]]
+  [[ "$output" == *"IDLE_TIMEOUT"* ]]
+  [[ "$output" != *"NEW_ACTIVITY"* ]]
+}
+
 @test "a matching WATCH_PR_TRIAGED_REVIEWS keeps the normal baseline behaviour" {
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"

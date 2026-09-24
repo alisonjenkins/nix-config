@@ -77,6 +77,7 @@ human_duration() {
 interval="$(numeric_env_or_default WATCH_PR_START_INTERVAL 60)"
 max_interval="$(numeric_env_or_default WATCH_PR_MAX_INTERVAL 900)"
 max_seconds="$(numeric_env_or_default WATCH_PR_MAX_SECONDS 86400)"
+triaged_reviews="$(numeric_env_or_default WATCH_PR_TRIAGED_REVIEWS "")"
 ratio="${WATCH_PR_RATIO:-1.5}"
 if ! [[ "$ratio" =~ ^[0-9]+(\.[0-9]+)?$ ]] || ! awk -v r="$ratio" 'BEGIN { exit !(r >= 1) }'; then
   echo "warning: \$WATCH_PR_RATIO='$ratio' is not a number >= 1 (a smaller ratio would shrink the interval instead of backing off); using 1.5" >&2
@@ -128,11 +129,12 @@ while :; do
     exit 0
   fi
 
-  if [[ -z "$prev_fingerprint" && -n "${WATCH_PR_TRIAGED_REVIEWS:-}" ]]; then
+  if [[ -z "$prev_fingerprint" && -n "$triaged_reviews" ]]; then
+    # reviews is the last tsv column of the fingerprint query above
     current_reviews="${fingerprint##*$'\t'}"
-    if [[ "$current_reviews" != "$WATCH_PR_TRIAGED_REVIEWS" ]]; then
+    if [[ "$current_reviews" != "$triaged_reviews" ]]; then
       echo "NEW_ACTIVITY: review count changed since triage"
-      echo "  triaged $WATCH_PR_TRIAGED_REVIEWS review(s), now $current_reviews: $fingerprint"
+      echo "  triaged $triaged_reviews review(s), now $current_reviews: $fingerprint"
       exit 0
     fi
   fi
