@@ -197,6 +197,60 @@ CGameStreamVideoStageVAAPI: Reinitializing 1280x800 ...
    judging whether a fix is real: if the filtered path does not match the
    DP-2-detached path, the filter still has a gap.
 
+### Game-mode follow-ups (from the 2026-09-24 live test), highest value first
+
+Game-mode streaming works end to end (docs/adr/0007): the shim launches the
+game without gamescope, Steam captures `Game Vulkan`, and camera look turns
+freely. These are what the live test surfaced.
+
+1. **Wrong learned client size.** `~/.local/state/stream-mode/clients.json`
+   holds `4470x1676` for the Mac client, about 2.67:1, not its 16:10 panel.
+   Every stream sizes the output to that, and games following the display get
+   a stretched aspect. Find which `streaming_log.txt` line `learn()` took it
+   from (probably the Mac client's window after a resize, not its screen), fix
+   the parsing or ignore sizes that change mid-session, then correct or delete
+   the entry.
+2. **Games render at their own configured resolution.** Without gamescope
+   nothing forces the render size to match the stream (steam-command-runner
+   ADR 0006 only applies under gamescope). HD2 was set to 1440x900 by hand as
+   a workaround. Options: borderless-fullscreen games follow the output size,
+   so sizing the output right (item 1) may be enough for them; for exclusive
+   fullscreen, investigate Wine/Proton display-mode overrides. Needs a survey
+   of a few games before choosing.
+3. **Reconnect to a running game streams the Friends List.** A new stream
+   session resets stream-mode's managed-window list. When the game is already
+   running, Steam's Friends List takes focus and Steam records it. On stream
+   start, stream-mode should re-adopt a running game's window, fullscreen it and
+   focus it.
+4. **MangoHud missing from the stream.** Steam captures frames in its overlay
+   layer, which sits before MangoHud in the Vulkan chain, so the HUD is drawn
+   after capture: visible on the host, missing on the client. A Vulkan loader
+   settings file (`~/.config/vulkan/loader_settings.d/vk_loader_settings.json`)
+   listing MangoHud first, then `unordered_layer_location`, puts it nearest the
+   application (verified with `VK_LOADER_DEBUG=layer`). Pending: in-game test,
+   then generate the file from the installed MangoHud package in home-manager
+   and write an ADR.
+5. **HD2 left at half width.** On one launch the game window stayed a half
+   width tile instead of fullscreen on the streamed output. Game capture hides
+   this on the client, but the game renders at the tile's size. Check why
+   `fill_streamed_output` did not act.
+6. **The shim's decision line is invisible by default.** Steam discards
+   launched games' stderr, so `steam-command-runner: streaming to ...` only
+   shows in `~/.steam-command-runner-shim.log`, and only with `shim_debug`.
+   Always write that one line to the log file, and correct the docs that say
+   it reaches the journal (runner ADR 0007, docs/remote-play-troubleshooting.md).
+7. **No outputs at all when DP-2 is off.** stream-mode turns the idle `steam`
+   output off. With DP-2 also off niri has zero outputs, and a Steam restart
+   then fails to open its login window
+   (`DesktopLoginWindow_uid0: Failed to create fallback output window, bailing`),
+   stays logged off, and is invisible to Remote Play clients. Keep the virtual
+   output on when it is the only output, or at least document it in the
+   troubleshooting guide.
+8. **lsfg-vk layer fails to load.** Every Vulkan app logs
+   `Failed to find 'vkGetInstanceProcAddr' in layer ".../lsfg-vk-2.0.0/lib/liblsfg-vk-layer.so"`.
+   Present with or without the loader settings file, so unrelated to item 4,
+   but frame generation is probably not working anywhere.
+
 ### Traps worth not re-learning
 
 - `flog` once did `fopen`/`fclose` per line; at the SDL hooks' rate (~180 lines/s)
