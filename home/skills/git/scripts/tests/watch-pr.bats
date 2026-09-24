@@ -210,3 +210,20 @@ SPY
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
 }
+
+@test "a review that landed after triage is reported on tick 1 instead of becoming the baseline" {
+  printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
+    >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
+  WATCH_PR_TRIAGED_REVIEWS=0 run "$script" 1
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"NEW_ACTIVITY"* ]]
+  [[ "$output" == *"triaged 0 review(s)"* ]]
+}
+
+@test "a matching WATCH_PR_TRIAGED_REVIEWS keeps the normal baseline behaviour" {
+  printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
+    >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
+  WATCH_PR_TRIAGED_REVIEWS=1 run "$script" 1
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"IDLE_TIMEOUT"* ]]
+}

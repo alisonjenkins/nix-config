@@ -18,7 +18,10 @@
 # not after: whatever review state exists on tick 1 becomes the known
 # baseline, silently, since there's nothing yet to compare it against.
 # Feedback already sitting on the PR when you start watching is not
-# reported -- only a change from that baseline is.
+# reported -- only a change from that baseline is. To close the seconds-wide
+# window between triage and this first tick, pass the review count you
+# triaged in WATCH_PR_TRIAGED_REVIEWS (gh pr view N --json reviews -q
+# '.reviews|length'); a different count on tick 1 wakes you immediately.
 set -euo pipefail
 
 usage() {
@@ -28,7 +31,8 @@ usage() {
   echo "  IDLE_TIMEOUT and exits" >&2
   echo "  env: WATCH_PR_START_INTERVAL (default 60s), WATCH_PR_MAX_INTERVAL" >&2
   echo "       (default 900s), WATCH_PR_RATIO (default 1.5), WATCH_PR_MAX_SECONDS" >&2
-  echo "       (default 86400 = 24h)" >&2
+  echo "       (default 86400 = 24h), WATCH_PR_TRIAGED_REVIEWS (review count seen at" >&2
+  echo "       triage; a different count on tick 1 reports NEW_ACTIVITY)" >&2
 }
 
 if [[ $# -lt 1 || $# -gt 2 ]]; then
@@ -122,6 +126,15 @@ while :; do
   if [[ "$pr_state" == "CLOSED" || "$pr_state" == "MERGED" ]]; then
     echo "PR_${pr_state}: PR #$pr_number is $pr_state, nothing left to watch for"
     exit 0
+  fi
+
+  if [[ -z "$prev_fingerprint" && -n "${WATCH_PR_TRIAGED_REVIEWS:-}" ]]; then
+    current_reviews="${fingerprint##*$'\t'}"
+    if [[ "$current_reviews" != "$WATCH_PR_TRIAGED_REVIEWS" ]]; then
+      echo "NEW_ACTIVITY: review count changed since triage"
+      echo "  triaged $WATCH_PR_TRIAGED_REVIEWS review(s), now $current_reviews: $fingerprint"
+      exit 0
+    fi
   fi
 
   if [[ -n "$prev_fingerprint" && "$fingerprint" != "$prev_fingerprint" ]]; then
