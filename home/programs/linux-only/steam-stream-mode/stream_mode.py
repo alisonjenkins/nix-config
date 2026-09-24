@@ -163,6 +163,16 @@ STOP_RE = re.compile(r">>> Stopped desktop stream")
 CLIENT_SIZE_RE = re.compile(
     r"CLIENT: Video size: \d+x\d+, output size: (\d+)x(\d+)"
 )
+# The client's resolution limit, sent when the stream starts. Steam scales its
+# capture down to fit inside it, so any output pixels beyond it are rendered
+# and then thrown away.
+MAX_CAPTURE_RE = re.compile(r"Maximum capture: (\d+)x(\d+)")
+# How long the client's reported size has to hold before the output follows
+# it. Its window opens at the size of our output and only then goes
+# fullscreen, so the first reports are our own size echoed back. Acting on the
+# echo is how a Mac got learned as 4470x1676 and kept it. Measured: the echo
+# held for 7s, a transitional size for 2s.
+CLIENT_SIZE_SETTLE = float(os.environ.get("STREAM_MODE_CLIENT_SIZE_SETTLE", "10"))
 ADD_WINDOW_RE = re.compile(r"Adding window \d+ \(\d+\) for process (\d+) and gameID (\d+)")
 REMOVE_PROC_RE = re.compile(r"Removing process (\d+) for gameID (\d+)")
 CONNECT_RE = re.compile(r"Client (\d+) \(([^)]*)\) connected via (?:direct|indirect) connection")
@@ -745,12 +755,53 @@ def save_clients(clients, path=None):
         log("stream-mode: could not persist client sizes: {}".format(exc))
 
 
-def client_size(client_id, clients):
-    """Resolution to build the output at, defaulting until one is learned."""
+def _size_pair(value):
+    if isinstance(value, list) and len(value) == 2:
+        try:
+            width, height = int(value[0]), int(value[1])
+        except (TypeError, ValueError):
+            return None
+        if width > 0 and height > 0:
+            return width, height
+    return None
+
+
+def fit_within(width, height, bound):
+    """Scale down to fit inside bound, keeping the aspect. Never scales up."""
+    if bound is None:
+        return width, height
+    scale = min(1.0, bound[0] / width, bound[1] / height)
+    if scale >= 1.0:
+        return width, height
+    # Even, because the encoder works in 2x2 chroma blocks.
+    return (
+        max(2, int(round(width * scale)) // 2 * 2),
+        max(2, int(round(height * scale)) // 2 * 2),
+    )
+
+
+def client_record(client_id, clients):
+    """The client's last settled output size and resolution limit.
+
+    A bare [w, h] is the older format, which stored whatever was reported
+    first. It is read as an output size with no known limit.
+    """
     entry = clients.get(str(client_id))
-    if isinstance(entry, list) and len(entry) == 2:
-        return int(entry[0]), int(entry[1])
-    return DEFAULT_WIDTH, DEFAULT_HEIGHT
+    if isinstance(entry, dict):
+        return _size_pair(entry.get("output")), _size_pair(entry.get("max_capture"))
+    return _size_pair(entry), None
+
+
+def client_size(client_id, clients, max_capture=None):
+    """Resolution to build the output at, defaulting until one is learned.
+
+    The client's own shape, fitted inside its resolution limit: this
+    session's limit when it has been sent, the remembered one otherwise.
+    """
+    output, remembered = client_record(client_id, clients)
+    if output is None:
+        return DEFAULT_WIDTH, DEFAULT_HEIGHT
+    return fit_within(output[0], output[1], max_capture or remembered)
 
 
 # --- session ----------------------------------------------------------------
@@ -767,7 +818,12 @@ class Session:
         self.pending = None
         self.reported_wait = False
         self.last_windows = []
-        self.learned = False
+        # This session's resolution limit, and the client's latest reported
+        # size with the monotonic time it may be acted on. See
+        # CLIENT_SIZE_SETTLE.
+        self.max_capture = None
+        self.reported_output = None
+        self.settle_at = None
         # Reset per session: a new client gets its own Big Picture placement,
         # and the user is free to move it afterwards without it snapping back.
         self.big_picture_placed = False
@@ -827,7 +883,9 @@ class Session:
     def connect(self, client_id, client_name):
         """A client has connected: size the output for it and turn it on."""
         self.client_id = client_id
-        self.learned = False
+        self.max_capture = None
+        self.reported_output = None
+        self.settle_at = None
         self.big_picture_placed = False
         self.staged_windows = set()
         self.fullscreened = set()
@@ -902,7 +960,7 @@ class Session:
         # output's own size meant a Deck streamed at 1600x900 simply because
         # that is what the output happened to be at the time.
         if self.client_id is not None:
-            width, height = client_size(self.client_id, self.clients)
+            width, height = client_size(self.client_id, self.clients, self.max_capture)
         else:
             size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
             width, height = size
@@ -978,11 +1036,30 @@ class Session:
 
     # -- learning
 
-    def learn(self, width, height):
-        """Record the client's panel, and use it for this session too.
+    def note_max_capture(self, width, height):
+        """The client's resolution limit for this session."""
+        self.max_capture = (width, height)
 
-        Once per session: the client reports its size repeatedly while
-        streaming and there is nothing to gain from acting on every one.
+    def note_client_output(self, width, height, now=None):
+        """The client reported its size; act on it once it has settled.
+
+        Followed for the whole session rather than taken once, so a client
+        window resized or made fullscreen mid-stream is followed too.
+        """
+        if self.client_id is None or (width, height) == self.reported_output:
+            return False
+        self.reported_output = (width, height)
+        self.settle_at = (time.monotonic() if now is None else now) + CLIENT_SIZE_SETTLE
+        return True
+
+    def settle_client_output(self, now):
+        if self.settle_at is None or self.reported_output is None or now < self.settle_at:
+            return False
+        self.settle_at = None
+        return self.learn(*self.reported_output)
+
+    def learn(self, width, height):
+        """Record the client's settled size, and use it for this session too.
 
         Applied immediately rather than only remembered. A client connecting
         for the first time has nothing to size the output from, so it gets the
@@ -992,30 +1069,34 @@ class Session:
         does the same: the resize is the display change Steam re-reads on, and
         the filter has to already be reporting the new size when it does.
         """
-        if self.learned or self.client_id is None:
+        if self.client_id is None:
             return False
-        self.learned = True
         key = str(self.client_id)
-        known = self.clients.get(key) == [width, height]
-        if not known:
-            self.clients[key] = [width, height]
+        _, remembered_max = client_record(key, self.clients)
+        record = {"output": [width, height]}
+        max_capture = self.max_capture or remembered_max
+        if max_capture is not None:
+            record["max_capture"] = list(max_capture)
+        changed = self.clients.get(key) != record
+        if changed:
+            self.clients[key] = record
             save_clients(self.clients)
             log(
-                "stream-mode: learned {}x{} for client {}".format(
-                    width, height, self.client_id
+                "stream-mode: learned {}x{} for client {} (limit {})".format(
+                    width, height, self.client_id,
+                    "{}x{}".format(*self.max_capture) if self.max_capture else "unknown",
                 )
             )
 
-        if self.output is None:
-            return not known
-        if output_logical_size(self.output) == (width, height):
-            return not known
+        target = client_size(key, self.clients, self.max_capture)
+        if self.output is None or output_logical_size(self.output) == target:
+            return changed
 
-        publish_target(self.output, width, height, DEFAULT_REFRESH)
-        set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+        publish_target(self.output, target[0], target[1], DEFAULT_REFRESH)
+        set_output_mode(self.output, target[0], target[1], DEFAULT_REFRESH)
         log(
             "stream-mode: resized {} to {}x{} for this session".format(
-                self.output, width, height
+                self.output, target[0], target[1]
             )
         )
         return True
@@ -1601,7 +1682,10 @@ def watch():
             # A pending audit has to wake the loop too, or it would not be
             # logged until the next event happened to arrive — and the whole
             # point of auditing is to see what happens when nothing does.
-            pending_work = remove_at or session.pending or session.audits or session.connect_deadline
+            pending_work = any((
+                remove_at, session.pending, session.audits,
+                session.connect_deadline, session.settle_at,
+            ))
             timeout = 1.0 if pending_work else 30.0
             if len(readable) < len(procs):
                 # Something is waiting to be restarted; wake for it.
@@ -1673,6 +1757,7 @@ def watch():
             # and slowly -- a game outliving Steam by a few seconds costs
             # nothing, and reading every process's name is not free.
             session.run_due_audits(now)
+            session.settle_client_output(now)
             if (session.game_pid is not None or session.streaming) \
                     and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
@@ -1694,7 +1779,12 @@ def handle_steam_line(session, line, remove_at):
 
     match = CLIENT_SIZE_RE.search(line)
     if match:
-        session.learn(int(match.group(1)), int(match.group(2)))
+        session.note_client_output(int(match.group(1)), int(match.group(2)))
+        return remove_at
+
+    match = MAX_CAPTURE_RE.search(line)
+    if match:
+        session.note_max_capture(int(match.group(1)), int(match.group(2)))
         return remove_at
 
     match = REMOVE_PROC_RE.search(line)

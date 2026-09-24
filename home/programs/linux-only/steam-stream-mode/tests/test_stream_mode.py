@@ -116,6 +116,12 @@ class TestLogParsing(unittest.TestCase):
             ("1280", "800"),
         )
 
+    def test_maximum_capture_is_the_clients_limit(self):
+        line = "[2026-09-24 08:12:45][740.084658] Maximum capture: 2880x1080 60.00 FPS\n"
+        self.assertEqual(
+            stream_mode.MAX_CAPTURE_RE.search(line).groups(), ("2880", "1080")
+        )
+
     def test_add_window_gives_pid_and_game(self):
         self.assertEqual(
             stream_mode.ADD_WINDOW_RE.search(self.ADD).groups(), ("2331545", "2854740")
@@ -222,6 +228,32 @@ class TestLearnedClients(unittest.TestCase):
 
     def test_learned_value_used(self):
         self.assertEqual(stream_mode.client_size("123", {"123": [1920, 1200]}), (1920, 1200))
+
+    def test_learned_output_is_fitted_inside_the_resolution_limit(self):
+        """A 2880x1800 Mac capped at 1080 lines gets its shape at 1728x1080."""
+        clients = {"123": {"output": [2880, 1800], "max_capture": [2880, 1080]}}
+        self.assertEqual(stream_mode.client_size("123", clients), (1728, 1080))
+
+    def test_this_sessions_limit_beats_the_remembered_one(self):
+        clients = {"123": {"output": [2880, 1800], "max_capture": [2880, 1080]}}
+        self.assertEqual(
+            stream_mode.client_size("123", clients, (2880, 1800)), (2880, 1800)
+        )
+
+    def test_a_legacy_entry_is_fitted_to_this_sessions_limit(self):
+        self.assertEqual(
+            stream_mode.client_size("123", {"123": [4470, 1676]}, (2880, 1080)),
+            (2880, 1080),
+        )
+
+    def test_fit_never_scales_up(self):
+        self.assertEqual(stream_mode.fit_within(1280, 800, (2880, 1080)), (1280, 800))
+        self.assertEqual(stream_mode.fit_within(1280, 800, None), (1280, 800))
+
+    def test_fit_keeps_sizes_even(self):
+        width, height = stream_mode.fit_within(2618, 1636, (2880, 1080))
+        self.assertEqual((width % 2, height % 2), (0, 0))
+        self.assertLessEqual(height, 1080)
 
     def test_malformed_entry_falls_back(self):
         self.assertEqual(
@@ -491,25 +523,61 @@ class TestSession(unittest.TestCase):
         self.assertIsNone(s.pending)
         self.assertEqual(self.moved, [])
 
-    def test_learn_records_the_first_resolution_only(self):
-        """Steam re-logs a derived resolution after negotiating."""
+    def test_learn_records_the_output_and_the_limit(self):
         s = self.session()
-        s.connect(123, "deck")
-        self.assertTrue(s.learn(1280, 800))
-        self.assertFalse(s.learn(1280, 360))
-        self.assertEqual(self.saved, [{"123": [1280, 800]}])
+        s.connect(123, "mac")
+        s.note_max_capture(2880, 1080)
+        self.assertTrue(s.learn(2880, 1800))
+        self.assertEqual(
+            self.saved, [{"123": {"output": [2880, 1800], "max_capture": [2880, 1080]}}]
+        )
 
     def test_learn_needs_a_connected_client(self):
         self.assertFalse(self.session().learn(1280, 800))
         self.assertEqual(self.saved, [])
 
-    def test_learning_resets_between_sessions(self):
+    def test_a_reported_size_waits_to_settle(self):
+        """The client's first reports echo our own output back.
+
+        Its window opens at the capture size and only then goes fullscreen.
+        Learning the first report stored the echo, 4470x1676 for a 2880x1800
+        Mac, and the next session was built at it and echoed it again.
+        """
         s = self.session()
-        s.connect(123, "deck")
-        s.learn(1280, 800)
+        s.connect(123, "mac")
+        s.note_max_capture(2880, 1080)
+        self.assertTrue(s.note_client_output(4470, 1676, now=0))
+        self.assertTrue(s.note_client_output(2880, 1800, now=7))
+        self.assertFalse(s.settle_client_output(7 + stream_mode.CLIENT_SIZE_SETTLE - 1))
+        self.assertEqual(self.saved, [])
+        self.assertTrue(s.settle_client_output(7 + stream_mode.CLIENT_SIZE_SETTLE))
+        self.assertEqual(self.saved[-1]["123"]["output"], [2880, 1800])
+
+    def test_a_repeated_report_does_not_restart_the_wait(self):
+        """Steam re-logs the size on every frame reset."""
+        s = self.session()
+        s.connect(123, "mac")
+        s.note_client_output(2880, 1800, now=0)
+        self.assertFalse(s.note_client_output(2880, 1800, now=5))
+        self.assertTrue(s.settle_client_output(stream_mode.CLIENT_SIZE_SETTLE))
+
+    def test_a_later_change_is_followed_too(self):
+        """Resizing or fullscreening the client window mid-stream."""
+        s = self.session()
+        s.connect(123, "mac")
+        s.note_client_output(2880, 1800, now=0)
+        s.settle_client_output(stream_mode.CLIENT_SIZE_SETTLE)
+        s.note_client_output(1920, 1080, now=100)
+        self.assertTrue(s.settle_client_output(100 + stream_mode.CLIENT_SIZE_SETTLE))
+        self.assertEqual(self.saved[-1]["123"]["output"], [1920, 1080])
+
+    def test_a_new_client_starts_without_the_previous_limit(self):
+        s = self.session()
+        s.connect(123, "mac")
+        s.note_max_capture(2880, 1080)
         s.teardown()
-        s.connect(123, "deck")
-        self.assertTrue(s.learn(1920, 1200))
+        s.connect(456, "deck")
+        self.assertIsNone(s.max_capture)
 
     def test_unstage_only_for_the_staged_game(self):
         s = self.session()
@@ -875,8 +943,11 @@ class TestEventDispatch(unittest.TestCase):
         def request(self, pid, game_id):
             self.calls.append(("request", pid, game_id))
 
-        def learn(self, w, h):
-            self.calls.append(("learn", w, h))
+        def note_client_output(self, w, h):
+            self.calls.append(("note_client_output", w, h))
+
+        def note_max_capture(self, w, h):
+            self.calls.append(("note_max_capture", w, h))
 
         def trace(self, window_id, what, layout=None, workspace_id=None):
             self.calls.append(("trace", window_id, what))
@@ -958,6 +1029,21 @@ class TestEventDispatch(unittest.TestCase):
             None,
         )
         self.assertIn(("request", 2331545, 2854740), self.s.calls)
+
+    def test_the_client_size_and_limit_are_noted(self):
+        stream_mode.handle_steam_line(
+            self.s, "[x] Maximum capture: 2880x1080 60.00 FPS\n", None
+        )
+        stream_mode.handle_steam_line(
+            self.s,
+            "[x] CLIENT: Video size: 2880x1080, output size: 2880x1800, "
+            "overlay size: 2880x1800\n",
+            None,
+        )
+        self.assertEqual(
+            self.s.calls,
+            [("note_max_capture", 2880, 1080), ("note_client_output", 2880, 1800)],
+        )
 
     def test_an_unrelated_line_changes_nothing(self):
         remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)

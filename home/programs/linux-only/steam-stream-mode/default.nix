@@ -56,9 +56,10 @@ in
       type = lib.types.int;
       default = 1280;
       description = ''
-        Width used for a client whose resolution has not been learned yet. The
-        real value is recorded from the first session and used from the next
-        connect onwards. 1280x800 is the Steam Deck's panel.
+        Width used for a client whose resolution has not been learned yet.
+        The client reports its own size and resolution limit while streaming;
+        the output follows those once they settle, and they are remembered
+        for its next connect. 1280x800 is the Steam Deck's panel.
       '';
     };
 
