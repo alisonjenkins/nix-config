@@ -234,6 +234,46 @@ class TestWindowForGame(unittest.TestCase):
         self.assertIsInstance(stream_mode.parent_pids(os.getpid()), list)
 
 
+class TestConnectedClient(unittest.TestCase):
+    """A restart forgot the client, and a launch before the stream went through gamescope."""
+
+    def read(self, text):
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
+            fh.write(text)
+        try:
+            return stream_mode.connected_client(fh.name)
+        finally:
+            os.unlink(fh.name)
+
+    def test_a_client_still_connected_is_found(self):
+        self.assertEqual(
+            self.read(
+                "[2026-09-24 08:39:02] Client 11 (ali-mba) disconnected: disconnecting all\n"
+                "[2026-09-24 08:39:33] Client 11 (ali-mba) connected via indirect connection\n"
+                "[2026-09-24 08:40:00] Received broadcast message from client 11 (ali-mba): x\n"
+            ),
+            (11, "ali-mba"),
+        )
+
+    def test_a_disconnected_client_is_not(self):
+        self.assertIsNone(self.read(
+            "[x] Client 11 (ali-mba) connected via indirect connection\n"
+            "[x] Client 11 (ali-mba) disconnected: ping timeout\n"
+        ))
+
+    def test_the_latest_of_several_clients_wins(self):
+        self.assertEqual(
+            self.read(
+                "[x] Client 11 (ali-mba) connected via direct connection\n"
+                "[x] Client 22 (ali-steam-deck) connected via direct connection\n"
+            ),
+            (22, "ali-steam-deck"),
+        )
+
+    def test_a_missing_log_means_no_client(self):
+        self.assertIsNone(stream_mode.connected_client("/nonexistent/remote_connections.txt"))
+
+
 class TestLearnedClients(unittest.TestCase):
     def test_default_until_learned(self):
         self.assertEqual(

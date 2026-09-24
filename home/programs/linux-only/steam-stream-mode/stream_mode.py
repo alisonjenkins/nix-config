@@ -1721,6 +1721,41 @@ def stream_in_progress(path=None):
     return last is True
 
 
+def connected_client(path=None):
+    """The client that connected most recently and has not disconnected.
+
+    The log is followed from its end, so a restart while a client was
+    connected -- every `just switch` -- forgot it. The target then stayed
+    withdrawn until a stream started, and a game launched from the client
+    before that went through gamescope.
+    """
+    path = path or CONNECTIONS_LOG
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - 200_000))
+            tail = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+
+    connected = {}
+    for line in tail.splitlines():
+        match = CONNECT_RE.search(line)
+        if match:
+            client_id = int(match.group(1))
+            connected.pop(client_id, None)
+            connected[client_id] = match.group(2)
+            continue
+        match = DISCONNECT_RE.search(line)
+        if match:
+            connected.pop(int(match.group(1)), None)
+    if not connected:
+        return None
+    client_id = list(connected)[-1]
+    return client_id, connected[client_id]
+
+
 def watch():
     session = Session()
 
@@ -1733,6 +1768,12 @@ def watch():
 
     session.ensure_output()
     withdraw_target()
+    # Only with Steam running, for the same reason as the stream check below:
+    # a Steam that crashed never logged the disconnect.
+    client = connected_client() if steam_is_running() else None
+    if client is not None:
+        log("stream-mode: {} is still connected".format(client[1]))
+        session.connect(*client)
     # A start marker with no stop is only evidence of a stream if Steam is
     # still there to be streaming. Steam that dies mid-stream never writes the
     # stop marker, so the log stays that way for good -- and this service,
