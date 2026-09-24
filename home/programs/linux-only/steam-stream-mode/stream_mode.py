@@ -1296,6 +1296,23 @@ class Session:
         )
         return True
 
+    def belongs_to_game(self, window):
+        """Staged, or the running game's by app id or process ancestry.
+
+        A game's replacement window after a splash is nobody's by name, but
+        it carries the game's app id or descends from its process. Anything
+        else on the streamed output is the desktop's: with the monitor off,
+        niri puts every workspace there.
+        """
+        if window.get("id") in self.staged_windows:
+            return True
+        if self.game_pid is None:
+            return False
+        if self.game_id is not None and window.get("app_id") == "steam_app_{}".format(self.game_id):
+            return True
+        pid = window.get("pid")
+        return bool(pid) and self.game_pid in parent_pids(pid)
+
     def fill_streamed_output(self, windows):
         """Fullscreen a staged game that is not covering the streamed output.
 
@@ -1334,7 +1351,7 @@ class Session:
             window_id = w.get("id")
             if window_id is None:
                 continue
-            if window_id not in self.staged_windows and self.game_pid is None:
+            if not self.belongs_to_game(w):
                 continue
             if is_helper_window(w):
                 continue

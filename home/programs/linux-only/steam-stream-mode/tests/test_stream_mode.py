@@ -1744,10 +1744,24 @@ class TestSplashScreens(unittest.TestCase):
         # arriving unannounced on the streamed output the game's replacement
         # rather than something of the desktop's that wandered over.
         s.game_pid = 4321
+        s.game_id = 1888160
         return s
 
-    def half_width(self, wid):
-        return {"id": wid, "workspace_id": 9, "layout": {"window_size": [640, 766]}}
+    def half_width(self, wid, app_id="steam_app_1888160"):
+        return {"id": wid, "app_id": app_id, "pid": 999999,
+                "workspace_id": 9, "layout": {"window_size": [640, 766]}}
+
+    def test_a_desktop_window_on_the_streamed_output_is_left_alone(self):
+        """With the monitor off the whole desktop lives on the streamed output.
+
+        GameGuard opened its FAQ in Zen, which was fullscreened in front of
+        HD2 and then given focus back every time HD2 took it, so Steam
+        captured nothing.
+        """
+        s = self.session()
+        zen = self.half_width(194, app_id="zen-beta")
+        self.assertFalse(s.fill_streamed_output([zen]))
+        self.assertEqual(self.toggled, [])
 
     def test_a_window_arriving_after_staging_is_still_fullscreened(self):
         s = self.session()
@@ -1770,7 +1784,7 @@ class TestSplashScreens(unittest.TestCase):
 
     def test_a_window_that_widens_resets_the_budget(self):
         s = self.session()
-        full = {"id": 127, "workspace_id": 9,
+        full = {"id": 127, "app_id": "steam_app_1888160", "workspace_id": 9,
                 "layout": {"window_size": [1280, 800]}}
         stream_mode.niri_windows = lambda: [self.half_width(127)]
         s.fill_streamed_output([self.half_width(127)])
