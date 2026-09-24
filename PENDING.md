@@ -229,10 +229,13 @@ freely. These are what the live test surfaced.
    `~/.steam-command-runner-shim.log` (runner `bc720b0`), docs corrected.
 7. ~~**No outputs at all when DP-2 is off.**~~ Done 2026-09-24
    (docs/adr/0013): the output stays on when it is the only one.
-8. **lsfg-vk layer fails to load.** Every Vulkan app logs
-   `Failed to find 'vkGetInstanceProcAddr' in layer ".../lsfg-vk-2.0.0/lib/liblsfg-vk-layer.so"`.
-   Present with or without the loader settings file, so unrelated to item 4,
-   but frame generation is probably not working anywhere.
+8. ~~**lsfg-vk layer fails to load.**~~ Not a fault, checked 2026-09-24. The
+   `Failed to find 'vkGetInstanceProcAddr'` line appears only for zenity
+   during SteamVR startup (`vrstartup-linux.txt`, 2026-09-20), not every app;
+   the host loader loads the layer cleanly. Frame generation is off because
+   the only profile (HD2 2x) has `active_in = []`, which reads as deliberate.
+   Probably lsfg-vk declining unprofiled processes; not confirmed in its
+   source.
 9. **Steam's desktop capture dies when the output goes off under it.** Steam
    keeps a PipeWire capture of the output open after a stream stops. When
    stream-mode turned the output off (08:20:41 on 2026-09-24) it logged
