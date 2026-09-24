@@ -44,7 +44,7 @@ skill suggests.
 |---|---|
 | Writing a commit message, splitting a large change | [commit-messages.md](commit-messages.md) |
 | Opening, updating, reviewing, or merging a PR | [pr-workflow.md](pr-workflow.md) |
-| Watching for review on your PR, replying to or resolving threads | [pr-review-responses.md](pr-review-responses.md) |
+| Watching for review on your PR (starts automatically on PR open), replying to or resolving threads | [pr-review-responses.md](pr-review-responses.md) |
 | Triaging a GitHub Copilot review specifically | [copilot-reviews.md](copilot-reviews.md) |
 | Running commit → branch → PR → review loop → auto-merge unattended | [auto-ship.md](auto-ship.md) |
 | Isolating feature work from the current checkout | [worktrees.md](worktrees.md) |

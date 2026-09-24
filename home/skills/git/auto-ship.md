@@ -22,7 +22,8 @@ about, not the chronologically first commit.
 
 ## 3. Open the PR
 
-Follow [pr-workflow.md](pr-workflow.md) step 1-4. Push, `gh pr create`.
+Follow [pr-workflow.md](pr-workflow.md) step 1-5. Push, `gh pr create`,
+start the watch.
 
 ## 4. Poll for review
 

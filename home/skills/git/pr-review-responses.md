@@ -18,8 +18,9 @@ close out the backlog first.
 
 ## Watching for a review
 
-There is no push notification for a review; poll. Ask before starting a long
-watch, and say what interval you chose.
+There is no push notification for a review; poll. Start the watch
+automatically as soon as a PR is opened (see [pr-workflow.md](pr-workflow.md)
+step 5) — no need to ask — and say what interval you chose.
 
 ```
 gh pr view <number> --json reviewDecision,reviews,statusCheckRollup
