@@ -31,6 +31,7 @@ something is wrong.
 | [0011](0011-mangohud-first-vulkan-layer.md) | Put MangoHud first in the Vulkan layer chain | Accepted |
 | [0012](0012-size-output-from-client-reports.md) | Size the streamed output from what the client reports | Accepted |
 | [0013](0013-disarm-on-client-disconnect.md) | Disarm on client disconnect, and never leave niri without an output | Accepted |
+| [0014](0014-reannounce-steam-virtual-gamepads.md) | Re-announce Steam's virtual gamepads when Steam lists them | Accepted |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
