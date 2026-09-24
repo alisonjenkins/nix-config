@@ -206,13 +206,13 @@ freely. These are what the live test surfaced.
 1. ~~**Wrong learned client size.**~~ Done 2026-09-24 (docs/adr/0012).
    Confirmed live: `set steam to 1728x1080@60`, then
    `Capture method set to Game Vulkan NV12`, `Capture resolution set to 1728x1080`.
-2. **Games render at their own configured resolution.** Without gamescope
-   nothing forces the render size to match the stream (steam-command-runner
-   ADR 0006 only applies under gamescope). HD2 was set to 1440x900 by hand as
-   a workaround. Options: borderless-fullscreen games follow the output size,
-   so sizing the output right (item 1) may be enough for them; for exclusive
-   fullscreen, investigate Wine/Proton display-mode overrides. Needs a survey
-   of a few games before choosing.
+2. ~~**Games render at their own configured resolution.**~~ Fixed
+   2026-09-24, not yet live-tested (runner ADR 0011). HD2 was confirmed to
+   keep a fixed resolution regardless of the window. A streamed launch now
+   gets its engine's resolution arguments (Unity, Unreal, Godot, Source,
+   recognised from the game's files), or a per-game settings rule for other
+   engines; HD2 has one. Reconnecting to a running game does not change its
+   resolution.
 3. ~~**Reconnect to a running game streams the Friends List.**~~ Done
    2026-09-24, live-confirmed 10:32: a stream start stages the last game again
    if its pid is still alive, and Steam went straight back to `Game Vulkan`. Gap: a stream-mode restart in between forgets
