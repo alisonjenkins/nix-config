@@ -17,6 +17,9 @@ import stream_mode  # noqa: E402
 
 # begin_stream() clears atoms on the real X root; never let a test reach it.
 stream_mode.XPROP = "/nonexistent/xprop"
+# Reads the live compositor. None means "unknown", which never forces a mode.
+real_output_refresh = stream_mode.output_refresh
+stream_mode.output_refresh = lambda name: None
 
 _state_dir = None
 
@@ -119,7 +122,7 @@ class TestLogParsing(unittest.TestCase):
     def test_maximum_capture_is_the_clients_limit(self):
         line = "[2026-09-24 08:12:45][740.084658] Maximum capture: 2880x1080 60.00 FPS\n"
         self.assertEqual(
-            stream_mode.MAX_CAPTURE_RE.search(line).groups(), ("2880", "1080")
+            stream_mode.MAX_CAPTURE_RE.search(line).groups(), ("2880", "1080", "60.00")
         )
 
     def test_add_window_gives_pid_and_game(self):
@@ -245,6 +248,32 @@ class TestLearnedClients(unittest.TestCase):
             stream_mode.client_size("123", {"123": [4470, 1676]}, (2880, 1080)),
             (2880, 1080),
         )
+
+    def test_refresh_is_the_clients_frame_rate(self):
+        self.assertEqual(stream_mode.client_refresh("123", {}, 59.94), 60)
+        self.assertEqual(stream_mode.client_refresh("123", {}, 120.0), 120)
+
+    def test_refresh_is_remembered_between_connects(self):
+        clients = {"123": {"output": [1280, 800], "refresh": 90}}
+        self.assertEqual(stream_mode.client_refresh("123", clients), 90)
+
+    def test_refresh_defaults_until_known(self):
+        for clients in ({}, {"123": [1280, 800]}, {"123": {"refresh": "junk"}}):
+            self.assertEqual(
+                stream_mode.client_refresh("123", clients), stream_mode.DEFAULT_REFRESH
+            )
+
+    def test_output_refresh_reads_the_current_mode_in_hertz(self):
+        real = stream_mode.niri_outputs
+        stream_mode.niri_outputs = lambda: {"steam": {
+            "current_mode": 1,
+            "modes": [{"refresh_rate": 60000}, {"refresh_rate": 90000}],
+        }}
+        try:
+            self.assertEqual(real_output_refresh("steam"), 90)
+            self.assertIsNone(real_output_refresh("DP-9"))
+        finally:
+            stream_mode.niri_outputs = real
 
     def test_fit_never_scales_up(self):
         self.assertEqual(stream_mode.fit_within(1280, 800, (2880, 1080)), (1280, 800))
@@ -526,10 +555,11 @@ class TestSession(unittest.TestCase):
     def test_learn_records_the_output_and_the_limit(self):
         s = self.session()
         s.connect(123, "mac")
-        s.note_max_capture(2880, 1080)
+        s.note_max_capture(2880, 1080, 120.0)
         self.assertTrue(s.learn(2880, 1800))
         self.assertEqual(
-            self.saved, [{"123": {"output": [2880, 1800], "max_capture": [2880, 1080]}}]
+            self.saved,
+            [{"123": {"output": [2880, 1800], "max_capture": [2880, 1080], "refresh": 120}}],
         )
 
     def test_learn_needs_a_connected_client(self):
@@ -739,6 +769,19 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertTrue(s.learn(1920, 1080))
         self.assertEqual(order, [("target", 1920, 1080), ("mode", 1920, 1080)])
 
+    def test_a_stream_runs_the_output_at_the_clients_frame_rate(self):
+        """The size already matches; only the refresh differs."""
+        stream_mode.output_refresh = lambda name: 90
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            self.modes.clear()
+            s.note_max_capture(2880, 1080, 60.0)
+            s.begin_stream()
+            self.assertEqual(self.modes, [(stream_mode.OUTPUT_NAME, 1280, 800, 60)])
+        finally:
+            stream_mode.output_refresh = lambda name: None
+
     def test_learning_the_size_already_in_use_changes_nothing(self):
         """The common case: a client reconnecting at the size it had before."""
         s = stream_mode.Session(stage_timeout=0)
@@ -946,8 +989,8 @@ class TestEventDispatch(unittest.TestCase):
         def note_client_output(self, w, h):
             self.calls.append(("note_client_output", w, h))
 
-        def note_max_capture(self, w, h):
-            self.calls.append(("note_max_capture", w, h))
+        def note_max_capture(self, w, h, fps=None):
+            self.calls.append(("note_max_capture", w, h, fps))
 
         def trace(self, window_id, what, layout=None, workspace_id=None):
             self.calls.append(("trace", window_id, what))
@@ -1042,7 +1085,7 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertEqual(
             self.s.calls,
-            [("note_max_capture", 2880, 1080), ("note_client_output", 2880, 1800)],
+            [("note_max_capture", 2880, 1080, 60.0), ("note_client_output", 2880, 1800)],
         )
 
     def test_an_unrelated_line_changes_nothing(self):

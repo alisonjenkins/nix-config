@@ -166,7 +166,7 @@ CLIENT_SIZE_RE = re.compile(
 # The client's resolution limit, sent when the stream starts. Steam scales its
 # capture down to fit inside it, so any output pixels beyond it are rendered
 # and then thrown away.
-MAX_CAPTURE_RE = re.compile(r"Maximum capture: (\d+)x(\d+)")
+MAX_CAPTURE_RE = re.compile(r"Maximum capture: (\d+)x(\d+)(?: ([\d.]+) FPS)?")
 # How long the client's reported size has to hold before the output follows
 # it. Its window opens at the size of our output and only then goes
 # fullscreen, so the first reports are our own size echoed back. Acting on the
@@ -312,6 +312,16 @@ def output_logical_size(name):
     if width is None or height is None:
         return None
     return (width, height)
+
+
+def output_refresh(name):
+    """The output's current refresh in whole Hz, or None if niri does not say."""
+    output = niri_outputs().get(name) or {}
+    modes, current = output.get("modes") or [], output.get("current_mode")
+    if not isinstance(current, int) or not 0 <= current < len(modes):
+        return None
+    millihertz = modes[current].get("refresh_rate")
+    return round(millihertz / 1000) if millihertz else None
 
 
 def set_output_mode(name, width, height, refresh):
@@ -804,6 +814,23 @@ def client_size(client_id, clients, max_capture=None):
     return fit_within(output[0], output[1], max_capture or remembered)
 
 
+def client_refresh(client_id, clients, fps=None):
+    """Refresh to drive the output at: the frame rate the client asked for.
+
+    Whole Hz, because that is what niri's custom modes take. A game that
+    follows the display otherwise renders frames the stream drops, or too
+    few for a 120 Hz client.
+    """
+    if fps is None:
+        entry = clients.get(str(client_id))
+        fps = entry.get("refresh") if isinstance(entry, dict) else None
+    try:
+        refresh = round(float(fps))
+    except (TypeError, ValueError):
+        return DEFAULT_REFRESH
+    return refresh if refresh > 0 else DEFAULT_REFRESH
+
+
 # --- session ----------------------------------------------------------------
 
 
@@ -822,6 +849,7 @@ class Session:
         # size with the monotonic time it may be acted on. See
         # CLIENT_SIZE_SETTLE.
         self.max_capture = None
+        self.max_fps = None
         self.reported_output = None
         self.settle_at = None
         # Reset per session: a new client gets its own Big Picture placement,
@@ -880,10 +908,19 @@ class Session:
         self.output = OUTPUT_NAME
         return True
 
+    def apply_mode(self, width, height, refresh):
+        """Set the output's mode unless it already has it."""
+        current_refresh = output_refresh(self.output)
+        if output_logical_size(self.output) == (width, height) and \
+                current_refresh in (None, refresh):
+            return False
+        return set_output_mode(self.output, width, height, refresh)
+
     def connect(self, client_id, client_name):
         """A client has connected: size the output for it and turn it on."""
         self.client_id = client_id
         self.max_capture = None
+        self.max_fps = None
         self.reported_output = None
         self.settle_at = None
         self.big_picture_placed = False
@@ -903,11 +940,10 @@ class Session:
             )
             return False
 
-        # Resize only when the client actually needs a different size, so a
+        refresh = client_refresh(client_id, self.clients)
+        # Resize only when the client actually needs a different mode, so a
         # reconnect from the same client does not disturb the layout.
-        current = output_logical_size(self.output)
-        if current != (width, height):
-            set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+        self.apply_mode(width, height, refresh)
 
         # Published before the output is enabled, not after. Steam re-reads the
         # monitor list when the X server reports outputs changing, and enabling
@@ -915,7 +951,7 @@ class Session:
         # such query and does nothing while it is absent. Publishing afterwards
         # would arm the filter just too late to affect the read it was meant
         # for, leaving Steam sized to the desktop monitor for the session.
-        publish_target(self.output, width, height, DEFAULT_REFRESH)
+        publish_target(self.output, width, height, refresh)
         set_output_enabled(self.output, True)
         # Only while nothing is streaming yet: a reconnect from the client
         # already being served must not impose a deadline on a session that
@@ -961,9 +997,11 @@ class Session:
         # that is what the output happened to be at the time.
         if self.client_id is not None:
             width, height = client_size(self.client_id, self.clients, self.max_capture)
+            refresh = client_refresh(self.client_id, self.clients, self.max_fps)
         else:
             size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
             width, height = size
+            refresh = output_refresh(self.output) or DEFAULT_REFRESH
 
         # Published and resized before the output is enabled, not after --
         # the same ordering connect() uses and for the same reason: enabling
@@ -974,9 +1012,8 @@ class Session:
         # target, or a service restart mid-session with no fresh connect
         # line) -- enabling first left the second case sized to whatever the
         # output happened to be at, or unfiltered outright.
-        published = publish_target(self.output, width, height, DEFAULT_REFRESH)
-        if output_logical_size(self.output) != (width, height):
-            set_output_mode(self.output, width, height, DEFAULT_REFRESH)
+        published = publish_target(self.output, width, height, refresh)
+        self.apply_mode(width, height, refresh)
         set_output_enabled(self.output, True)
         # Before the game is launched, so its window rule places it correctly
         # the first time rather than being corrected afterwards.
@@ -1036,9 +1073,10 @@ class Session:
 
     # -- learning
 
-    def note_max_capture(self, width, height):
-        """The client's resolution limit for this session."""
+    def note_max_capture(self, width, height, fps=None):
+        """The client's resolution and frame rate limit for this session."""
         self.max_capture = (width, height)
+        self.max_fps = fps
 
     def note_client_output(self, width, height, now=None):
         """The client reported its size; act on it once it has settled.
@@ -1073,7 +1111,8 @@ class Session:
             return False
         key = str(self.client_id)
         _, remembered_max = client_record(key, self.clients)
-        record = {"output": [width, height]}
+        refresh = client_refresh(key, self.clients, self.max_fps)
+        record = {"output": [width, height], "refresh": refresh}
         max_capture = self.max_capture or remembered_max
         if max_capture is not None:
             record["max_capture"] = list(max_capture)
@@ -1082,21 +1121,24 @@ class Session:
             self.clients[key] = record
             save_clients(self.clients)
             log(
-                "stream-mode: learned {}x{} for client {} (limit {})".format(
-                    width, height, self.client_id,
+                "stream-mode: learned {}x{}@{} for client {} (limit {})".format(
+                    width, height, refresh, self.client_id,
                     "{}x{}".format(*self.max_capture) if self.max_capture else "unknown",
                 )
             )
 
         target = client_size(key, self.clients, self.max_capture)
-        if self.output is None or output_logical_size(self.output) == target:
+        if self.output is None:
+            return changed
+        current_refresh = output_refresh(self.output)
+        if output_logical_size(self.output) == target and current_refresh in (None, refresh):
             return changed
 
-        publish_target(self.output, target[0], target[1], DEFAULT_REFRESH)
-        set_output_mode(self.output, target[0], target[1], DEFAULT_REFRESH)
+        publish_target(self.output, target[0], target[1], refresh)
+        set_output_mode(self.output, target[0], target[1], refresh)
         log(
-            "stream-mode: resized {} to {}x{} for this session".format(
-                self.output, target[0], target[1]
+            "stream-mode: set {} to {}x{}@{} for this session".format(
+                self.output, target[0], target[1], refresh
             )
         )
         return True
@@ -1784,7 +1826,10 @@ def handle_steam_line(session, line, remove_at):
 
     match = MAX_CAPTURE_RE.search(line)
     if match:
-        session.note_max_capture(int(match.group(1)), int(match.group(2)))
+        session.note_max_capture(
+            int(match.group(1)), int(match.group(2)),
+            float(match.group(3)) if match.group(3) else None,
+        )
         return remove_at
 
     match = REMOVE_PROC_RE.search(line)

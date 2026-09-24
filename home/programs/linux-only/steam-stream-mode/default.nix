@@ -72,7 +72,11 @@ in
     refresh = lib.mkOption {
       type = lib.types.int;
       default = 60;
-      description = "Refresh rate advertised by the virtual output.";
+      description = ''
+        Refresh rate for a client whose frame rate is not known yet. Each
+        stream runs the output at the frame rate the client asks for, and
+        remembers it for that client's next connect.
+      '';
     };
 
     stageTimeout = lib.mkOption {
