@@ -168,11 +168,17 @@ MAX_CAPTURE_RE = re.compile(r"Maximum capture: (\d+)x(\d+)(?: ([\d.]+) FPS)?")
 # held for 7s, a transitional size for 2s.
 CLIENT_SIZE_SETTLE = float(os.environ.get("STREAM_MODE_CLIENT_SIZE_SETTLE", "10"))
 # Steam switching the stream to the game's overlay, and that capture actually
-# starting. Normally about two seconds apart; once it never started, and the
-# stream stayed black until focus moved off the game and back.
+# starting. Once it never started, and the stream stayed black until focus
+# moved off the game and back.
 GAME_STREAM_RE = re.compile(r">>> Switching video stream from \S+ to GameOverlay_MovieStream_\d+")
 GAME_CAPTURE_RE = re.compile(r">>> Capture method set to Game ")
-CAPTURE_STALL = float(os.environ.get("STREAM_MODE_CAPTURE_STALL", "5"))
+# The client's connection report, every 5s: the clock stalls and nudges are
+# judged by, rather than one of our own. Working starts took up to 8s after
+# the switch; the stall lasted six minutes, reports going by at ~185 kbit/s
+# with no video. Six reports, about 30s, leaves the slow starts alone: a
+# nudge on a capture that was about to start broke it (13:01:40, 13:09:23).
+CLIENT_HEARTBEAT_RE = re.compile(r"CLIENT: SteamNetworkingSockets connection: ")
+CAPTURE_STALL_HEARTBEATS = 6
 # How much of a log to scan on start for a session or connection still open.
 # Steam rotates these logs at about 1 MB; a 200 KB window lost a session's
 # start marker after roughly 110 minutes of the ~1.8 KB/min keep-alive lines.
@@ -759,6 +765,25 @@ def focus_window(window_id):
     return True
 
 
+def focus_workspace(output, reference):
+    """Focus a workspace on output, by index or name.
+
+    niri resolves an index on the focused output, so that output is focused
+    first: with DP-2 focused, the index would pick one of DP-2's workspaces.
+    """
+    for action in (["focus-monitor", output], ["focus-workspace", str(reference)]):
+        result = subprocess.run(
+            [NIRI, "msg", "action", *action],
+            capture_output=True, text=True, env=niri_env(),
+        )
+        if result.returncode != 0:
+            log("stream-mode: could not focus workspace {} on {}: {} failed: {}".format(
+                reference, output, action[0], (result.stderr or "").strip()
+            ))
+            return False
+    return True
+
+
 def parent_pids(pid, limit=8):
     """Walk up the process tree, nearest ancestor first.
 
@@ -965,9 +990,12 @@ class Session:
         # client name -> id, from connect lines; the stream-start line names
         # its client but carries no id.
         self.known_clients = {}
-        # When to nudge a game capture that has not started, and how many
-        # nudges it has had. See CAPTURE_STALL.
-        self.capture_deadline = None
+        # A game capture Steam has switched to but not started, the client
+        # reports since, the nudges it has had, and the window a nudge in
+        # progress returns to. See client_heartbeat.
+        self.capture_waiting = False
+        self.capture_heartbeats = 0
+        self.nudge_return_to = None
         self.capture_nudges = 0
         # See check_gamepad_info. None until first read, so a watcher started
         # mid-game re-announces the listed pads once.
@@ -1126,6 +1154,8 @@ class Session:
         self.max_fps = None
         self.reported_output = None
         self.settle_at = None
+        # Not on each switch to game capture: every nudge's return logs one.
+        self.capture_nudges = 0
         self.streaming = True
         clear_gamescope_atoms()
         if self.output is None:
@@ -1167,40 +1197,86 @@ class Session:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
 
-    def game_capture_requested(self, now=None):
+    def game_capture_requested(self):
         """Steam moved the stream to the game's overlay; expect frames soon."""
-        self.capture_deadline = (time.monotonic() if now is None else now) + CAPTURE_STALL
-        self.capture_nudges = 0
+        self.capture_waiting = True
+        self.capture_heartbeats = 0
 
     def game_capture_started(self):
-        self.capture_deadline = None
+        # A nudge in flight still returns at the next report: capture that
+        # starts while focus is away would otherwise leave it there.
+        self.capture_waiting = False
+        self.capture_nudges = 0
 
-    def check_game_capture(self, now):
-        """Move focus off the game and back when its capture has stalled.
+    def client_heartbeat(self):
+        """The client's periodic report: the clock a stall is judged by.
 
         Steam binds game capture when the recorded window changes, and a
-        rebind is what got a stalled capture going. Bounded, because a
-        capture that never starts should not have focus bounced forever.
+        rebind is what got a stalled capture going, so a stall is answered by
+        moving focus off the game. Bounded, because a capture that never
+        starts should not have focus bounced forever.
         """
-        if self.capture_deadline is None or now < self.capture_deadline:
+        if self.nudge_return_to is not None:
+            # A report later, not straight away: returning at once, even on
+            # Steam's "Changing record window" line, Steam missed the return
+            # and stayed on the other window, a desktop capture showing black.
+            return self.finish_nudge()
+        if not self.capture_waiting:
             return False
+        self.capture_heartbeats += 1
+        if self.capture_heartbeats < CAPTURE_STALL_HEARTBEATS:
+            return False
+        self.capture_heartbeats = 0
         if self.capture_nudges >= CAPTURE_NUDGE_LIMIT:
             log("stream-mode: game capture never started; giving up on nudging it")
-            self.capture_deadline = None
+            self.capture_waiting = False
             return False
         game = next((w for w in self.last_windows
                      if self.belongs_to_game(w) and not is_helper_window(w)), None)
-        other = next((w for w in self.last_windows
-                      if game is not None and w.get("id") != game.get("id")), None)
-        if game is None or other is None:
-            self.capture_deadline = None
+        if game is None:
+            return False
+        away = self.nudge_away_target(game)
+        if away is None:
+            log("stream-mode: game capture has not started, and there is no empty "
+                "workspace or other window to move focus to")
             return False
         self.capture_nudges += 1
-        self.capture_deadline = now + CAPTURE_STALL
         log("stream-mode: game capture has not started; moving focus off window {} "
             "and back ({}/{})".format(game["id"], self.capture_nudges, CAPTURE_NUDGE_LIMIT))
-        focus_window(other["id"])
-        focus_window(game["id"])
+        self.nudge_return_to = game["id"]
+        away()
+        return True
+
+    def nudge_away_target(self, game):
+        """Somewhere to put focus that is not the game, as a callable.
+
+        An empty workspace on the streamed output first: niri keeps one at
+        the end of every output, so it needs no other window, and it leaves
+        the desktop's windows alone. Steam then records no window at all.
+        Failing that, any window that is not Steam's own: given one of its
+        own, Steam recorded it instead of the game.
+        """
+        try:
+            workspaces = niri_workspaces()
+        except (subprocess.CalledProcessError, ValueError, OSError):
+            workspaces = []
+        empty = [w for w in workspaces
+                 if w.get("output") == self.output and w.get("active_window_id") is None]
+        if empty:
+            # The unnamed one niri keeps at the end, over an empty named one.
+            best = max(empty, key=lambda w: (w.get("name") is None, w.get("idx") or 0))
+            return lambda: focus_workspace(self.output, best.get("idx"))
+        other = next((w for w in self.last_windows if all((
+            w.get("id") != game.get("id"),
+            not (w.get("app_id") or "").startswith("steam"),
+        ))), None)
+        if other is not None:
+            return lambda: focus_window(other["id"])
+        return None
+
+    def finish_nudge(self):
+        window_id, self.nudge_return_to = self.nudge_return_to, None
+        focus_window(window_id)
         return True
 
     def check_gamepad_info(self):
@@ -1287,7 +1363,8 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
-        self.capture_deadline = None
+        self.capture_waiting = False
+        self.nudge_return_to = None
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -1607,6 +1684,10 @@ class Session:
         """
         if not self.streaming or self.output is None:
             return False
+        # A nudge moves focus away on purpose; taking it back at once is the
+        # instant return that leaves Steam's capture black.
+        if self.nudge_return_to is not None:
+            return False
 
         for w in windows:
             window_id = w.get("id")
@@ -1874,6 +1955,11 @@ class Session:
             return False
         log("stream-mode: staged game (pid {}) exited".format(self.game_pid))
         self.game_pid = None
+        # The next game in this stream gets its own nudges, and a return to
+        # the window that just closed is not attempted.
+        self.capture_waiting = False
+        self.capture_nudges = 0
+        self.nudge_return_to = None
         return True
 
 
@@ -2074,7 +2160,7 @@ def watch():
             # see check_gamepad_info.
             pending_work = any((
                 remove_at, session.pending, session.audits, session.settle_at,
-                session.capture_deadline, session.client_id is not None,
+                session.client_id is not None,
                 session.streaming,
             ))
             timeout = 1.0 if pending_work else 30.0
@@ -2146,7 +2232,6 @@ def watch():
             # costs nothing, and reading every process's name is not free.
             session.run_due_audits(now)
             session.settle_client_output(now)
-            session.check_game_capture(now)
             session.check_gamepad_info()
             if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
@@ -2173,6 +2258,10 @@ def handle_steam_line(session, line, remove_at):
 
     if GAME_STREAM_RE.search(line):
         session.game_capture_requested()
+        return remove_at
+
+    if CLIENT_HEARTBEAT_RE.search(line):
+        session.client_heartbeat()
         return remove_at
 
     if GAME_CAPTURE_RE.search(line):

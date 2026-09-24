@@ -258,9 +258,13 @@ class TestStalledGameCapture(unittest.TestCase):
     """
 
     def setUp(self):
-        self._real = {k: getattr(stream_mode, k) for k in ("focus_window",)}
+        self._real = {k: getattr(stream_mode, k)
+                      for k in ("focus_window", "focus_workspace", "niri_workspaces")}
         self.focused = []
+        self.workspaces = []
         stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
+        stream_mode.focus_workspace = lambda out, ref: self.workspaces.append((out, ref)) or True
+        stream_mode.niri_workspaces = lambda: []
 
     def tearDown(self):
         for k, v in self._real.items():
@@ -279,35 +283,137 @@ class TestStalledGameCapture(unittest.TestCase):
         ]
         return s
 
-    def test_a_stalled_capture_gets_a_focus_nudge(self):
+    def stall(self, s):
+        """Run the reports up to the one that should nudge."""
+        s.game_capture_requested()
+        for _ in range(stream_mode.CAPTURE_STALL_HEARTBEATS - 1):
+            self.assertFalse(s.client_heartbeat())
+
+    def test_a_stall_is_judged_by_the_clients_reports(self):
         s = self.session()
-        s.game_capture_requested(now=0)
-        self.assertFalse(s.check_game_capture(stream_mode.CAPTURE_STALL - 1))
-        self.assertTrue(s.check_game_capture(stream_mode.CAPTURE_STALL))
+        self.stall(s)
+        self.assertTrue(s.client_heartbeat())
+        self.assertEqual(self.focused, [5], "focus moves away first")
+
+    def test_a_slow_start_is_not_a_stall(self):
+        """Capture started 8s after the switch, on the second report (13:09:23)."""
+        s = self.session()
+        s.game_capture_requested()
+        s.client_heartbeat()
+        s.client_heartbeat()
+        s.game_capture_started()
+        for _ in range(10):
+            self.assertFalse(s.client_heartbeat())
+        self.assertEqual(self.focused, [])
+
+    def test_the_nudge_returns_a_report_later(self):
+        """Returning at once, even on Steam's record-window line, Steam missed
+        it and stayed on the other window (13:01:40, 13:09:23)."""
+        s = self.session()
+        self.stall(s)
+        s.client_heartbeat()
+        self.assertEqual(self.focused, [5])
+        self.assertTrue(s.client_heartbeat())
         self.assertEqual(self.focused, [5, 227])
 
-    def test_a_capture_that_starts_is_left_alone(self):
+    def test_capture_starting_while_focus_is_away_still_returns(self):
+        """Left away, Steam records no window and the controller stays on
+        the Desktop layout, with nothing to re-arm the nudge."""
         s = self.session()
-        s.game_capture_requested(now=0)
+        self.stall(s)
+        s.client_heartbeat()
         s.game_capture_started()
-        self.assertFalse(s.check_game_capture(100))
+        self.assertTrue(s.client_heartbeat())
+        self.assertEqual(self.focused, [5, 227])
+
+    def test_the_nudge_avoids_steams_own_windows(self):
+        """Given a Steam window, Steam recorded it instead of the game."""
+        s = self.session()
+        s.last_windows.insert(1, {"id": 184, "app_id": "steam", "workspace_id": 5})
+        self.stall(s)
+        s.client_heartbeat()
+        self.assertEqual(self.focused, [5])
+
+    def test_the_nudge_prefers_an_empty_workspace_on_the_streamed_output(self):
+        """Needs no other window, and leaves the desktop's windows alone."""
+        s = self.session()
+        stream_mode.niri_workspaces = lambda: [
+            {"idx": 5, "name": "game", "output": stream_mode.OUTPUT_NAME, "active_window_id": 227},
+            {"idx": 6, "name": "notes", "output": stream_mode.OUTPUT_NAME, "active_window_id": None},
+            {"idx": 7, "name": None, "output": stream_mode.OUTPUT_NAME, "active_window_id": None},
+            {"idx": 1, "name": None, "output": "DP-2", "active_window_id": None},
+        ]
+        self.stall(s)
+        self.assertTrue(s.client_heartbeat())
+        self.assertEqual(self.workspaces, [(stream_mode.OUTPUT_NAME, 7)],
+                         "by index on the streamed output, not the focused one")
+        self.assertEqual(self.focused, [])
+        s.client_heartbeat()
+        self.assertEqual(self.focused, [227])
+
+    def test_no_window_and_no_empty_workspace_is_reported(self):
+        s = self.session()
+        s.last_windows = [s.last_windows[0]]
+        self.stall(s)
+        self.assertFalse(s.client_heartbeat())
         self.assertEqual(self.focused, [])
 
     def test_the_nudge_gives_up_after_a_few_tries(self):
         s = self.session()
-        s.game_capture_requested(now=0)
-        now = 0
-        for _ in range(stream_mode.CAPTURE_NUDGE_LIMIT + 3):
-            now += stream_mode.CAPTURE_STALL
-            s.check_game_capture(now)
+        s.game_capture_requested()
+        for _ in range(10 * stream_mode.CAPTURE_STALL_HEARTBEATS * stream_mode.CAPTURE_NUDGE_LIMIT):
+            s.client_heartbeat()
         self.assertEqual(len(self.focused), 2 * stream_mode.CAPTURE_NUDGE_LIMIT)
+
+    def test_the_limit_holds_when_each_return_switches_the_stream_again(self):
+        """Every return to the game logs another switch to GameOverlay
+        (13:21:27, 13:29:53, 13:31:39); counting from zero on each one would
+        nudge a dead capture forever."""
+        s = self.session()
+        s.game_capture_requested()
+        for _ in range(10 * stream_mode.CAPTURE_STALL_HEARTBEATS * stream_mode.CAPTURE_NUDGE_LIMIT):
+            returning = s.nudge_return_to is not None
+            s.client_heartbeat()
+            if returning:
+                s.game_capture_requested()
+        self.assertEqual(len(self.focused), 2 * stream_mode.CAPTURE_NUDGE_LIMIT)
+
+    def test_the_next_game_in_a_stream_gets_its_own_nudges(self):
+        s = self.session()
+        s.game_capture_requested()
+        for _ in range(10 * stream_mode.CAPTURE_STALL_HEARTBEATS * stream_mode.CAPTURE_NUDGE_LIMIT):
+            s.client_heartbeat()
+        self.assertTrue(s.unstage())
+        s.game_pid = 5678
+        self.focused.clear()
+        self.stall(s)
+        self.assertTrue(s.client_heartbeat(), "a fresh game is nudged")
+
+    def test_a_game_exiting_mid_nudge_is_not_returned_to(self):
+        s = self.session()
+        self.stall(s)
+        s.client_heartbeat()
+        self.assertTrue(s.unstage())
+        self.assertFalse(s.client_heartbeat())
+        self.assertEqual(self.focused, [5])
+
+    def test_a_new_stream_gets_its_own_nudges(self):
+        s = self.session()
+        s.capture_nudges = stream_mode.CAPTURE_NUDGE_LIMIT
+        s.begin_stream()
+        self.assertEqual(s.capture_nudges, 0)
 
     def test_no_game_window_means_no_nudge(self):
         s = self.session()
         s.last_windows = [s.last_windows[1]]
-        s.game_capture_requested(now=0)
-        self.assertFalse(s.check_game_capture(stream_mode.CAPTURE_STALL))
+        self.stall(s)
+        self.assertFalse(s.client_heartbeat())
         self.assertEqual(self.focused, [])
+
+    def test_the_heartbeat_is_recognised(self):
+        self.assertTrue(stream_mode.CLIENT_HEARTBEAT_RE.search(
+            "[2026-09-24 10:54:23][3992.1] CLIENT: SteamNetworkingSockets connection: "
+            "Connected SDR->lhr->lhr  Ping: 24ms IN: 81.9kbit"))
 
 
 class TestVirtualGamepads(unittest.TestCase):
@@ -1435,7 +1541,7 @@ class TestEventDispatch(unittest.TestCase):
         def reassert_output(self):
             self.calls.append(("reassert_output",))
 
-        def game_capture_requested(self, now=None):
+        def game_capture_requested(self):
             self.calls.append(("game_capture_requested",))
 
         def game_capture_started(self):
@@ -2334,6 +2440,13 @@ class TestFocus(unittest.TestCase):
         for _ in range(stream_mode.REFOCUS_LIMIT + 2):
             s.refocus_streamed_window([self.win(9, False)])
         self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+
+    def test_a_nudge_in_flight_is_not_undone(self):
+        s = self.session()
+        s.fullscreened.add(9)
+        s.nudge_return_to = 9
+        self.assertFalse(s.refocus_streamed_window([self.win(9, False)]))
+        self.assertEqual(self.focused, [])
 
     def test_nothing_is_focused_when_not_streaming(self):
         s = self.session()
