@@ -258,6 +258,13 @@ freely. These are what the live test surfaced.
    sends `wl_output.done`, before `output_resized` updates the logical size,
    so xwayland-satellite applies the old size on each `done`. Fix it in the
    patch and drop the workaround.
+12. **Stalled game capture recovery** (d7dafe03 and its fixups): after six
+   client reports with no game capture, stream-mode moves focus to an empty
+   workspace on the streamed output and back at the next report. The move
+   itself was verified by hand at 13:21 (`record window: (nil)`, then
+   `Game Vulkan` 0.2s after returning). The automatic trigger has not fired
+   live since the fix: capture starts took 2 to 17s, and earlier short
+   timers broke a starting capture twice.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
