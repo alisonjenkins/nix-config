@@ -225,11 +225,9 @@ freely. These are what the live test surfaced.
    width tile instead of fullscreen on the streamed output. Game capture hides
    this on the client, but the game renders at the tile's size. Check why
    `fill_streamed_output` did not act.
-6. **The shim's decision line is invisible by default.** Steam discards
-   launched games' stderr, so `steam-command-runner: streaming to ...` only
-   shows in `~/.steam-command-runner-shim.log`, and only with `shim_debug`.
-   Always write that one line to the log file, and correct the docs that say
-   it reaches the journal (runner ADR 0007, docs/remote-play-troubleshooting.md).
+6. ~~**The shim's decision line is invisible by default.**~~ Done 2026-09-24:
+   every launch writes a timestamped decision line to
+   `~/.steam-command-runner-shim.log` (runner `bc720b0`), docs corrected.
 7. ~~**No outputs at all when DP-2 is off.**~~ Done 2026-09-24
    (docs/adr/0013): the output stays on when it is the only one.
 8. **lsfg-vk layer fails to load.** Every Vulkan app logs

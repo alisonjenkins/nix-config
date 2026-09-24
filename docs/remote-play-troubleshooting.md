@@ -53,12 +53,15 @@ new stream.
 ### Did the shim launch the game directly?
 
 ```sh
-journalctl --user --since '10 min ago' | grep steam-command-runner
+grep ' app ' ~/.steam-command-runner-shim.log | tail -5
 ```
 
-A streamed launch prints
-`steam-command-runner: streaming to steam, launching without gamescope, overlay X86_64 only (from ...)`.
-No line means the game went through gamescope. Then check, in order:
+Every launch writes one line here, whatever `shim_debug` says. Steam throws
+away the game's stderr, so the journal never has it. A streamed launch reads
+`... app 553850: streaming to steam, launching without gamescope, overlay X86_64 only (from ...)`.
+`no stream target, launching through gamescope` means the target was absent
+when the game started. No line at all means the shim never ran. Then check,
+in order:
 
 1. Launch Options are `/home/ali/.local/bin/gamescope -- %command%`. A bare
    `gamescope` can skip the shim silently.
