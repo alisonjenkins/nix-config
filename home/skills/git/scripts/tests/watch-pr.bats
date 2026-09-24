@@ -225,7 +225,16 @@ SPY
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
   WATCH_PR_TRIAGED_REVIEWS=abc run "$script" 1
   [ "$status" -eq 0 ]
-  [[ "$output" == *"WATCH_PR_TRIAGED_REVIEWS='abc' is not a non-negative integer"* ]]
+  [[ "$output" == *"WATCH_PR_TRIAGED_REVIEWS='abc' is not a non-negative integer; ignoring it"* ]]
+  [[ "$output" == *"IDLE_TIMEOUT"* ]]
+  [[ "$output" != *"NEW_ACTIVITY"* ]]
+}
+
+@test "a zero-padded WATCH_PR_TRIAGED_REVIEWS still matches the numeric review count" {
+  printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t5\n' \
+    >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
+  WATCH_PR_TRIAGED_REVIEWS=05 run "$script" 1
+  [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
 }

@@ -62,11 +62,14 @@ numeric_env_or_default() {
     return
   fi
   if ! [[ "$value" =~ ^[0-9]+$ ]]; then
-    echo "warning: \$$var_name='$value' is not a non-negative integer; using $default_value" >&2
+    local fallback="using $default_value"
+    [[ -z "$default_value" ]] && fallback="ignoring it"
+    echo "warning: \$$var_name='$value' is not a non-negative integer; $fallback" >&2
     echo "$default_value"
     return
   fi
-  echo "$value"
+  # base 10 explicitly: strips zero padding and stops "08" reading as octal
+  echo "$((10#$value))"
 }
 
 human_duration() {
