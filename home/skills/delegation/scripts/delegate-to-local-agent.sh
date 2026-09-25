@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Runs a task as a read-only *agent* on the active local profile: the model
-# gets opencode's read, glob, grep and list tools over one directory and
-# can look things up itself, instead of needing every byte pasted into the
-# prompt (delegate-to-local.sh). It cannot edit, run commands, fetch URLs,
-# start sub-agents, or read outside that directory. See
-# ../delegate-to-local.md ("Agent mode").
+# Runs a task as an *agent* on the active local profile: the model gets
+# opencode's read, glob, grep and list tools over one directory and can look
+# things up itself, instead of needing every byte pasted into the prompt
+# (delegate-to-local.sh). With LOCAL_LLM_AGENT_EDIT=1 it may also edit files
+# in that directory; the script snapshots the directory first and writes a
+# diff afterwards, for review before anything is kept. It never runs
+# commands, fetches URLs, starts sub-agents, or touches anything outside the
+# directory. See ../delegate-to-local.md ("Agent mode", "Edit mode").
 #
 # opencode runs against an isolated home ($state_dir/agent-home), not the
 # user's: the global opencode config adds ~14k tokens of skills, MCP tools
@@ -19,6 +21,8 @@
 #   4 = LOCAL_LLM_EXPECT_PROFILE doesn't match the active profile
 #   5 = the task outgrew the model's context: split it, or use a profile
 #       with more context
+#   6 = the run changed files that execute later (.git/, .envrc): review
+#       before keeping
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/queue-common.sh
@@ -29,8 +33,10 @@ usage() {
   echo "env: LOCAL_LLM_EXPECT_PROFILE (exit 4 unless this profile is active)," >&2
   echo "     LOCAL_LLM_AGENT_TIMEOUT (seconds for the whole run, default 600)," >&2
   echo "     LOCAL_LLM_AGENT_LOG (where to keep the run's event log; default under the state dir)," >&2
+  echo "     LOCAL_LLM_AGENT_EDIT=1 (allow edits inside <directory>; writes <log>.diff and keeps a snapshot)," >&2
   echo "     LOCAL_LLM_PROFILES_FILE, LOCAL_LLM_STATE_DIR, OPENCODE_BIN" >&2
-  echo "exit codes: 1 usage/config, 2 no profile, 3 run failed/timed out, 4 wrong profile, 5 context overflow" >&2
+  echo "exit codes: 1 usage/config, 2 no profile, 3 run failed/timed out, 4 wrong profile, 5 context overflow," >&2
+  echo "            6 = the run changed files that execute later (.git/, .envrc): review before keeping" >&2
 }
 
 if [[ $# -ne 2 ]]; then
@@ -98,7 +104,11 @@ output_limit=$((context / 4))
 
 agent_home="$state_dir/agent-home"
 mkdir -p "$agent_home/.config/opencode"
-jq -n --arg url "$base_url/v1" --arg profile "$profile" \
+edit_permission="deny"
+if [[ "${LOCAL_LLM_AGENT_EDIT:-0}" == "1" ]]; then
+  edit_permission="allow"
+fi
+jq -n --arg url "$base_url/v1" --arg profile "$profile" --arg edit "$edit_permission" \
   --argjson context "$context" --argjson output "$output_limit" '{
   "$schema": "https://opencode.ai/config.json",
   provider: {local: {
@@ -114,7 +124,7 @@ jq -n --arg url "$base_url/v1" --arg profile "$profile" \
   compaction: {auto: false},
   permission: {
     read: "allow", glob: "allow", grep: "allow", list: "allow",
-    edit: "deny", bash: "deny", webfetch: "deny", websearch: "deny",
+    edit: $edit, bash: "deny", webfetch: "deny", websearch: "deny",
     task: "deny", skill: "deny", todowrite: "deny",
     external_directory: "deny"
   }
@@ -150,6 +160,16 @@ release_reservation() {
 }
 trap release_reservation EXIT
 
+# The snapshot is what an edit run is reviewed against, and what it is
+# rolled back to if the review rejects it.
+snapshot=""
+if [[ "$edit_permission" == "allow" ]]; then
+  snapshot="$log.before"
+  # Snapshots are only needed until the run is reviewed; keep a week.
+  find "$runs_dir" -mindepth 1 -maxdepth 1 -type d -name '*.before' -mtime +7 -exec rm -rf {} +
+  cp -a "$work_dir" "$snapshot"
+fi
+
 env HOME="$agent_home" \
   XDG_CONFIG_HOME="$agent_home/.config" XDG_DATA_HOME="$agent_home/.local/share" \
   XDG_STATE_HOME="$agent_home/.local/state" XDG_CACHE_HOME="$agent_home/.cache" \
@@ -173,6 +193,53 @@ while kill -0 "$oc_pid" 2>/dev/null; do
   sleep 1
 done
 wait "$oc_pid" || status=$?
+
+# Written before any exit below: a run that failed half-way through its
+# edits needs reviewing most of all.
+if [[ -n "$snapshot" ]]; then
+  diff -ruN "$snapshot" "$work_dir" >"$log.diff" || true
+fi
+# Nothing changed, so there is nothing to review or undo.
+if [[ -n "$snapshot" && ! -s "$log.diff" ]]; then
+  echo "no changes" >&2
+  rm -rf "$snapshot"
+  snapshot=""
+fi
+if [[ -n "$snapshot" ]]; then
+  echo "changed files:" >&2
+  diff -rq "$snapshot" "$work_dir" >&2 || true
+  echo "diff: $log.diff" >&2
+  echo "undo: rm -rf '$work_dir' && cp -a '$snapshot' '$work_dir'" >&2
+
+  # A model with edit access could write a file that runs later outside the
+  # sandbox (a git hook, an .envrc direnv loads); flag those separately since
+  # a long diff is easy to skim past.
+  mapfile -d '' -t changed_entries < <(
+    { (cd "$snapshot" && find . -mindepth 1 -print0)
+      (cd "$work_dir" && find . -mindepth 1 -print0)
+    } | sort -z -u
+  )
+  risky=()
+  for rel in "${changed_entries[@]}"; do
+    rel="${rel#./}"
+    [[ -z "$rel" ]] && continue
+    case "/$rel/" in
+      */.git/*) ;;
+      *) [[ "$(basename -- "$rel")" == ".envrc" ]] || continue ;;
+    esac
+    s="$snapshot/$rel"
+    w="$work_dir/$rel"
+    [[ -d "$s" || -d "$w" ]] && continue
+    if [[ ! -e "$s" || ! -e "$w" ]] || ! diff -q "$s" "$w" >/dev/null 2>&1; then
+      risky+=("$rel")
+    fi
+  done
+  if [[ ${#risky[@]} -gt 0 ]]; then
+    echo "error: the run changed files that run code later; review before keeping:" >&2
+    printf '%s\n' "${risky[@]}" >&2
+    risky_found=1
+  fi
+fi
 
 # Every read of the log goes through this: under set -e, one line that is
 # not JSON would otherwise end the script with jq's own exit code.
@@ -212,3 +279,6 @@ if [[ -z "$reply" ]]; then
   exit 3
 fi
 printf '%s\n' "$reply"
+if [[ "${risky_found:-0}" -eq 1 ]]; then
+  exit 6
+fi
