@@ -1,0 +1,84 @@
+--- a/src/server/event.rs
++++ b/src/server/event.rs
+@@ -1317,9 +1317,9 @@
+                 height,
+                 refresh,
+             } => {
+-                let Ok((output, dimensions)) = state
++                let Ok((output, dimensions, xdg)) = state
+                     .world
+-                    .query_one_mut::<(&WlOutput, &mut OutputDimensions)>(target)
++                    .query_one_mut::<(&WlOutput, &mut OutputDimensions, Option<&XdgOutputServer>)>(target)
+                 else {
+                     return;
+                 };
+@@ -1331,6 +1331,13 @@
+                     dimensions.width = width;
+                     dimensions.height = height;
+                     debug!("{} dimensions: {width}x{height}", output.id());
++                    if let Some(xdg) = xdg {
++                        if dimensions.rotated_90 {
++                            xdg.logical_size(dimensions.height, dimensions.width);
++                        } else {
++                            xdg.logical_size(dimensions.width, dimensions.height);
++                        }
++                    }
+                 }
+                 output.mode(convert_wenum(flags), width, height, refresh);
+             }
+--- a/src/server/tests.rs
++++ b/src/server/tests.rs
+@@ -1886,6 +1886,33 @@
+ }
+ 
+ #[test]
++fn output_mode_change_forwards_new_logical_size_xdg() {
++    let (mut f, _) = TestFixture::new_with_compositor();
++    let man = f.enable_xdg_output();
++
++    let (output_obj, output) = f.new_output(0, 0);
++    let output_xdg = f.create_xdg_output(&man, output_obj.obj.clone());
++    f.run();
++
++    std::mem::take(&mut *output_xdg.data.events.lock().unwrap());
++
++    f.testwl.set_output_mode(&output, 1728, 1080);
++    f.run();
++    f.run();
++
++    let events = std::mem::take(&mut *output_xdg.data.events.lock().unwrap());
++    let found = events.iter().rev().find_map(|e| {
++        if let zxdg_output_v1::Event::LogicalSize { width, height } = e {
++            Some((*width, *height))
++        } else {
++            None
++        }
++    });
++    let (width, height) = found.expect("No LogicalSize event received on xdg output");
++    assert_eq!((width, height), (1728, 1080));
++}
++
++#[test]
+ fn output_offset_remove_output() {
+     let (mut f, _) = TestFixture::new_with_compositor();
+ 
+--- a/testwl/src/lib.rs
++++ b/testwl/src/lib.rs
+@@ -923,6 +923,17 @@
+         self.display.flush_clients().unwrap();
+     }
+ 
++    pub fn set_output_mode(&mut self, output: &WlOutput, width: i32, height: i32) {
++        let xdg = self.state.outputs[output]
++            .xdg
++            .as_ref()
++            .expect("Output doesn't have an xdg output");
++        xdg.logical_size(width, height);
++        output.mode(wl_output::Mode::Current, width, height, 60000);
++        output.done();
++        self.display.flush_clients().unwrap();
++    }
++
+     pub fn enable_fractional_scale(&mut self) {
+         self.dh
+             .create_global::<State, WpFractionalScaleManagerV1, _>(1, ());

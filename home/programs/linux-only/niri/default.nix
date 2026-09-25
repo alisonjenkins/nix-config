@@ -26,7 +26,16 @@ in
     # silently, no core and no crash log. Observed 8 times in the week to
     # 2026-08-14. 0.8.2 is the newest release; upstream tracks this class of
     # flush panic in Supreeeme/xwayland-satellite#210 and niri-wm/niri#2159.
-    unstable.xwayland-satellite
+    #
+    # Patched: X saw every output mode change one change late, because the
+    # xdg-output LogicalSize handler forwards the size stored from the last
+    # wl_output.mode, which arrives after it (PENDING.md item 11). The patch
+    # adds a regression test, so the unit tests are run: nixpkgs skips them.
+    (unstable.xwayland-satellite.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ../../../../patches/xwayland-satellite-logical-size-on-mode.patch ];
+      doCheck = true;
+      cargoTestFlags = [ "--lib" ];
+    }))
   ] else [];
 
   # Run noctalia as a systemd user service (Restart=on-failure) bound to
