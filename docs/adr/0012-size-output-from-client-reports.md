@@ -49,6 +49,13 @@ setting, but that is an inference.
   one. A new value is acted on only after it has held for
   `CLIENT_SIZE_SETTLE` (10 seconds), so the echo and the transition are
   skipped. A client window resized mid-stream is followed the same way.
+- Ignores a report when the video in the same line is not our output and
+  the client is shaped like that video: the window has reshaped itself to
+  what it was sent, which is not its panel. On 2026-09-25 FH6's capture
+  stayed a black frame at the 2880x1080 limit, the Mac window followed it to
+  4470x1676, and after 10 seconds that was learned; the next HD2 launch
+  rendered at 2880x1080. A report shaped unlike the video (a letterboxed
+  capture) is the client's own panel and is still learned.
 - Reads `Maximum capture: WxH` and sizes the output to the client's shape
   fitted inside it, never scaled up, with even dimensions. For the Mac that
   is 2880x1800 fitted into 2880x1080: 1728x1080, 16:10.
@@ -98,7 +105,9 @@ Nothing is configured per client.
   `test_a_reported_size_waits_to_settle`,
   `test_learned_output_is_fitted_inside_the_resolution_limit`,
   `test_a_later_change_is_followed_too`,
-  `test_a_legacy_entry_is_fitted_to_this_sessions_limit`.
+  `test_a_legacy_entry_is_fitted_to_this_sessions_limit`,
+  `test_a_report_about_other_video_is_not_learned`,
+  `test_a_panel_unlike_the_video_is_still_learned`.
 
 ## Revisit when
 
