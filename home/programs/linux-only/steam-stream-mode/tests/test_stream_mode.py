@@ -547,12 +547,11 @@ class TestLogReaders(unittest.TestCase):
 
 
 class TestSetOutputMode(unittest.TestCase):
-    """X clients see each virtual output mode change one change late.
+    """One mode change is enough.
 
-    xwayland-satellite kept reporting the previous size: after the output was
-    set back to 1728x1080, HD2 read 1280x800 from X and sized its borderless
-    window to that. A second change that only differs in refresh carries the
-    size through.
+    X used to see each change one change late, so the output was stepped
+    through refresh+1 first. patches/xwayland-satellite-logical-size-on-mode.patch
+    fixed the cause, and xrandr then followed every change at once.
     """
 
     def setUp(self):
@@ -569,11 +568,9 @@ class TestSetOutputMode(unittest.TestCase):
     def tearDown(self):
         stream_mode.subprocess.run, stream_mode.niri_env = self._real
 
-    def test_the_real_mode_is_set_last_after_a_refresh_step(self):
+    def test_the_mode_is_set_once(self):
         self.assertTrue(stream_mode.set_output_mode("steam", 1728, 1080, 60))
-        self.assertEqual(
-            [c[-1] for c in self.calls], ["1728x1080@61", "1728x1080@60"]
-        )
+        self.assertEqual([c[-1] for c in self.calls], ["1728x1080@60"])
 
 
 class TestConnectedClient(unittest.TestCase):

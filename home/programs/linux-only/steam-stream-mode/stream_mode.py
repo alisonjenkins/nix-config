@@ -376,24 +376,18 @@ def set_output_mode(name, width, height, refresh):
     resolves it when a session starts, so an output that came and went leaves
     that request failing — which stalled Steam's main loop past its 15-second
     watchdog and segfaulted the client.
-
-    Set twice, first one Hz off. X clients through xwayland-satellite see a
-    virtual output's mode change one change late, so after a single change X
-    still reported the previous size and HD2 sized its borderless window to
-    1280x800 on a 1728x1080 output. The second change carries the size.
     """
-    for step in (refresh + 1, refresh):
-        result = subprocess.run(
-            [NIRI, "msg", "output", name, "mode", "{}x{}@{}".format(width, height, step)],
-            check=False, capture_output=True, text=True, env=niri_env(),
-        )
-        if result.returncode != 0:
-            log(
-                "stream-mode: could not set {} to {}x{}@{}: {}".format(
-                    name, width, height, step, (result.stderr or "").strip()
-                )
+    result = subprocess.run(
+        [NIRI, "msg", "output", name, "mode", "{}x{}@{}".format(width, height, refresh)],
+        check=False, capture_output=True, text=True, env=niri_env(),
+    )
+    if result.returncode != 0:
+        log(
+            "stream-mode: could not set {} to {}x{}@{}: {}".format(
+                name, width, height, refresh, (result.stderr or "").strip()
             )
-            return False
+        )
+        return False
     return True
 
 
