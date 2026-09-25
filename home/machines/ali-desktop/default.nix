@@ -11,19 +11,28 @@
   ];
 
   modules.vr.enableOpenSourceVR = true;
-  # 16 GiB RX 9070 XT: one model at a time, loaded on demand.
-  modules.delegateToLocal.profiles = {
+  # 16 GiB RX 9070 XT: one model at a time, loaded on demand. A q8_0 KV
+  # cache doubles each context for the VRAM f16 took, at the same speed
+  # (measured 2026-09-25, VRAM total / shared memory / generation):
+  #   fast,    16k f16: 9.6 GiB / 512 MiB / 85 tok/s; 32k q8_0: 9.8 GiB / 544 MiB / 81 tok/s
+  #   quality,  8k f16: 15.9 GiB / 499 MiB / 34 tok/s; 16k q8_0: 16.0 GiB / 516 MiB / 34 tok/s
+  #   quality, 24k q8_0 fits with 54 MiB spare; 32k spills to system RAM
+  #   (shared 1.2 GiB) and drops to 23 tok/s.
+  modules.delegateToLocal.profiles = let
+    q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
+  in {
     fast = {
       model = pkgs.llama-models.qwen3-8b-q6-k.modelFile;
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ];
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
       description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction and mechanical edits";
     };
     quality = {
       model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "8192" "--jinja" ];
-      # Thinking mode stays on: ~68 s and 3.7 tok/s for one real prompt
-      # (2026-09-22), past delegate-to-local.sh's 60 s default queue wait.
-      description = "Qwen3.6-27B UD-Q3_K_XL, ~13.5 GiB: harder reasoning, slow; set LOCAL_LLM_QUEUE_TIMEOUT to 120+";
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ] ++ q8Cache;
+      # Thinking mode stays on, so replies are long: 34 tok/s on a free
+      # GPU (2026-09-25), but agent tasks took 79 to 264 s. The 3.7 tok/s
+      # measured 2026-09-22 was probably with the GPU shared.
+      description = "Qwen3.6-27B UD-Q3_K_XL, ~13.5 GiB: reading code, harder reasoning; thinking on, so replies take a minute or more";
     };
   };
   modules.subnauticaVR = {
