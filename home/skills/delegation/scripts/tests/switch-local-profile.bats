@@ -272,6 +272,25 @@ TOML
   [[ "$output" == *"profile 'mid' active"* ]]
 }
 
+@test "a measured vram_mib overrides the size-based estimate" {
+  # The estimate (size * 1.2 + 512MiB) put a 13.5GB model at 16.7GiB; it
+  # measured 14.8GiB with a quantised KV cache, and fitted.
+  truncate -s 12G "$BATS_TEST_TMPDIR/models/measured.gguf"
+  cat >>"$LOCAL_LLM_PROFILES_FILE" <<TOML
+
+[measured]
+runtime = "llama-server"
+model = "$BATS_TEST_TMPDIR/models/measured.gguf"
+port = 8086
+vram_mib = 13000
+TOML
+  fake_drm_vram 2147483648 17179869184 # 14GiB free; estimate ~14.9GiB, measured ~12.7GiB
+  export FAKE_CURL_UP="http://localhost:8086"
+  run "$switch" "measured"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'measured' active"* ]]
+}
+
 @test "refuses and reports no alternatives when nothing declared would fit either" {
   fake_drm_vram 17079869184 17179869184 # ~100MiB free
   export FAKE_CURL_UP="http://localhost:8081"

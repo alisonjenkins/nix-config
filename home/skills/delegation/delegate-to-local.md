@@ -118,6 +118,11 @@ file (still plain JSON, since nothing hand-edits it).
 - `launch_args` (optional) — extra CLI args appended verbatim (e.g.
   context-size, quantization flags).
 - `description` (optional) — shown by `list-local-profiles.sh`.
+- `vram_mib` (optional) — the VRAM the loaded profile actually uses, in
+  MiB. The fit check uses it instead of its estimate (model size × 1.2 +
+  512MiB), which can refuse a profile that fits: it put a 13.5GB model with
+  a q8_0 KV cache at 16.7GiB, where it measured 14.8GiB. Measure it with the
+  profile loaded and nothing else on the GPU.
 
 ## Testing the pipeline without a real model
 

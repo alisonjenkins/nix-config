@@ -95,24 +95,43 @@ required_vram_bytes() {
   awk -v m="$model_bytes" -v f="$overhead_fraction" -v b="$buffer_bytes" 'BEGIN{printf "%.0f", m*(1+f)+b}'
 }
 
-# Comma-separated names of every OTHER declared, non-mock profile whose
-# model would fit in $free_bytes, so a refusal can offer real alternatives
+# VRAM bytes one profile needs: its measured `vram_mib` when the profile
+# declares one, else the size-based estimate above. Empty when neither is
+# known (a bare repo id), which callers treat as "can't fit-check this".
+# The estimate is deliberately cautious and can be well off: a 13.5GB model
+# with a q8_0 KV cache was estimated at 16.7GiB and measured 14.8GiB.
+profile_required_bytes() {
+  local profile_json="$1" overhead_fraction="$2" buffer_bytes="$3" vram_mib model model_bytes
+  vram_mib="$(jq -r '.vram_mib // empty' <<<"$profile_json")"
+  if [[ "$vram_mib" =~ ^[0-9]+$ ]]; then
+    echo $((vram_mib * 1048576))
+    return
+  fi
+  model="$(jq -r '.model // empty' <<<"$profile_json")"
+  [[ -n "$model" ]] || return 0
+  # `|| true`: model_size_bytes legitimately returns non-zero on an unstat-
+  # able file, and a bare assignment from its output would otherwise abort
+  # the whole script under `set -e`.
+  model_bytes="$(model_size_bytes "$model")" || true
+  [[ "$model_bytes" =~ ^[0-9]+$ ]] || return 0
+  required_vram_bytes "$model_bytes" "$overhead_fraction" "$buffer_bytes"
+}
+
+# Comma-separated names of every OTHER declared, non-mock profile that
+# would fit in $free_bytes, so a refusal can offer real alternatives
 # instead of just saying no.
 fitting_profiles() {
   local profiles_json="$1" exclude_name="$2" free_bytes="$3" overhead_fraction="$4" buffer_bytes="$5"
-  local name candidate_runtime candidate_model candidate_bytes candidate_required
+  local name candidate_json candidate_required
   local fits=()
-  while IFS=$'\t' read -r name candidate_runtime candidate_model; do
+  while IFS= read -r name; do
     [[ "$name" == "$exclude_name" ]] && continue
-    [[ "$candidate_runtime" == "mock" ]] && continue
-    # `|| true`: model_size_bytes legitimately returns non-zero on an unstat-
-    # able file, and a bare assignment from its output would otherwise abort
-    # the whole script under `set -e`.
-    candidate_bytes="$(model_size_bytes "$candidate_model")" || true
-    [[ "$candidate_bytes" =~ ^[0-9]+$ ]] || continue
-    candidate_required="$(required_vram_bytes "$candidate_bytes" "$overhead_fraction" "$buffer_bytes")"
+    candidate_json="$(jq -c --arg name "$name" '.[$name]' <<<"$profiles_json")"
+    [[ "$(jq -r '.runtime // empty' <<<"$candidate_json")" == "mock" ]] && continue
+    candidate_required="$(profile_required_bytes "$candidate_json" "$overhead_fraction" "$buffer_bytes")"
+    [[ "$candidate_required" =~ ^[0-9]+$ ]] || continue
     ((candidate_required <= free_bytes)) && fits+=("$name")
-  done < <(jq -r 'to_entries[] | [.key, (.value.runtime // ""), (.value.model // "")] | @tsv' <<<"$profiles_json")
+  done < <(jq -r 'keys[]' <<<"$profiles_json")
   local IFS=,
   echo "${fits[*]}"
 }
@@ -355,27 +374,24 @@ process_switch_job() {
     local vram_used vram_total
     read -r vram_used vram_total <<<"$(gpu_vram_bytes)"
     if [[ "$vram_used" =~ ^[0-9]+$ && "$vram_total" =~ ^[0-9]+$ ]]; then
-      local free_bytes model_bytes
+      local free_bytes required_bytes
       free_bytes=$((vram_total - vram_used))
       # The active profile is stopped before the new one starts, so its
       # VRAM counts as free: switching from the 27B to the 8B was refused
       # because the 27B's own footprint was counted as taken.
       if [[ -n "$old_profile" ]]; then
-        local old_runtime old_model old_bytes
-        old_runtime="$(jq -r --arg name "$old_profile" '.[$name].runtime // empty' <<<"$profiles_json")"
-        old_model="$(jq -r --arg name "$old_profile" '.[$name].model // empty' <<<"$profiles_json")"
-        if [[ -n "$old_model" && "$old_runtime" != "mock" ]]; then
-          old_bytes="$(model_size_bytes "$old_model")" || true
+        local old_json old_bytes
+        old_json="$(jq -c --arg name "$old_profile" '.[$name] // empty' <<<"$profiles_json")"
+        if [[ -n "$old_json" && "$(jq -r '.runtime // empty' <<<"$old_json")" != "mock" ]]; then
+          old_bytes="$(profile_required_bytes "$old_json" "$overhead_fraction" "$buffer_bytes")"
           if [[ "$old_bytes" =~ ^[0-9]+$ ]]; then
-            free_bytes=$((free_bytes + $(required_vram_bytes "$old_bytes" "$overhead_fraction" "$buffer_bytes")))
+            free_bytes=$((free_bytes + old_bytes))
             ((free_bytes > vram_total)) && free_bytes=$vram_total
           fi
         fi
       fi
-      model_bytes="$(model_size_bytes "$model")" || true
-      if [[ "$model_bytes" =~ ^[0-9]+$ ]]; then
-        local required_bytes
-        required_bytes="$(required_vram_bytes "$model_bytes" "$overhead_fraction" "$buffer_bytes")"
+      required_bytes="$(profile_required_bytes "$profile_json" "$overhead_fraction" "$buffer_bytes")"
+      if [[ "$required_bytes" =~ ^[0-9]+$ ]]; then
         if ((free_bytes < required_bytes)); then
           local alternatives msg
           alternatives="$(fitting_profiles "$profiles_json" "$profile_name" "$free_bytes" "$overhead_fraction" "$buffer_bytes")"
