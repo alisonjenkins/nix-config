@@ -102,6 +102,20 @@ in
     ];
   };
 
+  # The same model at UD-IQ3_S, ~12.7 GiB: the largest quant that fits a
+  # 16 GiB card whole, with room for its KV cache on an idle desktop.
+  qwen3-6-35b-a3b-ud-iq3-s = mkGgufModel {
+    pname = "qwen3.6-35b-a3b-ud-iq3-s";
+    primaryFile = "Qwen3.6-35B-A3B-UD-IQ3_S.gguf";
+    files = [
+      {
+        name = "Qwen3.6-35B-A3B-UD-IQ3_S.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/resolve/main/Qwen3.6-35B-A3B-UD-IQ3_S.gguf";
+        hash = "sha256-ZqPKiIzhNIK0DDM9skMsDr3jp7E3VPwp8Mb16JcD7GY=";
+      }
+    ];
+  };
+
   # Single smart model — Qwen3.6-27B Dense
   # All 27B params active every token, UD-Q5_K_XL ~18.7 GiB. Supersedes
   # Qwen3-32B (this repo's previous pick for this slot): newer (April 2026),
