@@ -87,6 +87,15 @@
       }];
     };
 
+    # Forza Horizon 6: ForzaTech takes no resolution argument either, and
+    # left at its saved 1024x768 it drew a small corner of the streamed
+    # output. Same rewrite-and-restore as HD2, on its UserConfigSelections.
+    games."2483190".stream_resolution_rules = [{
+      file = "{prefix}/drive_c/users/steamuser/AppData/Local/ForzaHorizon6/LocalStorage_Shared/ForzaUserConfigSelections/UserConfigSelections";
+      pattern = "(<ResolutionWidth value=\")\\d+(\"/>\\s*<ResolutionHeight value=\")\\d+";
+      replacement = "\${1}{width}\${2}{height}";
+    }];
+
     # Subnautica (264710): syncs the subnautica-vr-mods payload (see
     # modules.subnauticaVR above) before every launch. hooks.pre_launch
     # waits for the sync to finish (steam-command-runner's own `wait = true`
