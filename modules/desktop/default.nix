@@ -219,8 +219,9 @@ let
 
   romModules = collectRomFiles ./roms;
 
-  # The binaural 7.1 filter-chain, as a PipeWire context module, so a second
-  # instance can differ only in names and where the stereo output goes.
+  # The binaural 7.1 filter-chain, as a PipeWire context module. Shared by
+  # the desktop sink and the Remote Play one, which differ only in names and
+  # where the stereo output goes.
   binauralChain = { sinkName, outputName, description, captureExtra ? { }, playbackExtra ? { } }:
     let
       bs = cfg.pipewire.binauralSurround;
@@ -316,6 +317,57 @@ let
         } // playbackExtra;
       };
     };
+
+  # A standalone PipeWire client config (`pipewire -c <file>`) that runs the
+  # given modules for as long as the process lives.
+  standalonePipewireConf = name: modules: pkgs.writeText name (builtins.toJSON {
+    "context.properties" = { "log.level" = 0; };
+    "context.spa-libs" = {
+      "audio.convert.*" = "audioconvert/libspa-audioconvert";
+      "support.*" = "support/libspa-support";
+    };
+    "context.modules" = [
+      { name = "libpipewire-module-rt"; args = { }; flags = [ "ifexists" "nofail" ]; }
+      { name = "libpipewire-module-protocol-native"; }
+      { name = "libpipewire-module-client-node"; }
+      { name = "libpipewire-module-adapter"; }
+    ] ++ modules;
+  });
+
+  # Steam's Remote Play sink is a null sink with no channel positions
+  # (aux0,aux1), so a surround stream played into it keeps FL/FR by index and
+  # loses centre, LFE and surrounds: dialogue on the centre channel vanished
+  # from FH6 (2026-09-25). These sinks sit in front of it with real positions.
+  # Each output is pinned to Steam's sink and never falls back elsewhere.
+  steamStreamSink = "steam-streaming-playback";
+  remotePlayOutput = {
+    "target.object" = steamStreamSink;
+    "node.dont-fallback" = true;
+  };
+  remotePlayStereoConf = standalonePipewireConf "remote-play-stereo.conf" [{
+    name = "libpipewire-module-loopback";
+    args = {
+      "node.description" = "Remote Play stereo";
+      "capture.props" = {
+        "node.name" = "remote-play-stereo";
+        "media.class" = "Audio/Sink";
+        "audio.position" = [ "FL" "FR" ];
+      };
+      "playback.props" = {
+        "node.name" = "remote-play-stereo-out";
+        "audio.position" = [ "FL" "FR" ];
+        "stream.dont-remix" = true;
+      } // remotePlayOutput;
+    };
+  }];
+  remotePlayBinauralConf = standalonePipewireConf "remote-play-binaural.conf" [
+    (binauralChain {
+      sinkName = "remote-play-binaural";
+      outputName = "remote-play-binaural-out";
+      description = "Remote Play binaural 7.1";
+      playbackExtra = remotePlayOutput;
+    })
+  ];
 in
 {
   imports = [
@@ -580,6 +632,19 @@ in
           is enabled. Absorbs scheduling/bus jitter. Keep roughly
           `usbHeadroom + usbPeriodSize` >= total buffer
           (`usbPeriodSize * usbPeriodNum`) to avoid follower resync storms.
+        '';
+      };
+
+      remotePlaySinks = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Install PipeWire configs for sinks that feed Steam Remote Play's
+          stream sink with real channel positions, for a streaming tool to run
+          while a stream is live: /etc/steam-remote-play/stereo.conf (a
+          plain downmix) and, with binauralSurround enabled, binaural.conf
+          (the same HRTF as the desktop sink). Steam's own sink has none, so
+          surround played straight into it keeps only the front pair.
         '';
       };
 
@@ -2533,6 +2598,16 @@ in
     };
 
     # Only show COSMIC initial setup inside COSMIC sessions
+    # Not under /etc/pipewire: the PipeWire module installs that directory as
+    # one store path, which nothing else can add files to.
+    environment.etc."steam-remote-play/stereo.conf" = mkIf cfg.pipewire.remotePlaySinks {
+      source = remotePlayStereoConf;
+    };
+    environment.etc."steam-remote-play/binaural.conf" =
+      mkIf (cfg.pipewire.remotePlaySinks && cfg.pipewire.binauralSurround.enable) {
+        source = remotePlayBinauralConf;
+      };
+
     environment.etc."xdg/autostart/com.system76.CosmicInitialSetup.desktop" = mkIf cfg.cosmic.enable {
       text = ''
         [Desktop Entry]

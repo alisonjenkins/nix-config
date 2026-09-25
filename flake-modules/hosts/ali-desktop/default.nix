@@ -475,6 +475,9 @@ in {
             # offered). This sink takes the discrete surround and binauralises
             # it instead. Pinned to the Scarlett so it cannot loop through
             # EasyEffects, which follows the default sink.
+            # Positioned sinks in front of Steam's Remote Play sink, which
+            # steam-stream-mode runs while a stream is live.
+            remotePlaySinks = true;
             binauralSurround = {
               enable = true;
               outputNode = "alsa_output.usb-Focusrite_Scarlett_2i2_4th_Gen_S2R68MK3712AC3-00.pro-output-0";
