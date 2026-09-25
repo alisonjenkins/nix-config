@@ -130,6 +130,9 @@ in {
         hardware.asahi = {
           extractPeripheralFirmware = true;
           peripheralFirmwareDirectory = "/var/lib/asahi-firmware";
+          # Experimental upstream and only tested on M2; mpv needs
+          # --hwdec=vaapi --vo=dmabuf-wayland to use it.
+          avd.vaapi-support = true;
         };
 
         # Grant the nix-daemon build sandbox read access to the host firmware
