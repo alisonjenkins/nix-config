@@ -59,19 +59,22 @@ gpu_vram_bytes() {
 # safetensors). Empty output — not "0" — means "couldn't tell" (a bare HF
 # repo id, or a path that doesn't exist locally yet), which callers must
 # treat as "can't fit-check this one," not "zero bytes."
+#
+# Follows symlinks (stat -L, find -L): Nix store models are symlinks to the
+# real file, and measuring the link gave 62 bytes for a 6.7GB model.
 model_size_bytes() {
   local path="$1"
   if [[ -f "$path" ]]; then
-    stat -c%s "$path" 2>/dev/null || stat -f%z "$path" 2>/dev/null || true
+    stat -L -c%s "$path" 2>/dev/null || stat -L -f%z "$path" 2>/dev/null || true
     return
   fi
   if [[ -d "$path" ]]; then
     local total=0 f sz
     while IFS= read -r -d '' f; do
-      sz="$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null)" || return
+      sz="$(stat -L -c%s "$f" 2>/dev/null || stat -L -f%z "$f" 2>/dev/null)" || return
       [[ "$sz" =~ ^[0-9]+$ ]] || return
       total=$((total + sz))
-    done < <(find "$path" -type f -print0 2>/dev/null)
+    done < <(find -L "$path" -type f -print0 2>/dev/null)
     echo "$total"
   fi
 }

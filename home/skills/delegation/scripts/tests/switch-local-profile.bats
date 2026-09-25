@@ -235,6 +235,24 @@ TOML
   [ ! -s "$FAKE_RUNTIME_CALLS" ] # never even tried to launch anything
 }
 
+@test "a symlinked model is measured by its target, not the link" {
+  # Nix store models are symlinks to the real file; measuring the link gave
+  # 62 bytes for a 6.7GB model, so every fit check passed.
+  ln -s "$BATS_TEST_TMPDIR/models/quality/weights.safetensors" "$BATS_TEST_TMPDIR/models/linked.gguf"
+  cat >>"$LOCAL_LLM_PROFILES_FILE" <<TOML
+
+[linked]
+runtime = "llama-server"
+model = "$BATS_TEST_TMPDIR/models/linked.gguf"
+port = 8084
+TOML
+  fake_drm_vram 10737418240 17179869184 # 6GiB free; the 12GiB target does not fit
+  export FAKE_CURL_UP="http://localhost:8084"
+  run "$switch" "linked"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"profile 'linked' needs ~"* ]]
+}
+
 @test "refuses and reports no alternatives when nothing declared would fit either" {
   fake_drm_vram 17079869184 17179869184 # ~100MiB free
   export FAKE_CURL_UP="http://localhost:8081"
