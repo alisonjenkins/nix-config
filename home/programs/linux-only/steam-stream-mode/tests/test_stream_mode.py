@@ -2448,6 +2448,23 @@ class TestFocus(unittest.TestCase):
         self.assertFalse(s.refocus_streamed_window([self.win(9, False)]))
         self.assertEqual(self.focused, [])
 
+    def test_a_window_newer_than_the_game_keeps_focus(self):
+        """A login box or cloud-save prompt opened after the game must reach
+        the client; Steam streams the focused window."""
+        s = self.session()
+        s.fullscreened.add(9)
+        login = dict(self.win(12, True, size=(480, 360)), app_id="launcher")
+        self.assertFalse(s.refocus_streamed_window([self.win(9, False), login]))
+        self.assertEqual(self.focused, [])
+
+    def test_focus_falling_to_an_older_window_is_taken_back(self):
+        """A splash closing hands focus to whatever was there before."""
+        s = self.session()
+        s.fullscreened.add(9)
+        terminal = self.win(2, True)
+        self.assertTrue(s.refocus_streamed_window([self.win(9, False), terminal]))
+        self.assertEqual(self.focused, [9])
+
     def test_nothing_is_focused_when_not_streaming(self):
         s = self.session()
         s.streaming = False

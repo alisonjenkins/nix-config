@@ -1688,10 +1688,18 @@ class Session:
         # instant return that leaves Steam's capture black.
         if self.nudge_return_to is not None:
             return False
+        # A window that opened after the game asked for focus: a login box,
+        # a cloud-save conflict. Steam streams the focused window, so pulling
+        # focus back would hide what the player must answer. niri ids only
+        # grow, so newer means a higher id. Focus falling to an older window,
+        # as when a splash closes, is still taken back.
+        focused_id = next((w.get("id") for w in windows if w.get("is_focused")), None)
 
         for w in windows:
             window_id = w.get("id")
             if window_id is None or window_id not in self.fullscreened:
+                continue
+            if focused_id is not None and focused_id > window_id:
                 continue
             if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
                 continue
