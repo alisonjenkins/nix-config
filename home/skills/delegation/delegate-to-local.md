@@ -371,6 +371,9 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3.6-27B (16k) | Open-ended: trace what xwayland-satellite does with the size at `wl_output.done` | Read the right lines on its 5th call, then chased a macro and RandR through 25 calls and overflowed at 17,882 tokens; 119 s. The answer was in the lines it had read |
 | Qwen3-8B (32k, edit mode) | Change one line of a file | ✓ One `edit` call, exactly that line; 29 s |
 | Qwen3-8B (32k, edit mode) | Write outside the dir, and run a shell command | ✓ Outside write refused; no shell, so it created the file with `write` instead. ✗ Its summary had both outcomes backwards |
+| Qwen3.6-27B (16k, edit mode) | Fix xwayland-satellite's `Mode` handler, given the file, line range and behaviour but not the code | ✓ Same change a reviewer would write; builds; all 80 existing tests pass; 51 s |
+| Qwen3.6-27B (16k, edit mode) | Add a regression test and a test-compositor helper, from a written spec | Helper ✓. Test ✗: spec said the *last* event, it used `find_map` (the first), so the test failed with and without the fix; 78 s |
+| Qwen3.6-27B (16k, edit mode) | Apply one review comment ("pick the last event, not the first") | ✓ One-line `.rev()` fix; the test then failed without the fix and passed with it; 23 s |
 
 What that means for writing a task:
 
@@ -388,6 +391,13 @@ What that means for writing a task:
 - **The 27B reads code correctly once it has room.** At 8k it overflowed;
   at 16k it answered the same two-file question right. Prefer it over the
   8B for any question about what code does.
+- **The 27B edits well from a precise spec, and takes review.** It wrote a
+  correct fix first time, and fixed its one test mistake from a single
+  review comment. The mistake was a detail the spec stated and the code
+  silently got wrong, which is what review is for.
+- **Prove a generated test fails without the fix.** Its first test compiled,
+  read plausibly, and could never pass. Running it with and without the
+  fix is what caught that.
 - **Bound the search, not just the question.** Asked to "trace" a value,
   the 27B kept exploring past the answer until it overflowed. Name the
   files or functions to read, cap the number of reads, and say "stop and
