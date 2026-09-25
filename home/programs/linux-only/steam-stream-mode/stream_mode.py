@@ -1857,7 +1857,9 @@ class Session:
 
         for w in windows:
             window_id = w.get("id")
-            if window_id is None or window_id not in self.fullscreened:
+            if window_id is None:
+                continue
+            if window_id not in self.fullscreened and window_id not in self.staged_windows:
                 continue
             if not w.get("is_focused"):
                 held_since = self.focus_held_since.pop(window_id, None)

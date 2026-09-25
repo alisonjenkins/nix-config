@@ -2620,6 +2620,14 @@ class TestFocus(unittest.TestCase):
             s.refocus_streamed_window([self.win(9, False)], now=12)
         self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT - 1)
 
+    def test_a_staged_window_is_kept_focused_too(self):
+        """A game that opens at the output's size is never fullscreened by us,
+        and nor is one staged again after a restart."""
+        s = self.session()
+        s.staged_windows.add(9)
+        self.assertTrue(s.refocus_streamed_window([self.win(9, False)]))
+        self.assertEqual(self.focused, [9])
+
     def test_a_nudge_in_flight_is_not_undone(self):
         s = self.session()
         s.fullscreened.add(9)
