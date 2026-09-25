@@ -11,6 +11,21 @@
   ];
 
   modules.vr.enableOpenSourceVR = true;
+  # 16 GiB RX 9070 XT: one model at a time, loaded on demand.
+  modules.delegateToLocal.profiles = {
+    fast = {
+      model = pkgs.llama-models.qwen3-8b-q6-k.modelFile;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ];
+      description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction and mechanical edits";
+    };
+    quality = {
+      model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "8192" "--jinja" ];
+      # Thinking mode stays on: ~68 s and 3.7 tok/s for one real prompt
+      # (2026-09-22), past delegate-to-local.sh's 60 s default queue wait.
+      description = "Qwen3.6-27B UD-Q3_K_XL, ~13.5 GiB: harder reasoning, slow; set LOCAL_LLM_QUEUE_TIMEOUT to 120+";
+    };
+  };
   modules.subnauticaVR = {
     enable = true;
     # Subnautica lives on the secondary Steam library on this host, not the
