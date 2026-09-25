@@ -253,6 +253,25 @@ TOML
   [[ "$output" == *"profile 'linked' needs ~"* ]]
 }
 
+@test "switching away from the active profile counts its VRAM as free" {
+  # quality (12GiB) is loaded and will be stopped by the switch, so its VRAM
+  # is available to the new profile even though the card shows it in use.
+  truncate -s 8G "$BATS_TEST_TMPDIR/models/mid.gguf"
+  cat >>"$LOCAL_LLM_PROFILES_FILE" <<TOML
+
+[mid]
+runtime = "llama-server"
+model = "$BATS_TEST_TMPDIR/models/mid.gguf"
+port = 8085
+TOML
+  write_active "quality" "http://localhost:8081" "weights.safetensors"
+  fake_drm_vram 16106127360 17179869184 # 15GiB used, 1GiB free; mid needs ~10GiB
+  export FAKE_CURL_UP="http://localhost:8085"
+  run "$switch" "mid"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'mid' active"* ]]
+}
+
 @test "refuses and reports no alternatives when nothing declared would fit either" {
   fake_drm_vram 17079869184 17179869184 # ~100MiB free
   export FAKE_CURL_UP="http://localhost:8081"

@@ -345,12 +345,33 @@ process_switch_job() {
   # VRAM or unknown model size (a bare HF repo id, nothing downloaded yet)
   # both fail *open* — proceed — rather than block on data the check can't
   # see.
+  local active_file="$state_dir/active-profile.json"
+  local old_profile=""
+  if [[ -f "$active_file" ]]; then
+    old_profile="$(jq -r '.profile // empty' "$active_file" 2>/dev/null || true)"
+  fi
+
   if [[ "$runtime" != "mock" && "$force_switch" != "1" ]]; then
     local vram_used vram_total
     read -r vram_used vram_total <<<"$(gpu_vram_bytes)"
     if [[ "$vram_used" =~ ^[0-9]+$ && "$vram_total" =~ ^[0-9]+$ ]]; then
       local free_bytes model_bytes
       free_bytes=$((vram_total - vram_used))
+      # The active profile is stopped before the new one starts, so its
+      # VRAM counts as free: switching from the 27B to the 8B was refused
+      # because the 27B's own footprint was counted as taken.
+      if [[ -n "$old_profile" ]]; then
+        local old_runtime old_model old_bytes
+        old_runtime="$(jq -r --arg name "$old_profile" '.[$name].runtime // empty' <<<"$profiles_json")"
+        old_model="$(jq -r --arg name "$old_profile" '.[$name].model // empty' <<<"$profiles_json")"
+        if [[ -n "$old_model" && "$old_runtime" != "mock" ]]; then
+          old_bytes="$(model_size_bytes "$old_model")" || true
+          if [[ "$old_bytes" =~ ^[0-9]+$ ]]; then
+            free_bytes=$((free_bytes + $(required_vram_bytes "$old_bytes" "$overhead_fraction" "$buffer_bytes")))
+            ((free_bytes > vram_total)) && free_bytes=$vram_total
+          fi
+        fi
+      fi
       model_bytes="$(model_size_bytes "$model")" || true
       if [[ "$model_bytes" =~ ^[0-9]+$ ]]; then
         local required_bytes
@@ -370,12 +391,6 @@ process_switch_job() {
         fi
       fi
     fi
-  fi
-
-  local active_file="$state_dir/active-profile.json"
-  local old_profile=""
-  if [[ -f "$active_file" ]]; then
-    old_profile="$(jq -r '.profile // empty' "$active_file" 2>/dev/null || true)"
   fi
 
   # Coordination gate: a delegate-to-local.sh caller doing many calls can
