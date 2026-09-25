@@ -322,6 +322,19 @@ freely. These are what the live test surfaced.
    and Alt+Enter out of full screen gave 640x400 while back in gave
    1728x1080. Inferred, not observed directly: FH6 leaves full screen when it
    loses focus, and 640x400 is its windowed size.
+16. **Re-test a reconnect to a running HD2 on the merged build.** #368
+   merged (2026-09-25) with this unchecked. Item 3's re-staging was confirmed
+   on 2026-09-24, before the focus changes (staged windows now refocused,
+   niri focus events applied). With HD2 running, disconnect the client,
+   reconnect, and check the stream-mode log shows the game staged again and
+   Steam returns to `Game Vulkan`. Also check `~/.steam-command-runner-shim.log`
+   has `app 553850: streaming to steam, ...` for the launch.
+17. **Stream to a surround client.** Untested: every client so far reported
+   `audio channels = 2`. A client reporting more gets the stereo sink anyway
+   (docs/adr/0015), and Steam's channel order for more than two unpositioned
+   channels is unknown. Test with the home surround setup: check
+   `streaming_log.txt` for the channel count, then play a channel-test file
+   and note which speaker each channel reaches.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
