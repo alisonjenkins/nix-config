@@ -1792,7 +1792,6 @@
       },
       "original": {
         "owner": "alisonjenkins",
-        "ref": "feat/stream-aware-launch",
         "repo": "steam-command-runner",
         "type": "github"
       }
