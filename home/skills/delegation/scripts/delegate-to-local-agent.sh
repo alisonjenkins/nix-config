@@ -251,7 +251,8 @@ events | jq -r 'select(.type == "tool_use") | "tool \(.part.tool) \(.part.state.
 echo "event log: $log" >&2
 
 error_name="$(events | jq -r 'select(.type == "error") | .error.name' | head -1)"
-if grep -q 'Continue if you have next steps' "$log" 2>/dev/null; then
+# Text parts only: a tool that read this script returns the phrase too.
+if events | jq -r 'select(.type == "text") | .part.text' | grep -q 'Continue if you have next steps'; then
   echo "error: the conversation was compacted mid-task, so the reply cannot be trusted" >&2
   exit 5
 fi
