@@ -296,7 +296,7 @@ TOML
 
 @test "a measured vram_mib overrides the size-based estimate" {
   # The estimate (size * 1.2 + 512MiB) put a 13.5GB model at 16.7GiB; it
-  # measured 14.8GiB with a quantised KV cache, and fitted.
+  # measured 14.6GiB with a quantised KV cache, and fitted.
   truncate -s 12G "$BATS_TEST_TMPDIR/models/measured.gguf"
   cat >>"$LOCAL_LLM_PROFILES_FILE" <<TOML
 

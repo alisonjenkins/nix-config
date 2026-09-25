@@ -99,7 +99,7 @@ required_vram_bytes() {
 # declares one, else the size-based estimate above. Empty when neither is
 # known (a bare repo id), which callers treat as "can't fit-check this".
 # The estimate is deliberately cautious and can be well off: a 13.5GB model
-# with a q8_0 KV cache was estimated at 16.7GiB and measured 14.8GiB.
+# with a q8_0 KV cache was estimated at 16.7GiB and measured 14.6GiB.
 profile_required_bytes() {
   local profile_json="$1" overhead_fraction="$2" buffer_bytes="$3" vram_mib model model_bytes
   vram_mib="$(jq -r '.vram_mib // empty' <<<"$profile_json")"
