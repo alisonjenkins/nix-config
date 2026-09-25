@@ -276,12 +276,20 @@ freely. These are what the live test surfaced.
    0.8.3 and main) ignores the size it receives and forwards the size it
    stored from the last `wl_output.mode` (`event.rs:1331`). smithay sends
    `logical_size` before `mode`, so Xwayland is told the previous mode's
-   size every time. Fix: in the `Mode` handler, after storing a current
-   mode, re-send `xdg.logical_size` from the new dimensions. Patch
-   satellite (and report upstream; #251 may be this), then drop the
-   refresh+1 workaround. The local 27B answered the smithay half and read
-   the right satellite lines but overflowed before answering; the satellite
-   cause was found by reading them directly.
+   size every time. **Patched 2026-09-25**
+   (`patches/xwayland-satellite-logical-size-on-mode.patch`): the `Mode`
+   handler re-sends the logical size from the new dimensions, with a
+   regression test that fails without the fix. **Confirmed live
+   2026-09-25:** with the patched satellite running, `xrandr` followed
+   1726x1080, 1728x1080, 1280x800 and back at once, and stream-mode's
+   refresh+1 step was removed. A switch restarts stream-mode but not a
+   running satellite, which survives until every X client has gone (it
+   did on 2026-09-25): after deploying this, log out and back in before
+   the next stream, or streams get the old one-change lag without the
+   workaround. Left: report upstream (#251 may be this). The local 27B
+   answered the smithay half and read the right satellite lines but
+   overflowed before answering; the satellite cause was found by reading
+   them directly.
 12. **Stalled game capture recovery** (d7dafe03 and its fixups): after six
    client reports with no game capture, stream-mode moves focus to an empty
    workspace on the streamed output and back at the next report. The move
