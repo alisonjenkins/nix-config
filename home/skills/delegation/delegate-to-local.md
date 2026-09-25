@@ -324,7 +324,8 @@ using yours:
 It reserves the profile for the run (it talks to the server directly, not
 through the queue) and releases it on exit. Needs opencode 1.18.31 or later:
 1.18.30 crashes on every prompt (anomalyco/opencode#48965). Exit codes are
-the table above plus **5**: the task outgrew the context; split it.
+the table above plus **5**: the task outgrew the context; split it. In edit
+mode, **6**: the run changed a file that runs code later (see below).
 
 **Exit 0 means the run finished, not that the task was done.** A model that
 could not do something says so in prose and exits 0.
@@ -352,6 +353,12 @@ write as "denied". The diff and the tool lines were right both times.
   asked to `touch` a file, it created the file with the write tool.
 - Nothing it writes is kept by the script. Keep, commit or restore after
   review.
+- **Exit 6: it changed a file that runs code later**, anything under `.git/`
+  (a hook runs on your next commit) or an `.envrc` (direnv runs it). The
+  script lists the paths after the diff. Read those first; "no shell" does
+  not hold past them.
+- A run that changed nothing deletes its snapshot; other snapshots are
+  deleted after a week.
 
 ## What the local models are good and bad at
 
@@ -374,12 +381,17 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3.6-27B (16k, edit mode) | Fix xwayland-satellite's `Mode` handler, given the file, line range and behaviour but not the code | ✓ Same change a reviewer would write; builds; all 80 existing tests pass; 51 s |
 | Qwen3.6-27B (16k, edit mode) | Add a regression test and a test-compositor helper, from a written spec | Helper ✓. Test ✗: spec said the *last* event, it used `find_map` (the first), so the test failed with and without the fix; 78 s |
 | Qwen3.6-27B (16k, edit mode) | Apply one review comment ("pick the last event, not the first") | ✓ One-line `.rev()` fix; the test then failed without the fix and passed with it; 23 s |
+| Qwen3.6-27B (16k, edit mode) | Two small bash edits to this skill's own script, given the exact lines to add | ✓ Both exactly as specified; 56 s. (Its run exited 5, a false alarm from the script's own compaction check, since fixed) |
+| Qwen3.6-27B (16k, edit mode) | Move an early `exit 6` to after the reply is printed, given the lines | ✓ Exactly as specified, line numbers right; 32 s |
+| Qwen3-8B (32k, edit mode) | Replace one doc line with two given lines | Words ✓, shape ✗: joined them into one 150-character line despite being told two; 40 s |
 
 What that means for writing a task:
 
 - **Extraction yes, comprehension no (8B).** It finds and lists things
   reliably. Asked what code *does*, it can read the right lines and state
   the opposite. Ask the 8B for the text; decide what it means yourself.
+- **The 8B follows what, not always how.** Asked for two wrapped lines, it
+  wrote the right words as one long line. Check the shape of its edits too.
 - **Never trust its line numbers.** Ask for the code text and grep for it.
 - **Give absolute, real paths.** "The current directory" became the path
   `/current/directory/...`. A symlinked directory broke grep and glob
