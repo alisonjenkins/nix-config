@@ -499,6 +499,12 @@ in {
                 { type = "bq_peaking";   freq = 9000;  q = 1.2; gain = -5.4; }
                 { type = "bq_highshelf"; freq = 13000; q = 0.7; gain = -9.7; }
               ];
+              # Measured 2026-09-25 through the Remote Play copy of this
+              # chain: 7.1 pink noise came out 7.1 dB below a plain stereo
+              # downmix of the same signal (-28.9 vs -21.8 dBFS), and the Scarlett
+              # at full gain was still too quiet at times. +7 dB matched it to
+              # within 0.5 dB with peaks at 0.42 of full scale.
+              outputGain = 2.24;
             };
           };
 

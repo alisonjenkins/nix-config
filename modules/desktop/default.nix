@@ -268,8 +268,21 @@ let
           output = if i == 1 then "mix${side}:Out" else "${eqName side (i - 1)}:Out";
           input = "${eqName side i}:In";
         }) eq;
-      outputFor = side:
+      eqOutput = side:
         if eq == [ ] then "mix${side}:Out" else "${eqName side (builtins.length eq)}:Out";
+      # Makeup gain after the EQ, which mostly cuts.
+      gained = bs.outputGain != 1.0;
+      gainNodes = lib.optionals gained (map (side: {
+        type = "builtin";
+        label = "linear";
+        name = "gain${side}";
+        control = { "Mult" = bs.outputGain; "Add" = 0.0; };
+      }) [ "L" "R" ]);
+      gainLinks = lib.optionals gained (map (side: {
+        output = eqOutput side;
+        input = "gain${side}:In";
+      }) [ "L" "R" ]);
+      outputFor = side: if gained then "gain${side}:Out" else eqOutput side;
     in {
       name = "libpipewire-module-filter-chain";
       flags = [ "nofail" ];
@@ -280,9 +293,9 @@ let
           nodes = (map spatializer channels) ++ [
             { type = "builtin"; label = "mixer"; name = "mixL"; }
             { type = "builtin"; label = "mixer"; name = "mixR"; }
-          ] ++ (eqNodes "L") ++ (eqNodes "R");
+          ] ++ (eqNodes "L") ++ (eqNodes "R") ++ gainNodes;
           links = (linksFor "mixL" "L") ++ (linksFor "mixR" "R")
-            ++ (eqLinks "L") ++ (eqLinks "R");
+            ++ (eqLinks "L") ++ (eqLinks "R") ++ gainLinks;
           inputs = map (ch: "sp${ch}:In") channels;
           outputs = [ (outputFor "L") (outputFor "R") ];
         };
@@ -642,6 +655,19 @@ in
           type = types.str;
           default = "Binaural Surround 7.1";
           description = "Human-readable name shown in audio device pickers.";
+        };
+
+        outputGain = mkOption {
+          type = types.float;
+          default = 1.0;
+          example = 2.24;
+          description = ''
+            Linear makeup gain applied after the compensation EQ (2.24 is
+            +7 dB). A fitted EQ is mostly cuts, so the chain ends up quieter
+            than the unprocessed signal; this brings it back. Linear rather
+            than dB because Nix has no power function to convert. Too much
+            clips at the output device, since nothing limits the chain.
+          '';
         };
 
         compensationEq = mkOption {
