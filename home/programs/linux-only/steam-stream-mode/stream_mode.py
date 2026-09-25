@@ -92,6 +92,10 @@ READER_BACKOFF_MAX = float(os.environ.get("STREAM_MODE_READER_BACKOFF_MAX", "5")
 # half the output while niri reports it fullscreen. Bounded so a deliberate
 # switch to something else on the desktop is not fought indefinitely.
 REFOCUS_LIMIT = int(os.environ.get("STREAM_MODE_REFOCUS_LIMIT", "3"))
+# Seconds the game must keep focus before its takeback budget is restored.
+# Resetting on any regain let a switch that is undone at once be undone
+# forever; FH6's black windows at launch arrive within about 2 seconds.
+REFOCUS_SETTLE = float(os.environ.get("STREAM_MODE_REFOCUS_SETTLE", "10"))
 # How many times to widen one window. niri opens windows at
 # `default-column-width` -- a proportion of the output, 0.5 here -- so a game
 # arrives at half the streamed output's width. Capped so a window that cannot
@@ -1110,6 +1114,8 @@ class Session:
         self.fullscreened = set()
         # window id -> how many times focus has been taken back for it.
         self.refocus_attempts = {}
+        # window id -> when it was last seen gaining focus.
+        self.focus_held_since = {}
         # window id -> how many times it has been fullscreened to the output.
         self.widen_attempts = {}
         # Windows already reported as not covering the output, so the warning
@@ -1168,6 +1174,7 @@ class Session:
         self.staged_windows = set()
         self.fullscreened = set()
         self.refocus_attempts = {}
+        self.focus_held_since = {}
         self.widen_attempts = {}
         self.size_warned = set()
         width, height = client_size(client_id, self.clients)
@@ -1824,7 +1831,7 @@ class Session:
             (game.get("title") or "").strip(),
         ))
 
-    def refocus_streamed_window(self, windows):
+    def refocus_streamed_window(self, windows, now=None):
         """Keep the game the focused window while a stream is running.
 
         Focus is asked for once when a window arrives, but it does not always
@@ -1835,6 +1842,7 @@ class Session:
         """
         if not self.streaming or self.output is None:
             return False
+        now = time.monotonic() if now is None else now
         # A nudge moves focus away on purpose; taking it back at once is the
         # instant return that leaves Steam's capture black.
         if self.nudge_return_to is not None:
@@ -1851,13 +1859,17 @@ class Session:
             window_id = w.get("id")
             if window_id is None or window_id not in self.fullscreened:
                 continue
+            if not w.get("is_focused"):
+                held_since = self.focus_held_since.pop(window_id, None)
+                if held_since is not None and now - held_since >= REFOCUS_SETTLE:
+                    self.refocus_attempts.pop(window_id, None)
             newer = focused_id is not None and focused_id > window_id
             if newer and not self.is_blank_sibling(focused, w):
                 continue
             if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
                 continue
             if w.get("is_focused"):
-                self.refocus_attempts.pop(window_id, None)
+                self.focus_held_since.setdefault(window_id, now)
                 continue
             attempts = self.refocus_attempts.get(window_id, 0)
             if attempts >= REFOCUS_LIMIT:
@@ -2473,6 +2485,11 @@ def handle_steam_line(session, line, remove_at):
     return remove_at
 
 
+def set_focused(windows, window_id):
+    for w in windows:
+        w["is_focused"] = w.get("id") == window_id
+
+
 def handle_niri_event(session, line):
     """Act on one compositor event."""
     try:
@@ -2498,6 +2515,9 @@ def handle_niri_event(session, line):
             session.last_windows = [
                 w for w in session.last_windows if w.get("id") != window.get("id")
             ] + [window]
+            # niri sends no separate unfocus for the others.
+            if window.get("is_focused"):
+                set_focused(session.last_windows, window.get("id"))
             log(
                 "stream-mode: window {} appeared ({}, pid {})".format(
                     window.get("id"), window.get("app_id") or "?", window.get("pid")
@@ -2523,6 +2543,11 @@ def handle_niri_event(session, line):
                 if w.get("id") == window_id:
                     w["layout"] = layout
         session.fill_streamed_output(session.last_windows)
+        return
+
+    if "WindowFocusChanged" in event:
+        set_focused(session.last_windows, event["WindowFocusChanged"].get("id"))
+        session.on_windows(session.last_windows)
         return
 
     if "WindowClosed" in event:

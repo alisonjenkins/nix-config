@@ -1618,6 +1618,29 @@ class TestEventDispatch(unittest.TestCase):
         stream_mode.handle_niri_event(self.s, json.dumps({"WindowClosed": {"id": 1}}))
         self.assertEqual([w["id"] for w in self.s.last_windows], [2])
 
+    def focused_ids(self):
+        return [w["id"] for w in self.s.last_windows if w.get("is_focused")]
+
+    def test_a_window_opening_focused_takes_focus_from_the_others(self):
+        """niri says only the new window is focused; the old one's flag was
+        kept, so the game looked focused behind FH6's black window."""
+        self.s.last_windows = [{"id": 1, "is_focused": True}]
+        stream_mode.handle_niri_event(
+            self.s, json.dumps({"WindowOpenedOrChanged": {"window": {"id": 2, "is_focused": True}}})
+        )
+        self.assertEqual(self.focused_ids(), [2])
+
+    def test_a_focus_change_is_recorded_and_acted_on(self):
+        self.s.last_windows = [{"id": 1, "is_focused": True}, {"id": 2, "is_focused": False}]
+        stream_mode.handle_niri_event(self.s, json.dumps({"WindowFocusChanged": {"id": 2}}))
+        self.assertEqual(self.focused_ids(), [2])
+        self.assertIn(("on_windows", 2), self.s.calls)
+
+    def test_focus_leaving_every_window_is_recorded(self):
+        self.s.last_windows = [{"id": 1, "is_focused": True}]
+        stream_mode.handle_niri_event(self.s, json.dumps({"WindowFocusChanged": {"id": None}}))
+        self.assertEqual(self.focused_ids(), [])
+
     def test_workspace_changes_report_the_outputs(self):
         stream_mode.handle_niri_event(
             self.s,
@@ -2560,15 +2583,42 @@ class TestFocus(unittest.TestCase):
             s.refocus_streamed_window([self.win(9, False)])
         self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
 
-    def test_regaining_focus_resets_the_budget(self):
+    def test_holding_focus_resets_the_budget(self):
         s = self.session()
         s.fullscreened.add(9)
-        s.refocus_streamed_window([self.win(9, False)])
-        s.refocus_streamed_window([self.win(9, True)])
+        s.refocus_streamed_window([self.win(9, False)], now=0)
+        s.refocus_streamed_window([self.win(9, True)], now=1)
+        self.focused.clear()
+        later = 1 + stream_mode.REFOCUS_SETTLE
+        for _ in range(stream_mode.REFOCUS_LIMIT + 2):
+            s.refocus_streamed_window([self.win(9, False)], now=later)
+        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+
+    def test_a_switch_that_keeps_being_undone_eventually_wins(self):
+        """Every takeback is followed by niri reporting the game focused. If
+        that reset the budget, a switch to Steam's window would be undone
+        forever."""
+        s = self.session()
+        s.fullscreened.add(9)
+        steam = self.win(2, True)
+        for _ in range(stream_mode.REFOCUS_LIMIT + 3):
+            s.refocus_streamed_window([self.win(9, False), steam], now=5)
+            s.refocus_streamed_window([self.win(9, True), self.win(2, False)], now=5)
+        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+
+    def test_focus_lost_to_a_dialog_ends_the_hold(self):
+        """A hold interrupted by a login box starts again when focus returns."""
+        s = self.session()
+        s.fullscreened.add(9)
+        s.refocus_streamed_window([self.win(9, False)], now=0)
+        s.refocus_streamed_window([self.win(9, True)], now=0)
+        login = self.win(12, True)
+        s.refocus_streamed_window([self.win(9, False), login], now=5)
+        s.refocus_streamed_window([self.win(9, True), self.win(12, False)], now=6)
         self.focused.clear()
         for _ in range(stream_mode.REFOCUS_LIMIT + 2):
-            s.refocus_streamed_window([self.win(9, False)])
-        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT)
+            s.refocus_streamed_window([self.win(9, False)], now=12)
+        self.assertEqual(len(self.focused), stream_mode.REFOCUS_LIMIT - 1)
 
     def test_a_nudge_in_flight_is_not_undone(self):
         s = self.session()

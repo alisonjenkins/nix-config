@@ -311,8 +311,17 @@ freely. These are what the live test surfaced.
    PipeWire capture (see item 9), with a resolution rule rewriting FH6's
    `UserConfigSelections` to the client's size (it had kept 1024x768 and
    drew a corner of the output). Relative mouse is lost, which a controller
-   does not need. Untested: GE-Proton10-28 (Wine 10), and the same stream
-   from a non-niri session, to separate Wine from xwayland-satellite.
+   does not need. GE-Proton10-28 (Wine 10) captured no better. Untested: the
+   same stream from a non-niri session, to separate Wine from
+   xwayland-satellite.
+   FH6 dropping to a 640x400 window at the intro-to-menu change (seen on
+   Proton Experimental and GE-Proton10-28) went away once focus was fixed.
+   Seen: FH6 opens an untitled black window whenever its full screen state
+   changes, niri focuses it, and stream-mode, tracking focus wrongly, let it
+   keep focus. With that fixed (2026-09-25 11:09) the menu stayed 1728x1080,
+   and Alt+Enter out of full screen gave 640x400 while back in gave
+   1728x1080. Inferred, not observed directly: FH6 leaves full screen when it
+   loses focus, and 640x400 is its windowed size.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
