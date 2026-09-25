@@ -14,15 +14,16 @@
   # 16 GiB RX 9070 XT: one model at a time, loaded on demand. A q8_0 KV
   # cache doubles each context for the VRAM f16 took, at the same speed
   # (measured 2026-09-25, VRAM total / shared memory / generation):
-  #   small,   16k f16: 9.6 GiB / 512 MiB / 85 tok/s; 32k q8_0: 9.8 GiB / 544 MiB / 81 tok/s
+  #   small,   32k q8_0: 8.5 GiB / 287 MiB / 71 tok/s (Qwen3.5-9B; Qwen3-8B
+  #            before it took 9.8 GiB / 544 MiB / 81 tok/s)
   #   quality,  8k f16: 15.9 GiB / 499 MiB / 34 tok/s; 16k q8_0: 16.0 GiB / 516 MiB / 34 tok/s
   #   quality, 24k q8_0 fits with 54 MiB spare; 32k spills to system RAM
   #   (shared 1.2 GiB) and drops to 23 tok/s.
   #   fast,    32k q8_0: 14.7 GiB / 278 MiB / 127 tok/s
   # fast is a mixture-of-experts model: 35B parameters, 3B used per token,
   # so it runs faster than small and did better on every task it was given
-  # (home/skills/delegation/delegate-to-local.md). small stays because it
-  # is the one that fits beside a game.
+  # (home/skills/delegation/delegate-to-local.md). small is the one that
+  # fits beside a game.
   # vramMiB is each profile's own use, rounded up to 100 MiB: its total less
   # the ~1.1 GiB the desktop uses. Quality measured 14,910 MiB and fast
   # 13,868 MiB (sysfs mem_info_vram_used, loaded and after a request, less
@@ -41,10 +42,10 @@
       description = "Qwen3.6-35B-A3B UD-IQ3_S (MoE), ~12.7 GiB, 127 tok/s: new files, edits and review fixes from a spec";
     };
     small = {
-      model = pkgs.llama-models.qwen3-8b-q6-k.modelFile;
+      model = pkgs.llama-models.qwen3-5-9b-q6-k.modelFile;
       launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
-      vramMiB = 9000;
-      description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction only; fits beside a game";
+      vramMiB = 7600;
+      description = "Qwen3.5-9B Q6_K, ~6.9 GiB, 71 tok/s: small edits and lookups; fits beside a game";
     };
     quality = {
       model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;

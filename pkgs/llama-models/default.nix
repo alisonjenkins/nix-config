@@ -168,12 +168,10 @@ in
     ];
   };
 
-  # ali-desktop delegate-to-local "fast" tier — Qwen3-8B Dense
-  # Q6_K ~6.26 GiB. Sized for the RX 9070 XT's 16 GiB VRAM alongside the
-  # "quality" tier below (only one loaded at a time — see
-  # home/skills/delegation/delegate-to-local.md), leaving plenty of headroom
-  # for context. Verified to exist on HF with this exact quant + hash
-  # 2026-09-22.
+  # Qwen3-8B Dense, Q6_K ~6.26 GiB. No profile uses it since 2026-09-25:
+  # ali-desktop's fast tier moved to qwen3-6-35b-a3b-ud-iq3-s and its small
+  # tier to qwen3-5-9b-q6-k. Kept as the baseline the delegation scorecard
+  # compares against (home/skills/delegation/delegate-to-local.md).
   qwen3-8b-q6-k = mkGgufModel {
     pname = "qwen3-8b-q6-k";
     primaryFile = "Qwen3-8B-Q6_K.gguf";
