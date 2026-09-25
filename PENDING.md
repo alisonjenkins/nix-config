@@ -304,8 +304,13 @@ freely. These are what the live test surfaced.
    everything else worked. Only Steam's process can write that device; an
    output mode step did not make extest rebuild it. Released by switching to
    the Desktop layout and pressing R2 once. Every stall nudge risks this.
-   Find a way to release held buttons after a nudge, or detect it (the
-   EVIOCGKEY read in the session scratchpad works as a probe).
+   **Detected since 2026-09-25:** a report after each nudge returns,
+   stream-mode reads extest's device (`extest fake device`) with EVIOCGKEY
+   and logs any mouse button still down, with the manual fix. Left:
+   releasing it. Untested idea: a release from a separate uinput device
+   (`/dev/uinput` is writable by ali) may clear it, since the compositor
+   tracks buttons per seat, not per device. Testing that sends mouse button
+   events into the live session, so it needs a go-ahead first.
 14. **Game capture can freeze after a rebind.** At 13:29:53 Steam re-bound
    `Game Vulkan` after a focus return, then kept sending about 2.7 Mbit/s of
    the same picture while HD2 rendered normally (two screenshots differed).
