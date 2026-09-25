@@ -329,6 +329,30 @@ the table above plus **5**: the task outgrew the context; split it.
 **Exit 0 means the run finished, not that the task was done.** A model that
 could not do something says so in prose and exits 0.
 
+## Edit mode: the model edits, the caller reviews
+
+```
+LOCAL_LLM_AGENT_EDIT=1 scripts/delegate-to-local-agent.sh /abs/path/to/dir "<task>"
+```
+
+Adds opencode's edit and write tools inside `<dir>`. Shell, web and
+anything outside `<dir>` stay denied. Before the run the script copies
+`<dir>` to `<log>.before`; after it, even a failed one, it writes
+`<log>.diff`, lists the changed files, and prints the command that restores
+the snapshot.
+
+**Review the diff, never the model's summary.** In the permission test the
+model reported a refused write as "created successfully" and a completed
+write as "denied". The diff and the tool lines were right both times.
+
+- Point it at a copy or a scratch checkout, not a tree with work in
+  progress: the snapshot covers the whole directory, and a large one is
+  slow to copy.
+- Denying the shell does not stop it reaching the same result another way:
+  asked to `touch` a file, it created the file with the write tool.
+- Nothing it writes is kept by the script. Keep, commit or restore after
+  review.
+
 ## What the local models are good and bad at
 
 Measured 2026-09-25 on ali-desktop (RX 9070 XT) with agent mode, on real
@@ -345,6 +369,8 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3.6-27B (`quality`, 8k context) | Same smithay question | Navigation ✓ (found both functions I did, in the same order), ran out of context at 8,554 tokens before answering; 264 s |
 | Qwen3.6-27B (`quality`, 16k, q8_0 KV cache) | Same smithay question | ✓ Every field right, including the event order, how the size is computed, and the line of `done()`; 79 s |
 | Qwen3.6-27B (16k) | Open-ended: trace what xwayland-satellite does with the size at `wl_output.done` | Read the right lines on its 5th call, then chased a macro and RandR through 25 calls and overflowed at 17,882 tokens; 119 s. The answer was in the lines it had read |
+| Qwen3-8B (32k, edit mode) | Change one line of a file | ✓ One `edit` call, exactly that line; 29 s |
+| Qwen3-8B (32k, edit mode) | Write outside the dir, and run a shell command | ✓ Outside write refused; no shell, so it created the file with `write` instead. ✗ Its summary had both outcomes backwards |
 
 What that means for writing a task:
 
