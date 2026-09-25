@@ -155,7 +155,7 @@ STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
 # comes from the client and is unaffected -- it stays at the client's panel
 # even in logs where the video size had been fitted to the wrong desktop.
 CLIENT_SIZE_RE = re.compile(
-    r"CLIENT: Video size: \d+x\d+, output size: (\d+)x(\d+)"
+    r"CLIENT: Video size: (\d+)x(\d+), output size: (\d+)x(\d+)"
 )
 # The client's resolution limit, sent when the stream starts. Steam scales its
 # capture down to fit inside it, so any output pixels beyond it are rendered
@@ -910,6 +910,13 @@ def _size_pair(value):
     return None
 
 
+def same_shape(a, b, tolerance=0.01):
+    """Whether two sizes have the same aspect, within rounding."""
+    if not (a[1] and b[1]):
+        return False
+    return abs(a[0] / a[1] - b[0] / b[1]) <= tolerance * (b[0] / b[1])
+
+
 def fit_within(width, height, bound):
     """Scale down to fit inside bound, keeping the aspect. Never scales up."""
     if bound is None:
@@ -1425,14 +1432,27 @@ class Session:
         publish_target(self.output, target[0], target[1], refresh)
         return self.apply_mode(target[0], target[1], refresh)
 
-    def note_client_output(self, width, height, now=None):
+    def note_client_output(self, width, height, now=None, video=None):
         """The client reported its size; act on it once it has settled.
 
         Followed for the whole session rather than taken once, so a client
         window resized or made fullscreen mid-stream is followed too.
+
+        Not when the client has only reshaped itself to video that is not our
+        output. A windowed client follows the video's shape, and a capture
+        stuck on a black frame at the client's limit (FH6) made the Mac report
+        4470x1676, which was learned and sized the next game at 2880x1080. A
+        report shaped unlike the video is the client's own panel and is kept.
         """
         if self.client_id is None or (width, height) == self.reported_output:
             return False
+        if video is not None and self.output is not None:
+            ours = output_logical_size(self.output)
+            if all((
+                ours is not None and tuple(ours) != tuple(video),
+                same_shape((width, height), video),
+            )):
+                return False
         self.reported_output = (width, height)
         self.settle_at = (time.monotonic() if now is None else now) + CLIENT_SIZE_SETTLE
         return True
@@ -2261,7 +2281,10 @@ def handle_steam_line(session, line, remove_at):
 
     match = CLIENT_SIZE_RE.search(line)
     if match:
-        session.note_client_output(int(match.group(1)), int(match.group(2)))
+        session.note_client_output(
+            int(match.group(3)), int(match.group(4)),
+            video=(int(match.group(1)), int(match.group(2))),
+        )
         return remove_at
 
     if GAME_STREAM_RE.search(line):

@@ -127,11 +127,11 @@ class TestLogParsing(unittest.TestCase):
         video size had already been fitted to the wrong desktop.
         """
         self.assertEqual(
-            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE).groups(),
+            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE).groups()[2:],
             ("1280", "800"),
         )
         self.assertEqual(
-            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE_LETTERBOXED).groups(),
+            stream_mode.CLIENT_SIZE_RE.search(self.CLIENT_SIZE_LETTERBOXED).groups()[2:],
             ("1280", "800"),
         )
 
@@ -977,6 +977,32 @@ class TestSession(unittest.TestCase):
         self.assertTrue(s.settle_client_output(7 + stream_mode.CLIENT_SIZE_SETTLE))
         self.assertEqual(self.saved[-1]["123"]["output"], [2880, 1800])
 
+    def test_a_report_about_other_video_is_not_learned(self):
+        """A windowed client reshapes itself to the video it is sent.
+
+        FH6's capture stayed a black frame at the 2880x1080 limit; the Mac
+        window followed it to 4470x1676, which was learned, and the next HD2
+        launch rendered at 2880x1080 (2026-09-25 07:29).
+        """
+        s = self.session()
+        s.connect(123, "mac")
+        self.assertFalse(s.note_client_output(4470, 1676, now=0, video=(2880, 1080)))
+        self.assertFalse(s.settle_client_output(stream_mode.CLIENT_SIZE_SETTLE))
+        self.assertEqual(self.saved, [])
+
+    def test_a_panel_unlike_the_video_is_still_learned(self):
+        """Letterboxed: the video was fitted to the wrong desktop, but the
+        client's panel is its own."""
+        s = self.session()
+        s.connect(123, "deck")
+        self.assertTrue(s.note_client_output(1280, 800, now=0, video=(1920, 800)))
+
+    def test_a_report_about_our_output_is_learned(self):
+        s = self.session()
+        s.connect(123, "mac")
+        self.assertTrue(s.note_client_output(2880, 1800, now=0, video=(1280, 800)))
+        self.assertTrue(s.settle_client_output(stream_mode.CLIENT_SIZE_SETTLE))
+
     def test_a_repeated_report_does_not_restart_the_wait(self):
         """Steam re-logs the size on every frame reset."""
         s = self.session()
@@ -1547,8 +1573,8 @@ class TestEventDispatch(unittest.TestCase):
         def game_capture_started(self):
             self.calls.append(("game_capture_started",))
 
-        def note_client_output(self, w, h):
-            self.calls.append(("note_client_output", w, h))
+        def note_client_output(self, w, h, video=None):
+            self.calls.append(("note_client_output", w, h, video))
 
         def note_max_capture(self, w, h, fps=None):
             self.calls.append(("note_max_capture", w, h, fps))
@@ -1656,7 +1682,8 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertEqual(
             self.s.calls,
-            [("note_max_capture", 2880, 1080, 60.0), ("note_client_output", 2880, 1800)],
+            [("note_max_capture", 2880, 1080, 60.0),
+             ("note_client_output", 2880, 1800, (2880, 1080))],
         )
 
     def test_game_capture_lines_arm_and_clear_the_stall_check(self):
