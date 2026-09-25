@@ -218,6 +218,91 @@ let
   ) (builtins.readDir dir));
 
   romModules = collectRomFiles ./roms;
+
+  # The binaural 7.1 filter-chain, as a PipeWire context module, so a second
+  # instance can differ only in names and where the stereo output goes.
+  binauralChain = { sinkName, outputName, description, captureExtra ? { }, playbackExtra ? { } }:
+    let
+      bs = cfg.pipewire.binauralSurround;
+      # Sink channel order. The index within this list is also the mixer
+      # input number each spatializer feeds, so the two must stay in step.
+      channels = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
+      spatializer = ch: {
+        type = "sofa";
+        label = "spatializer";
+        name = "sp${ch}";
+        config = {
+          filename = toString bs.hrirFile;
+        };
+        control = {
+          "Azimuth" = bs.angles.${ch};
+          "Elevation" = 0;
+          "Radius" = 1;
+        };
+      };
+      # Every spatializer emits a stereo pair; the two mixers sum all eight
+      # pairs back down to one binaural stereo output.
+      linksFor = mixer: side:
+        lib.imap1 (i: ch: {
+          output = "sp${ch}:Out ${side}";
+          input = "${mixer}:In ${toString i}";
+        }) channels;
+      # Compensation EQ, one identical chain per output channel, hung off the
+      # mixer. Empty list leaves the mixers as the outputs.
+      eq = bs.compensationEq;
+      eqName = side: i: "eq${side}${toString i}";
+      eqNodes = side:
+        lib.imap1 (i: filt: {
+          type = "builtin";
+          label = filt.type;
+          name = eqName side i;
+          control = {
+            "Freq" = filt.freq;
+            "Q" = filt.q;
+            "Gain" = filt.gain;
+          };
+        }) eq;
+      # Link mixer -> first filter -> ... -> last filter.
+      eqLinks = side:
+        lib.imap1 (i: _: {
+          output = if i == 1 then "mix${side}:Out" else "${eqName side (i - 1)}:Out";
+          input = "${eqName side i}:In";
+        }) eq;
+      outputFor = side:
+        if eq == [ ] then "mix${side}:Out" else "${eqName side (builtins.length eq)}:Out";
+    in {
+      name = "libpipewire-module-filter-chain";
+      flags = [ "nofail" ];
+      args = {
+        "node.description" = description;
+        "media.name" = description;
+        "filter.graph" = {
+          nodes = (map spatializer channels) ++ [
+            { type = "builtin"; label = "mixer"; name = "mixL"; }
+            { type = "builtin"; label = "mixer"; name = "mixR"; }
+          ] ++ (eqNodes "L") ++ (eqNodes "R");
+          links = (linksFor "mixL" "L") ++ (linksFor "mixR" "R")
+            ++ (eqLinks "L") ++ (eqLinks "R");
+          inputs = map (ch: "sp${ch}:In") channels;
+          outputs = [ (outputFor "L") (outputFor "R") ];
+        };
+        "capture.props" = {
+          "node.name" = sinkName;
+          "media.class" = "Audio/Sink";
+          "audio.channels" = builtins.length channels;
+          "audio.position" = channels;
+        } // captureExtra;
+        "playback.props" = {
+          "node.name" = outputName;
+          "node.passive" = true;
+          "audio.channels" = 2;
+          "audio.position" = [ "FL" "FR" ];
+          # Never remix the binaural pair: it is already the final stereo
+          # image, and a channelmix pass on top would undo the HRTF.
+          "stream.dont-remix" = true;
+        } // playbackExtra;
+      };
+    };
 in
 {
   imports = [
@@ -1809,93 +1894,19 @@ in
           } // (lib.optionalAttrs cfg.pipewire.binauralSurround.enable (
             let
               bs = cfg.pipewire.binauralSurround;
-              # Sink channel order. The index within this list is also the
-              # mixer input number each spatializer feeds, so the two must
-              # stay in step.
-              channels = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
-              spatializer = ch: {
-                type = "sofa";
-                label = "spatializer";
-                name = "sp${ch}";
-                config = {
-                  filename = toString bs.hrirFile;
-                };
-                control = {
-                  "Azimuth" = bs.angles.${ch};
-                  "Elevation" = 0;
-                  "Radius" = 1;
-                };
-              };
-              # Every spatializer emits a stereo pair; the two mixers sum all
-              # eight pairs back down to one binaural stereo output.
-              linksFor = mixer: side:
-                lib.imap1 (i: ch: {
-                  output = "sp${ch}:Out ${side}";
-                  input = "${mixer}:In ${toString i}";
-                }) channels;
-
-              # Compensation EQ, one identical chain per output channel, hung
-              # off the mixer. Empty list leaves the mixers as the outputs.
-              eq = bs.compensationEq;
-              eqName = side: i: "eq${side}${toString i}";
-              eqNodes = side:
-                lib.imap1 (i: filt: {
-                  type = "builtin";
-                  label = filt.type;
-                  name = eqName side i;
-                  control = {
-                    "Freq" = filt.freq;
-                    "Q" = filt.q;
-                    "Gain" = filt.gain;
-                  };
-                }) eq;
-              # Link mixer -> first filter -> ... -> last filter.
-              eqLinks = side:
-                lib.imap1 (i: _: {
-                  output = if i == 1 then "mix${side}:Out" else "${eqName side (i - 1)}:Out";
-                  input = "${eqName side i}:In";
-                }) eq;
-              outputFor = side:
-                if eq == [ ] then "mix${side}:Out" else "${eqName side (builtins.length eq)}:Out";
             in {
               "99-binaural-surround" = {
                 "context.modules" = [
-                  {
-                    name = "libpipewire-module-filter-chain";
-                    flags = [ "nofail" ];
-                    args = {
-                      "node.description" = bs.description;
-                      "media.name" = bs.description;
-                      "filter.graph" = {
-                        nodes = (map spatializer channels) ++ [
-                          { type = "builtin"; label = "mixer"; name = "mixL"; }
-                          { type = "builtin"; label = "mixer"; name = "mixR"; }
-                        ] ++ (eqNodes "L") ++ (eqNodes "R");
-                        links = (linksFor "mixL" "L") ++ (linksFor "mixR" "R")
-                          ++ (eqLinks "L") ++ (eqLinks "R");
-                        inputs = map (ch: "sp${ch}:In") channels;
-                        outputs = [ (outputFor "L") (outputFor "R") ];
-                      };
-                      "capture.props" = {
-                        "node.name" = bs.sinkName;
-                        "media.class" = "Audio/Sink";
-                        "audio.channels" = builtins.length channels;
-                        "audio.position" = channels;
-                      } // (lib.optionalAttrs bs.makeDefault {
-                        # Above the ~1000 that ALSA sinks score, so automatic
-                        # default selection lands here.
-                        "priority.session" = 2000;
-                      });
-                      "playback.props" = {
-                        "node.name" = "effect_output.binaural71";
-                        "node.passive" = true;
-                        "audio.channels" = 2;
-                        "audio.position" = [ "FL" "FR" ];
-                        # Never remix the binaural pair: it is already the
-                        # final stereo image, and a channelmix pass on top
-                        # would undo the HRTF.
-                        "stream.dont-remix" = true;
-                      } // (lib.optionalAttrs (bs.outputNode != null) {
+                  (binauralChain {
+                    sinkName = bs.sinkName;
+                    outputName = "effect_output.binaural71";
+                    description = bs.description;
+                    captureExtra = lib.optionalAttrs bs.makeDefault {
+                      # Above the ~1000 that ALSA sinks score, so automatic
+                      # default selection lands here.
+                      "priority.session" = 2000;
+                    };
+                    playbackExtra = lib.optionalAttrs (bs.outputNode != null) {
                         # `node.target` alone is only a hint — session policy
                         # re-targets it freely, and when this sink is the
                         # default that lands the output on whichever effects
@@ -1917,9 +1928,8 @@ in
                         # destroy, every single boot.
                         "node.target" = bs.outputNode;
                         "target.object" = bs.outputNode;
-                      });
                     };
-                  }
+                  })
                 ];
               };
             }
