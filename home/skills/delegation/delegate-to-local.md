@@ -78,6 +78,11 @@ candidate) before trusting a pin as still current.
 
 ## Profiles
 
+In this repo, declare them per host with the home-manager option
+`modules.delegateToLocal.profiles` (`home/modules/delegate-to-local`), which
+writes the file below; ali-desktop's are in `home/machines/ali-desktop`. A
+host with none declared keeps a hand-written file, or none.
+
 A profile names a runtime + model + launch settings. Declared in a TOML file
 at `$LOCAL_LLM_PROFILES_FILE`, else `$XDG_CONFIG_HOME/delegate-to-local/profiles.toml`,
 else `$HOME/.config/delegate-to-local/profiles.toml` — one `[name]` table per

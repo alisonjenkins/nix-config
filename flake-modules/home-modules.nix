@@ -12,6 +12,7 @@
     vr = import ../home/modules/vr;
     subnautica-vr = import ../home/modules/subnautica-vr;
     beatsaber = import ../home/modules/beatsaber;
+    delegate-to-local = import ../home/modules/delegate-to-local;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
