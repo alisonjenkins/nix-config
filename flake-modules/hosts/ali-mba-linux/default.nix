@@ -232,6 +232,8 @@ in {
             outputs.overlays.modifications
             outputs.overlays.stable-packages
             outputs.overlays.tmux-sessionizer
+            # nixos-apple-silicon's AVD module needs avd-fw, which is not in 26.05.
+            (final: _prev: { avd-fw = final.master.avd-fw; })
           ];
           config = {
             allowUnfree = true;
