@@ -55,44 +55,38 @@ resolve_local_llm_state_dir() {
   fi
 }
 
-# mkdir is atomic even across processes — the classic portable lock
-# primitive (flock isn't on macOS by default). Used only for tiny critical
-# sections (the job-sequence counter, electing a single worker starter),
-# never held for the duration of actual model work — the queue worker's
-# strictly-serial loop is what provides that exclusion.
+# The lock is a symlink whose target is the holder's pid: `ln -s` creates
+# it and records the owner in one atomic step, and portably (flock isn't on
+# macOS by default). The previous mkdir-then-write-a-pid lock had a window
+# with no pid in it, in which a waiter under load took a live holder's lock
+# for abandoned and deleted it, letting two callers in. Used only for tiny
+# critical sections (the job-sequence counter, electing a single worker
+# starter), never held for the duration of actual model work — the queue
+# worker's strictly-serial loop is what provides that exclusion.
 acquire_lock() {
-  local lock_dir="$1" timeout="$2" interval="${3:-0.2}" elapsed=0 existing_pid
+  local lock="$1" timeout="$2" interval="${3:-0.2}" elapsed=0 holder
   while true; do
-    if mkdir "$lock_dir" 2>/dev/null; then
-      echo "$$" >"$lock_dir/pid"
+    # Anything here but a symlink is not a lock of this format: a directory
+    # is an old-style one, which `ln` would link inside and report success,
+    # and a plain file would leave readlink nothing to read forever.
+    if [[ -e "$lock" && ! -L "$lock" ]]; then
+      rm -rf "$lock"
+      continue
+    fi
+    if ln -s "$$" "$lock" 2>/dev/null; then
       return 0
     fi
-    existing_pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
-    # Exact string comparison, not a rounded numeric one: elapsed starts as
-    # the literal "0" and is later reformatted by awk's "%.2f" — rounding
-    # it (e.g. via printf '%.0f') would round anything under 0.5 down to
-    # 0 too, firing this grace-sleep on several early iterations instead of
-    # just the first, exactly the "every poll tick" cost the comment below
-    # says this avoids.
-    if [[ -z "$existing_pid" && "$elapsed" == "0" ]]; then
-      # No pid file yet, on the very first failed mkdir: either the holder
-      # died between mkdir and writing its pid (or was interrupted
-      # mid-run), or another acquire_lock call just created this same dir a
-      # moment ago and hasn't written its pid yet — genuinely concurrent
-      # with the line above, not dead. A brief one-time grace period tells
-      # the two apart: writing one line to a file a process just created is
-      # near-instant, so if the pid file is *still* empty right after, it
-      # really is abandoned. Only done on the first iteration — every later
-      # iteration already waited a full `interval` since the last check,
-      # which is much longer than any genuine holder needs to write one
-      # line, so re-sleeping here on every poll tick would only slow down
-      # legitimate high-contention acquisition (many callers racing for the
-      # same short-lived lock) without closing any additional race.
-      sleep 0.05
-      existing_pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+    holder="$(readlink "$lock" 2>/dev/null || true)"
+    if [[ -z "$holder" ]]; then
+      continue # released between the failed ln and this read; try again
     fi
-    if [[ -z "$existing_pid" ]] || ! kill -0 "$existing_pid" 2>/dev/null; then
-      rm -rf "$lock_dir"
+    if ! kill -0 "$holder" 2>/dev/null; then
+      # Only if it still names the dead holder: another waiter may have
+      # broken it and taken it since. Two waiters that both read the dead
+      # pid can still race here, one removing the lock the other just
+      # took; that needs a holder that died in a microseconds-wide window,
+      # so it is left open rather than made rename-based.
+      [[ "$(readlink "$lock" 2>/dev/null || true)" == "$holder" ]] && rm -f "$lock"
       continue
     fi
     if awk -v e="$elapsed" -v t="$timeout" 'BEGIN{exit !(e >= t)}'; then
