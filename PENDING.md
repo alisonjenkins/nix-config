@@ -265,6 +265,23 @@ freely. These are what the live test surfaced.
    sends `wl_output.done`, before `output_resized` updates the logical size,
    so xwayland-satellite applies the old size on each `done`. Fix it in the
    patch and drop the workaround.
+   Ruled out 2026-09-25: smithay 0.7.0's `Output::change_current_state`
+   (`src/output.rs:380`) calls the xdg-output one first
+   (`src/wayland/output/xdg.rs:124-132`), which sends `logical_size` from
+   the *new* mode, then `wl_output.mode`, `geometry`, `scale` and `done`
+   (`src/wayland/output/mod.rs:228-258`). A client reading the size at
+   `done` gets the new one.
+   **Cause found 2026-09-25: xwayland-satellite.** Its xdg-output
+   `LogicalSize` handler (0.8.2 `src/server/event.rs:1391`, unchanged in
+   0.8.3 and main) ignores the size it receives and forwards the size it
+   stored from the last `wl_output.mode` (`event.rs:1331`). smithay sends
+   `logical_size` before `mode`, so Xwayland is told the previous mode's
+   size every time. Fix: in the `Mode` handler, after storing a current
+   mode, re-send `xdg.logical_size` from the new dimensions. Patch
+   satellite (and report upstream; #251 may be this), then drop the
+   refresh+1 workaround. The local 27B answered the smithay half and read
+   the right satellite lines but overflowed before answering; the satellite
+   cause was found by reading them directly.
 12. **Stalled game capture recovery** (d7dafe03 and its fixups): after six
    client reports with no game capture, stream-mode moves focus to an empty
    workspace on the streamed output and back at the next report. The move
