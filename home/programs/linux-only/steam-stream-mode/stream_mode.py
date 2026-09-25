@@ -1812,6 +1812,18 @@ class Session:
             return True
         return False
 
+    def is_blank_sibling(self, window, game):
+        """An untitled window of the game, beside the game's titled one.
+
+        FH6 opens one, black and output-sized, whenever its full screen state
+        changes. A dialog the player must answer has a title.
+        """
+        return all((
+            self.belongs_to_game(window),
+            not (window.get("title") or "").strip(),
+            (game.get("title") or "").strip(),
+        ))
+
     def refocus_streamed_window(self, windows):
         """Keep the game the focused window while a stream is running.
 
@@ -1832,13 +1844,15 @@ class Session:
         # focus back would hide what the player must answer. niri ids only
         # grow, so newer means a higher id. Focus falling to an older window,
         # as when a splash closes, is still taken back.
-        focused_id = next((w.get("id") for w in windows if w.get("is_focused")), None)
+        focused = next((w for w in windows if w.get("is_focused")), None)
+        focused_id = focused.get("id") if focused else None
 
         for w in windows:
             window_id = w.get("id")
             if window_id is None or window_id not in self.fullscreened:
                 continue
-            if focused_id is not None and focused_id > window_id:
+            newer = focused_id is not None and focused_id > window_id
+            if newer and not self.is_blank_sibling(focused, w):
                 continue
             if self.workspace_outputs.get(w.get("workspace_id")) != self.output:
                 continue

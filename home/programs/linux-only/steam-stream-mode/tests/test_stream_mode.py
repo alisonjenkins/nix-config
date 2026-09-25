@@ -2586,6 +2586,38 @@ class TestFocus(unittest.TestCase):
         self.assertFalse(s.refocus_streamed_window([self.win(9, False), login]))
         self.assertEqual(self.focused, [])
 
+    def game_session(self):
+        s = self.session()
+        s.game_pid, s.game_id = 4242, "2483190"
+        s.fullscreened.add(9)
+        return s
+
+    def game_win(self, wid, focused, title):
+        return dict(self.win(wid, focused), app_id="steam_app_2483190", title=title)
+
+    def test_an_untitled_window_of_the_game_does_not_keep_focus(self):
+        """FH6 opens a black, untitled, output-sized window whenever its full
+        screen state changes, and niri focuses it: the stream went black and
+        the game muted itself."""
+        s = self.game_session()
+        windows = [self.game_win(9, False, "Forza Horizon 6"), self.game_win(12, True, "")]
+        self.assertTrue(s.refocus_streamed_window(windows))
+        self.assertEqual(self.focused, [9])
+
+    def test_a_titled_window_of_the_game_keeps_focus(self):
+        """A game's own sign-in window carries its app id too."""
+        s = self.game_session()
+        windows = [self.game_win(9, False, "Forza Horizon 6"), self.game_win(12, True, "Sign in")]
+        self.assertFalse(s.refocus_streamed_window(windows))
+        self.assertEqual(self.focused, [])
+
+    def test_an_untitled_game_window_keeps_focus_from_another_untitled_one(self):
+        """Nothing tells the game's windows apart when neither has a title."""
+        s = self.game_session()
+        windows = [self.game_win(9, False, ""), self.game_win(12, True, "")]
+        self.assertFalse(s.refocus_streamed_window(windows))
+        self.assertEqual(self.focused, [])
+
     def test_focus_falling_to_an_older_window_is_taken_back(self):
         """A splash closing hands focus to whatever was there before."""
         s = self.session()
