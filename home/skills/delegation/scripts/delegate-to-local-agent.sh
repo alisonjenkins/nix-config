@@ -32,6 +32,7 @@ usage() {
   echo "usage: $0 <directory> <task>" >&2
   echo "env: LOCAL_LLM_EXPECT_PROFILE (exit 4 unless this profile is active)," >&2
   echo "     LOCAL_LLM_AGENT_TIMEOUT (seconds for the whole run, default 600)," >&2
+  echo "     LOCAL_LLM_AGENT_MAX_FAILED_TOOLS (stop after this many failed tool calls in a row, default 5)," >&2
   echo "     LOCAL_LLM_AGENT_LOG (where to keep the run's event log; default under the state dir)," >&2
   echo "     LOCAL_LLM_AGENT_EDIT=1 (allow edits inside <directory>; writes <log>.diff and keeps a snapshot)," >&2
   echo "     LOCAL_LLM_PROFILES_FILE, LOCAL_LLM_STATE_DIR, OPENCODE_BIN" >&2
@@ -184,9 +185,24 @@ oc_pid=$!
 # exited 0. Auto-compaction is off above, so an overflow is an error event;
 # stop at the first one. opencode's injected continue prompt is the other
 # sign a compaction happened.
+#
+# A model can also get stuck repeating a tool call that fails: Qwen3-8B
+# retried an edit whose oldString did not match 34 times without re-reading
+# the file, and spent 398 s on nothing. Stop after max_failed in a row.
+max_failed="$(numeric_env_or_default LOCAL_LLM_AGENT_MAX_FAILED_TOOLS 5)"
+failed_streak() {
+  jq -r -R 'fromjson? // empty | select(.type == "tool_use") | .part.state.status' "$log" 2>/dev/null \
+    | awk '$0 == "error" { n++; next } { n = 0 } END { print n + 0 }'
+}
 status=0
+stuck=0
 while kill -0 "$oc_pid" 2>/dev/null; do
   if grep -q '"type":"error"' "$log" 2>/dev/null; then
+    kill "$oc_pid" 2>/dev/null || true
+    break
+  fi
+  if (($(failed_streak) >= max_failed)); then
+    stuck=1
     kill "$oc_pid" 2>/dev/null || true
     break
   fi
@@ -268,6 +284,11 @@ fi
 if [[ "$error_name" == "ContextOverflowError" ]]; then
   events | jq -r 'select(.type == "error") | .error.data.message' | head -1 >&2
   finish 5
+fi
+if [[ "$stuck" -eq 1 ]]; then
+  echo "error: the model made $max_failed failed tool calls in a row and was stopped; the last error:" >&2
+  events | jq -r 'select(.type == "tool_use" and .part.state.status == "error") | .part.state.error' | tail -1 >&2
+  finish 3
 fi
 if [[ -n "$error_name" ]]; then
   echo "error: opencode reported $error_name:" >&2

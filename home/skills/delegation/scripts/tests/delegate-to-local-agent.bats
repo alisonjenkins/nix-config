@@ -12,7 +12,8 @@ setup() {
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_AGENT_EDIT=1
   export OPENCODE_BIN="$BATS_TEST_TMPDIR/opencode"
-  unset FAKE_OC_WRITE FAKE_OC_EXIT LOCAL_LLM_EXPECT_PROFILE LOCAL_LLM_AGENT_LOG
+  unset FAKE_OC_WRITE FAKE_OC_EXIT FAKE_OC_TOOLS FAKE_OC_HANG LOCAL_LLM_EXPECT_PROFILE \
+    LOCAL_LLM_AGENT_LOG LOCAL_LLM_AGENT_MAX_FAILED_TOOLS
   : >"$FAKE_CURL_CALLS"
 
   mkdir -p "$LOCAL_LLM_STATE_DIR"
@@ -37,6 +38,14 @@ done
 if [[ -n "${FAKE_OC_WRITE:-}" ]]; then
   mkdir -p "$(dirname "$dir/$FAKE_OC_WRITE")"
   echo "written by the model" >"$dir/$FAKE_OC_WRITE"
+fi
+# $FAKE_OC_TOOLS is a space-separated list of tool call statuses to emit.
+# With $FAKE_OC_HANG set it then hangs, like a model retrying forever.
+for s in ${FAKE_OC_TOOLS:-}; do
+  printf '{"type":"tool_use","part":{"tool":"edit","state":{"status":"%s","input":{},"error":"Could not find oldString"}}}\n' "$s"
+done
+if [[ -n "${FAKE_OC_HANG:-}" ]]; then
+  exec sleep 60
 fi
 echo '{"type":"text","part":{"text":"done"}}'
 exit "${FAKE_OC_EXIT:-0}"
@@ -70,6 +79,24 @@ SH
   export FAKE_OC_EXIT=1
   run "$agent" "$work" "task"
   [ "$status" -eq 3 ]
+}
+
+@test "a model stuck repeating a failing tool call is stopped" {
+  # Qwen3-8B retried a non-matching edit 34 times in 398 s.
+  export FAKE_OC_TOOLS="error error error error error"
+  export FAKE_OC_HANG=1
+  SECONDS=0
+  run "$agent" "$work" "task"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"5 failed tool calls in a row"* ]]
+  [[ "$output" == *"Could not find oldString"* ]]
+  ((SECONDS < 30)) # stopped, not left to the timeout
+}
+
+@test "a success between failures resets the count" {
+  export FAKE_OC_TOOLS="error error error error completed error error error error"
+  run "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
 }
 
 @test "the printed undo command restores a directory whose path has a quote" {
