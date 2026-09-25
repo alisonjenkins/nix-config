@@ -152,6 +152,22 @@ in
     ];
   };
 
+  # ali-desktop delegate-to-local "small" tier — Qwen3.5-9B Dense
+  # Q6_K ~6.9 GiB, 7,570 MiB loaded with a 32k q8_0 KV cache (2026-09-25):
+  # less than Qwen3-8B at the same context, and right on the edit tasks the
+  # 8B got wrong.
+  qwen3-5-9b-q6-k = mkGgufModel {
+    pname = "qwen3.5-9b-q6-k";
+    primaryFile = "Qwen3.5-9B-Q6_K.gguf";
+    files = [
+      {
+        name = "Qwen3.5-9B-Q6_K.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/main/Qwen3.5-9B-Q6_K.gguf";
+        hash = "sha256-kYmEM89c4Kj0VRakzD6TQ7bgHQUtAfaEMJCYxmoybFk=";
+      }
+    ];
+  };
+
   # ali-desktop delegate-to-local "fast" tier — Qwen3-8B Dense
   # Q6_K ~6.26 GiB. Sized for the RX 9070 XT's 16 GiB VRAM alongside the
   # "quality" tier below (only one loaded at a time — see
