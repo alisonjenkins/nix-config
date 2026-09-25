@@ -183,10 +183,13 @@ always the cheaper or only option.
 
 A third option, for zero-marginal-cost text-only work with no cloud
 dependency: a model running on your own hardware via an OpenAI-compatible
-endpoint. It has no tool-use loop (text in, text out — it cannot read/edit
-files or run commands itself) and weaker capability/no cloud safety layer
-compared to Haiku or Copilot's Luna, so it fits a narrower slice of
-haiku-shaped work. See [delegate-to-local.md](delegate-to-local.md).
+endpoint. Text in, text out by default, or a read-only agent (read, glob,
+grep and list over one directory) through `delegate-to-local-agent.sh`; it
+never edits files or runs commands. Weaker than Haiku or Copilot's Luna: an
+8B model extracts reliably but misreads what code does, so it fits a
+narrower slice of haiku-shaped work, with every answer checked. See
+[delegate-to-local.md](delegate-to-local.md), including its measured
+good-at/bad-at table.
 
 ## Never delegate
 

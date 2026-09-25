@@ -11,14 +11,12 @@ works too.
 
 ## What this can and can't do
 
-**Text only — no tool-use loop.** Unlike `delegate-to-copilot.md`'s `copilot`
-CLI or a Claude sub-agent, a bare llama.cpp/MLX/Ollama/LM Studio server is a
-chat-completions endpoint, not an agent: it cannot read or write files, run
-commands, or call tools on its own. Use it for self-contained text-in,
-text-out work — summarizing, extracting, drafting, reformatting, answering a
-question against pasted context — and paste any file content the task needs
-directly into the prompt. For a task that needs to read/edit files or run
-commands itself, use a Claude sub-agent or `delegate-to-copilot.md` instead.
+**Two modes: text only, or a read-only agent.** `delegate-to-local.sh` is
+text in, text out: the model cannot read files, so paste what the task needs
+into the prompt. `delegate-to-local-agent.sh` (see "Agent mode" below) runs
+the same model inside opencode with read, glob, grep and list over one
+directory, so it can look things up itself. Neither can edit files or run
+commands. For that, use a Claude sub-agent or `delegate-to-copilot.md`.
 
 **Zero marginal cost, but weaker capability and no cloud safety layer.** A
 locally-hosted model in the ~7-30B range is meaningfully weaker than Haiku
@@ -284,6 +282,83 @@ scripts/stop-local-profile.sh          # when done, to free the hardware
   actually loaded.
 
 The script prints the model's reply to stdout on success.
+
+## Agent mode: `delegate-to-local-agent.sh`
+
+```
+scripts/switch-local-profile.sh fast
+scripts/delegate-to-local-agent.sh /abs/path/to/dir "<task>"
+```
+
+Runs the task in `opencode run` against the active profile, with read,
+glob, grep and list allowed inside `<dir>` and everything else denied:
+edit, bash, web, sub-agents, skills, and reads outside `<dir>`. Prints the
+model's final reply on stdout and one line per tool call on stderr, and
+keeps the full event log under `$state_dir/agent-runs/`. Read the tool
+lines: they show whether the answer came from the file or from the model.
+
+Why it builds its own opencode setup (`$state_dir/agent-home`) instead of
+using yours:
+
+- **Size.** The global opencode config (skills, MCP servers, instructions)
+  made the first request 17,249 tokens, more than `fast`'s 16k context
+  before the model did anything. The isolated setup starts at 3,105.
+- **Permissions.** The global config allows every tool.
+- **Context size.** opencode must be told the profile's real `--ctx-size`
+  (read from `profiles.toml`): told more, it overflows the server.
+- **Compaction is off.** On overflow opencode compacts the conversation
+  and carries on, and the summary lost the task: Qwen3.6-27B then replied
+  "I don't have access to prior conversation history", exit 0. The script
+  exits 5 on an overflow instead.
+
+It reserves the profile for the run (it talks to the server directly, not
+through the queue) and releases it on exit. Needs opencode 1.18.31 or later:
+1.18.30 crashes on every prompt (anomalyco/opencode#48965). Exit codes are
+the table above plus **5**: the task outgrew the context; split it.
+
+**Exit 0 means the run finished, not that the task was done.** A model that
+could not do something says so in prose and exits 0.
+
+## What the local models are good and bad at
+
+Measured 2026-09-25 on ali-desktop (RX 9070 XT) with agent mode, on real
+tasks with answers checked against the source. Add to this table when a
+new model or task shape is tried; it is the evidence for the rules below it.
+
+| Model (profile) | Task | Result |
+|---|---|---|
+| Qwen3-8B (`fast`) | Read one file, return line 3 | ✓ 23 s, used `read` with offset 3, limit 1 |
+| Qwen3-8B | Asked to write a file and run a command | ✓ Both denied, said it could not; exit 0 |
+| Qwen3-8B | Asked to read `/etc/hostname` (outside the dir) | ✓ Denied |
+| Qwen3-8B | List the calls in one function of a 1,400-line patch, with line numbers | Calls and order ✓, 2 of 4 line numbers wrong by 2 to 4; re-read from line 1 after grep gave the line; 61 s |
+| Qwen3-8B | Which Wayland events does smithay's `change_current_state` send? | ✗ Read the lines that send `xdg_output.logical_size`, answered that it sends none; quoted a real but irrelevant comment; 40 s |
+| Qwen3.6-27B (`quality`, 8k context) | Same smithay question | Navigation ✓ (found both functions I did, in the same order), ran out of context at 8,554 tokens before answering; 264 s |
+| Qwen3.6-27B (`quality`, 16k, q8_0 KV cache) | Same smithay question | ✓ Every field right, including the event order, how the size is computed, and the line of `done()`; 79 s |
+| Qwen3.6-27B (16k) | Open-ended: trace what xwayland-satellite does with the size at `wl_output.done` | Read the right lines on its 5th call, then chased a macro and RandR through 25 calls and overflowed at 17,882 tokens; 119 s. The answer was in the lines it had read |
+
+What that means for writing a task:
+
+- **Extraction yes, comprehension no (8B).** It finds and lists things
+  reliably. Asked what code *does*, it can read the right lines and state
+  the opposite. Ask the 8B for the text; decide what it means yourself.
+- **Never trust its line numbers.** Ask for the code text and grep for it.
+- **Give absolute, real paths.** "The current directory" became the path
+  `/current/directory/...`. A symlinked directory broke grep and glob
+  until the model switched to the resolved store path.
+- **Tell it to grep before reading**, and to read a bounded range. Say
+  "do not read the whole file" for anything large.
+- **One question per run, with a fixed reply format.** A form to fill in
+  (`FIELD: value`) is easy to check line by line.
+- **The 27B reads code correctly once it has room.** At 8k it overflowed;
+  at 16k it answered the same two-file question right. Prefer it over the
+  8B for any question about what code does.
+- **Bound the search, not just the question.** Asked to "trace" a value,
+  the 27B kept exploring past the answer until it overflowed. Name the
+  files or functions to read, cap the number of reads, and say "stop and
+  answer once you have read X".
+- **Check every answer against the source.** Every result above was
+  checked, and two of four real tasks were wrong in a way that read as
+  confident.
 
 ## Rules
 
