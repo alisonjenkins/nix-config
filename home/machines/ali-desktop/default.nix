@@ -144,6 +144,11 @@
       pattern = "(<ResolutionWidth value=\")\\d+(\"/>\\s*<ResolutionHeight value=\")\\d+";
       replacement = "\${1}{width}\${2}{height}";
     }];
+    # Experiment (PENDING.md item 15): FH6 presents into a Win32 child
+    # window, which Wine's X11 driver renders off-screen, so Steam never
+    # offers game capture. GE-Proton11-7's child-window rework is in the
+    # Wayland driver only; this runs FH6 on it.
+    games."2483190".env.PROTON_ENABLE_WAYLAND = "1";
 
     # Subnautica (264710): syncs the subnautica-vr-mods payload (see
     # modules.subnauticaVR above) before every launch. hooks.pre_launch
