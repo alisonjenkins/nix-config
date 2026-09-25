@@ -209,7 +209,7 @@ if [[ -n "$snapshot" ]]; then
   echo "changed files:" >&2
   diff -rq "$snapshot" "$work_dir" >&2 || true
   echo "diff: $log.diff" >&2
-  echo "undo: rm -rf '$work_dir' && cp -a '$snapshot' '$work_dir'" >&2
+  printf 'undo: rm -rf %q && cp -a %q %q\n' "$work_dir" "$snapshot" "$work_dir" >&2
 
   # A model with edit access could write a file that runs later outside the
   # sandbox (a git hook, an .envrc direnv loads); flag those separately since

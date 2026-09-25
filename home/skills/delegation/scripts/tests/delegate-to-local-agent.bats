@@ -71,3 +71,15 @@ SH
   run "$agent" "$work" "task"
   [ "$status" -eq 3 ]
 }
+
+@test "the printed undo command restores a directory whose path has a quote" {
+  local quoted="$BATS_TEST_TMPDIR/it's here"
+  mv "$work" "$quoted"
+  export FAKE_OC_WRITE="file.txt"
+  run "$agent" "$quoted" "task"
+  [ "$status" -eq 0 ]
+  local undo
+  undo="$(grep '^undo: ' <<<"$output")"
+  bash -c "${undo#undo: }"
+  [ "$(cat "$quoted/file.txt")" = "original" ]
+}
