@@ -396,6 +396,8 @@ From the scorecard below. Every row assumes you review the result.
 Measured 2026-09-25 on ali-desktop (RX 9070 XT) with agent mode, on real
 tasks with answers checked against the source. Add to this table when a
 new model or task shape is tried; it is the evidence for the rules below it.
+On ali-desktop the 8B was the `fast` profile until 2026-09-25, when the MoE
+took that name and the 8B became `small`.
 
 | Model (profile) | Task | Result |
 |---|---|---|
@@ -419,6 +421,10 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3-8B (32k, edit mode) | Apply three review comments, each with the exact new lines | ✓ All three; dropped the blank lines between functions; 93 s |
 | Qwen3-8B (32k, edit mode) | Write a unittest file from an exact spec | 3 of 4 tests right. The fixture wrote the name to `device`, not `device/name`, so its own test failed; skipped one case; ignored the blank-line rule; 18 s |
 | Qwen3-8B (32k, edit mode) | Fix that fixture from one review comment | ✗ 34 `edit` calls, all "Could not find oldString". It never re-read the file (a line had trailing spaces), and ended with no reply; 398 s. Such runs are now stopped after 5 |
+| Qwen3.6-35B-A3B MoE (UD-IQ3_S, 32k, edit mode) | The 8B's new-module task, same text | ✓ Read `heldkeys.py` first; ioctl, `eviocgkey` and sorting right. Only miss: no docstring on the copied function; 34 s |
+| Qwen3.6-35B-A3B MoE (edit mode) | The 8B's unittest task, same text | ✓ All 4 tests pass; right fixture paths, `event5` included, blank lines as asked; 30 s |
+| Qwen3.6-35B-A3B MoE (edit mode) | Fix the 8B's broken fixture from the same review comment | ✓ One read, one edit, tests pass, and it cleaned the trailing spaces the 8B tripped on; 20 s |
+| Qwen3.6-35B-A3B MoE (read-only) | The smithay question | Partly ✓: logical size sent, and computed from mode / scale, both right. Listed only the xdg-output events, missing `wl_output.mode` to `done`: it stopped at the helper instead of following the caller; 44 s |
 
 What that means for writing a task:
 
@@ -437,6 +443,11 @@ What that means for writing a task:
 - **The 8B writes new code fast and about half right.** 18 to 27 s per
   file, the easy parts right, one real bug per file. Worth it only with the
   review and a test run you would do anyway.
+- **The MoE replaces the 8B for writing and editing.** Qwen3.6-35B-A3B runs
+  3B parameters per token, so it generates faster than the 8B (127 against
+  81 tok/s) and got right every task the 8B got wrong: it read before
+  writing and edited first time. It needs 13.9 GiB, so the 8B stays for
+  when a game holds the GPU. For what code does, the 27B is still better.
 - **Never trust its line numbers.** Ask for the code text and grep for it.
 - **Give absolute, real paths.** "The current directory" became the path
   `/current/directory/...`. A symlinked directory broke grep and glob
