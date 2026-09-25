@@ -360,6 +360,10 @@ write as "denied". The diff and the tool lines were right both times.
   not hold past them. It wins over 3 and 5: a failed run can leave one too.
 - A run that changed nothing deletes its snapshot; other snapshots are
   deleted after a week.
+- **A run stuck on failing tool calls is stopped** after 5 in a row
+  (`LOCAL_LLM_AGENT_MAX_FAILED_TOOLS`) and exits 3 with the last error. A
+  non-matching `oldString` is the usual cause; the model does not re-read
+  the file to fix it.
 
 ## What the local models are good and bad at
 
@@ -388,7 +392,7 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3-8B (32k, edit mode) | Write a new 6-part module from a numbered spec, "first read heldkeys.py" for the ioctl | The sysfs scan ✓. Never read the reference: left one function with no body, invented the ioctl number, skipped "sorted"; 27 s |
 | Qwen3-8B (32k, edit mode) | Apply three review comments, each with the exact new lines | ✓ All three; dropped the blank lines between functions; 93 s |
 | Qwen3-8B (32k, edit mode) | Write a unittest file from an exact spec | 3 of 4 tests right. The fixture wrote the name to `device`, not `device/name`, so its own test failed; skipped one case; ignored the blank-line rule; 18 s |
-| Qwen3-8B (32k, edit mode) | Fix that fixture from one review comment | ✗ 34 `edit` calls, all "Could not find oldString". It never re-read the file (a line had trailing spaces), and ended with no reply; 398 s |
+| Qwen3-8B (32k, edit mode) | Fix that fixture from one review comment | ✗ 34 `edit` calls, all "Could not find oldString". It never re-read the file (a line had trailing spaces), and ended with no reply; 398 s. Such runs are now stopped after 5 |
 
 What that means for writing a task:
 
