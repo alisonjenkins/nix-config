@@ -279,6 +279,22 @@ freely. These are what the live test surfaced.
    the same picture while HD2 rendered normally (two screenshots differed).
    Another focus away and back fixed it at 13:31:39. Nothing in Steam's log
    marks the freeze, so stream-mode cannot detect it yet.
+15. **Forza Horizon 6 streams black: Steam never starts game capture.**
+   Seen 2026-09-24 14:17 and 14:32 from the Deck. FH6 rendered on the host
+   (niri screenshots), launched direct with `SteamStreaming=1`, and both its
+   windows carried `STEAM_GAME=2483190`. Steam's overlay was loaded and
+   worked: Shift+Tab on the host drew the Game Overview over FH6. Yet
+   `streaming_log.txt` never had `Switching video stream ... to
+   GameOverlay_MovieStream`, and capture stayed `Desktop Black Frame`. A focus
+   nudge, the right window being recorded, and fullscreen on or off (FH6
+   fullscreen adds an untitled black second window) changed nothing. Ruled
+   out: HDR (FH6 detects none), gamescope, lsfg-vk (inactive), MangoHud and
+   obs-vkcapture (HD2 streams with both), stale `GAMESCOPE_*` atoms, and DX12
+   itself: HD2 is DX12 through vkd3d-proton too. The difference left is the
+   Proton build: HD2 is set to Proton-CachyOS Latest, FH6 runs the default
+   DW-Proton Latest (a different `d3d12core.dll`, 5894144 vs 5885952 bytes).
+   Next: FH6 on Proton-CachyOS Latest; if capture starts, pin that Proton
+   per game. Subnautica (Unity, DX11, DW-Proton) streamed fine.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
