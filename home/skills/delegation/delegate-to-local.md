@@ -356,7 +356,7 @@ write as "denied". The diff and the tool lines were right both times.
 - **Exit 6: it changed a file that runs code later**, anything under `.git/`
   (a hook runs on your next commit) or an `.envrc` (direnv runs it). The
   script lists the paths after the diff. Read those first; "no shell" does
-  not hold past them.
+  not hold past them. It wins over 3 and 5: a failed run can leave one too.
 - A run that changed nothing deletes its snapshot; other snapshots are
   deleted after a week.
 

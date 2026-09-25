@@ -241,6 +241,15 @@ if [[ -n "$snapshot" ]]; then
   fi
 fi
 
+# A risky file stays whether the run succeeded or not, so 6 outranks every
+# other exit: a caller that retries on 3 or 5 would never read it otherwise.
+finish() {
+  if [[ "${risky_found:-0}" -eq 1 ]]; then
+    exit 6
+  fi
+  exit "$1"
+}
+
 # Every read of the log goes through this: under set -e, one line that is
 # not JSON would otherwise end the script with jq's own exit code.
 events() {
@@ -254,32 +263,30 @@ error_name="$(events | jq -r 'select(.type == "error") | .error.name' | head -1)
 # Text parts only: a tool that read this script returns the phrase too.
 if events | jq -r 'select(.type == "text") | .part.text' | grep -q 'Continue if you have next steps'; then
   echo "error: the conversation was compacted mid-task, so the reply cannot be trusted" >&2
-  exit 5
+  finish 5
 fi
 if [[ "$error_name" == "ContextOverflowError" ]]; then
   events | jq -r 'select(.type == "error") | .error.data.message' | head -1 >&2
-  exit 5
+  finish 5
 fi
 if [[ -n "$error_name" ]]; then
   echo "error: opencode reported $error_name:" >&2
   events | jq -r 'select(.type == "error") | .error.data.message // .error' | head -1 >&2
-  exit 3
+  finish 3
 fi
 if [[ "$status" -eq 124 ]]; then
   echo "error: the run did not finish within ${timeout_s}s" >&2
-  exit 3
+  finish 3
 fi
 if [[ "$status" -ne 0 ]]; then
   echo "error: opencode exited $status; see $log.stderr" >&2
-  exit 3
+  finish 3
 fi
 
 reply="$(events | jq -rs '[.[] | select(.type == "text") | .part.text] | last // empty')"
 if [[ -z "$reply" ]]; then
   echo "error: the run finished without a reply" >&2
-  exit 3
+  finish 3
 fi
 printf '%s\n' "$reply"
-if [[ "${risky_found:-0}" -eq 1 ]]; then
-  exit 6
-fi
+finish 0
