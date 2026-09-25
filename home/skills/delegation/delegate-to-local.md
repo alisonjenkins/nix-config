@@ -385,6 +385,10 @@ new model or task shape is tried; it is the evidence for the rules below it.
 | Qwen3.6-27B (16k, edit mode) | Two small bash edits to this skill's own script, given the exact lines to add | ✓ Both exactly as specified; 56 s. (Its run exited 5, a false alarm from the script's own compaction check, since fixed) |
 | Qwen3.6-27B (16k, edit mode) | Move an early `exit 6` to after the reply is printed, given the lines | ✓ Exactly as specified, line numbers right; 32 s |
 | Qwen3-8B (32k, edit mode) | Replace one doc line with two given lines | Words ✓, shape ✗: joined them into one 150-character line despite being told two; 40 s |
+| Qwen3-8B (32k, edit mode) | Write a new 6-part module from a numbered spec, "first read heldkeys.py" for the ioctl | The sysfs scan ✓. Never read the reference: left one function with no body, invented the ioctl number, skipped "sorted"; 27 s |
+| Qwen3-8B (32k, edit mode) | Apply three review comments, each with the exact new lines | ✓ All three; dropped the blank lines between functions; 93 s |
+| Qwen3-8B (32k, edit mode) | Write a unittest file from an exact spec | 3 of 4 tests right. The fixture wrote the name to `device`, not `device/name`, so its own test failed; skipped one case; ignored the blank-line rule; 18 s |
+| Qwen3-8B (32k, edit mode) | Fix that fixture from one review comment | ✗ 34 `edit` calls, all "Could not find oldString". It never re-read the file (a line had trailing spaces), and ended with no reply; 398 s |
 
 What that means for writing a task:
 
@@ -393,6 +397,16 @@ What that means for writing a task:
   the opposite. Ask the 8B for the text; decide what it means yourself.
 - **The 8B follows what, not always how.** Asked for two wrapped lines, it
   wrote the right words as one long line. Check the shape of its edits too.
+- **The 8B skips "read X first".** Told to copy a function from a file, it
+  never opened the file and made the code up. Paste what it needs into the
+  task instead of pointing at it.
+- **The 8B cannot recover from a failed edit.** When its `oldString` did
+  not match, it retried the same guess 34 times without re-reading the
+  file. For the 8B, ask for a new file or a whole-function rewrite, not an
+  edit of existing lines. Run it on the 27B when an edit is unavoidable.
+- **The 8B writes new code fast and about half right.** 18 to 27 s per
+  file, the easy parts right, one real bug per file. Worth it only with the
+  review and a test run you would do anyway.
 - **Never trust its line numbers.** Ask for the code text and grep for it.
 - **Give absolute, real paths.** "The current directory" became the path
   `/current/directory/...`. A symlinked directory broke grep and glob
