@@ -187,9 +187,10 @@ endpoint. Text in, text out by default, or an agent over one directory
 through `delegate-to-local-agent.sh`: read-only, or with
 `LOCAL_LLM_AGENT_EDIT=1` allowed to edit there, with a diff to review before
 anything is kept. It never runs commands. Weaker than Haiku or Copilot's
-Luna: the 8B extracts reliably but misreads what code does and cannot
-recover from a failed edit; the 27B edits well from an exact spec. So it
-fits a narrower slice of haiku-shaped work, with every result reviewed. See
+Luna: on ali-desktop, a 35B mixture-of-experts model and a 9B write and
+edit reliably from an exact spec, and only the 27B says correctly what code
+does. So it fits a narrower slice of haiku-shaped work, with every result
+reviewed. See
 [delegate-to-local.md](delegate-to-local.md): its "Picking a model" table
 first, then the measured scorecard.
 

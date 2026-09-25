@@ -368,16 +368,22 @@ write as "denied". The diff and the tool lines were right both times.
 
 ## Picking a model for a task
 
-From the scorecard below. Every row assumes you review the result.
+From the scorecard below, for ali-desktop's profiles: `fast` is
+Qwen3.6-35B-A3B, `small` is Qwen3.5-9B and `quality` is Qwen3.6-27B. Use
+`small` when a game holds the GPU; `fast` and `quality` need it nearly idle.
+Every row assumes you review the result.
 
 | Task | Use | Why |
 |---|---|---|
-| Find or list text in named files | 8B (`fast`) | Reliable and fast. Check line numbers by grepping. |
-| Say what code does | 27B (`quality`) | The 8B read the right lines and stated the opposite. |
-| Change existing lines, from exact old and new text | 27B | Right first time. The 8B cannot recover when its `oldString` does not match. |
-| Write a new small file from a numbered spec | 8B, with the reference code pasted in | About 20 s and half right: one real bug per file. |
-| Apply a review comment | 27B, or the 8B if the comment gives the exact new lines | Both applied exact lines. Only the 27B fixed a mistake from a description. |
-| Trace a value, or anything open-ended | Neither, unless bounded | The 27B read the answer, kept going and overflowed. |
+| Find or list text in named files | `fast`, or `small` beside a game | Even the old 8B did this reliably; not re-measured on these two. Check line numbers by grepping. |
+| Say what code does | `quality` | Every field right. `fast` got half of the same question, and the old 8B stated the opposite. |
+| Change existing lines, from exact old and new text | `fast` or `small` | Both fixed the fixture in one edit, where the old 8B looped 34 times. |
+| Write a new small file from a numbered spec | `fast` or `small` | Both read the reference first and got it right in 20 to 35 s. |
+| Apply a review comment | `fast`, `small` or `quality` | All three applied one right first time. |
+| Trace a value, or anything open-ended | None, unless bounded | The 27B read the answer, kept going and overflowed. |
+
+Give `small` absolute paths only: told to grep "under src/wayland/output", it
+used `/src/wayland/output` and looped on the refusal.
 
 ## Reviewing a run
 
