@@ -397,7 +397,7 @@ Measured 2026-09-25 on ali-desktop (RX 9070 XT) with agent mode, on real
 tasks with answers checked against the source. Add to this table when a
 new model or task shape is tried; it is the evidence for the rules below it.
 On ali-desktop the 8B was the `fast` profile until 2026-09-25, when the MoE
-took that name and the 8B became `small`.
+took that name and Qwen3.5-9B replaced the 8B as `small`.
 
 | Model (profile) | Task | Result |
 |---|---|---|
@@ -425,6 +425,9 @@ took that name and the 8B became `small`.
 | Qwen3.6-35B-A3B MoE (edit mode) | The 8B's unittest task, same text | ✓ All 4 tests pass; right fixture paths, `event5` included, blank lines as asked; 30 s |
 | Qwen3.6-35B-A3B MoE (edit mode) | Fix the 8B's broken fixture from the same review comment | ✓ One read, one edit, tests pass, and it cleaned the trailing spaces the 8B tripped on; 20 s |
 | Qwen3.6-35B-A3B MoE (read-only) | The smithay question | Partly ✓: logical size sent, and computed from mode / scale, both right. Listed only the xdg-output events, missing `wl_output.mode` to `done`: it stopped at the helper instead of following the caller; 44 s |
+| Qwen3.5-9B (Q6_K, 32k, edit mode) | The four tasks above, same text | New module ✓ (read the reference first; 24 s). Unit tests ✓ 4 of 4, extra blank lines (19 s). Fixture fix ✓ one read, one edit (19 s). Smithay ✗: took "under src/wayland/output" as `/src/wayland/output`, and repeated that refused path 70+ times until it overflowed |
+| Qwen3.5-9B (read-only) | The smithay question, with that one path made absolute | Mostly ✓: after two refused greps it resolved the path itself; found the right function; logical size, `mode` and `done` right, missed `geometry` and `scale`; 42 s |
+| Gemma 4 12B (Q4_K_M, 32k, edit mode) | The same four tasks | Module ✓ (107 s), tests ✓ (79 s), fixture fix ✓ (85 s): right, but 3 to 4 times slower than the 9B at 63 tok/s. Smithay: navigated sensibly, no answer within 300 s |
 
 What that means for writing a task:
 
@@ -446,8 +449,12 @@ What that means for writing a task:
 - **The MoE replaces the 8B for writing and editing.** Qwen3.6-35B-A3B runs
   3B parameters per token, so it generates faster than the 8B (127 against
   81 tok/s) and got right every task the 8B got wrong: it read before
-  writing and edited first time. It needs 13.9 GiB, so the 8B stays for
-  when a game holds the GPU. For what code does, the 27B is still better.
+  writing and edited first time. It needs 13.9 GiB. For what code does,
+  the 27B is still better.
+- **Qwen3.5-9B replaces the 8B beside a game.** In 7.6 GiB against the 8B's
+  9, it got the three edit tasks right that the 8B got wrong. It still
+  loops on a refused path rather than rethinking it, so every path in its
+  task must be absolute, including "grep under X".
 - **Never trust its line numbers.** Ask for the code text and grep for it.
 - **Give absolute, real paths.** "The current directory" became the path
   `/current/directory/...`. A symlinked directory broke grep and glob
