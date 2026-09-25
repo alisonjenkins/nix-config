@@ -316,6 +316,13 @@ freely. These are what the live test surfaced.
    the same picture while HD2 rendered normally (two screenshots differed).
    Another focus away and back fixed it at 13:31:39. Nothing in Steam's log
    marks the freeze, so stream-mode cannot detect it yet.
+   **Observed since 2026-09-26, not acted on:** the video rate alone cannot
+   tell a freeze from a menu (a minute in one at 18:07 sent 2.5 to 4
+   Mbit/s). While game capture runs, each client report under 4 Mbit/s
+   now reads the `steam` output with grim (30 ms, kept in memory), and
+   stream-mode logs "game capture may be frozen" when the picture changes
+   between two low reports. Left: after the next freeze, check that log
+   line fired and a menu did not, then have it nudge like a stalled start.
 15. **Forza Horizon 6 streams black: Steam never starts game capture.**
    Seen 2026-09-24 14:17 and 14:32 from the Deck. FH6 rendered on the host
    (niri screenshots), launched direct with `SteamStreaming=1`, and both its
