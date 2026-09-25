@@ -14,25 +14,37 @@
   # 16 GiB RX 9070 XT: one model at a time, loaded on demand. A q8_0 KV
   # cache doubles each context for the VRAM f16 took, at the same speed
   # (measured 2026-09-25, VRAM total / shared memory / generation):
-  #   fast,    16k f16: 9.6 GiB / 512 MiB / 85 tok/s; 32k q8_0: 9.8 GiB / 544 MiB / 81 tok/s
+  #   small,   16k f16: 9.6 GiB / 512 MiB / 85 tok/s; 32k q8_0: 9.8 GiB / 544 MiB / 81 tok/s
   #   quality,  8k f16: 15.9 GiB / 499 MiB / 34 tok/s; 16k q8_0: 16.0 GiB / 516 MiB / 34 tok/s
   #   quality, 24k q8_0 fits with 54 MiB spare; 32k spills to system RAM
   #   (shared 1.2 GiB) and drops to 23 tok/s.
+  #   fast,    32k q8_0: 14.7 GiB / 278 MiB / 127 tok/s
+  # fast is a mixture-of-experts model: 35B parameters, 3B used per token,
+  # so it runs faster than small and did better on every task it was given
+  # (home/skills/delegation/delegate-to-local.md). small stays because it
+  # is the one that fits beside a game.
   # vramMiB is each profile's own use, rounded up to 100 MiB: its total less
-  # the ~1.1 GiB the desktop uses. Quality measured 14,910 MiB (sysfs
-  # mem_info_vram_used, loaded and after a request, less the idle desktop's
-  # 1,131 MiB, 2026-09-25). The switch fit check's estimate put it at
-  # 16.7 GiB and refused it on an idle desktop. The check adds no margin to
-  # a measured value, and an idle desktop leaves about 15,170 MiB free, so
-  # quality only loads with nothing else on the GPU.
+  # the ~1.1 GiB the desktop uses. Quality measured 14,910 MiB and fast
+  # 13,868 MiB (sysfs mem_info_vram_used, loaded and after a request, less
+  # the idle desktop's ~1,140 MiB, 2026-09-25). The switch fit check's
+  # estimate put them at 16.7 and 15.8 GiB and refused both on an idle
+  # desktop. The check adds no margin to a measured value, and an idle
+  # desktop leaves about 15,170 MiB free, so both only load with nothing
+  # else on the GPU.
   modules.delegateToLocal.profiles = let
     q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
   in {
     fast = {
+      model = pkgs.llama-models.qwen3-6-35b-a3b-ud-iq3-s.modelFile;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
+      vramMiB = 13900;
+      description = "Qwen3.6-35B-A3B UD-IQ3_S (MoE), ~12.7 GiB, 127 tok/s: new files, edits and review fixes from a spec";
+    };
+    small = {
       model = pkgs.llama-models.qwen3-8b-q6-k.modelFile;
       launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
       vramMiB = 9000;
-      description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction and mechanical edits";
+      description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction only; fits beside a game";
     };
     quality = {
       model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;
