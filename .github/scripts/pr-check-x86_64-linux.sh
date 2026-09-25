@@ -18,6 +18,13 @@ FAILED=0
 # builds them on push.
 SKIP_BUILD="camoufox-browser nvidia-kernel-canary"
 
+# list_attr_names <flake-attr> — one attribute name per line, non-zero when
+# the set cannot be evaluated. Callers must fail on that: treating it as an
+# empty set passed the check with nothing checked.
+list_attr_names() {
+    nix eval --json "$1" --apply builtins.attrNames | jq -r '.[]'
+}
+
 # build_changed_packages <flake-attr> — build every exposed package whose
 # pkgs/<name>/ directory differs from the base branch. Evaluation alone
 # cannot catch a stale dependency hash (npmDepsHash, vendorHash) or a
@@ -34,7 +41,11 @@ build_changed_packages() {
         FAILED=1
         return
     fi
-    exposed="$(nix eval --json "${flake_attr}" --apply builtins.attrNames 2>/dev/null | jq -r '.[]' || true)"
+    if ! exposed="$(list_attr_names "${flake_attr}")"; then
+        echo "FAILED: could not list ${flake_attr}"
+        FAILED=1
+        return
+    fi
     changed="$(git diff --name-only FETCH_HEAD HEAD -- pkgs | cut -d/ -f2 | sort -u)"
     for name in $changed; do
         if ! grep -qx "${name}" <<<"${exposed}"; then
@@ -62,7 +73,11 @@ build_changed_packages() {
 check_module_set() {
     local flake_attr="$1"
     local names name
-    names="$(nix eval --json "${flake_attr}" --apply builtins.attrNames 2>/dev/null | jq -r '.[]' || true)"
+    if ! names="$(list_attr_names "${flake_attr}")"; then
+        echo "FAILED: could not list ${flake_attr}"
+        FAILED=1
+        return
+    fi
     for name in $names; do
         if nix eval --no-warn-dirty "${flake_attr}.${name}" \
             --apply 'x: if builtins.isFunction x || builtins.isAttrs x then "ok" else throw "neither a function nor an attrset"' \
@@ -80,7 +95,11 @@ check_module_set() {
 check_drv_set() {
     local flake_attr="$1"
     local names name
-    names="$(nix eval --json "${flake_attr}" --apply builtins.attrNames 2>/dev/null | jq -r '.[]' || true)"
+    if ! names="$(list_attr_names "${flake_attr}")"; then
+        echo "FAILED: could not list ${flake_attr}"
+        FAILED=1
+        return
+    fi
     for name in $names; do
         if nix eval --raw --no-warn-dirty "${flake_attr}.${name}.drvPath" >/dev/null 2>&1; then
             echo "ok: ${flake_attr}.${name}"
