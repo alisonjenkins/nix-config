@@ -36,13 +36,22 @@ let
         default = "";
         description = "Shown by list-local-profiles.sh.";
       };
+      vramMiB = lib.mkOption {
+        type = lib.types.nullOr lib.types.ints.positive;
+        default = null;
+        description = ''
+          Measured VRAM the loaded profile uses, in MiB. The switch fit check
+          uses it instead of its estimate (model size * 1.2 + 512MiB), which
+          can refuse a profile that fits.
+        '';
+      };
     };
   };
 
   toToml = _name: p: {
     inherit (p) runtime model port description;
     launch_args = p.launchArgs;
-  };
+  } // lib.optionalAttrs (p.vramMiB != null) { vram_mib = p.vramMiB; };
 in
 {
   options.modules.delegateToLocal.profiles = lib.mkOption {
