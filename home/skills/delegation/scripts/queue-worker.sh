@@ -378,8 +378,12 @@ process_switch_job() {
       free_bytes=$((vram_total - vram_used))
       # The active profile is stopped before the new one starts, so its
       # VRAM counts as free: switching from the 27B to the 8B was refused
-      # because the 27B's own footprint was counted as taken.
-      if [[ -n "$old_profile" ]]; then
+      # because the 27B's own footprint was counted as taken. Only while its
+      # server is alive: a crashed one frees nothing, and crediting it would
+      # load a model next to a game that has the VRAM.
+      local old_pid=""
+      [[ -n "$old_profile" ]] && old_pid="$(jq -r '.pid // empty' "$active_file" 2>/dev/null || true)"
+      if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
         local old_json old_bytes
         old_json="$(jq -c --arg name "$old_profile" '.[$name] // empty' <<<"$profiles_json")"
         if [[ -n "$old_json" && "$(jq -r '.runtime // empty' <<<"$old_json")" != "mock" ]]; then

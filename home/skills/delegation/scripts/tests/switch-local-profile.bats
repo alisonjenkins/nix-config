@@ -264,12 +264,34 @@ runtime = "llama-server"
 model = "$BATS_TEST_TMPDIR/models/mid.gguf"
 port = 8085
 TOML
-  write_active "quality" "http://localhost:8081" "weights.safetensors"
+  sleep 3600 </dev/null >/dev/null 2>&1 &
+  old_pid=$!
+  write_active "quality" "http://localhost:8081" "weights.safetensors" "$old_pid"
   fake_drm_vram 16106127360 17179869184 # 15GiB used, 1GiB free; mid needs ~10GiB
   export FAKE_CURL_UP="http://localhost:8085"
   run "$switch" "mid"
+  kill -9 "$old_pid" 2>/dev/null || true
   [ "$status" -eq 0 ]
   [[ "$output" == *"profile 'mid' active"* ]]
+}
+
+@test "a crashed active profile's VRAM is not counted as free" {
+  # Its server is gone, so whatever the card shows in use is something else
+  # (a game), and loading into it would starve that.
+  truncate -s 8G "$BATS_TEST_TMPDIR/models/mid.gguf"
+  cat >>"$LOCAL_LLM_PROFILES_FILE" <<TOML
+
+[mid]
+runtime = "llama-server"
+model = "$BATS_TEST_TMPDIR/models/mid.gguf"
+port = 8085
+TOML
+  write_active "quality" "http://localhost:8081" "weights.safetensors" # dead pid
+  fake_drm_vram 16106127360 17179869184 # 15GiB used, 1GiB free; mid needs ~10GiB
+  export FAKE_CURL_UP="http://localhost:8085"
+  run "$switch" "mid"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"profile 'mid' needs ~"* ]]
 }
 
 @test "a measured vram_mib overrides the size-based estimate" {
