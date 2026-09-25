@@ -183,8 +183,23 @@ teardown() {
 @test "runtime binary not on PATH exits 1" {
   # Real system PATH, without the tests/ dir that provides the fake
   # llama-server/mlx_lm.server doubles — a real machine with neither
-  # runtime installed looks exactly like this.
-  PATH="$orig_path" run "$switch" "fast"
+  # runtime installed looks exactly like this. A machine that has one
+  # installed keeps its other tools (yq sits beside llama-server on
+  # ali-desktop) through a directory linking everything but the runtimes.
+  local no_runtimes="$BATS_TEST_TMPDIR/no-runtimes" clean_path="" dir tool
+  mkdir -p "$no_runtimes"
+  IFS=: read -ra dirs <<<"$orig_path"
+  for dir in "${dirs[@]}"; do
+    if [[ -x "$dir/llama-server" || -x "$dir/mlx_lm.server" ]]; then
+      for tool in "$dir"/*; do
+        case "${tool##*/}" in llama-server | mlx_lm.server) continue ;; esac
+        [[ -e "$no_runtimes/${tool##*/}" ]] || ln -s "$tool" "$no_runtimes/${tool##*/}"
+      done
+      dir="$no_runtimes"
+    fi
+    clean_path="${clean_path:+$clean_path:}$dir"
+  done
+  PATH="$clean_path" run "$switch" "fast"
   [ "$status" -eq 1 ]
   [[ "$output" == *"'llama-server' not found on PATH"* ]]
 }
