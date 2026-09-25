@@ -11,11 +11,12 @@ works too.
 
 ## What this can and can't do
 
-**Two modes: text only, or a read-only agent.** `delegate-to-local.sh` is
-text in, text out: the model cannot read files, so paste what the task needs
-into the prompt. `delegate-to-local-agent.sh` (see "Agent mode" below) runs
-the same model inside opencode with read, glob, grep and list over one
-directory, so it can look things up itself. Neither can edit files or run
+**Two modes: text only, or an agent.** `delegate-to-local.sh` is text in,
+text out: the model cannot read files, so paste what the task needs into
+the prompt. `delegate-to-local-agent.sh` (see "Agent mode" below) runs the
+same model inside opencode with read, glob, grep and list over one
+directory, so it can look things up itself, and with `LOCAL_LLM_AGENT_EDIT=1`
+edit files there, leaving a diff to review ("Edit mode"). Neither runs
 commands. For that, use a Claude sub-agent or `delegate-to-copilot.md`.
 
 **Zero marginal cost, but weaker capability and no cloud safety layer.** A
