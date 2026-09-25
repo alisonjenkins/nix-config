@@ -1576,6 +1576,12 @@ class TestEventDispatch(unittest.TestCase):
         def note_client_output(self, w, h, video=None):
             self.calls.append(("note_client_output", w, h, video))
 
+        def route_audio(self):
+            self.calls.append(("route_audio",))
+
+        def stop_audio(self):
+            self.calls.append(("stop_audio",))
+
         def note_max_capture(self, w, h, fps=None):
             self.calls.append(("note_max_capture", w, h, fps))
 
@@ -1670,6 +1676,22 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertIn(("request", 2331545, 2854740), self.s.calls)
 
+    def test_audio_follows_steams_sink_and_the_stream_end(self):
+        stream_mode.handle_steam_line(
+            self.s,
+            '[x] PipeWire: Setting default.configured.audio.sink to '
+            '{"name":"steam-streaming-playback"}\n',
+            None,
+        )
+        stream_mode.handle_steam_line(
+            self.s, "[x] PipeWire: Setting default.configured.audio.sink to (null)\n", None
+        )
+        stream_mode.handle_steam_line(self.s, "[x] PipeWire: Deinitializing streaming\n", None)
+        self.assertEqual(
+            [c for c in self.s.calls if c[0] in ("route_audio", "stop_audio")],
+            [("route_audio",), ("stop_audio",)],
+        )
+
     def test_the_client_size_and_limit_are_noted(self):
         stream_mode.handle_steam_line(
             self.s, "[x] Maximum capture: 2880x1080 60.00 FPS\n", None
@@ -1703,6 +1725,86 @@ class TestEventDispatch(unittest.TestCase):
         remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)
         self.assertEqual(remove_at, 55.0)
         self.assertEqual(self.s.calls, [])
+
+
+class TestStreamAudio(unittest.TestCase):
+    """Steam's sink has no channel positions and keeps only the first two
+    channels of a surround stream; FH6's dialogue on the centre channel never
+    reached the client (2026-09-25). A positioned sink runs in front of it."""
+
+    SINKS = [
+        {"index": 1, "name": "effect_input.binaural71"},
+        {"index": 2, "name": "steam-streaming-playback"},
+        {"index": 3, "name": "remote-play-binaural"},
+    ]
+    INPUTS = [
+        {"index": 10, "sink": 2, "properties": {"node.name": "forzahorizon6.exe"}},
+        {"index": 11, "sink": 2, "properties": {"node.name": "remote-play-binaural-out"}},
+        {"index": 12, "sink": 1, "properties": {"node.name": "zen-beta"}},
+    ]
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k) for k in (
+            "pactl_json", "start_audio_sink", "stop_audio_sink", "subprocess",
+            "CLIENT_AUDIO", "AUDIO_MODES")}
+        self.tmp = tempfile.TemporaryDirectory()
+        conf = os.path.join(self.tmp.name, "binaural.conf")
+        open(conf, "w").close()
+        stream_mode.AUDIO_MODES = {
+            "stereo": (os.path.join(self.tmp.name, "missing.conf"), "remote-play-stereo"),
+            "binaural": (conf, "remote-play-binaural"),
+        }
+        stream_mode.CLIENT_AUDIO = {"ali-mba": "binaural"}
+        self.started, self.stopped, self.ran = [], [], []
+        stream_mode.pactl_json = lambda what: self.SINKS if what == "sinks" else self.INPUTS
+        stream_mode.start_audio_sink = lambda c: self.started.append(c) or object()
+        stream_mode.stop_audio_sink = lambda p: self.stopped.append(p)
+        ran = self.ran
+
+        class FakeSubprocess:
+            @staticmethod
+            def run(cmd, **_kwargs):
+                ran.append(cmd)
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        stream_mode.subprocess = FakeSubprocess
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+        self.tmp.cleanup()
+
+    def session(self, client):
+        s = stream_mode.Session(stage_timeout=0)
+        s.stream_client = client
+        return s
+
+    def test_a_binaural_client_gets_the_binaural_sink(self):
+        s = self.session("ali-mba")
+        self.assertTrue(s.route_audio())
+        self.assertEqual(self.started, [stream_mode.AUDIO_MODES["binaural"][0]])
+        self.assertIn([stream_mode.PACTL, "set-default-sink", "remote-play-binaural"], self.ran)
+
+    def test_only_games_already_in_steams_sink_are_moved(self):
+        """Our sink's own output plays into Steam's and must stay there, or it
+        would loop into itself; streams on other sinks are not ours."""
+        self.session("ali-mba").route_audio()
+        moved = [c for c in self.ran if c[1] == "move-sink-input"]
+        self.assertEqual(moved, [[stream_mode.PACTL, "move-sink-input", "10", "remote-play-binaural"]])
+
+    def test_a_missing_config_leaves_steams_sink_alone(self):
+        s = self.session("ali-steam-deck")
+        self.assertFalse(s.route_audio())
+        self.assertEqual(self.started, [])
+        self.assertEqual(self.ran, [])
+
+    def test_the_sink_stops_with_the_stream(self):
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.streaming = True
+        self.assertTrue(s.stop_audio())
+        self.assertEqual(len(self.stopped), 1)
+        self.assertFalse(s.stop_audio(), "stopping twice is harmless")
 
 
 class TestOutputDetection(unittest.TestCase):

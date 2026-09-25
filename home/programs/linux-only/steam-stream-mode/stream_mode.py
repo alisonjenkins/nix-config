@@ -139,6 +139,24 @@ TARGET_FILE = os.environ.get(
 TARGET_JSON_FILE = os.environ.get(
     "STREAM_MODE_TARGET_JSON_FILE", TARGET_FILE + ".json"
 )
+# Steam streams from a null sink with no channel positions, which keeps only
+# the first two channels of a surround stream: dialogue on the centre channel
+# never reached the client. A positioned sink runs in front of it for the
+# length of a stream, chosen per client by name ("stereo" or "binaural").
+# Only while streaming: WirePlumber remembers a moved game's sink, and one
+# that exists at home but leads nowhere would silence the game there.
+PIPEWIRE = os.environ.get("STREAM_MODE_PIPEWIRE", "pipewire")
+PACTL = os.environ.get("STREAM_MODE_PACTL", "pactl")
+STEAM_AUDIO_SINK = "steam-streaming-playback"
+AUDIO_MODES = {
+    "stereo": ("/etc/steam-remote-play/stereo.conf", "remote-play-stereo"),
+    "binaural": ("/etc/steam-remote-play/binaural.conf", "remote-play-binaural"),
+}
+DEFAULT_AUDIO = os.environ.get("STREAM_MODE_DEFAULT_AUDIO", "stereo")
+CLIENT_AUDIO = json.loads(os.environ.get("STREAM_MODE_CLIENT_AUDIO", "{}"))
+# How long the sink process gets to register its node before the default is
+# set anyway; it takes about a second.
+AUDIO_SINK_WAIT = 5.0
 
 # The session, not the video source. ">>> Starting/Stopped desktop stream"
 # mark Steam swapping between desktop and game capture, several times a
@@ -146,6 +164,11 @@ TARGET_JSON_FILE = os.environ.get(
 # minutes later. These two pair exactly, once per session.
 START_RE = re.compile(r"Streaming started to (.+?) at ")
 STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
+# Steam makes its sink the default just after the stream starts. Routing on
+# this line rather than the start marker means Steam cannot undo it after.
+STEAM_SINK_DEFAULT_RE = re.compile(
+    r'Setting default\.configured\.audio\.sink to \{"name":"steam-streaming-playback"\}'
+)
 # The client's own panel, relayed into the host's log by the client.
 #
 # This, rather than Steam's ">>> Capture resolution set to WxH": while the
@@ -439,6 +462,65 @@ def publish_target(output, width, height, refresh=None):
         return False
     log("stream-mode: published target {} {}x{}".format(output, width, height))
     return True
+
+
+def pactl_json(*what):
+    """`pactl -f json list <what>`, or [] when pactl fails."""
+    result = subprocess.run(
+        [PACTL, "-f", "json", "list", *what], capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        log("stream-mode: pactl list {} failed: {}".format(
+            " ".join(what), (result.stderr or "").strip()
+        ))
+        return []
+    try:
+        return json.loads(result.stdout)
+    except ValueError:
+        return []
+
+
+def sink_index(name):
+    return next((s["index"] for s in pactl_json("sinks") if s.get("name") == name), None)
+
+
+def start_audio_sink(conf):
+    """Run a standalone PipeWire config whose sink lives as long as it does."""
+    return subprocess.Popen(
+        [PIPEWIRE, "-c", conf],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+
+def stop_audio_sink(proc):
+    proc.terminate()
+    try:
+        proc.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def route_audio_to(sink):
+    """Make sink the default and move what already plays into Steam's there.
+
+    A game started before the stream (a reconnect) is already playing into
+    Steam's sink and would stay there. Our sinks' own outputs play into it
+    too and must stay, or they would loop into themselves.
+    """
+    subprocess.run([PACTL, "set-default-sink", sink], capture_output=True)
+    steam = sink_index(STEAM_AUDIO_SINK)
+    if steam is None:
+        return 0
+    moved = 0
+    for stream in pactl_json("sink-inputs"):
+        name = (stream.get("properties") or {}).get("node.name") or ""
+        if stream.get("sink") != steam or name.startswith("remote-play-"):
+            continue
+        subprocess.run(
+            [PACTL, "move-sink-input", str(stream["index"]), sink], capture_output=True,
+        )
+        moved += 1
+    return moved
 
 
 def withdraw_target():
@@ -1004,6 +1086,10 @@ class Session:
         self.capture_heartbeats = 0
         self.nudge_return_to = None
         self.capture_nudges = 0
+        # The client named by "Streaming started to", which picks the audio
+        # mode, and the sink process run for this stream. See route_audio.
+        self.stream_client = None
+        self.audio_proc = None
         # See check_gamepad_info. None until first read, so a watcher started
         # mid-game re-announces the listed pads once.
         self.gamepad_info_path = GAMEPAD_INFO
@@ -1151,6 +1237,7 @@ class Session:
         be: the Deck connected and the Mac reconnected in the same second, the
         Deck streamed, and its size was saved as the Mac's.
         """
+        self.stream_client = client_name
         streaming_id = self.known_clients.get(client_name)
         if streaming_id is not None and streaming_id != self.client_id:
             log("stream-mode: streaming to {}, not the last client to connect".format(client_name))
@@ -1203,6 +1290,37 @@ class Session:
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
+
+    def route_audio(self):
+        """Run this client's positioned sink and send the stream's audio there.
+
+        Steam's own sink has no channel positions, so surround played into it
+        keeps only the front pair. The mode is chosen per client, since
+        nothing the client sends says whether it has headphones or speakers.
+        """
+        mode = CLIENT_AUDIO.get(self.stream_client or "", DEFAULT_AUDIO)
+        conf, sink = AUDIO_MODES.get(mode, (None, None))
+        if conf is None or not os.path.exists(conf):
+            log("stream-mode: no {} audio sink ({}); leaving Steam's".format(mode, conf))
+            return False
+        self.stop_audio()
+        self.audio_proc = start_audio_sink(conf)
+        deadline = time.monotonic() + AUDIO_SINK_WAIT
+        while sink_index(sink) is None and time.monotonic() < deadline:
+            time.sleep(0.2)
+        moved = route_audio_to(sink)
+        log("stream-mode: {} audio for {} through {}; moved {} stream(s)".format(
+            mode, self.stream_client or "this client", sink, moved
+        ))
+        return True
+
+    def stop_audio(self):
+        if self.audio_proc is None:
+            return False
+        stop_audio_sink(self.audio_proc)
+        self.audio_proc = None
+        log("stream-mode: stream audio sink stopped")
+        return True
 
     def game_capture_requested(self):
         """Steam moved the stream to the game's overlay; expect frames soon."""
@@ -1372,6 +1490,7 @@ class Session:
         self.streaming = False
         self.capture_waiting = False
         self.nudge_return_to = None
+        self.stop_audio()
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -2268,6 +2387,7 @@ def watch():
     finally:
         for proc in procs.values():
             proc.terminate()
+        session.stop_audio()
         withdraw_target()
 
 
@@ -2318,7 +2438,13 @@ def handle_steam_line(session, line, remove_at):
         session.begin_stream(match.group(1))
         return None
 
+    if STEAM_SINK_DEFAULT_RE.search(line):
+        session.route_audio()
+        return remove_at
+
     if STOP_RE.search(line):
+        # Now, with Steam's sink going away, not with the output later.
+        session.stop_audio()
         log("stream-mode: stream stopped, dropping the output in {:.0f}s".format(
             REMOVE_AFTER
         ))

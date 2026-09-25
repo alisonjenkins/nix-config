@@ -16,7 +16,11 @@ let
     mkdir -p $out/bin
     makeWrapper ${raw}/bin/stream-mode $out/bin/stream-mode \
       --set-default STREAM_MODE_NIRI ${lib.getExe cfg.niriPackage} \
-      --set-default STREAM_MODE_XPROP ${lib.getExe pkgs.xprop}
+      --set-default STREAM_MODE_XPROP ${lib.getExe pkgs.xprop} \
+      --set-default STREAM_MODE_PIPEWIRE ${lib.getExe' pkgs.pipewire "pipewire"} \
+      --set-default STREAM_MODE_PACTL ${lib.getExe' pkgs.pulseaudio "pactl"} \
+      --set-default STREAM_MODE_DEFAULT_AUDIO ${cfg.audio.default} \
+      --set-default STREAM_MODE_CLIENT_AUDIO ${lib.escapeShellArg (builtins.toJSON cfg.audio.clients)}
   '';
 in
 {
@@ -116,6 +120,33 @@ in
         watcher withdraws the file when streaming ends, which is what keeps a
         stale one from outliving a session now.
       '';
+    };
+
+    audio = {
+      default = lib.mkOption {
+        type = lib.types.enum [ "stereo" "binaural" ];
+        default = "stereo";
+        description = ''
+          How game audio reaches a streaming client. Steam's own sink has no
+          channel positions and keeps only the first two channels of a
+          surround stream, so a positioned sink runs in front of it for the
+          length of the stream: "stereo" is a plain downmix, "binaural" the
+          desktop's HRTF chain, for headphones. Needs the configs from
+          modules.desktop.pipewire.remotePlaySinks; without them Steam's sink
+          is left as it is. Clients report only their channel count, never
+          headphones or speakers, so this cannot be detected.
+        '';
+      };
+
+      clients = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.enum [ "stereo" "binaural" ]);
+        default = { };
+        example = { "ali-mba" = "binaural"; };
+        description = ''
+          Per-client audio mode, by the name Steam logs in "Streaming started
+          to <name>". Clients not listed use audio.default.
+        '';
+      };
     };
 
     logPath = lib.mkOption {
