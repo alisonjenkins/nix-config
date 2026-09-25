@@ -365,6 +365,31 @@ write as "denied". The diff and the tool lines were right both times.
   non-matching `oldString` is the usual cause; the model does not re-read
   the file to fix it.
 
+## Picking a model for a task
+
+From the scorecard below. Every row assumes you review the result.
+
+| Task | Use | Why |
+|---|---|---|
+| Find or list text in named files | 8B (`fast`) | Reliable and fast. Check line numbers by grepping. |
+| Say what code does | 27B (`quality`) | The 8B read the right lines and stated the opposite. |
+| Change existing lines, from exact old and new text | 27B | Right first time. The 8B cannot recover when its `oldString` does not match. |
+| Write a new small file from a numbered spec | 8B, with the reference code pasted in | About 20 s and half right: one real bug per file. |
+| Apply a review comment | 27B, or the 8B if the comment gives the exact new lines | Both applied exact lines. Only the 27B fixed a mistake from a description. |
+| Trace a value, or anything open-ended | Neither, unless bounded | The 27B read the answer, kept going and overflowed. |
+
+## Reviewing a run
+
+1. **Read `<log>.diff`, not the reply.** Replies have claimed edits that
+   were refused and a finished file that had an empty function.
+2. **Read the tool lines** (stderr, or `jq` on the event log): a `write`
+   with no `read` before it means the model never looked at the file.
+3. **Run the tests, and prove a new test fails without its fix.**
+4. **Check the shape:** blank lines, wrapping and ordering were each
+   dropped at least once while the words were right.
+5. **Send one review round, with exact new lines where you can.** If the
+   model fails that, finish the change yourself rather than retrying.
+
 ## What the local models are good and bad at
 
 Measured 2026-09-25 on ali-desktop (RX 9070 XT) with agent mode, on real
