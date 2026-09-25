@@ -464,6 +464,110 @@ class TestStalledGameCapture(unittest.TestCase):
             "Connected SDR->lhr->lhr  Ping: 24ms IN: 81.9kbit"))
 
 
+class TestFrozenCaptureObserved(unittest.TestCase):
+    """Game capture kept sending one picture at ~2.7 Mbit/s while HD2 drew
+    normally (13:29:53), and nothing in Steam's log marked it. A menu drops
+    the rate as low, so a low rate is only suspicious while the streamed
+    output's own picture keeps changing. Logged, never acted on, until a
+    recorded freeze shows where the thresholds belong.
+    """
+
+    def setUp(self):
+        self._real = {k: getattr(stream_mode, k)
+                      for k in ("output_frame_hash", "focus_window", "log")}
+        self.hashes = []
+        self.grabs = 0
+        self.focused = []
+        self.lines = []
+        stream_mode.output_frame_hash = self.next_hash
+        stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
+        stream_mode.log = self.lines.append
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+
+    def next_hash(self, output, env=None):
+        self.grabs += 1
+        return self.hashes.pop(0) if self.hashes else None
+
+    def capturing(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.game_capture_requested()
+        s.game_capture_started()
+        return s
+
+    def suspected(self):
+        return [line for line in self.lines if "may be frozen" in line]
+
+    def test_a_low_rate_while_the_picture_changes_is_logged(self):
+        self.hashes = ["a", "b"]
+        s = self.capturing()
+        s.client_heartbeat(2700.0)
+        s.client_heartbeat(2650.0)
+        self.assertEqual(len(self.suspected()), 1)
+        self.assertIn("2650", self.suspected()[0])
+
+    def test_a_still_picture_at_a_low_rate_is_a_menu_not_a_freeze(self):
+        self.hashes = ["a", "a", "a"]
+        s = self.capturing()
+        for _ in range(3):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(self.suspected(), [])
+
+    def test_a_normal_rate_takes_no_captures(self):
+        s = self.capturing()
+        for _ in range(3):
+            s.client_heartbeat(16000.0)
+        self.assertEqual(self.grabs, 0)
+
+    def test_nothing_is_captured_before_game_capture_starts(self):
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.client_heartbeat(2700.0)
+        s.client_heartbeat(2700.0)
+        self.assertEqual(self.grabs, 0)
+
+    def test_logged_once_per_low_stretch(self):
+        self.hashes = ["a", "b", "c", "d", "e", "f"]
+        s = self.capturing()
+        for _ in range(3):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(len(self.suspected()), 1)
+        s.client_heartbeat(16000.0)
+        s.client_heartbeat(2700.0)
+        s.client_heartbeat(2700.0)
+        self.assertEqual(len(self.suspected()), 2)
+
+    def test_a_failed_capture_is_not_a_change(self):
+        self.hashes = ["a", None, "a"]
+        s = self.capturing()
+        for _ in range(3):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(self.suspected(), [])
+
+    def test_nothing_is_captured_while_the_output_is_gone(self):
+        """A niri reload removes the output mid-stream until it is rebuilt;
+        grim was handed None and the TypeError took stream-mode down."""
+        self.hashes = ["a", "b"]
+        s = self.capturing()
+        s.output = None
+        s.client_heartbeat(2700.0)
+        s.client_heartbeat(2700.0)
+        self.assertEqual(self.grabs, 0)
+
+    def test_it_never_moves_focus(self):
+        self.hashes = ["a", "b", "c"]
+        s = self.capturing()
+        s.last_windows = [{"id": 227, "app_id": "steam_app_553850", "workspace_id": 9}]
+        for _ in range(3):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(self.focused, [])
+
+
 class TestVirtualGamepads(unittest.TestCase):
     """A gamepad Steam creates mid-game has to be announced again.
 
@@ -1640,6 +1744,9 @@ class TestEventDispatch(unittest.TestCase):
             self.calls.append(("return_game_workspace",))
             return True
 
+        def client_heartbeat(self, kbit=None):
+            self.calls.append(("client_heartbeat", kbit))
+
     def setUp(self):
         self.s = self.FakeSession()
 
@@ -1788,6 +1895,16 @@ class TestEventDispatch(unittest.TestCase):
         self.assertEqual(
             self.s.calls, [("game_capture_requested",), ("game_capture_started",)]
         )
+
+    def test_a_client_report_passes_on_the_video_rate(self):
+        stream_mode.handle_steam_line(
+            self.s,
+            "[2026-09-25 22:04:30][1104.757039] CLIENT: SteamNetworkingSockets connection: "
+            "Connected SDR->lhr->lhr  Ping: 24ms IN: 15748.3kbit 1798.7 pkt/s qual 100.0% "
+            "OUT: 36.6kbit 53.4 pkt/s qual 100.0%\n",
+            None,
+        )
+        self.assertEqual(self.s.calls, [("client_heartbeat", 15748.3)])
 
     def test_an_unrelated_line_changes_nothing(self):
         remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)
@@ -2929,3 +3046,49 @@ class TestDecodeMouseButtons(unittest.TestCase):
         buf = bytearray(96)
         buf[34] = 3
         self.assertEqual(stream_mode.decode_mouse_buttons(buf), ["BTN_LEFT", "BTN_RIGHT"])
+
+
+class TestStreamBitrate(unittest.TestCase):
+    def test_reads_the_in_rate(self):
+        line = ("[2026-09-25 22:04:30][1104.757039] CLIENT: SteamNetworkingSockets connection: "
+                "Connected SDR->lhr->lhr  Ping: 24ms IN: 15748.3kbit 1798.7 pkt/s qual 100.0% "
+                "OUT: 36.6kbit 53.4 pkt/s qual 100.0%")
+        self.assertEqual(stream_mode.stream_bitrate_kbit(line), 15748.3)
+
+    def test_never_reads_the_out_rate(self):
+        line = "CLIENT: SteamNetworkingSockets connection: Connected Ping: 24ms OUT: 36.6kbit 53.4 pkt/s"
+        self.assertIsNone(stream_mode.stream_bitrate_kbit(line))
+
+    def test_other_lines_give_none(self):
+        self.assertIsNone(stream_mode.stream_bitrate_kbit("SynchronizeClientState(): setting cursor visible"))
+
+
+class TestOutputFrameHash(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.real_grim = stream_mode.GRIM
+
+    def tearDown(self):
+        stream_mode.GRIM = self.real_grim
+
+    def fake_grim(self, script):
+        path = os.path.join(self.tmp.name, "grim")
+        with open(path, "w") as f:
+            f.write("#!/bin/sh\n" + script)
+        os.chmod(path, 0o755)
+        stream_mode.GRIM = path
+
+    def test_same_picture_same_hash(self):
+        self.fake_grim("printf 'P6 same'\n")
+        a = stream_mode.output_frame_hash("steam")
+        self.assertIsNotNone(a)
+        self.assertEqual(a, stream_mode.output_frame_hash("steam"))
+
+    def test_failure_gives_none(self):
+        self.fake_grim("exit 1\n")
+        self.assertIsNone(stream_mode.output_frame_hash("steam"))
+
+    def test_missing_grim_gives_none(self):
+        stream_mode.GRIM = os.path.join(self.tmp.name, "no-such-grim")
+        self.assertIsNone(stream_mode.output_frame_hash("steam"))

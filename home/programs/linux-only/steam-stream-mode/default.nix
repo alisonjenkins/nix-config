@@ -17,6 +17,7 @@ let
     makeWrapper ${raw}/bin/stream-mode $out/bin/stream-mode \
       --set-default STREAM_MODE_NIRI ${lib.getExe cfg.niriPackage} \
       --set-default STREAM_MODE_XPROP ${lib.getExe pkgs.xprop} \
+      --set-default STREAM_MODE_GRIM ${lib.getExe pkgs.grim} \
       --set-default STREAM_MODE_PIPEWIRE ${lib.getExe' pkgs.pipewire "pipewire"} \
       --set-default STREAM_MODE_PACTL ${lib.getExe' pkgs.pulseaudio "pactl"} \
       --set-default STREAM_MODE_DEFAULT_AUDIO ${cfg.audio.default} \

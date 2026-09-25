@@ -35,6 +35,7 @@ made connect unusable as a trigger for the abandoned headless design.
 
 import array
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -46,6 +47,7 @@ import time
 
 NIRI = os.environ.get("STREAM_MODE_NIRI", "niri")
 XPROP = os.environ.get("STREAM_MODE_XPROP", "xprop")
+GRIM = os.environ.get("STREAM_MODE_GRIM", "grim")
 LOG = os.environ.get(
     "STREAM_MODE_LOG",
     os.path.expanduser("~/.local/share/Steam/logs/streaming_log.txt"),
@@ -208,6 +210,11 @@ GAME_CAPTURE_RE = re.compile(r">>> Capture method set to Game ")
 # nudge on a capture that was about to start broke it (13:01:40, 13:09:23).
 CLIENT_HEARTBEAT_RE = re.compile(r"CLIENT: SteamNetworkingSockets connection: ")
 CAPTURE_STALL_HEARTBEATS = 6
+# The video rate the client reports receiving. Play ran at 8 Mbit/s and up
+# for 1,474 of 1,637 reports on 2026-09-25; a capture frozen on one picture
+# sent about 2.7 Mbit/s (13:29:53), and so did a minute in a menu (18:07).
+BITRATE_RE = re.compile(r" IN: ([\d.]+)kbit ")
+FREEZE_SUSPECT_KBIT = 4000
 # How much of a log to scan on start for a session or connection still open.
 # Steam rotates these logs at about 1 MB; a 200 KB window lost a session's
 # start marker after roughly 110 minutes of the ~1.8 KB/min keep-alive lines.
@@ -318,6 +325,29 @@ def held_mouse_buttons(path):
     finally:
         os.close(fd)
     return decode_mouse_buttons(buf)
+
+
+# --- frozen capture --------------------------------------------------------
+
+
+def stream_bitrate_kbit(line):
+    """The video rate in a client report, or None for any other line."""
+    match = BITRATE_RE.search(line)
+    return float(match.group(1)) if match else None
+
+
+def output_frame_hash(output):
+    """A hash of what an output shows now, or None if it cannot be read."""
+    try:
+        result = subprocess.run(
+            [GRIM, "-o", output, "-t", "ppm", "-"],
+            capture_output=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or not result.stdout:
+        return None
+    return hashlib.sha256(result.stdout).hexdigest()
 
 
 # --- niri ------------------------------------------------------------------
@@ -1133,6 +1163,11 @@ class Session:
         self.capture_nudges = 0
         # A nudge has returned and the held-button check after it is due.
         self.held_button_check_due = False
+        # Game capture is sending frames, and the low-rate stretch it is in:
+        # reports so far, the last picture seen, and whether it was logged.
+        # See observe_capture_rate.
+        self.game_capturing = False
+        self.reset_low_rate()
         # The client named by "Streaming started to", which picks the audio
         # mode, and the sink process run for this stream. See route_audio.
         self.stream_client = None
@@ -1376,14 +1411,50 @@ class Session:
         """Steam moved the stream to the game's overlay; expect frames soon."""
         self.capture_waiting = True
         self.capture_heartbeats = 0
+        self.game_capturing = False
+        self.reset_low_rate()
 
     def game_capture_started(self):
         # A nudge in flight still returns at the next report: capture that
         # starts while focus is away would otherwise leave it there.
         self.capture_waiting = False
         self.capture_nudges = 0
+        self.game_capturing = True
+        self.reset_low_rate()
 
-    def client_heartbeat(self):
+    def reset_low_rate(self):
+        self.low_rate_reports = 0
+        self.low_rate_frame = None
+        self.freeze_logged = False
+
+    def observe_capture_rate(self, kbit):
+        """Log a stream that may be frozen: a low rate while the picture moves.
+
+        After a rebind, game capture once kept sending the same picture at
+        about 2.7 Mbit/s while HD2 drew normally (13:29:53), and nothing in
+        Steam's log marked it. A menu sends as little, but its picture is
+        still too, so the streamed output is read once per low report and a
+        change between two of them is what gets logged. Logged only: no
+        freeze has been recorded yet to set a nudge's thresholds from.
+        """
+        # No output while a lost one is rebuilt, and a picture from before
+        # and after the rebuild would differ for that reason alone.
+        if not self.game_capturing or self.output is None or kbit >= FREEZE_SUSPECT_KBIT:
+            self.reset_low_rate()
+            return
+        self.low_rate_reports += 1
+        frame = output_frame_hash(self.output)
+        if frame is None:
+            return
+        previous, self.low_rate_frame = self.low_rate_frame, frame
+        if previous is None or previous == frame or self.freeze_logged:
+            return
+        self.freeze_logged = True
+        log("stream-mode: stream at {:.0f} kbit/s for {} reports while {}'s "
+            "picture changes; game capture may be frozen (logged only)".format(
+                kbit, self.low_rate_reports, self.output))
+
+    def client_heartbeat(self, kbit=None):
         """The client's periodic report: the clock a stall is judged by.
 
         Steam binds game capture when the recorded window changes, and a
@@ -1394,6 +1465,8 @@ class Session:
         if self.held_button_check_due:
             self.held_button_check_due = False
             self.report_held_buttons()
+        if kbit is not None:
+            self.observe_capture_rate(kbit)
         if self.nudge_return_to is not None:
             # A report later, not straight away: returning at once, even on
             # Steam's "Changing record window" line, Steam missed the return
@@ -1566,6 +1639,8 @@ class Session:
         self.capture_waiting = False
         self.nudge_return_to = None
         self.held_button_check_due = False
+        self.game_capturing = False
+        self.reset_low_rate()
         self.stop_audio()
 
         # Off first, target withdrawn second -- the reverse of connect, and for
@@ -2204,6 +2279,8 @@ class Session:
         self.capture_waiting = False
         self.capture_nudges = 0
         self.nudge_return_to = None
+        self.game_capturing = False
+        self.reset_low_rate()
         return True
 
 
@@ -2509,7 +2586,7 @@ def handle_steam_line(session, line, remove_at):
         return remove_at
 
     if CLIENT_HEARTBEAT_RE.search(line):
-        session.client_heartbeat()
+        session.client_heartbeat(stream_bitrate_kbit(line))
         return remove_at
 
     if GAME_CAPTURE_RE.search(line):
