@@ -12,7 +12,9 @@ name: PR check
 # 1000+ derivations; both are far too slow for a per-PR gate across ~15
 # hosts. Host config breakage still gets caught on push via
 # build-and-cache.yaml — this only needs to catch a broken module/package/
-# devShell before a dependency bump merges unattended. See the script's own
+# devShell before a dependency bump merges unattended. Packages whose pkgs/
+# directory the PR changes are built, not just evaluated: a stale dependency
+# hash only shows at build time. See the script's own
 # header for the fuller history (IFD, disk exhaustion, cross-arch — all real
 # dead ends hit getting here).
 #
