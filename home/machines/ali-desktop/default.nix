@@ -18,17 +18,26 @@
   #   quality,  8k f16: 15.9 GiB / 499 MiB / 34 tok/s; 16k q8_0: 16.0 GiB / 516 MiB / 34 tok/s
   #   quality, 24k q8_0 fits with 54 MiB spare; 32k spills to system RAM
   #   (shared 1.2 GiB) and drops to 23 tok/s.
+  # vramMiB is each profile's own use, rounded up to 100 MiB: fast is its
+  # total less the ~1.07 GiB the desktop uses, quality its measured 14.8 GiB
+  # (its total above is the whole 15.9 GiB card, so it can't be subtracted
+  # from). The switch fit check's estimate put quality at 16.7 GiB and
+  # refused it on an idle desktop. The check adds no margin to a measured
+  # value, and an idle desktop leaves about 15,200 MiB free, so quality only
+  # loads with nothing else on the GPU.
   modules.delegateToLocal.profiles = let
     q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
   in {
     fast = {
       model = pkgs.llama-models.qwen3-8b-q6-k.modelFile;
       launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
+      vramMiB = 9000;
       description = "Qwen3-8B Q6_K, ~6.3 GiB: extraction and mechanical edits";
     };
     quality = {
       model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;
       launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ] ++ q8Cache;
+      vramMiB = 15200;
       # Thinking mode stays on, so replies are long: 34 tok/s on a free
       # GPU (2026-09-25), but agent tasks took 79 to 264 s. The 3.7 tok/s
       # measured 2026-09-22 was probably with the GPU shared.
