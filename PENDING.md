@@ -248,6 +248,13 @@ freely. These are what the live test surfaced.
    09:01, when a niri config reload turned the output off (now reasserted on
    `ConfigLoaded`, 484a897e). Confirmed it does not recover on its own: the
    desktop capture stayed `Black Frame` while game capture worked.
+   New lead 2026-09-25: Steam's desktop capture is `Desktop PipeWire RGB
+   DMABUF`, and it needs the portal's consent. An `xdg-desktop-portal-gnome`
+   "Steam wants to share your screen" dialog had been sitting unanswered on
+   the streamed output; once shared (with "Remember this selection") and
+   Steam restarted, `Desktop PipeWire` appeared in the log for the first time.
+   Every earlier `Desktop Black Frame` may have been that unanswered request.
+   Watch whether it recurs after the output goes off.
 11. **X sees virtual output mode changes one change late.** Measured
    2026-09-24: after `niri msg output steam mode 1726x1080@60` then
    `1728x1080@60`, `xrandr` on `:0` reported 1728 then 1726. HD2 read the
@@ -289,12 +296,23 @@ freely. These are what the live test surfaced.
    nudge, the right window being recorded, and fullscreen on or off (FH6
    fullscreen adds an untitled black second window) changed nothing. Ruled
    out: HDR (FH6 detects none), gamescope, lsfg-vk (inactive), MangoHud and
-   obs-vkcapture (HD2 streams with both), stale `GAMESCOPE_*` atoms, and DX12
-   itself: HD2 is DX12 through vkd3d-proton too. The difference left is the
-   Proton build: HD2 is set to Proton-CachyOS Latest, FH6 runs the default
-   DW-Proton Latest (a different `d3d12core.dll`, 5894144 vs 5885952 bytes).
-   Next: FH6 on Proton-CachyOS Latest; if capture starts, pin that Proton
-   per game. Subnautica (Unity, DX11, DW-Proton) streamed fine.
+   obs-vkcapture (a run with neither still failed), stale `GAMESCOPE_*`
+   atoms, the Proton build (DW-Proton, Proton-CachyOS and Proton Experimental
+   all failed), and a 10-bit swapchain (the render window is depth 24).
+   The difference, found 2026-09-25 by comparing X trees: HD2 is DX11 through
+   DXVK and presents straight into its top-level window. FH6 (DX12, vkd3d-
+   proton) presents into a Win32 child window, which Wine gives its own X
+   child surface from another client connection, and the overlay never
+   offers Steam a game capture for it. Setting `STEAM_GAME` on the child and
+   pointing `_NET_ACTIVE_WINDOW` at it changed nothing. Wine renders child-
+   window Vulkan surfaces off-screen and composites them in (ValveSoftware/
+   wine#91), with no switch to turn that off.
+   Playable meanwhile, without gamescope: in desktop mode through Steam's
+   PipeWire capture (see item 9), with a resolution rule rewriting FH6's
+   `UserConfigSelections` to the client's size (it had kept 1024x768 and
+   drew a corner of the output). Relative mouse is lost, which a controller
+   does not need. Untested: GE-Proton10-28 (Wine 10), and the same stream
+   from a non-niri session, to separate Wine from xwayland-satellite.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
