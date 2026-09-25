@@ -33,6 +33,8 @@ safe here: creating an output destroys nothing, unlike the Steam restart that
 made connect unusable as a trigger for the abandoned headless design.
 """
 
+import array
+import fcntl
 import json
 import os
 import re
@@ -271,6 +273,51 @@ def signal_process(pid, sig):
         log("stream-mode: could not signal {}: {}".format(pid, exc))
         return False
     return True
+
+
+# --- held mouse buttons ----------------------------------------------------
+
+# extest turns Steam Input's XTEST mouse into this uinput device. Only Steam's
+# process can write to it, so a button it leaves down stays down.
+EXTEST_DEVICE_NAME = "extest fake device"
+MOUSE_BUTTONS = {0x110: "BTN_LEFT", 0x111: "BTN_RIGHT", 0x112: "BTN_MIDDLE"}
+
+
+def eviocgkey(n):
+    """EVIOCGKEY(n) = _IOR('E', 0x18, n): the current state of every key."""
+    return (2 << 30) | (n << 16) | (ord("E") << 8) | 0x18
+
+
+def extest_event_devices(sys_input="/sys/class/input"):
+    """The /dev/input event nodes extest has created."""
+    devices = []
+    for entry in os.listdir(sys_input):
+        if not entry.startswith("event"):
+            continue
+        try:
+            with open(os.path.join(sys_input, entry, "device", "name")) as f:
+                if f.read().strip() == EXTEST_DEVICE_NAME:
+                    devices.append("/dev/input/" + entry)
+        except OSError:
+            continue
+    return sorted(devices)
+
+
+def decode_mouse_buttons(buf):
+    """Names of the mouse buttons set in an EVIOCGKEY buffer."""
+    return sorted(name for code, name in MOUSE_BUTTONS.items()
+                  if buf[code // 8] >> (code % 8) & 1)
+
+
+def held_mouse_buttons(path):
+    """The mouse buttons the kernel has down on one input device."""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        buf = array.array("B", [0] * 96)
+        fcntl.ioctl(fd, eviocgkey(len(buf)), buf, True)
+    finally:
+        os.close(fd)
+    return decode_mouse_buttons(buf)
 
 
 # --- niri ------------------------------------------------------------------
@@ -1084,6 +1131,8 @@ class Session:
         self.capture_heartbeats = 0
         self.nudge_return_to = None
         self.capture_nudges = 0
+        # A nudge has returned and the held-button check after it is due.
+        self.held_button_check_due = False
         # The client named by "Streaming started to", which picks the audio
         # mode, and the sink process run for this stream. See route_audio.
         self.stream_client = None
@@ -1342,6 +1391,9 @@ class Session:
         moving focus off the game. Bounded, because a capture that never
         starts should not have focus bounced forever.
         """
+        if self.held_button_check_due:
+            self.held_button_check_due = False
+            self.report_held_buttons()
         if self.nudge_return_to is not None:
             # A report later, not straight away: returning at once, even on
             # Steam's "Changing record window" line, Steam missed the return
@@ -1403,7 +1455,29 @@ class Session:
     def finish_nudge(self):
         window_id, self.nudge_return_to = self.nudge_return_to, None
         focus_window(window_id)
+        self.held_button_check_due = True
         return True
+
+    def report_held_buttons(self):
+        """Log a mouse button left down by a nudge's layout swap.
+
+        Focus off the game puts Steam Input on the Desktop layout, where R2
+        and the right trackpad click are the left mouse button. Held across
+        the swap back, the press reached extest's device and the release
+        never did: BTN_LEFT stayed down and A stopped selecting in HD2
+        (13:21). Checked a report after the return, once the game layout is
+        back and nothing should be holding a mouse button.
+        """
+        for path in extest_event_devices():
+            try:
+                held = held_mouse_buttons(path)
+            except OSError as exc:
+                log("stream-mode: could not read held buttons on {}: {}".format(path, exc))
+                continue
+            if held:
+                log("stream-mode: {} still holds {} after a nudge; if the game "
+                    "ignores a button, switch the controller to the Desktop layout "
+                    "and press R2 once".format(path, ", ".join(held)))
 
     def check_gamepad_info(self):
         """Re-announce Steam's listed virtual gamepads when the list changes.
@@ -1491,6 +1565,7 @@ class Session:
         self.streaming = False
         self.capture_waiting = False
         self.nudge_return_to = None
+        self.held_button_check_due = False
         self.stop_audio()
 
         # Off first, target withdrawn second -- the reverse of connect, and for

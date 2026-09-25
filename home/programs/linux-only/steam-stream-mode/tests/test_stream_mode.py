@@ -259,12 +259,24 @@ class TestStalledGameCapture(unittest.TestCase):
 
     def setUp(self):
         self._real = {k: getattr(stream_mode, k)
-                      for k in ("focus_window", "focus_workspace", "niri_workspaces")}
+                      for k in ("focus_window", "focus_workspace", "niri_workspaces",
+                                "extest_event_devices", "held_mouse_buttons", "log")}
         self.focused = []
         self.workspaces = []
+        self.lines = []
+        self.held = {}
         stream_mode.focus_window = lambda wid: self.focused.append(wid) or True
         stream_mode.focus_workspace = lambda out, ref: self.workspaces.append((out, ref)) or True
         stream_mode.niri_workspaces = lambda: []
+        stream_mode.extest_event_devices = lambda: sorted(self.held)
+        stream_mode.held_mouse_buttons = self.held_buttons
+        stream_mode.log = self.lines.append
+
+    def held_buttons(self, path):
+        held = self.held[path]
+        if isinstance(held, Exception):
+            raise held
+        return held
 
     def tearDown(self):
         for k, v in self._real.items():
@@ -315,6 +327,42 @@ class TestStalledGameCapture(unittest.TestCase):
         self.assertEqual(self.focused, [5])
         self.assertTrue(s.client_heartbeat())
         self.assertEqual(self.focused, [5, 227])
+
+    def nudge_and_return(self, s):
+        """Stall, nudge, return, and the report after the return."""
+        self.stall(s)
+        s.client_heartbeat()
+        s.client_heartbeat()
+        s.client_heartbeat()
+
+    def test_a_button_left_held_by_the_layout_swap_is_logged(self):
+        """R2 held across the swap left BTN_LEFT down on extest's device, and
+        A stopped selecting in HD2 (13:21)."""
+        self.held = {"/dev/input/event258": ["BTN_LEFT"]}
+        self.nudge_and_return(self.session())
+        held_lines = [line for line in self.lines if "still holds" in line]
+        self.assertEqual(len(held_lines), 1)
+        self.assertIn("/dev/input/event258", held_lines[0])
+        self.assertIn("BTN_LEFT", held_lines[0])
+
+    def test_nothing_is_logged_when_no_button_is_held(self):
+        self.held = {"/dev/input/event258": []}
+        self.nudge_and_return(self.session())
+        self.assertFalse([line for line in self.lines if "still holds" in line])
+
+    def test_buttons_are_checked_once_per_nudge(self):
+        self.held = {"/dev/input/event258": ["BTN_LEFT"]}
+        s = self.session()
+        self.nudge_and_return(s)
+        s.client_heartbeat()
+        s.client_heartbeat()
+        self.assertEqual(len([line for line in self.lines if "still holds" in line]), 1)
+
+    def test_an_unreadable_device_is_logged_not_raised(self):
+        self.held = {"/dev/input/event258": PermissionError(13, "Permission denied")}
+        self.nudge_and_return(self.session())
+        self.assertTrue([line for line in self.lines
+                         if "could not read" in line and "event258" in line])
 
     def test_capture_starting_while_focus_is_away_still_returns(self):
         """Left away, Steam records no window and the controller stays on
@@ -2846,3 +2894,38 @@ class TestShortOfOutput(unittest.TestCase):
         s.warn_if_short_of_output(1, [1248, 768], (1280, 800))
         s.warn_if_short_of_output(1, [1280, 800], (1280, 800))
         self.assertTrue(s.warn_if_short_of_output(1, [1248, 768], (1280, 800)))
+
+
+class TestExtestEventDevices(unittest.TestCase):
+    def test_finds_only_event_nodes_named_extest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for entry, name in {
+                "event3": "extest fake device",
+                "event7": "Logitech USB Receiver",
+                "event9": "extest fake device\n",
+                "mouse0": "extest fake device",
+            }.items():
+                path = os.path.join(tmp, entry, "device", "name")
+                os.makedirs(os.path.dirname(path))
+                with open(path, "w") as f:
+                    f.write(name)
+            os.makedirs(os.path.join(tmp, "event5"))
+            self.assertEqual(stream_mode.extest_event_devices(tmp),
+                             ["/dev/input/event3", "/dev/input/event9"])
+
+
+class TestDecodeMouseButtons(unittest.TestCase):
+    """Bit i of EVIOCGKEY's buffer is key code i; BTN_LEFT is 0x110."""
+
+    def test_nothing_held(self):
+        self.assertEqual(stream_mode.decode_mouse_buttons(bytearray(96)), [])
+
+    def test_left_held(self):
+        buf = bytearray(96)
+        buf[34] = 1
+        self.assertEqual(stream_mode.decode_mouse_buttons(buf), ["BTN_LEFT"])
+
+    def test_left_and_right_held(self):
+        buf = bytearray(96)
+        buf[34] = 3
+        self.assertEqual(stream_mode.decode_mouse_buttons(buf), ["BTN_LEFT", "BTN_RIGHT"])
