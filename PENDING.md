@@ -348,8 +348,21 @@ freely. These are what the live test surfaced.
    PipeWire capture (see item 9), with a resolution rule rewriting FH6's
    `UserConfigSelections` to the client's size (it had kept 1024x768 and
    drew a corner of the output). Relative mouse is lost, which a controller
-   does not need. GE-Proton10-28 (Wine 10) captured no better. Untested: the
-   same stream from a non-niri session, to separate Wine from
+   does not need. GE-Proton10-28 (Wine 10) captured no better.
+   **GE-Proton11-7 on both Wine drivers, 2026-09-26: no game capture.**
+   11-7 reworked child-window rendering (85 patches), but only in Wine's
+   Wayland driver. On the X11 path FH6 streamed over desktop capture as
+   before. With `PROTON_ENABLE_WAYLAND=1` (set through the runner's
+   per-game `env`, branch `experiment/fh6-wine-wayland`, reverted) FH6
+   opened a native Wayland window, app_id `forzahorizon6.exe`, which
+   stream-mode still staged by pid; Steam still never switched to game
+   capture, and the picture stopped at the Microsoft EULA screen while
+   FH6 used 113% CPU. 11-7 also starts SteamVR (250820) at every FH6
+   launch. The first pick of the tool never reached the host's Steam
+   (probably made in the client's; not confirmed), and that run used
+   10-28: check `compat_log.txt` for a new `Mapping AppID 2483190` line
+   before trusting a run. Untested: the same
+   stream from a non-niri session, to separate Wine from
    xwayland-satellite.
    FH6 dropping to a 640x400 window at the intro-to-menu change (seen on
    Proton Experimental and GE-Proton10-28) went away once focus was fixed.
