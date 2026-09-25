@@ -23,7 +23,7 @@ buildNpmPackage {
 
   inherit src;
 
-  npmDepsHash = "sha256-UTCPIpp4PyjQpDH/bjsEpmkFXxV54xU0wMYm4+sqPfg=";
+  npmDepsHash = "sha256-APFfflS3DfOU58536VoGgFsr5xqATJuLpve/JC2X6x4=";
 
   # dist/ is pre-built in the npm tarball; skip the TypeScript build step
   dontNpmBuild = true;
