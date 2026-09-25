@@ -18,6 +18,12 @@ in
   perSystem = { system, ... }: {
     packages = {
       positional-audio-bench = (pkgsFor system).positional-audio-bench;
+      # Renovate bumps these packages' lockfiles, but cannot update the Nix
+      # hash of their dependencies, so a bump can break the build while still
+      # evaluating. Exposed here so the PR check builds them when they change.
+      cavemem = (pkgsFor system).cavemem;
+      sift = (pkgsFor system).sift;
+      containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
     } //
       # camoufox-browser is a from-source patched-Firefox build (heavy); only
       # exposed/buildable on x86_64-linux, where CI compiles + caches it.
