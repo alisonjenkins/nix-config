@@ -1427,7 +1427,9 @@ in
         unstable.devenv
         unstable.mission-center
         unstable.nvtopPackages.amd
-        unstable.opencode
+        # From master until unstable passes 1.18.30, which crashes on every
+        # prompt (anomalyco/opencode#48965). Back to unstable after that.
+        master.opencode
         unstable.teamtype
         unzip
         # wallpapers # TODO: re-enable after wallpapers relocated from LFS
