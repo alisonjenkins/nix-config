@@ -45,6 +45,9 @@
     defaultWidth = config.custom.niri.virtualOutputs.steam.width;
     defaultHeight = config.custom.niri.virtualOutputs.steam.height;
     refresh = config.custom.niri.virtualOutputs.steam.refresh;
+    # The MacBook streams to headphones; everything else gets a plain
+    # downmix until its speakers or headphones are known.
+    audio.clients."ali-mba" = "binaural";
   };
 
   home.packages = [
