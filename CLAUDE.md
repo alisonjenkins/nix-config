@@ -58,6 +58,10 @@ just ami-upload <hostname> [region] [bucket]
 just ami <hostname> [region] [bucket]
 ```
 
+### Commit hooks
+
+`prek install --allow-missing-config` once per clone (prek is in the dev shell); the flag keeps commits working on branches older than the config. Hooks live in `.pre-commit-config.yaml`; `prek run --all-files` runs them by hand. The flake8 hook matches `writePython3Bin`'s build-time flags: plain `flake8` ignores W503, the build does not, and that has broken the `ali-desktop` build more than once.
+
 ### Common NixOS Operations
 
 ```bash

@@ -1,0 +1,21 @@
+# Hooks for prek (https://github.com/j178/prek), a pre-commit drop-in.
+# Install once per clone: `prek install` (the dev shell provides prek).
+# Tools come from this flake's pinned nixpkgs, so the hooks match the build.
+repos:
+  - repo: local
+    hooks:
+      # writePython3Bin runs flake8 at build time with `--ignore` set to its
+      # flakeIgnore list, which replaces flake8's default ignores (W503,
+      # W504, E121...). A plain `flake8` run passes code the build rejects,
+      # so keep this list equal to each script's flakeIgnore.
+      - id: flake8-python-writers
+        name: flake8 (as writePython3Bin runs it)
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.flake8 --command flake8 --show-source --ignore=E501
+        language: system
+        files: ^home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)\.py$
+      - id: stream-mode-tests
+        name: stream-mode tests
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s home/programs/linux-only/steam-stream-mode/tests
+        language: system
+        pass_filenames: false
+        files: ^home/programs/linux-only/steam-stream-mode/
