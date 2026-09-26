@@ -14,6 +14,7 @@
         packages = (with inputs.nixpkgs.legacyPackages.${system}; [
           age
           just
+          prek
           pv
           sops
           ssh-to-age
