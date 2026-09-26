@@ -11,6 +11,10 @@ setup() {
   echo "### verdict" >"$FAKE_GH_FIXTURES/review-bodies.txt"
 }
 
+suppressed_section() {
+  sed -n '/^-- Suppressed/,/^-- Latest review verdict/p' <<<"$output"
+}
+
 @test "no args prints usage and exits 1" {
   run "$script"
   [ "$status" -eq 1 ]
@@ -102,7 +106,9 @@ EOF
 EOF
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
-  [ "$(grep -c 'the actual finding text here' <<<"$output")" -eq 1 ]
+  # The verdict section reprints the raw body, so count within the
+  # suppressed-findings section only.
+  [ "$(suppressed_section | grep -c 'the actual finding text here')" -eq 1 ]
 }
 
 @test "keeps distinct findings at the same location separate" {
@@ -129,7 +135,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"src/first.sh:1"* ]]
   [[ "$output" == *"bullet for first"* ]]
-  [[ "$output" != *"src/second.sh:2"* ]]
+  [[ "$(suppressed_section)" != *"src/second.sh:2"* ]]
 }
 
 @test "ignores a **file:line** header with no following bullet line" {
@@ -186,11 +192,12 @@ EOF
   [ "$count" = "1" ]
 }
 
-@test "shows the precomputed verdict line" {
+@test "shows the latest review's header, then its verdict body" {
   run "$script" 319 owner/repo
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[2026-01-01T00:00:00Z] someone on abcdef12: ### verdict"* ]]
+  [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
+
 
 @test "reports no review yet instead of crashing on a PR with no reviews" {
   : >"$FAKE_GH_FIXTURES/review-bodies.txt"

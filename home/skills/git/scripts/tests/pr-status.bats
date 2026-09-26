@@ -171,8 +171,9 @@ EOF
 @test "shows the latest review with a summary body as the verdict" {
   run "$script" 1 owner/repo
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[2026-01-01T00:00:00Z] someone on abcdef12: ### verdict"* ]]
+  [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
+
 
 @test "reports no review yet when latestReviews has no summary body" {
   cat >"$FAKE_GH_FIXTURES/pr-status.json" <<'EOF'
