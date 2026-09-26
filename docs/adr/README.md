@@ -33,6 +33,7 @@ something is wrong.
 | [0013](0013-disarm-on-client-disconnect.md) | Disarm on client disconnect, and never leave niri without an output | Accepted |
 | [0014](0014-reannounce-steam-virtual-gamepads.md) | Re-announce Steam's virtual gamepads when Steam lists them | Accepted |
 | [0015](0015-positioned-sink-for-stream-audio.md) | Stream audio through a positioned sink, chosen per client | Accepted |
+| [0016](0016-performance-power-profile-during-vr.md) | Hold the performance power profile for a VR session's lifetime, event-driven | Accepted, causation unconfirmed |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
