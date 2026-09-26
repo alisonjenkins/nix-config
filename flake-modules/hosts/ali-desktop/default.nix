@@ -952,12 +952,14 @@ in {
 
             while true; do
               shm="$(find_shm)" || {
-                ${pkgs.inotify-tools}/bin/inotifywait -qq -e create /dev/shm
+                ${pkgs.inotify-tools}/bin/inotifywait -qq -e create /dev/shm || true
                 continue
               }
-              ${pkgs.power-profiles-daemon}/bin/powerprofilesctl launch \
+              if ! ${pkgs.power-profiles-daemon}/bin/powerprofilesctl launch \
                 -p performance -r "vrserver holding $shm" -- \
-                ${pkgs.inotify-tools}/bin/inotifywait -qq -e delete_self "$shm" || true
+                ${pkgs.inotify-tools}/bin/inotifywait -qq -e delete_self "$shm"; then
+                sleep 1
+              fi
             done
           '';
         };
