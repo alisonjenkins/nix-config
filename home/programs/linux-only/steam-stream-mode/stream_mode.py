@@ -215,6 +215,14 @@ CAPTURE_STALL_HEARTBEATS = 6
 # sent about 2.7 Mbit/s (13:29:53), and so did a minute in a menu (18:07).
 BITRATE_RE = re.compile(r" IN: ([\d.]+)kbit ")
 FREEZE_SUSPECT_KBIT = 4000
+# Every alarm on 2026-09-26 was false. A new capture ramps up from about
+# 300 kbit/s (fired 6 s after the start, 08:23:38), so the first reports of
+# one are skipped; so are those after the client reports a blackout (9 s of
+# nothing at 08:49:36); and quiet scenes dipped under the threshold for a
+# report or two at a time, where the one freeze seen lasted two minutes.
+FREEZE_WARMUP_REPORTS = 3
+FREEZE_SUSPECT_REPORTS = 4
+CLIENT_NETWORK_TROUBLE_RE = re.compile(r"CLIENT: .*consecutive end-to-end timeouts")
 # How much of a log to scan on start for a session or connection still open.
 # Steam rotates these logs at about 1 MB; a 200 KB window lost a session's
 # start marker after roughly 110 minutes of the ~1.8 KB/min keep-alive lines.
@@ -1163,10 +1171,12 @@ class Session:
         self.capture_nudges = 0
         # A nudge has returned and the held-button check after it is due.
         self.held_button_check_due = False
-        # Game capture is sending frames, and the low-rate stretch it is in:
-        # reports so far, the last picture seen, and whether it was logged.
-        # See observe_capture_rate.
+        # Game capture is sending frames, the reports still to skip, and the
+        # low-rate stretch it is in: reports so far, the last picture seen,
+        # whether it moved, and whether it was logged. See
+        # observe_capture_rate.
         self.game_capturing = False
+        self.freeze_quiet_reports = 0
         self.reset_low_rate()
         # The client named by "Streaming started to", which picks the audio
         # mode, and the sink process run for this stream. See route_audio.
@@ -1421,10 +1431,17 @@ class Session:
         self.capture_nudges = 0
         self.game_capturing = True
         self.reset_low_rate()
+        self.freeze_quiet_reports = FREEZE_WARMUP_REPORTS
+
+    def client_network_trouble(self):
+        """The client heard nothing for a while: its rate says nothing then."""
+        self.reset_low_rate()
+        self.freeze_quiet_reports = FREEZE_WARMUP_REPORTS
 
     def reset_low_rate(self):
         self.low_rate_reports = 0
         self.low_rate_frame = None
+        self.low_rate_moved = False
         self.freeze_logged = False
 
     def observe_capture_rate(self, kbit):
@@ -1434,9 +1451,14 @@ class Session:
         about 2.7 Mbit/s while HD2 drew normally (13:29:53), and nothing in
         Steam's log marked it. A menu sends as little, but its picture is
         still too, so the streamed output is read once per low report and a
-        change between two of them is what gets logged. Logged only: no
-        freeze has been recorded yet to set a nudge's thresholds from.
+        change between two of them, over a sustained low stretch, is what
+        gets logged. Logged only: no freeze has been recorded yet to set a
+        nudge's thresholds from.
         """
+        if self.freeze_quiet_reports > 0:
+            self.freeze_quiet_reports -= 1
+            self.reset_low_rate()
+            return
         # No output while a lost one is rebuilt, and a picture from before
         # and after the rebuild would differ for that reason alone.
         if not self.game_capturing or self.output is None or kbit >= FREEZE_SUSPECT_KBIT:
@@ -1444,10 +1466,12 @@ class Session:
             return
         self.low_rate_reports += 1
         frame = output_frame_hash(self.output)
-        if frame is None:
-            return
-        previous, self.low_rate_frame = self.low_rate_frame, frame
-        if previous is None or previous == frame or self.freeze_logged:
+        if frame is not None:
+            previous, self.low_rate_frame = self.low_rate_frame, frame
+            if previous is not None and previous != frame:
+                self.low_rate_moved = True
+        if (self.freeze_logged or not self.low_rate_moved
+                or self.low_rate_reports < FREEZE_SUSPECT_REPORTS):
             return
         self.freeze_logged = True
         log("stream-mode: stream at {:.0f} kbit/s for {} reports while {}'s "
@@ -2587,6 +2611,10 @@ def handle_steam_line(session, line, remove_at):
 
     if CLIENT_HEARTBEAT_RE.search(line):
         session.client_heartbeat(stream_bitrate_kbit(line))
+        return remove_at
+
+    if CLIENT_NETWORK_TROUBLE_RE.search(line):
+        session.client_network_trouble()
         return remove_at
 
     if GAME_CAPTURE_RE.search(line):

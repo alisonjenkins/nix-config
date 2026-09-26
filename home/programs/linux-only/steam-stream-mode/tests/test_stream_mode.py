@@ -497,23 +497,25 @@ class TestFrozenCaptureObserved(unittest.TestCase):
         s.streaming = True
         s.game_capture_requested()
         s.game_capture_started()
+        for _ in range(3):
+            s.client_heartbeat(16000.0)
         return s
 
     def suspected(self):
         return [line for line in self.lines if "may be frozen" in line]
 
     def test_a_low_rate_while_the_picture_changes_is_logged(self):
-        self.hashes = ["a", "b"]
+        self.hashes = ["a", "b", "c", "d"]
         s = self.capturing()
-        s.client_heartbeat(2700.0)
-        s.client_heartbeat(2650.0)
+        for kbit in (2700.0, 2700.0, 2700.0, 2650.0):
+            s.client_heartbeat(kbit)
         self.assertEqual(len(self.suspected()), 1)
         self.assertIn("2650", self.suspected()[0])
 
     def test_a_still_picture_at_a_low_rate_is_a_menu_not_a_freeze(self):
-        self.hashes = ["a", "a", "a"]
+        self.hashes = ["a", "a", "a", "a"]
         s = self.capturing()
-        for _ in range(3):
+        for _ in range(4):
             s.client_heartbeat(2700.0)
         self.assertEqual(self.suspected(), [])
 
@@ -532,20 +534,20 @@ class TestFrozenCaptureObserved(unittest.TestCase):
         self.assertEqual(self.grabs, 0)
 
     def test_logged_once_per_low_stretch(self):
-        self.hashes = ["a", "b", "c", "d", "e", "f"]
+        self.hashes = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
         s = self.capturing()
-        for _ in range(3):
+        for _ in range(5):
             s.client_heartbeat(2700.0)
         self.assertEqual(len(self.suspected()), 1)
         s.client_heartbeat(16000.0)
-        s.client_heartbeat(2700.0)
-        s.client_heartbeat(2700.0)
+        for _ in range(4):
+            s.client_heartbeat(2700.0)
         self.assertEqual(len(self.suspected()), 2)
 
     def test_a_failed_capture_is_not_a_change(self):
-        self.hashes = ["a", None, "a"]
+        self.hashes = ["a", None, "a", "a"]
         s = self.capturing()
-        for _ in range(3):
+        for _ in range(4):
             s.client_heartbeat(2700.0)
         self.assertEqual(self.suspected(), [])
 
@@ -560,12 +562,58 @@ class TestFrozenCaptureObserved(unittest.TestCase):
         self.assertEqual(self.grabs, 0)
 
     def test_it_never_moves_focus(self):
-        self.hashes = ["a", "b", "c"]
+        self.hashes = ["a", "b", "c", "d", "e"]
         s = self.capturing()
         s.last_windows = [{"id": 227, "app_id": "steam_app_553850", "workspace_id": 9}]
-        for _ in range(3):
+        for _ in range(5):
             s.client_heartbeat(2700.0)
         self.assertEqual(self.focused, [])
+
+    def test_the_first_reports_of_a_new_capture_are_ignored(self):
+        """A new capture ramps up from about 300 kbit/s: the first false
+        alarm came 6 s after game capture started (08:23:38)."""
+        self.hashes = ["a", "b", "c", "d"]
+        s = stream_mode.Session(stage_timeout=0)
+        s.output = stream_mode.OUTPUT_NAME
+        s.streaming = True
+        s.game_capture_requested()
+        s.game_capture_started()
+        for _ in range(3):
+            s.client_heartbeat(300.0)
+        self.assertEqual(self.grabs, 0)
+        self.assertEqual(self.suspected(), [])
+
+    def test_a_short_low_stretch_is_not_logged(self):
+        self.hashes = ["a", "b", "c", "d"]
+        s = self.capturing()
+        for _ in range(3):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(self.suspected(), [])
+        s.client_heartbeat(2700.0)
+        self.assertEqual(len(self.suspected()), 1)
+
+    def test_a_network_blackout_is_not_a_freeze(self):
+        """The client heard nothing for 9 s (08:49:36) and the rate fell to
+        nothing while the game drew on."""
+        self.hashes = ["a", "b", "c", "d", "e", "f", "g"]
+        s = self.capturing()
+        s.client_network_trouble()
+        for _ in range(3):
+            s.client_heartbeat(0.0)
+        self.assertEqual(self.grabs, 0)
+        self.assertEqual(self.suspected(), [])
+
+    def test_a_network_blackout_does_not_silence_it_afterwards(self):
+        """Blackouts happen on this connection; the detector has to come
+        back once the reports after one are past."""
+        self.hashes = ["a", "b", "c", "d"]
+        s = self.capturing()
+        s.client_network_trouble()
+        for _ in range(3):
+            s.client_heartbeat(0.0)
+        for _ in range(4):
+            s.client_heartbeat(2700.0)
+        self.assertEqual(len(self.suspected()), 1)
 
 
 class TestVirtualGamepads(unittest.TestCase):
@@ -1747,6 +1795,9 @@ class TestEventDispatch(unittest.TestCase):
         def client_heartbeat(self, kbit=None):
             self.calls.append(("client_heartbeat", kbit))
 
+        def client_network_trouble(self):
+            self.calls.append(("client_network_trouble",))
+
     def setUp(self):
         self.s = self.FakeSession()
 
@@ -1905,6 +1956,16 @@ class TestEventDispatch(unittest.TestCase):
             None,
         )
         self.assertEqual(self.s.calls, [("client_heartbeat", 15748.3)])
+
+    def test_a_client_connection_timeout_is_passed_on(self):
+        stream_mode.handle_steam_line(
+            self.s,
+            "[2026-09-26 08:49:36][39810.641269] CLIENT: [SteamNetworkingSockets] "
+            "[#3341161007 P2P SDR steamid:76561197991732359 vport 0] SDR: 3 consecutive "
+            "end-to-end timeouts\n",
+            None,
+        )
+        self.assertEqual(self.s.calls, [("client_network_trouble",)])
 
     def test_an_unrelated_line_changes_nothing(self):
         remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)
