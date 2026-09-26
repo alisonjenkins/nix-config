@@ -174,6 +174,21 @@ EOF
   [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
 
+@test "verdict skips a bot's marker comment and overview heading, and stops at its metadata" {
+  body=$'<!-- ccr-overview-v2 -->\n## Pull request overview\n\n### Needs a closer look\nThe explanation paragraph.\n\n**Review effort** 2/5\n<details>trailing metadata</details>'
+  jq --arg body "$body" '.data.repository.pullRequest.latestReviews.nodes[0].body = $body' \
+    "$FAKE_GH_FIXTURES/pr-status.json" >"$FAKE_GH_FIXTURES/pr-status.json.new"
+  mv "$FAKE_GH_FIXTURES/pr-status.json.new" "$FAKE_GH_FIXTURES/pr-status.json"
+
+  run "$script" 1 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *$'abcdef12:\n### Needs a closer look\nThe explanation paragraph.'* ]]
+  [[ "$output" != *"ccr-overview"* ]]
+  [[ "$output" != *"Pull request overview"* ]]
+  [[ "$output" != *"Review effort"* ]]
+  [[ "$output" != *"trailing metadata"* ]]
+}
+
 
 @test "reports no review yet when latestReviews has no summary body" {
   cat >"$FAKE_GH_FIXTURES/pr-status.json" <<'EOF'

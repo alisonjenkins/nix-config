@@ -198,6 +198,26 @@ EOF
   [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
 
+@test "verdict skips a bot's marker comment and overview heading, and stops at its metadata" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF'
+<!-- ccr-overview-v2 -->
+## Pull request overview
+
+### Needs a closer look
+The explanation paragraph.
+
+**Review effort** 2/5
+<details>trailing metadata</details>
+EOF
+  run "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *$'abcdef12:\n### Needs a closer look\nThe explanation paragraph.'* ]]
+  [[ "$output" != *"ccr-overview"* ]]
+  [[ "$output" != *"Pull request overview"* ]]
+  [[ "$output" != *"Review effort"* ]]
+  [[ "$output" != *"trailing metadata"* ]]
+}
+
 
 @test "reports no review yet instead of crashing on a PR with no reviews" {
   : >"$FAKE_GH_FIXTURES/review-bodies.txt"
