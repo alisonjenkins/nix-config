@@ -362,6 +362,13 @@ let
   };
 in
 {
+  imports = [ inputs.claude-monitor.homeManagerModules.default ];
+
+  # Live dashboard of every Claude Code session in tmux (working / needs
+  # permission / your turn). The module appends its `claude-monitor hook`
+  # entries to programs.claude-code.settings.hooks alongside the ones below.
+  programs.claude-monitor.enable = true;
+
   # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
   # would also drop the broken token-savior-bench, the server bin, and the
   # stats-less `ts` onto PATH.
