@@ -8,6 +8,10 @@
 # poll-pr-review.sh instead -- this script is for the merge-gate decision.
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/review-body.sh
+source "$script_dir/lib/review-body.sh"
+
 usage() {
   echo "usage: $0 <pr-number> [owner/repo]" >&2
   echo "  owner/repo defaults to the current repo (gh repo view)" >&2
@@ -130,40 +134,11 @@ echo
 
 # --- Suppressed / "previously missed" findings ---
 echo "-- Suppressed/previously-missed findings across all reviews (dedup) --"
-suppressed="$(jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.body != "") | .body' <<<"$scalar_json" \
-  | awk '
-    /^\*\*[^*]+:[0-9]+\*\*$/ {
-      loc = substr($0, 3, length($0) - 4)
-      got = (getline nextline)
-      if (got > 0 && nextline ~ /^\* /) {
-        text = substr(nextline, 3)
-        key = loc "\x1f" text
-        if (!(key in seen)) {
-          seen[key] = 1
-          print loc "\t" text
-        }
-      }
-      next
-    }
-  ' | sort -u)"
-if [[ -z "$suppressed" ]]; then
-  echo "(none)"
-else
-  while IFS=$'\t' read -r loc text; do
-    echo "$loc"
-    echo "  $text"
-  done <<<"$suppressed"
-fi
+jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.body != "") | .body' <<<"$scalar_json" \
+  | print_suppressed_findings
 echo
 
 # --- Latest review with a summary body ---
-# The body's literal first line is near-useless for bots like Copilot's
-# reviewer — it's an HTML marker comment (<!-- ccr-overview-v2 -->), with
-# the actual verdict ("### Needs a closer look", plus its explanation
-# paragraph) several lines further down. `split("\n")[0]` alone silently
-# hid every such verdict behind that comment; the awk filter below skips
-# comment/heading noise and stops before the trailing metadata
-# (**Review effort**, <details>) instead.
 echo "-- Latest review verdict --"
 latest_review_json="$(jq -c '.data.repository.pullRequest.latestReviews.nodes
     | map(select(.body != "")) | sort_by(.submittedAt) | last' <<<"$scalar_json")"
@@ -171,12 +146,5 @@ if [[ "$latest_review_json" == "null" ]]; then
   echo "(no review with a summary yet)"
 else
   jq -r '"[\(.submittedAt)] \(.author.login) on \(.commit.oid[0:8]):"' <<<"$latest_review_json"
-  jq -r '.body' <<<"$latest_review_json" | awk '
-    /^<!--/ { next }
-    /^##[^#]/ { next }
-    /^\*\*Review effort/ { exit }
-    /^<details/ { exit }
-    /^$/ { if (started) print; next }
-    { started = 1; print }
-  '
+  jq -r '.body' <<<"$latest_review_json" | print_review_verdict
 fi
