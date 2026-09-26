@@ -88,13 +88,44 @@ if [[ "$local_head_sha" != "$pr_head_sha" ]]; then
   git push --force-with-lease origin "$current_branch"
 fi
 
-echo "== waiting for PR #$pr_number's checks =="
-checks_output="$(gh pr checks "$pr_number" --watch 2>&1)" && checks_status=0 || checks_status=$?
-echo "$checks_output"
-if [[ $checks_status -ne 0 ]]; then
-  if [[ "$checks_output" == *"no checks reported"* ]]; then
-    echo "== no checks configured on this PR — nothing to gate on, proceeding =="
-  else
+# GitHub registers a push's checks asynchronously, so right after a push
+# `gh pr checks` can report none, or the previous head's. Only "nothing
+# registered on this exact SHA after a grace period" means the repo has no
+# checks; a required check slower than that is still caught by branch
+# protection rejecting the push below.
+checks_register_timeout="${MERGE_ONTO_DEFAULT_CHECKS_REGISTER_TIMEOUT:-120}"
+checks_register_interval="${MERGE_ONTO_DEFAULT_CHECKS_REGISTER_INTERVAL:-5}"
+
+count_head_checks() {
+  local check_runs statuses
+  check_runs="$(gh api "repos/{owner}/{repo}/commits/$1/check-runs" --jq .total_count)" || return 1
+  statuses="$(gh api "repos/{owner}/{repo}/commits/$1/status" --jq .total_count)" || return 1
+  echo $((check_runs + statuses))
+}
+
+echo "== waiting up to ${checks_register_timeout}s for checks to register on $local_head_sha =="
+deadline=$((SECONDS + checks_register_timeout))
+head_checks=""
+while :; do
+  if head_checks="$(count_head_checks "$local_head_sha")" && ((head_checks > 0)); then
+    break
+  fi
+  if ((SECONDS >= deadline)); then
+    break
+  fi
+  sleep "$checks_register_interval"
+done
+
+if [[ -z "$head_checks" ]]; then
+  echo "error: refusing to push — couldn't query checks on $local_head_sha (see gh errors above)" >&2
+  exit 1
+fi
+
+if ((head_checks == 0)); then
+  echo "== no checks registered on $local_head_sha after ${checks_register_timeout}s — nothing to gate on, proceeding =="
+else
+  echo "== waiting for PR #$pr_number's checks =="
+  if ! gh pr checks "$pr_number" --watch 2>&1; then
     echo "error: refusing to push — PR #$pr_number's checks did not all pass (see above)" >&2
     exit 1
   fi

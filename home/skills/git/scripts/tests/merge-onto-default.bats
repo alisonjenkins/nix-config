@@ -9,6 +9,10 @@ setup() {
   # Default: a PR exists, checks pass. pr-head-sha stays unset so every
   # test also exercises the re-push-before-checking path, harmlessly.
   echo 1 >"$FAKE_GH_FIXTURES/pr-number.txt"
+  # The head's checks register on the first poll unless a test says
+  # otherwise; no sleeping between polls.
+  export MERGE_ONTO_DEFAULT_CHECKS_REGISTER_INTERVAL=0
+  export MERGE_ONTO_DEFAULT_CHECKS_REGISTER_TIMEOUT=5
 
   origin="$BATS_TEST_TMPDIR/origin.git"
   git init -q --bare "$origin"
@@ -169,14 +173,63 @@ feature_branch_with_commit() {
   [[ "$output" != *"pushing feature onto"* ]]
 }
 
-@test "proceeds when the PR has no checks configured at all" {
+@test "proceeds when no checks register on the head within the grace period" {
+  echo 0 >"$FAKE_GH_FIXTURES/head-check-runs.txt"
   touch "$FAKE_GH_FIXTURES/checks-no-checks"
+  export MERGE_ONTO_DEFAULT_CHECKS_REGISTER_TIMEOUT=0
   feature_branch_with_commit "one"
 
   run "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"nothing to gate on, proceeding"* ]]
   [[ "$output" == *"signatures intact"* ]]
+}
+
+@test "refuses to push when gh reports no checks but the head has checks registered" {
+  # The race after a re-push: gh pr checks momentarily sees nothing on the
+  # new head, though GitHub has already registered its check runs.
+  touch "$FAKE_GH_FIXTURES/checks-no-checks"
+  feature_branch_with_commit "one"
+
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"checks did not all pass"* ]]
+  [[ "$output" != *"nothing to gate on"* ]]
+
+  run git ls-remote origin refs/heads/main
+  after_main="${output%%$'\t'*}"
+  [ "$before_main" = "$after_main" ]
+}
+
+@test "waits for the head's checks to register before watching them" {
+  echo 3 >"$FAKE_GH_FIXTURES/head-checks-register-after"
+  feature_branch_with_commit "one"
+
+  run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"nothing to gate on"* ]]
+  [[ "$output" == *"signatures intact"* ]]
+  [ "$(cat "$FAKE_GH_FIXTURES/head-check-runs-call-count")" -eq 3 ]
+}
+
+@test "refuses to push when the head's checks can't be queried" {
+  touch "$FAKE_GH_FIXTURES/head-checks-api-fails"
+  export MERGE_ONTO_DEFAULT_CHECKS_REGISTER_TIMEOUT=0
+  feature_branch_with_commit "one"
+
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"couldn't query checks"* ]]
+
+  run git ls-remote origin refs/heads/main
+  after_main="${output%%$'\t'*}"
+  [ "$before_main" = "$after_main" ]
 }
 
 @test "re-pushes the branch to update the PR before checking CI when the rebase moved HEAD" {
