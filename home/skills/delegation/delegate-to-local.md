@@ -435,6 +435,7 @@ took that name and Qwen3.5-9B replaced the 8B as `small`.
 | Qwen3.5-9B (read-only) | The smithay question, with that one path made absolute | Mostly ✓: after two refused greps it resolved the path itself; found the right function; logical size, `mode` and `done` right, missed `geometry` and `scale`; 42 s |
 | Gemma 4 12B (Q4_K_M, 32k, edit mode) | The same four tasks | Module ✓ (107 s), tests ✓ (79 s), fixture fix ✓ (85 s): right, but 3 to 4 times slower than the 9B at 63 tok/s. Smithay: navigated sensibly, no answer within 300 s |
 | Qwen3.6-35B-A3B (`fast`, edit mode) | PENDING 14: two functions (parse a log rate, hash a grim capture) and six tests, from a spec with the log line pasted in | ✓ Both files exactly to spec, all six tests pass, no review round; 22 s. The one wart, an unused import, was the spec's |
+| Qwen3.6-35B-A3B (`fast`, edit mode) | Eight numbered edits to one class in a 2,900-line test file (change helpers and assertions, add 4 tests), told to grep first and not read the whole file | ✓ Grepped, read bounded ranges, 9 edits, re-read each spot, every change exactly as specified, blank lines included; 72 s. The new tests failed until the code change, as intended |
 
 What that means for writing a task:
 
