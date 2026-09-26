@@ -328,6 +328,13 @@ freely. These are what the live test surfaced.
    moved; the next report was 11.7 Mbit/s. A new capture ramps up from
    about 300 kbit/s, so before it may act it must skip the first few
    reports after `Capture method set to Game`.
+   **Tightened the same day:** the first 3 reports of a capture and the 3
+   after the client logs `consecutive end-to-end timeouts` are skipped,
+   and a stretch must be 4 low reports (20 s) with the picture moving.
+   Replaying 2026-09-26's log (picture assumed always moving) cuts 8
+   alarms to 4: the warm-up, the 08:49 blackout and three short dips go;
+   stretches at 09:02:22, 09:19:29, 09:21:19 and 09:32:45 remain,
+   unclassified because nobody saw the screen then.
 15. **Forza Horizon 6 streams black: Steam never starts game capture.**
    Seen 2026-09-24 14:17 and 14:32 from the Deck. FH6 rendered on the host
    (niri screenshots), launched direct with `SteamStreaming=1`, and both its
