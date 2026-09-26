@@ -912,35 +912,54 @@ in {
           };
         };
 
-        # PPD's "balanced" profile lets amd_pstate clock down between bursts;
-        # under a concurrent game + SteamVR/Steam Link video+audio encode load
-        # that's enough scheduling latency to starve the audio jitter buffer,
-        # heard as crackle on the headset (repeated CAudioJitterBuffer
-        # fade-out/fade-in in driver_vrlink.txt). Rather than running
-        # "performance" at all times on a 24/7 machine, poll for vrserver and
-        # only hold performance while a VR session is actually active.
+        # Holds the performance profile for exactly as long as a VR session
+        # runs (see docs/adr/0016), event-driven rather than polling, per
+        # 0005's rule that the streaming stack reacts to events and never
+        # polls. vrserver leaves an IPC shared-memory segment at
+        # /dev/shm/u*-ValveIPCSharedObj-SteamVR for its whole run (also
+        # relied on by steamvr-setcap below); inotifywait blocks on its
+        # creation and deletion instead of a periodic check.
+        #
+        # `powerprofilesctl launch` calls PowerProfiles.HoldProfile over a
+        # D-Bus connection it keeps open for its child's lifetime, and
+        # releases the hold when that child exits for any reason —
+        # including this service being killed. Unlike a plain
+        # `powerprofilesctl set`, a stuck or crashed session can't leave the
+        # profile pinned, and it composes with ppd-set-balanced's boot-time
+        # default instead of overwriting it: the hold layers on top of
+        # whatever profile is active and releasing it restores that profile.
         systemd.services.steamvr-power-profile = {
-          description = "Bump power-profiles-daemon to performance while SteamVR is running";
+          description = "Hold power-profiles-daemon at performance for the duration of a VR session";
           after = [ "power-profiles-daemon.service" ];
           requires = [ "power-profiles-daemon.service" ];
-          serviceConfig.Type = "oneshot";
-          script = ''
-            target=balanced
-            if ${pkgs.procps}/bin/pgrep -x vrserver >/dev/null; then
-              target=performance
-            fi
-            current="$(${pkgs.power-profiles-daemon}/bin/powerprofilesctl get)"
-            [ "$current" = "$target" ] || ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set "$target"
-          '';
-        };
-
-        systemd.timers.steamvr-power-profile = {
-          description = "Poll for SteamVR to switch power-profiles-daemon performance/balanced";
-          wantedBy = [ "timers.target" ];
-          timerConfig = {
-            OnBootSec = "15s";
-            OnUnitActiveSec = "5s";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "simple";
+            Restart = "on-failure";
+            RestartSec = "2s";
           };
+          script = ''
+            set -euo pipefail
+
+            find_shm() {
+              for f in /dev/shm/u*-ValveIPCSharedObj-SteamVR; do
+                [ -e "$f" ] || continue
+                printf '%s\n' "$f"
+                return 0
+              done
+              return 1
+            }
+
+            while true; do
+              shm="$(find_shm)" || {
+                ${pkgs.inotify-tools}/bin/inotifywait -qq -e create /dev/shm
+                continue
+              }
+              ${pkgs.power-profiles-daemon}/bin/powerprofilesctl launch \
+                -p performance -r "vrserver holding $shm" -- \
+                ${pkgs.inotify-tools}/bin/inotifywait -qq -e delete_self "$shm" || true
+            done
+          '';
         };
 
         programs = {
