@@ -11,6 +11,16 @@
     #   url = "github:alisonjenkins/eks-creds";
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
+    claude-monitor = {
+      # TUI dashboard of live Claude Code session state in tmux; its
+      # home-manager module registers the hooks that feed it.
+      # git+ssh because the repo is private; github: 404s without a token.
+      url = "git+ssh://git@github.com/alisonjenkins/claude-monitor?ref=main";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
+    };
     flake-parts.url = "github:hercules-ci/flake-parts";
     haumea = {
       url = "github:nix-community/haumea/v0.2.2";

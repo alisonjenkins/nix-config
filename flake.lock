@@ -99,6 +99,31 @@
         "type": "github"
       }
     },
+    "claude-monitor": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1790460245,
+        "narHash": "sha256-QjqVWga2IsVPFqnS1ymk9UQoPE5L7wRQSYUNX7cmuO4=",
+        "ref": "main",
+        "rev": "2303411bd5b982341f9bdf309d919238b4034b6f",
+        "revCount": 20,
+        "type": "git",
+        "url": "ssh://git@github.com/alisonjenkins/claude-monitor"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/alisonjenkins/claude-monitor"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1776396856,
@@ -796,7 +821,7 @@
           "nixpkgs"
         ],
         "pre-commit": "pre-commit",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay_2"
       },
       "locked": {
         "lastModified": 1789379789,
@@ -1602,6 +1627,7 @@
     "root": {
       "inputs": {
         "ali-neovim": "ali-neovim",
+        "claude-monitor": "claude-monitor",
         "darwin": "darwin",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
@@ -1715,6 +1741,27 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
+          "claude-monitor",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773716879,
+        "narHash": "sha256-vXCTasEzzTTd0ZGEuyle20H2hjRom66JeNr7i2ktHD0=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "1a9ddeb45c5751b800331363703641b84d1f41f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
+      "inputs": {
+        "nixpkgs": [
           "lanzaboote",
           "nixpkgs"
         ]
@@ -1733,7 +1780,7 @@
         "type": "github"
       }
     },
-    "rust-overlay_2": {
+    "rust-overlay_3": {
       "inputs": {
         "nixpkgs": [
           "tmux-sessionizer",
@@ -2049,7 +2096,7 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rust-overlay": "rust-overlay_2"
+        "rust-overlay": "rust-overlay_3"
       },
       "locked": {
         "lastModified": 1761389567,
