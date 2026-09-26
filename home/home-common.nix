@@ -97,6 +97,7 @@
         nurl
         pamixer
         pavucontrol
+        prek
         prismlauncher
         qpwgraph
         screen
