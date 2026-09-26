@@ -1470,8 +1470,8 @@ class Session:
             previous, self.low_rate_frame = self.low_rate_frame, frame
             if previous is not None and previous != frame:
                 self.low_rate_moved = True
-        if (self.freeze_logged or not self.low_rate_moved
-                or self.low_rate_reports < FREEZE_SUSPECT_REPORTS):
+        sustained = self.low_rate_reports >= FREEZE_SUSPECT_REPORTS
+        if self.freeze_logged or not self.low_rate_moved or not sustained:
             return
         self.freeze_logged = True
         log("stream-mode: stream at {:.0f} kbit/s for {} reports while {}'s "
