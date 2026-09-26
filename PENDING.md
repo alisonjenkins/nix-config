@@ -323,6 +323,11 @@ freely. These are what the live test surfaced.
    stream-mode logs "game capture may be frozen" when the picture changes
    between two low reports. Left: after the next freeze, check that log
    line fired and a menu did not, then have it nudge like a stalled start.
+   **First false alarm, 2026-09-26 08:23:38:** it fired 6 s after game
+   capture started, on 496 and 302 kbit/s reports while HD2's picture
+   moved; the next report was 11.7 Mbit/s. A new capture ramps up from
+   about 300 kbit/s, so before it may act it must skip the first few
+   reports after `Capture method set to Game`.
 15. **Forza Horizon 6 streams black: Steam never starts game capture.**
    Seen 2026-09-24 14:17 and 14:32 from the Deck. FH6 rendered on the host
    (niri screenshots), launched direct with `SteamStreaming=1`, and both its
@@ -372,19 +377,31 @@ freely. These are what the live test surfaced.
    and Alt+Enter out of full screen gave 640x400 while back in gave
    1728x1080. Inferred, not observed directly: FH6 leaves full screen when it
    loses focus, and 640x400 is its windowed size.
-16. **Re-test a reconnect to a running HD2 on the merged build.** #368
-   merged (2026-09-25) with this unchecked. Item 3's re-staging was confirmed
-   on 2026-09-24, before the focus changes (staged windows now refocused,
-   niri focus events applied). With HD2 running, disconnect the client,
-   reconnect, and check the stream-mode log shows the game staged again and
-   Steam returns to `Game Vulkan`. Also check `~/.steam-command-runner-shim.log`
-   has `app 553850: streaming to steam, ...` for the launch.
+16. **Done 2026-09-26: a reconnect to a running HD2 works on the merged
+   build.** From the MacBook, remote over Steam's relay: the shim logged
+   `app 553850: streaming to steam` (08:22:50), game capture started 2 s
+   after the switch (08:23:32). On disconnect (08:23:48) HD2 shrank to
+   864x1046 and stream-mode began fullscreening it; the reconnect nine
+   seconds later went straight to `Game Vulkan NV12` in the same second,
+   with HD2 on `steam`, 1728x1080 and focused. No re-staging was needed
+   because the output outlived the gap (removal is 120 s after a stop).
 17. **Stream to a surround client.** Untested: every client so far reported
    `audio channels = 2`. A client reporting more gets the stereo sink anyway
    (docs/adr/0015), and Steam's channel order for more than two unpositioned
    channels is unknown. Test with the home surround setup: check
    `streaming_log.txt` for the channel count, then play a channel-test file
    and note which speaker each channel reaches.
+18. **A game launched as a stream starts renders at Steam's maximum
+   resolution, not the client's.** The runner sizes a streamed launch from
+   stream-mode's published target, and falls back to Steam's
+   `SteamStreamingMaximumResolution` when there is none. stream-mode
+   withdraws the target when a stream ends and publishes it only once
+   Steam logs the new one, a few seconds after the launch. So HD2
+   launched from the MacBook at 08:22:50 rendered at 1440x900 (the Mac's
+   `SteamStreamingMaximumResolution`) in a 1728x1080 output, while the
+   07:31 launch into a running stream got 1728x1080; FH6 at 00:34 did the
+   same. Fix in the runner (wait a few seconds for the published target
+   before falling back), or raise the Mac client's resolution limit.
 10. **Live-confirmed 2026-09-24 09:17** (for the record, not work): after a
    restart mid-connection stream-mode adopted the Mac, the shim launched HD2
    directly, the output was 1728x1080@60, and once HD2 had focus Steam
