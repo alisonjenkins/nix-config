@@ -30,7 +30,7 @@ check_workflow_file() {
         report_fail "$name: no explicit permissions block (inherits org/repo default)"
     fi
 
-    if grep -qE 'actions/cache|actions/setup-go.*cache|actions/setup-node.*cache|cachix|niks3|magic-nix-cache' "$wf"; then
+    if grep -qE 'actions/cache|actions/setup-go.*cache|actions/setup-node.*cache|cachix|niks3|cache-nix-action|magic-nix-cache' "$wf"; then
         report_pass "$name: has a caching step"
     else
         report_skip "$name: no caching step detected (only a finding if this job builds something cacheable)"
