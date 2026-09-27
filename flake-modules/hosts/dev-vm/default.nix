@@ -57,7 +57,9 @@ in {
 
         services.xserver = {
           enable = true;
-          videoDrivers = [ "qxl" ];
+          # QXL is x86-only (nixpkgs marks xf86-video-qxl broken on aarch64);
+          # an aarch64 QEMU virt guest uses virtio-gpu through modesetting.
+          videoDrivers = [ "modesetting" ];
           xkb = {
             layout = "us";
             variant = "";
