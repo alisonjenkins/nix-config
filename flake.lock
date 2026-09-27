@@ -110,18 +110,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1790460245,
-        "narHash": "sha256-QjqVWga2IsVPFqnS1ymk9UQoPE5L7wRQSYUNX7cmuO4=",
-        "ref": "main",
-        "rev": "2303411bd5b982341f9bdf309d919238b4034b6f",
-        "revCount": 20,
-        "type": "git",
-        "url": "ssh://git@github.com/alisonjenkins/claude-monitor"
+        "lastModified": 1790483238,
+        "narHash": "sha256-MImaj7p6EIguOHJJuYGEq1Sukk7lsjE+A7Wdh1wu9C0=",
+        "owner": "alisonjenkins",
+        "repo": "claude-monitor",
+        "rev": "7c682c90bb31c094625555053ec9bde475b2274f",
+        "type": "github"
       },
       "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "ssh://git@github.com/alisonjenkins/claude-monitor"
+        "owner": "alisonjenkins",
+        "repo": "claude-monitor",
+        "type": "github"
       }
     },
     "crane": {
