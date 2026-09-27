@@ -749,10 +749,8 @@ in
     # linked from the package into ~/.claude/commands/. Uses commandsDir (a
     # source-linked directory) rather than the `commands` attrset: that option's
     # string values are written as literal file *content*, whereas commandsDir
-    # links the store-path dir — the same idiom as `skills` below, and no IFD.
+    # links the store-path dir.
     commandsDir = "${claudeStatusbarPkg}/share/claude-statusbar/commands";
-
-    skills = "${allSkills}";
 
     # cavekit used to live here (the "ck:" namespace — /ck:spec, /ck:build,
     # /ck:check). GitHub spec-kit replaced it: see the speckitInitSkill in the
@@ -837,6 +835,15 @@ in
   # source, suppress the home.file symlink it would produce, and materialise the
   # generated JSON ourselves in an activation script (below).
   home.file."${config.programs.claude-code.configDir}/settings.json".enable = lib.mkForce false;
+
+  # Same entry `programs.claude-code.skills` would create, set directly: that
+  # option asserts `lib.pathIsDirectory`, which builds allSkills during eval
+  # (IFD), and linkFarm/symlinkJoin never substitute, so evaluating an aarch64
+  # host from an x86 machine without binfmt fails.
+  home.file."${config.programs.claude-code.configDir}/skills" = {
+    source = allSkills;
+    recursive = true;
+  };
 
   # Merge the nix-generated settings over whatever is already on disk. Every key
   # nix declares wins outright — the key is *deleted* from the old file rather
