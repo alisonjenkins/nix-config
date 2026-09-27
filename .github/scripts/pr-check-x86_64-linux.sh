@@ -7,7 +7,9 @@
 # breakage still gets caught on push via build-and-cache.yaml — this only
 # needs to catch a broken module/package/devShell before a dependency bump
 # merges unattended. Packages are evaluated, and the ones the PR changes are
-# also built (build_changed_packages).
+# also built (build_changed_packages). aarch64-linux hosts are the one
+# exception: they are evaluated here (check_hosts_for_system), since nothing
+# else covers them.
 #
 # Usage: pr-check-x86_64-linux.sh
 set -uo pipefail
@@ -111,6 +113,37 @@ check_drv_set() {
     done
 }
 
+# check_hosts_for_system <system> — evaluate (not build) the toplevel of every
+# nixosConfiguration whose hostPlatform is <system>. The exception to "no
+# whole-host configs" above: nothing else evaluates aarch64-linux hosts (the
+# arm64 job in build-and-cache.yaml is disabled), so a flake.lock bump broke
+# ali-mba-linux and dev-vm on main unnoticed. The desktop-sized ones take
+# ~25s each; the server images far less.
+# --max-jobs 0 because this x86 runner cannot build aarch64 derivations: any
+# import-from-derivation must be substitutable, and one that is not fails
+# here rather than silently needing binfmt.
+check_hosts_for_system() {
+    local system="$1"
+    local names name
+    if ! names="$(nix eval --json --no-warn-dirty .#nixosConfigurations \
+        --apply "cs: builtins.filter (n: cs.\${n}.pkgs.stdenv.hostPlatform.system == \"${system}\") (builtins.attrNames cs)" \
+        | jq -r '.[]')"; then
+        echo "FAILED: could not list ${system} nixosConfigurations"
+        FAILED=1
+        return
+    fi
+    for name in $names; do
+        local attr=".#nixosConfigurations.${name}.config.system.build.toplevel.drvPath"
+        if nix eval --raw --no-warn-dirty --max-jobs 0 "${attr}" >/dev/null 2>&1; then
+            echo "ok: nixosConfigurations.${name}"
+        else
+            echo "FAILED: nixosConfigurations.${name}"
+            nix eval --raw --no-warn-dirty --max-jobs 0 "${attr}" 2>&1 | tail -20
+            FAILED=1
+        fi
+    done
+}
+
 echo "== nixosModules =="
 check_module_set ".#nixosModules"
 
@@ -128,5 +161,8 @@ check_drv_set ".#packages.${TARGET_SYSTEM}"
 
 echo "== packages.${TARGET_SYSTEM} changed by this PR (built) =="
 build_changed_packages ".#packages.${TARGET_SYSTEM}"
+
+echo "== aarch64-linux nixosConfigurations (evaluated) =="
+check_hosts_for_system "aarch64-linux"
 
 exit "$FAILED"
