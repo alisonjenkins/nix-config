@@ -1,4 +1,5 @@
-{ pkgs
+{ config
+, pkgs
 , lib
 , ...
 }: {
@@ -65,7 +66,7 @@
     (pkgs.writeShellScriptBin ''obs-start-stream'' ''
       set -euo pipefail
       if ! ${pkgs.procps}/bin/pgrep -x '(obs|\.obs-wrapped)' >/dev/null; then
-        ${pkgs.obs-studio}/bin/obs --disable-shutdown-check &
+        ${config.programs.obs-studio.finalPackage}/bin/obs --disable-shutdown-check &
       fi
       # --wait-for-obs retries the websocket connection with backoff
       # instead of us polling for the OBS process and then guessing
