@@ -131,7 +131,8 @@ in {
           extractPeripheralFirmware = true;
           peripheralFirmwareDirectory = "/var/lib/asahi-firmware";
           # Experimental upstream and only tested on M2; mpv needs
-          # --hwdec=vaapi --vo=dmabuf-wayland to use it.
+          # --hwdec=vaapi --vo=dmabuf-wayland to use it. See
+          # docs/ali-mba-linux-hardware-video.md.
           avd.vaapi-support = true;
         };
 

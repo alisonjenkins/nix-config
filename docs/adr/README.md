@@ -39,6 +39,15 @@ steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
 and 0008 are the other half of this repo's 0007.
 
+## ali-mba-linux (M1 MacBook Air, Asahi)
+
+Start with [`docs/ali-mba-linux-hardware-video.md`](../ali-mba-linux-hardware-video.md)
+for hardware video decode.
+
+| # | Decision | Status |
+|---|---|---|
+| [0017](0017-ali-mba-linux-avd-vaapi.md) | Expose the M1 video decoder through VA-API, with avd-fw from master | Accepted, pending live test |
+
 ## Template
 
 ```markdown
