@@ -23,15 +23,18 @@ obsPatchJson() {
     warnEcho "obs: $secretFile unreadable, leaving the secret in $target unchanged"
     secretFile=""
   fi
-  if "$OBS_JQ" -s \
+  # A missing or empty target slurps to [], so it merges as {}.
+  if "$OBS_JQ" -n \
+      --slurpfile current "$([ -e "$target" ] && echo "$target" || echo /dev/null)" \
+      --slurpfile declared "$declared" \
       --arg secretPath "$secretPath" \
       --rawfile secret "${secretFile:-/dev/null}" \
       --argjson hasSecret "$([ -n "$secretFile" ] && echo true || echo false)" '
-    (.[0] // {}) * .[1]
+    ($current[0] // {}) * $declared[0]
     | if $hasSecret
       then setpath($secretPath | ltrimstr(".") | split("."); $secret | rtrimstr("\n"))
       else . end
-  ' <(cat "$target" 2>/dev/null || echo '{}') "$declared" > "$tmp"; then
+  ' > "$tmp"; then
     run install -m 0600 "$tmp" "$target"
   else
     warnEcho "obs: $target is not valid JSON, left unpatched"
