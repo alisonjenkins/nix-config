@@ -1721,6 +1721,75 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertFalse(s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME}))
         self.assertEqual(self.enabled, [])
 
+    def test_the_output_left_on_goes_off_when_the_monitor_returns(self):
+        """Left on as the only output, it stayed on after the monitor came back.
+
+        It kept taking new windows: a KDE Wallet prompt opened there, unseen,
+        and every gh call hung on the locked wallet behind it.
+        """
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            s.disconnect(123)
+            stream_mode.other_active_outputs = lambda name: {"DP-2"}
+            self.enabled.clear()
+            self.assertTrue(s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME}))
+            self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, False)])
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_the_output_left_on_stays_on_while_it_is_still_alone(self):
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            s.disconnect(123)
+            self.enabled.clear()
+            self.assertFalse(s.on_outputs_changed({stream_mode.OUTPUT_NAME}))
+            self.assertEqual(self.enabled, [])
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_the_output_left_on_stays_on_when_the_outputs_are_unknown(self):
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            s.disconnect(123)
+            stream_mode.other_active_outputs = lambda name: None
+            self.enabled.clear()
+            self.assertFalse(s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME}))
+            self.assertEqual(self.enabled, [])
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_an_output_kept_on_by_a_reload_goes_off_when_the_monitor_returns(self):
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.reassert_output()
+            stream_mode.other_active_outputs = lambda name: {"DP-2"}
+            self.enabled.clear()
+            self.assertTrue(s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME}))
+            self.assertEqual(self.enabled, [(stream_mode.OUTPUT_NAME, False)])
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
+    def test_a_new_client_keeps_the_output_left_on(self):
+        stream_mode.other_active_outputs = lambda name: set()
+        try:
+            s = stream_mode.Session(stage_timeout=0)
+            s.connect(123, "mac")
+            s.disconnect(123)
+            s.connect(456, "deck")
+            stream_mode.other_active_outputs = lambda name: {"DP-2"}
+            self.enabled.clear()
+            s.on_outputs_changed({"DP-2", stream_mode.OUTPUT_NAME})
+            self.assertNotIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        finally:
+            stream_mode.other_active_outputs = lambda name: None
+
     def test_a_client_with_a_different_panel_resizes_rather_than_replaces(self):
         """A television and a handheld share one declared output.
 

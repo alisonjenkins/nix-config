@@ -1145,6 +1145,9 @@ class Session:
 
     def __init__(self, stage_timeout=None):
         self.output = None
+        # An output kept on only because it was the last one, to be turned off
+        # once another comes back.
+        self.left_on_alone = None
         self.client_id = None
         self.streaming = False
         self.game_pid = None
@@ -1239,6 +1242,7 @@ class Session:
             return False
 
         self.output = OUTPUT_NAME
+        self.left_on_alone = None
         return True
 
     def apply_mode(self, width, height, refresh):
@@ -1628,6 +1632,7 @@ class Session:
             return True
         if other_active_outputs(OUTPUT_NAME) == set():
             set_output_enabled(OUTPUT_NAME, True)
+            self.left_on_alone = OUTPUT_NAME
             log("stream-mode: niri reloaded its config; kept {} on, it is the only output".format(OUTPUT_NAME))
             return True
         return False
@@ -1691,6 +1696,7 @@ class Session:
         # bailing"), stays logged off and is invisible to every client.
         if other_active_outputs(name) == set():
             withdraw_target()
+            self.left_on_alone = name
             log("stream-mode: left {} on, it is the only output".format(name))
             return True
         set_output_enabled(name, False)
@@ -2285,11 +2291,30 @@ class Session:
         Replaces a ten-second watchdog: the compositor says when an output
         appears or disappears, so there is nothing to poll for.
         """
-        if self.output is None or self.output in output_names:
+        if self.output is None:
+            return self.release_left_on_alone()
+        if self.output in output_names:
             return False
         log("stream-mode: {} has gone away, rebuilding".format(self.output))
         self.output = None
         return self.ensure_output()
+
+    def release_left_on_alone(self):
+        """Turn off an output kept on as the only one, now another is back.
+
+        Left on, it went on taking new windows after the monitor returned,
+        where nobody could see them: a KDE Wallet prompt opened there and
+        every keyring caller hung behind it. Turning it off hands its
+        workspaces back to the monitor. Unknown outputs keep it on until the
+        next event.
+        """
+        name = self.left_on_alone
+        if name is None or not other_active_outputs(name):
+            return False
+        self.left_on_alone = None
+        set_output_enabled(name, False)
+        log("stream-mode: another output is back; turned {} off".format(name))
+        return True
 
     def unstage(self, pid=None):
         if self.game_pid is None:
