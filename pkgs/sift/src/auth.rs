@@ -106,7 +106,15 @@ pub struct DatadogAuth {
 
 impl DatadogAuth {
     pub fn from_secretspec_profile(profile: &str) -> Result<Self, AuthError> {
-        let mut secrets = resolve_secrets()?;
+        Self::from_secrets(resolve_secrets()?, profile)
+    }
+
+    /// Same resolution `from_secretspec_profile` does, but against a
+    /// caller-supplied `Secrets` instead of the priority chain
+    /// `resolve_secrets()` walks — lets a test point at a fixture spec
+    /// without mutating the process environment (which `resolve_secrets()`
+    /// itself still owns for real callers via `SIFT_SECRETSPEC_TOML`).
+    fn from_secrets(mut secrets: Secrets, profile: &str) -> Result<Self, AuthError> {
         secrets.set_profile(profile);
         let secrets = secrets.with_reason("sift Datadog query");
 
@@ -250,16 +258,20 @@ mod tests {
     #[test]
     fn datadog_auth_names_the_missing_key_when_neither_env_var_is_set() {
         // Regression guard for the "clear error naming which key is
-        // missing" requirement: DatadogAuth must fail loudly rather
-        // than silently querying Datadog unauthenticated. Only
-        // meaningful when the test process itself has no DD_API_KEY —
-        // true in the Nix sandbox `cargo test` runs in, and in any dev
-        // shell that hasn't exported one.
-        if std::env::var("DD_API_KEY").is_ok() {
-            return;
-        }
+        // missing" requirement: DatadogAuth must fail loudly rather than
+        // silently querying Datadog unauthenticated. Uses a fixture spec
+        // (tests/fixtures/datadog_auth_missing_key.secretspec.toml) whose
+        // DD_API_KEY/DD_APP_KEY are `ref`-bound to env var names nothing
+        // sets, so the assertion holds regardless of whatever DD_API_KEY a
+        // developer has exported in their own shell for real sift use —
+        // unlike calling secretspec.toml's own `default` profile, which
+        // reads DD_API_KEY directly and would pass vacuously there.
+        let secrets = Secrets::load_from(Path::new(
+            "tests/fixtures/datadog_auth_missing_key.secretspec.toml",
+        ))
+        .expect("fixture secretspec.toml should load and validate");
 
-        let result = DatadogAuth::from_secretspec_profile("default");
+        let result = DatadogAuth::from_secrets(secrets, "default");
 
         match result {
             Err(AuthError::MissingDatadogKey { name, .. }) => {
