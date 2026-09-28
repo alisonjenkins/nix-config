@@ -24,30 +24,62 @@
       carries the message format, the splitting rules, and the PR workflow.
   '';
 
-  modelRouting = ''
-    # Model Routing (user mandate)
+  # cheapDelegate names the host's first rung below the main loop: "copilot"
+  # on work machines, where the Claude allowance is the one worth
+  # conserving, "local" everywhere else.
+  mkModelRouting = cheapDelegate:
+    let
+      cheapRung = {
+        copilot = ''
+          - Cheapest rung on this machine: GitHub Copilot's Luna through the
+            `delegation` skill's `scripts/delegate.sh`, for self-contained
+            text-in/text-out work. When it reports exhausted credits, or the
+            task needs this session's tools or skills, use a "haiku"
+            sub-agent instead.
+        '';
+        local = ''
+          - Cheapest rung on this machine: a local model through the
+            `delegation` skill's `scripts/delegate-to-local.sh` or
+            `delegate-to-local-agent.sh`, when `list-local-profiles.sh` shows
+            a live profile and the task is haiku-shaped. Otherwise a "haiku"
+            sub-agent.
+        '';
+      }.${cheapDelegate};
+    in
+    ''
+      # Model Routing (user mandate)
 
-    - Delegate mechanical stretches to a sub-agent (Agent tool) instead of
-      grinding them in the main loop: any run of ~5+ bulk calls of the same
-      shape — gh/GraphQL queries, web searches, log trawls. Prefer running
-      these in the background (run_in_background) so the main loop is not
-      blocked waiting on them.
-    - Default the sub-agent model to "haiku"; step up to "sonnet" only when
-      the task needs judgement, multi-step reasoning, or code changes. The
-      main loop stays on the big model, reserved for voice, scope, and
-      judgement.
-    - Fast local search keeps inline reading cheap: the built-in Grep tool
-      already uses ripgrep and works on every machine — make it the default for
-      content search. At the shell, use `rg` (content) and `fd` (file/dir
-      names) when present, but do not assume they are installed or at any fixed
-      path: probe with `command -v` first, fall back to `grep -r` / `find`, and
-      note `fd` may be packaged as `fdfind` on Debian/Ubuntu.
-    - Invoke the `delegation` skill before spawning a sub-agent: it carries
-      the model-tier decision test, when NOT to delegate at all, Explore vs
-      general-purpose, and how to write a self-contained prompt.
-    - Never delegate: user-facing judgement, irreversible actions, or work
-      whose context cannot be compressed into a prompt.
-  '';
+      - The main loop is the manager: scope, judgement, reviewing what
+        comes back, and talking to the user. Push everything else down to
+        the cheapest model that can do it; that is cheaper, and parallel
+        delegates are faster.
+      - Delegate by default any self-contained step whose result you need
+        as a conclusion or a diff rather than as context to reason over:
+        gh/GraphQL queries, web searches, log trawls, multi-file sweeps,
+        mechanical edits, drafts, and code changes you can specify exactly.
+        Two or more independent calls of the same shape already qualify; a
+        single lookup you already know how to do does not.
+    ''
+    + cheapRung
+    + ''
+      - Step up to a "sonnet" sub-agent only when the task itself needs
+        judgement, multi-step reasoning, or non-mechanical code.
+      - Run independent delegations in parallel: several Agent calls in one
+        message, and run_in_background for anything not needed before your
+        next step. Parallel writers each get their own worktree.
+      - Fast local search keeps inline reading cheap: the built-in Grep tool
+        already uses ripgrep and works on every machine — make it the default
+        for content search. At the shell, use `rg` (content) and `fd`
+        (file/dir names) when present, but do not assume they are installed
+        or at any fixed path: probe with `command -v` first, fall back to
+        `grep -r` / `find`, and note `fd` may be packaged as `fdfind` on
+        Debian/Ubuntu.
+      - Invoke the `delegation` skill before spawning a sub-agent: it
+        carries the model-tier decision test, when NOT to delegate at all,
+        Explore vs general-purpose, and how to write a self-contained prompt.
+      - Never delegate: user-facing judgement, irreversible actions, or work
+        whose context cannot be compressed into a prompt.
+    '';
 
   workStyle = ''
     # Working Principles (user mandate)
