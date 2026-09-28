@@ -1,6 +1,7 @@
 ---
 name: design
-description: Use when deciding how to structure a change: where a responsibility belongs, parameter vs new function, inheritance vs composition, splitting a module doing two things, or a change touching far more files than its size suggests. Also for reviewing an existing design, untangling coupling, deciding what to make configurable. Covers cohesion, orthogonality, shared state, and reversibility.
+description: >-
+  Use when deciding how to structure a change: where a responsibility belongs, parameter vs new function, inheritance vs composition, splitting a module doing two things, or a change touching far more files than its size suggests. Also for reviewing an existing design, untangling coupling, deciding what to make configurable. Covers cohesion, orthogonality, shared state, and reversibility.
 ---
 
 # Design
