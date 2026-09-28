@@ -56,10 +56,15 @@ is on before assuming either applies.)
 
 ## When to delegate at all
 
-The cost and speed gap above means the bar for delegating is lower than it
-feels: even a handful of clearly mechanical calls (not just runs of 5+) can
-be worth a haiku sub-agent, since haiku-tier cost is close to negligible and
-`run_in_background` hides the wall-clock cost from the main loop. The
+The main loop is a manager: it scopes, judges, reviews what comes back, and
+talks to the user. Everything else goes to the cheapest delegate that can do
+it. The cost and speed gap above means the bar for delegating is lower than
+it feels: two or more independent calls of the same shape already qualify,
+since cheap-tier cost is close to negligible and `run_in_background` hides
+the wall-clock cost from the main loop. Even a sonnet sub-agent under a
+sonnet main loop pays off on a long sweep: the per-token price is the same,
+but the sweep's output never enters the main context, which every later
+turn re-reads. The
 counterweight is spawn overhead, not per-call cost: a sub-agent pays for
 `CLAUDE.md`, git status, and its tool schemas on every spawn
 (general-purpose; Explore/Plan skip the first two — see below), so a batch
@@ -117,10 +122,32 @@ a conclusion from heterogeneous sources, or writing/editing code. Unsure which
 tier? That uncertainty is itself evidence the task needs judgement — pick
 sonnet.
 
-Before defaulting to haiku, check whether Copilot's `delegate.sh` (Luna) is
-the better fit instead — see delegate-to-copilot.md's "Separately metered
-Claude and Copilot allowances" when the account has independent quotas for
-each and Claude's is the one worth conserving.
+### The per-machine ladder
+
+Below haiku there is a cheaper rung, and which one depends on the machine.
+The Model Routing mandate in `~/.claude/CLAUDE.md` names it (nix sets it
+per host through `cheapDelegate`):
+
+| Machine | First rung | Falls back to |
+|---|---|---|
+| Work (`cheapDelegate = "copilot"`) | Copilot's Luna via `scripts/delegate.sh` | haiku sub-agent when credits are exhausted or the task needs this session's tools or skills |
+| Personal (default, `"local"`) | Local model via `scripts/delegate-to-local.sh` / `delegate-to-local-agent.sh` | haiku sub-agent when no profile is live or the task isn't haiku-shaped |
+
+Both first rungs are text in, text out (the local agent mode adds read, and
+optionally edit, over one directory). Neither runs commands, so anything
+that needs Bash, `gh`, MCP tools, or skills goes straight to a sub-agent.
+
+On a personal machine, check `list-local-profiles.sh` first; it is
+read-only and cheap. Don't load a profile for one task, since loading takes
+up to two minutes. Switch deliberately when a stretch of several
+local-shaped tasks is ahead and it fits the free VRAM (see
+[delegate-to-local.md](delegate-to-local.md)). On the work machine, a
+credit-exhaustion error from `delegate.sh` is cached for 24h, so after one,
+go straight to haiku for the rest of the session.
+
+Review every result from the first rung before using it. It is weaker
+(local) or external (Copilot) output, and wrong output costs more to redo
+than a haiku call would have.
 
 **The test:** could a competent but literal-minded assistant, with no
 discretion, get this right by following your instructions exactly? If yes,
