@@ -1,7 +1,7 @@
 # opencodeLocalLLM read via `args ... or` rather than a named formal arg: the
 # module system resolves named args through _module.args and errors when the
 # specialArg is absent, ignoring lambda defaults.
-{ pkgs, lib, inputs, ... } @ args:
+{ pkgs, lib, ... } @ args:
 let
   opencodeLocalLLM = args.opencodeLocalLLM or true;
 
@@ -225,20 +225,8 @@ in {
     # Cavemem opencode plugin
     "opencode/plugins/cavemem.js".text = cavememPluginJS;
 
-    # Skills shared with Claude Code, from home/skills/
-    # (flake.lib.skills). Linked as whole directories, not single files, so
-    # each family's bundled children (languages/*.md, per-tool guides) come
-    # along — that is where the detail lives, loaded on demand rather than
-    # sitting in baseline context.
-    #
-    # These SKILL.md files use agentskills.io spec frontmatter only, which is
-    # what makes them usable from here as well as from Claude Code. The infra
-    # family replaced the former inline github / kubernetes / terraform skills,
-    # which duplicated the same CLI guidance.
-
+    # Shared skills from home/skills/ reach opencode through ~/.agents/skills
+    # (home/programs/agent-skills), not a link here.
   }
-  // cavemanCommandConfigs
-  // lib.mapAttrs' (
-    name: path: lib.nameValuePair "opencode/skills/${name}" { source = path; }
-  ) inputs.self.lib.skills;
+  // cavemanCommandConfigs;
 }

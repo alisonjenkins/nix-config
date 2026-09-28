@@ -5,6 +5,7 @@
     # ./batsignal
     # ./dunst
     # ./kubecolor
+    ./agent-skills
     ./alacritty
     ./aws
     ./bat
