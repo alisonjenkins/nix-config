@@ -72,7 +72,10 @@ groups by facet/error type, `--mode topn` shows the biggest contributors,
 `--mode histogram` gives a time-bucketed rate, `--mode diff` compares
 against a baseline window (not yet wired into the CLI — see ADR 0003).
 `sift` defaults away from a raw dump; pass `--mode raw` when you need
-every line, up to `--limit` (default 200).
+every line, up to `--limit` (default 200). Reducing modes page through
+logs and traces newest first, up to `--max-events` (default 5000); a
+warning on stderr means the cap cut the window short, so raise it or
+narrow the query before trusting the counts as totals.
 
 ```bash
 sift datadog logs 'service:checkout status:error' --site us3.datadoghq.com --auth-profile work
