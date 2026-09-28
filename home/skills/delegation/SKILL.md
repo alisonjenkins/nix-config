@@ -11,25 +11,33 @@ sub-agent, not ground through inline.
 
 ## Cost and speed by tier
 
-Snapshot from [claude.com/pricing](https://claude.com/pricing), checked
-2026-09-19 — verify current numbers there before quoting them, since prices
-change and this table will drift:
+Prices from [claude.com/pricing](https://claude.com/pricing); intelligence
+index and output speed from [Artificial
+Analysis](https://artificialanalysis.ai/providers/anthropic) (medium effort).
+Both checked 2026-09-28 — verify current numbers before quoting them, since
+this table will drift:
 
-| Tier | Input / output per MTok (million tokens) | Roughly vs. Haiku |
-|---|---|---|
-| Haiku 4.5 | $1 / $5 | 1x — the fastest tier |
-| Sonnet 5 | $2 / $10 | ~2x |
-| Opus 5 | $5 / $25 | ~5x |
-| Fable 5.1 | $10 / $50 | ~10x |
+| Tier | Input / output per MTok (million tokens) | Roughly vs. Haiku | AA intelligence index | Output tok/s |
+|---|---|---|---|---|
+| Haiku 4.5 | $1 / $5 | 1x | 15 | ~80 |
+| Sonnet 5 | $2 / $10 | ~2x | 28 | ~60 |
+| Opus 5.5 | $4 / $20 | ~4x | 51 (up to 58 at max effort) | ~82 |
+| Fable 5.1 | $10 / $50 | ~10x | 49 (up to 53 at max effort) | ~56 |
 
-Haiku is the cheapest and fastest tier. Per that same pricing page, Opus's
+Opus 5.5 replaced Opus 5 ($5 / $25, now listed under legacy models) and is
+cheaper than it. The index shifts several points with effort/reasoning
+settings, so compare tiers by rough gap, not exact integers; it also
+measures benchmark reasoning, not long-running agentic work, which is where
+Fable is positioned.
+
+Haiku is the cheapest tier. Per that same pricing page, Opus's
 base speed is not fast — it has an optional "fast mode" at double its own
 price for roughly 2.5x the speed — and Fable is priced and positioned for
 long-running agentic work, not quick bulk calls.
 
 The gap compounds with volume: 50 haiku-tiered calls cost roughly what 25
 sonnet-tiered ones would (Sonnet's ~2x table ratio) for work that doesn't
-need sonnet's judgement — or 10 opus-tiered ones (~5x), if that's the
+need sonnet's judgement — or ~12 opus-tiered ones (~4x), if that's the
 comparison at hand. That gap, not a stylistic preference for cheap models,
 is the whole case for
 delegating aggressively rather than defaulting every call to whatever tier
@@ -174,9 +182,10 @@ means the prompt was underspecified — fix the prompt, not just the output.
 ## Delegating outside the Agent tool
 
 Everything above picks a *model tier* for an Agent-tool sub-agent. GitHub
-Copilot's own `copilot` CLI is a separate, external delegate with its
-cheapest model (`gpt-5.6-luna`) priced below even Haiku and, on public
-benchmarks, comparably fast and capable — read
+Copilot's own `copilot` CLI is a separate, external delegate whose cheapest
+models (GPT-6 Luna, then `gpt-5.6-luna`, the script's current default) are
+priced well below Haiku and, on public benchmarks, faster and more capable
+than it — read
 [delegate-to-copilot.md](delegate-to-copilot.md) for the actual numbers and
 when that beats a Claude sub-agent instead of assuming Claude tiers are
 always the cheaper or only option.
