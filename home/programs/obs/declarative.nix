@@ -114,6 +114,18 @@ in
   # saves. Declared keys are patched in place instead; removing a key from
   # these options stops managing it but does not delete it from the file.
   config = lib.mkIf config.programs.obs-studio.enable {
+    # Declared settings land in the world-readable store; secrets must come
+    # from the *File options instead.
+    assertions =
+      lib.mapAttrsToList (name: p: {
+        assertion = !(p.service ? settings && p.service.settings ? key);
+        message = "programs.obs-studio.declarative.profiles.${name}.service.settings.key would put the stream key in the Nix store; use streamKeyFile.";
+      }) cfg.profiles
+      ++ [{
+        assertion = !(cfg.websocket.settings ? server_password);
+        message = "programs.obs-studio.declarative.websocket.settings.server_password would put the password in the Nix store; use websocket.passwordFile.";
+      }];
+
     home.activation.obsDeclarativeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       obsPatchIni() {
         local target="$1"; shift
