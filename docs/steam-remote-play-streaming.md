@@ -231,6 +231,42 @@ Each degrades independently, which is why diagnosing this is tractable at all:
 a wrong capture size implicates the filter, a wrong window placement implicates
 the watcher, and the two symptoms do not overlap.
 
+## How niri hands workspaces between outputs
+
+Observed on ali-desktop with niri 26.04 (02fdd8e), 2026-09-28, by turning DP-2
+off and on with `steam` enabled and a window parked on a `steam` workspace. Every
+rule below decides where a window ends up when the monitor or `steam` comes and
+goes, so check them against this again after a niri upgrade.
+
+| Event | What niri does |
+|---|---|
+| The monitor goes off while `steam` is enabled | Every DP-2 workspace, named ones and their windows included, moves onto `steam` after `steam`'s own. |
+| The monitor comes back | niri returns only the workspaces that **came from** DP-2, in their old order. Workspaces **created on** `steam` stay on `steam` with their windows. DP-2 gets a fresh empty workspace at the end. |
+| `steam` is turned off while DP-2 is active | Its non-empty workspaces move to DP-2 with their windows, keeping their ids, placed before DP-2's trailing empty workspace. Its empty workspaces are dropped. |
+| A new window opens while `steam` is the only output | It lands on a `steam` workspace (the KDE Wallet prompt did, on workspace 70). |
+
+What that means for `stream-mode`:
+
+- **An enabled idle `steam` output strands windows.** A window that opens while
+  the monitor is off lands on a `steam` workspace, and the monitor coming back
+  does not bring it along. On 2026-09-28 that hid a KDE Wallet unlock prompt,
+  and every `gh` call hung on the locked wallet behind it.
+- **Turning `steam` off is how windows come home.** Nothing needs moving by
+  hand: turning the output off hands its windows to DP-2. So stream-mode turns
+  `steam` off as soon as another output is back
+  (`Session.release_left_on_alone`, [ADR 0013](adr/0013-disarm-on-client-disconnect.md)).
+- **Never turn off the last output.** With the monitor off, turning `steam`
+  off leaves niri with no outputs at all. The workspaces then have nowhere to
+  go, and a restarted Steam cannot open its login window. That is why `steam` is
+  left on alone in the first place.
+
+To repeat the check: `stream-mode on`, then
+`niri msg action move-window-to-monitor --id <id> steam` for a harmless window.
+Turn the monitor off and on, then run `stream-mode off`. Compare
+`niri msg -j workspaces` and `niri msg -j windows` after each step. Use the
+newest `/run/user/$UID/niri*.sock` as `NIRI_SOCKET`; a stale one from an
+earlier niri fails to connect.
+
 ## Covering the output
 
 `set_window_fullscreen(window_id, True)` — genuine fullscreen, not a maximised
