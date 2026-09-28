@@ -53,6 +53,7 @@
     ./rio
     ./rofi
     ./rust
+    ./sift
     ./ssh
     ./starship
     ./terraform
