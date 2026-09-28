@@ -1,6 +1,7 @@
 ---
 name: handoff
-description: Use when ending a session with work still open, before a context compaction, switching machines mid-task, or asked to write up state for another agent or session to continue from ("hand this off", "write up where we're at", "pick this up later"). Produces a structured summary: what was asked, what's done, what's in flight, decisions and why, open questions, and the exact next command.
+description: >-
+  Use when ending a session with work still open, before a context compaction, switching machines mid-task, or asked to write up state for another agent or session to continue from ("hand this off", "write up where we're at", "pick this up later"). Produces a structured summary: what was asked, what's done, what's in flight, decisions and why, open questions, and the exact next command.
 ---
 
 # Handoff

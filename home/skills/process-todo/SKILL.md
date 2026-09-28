@@ -1,6 +1,7 @@
 ---
 name: process-todo
-description: Process open items from todo.md at the repo root, moving completed items to done.md with ISO8601 UTC timestamps. Use when user runs /process-todo, says "process my todo", "work the todo list", or "update done.md".
+description: >-
+  Process open items from todo.md at the repo root, moving completed items to done.md with ISO8601 UTC timestamps. Use when user runs /process-todo, says "process my todo", "work the todo list", or "update done.md".
 argument-hint: "[optional item filter]"
 ---
 

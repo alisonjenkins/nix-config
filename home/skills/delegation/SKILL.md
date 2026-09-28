@@ -1,6 +1,7 @@
 ---
 name: delegation
-description: Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
+description: >-
+  Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation

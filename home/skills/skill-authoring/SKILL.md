@@ -1,6 +1,7 @@
 ---
 name: skill-authoring
-description: Use when adding, editing, splitting or reorganising a skill, deciding whether something should be a skill at all, or working out why a skill is not firing when it should. Carries the family pattern used here, how to write a description that actually matches, portable frontmatter, what a skill costs in context, how to test that it actually fires and works, and how skills get installed from this repo.
+description: >-
+  Use when adding, editing, splitting or reorganising a skill, deciding whether something should be a skill at all, or working out why a skill is not firing when it should. Carries the family pattern used here, how to write a description that actually matches, portable frontmatter, what a skill costs in context, how to test that it actually fires and works, and how skills get installed from this repo.
 ---
 
 # Skill authoring
