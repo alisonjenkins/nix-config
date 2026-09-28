@@ -27,8 +27,9 @@ Line numbers are as of commit `b99d957a`.
     the full output height, and the source already lays it out at the overview zoom.
   - The strip is shown at scale 1 in logical pixels, so its workspaces appear at the same zoom
     as the viewer's own. Scale drops below 1 only when the row does not fit (FR-009).
-  - A pure `overview_columns(viewer_strip, sources) -> Vec<Rectangle>` places the regions to
-    the right of the viewer's own strip and centres the whole row.
+  - A pure `overview_columns(viewer_strip, viewer_size, sources)` places the regions to the
+    right of the viewer's own strip and leaves the strip where niri draws it (see
+    data-model.md, amended during implementation).
   - Everything inside a column is the source's own `Monitor` state, reached through
     `Projection::to_source`.
 - **Rationale**: `Monitor::workspace_under` (`monitor.rs:1547`) extends workspace bounds to the

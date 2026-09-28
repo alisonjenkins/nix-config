@@ -68,12 +68,19 @@ its `source_rect` size.
 
 The output is one `region` per source, placed in this order:
 1. Scale is 1 for every source.
-2. Place the regions left to right after the viewer's strip, separated by a gap of
-   `0.05 × viewer height`.
-3. Centre the whole row (the viewer strip plus the regions) horizontally on the viewer.
-4. If the row is wider than 95% of the viewer, scale all source regions down uniformly until it
-   fits. The viewer strip is never scaled.
+2. Place the regions left to right starting right of the viewer's strip, separated by a gap
+   of `0.05 × viewer height`.
+3. The viewer's own strip is never moved or scaled. It stays exactly where niri draws it, so
+   `Monitor` geometry and hit-testing are unchanged.
+4. If the regions don't fit between the strip and the viewer's right edge (keeping one gap of
+   margin), scale all source regions down uniformly until they do, to a minimum scale of 0.05.
 5. Centre each region vertically.
+6. When the strip is as wide as the viewer (overview closed, zoom 1), the regions go fully
+   off-screen to the right, so they slide in as the overview opens.
+
+(Amended during implementation. The original design centred the whole row, which would have
+moved the viewer's own workspaces and needed changes to `Monitor` geometry for both rendering
+and hit-testing.)
 
 ## New `VirtualOutputError` variants
 
