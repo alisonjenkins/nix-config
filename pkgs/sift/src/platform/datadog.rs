@@ -167,7 +167,9 @@ fn is_retryable_status(status: u16) -> bool {
 fn backoff_delay(attempt: u32, reset_header: Option<&str>) -> Duration {
     if let Some(reset) = reset_header {
         if let Ok(secs) = reset.trim().parse::<u64>() {
-            return Duration::from_secs(secs).min(RETRY_MAX_WAIT);
+            // A reset of 0 would retry instantly and almost certainly hit
+            // the same limit again, so wait at least one second.
+            return Duration::from_secs(secs.max(1)).min(RETRY_MAX_WAIT);
         }
     }
     let exponent = attempt.saturating_sub(1);
@@ -872,6 +874,11 @@ mod tests {
     #[test]
     fn backoff_honors_a_parseable_reset_header() {
         assert_eq!(backoff_delay(1, Some("5")), Duration::from_secs(5));
+    }
+
+    #[test]
+    fn backoff_waits_at_least_a_second_on_a_zero_reset_header() {
+        assert_eq!(backoff_delay(1, Some("0")), Duration::from_secs(1));
     }
 
     #[test]
