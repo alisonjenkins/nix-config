@@ -19,3 +19,11 @@ repos:
         language: system
         pass_filenames: false
         files: ^home/programs/linux-only/steam-stream-mode/
+      # Copilot CLI and other strict parsers drop a skill whose frontmatter
+      # Claude Code happily loads (an unquoted ": " in a description).
+      - id: skill-frontmatter
+        name: skill frontmatter parses as strict YAML
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#yq-go --command .github/scripts/check-skill-frontmatter.sh
+        language: system
+        pass_filenames: false
+        files: ^home/skills/[^/]+/SKILL\.md$

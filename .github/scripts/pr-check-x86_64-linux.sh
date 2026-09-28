@@ -162,6 +162,12 @@ check_drv_set ".#packages.${TARGET_SYSTEM}"
 echo "== packages.${TARGET_SYSTEM} changed by this PR (built) =="
 build_changed_packages ".#packages.${TARGET_SYSTEM}"
 
+echo "== skill frontmatter (strict YAML) =="
+if ! nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
+    --command .github/scripts/check-skill-frontmatter.sh; then
+    FAILED=1
+fi
+
 echo "== aarch64-linux nixosConfigurations (evaluated) =="
 check_hosts_for_system "aarch64-linux"
 
