@@ -63,7 +63,12 @@ In `home/programs/linux-only/steam-stream-mode/stream_mode.py`:
   `SteamStreaming=1` (runner ADR 0007), which it does for launches from a
   client.
 - The output stays on while the monitor is off. Nothing else can use it then,
-  so nothing is lost.
+  so nothing is lost. It must go off again once the monitor returns, which
+  it did not at first: on 2026-09-28 it stayed on with DP-2 back and kept
+  taking new windows, so a KDE Wallet unlock prompt opened there unseen and
+  every `gh` call hung on the locked wallet. stream-mode now remembers an
+  output it left on alone and turns it off on the next output change that
+  shows another output active.
 - niri drops every change made over IPC when it reloads its config, and
   re-applies the declared `off` and mode. A `just switch` that touched
   config.kdl turned the output off at 09:01 on 2026-09-24 and left niri with
@@ -83,7 +88,9 @@ In `home/programs/linux-only/steam-stream-mode/stream_mode.py`:
 - Tests: `test_a_client_disconnecting_before_streaming_disarms`,
   `test_a_disconnect_mid_stream_leaves_the_stop_marker_in_charge`,
   `test_steam_dying_with_a_client_connected_disarms`,
-  `test_the_only_output_is_left_on`.
+  `test_the_only_output_is_left_on`,
+  `test_the_output_left_on_goes_off_when_the_monitor_returns`,
+  `test_an_output_kept_on_by_a_reload_goes_off_when_the_monitor_returns`.
 
 ## Revisit when
 
