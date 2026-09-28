@@ -7,5 +7,9 @@
   pname = "containerd-prepopulate";
   version = "0.1.0";
   src = ./.;
+  # Goes stale on every Renovate go.mod/go.sum bump; Go has no hash-free
+  # lockfile fetcher. To refresh: set it to "", run
+  # `nix build .#packages.x86_64-linux.containerd-prepopulate`, and paste
+  # the "got:" hash back here.
   vendorHash = "sha256-k/af0QBhmFMeTzOFkGCQa86qDjh4oeBLWc5uCFzt8Tg=";
 }
