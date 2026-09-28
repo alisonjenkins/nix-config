@@ -89,7 +89,12 @@ runs sequentially.
 - **Reads fan out, writes don't.** Parallelize independent investigations or
   lookups freely. Parallel *implementation* agents editing real code
   conflict with each other — serialize those, or isolate each in its own
-  worktree ([git/worktrees.md](../git/worktrees.md)).
+  worktree ([git/worktrees.md](../git/worktrees.md)). In Claude Code, spawn
+  each writer with `isolation: "worktree"` and have it start by checking
+  out the exact commit to build on (`git switch -c <branch> <sha>`), then
+  commit there for you to cherry-pick. A worktree you create yourself and
+  name in the prompt does not work: a sub-agent's shell is pinned to the
+  parent session's worktree and refuses to run anywhere else.
 - **Size the fan-out to the task, not habit**: ~1 agent for simple fact-
   finding, 2-4 for a comparison across sources, 10+ only for genuinely broad
   research — [Anthropic's own multi-agent research
