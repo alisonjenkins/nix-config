@@ -4,10 +4,10 @@ An alternative to an Agent-tool sub-agent: `scripts/delegate.sh` hands a
 subtask to GitHub Copilot's cheapest-tier model via the official `copilot`
 CLI. It spends real money and, on some profiles, writes to the working
 directory — state which profile you're using and why in one line before
-running it, as you would for a sub-agent's model tier, and don't reach for it
-unless the user's context indicates they want this (a Copilot subscription,
-cost-consciousness, or an explicit ask). Works against any repo — it doesn't
-assume this one.
+running it, as you would for a sub-agent's model tier. It is the default
+first rung on machines whose Model Routing mandate names it (nix
+`cheapDelegate = "copilot"`, the work laptop); elsewhere, use it only when
+the user asks. Works against any repo — it doesn't assume this one.
 
 ## Cost/speed/intelligence vs. a Claude sub-agent
 
