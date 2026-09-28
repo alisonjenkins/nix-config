@@ -48,9 +48,9 @@ turns a still-missing key into a clear, named error
 sift datadog logs 'service:checkout status:error' --site us3.datadoghq.com --auth-profile work
 ```
 
-Put real values into the `work`/`personal` profile's bound provider the
-same way as the LGTM secrets below (1Password item titled `DD_API_KEY`,
-or an SSM parameter at `/secretspec/sift/work/DD_API_KEY`).
+Put real values into the `work`/`personal` profile's 1Password vault the
+same way as the LGTM secrets below: items titled `DD_API_KEY` and
+`DD_APP_KEY`.
 
 ## 1Password (recommended): the `personal` profile
 
@@ -98,21 +98,39 @@ from the environment automatically — no `secretspec.toml` change
 needed. This is the right setup for a CI pipeline or any unattended
 `sift` invocation.
 
-## AWS SSM Parameter Store: the `work` profile
+## Work 1Password account: the `work` profile
+
+`--auth-profile work` reads from the work 1Password account through a
+`work_1password` provider alias that `secretspec.toml` deliberately
+leaves undefined: its URI names the work account, which stays out of
+this public repo. On work machines (`workIdentity = true`),
+`home/programs/sift` renders the alias into the per-user
+`~/.config/secretspec/config.toml` from sops, with the same 30-minute
+keyring cache as `personal`. secretspec checks project aliases before
+user ones, so never define `work_1password` in `secretspec.toml` too; it
+would shadow the real value.
+
+**One-time setup** (on the work machine):
 
 ```bash
-AWS_PROFILE=<your-profile> aws ssm put-parameter \
-  --name /secretspec/sift/work/LGTM_BEARER_TOKEN --type SecureString \
-  --value <your-real-token>
+op account list                     # note the work account's USER ID
+op item create --category=password --account <USER ID> --vault=<vault> \
+  --title=DD_API_KEY password=<api-key>
+op item create --category=password --account <USER ID> --vault=<vault> \
+  --title=DD_APP_KEY password=<application-key>
+sops secrets/ali-work-laptop-macos/work-identity.enc.yaml
+# add:  secretspec_work_1password_uri: onepassword://<USER ID>@<vault>
 ```
 
-`secretspec/sift/work/` is the `awsps` provider's default parameter
-path template — `/secretspec/{project}/{profile}/{key}`, where
-`project` comes from `secretspec.toml`'s `[project] name` and `profile`
-from `--auth-profile`. Adjust the region in `secretspec.toml`'s
-`work_awsps` provider entry (`awsps://us-east-1`) to match where the
-parameter actually lives; add `?prefix=/custom-prefix` to that URI instead if
-you want a different path prefix than the default template.
+Then `just switch`. The key must exist in the sops file before the
+switch, or sops-nix fails activation. Elsewhere, `--auth-profile work`
+fails with "Provider alias 'work_1password' is not defined".
+
+A cached alias like this one is a complete route and can't sit in a
+fallback chain, so the profile names only `work_1password`. To back a
+profile with AWS SSM Parameter Store instead, define an alias such as
+`{ uri = "awsps://us-east-1", cache = { provider = "local_cache", max_age = "30m" } }`;
+the `awsps` provider reads `/secretspec/{project}/{profile}/{key}`.
 
 ## Adding your own profile (e.g. Azure Key Vault)
 

@@ -98,7 +98,8 @@ aggregate endpoints (`/api/v2/logs/analytics/aggregate`,
 ## Consequences
 
 - Running `sift datadog ...` needs `DD_API_KEY`/`DD_APP_KEY` with
-  read-only scopes stored in 1Password (personal) or SSM (work) — see
+  read-only scopes stored in 1Password (the personal vault, or the work
+  account through a sops-rendered user-level alias) — see
   `pkgs/sift/docs/credential-profiles.md`. `pup`'s existing OAuth login
   is not reused by `sift`; the two tools authenticate independently.
 - `sift` stays a single self-contained binary with one credential path
