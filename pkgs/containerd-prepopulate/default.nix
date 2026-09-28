@@ -9,7 +9,8 @@
   src = ./.;
   # Goes stale on every Renovate go.mod/go.sum bump; Go has no hash-free
   # lockfile fetcher. To refresh: set it to "", run
-  # `nix build .#packages.x86_64-linux.containerd-prepopulate`, and paste
-  # the "got:" hash back here.
+  # `nix build .#packages.<system>.containerd-prepopulate` for the machine
+  # you are on, and paste the "got:" hash back here. The hash is the same on
+  # every system.
   vendorHash = "sha256-k/af0QBhmFMeTzOFkGCQa86qDjh4oeBLWc5uCFzt8Tg=";
 }
