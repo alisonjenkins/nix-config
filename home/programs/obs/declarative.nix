@@ -117,10 +117,16 @@ in
     # Declared settings land in the world-readable store; secrets must come
     # from the *File options instead.
     assertions =
-      lib.mapAttrsToList (name: p: {
-        assertion = !(p.service ? settings && p.service.settings ? key);
-        message = "programs.obs-studio.declarative.profiles.${name}.service.settings.key would put the stream key in the Nix store; use streamKeyFile.";
-      }) cfg.profiles
+      lib.concatLists (lib.mapAttrsToList (name: p: [
+        {
+          assertion = !(p.service ? settings && p.service.settings ? key);
+          message = "programs.obs-studio.declarative.profiles.${name}.service.settings.key would put the stream key in the Nix store; use streamKeyFile.";
+        }
+        {
+          assertion = !(p.service ? settings && p.service.settings ? password);
+          message = "programs.obs-studio.declarative.profiles.${name}.service.settings.password would put the RTMP auth password in the Nix store; set it in OBS instead.";
+        }
+      ]) cfg.profiles)
       ++ [{
         assertion = !(cfg.websocket.settings ? server_password);
         message = "programs.obs-studio.declarative.websocket.settings.server_password would put the password in the Nix store; use websocket.passwordFile.";
