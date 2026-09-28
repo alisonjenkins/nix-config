@@ -8,7 +8,12 @@ let
   };
 
   mandates = import ../shared-mandates.nix;
-  inherit (mandates) gitStrategy modelRouting workStyle;
+  inherit (mandates) gitStrategy workStyle;
+
+  # Read via `args ... or` for the same reason as hasFable below.
+  cheapDelegate = args.cheapDelegate or "local";
+  modelRouting = assert lib.assertOneOf "cheapDelegate" cheapDelegate [ "copilot" "local" ];
+    mandates.mkModelRouting cheapDelegate;
 
   # Fable is unavailable on the work account. A `model: fable` agent there does
   # NOT quietly fall back to opus — when a model is blocked, Claude Code falls
