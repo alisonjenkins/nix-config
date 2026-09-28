@@ -439,6 +439,9 @@ in {
           # the *parent's* model (sonnet) rather than to opus — the escalation
           # would silently do nothing. Naming opus here keeps the top rung real.
           hasFable = false;
+          # Delegate haiku-shaped work to Copilot's Luna first: this account's
+          # Claude allowance is the one worth conserving.
+          cheapDelegate = "copilot";
           github_clone_ssh_host_work = "github.com";
           hostname = "${hostnames.work}";
           # No local llama endpoint on this host — opencode falls back to
