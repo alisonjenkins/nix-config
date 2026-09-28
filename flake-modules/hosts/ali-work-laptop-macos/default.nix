@@ -164,6 +164,7 @@ in {
             ripgrep
             rlwrap
             selene
+            sift
             skopeo
             ssm-session-manager-plugin
             statix
