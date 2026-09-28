@@ -69,6 +69,18 @@ MalformedTimestamp}`, and the equivalent `Metrics*`/`Traces*` sets) —
 no variant is shared across signals, so a caller can always tell which
 endpoint and which failure mode produced an error.
 
+A 429, a 500/502/503/504, or a `reqwest` send error that is a timeout or
+connect failure is retried by a shared `send_with_retry` helper, up to
+`RETRY_MAX_ATTEMPTS` (4 total attempts) with the wait capped at
+`RETRY_MAX_WAIT` (60s): a 429's `X-RateLimit-Reset` is honored when
+parseable, otherwise the wait is exponential from 1s. Any other 4xx, or a
+non-transient send error, is not retried. This exists so a large
+`--max-events` fetch that has already paged through dozens of requests
+does not discard that work over one transient blip; without it,
+`check_response` returning `Err` on the first 429/5xx failed the whole
+`fetch_logs`/`fetch_metrics`/`fetch_traces` call, dropping every page
+already collected.
+
 `--group-by` defaults differ per signal, since the same reduction flags
 now have to serve three different query shapes: `status` for logs,
 `metric` for metrics, `service` for traces — see the doc comments on

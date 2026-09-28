@@ -3,6 +3,8 @@ use crate::event::Event;
 use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::thread;
+use std::time::Duration;
 use thiserror::Error;
 
 /// Datadog's v2 logs/spans search endpoints paginate via a `page.limit`
@@ -17,6 +19,19 @@ const PAGE_LIMIT: usize = 1000;
 /// reduction modes meaningful while keeping one `sift` invocation to a
 /// handful of paginated requests.
 pub const DEFAULT_MAX_EVENTS: usize = 5000;
+
+/// Total attempts (the original send plus retries) `send_with_retry` will
+/// make before giving up: enough to ride out a short blip (a 429 near its
+/// reset, a couple of 5xx flaps) without turning a large `--max-events`
+/// fetch into an indefinite hang when the endpoint is genuinely down.
+const RETRY_MAX_ATTEMPTS: u32 = 4;
+
+/// Ceiling on any single retry wait, whether driven by Datadog's own
+/// `X-RateLimit-Reset` or by exponential backoff: Datadog's documented
+/// rate-limit windows are minute-scale, so a single wait longer than this
+/// would stall a page fetch far past the point a fresh attempt is likely
+/// to succeed.
+const RETRY_MAX_WAIT: Duration = Duration::from_secs(60);
 
 /// Datadog's v2 API error envelope on a non-2xx response (JSON:API
 /// style: `{"errors":[{"title":...,"detail":...}]}`), or occasionally
@@ -124,6 +139,112 @@ fn truncate_body(body: &str) -> String {
 enum HttpFailure {
     RateLimited(Option<String>),
     Status(u16, String),
+}
+
+/// What `send_with_retry` reports after retries are exhausted (or a
+/// non-retryable failure hits immediately): `HttpFailure` plus the case
+/// `check_response` never sees — a `reqwest` send error.
+enum RetryFailure {
+    RateLimited(Option<String>),
+    Status(u16, String),
+    Send(reqwest::Error),
+}
+
+/// Whether a non-2xx status is worth retrying: rate limiting and
+/// server-side failures are typically transient, everything else (a
+/// malformed query, bad auth, a missing resource) will fail identically
+/// on the next attempt.
+fn is_retryable_status(status: u16) -> bool {
+    matches!(status, 429 | 500 | 502 | 503 | 504)
+}
+
+/// How long to wait before the next attempt. On a 429 with a parseable
+/// `X-RateLimit-Reset` (Datadog sends this as seconds until the limit
+/// resets), honor it; otherwise fall back to exponential backoff from 1s,
+/// doubling per attempt. Either way the wait is capped at
+/// `RETRY_MAX_WAIT`. `attempt` is the 1-based count of the attempt that
+/// just failed.
+fn backoff_delay(attempt: u32, reset_header: Option<&str>) -> Duration {
+    if let Some(reset) = reset_header {
+        if let Ok(secs) = reset.trim().parse::<u64>() {
+            return Duration::from_secs(secs).min(RETRY_MAX_WAIT);
+        }
+    }
+    let exponent = attempt.saturating_sub(1);
+    let secs = 1u64.checked_shl(exponent).unwrap_or(u64::MAX);
+    Duration::from_secs(secs).min(RETRY_MAX_WAIT)
+}
+
+/// Sends a request built fresh on each attempt (auth applied here, once
+/// per attempt), retrying on a 429, a 5xx in `is_retryable_status`, or a
+/// `reqwest` send error that is a timeout or connection failure. Any
+/// other 4xx, or a non-retryable send error, returns immediately. Shared
+/// by `fetch_logs`/`fetch_metrics`/`fetch_traces` so all three Datadog
+/// endpoints retry the same way.
+fn send_with_retry<F>(
+    endpoint: &'static str,
+    auth: &DatadogAuth,
+    build_request: F,
+) -> Result<reqwest::blocking::Response, RetryFailure>
+where
+    F: Fn() -> reqwest::blocking::RequestBuilder,
+{
+    let mut attempt: u32 = 1;
+    loop {
+        let request = auth.apply(build_request());
+        match request.send() {
+            Ok(response) => match check_response(response) {
+                Ok(response) => return Ok(response),
+                Err(HttpFailure::RateLimited(reset)) => {
+                    if attempt >= RETRY_MAX_ATTEMPTS {
+                        return Err(RetryFailure::RateLimited(reset));
+                    }
+                    let wait = backoff_delay(attempt, reset.as_deref());
+                    tracing::warn!(
+                        endpoint,
+                        attempt,
+                        status = 429,
+                        wait_secs = wait.as_secs(),
+                        "Datadog request rate limited; retrying"
+                    );
+                    thread::sleep(wait);
+                    attempt = attempt.saturating_add(1);
+                }
+                Err(HttpFailure::Status(status, body)) => {
+                    if !is_retryable_status(status) || attempt >= RETRY_MAX_ATTEMPTS {
+                        return Err(RetryFailure::Status(status, body));
+                    }
+                    let wait = backoff_delay(attempt, None);
+                    tracing::warn!(
+                        endpoint,
+                        attempt,
+                        status,
+                        wait_secs = wait.as_secs(),
+                        "Datadog request failed with a retryable status; retrying"
+                    );
+                    thread::sleep(wait);
+                    attempt = attempt.saturating_add(1);
+                }
+            },
+            Err(send_err) => {
+                let retryable = send_err.is_timeout() || send_err.is_connect();
+                if !retryable || attempt >= RETRY_MAX_ATTEMPTS {
+                    return Err(RetryFailure::Send(send_err));
+                }
+                let error_kind = if send_err.is_timeout() { "timeout" } else { "connect" };
+                let wait = backoff_delay(attempt, None);
+                tracing::warn!(
+                    endpoint,
+                    attempt,
+                    error_kind,
+                    wait_secs = wait.as_secs(),
+                    "Datadog request send failed; retrying"
+                );
+                thread::sleep(wait);
+                attempt = attempt.saturating_add(1);
+            }
+        }
+    }
 }
 
 fn check_response(
@@ -323,16 +444,12 @@ pub fn fetch_logs(
             sort: "-timestamp",
         };
 
-        let request = client.post(&url).json(&request_body);
-        let response = auth
-            .apply(request)
-            .send()
-            .map_err(DatadogError::LogsRequestFailed)?;
-        let response = match check_response(response) {
-            Ok(response) => response,
-            Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::LogsRateLimited { reset }),
-            Err(HttpFailure::Status(status, body)) => return Err(DatadogError::LogsStatus { status, body }),
-        };
+        let response = send_with_retry("logs.search", auth, || client.post(&url).json(&request_body))
+            .map_err(|failure| match failure {
+                RetryFailure::RateLimited(reset) => DatadogError::LogsRateLimited { reset },
+                RetryFailure::Status(status, body) => DatadogError::LogsStatus { status, body },
+                RetryFailure::Send(err) => DatadogError::LogsRequestFailed(err),
+            })?;
 
         let body = response.text().map_err(DatadogError::LogsResponseReadFailed)?;
         let (mut page_events, next_cursor) = parse_logs_response(&body)?;
@@ -453,20 +570,19 @@ pub fn fetch_metrics(
     auth: &DatadogAuth,
 ) -> Result<Vec<Event>, DatadogError> {
     let client = reqwest::blocking::Client::new();
-    let request = client.get(format!("{base_url}/api/v1/query")).query(&[
-        ("query", query.to_string()),
-        ("from", from_unix_secs.to_string()),
-        ("to", to_unix_secs.to_string()),
-    ]);
-    let response = auth
-        .apply(request)
-        .send()
-        .map_err(DatadogError::MetricsRequestFailed)?;
-    let response = match check_response(response) {
-        Ok(response) => response,
-        Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::MetricsRateLimited { reset }),
-        Err(HttpFailure::Status(status, body)) => return Err(DatadogError::MetricsStatus { status, body }),
-    };
+    let url = format!("{base_url}/api/v1/query");
+    let response = send_with_retry("metrics.query", auth, || {
+        client.get(&url).query(&[
+            ("query", query.to_string()),
+            ("from", from_unix_secs.to_string()),
+            ("to", to_unix_secs.to_string()),
+        ])
+    })
+    .map_err(|failure| match failure {
+        RetryFailure::RateLimited(reset) => DatadogError::MetricsRateLimited { reset },
+        RetryFailure::Status(status, body) => DatadogError::MetricsStatus { status, body },
+        RetryFailure::Send(err) => DatadogError::MetricsRequestFailed(err),
+    })?;
 
     let body = response.text().map_err(DatadogError::MetricsResponseReadFailed)?;
     parse_metrics_response(&body)
@@ -637,16 +753,12 @@ pub fn fetch_traces(
             },
         };
 
-        let request = client.post(&url).json(&request_body);
-        let response = auth
-            .apply(request)
-            .send()
-            .map_err(DatadogError::TracesRequestFailed)?;
-        let response = match check_response(response) {
-            Ok(response) => response,
-            Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::TracesRateLimited { reset }),
-            Err(HttpFailure::Status(status, body)) => return Err(DatadogError::TracesStatus { status, body }),
-        };
+        let response = send_with_retry("traces.search", auth, || client.post(&url).json(&request_body))
+            .map_err(|failure| match failure {
+                RetryFailure::RateLimited(reset) => DatadogError::TracesRateLimited { reset },
+                RetryFailure::Status(status, body) => DatadogError::TracesStatus { status, body },
+                RetryFailure::Send(err) => DatadogError::TracesRequestFailed(err),
+            })?;
 
         let body = response.text().map_err(DatadogError::TracesResponseReadFailed)?;
         let (mut page_events, next_cursor) = parse_traces_response(&body)?;
@@ -676,6 +788,44 @@ mod tests {
     fn base_url_prefixes_the_site_with_api() {
         assert_eq!(base_url("datadoghq.com"), "https://api.datadoghq.com");
         assert_eq!(base_url("us3.datadoghq.com"), "https://api.us3.datadoghq.com");
+    }
+
+    // --- retry ---
+
+    #[test]
+    fn retryable_statuses_are_429_and_5xx() {
+        for status in [429, 500, 502, 503, 504] {
+            assert!(is_retryable_status(status), "{status} should be retryable");
+        }
+    }
+
+    #[test]
+    fn non_retryable_statuses_are_rejected() {
+        for status in [400, 401, 403, 404, 422] {
+            assert!(!is_retryable_status(status), "{status} should not be retryable");
+        }
+    }
+
+    #[test]
+    fn backoff_honors_a_parseable_reset_header() {
+        assert_eq!(backoff_delay(1, Some("5")), Duration::from_secs(5));
+    }
+
+    #[test]
+    fn backoff_caps_a_reset_header_above_the_max_wait() {
+        assert_eq!(backoff_delay(1, Some("3600")), RETRY_MAX_WAIT);
+    }
+
+    #[test]
+    fn backoff_falls_back_to_exponential_on_a_bad_reset_header() {
+        assert_eq!(backoff_delay(2, Some("not-a-number")), Duration::from_secs(2));
+        assert_eq!(backoff_delay(1, None), Duration::from_secs(1));
+        assert_eq!(backoff_delay(3, None), Duration::from_secs(4));
+    }
+
+    #[test]
+    fn backoff_exponential_is_capped_at_the_max_wait() {
+        assert_eq!(backoff_delay(10, None), RETRY_MAX_WAIT);
     }
 
     // --- logs ---
