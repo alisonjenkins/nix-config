@@ -1,4 +1,4 @@
-{ lib, buildNpmPackage, fetchurl, runCommand, python3, pkg-config }:
+{ lib, buildNpmPackage, importNpmLock, fetchurl, runCommand, python3, pkg-config }:
 
 let
   npmTarball = fetchurl {
@@ -23,7 +23,15 @@ buildNpmPackage {
 
   inherit src;
 
-  npmDepsHash = "sha256-9U8Kx8C/07RFOK9W8gnKtzHc57oltyJ3DbIuG0FgVCQ=";
+  # Fetch each dependency from the integrity hash in package-lock.json instead
+  # of pinning one npmDepsHash: Renovate bumps the lockfile but cannot update
+  # a Nix hash, so every bump used to break the build until fixed by hand.
+  # Read from ./ rather than src, which is a derivation (that would be IFD).
+  npmDeps = importNpmLock {
+    package = lib.importJSON ./package.json;
+    packageLock = lib.importJSON ./package-lock.json;
+  };
+  npmConfigHook = importNpmLock.npmConfigHook;
 
   # dist/ is pre-built in the npm tarball; skip the TypeScript build step
   dontNpmBuild = true;
