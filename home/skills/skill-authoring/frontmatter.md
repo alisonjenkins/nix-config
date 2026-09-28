@@ -9,7 +9,19 @@ The [agentskills.io](https://agentskills.io) spec allows exactly six fields:
 Everything else is a Claude Code extension. Shared skills in this repo (the
 families under `home/skills/`) are linked into both Claude Code and opencode,
 so they use **spec fields only**; that is what keeps them usable outside Claude
-Code. Claude-Code-only behaviour belongs in settings (`skillOverrides`) or in
+Code. They are also linked into `~/.agents/skills` for opencode and Copilot
+CLI, whose YAML parsers are strict: an unquoted `: ` inside a plain
+`description:` value is a parse error there, and the skill silently fails to
+load, while Claude Code loads it fine. Write every description as a folded
+block scalar, which needs no escaping:
+
+```yaml
+description: >-
+  Use when deciding how to structure a change: where a responsibility belongs...
+```
+
+`.github/scripts/check-skill-frontmatter.sh` (a prek hook and a CI step)
+fails on frontmatter a strict parser rejects. Claude-Code-only behaviour belongs in settings (`skillOverrides`) or in
 an already Claude-Code-specific skill, such as a project skill under
 `.claude/skills/`.
 
