@@ -1,0 +1,878 @@
+use crate::auth::DatadogAuth;
+use crate::event::Event;
+use chrono::{DateTime, TimeZone, Utc};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use thiserror::Error;
+
+/// Datadog's v2 logs/spans search endpoints paginate via a `page.limit`
+/// this crate has not independently confirmed a hard maximum for; 1000
+/// matches the documented default/common ceiling for both endpoints and
+/// keeps each page well under Datadog's response-size limits.
+const PAGE_LIMIT: usize = 1000;
+
+/// Default `--max-events` for a reduction mode (aggregate/topn/histogram/
+/// diff): without a bound, a broad query would page against a live
+/// Datadog org indefinitely. 5000 events is enough to make any of the
+/// reduction modes meaningful while keeping one `sift` invocation to a
+/// handful of paginated requests.
+pub const DEFAULT_MAX_EVENTS: usize = 5000;
+
+/// Datadog's v2 API error envelope on a non-2xx response (JSON:API
+/// style: `{"errors":[{"title":...,"detail":...}]}`), or occasionally
+/// present even on a 200 that still failed to produce a result. Both
+/// logs and spans search share this shape.
+#[derive(Debug, Deserialize)]
+struct ApiErrorDetail {
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    detail: Option<String>,
+}
+
+fn format_api_errors(errors: &[ApiErrorDetail]) -> String {
+    errors
+        .iter()
+        .map(|e| {
+            let title = e.title.as_deref().unwrap_or("error");
+            match &e.detail {
+                Some(detail) => format!("{title}: {detail}"),
+                None => title.to_string(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+#[derive(Debug, Error)]
+pub enum DatadogError {
+    #[error("sending Datadog logs search request: {0}")]
+    LogsRequestFailed(reqwest::Error),
+    #[error("reading Datadog logs search response body: {0}")]
+    LogsResponseReadFailed(reqwest::Error),
+    #[error("Datadog logs search returned status {status}: {body}")]
+    LogsStatus { status: u16, body: String },
+    #[error("Datadog logs search was rate limited; X-RateLimit-Reset: {reset:?}")]
+    LogsRateLimited { reset: Option<String> },
+    #[error("parsing Datadog logs search response: {0}")]
+    LogsParse(serde_json::Error),
+    #[error("Datadog logs search reported an API error: {0}")]
+    LogsApiError(String),
+    #[error("Datadog log entry had a missing or malformed timestamp: {0:?}")]
+    LogsMalformedTimestamp(String),
+
+    #[error("sending Datadog metrics query request: {0}")]
+    MetricsRequestFailed(reqwest::Error),
+    #[error("reading Datadog metrics query response body: {0}")]
+    MetricsResponseReadFailed(reqwest::Error),
+    #[error("Datadog metrics query returned status {status}: {body}")]
+    MetricsStatus { status: u16, body: String },
+    #[error("Datadog metrics query was rate limited; X-RateLimit-Reset: {reset:?}")]
+    MetricsRateLimited { reset: Option<String> },
+    #[error("parsing Datadog metrics query response: {0}")]
+    MetricsParse(serde_json::Error),
+    #[error("Datadog metrics query reported status {status:?}: {message}")]
+    MetricsApiError { status: String, message: String },
+    #[error("Datadog metric point had a malformed timestamp: {0:?}")]
+    MetricsMalformedTimestamp(String),
+
+    #[error("sending Datadog spans search request: {0}")]
+    TracesRequestFailed(reqwest::Error),
+    #[error("reading Datadog spans search response body: {0}")]
+    TracesResponseReadFailed(reqwest::Error),
+    #[error("Datadog spans search returned status {status}: {body}")]
+    TracesStatus { status: u16, body: String },
+    #[error("Datadog spans search was rate limited; X-RateLimit-Reset: {reset:?}")]
+    TracesRateLimited { reset: Option<String> },
+    #[error("parsing Datadog spans search response: {0}")]
+    TracesParse(serde_json::Error),
+    #[error("Datadog spans search reported an API error: {0}")]
+    TracesApiError(String),
+    #[error("Datadog span had a missing or malformed timestamp: {0:?}")]
+    TracesMalformedTimestamp(String),
+}
+
+/// Builds the API base URL for a Datadog site, e.g. "datadoghq.com" ->
+/// "https://api.datadoghq.com", "us3.datadoghq.com" ->
+/// "https://api.us3.datadoghq.com". See
+/// https://docs.datadoghq.com/getting_started/site/.
+pub fn base_url(site: &str) -> String {
+    format!("https://api.{site}")
+}
+
+/// A truncated non-2xx response body is more useful in an error message
+/// than either the full body (which can be a multi-MB HTML error page
+/// from an intermediate proxy) or nothing at all.
+const ERROR_BODY_TRUNCATE_BYTES: usize = 2048;
+
+fn truncate_body(body: &str) -> String {
+    if body.len() <= ERROR_BODY_TRUNCATE_BYTES {
+        return body.to_string();
+    }
+    let mut end = ERROR_BODY_TRUNCATE_BYTES;
+    while end > 0 && !body.is_char_boundary(end) {
+        end = end.saturating_sub(1);
+    }
+    // `end` is walked backward until `is_char_boundary` holds, so this
+    // slice is always on a valid UTF-8 boundary.
+    #[allow(clippy::indexing_slicing)]
+    let mut truncated = body[..end].to_string();
+    truncated.push_str("... [truncated]");
+    truncated
+}
+
+enum HttpFailure {
+    RateLimited(Option<String>),
+    Status(u16, String),
+}
+
+fn check_response(
+    response: reqwest::blocking::Response,
+) -> Result<reqwest::blocking::Response, HttpFailure> {
+    let status = response.status();
+    if status.is_success() {
+        return Ok(response);
+    }
+    if status.as_u16() == 429 {
+        let reset = response
+            .headers()
+            .get("x-ratelimit-reset")
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string);
+        return Err(HttpFailure::RateLimited(reset));
+    }
+    let body = match response.text() {
+        Ok(body) => truncate_body(&body),
+        Err(read_err) => format!("<failed to read error response body: {read_err}>"),
+    };
+    Err(HttpFailure::Status(status.as_u16(), body))
+}
+
+/// Splits a Datadog tag ("key:value") into a label pair on its first
+/// colon. A tag with no colon (a bare boolean-style tag, e.g.
+/// "maintenance") becomes a label with an empty value rather than being
+/// dropped — its presence is still meaningful for aggregate/topn
+/// grouping.
+fn tag_to_label(tag: &str) -> (String, String) {
+    match tag.split_once(':') {
+        Some((key, value)) => (key.to_string(), value.to_string()),
+        None => (tag.to_string(), String::new()),
+    }
+}
+
+fn string_attributes(attributes: &serde_json::Map<String, serde_json::Value>) -> BTreeMap<String, String> {
+    attributes
+        .iter()
+        .filter_map(|(key, value)| value.as_str().map(|s| (key.clone(), s.to_string())))
+        .collect()
+}
+
+// ---------------------------------------------------------------------
+// Logs: POST /api/v2/logs/events/search
+// ---------------------------------------------------------------------
+
+#[derive(Serialize)]
+struct TimeFilter<'a> {
+    query: &'a str,
+    from: String,
+    to: String,
+}
+
+#[derive(Serialize)]
+struct PageRequest<'a> {
+    limit: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cursor: Option<&'a str>,
+}
+
+#[derive(Serialize)]
+struct LogsSearchRequest<'a> {
+    filter: TimeFilter<'a>,
+    page: PageRequest<'a>,
+    sort: &'static str,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct LogsSearchResponse {
+    #[serde(default)]
+    data: Vec<LogEntry>,
+    #[serde(default)]
+    meta: Option<LogsMeta>,
+    #[serde(default)]
+    errors: Option<Vec<ApiErrorDetail>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LogEntry {
+    #[serde(default)]
+    attributes: LogEntryAttributes,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct LogEntryAttributes {
+    #[serde(default)]
+    timestamp: Option<String>,
+    #[serde(default)]
+    message: Option<String>,
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    service: Option<String>,
+    #[serde(default)]
+    host: Option<String>,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    attributes: serde_json::Map<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LogsMeta {
+    #[serde(default)]
+    page: Option<LogsMetaPage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LogsMetaPage {
+    #[serde(default)]
+    after: Option<String>,
+}
+
+/// Parses one page of a Datadog `/api/v2/logs/events/search` JSON
+/// response body into `Event`s plus the pagination cursor for the next
+/// page, if any. Pure function — no I/O — testable against a fixture
+/// string.
+fn parse_logs_response(body: &str) -> Result<(Vec<Event>, Option<String>), DatadogError> {
+    let parsed: LogsSearchResponse = serde_json::from_str(body).map_err(DatadogError::LogsParse)?;
+
+    if let Some(errors) = &parsed.errors {
+        if !errors.is_empty() {
+            return Err(DatadogError::LogsApiError(format_api_errors(errors)));
+        }
+    }
+
+    let mut events = Vec::new();
+    for entry in parsed.data {
+        let attrs = entry.attributes;
+        let timestamp_str = attrs
+            .timestamp
+            .clone()
+            .ok_or_else(|| DatadogError::LogsMalformedTimestamp("<missing>".to_string()))?;
+        let timestamp = DateTime::parse_from_rfc3339(&timestamp_str)
+            .map(|dt| dt.with_timezone(&Utc))
+            .map_err(|_| DatadogError::LogsMalformedTimestamp(timestamp_str))?;
+
+        let mut labels = string_attributes(&attrs.attributes);
+        if let Some(status) = attrs.status {
+            labels.insert("status".to_string(), status);
+        }
+        if let Some(service) = attrs.service {
+            labels.insert("service".to_string(), service);
+        }
+        if let Some(host) = attrs.host {
+            labels.insert("host".to_string(), host);
+        }
+        for tag in &attrs.tags {
+            let (key, value) = tag_to_label(tag);
+            labels.insert(key, value);
+        }
+
+        events.push(Event {
+            timestamp,
+            labels,
+            value: None,
+            body: attrs.message,
+        });
+    }
+
+    let cursor = parsed.meta.and_then(|meta| meta.page).and_then(|page| page.after);
+    Ok((events, cursor))
+}
+
+/// Queries a Datadog site's `/api/v2/logs/events/search` endpoint,
+/// following the `meta.page.after` cursor until either `limit` events
+/// have been collected or the API reports no further page. Not
+/// unit-tested directly — a thin `reqwest` wrapper around
+/// `parse_logs_response`, which carries the actual logic.
+pub fn fetch_logs(
+    base_url: &str,
+    query: &str,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    limit: usize,
+    auth: &DatadogAuth,
+) -> Result<Vec<Event>, DatadogError> {
+    let client = reqwest::blocking::Client::new();
+    let url = format!("{base_url}/api/v2/logs/events/search");
+    let from = start.to_rfc3339();
+    let to = end.to_rfc3339();
+
+    let mut events = Vec::new();
+    let mut cursor: Option<String> = None;
+    loop {
+        let remaining = limit.saturating_sub(events.len());
+        if remaining == 0 {
+            break;
+        }
+        let page_limit = remaining.min(PAGE_LIMIT);
+        let request_body = LogsSearchRequest {
+            filter: TimeFilter { query, from: from.clone(), to: to.clone() },
+            page: PageRequest { limit: page_limit, cursor: cursor.as_deref() },
+            // Newest first: when a capped fetch stops early, the dropped
+            // tail is the oldest part of the window, not the newest.
+            sort: "-timestamp",
+        };
+
+        let request = client.post(&url).json(&request_body);
+        let response = auth
+            .apply(request)
+            .send()
+            .map_err(DatadogError::LogsRequestFailed)?;
+        let response = match check_response(response) {
+            Ok(response) => response,
+            Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::LogsRateLimited { reset }),
+            Err(HttpFailure::Status(status, body)) => return Err(DatadogError::LogsStatus { status, body }),
+        };
+
+        let body = response.text().map_err(DatadogError::LogsResponseReadFailed)?;
+        let (mut page_events, next_cursor) = parse_logs_response(&body)?;
+        let page_was_empty = page_events.is_empty();
+        events.append(&mut page_events);
+
+        match next_cursor {
+            Some(next) if !page_was_empty => cursor = Some(next),
+            _ => break,
+        }
+    }
+
+    Ok(events)
+}
+
+// ---------------------------------------------------------------------
+// Metrics: GET /api/v1/query
+// ---------------------------------------------------------------------
+
+#[derive(Debug, Deserialize, Default)]
+struct MetricsQueryResponse {
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
+    #[serde(default)]
+    series: Vec<MetricsSeries>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetricsSeries {
+    #[serde(default)]
+    metric: Option<String>,
+    #[serde(default)]
+    scope: Option<String>,
+    #[serde(default)]
+    tag_set: Vec<String>,
+    #[serde(default)]
+    pointlist: Vec<Vec<Option<f64>>>,
+}
+
+fn timestamp_from_unix_millis(ms: f64) -> Result<DateTime<Utc>, DatadogError> {
+    if !ms.is_finite() {
+        return Err(DatadogError::MetricsMalformedTimestamp(ms.to_string()));
+    }
+    if ms < i64::MIN as f64 || ms > i64::MAX as f64 {
+        return Err(DatadogError::MetricsMalformedTimestamp(ms.to_string()));
+    }
+    let whole_ms = ms.floor() as i64;
+    let seconds = whole_ms.div_euclid(1000);
+    let millis_remainder = whole_ms.rem_euclid(1000);
+    #[allow(clippy::arithmetic_side_effects)] // millis_remainder is in [0, 1000) from rem_euclid, so this stays within [0, 999_000_000].
+    let nanos = u32::try_from(millis_remainder).unwrap_or(0).saturating_mul(1_000_000);
+    Utc.timestamp_opt(seconds, nanos)
+        .single()
+        .ok_or_else(|| DatadogError::MetricsMalformedTimestamp(ms.to_string()))
+}
+
+/// Parses a Datadog `/api/v1/query` JSON response body into `Event`s.
+/// Pure function — no I/O — testable against a fixture string.
+fn parse_metrics_response(body: &str) -> Result<Vec<Event>, DatadogError> {
+    let parsed: MetricsQueryResponse = serde_json::from_str(body).map_err(DatadogError::MetricsParse)?;
+
+    let status = parsed.status.unwrap_or_default();
+    if status != "ok" {
+        return Err(DatadogError::MetricsApiError {
+            status,
+            message: parsed.error.unwrap_or_else(|| "no error message provided".to_string()),
+        });
+    }
+
+    let mut events = Vec::new();
+    for series in parsed.series {
+        let mut labels: BTreeMap<String, String> = series
+            .tag_set
+            .iter()
+            .map(|tag| tag_to_label(tag))
+            .collect();
+        if let Some(metric) = &series.metric {
+            labels.insert("metric".to_string(), metric.clone());
+        }
+        if let Some(scope) = &series.scope {
+            labels.insert("scope".to_string(), scope.clone());
+        }
+
+        for point in series.pointlist {
+            let ts_ms = point
+                .first()
+                .copied()
+                .flatten()
+                .ok_or_else(|| DatadogError::MetricsMalformedTimestamp("<missing>".to_string()))?;
+            // A null value means Datadog has no sample at that point in
+            // the series (a gap, e.g. from a rollup) — skip it rather
+            // than fabricating a 0.
+            let Some(value) = point.get(1).copied().flatten() else {
+                continue;
+            };
+
+            events.push(Event {
+                timestamp: timestamp_from_unix_millis(ts_ms)?,
+                labels: labels.clone(),
+                value: Some(value),
+                body: None,
+            });
+        }
+    }
+
+    Ok(events)
+}
+
+/// Queries a Datadog site's `/api/v1/query` timeseries endpoint. Not
+/// unit-tested directly, same rationale as `fetch_logs`.
+pub fn fetch_metrics(
+    base_url: &str,
+    query: &str,
+    from_unix_secs: i64,
+    to_unix_secs: i64,
+    auth: &DatadogAuth,
+) -> Result<Vec<Event>, DatadogError> {
+    let client = reqwest::blocking::Client::new();
+    let request = client.get(format!("{base_url}/api/v1/query")).query(&[
+        ("query", query.to_string()),
+        ("from", from_unix_secs.to_string()),
+        ("to", to_unix_secs.to_string()),
+    ]);
+    let response = auth
+        .apply(request)
+        .send()
+        .map_err(DatadogError::MetricsRequestFailed)?;
+    let response = match check_response(response) {
+        Ok(response) => response,
+        Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::MetricsRateLimited { reset }),
+        Err(HttpFailure::Status(status, body)) => return Err(DatadogError::MetricsStatus { status, body }),
+    };
+
+    let body = response.text().map_err(DatadogError::MetricsResponseReadFailed)?;
+    parse_metrics_response(&body)
+}
+
+// ---------------------------------------------------------------------
+// Traces (spans): POST /api/v2/spans/events/search
+// ---------------------------------------------------------------------
+
+#[derive(Serialize)]
+struct SpansSearchRequest<'a> {
+    data: SpansSearchRequestData<'a>,
+}
+
+#[derive(Serialize)]
+struct SpansSearchRequestData<'a> {
+    #[serde(rename = "type")]
+    kind: &'static str,
+    attributes: SpansSearchRequestAttributes<'a>,
+}
+
+#[derive(Serialize)]
+struct SpansSearchRequestAttributes<'a> {
+    filter: TimeFilter<'a>,
+    page: PageRequest<'a>,
+    sort: &'static str,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct SpansSearchResponse {
+    #[serde(default)]
+    data: Vec<SpanEntry>,
+    #[serde(default)]
+    meta: Option<LogsMeta>,
+    #[serde(default)]
+    errors: Option<Vec<ApiErrorDetail>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SpanEntry {
+    #[serde(default)]
+    attributes: SpanEntryAttributes,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct SpanEntryAttributes {
+    #[serde(default)]
+    start_timestamp: Option<String>,
+    #[serde(default)]
+    end_timestamp: Option<String>,
+    #[serde(default)]
+    service: Option<String>,
+    #[serde(default)]
+    resource_name: Option<String>,
+    #[serde(default)]
+    env: Option<String>,
+    #[serde(default)]
+    host: Option<String>,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    attributes: serde_json::Map<String, serde_json::Value>,
+}
+
+/// Derives a span's duration in milliseconds: prefer `end_timestamp -
+/// start_timestamp` (both are RFC3339 in the API response), falling
+/// back to a custom `attributes.duration` field (nanoseconds, the APM
+/// convention) when the endpoints aren't both present.
+fn span_duration_ms(attrs: &SpanEntryAttributes, start: DateTime<Utc>) -> Option<f64> {
+    if let Some(end_str) = &attrs.end_timestamp {
+        if let Ok(end) = DateTime::parse_from_rfc3339(end_str) {
+            let end = end.with_timezone(&Utc);
+            let millis = end.signed_duration_since(start).num_milliseconds();
+            return Some(millis as f64);
+        }
+    }
+    attrs
+        .attributes
+        .get("duration")
+        .and_then(serde_json::Value::as_f64)
+        .map(|ns| ns / 1_000_000.0)
+}
+
+/// Parses one page of a Datadog `/api/v2/spans/events/search` JSON
+/// response body into `Event`s plus the pagination cursor for the next
+/// page, if any. Pure function — no I/O — testable against a fixture
+/// string.
+fn parse_traces_response(body: &str) -> Result<(Vec<Event>, Option<String>), DatadogError> {
+    let parsed: SpansSearchResponse = serde_json::from_str(body).map_err(DatadogError::TracesParse)?;
+
+    if let Some(errors) = &parsed.errors {
+        if !errors.is_empty() {
+            return Err(DatadogError::TracesApiError(format_api_errors(errors)));
+        }
+    }
+
+    let mut events = Vec::new();
+    for entry in parsed.data {
+        let attrs = entry.attributes;
+        let start_str = attrs
+            .start_timestamp
+            .clone()
+            .ok_or_else(|| DatadogError::TracesMalformedTimestamp("<missing>".to_string()))?;
+        let start = DateTime::parse_from_rfc3339(&start_str)
+            .map(|dt| dt.with_timezone(&Utc))
+            .map_err(|_| DatadogError::TracesMalformedTimestamp(start_str))?;
+
+        let value = span_duration_ms(&attrs, start);
+
+        let mut labels = string_attributes(&attrs.attributes);
+        if let Some(service) = &attrs.service {
+            labels.insert("service".to_string(), service.clone());
+        }
+        if let Some(resource_name) = &attrs.resource_name {
+            labels.insert("resource_name".to_string(), resource_name.clone());
+        }
+        if let Some(env) = &attrs.env {
+            labels.insert("env".to_string(), env.clone());
+        }
+        if let Some(host) = &attrs.host {
+            labels.insert("host".to_string(), host.clone());
+        }
+        for tag in &attrs.tags {
+            let (key, value) = tag_to_label(tag);
+            labels.insert(key, value);
+        }
+
+        events.push(Event { timestamp: start, labels, value, body: None });
+    }
+
+    let cursor = parsed.meta.and_then(|meta| meta.page).and_then(|page| page.after);
+    Ok((events, cursor))
+}
+
+/// Queries a Datadog site's `/api/v2/spans/events/search` endpoint,
+/// following the `meta.page.after` cursor exactly like `fetch_logs`. Not
+/// unit-tested directly — a thin `reqwest` wrapper around
+/// `parse_traces_response`.
+pub fn fetch_traces(
+    base_url: &str,
+    query: &str,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    limit: usize,
+    auth: &DatadogAuth,
+) -> Result<Vec<Event>, DatadogError> {
+    let client = reqwest::blocking::Client::new();
+    let url = format!("{base_url}/api/v2/spans/events/search");
+    let from = start.to_rfc3339();
+    let to = end.to_rfc3339();
+
+    let mut events = Vec::new();
+    let mut cursor: Option<String> = None;
+    loop {
+        let remaining = limit.saturating_sub(events.len());
+        if remaining == 0 {
+            break;
+        }
+        let page_limit = remaining.min(PAGE_LIMIT);
+        let request_body = SpansSearchRequest {
+            data: SpansSearchRequestData {
+                kind: "search_request",
+                attributes: SpansSearchRequestAttributes {
+                    filter: TimeFilter { query, from: from.clone(), to: to.clone() },
+                    page: PageRequest { limit: page_limit, cursor: cursor.as_deref() },
+                    sort: "-timestamp",
+                },
+            },
+        };
+
+        let request = client.post(&url).json(&request_body);
+        let response = auth
+            .apply(request)
+            .send()
+            .map_err(DatadogError::TracesRequestFailed)?;
+        let response = match check_response(response) {
+            Ok(response) => response,
+            Err(HttpFailure::RateLimited(reset)) => return Err(DatadogError::TracesRateLimited { reset }),
+            Err(HttpFailure::Status(status, body)) => return Err(DatadogError::TracesStatus { status, body }),
+        };
+
+        let body = response.text().map_err(DatadogError::TracesResponseReadFailed)?;
+        let (mut page_events, next_cursor) = parse_traces_response(&body)?;
+        let page_was_empty = page_events.is_empty();
+        events.append(&mut page_events);
+
+        match next_cursor {
+            Some(next) if !page_was_empty => cursor = Some(next),
+            _ => break,
+        }
+    }
+
+    Ok(events)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::panic
+    )]
+    use super::*;
+
+    #[test]
+    fn base_url_prefixes_the_site_with_api() {
+        assert_eq!(base_url("datadoghq.com"), "https://api.datadoghq.com");
+        assert_eq!(base_url("us3.datadoghq.com"), "https://api.us3.datadoghq.com");
+    }
+
+    // --- logs ---
+
+    const LOGS_SAMPLE: &str = r#"{
+        "data": [
+            {
+                "attributes": {
+                    "timestamp": "2025-08-30T00:00:00.000Z",
+                    "message": "connection timeout",
+                    "status": "error",
+                    "service": "checkout",
+                    "host": "web-1",
+                    "tags": ["env:prod", "maintenance"],
+                    "attributes": {"http.method": "GET", "http.status_code": 500}
+                }
+            }
+        ],
+        "meta": {"page": {"after": "cursor123"}}
+    }"#;
+
+    #[test]
+    fn parses_log_entries_into_events_with_labels_and_body() {
+        let (events, cursor) = parse_logs_response(LOGS_SAMPLE).unwrap();
+
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].body, Some("connection timeout".to_string()));
+        assert_eq!(events[0].labels.get("status"), Some(&"error".to_string()));
+        assert_eq!(events[0].labels.get("service"), Some(&"checkout".to_string()));
+        assert_eq!(events[0].labels.get("host"), Some(&"web-1".to_string()));
+        assert_eq!(events[0].labels.get("env"), Some(&"prod".to_string()));
+        assert_eq!(events[0].labels.get("http.method"), Some(&"GET".to_string()));
+        assert_eq!(events[0].labels.get("http.status_code"), None); // not a string attribute
+        assert_eq!(cursor, Some("cursor123".to_string()));
+    }
+
+    #[test]
+    fn tag_without_a_colon_becomes_a_label_with_an_empty_value() {
+        let (events, _) = parse_logs_response(LOGS_SAMPLE).unwrap();
+        assert_eq!(events[0].labels.get("maintenance"), Some(&String::new()));
+    }
+
+    #[test]
+    fn logs_response_with_no_data_parses_to_an_empty_event_list() {
+        let (events, cursor) = parse_logs_response(r#"{"data":[],"meta":{"page":{}}}"#).unwrap();
+        assert!(events.is_empty());
+        assert_eq!(cursor, None);
+    }
+
+    #[test]
+    fn logs_api_error_body_is_reported_as_an_error() {
+        let body = r#"{"errors":[{"title":"Bad Request","detail":"query is invalid"}]}"#;
+        let result = parse_logs_response(body);
+        match result {
+            Err(DatadogError::LogsApiError(message)) => {
+                assert!(message.contains("query is invalid"));
+            }
+            other => panic!("expected LogsApiError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn logs_entry_with_a_malformed_timestamp_is_rejected() {
+        let body = r#"{"data":[{"attributes":{"timestamp":"not-a-timestamp","message":"x"}}]}"#;
+        let result = parse_logs_response(body);
+        assert!(matches!(result, Err(DatadogError::LogsMalformedTimestamp(_))));
+    }
+
+    #[test]
+    fn rejects_malformed_logs_json() {
+        assert!(parse_logs_response("not json").is_err());
+    }
+
+    // --- metrics ---
+
+    const METRICS_SAMPLE: &str = r#"{
+        "status": "ok",
+        "series": [
+            {
+                "metric": "system.load.1",
+                "scope": "host:web-1",
+                "tag_set": ["env:prod", "region:us-east-1"],
+                "pointlist": [[1725000000000, 1.5], [1725000060000, null]]
+            }
+        ]
+    }"#;
+
+    #[test]
+    fn parses_metrics_series_into_events_skipping_null_points() {
+        let events = parse_metrics_response(METRICS_SAMPLE).unwrap();
+
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].value, Some(1.5));
+        assert_eq!(events[0].labels.get("metric"), Some(&"system.load.1".to_string()));
+        assert_eq!(events[0].labels.get("scope"), Some(&"host:web-1".to_string()));
+        assert_eq!(events[0].labels.get("env"), Some(&"prod".to_string()));
+        assert_eq!(events[0].labels.get("region"), Some(&"us-east-1".to_string()));
+        assert_eq!(events[0].timestamp.timestamp(), 1725000000);
+    }
+
+    #[test]
+    fn metrics_response_with_no_series_parses_to_an_empty_event_list() {
+        let events = parse_metrics_response(r#"{"status":"ok","series":[]}"#).unwrap();
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn metrics_api_error_status_and_message_are_surfaced() {
+        let body = r#"{"status":"error","error":"invalid query"}"#;
+        let result = parse_metrics_response(body);
+        match result {
+            Err(DatadogError::MetricsApiError { status, message }) => {
+                assert_eq!(status, "error");
+                assert_eq!(message, "invalid query");
+            }
+            other => panic!("expected MetricsApiError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn metrics_point_with_a_malformed_timestamp_is_rejected() {
+        let body = r#"{"status":"ok","series":[{"pointlist":[[1e400,1.0]]}]}"#;
+        let result = parse_metrics_response(body);
+        assert!(matches!(result, Err(DatadogError::MetricsParse(_))));
+    }
+
+    #[test]
+    fn rejects_malformed_metrics_json() {
+        assert!(parse_metrics_response("not json").is_err());
+    }
+
+    // --- traces ---
+
+    const TRACES_SAMPLE: &str = r#"{
+        "data": [
+            {
+                "attributes": {
+                    "start_timestamp": "2025-08-30T00:00:00.000Z",
+                    "end_timestamp": "2025-08-30T00:00:00.250Z",
+                    "service": "checkout",
+                    "resource_name": "POST /cart",
+                    "env": "prod",
+                    "host": "web-1",
+                    "tags": ["error:true", "high_cardinality"],
+                    "attributes": {"http.status_code": "500"}
+                }
+            }
+        ],
+        "meta": {"page": {"after": "cursor456"}}
+    }"#;
+
+    #[test]
+    fn parses_span_entries_into_events_with_labels_and_duration_value() {
+        let (events, cursor) = parse_traces_response(TRACES_SAMPLE).unwrap();
+
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].value, Some(250.0));
+        assert_eq!(events[0].labels.get("service"), Some(&"checkout".to_string()));
+        assert_eq!(events[0].labels.get("resource_name"), Some(&"POST /cart".to_string()));
+        assert_eq!(events[0].labels.get("env"), Some(&"prod".to_string()));
+        assert_eq!(events[0].labels.get("host"), Some(&"web-1".to_string()));
+        assert_eq!(events[0].labels.get("error"), Some(&"true".to_string()));
+        assert_eq!(events[0].labels.get("high_cardinality"), Some(&String::new()));
+        assert_eq!(events[0].labels.get("http.status_code"), Some(&"500".to_string()));
+        assert_eq!(cursor, Some("cursor456".to_string()));
+    }
+
+    #[test]
+    fn span_duration_falls_back_to_a_custom_duration_attribute_in_nanoseconds() {
+        let body = r#"{"data":[{"attributes":{"start_timestamp":"2025-08-30T00:00:00.000Z","attributes":{"duration":250000000}}}]}"#;
+        let (events, _) = parse_traces_response(body).unwrap();
+        assert_eq!(events[0].value, Some(250.0));
+    }
+
+    #[test]
+    fn traces_response_with_no_data_parses_to_an_empty_event_list() {
+        let (events, cursor) = parse_traces_response(r#"{"data":[],"meta":{"page":{}}}"#).unwrap();
+        assert!(events.is_empty());
+        assert_eq!(cursor, None);
+    }
+
+    #[test]
+    fn traces_api_error_body_is_reported_as_an_error() {
+        let body = r#"{"errors":[{"title":"Bad Request","detail":"query is invalid"}]}"#;
+        let result = parse_traces_response(body);
+        assert!(matches!(result, Err(DatadogError::TracesApiError(_))));
+    }
+
+    #[test]
+    fn traces_entry_with_a_malformed_timestamp_is_rejected() {
+        let body = r#"{"data":[{"attributes":{"start_timestamp":"not-a-timestamp"}}]}"#;
+        let result = parse_traces_response(body);
+        assert!(matches!(result, Err(DatadogError::TracesMalformedTimestamp(_))));
+    }
+
+    #[test]
+    fn rejects_malformed_traces_json() {
+        assert!(parse_traces_response("not json").is_err());
+    }
+}

@@ -1,26 +1,56 @@
 # Configuring credential profiles
 
-`sift` resolves LGTM (Loki/Prometheus) credentials via
+`sift` resolves LGTM (Loki/Prometheus) and Datadog credentials via
 [secretspec](https://secretspec.dev), never via a raw token typed into a
 CLI flag. See `pkgs/sift/docs/adr/0006-secretspec-credential-resolution.md`
-for why, and `pkgs/sift/docs/adr/0007-credential-caching-and-memory-hygiene.md` for
-how repeated `sift` calls avoid repeated 1Password prompts.
+for why, `pkgs/sift/docs/adr/0007-credential-caching-and-memory-hygiene.md` for
+how repeated `sift` calls avoid repeated 1Password prompts, and
+`pkgs/sift/docs/adr/0008-datadog-direct-api.md` for why Datadog is queried
+directly rather than through `pup`.
 
 1Password is the primary/recommended source.
 
 ## The short version
 
-1. `pkgs/sift/secretspec.toml` declares what secrets exist
-   (`LGTM_BEARER_TOKEN`, `LGTM_BASIC_AUTH_USER`,
-   `LGTM_BASIC_AUTH_PASSWORD` — all optional) and, per profile, which
-   provider resolves them.
+1. `pkgs/sift/secretspec.toml` declares what secrets exist —
+   `LGTM_BEARER_TOKEN`, `LGTM_BASIC_AUTH_USER`,
+   `LGTM_BASIC_AUTH_PASSWORD` for `sift lgtm ...`, and `DD_API_KEY`,
+   `DD_APP_KEY` for `sift datadog ...` (all declared `required = false`
+   in secretspec itself — see the note below on what that does and
+   doesn't mean for Datadog) — and, per profile, which provider
+   resolves them.
 2. You put real values into that provider (1Password, AWS SSM/Secrets
    Manager, Azure Key Vault, or a plain env var) yourself, outside of
    sift and outside of anything an LLM session touches.
 3. You invoke `sift ... --auth-profile <name>`. Only the profile *name*
    crosses the command line — the resolved value goes straight from the
-   provider into the outbound request's `Authorization` header inside
-   sift's own process.
+   provider into the outbound request's `Authorization` header (LGTM)
+   or `DD-API-KEY`/`DD-APPLICATION-KEY` headers (Datadog) inside sift's
+   own process.
+
+## Datadog: `--auth-profile` is optional, the credential is not
+
+LGTM's `--auth-profile` genuinely means "query unauthenticated" when
+omitted — fine for a local, unsecured Loki/Prometheus. Datadog's API
+has no unauthenticated mode, so `sift datadog ...` behaves differently:
+omitting `--auth-profile` still resolves via secretspec's `default`
+profile (bound to the `env` provider), so a plain `DD_API_KEY`/
+`DD_APP_KEY` exported in the shell works with no profile flag at all —
+this is what `DD_SITE=us3.datadoghq.com` + env-var keys looks like on
+the work laptop. `required = false` in `secretspec.toml` only means
+secretspec itself won't hard-fail profile resolution when a key is
+unset; `sift`'s own `DatadogAuth::from_secretspec_profile` is what
+turns a still-missing key into a clear, named error
+(`AuthError::MissingDatadogKey`) before any request goes out — naming
+`DD_API_KEY` or `DD_APP_KEY` specifically, not a generic auth failure.
+
+```bash
+sift datadog logs 'service:checkout status:error' --site us3.datadoghq.com --auth-profile work
+```
+
+Put real values into the `work`/`personal` profile's bound provider the
+same way as the LGTM secrets below (1Password item titled `DD_API_KEY`,
+or an SSM parameter at `/secretspec/sift/work/DD_API_KEY`).
 
 ## 1Password (recommended): the `personal` profile
 

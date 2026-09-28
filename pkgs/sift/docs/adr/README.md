@@ -13,3 +13,4 @@ and implementation plan these decisions came out of.
 - [0005: Preserve sub-second timestamp precision per platform](0005-subsecond-timestamp-precision.md)
 - [0006: Resolve LGTM credentials via secretspec, never as a raw CLI value](0006-secretspec-credential-resolution.md)
 - [0007: TTL'd local caching for resolved credentials, zeroized in memory](0007-credential-caching-and-memory-hygiene.md)
+- [0008: Query Datadog directly over its HTTP API, not by shelling out to `pup`](0008-datadog-direct-api.md)

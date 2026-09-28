@@ -6,6 +6,8 @@ use thiserror::Error;
 const BEARER_TOKEN_SECRET: &str = "LGTM_BEARER_TOKEN";
 const BASIC_AUTH_USER_SECRET: &str = "LGTM_BASIC_AUTH_USER";
 const BASIC_AUTH_PASSWORD_SECRET: &str = "LGTM_BASIC_AUTH_PASSWORD";
+const DD_API_KEY_SECRET: &str = "DD_API_KEY";
+const DD_APP_KEY_SECRET: &str = "DD_APP_KEY";
 
 #[derive(Debug, Error)]
 pub enum AuthError {
@@ -17,6 +19,11 @@ pub enum AuthError {
         profile: String,
         source: Box<secretspec::SecretSpecError>,
     },
+    #[error(
+        "Datadog secret {name} not found via secretspec profile {profile:?} — set it with \
+         secretspec, or export {name} directly for the default profile's env fallback"
+    )]
+    MissingDatadogKey { name: &'static str, profile: String },
 }
 
 /// Credentials for an outbound LGTM query request, resolved once per
@@ -84,6 +91,56 @@ impl Auth {
     }
 }
 
+/// Credentials for an outbound Datadog request, resolved via a named
+/// secretspec profile exactly like `Auth` (see its docs above), but for
+/// Datadog's own two-header scheme (`DD-API-KEY`/`DD-APPLICATION-KEY`)
+/// rather than a bearer token or HTTP Basic Auth. Unlike LGTM's `Auth`,
+/// both keys are required — Datadog's API rejects an unauthenticated
+/// request outright, so there is no "no credentials" variant to fall
+/// back to.
+#[derive(Debug)]
+pub struct DatadogAuth {
+    api_key: SecretString,
+    app_key: SecretString,
+}
+
+impl DatadogAuth {
+    pub fn from_secretspec_profile(profile: &str) -> Result<Self, AuthError> {
+        let mut secrets = resolve_secrets()?;
+        secrets.set_profile(profile);
+        let secrets = secrets.with_reason("sift Datadog query");
+
+        let api_key = resolve_optional(&secrets, profile, DD_API_KEY_SECRET)?.ok_or_else(|| {
+            AuthError::MissingDatadogKey {
+                name: DD_API_KEY_SECRET,
+                profile: profile.to_string(),
+            }
+        })?;
+        let app_key = resolve_optional(&secrets, profile, DD_APP_KEY_SECRET)?.ok_or_else(|| {
+            AuthError::MissingDatadogKey {
+                name: DD_APP_KEY_SECRET,
+                profile: profile.to_string(),
+            }
+        })?;
+
+        Ok(Self {
+            api_key: SecretString::from(api_key),
+            app_key: SecretString::from(app_key),
+        })
+    }
+
+    /// Exposes the wrapped plaintext only for the span of this call, same
+    /// rationale as `Auth::apply`.
+    pub fn apply(
+        &self,
+        builder: reqwest::blocking::RequestBuilder,
+    ) -> reqwest::blocking::RequestBuilder {
+        builder
+            .header("DD-API-KEY", self.api_key.expose_secret())
+            .header("DD-APPLICATION-KEY", self.app_key.expose_secret())
+    }
+}
+
 /// Locates `secretspec.toml`, in priority order: an explicit
 /// `SIFT_SECRETSPEC_TOML` override, then the Nix-installed copy next to
 /// the running binary, then cwd-based discovery (walking up from the
@@ -137,7 +194,7 @@ fn resolve_optional(
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used)]
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
 
     // Regression tests for secretspec.toml itself — a typo'd provider
@@ -188,5 +245,27 @@ mod tests {
             resolution,
             NamedResolution::Missing { required: false } | NamedResolution::Undeclared
         ));
+    }
+
+    #[test]
+    fn datadog_auth_names_the_missing_key_when_neither_env_var_is_set() {
+        // Regression guard for the "clear error naming which key is
+        // missing" requirement: DatadogAuth must fail loudly rather
+        // than silently querying Datadog unauthenticated. Only
+        // meaningful when the test process itself has no DD_API_KEY —
+        // true in the Nix sandbox `cargo test` runs in, and in any dev
+        // shell that hasn't exported one.
+        if std::env::var("DD_API_KEY").is_ok() {
+            return;
+        }
+
+        let result = DatadogAuth::from_secretspec_profile("default");
+
+        match result {
+            Err(AuthError::MissingDatadogKey { name, .. }) => {
+                assert_eq!(name, DD_API_KEY_SECRET);
+            }
+            other => panic!("expected AuthError::MissingDatadogKey, got {other:?}"),
+        }
     }
 }
