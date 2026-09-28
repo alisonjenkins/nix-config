@@ -1,4 +1,4 @@
-{ lib, buildNpmPackage, importNpmLock, fetchurl, runCommand, python3, pkg-config }:
+{ lib, buildNpmPackage, importNpmLock, fetchurl, runCommand }:
 
 let
   npmTarball = fetchurl {
@@ -35,9 +35,6 @@ buildNpmPackage {
 
   # dist/ is pre-built in the npm tarball; skip the TypeScript build step
   dontNpmBuild = true;
-
-  # better-sqlite3 compiles its own bundled sqlite3 — needs a C++ toolchain and Python
-  nativeBuildInputs = [ python3 pkg-config ];
 
   # Workaround for upstream cavemem 0.1.3 bug: dist/index.js dispatches
   # `cavemem mcp` via `await import("./server-*.js")`, but the server bundle
