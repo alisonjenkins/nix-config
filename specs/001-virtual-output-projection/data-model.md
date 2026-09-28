@@ -75,7 +75,7 @@ The output is one `region` per source, placed in this order:
    fits. The viewer strip is never scaled.
 5. Centre each region vertically.
 
-## ViewOutputError (extends `VirtualOutputError`)
+## New `VirtualOutputError` variants
 
 | Variant | When |
 |---|---|

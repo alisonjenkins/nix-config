@@ -119,7 +119,7 @@ Someone is streaming from a virtual output on another device while the desk user
 ### Key Entities
 
 - **Virtual output**: A named monitor with no physical screen, which may be on or off. Holds its own workspaces and windows. Can be the subject of a stream.
-- **Physical monitor**: A real screen. Can show virtual outputs in its overview or in view mode.
+- **Physical monitor** (the *viewer*): A real screen. Can show virtual outputs in its overview or in view mode.
 - **Projection**: The relationship "physical monitor P shows virtual output V in area A, as an overview column or in view mode". It determines both where V's content appears on P and where input on P lands on V.
 - **View mode**: The state of a physical monitor that is showing one virtual output in full, until ended by command or automatically.
 

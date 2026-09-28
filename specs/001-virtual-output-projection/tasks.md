@@ -28,7 +28,7 @@ written, run and seen **failing** before its implementation task.
 
 **Purpose**: Module scaffolding and a green baseline.
 
-- [ ] T001 Record the baseline: run `cargo test --lib` and `cargo clippy --lib --tests` on `rebase-feat-virtual` and note the pass counts and any existing warnings in the first commit's body, so later regressions can be told apart from existing ones
+- [ ] T001 Record the baseline: run `cargo test --lib` and `cargo clippy --lib --tests` on `rebase-feat-virtual` and note the pass counts and any existing warnings, to go in T002's commit body. T001 changes no files, so later regressions can be told apart from existing ones.
 - [ ] T002 Create empty module `src/projection.rs` with a `//!` doc line and register `pub mod projection;` in `src/lib.rs`; create empty `src/tests/projection.rs` and register it in `src/tests/mod.rs`
 
 ---
@@ -56,7 +56,7 @@ written, run and seen **failing** before its implementation task.
 - [ ] T010 Write a failing fixture test in `src/tests/projection.rs`. Set up one physical output (`Fixture::add_output(1, (1920, 1080))`) and one virtual output (`state.backend.headless().create_virtual_output(niri, 1280, 800, 60, Some("steam".into()))`). With no projections, `niri.output_under(p)` for a point on the physical output returns that output and the same local position. This pins the pass-through behaviour.
 - [ ] T011 Implement `Niri::rebuild_projections(&mut self)` in `src/niri.rs`. It recomputes `projection_state.projections` from the output list, `layout.is_overview_open()`, `layout.overview_zoom()`, each monitor's `workspaces_render_geo`, and `projection_state.viewing`. Sources are virtual outputs in the layout (`is_virtual_output`), viewers are the others. If `viewing` names a viewer or source that no longer exists or is disabled, it clears `viewing`.
 - [ ] T012 Call `rebuild_projections` from every trigger:
-  - overview toggle and overview progress/animation advance (where `advance_animations` runs for monitors);
+  - overview toggle (`Layout::toggle_overview` callers), and every frame while the overview animates: call it in `Niri::advance_animations` right after the layout's animations advance, but only when `layout.overview_progress` changed or the overview is animating;
   - `add_output`, `remove_output` and `output_resized` in `src/niri.rs`;
   - output scale or config reload (`reload_output_config`).
 - [ ] T013 Make `Niri::output_under(pos)` in `src/niri.rs` projection-aware. After finding the global output and local position, if a projection with `viewer` equal to that output contains the position, return `(source Output, projection.to_source(local))`. A position inside a `View` projection's letterbox bars (inside the viewer but outside `region`) returns `None`. Route `output_under_cursor` through `output_under`. T010 must still pass.
@@ -77,24 +77,33 @@ written, run and seen **failing** before its implementation task.
 - [ ] T015 [P] [US1] Fixture test in `src/tests/projection.rs`: with a client window mapped on `steam` and the overview opened (`layout.toggle_overview()` then `niri_complete_animations()`), `niri.contents_under(p)` at the centre of `steam`'s column returns that window's surface. The surface-local position must match the window centre within 1 logical px.
 - [ ] T016 [P] [US1] Fixture test: begin an interactive move of the `steam` window with the position from `niri.output_under` inside the column, update to a point over the viewer's first workspace, and end. Assert the window is now on the viewer's workspace. Add the reverse case, viewer → `steam` column, as a second test.
 - [ ] T017 [P] [US1] Fixture test: an interactive move ending in the gap between two `steam` workspaces in its column creates a new workspace on `steam` containing the window. Assert through `layout.workspaces()` for `steam`.
-- [ ] T018 [P] [US1] Fixture test: turning `steam` off while the overview is open (headless `remove_virtual_output`, or a disable path if headless supports it) removes its projection without closing the overview. Re-creating it adds a column again.
+- [ ] T018 [P] [US1] Fixture test: removing `steam` with headless `remove_virtual_output` while the overview is open removes its projection without closing the overview, and re-creating it adds a column again. The headless backend has no on/off, so remove/recreate stands in for off/on here. Real `niri msg output steam off|on` is covered by the manual quickstart steps in T055.
+- [ ] T019 [P] [US1] Fixture test: reordering. Two windows on the same `steam` workspace; an interactive move of the first one, dropped past the second inside `steam`'s column, swaps their column order. Assert through the `steam` workspace's tiles.
+- [ ] T020 [P] [US1] Fixture test: scrolling a column. With 3 workspaces on `steam` and the overview open, `niri.workspace_under(false, p)` for a point in the `steam` column's lower workspace returns a `steam` workspace, and a workspace-switch gesture begun with `niri.output_under(p)` inside the column acts on `steam`'s monitor (its active workspace index changes) while the viewer's is unchanged.
+- [ ] T021 [P] [US1] Fixture test: several sources. Two virtual outputs, `steam` (1280x800) and `aux` (1920x1080), each with one window. With the overview open, `niri.output_under` at the centre of each column returns the matching output, and `contents_under` returns the matching window (FR-021).
+- [ ] T022 [P] [US1] Fixture test: rendering. With the overview open and a window on `steam`, render the viewer (`niri.render(ctx, &viewer, false, ..)` with the headless renderer the fixture provides, or the test GLES renderer used elsewhere in `src/tests`), and assert:
+  - at least one `OutputRenderElements::Projected` element exists;
+  - every Projected element's geometry lies inside the `steam` projection's `region` (converted to physical at the viewer scale);
+  - a name-label texture element sits above each region.
+
+  If the fixture cannot construct a renderer, write the assertions against a pure `projected_element_geometry(projection, source_elem_geo, viewer_scale, source_scale)` helper instead, and name the untested composition step in the commit body, as Principle II requires.
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] In `rebuild_projections` (`src/niri.rs`), when the overview is open or animating, build one `ProjectionKind::Overview` projection per (viewer, enabled source):
+- [ ] T023 [US1] In `rebuild_projections` (`src/niri.rs`), when the overview is open or animating, build one `ProjectionKind::Overview` projection per (viewer, enabled source):
   - `source_rect` is the x-extent of the source monitor's `workspaces_render_geo` over the full source height;
   - `region` comes from `overview_columns` with the viewer's own strip taken from its `workspaces_render_geo`.
-- [ ] T020 [US1] Add a `Projected` variant to the `OutputRenderElements` `niri_render_elements!` list in `src/niri.rs`, wrapping `CropRenderElement<RelocateRenderElement<RescaleRenderElement<RelocateRenderElement<OutputRenderElements<R>>>>>`. If the recursive type is rejected, render the source's elements into a boxed intermediate: wrap `MonitorRenderElement` and layer elements separately, and record the choice in the commit body.
-- [ ] T021 [US1] In `Niri::render_inner` (`src/niri.rs`), for a viewer that has `Overview` projections, collect `self.render(ctx, &source, false, ..)` elements for each source. Wrap each element as follows, then push it where the viewer's own workspaces are pushed:
+- [ ] T024 [US1] Add a `Projected` variant to the `OutputRenderElements` `niri_render_elements!` list in `src/niri.rs`, wrapping `CropRenderElement<RelocateRenderElement<RescaleRenderElement<RelocateRenderElement<OutputRenderElements<R>>>>>`. If the recursive type is rejected, render the source's elements into a boxed intermediate: wrap `MonitorRenderElement` and layer elements separately, and record the choice in the commit body.
+- [ ] T025 [US1] In `Niri::render_inner` (`src/niri.rs`), for a viewer that has `Overview` projections, collect `self.render(ctx, &source, false, ..)` elements for each source. Wrap each element as follows, then push it where the viewer's own workspaces are pushed:
   - relocate by `-source_rect.loc`;
   - rescale by `projection.scale() * viewer_scale / source_scale`;
   - relocate to `region.loc`;
   - crop to `region`.
 
   Never add projections while rendering a virtual output (FR-018).
-- [ ] T022 [US1] Draw the source's name above each column in `src/niri.rs`, using the same text-texture helper as the label in T033, or a simple pango texture. Cache the texture per name.
-- [ ] T023 [US1] Redraw cascade in `src/niri.rs`: when `redraw` runs for an output that is the source of any projection, call `queue_redraw` on each of that projection's viewers.
-- [ ] T024 [US1] Run T015–T018 and the full `cargo test --lib`. Fix until everything is green. The layout proptests must pass unchanged.
+- [ ] T026 [US1] Draw the source's name above each column in `src/niri.rs`, using the same text-texture helper as the label in T039, or a simple pango texture. Cache the texture per name.
+- [ ] T027 [US1] Redraw cascade in `src/niri.rs`: when `redraw` runs for an output that is the source of any projection, call `queue_redraw` on each of that projection's viewers.
+- [ ] T028 [US1] Run T015–T022 and the full `cargo test --lib`. Fix until everything is green. The layout proptests must pass unchanged.
 
 **Checkpoint**: The MVP. Stray windows on virtual outputs are visible in the overview and can be dragged off.
 
@@ -108,31 +117,42 @@ written, run and seen **failing** before its implementation task.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T025 [P] [US2] Fixture test in `src/tests/projection.rs`: after `start_viewing("steam")`, `niri.contents_under(viewer centre)` returns the `steam` window, and a point in the letterbox bar returns no surface. `layout.active_output()` is `steam`.
-- [ ] T026 [P] [US2] Fixture tests for the transitions in data-model.md:
+- [ ] T029 [P] [US2] Fixture test in `src/tests/projection.rs`: after `start_viewing("steam")`, `niri.contents_under(viewer centre)` returns the `steam` window, and the surface-local position matches the expected point within 1 physical pixel at the viewer's scale (SC-004). A point in the letterbox bar returns no surface. `layout.active_output()` is `steam`.
+- [ ] T030 [P] [US2] Fixture tests for the transitions in data-model.md:
   - stop returns `Stopped` and the viewer becomes active;
   - stop when not viewing returns `NotViewing`;
   - removing `steam` while viewing clears `viewing` and makes the viewer active;
   - removing the viewer clears `viewing` while `steam` still exists.
-- [ ] T027 [P] [US2] Fixture tests for the errors: an unknown name → `NotFound`, the physical output's name → `NotVirtual`, a disabled virtual output → `Disabled`. `viewing` is unchanged after each.
-- [ ] T028 [P] [US2] Unit test in `niri-config/src/binds.rs` tests: KDL `view-output "steam"` and `view-output` parse to `Action::ViewOutput { name: Some("steam") }` and `{ name: None }`.
+- [ ] T031 [P] [US2] Fixture tests for the errors: an unknown name → `NotFound`, the physical output's name → `NotVirtual`, a disabled virtual output → `Disabled`. `viewing` is unchanged after each.
+- [ ] T032 [P] [US2] Unit test in `niri-config/src/binds.rs` tests: KDL `view-output "steam"` and `view-output` parse to `Action::ViewOutput { name: Some("steam") }` and `{ name: None }`.
+- [ ] T033 [P] [US2] Fixture test: `niri.activate_overview_workspace(output, ws_id)` with the overview open.
+  - For a `steam` workspace, it closes the overview, makes that workspace active on `steam`, and leaves `viewing == Some(viewer, "steam")`.
+  - For a viewer workspace, it closes the overview, activates the workspace, and leaves `viewing` as `None`. This is today's behaviour.
+- [ ] T034 [P] [US2] Fixture test: view-mode rendering. After `start_viewing("steam")`, render the viewer and assert:
+  - Projected elements lie inside the letterbox `region`;
+  - a backdrop element covers the viewer;
+  - none of the viewer's own workspace elements are present.
+
+  Use the same fallback as T022 if the fixture has no renderer.
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Add `NotVirtual(String)`, `Disabled(String)` and `NoViewer` to `VirtualOutputError` in `src/backend/virtual_output.rs`, with messages that name the output, per contracts/view-output.md.
-- [ ] T030 [US2] Implement `Niri::start_viewing(&mut self, name: &str) -> Result<ViewOutputState, VirtualOutputError>` and `Niri::stop_viewing(&mut self) -> ViewOutputState` in `src/niri.rs`. They validate the name, pick the viewer (the active monitor if physical, else the physical output under the pointer, else the first physical output), set `viewing`, call `rebuild_projections`, and focus the source monitor on start or the viewer on stop.
-- [ ] T031 [US2] In `rebuild_projections`, when `viewing` is set and the overview is closed, build one `ProjectionKind::View` projection with `source_rect` = the full source and `region` = `letterbox(..)`. In `render_inner`, for a viewer in view mode, push the projected source elements plus a black `SolidColor` backdrop instead of the viewer's own monitor content.
-- [ ] T032 [US2] Automatic exit (FR-015): in `rebuild_projections`, if `viewing` gets cleared because the source or viewer is gone, focus the remaining output and trigger the label from T033 with "Stopped viewing <name>: <reason>".
-- [ ] T033 [P] [US2] Create `src/ui/view_output_label.rs`, copying the Hidden/Showing/Shown(deadline)/Hiding state machine from `src/ui/config_error_notification.rs` with a 2 s duration and one line of pango text. Register it in `src/ui/mod.rs`, advance and render it for the viewer in `src/niri.rs`, and show "Viewing: <name>" on start.
-- [ ] T034 [US2] niri-ipc (`niri-ipc/src/lib.rs`):
+- [ ] T035 [US2] Add `NotVirtual(String)`, `Disabled(String)` and `NoViewer` to `VirtualOutputError` in `src/backend/virtual_output.rs`, with messages that name the output, per contracts/view-output.md.
+- [ ] T036 [US2] Implement `Niri::start_viewing(&mut self, name: &str) -> Result<ViewOutputState, VirtualOutputError>` and `Niri::stop_viewing(&mut self) -> ViewOutputState` in `src/niri.rs`. They validate the name, pick the viewer (the active monitor if physical, else the physical output under the pointer, else the first physical output), set `viewing`, call `rebuild_projections`, and focus the source monitor on start or the viewer on stop.
+- [ ] T037 [US2] In `rebuild_projections`, when `viewing` is set and the overview is closed, build one `ProjectionKind::View` projection with `source_rect` = the full source and `region` = `letterbox(..)`. In `render_inner`, for a viewer in view mode, push the projected source elements plus a black `SolidColor` backdrop instead of the viewer's own monitor content.
+- [ ] T038 [US2] Automatic exit (FR-015): in `rebuild_projections`, if `viewing` gets cleared because the source or viewer is gone, focus the remaining output and trigger the label from T039 with "Stopped viewing <name>: <reason>".
+- [ ] T039 [P] [US2] Create `src/ui/view_output_label.rs`, copying the Hidden/Showing/Shown(deadline)/Hiding state machine from `src/ui/config_error_notification.rs` with a 2 s duration and one line of pango text. Register it in `src/ui/mod.rs`, advance and render it for the viewer in `src/niri.rs`, and show "Viewing: <name>" on start.
+- [ ] T040 [US2] niri-ipc (`niri-ipc/src/lib.rs`):
   - add `Request::ViewOutput { name: Option<String> }`, `Response::ViewOutput(ViewOutputState)` and `ViewOutputState { Viewing{viewer,source}, Stopped{viewer,source}, NotViewing }`;
   - add `Action::ViewOutput { name: Option<String> }` with its clap attributes.
-- [ ] T035 [US2] Server handler in `src/ipc/server.rs`: mirror the `CreateVirtualOutput` idle/channel pattern. Call `start_viewing` or `stop_viewing` and map errors to `Err(err.to_string())`.
-- [ ] T036 [US2] CLI in `src/ipc/client.rs`: add `niri msg view-output [NAME]`, print the one-line messages from contracts/view-output.md, and print JSON with `--json`.
-- [ ] T037 [US2] Bind action: add `Action::ViewOutput` parsing in `niri-config/src/binds.rs` and handle it in `State::do_action` in `src/input/mod.rs`. On error, `warn!` and show the message through the label.
-- [ ] T038 [US2] Overview click into view mode. At `src/input/mod.rs:3047-3057`, `src/input/touch_overview_grab.rs:~209` and `src/input/move_grab.rs:~98`: if the resolved workspace's output is virtual, focus that output, call `toggle_overview_to_workspace(idx)`, then `start_viewing(output name)` for the viewer the click came from.
-- [ ] T039 [US2] Opening the overview during view mode (FR-014): `rebuild_projections` builds Overview projections while the overview is open and keeps `viewing`; closing the overview rebuilds the View projection. Add a fixture test for this in `src/tests/projection.rs`.
-- [ ] T040 [US2] Run T025–T028, T039 and the full suite. Fix until everything is green.
+- [ ] T041 [US2] Server handler in `src/ipc/server.rs`: mirror the `CreateVirtualOutput` idle/channel pattern. Call `start_viewing` or `stop_viewing` and map errors to `Err(err.to_string())`.
+- [ ] T042 [US2] CLI in `src/ipc/client.rs`: add `niri msg view-output [NAME]`, print the one-line messages from contracts/view-output.md, and print JSON with `--json`.
+- [ ] T043 [US2] Bind action: add `Action::ViewOutput` parsing in `niri-config/src/binds.rs` and handle it in `State::do_action` in `src/input/mod.rs`. On error, `warn!` and show the message through the label.
+- [ ] T044 [US2] Overview click into view mode.
+  - Implement `Niri::activate_overview_workspace(&mut self, output: &Output, ws_id: WorkspaceId)` in `src/niri.rs`. It focuses the output, calls `toggle_overview_to_workspace(idx)`, and, if the output is virtual, calls `start_viewing(output name)`. T033 must pass.
+  - Replace the inline logic at `src/input/mod.rs:3047-3057`, `src/input/touch_overview_grab.rs:~209` and `src/input/move_grab.rs:~98` with calls to it. Those three call sites are the only untested glue, and the commit body names them.
+- [ ] T045 [US2] Opening the overview during view mode (FR-014): `rebuild_projections` builds Overview projections while the overview is open and keeps `viewing`; closing the overview rebuilds the View projection. Add a fixture test for this in `src/tests/projection.rs`.
+- [ ] T046 [US2] Run T029–T034, T045 and the full suite. Fix until everything is green.
 
 **Checkpoint**: US1 and US2 both work independently.
 
@@ -146,12 +166,12 @@ written, run and seen **failing** before its implementation task.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T041 [P] [US3] Fixture test in `src/tests/projection.rs`: collect `niri.render(ctx, &steam, ..)` elements with no projections, then again with an Overview projection and with a View projection. The element count and geometry are identical, so no projection or viewer content leaks into the source (FR-016, FR-018).
-- [ ] T042 [P] [US3] Fixture test: pointer rendering. With `include_pointer = true`, rendering `steam` while viewing it produces no pointer element, because the cursor stays on the viewer (FR-017).
+- [ ] T047 [P] [US3] Fixture test in `src/tests/projection.rs`: collect `niri.render(ctx, &steam, ..)` elements with no projections, then again with an Overview projection and with a View projection. The element count and geometry are identical, so no projection or viewer content leaks into the source (FR-016, FR-018).
+- [ ] T048 [P] [US3] Fixture test: pointer rendering. With `include_pointer = true`, rendering `steam` while viewing it produces no pointer element, because the cursor stays on the viewer (FR-017).
 
 ### Implementation for User Story 3
 
-- [ ] T043 [US3] Fix any leak that T041 or T042 expose, so the source path in `render_inner` never consults `projection_state`. Otherwise record in the commit body that no change was needed.
+- [ ] T049 [US3] Fix any leak that T047 or T048 expose, so the source path in `render_inner` never consults `projection_state`. Otherwise record in the commit body that no change was needed.
 
 **Checkpoint**: All three stories are done and independently tested.
 
@@ -159,12 +179,12 @@ written, run and seen **failing** before its implementation task.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] Document `view-output`, the overview columns and the limitations (pointer contention, softer scaling) in `docs/Virtual-Outputs.md` in the fork.
-- [ ] T045 Run the quality gates: `cargo fmt --check`, `cargo clippy --lib --tests -- -D warnings` (no new warnings compared with T001), and the full `cargo test --lib`.
-- [ ] T046 In nix-config, regenerate `nix-config:patches/niri-virtual-outputs.patch` with `git -c diff.external= diff --no-ext-diff e9b215fe HEAD` in the fork. Then build `.#nixosConfigurations.ali-desktop.config.programs.niri.package`.
-- [ ] T047 [P] Write the ADR `nix-config:docs/adr/0019-virtual-output-projection.md` covering the projection design, the single input chokepoint, and the rejected alternatives (native multi-output rendering, mirror client, Esc to exit). Add it to `nix-config:docs/adr/README.md` and link it from `nix-config:docs/steam-remote-play-streaming.md`.
-- [ ] T048 Add default binds, for example `Mod+V` → `view-output "steam"` and `Mod+Shift+V` → `view-output`, to the generated niri config in `nix-config:home/programs/linux-only/niri/module.nix`, next to the virtual-output blocks.
-- [ ] T049 After the user switches and logs in again, run the quickstart manual steps 1–10 on ali-desktop and record the outcome, including SC-005's 10 toggles during a stream, in the PR description.
+- [ ] T050 [P] Document `view-output`, the overview columns and the limitations (pointer contention, softer scaling) in `docs/Virtual-Outputs.md` in the fork.
+- [ ] T051 Run the quality gates: `cargo fmt --check`, `cargo clippy --lib --tests -- -D warnings` (no new warnings compared with T001), and the full `cargo test --lib`.
+- [ ] T052 In nix-config, regenerate `nix-config:patches/niri-virtual-outputs.patch` with `git -c diff.external= diff --no-ext-diff e9b215fe HEAD` in the fork. Then build `.#nixosConfigurations.ali-desktop.config.programs.niri.package`.
+- [ ] T053 [P] Write the ADR `nix-config:docs/adr/0019-virtual-output-projection.md` covering the projection design, the single input chokepoint, and the rejected alternatives (native multi-output rendering, mirror client, Esc to exit). Add it to `nix-config:docs/adr/README.md` and link it from `nix-config:docs/steam-remote-play-streaming.md`.
+- [ ] T054 Add default binds, for example `Mod+V` → `view-output "steam"` and `Mod+Shift+V` → `view-output`, to the generated niri config in `nix-config:home/programs/linux-only/niri/module.nix`, next to the virtual-output blocks.
+- [ ] T055 After the user switches and logs in again, run the quickstart manual steps 1–10 on ali-desktop and record the outcome, including SC-005's 10 toggles during a stream, in the PR description. Also check frame pacing with niri's debug FPS counter (or `niri msg outputs` plus a frame-time log): the viewer holds 120 Hz with the overview open and in view mode during a stream (plan Performance Goals).
 
 ---
 
@@ -173,9 +193,9 @@ written, run and seen **failing** before its implementation task.
 ### Phase Dependencies
 
 - Setup (T001–T002) → Foundational (T003–T014) → the user stories → Polish.
-- US1 (T015–T024) needs Foundational only.
-- US2 (T025–T040) needs Foundational. It reuses T020/T021 rendering from US1, so do US1 first, or pull T020–T021 forward if US2 is built alone.
-- US3 (T041–T043) needs US1 and US2 so that both projection kinds exist to test against.
+- US1 (T015–T028) needs Foundational only.
+- US2 (T029–T046) needs Foundational. It reuses the T024/T025 rendering from US1, so do US1 first, or pull T024–T025 forward if US2 is built alone.
+- US3 (T047–T049) needs US1 and US2 so that both projection kinds exist to test against.
 - Polish needs every story it documents or ships.
 
 ### Within Each Story
@@ -187,15 +207,15 @@ written, run and seen **failing** before its implementation task.
 ### Parallel Opportunities
 
 - T003, T005 and T007 are independent pure tests (different functions and files).
-- T015–T018 are test-only additions to the same file, so they can be written together, but land in one commit.
-- T025–T028 are test writing; T033 (label widget) is independent of T029–T032.
-- T041 and T042 go together. T044 and T047 are docs, in parallel.
+- T015–T022 are test-only additions to the same file, so they can be written together, but land in one commit.
+- T029–T034 are test writing; T039 (label widget) and T040/T042 (niri-ipc types, CLI) are independent of T035–T038.
+- T047 and T048 go together. T050 and T053 are docs, in parallel.
 
 ## Parallel Example: User Story 1
 
 ```text
-Write together: T015, T016, T017, T018   (src/tests/projection.rs — one commit)
-Then sequential: T019 → T020 → T021 → T022 → T023 → T024
+Write together: T015–T022   (src/tests/projection.rs — one commit)
+Then sequential: T023 → T024 → T025 → T026 → T027 → T028
 ```
 
 ## Implementation Strategy

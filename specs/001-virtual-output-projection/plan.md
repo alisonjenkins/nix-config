@@ -53,7 +53,7 @@ regenerated `patches/niri-virtual-outputs.patch`.
 | I. Atomic, revertable history | Pass | Tasks map to commits that each build and test green: pure maths, classification helper, state, input chokepoint, rendering, overview click, IPC, label. |
 | II. Test first, evidence | Pass | Every behaviour has a failing test first (unit or fixture). Rendering glue that cannot be unit-tested is named in the quickstart's manual steps. |
 | III. IaC, live changes by consent | Pass | Delivered by patch plus `just switch`. The live checks (quickstart manual steps) are run only after the user switches. |
-| IV. Errors carry context | Pass | `ViewOutputError` variants name the output. No `unwrap` outside tests. clippy and fmt gates. |
+| IV. Errors carry context | Pass | New `VirtualOutputError` variants name the output. No `unwrap` outside tests. clippy and fmt gates. |
 | V. Right altitude, single source | Pass | One chokepoint rather than about 25 per-call edits. It reuses the existing overview wrappers, DnD and interactive move. No layout changes. |
 | VI. Record the why | Pass | An ADR in nix-config `docs/adr/` records the projection design and the rejected alternatives (native multi-output rendering, mirror client). |
 | VII. Fork patches are generated | Pass | Code only in `/home/ali/git/niri`. The patch is regenerated with `git diff e9b215fe HEAD`. `.specify/` stays in nix-config. |
@@ -86,7 +86,7 @@ src/
 │                                 #   output_under_cursor via chokepoint; render_inner projection
 │                                 #   push; redraw cascade; OutputRenderElements::Projected variant
 ├── lib.rs                        # mod projection
-├── backend/virtual_output.rs     # is_virtual_output(); ViewOutputError variants
+├── backend/virtual_output.rs     # is_virtual_output(); new VirtualOutputError variants
 ├── input/mod.rs                  # do_action ViewOutput; overview click → view mode for virtual ws
 ├── input/move_grab.rs            # overview click-through path (line ~98) → view mode for virtual ws
 ├── input/touch_overview_grab.rs  # same for touch (line ~209)
