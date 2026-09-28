@@ -65,8 +65,30 @@ flag asserted from memory is the unverifiable claim this skill avoids.
 
 A raw `pup` log or trace search returns far more than one question
 needs. Use `sift datadog logs`/`sift datadog metrics`/
-`sift datadog traces` (the `sift` package) instead: `--mode aggregate`
+`sift datadog traces` (the `sift` package) instead — it calls Datadog's
+HTTP API directly (no `pup` shell-out; see
+`pkgs/sift/docs/adr/0008-datadog-direct-api.md`): `--mode aggregate`
 groups by facet/error type, `--mode topn` shows the biggest contributors,
 `--mode histogram` gives a time-bucketed rate, `--mode diff` compares
-against a baseline window. `sift` defaults away from a raw dump; pass
-`--mode raw` when you need every line.
+against a baseline window (not yet wired into the CLI — see ADR 0003).
+`sift` defaults away from a raw dump; pass `--mode raw` when you need
+every line, up to `--limit` (default 200).
+
+```bash
+sift datadog logs 'service:checkout status:error' --site us3.datadoghq.com --auth-profile work
+sift datadog metrics 'avg:system.load.1{service:checkout}' --site us3.datadoghq.com
+sift datadog traces 'service:checkout @http.status_code:500' --mode topn --group-by resource_name
+```
+
+- `--site` (env `DD_SITE`, default `datadoghq.com`) selects the Datadog
+  site — the work laptop sets `DD_SITE=us3.datadoghq.com`. The request
+  goes to `https://api.{site}`.
+- `--auth-profile` (env `SIFT_DD_AUTH_PROFILE`) resolves `DD_API_KEY`/
+  `DD_APP_KEY` via secretspec, the same mechanism as `sift lgtm`'s
+  `--auth-profile` — see `pkgs/sift/docs/credential-profiles.md`.
+  Unlike LGTM there's no unauthenticated mode: omitting the flag still
+  resolves via secretspec's `default` profile (env-var fallback), so a
+  plain `DD_API_KEY`/`DD_APP_KEY` in the environment works with no flag
+  at all. A missing key fails loudly, naming which one.
+- `--group-by` defaults to `status` for logs, `metric` for metrics,
+  `service` for traces.
