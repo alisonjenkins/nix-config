@@ -104,6 +104,35 @@
     inputs.steam-command-runner.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
+  programs.obs-studio.declarative = {
+    # obs-start-stream / obs-stop-stream drive OBS through obs-do, which
+    # talks to obs-websocket on its default port.
+    websocket.settings = {
+      server_enabled = true;
+      server_port = 4455;
+      auth_required = true;
+    };
+
+    profiles.Untitled = {
+      basic = {
+        Output.Mode = "Advanced";
+        AdvOut.Encoder = "ffmpeg_vaapi_tex";
+      };
+      streamEncoder = {
+        # The Raphael iGPU, not the RX 9070 (pci-0000:03:00.0-render).
+        vaapi_device = "/dev/dri/by-path/pci-0000:1a:00.0-render";
+        rate_control = "VBR";
+        bitrate = 10000;
+        maxrate = 12000;
+        keyint_sec = 2;
+      };
+      service = {
+        type = "rtmp_custom";
+        settings.server = "rtmp://stream.redwood-guild.com:1935/app";
+      };
+    };
+  };
+
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
   # Capture source can find any game launched through steam-command-runner,
   # without adding it per-game as a Steam launch option.
