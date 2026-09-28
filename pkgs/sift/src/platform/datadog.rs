@@ -281,11 +281,65 @@ fn tag_to_label(tag: &str) -> (String, String) {
     }
 }
 
+/// Datadog log/span attributes can nest arbitrarily deep; a real payload
+/// is at most a handful of levels (e.g. `http.response.headers.x-foo`), so
+/// capping recursion here bounds `flatten_attributes_into`'s stack depth
+/// against a pathological or malicious payload without truncating anything
+/// realistic.
+const MAX_ATTRIBUTE_FLATTEN_DEPTH: usize = 8;
+
+/// Flattens a Datadog `attributes` JSON object into label key/value pairs
+/// for grouping: a nested object contributes dot-joined keys
+/// (`http.status_code`), numbers and booleans become their string form,
+/// strings pass through as-is, nulls are skipped, and an array joins its
+/// scalar elements with `,` (an array element that is itself an object is
+/// skipped, since it has no single scalar representation).
+fn flatten_attributes_into(
+    prefix: &str,
+    map: &serde_json::Map<String, serde_json::Value>,
+    depth: usize,
+    out: &mut BTreeMap<String, String>,
+) {
+    if depth > MAX_ATTRIBUTE_FLATTEN_DEPTH {
+        return;
+    }
+    for (key, value) in map {
+        let full_key = if prefix.is_empty() { key.clone() } else { format!("{prefix}.{key}") };
+        match value {
+            serde_json::Value::Null => {}
+            serde_json::Value::String(s) => {
+                out.insert(full_key, s.clone());
+            }
+            serde_json::Value::Bool(b) => {
+                out.insert(full_key, b.to_string());
+            }
+            serde_json::Value::Number(n) => {
+                out.insert(full_key, n.to_string());
+            }
+            serde_json::Value::Object(nested) => {
+                flatten_attributes_into(&full_key, nested, depth.saturating_add(1), out);
+            }
+            serde_json::Value::Array(items) => {
+                let joined = items
+                    .iter()
+                    .filter_map(|item| match item {
+                        serde_json::Value::String(s) => Some(s.clone()),
+                        serde_json::Value::Bool(b) => Some(b.to_string()),
+                        serde_json::Value::Number(n) => Some(n.to_string()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join(",");
+                out.insert(full_key, joined);
+            }
+        }
+    }
+}
+
 fn string_attributes(attributes: &serde_json::Map<String, serde_json::Value>) -> BTreeMap<String, String> {
-    attributes
-        .iter()
-        .filter_map(|(key, value)| value.as_str().map(|s| (key.clone(), s.to_string())))
-        .collect()
+    let mut out = BTreeMap::new();
+    flatten_attributes_into("", attributes, 0, &mut out);
+    out
 }
 
 // ---------------------------------------------------------------------
@@ -645,12 +699,19 @@ struct SpanEntryAttributes {
     tags: Vec<String>,
     #[serde(default)]
     attributes: serde_json::Map<String, serde_json::Value>,
+    /// Datadog's `SpansAttributes` carries both `attributes` and `custom`
+    /// (a separate "JSON object of custom spans data" map, per
+    /// DataDog/datadog-api-client-go's `model_spans_attributes.go`) —
+    /// distinct maps, not a duplicate of the same data.
+    #[serde(default)]
+    custom: serde_json::Map<String, serde_json::Value>,
 }
 
 /// Derives a span's duration in milliseconds: prefer `end_timestamp -
-/// start_timestamp` (both are RFC3339 in the API response), falling
-/// back to a custom `attributes.duration` field (nanoseconds, the APM
-/// convention) when the endpoints aren't both present.
+/// start_timestamp` (both are RFC3339 in the API response), falling back
+/// to a custom `duration` field (nanoseconds, the APM convention) —
+/// checked in `custom` first, then `attributes` — when the endpoints
+/// aren't both present.
 fn span_duration_ms(attrs: &SpanEntryAttributes, start: DateTime<Utc>) -> Option<f64> {
     if let Some(end_str) = &attrs.end_timestamp {
         if let Ok(end) = DateTime::parse_from_rfc3339(end_str) {
@@ -660,8 +721,9 @@ fn span_duration_ms(attrs: &SpanEntryAttributes, start: DateTime<Utc>) -> Option
         }
     }
     attrs
-        .attributes
+        .custom
         .get("duration")
+        .or_else(|| attrs.attributes.get("duration"))
         .and_then(serde_json::Value::as_f64)
         .map(|ns| ns / 1_000_000.0)
 }
@@ -693,6 +755,7 @@ fn parse_traces_response(body: &str) -> Result<(Vec<Event>, Option<String>), Dat
         let value = span_duration_ms(&attrs, start);
 
         let mut labels = string_attributes(&attrs.attributes);
+        flatten_attributes_into("", &attrs.custom, 0, &mut labels);
         if let Some(service) = &attrs.service {
             labels.insert("service".to_string(), service.clone());
         }
@@ -858,7 +921,7 @@ mod tests {
         assert_eq!(events[0].labels.get("host"), Some(&"web-1".to_string()));
         assert_eq!(events[0].labels.get("env"), Some(&"prod".to_string()));
         assert_eq!(events[0].labels.get("http.method"), Some(&"GET".to_string()));
-        assert_eq!(events[0].labels.get("http.status_code"), None); // not a string attribute
+        assert_eq!(events[0].labels.get("http.status_code"), Some(&"500".to_string()));
         assert_eq!(cursor, Some("cursor123".to_string()));
     }
 
@@ -897,6 +960,49 @@ mod tests {
     #[test]
     fn rejects_malformed_logs_json() {
         assert!(parse_logs_response("not json").is_err());
+    }
+
+    #[test]
+    fn nested_log_attribute_is_flattened_into_a_dotted_label() {
+        let body = r#"{"data":[{"attributes":{"timestamp":"2025-08-30T00:00:00.000Z","attributes":{"http":{"status_code":500,"method":"GET"},"duration":1234}}}]}"#;
+        let (events, _) = parse_logs_response(body).unwrap();
+        assert_eq!(events[0].labels.get("http.status_code"), Some(&"500".to_string()));
+        assert_eq!(events[0].labels.get("http.method"), Some(&"GET".to_string()));
+        assert_eq!(events[0].labels.get("duration"), Some(&"1234".to_string()));
+    }
+
+    #[test]
+    fn boolean_log_attribute_is_stringified() {
+        let body = r#"{"data":[{"attributes":{"timestamp":"2025-08-30T00:00:00.000Z","attributes":{"retried":true}}}]}"#;
+        let (events, _) = parse_logs_response(body).unwrap();
+        assert_eq!(events[0].labels.get("retried"), Some(&"true".to_string()));
+    }
+
+    #[test]
+    fn null_log_attribute_is_skipped() {
+        let body = r#"{"data":[{"attributes":{"timestamp":"2025-08-30T00:00:00.000Z","attributes":{"optional_field":null}}}]}"#;
+        let (events, _) = parse_logs_response(body).unwrap();
+        assert_eq!(events[0].labels.get("optional_field"), None);
+    }
+
+    #[test]
+    fn attribute_flattening_stops_at_the_depth_cap() {
+        // Nest one level past MAX_ATTRIBUTE_FLATTEN_DEPTH; the deepest key
+        // must not survive flattening.
+        let mut value = serde_json::json!("too_deep");
+        for _ in 0..=MAX_ATTRIBUTE_FLATTEN_DEPTH.saturating_add(1) {
+            value = serde_json::json!({ "level": value });
+        }
+        let mut attributes = serde_json::Map::new();
+        attributes.insert("root".to_string(), value);
+
+        let mut out = BTreeMap::new();
+        flatten_attributes_into("", &attributes, 0, &mut out);
+
+        assert!(
+            !out.values().any(|v| v == "too_deep"),
+            "expected the deepest nested value to be dropped by the depth cap, got {out:?}"
+        );
     }
 
     // --- metrics ---
@@ -996,6 +1102,20 @@ mod tests {
     #[test]
     fn span_duration_falls_back_to_a_custom_duration_attribute_in_nanoseconds() {
         let body = r#"{"data":[{"attributes":{"start_timestamp":"2025-08-30T00:00:00.000Z","attributes":{"duration":250000000}}}]}"#;
+        let (events, _) = parse_traces_response(body).unwrap();
+        assert_eq!(events[0].value, Some(250.0));
+    }
+
+    #[test]
+    fn span_custom_attributes_are_flattened_into_labels() {
+        let body = r#"{"data":[{"attributes":{"start_timestamp":"2025-08-30T00:00:00.000Z","end_timestamp":"2025-08-30T00:00:00.250Z","custom":{"http":{"status_code":500}}}}]}"#;
+        let (events, _) = parse_traces_response(body).unwrap();
+        assert_eq!(events[0].labels.get("http.status_code"), Some(&"500".to_string()));
+    }
+
+    #[test]
+    fn span_duration_falls_back_to_custom_duration_before_attributes_duration() {
+        let body = r#"{"data":[{"attributes":{"start_timestamp":"2025-08-30T00:00:00.000Z","custom":{"duration":250000000},"attributes":{"duration":999000000}}}]}"#;
         let (events, _) = parse_traces_response(body).unwrap();
         assert_eq!(events[0].value, Some(250.0));
     }
