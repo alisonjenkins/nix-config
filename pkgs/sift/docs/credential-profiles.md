@@ -122,9 +122,19 @@ sops secrets/ali-work-laptop-macos/work-identity.enc.yaml
 # add:  secretspec_work_1password_uri: onepassword://<USER ID>@<vault>
 ```
 
-Then `just switch`. The key must exist in the sops file before the
-switch, or sops-nix fails activation. Elsewhere, `--auth-profile work`
-fails with "Provider alias 'work_1password' is not defined".
+Then `just switch`. Add the key to the sops file **before** switching.
+home-manager's sops-nix decrypts in a background agent (launchd on macOS,
+a systemd user service on Linux), not in the switch itself, and it stops
+at the first missing key. So the switch can look successful while none
+of `work-identity.enc.yaml`'s secrets get written, including the work git
+email and the work SSH public keys, not only this alias. Elsewhere,
+`--auth-profile work` fails with "Provider alias 'work_1password' is not
+defined".
+
+The `work` profile's `LGTM_*` secrets come from the same 1Password vault
+now, not SSM. They are optional, so one that only exists in SSM is
+silently absent and `sift lgtm ... --auth-profile work` queries without
+credentials. Create them in the vault too if you use that combination.
 
 A cached alias like this one is a complete route and can't sit in a
 fallback chain, so the profile names only `work_1password`. To back a
