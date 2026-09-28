@@ -3,6 +3,8 @@
 , lib
 , ...
 }: {
+  imports = [ ./declarative.nix ];
+
   # home.file =
   #   if pkgs.stdenv.isLinux
   #   then {
