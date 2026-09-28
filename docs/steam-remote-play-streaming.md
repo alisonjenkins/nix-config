@@ -51,13 +51,17 @@ other output, so it takes part in normal `output` handling — enable, disable,
 `mode`, workspace assignment — rather than being a special object created over
 IPC.
 
-Two local fixes on top, both worth keeping if this is ever upstreamed:
+Local fixes on top, all worth keeping if this is ever upstreamed:
 
 - **A real physical size.** Upstream reports `0mm x 0mm` for virtual outputs.
   Steam *discards* such outputs entirely, so the streamed output was never even
   a candidate. The patch derives millimetres from the mode at ~96dpi.
 - **No crash on output reconnect**, which the original hit whenever DP-2 came
   back.
+- **A fresh output each time `steam` is turned off**, and only the current mode
+  advertised. Reusing one output made GTK 3 apps, and Qt apps using the gtk3
+  platform theme, corrupt their heap on every toggle. See
+  [ADR 0018](adr/0018-fresh-output-per-virtual-output-disable.md).
 
 Gated behind `modules.desktop.niriVirtualOutputs`, **off by default**. When off,
 the stock upstream niri is used and none of this is built.
