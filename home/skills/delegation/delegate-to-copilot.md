@@ -97,9 +97,11 @@ argument, so pass `profile` explicitly whenever you also pass a skill (e.g.
 
 The optional third argument names one or more comma-separated Claude skills
 (e.g. `programming` or `programming,testing`) to hand to the delegate, so it
-follows the same conventions this session does — Copilot's own project-skill
-discovery only sees the target repo's `.claude/skills/`, not Claude's global
-`~/.claude/skills/`. The script resolves each skill's directory (project
+follows the same conventions this session does. Copilot discovers the shared
+`home/skills/` families on its own through `~/.agents/skills` (see the
+`skill-authoring` skill's wiring.md), but not skills that exist only in
+Claude's `~/.claude/skills/`, and naming the skill makes the delegate read it
+rather than hoping it fires. The script resolves each skill's directory (project
 `.claude/skills/<skill>` first, then `~/.claude/skills/<skill>`), grants the
 delegate read access to both skill roots via `--add-dir`, and prepends an
 instruction to read each named skill's `SKILL.md` and follow wherever it

@@ -4,7 +4,7 @@
 
 | Scope | Location | Notes |
 |---|---|---|
-| Every project, every machine | `home/skills/<name>/` | Runtime-agnostic. Auto-discovered into `flake.lib.skills`, then linked into Claude Code *and* opencode. Spec-only frontmatter. |
+| Every project, every machine | `home/skills/<name>/` | Runtime-agnostic. Auto-discovered into `flake.lib.skills`, then linked into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (opencode, Copilot CLI). Spec-only frontmatter. |
 | This repo only | `.claude/skills/<name>/` | Checked in. Claude-Code-only frontmatter is fine here. |
 | One subtree of a monorepo | `<subdir>/.claude/skills/<name>/` | Loads the first time Claude touches a file in that subtree; appears as `<subdir>:<name>` when the name clashes. |
 
@@ -30,16 +30,21 @@ one arbitrary `SKILL.md` wins, and every skill's `scripts/`, `reference/`, and
 `home.file` does not remove files a previous generation created, so after a
 layout change, delete stale directories in `~/.claude/skills/` by hand.
 
-## opencode
+## opencode and Copilot CLI
 
-`home/programs/opencode/default.nix` links every shared skill automatically
-from the same flake output:
+`home/programs/agent-skills/default.nix` links every shared skill into
+`~/.agents/skills`, the personal skills path both opencode and GitHub Copilot
+CLI read. Claude Code does not read it, which is why claude-code keeps its own
+`~/.claude/skills` link:
 
 ```nix
-// lib.mapAttrs' (
-  name: path: lib.nameValuePair "opencode/skills/${name}" { source = path; }
-) inputs.self.lib.skills
+home.file = lib.mapAttrs' (
+  name: path: lib.nameValuePair ".agents/skills/${name}" { source = path; }
+) inputs.self.lib.skills;
 ```
+
+opencode also reads `~/.claude/skills`, so it sees each shared skill twice.
+Don't add a third link under `~/.config/opencode/skills`.
 
 It links whole **directories**. Linking a single `SKILL.md` would silently drop
 every child file: the skill would load with a routing table pointing at
