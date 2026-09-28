@@ -737,7 +737,7 @@ index 49fbc6b0..272ceded 100644
 +    }
  }
 diff --git a/src/backend/tty.rs b/src/backend/tty.rs
-index 6dd83492..3a9ccf2f 100644
+index 6dd83492..005b1de7 100644
 --- a/src/backend/tty.rs
 +++ b/src/backend/tty.rs
 @@ -16,7 +16,7 @@ use drm_ffi::drm_mode_modeinfo;
@@ -760,7 +760,7 @@ index 6dd83492..3a9ccf2f 100644
  use crate::frame_clock::FrameClock;
  use crate::niri::{Niri, RedrawState, State};
  use crate::render_helpers::debug::draw_damage;
-@@ -101,6 +101,119 @@ pub struct Tty {
+@@ -101,6 +101,163 @@ pub struct Tty {
      // Whether the debug tinting is enabled.
      debug_tint: bool,
      ipc_outputs: Arc<Mutex<IpcOutputMap>>,
@@ -795,6 +795,19 @@ index 6dd83492..3a9ccf2f 100644
 +    /// asked for over IPC. Only a declared output is removed when it stops
 +    /// being declared; one created over IPC is owned by whoever asked for it.
 +    declared: bool,
++}
++
++impl VirtualOutput {
++    /// Take the output out of use, returning the Output that was live so it can be
++    /// removed from the layout.
++    ///
++    /// The one kept for turning it back on is new, so no client resource is ever
++    /// attached to a disabled output and a resize while off reaches nobody.
++    fn turn_off(&mut self) -> Output {
++        self.enabled = false;
++        let rebuilt = rebuild_virtual_output(&self.output);
++        mem::replace(&mut self.output, rebuilt)
++    }
 +}
 +
 +/// Size and rate a declared virtual output should have.
@@ -841,6 +854,37 @@ index 6dd83492..3a9ccf2f 100644
 +    }
 +}
 +
++/// A new Output with the same identity and current mode as `output`.
++///
++/// A virtual output must not keep its Output across being turned off: smithay keeps the
++/// xdg_output resources on the Output, not on its global, so any later mode change or
++/// re-add sends events to objects clients already dropped, and GTK 3 writes those into
++/// freed memory.
++fn rebuild_virtual_output(output: &Output) -> Output {
++    let rebuilt = Output::new(output.name(), output.physical_properties());
++    if let Some(mode) = output.current_mode() {
++        rebuilt.change_current_state(Some(mode), None, None, None);
++        rebuilt.set_preferred(mode);
++    }
++    if let Some(name) = output.user_data().get::<OutputName>() {
++        let name = name.clone();
++        rebuilt.user_data().insert_if_missing(|| name);
++    }
++    rebuilt
++}
++
++/// Make `mode` the only mode `output` advertises.
++///
++/// A virtual output can be any size, so modes it no longer has would otherwise pile up
++/// on every resize and be offered to clients as if it still supported them.
++fn set_only_mode(output: &Output, mode: Mode) {
++    output.change_current_state(Some(mode), None, None, None);
++    output.set_preferred(mode);
++    for stale in output.modes().into_iter().filter(|m| *m != mode) {
++        output.delete_mode(stale);
++    }
++}
++
 +/// Refresh interval matching the rate a virtual output advertises.
 +fn virtual_refresh_interval(refresh_rate: u32) -> Duration {
 +    Duration::from_nanos(1_000_000_000 / u64::from(refresh_rate))
@@ -880,7 +924,7 @@ index 6dd83492..3a9ccf2f 100644
  }
  
  pub type TtyRenderer<'render> = MultiRenderer<
-@@ -509,6 +622,10 @@ impl Tty {
+@@ -509,6 +666,10 @@ impl Tty {
              update_output_config_on_resume: false,
              debug_tint: false,
              ipc_outputs: Arc::new(Mutex::new(HashMap::new())),
@@ -891,7 +935,7 @@ index 6dd83492..3a9ccf2f 100644
          })
      }
  
-@@ -551,6 +668,10 @@ impl Tty {
+@@ -551,6 +712,10 @@ impl Tty {
                  warn!("error adding device: {err:?}");
              }
          }
@@ -902,7 +946,7 @@ index 6dd83492..3a9ccf2f 100644
      }
  
      fn on_udev_event(&mut self, niri: &mut Niri, event: UdevEvent) {
-@@ -1604,7 +1725,11 @@ impl Tty {
+@@ -1604,7 +1769,11 @@ impl Tty {
              .global_space
              .outputs()
              .find(|output| {
@@ -915,7 +959,7 @@ index 6dd83492..3a9ccf2f 100644
                  tty_state.node == node && tty_state.crtc == crtc
              })
              .cloned();
-@@ -1684,7 +1809,11 @@ impl Tty {
+@@ -1684,7 +1853,11 @@ impl Tty {
              .global_space
              .outputs()
              .find(|output| {
@@ -928,7 +972,7 @@ index 6dd83492..3a9ccf2f 100644
                  tty_state.node == node && tty_state.crtc == crtc
              })
              .cloned()
-@@ -1832,7 +1961,15 @@ impl Tty {
+@@ -1832,7 +2005,15 @@ impl Tty {
          if output_state.unfinished_animations_remain {
              niri.queue_redraw(&output);
          } else {
@@ -945,7 +989,7 @@ index 6dd83492..3a9ccf2f 100644
          }
      }
  
-@@ -1861,7 +1998,12 @@ impl Tty {
+@@ -1861,7 +2042,12 @@ impl Tty {
  
          let mut rv = RenderResult::Skipped;
  
@@ -959,7 +1003,7 @@ index 6dd83492..3a9ccf2f 100644
          let Some(device) = self.devices.get_mut(&tty_state.node) else {
              error!("missing output device");
              return rv;
-@@ -2075,7 +2217,13 @@ impl Tty {
+@@ -2075,7 +2261,13 @@ impl Tty {
      }
  
      pub fn get_gamma_size(&self, output: &Output) -> anyhow::Result<u32> {
@@ -974,7 +1018,7 @@ index 6dd83492..3a9ccf2f 100644
          let crtc = tty_state.crtc;
  
          let device = self
-@@ -2096,7 +2244,10 @@ impl Tty {
+@@ -2096,7 +2288,10 @@ impl Tty {
      }
  
      pub fn set_gamma(&mut self, output: &Output, ramp: Option<Vec<u16>>) -> anyhow::Result<()> {
@@ -986,7 +1030,7 @@ index 6dd83492..3a9ccf2f 100644
          let crtc = tty_state.crtc;
  
          let device = self
-@@ -2196,7 +2347,11 @@ impl Tty {
+@@ -2196,7 +2391,11 @@ impl Tty {
                      .global_space
                      .outputs()
                      .find(|output| {
@@ -999,7 +1043,7 @@ index 6dd83492..3a9ccf2f 100644
                          tty_state.node == *node && tty_state.crtc == crtc
                      })
                      .map(logical_output);
-@@ -2235,6 +2390,12 @@ impl Tty {
+@@ -2235,6 +2434,12 @@ impl Tty {
              }
          }
  
@@ -1012,7 +1056,7 @@ index 6dd83492..3a9ccf2f 100644
          let mut guard = self.ipc_outputs.lock().unwrap();
          *guard = ipc_outputs;
          niri.ipc_outputs_changed = true;
-@@ -2244,6 +2405,322 @@ impl Tty {
+@@ -2244,6 +2449,324 @@ impl Tty {
          self.ipc_outputs.clone()
      }
  
@@ -1166,13 +1210,17 @@ index 6dd83492..3a9ccf2f 100644
 +            let Some(virt) = self.virtual_outputs.outputs.get_mut(&name) else {
 +                continue;
 +            };
-+            virt.enabled = enable;
-+            let output = virt.output.clone();
-+            let refresh_rate = virt.refresh_rate;
 +            if enable {
-+                niri.add_output(output, Some(virtual_refresh_interval(refresh_rate)), false);
++                virt.enabled = true;
++                let refresh_rate = virt.refresh_rate;
++                niri.add_output(
++                    virt.output.clone(),
++                    Some(virtual_refresh_interval(refresh_rate)),
++                    false,
++                );
 +            } else {
-+                niri.remove_output(&output);
++                let live = virt.turn_off();
++                niri.remove_output(&live);
 +            }
 +        }
 +    }
@@ -1288,9 +1336,7 @@ index 6dd83492..3a9ccf2f 100644
 +                size: (i32::from(wanted.width), i32::from(wanted.height)).into(),
 +                refresh: i32::try_from(refresh_rate * 1000).unwrap_or(60_000),
 +            };
-+            virt.output
-+                .change_current_state(Some(mode), None, None, None);
-+            virt.output.set_preferred(mode);
++            set_only_mode(&virt.output, mode);
 +
 +            // Only outputs in the layout have frame clocks and windows to lay
 +            // out again; a disabled one picks the mode up when it is enabled.
@@ -1335,7 +1381,7 @@ index 6dd83492..3a9ccf2f 100644
      #[cfg(feature = "xdp-gnome-screencast")]
      pub fn primary_gbm_device(&self) -> Option<GbmDevice<DrmDeviceFd>> {
          // Try to find a device corresponding to the primary render node.
-@@ -2286,7 +2763,10 @@ impl Tty {
+@@ -2286,7 +2809,10 @@ impl Tty {
          }
          for (&node, device) in self.devices.iter_mut() {
              for (&crtc, surface) in device.surfaces.iter_mut() {
@@ -1347,7 +1393,7 @@ index 6dd83492..3a9ccf2f 100644
                  if tty_state.node == node && tty_state.crtc == crtc {
                      let word = if enable_vrr { "enabling" } else { "disabling" };
                      if let Err(err) = surface.compositor.use_vrr(enable_vrr) {
-@@ -2392,6 +2872,8 @@ impl Tty {
+@@ -2392,6 +2918,8 @@ impl Tty {
          }
          self.update_output_config_on_resume = false;
  
@@ -1356,7 +1402,7 @@ index 6dd83492..3a9ccf2f 100644
          // Figure out if we should disable laptop panels.
          let disable_laptop_panels = self.should_disable_laptop_panels(niri.is_lid_closed);
          let should_disable = |connector: &str| disable_laptop_panels && is_laptop_panel(connector);
-@@ -2466,7 +2948,11 @@ impl Tty {
+@@ -2466,7 +2994,11 @@ impl Tty {
                      .global_space
                      .outputs()
                      .find(|output| {
@@ -1369,18 +1415,21 @@ index 6dd83492..3a9ccf2f 100644
                          tty_state.node == node && tty_state.crtc == crtc
                      })
                      .cloned();
-@@ -3530,8 +4016,150 @@ mod tests {
+@@ -3529,9 +4061,228 @@ unsafe fn init_libinput_plugin_system(libinput: &Libinput) {
+ mod tests {
      use insta::assert_debug_snapshot;
      use niri_config::output::Modeline;
++    use niri_config::OutputName;
      use niri_ipc::{HSyncPolarity, VSyncPolarity};
 +    use smithay::output::{Mode, Output, PhysicalProperties, Subpixel};
 +
 +    use crate::backend::tty::{
 +        calculate_drm_mode_from_modeline, calculate_mode_cvt, configured_refresh_rate,
-+        declared_virtual_mode, virtual_output_transition, with_virtual_outputs, ConfiguredMode,
-+        IpcOutputMap, OutputId, VirtualOutput,
++        declared_virtual_mode, rebuild_virtual_output, set_only_mode, virtual_output_transition,
++        with_virtual_outputs, ConfiguredMode, IpcOutputMap, OutputId, VirtualOutput,
 +    };
-+
+ 
+-    use crate::backend::tty::{calculate_drm_mode_from_modeline, calculate_mode_cvt};
 +    fn virtual_output(enabled: bool) -> VirtualOutput {
 +        let output = Output::new(
 +            "steam".to_owned(),
@@ -1447,8 +1496,83 @@ index 6dd83492..3a9ccf2f 100644
 +        // what makes it usable as a screencast target.
 +        assert!(listed.logical.is_some());
 +    }
- 
--    use crate::backend::tty::{calculate_drm_mode_from_modeline, calculate_mode_cvt};
++
++    #[test]
++    fn turning_a_virtual_output_back_on_gives_it_a_fresh_output() {
++        // Regression: re-adding the same Output re-sent xdg_output events to
++        // proxies clients had orphaned when the old global went away; GTK 3
++        // wrote them into freed monitors and crashed later on heap corruption.
++        let virt = virtual_output(false);
++        virt.output.user_data().insert_if_missing(|| OutputName {
++            connector: "steam".to_owned(),
++            make: Some("niri".to_owned()),
++            model: Some("virtual".to_owned()),
++            serial: Some("1".to_owned()),
++        });
++        let stale = Mode {
++            size: (2880, 1800).into(),
++            refresh: 90_000,
++        };
++        virt.output.add_mode(stale);
++
++        let rebuilt = rebuild_virtual_output(&virt.output);
++
++        assert_ne!(rebuilt, virt.output);
++        assert_eq!(rebuilt.name(), "steam");
++        assert_eq!(
++            format!("{:?}", rebuilt.physical_properties()),
++            format!("{:?}", virt.output.physical_properties())
++        );
++        assert_eq!(rebuilt.current_mode(), virt.output.current_mode());
++        assert_eq!(rebuilt.preferred_mode(), virt.output.current_mode());
++        assert_eq!(rebuilt.modes(), vec![virt.output.current_mode().unwrap()]);
++        let name = rebuilt
++            .user_data()
++            .get::<OutputName>()
++            .expect("name is kept");
++        assert_eq!(name.connector, "steam");
++        assert_eq!(name.serial.as_deref(), Some("1"));
++    }
++
++    #[test]
++    fn turning_a_virtual_output_off_detaches_it_from_the_live_output() {
++        // Regression: a resize runs before an output is turned back on, so the
++        // Output kept while off must already be a new one, or the resize sends
++        // logical_size to xdg_output objects clients dropped with the old global.
++        let mut virt = virtual_output(true);
++        let live = virt.output.clone();
++
++        let removed = virt.turn_off();
++
++        assert_eq!(removed, live);
++        assert_ne!(virt.output, live);
++        assert!(!virt.enabled);
++        assert_eq!(virt.output.name(), "steam");
++
++        let resized = Mode {
++            size: (1728, 1080).into(),
++            refresh: 60_000,
++        };
++        virt.output
++            .change_current_state(Some(resized), None, None, None);
++        assert_ne!(live.current_mode(), Some(resized));
++    }
++
++    #[test]
++    fn resizing_a_virtual_output_drops_its_old_mode() {
++        let virt = virtual_output(true);
++        let resized = Mode {
++            size: (1728, 1080).into(),
++            refresh: 60_000,
++        };
++
++        set_only_mode(&virt.output, resized);
++
++        assert_eq!(virt.output.modes(), vec![resized]);
++        assert_eq!(virt.output.current_mode(), Some(resized));
++        assert_eq!(virt.output.preferred_mode(), Some(resized));
++    }
++
 +    #[test]
 +    fn a_declared_virtual_output_takes_its_size_from_mode() {
 +        // A virtual output has no connector advertising modes, so `mode` is
