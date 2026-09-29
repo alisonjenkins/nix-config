@@ -32,8 +32,10 @@ flake input.
   shows one virtual output letterboxed on the focused physical monitor. Input goes to the
   virtual output, which becomes the active monitor, and a 2 s label says
   "Viewing: <name>". Overlay-layer surfaces such as notifications stay on top. It ends with
-  `view-output` and no name (`Mod+Ctrl+Shift+V`), by clicking the viewer's own workspace in
-  the overview, or automatically when either output goes away.
+  `view-output` and no name (`Mod+Ctrl+Shift+V`), whenever the viewer becomes the active
+  monitor again by any route (overview click or keyboard, focus-monitor binds), with Escape
+  when the view was entered by clicking into it from the overview, or automatically when
+  either output goes away.
 - **Rendering** wraps the source's own render elements in one `ProjectedElement` that maps
   geometry, damage and opaque regions from the source's scale to the viewer's. The source's
   own rendering, frame pacing and any stream from it are untouched.
@@ -59,6 +61,12 @@ flake input.
 - A virtual output must draw the pointer only while the pointer is physically over it. Never
   drawing it would drop a streaming client's own cursor from the stream; always drawing it
   leaks the desk cursor into the stream.
+- What is drawn on top must be what takes the click. Input resolves projections first, so
+  overview columns are drawn above the viewer's workspaces, on an opaque fill: otherwise a
+  busy workspace's windows spill over a column, look clickable, and the click goes to the
+  virtual output.
+- View mode must end whenever the viewer becomes active again, not only on the explicit
+  exits; otherwise the source keeps covering a viewer whose own workspaces are now active.
 - Every code path that turns an output into a cursor position must use the *physical*
   output. Two independent reviews found nine places (warp-to-focus, pointer-lock hints,
   gesture wrap and clamp, grab deltas, confine regions) where a projected hit made the
@@ -75,8 +83,9 @@ flake input.
 - **A mirror client** (screencast in a fullscreen window plus focus-monitor bindings).
   Cannot pass mouse clicks through, cannot join the overview, no drag and drop.
 - **A thumbnail strip in the overview.** Shows, but cannot be used like the overview.
-- **Esc to leave view mode.** Esc belongs to the focused application; the rule would be
-  unpredictable.
+- **Esc to leave every view.** Esc belongs to the focused application. It leaves only a
+  view entered from the overview, where it reads as "back" (and the key is then withheld
+  from the app); a view started by command or bind passes Esc through.
 - **Centre the whole overview row.** Moves the viewer's own workspaces and needs `Monitor`
   geometry changes in both rendering and hit-testing.
 - **Patch Qt, or GTK.** The crashes that started this (ADR 0018) were fixed at their source
