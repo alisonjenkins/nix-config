@@ -58,6 +58,14 @@ spec live in `specs/001-virtual-output-projection/`; the code is in the niri for
 - A virtual output must draw the pointer only while the pointer is physically over it. Never
   drawing it would drop a streaming client's own cursor from the stream; always drawing it
   leaks the desk cursor into the stream.
+- Every code path that turns an output into a cursor position must use the *physical*
+  output. Two independent reviews found nine places (warp-to-focus, pointer-lock hints,
+  gesture wrap and clamp, grab deltas, confine regions) where a projected hit made the
+  source the reference and teleported the cursor onto the virtual output. They are pinned
+  by tests that drive real input through a test input backend (`src/tests/input.rs`).
+- The patch base must be the niri revision the flake builds. It had drifted 49 commits
+  behind; old hunks applied with fuzz until new ones didn't. Renderer tests are named
+  `egl_` because the Nix build skips `::egl` (no EGL display in the sandbox).
 
 ## Alternatives rejected
 
@@ -80,8 +88,8 @@ spec live in `specs/001-virtual-output-projection/`; the code is in the niri for
 - Projected content is scaled, so it can look softer than native.
 - Drag deltas inside a shrunk column are scaled slightly wrong because niri divides by the
   viewer's overview zoom; drop targets use the absolute position and stay correct.
-- A touch tap on a virtual workspace in the overview enters view mode on the physical
-  output under the pointer, which may differ from where the tap happened.
+- In view mode, Alt-Tab opens on the viewer, and its input resolves on the physical output
+  only. While it is open, input over an overview column closes it instead of reaching it.
 - A window screenshot's cursor position stays in the source's coordinates.
 
 ## Revisit when
