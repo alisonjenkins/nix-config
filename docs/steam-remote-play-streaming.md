@@ -45,8 +45,8 @@ several wrong turns. See `PENDING.md` for the full archaeology.
 
 ### 1. niri virtual-output patch
 
-A rebase of `QaidVoid/niri` `feat/virtual` onto `e9b215fe`, with upstream
-`02fdd8e` merged in since, plus local fixes.
+A rebase of `QaidVoid/niri` `feat/virtual` onto upstream niri `1f03391e`, plus
+local fixes.
 Adds a `virtual` output kind that can be declared in the config file like any
 other output, so it takes part in normal `output` handling — enable, disable,
 `mode`, workspace assignment — rather than being a special object created over
@@ -81,9 +81,10 @@ The base must be the exact niri revision the flake builds, and the fork's
 history must contain it. On 2026-09-29 the patch was still cut from an older
 base (`e9b215fe`) than the flake's niri (`02fdd8e`, 49 commits newer); old
 hunks applied with fuzz until new ones touched code upstream had changed, and
-the build broke at patch time. Upstream `02fdd8e` was merged into the fork (not
-rebased, to keep the published branch history), so the base is now `02fdd8e`.
-After bumping the `niri` flake input, merge the new revision into the fork and
+the build broke at patch time. Upstream `02fdd8e` was first merged into the
+fork; later the branch was rebased onto upstream `1f03391e` instead, so the
+virtual-output work stays a linear series that can go upstream as a PR.
+After bumping the `niri` flake input, rebase the fork onto the new revision and
 regenerate before building.
 
 ### 2. Output declaration

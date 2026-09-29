@@ -981,7 +981,7 @@ in {
             # The patch is generated, not edited: it is
             # `git diff --no-ext-diff <niri flake rev> HEAD` on the fork's
             # rebase-feat-virtual branch, whose history must contain that rev
-            # (merge upstream into the fork after bumping the niri input, or
+            # (rebase the fork onto it after bumping the niri input, or
             # hunks stop applying). Fixes belong there as commits, so they
             # keep their rationale and their tests; regenerate afterwards.
             patchedNiri = upstreamNiri.overrideAttrs (old: {
