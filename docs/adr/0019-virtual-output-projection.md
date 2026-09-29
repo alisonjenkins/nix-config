@@ -23,7 +23,8 @@ spec live in `specs/001-virtual-output-projection/`; the code is in the niri for
 (`alisonjenkins/niri`, `rebase-feat-virtual`), which ali-desktop builds as the `niri-virtual`
 flake input.
 
-- **Overview columns.** With the overview open, each enabled virtual output gets a column
+- **Overview columns** (superseded by [0020](0020-virtual-output-overview-band.md): one
+  band column instead of one column per output). With the overview open, each enabled virtual output gets a column
   to the right of the viewer's own workspaces, labelled with its name. The column is the
   output's real overview, so dragging windows between any workspaces, dropping into gaps to
   create workspaces, reordering and clicking all work across outputs. The viewer's own

@@ -48,7 +48,8 @@ for hardware video decode.
 |---|---|---|
 | [0017](0017-ali-mba-linux-avd-vaapi.md) | Expose the M1 video decoder through VA-API, with avd-fw from master | Accepted, pending live test |
 | [0018](0018-fresh-output-per-virtual-output-disable.md) | Build a fresh output each time the `steam` virtual output is turned off | Accepted |
-| [0019](0019-virtual-output-projection.md) | Show virtual outputs on physical monitors through projections | Accepted, pending live test |
+| [0019](0019-virtual-output-projection.md) | Show virtual outputs on physical monitors through projections | Accepted, pending live test; overview columns superseded by 0020 |
+| [0020](0020-virtual-output-overview-band.md) | Show virtual outputs in one overview band column | Accepted, pending live test |
 
 ## Template
 

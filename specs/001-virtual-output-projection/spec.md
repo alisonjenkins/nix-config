@@ -88,6 +88,9 @@ Someone is streaming from a virtual output on another device while the desk user
 
 **Overview**
 
+> Superseded by `specs/002-virtual-overview-column/` (FR-001 to FR-006 and FR-009): virtual
+> outputs now appear as one scrollable column in a reserved band, not one column each.
+
 - **FR-001**: While the overview is open on a physical monitor, the system MUST show, beside that monitor's workspaces, one column per virtual output that is on, labelled with the virtual output's name.
 - **FR-002**: Each such column MUST present the virtual output's actual workspaces and windows, at the same zoom as the physical monitor's workspaces in the overview, subject to FR-009.
 - **FR-003**: Every overview interaction available for a physical monitor's workspaces MUST work identically in a virtual output's column and across columns: dragging a window to any workspace on any output in either direction, dropping into the gap between workspaces to create a new workspace, reordering windows within a workspace, scrolling a column's workspaces, and clicking a workspace.

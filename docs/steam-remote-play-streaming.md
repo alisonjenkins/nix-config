@@ -63,8 +63,9 @@ Local fixes on top, all worth keeping if this is ever upstreamed:
   advertised. Reusing one output made GTK 3 apps, and Qt apps using the gtk3
   platform theme, corrupt their heap on every toggle. See
   [ADR 0018](adr/0018-fresh-output-per-virtual-output-disable.md).
-- **Virtual outputs are visible from the desk.** The overview shows each enabled
-  virtual output as a column beside DP-2's workspaces, and `Mod+Ctrl+V`
+- **Virtual outputs are visible from the desk.** The overview reserves a band at
+  DP-2's right edge listing every enabled virtual output's workspaces
+  ([ADR 0020](adr/0020-virtual-output-overview-band.md)), and `Mod+Ctrl+V`
   (`niri msg view-output steam`) shows `steam` letterboxed on DP-2 with input
   going to it; `Mod+Ctrl+Shift+V` returns. See
   [ADR 0019](adr/0019-virtual-output-projection.md).
