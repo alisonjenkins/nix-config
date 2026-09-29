@@ -45,7 +45,8 @@ several wrong turns. See `PENDING.md` for the full archaeology.
 
 ### 1. niri virtual-output patch
 
-A rebase of `QaidVoid/niri` `feat/virtual` onto `e9b215fe`, plus local fixes.
+A rebase of `QaidVoid/niri` `feat/virtual` onto `e9b215fe`, with upstream
+`02fdd8e` merged in since, plus local fixes.
 Adds a `virtual` output kind that can be declared in the config file like any
 other output, so it takes part in normal `output` handling — enable, disable,
 `mode`, workspace assignment — rather than being a special object created over
@@ -71,9 +72,19 @@ Local fixes on top, all worth keeping if this is ever upstreamed:
 Gated behind `modules.desktop.niriVirtualOutputs`, **off by default**. When off,
 the stock upstream niri is used and none of this is built.
 
-The patch is *generated*, not hand-edited: `git diff e9b215fe HEAD` on the
-fork's `rebase-feat-virtual` branch. Fixes belong there as commits — so they
-keep their rationale and their tests — and the patch is regenerated afterwards.
+The patch is *generated*, not hand-edited:
+`git diff --no-ext-diff <niri flake rev> HEAD` on the fork's
+`rebase-feat-virtual` branch. Fixes belong there as commits — so they keep
+their rationale and their tests — and the patch is regenerated afterwards.
+
+The base must be the exact niri revision the flake builds, and the fork's
+history must contain it. On 2026-09-29 the patch was still cut from an older
+base (`e9b215fe`) than the flake's niri (`02fdd8e`, 49 commits newer); old
+hunks applied with fuzz until new ones touched code upstream had changed, and
+the build broke at patch time. Upstream `02fdd8e` was merged into the fork (not
+rebased, to keep the published branch history), so the base is now `02fdd8e`.
+After bumping the `niri` flake input, merge the new revision into the fork and
+regenerate before building.
 
 ### 2. Output declaration
 

@@ -30,7 +30,10 @@ Expected: everything passes. The fixture tests cover:
 ## Build and ship (nix-config)
 
 ```bash
-cd /home/ali/git/niri && git -c diff.external= diff --no-ext-diff e9b215fe HEAD \
+# Base = the niri rev in nix-config's flake.lock (02fdd8e at the time of writing);
+# the fork's history must contain it.
+cd /home/ali/git/niri && git -c diff.external= diff --no-ext-diff --binary \
+  "$(jq -r .nodes.niri.locked.rev <nix-config>/flake.lock)" HEAD \
   > <nix-config>/patches/niri-virtual-outputs.patch
 cd <nix-config>
 nix build .#nixosConfigurations.ali-desktop.config.programs.niri.package

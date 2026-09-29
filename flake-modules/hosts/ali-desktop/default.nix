@@ -979,9 +979,11 @@ in {
             # in patches/niri-virtual-outputs.patch for provenance.
             #
             # The patch is generated, not edited: it is
-            # `git diff e9b215fe HEAD` on the fork's rebase-feat-virtual
-            # branch. Fixes belong there as commits, so they keep their
-            # rationale and their tests; regenerate the patch afterwards.
+            # `git diff --no-ext-diff <niri flake rev> HEAD` on the fork's
+            # rebase-feat-virtual branch, whose history must contain that rev
+            # (merge upstream into the fork after bumping the niri input, or
+            # hunks stop applying). Fixes belong there as commits, so they
+            # keep their rationale and their tests; regenerate afterwards.
             patchedNiri = upstreamNiri.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
                 "${patchesDir}/niri-virtual-outputs.patch"
