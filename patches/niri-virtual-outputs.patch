@@ -271,7 +271,7 @@ index 00000000..ac63a38a
 +- Virtual outputs are not supported when running niri nested in another Wayland compositor (Winit backend)
 +- Virtual outputs created over IPC are not persisted across niri restarts — declare them in the config if you need them to come back
 diff --git a/niri-config/src/binds.rs b/niri-config/src/binds.rs
-index e1a6a546..43822e1b 100644
+index d02aa595..14e8706b 100644
 --- a/niri-config/src/binds.rs
 +++ b/niri-config/src/binds.rs
 @@ -154,6 +154,9 @@ pub enum Action {
@@ -292,7 +292,7 @@ index e1a6a546..43822e1b 100644
      #[knuffel(skip)]
      StopCast(u64),
      ToggleOverview,
-@@ -436,6 +440,14 @@ impl From<niri_ipc::Action> for Action {
+@@ -440,6 +444,14 @@ impl From<niri_ipc::Action> for Action {
              niri_ipc::Action::CloseWindow { id: Some(id) } => Self::CloseWindowById(id),
              niri_ipc::Action::FullscreenWindow { id: None } => Self::FullscreenWindow,
              niri_ipc::Action::FullscreenWindow { id: Some(id) } => Self::FullscreenWindowById(id),
@@ -307,7 +307,7 @@ index e1a6a546..43822e1b 100644
              niri_ipc::Action::ToggleWindowedFullscreen { id: None } => {
                  Self::ToggleWindowedFullscreen
              }
-@@ -696,6 +708,7 @@ impl From<niri_ipc::Action> for Action {
+@@ -700,6 +712,7 @@ impl From<niri_ipc::Action> for Action {
                  Self::SetDynamicCastMonitor(output)
              }
              niri_ipc::Action::ClearDynamicCastTarget {} => Self::ClearDynamicCastTarget,
@@ -316,10 +316,10 @@ index e1a6a546..43822e1b 100644
              niri_ipc::Action::ToggleOverview {} => Self::ToggleOverview,
              niri_ipc::Action::OpenOverview {} => Self::OpenOverview,
 diff --git a/niri-config/src/lib.rs b/niri-config/src/lib.rs
-index c78c06bb..297ce2d7 100644
+index 22e0d3db..3f7b7d40 100644
 --- a/niri-config/src/lib.rs
 +++ b/niri-config/src/lib.rs
-@@ -655,6 +655,68 @@ mod tests {
+@@ -647,6 +647,68 @@ mod tests {
              .unwrap()
      }
  
@@ -388,7 +388,7 @@ index c78c06bb..297ce2d7 100644
      #[test]
      fn parse_on_xdg_activate() {
          let parsed = do_parse(
-@@ -1203,6 +1265,7 @@ mod tests {
+@@ -1204,6 +1266,7 @@ mod tests {
                                  },
                              },
                          ),
@@ -396,7 +396,7 @@ index c78c06bb..297ce2d7 100644
                          modeline: None,
                          variable_refresh_rate: Some(
                              Vrr {
-@@ -1249,6 +1312,7 @@ mod tests {
+@@ -1250,6 +1313,7 @@ mod tests {
                                  },
                              },
                          ),
@@ -404,7 +404,7 @@ index c78c06bb..297ce2d7 100644
                          modeline: None,
                          variable_refresh_rate: None,
                          focus_at_startup: false,
-@@ -1265,6 +1329,7 @@ mod tests {
+@@ -1266,6 +1330,7 @@ mod tests {
                          position: None,
                          max_bpc: None,
                          mode: None,
@@ -2188,9 +2188,18 @@ index a266b6ca..7ff912fe 100644
                  tablet_tool
                      .unwrap()
 diff --git a/src/input/mod.rs b/src/input/mod.rs
-index 183909ee..e689b97f 100644
+index e0f47c88..ec5eab4d 100644
 --- a/src/input/mod.rs
 +++ b/src/input/mod.rs
+@@ -15,7 +15,7 @@ use smithay::backend::input::{
+     InputEvent, KeyState, KeyboardKeyEvent, Keycode, MouseButton, PointerAxisEvent,
+     PointerButtonEvent, PointerMotionEvent, ProximityState, Switch, SwitchState, SwitchToggleEvent,
+     TabletToolButtonEvent, TabletToolEvent, TabletToolProximityEvent, TabletToolTipEvent,
+-    TabletToolTipState, TouchEvent,
++    TabletToolTipState, TouchEvent, TouchSlot,
+ };
+ use smithay::backend::libinput::LibinputInputBackend;
+ use smithay::input::dnd::DnDGrab;
 @@ -872,6 +872,23 @@ impl State {
                      self.niri.queue_redraw_all();
                  }
@@ -2255,7 +2264,7 @@ index 183909ee..e689b97f 100644
  
                              // Only select the *next* window if some window (which should be the
                              // first one) is already focused. If nothing is focused, keep the first
-@@ -2512,13 +2536,13 @@ impl State {
+@@ -2518,13 +2542,13 @@ impl State {
          let spatial_grab = pointer.with_grab(|_, grab| {
              let grab = grab.as_any();
              if let Some(grab) = grab.downcast_ref::<SpatialMovementGrab>() {
@@ -2272,9 +2281,19 @@ index 183909ee..e689b97f 100644
                      return Some((output.clone(), true));
                  }
              }
-@@ -2573,12 +2597,8 @@ impl State {
-             self.niri.screenshot_ui.pointer_motion(point, None);
+@@ -2570,21 +2594,10 @@ impl State {
+             }
          }
+ 
+-        if let Some(output) = self.niri.screenshot_ui.selection_output() {
+-            let geom = self.niri.global_space.output_geometry(output).unwrap();
+-            let point = (new_pos - geom.loc.to_f64())
+-                .to_physical(output.current_scale().fractional_scale())
+-                .to_i32_round::<i32>();
+-
+-            self.niri.screenshot_ui.pointer_motion(point, None);
+-        }
++        self.screenshot_ui_pointer_motion(new_pos, None);
  
 -        if let Some(mru_output) = self.niri.window_mru_ui.output() {
 -            if let Some((output, pos_within_output)) = self.niri.output_under(new_pos) {
@@ -2287,7 +2306,7 @@ index 183909ee..e689b97f 100644
          }
  
          let under = self.niri.contents_under(new_pos);
-@@ -2587,17 +2607,20 @@ impl State {
+@@ -2593,17 +2606,20 @@ impl State {
          if let Some((focus_surface, region)) = pointer_confined {
              let mut prevent = false;
  
@@ -2318,7 +2337,7 @@ index 183909ee..e689b97f 100644
              }
  
              if prevent {
-@@ -2652,6 +2675,7 @@ impl State {
+@@ -2658,6 +2674,7 @@ impl State {
                      .unwrap_or(true)
              {
                  self.niri.layout.toggle_overview();
@@ -2326,10 +2345,20 @@ index 183909ee..e689b97f 100644
              }
              self.niri.pointer_inside_hot_corner = true;
          }
-@@ -2708,12 +2732,8 @@ impl State {
-             self.niri.screenshot_ui.pointer_motion(point, None);
-         }
+@@ -2705,21 +2722,10 @@ impl State {
  
+         let pointer = self.niri.seat.get_pointer().unwrap();
+ 
+-        if let Some(output) = self.niri.screenshot_ui.selection_output() {
+-            let geom = self.niri.global_space.output_geometry(output).unwrap();
+-            let point = (pos - geom.loc.to_f64())
+-                .to_physical(output.current_scale().fractional_scale())
+-                .to_i32_round::<i32>();
++        self.screenshot_ui_pointer_motion(pos, None);
+ 
+-            self.niri.screenshot_ui.pointer_motion(point, None);
+-        }
+-
 -        if let Some(mru_output) = self.niri.window_mru_ui.output() {
 -            if let Some((output, pos_within_output)) = self.niri.output_under(pos) {
 -                if mru_output == output {
@@ -2341,7 +2370,7 @@ index 183909ee..e689b97f 100644
          }
  
          let under = self.niri.contents_under(pos);
-@@ -2743,6 +2763,7 @@ impl State {
+@@ -2749,6 +2755,7 @@ impl State {
                      .unwrap_or(true)
              {
                  self.niri.layout.toggle_overview();
@@ -2349,7 +2378,7 @@ index 183909ee..e689b97f 100644
              }
              self.niri.pointer_inside_hot_corner = true;
          }
-@@ -2799,12 +2820,11 @@ impl State {
+@@ -2805,12 +2812,11 @@ impl State {
  
          if ButtonState::Pressed == button_state {
              let mut is_mru_open = false;
@@ -2364,7 +2393,7 @@ index 183909ee..e689b97f 100644
                          let id = self.niri.window_mru_ui.pointer_motion(pos_within_output);
                          if id.is_some() {
                              self.confirm_mru();
-@@ -2866,7 +2886,16 @@ impl State {
+@@ -2872,7 +2878,16 @@ impl State {
                      self.niri
                          .layout
                          .view_offset_gesture_begin(&output, Some(ws_idx), false);
@@ -2382,7 +2411,7 @@ index 183909ee..e689b97f 100644
                      pointer.set_grab(self, grab, serial, Focus::Clear);
                      self.niri
                          .cursor_manager
-@@ -2901,7 +2930,16 @@ impl State {
+@@ -2907,7 +2922,16 @@ impl State {
                          button: button_code,
                          location,
                      };
@@ -2400,7 +2429,7 @@ index 183909ee..e689b97f 100644
                      pointer.set_grab(self, grab, serial, Focus::Clear);
                      self.niri
                          .cursor_manager
-@@ -3013,7 +3051,7 @@ impl State {
+@@ -3019,7 +3043,7 @@ impl State {
                                  location,
                              };
                              let start_data = AnyStartData::Pointer(start_data);
@@ -2409,7 +2438,7 @@ index 183909ee..e689b97f 100644
                              pointer.set_grab(self, grab, serial, Focus::Clear);
                              self.niri
                                  .cursor_manager
-@@ -3032,10 +3070,12 @@ impl State {
+@@ -3038,10 +3062,12 @@ impl State {
                  .then(|| self.niri.workspace_under_cursor(false))
                  .flatten()
              {
@@ -2426,10 +2455,51 @@ index 183909ee..e689b97f 100644
  
                  // FIXME: granular.
                  self.niri.queue_redraw_all();
-@@ -3608,12 +3648,8 @@ impl State {
-             self.niri.screenshot_ui.pointer_motion(point, None);
-         }
+@@ -3062,29 +3088,7 @@ impl State {
  
+         if button == Some(MouseButton::Left) && self.niri.screenshot_ui.is_open() {
+             if button_state == ButtonState::Pressed {
+-                let pos = pointer.current_location();
+-
+-                // If we'll be moving the existing selection, use the selection output.
+-                let output = if mod_down {
+-                    self.niri.screenshot_ui.selection_output()
+-                } else {
+-                    self.niri.output_under(pos).map(|(out, _)| out)
+-                };
+-
+-                if let Some(output) = output.cloned() {
+-                    let geom = self.niri.global_space.output_geometry(&output).unwrap();
+-                    let point = (pos - geom.loc.to_f64())
+-                        .to_physical(output.current_scale().fractional_scale())
+-                        .to_i32_round();
+-
+-                    if self
+-                        .niri
+-                        .screenshot_ui
+-                        .pointer_down(output, point, None, mod_down)
+-                    {
+-                        self.niri.queue_redraw_all();
+-                    }
+-                }
++                self.screenshot_ui_pointer_down(pointer.current_location(), None, mod_down);
+             } else if let Some(capture) = self.niri.screenshot_ui.pointer_up(None) {
+                 if capture {
+                     self.confirm_screenshot(true);
+@@ -3605,21 +3609,10 @@ impl State {
+             return;
+         };
+ 
+-        if let Some(output) = self.niri.screenshot_ui.selection_output() {
+-            let geom = self.niri.global_space.output_geometry(output).unwrap();
+-            let point = (pos - geom.loc.to_f64())
+-                .to_physical(output.current_scale().fractional_scale())
+-                .to_i32_round::<i32>();
++        self.screenshot_ui_pointer_motion(pos, None);
+ 
+-            self.niri.screenshot_ui.pointer_motion(point, None);
+-        }
+-
 -        if let Some(mru_output) = self.niri.window_mru_ui.output() {
 -            if let Some((output, pos_within_output)) = self.niri.output_under(pos) {
 -                if mru_output == output {
@@ -2441,10 +2511,39 @@ index 183909ee..e689b97f 100644
          }
  
          let under = self.niri.contents_under(pos);
-@@ -3711,18 +3747,15 @@ impl State {
-                                 self.niri.queue_redraw_all();
-                             }
-                         }
+@@ -3696,39 +3689,16 @@ impl State {
+                     let mod_down = modifiers.contains(mod_key.to_modifiers());
+ 
+                     if self.niri.screenshot_ui.is_open() {
+-                        // If we'll be moving the existing selection, use the selection output.
+-                        let output = if mod_down {
+-                            self.niri.screenshot_ui.selection_output()
++                        self.screenshot_ui_pointer_down(pos, None, mod_down);
++                    } else if self.niri.window_mru_ui.is_open() {
++                        let id = self
++                            .niri
++                            .mru_pos_under(pos)
++                            .and_then(|pos| self.niri.window_mru_ui.pointer_motion(pos));
++                        if id.is_some() {
++                            self.confirm_mru();
+                         } else {
+-                            under.output.as_ref()
+-                        };
+-
+-                        if let Some(output) = output.cloned() {
+-                            let geom = self.niri.global_space.output_geometry(&output).unwrap();
+-                            let point = (pos - geom.loc.to_f64())
+-                                .to_physical(output.current_scale().fractional_scale())
+-                                .to_i32_round();
+-
+-                            if self
+-                                .niri
+-                                .screenshot_ui
+-                                .pointer_down(output, point, None, mod_down)
+-                            {
+-                                self.niri.queue_redraw_all();
+-                            }
+-                        }
 -                    } else if let Some(mru_output) = self.niri.window_mru_ui.output() {
 -                        if let Some((output, pos_within_output)) = self.niri.output_under(pos) {
 -                            if mru_output == output {
@@ -2457,19 +2556,11 @@ index 183909ee..e689b97f 100644
 -                            } else {
 -                                self.niri.cancel_mru();
 -                            }
-+                    } else if self.niri.window_mru_ui.is_open() {
-+                        let id = self
-+                            .niri
-+                            .mru_pos_under(pos)
-+                            .and_then(|pos| self.niri.window_mru_ui.pointer_motion(pos));
-+                        if id.is_some() {
-+                            self.confirm_mru();
-+                        } else {
 +                            self.niri.cancel_mru();
                          }
                      } else if !tool.is_grabbed() {
                          if self.niri.layout.is_overview_open()
-@@ -3730,9 +3763,6 @@ impl State {
+@@ -3736,9 +3706,6 @@ impl State {
                              && under.layer.is_none()
                              && under.output.is_some()
                          {
@@ -2479,7 +2570,7 @@ index 183909ee..e689b97f 100644
                              let mut matched_narrow = true;
                              let mut ws = self.niri.workspace_under(false, pos);
                              if ws.is_none() {
-@@ -3751,16 +3781,21 @@ impl State {
+@@ -3757,16 +3724,21 @@ impl State {
                              };
                              let start_data = AnyStartData::TabletTool(start_data);
                              let start_timestamp = Duration::from_micros(event.time().micros());
@@ -2506,10 +2597,102 @@ index 183909ee..e689b97f 100644
                          } else if let Some((window, _)) = under.window {
                              self.niri.layout.activate_window(&window);
  
-@@ -4311,18 +4346,15 @@ impl State {
-                     self.niri.queue_redraw_all();
-                 }
-             }
+@@ -4284,6 +4256,62 @@ impl State {
+         )
+     }
+ 
++    /// Moves an ongoing screenshot UI drag to the global `pos`, relative to the selection's
++    /// output. Returns that output, or `None` when the screenshot UI is closed.
++    fn screenshot_ui_pointer_motion(
++        &mut self,
++        pos: Point<f64, Logical>,
++        slot: Option<TouchSlot>,
++    ) -> Option<Output> {
++        let output = self.niri.screenshot_ui.selection_output()?.clone();
++        let Some(geom) = self.niri.global_space.output_geometry(&output) else {
++            trace!(output = %output.name(), "screenshot UI output has no geometry in global_space");
++            return None;
++        };
++        let point = (pos - geom.loc.to_f64())
++            .to_physical(output.current_scale().fractional_scale())
++            .to_i32_round::<i32>();
++
++        self.niri.screenshot_ui.pointer_motion(point, slot);
++        Some(output)
++    }
++
++    /// Starts a screenshot UI selection, or a move of the existing one when `move_existing`, at
++    /// the global `pos` of a pointer, tablet tool or touch point.
++    fn screenshot_ui_pointer_down(
++        &mut self,
++        pos: Point<f64, Logical>,
++        slot: Option<TouchSlot>,
++        move_existing: bool,
++    ) {
++        // The screenshot UI is drawn on every physical output and never inside a projection.
++        let output = if move_existing {
++            self.niri.screenshot_ui.selection_output()
++        } else {
++            self.niri
++                .physical_output_under(pos)
++                .map(|(output, _)| output)
++        };
++        let Some(output) = output.cloned() else {
++            return;
++        };
++        let Some(geom) = self.niri.global_space.output_geometry(&output) else {
++            debug!(output = %output.name(), "screenshot UI output has no geometry in global_space");
++            return;
++        };
++        let point = (pos - geom.loc.to_f64())
++            .to_physical(output.current_scale().fractional_scale())
++            .to_i32_round();
++
++        if self
++            .niri
++            .screenshot_ui
++            .pointer_down(output, point, slot, move_existing)
++        {
++            self.niri.queue_redraw_all();
++        }
++    }
++
+     /// Computes the cursor position for the touch event.
+     ///
+     /// This function handles the touch output mapping, as well as coordinate transform
+@@ -4313,39 +4341,16 @@ impl State {
+         let mod_down = mods.contains(mod_key.to_modifiers());
+ 
+         if self.niri.screenshot_ui.is_open() {
+-            // If we'll be moving the existing selection, use the selection output.
+-            let output = if mod_down {
+-                self.niri.screenshot_ui.selection_output()
++            self.screenshot_ui_pointer_down(pos, Some(slot), mod_down);
++        } else if self.niri.window_mru_ui.is_open() {
++            let id = self
++                .niri
++                .mru_pos_under(pos)
++                .and_then(|pos| self.niri.window_mru_ui.pointer_motion(pos));
++            if id.is_some() {
++                self.confirm_mru();
+             } else {
+-                under.output.as_ref()
+-            };
+-
+-            if let Some(output) = output.cloned() {
+-                let geom = self.niri.global_space.output_geometry(&output).unwrap();
+-                let point = (pos - geom.loc.to_f64())
+-                    .to_physical(output.current_scale().fractional_scale())
+-                    .to_i32_round();
+-
+-                if self
+-                    .niri
+-                    .screenshot_ui
+-                    .pointer_down(output, point, Some(slot), mod_down)
+-                {
+-                    self.niri.queue_redraw_all();
+-                }
+-            }
 -        } else if let Some(mru_output) = self.niri.window_mru_ui.output() {
 -            if let Some((output, pos_within_output)) = self.niri.output_under(pos) {
 -                if mru_output == output {
@@ -2522,19 +2705,11 @@ index 183909ee..e689b97f 100644
 -                } else {
 -                    self.niri.cancel_mru();
 -                }
-+        } else if self.niri.window_mru_ui.is_open() {
-+            let id = self
-+                .niri
-+                .mru_pos_under(pos)
-+                .and_then(|pos| self.niri.window_mru_ui.pointer_motion(pos));
-+            if id.is_some() {
-+                self.confirm_mru();
-+            } else {
 +                self.niri.cancel_mru();
              }
          } else if !handle.is_grabbed() {
              if self.niri.layout.is_overview_open()
-@@ -4330,9 +4362,6 @@ impl State {
+@@ -4353,9 +4358,6 @@ impl State {
                  && under.layer.is_none()
                  && under.output.is_some()
              {
@@ -2544,7 +2719,7 @@ index 183909ee..e689b97f 100644
                  let mut matched_narrow = true;
                  let mut ws = self.niri.workspace_under(false, pos);
                  if ws.is_none() {
-@@ -4351,16 +4380,22 @@ impl State {
+@@ -4374,16 +4376,22 @@ impl State {
                  };
                  let start_data = AnyStartData::Touch(start_data);
                  let start_timestamp = Duration::from_micros(evt.time().micros());
@@ -2571,6 +2746,21 @@ index 183909ee..e689b97f 100644
 +                }
              } else if let Some((window, _)) = under.window {
                  self.niri.layout.activate_window(&window);
+ 
+@@ -4459,13 +4467,7 @@ impl State {
+         };
+         let slot = evt.slot();
+ 
+-        if let Some(output) = self.niri.screenshot_ui.selection_output().cloned() {
+-            let geom = self.niri.global_space.output_geometry(&output).unwrap();
+-            let point = (pos - geom.loc.to_f64())
+-                .to_physical(output.current_scale().fractional_scale())
+-                .to_i32_round::<i32>();
+-
+-            self.niri.screenshot_ui.pointer_motion(point, Some(slot));
++        if let Some(output) = self.screenshot_ui_pointer_motion(pos, Some(slot)) {
+             self.niri.queue_redraw(&output);
+         }
  
 diff --git a/src/input/move_grab.rs b/src/input/move_grab.rs
 index b10db89b..e208dfe9 100644
@@ -2686,6 +2876,20 @@ index b10db89b..e208dfe9 100644
                  output,
                  pos_within_output,
              );
+diff --git a/src/input/pick_color_grab.rs b/src/input/pick_color_grab.rs
+index 32132358..84ce0ef7 100644
+--- a/src/input/pick_color_grab.rs
++++ b/src/input/pick_color_grab.rs
+@@ -36,7 +36,8 @@ impl PickColorGrab {
+     }
+ 
+     fn pick_color_at_point(location: Point<f64, Logical>, data: &mut State) -> Option<PickedColor> {
+-        let (output, pos_within_output) = data.niri.output_under(location)?;
++        // Sample the physical output's own frame, which draws any projection as it is seen.
++        let (output, pos_within_output) = data.niri.physical_output_under(location)?;
+         let output = output.clone();
+ 
+         data.backend
 diff --git a/src/input/resize_grab.rs b/src/input/resize_grab.rs
 index 17158e40..77f74d02 100644
 --- a/src/input/resize_grab.rs
@@ -3120,31 +3324,31 @@ index 374216c2..9c2038b8 100644
  
      Ok(response)
 diff --git a/src/layout/mod.rs b/src/layout/mod.rs
-index c79a5036..9d2b4fdb 100644
+index 97f917a9..cfdb7e0b 100644
 --- a/src/layout/mod.rs
 +++ b/src/layout/mod.rs
-@@ -820,6 +820,19 @@ impl<W: LayoutElement> Layout<W> {
-                     primary.clean_up_workspaces();
-                 }
- 
-+                // Every workspace on the primary can belong to the output that
-+                // is connecting — a virtual output that held the session while
-+                // a physical one was away, with its workspaces pinned back to
-+                // that display by open-on-output. Draining them all leaves the
-+                // primary with none, which breaks the invariant asserted in
-+                // Monitor::verify_invariants and panics the next time anything
-+                // indexes workspaces[active_workspace_idx]; in practice, the
-+                // screencast render path, taking the session down.
-+                if primary.workspaces.is_empty() {
-+                    primary.add_workspace_bottom();
-+                    primary.active_workspace_idx = 0;
-+                }
+@@ -829,6 +829,19 @@ impl<W: LayoutElement> Layout<W> {
+                     {
+                         source.clean_up_workspaces();
+                     }
 +
++                    // Every workspace on a source monitor can belong to the output
++                    // that is connecting — a virtual output that held the session
++                    // while a physical one was away, with its workspaces pinned back
++                    // to that display by open-on-output. Draining them all leaves the
++                    // source with none, which breaks the invariant asserted in
++                    // Monitor::verify_invariants and panics the next time anything
++                    // indexes workspaces[active_workspace_idx]; in practice, the
++                    // screencast render path, taking the session down.
++                    if source.workspaces.is_empty() {
++                        source.add_workspace_bottom();
++                        source.active_workspace_idx = 0;
++                    }
+                 }
                  workspaces.reverse();
  
-                 let ws_id_to_activate = self.last_active_workspace_id.remove(&output.name());
 diff --git a/src/layout/monitor.rs b/src/layout/monitor.rs
-index f119e619..09994301 100644
+index 761d226b..70524052 100644
 --- a/src/layout/monitor.rs
 +++ b/src/layout/monitor.rs
 @@ -1647,7 +1647,13 @@ impl<W: LayoutElement> Monitor<W> {
@@ -3204,7 +3408,7 @@ index f9563ae6..b3b8db7b 100644
          cli.session,
      )
 diff --git a/src/niri.rs b/src/niri.rs
-index 7d07dbc1..de97a2e4 100644
+index abebcc2e..84a0fdf4 100644
 --- a/src/niri.rs
 +++ b/src/niri.rs
 @@ -19,6 +19,7 @@ use niri_config::{
@@ -3271,10 +3475,10 @@ index 7d07dbc1..de97a2e4 100644
  
  // We'll try to send frame callbacks at least once a second. We'll make a timer that fires once a
  // second, so with the worst timing the maximum interval between two frame callbacks for a surface
-@@ -435,6 +449,22 @@ pub struct Niri {
+@@ -438,6 +452,22 @@ pub struct Niri {
  
-     #[cfg(feature = "xdp-gnome-screencast")]
-     pub casting: Screencasting,
+     #[cfg(test)]
+     pub test_action_count: usize,
 +
 +    /// Which virtual outputs are projected onto which physical monitors.
 +    pub projection_state: ProjectionState,
@@ -3294,7 +3498,7 @@ index 7d07dbc1..de97a2e4 100644
  }
  
  smithay::delegate_dispatch2!(State);
-@@ -504,6 +534,8 @@ pub struct OutputState {
+@@ -507,6 +537,8 @@ pub struct OutputState {
      pub lock_render_state: LockRenderState,
      pub lock_surface: Option<LockSurface>,
      pub lock_color_buffer: SolidColorBuffer,
@@ -3303,7 +3507,7 @@ index 7d07dbc1..de97a2e4 100644
      screen_transition: Option<ScreenTransition>,
      /// Damage tracker used for the debug damage visualization.
      pub debug_damage_tracker: OutputDamageTracker,
-@@ -562,6 +594,24 @@ pub struct PointContents {
+@@ -565,6 +597,24 @@ pub struct PointContents {
      pub hot_corner: bool,
  }
  
@@ -3328,7 +3532,7 @@ index 7d07dbc1..de97a2e4 100644
  #[derive(Debug, Default)]
  pub enum LockState {
      #[default]
-@@ -722,6 +772,50 @@ pub struct State {
+@@ -725,6 +775,50 @@ pub struct State {
  }
  
  impl State {
@@ -3379,7 +3583,7 @@ index 7d07dbc1..de97a2e4 100644
      pub fn new(
          config: Config,
          event_loop: LoopHandle<'static, State>,
-@@ -1050,10 +1144,13 @@ impl State {
+@@ -1053,10 +1147,13 @@ impl State {
          let rect = monitor.active_window_visual_rectangle();
  
          if let Some(rect) = rect {
@@ -3397,7 +3601,7 @@ index 7d07dbc1..de97a2e4 100644
          }
  
          rv
-@@ -1936,6 +2033,8 @@ impl State {
+@@ -1940,6 +2037,8 @@ impl State {
  
          let config = self.niri.config.borrow().outputs.clone();
          self.niri.output_management_state.on_config_changed(config);
@@ -3406,7 +3610,22 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      pub fn modify_output_config<F>(&mut self, name: &str, fun: F)
-@@ -2553,6 +2652,7 @@ impl Niri {
+@@ -2092,9 +2191,11 @@ impl State {
+             return;
+         }
+ 
+-        let default_output = self
+-            .niri
+-            .output_under_cursor()
++        // The screenshot UI is drawn on the physical output, never inside a projection.
++        let pointer_pos = self.niri.seat.get_pointer().map(|p| p.current_location());
++        let default_output = pointer_pos
++            .and_then(|pos| self.niri.physical_output_under(pos))
++            .map(|(output, _)| output.clone())
+             .or_else(|| self.niri.layout.active_output().cloned());
+         let Some(default_output) = default_output else {
+             return;
+@@ -2557,6 +2658,7 @@ impl Niri {
          let window_mru_ui = WindowMruUi::new(config.clone());
          let config_error_notification =
              ConfigErrorNotification::new(animation_clock.clone(), config.clone());
@@ -3414,10 +3633,10 @@ index 7d07dbc1..de97a2e4 100644
  
          let mut hotkey_overlay = HotkeyOverlay::new(config.clone(), mod_key);
          if !config_.hotkey_overlay.skip_at_startup {
-@@ -2775,6 +2875,11 @@ impl Niri {
+@@ -2782,6 +2884,11 @@ impl Niri {
  
-             #[cfg(feature = "xdp-gnome-screencast")]
-             casting: screencasting,
+             #[cfg(test)]
+             test_action_count: 0,
 +
 +            projection_state: ProjectionState::default(),
 +            projection_rebuild_overview_zoom: 1.,
@@ -3426,7 +3645,7 @@ index 7d07dbc1..de97a2e4 100644
          };
  
          niri.reset_pointer_inactivity_timer();
-@@ -3023,6 +3128,7 @@ impl Niri {
+@@ -3034,6 +3141,7 @@ impl Niri {
              lock_render_state,
              lock_surface: None,
              lock_color_buffer: SolidColorBuffer::new(size, CLEAR_COLOR_LOCKED),
@@ -3434,7 +3653,7 @@ index 7d07dbc1..de97a2e4 100644
              screen_transition: None,
              debug_damage_tracker: OutputDamageTracker::from_output(&output),
          };
-@@ -3031,6 +3137,8 @@ impl Niri {
+@@ -3042,6 +3150,8 @@ impl Niri {
  
          // Must be last since it will call queue_redraw(output) which needs things to be filled-in.
          self.reposition_outputs(Some(&output));
@@ -3443,7 +3662,7 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      pub fn output_exists(&self, output: &Output) -> bool {
-@@ -3119,6 +3227,8 @@ impl Niri {
+@@ -3130,6 +3240,8 @@ impl Niri {
          if self.window_mru_ui.output() == Some(output) {
              self.cancel_mru();
          }
@@ -3452,7 +3671,7 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      pub fn output_resized(&mut self, output: &Output) {
-@@ -3141,11 +3251,13 @@ impl Niri {
+@@ -3152,11 +3264,13 @@ impl Niri {
          }
  
          self.layout.update_output_size(output);
@@ -3466,7 +3685,7 @@ index 7d07dbc1..de97a2e4 100644
              if let Some(lock_surface) = &state.lock_surface {
                  configure_lock_surface(lock_surface, output);
              }
-@@ -3191,17 +3303,664 @@ impl Niri {
+@@ -3202,17 +3316,667 @@ impl Niri {
          self.queue_redraw_all();
      }
  
@@ -4098,7 +4317,10 @@ index 7d07dbc1..de97a2e4 100644
 +    }
 +
 +    /// The output a global position physically lies on, ignoring projections.
-+    fn physical_output_under(
++    ///
++    /// UI drawn over each physical output instead of its content, such as the screenshot UI,
++    /// resolves pointer input with this: a projection never draws it.
++    pub fn physical_output_under(
 +        &self,
 +        pos: Point<f64, Logical>,
 +    ) -> Option<(&Output, Point<f64, Logical>)> {
@@ -4139,7 +4361,7 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      fn is_inside_hot_corner(&self, output: &Output, pos: Point<f64, Logical>) -> bool {
-@@ -3247,11 +4006,10 @@ impl Niri {
+@@ -3258,11 +4022,10 @@ impl Niri {
          false
      }
  
@@ -4155,7 +4377,7 @@ index 7d07dbc1..de97a2e4 100644
          // The ordering here must be consistent with the ordering in render() so that input is
          // consistent with the visuals.
  
-@@ -3290,7 +4048,7 @@ impl Niri {
+@@ -3301,7 +4064,7 @@ impl Niri {
              return false;
          }
  
@@ -4164,7 +4386,7 @@ index 7d07dbc1..de97a2e4 100644
              return true;
          }
  
-@@ -3357,9 +4115,10 @@ impl Niri {
+@@ -3368,9 +4131,10 @@ impl Niri {
              return None;
          }
  
@@ -4177,7 +4399,7 @@ index 7d07dbc1..de97a2e4 100644
              return None;
          }
  
-@@ -3394,9 +4153,10 @@ impl Niri {
+@@ -3405,9 +4169,10 @@ impl Niri {
              return None;
          }
  
@@ -4190,7 +4412,7 @@ index 7d07dbc1..de97a2e4 100644
              return None;
          }
  
-@@ -3433,11 +4193,41 @@ impl Niri {
+@@ -3444,11 +4209,41 @@ impl Niri {
      pub fn contents_under(&self, pos: Point<f64, Logical>) -> PointContents {
          let mut rv = PointContents::default();
  
@@ -4234,7 +4456,7 @@ index 7d07dbc1..de97a2e4 100644
  
          // The ordering here must be consistent with the ordering in render() so that input is
          // consistent with the visuals.
-@@ -3459,12 +4249,7 @@ impl Niri {
+@@ -3470,12 +4265,7 @@ impl Niri {
                  (0, 0),
                  WindowSurfaceType::ALL,
              )
@@ -4248,7 +4470,7 @@ index 7d07dbc1..de97a2e4 100644
  
              return rv;
          }
-@@ -3567,7 +4352,7 @@ impl Niri {
+@@ -3578,7 +4368,7 @@ impl Niri {
                  .or_else(|| layer_toplevel_under(Layer::Bottom))
                  .or_else(|| layer_toplevel_under(Layer::Background));
          } else {
@@ -4257,7 +4479,7 @@ index 7d07dbc1..de97a2e4 100644
                  rv.hot_corner = true;
                  return rv;
              }
-@@ -3598,7 +4383,7 @@ impl Niri {
+@@ -3609,7 +4399,7 @@ impl Niri {
          };
  
          if let Some((_, surface_pos)) = &mut surface_and_pos {
@@ -4266,7 +4488,7 @@ index 7d07dbc1..de97a2e4 100644
          }
  
          rv.surface = surface_and_pos;
-@@ -3609,7 +4394,17 @@ impl Niri {
+@@ -3620,7 +4410,17 @@ impl Niri {
  
      pub fn output_under_cursor(&self) -> Option<Output> {
          let pos = self.seat.get_pointer().unwrap().current_location();
@@ -4285,7 +4507,7 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      pub fn output_left_of(&self, current: &Output) -> Option<Output> {
-@@ -3818,6 +4613,28 @@ impl Niri {
+@@ -3829,6 +4629,28 @@ impl Niri {
          state.redraw_state = mem::take(&mut state.redraw_state).queue_redraw();
      }
  
@@ -4314,7 +4536,7 @@ index 7d07dbc1..de97a2e4 100644
      pub fn redraw_queued_outputs(&mut self, backend: &mut Backend) {
          let _span = tracy_client::span!("Niri::redraw_queued_outputs");
  
-@@ -4204,10 +5021,19 @@ impl Niri {
+@@ -4215,10 +5037,19 @@ impl Niri {
  
          self.layout.advance_animations();
          self.config_error_notification.advance_animations();
@@ -4334,7 +4556,7 @@ index 7d07dbc1..de97a2e4 100644
          for state in self.output_state.values_mut() {
              if let Some(transition) = &mut state.screen_transition {
                  if transition.is_done() {
-@@ -4218,6 +5044,31 @@ impl Niri {
+@@ -4229,6 +5060,31 @@ impl Niri {
      }
  
      pub fn update_render_elements(&mut self, output: Option<&Output>) {
@@ -4366,7 +4588,7 @@ index 7d07dbc1..de97a2e4 100644
          self.update_xray_render_elements(output);
          self.layout.update_render_elements(output);
  
-@@ -4310,10 +5161,21 @@ impl Niri {
+@@ -4321,10 +5177,21 @@ impl Niri {
      }
  
      pub fn render<R: NiriRenderer>(
@@ -4388,7 +4610,7 @@ index 7d07dbc1..de97a2e4 100644
          push: &mut dyn FnMut(OutputRenderElements<R>),
      ) {
          let _span = tracy_client::span!("Niri::render");
-@@ -4334,7 +5196,7 @@ impl Niri {
+@@ -4345,7 +5212,7 @@ impl Niri {
          let state = self.output_state.get(output).unwrap();
          ctx.xray = Some(&state.xray);
  
@@ -4397,7 +4619,7 @@ index 7d07dbc1..de97a2e4 100644
  
          self.clear_xray_elements(output);
      }
-@@ -4344,8 +5206,10 @@ impl Niri {
+@@ -4355,8 +5222,10 @@ impl Niri {
          mut ctx: RenderCtx<R>,
          output: &Output,
          include_pointer: bool,
@@ -4408,7 +4630,7 @@ index 7d07dbc1..de97a2e4 100644
          let state = self.output_state.get(output).unwrap();
          let output_scale = Scale::from(output.current_scale().fractional_scale());
  
-@@ -4359,7 +5223,12 @@ impl Niri {
+@@ -4370,7 +5239,16 @@ impl Niri {
          };
  
          // The pointer goes on the top.
@@ -4417,12 +4639,16 @@ index 7d07dbc1..de97a2e4 100644
 +        // A virtual output only gets the pointer while it is physically over it (a streaming
 +        // client's cursor); a desk cursor on a viewer that shows the output must not leak into
 +        // the output's own render or its stream (FR-017).
-+        let pointer_belongs_here = !is_virtual_output(output) || self.pointer_is_over(output);
-+        if include_pointer && self.pointer_visibility.is_visible() && pointer_belongs_here {
++        // Checked last: it locks the pointer, which a render from inside a pointer grab (the
++        // colour picker) already holds, so it must not run for a render without the pointer.
++        if include_pointer
++            && self.pointer_visibility.is_visible()
++            && (!is_virtual_output(output) || self.pointer_is_over(output))
++        {
              self.render_pointer(ctx.renderer, output, &mut |elem| push(elem.into()));
          }
  
-@@ -4371,11 +5240,16 @@ impl Niri {
+@@ -4382,11 +5260,16 @@ impl Niri {
          }
  
          // Next, the exit confirm dialog.
@@ -4442,7 +4668,7 @@ index 7d07dbc1..de97a2e4 100644
              push(element.into());
          }
  
-@@ -4417,7 +5291,7 @@ impl Niri {
+@@ -4428,7 +5311,7 @@ impl Niri {
          .into();
  
          // If the screenshot UI is open, draw it.
@@ -4451,7 +4677,7 @@ index 7d07dbc1..de97a2e4 100644
              self.screenshot_ui
                  .render_output(output, ctx.target, &mut |elem| push(elem.into()));
  
-@@ -4427,14 +5301,21 @@ impl Niri {
+@@ -4438,14 +5321,21 @@ impl Niri {
              return;
          }
  
@@ -4464,15 +4690,15 @@ index 7d07dbc1..de97a2e4 100644
 +            if let Some(element) = self.view_output_label.render(ctx.renderer, output) {
 +                push(element.into());
 +            }
-+
-+            // Draw the hotkey overlay on top.
-+            if let Some(element) = self.hotkey_overlay.render(ctx.renderer, output) {
-+                push(element.into());
-+            }
  
 -        // Then, the Alt-Tab switcher.
 -        self.window_mru_ui
 -            .render_output(self, output, ctx.r(), &mut |elem| push(elem.into()));
++            // Draw the hotkey overlay on top.
++            if let Some(element) = self.hotkey_overlay.render(ctx.renderer, output) {
++                push(element.into());
++            }
++
 +            // Then, the Alt-Tab switcher.
 +            self.window_mru_ui
 +                .render_output(self, output, ctx.r(), &mut |elem| push(elem.into()));
@@ -4480,7 +4706,7 @@ index 7d07dbc1..de97a2e4 100644
  
          // Don't draw the focus ring on the workspaces while interactively moving above those
          // workspaces, since the interactively-moved window already has a focus ring.
-@@ -4506,6 +5387,31 @@ impl Niri {
+@@ -4517,6 +5407,31 @@ impl Niri {
          push_popups_from_layer!(Layer::Overlay);
          push_normal_from_layer!(Layer::Overlay);
  
@@ -4512,7 +4738,7 @@ index 7d07dbc1..de97a2e4 100644
          // When rendering above the top layer, we put the regular monitor elements first.
          // Otherwise, we will render all layer-shell pop-ups and the top layer on top.
          if mon.render_above_top_layer() {
-@@ -4557,6 +5463,8 @@ impl Niri {
+@@ -4568,6 +5483,8 @@ impl Niri {
  
              mon.render_workspaces(ctx.r(), focus_ring, &mut |elem| push(elem.into()));
  
@@ -4521,7 +4747,7 @@ index 7d07dbc1..de97a2e4 100644
              for (ws, geo) in mon.workspaces_with_render_geo() {
                  // The render element namespace. This will be set to the workspace index for
                  // elements duplicated across workspaces (i.e. background and bottom layers) in
-@@ -4584,6 +5492,93 @@ impl Niri {
+@@ -4595,6 +5512,93 @@ impl Niri {
          push(backdrop);
      }
  
@@ -4615,7 +4841,7 @@ index 7d07dbc1..de97a2e4 100644
      pub fn fill_xray_elements(&self, mut ctx: RenderCtx<GlesRenderer>, output: &Output) {
          let _span = tracy_client::span!("Niri::fill_xray_elements");
  
-@@ -4748,6 +5743,8 @@ impl Niri {
+@@ -4759,6 +5763,8 @@ impl Niri {
              state.unfinished_animations_remain = self.layout.are_animations_ongoing(Some(output));
              state.unfinished_animations_remain |=
                  self.config_error_notification.are_animations_ongoing();
@@ -4624,7 +4850,7 @@ index 7d07dbc1..de97a2e4 100644
              state.unfinished_animations_remain |= self.exit_confirm_dialog.are_animations_ongoing();
              state.unfinished_animations_remain |= self.screenshot_ui.are_animations_ongoing();
              state.unfinished_animations_remain |= self.window_mru_ui.are_animations_ongoing();
-@@ -4768,6 +5765,8 @@ impl Niri {
+@@ -4779,6 +5785,8 @@ impl Niri {
  
              // Render.
              res = backend.render(self, output, target_presentation_time);
@@ -4633,7 +4859,7 @@ index 7d07dbc1..de97a2e4 100644
          }
  
          let is_locked = self.is_locked();
-@@ -5254,6 +6253,44 @@ impl Niri {
+@@ -5265,6 +6273,44 @@ impl Niri {
          }
      }
  
@@ -4678,7 +4904,7 @@ index 7d07dbc1..de97a2e4 100644
      pub fn send_frame_callbacks_on_fallback_timer(&mut self) {
          let _span = tracy_client::span!("Niri::send_frame_callbacks_on_fallback_timer");
  
-@@ -6433,6 +7470,8 @@ impl Niri {
+@@ -6497,6 +7543,8 @@ impl Niri {
                  deadline_token,
              };
          }
@@ -4687,7 +4913,7 @@ index 7d07dbc1..de97a2e4 100644
      }
  
      pub fn maybe_continue_to_locking(&mut self) {
-@@ -6500,6 +7539,7 @@ impl Niri {
+@@ -6564,6 +7612,7 @@ impl Niri {
          for output_state in self.output_state.values_mut() {
              output_state.lock_surface = None;
          }
@@ -4695,7 +4921,7 @@ index 7d07dbc1..de97a2e4 100644
          self.queue_redraw_all();
      }
  
-@@ -7008,6 +8048,42 @@ impl Niri {
+@@ -7072,6 +8121,42 @@ impl Niri {
              self.queue_redraw(&output);
          }
      }
@@ -4738,7 +4964,7 @@ index 7d07dbc1..de97a2e4 100644
  }
  
  pub struct NewClient {
-@@ -7031,6 +8107,23 @@ impl ClientData for ClientState {
+@@ -7095,6 +8180,23 @@ impl ClientData for ClientState {
      fn disconnected(&self, _client_id: ClientId, _reason: DisconnectReason) {}
  }
  
@@ -4762,7 +4988,7 @@ index 7d07dbc1..de97a2e4 100644
  fn scale_relocate_crop<E: Element>(
      elem: E,
      output_scale: Scale<f64>,
-@@ -7077,5 +8170,7 @@ niri_render_elements! {
+@@ -7141,5 +8243,7 @@ niri_render_elements! {
          Texture = PrimaryGpuTextureRenderElement,
          // Used for the CPU-rendered panels.
          RelocatedMemoryBuffer = RelocateRenderElement<MemoryRenderBufferRenderElement<R>>,
@@ -5250,16 +5476,18 @@ index 00000000..1c41c4fa
 +    }
 +}
 diff --git a/src/tests/client.rs b/src/tests/client.rs
-index b8599db6..f8095b6c 100644
+index e6203cf3..00bf871f 100644
 --- a/src/tests/client.rs
 +++ b/src/tests/client.rs
-@@ -9,7 +9,14 @@ use std::time::Duration;
+@@ -9,9 +9,16 @@ use std::time::Duration;
  
  use calloop::EventLoop;
  use calloop_wayland_source::WaylandSource;
 +use smithay::reexports::wayland_protocols::ext::session_lock::v1::client::ext_session_lock_manager_v1::ExtSessionLockManagerV1;
 +use smithay::reexports::wayland_protocols::ext::session_lock::v1::client::ext_session_lock_v1::ExtSessionLockV1;
  use single_pixel_buffer::v1::client::wp_single_pixel_buffer_manager_v1::WpSinglePixelBufferManagerV1;
+ use smithay::reexports::wayland_protocols::wp::keyboard_shortcuts_inhibit::zv1::client::zwp_keyboard_shortcuts_inhibit_manager_v1::ZwpKeyboardShortcutsInhibitManagerV1;
+ use smithay::reexports::wayland_protocols::wp::keyboard_shortcuts_inhibit::zv1::client::zwp_keyboard_shortcuts_inhibitor_v1::{self, ZwpKeyboardShortcutsInhibitorV1};
 +use smithay::reexports::wayland_protocols::wp::pointer_constraints::zv1::client::zwp_confined_pointer_v1::ZwpConfinedPointerV1;
 +use smithay::reexports::wayland_protocols::wp::pointer_constraints::zv1::client::zwp_locked_pointer_v1::ZwpLockedPointerV1;
 +use smithay::reexports::wayland_protocols::wp::pointer_constraints::zv1::client::zwp_pointer_constraints_v1::{
@@ -5268,46 +5496,42 @@ index b8599db6..f8095b6c 100644
  use smithay::reexports::wayland_protocols::wp::single_pixel_buffer;
  use smithay::reexports::wayland_protocols::wp::viewporter::client::wp_viewport::WpViewport;
  use smithay::reexports::wayland_protocols::wp::viewporter::client::wp_viewporter::WpViewporter;
-@@ -31,7 +38,10 @@ use wayland_client::protocol::wl_callback::{self, WlCallback};
- use wayland_client::protocol::wl_compositor::WlCompositor;
+@@ -34,6 +41,8 @@ use wayland_client::protocol::wl_compositor::WlCompositor;
  use wayland_client::protocol::wl_display::WlDisplay;
+ use wayland_client::protocol::wl_keyboard::{self, WlKeyboard};
  use wayland_client::protocol::wl_output::{self, WlOutput};
 +use wayland_client::protocol::wl_pointer::WlPointer;
 +use wayland_client::protocol::wl_region::WlRegion;
  use wayland_client::protocol::wl_registry::{self, WlRegistry};
-+use wayland_client::protocol::wl_seat::WlSeat;
+ use wayland_client::protocol::wl_seat::{self, WlSeat};
  use wayland_client::protocol::wl_surface::{self, WlSurface};
- use wayland_client::{Connection, Dispatch, Proxy as _, QueueHandle};
- 
-@@ -58,6 +68,10 @@ pub struct State {
-     pub virtual_pointer_manager: Option<ZwlrVirtualPointerManagerV1>,
+@@ -65,6 +74,9 @@ pub struct State {
      pub spbm: Option<WpSinglePixelBufferManagerV1>,
      pub viewporter: Option<WpViewporter>,
+     pub ksim: Option<ZwpKeyboardShortcutsInhibitManagerV1>,
 +    pub session_lock_manager: Option<ExtSessionLockManagerV1>,
-+    pub seat: Option<WlSeat>,
 +    pub pointer: Option<WlPointer>,
 +    pub pointer_constraints: Option<ZwpPointerConstraintsV1>,
  
      pub windows: Vec<Window>,
      pub layers: Vec<LayerSurface>,
-@@ -185,6 +199,10 @@ impl Client {
-             virtual_pointer_manager: None,
+@@ -265,6 +277,9 @@ impl Client {
              spbm: None,
              viewporter: None,
+             ksim: None,
 +            session_lock_manager: None,
-+            seat: None,
 +            pointer: None,
 +            pointer_constraints: None,
              windows: Vec::new(),
              layers: Vec::new(),
          };
-@@ -237,6 +255,50 @@ impl Client {
+@@ -317,6 +332,50 @@ impl Client {
          self.state.layer(surface)
      }
  
 +    fn pointer(&mut self) -> WlPointer {
 +        let state = &mut self.state;
-+        let seat = state.seat.as_ref().unwrap();
++        let seat = state.seats.keys().next().unwrap();
 +        state
 +            .pointer
 +            .get_or_insert_with(|| seat.get_pointer(&self.qh, ()))
@@ -5352,23 +5576,20 @@ index b8599db6..f8095b6c 100644
      pub fn output(&mut self, name: &str) -> WlOutput {
          self.state
              .outputs
-@@ -525,6 +587,15 @@ impl Dispatch<WlRegistry, ()> for State {
+@@ -640,6 +699,12 @@ impl Dispatch<WlRegistry, ()> for State {
                  } else if interface == WpViewporter::interface().name {
                      let version = min(version, WpViewporter::interface().version);
                      state.viewporter = Some(registry.bind(name, version, qh, ()));
 +                } else if interface == ExtSessionLockManagerV1::interface().name {
 +                    let version = min(version, ExtSessionLockManagerV1::interface().version);
 +                    state.session_lock_manager = Some(registry.bind(name, version, qh, ()));
-+                } else if interface == WlSeat::interface().name {
-+                    let version = min(version, WlSeat::interface().version);
-+                    state.seat = Some(registry.bind(name, version, qh, ()));
 +                } else if interface == ZwpPointerConstraintsV1::interface().name {
 +                    let version = min(version, ZwpPointerConstraintsV1::interface().version);
 +                    state.pointer_constraints = Some(registry.bind(name, version, qh, ()));
                  } else if interface == WlOutput::interface().name {
                      let version = min(version, WlOutput::interface().version);
                      let output = registry.bind(name, version, qh, ());
-@@ -598,6 +669,31 @@ impl Dispatch<XdgWmBase, ()> for State {
+@@ -825,6 +890,31 @@ impl Dispatch<XdgWmBase, ()> for State {
      }
  }
  
@@ -5400,22 +5621,10 @@ index b8599db6..f8095b6c 100644
  impl Dispatch<ZwlrLayerShellV1, ()> for State {
      fn event(
          _state: &mut Self,
-@@ -785,3 +881,77 @@ impl Dispatch<WpViewport, ()> for State {
-         unreachable!()
+@@ -1042,3 +1132,65 @@ impl Dispatch<ZwpKeyboardShortcutsInhibitorV1, ()> for State {
+         }
      }
  }
-+
-+impl Dispatch<WlSeat, ()> for State {
-+    fn event(
-+        _state: &mut Self,
-+        _proxy: &WlSeat,
-+        _event: <WlSeat as wayland_client::Proxy>::Event,
-+        _data: &(),
-+        _conn: &Connection,
-+        _qhandle: &QueueHandle<Self>,
-+    ) {
-+    }
-+}
 +
 +impl Dispatch<WlPointer, ()> for State {
 +    fn event(
@@ -5732,17 +5941,18 @@ index 00000000..d0541dc9
 +    send(f, InputEvent::TouchFrame { event: event() });
 +}
 diff --git a/src/tests/mod.rs b/src/tests/mod.rs
-index 314feb06..9042dd41 100644
+index ad66c822..f57bdb32 100644
 --- a/src/tests/mod.rs
 +++ b/src/tests/mod.rs
-@@ -2,12 +2,15 @@ use fixture::Fixture;
+@@ -2,6 +2,7 @@ use fixture::Fixture;
  
  mod client;
  mod fixture;
 +mod input;
  mod server;
+ mod test_input_backend;
  
- mod animations;
+@@ -10,6 +11,8 @@ mod binds;
  mod floating;
  mod fullscreen;
  mod layer_shell;
@@ -5753,10 +5963,10 @@ index 314feb06..9042dd41 100644
  mod virtual_pointer;
 diff --git a/src/tests/projection.rs b/src/tests/projection.rs
 new file mode 100644
-index 00000000..a23614c1
+index 00000000..0e5a6e75
 --- /dev/null
 +++ b/src/tests/projection.rs
-@@ -0,0 +1,2793 @@
+@@ -0,0 +1,3023 @@
 +#![allow(clippy::unwrap_used, clippy::expect_used)]
 +
 +use smithay::utils::{Logical, Point, Rectangle, Size};
@@ -8550,6 +8760,236 @@ index 00000000..a23614c1
 +        );
 +    }
 +}
++
++/// The screenshot UI while a virtual output is projected: it is drawn on each physical
++/// output, so a drag on the viewer must select on the viewer, never on the source it shows.
++mod screenshot_tests {
++    use niri_config::Action;
++    use smithay::output::Output;
++    use smithay::utils::{Logical, Physical, Point, Rectangle};
++
++    use super::overview_tests::{map_window_on, output_named};
++    use crate::projection::ProjectionKind;
++    use crate::tests::fixture::Fixture;
++    use crate::tests::input;
++
++    /// A viewer with a window of its own and a 1280x800 `steam` with a window on it.
++    pub(super) fn set_up(viewer_size: (u16, u16)) -> (Fixture, Output) {
++        let mut f = Fixture::new();
++        f.niri_state().backend.headless().add_renderer().unwrap();
++        f.add_output(1, viewer_size);
++        let state = f.niri_state();
++        state
++            .backend
++            .headless()
++            .create_virtual_output(&mut state.niri, 1280, 800, 60, Some("steam".to_string()))
++            .unwrap();
++        let viewer = f.niri_output(1);
++        let steam = output_named(&mut f, "steam");
++        let id = f.add_client();
++        map_window_on(&mut f, id, &steam, 300, 200);
++        map_window_on(&mut f, id, &viewer, 300, 200);
++        f.niri().layout.focus_output(&viewer);
++        (f, viewer)
++    }
++
++    pub(super) fn viewer_loc(f: &mut Fixture, viewer: &Output) -> Point<f64, Logical> {
++        f.niri()
++            .global_space
++            .output_geometry(viewer)
++            .unwrap()
++            .loc
++            .to_f64()
++    }
++
++    fn region_of(f: &mut Fixture, kind: ProjectionKind) -> Rectangle<f64, Logical> {
++        f.niri()
++            .projection_state
++            .projections
++            .iter()
++            .find(|p| p.kind == kind && p.source == "steam")
++            .unwrap()
++            .region
++    }
++
++    fn open_screenshot_ui(f: &mut Fixture) {
++        f.niri_state()
++            .do_action(Action::Screenshot(true, None), false);
++        assert!(f.niri().screenshot_ui.is_open());
++    }
++
++    fn selection(f: &mut Fixture) -> (String, Rectangle<i32, Physical>) {
++        let (output, rect) = f.niri().screenshot_ui.selection().unwrap();
++        (output.name(), rect)
++    }
++
++    /// Presses at `start` (viewer-local), drags by `delta` and releases; returns the
++    /// selection the drag is expected to make on a scale-1 viewer.
++    fn drag(
++        f: &mut Fixture,
++        viewer: &Output,
++        start: Point<f64, Logical>,
++        delta: (f64, f64),
++    ) -> Rectangle<i32, Physical> {
++        assert_eq!(viewer.current_scale().fractional_scale(), 1.);
++        let loc = viewer_loc(f, viewer);
++        f.niri_state().move_cursor(start + loc);
++        input::pointer_button(f, input::BTN_LEFT, true);
++        input::pointer_motion(f, delta);
++        input::pointer_button(f, input::BTN_LEFT, false);
++        let start = start.to_physical(1.).to_i32_round::<i32>();
++        // Selections include both corner pixels.
++        Rectangle::new(start, (delta.0 as i32 + 1, delta.1 as i32 + 1).into())
++    }
++
++    #[test]
++    fn egl_dragging_in_the_screenshot_ui_in_view_mode_selects_on_the_viewer() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        f.niri().start_viewing("steam").unwrap();
++        f.niri_complete_animations();
++        let region = region_of(&mut f, ProjectionKind::View);
++        open_screenshot_ui(&mut f);
++
++        let start = region.loc + Point::from((200., 100.));
++        let expected = drag(&mut f, &viewer, start, (400., 300.));
++
++        assert!(f.niri().screenshot_ui.is_open());
++        assert_eq!(
++            selection(&mut f),
++            (viewer.name(), expected),
++            "the drag should select on the viewer the screenshot UI is drawn on"
++        );
++    }
++
++    #[test]
++    fn egl_opening_the_screenshot_ui_in_view_mode_selects_on_the_viewer() {
++        // Over the source's picture and over a letterbox bar.
++        for x in [960., 10.] {
++            let (mut f, viewer) = set_up((1920, 1080));
++            f.niri().start_viewing("steam").unwrap();
++            f.niri_complete_animations();
++            let loc = viewer_loc(&mut f, &viewer);
++            f.niri_state().move_cursor(loc + Point::from((x, 540.)));
++
++            open_screenshot_ui(&mut f);
++
++            assert_eq!(
++                selection(&mut f),
++                (
++                    viewer.name(),
++                    Rectangle::new((480, 270).into(), (960, 540).into())
++                ),
++                "opening with the pointer at x={x} on the viewer should default to the viewer"
++            );
++        }
++    }
++
++    #[test]
++    fn egl_dragging_in_the_screenshot_ui_without_projections_selects_under_the_pointer() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        assert!(f.niri().projection_state.projections.is_empty());
++        open_screenshot_ui(&mut f);
++
++        let expected = drag(&mut f, &viewer, Point::from((300., 200.)), (400., 300.));
++
++        assert_eq!(selection(&mut f), (viewer.name(), expected));
++    }
++
++    #[test]
++    fn egl_dragging_in_the_screenshot_ui_over_an_overview_column_selects_on_the_viewer() {
++        let (mut f, viewer) = set_up((5120, 1440));
++        f.niri().layout.toggle_overview();
++        f.niri_complete_animations();
++        assert!(f.niri().layout.is_overview_open());
++        let region = region_of(&mut f, ProjectionKind::Overview);
++        open_screenshot_ui(&mut f);
++
++        let start = region.loc + region.size.downscale(2.).to_point();
++        let expected = drag(&mut f, &viewer, start, (50., 40.));
++
++        assert_eq!(
++            selection(&mut f),
++            (viewer.name(), expected),
++            "the drag should select on the viewer, not in the projected column's source"
++        );
++    }
++
++    #[test]
++    fn egl_tapping_in_the_screenshot_ui_in_view_mode_selects_on_the_viewer() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        input::add_device(&mut f);
++        f.niri().config.borrow_mut().input.touch.map_to_output = Some(viewer.name());
++        f.niri().start_viewing("steam").unwrap();
++        f.niri_complete_animations();
++        let region = region_of(&mut f, ProjectionKind::View);
++        open_screenshot_ui(&mut f);
++
++        let tap = region.loc + Point::from((200., 100.));
++        input::touch_tap(&mut f, (tap.x / 1920., tap.y / 1080.));
++
++        // A tap selects the default 32x32 square centred on it.
++        let loc = tap.to_physical(1.).to_i32_round::<i32>() - Point::from((16, 16));
++        assert_eq!(
++            selection(&mut f),
++            (viewer.name(), Rectangle::new(loc, (32, 32).into())),
++            "the tap should select on the viewer the screenshot UI is drawn on"
++        );
++    }
++}
++
++/// The colour picker while a virtual output is viewed. It renders from inside its pointer grab,
++/// where the pointer is locked, and must sample what the physical output shows.
++mod pick_color_tests {
++    use niri_ipc::PickedColor;
++    use smithay::utils::{Logical, Point};
++
++    use super::screenshot_tests::{set_up, viewer_loc};
++    use crate::tests::fixture::Fixture;
++    use crate::tests::input;
++
++    fn pick_at(f: &mut Fixture, pos: Point<f64, Logical>) -> Option<PickedColor> {
++        let (tx, rx) = async_channel::unbounded();
++        f.niri_state().move_cursor(pos);
++        f.niri_state().handle_pick_color(tx);
++        input::pointer_button(f, input::BTN_LEFT, true);
++        input::pointer_button(f, input::BTN_LEFT, false);
++        rx.try_recv().expect("the pick should have answered")
++    }
++
++    #[test]
++    fn egl_picking_over_the_viewed_picture_answers() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        f.niri().start_viewing("steam").unwrap();
++        f.niri_complete_animations();
++        let loc = viewer_loc(&mut f, &viewer);
++
++        assert!(pick_at(&mut f, loc + Point::from((960., 540.))).is_some());
++    }
++
++    #[test]
++    fn egl_picking_a_letterbox_bar_in_view_mode_returns_its_black() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        f.niri().start_viewing("steam").unwrap();
++        f.niri_complete_animations();
++        let loc = viewer_loc(&mut f, &viewer);
++
++        let color = pick_at(&mut f, loc + Point::from((10., 540.)));
++
++        assert_eq!(
++            color.map(|c| c.rgb),
++            Some([0., 0., 0.]),
++            "the bar is drawn black on the viewer, so picking it should return black"
++        );
++    }
++
++    #[test]
++    fn egl_picking_without_projections_samples_the_output_under_the_pointer() {
++        let (mut f, viewer) = set_up((1920, 1080));
++        let loc = viewer_loc(&mut f, &viewer);
++
++        assert!(pick_at(&mut f, loc + Point::from((10., 540.))).is_some());
++    }
++}
 diff --git a/src/tests/projection_stream.rs b/src/tests/projection_stream.rs
 new file mode 100644
 index 00000000..5da02a00
@@ -8998,6 +9438,30 @@ index 00000000..eb7a804f
 +        Some(PrimaryGpuTextureRenderElement(elem))
 +    }
 +}
+diff --git a/src/ui/screenshot_ui.rs b/src/ui/screenshot_ui.rs
+index a1586361..88ed95f9 100644
+--- a/src/ui/screenshot_ui.rs
++++ b/src/ui/screenshot_ui.rs
+@@ -789,6 +789,19 @@ impl ScreenshotUi {
+         }
+     }
+ 
++    #[cfg(test)]
++    pub fn selection(&self) -> Option<(&Output, Rectangle<i32, Physical>)> {
++        if let Self::Open {
++            selection: (output, a, b),
++            ..
++        } = self
++        {
++            Some((output, rect_from_corner_points(*a, *b)))
++        } else {
++            None
++        }
++    }
++
+     pub fn output_size(&self, output: &Output) -> Option<(Size<i32, Physical>, f64, Transform)> {
+         if let Self::Open { output_data, .. } = self {
+             let data = output_data.get(output)?;
 diff --git a/src/ui/text_texture.rs b/src/ui/text_texture.rs
 new file mode 100644
 index 00000000..f53cea33

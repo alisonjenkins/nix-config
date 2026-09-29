@@ -964,11 +964,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789498232,
-        "narHash": "sha256-77MjtAjEiPCRH/CtChSU6IHclKkgQ3pI7s3c7N7iiiQ=",
+        "lastModified": 1790353586,
+        "narHash": "sha256-oEvDG8PTqiy6lvKKWj9D+XZyPzYcl4rm5Qs7qKR0pSk=",
         "owner": "YaLTeR",
         "repo": "niri",
-        "rev": "02fdd8e7586110d6aa79d94f388756a3479091b6",
+        "rev": "1f03391ea644c2a43597de7f637269e26d1e1b49",
         "type": "github"
       },
       "original": {
