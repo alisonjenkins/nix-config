@@ -1,7 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: template (unversioned) → 1.0.0
-- Modified principles: all placeholders replaced (first ratification)
+- Version change: 1.0.0 → 1.0.1
+- Modified principles: VII. Fork Patches Are Generated — clarified for a fork built as a
+  flake input (niri now is); scope line updated to match
+- Earlier: template (unversioned) → 1.0.0, all placeholders replaced (first ratification)
 - Added principles: I. Atomic, Revertable History; II. Test First, Evidence Before Done;
   III. Infrastructure as Code, Live Changes by Consent; IV. Errors Carry Context;
   V. Right Altitude, Single Source of Truth; VI. Record the Why; VII. Fork Patches Are Generated
@@ -18,8 +20,8 @@ Sync Impact Report
 # nix-config Constitution
 
 Scope: this repository (a NixOS / nix-darwin / home-manager flake) and any feature built in a
-fork that this repository carries as a patch, such as the niri fork behind
-`patches/niri-virtual-outputs.patch`.
+fork that this repository carries as a patch or builds as a flake input, such as the niri fork
+behind the `niri-virtual` input.
 
 ## Core Principles
 
@@ -91,11 +93,11 @@ Rationale: commit messages and agent memory are not where the next reader looks.
 
 ### VII. Fork Patches Are Generated
 
-- A patch this repository carries against an upstream or fork (for example
-  `patches/niri-virtual-outputs.patch`) MUST be generated from fork commits
-  (`git diff <base> HEAD`), never edited by hand.
+- A patch this repository carries against an upstream or fork MUST be generated from fork
+  commits (`git diff <base> HEAD`), never edited by hand.
 - Fixes MUST land in the fork as commits with their tests first, then the patch is
-  regenerated and the affected package rebuilt.
+  regenerated (or, for a fork built as a flake input, the input updated) and the affected
+  package rebuilt.
 - Files that belong to this repository's tooling (`.specify/`, `.claude/`) MUST NOT be added
   to a fork whose diff becomes a patch.
 
@@ -136,4 +138,4 @@ Rationale: a hand-edited patch loses its history, its tests and its upstreamabil
 - Runtime guidance for agents lives in `CLAUDE.md` and the repository's skills
   (`.claude/skills/`); they MUST stay consistent with this file.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-28 | **Last Amended**: 2026-09-28
+**Version**: 1.0.1 | **Ratified**: 2026-09-28 | **Last Amended**: 2026-09-29
