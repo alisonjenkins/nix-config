@@ -977,6 +977,27 @@
         "type": "github"
       }
     },
+    "niri-virtual": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs_unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790662352,
+        "narHash": "sha256-bfCgW4CT1rtgMxsiAQ9mIsjkCZXHqs25uib3OGXCqgg=",
+        "owner": "alisonjenkins",
+        "repo": "niri",
+        "rev": "6258e783824e552ef4575028be8a45eb42958206",
+        "type": "github"
+      },
+      "original": {
+        "owner": "alisonjenkins",
+        "ref": "rebase-feat-virtual",
+        "repo": "niri",
+        "type": "github"
+      }
+    },
     "nix-cachyos-kernel": {
       "inputs": {
         "flake-compat": "flake-compat_3",
@@ -1642,6 +1663,7 @@
         "luks-controller-unlock": "luks-controller-unlock",
         "niks3": "niks3",
         "niri": "niri",
+        "niri-virtual": "niri-virtual",
         "nix-cachyos-kernel": "nix-cachyos-kernel",
         "nix-flatpak": "nix-flatpak",
         "nix-index-database": "nix-index-database",

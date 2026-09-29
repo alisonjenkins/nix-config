@@ -7,6 +7,12 @@
       url = "github:YaLTeR/niri";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
+    # niri with virtual outputs and projections: upstream niri plus the
+    # fork's commits, used when modules.desktop.niriVirtualOutputs is on.
+    niri-virtual = {
+      url = "github:alisonjenkins/niri/rebase-feat-virtual";
+      inputs.nixpkgs.follows = "nixpkgs_unstable";
+    };
     # eks-creds = {
     #   url = "github:alisonjenkins/eks-creds";
     #   inputs.nixpkgs.follows = "nixpkgs";

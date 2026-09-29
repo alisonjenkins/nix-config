@@ -972,21 +972,15 @@ in {
 
           niri = let
             upstreamNiri = inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri;
-            # Rebased QaidVoid/niri feat/virtual — adds `create-virtual-output`
-            # IPC and a `virtual` output kind. Gated behind
-            # modules.desktop.niriVirtualOutputs (off by default) until §5b
-            # nested validation passes; see the patch file's header comment
-            # in patches/niri-virtual-outputs.patch for provenance.
-            #
-            # The patch is generated, not edited: it is
-            # `git diff --no-ext-diff <niri flake rev> HEAD` on the fork's
-            # rebase-feat-virtual branch, whose history must contain that rev
-            # (rebase the fork onto it after bumping the niri input, or
-            # hunks stop applying). Fixes belong there as commits, so they
-            # keep their rationale and their tests; regenerate afterwards.
-            patchedNiri = upstreamNiri.overrideAttrs (old: {
+            # alisonjenkins/niri rebase-feat-virtual: QaidVoid's feat/virtual
+            # rebased onto upstream, adding a `virtual` output kind, plus
+            # local fixes and overview/view-output projections (ADR 0019).
+            # Gated behind modules.desktop.niriVirtualOutputs (off by
+            # default). Fixes go into the fork as commits, with their tests;
+            # `nix flake update niri-virtual` picks them up here.
+            virtualNiri = inputs.niri-virtual.packages.${pkgs.stdenv.hostPlatform.system}.niri;
+            patchedNiri = virtualNiri.overrideAttrs (old: {
               patches = (old.patches or []) ++ [
-                "${patchesDir}/niri-virtual-outputs.patch"
                 # Independent of virtual outputs: makes niri react to
                 # logind's own Unlock signal (loginctl unlock-session), which
                 # it otherwise only ever writes (LockedHint) and never reads.
