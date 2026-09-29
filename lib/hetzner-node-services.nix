@@ -107,10 +107,15 @@
       requires = [ "tailscale-bootstrap.service" ];
       wantedBy = [ "multi-user.target" ];
 
+      # As upstream's k3s units: containerd and the pod shims live in this
+      # unit's cgroup, so the default KillMode=control-group would kill every
+      # pod on the node whenever k3s restarts, including on-failure restarts.
       serviceConfig = {
         Type = "exec";
         Restart = "on-failure";
         RestartSec = "10s";
+        KillMode = "process";
+        Delegate = "yes";
       };
 
       script = ''
@@ -331,10 +336,15 @@
       requires = [ "tailscale-bootstrap.service" "k3s-state-volume.service" ];
       wantedBy = [ "multi-user.target" ];
 
+      # KillMode/Delegate as upstream's k3s units: containerd and the pod shims
+      # live in this unit's cgroup, so the default KillMode=control-group would
+      # take down every pod on the single master whenever k3s restarts.
       serviceConfig = {
         Type = "exec";
         Restart = "on-failure";
         RestartSec = "10s";
+        KillMode = "process";
+        Delegate = "yes";
       };
 
       script = ''
@@ -599,8 +609,9 @@
 
         # Re-measure. If truncating the WAL got us back under, stop here: the
         # row-delete below is the expensive part (40 minutes on the 7.6 GB
-        # datastore in the 2026-07-30 incident) and every second of it is a full
-        # outage, since stopping k3s takes containerd and all pods with it.
+        # datastore in the 2026-07-30 incident) and every second of it is an API
+        # outage. Pods keep running (KillMode=process on k3s-server-bootstrap),
+        # but nothing can be scheduled, updated or reconciled meanwhile.
         DB_SIZE=$(stat -c %s "$DB")
         if [ "$DB_SIZE" -lt "$THRESHOLD_BYTES" ]; then
           echo "checkpoint alone sufficed (db=$DB_SIZE) — skipping compaction"
