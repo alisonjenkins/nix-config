@@ -75,6 +75,16 @@
       "/media/steam-games-1/SteamLibrary"
     ];
   };
+  modules.helldivers2Mods = {
+    enable = true;
+    # Helldivers 2 lives in the same secondary library as Beat Saber (see
+    # helldivers2-frame-generation memory: bin/helldivers2.exe under
+    # /media/steam-games-1/SteamLibrary/steamapps/common/Helldivers 2).
+    steamLibraryRoots = [
+      "${config.home.homeDirectory}/.local/share/Steam"
+      "/media/steam-games-1/SteamLibrary"
+    ];
+  };
 
   # Remote Play captures a whole output and Steam only ever asks the portal
   # for monitors, so on the 5120x1440 ultrawide a Deck received about 1280x360
