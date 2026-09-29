@@ -30,13 +30,10 @@ Expected: everything passes. The fixture tests cover:
 ## Build and ship (nix-config)
 
 ```bash
-# Base = the niri rev in nix-config's flake.lock (1f03391e at the time of writing);
-# the fork's history must contain it.
-NIX_CONFIG_DIR=~/git/personal/nix-config
-cd /home/ali/git/niri && git -c diff.external= diff --no-ext-diff --binary \
-  "$(jq -r .nodes.niri.locked.rev "$NIX_CONFIG_DIR/flake.lock")" HEAD \
-  > "$NIX_CONFIG_DIR/patches/niri-virtual-outputs.patch"
-cd "$NIX_CONFIG_DIR"
+# Push the fork first: the niri-virtual input follows
+# alisonjenkins/niri rebase-feat-virtual.
+cd ~/git/personal/nix-config
+nix flake update niri-virtual
 nix build .#nixosConfigurations.ali-desktop.config.programs.niri.package
 just switch   # then log out and back in: the compositor is replaced
 ```

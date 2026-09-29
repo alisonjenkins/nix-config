@@ -261,10 +261,10 @@ freely. These are what the live test surfaced.
    stale 1280x800 and sized its borderless window to it. stream-mode works
    around it by stepping through refresh+1 (4a1dea45). Suspected
    cause, not confirmed: `resize_virtual_outputs` in
-   `patches/niri-virtual-outputs.patch` calls `change_current_state`, which
+   the niri fork calls `change_current_state`, which
    sends `wl_output.done`, before `output_resized` updates the logical size,
    so xwayland-satellite applies the old size on each `done`. Fix it in the
-   patch and drop the workaround.
+   fork and drop the workaround.
    Ruled out 2026-09-25: smithay 0.7.0's `Output::change_current_state`
    (`src/output.rs:380`) calls the xdg-output one first
    (`src/wayland/output/xdg.rs:124-132`), which sends `logical_size` from

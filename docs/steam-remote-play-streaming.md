@@ -35,7 +35,7 @@ several wrong turns. See `PENDING.md` for the full archaeology.
 
 | Component | Lives in | Does |
 |---|---|---|
-| niri virtual-output patch | `patches/niri-virtual-outputs.patch` | Gives the compositor an output that has no monitor behind it |
+| niri virtual-output fork | `niri-virtual` flake input (`alisonjenkins/niri`) | Gives the compositor an output that has no monitor behind it |
 | Output declaration | `home/programs/linux-only/niri/module.nix` | Declares the `steam` output in niri's config, disabled |
 | Watcher | `home/programs/linux-only/steam-stream-mode/` | Reacts to stream and compositor events; owns all state |
 | SDL filter | `pkgs/steam-display-filter/` | Makes Steam see one display, sized to the stream |
@@ -72,20 +72,18 @@ Local fixes on top, all worth keeping if this is ever upstreamed:
 Gated behind `modules.desktop.niriVirtualOutputs`, **off by default**. When off,
 the stock upstream niri is used and none of this is built.
 
-The patch is *generated*, not hand-edited:
-`git diff --no-ext-diff <niri flake rev> HEAD` on the fork's
-`rebase-feat-virtual` branch. Fixes belong there as commits — so they keep
-their rationale and their tests — and the patch is regenerated afterwards.
+ali-desktop builds niri straight from the fork: the `niri-virtual` flake input
+points at `alisonjenkins/niri` `rebase-feat-virtual`. Fixes belong there as
+commits — so they keep their rationale and their tests — and
+`nix flake update niri-virtual` picks them up. To follow upstream niri, rebase
+the fork onto upstream main; it is kept as a linear series so it can go
+upstream as a PR.
 
-The base must be the exact niri revision the flake builds, and the fork's
-history must contain it. On 2026-09-29 the patch was still cut from an older
-base (`e9b215fe`) than the flake's niri (`02fdd8e`, 49 commits newer); old
-hunks applied with fuzz until new ones touched code upstream had changed, and
-the build broke at patch time. Upstream `02fdd8e` was first merged into the
-fork; later the branch was rebased onto upstream `1f03391e` instead, so the
-virtual-output work stays a linear series that can go upstream as a PR.
-After bumping the `niri` flake input, rebase the fork onto the new revision and
-regenerate before building.
+Until 2026-09-29 the fork was shipped as a patch generated against the upstream
+niri rev the flake pinned. The patch had to be regenerated after every fork
+change and after every niri bump; once it had been cut from a base 49 commits
+older than the pinned niri, old hunks applied with fuzz until new ones didn't,
+and the build broke at patch time. Building from the fork removes that step.
 
 ### 2. Output declaration
 
@@ -308,7 +306,7 @@ Getting there took two false starts, both worth not repeating:
   Inferring the state from geometry once turned an already-fullscreen game back
   into a windowed one.
 
-`patches/niri-virtual-outputs.patch` therefore adds `set-window-fullscreen`,
+The niri fork therefore adds `set-window-fullscreen`,
 which says what the state should be. The layout layer already took a bool
 (`Layout::set_fullscreen`); only the IPC surface was missing. Being idempotent,
 it can be sent on every event reporting the wrong size without tracking what

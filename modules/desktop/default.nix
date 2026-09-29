@@ -797,8 +797,8 @@ in
       type = types.bool;
       default = false;
       description = ''
-        Build niri with the rebased QaidVoid `feat/virtual` patch
-        (patches/niri-virtual-outputs.patch), adding
+        Build niri from the fork with the rebased QaidVoid `feat/virtual`
+        work (the niri-virtual flake input), adding
         `niri msg create-virtual-output` and a `virtual` output kind.
         Off by default: this patches the compositor that runs the login
         session, and must only be flipped on after nested validation

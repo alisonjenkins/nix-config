@@ -49,7 +49,8 @@ used.
 
 - The patch is generated from a fork branch (`git diff e9b215fe HEAD` on
   `rebase-feat-virtual`). Fixes go there as commits, then the patch is
-  regenerated. Do not hand-edit it.
+  regenerated. Do not hand-edit it. (Since 2026-09-29 there is no patch:
+  ali-desktop builds niri from the fork as the `niri-virtual` flake input.)
 - Something on the host has to toggle the output. That is steam-stream-mode
   ([0005](0005-stream-mode-owns-stream-state.md)).
 

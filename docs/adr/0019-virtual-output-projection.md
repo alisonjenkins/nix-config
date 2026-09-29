@@ -20,7 +20,8 @@ A **projection** maps a rectangle of a virtual output (the source) onto a region
 physical monitor (the viewer) with one uniform scale. Only virtual outputs can be sources
 and only physical outputs can be viewers, so projections never recurse. The design and its
 spec live in `specs/001-virtual-output-projection/`; the code is in the niri fork
-(`alisonjenkins/niri`, `rebase-feat-virtual`), shipped as `patches/niri-virtual-outputs.patch`.
+(`alisonjenkins/niri`, `rebase-feat-virtual`), which ali-desktop builds as the `niri-virtual`
+flake input.
 
 - **Overview columns.** With the overview open, each enabled virtual output gets a column
   to the right of the viewer's own workspaces, labelled with its name. The column is the
