@@ -17,10 +17,13 @@ enum ViewOutputState {
 |---|---|---|---|
 | `name: Some(v)` | `v` is a virtual output that is on | `Viewing { viewer, source: v }` | The focused physical output views `v`, and `v` becomes the active monitor |
 | `name: Some(v)` | Already viewing another output | `Viewing { viewer, source: v }` | Switches to `v` |
-| `name: Some(v)` | `v` unknown | `Err("no output named 'v'")` | None |
-| `name: Some(v)` | `v` is physical | `Err("output 'v' is not a virtual output")` | None |
-| `name: Some(v)` | `v` is off | `Err("virtual output 'v' is off")` | None |
-| `name: Some(v)` | No physical output exists | `Err("no physical output to view 'v' on")` | None |
+| `name: Some(v)` | `v` unknown | `Err("virtual output \"v\" not found")` | None |
+| `name: Some(v)` | `v` is physical | `Err("output \"v\" is not a virtual output")` | None |
+| `name: Some(v)` | `v` is off | `Err("virtual output \"v\" is off")` | None |
+| `name: Some(v)` | No physical output exists | `Err("no physical output to view \"v\" on")` | None |
+
+(Amended during implementation: the messages follow the existing `VirtualOutputError`
+style, with double-quoted names.)
 | `name: None` | Viewing | `Stopped { viewer, source }` | The viewer shows its own workspaces and becomes active |
 | `name: None` | Not viewing | `NotViewing` | None |
 
