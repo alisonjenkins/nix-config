@@ -32,6 +32,13 @@ let
   virtualOutputBlocks =
     lib.concatStringsSep "\n\n" (lib.mapAttrsToList mkVirtualOutput cfg.virtualOutputs);
 
+  # Show the first declared virtual output on the focused monitor, and return. Only emitted with
+  # virtual outputs declared, since `view-output` exists only in the patched niri that has them.
+  viewOutputBinds = lib.optionalString (cfg.virtualOutputs != { }) ''
+    Mod+Ctrl+V { view-output "${lib.head (lib.attrNames cfg.virtualOutputs)}"; }
+    Mod+Ctrl+Shift+V { view-output; }
+  '';
+
   mkWorkspace = name: body:
     let
       indent = block:
@@ -640,6 +647,7 @@ in {
           // Escape inhibit
           Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
 
+          ${viewOutputBinds}
           ${cfg.extraBinds}
       }
     '';
