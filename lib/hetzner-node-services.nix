@@ -347,6 +347,13 @@
         Delegate = "yes";
       };
 
+      # Soft heap limit for the all-in-one k3s process. Its live heap is
+      # ~1.6 GiB, but with the default GOGC it grew to ~2.4 GiB between
+      # collections, which on the 7.9 GiB master pushed the node into swap
+      # and stalled SQLite writes past the 5 s lease deadline. Go collects
+      # harder as the heap nears this limit; it never fails an allocation.
+      environment.GOMEMLIMIT = "1900MiB";
+
       script = ''
         set -euo pipefail
 
