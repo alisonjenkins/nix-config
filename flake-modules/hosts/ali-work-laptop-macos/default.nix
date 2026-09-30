@@ -437,13 +437,17 @@ in {
               directories = [
                 "${config.home.homeDirectory}/.agents/skills"
               ];
-              # Matches what the `git` skill actually shells out to
-              # (gh pr checks/comment/create/edit/merge/view, gh repo view,
-              # gh api) — narrower than a blanket `gh:*`.
+              # Only what the `git` skill runs directly. Deliberately left out so
+              # they keep prompting: `gh pr merge` (irreversible, and merges
+              # server-side unsigned), `gh pr close`, and `gh api`, which can
+              # issue any REST call (including DELETE) or GraphQL mutation.
               commandPatterns = [
-                "gh pr:*"
+                "gh pr view:*"
+                "gh pr checks:*"
+                "gh pr create:*"
+                "gh pr edit:*"
+                "gh pr comment:*"
                 "gh repo view:*"
-                "gh api:*"
               ];
             };
           };
