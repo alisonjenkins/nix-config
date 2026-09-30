@@ -613,8 +613,16 @@ in
 
     # v4l2loopback virtual webcam devices for multi-app camera sharing
     boot.extraModulePackages = optionals cfg.enableVirtualCamera [ config.boot.kernelPackages.v4l2loopback ];
+    # card_label must be an unquoted comma-separated list: modprobe does not strip
+    # the inner quotes, so card_label="A","B" produced the labels 'A"' and '"B'.
+    # exclusive_caps must be one value per device (0,0 not 1): with exclusive_caps=1
+    # a device advertises VIDEO_CAPTURE only once a producer opens it, and PipeWire's
+    # V4L2 monitor enumerates devices at add time only — it never re-probes, so the
+    # device never appears as a camera source to PipeWire clients (Firefox/Zen with
+    # media.webrtc.camera.allow-pipewire, portal users). exclusive_caps=0 keeps
+    # VIDEO_CAPTURE always advertised, so a persistent Video/Source node exists.
     boot.extraModprobeConfig = mkIf cfg.enableVirtualCamera ''
-      options v4l2loopback devices=2 video_nr=10,11 card_label="Virtual_Camera_1","Virtual_Camera_2" exclusive_caps=1
+      options v4l2loopback devices=2 video_nr=10,11 card_label=Virtual_Camera_1,Virtual_Camera_2 exclusive_caps=0,0
     '';
 
     # Cleanly disconnect WiFi before suspend to avoid stale AP sessions on resume
