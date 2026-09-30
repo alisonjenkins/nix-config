@@ -1422,9 +1422,8 @@ in
             }
           );
         })
-        # copilot-cli removed upstream (deprecated by GitHub; use
-        # `gh extension install github/gh-copilot` instead).
         unstable.devenv
+        unstable.github-copilot-cli
         unstable.mission-center
         unstable.nvtopPackages.amd
         # From master until unstable passes 1.18.30, which crashes on every
