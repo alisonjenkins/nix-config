@@ -14,6 +14,7 @@ const skip = (why) => {
   console.error("copilot-cli: not updating " + target + ": " + why);
   process.exit(0);
 };
+process.on("uncaughtException", (err) => skip(err.message));
 
 let text = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
 const bom = text.startsWith("\uFEFF") ? "\uFEFF" : "";
