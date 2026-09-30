@@ -28,8 +28,8 @@ if (!isObject(existing)) skip("its top level is not an object");
 
 const patch = JSON.parse(fs.readFileSync(patchFile, "utf8"));
 // modify() reformats the object it edits, so match the file's own indent
-// (tab, or the width of its first indented line) instead of imposing one.
-const indent = /^([ \t]+)\S/m.exec(text);
+// (tab, or the width of its first indented key; comment lines don't count) instead of imposing one.
+const indent = /^([ \t]+)["{[]/m.exec(text);
 const formattingOptions =
   indent && indent[1][0] === "\t"
     ? { insertSpaces: false }

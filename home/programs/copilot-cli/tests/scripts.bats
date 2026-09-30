@@ -67,6 +67,13 @@ EOF
   grep -qP '^\t"model"' "$dir/s.json"
 }
 
+@test "merge: a block-comment header does not set the indent" {
+  printf '/*\n * header\n */\n{\n    "a": 1,\n    "nested": { "z": 1 }\n}\n' > "$dir/s.json"
+  "$JSON_MERGE" "$dir/s.json" "$dir/patch.json"
+  [ -z "$(grep -E '^( {4})* {1,3}[^ ]' "$dir/s.json" | grep -v '^ \*')" ]
+  grep -q '^        "a": 1,$' "$dir/s.json"
+}
+
 @test "merge: invalid JSONC is left untouched with a warning and exit 0" {
   echo '{ "a": ' > "$dir/s.json"
   run "$JSON_MERGE" "$dir/s.json" "$dir/patch.json"
