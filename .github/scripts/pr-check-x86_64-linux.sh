@@ -162,6 +162,12 @@ check_drv_set ".#packages.${TARGET_SYSTEM}"
 echo "== packages.${TARGET_SYSTEM} changed by this PR (built) =="
 build_changed_packages ".#packages.${TARGET_SYSTEM}"
 
+echo "== copilot-cli script tests (bats) =="
+if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.copilot-cli-bats"; then
+    echo "FAILED: checks.${TARGET_SYSTEM}.copilot-cli-bats"
+    FAILED=1
+fi
+
 echo "== skill frontmatter (strict YAML) =="
 if ! nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
     --command .github/scripts/check-skill-frontmatter.sh; then
