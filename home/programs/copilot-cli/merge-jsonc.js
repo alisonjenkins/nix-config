@@ -16,7 +16,7 @@ const skip = (why) => {
 };
 
 let text = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
-if (text.trim() === "") text = "{}\n";
+if (jsonc.stripComments(text).trim() === "") text = text.trimEnd() + "\n{}\n";
 
 const errors = [];
 const existing = jsonc.parse(text, errors, { allowTrailingComma: true });
