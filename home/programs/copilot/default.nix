@@ -1,0 +1,218 @@
+{ config, lib, pkgs, inputs, ... }:
+let
+  cfg = config.programs.copilot-cli;
+
+  configDir = "${config.home.homeDirectory}/.copilot";
+
+  # Deep-merges `patch` into the JSON file at `path`, creating the file with
+  # `patch` as its initial content if it doesn't exist yet. Array-valued
+  # fields listed in `unionArrayPaths` are unioned (deduped) with whatever is
+  # already on disk instead of being replaced outright, so anything the CLI
+  # itself grants at runtime (e.g. accepting a permission prompt) survives
+  # the next `home-manager switch` instead of being clobbered.
+  #
+  # Everything else in the file — auth tokens, session/runtime state the CLI
+  # writes on its own — passes through untouched. This intentionally avoids
+  # `home.file`'s symlink-into-the-store approach: that would make the file
+  # read-only, which breaks the CLI's own writes to it.
+  jsonMerge = { path, patch, unionArrayPaths ? [ ] }:
+    let
+      patchFile = pkgs.writeText "copilot-cli-patch.json" (builtins.toJSON patch);
+    in
+    ''
+      run mkdir -p ${lib.escapeShellArg configDir}
+      run ${pkgs.jq}/bin/jq -n \
+        --slurpfile patch ${patchFile} \
+        --argjson unionPaths ${lib.escapeShellArg (builtins.toJSON unionArrayPaths)} \
+        --slurpfile existing <(test -f ${lib.escapeShellArg path} && cat ${lib.escapeShellArg path} || echo '{}') \
+        '
+          def deepmerge(a; b):
+            if (a | type) == "object" and (b | type) == "object" then
+              reduce (b | keys_unsorted[]) as $k
+                (a; .[$k] = (if (a[$k] != null) then deepmerge(a[$k]; b[$k]) else b[$k] end))
+            else b end;
+          ($existing[0]) as $base
+          | ($patch[0]) as $p
+          | deepmerge($base; $p) as $merged
+          | reduce $unionPaths[] as $up
+              ($merged;
+                getpath($up | split(".")) as $existingArr
+                | if ($existingArr | type) == "array" then
+                    setpath($up | split("."); ($existingArr + ($p | getpath($up | split("."))) | unique))
+                  else . end)
+        ' > ${lib.escapeShellArg path}.new
+      run mv ${lib.escapeShellArg path}.new ${lib.escapeShellArg path}
+    '';
+
+  # Grants a project (identified by its absolute path in permissions-config.json's
+  # `locations`) extra trusted directories and/or pre-approved command patterns,
+  # without disturbing anything else already recorded for that project or any
+  # other. Directories are unioned/deduped; command patterns are merged into
+  # the single `{kind: "commands"}` tool_approvals entry (also unioned/deduped)
+  # rather than appended as a duplicate entry.
+  #
+  # Args: <perm-file> <project-path> <dir>... -- <command-pattern>...
+  # (the "--" separator is required even when one side is empty)
+  trustProjectScript = pkgs.writeShellScript "copilot-cli-trust-project" ''
+    set -euo pipefail
+    perm_file="$1"; proj="$2"; shift 2
+
+    dirs=()
+    cmds=()
+    side=dirs
+    for a in "$@"; do
+      if [ "$a" = "--" ]; then side=cmds; continue; fi
+      if [ "$side" = dirs ]; then dirs+=("$a"); else cmds+=("$a"); fi
+    done
+
+    mkdir -p "$(dirname "$perm_file")"
+    [ -f "$perm_file" ] || echo '{}' > "$perm_file"
+
+    dirs_json="$(printf '%s\n' "''${dirs[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
+    cmds_json="$(printf '%s\n' "''${cmds[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
+
+    tmp="$(mktemp)"
+    ${pkgs.jq}/bin/jq --arg proj "$proj" --argjson dirs "$dirs_json" --argjson cmds "$cmds_json" '
+      (.locations[$proj].allowed_directories // []) as $existingDirs
+      | .locations[$proj].allowed_directories = (($existingDirs + $dirs) | unique)
+      | (.locations[$proj].tool_approvals // []) as $approvals
+      | (($approvals | map(select(.kind == "commands")) | .[0].commandIdentifiers) // []) as $existingCmds
+      | (($existingCmds + $cmds) | unique) as $mergedCmds
+      | if ($cmds | length) > 0 then
+          .locations[$proj].tool_approvals =
+            ([{kind: "commands", commandIdentifiers: $mergedCmds}]
+             + ($approvals | map(select(.kind != "commands"))))
+        else . end
+    ' "$perm_file" > "$tmp"
+    mv "$tmp" "$perm_file"
+  '';
+in
+{
+  options.programs.copilot-cli = {
+    enable = lib.mkEnableOption "declarative config management for the GitHub Copilot CLI (~/.copilot)";
+
+    trustedProjects = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          directories = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Extra directories the CLI may read/write/exec without prompting.";
+          };
+          commandPatterns = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = ''
+              Command patterns (as accepted by the CLI's own "don't ask again
+              for `<cmd>` in this repo" prompt, e.g. `"gh pr:*"`) to
+              pre-approve without prompting.
+            '';
+          };
+        };
+      });
+      default = { };
+      description = ''
+        Per-project trust grants, keyed by the absolute project path as it
+        appears under `permissions-config.json`'s `locations`. Merged
+        additively with whatever the CLI has already granted interactively.
+      '';
+      example = lib.literalExpression ''
+        {
+          "/home/ali/git/nix-config".directories = [ "/home/ali/.agents/skills" ];
+          "/home/ali/git/nix-config".commandPatterns = [ "gh pr:*" ];
+        }
+      '';
+    };
+
+    settings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.anything;
+      default = { };
+      description = "Deep-merged into ~/.copilot/settings.json.";
+    };
+
+    mcpServers = lib.mkOption {
+      type = lib.types.attrsOf lib.types.anything;
+      default = { };
+      description = "Deep-merged into ~/.copilot/mcp-config.json's `mcpServers` key.";
+    };
+
+    autoTrustSubdirsOf = lib.mkOption {
+      type = lib.types.submodule {
+        options = {
+          file = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.home.homeDirectory}/.config/copilot-cli/trusted-parents";
+            description = ''
+              A plain-text, newline-separated list of parent directories,
+              read at activation time (never at Nix eval time, and never
+              written into the store). Every immediate subdirectory of every
+              listed parent gets `directories`/`commandPatterns` merged into
+              its `permissions-config.json` entry.
+
+              This exists so machine- or employer-specific project paths
+              (e.g. `~/git/<employer>`) never have to appear in the flake
+              source — the file lives outside the repo, is user-maintained,
+              and is simply absent (no-op) on machines that don't need it.
+            '';
+          };
+
+          directories = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Directories to grant read/write/exec access to, for every discovered project.";
+          };
+
+          commandPatterns = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Command patterns to pre-approve, for every discovered project.";
+          };
+        };
+      };
+      default = { };
+      description = "Auto-discover projects under runtime-listed parent directories and trust them.";
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    home.activation.copilotCliConfig = inputs.home-manager.lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      lib.concatStringsSep "\n" (
+        (lib.mapAttrsToList
+          (proj: grant:
+            "run ${trustProjectScript} ${lib.escapeShellArg "${configDir}/permissions-config.json"} ${lib.escapeShellArg proj} "
+            + lib.escapeShellArgs (grant.directories ++ [ "--" ] ++ grant.commandPatterns))
+          cfg.trustedProjects)
+        ++ lib.optional (cfg.settings != { }) (jsonMerge {
+          path = "${configDir}/settings.json";
+          patch = cfg.settings;
+        })
+        ++ lib.optional (cfg.mcpServers != { }) (jsonMerge {
+          path = "${configDir}/mcp-config.json";
+          patch = { mcpServers = cfg.mcpServers; };
+        })
+        ++ lib.optional (cfg.autoTrustSubdirsOf.directories != [ ] || cfg.autoTrustSubdirsOf.commandPatterns != [ ]) (
+          let
+            script = pkgs.writeShellScript "copilot-cli-trust-parents" ''
+              set -euo pipefail
+              perm_file="$1"; parents_file="$2"; shift 2
+
+              [ -f "$parents_file" ] || exit 0
+
+              while IFS= read -r parent; do
+                [ -z "$parent" ] && continue
+                parent="''${parent/#\~/$HOME}"
+                [ -d "$parent" ] || continue
+                for proj in "$parent"/*/; do
+                  [ -d "$proj" ] || continue
+                  ${trustProjectScript} "$perm_file" "''${proj%/}" "$@"
+                done
+              done < "$parents_file"
+            '';
+          in
+          "run ${script} ${lib.escapeShellArg "${configDir}/permissions-config.json"} ${lib.escapeShellArg cfg.autoTrustSubdirsOf.file} "
+          + lib.escapeShellArgs (cfg.autoTrustSubdirsOf.directories ++ [ "--" ] ++ cfg.autoTrustSubdirsOf.commandPatterns)
+        )
+      )
+    );
+  };
+}
