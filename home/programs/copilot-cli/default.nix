@@ -60,7 +60,7 @@ let
     done
 
     mkdir -p "$(dirname "$perm_file")"
-    [ -f "$perm_file" ] || echo '{}' > "$perm_file"
+    [ -s "$perm_file" ] || echo '{}' > "$perm_file"
 
     dirs_json="$(printf '%s\n' "''${dirs[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
     cmds_json="$(printf '%s\n' "''${cmds[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
