@@ -9,25 +9,33 @@ let
   # CLI writes on its own — pass through untouched. Avoids `home.file`'s
   # symlink-into-the-store approach: that would make the file read-only, which
   # breaks the CLI's own writes to it.
+  jsonMergeScript = pkgs.writeShellScript "copilot-cli-json-merge" ''
+    set -euo pipefail
+    target="$1"; patch_file="$2"
+
+    mkdir -p "$(dirname "$target")"
+    [ -f "$target" ] || echo '{}' > "$target"
+
+    tmp="$(mktemp "$target.XXXXXX")"
+    trap 'rm -f "$tmp"' EXIT
+    if ! ${pkgs.jq}/bin/jq -n \
+      --slurpfile patch "$patch_file" \
+      --slurpfile existing "$target" '
+        def deepmerge(a; b):
+          if (a | type) == "object" and (b | type) == "object" then
+            reduce (b | keys_unsorted[]) as $k
+              (a; .[$k] = (if (a[$k] != null) then deepmerge(a[$k]; b[$k]) else b[$k] end))
+          else b end;
+        deepmerge($existing[0]; $patch[0])
+      ' > "$tmp"; then
+      echo "copilot-cli: not updating $target: it is not valid JSON" >&2
+      exit 0
+    fi
+    mv "$tmp" "$target"
+  '';
+
   jsonMerge = { path, patch }:
-    let
-      patchFile = pkgs.writeText "copilot-cli-patch.json" (builtins.toJSON patch);
-    in
-    ''
-      run mkdir -p ${lib.escapeShellArg configDir}
-      run ${pkgs.jq}/bin/jq -n \
-        --slurpfile patch ${patchFile} \
-        --slurpfile existing <(test -f ${lib.escapeShellArg path} && cat ${lib.escapeShellArg path} || echo '{}') \
-        '
-          def deepmerge(a; b):
-            if (a | type) == "object" and (b | type) == "object" then
-              reduce (b | keys_unsorted[]) as $k
-                (a; .[$k] = (if (a[$k] != null) then deepmerge(a[$k]; b[$k]) else b[$k] end))
-            else b end;
-          deepmerge($existing[0]; $patch[0])
-        ' > ${lib.escapeShellArg path}.new
-      run mv ${lib.escapeShellArg path}.new ${lib.escapeShellArg path}
-    '';
+    "run ${jsonMergeScript} ${lib.escapeShellArg path} ${pkgs.writeText "copilot-cli-patch.json" (builtins.toJSON patch)}";
 
   # Grants a project (identified by its absolute path in permissions-config.json's
   # `locations`) extra trusted directories and/or pre-approved command patterns,
