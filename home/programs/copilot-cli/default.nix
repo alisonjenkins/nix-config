@@ -187,7 +187,7 @@ in
       args = [
         "-c"
         ''
-          exec env WORKSPACE_ROOTS="$PWD" TOKEN_SAVIOR_CLIENT=copilot-cli TOKEN_SAVIOR_PROFILE=optimized             ${pkgs.token-savior}/bin/token-savior
+          exec env WORKSPACE_ROOTS="$PWD" TOKEN_SAVIOR_CLIENT=copilot-cli TOKEN_SAVIOR_PROFILE=optimized ${pkgs.token-savior}/bin/token-savior
         ''
       ];
     };
