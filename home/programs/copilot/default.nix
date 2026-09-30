@@ -4,18 +4,12 @@ let
 
   configDir = "${config.home.homeDirectory}/.copilot";
 
-  # Deep-merges `patch` into the JSON file at `path`, creating the file with
-  # `patch` as its initial content if it doesn't exist yet. Array-valued
-  # fields listed in `unionArrayPaths` are unioned (deduped) with whatever is
-  # already on disk instead of being replaced outright, so anything the CLI
-  # itself grants at runtime (e.g. accepting a permission prompt) survives
-  # the next `home-manager switch` instead of being clobbered.
-  #
-  # Everything else in the file — auth tokens, session/runtime state the CLI
-  # writes on its own — passes through untouched. This intentionally avoids
-  # `home.file`'s symlink-into-the-store approach: that would make the file
-  # read-only, which breaks the CLI's own writes to it.
-  jsonMerge = { path, patch, unionArrayPaths ? [ ] }:
+  # Deep-merges `patch` into the JSON file at `path`, creating the file if it
+  # doesn't exist yet. Keys the patch doesn't mention — auth tokens, state the
+  # CLI writes on its own — pass through untouched. Avoids `home.file`'s
+  # symlink-into-the-store approach: that would make the file read-only, which
+  # breaks the CLI's own writes to it.
+  jsonMerge = { path, patch }:
     let
       patchFile = pkgs.writeText "copilot-cli-patch.json" (builtins.toJSON patch);
     in
@@ -23,7 +17,6 @@ let
       run mkdir -p ${lib.escapeShellArg configDir}
       run ${pkgs.jq}/bin/jq -n \
         --slurpfile patch ${patchFile} \
-        --argjson unionPaths ${lib.escapeShellArg (builtins.toJSON unionArrayPaths)} \
         --slurpfile existing <(test -f ${lib.escapeShellArg path} && cat ${lib.escapeShellArg path} || echo '{}') \
         '
           def deepmerge(a; b):
@@ -31,15 +24,7 @@ let
               reduce (b | keys_unsorted[]) as $k
                 (a; .[$k] = (if (a[$k] != null) then deepmerge(a[$k]; b[$k]) else b[$k] end))
             else b end;
-          ($existing[0]) as $base
-          | ($patch[0]) as $p
-          | deepmerge($base; $p) as $merged
-          | reduce $unionPaths[] as $up
-              ($merged;
-                getpath($up | split(".")) as $existingArr
-                | if ($existingArr | type) == "array" then
-                    setpath($up | split("."); ($existingArr + ($p | getpath($up | split("."))) | unique))
-                  else . end)
+          deepmerge($existing[0]; $patch[0])
         ' > ${lib.escapeShellArg path}.new
       run mv ${lib.escapeShellArg path}.new ${lib.escapeShellArg path}
     '';
