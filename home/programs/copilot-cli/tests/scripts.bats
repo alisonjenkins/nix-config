@@ -63,7 +63,7 @@ EOF
 @test "merge: a tab-indented file stays tab-indented" {
   printf '{\n\t"a": 1\n}\n' > "$dir/s.json"
   "$JSON_MERGE" "$dir/s.json" "$dir/patch.json"
-  ! grep -q '^  ' "$dir/s.json"
+  [ -z "$(grep '^  ' "$dir/s.json")" ]
   grep -qP '^\t"model"' "$dir/s.json"
 }
 
