@@ -143,16 +143,23 @@ in
             type = lib.types.str;
             default = "${config.home.homeDirectory}/.config/copilot-cli/trusted-parents";
             description = ''
-              A plain-text, newline-separated list of parent directories,
-              read at activation time (never at Nix eval time, and never
-              written into the store). Every immediate subdirectory of every
-              listed parent gets `directories`/`commandPatterns` merged into
-              its `permissions-config.json` entry.
+              Optional plain-text, newline-separated list of extra parent
+              directories, read at activation time (never at Nix eval time,
+              and never written into the store). Absent file is a no-op.
+              Use it for parents that `discoverUnder` would not find.
+            '';
+          };
 
-              This exists so machine- or employer-specific project paths
-              (e.g. `~/git/<employer>`) never have to appear in the flake
-              source — the file lives outside the repo, is user-maintained,
-              and is simply absent (no-op) on machines that don't need it.
+          discoverUnder = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = "${config.home.homeDirectory}/git";
+            description = ''
+              Root scanned at activation time for grouping directories: an
+              immediate subdirectory that is not itself a git repo but
+              contains at least one (e.g. `~/git/<org>`). Each one found is
+              treated as a parent. Discovery happens on the machine, so
+              employer- or org-specific paths never appear in the flake
+              source. `null` disables discovery.
             '';
           };
 
@@ -170,7 +177,7 @@ in
         };
       };
       default = { };
-      description = "Auto-discover projects under runtime-listed parent directories and trust them.";
+      description = "Auto-discover projects under runtime-discovered parent directories and trust them.";
     };
   };
 
@@ -194,22 +201,42 @@ in
           let
             script = pkgs.writeShellScript "copilot-cli-trust-parents" ''
               set -euo pipefail
-              perm_file="$1"; parents_file="$2"; shift 2
+              perm_file="$1"; parents_file="$2"; discover_root="$3"; shift 3
 
-              [ -f "$parents_file" ] || exit 0
+              parents=()
 
-              while IFS= read -r parent; do
-                [ -z "$parent" ] && continue
-                parent="''${parent/#\~/$HOME}"
+              if [ -f "$parents_file" ]; then
+                while IFS= read -r parent; do
+                  [ -z "$parent" ] && continue
+                  parents+=("''${parent/#\~/$HOME}")
+                done < "$parents_file"
+              fi
+
+              if [ -n "$discover_root" ] && [ -d "$discover_root" ]; then
+                for group in "$discover_root"/*/; do
+                  [ -d "$group" ] || continue
+                  [ -e "$group.git" ] && continue
+                  for child in "$group"*/; do
+                    if [ -e "$child.git" ]; then
+                      parents+=("''${group%/}")
+                      break
+                    fi
+                  done
+                done
+              fi
+
+              [ "''${#parents[@]}" -gt 0 ] || exit 0
+
+              printf '%s\n' "''${parents[@]}" | sort -u | while IFS= read -r parent; do
                 [ -d "$parent" ] || continue
                 for proj in "$parent"/*/; do
                   [ -d "$proj" ] || continue
                   ${trustProjectScript} "$perm_file" "''${proj%/}" "$@"
                 done
-              done < "$parents_file"
+              done
             '';
           in
-          "run ${script} ${lib.escapeShellArg "${configDir}/permissions-config.json"} ${lib.escapeShellArg cfg.autoTrustSubdirsOf.file} "
+          "run ${script} ${lib.escapeShellArg "${configDir}/permissions-config.json"} ${lib.escapeShellArg cfg.autoTrustSubdirsOf.file} ${lib.escapeShellArg (toString cfg.autoTrustSubdirsOf.discoverUnder)} "
           + lib.escapeShellArgs (cfg.autoTrustSubdirsOf.directories ++ [ "--" ] ++ cfg.autoTrustSubdirsOf.commandPatterns)
         )
       )

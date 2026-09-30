@@ -429,9 +429,9 @@ in {
         home-manager.users.${username} = { config, ... }: {
           imports = [ self.homeModules.home-macos ];
 
-          # Keep the parent project directory (e.g. ~/git/<employer>) out of
-          # the repo: it's read at activation time from a plain, untracked,
-          # user-maintained file — see programs.copilot-cli.autoTrustSubdirsOf.
+          # Project parents (e.g. ~/git/<employer>) are discovered on the
+          # machine at activation, so they stay out of the repo — see
+          # programs.copilot-cli.autoTrustSubdirsOf.
           programs.copilot-cli = {
             enable = true;
             autoTrustSubdirsOf = {
