@@ -39,15 +39,17 @@ rec {
       if [ "$side" = dirs ]; then dirs+=("$a"); else cmds+=("$a"); fi
     done
 
-    mkdir -p "$(dirname "$perm_file")"
-    [ -s "$perm_file" ] || echo '{}' > "$perm_file"
+    skip() { echo "copilot-cli: not updating $perm_file: $1" >&2; exit 0; }
+
+    mkdir -p "$(dirname "$perm_file")" || skip "cannot create its directory"
+    [ -s "$perm_file" ] || echo '{}' > "$perm_file" || skip "cannot write it"
 
     dirs_json="$(printf '%s\n' "''${dirs[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
     cmds_json="$(printf '%s\n' "''${cmds[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
 
-    tmp="$(mktemp "$perm_file.XXXXXX")"
+    tmp="$(mktemp "$perm_file.XXXXXX")" || skip "cannot create a temp file next to it"
     trap 'rm -f "$tmp"' EXIT
-    if ! ${pkgs.jq}/bin/jq --arg proj "$proj" --argjson dirs "$dirs_json" --argjson cmds "$cmds_json" '
+    ${pkgs.jq}/bin/jq --arg proj "$proj" --argjson dirs "$dirs_json" --argjson cmds "$cmds_json" '
       (.locations[$proj].allowed_directories // []) as $existingDirs
       | .locations[$proj].allowed_directories = (($existingDirs + $dirs) | unique)
       | (.locations[$proj].tool_approvals // []) as $approvals
@@ -58,11 +60,8 @@ rec {
             ([{kind: "commands", commandIdentifiers: $mergedCmds}]
              + ($approvals | map(select(.kind != "commands"))))
         else . end
-    ' "$perm_file" > "$tmp"; then
-      echo "copilot-cli: not updating $perm_file: it is not valid JSON" >&2
-      exit 0
-    fi
-    mv "$tmp" "$perm_file"
+    ' "$perm_file" > "$tmp" || skip "it is not valid JSON"
+    mv "$tmp" "$perm_file" || skip "cannot replace it"
   '';
 
   # Grants every git repo directly under each parent (from the optional

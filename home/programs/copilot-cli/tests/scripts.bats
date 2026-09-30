@@ -122,6 +122,15 @@ EOF
   [ "$(cat "$dir/p.json")" = '{ nope' ]
 }
 
+@test "trust-project: an unwritable directory warns and exits 0" {
+  [ "$(id -u)" -ne 0 ] || skip "root ignores directory permissions"
+  mkdir "$dir/ro"; echo '{}' > "$dir/ro/p.json"; chmod 555 "$dir/ro"
+  run "$TRUST_PROJECT" "$dir/ro/p.json" /p /d -- 'x:*'
+  chmod 755 "$dir/ro"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"not updating"* ]]
+}
+
 # ---- trust-parents ---------------------------------------------------------
 
 keys() { jq -c '.locations | keys' "$1" | sed "s#$dir#D#g"; }
