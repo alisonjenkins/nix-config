@@ -164,13 +164,13 @@ in
           directories = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
-            description = "Directories to grant read/write/exec access to, for every discovered project.";
+            description = "Directories to grant read/write/exec access to, for every git repo directly under a parent.";
           };
 
           commandPatterns = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
-            description = "Command patterns to pre-approve, for every discovered project.";
+            description = "Command patterns to pre-approve, for every git repo directly under a parent.";
           };
         };
       };
@@ -245,7 +245,7 @@ in
               printf '%s\n' "''${parents[@]}" | sort -u | while IFS= read -r parent; do
                 [ -d "$parent" ] || continue
                 for proj in "$parent"/*/; do
-                  [ -d "$proj" ] || continue
+                  [ -e "$proj.git" ] || continue
                   ${trustProjectScript} "$perm_file" "''${proj%/}" "$@"
                 done
               done
