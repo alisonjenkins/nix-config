@@ -114,6 +114,14 @@ EOF
   [ "$output" = '[["/new","/old"],1,["a","b","gh pr view:*"],["commands","read"]]' ]
 }
 
+@test "trust-project: a symlinked file is written through, not replaced" {
+  echo '{}' > "$dir/real.json"
+  ln -s real.json "$dir/p.json"
+  "$TRUST_PROJECT" "$dir/p.json" /p /d -- 'x:*'
+  [ -L "$dir/p.json" ]
+  [ "$(jq -c '.locations["/p"].allowed_directories' "$dir/real.json")" = '["/d"]' ]
+}
+
 @test "trust-project: an empty or missing file is seeded" {
   : > "$dir/empty.json"
   "$TRUST_PROJECT" "$dir/empty.json" /p /d -- 'x:*'

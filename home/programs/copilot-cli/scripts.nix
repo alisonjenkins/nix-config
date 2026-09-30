@@ -30,6 +30,9 @@ rec {
   trustProject = pkgs.writeShellScript "copilot-cli-trust-project" ''
     set -euo pipefail
     perm_file="$1"; proj="$2"; shift 2
+    # Write through a symlink (dotfiles repo); a read-only store symlink is replaced.
+    real="$(readlink -f "$perm_file" 2>/dev/null || true)"
+    case "$real" in ""|/nix/store/*) ;; *) perm_file="$real" ;; esac
 
     dirs=()
     cmds=()
