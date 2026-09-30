@@ -57,8 +57,9 @@ let
     dirs_json="$(printf '%s\n' "''${dirs[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
     cmds_json="$(printf '%s\n' "''${cmds[@]:-}" | sed '/^$/d' | ${pkgs.jq}/bin/jq -R . | ${pkgs.jq}/bin/jq -s .)"
 
-    tmp="$(mktemp)"
-    ${pkgs.jq}/bin/jq --arg proj "$proj" --argjson dirs "$dirs_json" --argjson cmds "$cmds_json" '
+    tmp="$(mktemp "$perm_file.XXXXXX")"
+    trap 'rm -f "$tmp"' EXIT
+    if ! ${pkgs.jq}/bin/jq --arg proj "$proj" --argjson dirs "$dirs_json" --argjson cmds "$cmds_json" '
       (.locations[$proj].allowed_directories // []) as $existingDirs
       | .locations[$proj].allowed_directories = (($existingDirs + $dirs) | unique)
       | (.locations[$proj].tool_approvals // []) as $approvals
@@ -69,7 +70,10 @@ let
             ([{kind: "commands", commandIdentifiers: $mergedCmds}]
              + ($approvals | map(select(.kind != "commands"))))
         else . end
-    ' "$perm_file" > "$tmp"
+    ' "$perm_file" > "$tmp"; then
+      echo "copilot-cli: not updating $perm_file: it is not valid JSON" >&2
+      exit 0
+    fi
     mv "$tmp" "$perm_file"
   '';
 in
@@ -212,6 +216,11 @@ in
               fi
 
               [ "''${#parents[@]}" -gt 0 ] || exit 0
+
+              if [ -f "$perm_file" ] && ! ${pkgs.jq}/bin/jq empty "$perm_file" 2>/dev/null; then
+                echo "copilot-cli: not updating $perm_file: it is not valid JSON" >&2
+                exit 0
+              fi
 
               printf '%s\n' "''${parents[@]}" | sort -u | while IFS= read -r parent; do
                 [ -d "$parent" ] || continue
