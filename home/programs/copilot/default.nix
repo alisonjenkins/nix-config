@@ -33,8 +33,9 @@ let
   # `locations`) extra trusted directories and/or pre-approved command patterns,
   # without disturbing anything else already recorded for that project or any
   # other. Directories are unioned/deduped; command patterns are merged into
-  # the single `{kind: "commands"}` tool_approvals entry (also unioned/deduped)
-  # rather than appended as a duplicate entry.
+  # one `{kind: "commands"}` tool_approvals entry (also unioned/deduped),
+  # collapsing any existing commands entries into it without losing their
+  # identifiers.
   #
   # Args: <perm-file> <project-path> <dir>... -- <command-pattern>...
   # (the "--" separator is required even when one side is empty)
@@ -61,7 +62,7 @@ let
       (.locations[$proj].allowed_directories // []) as $existingDirs
       | .locations[$proj].allowed_directories = (($existingDirs + $dirs) | unique)
       | (.locations[$proj].tool_approvals // []) as $approvals
-      | (($approvals | map(select(.kind == "commands")) | .[0].commandIdentifiers) // []) as $existingCmds
+      | ($approvals | map(select(.kind == "commands") | .commandIdentifiers // []) | add // []) as $existingCmds
       | (($existingCmds + $cmds) | unique) as $mergedCmds
       | if ($cmds | length) > 0 then
           .locations[$proj].tool_approvals =
