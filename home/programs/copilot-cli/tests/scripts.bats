@@ -74,6 +74,14 @@ EOF
   grep -q '^        "a": 1,$' "$dir/s.json"
 }
 
+@test "merge: a symlinked file is written through, not replaced" {
+  echo '{"a":1}' > "$dir/real.json"
+  ln -s real.json "$dir/s.json"
+  "$JSON_MERGE" "$dir/s.json" "$dir/patch.json"
+  [ -L "$dir/s.json" ]
+  grep -q '"model": "gpt-x"' "$dir/real.json"
+}
+
 @test "merge: invalid JSONC is left untouched with a warning and exit 0" {
   echo '{ "a": ' > "$dir/s.json"
   run "$JSON_MERGE" "$dir/s.json" "$dir/patch.json"

@@ -16,7 +16,15 @@ const skip = (why) => {
 };
 process.on("uncaughtException", (err) => skip(err.message));
 
-let text = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+// Write through a symlink (dotfiles repo) so it survives; a store symlink is
+// read-only, so that one is replaced by a real file.
+let file = target;
+try {
+  const real = fs.realpathSync(target);
+  if (!real.startsWith("/nix/store/")) file = real;
+} catch {}
+
+let text = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
 const bom = text.startsWith("\uFEFF") ? "\uFEFF" : "";
 text = text.slice(bom.length);
 if (jsonc.stripComments(text).trim() === "") text = text.trimEnd() + "\n{}\n";
@@ -56,14 +64,14 @@ jsonc.parse(text, after, { allowTrailingComma: true });
 if (after.length > 0) skip("the merged result did not parse; refusing to write it");
 
 text = bom + text;
-const original = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : null;
+const original = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
 if (original === text) process.exit(0);
 
-fs.mkdirSync(path.dirname(target), { recursive: true });
-const tmp = target + "." + process.pid + ".tmp";
+fs.mkdirSync(path.dirname(file), { recursive: true });
+const tmp = file + "." + process.pid + ".tmp";
 try {
-  fs.writeFileSync(tmp, text, { mode: original === null ? 0o600 : fs.statSync(target).mode });
-  fs.renameSync(tmp, target);
+  fs.writeFileSync(tmp, text, { mode: original === null ? 0o600 : fs.statSync(file).mode });
+  fs.renameSync(tmp, file);
 } finally {
   fs.rmSync(tmp, { force: true });
 }
