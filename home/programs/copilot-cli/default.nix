@@ -4,34 +4,18 @@ let
 
   configDir = "${config.home.homeDirectory}/.copilot";
 
-  # Deep-merges `patch` into the JSON file at `path`, creating the file if it
+  jsoncParser = pkgs.fetchzip {
+    url = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz";
+    hash = "sha256-eZb4Epz0UsTTaSstqBl46Sy/KRyKaJ+vBUJ92/6wsZY=";
+  };
+
+  # Deep-merges `patch` into the JSONC file at `path`, creating the file if it
   # doesn't exist yet. Keys the patch doesn't mention — auth tokens, state the
-  # CLI writes on its own — pass through untouched. Avoids `home.file`'s
-  # symlink-into-the-store approach: that would make the file read-only, which
-  # breaks the CLI's own writes to it.
+  # CLI writes on its own — and the user's comments pass through untouched.
+  # Avoids `home.file`'s symlink-into-the-store approach: that would make the
+  # file read-only, which breaks the CLI's own writes to it.
   jsonMergeScript = pkgs.writeShellScript "copilot-cli-json-merge" ''
-    set -euo pipefail
-    target="$1"; patch_file="$2"
-
-    mkdir -p "$(dirname "$target")"
-    [ -f "$target" ] || echo '{}' > "$target"
-
-    tmp="$(mktemp "$target.XXXXXX")"
-    trap 'rm -f "$tmp"' EXIT
-    if ! ${pkgs.jq}/bin/jq -n \
-      --slurpfile patch "$patch_file" \
-      --slurpfile existing "$target" '
-        def deepmerge(a; b):
-          if (a | type) == "object" and (b | type) == "object" then
-            reduce (b | keys_unsorted[]) as $k
-              (a; .[$k] = (if (a[$k] != null) then deepmerge(a[$k]; b[$k]) else b[$k] end))
-          else b end;
-        deepmerge($existing[0]; $patch[0])
-      ' > "$tmp"; then
-      echo "copilot-cli: not updating $target: it is not valid JSON" >&2
-      exit 0
-    fi
-    mv "$tmp" "$target"
+    exec ${pkgs.nodejs}/bin/node ${pkgs.replaceVars ./merge-jsonc.js { inherit jsoncParser; }} "$@"
   '';
 
   jsonMerge = { path, patch }:
