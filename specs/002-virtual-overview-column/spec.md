@@ -117,7 +117,7 @@ A status bar or script subscribed to the compositor's event stream is told when 
 - **FR-006**: Every workspace in the column MUST be shown at the full column width, with its height following its output's proportions, so that adding virtual outputs never shrinks any of them.
 - **FR-007**: The column MUST scroll vertically on its own, independently per physical monitor, clamped at its ends, and centred when shorter than the band.
 - **FR-008**: When the overview opens, the column MUST be scrolled so that the first virtual output's active workspace is visible.
-- **FR-009**: Each workspace in the column MUST show that workspace's windows as the overview shows them on the virtual output, including drop feedback while dragging, confined to the workspace's area; the virtual output's bars and notifications are not shown in the column.
+- **FR-009**: Each workspace in the column MUST show that workspace's windows as the overview shows them on the virtual output, including drop feedback while dragging, confined to the workspace's area, together with the virtual output's own layer surfaces (wallpaper and anything below windows behind them; bars and notifications in front), so a tile looks like that output. Layer surfaces in a tile are display only: clicks and drags there act on the workspace and its windows.
 - **FR-010**: Each virtual output's active workspace MUST be highlighted in the column in the same way the overview highlights a physical monitor's active workspace.
 - **FR-011**: The band MUST be opaque; the physical monitor's own content MUST NOT show through it.
 
