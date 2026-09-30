@@ -106,7 +106,6 @@ in {
             gama-tui
             gephi
             gh
-            github-copilot-cli
             gitify
             gitui
             glow
@@ -180,6 +179,7 @@ in {
             typst-live
             unstable.delve
             unstable.devenv
+            unstable.github-copilot-cli
             unstable.opentofu
             unstable.prek
             unstable.teamtype
@@ -426,7 +426,29 @@ in {
         home-manager.backupCommand = lib.getExe pkgs.hm-backup-file;
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
-        home-manager.users.${username} = self.homeModules.home-macos;
+        home-manager.users.${username} = { config, ... }: {
+          imports = [ self.homeModules.home-macos ];
+
+          # Keep the parent project directory (e.g. ~/git/<employer>) out of
+          # the repo: it's read at activation time from a plain, untracked,
+          # user-maintained file — see programs.copilot-cli.autoTrustSubdirsOf.
+          programs.copilot-cli = {
+            enable = true;
+            autoTrustSubdirsOf = {
+              directories = [
+                "${config.home.homeDirectory}/.agents/skills"
+              ];
+              # Matches what the `git` skill actually shells out to
+              # (gh pr checks/comment/create/edit/merge/view, gh repo view,
+              # gh api) — narrower than a blanket `gh:*`.
+              commandPatterns = [
+                "gh pr:*"
+                "gh repo view:*"
+                "gh api:*"
+              ];
+            };
+          };
+        };
         home-manager.extraSpecialArgs = commonArgs // {
           # gitEmail is deliberately unset: the work email lives in
           # workIdentitySecretsFile and reaches git via a sops-rendered
