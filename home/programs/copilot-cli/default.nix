@@ -218,7 +218,8 @@ in
               if [ -f "$parents_file" ]; then
                 while IFS= read -r parent || [ -n "$parent" ]; do
                   [ -z "$parent" ] && continue
-                  parents+=("''${parent/#\~/$HOME}")
+                  parent="''${parent/#\~/$HOME}"
+                  parents+=("''${parent%/}")
                 done < "$parents_file"
               fi
 
