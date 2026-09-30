@@ -984,11 +984,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790676900,
-        "narHash": "sha256-izJqNj9gxQl+PvF7rZ/Q1OOU8Ptzrez9Cjh+jrDa2ms=",
+        "lastModified": 1790755867,
+        "narHash": "sha256-gc660/OqjaHQA18VUi7i42xORBH1tdcqqwbp2mcHlHI=",
         "owner": "alisonjenkins",
         "repo": "niri",
-        "rev": "f3f879cca558406bf63e98b6de282942d8247f91",
+        "rev": "bb9236302047cb7993931dd2ac711ccfa6a9ef9a",
         "type": "github"
       },
       "original": {
