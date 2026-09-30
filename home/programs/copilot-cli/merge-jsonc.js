@@ -27,7 +27,13 @@ if (errors.length > 0) skip("it is not valid JSONC");
 if (!isObject(existing)) skip("its top level is not an object");
 
 const patch = JSON.parse(fs.readFileSync(patchFile, "utf8"));
-const formattingOptions = { insertSpaces: true, tabSize: 2 };
+// modify() reformats the object it edits, so match the file's own indent
+// (tab, or the width of its first indented line) instead of imposing one.
+const indent = /^([ \t]+)\S/m.exec(text);
+const formattingOptions =
+  indent && indent[1][0] === "\t"
+    ? { insertSpaces: false }
+    : { insertSpaces: true, tabSize: indent ? indent[1].length : 2 };
 
 // Same semantics as the jq merge used for the other files: objects merge
 // recursively, anything else (arrays, scalars) is replaced by the patch;
