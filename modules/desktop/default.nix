@@ -698,9 +698,8 @@ in
         suspendScripts
         television
         unstable.cobang
-        # copilot-cli removed upstream (deprecated by GitHub; use
-        # `gh extension install github/gh-copilot` instead).
         unstable.devenv
+        unstable.github-copilot-cli
         unstable.mission-center
         unstable.nvtopPackages.amd
         unstable.opencode
