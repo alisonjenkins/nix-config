@@ -14,7 +14,6 @@
     ./chromium
     ./claude-code
     ./comodoro
-    ./copilot
     ./copilot-cli
     ./direnv
     ./eww

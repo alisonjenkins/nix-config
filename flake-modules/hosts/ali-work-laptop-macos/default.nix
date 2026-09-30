@@ -433,7 +433,6 @@ in {
           # machine at activation, so they stay out of the repo — see
           # programs.copilot-cli.autoTrustSubdirsOf.
           programs.copilot-cli = {
-            enable = true;
             autoTrustSubdirsOf = {
               directories = [
                 "${config.home.homeDirectory}/.agents/skills"
