@@ -16,6 +16,8 @@ const skip = (why) => {
 };
 
 let text = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+const bom = text.startsWith("\uFEFF") ? "\uFEFF" : "";
+text = text.slice(bom.length);
 if (jsonc.stripComments(text).trim() === "") text = text.trimEnd() + "\n{}\n";
 
 const errors = [];
@@ -46,6 +48,7 @@ const after = [];
 jsonc.parse(text, after, { allowTrailingComma: true });
 if (after.length > 0) skip("the merged result did not parse; refusing to write it");
 
+text = bom + text;
 const original = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : null;
 if (original === text) process.exit(0);
 
