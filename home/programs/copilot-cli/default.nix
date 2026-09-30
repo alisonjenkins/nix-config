@@ -216,7 +216,7 @@ in
               parents=()
 
               if [ -f "$parents_file" ]; then
-                while IFS= read -r parent; do
+                while IFS= read -r parent || [ -n "$parent" ]; do
                   [ -z "$parent" ] && continue
                   parents+=("''${parent/#\~/$HOME}")
                 done < "$parents_file"
