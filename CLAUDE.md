@@ -170,6 +170,10 @@ Lives in the **`minecraft-modpack-packaging`** skill (`.claude/skills/minecraft-
 
 Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SKILL.md`) — `pkgs/beatsaber-mods` (BeatMods-resolved mod payload) + `home/modules/beatsaber` (merge-copy placement + `beatsaber-patch-mods`), how to add/remove a mod, bump the pinned game version, and debug BSIPA/install issues. Auto-loads when working on `pkgs/beatsaber-mods` / `home/modules/beatsaber`.
 
+### Helldivers 2 modding
+
+Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-modding/SKILL.md`) — `pkgs/h2mm-cli` (Linux-native mod manager package) + `home/modules/helldivers2-mods` (steamLibraryRoots lookup + h2path pre-seed only; mod install/enable itself stays manual, see the skill for why), how to install a mod, debug h2mm not finding the game, and bump the pinned h2mm-cli version. Auto-loads when working on `pkgs/h2mm-cli` / `home/modules/helldivers2-mods`.
+
 ### Dev workflows + pending work
 
 - **How to** modify configs / add hosts / modules / flake-modules / secrets → the **`nix-config-workflows`** skill (`.claude/skills/nix-config-workflows/SKILL.md`), auto-loads for that work.
