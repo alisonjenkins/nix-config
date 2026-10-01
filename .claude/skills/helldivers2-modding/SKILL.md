@@ -40,6 +40,40 @@ not activation. Two reasons:
    the same reason `beatsaber-patch-mods`'s `IPA.exe` patch step is kept off
    activation (see the `beatsaber-modding` skill).
 
+## How mod loading actually works
+
+Helldivers 2 (Bitsquid/Stingray engine) loads assets from numbered
+`<hash>.patch_N` / `<hash>.patch_N.stream` archive pairs sitting next to the
+base game data — at startup it layers them in ascending `N` order, last one
+wins per asset. A mod *is* one of these pairs; there's no in-game mod
+loader or manifest to toggle. `h2mm install` copies a mod's patch files into
+`data/`, assigns the next free `N` (or whatever `h2mm order` puts it at),
+and writes the mapping into `data/mods.csv`.
+
+Disabling a mod doesn't delete or move it out of `data/` — it renames the
+files with a `disabled_<timestamp>_` prefix, which no longer matches the
+`patch_N` pattern the engine scans for, so it's silently skipped at
+startup. Nothing server-side is involved and nothing needs reinstalling to
+flip back.
+
+## Swapping between modded and vanilla
+
+- **One mod**: `h2mm disable -n "<name>"` / `h2mm enable -n "<name>"` (or
+  `-i <index>` from `h2mm list`).
+- **Everything, temporarily** (e.g. before a multiplayer session — HD2 has
+  no anti-cheat that bans for mods, but a host/client asset mismatch can
+  still cause join failures or visual desync): `h2mm modpack create
+  "Vanilla"` while nothing is enabled, then `h2mm modpack switch "Vanilla"`
+  to disable every mod at once and `h2mm modpack switch <your modpack>` to
+  re-enable them — this just batches `enable`/`disable` over the set
+  recorded in the modpack, nothing more.
+- **Everything, permanently**: `h2mm reset` deletes every `patch_N` file
+  and clears `data/mods.csv` (add `--no-path-reset` to keep the
+  `h2path` cache this module pre-seeds; otherwise the next `h2mm`
+  invocation falls back to its interactive prompt until the next
+  `home-manager switch` reseeds it). Irreversible — mods have to be
+  reinstalled from their archives, not just re-enabled.
+
 ## Installing a mod
 
 1. Download the mod's zip from Nexus by hand into
