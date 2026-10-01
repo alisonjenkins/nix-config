@@ -34,6 +34,14 @@ let
   # leaves it empty. Checks for bin/helldivers2.exe alongside data/ so an
   # empty Steam-created placeholder dir (the beatsaber module hit exactly
   # this once) doesn't get treated as a real install.
+  #
+  # Not shared with home/modules/beatsaber's findGameDirs or
+  # home/modules/subnautica-vr's game_dir lookup: same "scan steamLibraryRoots
+  # for steamapps/common/<Game>" idea, but different validation shape (first
+  # match requiring ALL markers here vs. beatsaber's multi-candidate array
+  # requiring ANY marker, vs. subnautica-vr's single fixed path with no
+  # marker check). A future fix to the steam-library-search approach (e.g.
+  # Flatpak Steam paths) needs to touch all three.
   findGameDataDir = ''
     gameDataDir=""
     for root in ${lib.concatMapStringsSep " " lib.escapeShellArg cfg.steamLibraryRoots}; do

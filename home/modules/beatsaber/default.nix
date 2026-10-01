@@ -60,6 +60,15 @@ let
   # (this bit us once: an empty placeholder under ~/.local/share/Steam got
   # populated with mod files while the real install sat under a second
   # library). Every consumer of $gameDirs can assume each entry is real.
+  #
+  # Not shared with home/modules/helldivers2-mods' findGameDataDir or
+  # home/modules/subnautica-vr's game_dir lookup: same "scan
+  # steamLibraryRoots for steamapps/common/<Game>" idea, but different
+  # validation shape (this one builds a multi-candidate array requiring ANY
+  # marker file vs. helldivers2-mods' first-match requiring ALL markers, vs.
+  # subnautica-vr's single fixed path with no marker check). A future fix to
+  # the steam-library-search approach (e.g. Flatpak Steam paths) needs to
+  # touch all three.
   findGameDirs = ''
     # This snippet is inlined straight into the home-manager activation
     # script alongside other, unrelated steps -- not run in a subshell -- so
