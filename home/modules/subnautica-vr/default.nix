@@ -23,12 +23,14 @@ let
       # WINEDLLOVERRIDES comes from that game's own `env` config instead,
       # since a pre_launch hook doesn't exec the game itself).
 
-      # Not shared with home/modules/beatsaber's findGameDirs or
-      # home/modules/helldivers2-mods' findGameDataDir: same "find the game
-      # under steamapps/common" idea, but this one takes a single fixed
-      # library path and does no marker-file validation, vs. their
-      # multi-root scans. A future fix to the steam-library-search approach
-      # (e.g. Flatpak Steam paths) needs to touch all three.
+      # Not shared with home/modules/beatsaber's findGameDirs,
+      # modules/vr's steamvr-setcap, or home/modules/helldivers2-mods'
+      # findGameDataDir: same "find the game under steamapps/common" idea,
+      # but this one takes a single fixed library path and does no
+      # marker-file validation, vs. their multi-root scans (and, for
+      # beatsaber/vr, glob expansion via lib/steam-glob-candidates.nix). A
+      # future fix to the steam-library-search approach (e.g. Flatpak Steam
+      # paths) still needs to touch all four validation call sites.
       game_dir="${cfg.steamLibraryPath}/steamapps/common/Subnautica"
 
       if [ ! -d "$game_dir" ]; then

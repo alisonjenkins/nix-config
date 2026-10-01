@@ -35,13 +35,17 @@ let
   # empty Steam-created placeholder dir (the beatsaber module hit exactly
   # this once) doesn't get treated as a real install.
   #
-  # Not shared with home/modules/beatsaber's findGameDirs or
-  # home/modules/subnautica-vr's game_dir lookup: same "scan steamLibraryRoots
-  # for steamapps/common/<Game>" idea, but different validation shape (first
-  # match requiring ALL markers here vs. beatsaber's multi-candidate array
-  # requiring ANY marker, vs. subnautica-vr's single fixed path with no
-  # marker check). A future fix to the steam-library-search approach (e.g.
-  # Flatpak Steam paths) needs to touch all three.
+  # Not shared with home/modules/beatsaber's findGameDirs, modules/vr's
+  # steamvr-setcap, or home/modules/subnautica-vr's game_dir lookup: same
+  # "scan steamLibraryRoots for steamapps/common/<Game>" idea, but different
+  # validation shape (first match requiring ALL markers here vs.
+  # beatsaber/vr's multi-candidate array requiring ANY marker (or no
+  # marker, for vr), vs. subnautica-vr's single fixed path with no marker
+  # check). Unlike beatsaber/vr, this doesn't need glob expansion -- each
+  # candidate is one exact literal path per root, not a pattern -- so
+  # there's nothing to pull from lib/steam-glob-candidates.nix here. A
+  # future fix to the steam-library-search approach (e.g. Flatpak Steam
+  # paths) still needs to touch all four validation call sites.
   findGameDataDir = ''
     gameDataDir=""
     for root in ${lib.concatMapStringsSep " " lib.escapeShellArg cfg.steamLibraryRoots}; do
