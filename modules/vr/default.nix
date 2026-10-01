@@ -2,6 +2,8 @@
 let
   cfg = config.modules.vr;
 
+  steamGlob = import ../../lib/steam-glob-candidates.nix { inherit lib; };
+
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   pw-link = "${pkgs.pipewire}/bin/pw-link";
 
@@ -265,26 +267,18 @@ in
         # after a Steam update needs this unit back to inactive once done.
         serviceConfig.Type = "oneshot";
         script = ''
-          # Root patterns as a bash array, one per Nix list entry, so a root
-          # containing a space (e.g. "/media/Steam Games/Steam") survives as
-          # one token. This unit's bash has no programmable-completion
-          # support, so `compgen` isn't available to glob each pattern in
-          # isolation -- instead, IFS is cleared before the unquoted
-          # `$pattern` expansion below, which stops word-splitting on the
-          # literal path while still letting pathname expansion match `*`.
-          shopt -s nullglob
-          patterns=(
-          ${lib.concatMapStringsSep "\n" (root:
-            "  ${lib.escapeShellArg "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"}"
-          ) cfg.steamLibraryRoots}
-          )
-          launchers=()
-          old_ifs="$IFS"
-          IFS=
-          for pattern in "''${patterns[@]}"; do
-            launchers+=( $pattern )
-          done
-          IFS="$old_ifs"
+          # Expands steamLibraryRoots into a `launchers` array, handling a
+          # root containing a space (e.g. "/media/Steam Games/Steam") as one
+          # token -- see lib/steam-glob-candidates.nix for how.
+          # saveRestoreNullglob = false: this oneshot owns its own shell and
+          # exits right after, unlike beatsaber's inlined activation snippet.
+          ${steamGlob.expandGlobCandidates {
+            patterns = map (
+              root: "${root}/steamapps/common/SteamVR/bin/linux64/vrcompositor-launcher"
+            ) cfg.steamLibraryRoots;
+            outputVar = "launchers";
+            saveRestoreNullglob = false;
+          }}
           for launcher in "''${launchers[@]}"; do
             [ -e "$launcher" ] || continue
             # Checks for the `ep` flags specifically, not just the capability
