@@ -7,10 +7,14 @@ let
 
     path = "${config.xdg.configHome}/mimeapps.list"
     key = "x-scheme-handler/vrmonitor"
-    # Steam names the handler after whichever SteamVR install it last
-    # launched; list both so xdg-open has a candidate either way.
-    value = "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"
-    section = "[Default Applications]"
+    seeds = [
+        # Steam names the handler after whichever SteamVR install it last
+        # launched; list both so xdg-open has a candidate either way.
+        ("[Default Applications]", "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"),
+        # The portal ignores the default for custom schemes and only skips
+        # its chooser when exactly one app is recommended, so this lists one.
+        ("[Added Associations]", "valve-vrmonitor.desktop;"),
+    ]
 
 
     def mtime():
@@ -27,7 +31,7 @@ let
             return None
 
 
-    def seed(lines):
+    def seed(lines, section, value):
         """Returns the new line list, or None if the key is already set."""
         section_start = None
         for i, line in enumerate(lines):
@@ -69,8 +73,14 @@ let
         except FileNotFoundError:
             pass
 
-        new_lines = seed(lines)
-        if new_lines is None:
+        new_lines = lines
+        changed = False
+        for section, value in seeds:
+            seeded = seed(new_lines, section, value)
+            if seeded is not None:
+                new_lines = seeded
+                changed = True
+        if not changed:
             break
 
         tmp_path = f"{path}.new"
@@ -139,6 +149,9 @@ in
     # its x-scheme-handler/vrmonitor .desktop file there at runtime, outside
     # home-manager's activation, so the cache never picks it up) -- shows
     # "No Apps available" even though a handler is sitting right there.
+    # A [Default Applications] entry alone does not help: xdg-desktop-portal
+    # only honours defaults for http/mailto-style schemes, so the
+    # [Added Associations] entry is what actually skips the chooser.
     #
     # Deliberately not xdg.mimeApps.enable (which would make home-manager
     # own the whole of mimeapps.list as a read-only symlink): several apps
