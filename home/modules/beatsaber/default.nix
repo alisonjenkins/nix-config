@@ -48,6 +48,8 @@
 let
   cfg = config.modules.beatsaber;
 
+  steamGlob = import ../../../lib/steam-glob-candidates.nix { inherit lib; };
+
   # Bash snippet: populates a `gameDirs` array with every steamLibraryRoots
   # entry that both resolves to a directory AND already looks like a real
   # Beat Saber install. Shared between the activation's copy step and
@@ -66,37 +68,16 @@ let
   # steamLibraryRoots for steamapps/common/<Game>" idea, but different
   # validation shape (this one builds a multi-candidate array requiring ANY
   # marker file vs. helldivers2-mods' first-match requiring ALL markers, vs.
-  # subnautica-vr's single fixed path with no marker check). A future fix to
-  # the steam-library-search approach (e.g. Flatpak Steam paths) needs to
-  # touch all three.
+  # subnautica-vr's single fixed path with no marker check). The glob-expand
+  # plumbing itself IS shared with modules/vr's steamvr-setcap, via
+  # lib/steam-glob-candidates.nix. A future fix to the steam-library-search
+  # approach (e.g. Flatpak Steam paths) still needs to touch all three
+  # validation call sites, even though the expansion step is unified.
   findGameDirs = ''
-    # This snippet is inlined straight into the home-manager activation
-    # script alongside other, unrelated steps -- not run in a subshell -- so
-    # a `shopt` here would otherwise leak into everything that runs after
-    # it. Save and restore the exact prior state (shopt -p, not a bare
-    # shopt -u: nullglob might already have been on for some other reason).
-    # `shopt -p nullglob` exits 1 when nullglob is OFF (its normal state
-    # here), and `var=$(cmd)` propagates that under the activation script's
-    # `set -e` -- which killed every switch before the copy loop even ran.
-    # The `|| true` keeps the printed restore string while swallowing the
-    # status; the string is correct regardless of the exit code.
-    beatsaber_nullglob_state="$(shopt -p nullglob || true)"
-    shopt -s nullglob
-    patterns=(
-    ${lib.concatMapStringsSep "\n" (root:
-      "  ${lib.escapeShellArg "${root}/steamapps/common/Beat Saber"}"
-    ) cfg.steamLibraryRoots}
-    )
-    candidates=()
-    old_ifs="$IFS"
-    IFS=
-    for pattern in "''${patterns[@]}"; do
-      # shellcheck disable=SC2206 # unquoted on purpose: IFS is cleared above
-      # so this performs pathname expansion without word-splitting the result.
-      candidates+=( $pattern )
-    done
-    IFS="$old_ifs"
-    eval "$beatsaber_nullglob_state"
+    ${steamGlob.expandGlobCandidates {
+      patterns = map (root: "${root}/steamapps/common/Beat Saber") cfg.steamLibraryRoots;
+      outputVar = "candidates";
+    }}
 
     gameDirs=()
     for candidate in "''${candidates[@]}"; do
