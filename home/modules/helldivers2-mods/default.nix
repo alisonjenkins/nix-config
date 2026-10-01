@@ -79,10 +79,10 @@ in
       ${findGameDataDir}
 
       run mkdir -p ${lib.escapeShellArg cfg.modsDir}
-      run mkdir -p "$HOME/.config/h2mm"
+      run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.config/h2mm"}
 
       if [ -n "$gameDataDir" ]; then
-        run bash -c 'printf "%s" "$1" > "$2"' -- "$gameDataDir" "$HOME/.config/h2mm/h2path"
+        run bash -c 'printf "%s" "$1" > "$2"' -- "$gameDataDir" ${lib.escapeShellArg "${config.home.homeDirectory}/.config/h2mm/h2path"}
       else
         echo "Warning: [helldivers2-mods] no Helldivers 2 install found under: ${lib.concatStringsSep ", " cfg.steamLibraryRoots} -- h2mm will prompt for its path on first run" >&2
       fi
