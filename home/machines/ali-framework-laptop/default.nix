@@ -6,6 +6,7 @@
   ];
 
   modules.beatsaber.enable = true;
+  modules.helldivers2Mods.enable = true;
 
   home.packages = [
     pkgs.nbt-studio
