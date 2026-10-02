@@ -4,7 +4,8 @@
 # home/modules/helldivers2-mods and the helldivers2-modding skill for the
 # full failure mode this fixes). Like deploying a mod through Arsenal,
 # this stays a manual, run-by-hand tool — mutating live game state can't
-# be unattended activation (see home/modules/helldivers2-mods's header).
+# be an unattended activation step (see home/modules/helldivers2-mods's
+# header).
 #
 # Pinned by commit rev, not version: pyproject.toml declares 0.3.0, which
 # is already ahead of the latest tag (v0.2.5) — the current code is
