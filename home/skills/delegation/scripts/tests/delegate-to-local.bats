@@ -156,7 +156,7 @@ teardown() {
   for i in $(seq 1 "$n"); do
     out="$BATS_TEST_TMPDIR/out-$i.log"
     outs+=("$out")
-    "$delegate" "task $i" >"$out" 2>&1 &
+    bash "$delegate" "task $i" >"$out" 2>&1 &
     pids+=("$!")
   done
   for p in "${pids[@]}"; do wait "$p"; done
