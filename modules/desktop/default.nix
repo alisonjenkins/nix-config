@@ -1255,6 +1255,15 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
+        assertion = pkgs.unstable.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
+        message = ''
+          pkgs.unstable glibc (${pkgs.unstable.stdenv.cc.libc.version}) differs from the system's (${pkgs.stdenv.cc.libc.version}).
+          hardware.graphics.package is pkgs.unstable.mesa, which every system-built GUI process
+          (niri, cage, electron apps) dlopen()s, and a lower-glibc process cannot load it.
+          Pin nixpkgs_unstable to a rev with matching glibc or build mesa against the system's.
+        '';
+      }
+      {
         assertion = cfg.pipewire.minQuantum == null || cfg.pipewire.minQuantum <= cfg.pipewire.quantum;
         message = "modules.desktop.pipewire.minQuantum (${toString cfg.pipewire.minQuantum}) must be <= quantum (${toString cfg.pipewire.quantum})";
       }
