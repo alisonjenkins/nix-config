@@ -11,6 +11,31 @@
   ];
 
   modules.vr.enableOpenSourceVR = true;
+  modules.vr.steamvrSettings = {
+    driver_vrlink = {
+      # SteamVR's own default is false for both -- re-enabled here because
+      # this host wants them on. A beta build (25664061) segfaulted vrserver
+      # within ~5-9s whenever both were on at once with no HMD connected yet
+      # (coredump: null-pointer call inside driver_vrlink.so); Valve has
+      # since rolled that build back off the beta branch, and the current
+      # build (confirmed 2026-10-02) runs both enabled without crashing.
+      enableEncryption = true;
+      enableQoS = true;
+      # Default is false; this host wants the image sharpened.
+      useSharpening = true;
+    };
+    steamvr = {
+      # Lets SteamVR run with no HMD attached -- this host runs it that way
+      # often (Steam Frame streaming, WiVRn as the alternate OpenXR runtime).
+      allowDisplayLockedMode = true;
+      # Compositor async reprojection off; affects frame timing, not cosmetic.
+      disableAsync = true;
+      mirrorViewDisplayMode = 0;
+      showMirrorView = true;
+      showAdvancedSettings = true;
+    };
+    userinterface.StatusAlwaysOnTop = true;
+  };
   # 16 GiB RX 9070 XT: one model at a time, loaded on demand. A q8_0 KV
   # cache doubles each context for the VRAM f16 took, at the same speed
   # (measured 2026-09-25, VRAM total / shared memory / generation):
