@@ -1255,7 +1255,9 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = pkgs.unstable.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
+        assertion =
+          config.hardware.graphics.package.outPath != pkgs.unstable.mesa.outPath
+          || pkgs.unstable.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
         message = ''
           pkgs.unstable glibc (${pkgs.unstable.stdenv.cc.libc.version}) differs from the system's (${pkgs.stdenv.cc.libc.version}).
           hardware.graphics.package is pkgs.unstable.mesa, which every system-built GUI process
