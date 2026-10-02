@@ -1,30 +1,35 @@
-# Declarative scaffolding for Helldivers 2 modding via h2mm-cli
-# (pkgs/h2mm-cli — see that package for why it's the pick: Nexus's own
-# Arsenal mod manager has no Linux build yet, only Windows).
+# Declarative scaffolding for Helldivers 2 modding via Arsenal
+# (pkgs/arsenal). Previously used h2mm-cli (pkgs/h2mm-cli) — switched after
+# upstream deprecated h2mm-cli in favor of Arsenal (2025-09-30) and a
+# confirmed, unfixed h2mm-cli bug surfaced: `h2mm list` shows a mod
+# ENABLED, files land correctly in data/, but the mod has zero effect
+# in-game (upstream issue #96). See the helldivers2-modding skill for the
+# full incident writeup (same symptom reproduced here, root-caused via
+# that issue, fixed by migrating to Arsenal).
 #
-# What this module does NOT do: actually install a mod. Nexus gates
-# scripted/API downloads behind a Premium account (see
+# Also installs pkgs/hd2-repatcher, for when a game update desyncs a
+# mod's unit resource IDs and it silently stops applying — run by hand
+# the same way mod install/enable are, for the same live-state-mutation
+# reason below.
+#
+# What this module does NOT do: actually install a mod, or pre-seed
+# Arsenal's own game-path setting. Nexus gates scripted/API downloads
+# behind a Premium account (see
 # https://www.nexusmods.com/helldivers2/mods/16493 for DiverKit), so mod
 # archives can't be nix-fetched by content hash the way pkgs/beatsaber-mods
-# fetches from BeatMods. And h2mm's own `install`/`enable` commands rewrite
-# the live game's data/ directory (numbered .patch_N archives, a mods.csv
+# fetches from BeatMods. And Arsenal's install/enable actions rewrite the
+# live game's data/ directory (numbered .patch_N archives, a mods.csv
 # ledger) — running that unattended on every home-manager switch risks
 # corrupting that state exactly the way modules/beatsaber's IPA.exe patch
 # step is deliberately kept off activation (see that module's comment for
-# the fuller reasoning). Both stay manual, imperative, run-by-hand steps:
+# the fuller reasoning). Arsenal's game-path setting lives in its own
+# Electron userData store (not reverse-engineered here, unlike h2mm-cli's
+# plain-text `~/.config/h2mm/h2path`), so unlike the old h2mm setup this
+# module can't pre-seed it either — Arsenal prompts for the path itself on
+# first launch if it can't find the game, a one-time manual step:
 #
 #   1. Download a mod's zip from Nexus by hand into `cfg.modsDir`.
-#   2. `h2mm install ~/mods/helldivers2/<mod>.zip` (then `h2mm enable`
-#      if it doesn't prompt to).
-#
-# What IS safe to automate declaratively: finding the game's data/
-# directory and pre-seeding h2mm's own path cache (~/.config/h2mm/h2path,
-# a one-line plain-text file h2mm reads before falling back to an
-# interactive `find`+prompt) so the first `h2mm` invocation doesn't stall
-# waiting on a TTY prompt during a switch or from a non-interactive
-# context. That file is just a path string outside the game install —
-# safe to rewrite on every switch, same idempotence contract as any other
-# activation step here.
+#   2. Add/deploy it through Arsenal's own UI.
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.helldivers2Mods;
@@ -33,7 +38,10 @@ let
   # that resolves to a real Helldivers 2 install's data/ directory, or
   # leaves it empty. Checks for bin/helldivers2.exe alongside data/ so an
   # empty Steam-created placeholder dir (the beatsaber module hit exactly
-  # this once) doesn't get treated as a real install.
+  # this once) doesn't get treated as a real install. Used only to print a
+  # helpful warning on activation — Arsenal's own game-path setting isn't
+  # pre-seeded (see module header comment), so this can't write anywhere
+  # useful the way it fed h2mm's h2path cache before the Arsenal migration.
   #
   # Not shared with home/modules/beatsaber's findGameDirs, modules/vr's
   # steamvr-setcap, or home/modules/subnautica-vr's game_dir lookup: same
@@ -59,7 +67,7 @@ let
 in
 {
   options.modules.helldivers2Mods = {
-    enable = lib.mkEnableOption "Helldivers 2 modding scaffolding (h2mm-cli + mods drop dir + h2path pre-seed)";
+    enable = lib.mkEnableOption "Helldivers 2 modding scaffolding (Arsenal + hd2-repatcher + mods drop dir)";
 
     steamLibraryRoots = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -68,7 +76,8 @@ in
         Glob-free roots to search for the Helldivers 2 install
         (`steamapps/common/Helldivers 2`). Extend per host with any
         additional Steam library folder the game might live in instead.
-        Only the first match is used — h2mm only tracks one game directory.
+        Only the first match is used — purely informational (see module
+        header comment for why it can't be fed into Arsenal directly).
       '';
     };
 
@@ -76,27 +85,24 @@ in
       type = lib.types.str;
       default = "${config.home.homeDirectory}/mods/helldivers2";
       description = ''
-        Directory to manually drop downloaded mod zips into before running
-        `h2mm install`. Created on activation; never synced or fetched into
-        — Nexus mod archives have to be downloaded by hand (see the module
-        header comment for why).
+        Directory to manually drop downloaded mod zips into before adding
+        them through Arsenal. Created on activation; never synced or
+        fetched into — Nexus mod archives have to be downloaded by hand
+        (see the module header comment for why).
       '';
     };
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ pkgs.h2mm-cli ];
+    home.packages = [ pkgs.arsenal pkgs.hd2-repatcher ];
 
-    home.activation.seedH2mmPath = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.checkHelldivers2GameDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${findGameDataDir}
 
       run mkdir -p ${lib.escapeShellArg cfg.modsDir}
-      run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.config/h2mm"}
 
-      if [ -n "$gameDataDir" ]; then
-        run bash -c 'printf "%s" "$1" > "$2"' -- "$gameDataDir" ${lib.escapeShellArg "${config.home.homeDirectory}/.config/h2mm/h2path"}
-      else
-        echo "Warning: [helldivers2-mods] no Helldivers 2 install found under: ${lib.concatStringsSep ", " cfg.steamLibraryRoots} -- h2mm will prompt for its path on first run" >&2
+      if [ -z "$gameDataDir" ]; then
+        echo "Warning: [helldivers2-mods] no Helldivers 2 install found under: ${lib.concatStringsSep ", " cfg.steamLibraryRoots} -- Arsenal will prompt for its path on first run" >&2
       fi
     '';
   };
