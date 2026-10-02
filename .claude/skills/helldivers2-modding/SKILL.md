@@ -30,11 +30,14 @@ Two pieces:
   to. CLI-only build: `gui.py` needs tkinter and is deliberately excluded
   from the closure (see the package's header comment).
 - `home/modules/helldivers2-mods`: installs `arsenal` + `hd2-repatcher`
-  and, on every `home-manager switch`, warns (stderr only — nothing is
-  written) if `steamLibraryRoots` doesn't contain a real Helldivers 2
-  install. That's **all** it automates; Arsenal's own game-path setting
-  lives in its Electron userData store, not reverse-engineered here, so
-  unlike the old h2mm-cli setup this module can't pre-seed it.
+  and, on every `home-manager switch`, searches `steamLibraryRoots` for
+  the game and `jq`-merges the result into Arsenal's `userGameDir` setting
+  (`~/.config/hd2arsenal/hd2a_data.json`'s `userGameDir` key — the game's
+  **root** dir, not `data/`, unlike h2mm-cli/hd2-repatcher). A merge, not
+  a wholesale overwrite, since that file also holds Arsenal's own live
+  state (mod list, deploy flags, UI prefs) that activation must not
+  clobber. Warns on stderr instead if no install is found. That's **all**
+  it automates.
 
 ## Incident: h2mm-cli silently not deploying mods (2026-10-02)
 
@@ -119,8 +122,8 @@ flip back.
   module) doesn't get treated as a real install. Check
   `steamapps/libraryfolders.vdf` under any Steam install for where appid
   `553850` actually lives, and add that root to the host's
-  `steamLibraryRoots`. This is informational only now — Arsenal prompts
-  for the path itself on first launch regardless.
+  `steamLibraryRoots`. Without this, Arsenal's `userGameDir` won't get
+  pre-seeded and it'll prompt for the path itself on first launch instead.
 - **A mod is installed/enabled correctly (mod manager shows it enabled,
   patch files present on disk with real content) but has zero effect
   in-game**: see the Incident section above before assuming it's a stale
