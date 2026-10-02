@@ -7,14 +7,13 @@ description: How this repo scaffolds Helldivers 2 modding via pkgs/arsenal
   explaining why mod install itself isn't declarative here.
 paths:
   - "pkgs/arsenal/**"
-  - "pkgs/h2mm-cli/**"
   - "pkgs/hd2-repatcher/**"
   - "home/modules/helldivers2-mods/**"
 ---
 
 # Helldivers 2 modding
 
-Three pieces:
+Two pieces:
 
 - `pkgs/arsenal`: packages `hd2arsenal` (rsnl-gg/HD2Arsenal), the current
   Linux-native mod manager, GUI. Upstream ships an electron-builder `.deb`
@@ -23,11 +22,6 @@ Three pieces:
   (not nixpkgs') Electron binary and its native node addons
   (`better-sqlite3`, `sharp`, `active-win`) against nixpkgs libs. Pinned by
   version + content hash from the GitHub release's `digest` field.
-- `pkgs/h2mm-cli`: the **previous** mod manager, CLI. Upstream deprecated
-  it 2025-09-30 in favor of Arsenal, and it has a confirmed unfixed bug
-  (see Incident below) — kept in the repo only because it still builds and
-  may be useful for one-off CLI scripting against an existing `mods.csv`.
-  **Do not use `h2mm install`/`enable` to deploy a mod.**
 - `pkgs/hd2-repatcher`: packages `hd2-repatcher-cli` (RaidingForPants/
   hd2-repatcher), which resyncs a mod's `.patch` files' unit resource IDs
   against the currently-installed game data after an Arrowhead update
@@ -155,15 +149,3 @@ repos/leguteape/hd2arsenal-release/releases/latest -q
 digest is already a verified checksum. If the deb filename pattern
 (`hd2arsenal_<version>_amd64.deb`) changes, update the `dpkg-deb -x` line
 in `installPhase` too.
-
-## Bumping h2mm-cli's pinned version
-
-Upstream has no releases/tags; `pkgs/h2mm-cli` pins by content hash of the
-raw script. Check
-<https://raw.githubusercontent.com/v4n00/h2mm-cli/master/version> against
-the `version` in `pkgs/h2mm-cli/default.nix`, and if it's moved, bump both
-`version` and `hash` (`nix hash to-sri --type sha256 $(nix-prefetch-url
-https://raw.githubusercontent.com/v4n00/h2mm-cli/master/h2mm)` or let the
-build fail once and read the hash mismatch error) together in one commit.
-This package is deprecated upstream (see Incident above) — only bump it if
-something still actively depends on it.
