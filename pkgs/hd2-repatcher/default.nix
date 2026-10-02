@@ -2,19 +2,23 @@
 # mod .patch files against the currently-installed game data after an
 # Arrowhead update desyncs their unit resource IDs (see
 # home/modules/helldivers2-mods and the helldivers2-modding skill for the
-# full failure mode this fixes). Like h2mm itself, this stays a manual,
-# run-by-hand tool — see pkgs/h2mm-cli's header for why mutating live game
-# state can't be unattended activation.
+# full failure mode this fixes). Like deploying a mod through Arsenal,
+# this stays a manual, run-by-hand tool — mutating live game state can't
+# be unattended activation (see home/modules/helldivers2-mods's header).
 #
-# Upstream has no release tags (pyproject.toml's version trails the repo:
-# 0.3.0 declared, latest tag is v0.2.5), so this is pinned by commit rev, not
-# version. Bump both `rev` and `hash` together from
-# https://github.com/RaidingForPants/hd2-repatcher when upstream moves.
+# Pinned by commit rev, not version: pyproject.toml declares 0.3.0, which
+# is already ahead of the latest tag (v0.2.5) — the current code is
+# untagged, not a version behind its tags. Bump both `rev` and `hash`
+# together from https://github.com/RaidingForPants/hd2-repatcher when
+# upstream moves.
 #
-# Only the CLI entry point is built: gui.py imports tkinter at module level,
-# but cli.py only imports gui lazily when invoked with zero arguments — a
-# path this package never takes (see home/modules/helldivers2-mods), so
-# tkinter is deliberately left off the closure.
+# Only one binary is built: upstream's pyproject.toml defines both
+# `hd2-repatcher` and `hd2-repatcher-cli` as the same `cli:main` console
+# script, so they're identical except for name. `postInstall` below drops
+# the duplicate `hd2-repatcher` name. (Separately, `gui.py` — reachable
+# only via `cli.py`'s lazy `from gui import run_gui` when invoked with
+# zero arguments, a path this package never takes — needs tkinter, which
+# is deliberately left off this closure either way.)
 {
   lib,
   fetchFromGitHub,
@@ -43,8 +47,8 @@ python3Packages.buildPythonApplication {
   # nixpkgs' own pinned versions of the same packages.
   pythonRelaxDeps = [ "platformdirs" "lz4" ];
 
-  # The GUI entry point needs tkinter, which this package intentionally
-  # excludes (see header comment) — only the CLI is usable here.
+  # hd2-repatcher and hd2-repatcher-cli are the same cli:main entry point
+  # under two names (see header comment) — drop the duplicate.
   postInstall = ''
     rm $out/bin/hd2-repatcher
   '';
