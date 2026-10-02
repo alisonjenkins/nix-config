@@ -6,7 +6,7 @@
     {
       checks.delegation-bats = pkgs.runCommand "delegation-bats"
         {
-          nativeBuildInputs = [ pkgs.bats pkgs.jq pkgs.python3 pkgs.curl pkgs.yq-go pkgs.git ];
+          nativeBuildInputs = [ pkgs.bats pkgs.jq pkgs.python3 pkgs.curl pkgs.yq-go pkgs.git pkgs.procps ];
         } ''
         bats ${self + "/home/skills/delegation/scripts"}/tests
         touch $out
