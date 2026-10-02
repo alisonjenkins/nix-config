@@ -12,9 +12,8 @@
 # the same way mod install/enable are, for the same live-state-mutation
 # reason below.
 #
-# What this module does NOT do: actually install a mod, or pre-seed
-# Arsenal's own game-path setting. Nexus gates scripted/API downloads
-# behind a Premium account (see
+# What this module does NOT do: actually install a mod. Nexus gates
+# scripted/API downloads behind a Premium account (see
 # https://www.nexusmods.com/helldivers2/mods/16493 for DiverKit), so mod
 # archives can't be nix-fetched by content hash the way pkgs/beatsaber-mods
 # fetches from BeatMods. And Arsenal's install/enable actions rewrite the
@@ -22,14 +21,18 @@
 # ledger) — running that unattended on every home-manager switch risks
 # corrupting that state exactly the way modules/beatsaber's IPA.exe patch
 # step is deliberately kept off activation (see that module's comment for
-# the fuller reasoning). Arsenal's game-path setting lives in its own
-# Electron userData store (not reverse-engineered here, unlike h2mm-cli's
-# plain-text `~/.config/h2mm/h2path`), so unlike the old h2mm setup this
-# module can't pre-seed it either — Arsenal prompts for the path itself on
-# first launch if it can't find the game, a one-time manual step:
+# the fuller reasoning). Both stay manual, imperative, run-by-hand steps:
 #
 #   1. Download a mod's zip from Nexus by hand into `cfg.modsDir`.
 #   2. Add/deploy it through Arsenal's own UI.
+#
+# What IS safe to automate declaratively: pre-seeding Arsenal's game-path
+# setting. Unlike h2mm-cli's plain-text `~/.config/h2mm/h2path`, Arsenal
+# keeps this (as `userGameDir`, the game's ROOT dir, not `data/`) inside
+# `~/.config/hd2arsenal/hd2a_data.json` alongside a lot of other live
+# state (mod list, deploy flags, UI prefs) — so activation `jq`-merges
+# just that one key into the existing file instead of overwriting it
+# wholesale, same idempotence contract as any other activation step here.
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.helldivers2Mods;
@@ -38,10 +41,7 @@ let
   # that resolves to a real Helldivers 2 install's data/ directory, or
   # leaves it empty. Checks for bin/helldivers2.exe alongside data/ so an
   # empty Steam-created placeholder dir (the beatsaber module hit exactly
-  # this once) doesn't get treated as a real install. Used only to print a
-  # helpful warning on activation — Arsenal's own game-path setting isn't
-  # pre-seeded (see module header comment), so this can't write anywhere
-  # useful the way it fed h2mm's h2path cache before the Arsenal migration.
+  # this once) doesn't get treated as a real install.
   #
   # Not shared with home/modules/beatsaber's findGameDirs, modules/vr's
   # steamvr-setcap, or home/modules/subnautica-vr's game_dir lookup: same
@@ -76,8 +76,8 @@ in
         Glob-free roots to search for the Helldivers 2 install
         (`steamapps/common/Helldivers 2`). Extend per host with any
         additional Steam library folder the game might live in instead.
-        Only the first match is used — purely informational (see module
-        header comment for why it can't be fed into Arsenal directly).
+        Only the first match is used — fed into Arsenal's `userGameDir`
+        setting on every activation.
       '';
     };
 
@@ -96,12 +96,28 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ pkgs.arsenal pkgs.hd2-repatcher ];
 
-    home.activation.checkHelldivers2GameDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.seedArsenalGamePath = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${findGameDataDir}
 
       run mkdir -p ${lib.escapeShellArg cfg.modsDir}
 
-      if [ -z "$gameDataDir" ]; then
+      if [ -n "$gameDataDir" ]; then
+        # Arsenal wants the game's ROOT dir (userGameDir), not data/ --
+        # the opposite of h2mm-cli/hd2-repatcher, which both want data/.
+        gameRootDir="''${gameDataDir%/data}"
+        arsenalDataFile=${lib.escapeShellArg "${config.home.homeDirectory}/.config/hd2arsenal/hd2a_data.json"}
+        run mkdir -p "$(dirname "$arsenalDataFile")"
+        if [ -s "$arsenalDataFile" ]; then
+          run bash -c '
+            set -e
+            tmp=$(mktemp)
+            ${lib.getExe pkgs.jq} --arg dir "$1" "(.userGameDir) = \$dir" "$2" > "$tmp"
+            mv "$tmp" "$2"
+          ' -- "$gameRootDir" "$arsenalDataFile"
+        else
+          run bash -c '${lib.getExe pkgs.jq} -n --arg dir "$1" "{userGameDir: \$dir}" > "$2"' -- "$gameRootDir" "$arsenalDataFile"
+        fi
+      else
         echo "Warning: [helldivers2-mods] no Helldivers 2 install found under: ${lib.concatStringsSep ", " cfg.steamLibraryRoots} -- Arsenal will prompt for its path on first run" >&2
       fi
     '';
