@@ -1,7 +1,7 @@
 ---
 name: delegation
 description: >-
-  Use before spawning a sub-agent (Agent tool), deciding whether a batch of similar calls belongs in the main loop, whether to run several in parallel, or when a delegated result came back wrong or incomplete. Covers model tier/cost/speed (haiku/sonnet/opus/fable), Explore vs general-purpose, background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
+  Use before doing a multi-step task yourself, not only once you're already considering a sub-agent: a multi-file sweep, several similar gh/GraphQL/API lookups, a log trawl, a round of mechanical edits across files, 2+ independent research questions, or any batch of same-shaped calls — check whether it belongs on a cheaper model, in a sub-agent, or fanned out in parallel before touching it inline. Also use when picking a model tier (haiku/sonnet/opus/fable), choosing Explore vs general-purpose, batching parallel Agent calls in one message, or when a delegated result came back wrong or incomplete. Covers background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
 ---
 
 # Delegation
@@ -9,6 +9,20 @@ description: >-
 The main loop runs on a fast, capable model reserved for voice, scope, and
 judgement. Anything that needs none of those belongs on a cheaper model in a
 sub-agent, not ground through inline.
+
+## Before doing it yourself, check for these
+
+These thoughts mean stop and re-read "When to delegate at all" and "Running
+sub-agents in parallel" below — they're the moment this skill gets skipped:
+
+| Thought | Reality |
+|---|---|
+| "It's faster to just do this myself" | True for one call. Not true for 2+ similar ones — spawn overhead is the only real cost, and `run_in_background` hides wall-clock. |
+| "I'll do these files one at a time, it's simpler" | Independent reads/edits across files are exactly the fan-out case. Batch them into one message of parallel Agent calls. |
+| "This is quick, not worth a sub-agent" | Quick and cheap-tier-shaped is the haiku case, not the skip-delegation case. |
+| "I already started, I'll just finish it inline" | Sunk cost. If the remaining items are independent and same-shaped, hand the rest off. |
+| "The user wants this done now" | Parallel sub-agents are faster wall-clock, not slower — fanning out serves urgency, it doesn't fight it. |
+| "I need the output to reason over anyway" | Only true if you need the raw content, not a conclusion. A sweep whose result you'll summarize or act on belongs in a sub-agent even then (see `fork` in the Agent tool). |
 
 ## Cost and speed by tier
 
