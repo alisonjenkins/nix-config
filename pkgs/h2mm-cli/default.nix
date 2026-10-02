@@ -1,7 +1,13 @@
-# h2mm-cli (v4n00/h2mm-cli) — the only Linux-native Helldivers 2 mod manager
-# today. The upstream author's own install.sh points users at the "Arsenal"
-# GUI mod manager instead, but Arsenal's Linux support is still unreleased
-# (planned v0.30 as of 2026-09) — h2mm-cli is what actually runs here.
+# h2mm-cli (v4n00/h2mm-cli) — DEPRECATED upstream as of 2025-09-30 in favor
+# of Arsenal (pkgs/arsenal), which gained Linux support in its 0.30.0
+# release. Also has a confirmed, unfixed bug (upstream issue #96: mods show
+# ENABLED in `h2mm list` but have zero effect in-game) and the repo has had
+# no code commits since the deprecation. home/modules/helldivers2-mods no
+# longer installs this — kept here only because it still builds and may be
+# useful for one-off CLI scripting (e.g. `h2mm modpack switch`) against an
+# existing mods.csv. See the helldivers2-modding skill for the full
+# incident writeup. Do not use `h2mm install`/`enable` to deploy a mod;
+# use pkgs/arsenal instead.
 #
 # Upstream ships the tool as a single committed bash script (no build step,
 # no releases artifact), so this package is just fetchurl + wrapProgram, not
