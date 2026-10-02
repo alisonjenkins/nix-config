@@ -96,7 +96,7 @@ let
   '';
 in
 {
-  imports = [ ./vr-runtime.nix ];
+  imports = [ ./vr-runtime.nix ./steamvr-settings.nix ];
 
   options.modules.vr = {
     enableOpenSourceVR = lib.mkOption {
