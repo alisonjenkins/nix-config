@@ -1,9 +1,10 @@
 # Arsenal (rsnl-gg/HD2Arsenal) — the Helldivers 2 mod manager h2mm-cli
-# (pkgs/h2mm-cli) deprecated itself in favor of on 2025-09-30. h2mm-cli has
-# an unfixed, confirmed-reproducible bug (upstream issue #96: mods show
-# ENABLED but have zero effect in-game, same symptom Arsenal doesn't have
-# with the same mod) and its repo has had no code commits since the
-# deprecation — Arsenal is the only maintained Linux-native option left.
+# deprecated itself in favor of, on 2025-09-30. h2mm-cli had an unfixed,
+# confirmed-reproducible bug (upstream issue #96: mods show ENABLED but
+# have zero effect in-game, same symptom Arsenal doesn't have with the
+# same mod) and its repo had no code commits after the deprecation —
+# Arsenal is the only maintained Linux-native option left. h2mm-cli's own
+# package was removed from this repo once nothing depended on it anymore.
 # See the helldivers2-modding skill for the fuller incident writeup.
 #
 # Upstream ships this as an electron-builder .deb, zipped, no AppImage/

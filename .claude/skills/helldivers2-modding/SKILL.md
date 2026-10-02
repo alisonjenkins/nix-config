@@ -26,9 +26,12 @@ Two pieces:
   hd2-repatcher), which resyncs a mod's `.patch` files' unit resource IDs
   against the currently-installed game data after an Arrowhead update
   desyncs them (see Debugging below). Pinned by commit rev — upstream's
-  `pyproject.toml` version trails its latest tag, so there's no tag to pin
-  to. CLI-only build: `gui.py` needs tkinter and is deliberately excluded
-  from the closure (see the package's header comment).
+  `pyproject.toml` already declares a version (0.3.0) ahead of its latest
+  tag (v0.2.5), so the current code is untagged, with no tag to pin to.
+  Only one binary is built: upstream defines `hd2-repatcher` and
+  `hd2-repatcher-cli` as the same entry point, and `gui.py` (reachable
+  only with zero CLI args, a path never taken here) needs tkinter, kept
+  off the closure (see the package's header comment).
 - `home/modules/helldivers2-mods`: installs `arsenal` + `hd2-repatcher`
   and, on every `home-manager switch`, searches `steamLibraryRoots` for
   the game and `jq`-merges the result into Arsenal's `userGameDir` setting
