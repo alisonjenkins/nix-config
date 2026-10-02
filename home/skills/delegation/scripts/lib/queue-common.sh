@@ -151,7 +151,7 @@ ensure_queue_worker_running() {
       done
       break
     done
-    exec nohup "$script_dir/queue-worker.sh" </dev/null >"$state_dir/queue-worker.log" 2>&1
+    exec nohup bash "$script_dir/queue-worker.sh" </dev/null >"$state_dir/queue-worker.log" 2>&1
   ) &
   disown
   # Hold the starter lock until the new worker has actually claimed the
