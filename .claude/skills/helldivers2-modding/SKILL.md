@@ -1,28 +1,80 @@
 ---
 name: helldivers2-modding
-description: How this repo scaffolds Helldivers 2 modding via pkgs/h2mm-cli
+description: How this repo scaffolds Helldivers 2 modding via pkgs/arsenal
   and home/modules/helldivers2-mods. Use when installing/enabling a
-  Helldivers 2 mod, debugging why h2mm can't find the game, bumping
-  h2mm-cli's pinned version, or explaining why mod install itself isn't
-  declarative here.
+  Helldivers 2 mod, debugging why a mod shows enabled but does nothing
+  in-game, bumping arsenal's or hd2-repatcher's pinned version, or
+  explaining why mod install itself isn't declarative here.
 paths:
+  - "pkgs/arsenal/**"
   - "pkgs/h2mm-cli/**"
+  - "pkgs/hd2-repatcher/**"
   - "home/modules/helldivers2-mods/**"
 ---
 
 # Helldivers 2 modding
 
-Two pieces:
+Three pieces:
 
-- `pkgs/h2mm-cli`: packages `h2mm` (v4n00/h2mm-cli), the only Linux-native
-  Helldivers 2 mod manager today — upstream's own GUI tool ("Arsenal") has
-  no Linux build yet. Upstream ships it as a single committed bash script
-  with no releases/tags, so the package is `fetchurl` + `wrapProgram`
-  pinned by content hash, not a git rev.
-- `home/modules/helldivers2-mods`: installs that package and, on every
-  `home-manager switch`, pre-seeds h2mm's own path cache
-  (`~/.config/h2mm/h2path`) by searching `steamLibraryRoots` for the game.
-  That's **all** it automates.
+- `pkgs/arsenal`: packages `hd2arsenal` (rsnl-gg/HD2Arsenal), the current
+  Linux-native mod manager, GUI. Upstream ships an electron-builder `.deb`
+  zipped (no AppImage/tarball) — the package `fetchurl`s the zip,
+  `dpkg-deb -x`s the `.deb` inside it, then `autoPatchelf`s the bundled
+  (not nixpkgs') Electron binary and its native node addons
+  (`better-sqlite3`, `sharp`, `active-win`) against nixpkgs libs. Pinned by
+  version + content hash from the GitHub release's `digest` field.
+- `pkgs/h2mm-cli`: the **previous** mod manager, CLI. Upstream deprecated
+  it 2025-09-30 in favor of Arsenal, and it has a confirmed unfixed bug
+  (see Incident below) — kept in the repo only because it still builds and
+  may be useful for one-off CLI scripting against an existing `mods.csv`.
+  **Do not use `h2mm install`/`enable` to deploy a mod.**
+- `pkgs/hd2-repatcher`: packages `hd2-repatcher-cli` (RaidingForPants/
+  hd2-repatcher), which resyncs a mod's `.patch` files' unit resource IDs
+  against the currently-installed game data after an Arrowhead update
+  desyncs them (see Debugging below). Pinned by commit rev — upstream's
+  `pyproject.toml` version trails its latest tag, so there's no tag to pin
+  to. CLI-only build: `gui.py` needs tkinter and is deliberately excluded
+  from the closure (see the package's header comment).
+- `home/modules/helldivers2-mods`: installs `arsenal` + `hd2-repatcher`
+  and, on every `home-manager switch`, warns (stderr only — nothing is
+  written) if `steamLibraryRoots` doesn't contain a real Helldivers 2
+  install. That's **all** it automates; Arsenal's own game-path setting
+  lives in its Electron userData store, not reverse-engineered here, so
+  unlike the old h2mm-cli setup this module can't pre-seed it.
+
+## Incident: h2mm-cli silently not deploying mods (2026-10-02)
+
+Symptom: `h2mm list` showed all 5 installed mods `ENABLED`, `data/mods.csv`
+and the numbered `.patch_N` files were correctly placed with real
+(nonzero) content, the game's library path and `h2path` cache were
+correct, and a full machine reboot didn't change anything — yet **none**
+of the mods, including the simplest pure-overlay one (Mod Lag Watchdog),
+had any visible effect in-game.
+
+Every config/file-placement layer checked out; the fault was upstream.
+`h2mm-cli`'s own git history shows:
+
+```
+commit 9bfa892 "chore: deprecate" (2025-09-30):
+> This project is deprecated as of 30/09/2025 in favor of Arsenal's
+> 0.30.0 release, a GUI mod manager that supports every feature of
+> Helldivers 2 Mod Manager CLI and more, on Linux.
+```
+
+and [upstream issue #96 "Doesn't deploy mods"](https://github.com/v4n00/h2mm-cli/issues/96)
+(filed 2026-04-17, after the deprecation, never fixed) reproduces the
+exact symptom: mods show `ENABLED` but have zero effect, confirmed to be
+an h2mm-cli bug by testing the same mod with Arsenal instead, where it
+works. The repo had no code commits after the deprecation commit, so the
+bug was never going to be fixed. `hd2-repatcher` was a red herring here —
+run against each mod's isolated original zip contents, it found 4 of 5
+mods weren't even "unit resource" mods (out of its scope entirely) and the
+5th was flagged corrupted, not just stale; repatching doesn't fix an
+h2mm-cli deployment bug.
+
+Fix: migrated the module from `h2mm-cli` to `pkgs/arsenal` (this skill's
+current state). If this symptom resurfaces with Arsenal, it's a new bug —
+don't assume it's the same root cause.
 
 ## What this module deliberately does NOT do
 
@@ -34,10 +86,10 @@ not activation. Two reasons:
    <https://www.nexusmods.com/helldivers2/mods/16493> for DiverKit), unlike
    `pkgs/beatsaber-mods`, which fetches straight from the BeatMods API by
    content hash.
-2. **`h2mm install`/`h2mm enable` mutate live game state** — numbered
-   `.patch_N` archives and a `mods.csv` ledger inside the game's `data/`
-   directory. Running that unattended on every switch risks corrupting it,
-   the same reason `beatsaber-patch-mods`'s `IPA.exe` patch step is kept off
+2. **Deploying a mod mutates live game state** — numbered `.patch_N`
+   archives and a `mods.csv` ledger inside the game's `data/` directory.
+   Running that unattended on every switch risks corrupting it, the same
+   reason `beatsaber-patch-mods`'s `IPA.exe` patch step is kept off
    activation (see the `beatsaber-modding` skill).
 
 ## How mod loading actually works
@@ -46,9 +98,9 @@ Helldivers 2 (Bitsquid/Stingray engine) loads assets from numbered
 `<hash>.patch_N` / `<hash>.patch_N.stream` archive pairs sitting next to the
 base game data — at startup it layers them in ascending `N` order, last one
 wins per asset. A mod *is* one of these pairs; there's no in-game mod
-loader or manifest to toggle. `h2mm install` copies a mod's patch files into
-`data/`, assigns the next free `N` (or whatever `h2mm order` puts it at),
-and writes the mapping into `data/mods.csv`.
+loader or manifest to toggle. The mod manager copies a mod's patch files
+into `data/`, assigns the next free `N`, and writes the mapping into
+`data/mods.csv`.
 
 Disabling a mod doesn't delete or move it out of `data/` — it renames the
 files with a `disabled_<timestamp>_` prefix, which no longer matches the
@@ -56,37 +108,12 @@ files with a `disabled_<timestamp>_` prefix, which no longer matches the
 startup. Nothing server-side is involved and nothing needs reinstalling to
 flip back.
 
-## Swapping between modded and vanilla
-
-- **One mod**: `h2mm disable -n "<name>"` / `h2mm enable -n "<name>"` (or
-  `-i <index>` from `h2mm list`).
-- **Everything, temporarily** (e.g. before a multiplayer session — HD2 has
-  no anti-cheat that bans for mods, but a host/client asset mismatch can
-  still cause join failures or visual desync): `h2mm modpack create
-  "Vanilla"` while nothing is enabled, then `h2mm modpack switch "Vanilla"`
-  to disable every mod at once and `h2mm modpack switch <your modpack>` to
-  re-enable them — this just batches `enable`/`disable` over the set
-  recorded in the modpack, nothing more.
-- **Everything, permanently**: `h2mm reset` deletes every `patch_N` file
-  and clears `data/mods.csv` (add `--no-path-reset` to keep the
-  `h2path` cache this module pre-seeds; otherwise the next `h2mm`
-  invocation falls back to its interactive prompt until the next
-  `home-manager switch` reseeds it). Irreversible — mods have to be
-  reinstalled from their archives, not just re-enabled.
-
 ## Installing a mod
 
 1. Download the mod's zip from Nexus by hand into
    `modules.helldivers2Mods.modsDir` (default `~/mods/helldivers2`,
    created by activation).
-2. `h2mm install ~/mods/helldivers2/<mod>.zip`
-3. `h2mm enable <mod>` if it doesn't prompt to enable it itself.
-
-`h2mm` reads the game's `data/` directory from `~/.config/h2mm/h2path` —
-pre-seeded by this module so the first invocation doesn't stall waiting on
-a TTY prompt in a non-interactive context. If that file is empty or
-missing, `h2mm` falls back to an interactive `find` + prompt instead of
-failing outright.
+2. Add it through Arsenal's own UI and deploy it.
 
 ## Debugging
 
@@ -98,16 +125,36 @@ failing outright.
   module) doesn't get treated as a real install. Check
   `steamapps/libraryfolders.vdf` under any Steam install for where appid
   `553850` actually lives, and add that root to the host's
-  `steamLibraryRoots`.
-- **`h2mm` prompts interactively instead of using the pre-seeded path**:
-  `~/.config/h2mm/h2path` is empty or stale — rerun `just switch` (it's
-  idempotent, rewritten every activation), or check the warning above fired
-  because the game genuinely isn't found yet.
+  `steamLibraryRoots`. This is informational only now — Arsenal prompts
+  for the path itself on first launch regardless.
+- **A mod is installed/enabled correctly (mod manager shows it enabled,
+  patch files present on disk with real content) but has zero effect
+  in-game**: see the Incident section above before assuming it's a stale
+  unit-ID issue — check which mod manager is in use first, since this
+  exact symptom was an unfixed h2mm-cli bug. If using Arsenal and it
+  recurs, then check `hd2-repatcher-cli --game "<data dir>" <mod patch
+  folder>` per mod (the patch folder is the mod's original extracted zip
+  contents, not the live mixed `data/` dir — scanning the whole data dir
+  risks false "corrupted" verdicts on unrelated vanilla patch files).
+  Confirmed via <https://github.com/RaidingForPants/hd2-repatcher> and
+  <https://steamcommunity.com/app/553850/discussions/0/732532498321661503/>.
 - Steam library lookup here, in `home/modules/beatsaber`, and in
   `home/modules/subnautica-vr` are three separate implementations with
   different validation shapes (see the cross-reference comments in each) —
   a Flatpak-Steam-paths fix or similar needs to be applied to all three by
   hand.
+
+## Bumping arsenal's pinned version
+
+No tags, releases only, via <https://github.com/leguteape/hd2arsenal-release/releases/latest>
+(mirrors rsnl.gg's builds). Bump `version` in `pkgs/arsenal/default.nix`
+and get the new hash from the release asset's `digest` field (`gh api
+repos/leguteape/hd2arsenal-release/releases/latest -q
+.assets[0].digest`, strip the `sha256:` prefix, `nix hash convert
+--hash-algo sha256 --to sri <hex>`) — don't `fetchurl` blind, GitHub's API
+digest is already a verified checksum. If the deb filename pattern
+(`hd2arsenal_<version>_amd64.deb`) changes, update the `dpkg-deb -x` line
+in `installPhase` too.
 
 ## Bumping h2mm-cli's pinned version
 
@@ -118,3 +165,5 @@ the `version` in `pkgs/h2mm-cli/default.nix`, and if it's moved, bump both
 `version` and `hash` (`nix hash to-sri --type sha256 $(nix-prefetch-url
 https://raw.githubusercontent.com/v4n00/h2mm-cli/master/h2mm)` or let the
 build fail once and read the hash mismatch error) together in one commit.
+This package is deprecated upstream (see Incident above) — only bump it if
+something still actively depends on it.
