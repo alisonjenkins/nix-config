@@ -753,19 +753,7 @@ in {
             };
           };
 
-          # Override desktop module's pkgs.unstable.mesa (25.2.6) with
-          # pkgs.master.mesa (26.1.1) on this host only. Master has the
-          # RADV gfx12 work that landed since 25.2.6: DGC+multiview
-          # enabled for vkd3d-proton, VK_KHR_pipeline_library under LLVM,
-          # VRS workaround on GFX12, depth/stencil clear perf, L2
-          # invalidation with streamout, quad-derivatives fix. Targets
-          # FH6 frame-pacing stutter on RX 9070 XT (gfx1201). Revisit
-          # once unstable catches up to 26.x.
-          graphics.package = lib.mkForce pkgs.master.mesa;
-          graphics.package32 = lib.mkForce pkgs.master.pkgsi686Linux.mesa;
-
-          # Modern mesa (both nixos-unstable 26.1.5 and master 26.2.0 —
-          # checked both directly) is GLVND-only: it ships libGLX_mesa.so
+          # Modern mesa (nixos-unstable 26.1.5+) is GLVND-only: it ships libGLX_mesa.so
           # / libEGL_mesa.so ICDs but never libGL.so.1 itself. The NixOS
           # `hardware.graphics` module doesn't add libglvnd on its own
           # either (checked nixos/modules/hardware/graphics.nix — no
@@ -774,10 +762,10 @@ in {
           # Surfaced when the gamescope launch chain's LD_PRELOAD'd
           # overlay/mangohud layer needs it and gamemoderun's bash dies
           # with "error while loading shared libraries: libGL.so.1".
-          # Pull libglvnd from the same pkgs.master used above so its
-          # ABI matches the mesa ICDs it's dispatching to.
-          graphics.extraPackages = [ pkgs.master.libglvnd ];
-          graphics.extraPackages32 = [ pkgs.master.pkgsi686Linux.libglvnd ];
+          # Pull libglvnd from the same pkgs.unstable as the desktop module's
+          # mesa so its ABI matches the mesa ICDs it's dispatching to.
+          graphics.extraPackages = [ pkgs.unstable.libglvnd ];
+          graphics.extraPackages32 = [ pkgs.unstable.pkgsi686Linux.libglvnd ];
         };
 
         # Disable NetworkManager-wait-online — desktop doesn't need network up before login
@@ -1022,7 +1010,7 @@ in {
             enable = true;
             # Steam's FHS root supplies libva from the base package set, which
             # shadows the matching one hardware.graphics.extraPackages32 puts in
-            # the same tree. mesa is forced to master above, and its radeonsi
+            # the same tree. mesa comes from unstable, and its radeonsi
             # VAAPI driver exports __vaDriverInit_1_24, so the base set's libva
             # 2.23 — which only probes down from __vaDriverInit_1_23 — finds no
             # init symbol and every hardware encoder fails. Remote Play then
@@ -1033,7 +1021,7 @@ in {
             # others, and replacing it for the whole system rebuilds all of them
             # from source for a fault only Steam's private FHS actually has.
             package = let
-              steamPkgs = pkgs.extend (_final: prev: { libva = prev.master.libva; });
+              steamPkgs = pkgs.extend (_final: prev: { libva = prev.unstable.libva; });
               # steam-stream-mode's state directory: the published stream target
               # and the display filter's log live here.
               streamModeState = "${config.users.users.${username}.home}/.local/state/stream-mode";
