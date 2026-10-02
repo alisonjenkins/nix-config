@@ -172,7 +172,7 @@ Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SK
 
 ### Helldivers 2 modding
 
-Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-modding/SKILL.md`) — `pkgs/arsenal` (current Linux-native GUI mod manager, migrated from the deprecated/buggy `pkgs/h2mm-cli`) + `pkgs/hd2-repatcher` + `home/modules/helldivers2-mods` (steamLibraryRoots lookup, warning-only; mod install/enable itself stays manual, see the skill for why), how to install a mod, the h2mm-cli deployment-bug incident writeup, and bumping pinned versions. Auto-loads when working on `pkgs/arsenal` / `pkgs/h2mm-cli` / `pkgs/hd2-repatcher` / `home/modules/helldivers2-mods`.
+Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-modding/SKILL.md`) — `pkgs/arsenal` (Linux-native GUI mod manager, migrated from the deprecated/buggy h2mm-cli, since removed) + `pkgs/hd2-repatcher` + `home/modules/helldivers2-mods` (steamLibraryRoots lookup, warning-only; mod install/enable itself stays manual, see the skill for why), how to install a mod, the h2mm-cli deployment-bug incident writeup, and bumping pinned versions. Auto-loads when working on `pkgs/arsenal` / `pkgs/hd2-repatcher` / `home/modules/helldivers2-mods`.
 
 ### Dev workflows + pending work
 
