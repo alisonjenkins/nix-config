@@ -340,12 +340,6 @@ TOML
 }
 
 @test "a higher LOCAL_LLM_VRAM_OVERHEAD_FRACTION can push a previously-fitting profile over the edge" {
-  # Pre-existing bug, not introduced by the sandbox-hermeticity fix that
-  # made this suite runnable in CI for the first time: the end-to-end job
-  # loads instead of refusing here, even though the fit-check's own
-  # arithmetic (verified standalone) says it should refuse. Needs tracing
-  # through queue-worker.sh's job-processing path — see the follow-up issue.
-  skip "known bug: fit-check doesn't refuse end-to-end with overhead_fraction=1.0 (follow-up pending)"
   fake_drm_vram 10737418240 17179869184 # 6GiB free -- fits fast at the default 0.2 overhead
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_VRAM_OVERHEAD_FRACTION=1.0 # required becomes 4GiB*2 + 512MiB =~ 8.5GiB
