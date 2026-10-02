@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 # Extracts the add_dir field's value from a FAKE_COPILOT_CALLS line (field
 # 6 of 8, tab-separated) — not just the tail of the line, since gh_host and
 # copilot_gh_host fields follow it.
@@ -12,7 +14,7 @@ add_dir_of() {
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   delegate="$script_dir/../delegate.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_COPILOT_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_COPILOT_CALLS"
   export DELEGATE_RETRY_BASE_DELAY=0
@@ -20,7 +22,7 @@ setup() {
 }
 
 @test "no args prints usage and exits 1" {
-  run "$delegate"
+  run bash "$delegate"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
   [[ "$output" == *"[profile]"* ]]
@@ -39,13 +41,13 @@ setup() {
 }
 
 @test "too many args prints usage and exits 1" {
-  run "$delegate" "task" "read" "some-skill" "extra"
+  run bash "$delegate" "task" "read" "some-skill" "extra"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "invalid profile prints error listing valid profiles and exits 1" {
-  run "$delegate" "task" "bogus-profile"
+  run bash "$delegate" "task" "bogus-profile"
   [ "$status" -eq 1 ]
   [[ "$output" == *"invalid profile 'bogus-profile'"* ]]
   [[ "$output" == *"valid profiles: read, write-workdir, write-and-test"* ]]
@@ -53,35 +55,35 @@ setup() {
 
 @test "default profile is read when omitted" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   grep -q "allow_tool=read	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "read profile maps to allow-tool=read" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "allow_tool=read	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "write-workdir profile maps to allow-tool=read,write" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" write-workdir
+  run bash "$delegate" "hello task" write-workdir
   [ "$status" -eq 0 ]
   grep -q "allow_tool=read,write	add_dir=	" "$FAKE_COPILOT_CALLS"
 }
 
 @test "write-and-test profile maps to allow-tool=read,write,shell(npm test,pytest,cargo test)" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" write-and-test
+  run bash "$delegate" "hello task" write-and-test
   [ "$status" -eq 0 ]
   grep -q 'allow_tool=read,write,shell(npm test,pytest,cargo test)	add_dir=	' "$FAKE_COPILOT_CALLS"
 }
 
 @test "always passes -s and --no-ask-user" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "silent=yes" "$FAKE_COPILOT_CALLS"
   grep -q "no_ask_user=yes" "$FAKE_COPILOT_CALLS"
@@ -90,7 +92,7 @@ setup() {
 @test "GH_HOST is inherited by the copilot subprocess for GitHub Enterprise" {
   export FAKE_COPILOT_MODE=all-models-ok
   export GH_HOST=github.example-enterprise.com
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "gh_host=github.example-enterprise.com" "$FAKE_COPILOT_CALLS"
 }
@@ -98,7 +100,7 @@ setup() {
 @test "COPILOT_GH_HOST is inherited by the copilot subprocess too" {
   export FAKE_COPILOT_MODE=all-models-ok
   export COPILOT_GH_HOST=github.example-enterprise.com
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "copilot_gh_host=github.example-enterprise.com" "$FAKE_COPILOT_CALLS"
 }
@@ -106,14 +108,14 @@ setup() {
 @test "no GH_HOST set: field is empty, not a stale value from a prior test" {
   export FAKE_COPILOT_MODE=all-models-ok
   unset GH_HOST COPILOT_GH_HOST
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "gh_host=	copilot_gh_host=$" "$FAKE_COPILOT_CALLS"
 }
 
 @test "tries gpt-5.6-luna first" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
   grep -q "model=gpt-5.6-luna" "$FAKE_COPILOT_CALLS"
@@ -122,7 +124,7 @@ setup() {
 
 @test "falls back to claude-haiku-4.5 when luna is rejected" {
   export FAKE_COPILOT_MODE=luna-rejected
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 2 ]
   sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-5.6-luna"
@@ -132,7 +134,7 @@ setup() {
 
 @test "fallback call keeps the same tool_scope as the primary call" {
   export FAKE_COPILOT_MODE=luna-rejected
-  run "$delegate" "hello task" write-workdir
+  run bash "$delegate" "hello task" write-workdir
   [ "$status" -eq 0 ]
   sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
   sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
@@ -140,7 +142,7 @@ setup() {
 
 @test "does not fall back on an unrelated failure, and surfaces it on stderr" {
   export FAKE_COPILOT_MODE=unrelated-failure
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
   [[ "$output" == *"something else went wrong"* ]]
@@ -148,7 +150,7 @@ setup() {
 
 @test "does not fall back on an unrelated error that merely contains the phrase 'is not available'" {
   export FAKE_COPILOT_MODE=phrase-collision
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
   [[ "$output" == *"requested feature is not available on this plan"* ]]
@@ -157,7 +159,7 @@ setup() {
 @test "treats an HTTP 503 as transient and retries, without relying on \\b" {
   export FAKE_COPILOT_MODE=outage-503
   export DELEGATE_RETRY_MAX=2
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 2 ]
   [[ "$output" == *"possible outage"* ]]
@@ -167,7 +169,7 @@ setup() {
   export FAKE_COPILOT_MODE=outage-then-ok
   export FAKE_COPILOT_OUTAGE_COUNTER="$BATS_TEST_TMPDIR/outage-counter"
   export FAKE_COPILOT_OUTAGE_SUCCEED_ON=2
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 2 ]
   [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
@@ -176,7 +178,7 @@ setup() {
 @test "gives up after DELEGATE_RETRY_MAX transient failures and reports a possible outage" {
   export FAKE_COPILOT_MODE=outage-persistent
   export DELEGATE_RETRY_MAX=3
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 3 ]
   [[ "$output" == *"possible outage"* ]]
@@ -185,7 +187,7 @@ setup() {
 
 @test "does not retry or switch models on credits/quota exhaustion, and says so" {
   export FAKE_COPILOT_MODE=credits-exhausted
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
   [[ "$output" == *"exhausted credits/quota"* ]]
@@ -195,7 +197,7 @@ setup() {
 @test "credits exhaustion writes a future cooldown timestamp to the state file" {
   export FAKE_COPILOT_MODE=credits-exhausted
   before="$(date +%s)"
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   cooldown_file="$DELEGATE_STATE_DIR/credits-exhausted-until"
   [ -f "$cooldown_file" ]
@@ -208,7 +210,7 @@ setup() {
   mkdir -p "$DELEGATE_STATE_DIR"
   echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"credits were reported exhausted"* ]]
   [[ "$output" == *"reset-credits-cooldown.sh"* ]]
@@ -219,7 +221,7 @@ setup() {
   mkdir -p "$DELEGATE_STATE_DIR"
   echo "$(( $(date +%s) - 10 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
 }
@@ -228,7 +230,7 @@ setup() {
   mkdir -p "$DELEGATE_STATE_DIR"
   echo "not-a-timestamp" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
 }
@@ -238,7 +240,7 @@ setup() {
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME"
   export FAKE_COPILOT_MODE=credits-exhausted
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ -f "$HOME/.cache/delegate-to-copilot/credits-exhausted-until" ]
 }
@@ -246,7 +248,7 @@ setup() {
 @test "DELEGATE_STATE_DIR still caches when HOME is unset" {
   unset HOME
   export FAKE_COPILOT_MODE=credits-exhausted
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ -f "$DELEGATE_STATE_DIR/credits-exhausted-until" ]
 }
@@ -256,7 +258,7 @@ setup() {
   echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
   unset HOME
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"credits were reported exhausted"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
@@ -267,7 +269,7 @@ setup() {
   export XDG_CACHE_HOME="$BATS_TEST_TMPDIR/xdg-cache"
   mkdir -p "$XDG_CACHE_HOME"
   export FAKE_COPILOT_MODE=credits-exhausted
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ -f "$XDG_CACHE_HOME/delegate-to-copilot/credits-exhausted-until" ]
 }
@@ -275,7 +277,7 @@ setup() {
 @test "with none of DELEGATE_STATE_DIR/XDG_CACHE_HOME/HOME set, delegate.sh still works, just without caching" {
   unset DELEGATE_STATE_DIR HOME XDG_CACHE_HOME
   export FAKE_COPILOT_MODE=credits-exhausted
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"exhausted credits/quota"* ]]
 }
@@ -283,7 +285,7 @@ setup() {
 @test "reset-credits-cooldown.sh fails clearly when no state dir can be resolved" {
   unset DELEGATE_STATE_DIR HOME XDG_CACHE_HOME
   reset_script="$script_dir/../reset-credits-cooldown.sh"
-  run "$reset_script"
+  run bash "$reset_script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"can't tell where"* ]]
 }
@@ -292,7 +294,7 @@ setup() {
   export FAKE_COPILOT_MODE=credits-exhausted
   export DELEGATE_CREDITS_COOLDOWN_SECONDS=5
   before="$(date +%s)"
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   cooldown_until="$(<"$DELEGATE_STATE_DIR/credits-exhausted-until")"
   [ "$cooldown_until" -le "$(( before + 5 + 2 ))" ]
@@ -302,7 +304,7 @@ setup() {
   export FAKE_COPILOT_MODE=credits-exhausted
   export DELEGATE_CREDITS_COOLDOWN_SECONDS=abc
   before="$(date +%s)"
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"warning: DELEGATE_CREDITS_COOLDOWN_SECONDS='abc'"* ]]
   cooldown_until="$(<"$DELEGATE_STATE_DIR/credits-exhausted-until")"
@@ -313,7 +315,7 @@ setup() {
 @test "a non-integer DELEGATE_RETRY_MAX warns and falls back to the default instead of aborting under set -e" {
   export FAKE_COPILOT_MODE=outage-persistent
   export DELEGATE_RETRY_MAX=nope
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"warning: DELEGATE_RETRY_MAX='nope'"* ]]
   [[ "$output" == *"possible outage"* ]]
@@ -326,7 +328,7 @@ setup() {
   export FAKE_COPILOT_OUTAGE_COUNTER="$BATS_TEST_TMPDIR/outage-counter"
   export FAKE_COPILOT_OUTAGE_SUCCEED_ON=2
   export DELEGATE_RETRY_BASE_DELAY=negative-two
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [[ "$output" == *"warning: DELEGATE_RETRY_BASE_DELAY='negative-two'"* ]]
   [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
@@ -337,7 +339,7 @@ setup() {
   mkdir -p "$DELEGATE_STATE_DIR"
   cooldown_file="$DELEGATE_STATE_DIR/credits-exhausted-until"
   echo "$(( $(date +%s) + 3600 ))" >"$cooldown_file"
-  run "$reset_script"
+  run bash "$reset_script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"cleared: $cooldown_file"* ]]
   [ ! -f "$cooldown_file" ]
@@ -345,7 +347,7 @@ setup() {
 
 @test "reset-credits-cooldown.sh is a no-op, not an error, when there's nothing to clear" {
   reset_script="$script_dir/../reset-credits-cooldown.sh"
-  run "$reset_script"
+  run bash "$reset_script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"nothing to clear"* ]]
 }
@@ -356,21 +358,21 @@ setup() {
   mkdir -p "$DELEGATE_STATE_DIR"
   echo "$(( $(date +%s) + 3600 ))" >"$DELEGATE_STATE_DIR/credits-exhausted-until"
 
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 1 ]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
 
-  run "$reset_script"
+  run bash "$reset_script"
   [ "$status" -eq 0 ]
 
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
 }
 
 @test "no skill arg: no --add-dir and task is passed through unchanged" {
   export FAKE_COPILOT_MODE=all-models-ok
-  run "$delegate" "hello task" read
+  run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   grep -q "task=hello task" "$FAKE_COPILOT_CALLS"
   grep -q "add_dir=	" "$FAKE_COPILOT_CALLS"
@@ -385,7 +387,7 @@ setup() {
   mkdir -p "$skill_dir" "$HOME"
   echo "---" >"$skill_dir/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read myskill
+  run bash "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
   grep -q "add_dir=$project_root	" "$FAKE_COPILOT_CALLS"
   grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
@@ -409,7 +411,7 @@ setup() {
   cd "$project_dir"
   export FAKE_COPILOT_CAT_RELATIVE="othersibling/SKILL.md"
   export FAKE_COPILOT_CAT_OUT="$BATS_TEST_TMPDIR/captured.txt"
-  run "$delegate" "hello task" read myskill
+  run bash "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
 
   # captured while the staged copy still existed, i.e. --add-dir on it
@@ -432,7 +434,7 @@ setup() {
   cd "$BATS_TEST_TMPDIR/project"
   export FAKE_COPILOT_CAT_RELATIVE="globalskill/SKILL.md"
   export FAKE_COPILOT_CAT_OUT="$BATS_TEST_TMPDIR/captured.txt"
-  run "$delegate" "hello task" read globalskill
+  run bash "$delegate" "hello task" read globalskill
   [ "$status" -eq 0 ]
   [ "$(cat "$FAKE_COPILOT_CAT_OUT")" = "global marker content" ]
 
@@ -451,7 +453,7 @@ setup() {
   echo "---" >"$skill_dir/SKILL.md"
   git init -q "$repo_root"
   cd "$repo_root/sub/deeper"
-  run "$delegate" "hello task" read myskill
+  run bash "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
   grep -q "read the following: $skill_dir/SKILL.md" "$FAKE_COPILOT_CALLS"
 }
@@ -466,7 +468,7 @@ setup() {
   echo "---" >"$project_skill/SKILL.md"
   echo "---" >"$global_skill/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read dupskill
+  run bash "$delegate" "hello task" read dupskill
   [ "$status" -eq 0 ]
   grep -q "read the following: $project_skill/SKILL.md" "$FAKE_COPILOT_CALLS"
 }
@@ -479,7 +481,7 @@ setup() {
   mkdir -p "$project_dir" "$user_root/myskill"
   echo "---" >"$user_root/myskill/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read myskill
+  run bash "$delegate" "hello task" read myskill
   [ "$status" -eq 0 ]
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
@@ -493,7 +495,7 @@ setup() {
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME" "$BATS_TEST_TMPDIR/project"
   cd "$BATS_TEST_TMPDIR/project"
-  run "$delegate" "hello task" read no-such-skill
+  run bash "$delegate" "hello task" read no-such-skill
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
@@ -504,7 +506,7 @@ setup() {
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME" "$BATS_TEST_TMPDIR/project"
   cd "$BATS_TEST_TMPDIR/project"
-  run "$delegate" "hello task" read " , ,"
+  run bash "$delegate" "hello task" read " , ,"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no valid skill names found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]
@@ -515,7 +517,7 @@ setup() {
   unset HOME
   mkdir -p "$BATS_TEST_TMPDIR/project"
   cd "$BATS_TEST_TMPDIR/project"
-  run "$delegate" "hello task" read no-such-skill
+  run bash "$delegate" "hello task" read no-such-skill
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'no-such-skill' not found"* ]]
   [[ "$output" == *"~/.claude/skills"* ]]
@@ -533,7 +535,7 @@ setup() {
   echo "---" >"$skill_a/SKILL.md"
   echo "---" >"$skill_b/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read skill-a,skill-b
+  run bash "$delegate" "hello task" read skill-a,skill-b
   [ "$status" -eq 0 ]
   grep -q "read the following: $skill_a/SKILL.md, $skill_b/SKILL.md" "$FAKE_COPILOT_CALLS"
   grep -q "Then: hello task" "$FAKE_COPILOT_CALLS"
@@ -550,7 +552,7 @@ setup() {
   echo "---" >"$skill_a/SKILL.md"
   echo "---" >"$skill_b/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read "skill-a, skill-b"
+  run bash "$delegate" "hello task" read "skill-a, skill-b"
   [ "$status" -eq 0 ]
   grep -q "read the following: $skill_a/SKILL.md, $skill_b/SKILL.md" "$FAKE_COPILOT_CALLS"
 }
@@ -569,7 +571,7 @@ setup() {
   # "a,,b": bash's `read -ra` on IFS=',' does produce a genuine empty
   # field for a *middle* empty entry (unlike a trailing comma, which
   # `read` just drops) — this is the real case that needs skipping.
-  run "$delegate" "hello task" read "skill-a,,skill-b"
+  run bash "$delegate" "hello task" read "skill-a,,skill-b"
   [ "$status" -eq 0 ]
   # exact match, not substring: a spurious middle entry (e.g. from an
   # unskipped empty name resolving to the skills root itself) would
@@ -587,7 +589,7 @@ setup() {
   echo "---" >"$project_skill/SKILL.md"
   echo "---" >"$global_skill/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read project-skill,global-skill
+  run bash "$delegate" "hello task" read project-skill,global-skill
   [ "$status" -eq 0 ]
 
   call_line="$(cat "$FAKE_COPILOT_CALLS")"
@@ -602,7 +604,7 @@ setup() {
   mkdir -p "$project_root/known" "$HOME"
   echo "---" >"$project_root/known/SKILL.md"
   cd "$project_dir"
-  run "$delegate" "hello task" read known,missing-one,missing-two
+  run bash "$delegate" "hello task" read known,missing-one,missing-two
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'missing-one,missing-two' not found"* ]]
   [ ! -s "$FAKE_COPILOT_CALLS" ]

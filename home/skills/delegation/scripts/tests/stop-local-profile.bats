@@ -21,7 +21,7 @@ active_file() {
 }
 
 @test "no-op, not an error, when nothing is active" {
-  run "$stop"
+  run bash "$stop"
   [ "$status" -eq 0 ]
   [[ "$output" == *"nothing to stop"* ]]
 }
@@ -32,7 +32,7 @@ active_file() {
   jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid "$pid" \
     '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$(active_file)"
 
-  run "$stop"
+  run bash "$stop"
   [ "$status" -eq 0 ]
   [[ "$output" == *"stopped profile 'fast'"* ]]
   [ ! -f "$(active_file)" ]
@@ -46,7 +46,7 @@ active_file() {
   jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid 999999 \
     '{profile: $profile, url: $url, model: $model, pid: 999999}' >"$(active_file)"
 
-  run "$stop"
+  run bash "$stop"
   [ "$status" -eq 0 ]
   [[ "$output" == *"already gone"* ]]
   [ ! -f "$(active_file)" ]

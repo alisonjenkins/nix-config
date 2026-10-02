@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   delegate="$script_dir/../delegate-to-local.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_CURL_CALLS"
   export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
@@ -28,14 +30,14 @@ teardown() {
 }
 
 @test "no args prints usage and exits 1" {
-  run "$delegate"
+  run bash "$delegate"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
   [[ "$output" == *"exit codes:"* ]]
 }
 
 @test "too many args prints usage and exits 1" {
-  run "$delegate" "task" "extra"
+  run bash "$delegate" "task" "extra"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
@@ -55,7 +57,7 @@ teardown() {
 
 @test "no active profile recorded exits 2" {
   rm -f "$LOCAL_LLM_STATE_DIR/active-profile.json"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 2 ]
   [[ "$output" == *"no local profile is active"* ]]
   [[ "$output" == *"switch-local-profile.sh"* ]]
@@ -64,7 +66,7 @@ teardown() {
 @test "an active profile that isn't actually responding exits 2" {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP=""
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 2 ]
   [[ "$output" == *"'fast' is recorded active but its server isn't responding"* ]]
 }
@@ -72,7 +74,7 @@ teardown() {
 @test "successful call against the active profile prints the reply" {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   [ "$output" = "response for model=fake-model-8080: hello task" ]
   chat_call="$(sed -n '2p' "$FAKE_CURL_CALLS")"
@@ -83,7 +85,7 @@ teardown() {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_MODEL="custom-model"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   chat_call="$(sed -n '2p' "$FAKE_CURL_CALLS")"
   [[ "$chat_call" == *'"model":"custom-model"'* ]]
@@ -93,7 +95,7 @@ teardown() {
   write_active "quality" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_EXPECT_PROFILE="quality"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
 }
 
@@ -101,7 +103,7 @@ teardown() {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_EXPECT_PROFILE="quality"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 4 ]
   [[ "$output" == *"expected profile 'quality'"* ]]
   [[ "$output" == *"'fast' is loaded"* ]]
@@ -113,7 +115,7 @@ teardown() {
   rm -f "$LOCAL_LLM_STATE_DIR/active-profile.json"
   export LOCAL_LLM_URL="http://localhost:9090"
   export FAKE_CURL_UP="http://localhost:9090"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   [[ "$output" == *"fake-model-9090"* ]]
 }
@@ -122,7 +124,7 @@ teardown() {
   export LOCAL_LLM_URL="http://localhost:9090"
   export FAKE_CURL_UP="http://localhost:9090"
   export FAKE_CURL_MODE=malformed-models
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 2 ]
   [[ "$output" == *"responded, but its /v1/models response wasn't the expected OpenAI-compatible shape"* ]]
   [[ "$output" != *"is not reachable"* ]]
@@ -132,7 +134,7 @@ teardown() {
   export LOCAL_LLM_URL="http://localhost:9090"
   export FAKE_CURL_UP="http://localhost:9090"
   export FAKE_CURL_MODE=chat-timeout
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 3 ]
   [[ "$output" == *"request to http://localhost:9090/v1/chat/completions failed"* ]]
   [[ "$output" == *"Operation timed out"* ]]
@@ -141,7 +143,7 @@ teardown() {
 @test "explicit LOCAL_LLM_URL that is unreachable exits 2" {
   export LOCAL_LLM_URL="http://localhost:9090"
   export FAKE_CURL_UP=""
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 2 ]
   [[ "$output" == *"LOCAL_LLM_URL=http://localhost:9090 is not reachable"* ]]
 }
@@ -189,7 +191,7 @@ teardown() {
 @test "a single call with no LOCAL_LLM_RESERVE_SECONDS creates no reservation" {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   [ ! -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
 }
@@ -199,7 +201,7 @@ teardown() {
   export FAKE_CURL_UP="http://localhost:8080"
   export LOCAL_LLM_RESERVE_SECONDS=120
   export LOCAL_LLM_RESERVE_REASON="a batch of edits"
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 0 ]
   [ -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
   [ "$(jq -r .profile "$LOCAL_LLM_STATE_DIR/reservation.json")" = "fast" ]
@@ -215,7 +217,7 @@ teardown() {
   export FAKE_CURL_UP="http://localhost:8080"
   export FAKE_CURL_MODE=chat-error
   export LOCAL_LLM_RESERVE_SECONDS=120
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 3 ]
   [ ! -f "$LOCAL_LLM_STATE_DIR/reservation.json" ]
 }
@@ -224,7 +226,7 @@ teardown() {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
   export FAKE_CURL_MODE=chat-error
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 3 ]
   [[ "$output" == *"request to http://localhost:8080/v1/chat/completions failed"* ]]
   [[ "$output" == *"boom"* ]]
@@ -234,7 +236,7 @@ teardown() {
   write_active "fast" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"
   export FAKE_CURL_MODE=chat-timeout
-  run "$delegate" "hello task"
+  run bash "$delegate" "hello task"
   [ "$status" -eq 3 ]
   [[ "$output" == *"request to http://localhost:8080/v1/chat/completions failed"* ]]
   # Regression: curl's own timeout/connection diagnostic is on stderr, not

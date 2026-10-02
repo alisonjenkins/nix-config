@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   list="$script_dir/../list-local-profiles.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_CURL_CALLS"
   export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.toml"
@@ -25,20 +27,20 @@ TOML
 
 @test "missing profiles file exits 1" {
   rm -f "$LOCAL_LLM_PROFILES_FILE"
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 1 ]
   [[ "$output" == *"profiles file not found"* ]]
 }
 
 @test "malformed profiles file exits 1" {
   printf 'not = valid = toml =\n' >"$LOCAL_LLM_PROFILES_FILE"
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 1 ]
   [[ "$output" == *"not valid TOML"* ]]
 }
 
 @test "lists all profiles with no active marker when nothing is active" {
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [[ "$output" == *"fast"*"/models/fast.gguf"*"quick profile"* ]]
   [[ "$output" == *"quality"*"/models/quality"*"bigger profile"* ]]
@@ -49,7 +51,7 @@ TOML
   jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid 1 \
     '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$LOCAL_LLM_STATE_DIR/active-profile.json"
   export FAKE_CURL_UP="http://localhost:8080"
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [[ "$output" == *"* fast"*"(active, responding)"* ]]
   [[ "$output" != *"quality"*"active"* ]]
@@ -59,13 +61,13 @@ TOML
   jq -nc --arg profile "fast" --arg url "http://localhost:8080" --arg model "m" --argjson pid 1 \
     '{profile: $profile, url: $url, model: $model, pid: $pid}' >"$LOCAL_LLM_STATE_DIR/active-profile.json"
   export FAKE_CURL_UP=""
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [[ "$output" == *"* fast"*"(active, but not responding"* ]]
 }
 
 @test "never makes a live check for a profile that isn't active" {
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [ ! -s "$FAKE_CURL_CALLS" ]
 }
@@ -80,7 +82,7 @@ TOML
   jq -nc --arg profile "quality" --arg reason "old batch" --argjson expires "$(($(date +%s) + 120))" \
     '{profile: $profile, reason: $reason, expires_at: $expires}' >"$LOCAL_LLM_STATE_DIR/reservation.json"
   export FAKE_CURL_UP="http://localhost:8080"
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [[ "$output" == *"* fast"*"(active, responding)"* ]]
   [[ "$output" != *"reserved"* ]]
@@ -92,7 +94,7 @@ TOML
   jq -nc --arg profile "fast" --arg reason "big batch" --argjson expires "$(($(date +%s) + 120))" \
     '{profile: $profile, reason: $reason, expires_at: $expires}' >"$LOCAL_LLM_STATE_DIR/reservation.json"
   export FAKE_CURL_UP="http://localhost:8080"
-  run "$list"
+  run bash "$list"
   [ "$status" -eq 0 ]
   [[ "$output" == *"reserved"*"big batch"* ]]
 }

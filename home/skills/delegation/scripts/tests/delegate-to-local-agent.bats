@@ -1,11 +1,13 @@
 #!/usr/bin/env bats
+
+load 'sandbox-path-helpers'
 # Edit mode's review contract: what a run changed is reported, and a change
 # to a file that runs code later is never hidden behind another exit code.
 
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   agent="$script_dir/../delegate-to-local-agent.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export LOCAL_LLM_STATE_DIR="$BATS_TEST_TMPDIR/state"
   export LOCAL_LLM_PROFILES_FILE="$BATS_TEST_TMPDIR/profiles.toml"
   export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/curl-calls.log"
@@ -28,8 +30,8 @@ TOML
 
   # Writes $FAKE_OC_WRITE (relative to --dir), replies, then exits
   # $FAKE_OC_EXIT, like a run that edited and then failed or finished.
-  cat >"$OPENCODE_BIN" <<'SH'
-#!/usr/bin/env bash
+  printf '#!%s\n' "$(command -v bash)" >"$OPENCODE_BIN"
+  cat >>"$OPENCODE_BIN" <<'SH'
 if [[ "$1" == "--version" ]]; then echo 1.18.31; exit 0; fi
 while [[ $# -gt 0 ]]; do
   if [[ "$1" == "--dir" ]]; then dir="$2"; shift; fi
@@ -59,7 +61,7 @@ SH
 
 @test "a changed git hook exits 6 after printing the reply" {
   export FAKE_OC_WRITE=".git/hooks/pre-commit"
-  run "$agent" "$work" "task"
+  run bash "$agent" "$work" "task"
   [ "$status" -eq 6 ]
   [[ "$output" == *".git/hooks/pre-commit"* ]]
   [[ "$output" == *"done"* ]]
@@ -69,7 +71,7 @@ SH
   # A failed run's exit code must not hide a hook it left behind.
   export FAKE_OC_WRITE=".git/hooks/pre-commit"
   export FAKE_OC_EXIT=1
-  run "$agent" "$work" "task"
+  run bash "$agent" "$work" "task"
   [ "$status" -eq 6 ]
   [[ "$output" == *"opencode exited 1"* ]]
 }
@@ -77,7 +79,7 @@ SH
 @test "a failed run that changed nothing risky keeps its own exit code" {
   export FAKE_OC_WRITE="file.txt"
   export FAKE_OC_EXIT=1
-  run "$agent" "$work" "task"
+  run bash "$agent" "$work" "task"
   [ "$status" -eq 3 ]
 }
 
@@ -86,7 +88,7 @@ SH
   export FAKE_OC_TOOLS="error error error error error"
   export FAKE_OC_HANG=1
   SECONDS=0
-  run "$agent" "$work" "task"
+  run bash "$agent" "$work" "task"
   [ "$status" -eq 3 ]
   [[ "$output" == *"5 failed tool calls in a row"* ]]
   [[ "$output" == *"Could not find oldString"* ]]
@@ -95,7 +97,7 @@ SH
 
 @test "a success between failures resets the count" {
   export FAKE_OC_TOOLS="error error error error completed error error error error"
-  run "$agent" "$work" "task"
+  run bash "$agent" "$work" "task"
   [ "$status" -eq 0 ]
 }
 
@@ -103,7 +105,7 @@ SH
   local quoted="$BATS_TEST_TMPDIR/it's here"
   mv "$work" "$quoted"
   export FAKE_OC_WRITE="file.txt"
-  run "$agent" "$quoted" "task"
+  run bash "$agent" "$quoted" "task"
   [ "$status" -eq 0 ]
   local undo
   undo="$(grep '^undo: ' <<<"$output")"
