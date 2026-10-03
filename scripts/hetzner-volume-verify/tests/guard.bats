@@ -10,8 +10,9 @@ setup() {
   : > "$FIXTURES/kubectl.calls"
   verdict="${BATS_TEST_TMPDIR}/verdict.txt"
   echo '2026-10-03T14:09:55Z volume=vol1 verdict=verified' > "$verdict"
-  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"Completed"}}]}' > "$FIXTURES/backups.json"
+  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"Completed","completionTimestamp":"2026-10-03T14:05:00Z"}}]}' > "$FIXTURES/backups.json"
   echo Retain > "$FIXTURES/pv-pvc-old.policy"
+  echo '{"items":[]}' > "$FIXTURES/pods.json"
 }
 
 # bats does not fail a test on a bare `! cmd`, so assert the count instead.
@@ -21,7 +22,7 @@ no_kubectl_call() {
 
 destroy_args() {
   echo --volume vol1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
-    --verdict-file "$verdict" --backup velero --backup-namespace velero
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --since 2026-10-03T14:00:00Z
 }
 
 # --- retain-pv.sh ---
@@ -104,4 +105,45 @@ destroy_args() {
   claim=$(grep -n 'delete pvc' "$FIXTURES/kubectl.calls" | cut -d: -f1)
   pv=$(grep -n 'delete pv ' "$FIXTURES/kubectl.calls" | cut -d: -f1)
   [ "$claim" -lt "$pv" ]
+}
+
+# --- found in review: stale verdicts, regex names, stale backups, claims in use ---
+
+@test "destroy uses the last verdict line for the volume, not an earlier verified one" {
+  printf '%s\n%s\n' \
+    '2026-10-03T14:09:55Z volume=vol1 verdict=verified' \
+    '2026-10-03T15:30:00Z volume=vol1 verdict=failed' > "$verdict"
+  run "$dir/destroy-old-volume.sh" $(destroy_args) --execute
+  [ "$status" -eq 1 ]
+  no_kubectl_call delete
+}
+
+@test "destroy matches the volume name literally, not as a regular expression" {
+  echo '2026-10-03T14:09:55Z volume=volX1 verdict=verified' > "$verdict"
+  run "$dir/destroy-old-volume.sh" --volume vol.1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --since 2026-10-03T14:00:00Z --execute
+  [ "$status" -eq 1 ]
+  no_kubectl_call delete
+}
+
+@test "destroy requires --since so an old backup cannot count as fresh" {
+  run "$dir/destroy-old-volume.sh" --volume vol1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --execute
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--since"* ]]
+}
+
+@test "destroy refuses when the only completed backup is older than --since" {
+  run "$dir/destroy-old-volume.sh" $(destroy_args | sed 's/--since [^ ]*/--since 2026-10-03T16:00:00Z/') --execute
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"since"* ]]
+  no_kubectl_call delete
+}
+
+@test "destroy refuses while a pod still mounts the claim" {
+  echo '{"items":[{"metadata":{"name":"synapse-0"},"spec":{"volumes":[{"persistentVolumeClaim":{"claimName":"old-claim"}}]}}]}' > "$FIXTURES/pods.json"
+  run "$dir/destroy-old-volume.sh" $(destroy_args) --execute
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"synapse-0"* ]]
+  no_kubectl_call delete
 }

@@ -50,3 +50,10 @@ metrics() {
   [[ "$output" == *"livekit_participant_total"* ]]
   [[ "$output" != *"calls=0"* ]]
 }
+
+@test "a series that only shares the metric's prefix is not counted" {
+  printf 'livekit_participant_total{node_id="a"} 0\nlivekit_participant_total_extra{node_id="a"} 5\n' > "$FIXTURES/curl.out"
+  run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"calls=0"* ]]
+}
