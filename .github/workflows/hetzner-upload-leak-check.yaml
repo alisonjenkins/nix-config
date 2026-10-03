@@ -1,0 +1,57 @@
+# Fail if Hetzner image-upload temp resources are left behind
+#
+# hcloud-upload-image creates a temp server and ssh key per upload and removes
+# them when it finishes. A killed or crashed run leaves them billing. Anything
+# carrying its label that is older than MAX_AGE_HOURS cannot be an in-flight
+# upload, so its presence fails this job (GitHub then notifies).
+#
+# Clean up with: HCLOUD_TOKEN=... hcloud-upload-image cleanup
+#
+# Requires the HCLOUD_TOKEN_READONLY repo secret (read-only Hetzner project
+# token; this job only lists resources).
+
+name: Hetzner upload leak check
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MAX_AGE_HOURS: "2"
+  LABEL_SELECTOR: apricote.de%2Fcreated-by%3Dhcloud-upload-image
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Look for leaked upload servers and ssh keys
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN_READONLY }}
+        run: |
+          set -euo pipefail
+          : "${HCLOUD_TOKEN:?HCLOUD_TOKEN_READONLY secret is not set}"
+          cutoff=$(( $(date +%s) - MAX_AGE_HOURS * 3600 ))
+          leaked=0
+          for kind in servers ssh_keys; do
+            body=$(curl -sf --retry 3 --retry-delay 5 \
+              -H "Authorization: Bearer ${HCLOUD_TOKEN}" \
+              "https://api.hetzner.cloud/v1/${kind}?per_page=50&label_selector=${LABEL_SELECTOR}")
+            stale=$(jq -r --argjson cutoff "$cutoff" --arg kind "$kind" '
+              .[$kind][]
+              | select((.created | sub("\\+00:00$"; "Z") | fromdateiso8601) < $cutoff)
+              | "\($kind) id=\(.id) name=\(.name) created=\(.created)"' <<<"$body")
+            if [ -n "$stale" ]; then
+              echo "::error::Leaked hcloud-upload-image resources older than ${MAX_AGE_HOURS}h:"
+              echo "$stale"
+              leaked=1
+            fi
+          done
+          if [ "$leaked" -eq 0 ]; then
+            echo "No leaked hcloud-upload-image servers or ssh keys."
+          fi
+          exit "$leaked"
