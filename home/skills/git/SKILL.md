@@ -13,6 +13,10 @@ description: >-
   before. Never bundle unrelated changes into one commit.
 - **Never squash.** Squash merges collapse atomic commits into one oversized
   commit and destroy per-change revertability.
+- **No `fixup!`/`squash!`/`amend!` commit lands on the default branch.**
+  Fixups are fine while a PR is open; they are autosquashed into their
+  targets before merge (see [pr-workflow.md](pr-workflow.md)), and
+  `scripts/check-no-fixups.sh` must be green before any merge route.
 - **Merging PRs and branches:** prefer rebase-and-merge
   (`gh pr merge --rebase`). If rebase merges are unavailable or disallowed,
   use a merge commit (`gh pr merge --merge`). Never `gh pr merge --squash`.

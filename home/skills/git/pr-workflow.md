@@ -34,9 +34,26 @@ non-obvious flags.
 
 - A fix for something *this PR itself introduced* (a review comment, a bug
   found while iterating): `git commit --fixup=<sha>` targeting the commit
-  that introduced it, not a plain new commit. Push normally — no
-  `rebase --autosquash` unless asked; the fixups stay as visible commits,
-  still honouring the atomic-commit mandate.
+  that introduced it, not a plain new commit. Push normally — while the PR is
+  open the fixups stay as visible commits, so reviewers can see what changed
+  since they last looked; no `rebase --autosquash` mid-review unless asked.
+- **A `fixup!` commit must never reach the default branch.** It is a
+  placeholder for "fold me into my target", not a change that stands alone:
+  landed as-is it is non-atomic (reverting the target leaves the fix
+  behind) and its subject is unreadable in `git log`. The fold happens at
+  merge time, once review is done:
+  `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<default>` (the
+  empty sequence editor makes it non-interactive), then
+  `git push --force-with-lease`. This is not "squash" in the mandate's
+  sense: each fixup merges into exactly one named target, every other
+  commit survives, and atomic commits are the result, not the casualty.
+  Also covers `squash!` and `amend!`.
+- The guard is `scripts/check-no-fixups.sh [range]` (default
+  `origin/<default>..HEAD`; exits 1 and names each offender).
+  `scripts/merge-onto-default.sh` runs it before touching anything, so the
+  preferred merge route cannot land a fixup. **`gh pr merge --rebase` /
+  `--merge` and the GitHub UI have no such gate** — run the script yourself
+  immediately before either fallback, and never merge with it red.
 - A fix for something that predates this PR (a pre-existing bug noticed in
   passing): a normal commit — it's not part of this PR's history to keep
   legible.
@@ -51,9 +68,12 @@ non-obvious flags.
 
 ## Merging
 
+- **Before any merge route: no `fixup!`/`squash!`/`amend!` commits in the
+  PR** (see "Fixing feedback" above). If `check-no-fixups.sh` is red,
+  autosquash and re-push first; the merge script stops on it by itself.
 - **Try `scripts/merge-onto-default.sh` first.** Needs an open PR (gates
   on its checks via `gh pr checks --watch`, whatever the repo has —
-  none assumed). Rebases locally, re-pushes to refresh CI if that moved
+  none assumed). Refuses if fixup commits remain. Rebases locally, re-pushes to refresh CI if that moved
   HEAD, waits for checks, then pushes straight to the default branch —
   fast-forward, signatures intact. GitHub auto-marks the PR merged.
   CI wait is often minutes — run in the background or with a raised

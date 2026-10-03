@@ -103,6 +103,10 @@ All of these, not just checks green (`pr-status.sh` reports all of them):
   signal for them).
 - `checks=` is not pending or failing, or a named, explained exception the
   user already accepted.
+- No `fixup!`/`squash!`/`amend!` commits remain
+  (`scripts/check-no-fixups.sh` is green). Review-round fixes are made as
+  fixups; autosquash them and re-push as the last step before merging, not
+  before — see [pr-workflow.md](pr-workflow.md).
 
 Once satisfied: `scripts/merge-onto-default.sh` — rebases locally, gates on
 the PR's checks itself, and pushes straight to the default branch,
