@@ -31,16 +31,22 @@ applications need no change.
 2. Confirm the old instance is still running and has zero lag:
    `kubectl cnpg status CLUSTER -n NAMESPACE`.
 3. Promote it: `kubectl cnpg promote CLUSTER OLD_INSTANCE -n NAMESPACE`.
-4. Remove the new instance and its volume:
-   `kubectl cnpg destroy CLUSTER NEW_INSTANCE -n NAMESPACE`.
-5. Set `spec.storage.storageClass` back to `hcloud-volumes` in the cluster
-   manifest, in a pull request, so Flux does not recreate the encrypted one.
+4. In one pull request, set `spec.instances: 1` and `spec.storage.storageClass:
+   hcloud-volumes` in the cluster manifest, merge it, and let Flux apply it. Do
+   both together. If you only set the class, `instances: 2` makes the operator
+   keep a replica. Do not run `kubectl cnpg destroy` before this: with
+   `instances: 2` still in Git the operator creates a new replica straight away.
+5. The operator scales down by removing a replica. Confirm it removed the new
+   instance and not the old primary: `kubectl cnpg status CLUSTER -n NAMESPACE`
+   should show only `OLD_INSTANCE`. Then delete the new instance's leftover
+   claim if it is still listed: `kubectl get pvc -n NAMESPACE`.
 6. Confirm the cluster reports `Cluster in healthy state` and the applications
    reconnected (Synapse and the authentication service for Matrix, Museum for photos).
 
-The promote and destroy flags are not yet proven on CloudNativePG 1.30.1. They
-are rehearsed on a scratch cluster first (research section 3). If a flag differs,
-fix this page in the same pull request as the rehearsal.
+The promote flags, and which instance the operator removes when `instances`
+drops, are not yet proven on CloudNativePG 1.30.1. They are rehearsed on a
+scratch cluster first (research section 3). If something differs, fix this page
+in the same pull request as the rehearsal.
 
 If the old instance is already gone but its volume is still retained, do not
 improvise. Restore from the backup into a new instance.

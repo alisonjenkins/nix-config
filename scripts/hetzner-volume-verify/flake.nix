@@ -23,7 +23,7 @@
             kubectl
             rsync
             shellcheck
-          ] ++ lib.optional stdenv.isLinux cryptsetup;
+          ] ++ lib.optional stdenv.hostPlatform.isLinux cryptsetup;
         };
       });
     };
