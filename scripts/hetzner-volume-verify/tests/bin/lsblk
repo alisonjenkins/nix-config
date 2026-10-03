@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Prints the filesystem type fixture for -no FSTYPE <device>.
+cat "$FIXTURES/fstype.txt"

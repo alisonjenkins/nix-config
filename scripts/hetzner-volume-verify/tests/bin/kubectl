@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fixture-driven kubectl: answers from files in $FIXTURES, never touches a cluster.
+set -euo pipefail
+args="$*"
+case "$args" in
+  *"get secret"*) [ -f "$FIXTURES/secret.b64" ] || { echo "Error from server (NotFound)" >&2; exit 1; }; cat "$FIXTURES/secret.b64" ;;
+  exec*) pod="$4"; cat "$FIXTURES/psql-$pod.txt" ;;
+  *"get pods"*) cat "$FIXTURES/pods.json" ;;
+  logs*) cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;
+  *"get backups.velero.io"*|*"get backups.postgresql.cnpg.io"*) cat "$FIXTURES/backups.json" ;;
+  *) echo "fake kubectl: unhandled: $args" >&2; exit 99 ;;
+esac

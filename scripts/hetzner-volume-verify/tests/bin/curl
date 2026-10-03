@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Exit code and body come from fixtures; every call is logged for assertions.
+echo "$*" >> "$FIXTURES/curl.calls"
+cat "$FIXTURES/curl.out" 2>/dev/null || true
+exit "$(cat "$FIXTURES/curl.rc" 2>/dev/null || echo 0)"
