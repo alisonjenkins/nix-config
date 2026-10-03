@@ -6,16 +6,20 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: verify.sh --volume NAME [--checks encryption,compare,health,functional,backup]
-  encryption: --device DEV (the raw block device, not the /dev/mapper one) --mapping NAME --secret NAMESPACE/NAME
+usage: verify.sh --volume NAME --checks encryption,compare,health,functional,backup (any of them)
+  encryption: --device DEV (the raw block device, not the /dev/mapper one) --mapping NAME
+              --secret NAMESPACE/NAME --storageclass NAME [--node-exec CMD]
+              --node-exec is a command prefix that runs a command on the node holding the volume
+              (for example a kubectl debug or ssh wrapper). Without it the checks run on this machine.
   compare:    --kind files    --old-dir DIR --new-dir DIR
               --kind database --namespace NS --old-pod POD --new-pod POD --db NAME
   health:     --namespace NS --selector LABEL=VALUE [--health-url URL] [--health-seconds N]
   functional: --service matrix|photos|documents|monitoring|notifications|game
-              matrix: --homeserver URL (env VERIFY_BOT_PASSWORD, VERIFY_BOT_ROOM, optional VERIFY_BOT_USER)
+              matrix: --homeserver URL (env VERIFY_BOT_TOKEN, an access token for verify-bot, and VERIFY_BOT_ROOM)
               photos: --photos-url URL (env VERIFY_PHOTOS_PASSWORD)
               monitoring: --prometheus-url URL [--alertmanager-url URL] [--grafana-url URL]
-  backup:     --backup velero|cnpg --backup-namespace NS [--since ISO8601]
+  backup:     --backup velero|cnpg --backup-namespace NS --backup-for TARGET [--since ISO8601]
+              TARGET is the workload namespace for velero, or the cluster name for cnpg
 EOF
 }
 
@@ -27,12 +31,12 @@ die_usage() {
 
 ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
-volume="" checks="encryption,compare,health,functional,backup"
-device="" mapping="" secret=""
+volume="" checks=""
+device="" mapping="" secret="" storageclass="" node_exec=""
 kind="" old_dir="" new_dir="" namespace="" old_pod="" new_pod="" db="" selector=""
 health_url="" health_seconds=300
 service="" homeserver="" photos_url="" prometheus_url="" alertmanager_url="" grafana_url=""
-backup="" backup_namespace="" since=""
+backup="" backup_namespace="" backup_for="" since=""
 
 while [ $# -gt 0 ]; do
   [ $# -ge 2 ] || die_usage "$1 needs a value"
@@ -42,6 +46,9 @@ while [ $# -gt 0 ]; do
     --device) device=$2 ;;
     --mapping) mapping=$2 ;;
     --secret) secret=$2 ;;
+    --storageclass) storageclass=$2 ;;
+    --node-exec) node_exec=$2 ;;
+    --backup-for) backup_for=$2 ;;
     --kind) kind=$2 ;;
     --old-dir) old_dir=$2 ;;
     --new-dir) new_dir=$2 ;;
@@ -67,6 +74,7 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$volume" ] || die_usage "--volume is required"
+[ -n "$checks" ] || die_usage "--checks is required"
 
 failed=0
 workdir=$(mktemp -d)
@@ -87,7 +95,16 @@ check_encryption() {
   need encryption device --device
   need encryption mapping --mapping
   need encryption secret --secret
-  local problems=() ns=${secret%%/*} name=${secret#*/} b64 fstype magic
+  need encryption storageclass --storageclass
+  local problems=() ns=${secret%%/*} name=${secret#*/} b64 fstype magic ref nx=()
+  [ -z "$node_exec" ] || read -ra nx <<<"$node_exec"
+
+  if ! ref=$(kubectl get storageclass "$storageclass" \
+    -o jsonpath='{.parameters.csi\.storage\.k8s\.io/node-publish-secret-namespace}/{.parameters.csi\.storage\.k8s\.io/node-publish-secret-name}' 2>/dev/null); then
+    problems+=("cannot read storageclass $storageclass")
+  elif [ "$ref" != "$secret" ]; then
+    problems+=("storageclass $storageclass references secret '$ref', not $secret")
+  fi
 
   if ! b64=$(kubectl get secret -n "$ns" "$name" -o jsonpath='{.data.encryption-passphrase}' 2>/dev/null); then
     problems+=("secret $secret not found or unreadable")
@@ -95,12 +112,12 @@ check_encryption() {
     problems+=("secret $secret is empty")
   fi
 
-  fstype=$(lsblk -no FSTYPE "$device" 2>/dev/null | head -n1 | tr -d '[:space:]') || fstype=""
+  fstype=$("${nx[@]}" lsblk -no FSTYPE "$device" 2>/dev/null | head -n1 | tr -d '[:space:]') || fstype=""
   [ "$fstype" = crypto_LUKS ] || problems+=("device $device has fstype '${fstype:-none}', want crypto_LUKS")
 
-  cryptsetup status "$mapping" >/dev/null 2>&1 || problems+=("no active crypt mapping $mapping")
+  "${nx[@]}" cryptsetup status "$mapping" >/dev/null 2>&1 || problems+=("no active crypt mapping $mapping")
 
-  if magic=$(dd if="$device" bs=1 skip=1080 count=2 2>/dev/null | od -An -tx1 | tr -d '[:space:]'); then
+  if magic=$("${nx[@]}" dd if="$device" bs=1 skip=1080 count=2 2>/dev/null | od -An -tx1 | tr -d '[:space:]'); then
     [ "$magic" != 53ef ] || problems+=("raw device $device shows an ext4 superblock magic at offset 1080")
   else
     problems+=("cannot read raw device $device")
@@ -171,7 +188,7 @@ check_compare() {
 check_health() {
   need health namespace --namespace
   need health selector --selector
-  local problems=() pods bad probes i interval=${VERIFY_HEALTH_INTERVAL:-10} line
+  local problems=() pods bad probes i interval=${VERIFY_HEALTH_INTERVAL:-10} line logs
 
   if ! pods=$(kubectl get pods -n "$namespace" -l "$selector" -o json 2>/dev/null); then
     emit health fail "cannot list pods in $namespace with $selector"; return
@@ -197,9 +214,12 @@ check_health() {
     done
   fi
 
-  line=$(kubectl logs -n "$namespace" -l "$selector" --all-containers --tail=500 2>/dev/null \
-    | grep -Ei 'permission denied|read-only file system|no space left|(error|fatal).*(volume|database|connection refused)' | head -n1 || true)
-  [ -z "$line" ] || problems+=("logs show: ${line:0:160}")
+  if logs=$(kubectl logs -n "$namespace" -l "$selector" --all-containers --tail=500 --max-log-requests=20 2>&1); then
+    line=$(grep -Ei 'permission denied|read-only file system|no space left|(error|fatal).*(volume|database|connection refused)' <<<"$logs" | head -n1 || true)
+    [ -z "$line" ] || problems+=("logs show: ${line:0:160}")
+  else
+    problems+=("cannot read logs for $selector in $namespace: ${logs:0:120}")
+  fi
 
   if [ ${#problems[@]} -eq 0 ]; then
     emit health pass "pods ready, no restarts${health_url:+, $health_url answered for ${health_seconds}s}"
@@ -211,29 +231,26 @@ check_health() {
 # Part 3: functional checks, one per service.
 functional_matrix() {
   need functional homeserver --homeserver
-  local user=${VERIFY_BOT_USER:-verify-bot} token login txn
-  txn=verify-$(date +%s)
-  if [ -z "${VERIFY_BOT_PASSWORD:-}" ]; then
-    emit functional fail "matrix: VERIFY_BOT_PASSWORD is not exported (see README, test accounts)"; return
+  local token=${VERIFY_BOT_TOKEN:-} room=${VERIFY_BOT_ROOM:-} txn body auth
+  if [ -z "$token" ]; then
+    emit functional fail "matrix: VERIFY_BOT_TOKEN is not exported (an access token for verify-bot; password login is not served here)"; return
   fi
-  login=$(jq -n --arg u "$user" --arg p "$VERIFY_BOT_PASSWORD" \
-    '{type: "m.login.password", identifier: {type: "m.id.user", user: $u}, password: $p}' \
-    | curl -fsS --max-time 20 -X POST -H 'Content-Type: application/json' --data @- "$homeserver/_matrix/client/v3/login" 2>/dev/null) \
-    || { emit functional fail "matrix: login at $homeserver failed for $user"; return; }
-  token=$(jq -r '.access_token // empty' <<<"$login")
-  [ -n "$token" ] || { emit functional fail "matrix: login at $homeserver returned no access token"; return; }
-  if [ -z "${VERIFY_BOT_ROOM:-}" ]; then
+  if [ -z "$room" ]; then
     emit functional fail "matrix: VERIFY_BOT_ROOM is not exported (the private test room id)"; return
   fi
-  local body="verify $txn" room=${VERIFY_BOT_ROOM}
+  txn=verify-$(date +%s)
+  body="verify $txn"
+  # The token goes in a mode 600 header file, not on the command line where ps would show it.
+  auth="$workdir/auth"
+  (umask 077; printf 'Authorization: Bearer %s\n' "$token" >"$auth")
   jq -n --arg b "$body" '{msgtype: "m.text", body: $b}' \
-    | curl -fsS --max-time 20 -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data @- \
+    | curl -fsS --max-time 20 -X PUT -H "@$auth" -H 'Content-Type: application/json' --data @- \
       "$homeserver/_matrix/client/v3/rooms/$room/send/m.room.message/$txn" >/dev/null 2>&1 \
     || { emit functional fail "matrix: send to $room at $homeserver failed"; return; }
-  curl -fsS --max-time 20 -H "Authorization: Bearer $token" "$homeserver/_matrix/client/v3/rooms/$room/messages?dir=b&limit=10" 2>/dev/null \
+  curl -fsS --max-time 20 -H "@$auth" "$homeserver/_matrix/client/v3/rooms/$room/messages?dir=b&limit=10" 2>/dev/null \
     | jq -e --arg b "$body" '[.chunk[]?.content.body] | index($b)' >/dev/null \
     || { emit functional fail "matrix: sent message not read back from $room"; return; }
-  emit functional pass "matrix: login, send and read back in $room"
+  emit functional pass "matrix: send and read back in $room"
 }
 
 functional_monitoring() {
@@ -275,6 +292,7 @@ check_functional() {
 check_backup() {
   need backup backup --backup
   need backup backup_namespace --backup-namespace
+  need backup backup_for --backup-for
   local resource list n
   case "$backup" in
     velero) resource=backups.velero.io ;;
@@ -284,13 +302,19 @@ check_backup() {
   if ! list=$(kubectl get "$resource" -n "$backup_namespace" -o json 2>/dev/null); then
     emit backup fail "cannot list $resource in $backup_namespace"; return
   fi
-  n=$(jq --arg since "$since" '[.items[]
+  # A completed backup only counts when it belongs to the target: a Velero backup that includes the
+  # workload namespace (an empty list means every namespace), or a CNPG backup of the named cluster.
+  n=$(jq --arg since "$since" --arg kind "$backup" --arg for "$backup_for" '[.items[]
       | select((.status.phase // "" | ascii_downcase) == "completed")
-      | select($since == "" or ((.status.completionTimestamp // .status.stoppedAt // "") >= $since))] | length' <<<"$list")
+      | select($since == "" or ((.status.completionTimestamp // .status.stoppedAt // "") >= $since))
+      | select(if $kind == "velero"
+               then (((.spec.includedNamespaces // []) | (length == 0 or index($for) != null))
+                     and (((.spec.excludedNamespaces // []) | index($for)) == null))
+               else .spec.cluster.name == $for end)] | length' <<<"$list")
   if [ "$n" -gt 0 ]; then
-    emit backup pass "$n completed $backup backup(s) in $backup_namespace${since:+ since $since}"
+    emit backup pass "$n completed $backup backup(s) for $backup_for in $backup_namespace${since:+ since $since}"
   else
-    emit backup fail "no completed $backup backup in $backup_namespace${since:+ since $since}"
+    emit backup fail "no completed $backup backup for $backup_for in $backup_namespace${since:+ since $since}"
   fi
 }
 
