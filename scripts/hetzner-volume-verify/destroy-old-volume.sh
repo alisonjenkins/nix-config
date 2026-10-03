@@ -9,17 +9,19 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() {
   cat >&2 <<'EOF'
 usage: destroy-old-volume.sh --volume NAME --pv PV --claim NAMESPACE/NAME --hcloud-volume ID
-         --verdict-file FILE --backup velero|cnpg --backup-namespace NS --since ISO8601 [--execute]
-  --since is the time of the switch: a backup completed before it does not count.
+         --verdict-file FILE --backup velero|cnpg --backup-namespace NS --backup-for TARGET
+         --since ISO8601 [--execute]
+  --since is the time of the switch: a backup or a verdict from before it does not count.
+  --backup-for is the workload namespace for velero, or the cluster name for cnpg.
 EOF
   exit 2
 }
 
-volume="" pv="" claim="" hcloud_id="" verdict_file="" backup="" backup_ns="" since="" execute=0
+volume="" pv="" claim="" hcloud_id="" verdict_file="" backup="" backup_ns="" backup_for="" since="" execute=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --execute) execute=1; shift; continue ;;
-    --volume | --pv | --claim | --hcloud-volume | --verdict-file | --backup | --backup-namespace | --since) ;;
+    --volume | --pv | --claim | --hcloud-volume | --verdict-file | --backup | --backup-namespace | --backup-for | --since) ;;
     *) echo "destroy-old-volume: unknown option $1" >&2; usage ;;
   esac
   [ $# -ge 2 ] || usage
@@ -31,12 +33,13 @@ while [ $# -gt 0 ]; do
     --verdict-file) verdict_file=$2 ;;
     --backup) backup=$2 ;;
     --backup-namespace) backup_ns=$2 ;;
+    --backup-for) backup_for=$2 ;;
     --since) since=$2 ;;
   esac
   shift 2
 done
 for req in volume:--volume pv:--pv claim:--claim hcloud_id:--hcloud-volume verdict_file:--verdict-file \
-  backup:--backup backup_ns:--backup-namespace since:--since; do
+  backup:--backup backup_ns:--backup-namespace backup_for:--backup-for since:--since; do
   name=${req%%:*}
   [ -n "${!name}" ] || { echo "destroy-old-volume: ${req##*:} is required" >&2; usage; }
 done
@@ -47,16 +50,21 @@ refuse() {
 }
 
 [ -r "$verdict_file" ] || refuse "cannot read verdict file $verdict_file"
-last_verdict=$(awk -v want="volume=$volume" '
+last=$(awk -v want="volume=$volume" '
   { hit = 0; v = ""
     for (i = 1; i <= NF; i++) { if ($i == want) hit = 1; if ($i ~ /^verdict=/) v = $i }
-    if (hit && v != "") last = v }
+    if (hit && v != "") last = $1 " " v }
   END { print last }' "$verdict_file")
+last_ts=${last%% *}
+last_verdict=${last#* }
 [ "$last_verdict" = verdict=verified ] \
   || refuse "the last verdict for volume=$volume in $verdict_file is '${last_verdict:-none}', want verdict=verified"
+[[ "$last_ts" > "$since" || "$last_ts" == "$since" ]] \
+  || refuse "the verified verdict at $last_ts is older than --since $since, verify again after the switch"
 
-"$here/verify.sh" --volume "$volume" --checks backup --backup "$backup" --backup-namespace "$backup_ns" --since "$since" >/dev/null \
-  || refuse "no completed $backup backup in $backup_ns since $since"
+"$here/verify.sh" --volume "$volume" --checks backup --backup "$backup" --backup-namespace "$backup_ns" \
+  --backup-for "$backup_for" --since "$since" >/dev/null \
+  || refuse "no completed $backup backup for $backup_for in $backup_ns since $since"
 
 policy=$(kubectl get pv "$pv" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}' 2>/dev/null) \
   || refuse "cannot read pv $pv"

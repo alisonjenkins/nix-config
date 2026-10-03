@@ -134,6 +134,7 @@ destroy_args() {
 }
 
 @test "destroy refuses when the only completed backup is older than --since" {
+  echo '2026-10-03T17:00:00Z volume=vol1 verdict=verified' > "$verdict"
   run "$dir/destroy-old-volume.sh" $(destroy_args | sed 's/--since [^ ]*/--since 2026-10-03T16:00:00Z/') --execute
   [ "$status" -eq 1 ]
   [[ "$output" == *"since"* ]]
