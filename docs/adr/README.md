@@ -60,6 +60,7 @@ for the live-maintenance runbook.
 | # | Decision | Status |
 |---|---|---|
 | [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed |
+| [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
 
 ## Template
 

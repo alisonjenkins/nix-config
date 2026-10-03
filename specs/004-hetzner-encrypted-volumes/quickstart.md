@@ -69,9 +69,9 @@ node-agent pod carry the injected token and role ARN.
 
 **B1b. A long upload survives credential expiry**
 
-Back up the largest volume with a deliberately short role session duration.
+Back up a throwaway volume large enough that the upload runs close to an hour.
 
-Pass: the backup completes, or fails in a way that tells us the session duration to set. Record
+Pass: the backup completes, or fails in a way that tells us how large a volume one run can take. Record
 the figure and set it before the real schedules run.
 
 **B2. Every backup restores**
@@ -188,8 +188,8 @@ Pass: the data is readable both times.
 kubectl get secrets -A --no-headers | grep -i -E "aws|s3|restore"
 ```
 
-Pass: no secret holds an AWS access key for backups, and the old restore user has no access
-keys in AWS (spec SC-012).
+Pass: no secret holds AWS credentials for backups, and `matrix/cnpg-restore-aws-creds` (expired
+temporary credentials) is gone (spec SC-012).
 
 **E4. Leftovers are listed**
 

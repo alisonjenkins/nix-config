@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# `cryptsetup status <name>`: active unless the fixture says otherwise.
+if [ -f "$FIXTURES/mapping-inactive" ]; then echo "$2 is inactive." ; exit 4; fi
+echo "/dev/mapper/$2 is active and is in use."
