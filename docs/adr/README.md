@@ -51,6 +51,16 @@ for hardware video decode.
 | [0019](0019-virtual-output-projection.md) | Show virtual outputs on physical monitors through projections | Accepted, pending live test; overview columns superseded by 0020 |
 | [0020](0020-virtual-output-overview-band.md) | Show virtual outputs in one overview band column | Accepted, pending live test |
 
+## Hetzner cluster
+
+Start with [`docs/hetzner-inplace-patching-design.md`](../hetzner-inplace-patching-design.md)
+for the plan, and [`docs/hetzner-k3s-live-maintenance.md`](../hetzner-k3s-live-maintenance.md)
+for the live-maintenance runbook.
+
+| # | Decision | Status |
+|---|---|---|
+| [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed |
+
 ## Template
 
 ```markdown
