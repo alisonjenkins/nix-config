@@ -7,7 +7,7 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 usage: verify.sh --volume NAME [--checks encryption,compare,health,functional,backup]
-  encryption: --device DEV --mapping NAME --secret NAMESPACE/NAME
+  encryption: --device DEV (the raw block device, not the /dev/mapper one) --mapping NAME --secret NAMESPACE/NAME
   compare:    --kind files    --old-dir DIR --new-dir DIR
               --kind database --namespace NS --old-pod POD --new-pod POD --db NAME
   health:     --namespace NS --selector LABEL=VALUE [--health-url URL] [--health-seconds N]
@@ -120,15 +120,7 @@ manifest() {
   done)
 }
 
-# One line per table: schema.table|row count|md5 of the table's rows.
-read -r -d '' table_sql <<'SQL' || true
-SELECT t.table_schema || '.' || t.table_name || '|' ||
-  (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', t.table_schema, t.table_name), false, true, '')))[1]::text || '|' ||
-  (xpath('/row/h/text()', query_to_xml(format('select coalesce(md5(string_agg(x::text, '','' order by x::text)), '''') as h from %I.%I x', t.table_schema, t.table_name), false, true, '')))[1]::text
-FROM information_schema.tables t
-WHERE t.table_type = 'BASE TABLE' AND t.table_schema NOT IN ('pg_catalog', 'information_schema')
-ORDER BY 1
-SQL
+table_sql_file="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/table-checksums.sql"
 
 # differing_keys OLD NEW: first field of every line present in only one file or different.
 differing_keys() {
@@ -158,10 +150,10 @@ check_compare() {
       need compare old_pod --old-pod
       need compare new_pod --new-pod
       need compare db --db
-      if ! kubectl exec -n "$namespace" "$old_pod" -- psql -d "$db" -At -c "$table_sql" >"$workdir/old.m" 2>"$workdir/err"; then
+      if ! kubectl exec -n "$namespace" "$old_pod" -i -- psql -d "$db" -At -f - <"$table_sql_file" >"$workdir/old.m" 2>"$workdir/err"; then
         emit compare fail "query on $namespace/$old_pod db=$db failed: $(head -c 200 "$workdir/err")"; return
       fi
-      if ! kubectl exec -n "$namespace" "$new_pod" -- psql -d "$db" -At -c "$table_sql" >"$workdir/new.m" 2>"$workdir/err"; then
+      if ! kubectl exec -n "$namespace" "$new_pod" -i -- psql -d "$db" -At -f - <"$table_sql_file" >"$workdir/new.m" 2>"$workdir/err"; then
         emit compare fail "query on $namespace/$new_pod db=$db failed: $(head -c 200 "$workdir/err")"; return
       fi
       diffs=$(differing_keys "$workdir/old.m" "$workdir/new.m")
