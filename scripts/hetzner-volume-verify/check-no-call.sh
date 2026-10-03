@@ -29,11 +29,11 @@ if ! body=$(curl -fsS --max-time 10 "$url" 2>&1); then
   exit 3
 fi
 
-if ! grep -q "^$metric" <<<"$body"; then
+if ! grep -qE "^${metric}[{ ]" <<<"$body"; then
   echo "check-no-call: $metric not found at $url; treating as a call in progress" >&2
   exit 3
 fi
 
-calls=$(awk -v m="$metric" 'index($0, m) == 1 {s += $NF} END {printf "%d", s}' <<<"$body")
+calls=$(awk -v m="$metric" '$0 ~ "^" m "[{ ]" {s += $NF} END {printf "%d", s}' <<<"$body")
 echo "calls=$calls"
 [ "$calls" -eq 0 ] || exit 1

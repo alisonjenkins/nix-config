@@ -9,7 +9,8 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() {
   cat >&2 <<'EOF'
 usage: destroy-old-volume.sh --volume NAME --pv PV --claim NAMESPACE/NAME --hcloud-volume ID
-         --verdict-file FILE --backup velero|cnpg --backup-namespace NS [--since ISO8601] [--execute]
+         --verdict-file FILE --backup velero|cnpg --backup-namespace NS --since ISO8601 [--execute]
+  --since is the time of the switch: a backup completed before it does not count.
 EOF
   exit 2
 }
@@ -34,8 +35,10 @@ while [ $# -gt 0 ]; do
   esac
   shift 2
 done
-for v in volume pv claim hcloud_id verdict_file backup backup_ns; do
-  [ -n "${!v}" ] || { echo "destroy-old-volume: --${v//_/-} is required" >&2; usage; }
+for req in volume:--volume pv:--pv claim:--claim hcloud_id:--hcloud-volume verdict_file:--verdict-file \
+  backup:--backup backup_ns:--backup-namespace since:--since; do
+  name=${req%%:*}
+  [ -n "${!name}" ] || { echo "destroy-old-volume: ${req##*:} is required" >&2; usage; }
 done
 
 refuse() {
@@ -44,13 +47,16 @@ refuse() {
 }
 
 [ -r "$verdict_file" ] || refuse "cannot read verdict file $verdict_file"
-grep -q " volume=$volume verdict=verified\$" "$verdict_file" \
-  || refuse "no 'volume=$volume verdict=verified' line in $verdict_file"
+last_verdict=$(awk -v want="volume=$volume" '
+  { hit = 0; v = ""
+    for (i = 1; i <= NF; i++) { if ($i == want) hit = 1; if ($i ~ /^verdict=/) v = $i }
+    if (hit && v != "") last = v }
+  END { print last }' "$verdict_file")
+[ "$last_verdict" = verdict=verified ] \
+  || refuse "the last verdict for volume=$volume in $verdict_file is '${last_verdict:-none}', want verdict=verified"
 
-since_args=()
-[ -z "$since" ] || since_args=(--since "$since")
-"$here/verify.sh" --volume "$volume" --checks backup --backup "$backup" --backup-namespace "$backup_ns" "${since_args[@]}" >/dev/null \
-  || refuse "no completed $backup backup in $backup_ns${since:+ since $since}"
+"$here/verify.sh" --volume "$volume" --checks backup --backup "$backup" --backup-namespace "$backup_ns" --since "$since" >/dev/null \
+  || refuse "no completed $backup backup in $backup_ns since $since"
 
 policy=$(kubectl get pv "$pv" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}' 2>/dev/null) \
   || refuse "cannot read pv $pv"
@@ -58,6 +64,11 @@ policy=$(kubectl get pv "$pv" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}
 
 claim_ns=${claim%%/*}
 claim_name=${claim#*/}
+
+users=$(kubectl get pods -n "$claim_ns" -o json 2>/dev/null \
+  | jq -r --arg c "$claim_name" '.items[] | select(any(.spec.volumes[]?; .persistentVolumeClaim.claimName == $c)) | .metadata.name' \
+  | paste -sd, -) || refuse "cannot list pods in $claim_ns to check who mounts $claim_name"
+[ -z "$users" ] || refuse "pod(s) still mount claim $claim: $users"
 
 if [ "$execute" -ne 1 ]; then
   echo "dry run: would delete pvc $claim_name in $claim_ns, pv $pv, then hcloud volume $hcloud_id (add --execute)"
