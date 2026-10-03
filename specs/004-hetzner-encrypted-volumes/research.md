@@ -218,8 +218,8 @@ scratch clone of the Terraform repository.
 
 | Piece | Where | Detail |
 |---|---|---|
-| Velero role | `terraform`, new `main/hetzner_backups.tf` | an `irsa_role` for the Velero service account, with the policy of `k3s_velero` limited to `velero-hetzner/*` and the bucket list actions |
-| Database backup role | same file | an `irsa_role` for the database service accounts (`matrix:shared-postgres`, and the photo database's), with the policy of `k3s_cnpg_backup` limited to `cnpg-hetzner/*` |
+| Velero role | `terraform`, new `main/hetzner_backups.tf` | an `irsa_role` for `velero:velero`, with the policy of `k3s_velero` limited to `velero-hetzner/*` and prefix-conditioned list actions |
+| Database backup roles | same file | one `irsa_role` each for `matrix:shared-postgres` and `ente:ente-db` (the module trusts one service account per role), each limited to its own prefix (`cnpg-hetzner/shared-postgres`, `cnpg-hetzner/ente-db`) |
 | Bucket policy | `terraform`, `main/iam_policies.tf` | add the two roles to the exemption from the IP-restriction deny |
 | Velero service account | `home-cluster` | annotated with the Velero role ARN, no credential Secret |
 | Database service accounts | `home-cluster` | annotated with the database backup role ARN. `shared-postgres` today uses the read-only restore role, so its annotation changes to the new role, which also needs read access to the old prefix until the restore source is no longer needed |
@@ -228,9 +228,10 @@ scratch clone of the Terraform repository.
 
 - The Kopia uploader in the node-agent gets credentials once, through the SDK's chain, and
   hands the resulting key and session token to Kopia. It is not shown to refresh them during a
-  running upload. IRSA sessions default to one hour. A role maximum session duration of up to
-  12 hours, with the matching token setting, covers a long upload. The rehearsal uploads a large
-  volume to find out.
+  running upload. IRSA sessions last one hour: the SDK requests the default duration, so a
+  longer role maximum does not extend them (corrected 2026-10-03; an earlier draft said it
+  would). The volumes here are small, so an hour is likely enough. The rehearsal uploads a large
+  volume to find out, and the fallback is to split large volumes across runs.
 - Whether the Velero node-agent pods get the token injected. They need the annotation on the
   node-agent service account as well as the server's. Rehearsal.
 
@@ -336,13 +337,15 @@ its own flake and a dev shell, so no tool is assumed on `PATH` (constitution IV)
 
 ## 11. Open points
 
-1. **Kopia credential refresh** during a long upload is unproven. The rehearsal uploads a large
-   volume and sets the role's session duration to cover it.
+1. **Kopia credential refresh** during a long upload is unproven. IRSA sessions last one hour.
+   The rehearsal uploads a large volume, and the fallback is to split large volumes across runs.
 2. **Node-agent token injection**: confirm the webhook injects into the node-agent DaemonSet's
    pods.
-3. **The `shared-postgres` role swap**: the service account currently has the read-only
-   restore role. The new role must keep read access to the old Matrix backups, or the restore
-   source must be dropped first. Decide when writing the Terraform.
+3. **The `shared-postgres` role swap**: resolved. The new role merges in the read statements of
+   the old restore role (`include_restore`), so it keeps reading the old Matrix backups.
+   Separately, `matrix/cnpg-restore-aws-creds` is not a long-lived key: it holds temporary
+   credentials (a session token) from 2026-09-13 that nothing references. It is deleted, and there
+   is no IAM key to revoke.
 4. **Minecraft end-of-session backup** needs changes in three places: the server image in this
    repository, the cluster manifests in `home-cluster`, and the `mc-limbo-proxy` repository.
 5. The IAM and bucket-policy changes are in a repository this feature does not own. They are
