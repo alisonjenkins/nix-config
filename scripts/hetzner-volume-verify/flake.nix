@@ -19,6 +19,7 @@
             gnugrep
             hcloud
             jq
+            postgresql
             kubectl
             rsync
             shellcheck
