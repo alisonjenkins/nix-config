@@ -10,7 +10,7 @@ setup() {
   : > "$FIXTURES/kubectl.calls"
   verdict="${BATS_TEST_TMPDIR}/verdict.txt"
   echo '2026-10-03T14:09:55Z volume=vol1 verdict=verified' > "$verdict"
-  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"Completed","completionTimestamp":"2026-10-03T14:05:00Z"}}]}' > "$FIXTURES/backups.json"
+  echo '{"items":[{"metadata":{"name":"b1"},"spec":{"includedNamespaces":["matrix"]},"status":{"phase":"Completed","completionTimestamp":"2026-10-03T14:05:00Z"}}]}' > "$FIXTURES/backups.json"
   echo Retain > "$FIXTURES/pv-pvc-old.policy"
   echo '{"items":[]}' > "$FIXTURES/pods.json"
 }
@@ -22,7 +22,7 @@ no_kubectl_call() {
 
 destroy_args() {
   echo --volume vol1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
-    --verdict-file "$verdict" --backup velero --backup-namespace velero --since 2026-10-03T14:00:00Z
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --backup-for matrix --since 2026-10-03T14:00:00Z
 }
 
 # --- retain-pv.sh ---
@@ -121,14 +121,14 @@ destroy_args() {
 @test "destroy matches the volume name literally, not as a regular expression" {
   echo '2026-10-03T14:09:55Z volume=volX1 verdict=verified' > "$verdict"
   run "$dir/destroy-old-volume.sh" --volume vol.1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
-    --verdict-file "$verdict" --backup velero --backup-namespace velero --since 2026-10-03T14:00:00Z --execute
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --backup-for matrix --since 2026-10-03T14:00:00Z --execute
   [ "$status" -eq 1 ]
   no_kubectl_call delete
 }
 
 @test "destroy requires --since so an old backup cannot count as fresh" {
   run "$dir/destroy-old-volume.sh" --volume vol1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
-    --verdict-file "$verdict" --backup velero --backup-namespace velero --execute
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --backup-for matrix --execute
   [ "$status" -eq 2 ]
   [[ "$output" == *"--since"* ]]
 }
@@ -145,5 +145,28 @@ destroy_args() {
   run "$dir/destroy-old-volume.sh" $(destroy_args) --execute
   [ "$status" -eq 1 ]
   [[ "$output" == *"synapse-0"* ]]
+  no_kubectl_call delete
+}
+
+@test "destroy refuses when the only completed backup is of another namespace" {
+  echo '{"items":[{"metadata":{"name":"b1"},"spec":{"includedNamespaces":["couchdb"]},"status":{"phase":"Completed","completionTimestamp":"2026-10-03T14:05:00Z"}}]}' > "$FIXTURES/backups.json"
+  run "$dir/destroy-old-volume.sh" $(destroy_args) --execute
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"matrix"* ]]
+  no_kubectl_call delete
+}
+
+@test "destroy requires --backup-for" {
+  run "$dir/destroy-old-volume.sh" --volume vol1 --pv pvc-old --claim matrix/old-claim --hcloud-volume 12345 \
+    --verdict-file "$verdict" --backup velero --backup-namespace velero --since 2026-10-03T14:00:00Z --execute
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--backup-for"* ]]
+}
+
+@test "destroy refuses a verified verdict that is older than --since" {
+  echo '{"items":[{"metadata":{"name":"b1"},"spec":{"includedNamespaces":["matrix"]},"status":{"phase":"Completed","completionTimestamp":"2026-10-03T16:30:00Z"}}]}' > "$FIXTURES/backups.json"
+  run "$dir/destroy-old-volume.sh" $(destroy_args | sed 's/--since [^ ]*/--since 2026-10-03T16:00:00Z/') --execute
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"older than"* ]]
   no_kubectl_call delete
 }

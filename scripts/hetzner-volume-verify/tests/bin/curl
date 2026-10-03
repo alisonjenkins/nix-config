@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # Exit code and body come from fixtures; every call is logged for assertions.
+# A body fixture named curl.out.<url with non-alphanumerics as _> overrides curl.out for that URL
+# (the URL is the last argument), and curl.rc.<same> overrides the exit code.
 echo "$*" >> "$FIXTURES/curl.calls"
-cat "$FIXTURES/curl.out" 2>/dev/null || true
+url=${*: -1}
+key=$(tr -c 'A-Za-z0-9\n' _ <<<"$url")
+if [ -f "$FIXTURES/curl.out.$key" ]; then cat "$FIXTURES/curl.out.$key"; else cat "$FIXTURES/curl.out" 2>/dev/null || true; fi
+if [ -f "$FIXTURES/curl.rc.$key" ]; then exit "$(cat "$FIXTURES/curl.rc.$key")"; fi
 exit "$(cat "$FIXTURES/curl.rc" 2>/dev/null || echo 0)"

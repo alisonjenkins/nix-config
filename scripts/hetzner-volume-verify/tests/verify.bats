@@ -12,10 +12,12 @@ setup() {
   head -c 4096 /dev/urandom > "$device"
   printf 'crypto_LUKS\n' > "$FIXTURES/fstype.txt"
   printf 'c2VjcmV0\n' > "$FIXTURES/secret.b64"
+  printf 'kube-system/hcloud-volume-passphrase\n' > "$FIXTURES/sc.ref"
 }
 
 enc_args() {
-  echo --volume vol1 --checks encryption --device "$device" --mapping pvc-1 --secret kube-system/hcloud-volume-passphrase
+  echo --volume vol1 --checks encryption --device "$device" --mapping pvc-1 \
+    --secret kube-system/hcloud-volume-passphrase --storageclass hcloud-volumes-encrypted
 }
 
 # --- output contract ---
@@ -39,6 +41,12 @@ enc_args() {
   run "$script" --checks encryption
   [ "$status" -eq 2 ]
   [[ "$output" == *"--volume"* ]]
+}
+
+@test "missing --checks is a usage error that names the option" {
+  run "$script" --volume vol1
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--checks"* ]]
 }
 
 # --- part 0: encryption is real ---
@@ -78,6 +86,29 @@ enc_args() {
   run "$script" $(enc_args)
   [ "$status" -eq 1 ]
   [[ "$output" == *"magic"* ]]
+}
+
+@test "encryption runs lsblk, cryptsetup and the raw read through --node-exec" {
+  run "$script" $(enc_args) --node-exec "${BATS_TEST_DIRNAME}/bin/on-node"
+  [ "$status" -eq 0 ]
+  grep -q 'lsblk' "$FIXTURES/on-node.calls"
+  grep -q 'cryptsetup status pvc-1' "$FIXTURES/on-node.calls"
+  grep -q 'dd if=' "$FIXTURES/on-node.calls"
+}
+
+@test "encryption fails when the StorageClass references a different Secret" {
+  printf 'kube-system/some-other-secret\n' > "$FIXTURES/sc.ref"
+  run "$script" $(enc_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"some-other-secret"* ]]
+  [[ "$output" == *"hcloud-volume-passphrase"* ]]
+}
+
+@test "encryption fails when the StorageClass cannot be read" {
+  rm "$FIXTURES/sc.ref"
+  run "$script" $(enc_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"hcloud-volumes-encrypted"* ]]
 }
 
 # --- part 1: data comparison ---
@@ -166,6 +197,15 @@ ready_pod_json() {
   [[ "$output" == *"http://synapse.test/health"* ]]
 }
 
+@test "health fails closed when the logs cannot be read" {
+  ready_pod_json 0 > "$FIXTURES/pods.json"
+  touch "$FIXTURES/logs.fail"
+  run "$script" $(health_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"app=synapse"* ]]
+  [[ "$output" == *"logs"* ]]
+}
+
 @test "health fails when the logs show a volume error" {
   ready_pod_json 0 > "$FIXTURES/pods.json"
   echo "ERROR permission denied opening /data/media" > "$FIXTURES/logs.txt"
@@ -176,11 +216,20 @@ ready_pod_json() {
 
 # --- part 3: functional ---
 
-@test "matrix functional fails clearly when the verify-bot credentials are not exported" {
-  unset VERIFY_BOT_PASSWORD
+@test "matrix functional fails clearly when the verify-bot token is not exported" {
+  unset VERIFY_BOT_TOKEN
   run "$script" --volume vol1 --checks functional --service matrix --homeserver https://matrix.test
   [ "$status" -eq 1 ]
-  [[ "$output" == *"VERIFY_BOT_PASSWORD"* ]]
+  [[ "$output" == *"VERIFY_BOT_TOKEN"* ]]
+}
+
+@test "matrix functional never puts the token on a curl command line" {
+  export VERIFY_BOT_TOKEN=tok-should-not-leak-123 VERIFY_BOT_ROOM='!room:matrix.test'
+  echo '{"chunk":[{"content":{"body":"unrelated"}}]}' > "$FIXTURES/curl.out"
+  run "$script" --volume vol1 --checks functional --service matrix --homeserver https://matrix.test
+  [ -s "$FIXTURES/curl.calls" ]
+  [ "$(grep -c 'tok-should-not-leak-123' "$FIXTURES/curl.calls" || true)" -eq 0 ]
+  [ "$(grep -c 'Bearer' "$FIXTURES/curl.calls" || true)" -eq 0 ]
 }
 
 @test "photos functional fails clearly when the test account credentials are not exported" {
@@ -191,7 +240,7 @@ ready_pod_json() {
 }
 
 @test "matrix functional fails when the homeserver stops answering" {
-  export VERIFY_BOT_PASSWORD=pw
+  export VERIFY_BOT_TOKEN=tok VERIFY_BOT_ROOM='!room:matrix.test'
   echo 22 > "$FIXTURES/curl.rc"
   run "$script" --volume vol1 --checks functional --service matrix --homeserver https://matrix.test
   [ "$status" -eq 1 ]
@@ -219,27 +268,61 @@ ready_pod_json() {
 
 # --- part 4: fresh backup ---
 
+velero_backup() {
+  printf '{"items":[{"metadata":{"name":"b1"},"spec":{"includedNamespaces":%s},"status":{"phase":"%s"}}]}\n' "$1" "$2" > "$FIXTURES/backups.json"
+}
+
+cnpg_backup() {
+  printf '{"items":[{"metadata":{"name":"b1"},"spec":{"cluster":{"name":"%s"}},"status":{"phase":"%s"}}]}\n' "$1" "$2" > "$FIXTURES/backups.json"
+}
+
 @test "backup fails when no completed Velero backup is listed" {
-  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"InProgress"}}]}' > "$FIXTURES/backups.json"
-  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero
+  velero_backup '["matrix"]' InProgress
+  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero --backup-for matrix
   [ "$status" -eq 1 ]
   [[ "$output" == *"no completed"* ]]
 }
 
-@test "backup passes with a completed Velero backup" {
-  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"Completed"}}]}' > "$FIXTURES/backups.json"
-  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero
+@test "backup passes with a completed Velero backup that includes the workload namespace" {
+  velero_backup '["couchdb","matrix"]' Completed
+  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero --backup-for matrix
   [ "$status" -eq 0 ]
+}
+
+@test "backup passes with a completed Velero backup of every namespace" {
+  velero_backup '[]' Completed
+  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero --backup-for matrix
+  [ "$status" -eq 0 ]
+}
+
+@test "backup fails when the only completed Velero backup is of another namespace" {
+  velero_backup '["couchdb"]' Completed
+  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero --backup-for matrix
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"matrix"* ]]
 }
 
 @test "backup fails when no completed CNPG backup is listed" {
   echo '{"items":[]}' > "$FIXTURES/backups.json"
-  run "$script" --volume vol1 --checks backup --backup cnpg --backup-namespace matrix
+  run "$script" --volume vol1 --checks backup --backup cnpg --backup-namespace matrix --backup-for shared-postgres
   [ "$status" -eq 1 ]
 }
 
-@test "backup passes with a completed CNPG backup" {
-  echo '{"items":[{"metadata":{"name":"b1"},"status":{"phase":"completed"}}]}' > "$FIXTURES/backups.json"
-  run "$script" --volume vol1 --checks backup --backup cnpg --backup-namespace matrix
+@test "backup passes with a completed CNPG backup of the named cluster" {
+  cnpg_backup shared-postgres completed
+  run "$script" --volume vol1 --checks backup --backup cnpg --backup-namespace matrix --backup-for shared-postgres
   [ "$status" -eq 0 ]
+}
+
+@test "backup fails when the only completed CNPG backup is of another cluster" {
+  cnpg_backup other-db completed
+  run "$script" --volume vol1 --checks backup --backup cnpg --backup-namespace matrix --backup-for shared-postgres
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"shared-postgres"* ]]
+}
+
+@test "backup without --backup-for is a usage error" {
+  run "$script" --volume vol1 --checks backup --backup velero --backup-namespace velero
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--backup-for"* ]]
 }

@@ -7,7 +7,7 @@ setup() {
   export FIXTURES="${BATS_TEST_TMPDIR}/fixtures"
   mkdir -p "$FIXTURES"
   export PATH="${BATS_TEST_DIRNAME}/bin:${PATH}"
-  export VERIFY_METRICS_URL="http://sfu.test/metrics"
+  export VERIFY_METRICS_URLS="http://sfu.test/metrics"
 }
 
 metrics() {
@@ -53,6 +53,36 @@ metrics() {
 
 @test "a series that only shares the metric's prefix is not counted" {
   printf 'livekit_participant_total{node_id="a"} 0\nlivekit_participant_total_extra{node_id="a"} 5\n' > "$FIXTURES/curl.out"
+  run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"calls=0"* ]]
+}
+
+# --- several SFU pods: every one must be read and every one must answer ---
+
+@test "participants on every listed SFU are summed" {
+  export VERIFY_METRICS_URLS="http://a.test/metrics http://b.test/metrics"
+  printf 'livekit_participant_total{node_id="a"} 0\n' > "$FIXTURES/curl.out.http___a_test_metrics"
+  printf 'livekit_participant_total{node_id="b"} 3\n' > "$FIXTURES/curl.out.http___b_test_metrics"
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"calls=3"* ]]
+}
+
+@test "one unreachable SFU fails closed even when the other reports zero" {
+  export VERIFY_METRICS_URLS="http://a.test/metrics http://b.test/metrics"
+  printf 'livekit_participant_total{node_id="a"} 0\n' > "$FIXTURES/curl.out.http___a_test_metrics"
+  echo 7 > "$FIXTURES/curl.rc.http___b_test_metrics"
+  run "$script"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"http://b.test/metrics"* ]]
+  [[ "$output" != *"calls=0"* ]]
+}
+
+@test "zero participants on every SFU exits 0" {
+  export VERIFY_METRICS_URLS="http://a.test/metrics http://b.test/metrics"
+  printf 'livekit_participant_total{node_id="a"} 0\n' > "$FIXTURES/curl.out.http___a_test_metrics"
+  printf 'livekit_participant_total{node_id="b"} 0\n' > "$FIXTURES/curl.out.http___b_test_metrics"
   run "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"calls=0"* ]]

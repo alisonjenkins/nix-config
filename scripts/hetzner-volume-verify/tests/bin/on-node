@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stands in for a node shell (kubectl debug, ssh): logs the command, then runs it locally.
+echo "$*" >> "$FIXTURES/on-node.calls"
+exec "$@"
