@@ -205,7 +205,13 @@ in
             [ -n "$src" ] || { echo "no .raw found in ${imagePkg}" >&2; exit 1; }
 
             work=$(mktemp -d)
-            trap 'rm -rf "$work"' EXIT
+            # A failed run leaks a billing temp server + ssh key; cleanup removes them (unsafe alongside a concurrent publish).
+            cleanup() {
+              rm -rf "$work"
+              hcloud-upload-image cleanup \
+                || echo "WARNING: hcloud-upload-image cleanup failed; check for leaked servers: hcloud server list -l apricote.de/created-by=hcloud-upload-image" >&2
+            }
+            trap cleanup EXIT
             cp "$src" "$work/image.raw"
             chmod +w "$work/image.raw"
 
