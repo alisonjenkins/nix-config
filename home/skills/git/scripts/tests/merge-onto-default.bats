@@ -268,3 +268,18 @@ HOOK
   [[ "$output" == *"gh pr merge"* ]]
   [[ "$output" == *"will be unsigned"* ]]
 }
+
+@test "refuses to merge while a fixup! commit is ahead of main" {
+  feature_branch_with_commit "one"
+  git commit -q --allow-empty --fixup=HEAD
+
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
+  run "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"fixup"* ]]
+
+  run git ls-remote origin refs/heads/main
+  [ "${output%%$'\t'*}" = "$before_main" ]
+}

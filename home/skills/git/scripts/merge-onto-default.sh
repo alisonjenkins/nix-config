@@ -59,6 +59,11 @@ if [[ "$current_branch" == "$default_branch" ]]; then
   exit 1
 fi
 
+if ! "$script_dir/check-no-fixups.sh" "origin/$default_branch..HEAD"; then
+  echo "error: refusing to merge — fold the fixup commit(s) into their targets first (see above)" >&2
+  exit 1
+fi
+
 if ! "$script_dir/rebase-onto-default.sh"; then
   echo "error: rebase failed — resolve it before merging (see above)" >&2
   exit 1
