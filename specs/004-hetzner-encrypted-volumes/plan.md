@@ -188,7 +188,7 @@ Assumptions say.
 | A live file copy of a busy volume is inconsistent | A backup that cannot be restored | The restore test decides. The service is paused for the backup until it passes |
 | Terraform lives in another repository and may be behind | An unexpected plan | Pull, plan and read the diff before applying |
 | Seven days is short | A step is rushed | Gates do not move. If a gate fails, the deadline slips, not the check |
-| Kopia does not refresh credentials during an upload | A long backup fails partway | Test with a large upload in Phase B. A longer role session duration covers it |
+| Kopia does not refresh credentials during an upload | A long backup fails partway | Test with a large upload in Phase B. IRSA sessions last one hour, so large volumes are split across runs if needed |
 | The Velero node-agent gets no token | Uploads fail with no credentials | Annotate the node-agent service account too, and test in Phase B |
 | A save pause hitches the game | Players notice | Measure in the first live test. Move the interval if needed |
 | The proxy's backup step hangs | The server runs at cost | A time limit, then scale anyway and log loudly |
@@ -196,7 +196,7 @@ Assumptions say.
 | Memory pressure on the 8 GB master | Swap thrash slows the datastore, as on 2026-09-29 | Measure headroom first, set explicit limits, stop at a threshold, and never overlap backups and switchovers |
 | A failed verification has no tested way back | Data stuck on the new volume | A rollback runbook, rehearsed for a database and for a file volume before the first real move |
 | An interrupting step runs during a call | A call drops | A fail-closed check that the SFU reports no participants, run immediately before each step |
-| A long-lived storage key lingers | The no-keys requirement cannot be met | Find and remove the unmanaged restore key and revoke its AWS access key |
+| A stale credential secret lingers | The no-keys requirement cannot be shown | `matrix/cnpg-restore-aws-creds` is expired temporary credentials, not a key. Delete it and record that no AWS credential secret for backups remains |
 | Backups are the way back once old volumes are gone | A bad backup removes the safety net | Restore tests before any move. A fresh backup of the new volume before any removal |
 
 ## Post-design Constitution Check
