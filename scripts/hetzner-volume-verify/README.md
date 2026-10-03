@@ -19,8 +19,14 @@ Scripts are written test first: a failing `bats` test in `tests/`, then the scri
 
 ## Contents
 
-Nothing yet. The scripts arrive with their tests in the order of `specs/004-hetzner-encrypted-volumes/tasks.md`:
-`verify.sh`, `retain-pv.sh`, `destroy-old-volume.sh`, `check-no-call.sh`, `migrate-files.sh` and `check-world.sh`.
+- `verify.sh`: the verification gate, one result line per check and a final `verdict=`. Run `verify.sh` with no
+  arguments for its options. The Matrix functional check reads `VERIFY_BOT_PASSWORD` and `VERIFY_BOT_ROOM` from
+  the environment. The functional checks for photos, documents, notifications and the game server are not
+  implemented yet: they fail closed, so the gate never passes without them being run by hand and recorded.
+- `tests/`: bats tests, with fixture-driven fakes for `kubectl`, `lsblk`, `cryptsetup` and `curl` in `tests/bin`.
+
+Still to come, in the order of `specs/004-hetzner-encrypted-volumes/tasks.md`:
+`retain-pv.sh`, `destroy-old-volume.sh`, `check-no-call.sh`, `migrate-files.sh` and `check-world.sh`.
 
 ## Rules
 
