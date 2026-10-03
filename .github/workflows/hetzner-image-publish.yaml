@@ -1,0 +1,38 @@
+# Weekly Hetzner node image publish
+#
+# Builds the hetzner-karpenter-node-amd64 image and publishes it as a Hetzner
+# snapshot labelled purpose=k8s-node (the label Karpenter's HCloudNodeClass
+# selects on). The publish script removes its temp upload server on exit; see
+# hetzner-upload-leak-check.yaml for the periodic backstop.
+#
+# Requires the HCLOUD_TOKEN repo secret (read/write Hetzner Cloud project token).
+
+name: Publish Hetzner image
+
+on:
+  schedule:
+    # Saturday 18:00 UTC
+    - cron: "0 18 * * 6"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 180
+    # Backstop: never run fork-PR code on the home self-hosted runner.
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+      - name: Build and publish snapshot
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+        run: nix run .#publish-hetzner-snapshot
