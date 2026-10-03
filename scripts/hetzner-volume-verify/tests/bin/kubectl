@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Fixture-driven kubectl: answers from files in $FIXTURES, never touches a cluster.
+# Mutating verbs (patch, delete) are only logged to $FIXTURES/kubectl.calls.
 set -euo pipefail
 args="$*"
+echo "$args" >> "$FIXTURES/kubectl.calls"
 case "$args" in
   *"get secret"*) [ -f "$FIXTURES/secret.b64" ] || { echo "Error from server (NotFound)" >&2; exit 1; }; cat "$FIXTURES/secret.b64" ;;
   exec*) pod="$4"; cat "$FIXTURES/psql-$pod.txt" ;;
   *"get pods"*) cat "$FIXTURES/pods.json" ;;
   logs*) cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;
   *"get backups.velero.io"*|*"get backups.postgresql.cnpg.io"*) cat "$FIXTURES/backups.json" ;;
+  *"get pv "*) pv=$(sed -E 's/.*get pv ([^ ]+).*/\1/' <<<"$args"); [ -f "$FIXTURES/pv-$pv.policy" ] || { echo "Error from server (NotFound): pv $pv" >&2; exit 1; }; cat "$FIXTURES/pv-$pv.policy" ;;
+  patch*|delete*) ;;
   *) echo "fake kubectl: unhandled: $args" >&2; exit 99 ;;
 esac

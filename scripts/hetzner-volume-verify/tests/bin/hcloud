@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Logs every call; never talks to Hetzner.
+echo "$*" >> "$FIXTURES/hcloud.calls"
