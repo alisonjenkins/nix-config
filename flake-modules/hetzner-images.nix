@@ -198,9 +198,23 @@ in
         in
         pkgs.writeShellApplication {
           name = "publish-hetzner-snapshot";
-          runtimeInputs = [ pkgs.hcloud-upload-image pkgs.findutils pkgs.coreutils pkgs.util-linux pkgs.python3 ];
+          runtimeInputs = [ pkgs.hcloud-upload-image pkgs.curl pkgs.jq pkgs.findutils pkgs.coreutils pkgs.util-linux pkgs.python3 ];
           text = ''
             : "''${HCLOUD_TOKEN:?Set HCLOUD_TOKEN (e.g. via op run)}"
+
+            # Karpenter resolves the newest purpose=k8s-node snapshot and drifts
+            # every node when it changes, so only publish a new one when the
+            # image content (its store hash) is new.
+            image_hash=$(basename ${imagePkg} | cut -c1-32)
+            existing=$(curl -sf --retry 3 --retry-delay 5 \
+              -H "Authorization: Bearer $HCLOUD_TOKEN" \
+              "https://api.hetzner.cloud/v1/images?type=snapshot&label_selector=purpose%3Dk8s-node%2Cnix-image%3D$image_hash" \
+              | jq '.images | length')
+            if [ "$existing" -gt 0 ]; then
+              echo "Snapshot for image $image_hash already published; nothing to do."
+              exit 0
+            fi
+
             src=$(find ${imagePkg} -name '*.raw' | head -1)
             [ -n "$src" ] || { echo "no .raw found in ${imagePkg}" >&2; exit 1; }
 
@@ -236,7 +250,7 @@ in
               --architecture x86 \
               --location nbg1 \
               --description "talos-compat nixos-k8s-node amd64 ${version}" \
-              --labels purpose=k8s-node,os=nixos,arch=amd64
+              --labels "purpose=k8s-node,os=nixos,arch=amd64,nix-image=$image_hash"
           '';
         };
     };
