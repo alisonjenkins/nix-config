@@ -83,9 +83,19 @@
         # Bring up Tailscale. `hostname` is not in the stripped unit PATH (it's in
         # inetutils) → bare `$(hostname)` exits 127 [B27 class]. Read the kernel
         # hostname via a bash builtin redirection (no external `cat` either).
-        ${pkgs.tailscale}/bin/tailscale up \
-          --auth-key="$TAILSCALE_AUTH_KEY" \
-          --hostname="$(< /proc/sys/kernel/hostname)"
+        up_args=(--hostname="$(< /proc/sys/kernel/hostname)")
+        auth_key="$TAILSCALE_AUTH_KEY"
+        # An OAuth client secret (never expires, unlike a 90-day auth key) mints
+        # a key per login, which requires tags and takes ephemeral/preauthorized
+        # as query params.
+        if [[ "$auth_key" == tskey-client-* ]]; then
+          : "''${TAILSCALE_ADVERTISE_TAGS:?OAuth client secret needs TAILSCALE_ADVERTISE_TAGS (e.g. tag:k8s-node)}"
+          auth_key="$auth_key?ephemeral=true&preauthorized=true"
+        fi
+        if [ -n "''${TAILSCALE_ADVERTISE_TAGS:-}" ]; then
+          up_args+=(--advertise-tags="$TAILSCALE_ADVERTISE_TAGS")
+        fi
+        ${pkgs.tailscale}/bin/tailscale up --auth-key="$auth_key" "''${up_args[@]}"
 
         # Wait for Tailscale IP assignment
         for i in $(seq 1 30); do
