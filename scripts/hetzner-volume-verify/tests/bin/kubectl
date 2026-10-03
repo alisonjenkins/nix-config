@@ -11,6 +11,7 @@ case "$args" in
   logs*) cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;
   *"get backups.velero.io"*|*"get backups.postgresql.cnpg.io"*) cat "$FIXTURES/backups.json" ;;
   *"get pv "*) pv=$(sed -E 's/.*get pv ([^ ]+).*/\1/' <<<"$args"); [ -f "$FIXTURES/pv-$pv.policy" ] || { echo "Error from server (NotFound): pv $pv" >&2; exit 1; }; cat "$FIXTURES/pv-$pv.policy" ;;
+  "patch pv "*) pv=$(awk '{print $3}' <<<"$args"); echo Retain > "$FIXTURES/pv-$pv.policy" ;;
   patch*|delete*) ;;
   *) echo "fake kubectl: unhandled: $args" >&2; exit 99 ;;
 esac

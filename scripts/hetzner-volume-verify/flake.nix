@@ -17,6 +17,7 @@
             coreutils
             findutils
             gnugrep
+            hcloud
             jq
             kubectl
             rsync
