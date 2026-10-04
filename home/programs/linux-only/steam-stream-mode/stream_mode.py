@@ -1206,8 +1206,10 @@ class Session:
         self.client_id = None
         self.streaming = False
         # A stream begun from desktop capture while SteamVR ran, which only
-        # SteamVR exiting ends. See desktop_stream_started.
+        # SteamVR exiting ends, and the refresh SteamVR agreed for it. See
+        # desktop_stream_started.
         self.vr_stream = False
+        self.vr_refresh = None
         self.game_pid = None
         self.game_id = None
         self.pending = None
@@ -1483,6 +1485,7 @@ class Session:
         # The headset never reports a refresh to Steam. Left at the default
         # 60 Hz under a 90 Hz panel, frames alternate one refresh and two.
         refresh = vr_link_refresh() or VR_DEFAULT_REFRESH
+        self.vr_refresh = refresh
         log("stream-mode: desktop capture started with no stream announced; "
             "streaming to SteamVR at {} Hz until it exits".format(refresh))
         return self.begin_stream(fps=refresh)
@@ -1753,7 +1756,9 @@ class Session:
             self.output = OUTPUT_NAME
             if self.client_id is not None:
                 width, height = client_size(self.client_id, self.clients, self.max_capture)
-                refresh = client_refresh(self.client_id, self.clients, self.max_fps)
+                # The headset's rate is not learned per client: it is SteamVR's.
+                fps = self.vr_refresh if self.vr_stream else self.max_fps
+                refresh = client_refresh(self.client_id, self.clients, fps)
                 self.apply_mode(width, height, refresh)
             set_output_enabled(OUTPUT_NAME, True)
             log("stream-mode: niri reloaded its config; restored {}".format(OUTPUT_NAME))
@@ -1794,6 +1799,7 @@ class Session:
         """
         self.streaming = False
         self.vr_stream = False
+        self.vr_refresh = None
         self.capture_waiting = False
         self.nudge_return_to = None
         self.held_button_check_due = False

@@ -1596,6 +1596,13 @@ class TestOutputLifetime(unittest.TestCase):
         self.start_vr_stream(link_refresh=None)
         self.assertEqual(self.modes[-1][3], stream_mode.VR_DEFAULT_REFRESH)
 
+    def test_a_config_reload_mid_vr_stream_keeps_the_headsets_rate(self):
+        """niri drops IPC changes on reload; the headset's rate is not learned."""
+        s = self.start_vr_stream(link_refresh=90)
+        self.modes.clear()
+        s.reassert_output()
+        self.assertEqual(self.modes[-1][3], 90)
+
     def test_another_client_connecting_mid_vr_stream_leaves_the_output(self):
         """An idle Mac reconnecting resized the output under the game."""
         s = self.start_vr_stream()
