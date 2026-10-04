@@ -35,6 +35,7 @@ something is wrong.
 | [0015](0015-positioned-sink-for-stream-audio.md) | Stream audio through a positioned sink, chosen per client | Accepted |
 | [0016](0016-performance-power-profile-during-vr.md) | Hold the performance power profile for a VR session's lifetime, event-driven | Accepted, causation unconfirmed |
 | [0025](0025-steam-link-vr-stream-lifecycle.md) | Start a Steam Link VR stream on desktop capture, end it when SteamVR exits | Accepted, pending live test |
+| [0028](0028-draw-cursor-into-vr-stream-capture.md) | Draw the cursor into the capture during a Steam Link VR stream | Accepted, pending live test |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
