@@ -42,3 +42,33 @@ Afterwards both Postgres clusters were healthy, no pod was failing, and the mast
 Observation for the script: `verify.sh --storageclass` is an argument, so the encryption check compares that class's
 Secret reference with `--secret`, not the class the volume was actually provisioned with. The device and mapping checks
 still catch a plain volume (as above), so the gate is safe, but reading the class from the PV would be tighter.
+
+## T025: what a wrong passphrase Secret does (2026-10-04T05:32Z to 05:35Z)
+
+Two scratch StorageClasses in `enc-test`, each with a throwaway volume. The real Secret `kube-system/hcloud-volume-passphrase`
+was never touched: its `resourceVersion` was 53972795 before and after.
+
+| Case | Result |
+|---|---|
+| `node-publish-secret-name` points at a Secret that does not exist | **Safe.** The volume attached, but the pod stayed in `ContainerCreating` with `FailedMount … failed to find the secret enc-test-does-not-exist … not found`. Nothing was mounted. |
+| The Secret exists but has no `encryption-passphrase` key (a wrong key name) | **Silent plain text.** The pod ran with no warning. Inside it, `/data` was an `ext4` mount on `/dev/disk/by-id/scsi-0HC_Volume_107028437` (major 8, the raw disk), not a device-mapper device. |
+
+This matches the driver source (`mount.go:113`): an empty passphrase skips LUKS. A missing Secret is stopped by kubelet. A
+Secret with the wrong key, or an empty value, is not. The hazard is the first mount of a new volume, when the driver formats it:
+an existing LUKS volume mounted with an empty passphrase fails to mount, because the raw device is not ext4. So the guard has to
+act when a claim is created. That is task T025a. `verify.sh` part 0 also catches such a volume after the fact (it fails a
+plain device, as in T024).
+
+## T026: online resize of an encrypted volume (2026-10-04T05:35Z to 05:37Z)
+
+A 10 GiB claim on `hcloud-volumes-encrypted` held a 100 MiB random file and its SHA-256. The claim was patched to 20 Gi while
+the pod kept it mounted.
+
+- Patch at 05:36:29Z, claim capacity `20Gi` at 05:37:16Z (47 s). Events: `Resizing`, `FileSystemResizeRequired`,
+  `FileSystemResizeSuccessful`. The pod did not restart (0 restarts).
+- `df` inside the pod went from 9.7G to 19.6G. `sha256sum -c` of the file: OK. The marker file was intact.
+- On the node (read-only): raw device 21474836480 bytes `crypto_LUKS`; active mapping 21472739328 bytes (20 GiB less the 2 MiB
+  LUKS header), LUKS1 `aes-xts-plain64`, `ext4` inside. No driver secret was needed for the resize, as the source suggested.
+
+Cleanup: namespace `enc-test`, both scratch classes and the scratch Secret deleted; no `enc-test` PV remains; both root debug
+pods were deleted. Both Postgres clusters were healthy afterwards and the master was at 75% memory.
