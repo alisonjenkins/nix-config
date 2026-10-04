@@ -176,6 +176,14 @@ STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
 # starting desktop capture for a game shown in the headset, and SteamVR
 # exiting is its end. See Session.desktop_stream_started.
 DESKTOP_STREAM_START_RE = re.compile(r">>> Starting desktop stream")
+# The headset's refresh as SteamVR agreed it, logged by its vrlink driver.
+VRSERVER_LOG = os.environ.get(
+    "STREAM_MODE_VRSERVER_LOG",
+    os.path.expanduser("~/.local/share/Steam/logs/vrserver.txt"),
+)
+VR_LINK_RATE_RE = re.compile(r"vrlink: SendUpdatedFramerateRequest: Best client match ([\d.]+) Hz")
+# What a Quest 2 agreed on 2026-10-04 when the log said nothing else.
+VR_DEFAULT_REFRESH = int(os.environ.get("STREAM_MODE_VR_DEFAULT_REFRESH", "90"))
 # Steam makes its sink the default just after the stream starts. Routing on
 # this line rather than the start marker means Steam cannot undo it after.
 STEAM_SINK_DEFAULT_RE = re.compile(
@@ -288,6 +296,19 @@ def steam_is_running():
 
 def vrserver_running():
     return process_running("vrserver")
+
+
+def vr_link_refresh(path=None):
+    """The refresh SteamVR last agreed with the headset, in whole Hz, or None."""
+    try:
+        with open(path or VRSERVER_LOG, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            fh.seek(max(0, fh.tell() - LOG_SCAN_BYTES))
+            text = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    rates = VR_LINK_RATE_RE.findall(text)
+    return round(float(rates[-1])) if rates else None
 
 
 def signal_process(pid, sig):
@@ -1343,14 +1364,19 @@ class Session:
         log("stream-mode: turned {} off".format(name))
         return True
 
-    def begin_stream(self, client_name=None):
+    def begin_stream(self, client_name=None, fps=None):
         """A stream has started: say where to render.
 
         client_name is the one Steam names in "Streaming started to", which is
         the client actually streaming. The last client to connect need not
         be: the Deck connected and the Mac reconnected in the same second, the
         Deck streamed, and its size was saved as the Mac's.
+
+        fps overrides the client's learned refresh, for a client that never
+        reports one.
         """
+        if client_name is not None:
+            self.vr_stream = False
         self.stream_client = client_name
         streaming_id = self.known_clients.get(client_name)
         if streaming_id is not None and streaming_id != self.client_id:
@@ -1379,7 +1405,7 @@ class Session:
         # that is what the output happened to be at the time.
         if self.client_id is not None:
             width, height = client_size(self.client_id, self.clients, self.max_capture)
-            refresh = client_refresh(self.client_id, self.clients, self.max_fps)
+            refresh = client_refresh(self.client_id, self.clients, fps)
         else:
             size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
             width, height = size
@@ -1419,9 +1445,15 @@ class Session:
         if self.streaming or self.client_id is None:
             return False
         self.vr_stream = vrserver_running()
+        if not self.vr_stream:
+            log("stream-mode: desktop capture started with no stream announced; streaming")
+            return self.begin_stream()
+        # The headset never reports a refresh to Steam. Left at the default
+        # 60 Hz under a 90 Hz panel, frames alternate one refresh and two.
+        refresh = vr_link_refresh() or VR_DEFAULT_REFRESH
         log("stream-mode: desktop capture started with no stream announced; "
-            "streaming{}".format(" to SteamVR until it exits" if self.vr_stream else ""))
-        return self.begin_stream()
+            "streaming to SteamVR at {} Hz until it exits".format(refresh))
+        return self.begin_stream(fps=refresh)
 
     def check_vr_alive(self):
         """End a VR stream once SteamVR has exited; nothing else marks its end.

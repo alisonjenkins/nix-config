@@ -1269,6 +1269,8 @@ class TestOutputLifetime(unittest.TestCase):
                 "move_window_to_output",
                 "steam_is_running",
                 "vrserver_running",
+                "vr_link_refresh",
+                "output_refresh",
                 "signal_process",
             )
         }
@@ -1570,6 +1572,36 @@ class TestOutputLifetime(unittest.TestCase):
         s.desktop_stream_started()
         self.assertFalse(s.check_vr_alive())
         self.assertTrue(s.streaming)
+
+    def start_vr_stream(self, link_refresh=90):
+        stream_mode.vrserver_running = lambda: True
+        stream_mode.vr_link_refresh = lambda: link_refresh
+        stream_mode.output_refresh = lambda name: 60
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(10933890668138783182, "device")
+        s.desktop_stream_started()
+        return s
+
+    def test_a_vr_stream_runs_the_output_at_the_headsets_rate(self):
+        """A 60 Hz output in a 90 Hz headset holds frames for one refresh,
+        then two: judder that shows most when turning to aim."""
+        self.start_vr_stream(link_refresh=90)
+        self.assertEqual(self.modes[-1], (stream_mode.OUTPUT_NAME, 1280, 800, 90))
+
+    def test_a_vr_stream_follows_a_120_hz_headset(self):
+        self.start_vr_stream(link_refresh=120)
+        self.assertEqual(self.modes[-1][3], 120)
+
+    def test_a_vr_stream_with_no_known_rate_runs_at_90(self):
+        self.start_vr_stream(link_refresh=None)
+        self.assertEqual(self.modes[-1][3], stream_mode.VR_DEFAULT_REFRESH)
+
+    def test_a_remote_play_stream_after_vr_is_not_a_vr_stream(self):
+        """Ended by its own stop marker, not by SteamVR exiting."""
+        s = self.start_vr_stream()
+        s.known_clients["ali-mba"] = 123
+        s.begin_stream("ali-mba")
+        self.assertFalse(s.vr_stream)
 
     def test_a_remote_play_stream_is_not_ended_by_steamvr_exiting(self):
         stream_mode.vrserver_running = lambda: False
@@ -2346,6 +2378,33 @@ class TestNiriSocket(unittest.TestCase):
         live = os.path.join(self.tmp.name, "niri.wayland-1.{}.sock".format(os.getpid()))
         open(live, "w").close()
         self.assertEqual(stream_mode.niri_env()["NIRI_SOCKET"], live)
+
+
+class TestVrLinkRefresh(unittest.TestCase):
+    """SteamVR logs the rate it agreed with the headset; the last one stands."""
+
+    def write(self, text):
+        fh = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False)
+        self.addCleanup(os.remove, fh.name)
+        fh.write(text)
+        fh.close()
+        return fh.name
+
+    def test_reads_the_last_agreed_rate(self):
+        path = self.write(
+            "Sun Oct 04 2026 12:47:58.122630 [Info] - vrlink: SendUpdatedFramerateRequest: "
+            "Best client match 72.00 Hz (host preferred 90.00 Hz)\n"
+            "Sun Oct 04 2026 12:47:58.169650 [Info] - vrlink: \t120.000000 Hz\n"
+            "Sun Oct 04 2026 12:47:58.181191 [Info] - vrlink: SendUpdatedFramerateRequest: "
+            "Best client match 90.00 Hz (host preferred 90.00 Hz)\n"
+        )
+        self.assertEqual(stream_mode.vr_link_refresh(path), 90)
+
+    def test_no_agreed_rate_is_none(self):
+        self.assertIsNone(stream_mode.vr_link_refresh(self.write("nothing here\n")))
+
+    def test_a_missing_log_is_none(self):
+        self.assertIsNone(stream_mode.vr_link_refresh("/nonexistent/vrserver.txt"))
 
 
 class TestStreamTarget(unittest.TestCase):
