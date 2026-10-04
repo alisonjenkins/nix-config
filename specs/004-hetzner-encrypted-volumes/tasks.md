@@ -199,8 +199,8 @@ that tasks inside this phase marked [P] may overlap.
 
 **Independent test**: Quickstart E3.
 
-- [ ] T070 [US6] [CONSENT] Recovery drill from the repository copy. Write test data to a throwaway encrypted volume, detach it, and attach it to a pod through a PV whose `nodePublishSecretRef` points at a Secret built from `sops -d` of `secrets/hcloud-volume-passphrase.enc.yaml`. Read the data back.
-- [ ] T071 [US6] [CONSENT] Repeat T070 with a Secret built only from the password manager copy (the owner supplies it with `op`; never echo it). Both drills must read the data. Delete the throwaways, and record the results in `evidence/storage.md` (SC-006).
+- [x] T070 [US6] [CONSENT] Recovery drill from the repository copy. Write test data to a throwaway encrypted volume, detach it, and attach it to a pod through a PV whose `nodePublishSecretRef` points at a Secret built from `sops -d` of `secrets/hcloud-volume-passphrase.enc.yaml`. Read the data back.
+- [x] T071 [US6] [CONSENT] Repeat T070 with a Secret built only from the password manager copy (the owner supplies it with `op`; never echo it). Both drills must read the data. Delete the throwaways, and record the results in `evidence/storage.md` (SC-006).
 
 ---
 

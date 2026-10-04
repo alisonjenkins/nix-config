@@ -117,3 +117,22 @@ The owner approved creating both items. Each was created in the `Personal` vault
 For each, the hash of the 1Password value, the SOPS file in git and the live Secret (`kube-system/hcloud-volume-passphrase`,
 `velero/velero-repo-credentials`) are identical. Each item's notes say what it is, where else it lives, and that losing the passphrase loses the encrypted
 volumes' data (and, for the repository password, makes every Velero backup unreadable). This closes FR-003 and the password-manager part of T012 and T013.
+
+## T070, T071: the volume reads back with either copy of the passphrase (2026-10-04T12:55Z to 13:15Z)
+
+SC-006. A throwaway 10 GiB claim on `hcloud-volumes-encrypted` in `enc-test` was written with a 4 MiB random file and its SHA-256
+(`802280e1…`), its PV set to `Retain`, and the pod and claim deleted, which freed the volume at Hetzner. The old PV object was deleted
+(its Secret reference is baked into it), then the volume was attached again twice through a static PV (same `volumeHandle`) whose
+`nodePublishSecretRef` named a Secret built from one source each time:
+
+| Drill | Secret built from | Result |
+|---|---|---|
+| T070 | `sops -d` of `secrets/hcloud-volume-passphrase.enc.yaml` in the repository | `sha256sum -c` OK, same hash |
+| T071 | the password manager item "Hetzner K8s - Volume Encryption Passphrase" only | `sha256sum -c` OK, same hash |
+
+Both Secrets were 64 bytes with the same SHA-256 prefix (`669e024a`), so the two copies are identical. No value was printed. The reader
+pods mounted the claim read-only. Cleaned up: pods, claims, PVs, both drill Secrets and the namespace are deleted, and the orphaned
+Hetzner volume (id 107030480, labelled `pvc-name: drill`) was deleted through the API after checking its name and labels.
+
+The static claims were of the encrypted class, so the Kyverno claim guard ran on them and admitted them because
+`kube-system/hcloud-volume-passphrase` is non-empty.
