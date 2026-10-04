@@ -20,6 +20,7 @@
             hcloud
             jq
             postgresql
+            (python3.withPackages (ps: [ ps.lz4 ]))
             kubectl
             rsync
             shellcheck
