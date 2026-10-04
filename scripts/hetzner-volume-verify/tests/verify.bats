@@ -139,6 +139,60 @@ files_args() {
   [[ "$output" == *"b"* ]]
 }
 
+manifest_args() {
+  echo --volume vol1 --checks compare --kind files --old-manifest "${BATS_TEST_TMPDIR}/old.manifest" --new-manifest "${BATS_TEST_TMPDIR}/new.manifest"
+}
+
+write_manifests() {
+  printf './a\t6\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/old.manifest"
+  printf './a\t6\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+}
+
+@test "manifest compare passes on identical manifests" {
+  write_manifests
+  run "$script" $(manifest_args)
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"files=2 bytes=11"* ]]
+}
+
+@test "manifest compare fails when a file is missing from the new manifest" {
+  write_manifests
+  printf './a\t6\taaa\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  run "$script" $(manifest_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"differing paths: ./sub/b"* ]]
+}
+
+@test "manifest compare fails when a file size changed" {
+  write_manifests
+  printf './a\t7\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  run "$script" $(manifest_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"differing paths: ./a"* ]]
+}
+
+@test "manifest compare fails when only a checksum changed" {
+  write_manifests
+  printf './a\t6\taaa\n./sub/b\t5\tccc\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  run "$script" $(manifest_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"differing paths: ./sub/b"* ]]
+}
+
+@test "manifest compare fails when a manifest cannot be read" {
+  write_manifests
+  rm "${BATS_TEST_TMPDIR}/new.manifest"
+  run "$script" $(manifest_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot read"* ]]
+}
+
+@test "files compare needs both manifests or both directories" {
+  run "$script" --volume vol1 --checks compare --kind files --old-manifest "${BATS_TEST_TMPDIR}/old.manifest"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--new-manifest"* ]]
+}
+
 db_args() {
   echo --volume db1 --checks compare --kind database --namespace matrix --old-pod shared-postgres-1 --new-pod shared-postgres-2 --db synapse
 }
