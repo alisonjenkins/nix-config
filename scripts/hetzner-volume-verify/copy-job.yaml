@@ -2,15 +2,20 @@
 # Copies one claim onto another and writes a path, size and sha256 manifest of both, for
 # migrate-files.sh (spec 004 T062). The old claim is mounted read-only, so the job cannot change the
 # data it copies from. Rendered by migrate-files.sh with envsubst; do not apply it by hand while the
-# workload still runs. Only the five variables below are substituted: the script text uses $p and
+# workload still runs. Only the seven variables below are substituted: the script text uses $p and
 # $(...) of its own, which envsubst must not touch.
+#
+# Runs as a fixed non-root uid:gid because the namespaces enforce Pod Security restricted. rsync -a
+# keeps ownership only when it can chown, so --uid/--gid must equal the owner of the files on the old
+# claim: a non-root rsync cannot give files to anyone else. The manifest records uid:gid per file, so
+# an owner mismatch between the claims shows up as a difference in verify.sh.
 #
 # Image: needs rsync and sha256sum in one image, and the Kyverno policy wants pinned tags. Alpine's
 # busybox has sha256sum, find, wc and sort; the rsync-ssh image is Alpine plus rsync. Override with
 # COPY_IMAGE in the environment of migrate-files.sh.
 #
 # The manifest lines go to the pod log between MIGRATE-MANIFEST-BEGIN/END markers, one block per
-# claim, tab separated: path, bytes, sha256. Nothing is deleted from the new claim (no --delete), so a
+# claim, tab separated: path, bytes, sha256, uid:gid. Nothing is deleted from the new claim (no --delete), so a
 # file that was already there shows up in the manifest comparison as a difference.
 apiVersion: batch/v1
 kind: Job
@@ -27,9 +32,20 @@ spec:
         purpose: migrate-files
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: ${UID_NUM}
+        runAsGroup: ${GID_NUM}
+        fsGroup: ${GID_NUM}
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: copy
           image: ${IMAGE}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           command:
             - sh
             - -c
@@ -41,7 +57,7 @@ spec:
               manifest() {
                 echo "MIGRATE-MANIFEST-BEGIN $2"
                 (cd "$1" && find . -type f | LC_ALL=C sort | while IFS= read -r p; do
-                  printf '%s\t%s\t%s\n' "$p" "$(wc -c <"$p" | tr -d ' ')" "$(sha256sum <"$p" | cut -d' ' -f1)"
+                  printf '%s\t%s\t%s\t%s\n' "$p" "$(wc -c <"$p" | tr -d ' ')" "$(sha256sum <"$p" | cut -d' ' -f1)" "$(stat -c %u:%g "$p")"
                 done)
                 echo "MIGRATE-MANIFEST-END $2"
               }

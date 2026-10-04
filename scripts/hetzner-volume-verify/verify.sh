@@ -15,7 +15,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               (for example a kubectl debug or ssh wrapper). Without it the checks run on this machine.
   compare:    --kind files    --old-dir DIR --new-dir DIR
               --kind files    --old-manifest FILE --new-manifest FILE
-              (manifests are the tab separated path, size, sha256 files that migrate-files.sh saves)
+              (manifests are the tab separated path, size, sha256, uid:gid files that migrate-files.sh saves)
               --kind database --namespace NS --old-pod POD --new-pod POD --db NAME[,NAME...]
   health:     --namespace NS --selector LABEL=VALUE [--health-url URL] [--health-seconds N]
   functional: --service matrix|photos|documents|monitoring|notifications|game

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copy a files volume onto its encrypted replacement (spec 004 T062).
 # Refuses unless the service is scaled to zero and no pod mounts either claim. Runs copy-job.yaml
-# (rsync -a --checksum old -> new), waits for it, and saves a path, size and sha256 manifest of
+# (rsync -a --checksum old -> new), waits for it, and saves a path, size, sha256 and owner manifest of
 # each claim for verify.sh --old-manifest/--new-manifest. Dry run unless --execute is given.
 # The finished Job is left in place as a record and so a re-run refuses; delete it to run again.
 set -euo pipefail
@@ -11,20 +11,22 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() {
   cat >&2 <<'EOF'
 usage: migrate-files.sh --namespace NS --service NAME --old-claim PVC --new-claim PVC
-         --manifest-dir DIR [--execute]
+         --manifest-dir DIR --uid N --gid N [--execute]
   --service is the Deployment or StatefulSet that uses the claims; it must be scaled to zero.
-  Writes DIR/old.manifest and DIR/new.manifest (tab separated path, bytes, sha256, sorted by path).
+  --uid and --gid are what the job runs as (Pod Security restricted: non-zero uid). They must equal
+  the owner of the files on the old claim, or rsync -a cannot keep ownership and the manifests differ.
+  Writes DIR/old.manifest and DIR/new.manifest (tab separated path, bytes, sha256, uid:gid, sorted by path).
   Environment: COPY_IMAGE (job image, needs rsync and sha256sum), MIGRATE_TIMEOUT_SECONDS,
   MIGRATE_POLL_INTERVAL.
 EOF
   exit 2
 }
 
-namespace="" service="" old_claim="" new_claim="" manifest_dir="" execute=0
+namespace="" service="" old_claim="" new_claim="" manifest_dir="" uid="" gid="" execute=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --execute) execute=1; shift; continue ;;
-    --namespace | --service | --old-claim | --new-claim | --manifest-dir) ;;
+    --namespace | --service | --old-claim | --new-claim | --manifest-dir | --uid | --gid) ;;
     *) echo "migrate-files: unknown option $1" >&2; usage ;;
   esac
   [ $# -ge 2 ] || usage
@@ -34,14 +36,18 @@ while [ $# -gt 0 ]; do
     --old-claim) old_claim=$2 ;;
     --new-claim) new_claim=$2 ;;
     --manifest-dir) manifest_dir=$2 ;;
+    --uid) uid=$2 ;;
+    --gid) gid=$2 ;;
   esac
   shift 2
 done
 for req in namespace:--namespace service:--service old_claim:--old-claim new_claim:--new-claim \
-  manifest_dir:--manifest-dir; do
+  manifest_dir:--manifest-dir uid:--uid gid:--gid; do
   name=${req%%:*}
   [ -n "${!name}" ] || { echo "migrate-files: ${req##*:} is required" >&2; usage; }
 done
+[[ "$uid" =~ ^[1-9][0-9]*$ ]] || { echo "migrate-files: --uid must be a positive number (Pod Security restricted forbids root), got '$uid'" >&2; usage; }
+[[ "$gid" =~ ^[0-9]+$ ]] || { echo "migrate-files: --gid must be a number, got '$gid'" >&2; usage; }
 
 # Pinned because the cluster's policy rejects floating tags; see the header of copy-job.yaml.
 image=${COPY_IMAGE:-docker.io/instrumentisto/rsync-ssh:alpine3.20-r0}
@@ -76,14 +82,14 @@ if kubectl get job "$job_name" -n "$namespace" -o jsonpath='{.status.succeeded}/
 fi
 
 if [ "$execute" -ne 1 ]; then
-  echo "dry run: would run job $job_name in $namespace copying claim $old_claim to $new_claim (rsync -a --checksum) and save manifests in $manifest_dir (add --execute)"
+  echo "dry run: would run job $job_name in $namespace copying claim $old_claim to $new_claim (rsync -a --checksum) as $uid:$gid and save manifests in $manifest_dir (add --execute)"
   exit 0
 fi
 
 # Step run-copy-job.
 # shellcheck disable=SC2016 # the variable names are for envsubst, not the shell
-env NAMESPACE="$namespace" JOB_NAME="$job_name" OLD_CLAIM="$old_claim" NEW_CLAIM="$new_claim" IMAGE="$image" \
-  envsubst '$NAMESPACE $JOB_NAME $OLD_CLAIM $NEW_CLAIM $IMAGE' <"$here/copy-job.yaml" \
+env NAMESPACE="$namespace" JOB_NAME="$job_name" OLD_CLAIM="$old_claim" NEW_CLAIM="$new_claim" IMAGE="$image" UID_NUM="$uid" GID_NUM="$gid" \
+  envsubst '$NAMESPACE $JOB_NAME $OLD_CLAIM $NEW_CLAIM $IMAGE $UID_NUM $GID_NUM'<"$here/copy-job.yaml" \
   | kubectl apply -f - >&2 \
   || refuse run-copy-job "rendering or applying job $job_name failed"
 
