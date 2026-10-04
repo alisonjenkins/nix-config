@@ -13,10 +13,11 @@ setup() {
   printf 'crypto_LUKS\n' > "$FIXTURES/fstype.txt"
   printf 'c2VjcmV0\n' > "$FIXTURES/secret.b64"
   printf 'kube-system/hcloud-volume-passphrase\n' > "$FIXTURES/sc.ref"
+  printf 'hcloud-volumes-encrypted\n' > "$FIXTURES/pv-pvc-1.class"
 }
 
 enc_args() {
-  echo --volume vol1 --checks encryption --device "$device" --mapping pvc-1 \
+  echo --volume vol1 --checks encryption --device "$device" --mapping pvc-1 --pv pvc-1 \
     --secret kube-system/hcloud-volume-passphrase --storageclass hcloud-volumes-encrypted
 }
 
@@ -350,4 +351,37 @@ cnpg_backup() {
   [ "$(grep -c 'check=compare result=fail' <<<"$output")" -eq 1 ]
   [[ "$output" == *"db=mas"*"result=fail"* || "$output" == *"result=fail"*"mas"* ]]
   [[ "$output" == *"verdict=failed"* ]]
+}
+
+# --- found in review: the class must come from the volume, and a LUKS header is not an ext4 hit ---
+
+@test "encryption fails when the PV was provisioned from a different class" {
+  printf 'hcloud-volumes\n' > "$FIXTURES/pv-pvc-1.class"
+  run "$script" $(enc_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"pvc-1"* ]]
+  [[ "$output" == *"hcloud-volumes-encrypted"* ]]
+}
+
+@test "encryption fails when the PV cannot be read" {
+  rm "$FIXTURES/pv-pvc-1.class"
+  run "$script" $(enc_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"pvc-1"* ]]
+}
+
+@test "encryption without --pv is a usage error" {
+  run "$script" --volume vol1 --checks encryption --device "$device" --mapping pvc-1 \
+    --secret kube-system/hcloud-volume-passphrase --storageclass hcloud-volumes-encrypted
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--pv"* ]]
+}
+
+@test "bytes 53 ef at offset 1080 of a device with a LUKS header are not an ext4 hit" {
+  printf 'LUKS\xba\xbe' > "$device"
+  head -c $((1080 - 6)) /dev/zero >> "$device"
+  printf '\x53\xef' >> "$device"
+  head -c 3000 /dev/zero >> "$device"
+  run "$script" $(enc_args)
+  [ "$status" -eq 0 ]
 }
