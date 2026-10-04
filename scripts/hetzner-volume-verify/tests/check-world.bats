@@ -26,11 +26,11 @@ mk() { python3 "$mkr" "$@"; }
   [[ "${lines[-1]}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\ chunks_read=1 ]]
 }
 
-@test "gzip, zlib, lz4 and uncompressed chunks all pass" {
-  mk "$world/region/r.0.0.mca" 0,0:gzip 1,0:zlib 2,0:lz4 3,0:none
+@test "gzip, zlib, lz4 (block stream and frame) and uncompressed chunks all pass" {
+  mk "$world/region/r.0.0.mca" 0,0:gzip 1,0:zlib 2,0:lz4 3,0:none 4,0:lz4frame
   run "$script" "$world"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"chunks_read=4 unreadable=0 files=1"* ]]
+  [[ "$output" == *"chunks_read=5 unreadable=0 files=1"* ]]
 }
 
 @test "truncated compressed data fails naming the file and chunk" {

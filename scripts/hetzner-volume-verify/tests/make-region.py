@@ -14,6 +14,7 @@ import zlib
 from pathlib import Path
 
 import lz4.block
+import lz4.frame
 
 SECTOR = 4096
 
@@ -49,7 +50,13 @@ def encode(kind: str, seed: int) -> tuple[int, bytes]:
     if kind == "gzip":
         return 1, gzip.compress(nbt)
     if kind == "lz4":
-        return 4, lz4.block.compress(nbt, store_size=False)
+        # lz4-java LZ4BlockOutputStream framing, as Minecraft 1.20.5+ writes it (checksum not checked).
+        block = lz4.block.compress(nbt, store_size=False)
+        head = b"LZ4Block" + b"\x20" + struct.pack("<iiI", len(block), len(nbt), 0)
+        end = b"LZ4Block" + b"\x16" + struct.pack("<iiI", 0, 0, 0)
+        return 4, head + block + end
+    if kind == "lz4frame":
+        return 4, lz4.frame.compress(nbt)
     if kind == "none":
         return 3, nbt
     if kind == "truncated":
