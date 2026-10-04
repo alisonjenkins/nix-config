@@ -94,3 +94,43 @@ destroyed the new claim. For those two only the old PV object and its Hetzner vo
 After the removals `hcloud volume list` shows the five encrypted volumes, the master state disk and four plain data volumes
 that are still to move: `ente-db` (`pvc-c2e48d50…`), Synapse media (`pvc-27565201…`), `shared-postgres` (`pvc-5e189937…`) and the
 Minecraft world (`pvc-22ab50ca…`).
+
+## Synapse media `matrix-stack-synapse-media` -> `matrix-stack-synapse-media-enc` (T062 to T066, 2026-10-04)
+
+Done at the owner's request ("do the matrix stuff now quickly"), on a Sunday, with `check-no-call.sh` printing `calls=0`.
+
+| Step | Result |
+|---|---|
+| Chart value | `synapse.media.storage.existingClaim` (the chart's own claim carries `helm.sh/resource-policy: keep`); new claim `matrix-stack-synapse-media-enc` merged first (home-cluster#1580) |
+| Backup before the move | `matrix-enc-pre-20261004t163156z` `Completed`, no errors (media 858,760,764 bytes; the `pgdata` exclusion was already in place) |
+| Stop | 16:34:54Z: `matrix` Flux Kustomization and the `matrix-stack` HelmRelease (in namespace `matrix`) suspended, `matrix-stack-synapse-main` scaled to 0 |
+| Copy | `migrate-files.sh --uid 10091 --gid 10091`: 890 files, finished 16:36:31Z, manifests **identical** (owner `10091:10091`) |
+| Old PV | `Retain` before the switch |
+| Switch (home-cluster#1581) and resume | Synapse back on the encrypted claim at about 16:40Z; Synapse was down about **5 minutes** (the chart upgrade and pod start dominated; the copy took 1.5 minutes) |
+| Mount in the pod | `/dev/mapper/scsi-0HC_Volume_107031334` |
+| Health | all Matrix pods Running, client API 200 from outside, the SFU and its auth service Running (`lk_jwt_service` health checks passing); rooms that were in a call closed on idle timeout when the database restarted at 16:18Z, earlier. User `@lace` was syncing from Element X and a browser throughout |
+| Encryption verdict | `verdict=verified` at 16:40:36Z (volume 107031334) |
+
+### Restore test of the media backup (T046)
+
+Backup `matrix-media-staging-20261004t172840z`: a read-write staging pod mounting the claim (a read-only second mount of a volume already
+mounted read-write by Synapse fails: `mount -o ro` on the same device) selected by label, with `persistentvolumes`, `Completed`, no errors, 858,760,764 bytes.
+Restore `restore-test-matrix-d172914` into namespace `restore-test-matrix`: the data restore `Completed` (858,760,764 of 858,760,764 bytes),
+the scratch claim bound to **its own new encrypted volume** (`check-restored-pvcs.sh` passed), and one expected error: Velero also
+restored the Synapse pod because it mounts the selected claim, and that pod could not be created in the scratch namespace (its
+service account does not exist there), so no second Synapse started. Comparison: the restored volume's manifest (path, size, sha256,
+owner) is **identical** to the live one for all 890 files; the only extra file is Velero's own `.velero/<id>` marker.
+
+Things that did not work, for the next restore test of a pod with many init containers: patching the restored Synapse pod's
+`initContainers` through a resource modifier (Velero's `restore-wait` init container and the chart's own both mount volumes that the
+patch removed, so pod creation failed three times), and restoring a pod that is not the staging pod. Restore a staging pod instead.
+A resource modifier's `value` must be a JSON **string**, not YAML. A restore that is deleted while `InProgress` keeps its finalizers and
+blocks every later restore until they are removed by hand (the later restore stays without a phase).
+
+Cleaned up: the scratch namespace and its volume, the Restore objects, the modifier ConfigMap and the staging pod.
+
+### Removal and schedule
+
+The old plain media volume (Hetzner id 106859394, PV `pvc-27565201…`) was removed with `destroy-old-volume.sh --execute` at
+**17:32:30Z**, within 24 hours of the switch (all gates passed: verified verdict after the switch, a completed backup after it, `Retain`,
+no pod mounting the claim). The daily `matrix` Velero schedule is enabled (home-cluster#1582, `0 4 * * *`).
