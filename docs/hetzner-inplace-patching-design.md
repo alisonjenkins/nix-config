@@ -172,73 +172,15 @@ Only when the SFU reports zero participants. The script refuses to run otherwise
 
 ## Encryption of the Matrix volumes
 
-Existing volumes cannot be converted in place. Each is copied to a new encrypted volume.
+Moved to its own feature, so there is one source. Existing volumes cannot be converted in
+place; each is copied to a new encrypted volume (LUKS through the Hetzner CSI driver), after a
+restore-tested backup exists.
 
-1. Create a passphrase Secret (SOPS-encrypted in `home-cluster`) and a StorageClass
-   `hcloud-volumes-encrypted` with
-   `csi.storage.k8s.io/node-publish-secret-name` and `-namespace` set.
-2. Prove it with a throwaway volume. This also shows how long the first mount takes on the
-   edge node.
-3. Move Postgres to an encrypted volume, onto the edge node, by replication. Nothing is
-   copied while the database is offline, and the old volume stays untouched until the new one
-   is proven. See "Postgres migration by replication" below.
-4. Copy Synapse media to a new encrypted volume with a one-off job.
-5. Delete the old plaintext volumes only after the data is verified.
-
-### Postgres migration by replication
-
-`shared-postgres` (namespace `matrix`) runs PostgreSQL 17 under CloudNativePG 1.30.1 with one
-instance on a 20 GiB volume. It holds four databases: `niks3` (607 MB), `synapse` (217 MB),
-`mas` (19 MB) and `app` (8 MB). That is under 1 GB, so a copy takes minutes.
-
-Primary method: add a replica on the new storage, then switch over.
-
-1. Set the cluster's `storage.storageClass` to `hcloud-volumes-encrypted` and add a node
-   selector for the edge node. New instances take their volume from this setting. Existing
-   volumes are not touched.
-2. Scale to 2 instances. The operator builds the second instance from a base backup of the
-   first and then streams from it. The new volume is created encrypted.
-3. Wait until the replica reports zero lag.
-4. Switch over (`kubectl cnpg promote`). Applications see one dropped connection and
-   reconnect. The cluster name and the `shared-postgres-rw` service stay the same, so no
-   application needs reconfiguring.
-5. Keep the old instance and volume only until verification passes (data comparison, health
-   checks and a functional check; see `specs/004-hetzner-encrypted-volumes/spec.md`, FR-006).
-   Before deleting anything, set the old PV's reclaim policy to `Retain`. The StorageClass
-   default is `Delete`, which would destroy the volume with its claim.
-6. Once verification passes and a fresh backup of the new volume exists, destroy the old
-   instance and its volume, within 24 hours. There is no fixed soak period (owner's decision,
-   2026-10-03). After that, the way back is the backup.
-
-Fallback: a second `Cluster` in replica mode (`replica.enabled`) that streams from the first,
-then promote it. That needs the apps repointed (Synapse, MAS, and the niks3 DB URI), so use it
-only if the primary method fails the rehearsal.
-
-Safety steps, in order:
-
-1. **Fix the operator status error first.** The cluster currently reports `Instance Status
-   Extraction Error: HTTP communication issue`, although the pod is ready. The operator needs
-   that channel to drive a switchover.
-2. **Take a logical dump of every database and prove it restores.** The cluster spec has no
-   `backup` section and no scheduled backup, and `firstRecoverabilityPoint` is empty. As far
-   as I can tell, the Matrix and niks3 databases have no backup on this cluster today. Add a
-   proper backup before any migration.
-3. **Rehearse on a scratch CloudNativePG cluster.** I am not certain the operator accepts a
-   changed `storageClass` on an existing cluster and uses it for new instances. The rehearsal
-   settles that and the fallback decision.
-4. **Run it in a no-call window.** The switchover takes seconds, but Synapse reconnects and
-   chat blips.
-
-What this covers: data at rest on Hetzner's storage, including discarded disks. What it does
-not cover:
-
-- Anyone with cluster access can read the passphrase Secret.
-- The node root disk stays unencrypted. Postgres scratch files and Synapse temp files are
-  `emptyDir` on it. Memory-backed `emptyDir` is an option if that matters.
-- Postgres backups. Check where they go and whether they are encrypted.
-
-The source for the StorageClass parameters is the driver's documentation. I confirmed them
-from a search result, not the upstream page, so the throwaway volume is the real test.
+- Decision and reasons: [ADR 0022](adr/0022-encrypt-hetzner-volumes.md).
+- Spec, plan, research and the migration tasks: `specs/004-hetzner-encrypted-volumes/`
+  (`spec.md`, `plan.md`, `research.md`, `tasks.md`).
+- What was actually done and measured: `specs/004-hetzner-encrypted-volumes/evidence/`.
+- Rolling back a migration: [hetzner-encrypted-volumes-rollback.md](hetzner-encrypted-volumes-rollback.md).
 
 ## Rollout
 
