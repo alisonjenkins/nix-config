@@ -11,9 +11,16 @@ export KUBECONFIG=~/.kube/hetzner-cp.yaml
 ```
 
 Times are ISO 8601 UTC. The verification script is `scripts/hetzner-volume-verify/verify.sh`
-in nix-config, run inside its dev shell. Its checks are defined in
-[contracts/verification.md](contracts/verification.md). The volume list is in
+in nix-config, run inside its dev shell (`cd scripts/hetzner-volume-verify && nix develop`). Its checks
+are defined in [contracts/verification.md](contracts/verification.md). The volume list is in
 [data-model.md](data-model.md).
+
+`verify.sh` needs `--volume NAME` and `--checks` (any of `encryption`, `compare`, `health`, `functional`,
+`backup`). Run it with no arguments for the options of each check. Its encryption check must run on the node
+that holds the volume: give it `--node-exec`, a command prefix that runs a command on that node. Pipe its
+output through `tee -a specs/004-hetzner-encrypted-volumes/evidence/verdict-<volume>.txt`, because
+`destroy-old-volume.sh` reads that file as its `--verdict-file` and judges by the last verdict line for the
+volume.
 
 ## Phase A: prerequisites
 
@@ -91,7 +98,13 @@ Pass: file and row comparisons match. The scratch namespace is deleted afterward
 
 1. Create the Secret and the encrypted StorageClass, non-default.
 2. Create a small volume and a pod that mounts it.
-3. Run `verify.sh` part 0 against it.
+3. Run the encryption check against it:
+
+   ```sh
+   verify.sh --volume enc-test --checks encryption --device <raw device on the node> \
+     --mapping <LUKS mapping name> --secret kube-system/hcloud-volume-passphrase \
+     --storageclass hcloud-volumes-encrypted --node-exec "<command that runs on the master>"
+   ```
 
 Pass: the device shows `crypto_LUKS` and an active `crypt` mapping. The first mount completes
 within 1 minute of a plain volume's (spec US5).
@@ -140,11 +153,22 @@ prints `calls=0` and exits 0. With the metrics endpoint unreachable it exits non
 For each database (Matrix and cache first, then photos), in a no-call window.
 
 ```sh
-scripts/hetzner-volume-verify/verify.sh --volume shared-postgres-1 --new <new instance>
+V=shared-postgres-1
+verify.sh --volume "$V" --checks encryption,compare,health,functional,backup \
+  --device <raw device of the new volume> --mapping <LUKS mapping name> \
+  --secret kube-system/hcloud-volume-passphrase --storageclass hcloud-volumes-encrypted \
+  --node-exec "<command that runs on the master>" \
+  --kind database --namespace matrix --old-pod shared-postgres-1 --new-pod <new instance> \
+  --db <db1>,<db2>,<db3>,<db4> \
+  --selector cnpg.io/cluster=shared-postgres --health-url <service health URL> \
+  --service matrix --homeserver https://matrix.redwood-guild.com \
+  --backup cnpg --backup-namespace matrix --backup-for shared-postgres --since <time of the switch> \
+  | tee -a specs/004-hetzner-encrypted-volumes/evidence/verdict-"$V".txt
 ```
 
-Pass: the output ends `verdict=verified`. Then a fresh backup of the new volume exists, and the
-old volume is destroyed within 24 hours.
+`VERIFY_BOT_TOKEN` and `VERIFY_BOT_ROOM` are exported first (the Matrix check). Pass: the output ends
+`verdict=verified`. Then set `instances: 1` so the operator removes the old instance, confirm it is gone,
+and run `destroy-old-volume.sh` with `--verdict-file` pointing at the file above, within 24 hours.
 
 ## Phase D: file volumes
 
@@ -153,7 +177,8 @@ For each volume in the inventory that is not a database.
 1. Scale the service to zero.
 2. Run the copy job.
 3. Point the service at the new encrypted volume and scale it up.
-4. Run `verify.sh --volume <name>`.
+4. Run `verify.sh --volume <name> --checks encryption,compare,health,functional,backup --kind files …`
+   with the options of each check, piped through `tee -a` to the verdict file.
 
 Pass: `verdict=verified`, a fresh Velero backup of the new volume, and the old volume gone
 within 24 hours.
@@ -162,7 +187,7 @@ within 24 hours.
 
 **E1. New volumes are encrypted by default**
 
-Create a small volume naming no class. Run `verify.sh` part 0.
+Create a small volume naming no class. Run the encryption check (`verify.sh --checks encryption …`).
 
 Pass: encrypted. Existing workloads did not restart.
 
