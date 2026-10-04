@@ -601,10 +601,6 @@ in {
           controls."PCM 02" = "DSP 1";
         };
 
-        # Full PowerPlay unlock for overclocking/undervolting, overriding
-        # modules/base's more conservative default.
-        modules.base.amdgpuPPFeatureMask = "0xffffffff";
-
         boot = {
           bootspec.enableValidation = true;
           # kernelPackages = pkgs.linuxPackages-rt_latest;
