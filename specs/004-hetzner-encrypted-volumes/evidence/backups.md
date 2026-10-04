@@ -98,3 +98,58 @@ T046 stays open for `couchdb-data`, `matrix-stack-synapse-media`, the Alertmanag
 namespace would run a second Prometheus (about 600 MiB) on a master with under 1.5 GiB free, which breaks the stop threshold, so its restore
 needs a resource modifier that keeps the restored pod from running the application. The Synapse media backup waits until the `shared-postgres`
 pod carries the `pgdata` exclusion (draft PR 1565), because the `matrix` namespace also holds that volume.
+
+## T046 (part): restore tests of `couchdb-data`, Prometheus and Alertmanager (2026-10-04T06:24Z to 07:17Z)
+
+### couchdb-data: passed
+
+Backup `first-couchdb-20261004`: `Completed`, 25 of 25 items, 14.8 MB of data, no errors. Restore into `restore-test-couchdb`: `Completed`, 4
+warnings (all benign). The databases were compared logically from inside both pods (credentials taken from the pod's own environment,
+never printed): the four databases (`_global_changes`, `_replicator`, `_users`, `obsidianlivesync`) have identical document counts and
+identical SHA-256 of every document id and revision, including the 3,068 documents of `obsidianlivesync`.
+
+### monitoring: backup passed, restore passed, and a near miss
+
+Backup `first-monitoring-20261004`: `Completed`, 237 of 237 items, no errors; the Prometheus TSDB (1.17 GB) uploaded in about 90 s. Node memory
+stayed at 76 to 79%.
+
+**Near miss (06:31Z).** To keep a second operator and a second Prometheus out of the cluster, I restored only the Prometheus and Alertmanager
+pods and volumes, selecting them by label and listing only `pods` and `persistentvolumeclaims`. Because PersistentVolumes were left out, Velero
+kept `spec.volumeName` on the restored PVCs, so the scratch PVCs named the **live** Prometheus and Alertmanager volumes. They stayed unbound only
+because those volumes are already bound to the live claims; had a restored pod started, the data restore would have written backup data into the
+live volume. Nothing was written. I deleted the scratch namespace at once and confirmed the live PVs were still bound to the live claims, the live
+pods were running, and Prometheus had 0 restarts (Alertmanager's 2 restarts date from 2026-09-27).
+
+What I changed because of it:
+
+- `scripts/hetzner-volume-verify/check-restored-pvcs.sh` (tests first, 7 bats tests): run it after a restore and before any restored pod runs; every
+  PVC in the scratch namespace must have no volume yet or one bound to that same PVC, and an unreadable volume or namespace fails closed.
+- Rules for every restore test from now on: include `persistentvolumes` in `includedResources` (the working configuration, as in the ntfy and
+  couchdb restores: Velero provisions a new volume and leaves the live one alone); restore pods and their PVCs in **one** restore, because Velero
+  creates the data-restore objects only for volumes whose PVC it restored in the same restore (a two-stage split left the pods waiting forever);
+  run the guard straight after.
+
+**Method that worked.** A Restore with `includedResources: [persistentvolumeclaims, persistentvolumes, pods]` and `orLabelSelectors` for the two
+applications, after a first restore of Secrets, ConfigMaps and ServiceAccounts, with a resource modifier (a ConfigMap in `velero`) that swaps the
+Prometheus container for `busybox` running `sleep` (the real image is distroless, and a second Prometheus would take about 600 MiB), and sets
+resource limits on every restored container (the `require-resource-limits` policy applies to a scratch namespace even though `monitoring` is
+exempt). A `remove /spec/volumeName` patch in the modifier was unnecessary once PVs were included (it errored on a missing key, harmlessly).
+
+**Result.** All four volume restores `Completed`. The guard passed: both scratch PVCs bound to their own new volumes. Prometheus: 14 TSDB blocks
+restored; the 13 that also exist on the live volume have identical `chunks/000001`, `index`, `meta.json` and `tombstones` (52 files, byte for
+byte, compared against the live volume read-only through a root debug pod); one restored block was compacted away on the live side since the
+backup, and one live block is newer than the backup. The write-ahead log and head chunks restored too. (An earlier "differing" result came from my
+own digest line including `du` disk usage, which differs between filesystems; the file comparison settled it.) Alertmanager's `nflog` and
+`silences` are empty on both sides. The restored Prometheus pod took 10 minutes to terminate because `sleep` ignores SIGTERM and Prometheus pods
+get a 600 s grace period.
+
+**Decision for T046:** keep the crash-consistent Velero file copy for Prometheus. The snapshot API is not needed: the restored blocks are intact
+and the head and WAL are present for Prometheus to replay.
+
+Cleaned up: scratch namespaces, their volumes, the Restore objects and the modifier ConfigMap are deleted; the root debug pods were deleted.
+
+### Memory after Velero
+
+Available memory is now about 1.0 GiB with 540 MiB of swap in use (T021's baseline was 1.55 GiB and 344 MiB), above the stop threshold of 700 MiB
+but with less margin: the plugin and Velero cost about 500 MiB. A second database instance (T050 onward) is allowed up to 1 GiB, so Phase 4
+needs a plan for headroom first (for example pausing a non-essential workload for the migration window).
