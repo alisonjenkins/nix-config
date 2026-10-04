@@ -612,6 +612,7 @@ in {
 
           kernelParams = [
             # AMD GPU optimized for RDNA 4 (GFX1201) - BIOS 3.50 + LQX kernel
+            # Check overrides against `modinfo -p amdgpu`: docs/adr/0024-amdgpu-kernel-parameters.md
             "amdgpu.gpu_recovery=1"            # Enable GPU recovery
             "amdgpu.dc=1"                      # Enable Display Core (DC)
             "amdgpu.dpm=1"                     # Enable Dynamic Power Management
@@ -1238,6 +1239,7 @@ in {
             # (2026-10-04, Helldivers 2), so this chip's stable limit is
             # above -70mV. -40mV keeps a 30mV margin; the undervolt
             # only measured +1.2% anyway. Step toward 0 if it hangs again.
+            # See docs/adr/0023-gpu-undervolt-margin.md.
             settings = {
               # Current schema version for lact 0.10.x. Without it the daemon
               # migrates from 0 and then tries to write the migrated file
