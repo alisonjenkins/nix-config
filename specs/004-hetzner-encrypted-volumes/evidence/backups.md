@@ -153,3 +153,37 @@ Cleaned up: scratch namespaces, their volumes, the Restore objects and the modif
 Available memory is now about 1.0 GiB with 540 MiB of swap in use (T021's baseline was 1.55 GiB and 344 MiB), above the stop threshold of 700 MiB
 but with less margin: the plugin and Velero cost about 500 MiB. A second database instance (T050 onward) is allowed up to 1 GiB, so Phase 4
 needs a plan for headroom first (for example pausing a non-essential workload for the migration window).
+
+## T042, T043: backup alerts and the first end-to-end test (2026-10-04T07:10Z to 07:55Z)
+
+home-cluster PRs 1568 and 1569 merged: Velero's ServiceMonitor, a PodMonitor for the `shared-postgres` and `ente-db` instances (the operator's own
+lacks the `release` label this Prometheus selects on), and the PrometheusRule `hetzner-backup-alerts` (seven alerts). Every metric the rules use was
+read from live output first, and after the merge each has a series in Prometheus (Velero up; `cnpg_collector_last_available_backup_timestamp`,
+`cnpg_pg_stat_archiver_failed_count` and `..._seconds_since_last_archival` for both clusters) and all rules report health `ok`. Velero exports no
+storage-location metric, so none is used.
+
+### A gap found by testing, and fixed
+
+`VeleroBackupFailed` first watched only `velero_backup_failure_total` and `velero_backup_partial_failure_total`. A scheduled backup pointed at a
+storage location the role cannot use (a scratch location with prefix `cnpg`) ended `FailedValidation` with `backup can't be created because
+BackupStorageLocation test-denied is in Unavailable status`, and after that run the metrics for the schedule were `failure_total` 0,
+`partial_failure_total` 0 and `validation_failure_total` 1. A broken bucket policy or an expired credential, the likeliest way these backups
+fail, would therefore not have alerted until `VeleroScheduleStale` fired 26 hours later. PR 1569 adds the validation counter to the rule.
+
+### End to end (VeleroBackupFailed)
+
+With the corrected rule and the test schedule still running (one failing backup every 2 minutes): the alert went `pending` at 07:32, `firing` at
+07:37 after its 5 minute hold, with the right labels (`schedule=alert-test`, `severity=critical`); Alertmanager held it with receiver `ntfy` and
+no failed webhook notifications; the ntfy bridge logged `Successfully forwarded alert to ntfy` at 07:37:30Z, one group-wait (30 s) later. So the
+chain rule, Prometheus, Alertmanager, bridge, ntfy works.
+
+Cleanup: the test schedule, storage location, backups and namespace are deleted. The alert stayed firing for a while after the schedule was gone
+because `increase(...[1h])` keeps seeing the old pod's samples until they age out of the one hour window: an alert on a failed backup clears about
+an hour after the last failure, by design. A silence for exactly that test series (until 09:09Z) stops it re-notifying.
+
+### What T043 has and has not proved
+
+Proved: the failure path of `VeleroBackupFailed` and the delivery chain. Not forced: `VeleroScheduleStale`, `VeleroDown`, `DatabaseBaseBackupStale`,
+`DatabaseHasNoBackup` (it is `pending` now for `shared-postgres`, and will fire after 24 hours without a backup unless T031 lands first),
+`DatabaseWALArchivingFailing` and `DatabaseWALArchivingStale`. Their expressions are checked against real series but not exercised; a `promtool`
+unit test of them is the cheap next step. T043 stays open for those.
