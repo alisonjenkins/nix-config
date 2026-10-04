@@ -65,6 +65,12 @@ The cluster already has web identity (IRSA): a self-hosted issuer, the pod-ident
 - After an old volume is removed, the way back is the backup, not the old volume.
 - One passphrase covers all encrypted volumes. Losing it loses the data, so it lives in the encrypted
   config repository and in the owner's password manager.
+- `hcloud-volumes-encrypted` has `reclaimPolicy: Delete`, like the old class. A mistaken `kubectl delete pvc` on a
+  migrated volume destroys it, and once its old copy is removed only the backup remains. `Retain` would prevent
+  that but leaves an orphaned Hetzner volume after every throwaway test. The decision is to keep `Delete` and
+  protect each migrated volume with the backup; revisit if a claim is ever deleted by mistake.
+- A Secret that exists but has no, or an empty, `encryption-passphrase` gives a silent plain volume on first
+  mount (tested 2026-10-04, `evidence/storage.md`). A Kyverno policy on claim creation (task T025a) blocks it.
 - Encryption protects data at rest on Hetzner's storage. It does not protect against someone with
   access to the cluster, because the passphrase is a cluster Secret. Node root disks and `emptyDir`
   scratch space stay unencrypted.

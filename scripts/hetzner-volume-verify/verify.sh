@@ -8,7 +8,9 @@ usage() {
   cat >&2 <<'EOF'
 usage: verify.sh --volume NAME --checks encryption,compare,health,functional,backup (any of them)
   encryption: --device DEV (the raw block device, not the /dev/mapper one) --mapping NAME
-              --secret NAMESPACE/NAME --storageclass NAME [--node-exec CMD]
+              --pv PV --secret NAMESPACE/NAME --storageclass NAME [--node-exec CMD]
+              --storageclass is the class the volume must have been provisioned from: the check reads it
+              off the PV and compares it, and compares that class's Secret reference with --secret.
               --node-exec is a command prefix that runs a command on the node holding the volume
               (for example a kubectl debug or ssh wrapper). Without it the checks run on this machine.
   compare:    --kind files    --old-dir DIR --new-dir DIR
@@ -32,7 +34,7 @@ die_usage() {
 ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
 volume="" checks=""
-device="" mapping="" secret="" storageclass="" node_exec=""
+device="" mapping="" pv="" secret="" storageclass="" node_exec=""
 kind="" old_dir="" new_dir="" namespace="" old_pod="" new_pod="" db="" selector=""
 health_url="" health_seconds=300
 service="" homeserver="" photos_url="" prometheus_url="" alertmanager_url="" grafana_url=""
@@ -45,6 +47,7 @@ while [ $# -gt 0 ]; do
     --checks) checks=$2 ;;
     --device) device=$2 ;;
     --mapping) mapping=$2 ;;
+    --pv) pv=$2 ;;
     --secret) secret=$2 ;;
     --storageclass) storageclass=$2 ;;
     --node-exec) node_exec=$2 ;;
@@ -96,7 +99,8 @@ check_encryption() {
   need encryption mapping --mapping
   need encryption secret --secret
   need encryption storageclass --storageclass
-  local problems=() ns=${secret%%/*} name=${secret#*/} b64 fstype magic ref nx=()
+  need encryption pv --pv
+  local problems=() ns=${secret%%/*} name=${secret#*/} b64 fstype magic head6 ref pvclass nx=()
   [ -z "$node_exec" ] || read -ra nx <<<"$node_exec"
 
   if ! ref=$(kubectl get storageclass "$storageclass" \
@@ -117,10 +121,21 @@ check_encryption() {
 
   "${nx[@]}" cryptsetup status "$mapping" >/dev/null 2>&1 || problems+=("no active crypt mapping $mapping")
 
-  if magic=$("${nx[@]}" dd if="$device" bs=1 skip=1080 count=2 2>/dev/null | od -An -tx1 | tr -d '[:space:]'); then
-    [ "$magic" != 53ef ] || problems+=("raw device $device shows an ext4 superblock magic at offset 1080")
+  # 53 ef at offset 1080 is the ext4 superblock magic, but a LUKS header (magic "LUKS" BA BE at offset 0)
+  # holds random bytes there, which equal 53 ef once in 65536 devices. Only count it without a LUKS header.
+  if magic=$("${nx[@]}" dd if="$device" bs=1 skip=1080 count=2 2>/dev/null | od -An -tx1 | tr -d '[:space:]') \
+    && head6=$("${nx[@]}" dd if="$device" bs=1 count=6 2>/dev/null | od -An -tx1 | tr -d '[:space:]'); then
+    if [ "$magic" = 53ef ] && [ "$head6" != 4c554b53babe ]; then
+      problems+=("raw device $device shows an ext4 superblock magic at offset 1080")
+    fi
   else
     problems+=("cannot read raw device $device")
+  fi
+
+  if ! pvclass=$(kubectl get pv "$pv" -o jsonpath='{.spec.storageClassName}' 2>/dev/null); then
+    problems+=("cannot read pv $pv")
+  elif [ "$pvclass" != "$storageclass" ]; then
+    problems+=("pv $pv was provisioned from class '${pvclass:-none}', not $storageclass")
   fi
 
   if [ ${#problems[@]} -eq 0 ]; then

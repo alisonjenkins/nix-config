@@ -102,7 +102,8 @@ Pass: file and row comparisons match. The scratch namespace is deleted afterward
 
    ```sh
    verify.sh --volume enc-test --checks encryption --device <raw device on the node> \
-     --mapping <LUKS mapping name> --secret kube-system/hcloud-volume-passphrase \
+     --mapping <LUKS mapping name> --pv <the volume's PV name> \
+     --secret kube-system/hcloud-volume-passphrase \
      --storageclass hcloud-volumes-encrypted --node-exec "<command that runs on the master>"
    ```
 
@@ -155,7 +156,7 @@ For each database (Matrix and cache first, then photos), in a no-call window.
 ```sh
 V=shared-postgres-1
 verify.sh --volume "$V" --checks encryption,compare,health,functional,backup \
-  --device <raw device of the new volume> --mapping <LUKS mapping name> \
+  --device <raw device of the new volume> --mapping <LUKS mapping name> --pv <the new volume's PV name> \
   --secret kube-system/hcloud-volume-passphrase --storageclass hcloud-volumes-encrypted \
   --node-exec "<command that runs on the master>" \
   --kind database --namespace matrix --old-pod shared-postgres-1 --new-pod <new instance> \
