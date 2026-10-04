@@ -618,7 +618,6 @@ in {
 
             # Performance optimizations (stability issues resolved with BIOS/kernel fix)
             "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (optimal for RDNA)
-            "amdgpu.vm_update_mode=0"          # Use default (auto) VM update mode for best performance
 
             # FH6 hang mitigations (GFX12/RDNA4 CPFW pipe-reset gap — see memory/forza-horizon-6-linux.md)
             "amdgpu.lockup_timeout=20000"      # 20s ring timeout (default 10s) — heavy frames don't trip false hang
