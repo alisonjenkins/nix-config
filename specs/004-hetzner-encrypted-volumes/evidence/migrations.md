@@ -134,3 +134,40 @@ Cleaned up: the scratch namespace and its volume, the Restore objects, the modif
 The old plain media volume (Hetzner id 106859394, PV `pvc-27565201…`) was removed with `destroy-old-volume.sh --execute` at
 **17:32:30Z**, within 24 hours of the switch (all gates passed: verified verdict after the switch, a completed backup after it, `Retain`,
 no pod mounting the claim). The daily `matrix` Velero schedule is enabled (home-cluster#1582, `0 4 * * *`).
+
+## `ente-db-1` -> `ente-db-2` on the encrypted class (T050 to T052, T072, T078 for ente-db, 2026-10-04)
+
+Done at the owner's request on a Sunday evening (no call gate: the photo service does not use the SFU).
+
+### Rehearsal on a scratch cluster (T050, T051)
+
+A one-instance `Cluster` `rehearsal` (namespace `scratch-migrate`, 10 Gi on `hcloud-volumes`, 50,000 test rows) was changed to
+`hcloud-volumes-encrypted` and scaled to 2:
+
+| Question | Answer |
+|---|---|
+| Does the webhook accept a changed `storage.storageClass` on an existing cluster? | **yes**; the existing instance keeps its plain claim, the new one is created on the encrypted class (`rehearsal-2` on `hcloud-volumes-encrypted`) |
+| Replica build | ready in about 31 s, streaming, rows identical (count and md5 of all values) |
+| `kubectl cnpg promote` interruption | about **35 s** of failed queries through `rehearsal-rw` with idle clients (1.5 s probe interval); data intact, the old instance became a replica |
+| `kubectl cnpg destroy rehearsal-1` | the operator **recreates the instance while `instances` is still 2**, so lower `instances` in the same step; the destroyed instance's volume has reclaim policy `Delete` (it went `Released` and would be removed): set `Retain` first |
+| Way back | not rehearsed (the old instance stays until the new one is verified, so it is a promote away) |
+
+**T051: the primary method (replica on the encrypted class, switchover) is confirmed; no replica-cluster fallback needed.** The
+scratch namespace, its volumes and PVs were deleted (0 PVs and 0 Hetzner volumes left).
+
+### The migration (home-cluster#1585, #1586, #1587)
+
+| Step | Result |
+|---|---|
+| Class for new volumes (#1585) | `storage.storageClass: hcloud-volumes-encrypted`; `ente-db-1` untouched |
+| Second instance (#1586) | `instances: 2`, plus `smartShutdownTimeout: 10` (the 180 s default kept new connections refused for 3 minutes on the earlier restarts; the setting did not restart the primary). `ente-db-2` Ready on `hcloud-volumes-encrypted` about 1 minute after the reconcile, streaming, 0 bytes lag |
+| Before the switch | fresh encrypted dump (33 MB, end marker checked, 21:13:25Z), plugin base backup `ente-db-pre-switch-20261004t211327` `completed`; encryption verdict for the replica volume `verified` at 21:13:54Z (Hetzner volume 107032753) |
+| Switchover | `kubectl cnpg promote ente-db ente-db-2` at 21:14:07Z; Museum's public `/ping` (needs the database) failed for **8 seconds** (14 failed probes of 61, from 1.3 s to 9.3 s after the promote) |
+| After | `ente-db-2` primary and `Cluster in healthy state`; `ente-db-1` demoted to a replica (its container restarted once, expected) |
+| Verification (21:15:42Z and 21:16:14Z) | encryption `pass` (`crypto_LUKS`, mapping active, Secret set); database compare `pass` (`ente`: 81 tables, row counts and checksums identical old against new; `postgres`: 0 tables); backup `pass` (`ente-db-post-switch-20261004t211517` `completed` after the switch); Museum `/ping` 200, its error lines were the switchover blip only; `verdict=verified` for these three checks |
+| Health check | `verify.sh --checks health` **failed on a false positive**: its log pattern matches the JSON field name `error_severity` and the words "database system" in CloudNativePG's structured start-up lines (all `LOG`, plus `FATAL 57P03 the database system is starting up` during the replica's normal start). The new primary was checked by hand instead (Ready, 0 restarts, Museum 200). A fix with tests is in progress (branch `fix/verify-health-json-logs`) |
+| Retain and remove the old instance (#1587) | `ente-db-1` PV `pvc-c2e48d50…` set to `Retain`, `instances` back to 1, the operator removed `ente-db-1` |
+| Old volume removed | `destroy-old-volume.sh --execute` at **21:18:30Z** (Hetzner id 106169213), 4 minutes after the switch |
+
+The functional check for the photo service (sign in, open a known album) was not exercised: it needs credentials the session does not have.
+Left to do for the old archive: the restore test of the new plugin chain (T033), then removing the old Hetzner Object Storage bucket.
