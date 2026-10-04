@@ -8,10 +8,14 @@
 None of the household's nine data volumes on the Hetzner cluster is encrypted. They are plain ext4
 on Hetzner cloud volumes, on a single StorageClass, `hcloud-volumes`, that is also the default.
 
-Backups are thin. The Matrix and cache databases have no backup configured on this cluster (the
-cluster record shows no backup section and an empty recovery point), and neither do the media store,
-the photo database, the document database, monitoring, the notification server or the game server.
-Each of those volumes has one copy.
+Backups are thin. The Matrix and cache databases (`shared-postgres`) have no backup configured on this
+cluster (the cluster record shows no backup section and an empty recovery point), and neither do the
+media store, the document database, monitoring, the notification server or the game server. Each of
+those volumes has one copy. The photo database (`ente-db`) is the exception: it has had a working
+in-tree CloudNativePG backup since 2026-09-04 (daily base backups, WAL archiving, 30 day retention) to
+a Hetzner Object Storage bucket, using the account-wide `ente-s3` key. An earlier version of this
+record said it had none; that was wrong. It still has to move to the plugin and web identity, because
+the in-tree method is removed in CloudNativePG 1.31.0 and a long-lived key is not allowed for backups.
 
 Two findings from the live cluster shaped the order of work:
 
