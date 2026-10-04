@@ -1,0 +1,63 @@
+---
+# Copies one claim onto another and writes a path, size and sha256 manifest of both, for
+# migrate-files.sh (spec 004 T062). The old claim is mounted read-only, so the job cannot change the
+# data it copies from. Rendered by migrate-files.sh with envsubst; do not apply it by hand while the
+# workload still runs. Only the five variables below are substituted: the script text uses $p and
+# $(...) of its own, which envsubst must not touch.
+#
+# Image: needs rsync and sha256sum in one image, and the Kyverno policy wants pinned tags. Alpine's
+# busybox has sha256sum, find, wc and sort; the rsync-ssh image is Alpine plus rsync. Override with
+# COPY_IMAGE in the environment of migrate-files.sh.
+#
+# The manifest lines go to the pod log between MIGRATE-MANIFEST-BEGIN/END markers, one block per
+# claim, tab separated: path, bytes, sha256. Nothing is deleted from the new claim (no --delete), so a
+# file that was already there shows up in the manifest comparison as a difference.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${JOB_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    purpose: migrate-files
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        purpose: migrate-files
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: copy
+          image: ${IMAGE}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              set -o pipefail
+              rsync -a --checksum /old/ /new/ || { echo "step=rsync failed status=$?"; exit 1; }
+              echo "step=rsync ok"
+              manifest() {
+                echo "MIGRATE-MANIFEST-BEGIN $2"
+                (cd "$1" && find . -type f | LC_ALL=C sort | while IFS= read -r p; do
+                  printf '%s\t%s\t%s\n' "$p" "$(wc -c <"$p" | tr -d ' ')" "$(sha256sum <"$p" | cut -d' ' -f1)"
+                done)
+                echo "MIGRATE-MANIFEST-END $2"
+              }
+              manifest /old old || { echo "step=manifest failed claim=old"; exit 1; }
+              manifest /new new || { echo "step=manifest failed claim=new"; exit 1; }
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 256Mi}
+          volumeMounts:
+            - {name: old, mountPath: /old, readOnly: true}
+            - {name: new, mountPath: /new}
+      volumes:
+        - name: old
+          persistentVolumeClaim:
+            claimName: ${OLD_CLAIM}
+            readOnly: true
+        - name: new
+          persistentVolumeClaim:
+            claimName: ${NEW_CLAIM}
