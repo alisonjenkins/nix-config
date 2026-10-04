@@ -1268,6 +1268,7 @@ class TestOutputLifetime(unittest.TestCase):
                 "set_window_fullscreen",
                 "move_window_to_output",
                 "steam_is_running",
+                "vrserver_running",
                 "signal_process",
             )
         }
@@ -1517,6 +1518,66 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertTrue(s.check_steam_alive())
         self.assertEqual(signalled, [(4242, stream_mode.signal.SIGTERM)])
         self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+
+    def test_a_desktop_stream_with_no_session_marker_starts_one(self):
+        """Steam Link VR never logs "Streaming started to".
+
+        Its first sign of streaming is Steam starting desktop capture for the
+        game, and without a stream nothing fullscreened the game on the
+        output.
+        """
+        stream_mode.vrserver_running = lambda: True
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(10933890668138783182, "device")
+        self.assertTrue(s.desktop_stream_started())
+        self.assertTrue(s.streaming)
+
+    def test_a_desktop_stream_with_no_client_starts_nothing(self):
+        stream_mode.vrserver_running = lambda: True
+        s = stream_mode.Session(stage_timeout=0)
+        self.assertFalse(s.desktop_stream_started())
+        self.assertFalse(s.streaming)
+
+    def test_a_desktop_stream_inside_a_remote_play_session_is_ignored(self):
+        """Steam swaps to and from desktop capture several times a session."""
+        stream_mode.vrserver_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        self.assertFalse(s.desktop_stream_started())
+
+    def test_a_vr_stream_ends_when_steamvr_exits(self):
+        """Steam logs no stop line for a VR session; SteamVR exiting is the end."""
+        running = [True]
+        stream_mode.vrserver_running = lambda: running[0]
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(10933890668138783182, "device")
+        s.desktop_stream_started()
+        self.assertFalse(s.check_vr_alive())
+
+        running[0] = False
+        self.enabled.clear()
+        self.assertTrue(s.check_vr_alive())
+        self.assertFalse(s.streaming)
+        self.assertIn((stream_mode.OUTPUT_NAME, False), self.enabled)
+        # Forgotten, so the headset's next streaming request connects afresh.
+        self.assertIsNone(s.client_id)
+
+    def test_a_stream_without_steamvr_is_not_ended_by_its_absence(self):
+        stream_mode.vrserver_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(10933890668138783182, "device")
+        s.desktop_stream_started()
+        self.assertFalse(s.check_vr_alive())
+        self.assertTrue(s.streaming)
+
+    def test_a_remote_play_stream_is_not_ended_by_steamvr_exiting(self):
+        stream_mode.vrserver_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "ali-mba")
+        s.begin_stream("ali-mba")
+        self.assertFalse(s.check_vr_alive())
+        self.assertTrue(s.streaming)
 
     def test_nothing_is_killed_while_steam_is_alive(self):
         signalled = []
@@ -1816,6 +1877,7 @@ class TestEventDispatch(unittest.TestCase):
             self.pending = None
             self.last_windows = []
             self.calls = []
+            self.desktop_stream_begins = False
 
         def on_windows(self, windows):
             self.calls.append(("on_windows", len(windows)))
@@ -1826,6 +1888,10 @@ class TestEventDispatch(unittest.TestCase):
         def begin_stream(self, client_name=None):
             self.calls.append(("begin_stream",))
             self.streaming_to = client_name
+
+        def desktop_stream_started(self):
+            self.calls.append(("desktop_stream_started",))
+            return self.desktop_stream_begins
 
         def request(self, pid, game_id):
             self.calls.append(("request", pid, game_id))
@@ -2035,6 +2101,20 @@ class TestEventDispatch(unittest.TestCase):
             None,
         )
         self.assertEqual(self.s.calls, [("client_network_trouble",)])
+
+    def test_a_desktop_stream_that_starts_a_stream_clears_the_removal(self):
+        self.s.desktop_stream_begins = True
+        remove_at = stream_mode.handle_steam_line(
+            self.s, "[2026-10-04 11:58:16][5835.446246] >>> Starting desktop stream\n", 55.0
+        )
+        self.assertIsNone(remove_at)
+        self.assertEqual(self.s.calls, [("desktop_stream_started",)])
+
+    def test_a_desktop_capture_swap_keeps_the_removal(self):
+        remove_at = stream_mode.handle_steam_line(
+            self.s, "[x] >>> Starting desktop stream\n", 55.0
+        )
+        self.assertEqual(remove_at, 55.0)
 
     def test_an_unrelated_line_changes_nothing(self):
         remove_at = stream_mode.handle_steam_line(self.s, "[x] noise\n", 55.0)

@@ -172,6 +172,10 @@ AUDIO_SINK_WAIT = 5.0
 # minutes later. These two pair exactly, once per session.
 START_RE = re.compile(r"Streaming started to (.+?) at ")
 STOP_RE = re.compile(r"PipeWire: Deinitializing streaming")
+# Steam Link VR logs neither of those. Its first sign of streaming is Steam
+# starting desktop capture for a game shown in the headset, and SteamVR
+# exiting is its end. See Session.desktop_stream_started.
+DESKTOP_STREAM_START_RE = re.compile(r">>> Starting desktop stream")
 # Steam makes its sink the default just after the stream starts. Routing on
 # this line rather than the start marker means Steam cannot undo it after.
 STEAM_SINK_DEFAULT_RE = re.compile(
@@ -260,8 +264,8 @@ def log(message):
     print(message, flush=True)
 
 
-def steam_is_running():
-    """Whether a Steam client process exists.
+def process_running(name):
+    """Whether a process with this command name exists.
 
     Read from /proc rather than shelling out to pgrep: this is checked on a
     timer, and the answer decides whether to kill something.
@@ -271,11 +275,19 @@ def steam_is_running():
             continue
         try:
             with open(os.path.join("/proc", entry, "comm")) as fh:
-                if fh.read().strip() == "steam":
+                if fh.read().strip() == name:
                     return True
         except OSError:
             continue
     return False
+
+
+def steam_is_running():
+    return process_running("steam")
+
+
+def vrserver_running():
+    return process_running("vrserver")
 
 
 def signal_process(pid, sig):
@@ -1150,6 +1162,9 @@ class Session:
         self.left_on_alone = None
         self.client_id = None
         self.streaming = False
+        # A stream begun from desktop capture while SteamVR ran, which only
+        # SteamVR exiting ends. See desktop_stream_started.
+        self.vr_stream = False
         self.game_pid = None
         self.game_id = None
         self.pending = None
@@ -1389,6 +1404,36 @@ class Session:
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
+
+    def desktop_stream_started(self):
+        """Begin a stream Steam never announced, for a connected client.
+
+        A Steam Link VR session is not a Remote Play session: Steam logs no
+        "Streaming started to" for it and no stop marker after. A flat game
+        shown in the headset only makes Steam start desktop capture, so with
+        no stream begun nothing fullscreened the game on the output.
+
+        Inside a Remote Play session the same line is Steam swapping its
+        capture source, several times a session, so it starts nothing then.
+        """
+        if self.streaming or self.client_id is None:
+            return False
+        self.vr_stream = vrserver_running()
+        log("stream-mode: desktop capture started with no stream announced; "
+            "streaming{}".format(" to SteamVR until it exits" if self.vr_stream else ""))
+        return self.begin_stream()
+
+    def check_vr_alive(self):
+        """End a VR stream once SteamVR has exited; nothing else marks its end.
+
+        The client is forgotten too: the headset's next streaming request
+        names the same device id, and one still recorded is not reconnected.
+        """
+        if not self.vr_stream or not self.streaming or vrserver_running():
+            return False
+        log("stream-mode: SteamVR has exited; ending the VR stream")
+        self.client_id = None
+        return self.end_stream()
 
     def route_audio(self):
         """Run this client's positioned sink and send the stream's audio there.
@@ -1665,6 +1710,7 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
+        self.vr_stream = False
         self.capture_waiting = False
         self.nudge_return_to = None
         self.held_button_check_due = False
@@ -2605,7 +2651,7 @@ def watch():
             session.check_gamepad_info()
             if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
-                if session.check_steam_alive():
+                if session.check_steam_alive() or session.check_vr_alive():
                     remove_at = None
     finally:
         for proc in procs.values():
@@ -2664,6 +2710,9 @@ def handle_steam_line(session, line, remove_at):
         log("stream-mode: stream started")
         session.begin_stream(match.group(1))
         return None
+
+    if DESKTOP_STREAM_START_RE.search(line):
+        return None if session.desktop_stream_started() else remove_at
 
     if STEAM_SINK_DEFAULT_RE.search(line):
         session.route_audio()
