@@ -261,7 +261,7 @@ Tasks T072 to T083 are independent per service and may run in parallel once US2 
 
 ## Phase 11: Polish and cross-cutting
 
-- [ ] T096 [P] Record the leftovers that stay unencrypted (node root disks, `emptyDir` scratch such as the Postgres scratch and Synapse temp directories) in `nix-config:docs/adr/0022-encrypt-hetzner-volumes.md` with the owner's acceptance (spec FR-013), and offer memory-backed `emptyDir` where it fits.
+- [x] T096 [P] Record the leftovers that stay unencrypted (node root disks, `emptyDir` scratch such as the Postgres scratch and Synapse temp directories) in `nix-config:docs/adr/0022-encrypt-hetzner-volumes.md` with the owner's acceptance (spec FR-013), and offer memory-backed `emptyDir` where it fits.
 - [x] T097 [P] Replace the "Encryption of the Matrix volumes" section of `nix-config:docs/hetzner-inplace-patching-design.md` with a short pointer to this feature's spec, plan and research, so there is one source.
 - [ ] T098 Update `nix-config:docs/adr/0022-encrypt-hetzner-volumes.md` with the final evidence (the results of T024 to T026, T044, T050 and T094), move its status to Accepted, and add the "Revisit when" conditions.
 - [ ] T099 Re-run every quickstart scenario that has a pass condition, and tick SC-001 to SC-012 in `evidence/success-criteria.md` with the evidence for each. Clear any open item.

@@ -94,7 +94,7 @@ and are not listed.
 | `ente/museum` `tmp`, `ente/ente-web` caches | Upload staging for photos, web cache | `medium: Memory` is possible for `museum` `tmp` if photo sizes stay small |
 | `ntfy/ntfy` `tmp`, `couchdb/couchdb` `config`, `streaming/*` rendered config | Rendered configuration, short lived | Accepted |
 
-Owner's acceptance of this list is still open (task T096); until it is given, FR-013 is not closed.
+The owner accepted this list on 2026-10-04 (task T096, FR-013). Nothing on it is moved to memory backed storage for now.
 
 ## Evidence
 
