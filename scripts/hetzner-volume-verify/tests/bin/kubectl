@@ -13,6 +13,8 @@ case "$args" in
          cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;
   *"get storageclass"*) cat "$FIXTURES/sc.ref" ;;
   *"get backups.velero.io"*|*"get backups.postgresql.cnpg.io"*) cat "$FIXTURES/backups.json" ;;
+  *"get pvc "*|*"get pvc -n"*"-o json"*) [ -f "$FIXTURES/pvcs.json" ] || { echo "Error from server (NotFound): namespace" >&2; exit 1; }; cat "$FIXTURES/pvcs.json" ;;
+  *"get pv "*claimRef*) pv=$(sed -E 's/.*get pv ([^ ]+).*/\1/' <<<"$args"); [ -f "$FIXTURES/pv-$pv.claimref" ] || { echo "Error from server (NotFound): pv $pv" >&2; exit 1; }; cat "$FIXTURES/pv-$pv.claimref" ;;
   *"get pv "*storageClassName*) pv=$(sed -E 's/.*get pv ([^ ]+).*/\1/' <<<"$args"); [ -f "$FIXTURES/pv-$pv.class" ] || { echo "Error from server (NotFound): pv $pv" >&2; exit 1; }; cat "$FIXTURES/pv-$pv.class" ;;
   *"get pv "*) pv=$(sed -E 's/.*get pv ([^ ]+).*/\1/' <<<"$args"); [ -f "$FIXTURES/pv-$pv.policy" ] || { echo "Error from server (NotFound): pv $pv" >&2; exit 1; }; cat "$FIXTURES/pv-$pv.policy" ;;
   "patch pv "*) pv=$(awk '{print $3}' <<<"$args"); echo Retain > "$FIXTURES/pv-$pv.policy" ;;
