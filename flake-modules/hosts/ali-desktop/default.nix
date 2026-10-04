@@ -1239,13 +1239,11 @@ in {
             enable = true;
             package = pkgs.unstable.lact;
 
-            # Re-enabled nix-managed settings 2026-08-31 after a GPU ring hang
-            # (amdgpu ring gfx_0.0.0 timeout -> MODE1 reset -> VRAM lost ->
-            # Xwayland/niri session death) during a game session. -80mV was
-            # never confirmed as the cause of a prior, unrelated round of
-            # Forza Horizon 6 crashes, but backing the undervolt off by 5mV
-            # from the live GUI-set -75mV is cheap insurance. Bump toward 0
-            # further if it happens again.
+            # Ring hangs (gfx_0.0.0 timeout -> MODE1 reset -> VRAM lost ->
+            # session death) at -80mV (FH6), -75mV (2026-08-31) and -70mV
+            # (2026-10-04, Helldivers 2), so this chip's stable limit is
+            # above -70mV. -40mV keeps a 30mV margin; the undervolt
+            # only measured +1.2% anyway. Step toward 0 if it hangs again.
             settings = {
               # Current schema version for lact 0.10.x. Without it the daemon
               # migrates from 0 and then tries to write the migrated file
@@ -1262,7 +1260,7 @@ in {
                 fan_control_enabled = false;
                 performance_level = "auto";
                 power_cap = 374.0;
-                voltage_offset = -70;
+                voltage_offset = -40;
               };
             };
           };
