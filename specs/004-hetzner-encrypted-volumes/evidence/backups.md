@@ -290,3 +290,22 @@ unblocks us"). A fresh encrypted safety dump (139 MB, `pg_dumpall`, end marker c
 
 Lesson recorded: a sidecar setting is applied only when the pod is created, so a wrong value costs a second restart. The restart blip is
 dominated by `smartShutdownTimeout` (180 s); lowering it for planned restarts would cut the connection-refusing window.
+
+## T032: ente-db backs up through the Barman Cloud Plugin (2026-10-04)
+
+Done at the owner's request ("do the ente-db plugin conversion now"), on a Sunday evening, before the plugin's restore proof on
+`shared-postgres` (T035) that the task asked for first; the old chain was kept so nothing was lost by going ahead.
+
+| Step | Result |
+|---|---|
+| Before | fresh encrypted `pg_dumpall` (33 MB, end marker checked) at 20:45:16Z; on-demand in-tree backup `ente-db-pre-plugin-20261004t204518` `completed` (recovery point since 2026-09-04) |
+| Validation | the same `Cluster` with both `spec.backup.barmanObjectStore` and `spec.plugins` is **rejected** by the webhook ("Cannot enable a WAL archiver plugin when barmanObjectStore is configured"); a server-side dry run with the Flux field manager (which removes `spec.backup`) is accepted, so the change ships as one commit |
+| Change (home-cluster#1583) | `ObjectStore ente-db` (`s3://ajj-backups/cnpg-hetzner/ente-db`, IRSA role `hetzner-cnpg-backup-ente-db-irsa`, sidecar 128 Mi request / 512 Mi limit from the start), `spec.plugins` with `isWALArchiver`, service account annotation, `pgdata` Velero exclusion, `ente-db-daily` `method: plugin`, the `ente` Kustomization waits for `cnpg-barman-plugin`, and the old Hetzner Object Storage archive kept as the `ente-db-hetzner-os` externalCluster |
+| Pod restart | Terminating 20:49:37Z, Ready 20:53:04Z: about **3.5 minutes** (the 180 s smart-shutdown wait again) |
+| Cluster | `Cluster in healthy state`, `ContinuousArchiving=True`, archiver `archived_count 2235`, last file archived |
+| First plugin base backup | `ente-db-first-20261004t205311` `completed`, 20:53:12Z to 20:53:24Z (**12 s**, same as the old in-tree backups), sidecar 0 restarts |
+| Recovery window | `ObjectStore.status.serverRecoveryWindow`: first recoverability point and last successful backup `2026-10-04T20:53:24Z` |
+| Photo service | Museum pod kept running; its `/ping` failed only while the database was down (3 log lines) and returns `pong`; the public `/ping` returns 200. Signing in and opening an album was not exercised |
+
+Open (T033): a restore test of the new plugin chain (as T035 does for `shared-postgres`) and then removing the old bucket and the
+backup use of `ente-s3` (Museum still needs `ente-s3` for photo storage). The old archive stays until then.
