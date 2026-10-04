@@ -252,7 +252,18 @@ check_health() {
   fi
 
   if logs=$(kubectl logs -n "$namespace" -l "$selector" --all-containers --tail=500 --max-log-requests=20 2>&1); then
-    line=$(grep -Ei 'permission denied|read-only file system|no space left|(error|fatal).*(volume|database|connection refused)' <<<"$logs" | head -n1 || true)
+    problem_re='permission denied|read-only file system|no space left|(error|fatal).*(volume|database|connection refused)'
+    # CNPG logs JSON whose keys (error_severity, database_name) trip the grep; judge .record only.
+    # 57P03 is a normal replica start. Non-JSON lines keep the plain grep.
+    line=$(while IFS= read -r l; do
+      if jq -e '.record | type == "object"' <<<"$l" >/dev/null 2>&1; then
+        jq -r --arg re "$problem_re" 'select((.record.error_severity | IN("ERROR", "FATAL", "PANIC"))
+          and (.record.sql_state_code != "57P03")
+          and (.record.message // "" | test($re; "i"))) | .record.message' <<<"$l"
+      else
+        grep -Ei "$problem_re" <<<"$l" || true
+      fi
+    done <<<"$logs" | head -n1)
     [ -z "$line" ] || problems+=("logs show: ${line:0:160}")
   else
     problems+=("cannot read logs for $selector in $namespace: ${logs:0:120}")
