@@ -50,3 +50,51 @@ A scratch pod in `matrix` (ServiceAccount `shared-postgres`, `AWS_ROLE_ARN` set 
 Both failures are in the policy applied under T005 to T008 and would have made WAL archiving fail on the live database. The fix is T008a
 (Terraform commit `ad39500`, awaiting the owner's `tofu apply`). The scratch pod was deleted; the probe left one incomplete multipart
 upload (`cnpg-hetzner/shared-postgres/_iam-probe/mpu.bin`) to abort once the role may list uploads.
+
+## T013, T038 to T041: Velero installed and a first backup works (2026-10-04T06:08Z to 06:18Z)
+
+home-cluster PR 1566 merged (namespace, repository password Secret, HelmRelease: chart 12.2.0, Velero 1.18.2, plugin v1.14.4, Kopia, web
+identity `hetzner-velero-irsa`, no stored key). The repository password was generated from `/dev/urandom` and never printed; its
+64 character value decrypts with the owner's key. **A copy in the password manager is still to do (owner):** losing it makes every
+backup unreadable.
+
+Flux installed it in 57 s. The storage location reported `Available` (validated against `s3://ajj-backups/velero-hetzner`), so Velero's
+own listing calls work with the role as applied. Node memory went from 76% to 79% (about 230 MiB), above the 75% of T021's baseline but
+well clear of the stop threshold (available memory under 700 MiB).
+
+### The first backup failed, and why
+
+A backup of namespace `ntfy` ended `PartiallyFailed`: all three Kopia volume backups failed with
+`error to expose PVB: error to create hosting pod: admission webhook "validate.kyverno.svc-fail" denied the request … require-resource-limits`.
+Velero 1.18 starts a temporary hosting pod per volume backup, with no resources, and this cluster's Kyverno policy requires limits on every
+container in a workload namespace. These pods exist only at run time, so `helm template` of the chart could not show it. Fixed by PR 1567:
+a `velero-node-agent-config` ConfigMap with `podResources` (`50m`/`500m` CPU, `128Mi`/`512Mi` memory) and `loadConcurrency: 1`, read through
+`--node-agent-configmap`. The failed backup was removed with a `DeleteBackupRequest`.
+
+### After the fix
+
+Backup `second-ntfy-20261004` (started 06:17:08Z): `Completed`, 46 of 46 items, no errors or warnings, and all three volume backups
+completed (`data`, `tmp`, `rendered-config`).
+
+## T046 (part): restore test of `ntfy-data` (2026-10-04T06:19Z)
+
+`Restore` of that backup with `namespaceMapping ntfy -> restore-test-ntfy`, excluding the hostname route (so the scratch copy cannot claim a
+live hostname), policy reports and endpoints: `Completed`, 3 volume restores completed, restored pods Running, 5 warnings that are all benign
+(CRDs, `kube-root-ca.crt` and a CiliumEndpoint already exist).
+
+| File in `/var/lib/ntfy` | Live | Restored | Result |
+|---|---|---|---|
+| `cache.db` | 348160 bytes, sha `7b796bc05b1c72cc…` | same | byte-identical |
+| `user.db` | 118784 bytes, sha `72acab57dacca494…` | 118784 bytes, sha `c45ded9455c29f4c…` | bytes differ, content identical |
+
+`user.db` had not changed on the live volume since before the backup (mtime Oct 3 10:23), yet the restored copy differs. Comparing the logical
+contents settled it: `PRAGMA integrity_check` is `ok` on both, the schemas match (8 tables), and `sqlite3 .dump | sha256sum` is `84c58fe9375a8316`
+for both. The restored ntfy had been running for 2 minutes, and SQLite rewrites header fields when a database is opened. Velero also adds a
+`.velero/<uid>` marker file to a restored volume, which is not data. Lessons for the remaining restore tests: compare files while the
+restored workload is not running when the format is a database, or compare logical contents; ignore `.velero/`. My local copies of the
+databases (they hold ntfy user records) were shredded, and the scratch namespace, its volume and the restore object were deleted.
+
+T046 stays open for `couchdb-data`, `matrix-stack-synapse-media`, the Alertmanager and Prometheus volumes. Restoring Prometheus into a scratch
+namespace would run a second Prometheus (about 600 MiB) on a master with under 1.5 GiB free, which breaks the stop threshold, so its restore
+needs a resource modifier that keeps the restored pod from running the application. The Synapse media backup waits until the `shared-postgres`
+pod carries the `pgdata` exclusion (draft PR 1565), because the `matrix` namespace also holds that volume.
