@@ -16,6 +16,7 @@
             bats
             coreutils
             findutils
+            gettext
             gnugrep
             hcloud
             jq

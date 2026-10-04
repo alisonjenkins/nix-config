@@ -1,6 +1,6 @@
 { self, ... }: {
   # Hermetic bats tests for scripts/hetzner-volume-verify (verify.sh, retain-pv.sh,
-  # destroy-old-volume.sh, check-no-call.sh, table-checksums.sql). kubectl, lsblk, cryptsetup,
+  # destroy-old-volume.sh, check-no-call.sh, migrate-files.sh, table-checksums.sql). kubectl, lsblk, cryptsetup,
   # curl and hcloud are fakes in tests/bin; sql.bats starts a throwaway Postgres.
   # Run with: nix build .#checks.<system>.hetzner-volume-verify-bats
   perSystem = { pkgs, ... }:
@@ -13,6 +13,7 @@
             pkgs.diffutils
             pkgs.findutils
             pkgs.gawk
+            pkgs.gettext
             pkgs.gnugrep
             pkgs.gnused
             pkgs.jq
