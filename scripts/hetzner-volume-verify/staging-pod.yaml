@@ -1,0 +1,44 @@
+---
+# A minimal pod that mounts one claim so Velero's file-system backup can reach it, for a volume
+# whose own workload is scaled to zero (Grafana now, the Minecraft world before its migration).
+# Velero copies a volume only through a running pod that mounts it. The claim is mounted read-only,
+# so this pod cannot change what it backs up.
+#
+# Render and apply with the namespace and claim of the volume, then delete the pod afterwards:
+#   NAMESPACE=monitoring CLAIM=kube-prometheus-stack-grafana envsubst <staging-pod.yaml | kubectl apply -f -
+#   kubectl delete pod -n "$NAMESPACE" staging-backup
+# Back it up with a Backup that selects the pod and the claim (see specs/004-hetzner-encrypted-volumes/
+# evidence/backups.md): the claim must be included too, or it cannot be restored. Needs envsubst (gettext).
+#
+# Restoring it into a scratch namespace needs a resource modifier that makes the RESTORED copy
+# writable. The restored pod inherits the read-only mount, so the data restore has nowhere to write:
+# the data-restore object never starts and the restore hangs (found 2026-10-04). Patch
+# /spec/containers/0/volumeMounts/0/readOnly and /spec/volumes/0/persistentVolumeClaim/readOnly to
+# false for the pod named staging-backup, and restore pods, claims and PersistentVolumes in one
+# Restore. Run check-restored-pvcs.sh straight after the restore starts.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: staging-backup
+  namespace: ${NAMESPACE}
+  labels:
+    purpose: staging-backup
+  annotations:
+    backup.velero.io/backup-volumes: data
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: sleeper
+      image: docker.io/library/busybox:1.37
+      command: ["sleep", "21600"]
+      resources:
+        requests: {cpu: 10m, memory: 8Mi}
+        limits: {memory: 32Mi}
+      volumeMounts:
+        - {name: data, mountPath: /data, readOnly: true}
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: ${CLAIM}
+        readOnly: true

@@ -31,6 +31,7 @@ Scripts are written test first: a failing `bats` test in `tests/`, then the scri
   backup of the same target, and a `Retain` PV, with no pod mounting the claim. A dry run unless `--execute` is given.
 - `check-no-call.sh`: prints `calls=N` from every SFU pod and exits 0 only at zero. It fails closed.
 - `check-restored-pvcs.sh`: run after a Velero restore into a scratch namespace and before any restored pod runs; fails if a restored PVC names a volume that belongs to another claim (it would let the restore write into that volume).
+- `staging-pod.yaml`: a read-only pod that mounts one claim so Velero can back up a volume whose workload is scaled to zero (Grafana, the Minecraft world). Usage and the restore caveat are in its header.
 - `tests/`: bats tests, with fixture-driven fakes for `kubectl`, `lsblk`, `cryptsetup`, `curl`, `hcloud` and a node
   shell in `tests/bin`. `tests/sql.bats` runs the checksum query against a real throwaway Postgres.
 

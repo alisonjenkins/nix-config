@@ -187,3 +187,27 @@ Proved: the failure path of `VeleroBackupFailed` and the delivery chain. Not for
 `DatabaseHasNoBackup` (it is `pending` now for `shared-postgres`, and will fire after 24 hours without a backup unless T031 lands first),
 `DatabaseWALArchivingFailing` and `DatabaseWALArchivingStale`. Their expressions are checked against real series but not exercised; a `promtool`
 unit test of them is the cheap next step. T043 stays open for those.
+
+## T045, T047 (part): the staging pod and the Grafana restore test (2026-10-04T09:26Z to 10:20Z)
+
+`scripts/hetzner-volume-verify/staging-pod.yaml` is a minimal pod (busybox `sleep`, resource limits, the claim mounted **read-only**) that lets Velero's
+file-system backup reach a volume whose workload is scaled to zero. Grafana has 0 replicas, so its volume was never backed up by the daily schedule.
+
+**Backup.** With the staging pod running against `monitoring/kube-prometheus-stack-grafana`, a Backup selecting the pod and the Grafana claim by label:
+`Completed`, 31 of 31 items, the data volume 161,766,537 bytes (598 files), no errors. A live listing taken from the staging pod beforehand matched in count
+and total size.
+
+**Restore, and a flaw in my own template.** The first restore into a scratch namespace hung for 17 minutes: the data-restore object existed but never started
+and the pod stayed in its restore init container. Cause: the restored pod inherits the read-only mount, so the data restore has nowhere to write. Deleting
+that restore then hung on a finalizer of the never-started data-restore object (its pod and namespace were gone); I removed the finalizers of my own
+leftover test objects by hand (the node-agent controller re-added the one on the data-restore object, so the Restore's finalizer was removed instead and the
+orphan deleted). The retry used a resource modifier that makes only the restored copy writable (the live staging pod stays read-only); the template's header
+now says so.
+
+**Result.** The retry `Completed`: the guard (`check-restored-pvcs.sh`) passed, the data restore reported exactly 161,766,537 bytes, and a path, size and
+SHA-256 listing of every file on the live volume (from the read-only staging pod) against the restored volume has **598 files on each side and 0
+differences**, including the 12 MB `grafana.db`. With no application running on either side, the comparison is exact bytes, so this one is stronger than the
+logical comparisons used for the databases. Cleaned up: the staging pod, the scratch namespace and its volume, the Restore objects and the modifier are
+deleted; the live Grafana claim is still `Bound`.
+
+Still open for T047: the Minecraft world (`minecraft-create-arkana-data`, 50 Gi), which is larger and is better done with T044's timing in hand.
