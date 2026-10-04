@@ -52,7 +52,8 @@ spec:
             - |
               set -eu
               set -o pipefail
-              rsync -a --checksum /old/ /new/ || { echo "step=rsync failed status=$?"; exit 1; }
+              # The claim roots and lost+found are root-owned: a non-root rsync cannot set their times.
+              rsync -a --omit-dir-times --exclude=/lost+found --checksum /old/ /new/ || { echo "step=rsync failed status=$?"; exit 1; }
               echo "step=rsync ok"
               manifest() {
                 echo "MIGRATE-MANIFEST-BEGIN $2"
