@@ -83,7 +83,7 @@ if [ "$execute" -ne 1 ]; then
   exit 0
 fi
 
-kubectl delete pvc "$claim_name" -n "$claim_ns" || refuse "deleting pvc $claim failed"
+kubectl delete pvc "$claim_name" -n "$claim_ns" --ignore-not-found || refuse "deleting pvc $claim failed"
 kubectl delete pv "$pv" || refuse "deleting pv $pv failed"
 hcloud volume delete "$hcloud_id" || refuse "deleting hcloud volume $hcloud_id failed (claim and pv are already gone)"
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) volume=$volume destroyed pvc=$claim pv=$pv hcloud_volume=$hcloud_id"

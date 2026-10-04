@@ -171,3 +171,9 @@ destroy_args() {
   [[ "$output" == *"older than"* ]]
   no_kubectl_call delete
 }
+
+@test "destroy --execute tolerates a claim the operator already removed" {
+  run "$dir/destroy-old-volume.sh" $(destroy_args) --execute
+  [ "$status" -eq 0 ]
+  grep -q 'delete pvc old-claim -n matrix --ignore-not-found' "$FIXTURES/kubectl.calls"
+}

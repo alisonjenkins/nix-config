@@ -6,7 +6,8 @@ args="$*"
 echo "$args" >> "$FIXTURES/kubectl.calls"
 case "$args" in
   *"get secret"*) [ -f "$FIXTURES/secret.b64" ] || { echo "Error from server (NotFound)" >&2; exit 1; }; cat "$FIXTURES/secret.b64" ;;
-  exec*) pod="$4"; cat "$FIXTURES/psql-$pod.txt" ;;
+  exec*) pod="$4"; db=$(sed -E 's/.* -d ([^ ]+).*/\1/' <<<"$args")
+         if [ -f "$FIXTURES/psql-$pod-$db.txt" ]; then cat "$FIXTURES/psql-$pod-$db.txt"; else cat "$FIXTURES/psql-$pod.txt"; fi ;;
   *"get pods"*) cat "$FIXTURES/pods.json" ;;
   logs*) [ ! -f "$FIXTURES/logs.fail" ] || { echo "error: you are attempting to follow too many log streams" >&2; exit 1; }
          cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;

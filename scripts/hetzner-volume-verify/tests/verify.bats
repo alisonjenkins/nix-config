@@ -326,3 +326,28 @@ cnpg_backup() {
   [ "$status" -eq 2 ]
   [[ "$output" == *"--backup-for"* ]]
 }
+
+# --- several databases in one run: one line each, one verdict ---
+
+@test "database compare over a list of databases prints a line per database and one verdict" {
+  printf 'users|10|abc\n' > "$FIXTURES/psql-shared-postgres-1.txt"
+  cp "$FIXTURES/psql-shared-postgres-1.txt" "$FIXTURES/psql-shared-postgres-2.txt"
+  run "$script" --volume db1 --checks compare --kind database --namespace matrix \
+    --old-pod shared-postgres-1 --new-pod shared-postgres-2 --db synapse,mas,niks3
+  [ "$status" -eq 0 ]
+  [ "$(grep -c 'check=compare result=pass' <<<"$output")" -eq 3 ]
+  [ "$(grep -c 'verdict=' <<<"$output")" -eq 1 ]
+  [[ "$output" == *"db=mas"* ]]
+}
+
+@test "one differing database in the list fails the run and is named" {
+  printf 'users|10|abc\n' > "$FIXTURES/psql-shared-postgres-1.txt"
+  cp "$FIXTURES/psql-shared-postgres-1.txt" "$FIXTURES/psql-shared-postgres-2.txt"
+  printf 'users|10|zzz\n' > "$FIXTURES/psql-shared-postgres-2-mas.txt"
+  run "$script" --volume db1 --checks compare --kind database --namespace matrix \
+    --old-pod shared-postgres-1 --new-pod shared-postgres-2 --db synapse,mas,niks3
+  [ "$status" -eq 1 ]
+  [ "$(grep -c 'check=compare result=fail' <<<"$output")" -eq 1 ]
+  [[ "$output" == *"db=mas"*"result=fail"* || "$output" == *"result=fail"*"mas"* ]]
+  [[ "$output" == *"verdict=failed"* ]]
+}

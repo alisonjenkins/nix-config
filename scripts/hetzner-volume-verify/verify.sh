@@ -12,7 +12,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               --node-exec is a command prefix that runs a command on the node holding the volume
               (for example a kubectl debug or ssh wrapper). Without it the checks run on this machine.
   compare:    --kind files    --old-dir DIR --new-dir DIR
-              --kind database --namespace NS --old-pod POD --new-pod POD --db NAME
+              --kind database --namespace NS --old-pod POD --new-pod POD --db NAME[,NAME...]
   health:     --namespace NS --selector LABEL=VALUE [--health-url URL] [--health-seconds N]
   functional: --service matrix|photos|documents|monitoring|notifications|game
               matrix: --homeserver URL (env VERIFY_BOT_TOKEN, an access token for verify-bot, and VERIFY_BOT_ROOM)
@@ -144,6 +144,23 @@ differing_keys() {
   { diff <(LC_ALL=C sort "$1") <(LC_ALL=C sort "$2") || true; } | sed -n 's/^[<>] //p' | awk -F'\t|[|]' '{print $1}' | LC_ALL=C sort -u | paste -sd, -
 }
 
+# compare_database NAME: row counts and checksums of one database on the old and new instance.
+compare_database() {
+  local name=$1 diffs
+  if ! kubectl exec -n "$namespace" "$old_pod" -i -- psql -d "$name" -At -f - <"$table_sql_file" >"$workdir/old.m" 2>"$workdir/err"; then
+    emit compare fail "db=$name: query on $namespace/$old_pod failed: $(head -c 200 "$workdir/err")"; return
+  fi
+  if ! kubectl exec -n "$namespace" "$new_pod" -i -- psql -d "$name" -At -f - <"$table_sql_file" >"$workdir/new.m" 2>"$workdir/err"; then
+    emit compare fail "db=$name: query on $namespace/$new_pod failed: $(head -c 200 "$workdir/err")"; return
+  fi
+  diffs=$(differing_keys "$workdir/old.m" "$workdir/new.m")
+  if [ -z "$diffs" ]; then
+    emit compare pass "db=$name tables=$(wc -l <"$workdir/old.m" | tr -d ' ')"
+  else
+    emit compare fail "db=$name tables differ in rows or checksum: $diffs"
+  fi
+}
+
 # Part 1: data comparison.
 check_compare() {
   need compare kind --kind
@@ -167,18 +184,11 @@ check_compare() {
       need compare old_pod --old-pod
       need compare new_pod --new-pod
       need compare db --db
-      if ! kubectl exec -n "$namespace" "$old_pod" -i -- psql -d "$db" -At -f - <"$table_sql_file" >"$workdir/old.m" 2>"$workdir/err"; then
-        emit compare fail "query on $namespace/$old_pod db=$db failed: $(head -c 200 "$workdir/err")"; return
-      fi
-      if ! kubectl exec -n "$namespace" "$new_pod" -i -- psql -d "$db" -At -f - <"$table_sql_file" >"$workdir/new.m" 2>"$workdir/err"; then
-        emit compare fail "query on $namespace/$new_pod db=$db failed: $(head -c 200 "$workdir/err")"; return
-      fi
-      diffs=$(differing_keys "$workdir/old.m" "$workdir/new.m")
-      if [ -z "$diffs" ]; then
-        emit compare pass "tables=$(wc -l <"$workdir/old.m" | tr -d ' ') db=$db"
-      else
-        emit compare fail "tables differ in rows or checksum: $diffs"
-      fi
+      local one_db dbs
+      IFS=',' read -ra dbs <<<"$db"
+      for one_db in "${dbs[@]}"; do
+        compare_database "$one_db"
+      done
       ;;
     *) die_usage "--kind must be files or database, got '$kind'" ;;
   esac
