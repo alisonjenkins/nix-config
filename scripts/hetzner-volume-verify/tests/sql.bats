@@ -49,6 +49,30 @@ setup() {
   [ "$(grep '^s.Odd' <<<"$before")" = "$(grep '^s.Odd' <<<"$after")" ]
 }
 
+@test "unlogged tables are skipped, logged ones still listed" {
+  q -c 'drop table if exists locks; create unlogged table locks(k text); insert into locks values ($$x$$);'
+  run sums
+  q -c 'drop table locks'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"public.users|2|"* ]]
+  [[ "$output" != *"public.locks|"* ]]
+}
+
+@test "the query succeeds on a hot standby that has an unlogged table" {
+  command -v pg_basebackup >/dev/null || skip "pg_basebackup not on PATH"
+  q -c 'drop table if exists locks; create unlogged table locks(k text);'
+  sdir="${BATS_TEST_TMPDIR}/standby"
+  mkdir -p "$sdir/sock"
+  pg_basebackup -h "$PGDIR" -D "$sdir/data" -R -X stream >/dev/null
+  pg_ctl -D "$sdir/data" -o "-k $sdir/sock -p 5433 -c listen_addresses=''" -l "$sdir/log" -w start >/dev/null
+  run psql -h "$sdir/sock" -p 5433 -d postgres -qAt -v ON_ERROR_STOP=1 -f "${BATS_TEST_DIRNAME}/../table-checksums.sql"
+  pg_ctl -D "$sdir/data" -m immediate stop >/dev/null
+  q -c 'drop table locks'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"public.users|2|"* ]]
+  [[ "$output" != *"public.locks|"* ]]
+}
+
 @test "the checksum does not depend on insertion order" {
   before=$(sums | grep '^public.users|')
   q -c 'delete from users; insert into users values (2, $$b$$), (1, $$a$$);'
