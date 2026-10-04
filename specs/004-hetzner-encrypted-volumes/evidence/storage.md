@@ -136,3 +136,13 @@ Hetzner volume (id 107030480, labelled `pvc-name: drill`) was deleted through th
 
 The static claims were of the encrypted class, so the Kyverno claim guard ran on them and admitted them because
 `kube-system/hcloud-volume-passphrase` is non-empty.
+
+## T067 to T069: the encrypted class is the default (2026-10-04T22:18Z)
+
+home-cluster#1591 set `defaultStorageClass: false` on `hcloud-volumes` and `true` on `hcloud-volumes-encrypted` in one commit; the old class is
+otherwise unchanged. At that point eight claims were on the encrypted class and one (the Minecraft world) on the plain class, which it names
+explicitly. T068: a claim naming no class in a throwaway namespace got `hcloud-volumes-encrypted`, the verification script's encryption
+check passed (`crypto_LUKS`, mapping active), the total pod restart count was 3125 before and after, and the namespace and volume were deleted.
+
+T069 follow-up, not done in this feature: once the Minecraft world has moved, remove the explicit `storageClassName: hcloud-volumes`
+from the manifests that still carry it, so the default is the single source of the class (constitution V).

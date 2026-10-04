@@ -171,3 +171,28 @@ scratch namespace, its volumes and PVs were deleted (0 PVs and 0 Hetzner volumes
 
 The functional check for the photo service (sign in, open a known album) was not exercised: it needs credentials the session does not have.
 Left to do for the old archive: the restore test of the new plugin chain (T033), then removing the old Hetzner Object Storage bucket.
+
+## `shared-postgres-1` -> `shared-postgres-2` on the encrypted class (T052 to T058, 2026-10-04)
+
+Done overnight while the owner slept ("do the shared-postgres carefully when calls drops to 0"), gated on `check-no-call.sh` printing
+`calls=0` before the replica was added and again immediately before the switchover (both `calls=0`).
+
+| Step | Result |
+|---|---|
+| Before | fresh encrypted `pg_dumpall` at 21:38Z and again 21:47Z (139 MB, end marker checked); the dump restored into a scratch cluster in 27 s with 0 errors (niks3 and app identical to live, mas and synapse differing only in churning tables) |
+| Class for new volumes (home-cluster#1588) | `storage.storageClass: hcloud-volumes-encrypted` and `smartShutdownTimeout: 10`; the primary did **not** restart (creation time and restart count unchanged) |
+| Second instance (#1589) | `instances: 2`; `shared-postgres-2` Ready on `hcloud-volumes-encrypted` in 1 min 38 s, streaming, 0 bytes lag; node memory 76% to 79% |
+| Before the switch | plugin base backup `shared-postgres-pre-switch-20261004t214713` `completed` (taken on the replica, which also proves the replica can back up); encryption verdict for the replica volume `verified` at 21:48:38Z (Hetzner volume 107032963) |
+| Switchover | `kubectl cnpg promote shared-postgres shared-postgres-2` at 21:48:53Z; queries through `shared-postgres-rw` failed for about **30 seconds** (35 failed probes at 0.5 s, first 0.9 s, last 30.5 s after the promote); the 10 s smart shutdown kept it far below the 3.5 minutes of the plugin restarts |
+| Matrix after | `Cluster in healthy state`, all pods Running; MAS restarted twice (reconnect), Synapse needed no restart; the client API returned 200; no Synapse errors in the five minutes after the switch, about 30 requests per minute throughout |
+| Compare (21:51Z, old instance now a standby) | `verify.sh --kind database` **failed**, and not for a data reason: the old primary was a standby, where Postgres cannot read UNLOGGED tables (`worker_read_write_locks`, `queue_leader`), so the checksum query aborted. Run again skipping unlogged tables: `app` 0 tables, `mas` 33, `niks3` 8, `synapse` 173, **all identical, no errors** (the skipped unlogged tables are not replicated and hold only locks and leader state). Fixed in nix-config#490 (tests, including a real hot standby) |
+| Backups after the switch | `shared-postgres-post-switch-20261004t215012` and `shared-postgres-final-20261004t221105` `completed` |
+| Encryption verdict after the switch | `verdict=verified` (encryption and backup checks) at 22:13:04Z |
+| Old instance | PV `pvc-5e189937…` set to `Retain`, `instances` back to 1 (home-cluster#1590), the operator removed `shared-postgres-1` |
+| Restore test of the plugin chain (T035) | see `backups.md`; passed, so the old volume was removed |
+| Old volume removed | `destroy-old-volume.sh --execute` at **22:16:56Z** (Hetzner id 106859616), 28 minutes after the switchover |
+
+Not exercised: the Matrix functional check (it needs the `verify-bot` account, T016) and a call; the `health` check was done by hand (all
+pods Ready, no errors) because its fix was still in review.
+
+With this, **every household volume except the Minecraft world is on an encrypted volume**; the world waits for the Minecraft work.

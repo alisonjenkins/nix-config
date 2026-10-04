@@ -309,3 +309,20 @@ Done at the owner's request ("do the ente-db plugin conversion now"), on a Sunda
 
 Open (T033): a restore test of the new plugin chain (as T035 does for `shared-postgres`) and then removing the old bucket and the
 backup use of `ente-s3` (Museum still needs `ente-s3` for photo storage). The old archive stays until then.
+
+## T033, T035: the plugin chains restore (2026-10-04)
+
+The IAM trust policy of each backup role names only the live service account (`matrix:shared-postgres`, `ente:ente-db`), so a scratch
+namespace cannot assume it. For the test the live service account's token was requested with `kubectl create token --audience
+sts.amazonaws.com --duration 1h`, exchanged for 1 hour credentials with `sts assume-role-with-web-identity`, stored in a Secret in the
+scratch namespace and referenced by a copy of the `ObjectStore` (read-only use: the scratch `Cluster` has no backup section). No value was
+printed; the Secret went with the namespace and the credentials expired within the hour.
+
+| | `shared-postgres` | `ente-db` |
+|---|---|---|
+| Scratch `Cluster` | `bootstrap.recovery` from the plugin (`externalClusters` with `plugin`), 10 Gi on `hcloud-volumes-encrypted` | same, with the pinned PostgreSQL 18.4 image |
+| Time to a healthy cluster | 108 s | 118 s |
+| Databases | `niks3` 607 MB, `synapse` 218 MB, `mas` 19 MB, `app` | `ente` (81 tables) |
+| Compare against the live primary | `niks3` (8 tables) and `app` identical; `mas` (33 tables) differs in 6 and `synapse` (173) in 4, all churning tables (OAuth tokens and sessions, queue jobs, devices, presence, stream positions, user IPs) written since the last archived WAL | **all 81 tables identical**, `postgres` 0 tables |
+
+Namespaces, volumes and credentials were deleted afterwards (0 scratch PVs).
