@@ -1291,9 +1291,17 @@ class Session:
 
     def connect(self, client_id, client_name):
         """A client has connected: size the output for it and turn it on."""
-        self.client_id = client_id
         if client_name:
             self.known_clients[client_name] = client_id
+        # A Mac whose Steam reconnects on its own resized the output under a
+        # game in the headset. Only a VR stream: it has no stop marker or
+        # grace period for a new client to wait out.
+        if self.vr_stream and client_id != self.client_id:
+            log("stream-mode: {} connected during a VR stream; leaving {} as it is".format(
+                client_name or client_id, self.output
+            ))
+            return False
+        self.client_id = client_id
         self.max_capture = None
         self.max_fps = None
         self.reported_output = None

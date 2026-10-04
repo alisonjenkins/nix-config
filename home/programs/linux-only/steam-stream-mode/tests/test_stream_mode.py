@@ -1596,6 +1596,16 @@ class TestOutputLifetime(unittest.TestCase):
         self.start_vr_stream(link_refresh=None)
         self.assertEqual(self.modes[-1][3], stream_mode.VR_DEFAULT_REFRESH)
 
+    def test_another_client_connecting_mid_vr_stream_leaves_the_output(self):
+        """An idle Mac reconnecting resized the output under the game."""
+        s = self.start_vr_stream()
+        s.clients = {"123": {"output": [1728, 1080], "refresh": 60}}
+        self.modes.clear()
+        self.assertFalse(s.connect(123, "ali-mba"))
+        self.assertEqual(self.modes, [])
+        self.assertEqual(s.client_id, 10933890668138783182)
+        self.assertEqual(s.known_clients["ali-mba"], 123)
+
     def test_a_remote_play_stream_after_vr_is_not_a_vr_stream(self):
         """Ended by its own stop marker, not by SteamVR exiting."""
         s = self.start_vr_stream()
