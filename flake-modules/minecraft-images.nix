@@ -22,18 +22,8 @@ let
       };
 
       jre = pkgs.temurin-jre-bin-21;
-    in
-    pkgs.dockerTools.buildLayeredImage {
-      name = imageName;
-      # OCI image tag chars: [a-zA-Z0-9._-] only — drop SemVer build-meta
-      # `+` so a version like `1.5+aeronautics-1.2.1` lands as a valid tag
-      # `v1.5-aeronautics-1.2.1`.
-      tag = "v" + lib.replaceStrings [ "+" ] [ "-" ] server.version;
 
-      # Reproducible image (no creation timestamp drift between rebuilds).
-      created = "1970-01-01T00:00:01Z";
-
-      contents = [
+      imageContents = [
         # Plain bash (no readline / history / etc.) is enough for the
         # entrypoint and saves ~5 MB vs bashInteractive.
         pkgs.bash
@@ -45,6 +35,9 @@ let
         pkgs.gnugrep
         pkgs.gawk
         pkgs.cacert
+        # mcrcon for the Velero backup hook (save-off / save-all flush /
+        # save-on); hooks exec `sh -c`, and `sh` comes from pkgs.bash.
+        pkgs.mcrcon
         # libstdc++ for spark profiler's async-profiler engine — without
         # it spark falls back to the JVM sampling profiler (less accurate
         # for native-call hotspots).
@@ -52,6 +45,17 @@ let
         jre
         server
       ];
+      image = pkgs.dockerTools.buildLayeredImage {
+      name = imageName;
+      # OCI image tag chars: [a-zA-Z0-9._-] only — drop SemVer build-meta
+      # `+` so a version like `1.5+aeronautics-1.2.1` lands as a valid tag
+      # `v1.5-aeronautics-1.2.1`.
+      tag = "v" + lib.replaceStrings [ "+" ] [ "-" ] server.version;
+
+      # Reproducible image (no creation timestamp drift between rebuilds).
+      created = "1970-01-01T00:00:01Z";
+
+      contents = imageContents;
 
       # Layer mod jars individually: the server tree symlinks each per-mod
       # fetchurl store path, so dockerTools.buildLayeredImage spreads them
@@ -85,7 +89,10 @@ let
           "MINECRAFT_HEAP=${heap}"
         ];
       };
-    };
+      };
+    in
+    # `contents` is surfaced so checks can inspect the image without building it.
+    image // { contents = imageContents; };
 
   cscImage = system:
     let pkgs = import inputs.nixpkgs {

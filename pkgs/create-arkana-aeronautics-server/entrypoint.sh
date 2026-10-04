@@ -46,6 +46,12 @@ for f in server.properties eula.txt; do
   fi
 done
 
+# RCON (backup hook) is force-configured every boot; the password comes from
+# the environment and the server must not start without it.
+# shellcheck source=rcon.sh
+source "${BASH_SOURCE[0]%/*}/rcon.sh"
+configure_rcon /data/server.properties
+
 # `config/` may be edited by admins (per-mod tuning); copy on first start
 # so changes persist on the PVC and survive image upgrades.
 if [ ! -e config ] && [ -e /opt/server/config ]; then

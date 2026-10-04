@@ -31,10 +31,11 @@ load_lib() {
   ! grep -E '^server-ip=' "$SERVER_PROPERTIES"
 }
 
-@test "image contents include mcrcon, bash and coreutils" {
-  grep -qx 'mcrcon' "$IMAGE_CONTENTS"
-  grep -qx 'bash' "$IMAGE_CONTENTS"
-  grep -qx 'coreutils' "$IMAGE_CONTENTS"
+@test "image contents include mcrcon, bash (sh) and coreutils" {
+  # pkgs.bash's pname is bash-interactive in this nixpkgs; it provides sh.
+  for name in mcrcon 'bash(-interactive)?' coreutils; do
+    grep -Eqx "$name" "$IMAGE_CONTENTS" || { echo "missing $name in: $(tr '\n' ' ' <"$IMAGE_CONTENTS")" >&2; return 1; }
+  done
 }
 
 @test "entrypoint configures rcon before exec'ing java" {

@@ -220,7 +220,14 @@ let
     # is only reachable via the proxy (ClusterIP, not internet-exposed), so it
     # must NOT perform its own Mojang auth.
     online-mode=false
-    enable-rcon=false
+    # RCON serves the Velero backup hook (save-off / save-all flush / save-on):
+    #   sh -c 'mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASSWORD" "save-off" "save-all flush"'
+    # The password is never baked: entrypoint.sh writes it from $RCON_PASSWORD.
+    # Minecraft cannot bind RCON apart from the game port (server-ip would
+    # move both), so it listens on all pod interfaces. Restrict it with a
+    # NetworkPolicy and a strong password; do not set server-ip.
+    enable-rcon=true
+    rcon.port=25575
     spawn-protection=0
     allow-flight=true
   '';
@@ -328,6 +335,7 @@ stdenvNoCC.mkDerivation {
     '') datapacks}
 
     install -m755 ${./entrypoint.sh}     $out/entrypoint.sh
+    install -m644 ${./rcon.sh}           $out/rcon.sh
     # Replace the portable shebang with an absolute store path
     # (dockerTools images contain only /nix/store, no /usr/bin/env)
     # and substitute the libstdc++ path for spark's async-profiler.
@@ -382,6 +390,8 @@ stdenvNoCC.mkDerivation {
 
   passthru = {
     inherit neoforgeVersion;
+    # Exposed so tests can inspect the baked file without building the tree.
+    serverPropertiesFile = serverProperties;
     # Surfaced for the client derivation so the manifest version stays in
     # lock-step with the server.
     arkanaVersion = "1.5";
