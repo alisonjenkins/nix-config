@@ -512,6 +512,25 @@ def set_output_mode(name, width, height, refresh):
     return True
 
 
+def set_screencast_cursor(name, embed):
+    """Draw the pointer into casts of the output that asked for it hidden.
+
+    Steam captures with the cursor hidden because a Remote Play client draws
+    its own. SteamVR's desktop view shows the frames as they are, so a game in
+    the headset had no cursor. Needs the niri fork's `screencast-cursor`.
+    """
+    result = subprocess.run(
+        [NIRI, "msg", "output", name, "screencast-cursor", "on" if embed else "off"],
+        check=False, capture_output=True, text=True, env=niri_env(),
+    )
+    if result.returncode != 0:
+        log("stream-mode: could not turn the screencast cursor {} on {}: {}".format(
+            "on" if embed else "off", name, (result.stderr or "").strip()
+        ))
+        return False
+    return True
+
+
 def set_output_enabled(name, enabled):
     """Take the virtual output in or out of the layout.
 
@@ -1488,7 +1507,10 @@ class Session:
         self.vr_refresh = refresh
         log("stream-mode: desktop capture started with no stream announced; "
             "streaming to SteamVR at {} Hz until it exits".format(refresh))
-        return self.begin_stream(fps=refresh)
+        began = self.begin_stream(fps=refresh)
+        if self.output is not None:
+            set_screencast_cursor(self.output, True)
+        return began
 
     def check_vr_alive(self):
         """End a VR stream once SteamVR has exited; nothing else marks its end.
@@ -1761,6 +1783,8 @@ class Session:
                 refresh = client_refresh(self.client_id, self.clients, fps)
                 self.apply_mode(width, height, refresh)
             set_output_enabled(OUTPUT_NAME, True)
+            if self.vr_stream:
+                set_screencast_cursor(OUTPUT_NAME, True)
             log("stream-mode: niri reloaded its config; restored {}".format(OUTPUT_NAME))
             return True
         if other_active_outputs(OUTPUT_NAME) == set():
@@ -1798,6 +1822,8 @@ class Session:
         which is what emptied the desktop onto it during a KVM switch.
         """
         self.streaming = False
+        if self.vr_stream:
+            set_screencast_cursor(self.output or OUTPUT_NAME, False)
         self.vr_stream = False
         self.vr_refresh = None
         self.capture_waiting = False

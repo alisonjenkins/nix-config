@@ -1271,9 +1271,14 @@ class TestOutputLifetime(unittest.TestCase):
                 "vrserver_running",
                 "vr_link_refresh",
                 "output_refresh",
+                "set_screencast_cursor",
                 "signal_process",
             )
         }
+        self.cursor = []
+        stream_mode.set_screencast_cursor = lambda name, embed: (
+            self.cursor.append((name, embed)) or True
+        )
 
         def set_mode(name, w, h, r):
             self.modes.append((name, w, h, r))
@@ -1595,6 +1600,32 @@ class TestOutputLifetime(unittest.TestCase):
     def test_a_vr_stream_with_no_known_rate_runs_at_90(self):
         self.start_vr_stream(link_refresh=None)
         self.assertEqual(self.modes[-1][3], stream_mode.VR_DEFAULT_REFRESH)
+
+    def test_a_vr_stream_draws_the_cursor_into_the_capture(self):
+        """Steam asks for its capture without the cursor; SteamVR never adds one."""
+        self.start_vr_stream()
+        self.assertEqual(self.cursor, [(stream_mode.OUTPUT_NAME, True)])
+
+    def test_a_stream_without_steamvr_leaves_the_cursor_alone(self):
+        """A Remote Play client draws its own cursor; a second one would be wrong."""
+        stream_mode.vrserver_running = lambda: False
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.desktop_stream_started()
+        self.assertEqual(self.cursor, [])
+
+    def test_the_vr_stream_ending_stops_drawing_the_cursor(self):
+        s = self.start_vr_stream()
+        stream_mode.vrserver_running = lambda: False
+        self.assertTrue(s.check_vr_alive())
+        self.assertEqual(self.cursor[-1], (stream_mode.OUTPUT_NAME, False))
+
+    def test_a_config_reload_mid_vr_stream_draws_the_cursor_again(self):
+        """niri drops IPC changes on every reload."""
+        s = self.start_vr_stream()
+        self.cursor.clear()
+        s.reassert_output()
+        self.assertEqual(self.cursor, [(stream_mode.OUTPUT_NAME, True)])
 
     def test_a_config_reload_mid_vr_stream_keeps_the_headsets_rate(self):
         """niri drops IPC changes on reload; the headset's rate is not learned."""
