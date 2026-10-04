@@ -211,3 +211,32 @@ logical comparisons used for the databases. Cleaned up: the staging pod, the scr
 deleted; the live Grafana claim is still `Bound`.
 
 Still open for T047: the Minecraft world (`minecraft-create-arkana-data`, 50 Gi), which is larger and is better done with T044's timing in hand.
+
+## T044: a 64 GiB upload from an encrypted volume (2026-10-04T09:25Z to 10:38Z)
+
+A throwaway 70 Gi claim on `hcloud-volumes-encrypted` was filled with 64 GiB of incompressible data (64 files from `/dev/urandom`, about 40 MB/s to
+write), then backed up by Velero while a watchdog logged master memory every minute and was set to delete the backup if available memory fell under
+700 MiB or swap passed 1 GiB.
+
+| Measure | Result |
+|---|---|
+| Backup | `Completed`, 68,719,476,741 bytes (64 GiB), no errors, no warnings |
+| Duration | 10:19:08Z to 10:38:10Z: 19 minutes, about 60 MB/s |
+| Credential errors in the node-agent log (`expired`, `InvalidIdentityToken`, `AccessDenied`, `credential`) | none |
+| Master memory during the run | minimum available **732 MiB** (threshold 700), maximum swap 713 MiB (threshold 1 GiB); node at 78% afterwards |
+| Velero server memory | about 330 MiB of its 512 MiB limit; the hosting pod about 245 MiB of its 512 MiB limit |
+| Encrypted volume under Kopia | read and uploaded normally |
+
+**What this did not prove.** The point of the test was credential refresh: the web identity credentials last one hour, and an upload that outlives them
+must keep working. At about 60 MB/s the whole 64 GiB finished in 19 minutes, so the credentials never expired and the refresh path was **not exercised**.
+Reaching an hour would take about 200 GB, which is not worth that load on this master. Judgement: the case only arises for an upload longer than an hour,
+and the largest household volume is the 50 Gi Minecraft world, about 15 minutes at this rate; if a volume ever approaches 200 GB, or a backup fails near
+the one hour mark, this is where to look. `VeleroBackupFailed` would report it. T044 is therefore left open for the owner to accept or to ask for a longer
+run.
+
+**What it did show.** A 64 GiB backup is possible on this master but leaves almost no memory margin: the minimum of 732 MiB is 32 MiB above the stop
+line, and swap climbed to 713 MiB. A backup of this size must not overlap a database migration or any other large job (T021's no-overlap rule holds), and
+Phase 4 needs real headroom before it starts.
+
+Cleanup: the test backup was removed with a `DeleteBackupRequest` (Kopia frees the blobs at its next maintenance run, so up to 64 GiB stays in the bucket
+until then), the namespace and its volume were deleted (no `enc-test` volume remains), and the watchdog was stopped.
