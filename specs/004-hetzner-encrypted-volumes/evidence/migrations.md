@@ -196,3 +196,12 @@ Not exercised: the Matrix functional check (it needs the `verify-bot` account, T
 pods Ready, no errors) because its fix was still in review.
 
 With this, **every household volume except the Minecraft world is on an encrypted volume**; the world waits for the Minecraft work.
+
+## T059: the removal guard (2026-10-04T22:2xZ)
+
+A throwaway claim on the encrypted class (Hetzner volume 107033250) was written with a marker and set to `Retain`. Deleting its pod and
+claim left the PV `Released` and the Hetzner volume in place. `destroy-old-volume.sh --execute` then refused three times, each with
+the reason named and nothing deleted: a verdict of `verdict=failed`; a `verified` verdict older than `--since`; and no completed backup
+of the target since `--since`. The throwaway PV, volume and namespace were then deleted by hand (after checking the PV name equalled the
+volume name and nothing was attached). The running-pod refusal and the `Retain` check were exercised for real by the migrations
+(each old PV was `Retain` before its removal, and the script's pod check passed only after the workload moved).

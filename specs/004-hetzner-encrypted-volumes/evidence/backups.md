@@ -326,3 +326,28 @@ printed; the Secret went with the namespace and the credentials expired within t
 | Compare against the live primary | `niks3` (8 tables) and `app` identical; `mas` (33 tables) differs in 6 and `synapse` (173) in 4, all churning tables (OAuth tokens and sessions, queue jobs, devices, presence, stream positions, user IPs) written since the last archived WAL | **all 81 tables identical**, `postgres` 0 tables |
 
 Namespaces, volumes and credentials were deleted afterwards (0 scratch PVs).
+
+## T036, T037: the stale restore Secret is gone (2026-10-04T22:2xZ)
+
+`matrix/cnpg-restore-aws-creds` held the keys `ACCESS_KEY_ID` (20 bytes), `SECRET_ACCESS_KEY` (40) and `SESSION_TOKEN` (932): expired temporary
+credentials created on 2026-09-13, not a long-lived key. Nothing referenced it (no pod volume, `env` or `envFrom`, no `Cluster`, no manifest
+in `home-cluster`), and the restore tests no longer need it, so it was deleted; `shared-postgres` stayed healthy and no Secret of that name
+remains (SC-012, FR-016).
+
+## T048, T049: backups proven (2026-10-04T22:30Z)
+
+Latest completed backup per volume (UTC):
+
+| Volume group | Backup | Completed |
+|---|---|---|
+| `couchdb` | Velero `couchdb-enc-20261004t141409z` | 14:14:54Z |
+| `ntfy` | Velero `ntfy-enc-20261004t142839z` | 14:29:26Z |
+| `monitoring` (Grafana, Alertmanager, Prometheus) | Velero `monitoring-enc-20261004t151335z` | 15:15:37Z |
+| `matrix` media | Velero `matrix-media-staging-20261004t172840z` | 17:29:03Z |
+| `shared-postgres` | CNPG plugin `shared-postgres-final-20261004t221105` | 22:12:31Z |
+| `ente-db` | CNPG plugin `ente-db-post-switch-20261004t211517` | 21:15:30Z |
+| Minecraft world | Velero `first-minecraft-20261004` (its schedules are still disabled, see the Minecraft work) | 11:00:54Z |
+
+Every volume has been restored from its backup and compared (files byte for byte for the Velero volumes; every logged table for the two
+databases, from the plugin chain through `restore-test` clusters). **Backups are proven as of 2026-10-04T22:30Z**; storage was proven at
+05:52:24Z, so the 7 day window of FR-012 ends 2026-10-11T22:30Z. Nine of ten data volumes are already encrypted; the Minecraft world is the last.
