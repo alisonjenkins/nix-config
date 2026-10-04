@@ -176,7 +176,7 @@ args() {
   [ "$status" -eq 0 ]
   grep -q 'claimName: old-claim' "$FIXTURES/applied.yaml"
   grep -q 'claimName: new-claim' "$FIXTURES/applied.yaml"
-  grep -q 'rsync -a --checksum /old/ /new/' "$FIXTURES/applied.yaml"
+  grep -q 'rsync -a --omit-dir-times --exclude=/lost+found --checksum /old/ /new/' "$FIXTURES/applied.yaml"
   grep -q 'limits:' "$FIXTURES/applied.yaml"
   grep -q 'readOnly: true' "$FIXTURES/applied.yaml"
   grep -q 'namespace: matrix' "$FIXTURES/applied.yaml"
