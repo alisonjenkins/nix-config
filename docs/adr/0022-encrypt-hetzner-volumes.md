@@ -80,6 +80,22 @@ The cluster already has web identity (IRSA): a self-hosted issuer, the pod-ident
   scratch space stay unencrypted.
 - Everything is encrypted within 7 days of the storage and the backups being proven.
 
+## Locations that stay unencrypted
+
+Listed from the live cluster on 2026-10-04 (`emptyDir` volumes on the node's own disk), as FR-013 requires.
+The Matrix `tmp` and rendered-config scratch areas and the PostgreSQL `shm` areas are already memory backed
+and are not listed.
+
+| Where | What it can hold | Option |
+|---|---|---|
+| Node root disks (all nodes) | Container images, logs, anything below | No root disk encryption is configured; out of scope for this feature |
+| `matrix/shared-postgres-1`, `ente/ente-db-1` `scratch-data` | PostgreSQL temporary files (large sorts and joins spill here) | `medium: Memory` with a size limit; costs RAM on a memory-tight master, so not done |
+| `velero/node` `scratch`, `velero/velero` `scratch` | The Kopia cache and the data of a volume while it is backed up | Memory backed would need the size of the largest volume; accepted. The repository itself is encrypted by Kopia and is the only copy leaving the cluster |
+| `ente/museum` `tmp`, `ente/ente-web` caches | Upload staging for photos, web cache | `medium: Memory` is possible for `museum` `tmp` if photo sizes stay small |
+| `ntfy/ntfy` `tmp`, `couchdb/couchdb` `config`, `streaming/*` rendered config | Rendered configuration, short lived | Accepted |
+
+Owner's acceptance of this list is still open (task T096); until it is given, FR-013 is not closed.
+
 ## Evidence
 
 Read-only queries on 2026-10-03: the StorageClass and PVs, the CloudNativePG cluster spec and operator
