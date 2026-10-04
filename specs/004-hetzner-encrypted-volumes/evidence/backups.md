@@ -262,3 +262,10 @@ to do. Timing for the real world backups: about 2.5 minutes for the present 6 Gi
 Cleaned up: the staging pod, the scratch namespace and its volume, the Restore object and the modifier are deleted; the live claim is still `Bound`.
 
 **T047 is done.** T046 remains open only for `matrix-stack-synapse-media`, which waits for the `shared-postgres` pod to carry the `pgdata` exclusion (T031).
+
+## check-world.sh on the real Minecraft world (T093)
+
+2026-10-04T11:47:04Z: the six `region` directories of the live world (1,344 `.mca` files) were copied read-only through the staging pod and read with
+`check-world.sh`: `chunks_read=178391 unreadable=0 files=1344`, exit 0, about 3 s. Positive controls on a throwaway copy: a corrupted chunk and a truncated
+file were each reported (exit 1). The local copy and the staging pod are deleted. Limits: `.mcc` external chunks are not read, and the LZ4 framing is
+untested on real data (this world uses zlib).
