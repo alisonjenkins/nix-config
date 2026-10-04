@@ -72,3 +72,34 @@ the pod kept it mounted.
 
 Cleanup: namespace `enc-test`, both scratch classes and the scratch Secret deleted; no `enc-test` PV remains; both root debug
 pods were deleted. Both Postgres clusters were healthy afterwards and the master was at 75% memory.
+
+## T025a: the silent plain-text case is blocked (2026-10-04T05:40Z to 05:58Z)
+
+home-cluster PR 1563 added the Kyverno policy `require-volume-passphrase` (`Enforce`) and a Role that lets Kyverno's admission
+controller read exactly one Secret, `kube-system/hcloud-volume-passphrase`. The lookup runs only for claims of
+`hcloud-volumes-encrypted`.
+
+Before it went in, the same policy was tried on a scratch Secret, class and namespace (all deleted), with server-side dry-run claims:
+
+| Case | Result |
+|---|---|
+| Secret has the wrong key | denied |
+| Secret has a non-empty `encryption-passphrase` | admitted |
+| Key present but empty | denied |
+| Secret missing | denied, fail closed (`failed to check deny conditions … could not find the requested resource`) |
+| Claim of a plain class while the Secret is missing | admitted: the guard cannot block ordinary claims |
+
+After the merge (2026-10-04T05:58Z), against the real Secret: the policy is `Ready`; `kubectl auth can-i` shows Kyverno can read
+`hcloud-volume-passphrase` and cannot read `hcloud`; a dry-run claim of `hcloud-volumes-encrypted` is admitted and so is one of
+`hcloud-volumes`. No probe claim was created. The real Secret was never modified.
+
+Gap, tracked in T067: a claim that names no class uses the default class, so once the default is switched to the encrypted class
+the policy must cover that case too. Kyverno's resource filters also skip `kube-system`, so a claim made there is not checked;
+no workload creates encrypted claims there.
+
+## T027: storage proven (2026-10-04T05:52:24Z)
+
+The encrypted class exists next to the unchanged default (T022, T023), a volume on it is LUKS with an active mapping and no
+plain text in its raw bytes (T024), a missing Secret stops the mount and a wrong or empty passphrase is blocked at claim
+creation (T025, T025a), and it resizes online with the data intact (T026). The 7 day clock starts when this and T049
+(backups proven) are both done.
