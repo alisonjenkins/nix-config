@@ -240,3 +240,25 @@ Phase 4 needs real headroom before it starts.
 
 Cleanup: the test backup was removed with a `DeleteBackupRequest` (Kopia frees the blobs at its next maintenance run, so up to 64 GiB stays in the bucket
 until then), the namespace and its volume were deleted (no `enc-test` volume remains), and the watchdog was stopped.
+
+## T047: the Minecraft world, backed up and restored (2026-10-04T10:55Z to 11:07Z)
+
+`minecraft-create-arkana-data` is a 50 Gi plain claim, with 5.8 GiB used (6,197,258,417 bytes in 5,775 files, 1,856 of them `.mca` region files), and
+both Minecraft Deployments are at zero, so Velero could not reach it before. The `minecraft` namespace allows privileged pods and holds only this volume,
+so the staging pod from T045 ran against the live claim (read-only) and the Backup covered the whole namespace.
+
+| Step | Result |
+|---|---|
+| Live listing (path, size, SHA-256 of every file, from the staging pod) | 5,775 files, 6,197,258,417 bytes, no errors, 2 min 18 s to hash |
+| Backup `first-minecraft-20261004` | `Completed`, 38 of 38 items, no errors or warnings, data volume 6,197,258,417 bytes, **2 min 34 s** (about 40 MB/s) |
+| Restore into `restore-test-minecraft` (PVs, claims and the pod, with the writable-copy modifier) | `Completed`, about 3 min 20 s, the data restore reported 6,197,258,417 bytes |
+| `check-restored-pvcs.sh` straight after the restore started | passed: the scratch claim bound to its own new volume |
+| Live against restored listing | **5,775 files on each side, 0 differences**, 1,856 region files on each side |
+
+With no server running on either side the comparison is exact bytes. This proves the backup and the restore of the files; it does not yet prove that the
+world loads: `check-world.sh` (read every chunk of every region file, T092 to T094) and a short game session (T077) are the checks for that, and are still
+to do. Timing for the real world backups: about 2.5 minutes for the present 6 GiB, so the 2 hourly schedule is far inside its interval.
+
+Cleaned up: the staging pod, the scratch namespace and its volume, the Restore object and the modifier are deleted; the live claim is still `Bound`.
+
+**T047 is done.** T046 remains open only for `matrix-stack-synapse-media`, which waits for the `shared-postgres` pod to carry the `pgdata` exclusion (T031).
