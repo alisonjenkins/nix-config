@@ -31,11 +31,18 @@ Scripts are written test first: a failing `bats` test in `tests/`, then the scri
   backup of the same target, and a `Retain` PV, with no pod mounting the claim. A dry run unless `--execute` is given.
 - `check-no-call.sh`: prints `calls=N` from every SFU pod and exits 0 only at zero. It fails closed.
 - `check-restored-pvcs.sh`: run after a Velero restore into a scratch namespace and before any restored pod runs; fails if a restored PVC names a volume that belongs to another claim (it would let the restore write into that volume).
+- `check-world.sh WORLD_DIR`: proves a Minecraft world's region files are readable. Decodes every chunk of every `.mca`
+  under every `region` directory (overworld, `DIM-1`, `DIM1`, `dimensions/<ns>/<name>`; `entities` and `poi` are
+  ignored) to a valid NBT root, prints one `unreadable` line per bad chunk and a final `chunks_read= unreadable= files=`
+  line. Exit 0 only when nothing is unreadable and at least one chunk was read; 2 on a usage error. Read-only; uses
+  one worker per CPU (`CHECK_WORLD_JOBS` overrides). The LZ4 block checksum is not verified. `check-world.py` is its
+  implementation.
 - `staging-pod.yaml`: a read-only pod that mounts one claim so Velero can back up a volume whose workload is scaled to zero (Grafana, the Minecraft world). Usage and the restore caveat are in its header.
 - `tests/`: bats tests, with fixture-driven fakes for `kubectl`, `lsblk`, `cryptsetup`, `curl`, `hcloud` and a node
   shell in `tests/bin`. `tests/sql.bats` runs the checksum query against a real throwaway Postgres.
+  `tests/make-region.py` writes the Anvil fixture worlds for `tests/check-world.bats`.
 
-Still to come, in the order of `specs/004-hetzner-encrypted-volumes/tasks.md`: `migrate-files.sh` and `check-world.sh`.
+Still to come, in the order of `specs/004-hetzner-encrypted-volumes/tasks.md`: `migrate-files.sh`.
 
 ## Rules
 
