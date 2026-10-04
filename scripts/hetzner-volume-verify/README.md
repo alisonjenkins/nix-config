@@ -42,7 +42,13 @@ Scripts are written test first: a failing `bats` test in `tests/`, then the scri
   shell in `tests/bin`. `tests/sql.bats` runs the checksum query against a real throwaway Postgres.
   `tests/make-region.py` writes the Anvil fixture worlds for `tests/check-world.bats`.
 
-Still to come, in the order of `specs/004-hetzner-encrypted-volumes/tasks.md`: `migrate-files.sh`.
+- `migrate-files.sh`: copies a files volume onto its replacement. Refuses unless the Deployment or StatefulSet is at
+  zero replicas, no pod mounts either claim and the copy job does not already exist. Runs `copy-job.yaml` (`rsync -a
+  --checksum`, old claim read-only), waits for it, refuses with the failing step named if it failed, and saves
+  `old.manifest` and `new.manifest` (path, bytes, sha256) in `--manifest-dir` for `verify.sh --kind files
+  --old-manifest ... --new-manifest ...`. A dry run unless `--execute` is given. The job image comes from
+  `COPY_IMAGE`; the finished Job stays as a record, delete it before copying again.
+- `copy-job.yaml`: the Job that `migrate-files.sh` renders with `envsubst`.
 
 ## Rules
 
