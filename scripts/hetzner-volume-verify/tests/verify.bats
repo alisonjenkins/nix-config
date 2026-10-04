@@ -277,6 +277,40 @@ ready_pod_json() {
   [[ "$output" == *"logs"* ]]
 }
 
+@test "health ignores LOG-level CNPG JSON lines that mention the database" {
+  ready_pod_json 0 > "$FIXTURES/pods.json"
+  cat > "$FIXTURES/logs.txt" <<'EOF'
+{"level":"info","logger":"postgres","record":{"error_severity":"LOG","database_name":"ente","message":"database system was interrupted; last known up at 2026-10-04 10:00:00 UTC"}}
+{"level":"info","logger":"postgres","record":{"error_severity":"LOG","message":"database system is ready to accept read-only connections"}}
+EOF
+  run "$script" $(health_args)
+  [ "$status" -eq 0 ]
+}
+
+@test "health ignores the FATAL 57P03 startup line during a replica start" {
+  ready_pod_json 0 > "$FIXTURES/pods.json"
+  echo '{"logger":"postgres","record":{"error_severity":"FATAL","sql_state_code":"57P03","message":"the database system is starting up"}}' > "$FIXTURES/logs.txt"
+  run "$script" $(health_args)
+  [ "$status" -eq 0 ]
+}
+
+@test "health fails on a JSON ERROR record and reports its message" {
+  ready_pod_json 0 > "$FIXTURES/pods.json"
+  echo '{"logger":"postgres","record":{"error_severity":"ERROR","sql_state_code":"53100","message":"could not write to file: No space left on device"}}' > "$FIXTURES/logs.txt"
+  run "$script" $(health_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"logs show"* ]]
+  [[ "$output" == *"No space left on device"* ]]
+}
+
+@test "health still fails on a plain-text read-only file system line" {
+  ready_pod_json 0 > "$FIXTURES/pods.json"
+  echo "open /data/x: read-only file system" > "$FIXTURES/logs.txt"
+  run "$script" $(health_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"logs show"* ]]
+}
+
 # --- part 3: functional ---
 
 @test "matrix functional fails clearly when the verify-bot token is not exported" {
