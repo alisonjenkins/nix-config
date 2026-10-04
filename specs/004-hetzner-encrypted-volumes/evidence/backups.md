@@ -269,3 +269,24 @@ Cleaned up: the staging pod, the scratch namespace and its volume, the Restore o
 `check-world.sh`: `chunks_read=178391 unreadable=0 files=1344`, exit 0, about 3 s. Positive controls on a throwaway copy: a corrupted chunk and a truncated
 file were each reported (exit 1). The local copy and the staging pod are deleted. Limits: `.mcc` external chunks are not read, and the LZ4 framing is
 untested on real data (this world uses zlib).
+
+## T029 to T031: shared-postgres backs up through the Barman Cloud Plugin (2026-10-04)
+
+Merged home-cluster#1565 (ObjectStore `s3://ajj-backups/cnpg-hetzner/shared-postgres`, daily `ScheduledBackup`, `plugins` with
+`isWALArchiver`, the `pgdata` exclusion for Velero, IRSA role `hetzner-cnpg-backup-shared-postgres-irsa`) at 16:12:37Z on a Sunday,
+outside the weekday window, with `check-no-call.sh` printing `calls=2`. The owner chose to go ahead and drop the calls ("do 2 as it
+unblocks us"). A fresh encrypted safety dump (139 MB, `pg_dumpall`, end marker checked) was taken at 16:11Z first.
+
+| Step | Result |
+|---|---|
+| Pod restart to add the plugin sidecar and the new service account | Terminating 16:14:32Z, Ready 16:18:05Z: **about 3.5 minutes**, nearly all of it the 180 s `smartShutdownTimeout` wait (pooled Synapse/MAS/niks3 connections never close on a smart shutdown); the new pod itself took about 15 s |
+| Applications | Synapse and MAS reconnected on their own (MAS restarted 6 times while the database was away); no pod stayed failing |
+| Cluster | `Cluster in healthy state`, `ContinuousArchiving=True`, WAL archived to the bucket |
+| First base backup (`shared-postgres-first-20261004t162000`) | **failed** after 37 s: `rpc error: code = Unavailable … EOF`. Cause: the plugin sidecar was **OOMKilled at its 128 Mi limit** (the limit set in `objectstore.yaml`); `barman-cloud-backup` compresses the whole data directory while it uploads. WAL archiving, which needs little memory, was unaffected |
+| Fix (home-cluster#1579) | sidecar limit 512 Mi, request 128 Mi; the sidecar only reads its resources at pod creation, so the pod was restarted once more at 16:23:13Z (calls were 0): Terminating to Ready took about 3.3 minutes |
+| Second base backup (`shared-postgres-first-20261004t162639`) | `completed`, 16:26:40Z to 16:27:48Z (**68 s**), sidecar 0 restarts |
+| Recovery window | `ObjectStore.status.serverRecoveryWindow`: `firstRecoverabilityPoint` and `lastSuccessfulBackupTime` both `2026-10-04T16:27:48Z` (`Cluster.status.firstRecoverabilityPoint` stays empty with the plugin method; read the ObjectStore status instead) |
+| Velero | the pod carries `backup.velero.io/backup-volumes-excludes: pgdata`, so the disabled `matrix` Velero schedule can be enabled |
+
+Lesson recorded: a sidecar setting is applied only when the pod is created, so a wrong value costs a second restart. The restart blip is
+dominated by `smartShutdownTimeout` (180 s); lowering it for planned restarts would cut the connection-refusing window.
