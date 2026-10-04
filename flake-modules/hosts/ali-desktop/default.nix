@@ -620,7 +620,7 @@ in {
             "amdgpu.vm_fragment_size=9"        # Use 2MB page fragments (optimal for RDNA)
 
             # FH6 hang mitigations (GFX12/RDNA4 CPFW pipe-reset gap — see memory/forza-horizon-6-linux.md)
-            "amdgpu.lockup_timeout=20000"      # 20s ring timeout (default 10s) — heavy frames don't trip false hang
+            "amdgpu.lockup_timeout=20000"      # 20s ring timeout (default 2s) — long llama.cpp Vulkan dispatches don't trip DeviceLost
             "amdgpu.runpm=0"                   # Disable PCIe runtime PM — stops GPU wedging under load
 
             # Allow PCI bridge window reallocation when devices appear after initial scan
