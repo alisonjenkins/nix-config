@@ -174,6 +174,12 @@ if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.delegation-b
     FAILED=1
 fi
 
+echo "== hetzner-volume-verify script tests (bats) =="
+if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.hetzner-volume-verify-bats"; then
+    echo "FAILED: checks.${TARGET_SYSTEM}.hetzner-volume-verify-bats"
+    FAILED=1
+fi
+
 echo "== skill frontmatter (strict YAML) =="
 if ! nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
     --command .github/scripts/check-skill-frontmatter.sh; then
