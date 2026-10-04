@@ -103,3 +103,17 @@ The encrypted class exists next to the unchanged default (T022, T023), a volume 
 plain text in its raw bytes (T024), a missing Secret stops the mount and a wrong or empty passphrase is blocked at claim
 creation (T025, T025a), and it resizes online with the data intact (T026). The 7 day clock starts when this and T049
 (backups proven) are both done.
+
+## T012, T013: password-manager copies (2026-10-04)
+
+The owner approved creating both items. Each was created in the `Personal` vault by streaming the value from SOPS through `jq` into `op item create` on stdin
+(never on a command line, in a file or in output), after checking no item with that title existed:
+
+| 1Password item | Field | Length | SHA-256 prefix of the value |
+|---|---|---|---|
+| `Hetzner K8s - Volume Encryption Passphrase` | `password` | 64 | `669e024a2b2d53ff` |
+| `Hetzner K8s - Velero Kopia Repository Password` | `password` | 64 | `e3790e01aabe4744` |
+
+For each, the hash of the 1Password value, the SOPS file in git and the live Secret (`kube-system/hcloud-volume-passphrase`,
+`velero/velero-repo-credentials`) are identical. Each item's notes say what it is, where else it lives, and that losing the passphrase loses the encrypted
+volumes' data (and, for the repository password, makes every Velero backup unreadable). This closes FR-003 and the password-manager part of T012 and T013.
