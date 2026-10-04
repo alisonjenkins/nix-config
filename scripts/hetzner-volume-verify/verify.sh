@@ -14,6 +14,8 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               --node-exec is a command prefix that runs a command on the node holding the volume
               (for example a kubectl debug or ssh wrapper). Without it the checks run on this machine.
   compare:    --kind files    --old-dir DIR --new-dir DIR
+              --kind files    --old-manifest FILE --new-manifest FILE
+              (manifests are the tab separated path, size, sha256 files that migrate-files.sh saves)
               --kind database --namespace NS --old-pod POD --new-pod POD --db NAME[,NAME...]
   health:     --namespace NS --selector LABEL=VALUE [--health-url URL] [--health-seconds N]
   functional: --service matrix|photos|documents|monitoring|notifications|game
@@ -35,7 +37,7 @@ ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
 volume="" checks=""
 device="" mapping="" pv="" secret="" storageclass="" node_exec=""
-kind="" old_dir="" new_dir="" namespace="" old_pod="" new_pod="" db="" selector=""
+kind="" old_dir="" new_dir="" old_manifest="" new_manifest="" namespace="" old_pod="" new_pod="" db="" selector=""
 health_url="" health_seconds=300
 service="" homeserver="" photos_url="" prometheus_url="" alertmanager_url="" grafana_url=""
 backup="" backup_namespace="" backup_for="" since=""
@@ -55,6 +57,8 @@ while [ $# -gt 0 ]; do
     --kind) kind=$2 ;;
     --old-dir) old_dir=$2 ;;
     --new-dir) new_dir=$2 ;;
+    --old-manifest) old_manifest=$2 ;;
+    --new-manifest) new_manifest=$2 ;;
     --namespace) namespace=$2 ;;
     --old-pod) old_pod=$2 ;;
     --new-pod) new_pod=$2 ;;
@@ -182,11 +186,19 @@ check_compare() {
   local diffs
   case "$kind" in
     files)
-      need compare old_dir --old-dir
-      need compare new_dir --new-dir
-      [ -d "$old_dir" ] && [ -d "$new_dir" ] || { emit compare fail "cannot read $old_dir or $new_dir"; return; }
-      manifest "$old_dir" >"$workdir/old.m"
-      manifest "$new_dir" >"$workdir/new.m"
+      if [ -n "$old_manifest$new_manifest" ]; then
+        need compare old_manifest --old-manifest
+        need compare new_manifest --new-manifest
+        [ -r "$old_manifest" ] && [ -r "$new_manifest" ] || { emit compare fail "cannot read $old_manifest or $new_manifest"; return; }
+        LC_ALL=C sort "$old_manifest" >"$workdir/old.m"
+        LC_ALL=C sort "$new_manifest" >"$workdir/new.m"
+      else
+        need compare old_dir --old-dir
+        need compare new_dir --new-dir
+        [ -d "$old_dir" ] && [ -d "$new_dir" ] || { emit compare fail "cannot read $old_dir or $new_dir"; return; }
+        manifest "$old_dir" >"$workdir/old.m"
+        manifest "$new_dir" >"$workdir/new.m"
+      fi
       diffs=$(differing_keys "$workdir/old.m" "$workdir/new.m")
       if [ -z "$diffs" ]; then
         emit compare pass "files=$(wc -l <"$workdir/old.m" | tr -d ' ') bytes=$(awk -F'\t' '{s+=$2} END {print s+0}' "$workdir/old.m")"
