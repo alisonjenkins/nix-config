@@ -8,6 +8,12 @@ case "$args" in
   *"get secret"*) [ -f "$FIXTURES/secret.b64" ] || { echo "Error from server (NotFound)" >&2; exit 1; }; cat "$FIXTURES/secret.b64" ;;
   exec*) pod="$4"; db=$(sed -E 's/.* -d ([^ ]+).*/\1/' <<<"$args")
          if [ -f "$FIXTURES/psql-$pod-$db.txt" ]; then cat "$FIXTURES/psql-$pod-$db.txt"; else cat "$FIXTURES/psql-$pod.txt"; fi ;;
+  *"get deployment "*|*"get statefulset "*)
+         kind=$(sed -E 's/.*get (deployment|statefulset) .*/\1/' <<<"$args"); name=$(sed -E 's/.*get (deployment|statefulset) ([^ ]+).*/\2/' <<<"$args")
+         [ -f "$FIXTURES/replicas-$kind-$name" ] || { echo "Error from server (NotFound): $kind $name" >&2; exit 1; }; cat "$FIXTURES/replicas-$kind-$name" ;;
+  *"get job "*) [ -f "$FIXTURES/job.status" ] || { echo "Error from server (NotFound): job" >&2; exit 1; }; cat "$FIXTURES/job.status" ;;
+  "apply "*) cat > "$FIXTURES/applied.yaml"; [ ! -f "$FIXTURES/job.result" ] || cp "$FIXTURES/job.result" "$FIXTURES/job.status" ;;
+  "logs "*job/*) cat "$FIXTURES/job.logs" ;;
   *"get pods"*) cat "$FIXTURES/pods.json" ;;
   logs*) [ ! -f "$FIXTURES/logs.fail" ] || { echo "error: you are attempting to follow too many log streams" >&2; exit 1; }
          cat "$FIXTURES/logs.txt" 2>/dev/null || true ;;
