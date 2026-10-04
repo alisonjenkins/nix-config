@@ -144,8 +144,8 @@ manifest_args() {
 }
 
 write_manifests() {
-  printf './a\t6\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/old.manifest"
-  printf './a\t6\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  printf './a\t6\taaa\t5984:5984\n./sub/b\t5\tbbb\t5984:5984\n' > "${BATS_TEST_TMPDIR}/old.manifest"
+  printf './a\t6\taaa\t5984:5984\n./sub/b\t5\tbbb\t5984:5984\n' > "${BATS_TEST_TMPDIR}/new.manifest"
 }
 
 @test "manifest compare passes on identical manifests" {
@@ -157,7 +157,7 @@ write_manifests() {
 
 @test "manifest compare fails when a file is missing from the new manifest" {
   write_manifests
-  printf './a\t6\taaa\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  printf './a\t6\taaa\t5984:5984\n' > "${BATS_TEST_TMPDIR}/new.manifest"
   run "$script" $(manifest_args)
   [ "$status" -eq 1 ]
   [[ "$output" == *"differing paths: ./sub/b"* ]]
@@ -165,7 +165,7 @@ write_manifests() {
 
 @test "manifest compare fails when a file size changed" {
   write_manifests
-  printf './a\t7\taaa\n./sub/b\t5\tbbb\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  printf './a\t7\taaa\t5984:5984\n./sub/b\t5\tbbb\t5984:5984\n' > "${BATS_TEST_TMPDIR}/new.manifest"
   run "$script" $(manifest_args)
   [ "$status" -eq 1 ]
   [[ "$output" == *"differing paths: ./a"* ]]
@@ -173,10 +173,18 @@ write_manifests() {
 
 @test "manifest compare fails when only a checksum changed" {
   write_manifests
-  printf './a\t6\taaa\n./sub/b\t5\tccc\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  printf './a\t6\taaa\t5984:5984\n./sub/b\t5\tccc\t5984:5984\n' > "${BATS_TEST_TMPDIR}/new.manifest"
   run "$script" $(manifest_args)
   [ "$status" -eq 1 ]
   [[ "$output" == *"differing paths: ./sub/b"* ]]
+}
+
+@test "manifest compare fails when only a file owner changed" {
+  write_manifests
+  printf './a\t6\taaa\t0:0\n./sub/b\t5\tbbb\t5984:5984\n' > "${BATS_TEST_TMPDIR}/new.manifest"
+  run "$script" $(manifest_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"differing paths: ./a"* ]]
 }
 
 @test "manifest compare fails when a manifest cannot be read" {

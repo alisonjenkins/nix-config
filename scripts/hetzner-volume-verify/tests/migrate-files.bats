@@ -16,10 +16,10 @@ setup() {
   {
     echo 'step=rsync ok'
     echo 'MIGRATE-MANIFEST-BEGIN old'
-    printf './sub/b\t5\tbbb\n./a\t6\taaa\n'
+    printf './sub/b\t5\tbbb\t5984:5984\n./a\t6\taaa\t5984:5984\n'
     echo 'MIGRATE-MANIFEST-END old'
     echo 'MIGRATE-MANIFEST-BEGIN new'
-    printf './sub/b\t5\tbbb\n./a\t6\taaa\n'
+    printf './sub/b\t5\tbbb\t5984:5984\n./a\t6\taaa\t5984:5984\n'
     echo 'MIGRATE-MANIFEST-END new'
   } > "$FIXTURES/job.logs"
 }
@@ -30,7 +30,46 @@ no_kubectl_call() {
 }
 
 args() {
-  echo --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests"
+  echo --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 5984 --gid 5984
+}
+
+@test "the rendered job satisfies Pod Security restricted for the given uid and gid" {
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 5984 --gid 5985 --execute
+  [ "$status" -eq 0 ]
+  grep -q 'runAsNonRoot: true' "$FIXTURES/applied.yaml"
+  grep -q 'runAsUser: 5984' "$FIXTURES/applied.yaml"
+  grep -q 'runAsGroup: 5985' "$FIXTURES/applied.yaml"
+  grep -q 'fsGroup: 5985' "$FIXTURES/applied.yaml"
+  grep -q 'type: RuntimeDefault' "$FIXTURES/applied.yaml"
+  grep -q 'allowPrivilegeEscalation: false' "$FIXTURES/applied.yaml"
+  grep -q 'drop: \[ALL\]' "$FIXTURES/applied.yaml"
+}
+
+@test "the job script records the owner of every file in the manifest" {
+  run "$script" $(args) --execute
+  [ "$status" -eq 0 ]
+  grep -q 'stat -c %u:%g' "$FIXTURES/applied.yaml"
+}
+
+@test "uid 0 is refused as a usage error" {
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 0 --gid 5984
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--uid"* ]]
+}
+
+@test "a non-numeric gid is refused as a usage error" {
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 5984 --gid abc
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--gid"* ]]
+}
+
+@test "a missing uid or gid is a usage error" {
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --gid 5984
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--uid"* ]]
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 5984
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--gid"* ]]
 }
 
 @test "refuses when the deployment still has replicas" {
@@ -128,8 +167,8 @@ args() {
 @test "happy path applies the job and writes both manifests sorted by path" {
   run "$script" $(args) --execute
   [ "$status" -eq 0 ]
-  [ "$(printf './a\t6\taaa\n./sub/b\t5\tbbb\n')" = "$(cat "$manifests/old.manifest")" ]
-  [ "$(printf './a\t6\taaa\n./sub/b\t5\tbbb\n')" = "$(cat "$manifests/new.manifest")" ]
+  [ "$(printf './a\t6\taaa\t5984:5984\n./sub/b\t5\tbbb\t5984:5984\n')" = "$(cat "$manifests/old.manifest")" ]
+  [ "$(printf './a\t6\taaa\t5984:5984\n./sub/b\t5\tbbb\t5984:5984\n')" = "$(cat "$manifests/new.manifest")" ]
 }
 
 @test "the rendered job mounts old read-only, new writable, rsyncs, and sets limits" {
