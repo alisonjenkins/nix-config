@@ -73,19 +73,24 @@ The old volumes are `Released` and `Retain`: Alertmanager PV `pvc-26c7ac91…` (
 `pvc-cb801167…` (106169152). Their old claim names now belong to the new volumes, so `destroy-old-volume.sh` must NOT be used for
 these two (it would delete the new claim): delete only the old PV object and its Hetzner volume.
 
-## Old volumes: removal is open
+## Removal log (T060, T078)
 
-All five migrated volumes have a `verified` encryption verdict after their switch (verdict files in
-`~/hetzner-encrypted-volumes/verdicts/`) and a completed backup, and every old PV is `Released` and `Retain`. Dry runs of
-`destroy-old-volume.sh` for couchdb, ntfy and Grafana pass every gate. The deletion of the five old Hetzner volumes was denied by the
-session's permission guard (it is a cloud volume delete), so they remain, as the way back. SC-007's 24 hour limit runs from each
-switch (couchdb about 14:13Z, ntfy 14:28Z, Grafana about 14:38Z, Alertmanager 15:07Z, Prometheus 15:09Z): they need the owner's go-ahead,
-or the owner can delete them.
+All five migrated volumes had a `verified` encryption verdict after their switch (verdict files in
+`~/hetzner-encrypted-volumes/verdicts/`) and a completed backup, and every old PV was `Released` and `Retain`. The session's
+permission guard first denied the cloud volume delete; the owner then gave the go-ahead ("yes delete the old volumes") and the
+volumes were removed. Couchdb, ntfy and Grafana went through `destroy-old-volume.sh --execute` (all gates passed). Alertmanager
+and Prometheus did not: their old claim names now belong to the new volumes, so the script (which deletes the claim) would have
+destroyed the new claim. For those two only the old PV object and its Hetzner volume were deleted, after checking that the PV was
+`Released`, its volume handle matched the Hetzner id, the Hetzner volume's name equalled the PV name, and it was not attached to a server.
 
-| Old volume | Hetzner id | PV |
-|---|---|---|
-| couchdb-data | 106201840 | `pvc-fe5eb7e8…` |
-| ntfy-data | 106190223 | `pvc-e280df3f…` |
-| Grafana | 106169150 | `pvc-36ef7538…` |
-| Alertmanager | 106169151 | `pvc-26c7ac91…` |
-| Prometheus | 106169152 | `pvc-cb801167…` |
+| Old volume | Hetzner id | PV | Switch (UTC) | Removed (UTC) | Within 24 h |
+|---|---|---|---|---|---|
+| couchdb-data | 106201840 | `pvc-fe5eb7e8…` | about 14:13Z | 15:20:24Z | yes |
+| ntfy-data | 106190223 | `pvc-e280df3f…` | about 14:28Z | 15:20:27Z | yes |
+| Grafana | 106169150 | `pvc-36ef7538…` | about 14:38Z | 15:20:28Z | yes |
+| Alertmanager | 106169151 | `pvc-26c7ac91…` | about 15:07Z | 15:20:50Z | yes |
+| Prometheus | 106169152 | `pvc-cb801167…` | about 15:09Z | 15:20:51Z | yes |
+
+After the removals `hcloud volume list` shows the five encrypted volumes, the master state disk and four plain data volumes
+that are still to move: `ente-db` (`pvc-c2e48d50…`), Synapse media (`pvc-27565201…`), `shared-postgres` (`pvc-5e189937…`) and the
+Minecraft world (`pvc-22ab50ca…`).
