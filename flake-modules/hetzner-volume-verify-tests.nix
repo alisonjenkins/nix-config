@@ -17,6 +17,7 @@
             pkgs.gnused
             pkgs.jq
             pkgs.postgresql
+            (pkgs.python3.withPackages (ps: [ ps.lz4 ]))
           ];
         } ''
         # The sandbox has no /usr/bin/env, so rewrite the scripts' shebangs on a writable copy.
