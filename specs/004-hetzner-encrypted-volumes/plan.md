@@ -17,8 +17,8 @@ The approach, from `research.md`:
 2. Give every volume a backup. Databases use the operator's Barman Cloud Plugin for continuous
    backups. Other volumes use Velero with Kopia file backups. Both write to the existing S3
    bucket under new prefixes, with short-lived credentials and no stored keys, through the web
-   identity (IRSA) the cluster already has. The two new AWS roles are created in the
-   cloud-account Terraform repository.
+   identity (IRSA) the cluster already has. The three new AWS roles (Velero, and one for each
+   database) are created in the cloud-account Terraform repository.
 3. Add a second StorageClass that encrypts, prove it on a throwaway volume, and prove that a
    missing passphrase cannot silently produce a plain volume.
 4. Move the databases by adding a replica on the encrypted class, switching over, verifying

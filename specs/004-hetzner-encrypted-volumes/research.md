@@ -220,7 +220,7 @@ scratch clone of the Terraform repository.
 |---|---|---|
 | Velero role | `terraform`, new `main/hetzner_backups.tf` | an `irsa_role` for `velero:velero`, with the policy of `k3s_velero` limited to `velero-hetzner/*` and prefix-conditioned list actions |
 | Database backup roles | same file | one `irsa_role` each for `matrix:shared-postgres` and `ente:ente-db` (the module trusts one service account per role), each limited to its own prefix (`cnpg-hetzner/shared-postgres`, `cnpg-hetzner/ente-db`) |
-| Bucket policy | `terraform`, `main/iam_policies.tf` | add the two roles to the exemption from the IP-restriction deny |
+| Bucket policy | `terraform`, `main/iam_policies.tf` | add the three roles to the exemption from the IP-restriction deny |
 | Velero service account | `home-cluster` | annotated with the Velero role ARN, no credential Secret |
 | Database service accounts | `home-cluster` | annotated with the database backup role ARN. `shared-postgres` today uses the read-only restore role, so its annotation changes to the new role, which also needs read access to the old prefix until the restore source is no longer needed |
 

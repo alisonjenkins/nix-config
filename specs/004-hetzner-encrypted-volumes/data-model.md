@@ -86,7 +86,7 @@ the live world.
 | Issuer | `https://s3.eu-west-1.amazonaws.com/hetzner-k8s-irsa`, published by the Terraform module `hetzner_irsa` |
 | Webhook | `pod-identity-webhook` in `kube-system`, injecting the token and role ARN into annotated service accounts |
 | Used today by | `matrix:shared-postgres`, with the read-only restore role |
-| This feature adds | two roles on this issuer, one for Velero and one for the database backups |
+| This feature adds | three roles on this issuer: one for Velero and one for each database's backups (`matrix:shared-postgres`, `ente:ente-db`), because the module trusts one service account per role |
 
 ### Migration run
 
