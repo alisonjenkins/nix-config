@@ -51,6 +51,16 @@ for hardware video decode.
 | [0019](0019-virtual-output-projection.md) | Show virtual outputs on physical monitors through projections | Accepted, pending live test; overview columns superseded by 0020 |
 | [0020](0020-virtual-output-overview-band.md) | Show virtual outputs in one overview band column | Accepted, pending live test |
 
+## ali-desktop GPU
+
+Start with [`docs/ali-desktop-gpu.md`](../ali-desktop-gpu.md) for the
+current tuning and how to triage a GPU hang.
+
+| # | Decision | Status |
+|---|---|---|
+| [0023](0023-gpu-undervolt-margin.md) | Undervolt the RX 9070 XT to -40mV, not to the edge | Accepted, pending soak |
+| [0024](0024-amdgpu-kernel-parameters.md) | Override amdgpu kernel parameters only with a measured reason | Accepted |
+
 ## Hetzner cluster
 
 Start with [`docs/hetzner-inplace-patching-design.md`](../hetzner-inplace-patching-design.md)
