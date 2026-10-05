@@ -19,6 +19,13 @@ repos:
         language: system
         pass_filenames: false
         files: ^home/programs/linux-only/steam-stream-mode/
+      # A zero-padded CurseForge CDN path (files/7956/082/) is a 403 in CI.
+      - id: forgecdn-paths
+        name: CurseForge CDN paths are not zero padded
+        entry: .github/scripts/check-forgecdn-paths.sh
+        language: system
+        pass_filenames: false
+        files: ^pkgs/.*\.nix$
       # Copilot CLI and other strict parsers drop a skill whose frontmatter
       # Claude Code happily loads (an unquoted ": " in a description).
       - id: skill-frontmatter

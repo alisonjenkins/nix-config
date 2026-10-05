@@ -180,6 +180,11 @@ if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.hetzner-volu
     FAILED=1
 fi
 
+echo "== CurseForge CDN paths (no zero padding) =="
+if ! .github/scripts/check-forgecdn-paths.sh; then
+    FAILED=1
+fi
+
 echo "== skill frontmatter (strict YAML) =="
 if ! nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
     --command .github/scripts/check-skill-frontmatter.sh; then
