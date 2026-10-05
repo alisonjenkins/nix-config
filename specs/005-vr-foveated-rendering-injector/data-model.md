@@ -62,6 +62,7 @@ One per run set (a condition measured several times).
 | `condition` | `off` or `on`; the three `build` values above are compared in pairs |
 | `eyePassShare` | Median eye-pass time divided by median GPU frame time |
 | `runs[]` | Per run: frames, median and p99 GPU frame time (ms), median eye-pass time (ms), mean power (W), mean core clock (MHz), start and end temperature |
+| `window` (per run) | `skipSeconds`, `windowSeconds`, `windowStartUnixS`, `windowEndUnixS`: the measured window that frames and power samples were trimmed to |
 | `noise` | Spread of per-run medians within the condition |
 | `date` | ISO 8601 UTC |
 
@@ -80,3 +81,8 @@ State rule: `go` when GPU time or power drops by more than twice the larger with
 noise, with the same sign in every interleaved pair, and the artefacts are tolerable;
 `no-go` when neither drops beyond noise or the artefacts are not tolerable; `inconclusive`
 when the runs were too noisy to tell.
+
+"Too noisy to tell" is a spread of at least 5% of the off median in a compared metric when no
+metric shows a beyond-noise change. A beyond-noise increase with no reduction is `no-go`.
+Unjudged artefacts with a reduction give `inconclusive`, with the reason "artefacts not
+judged".

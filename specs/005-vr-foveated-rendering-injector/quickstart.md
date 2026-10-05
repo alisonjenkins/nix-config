@@ -50,9 +50,18 @@ nix build .#vr-foveation-bench
 nix flake check   # or: just check
 ```
 
-Expect: the statistics tests pass. Then run a 60 s warm-up and 5 interleaved runs per
-condition with the sampler; the report prints per-run medians, p99, mean power, noise, and the
-verdict, and exits 0.
+Expect: the statistics tests pass. Then take 5 interleaved runs per condition, each logging the
+whole session from game start with the sampler running alongside. The report trims every run to
+the same measured window, so warm-up never counts:
+
+```bash
+vr-foveation-bench report --meta meta.json --off off1.csv ... --on on1.csv ... \
+  --off-power off1-sampler.csv ... --on-power on1-sampler.csv ... \
+  --skip-seconds 60 --window-seconds 60 --artefacts unknown --out report.json
+```
+
+It prints per-run medians, p99, mean power, noise and the verdict, and exits 0. It refuses to
+overwrite an existing `report.json` unless `--force` is given.
 
 Take two baselines: stock Proton, and the patched tool with `DXVK_FOVEATION` unset. Expect the
 second to match the first within noise (SC-005).

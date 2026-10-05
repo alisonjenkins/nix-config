@@ -69,11 +69,25 @@ assert on: `no_profile`, `invalid_profile`, `no_pass_matched`, `unverified_gpu`,
 
 ## 5. Measurement log and report
 
-The fork writes `frame,gpu_ms,eye_pass_ms` rows (CSV, header included) to
-`$XDG_STATE_HOME/dxvk-foveation/<exe>-<timestamp>.csv`. The Python package reads it with the
-sampler's `time_s,power_w,core_mhz,gpu_busy_percent` rows and writes a report as JSON with the
-fields in `data-model.md` (measurement report), including `headsetOrDisplay`, `build` and
-`eyePassShare`. Times are ISO 8601 UTC.
+The fork writes `frame,gpu_ms,eye_pass_ms,unix_s` rows (CSV, header included) to
+`$XDG_STATE_HOME/dxvk-foveation/<exe>-<timestamp>.csv`. `unix_s` is the wall-clock time of the
+frame in seconds since the Unix epoch. The sampler writes
+`time_s,power_w,core_mhz,gpu_busy_percent,temp_c,unix_s` rows with the same wall clock, so the
+two logs share one time axis even though they are started separately.
+
+The Python package reads both and writes a report as JSON with the fields in `data-model.md`
+(measurement report), including `headsetOrDisplay`, `build` and `eyePassShare`. Times are ISO
+8601 UTC.
+
+Window: `report` takes `--skip-seconds S` (default 0) and `--window-seconds W` (default: to the
+end of the frame log). The window starts at the first frame's `unix_s` plus S. Frames and
+sampler samples are both trimmed to it, so warm-up, loading screens and menus never enter the
+medians or the mean power. The window used is stored in each run of the report. A run is a
+bad-input error when it has no frames or fewer than two sampler samples inside the window, when
+the frame log ends more than one second before a requested window end (the run stopped early),
+or when the sampler starts or ends more than one second inside the window edges.
+
+`report` refuses to overwrite an existing output file unless `--force` is given.
 
 Exit status for the report tool: 0 when a report was written, 1 on bad input, 2 when the
 runs are too few to compute noise (fewer than 3 per condition).

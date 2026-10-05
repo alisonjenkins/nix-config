@@ -45,11 +45,11 @@ description: "Task list for foveated rendering for VR games that lack it"
 - [ ] T008 Build the unmodified fork through Nix as a package and show its version line matches the base, in `pkgs/proton-foveated/default.nix`
 - [ ] T009 Build the compat tool (the runner chosen in T006 plus the fork's DXVK) in `pkgs/proton-foveated/default.nix` and install it as its own directory, without touching the runner updater's directories
 - [ ] T010 [P] Register both packages in `pkgs/default.nix` and expose them in `flake-modules/packages.nix` so PR checks build them
-- [ ] T011 [P] Create the empty bench package in `pkgs/vr-foveation-bench/default.nix` (Python, standard library, flake8-clean), exposed in `flake-modules/packages.nix`
-- [ ] T012 [P] Add the bench package's source files to the flake8 hook's `files` pattern in `.pre-commit-config.yaml`
+- [x] T011 [P] Create the empty bench package in `pkgs/vr-foveation-bench/default.nix` (Python, standard library, flake8-clean), exposed in `flake-modules/packages.nix`
+- [x] T012 [P] Add the bench package's source files to the flake8 hook's `files` pattern in `.pre-commit-config.yaml`
 - [ ] T013 [P] Create the C++ test directory and Meson test target in `fork:tests/foveation/meson.build`, running with the fork's normal build
 - [ ] T014 [P] Add the rate limits and the verified GPU and driver list as one source of truth in `fork:src/dxvk/dxvk_foveation.h` (rate limits read from the device; verified list holds GPU name and driver; no copies elsewhere)
-- [ ] T015 [P] Expose the Python and home-module tests as flake checks in `flake-modules/vr-foveation-tests.nix`, and run `meson test` in the fork package's check phase in `pkgs/proton-foveated/default.nix`, so `just check` runs them with no headset or game (SC-007)
+- [ ] T015 [P] (the bench package's tests are wired as `checks.<system>.vr-foveation-bench-tests` in `flake-modules/vr-foveation-tests.nix`; the home-module tests and the fork's `meson test` remain) Expose the Python and home-module tests as flake checks in `flake-modules/vr-foveation-tests.nix`, and run `meson test` in the fork package's check phase in `pkgs/proton-foveated/default.nix`, so `just check` runs them with no headset or game (SC-007)
 
 **Checkpoint**: `nix build .#proton-foveated` and `just check` build and pass with no behaviour change; a game launched with the tool behaves like stock.
 
@@ -63,17 +63,17 @@ description: "Task list for foveated rendering for VR games that lack it"
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Failing tests for the statistics rule (per-run median and p99, noise as spread of medians, gain beyond twice the larger noise with the same sign in every pair, fewer than 3 runs returns exit status 2) in `pkgs/vr-foveation-bench/tests/test_stats.py`
-- [ ] T017 [P] [US1] Failing tests for the report schema (including `headsetOrDisplay`, `build` and `eyePassShare`) and the verdict states (`go`, `no-go`, `inconclusive`) in `pkgs/vr-foveation-bench/tests/test_report.py`
-- [ ] T018 [P] [US1] Failing test for selecting the discrete GPU by PCI device and never by hwmon index, using a fake sysfs tree, in `pkgs/vr-foveation-bench/tests/test_sampler.py`
+- [x] T016 [P] [US1] Failing tests for the statistics rule (per-run median and p99, noise as spread of medians, gain beyond twice the larger noise with the same sign in every pair, fewer than 3 runs returns exit status 2) in `pkgs/vr-foveation-bench/tests/test_stats.py`
+- [x] T017 [P] [US1] Failing tests for the report schema (including `headsetOrDisplay`, `build` and `eyePassShare`) and the verdict states (`go`, `no-go`, `inconclusive`) in `pkgs/vr-foveation-bench/tests/test_report.py`
+- [x] T018 [P] [US1] Failing test for selecting the discrete GPU by PCI device and never by hwmon index, using a fake sysfs tree, in `pkgs/vr-foveation-bench/tests/test_sampler.py`
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Implement the statistics module in `pkgs/vr-foveation-bench/vr_foveation_bench/stats.py` until T016 passes
-- [ ] T020 [US1] Implement the report and verdict logic in `pkgs/vr-foveation-bench/vr_foveation_bench/report.py` until T017 passes
-- [ ] T021 [US1] Implement the sampler (power from the power-average sensor at about 20 Hz and integrated to energy, core clock, busy percent, start and end temperature) in `pkgs/vr-foveation-bench/vr_foveation_bench/sampler.py` until T018 passes
-- [ ] T022 [US1] Add the command line (`sample`, `report`) with exit codes and ISO 8601 UTC times in `pkgs/vr-foveation-bench/vr_foveation_bench/cli.py`
-- [ ] T023 [US1] Failing C++ test for the measurement log writer (header, one row per frame, `gpu_ms` and `eye_pass_ms` columns) in `fork:tests/foveation/test_measure_log.cpp`
+- [x] T019 [US1] Implement the statistics module in `pkgs/vr-foveation-bench/vr_foveation_bench/stats.py` until T016 passes
+- [x] T020 [US1] Implement the report and verdict logic in `pkgs/vr-foveation-bench/vr_foveation_bench/report.py` until T017 passes
+- [x] T021 [US1] Implement the sampler (power from the power-average sensor at about 20 Hz and integrated to energy, core clock, busy percent, start and end temperature) in `pkgs/vr-foveation-bench/vr_foveation_bench/sampler.py` until T018 passes
+- [x] T022 [US1] Add the command line (`sample`, `report`) with exit codes and ISO 8601 UTC times in `pkgs/vr-foveation-bench/vr_foveation_bench/cli.py`
+- [ ] T023 [US1] Failing C++ test for the measurement log writer (header `frame,gpu_ms,eye_pass_ms,unix_s`, one row per frame, wall-clock `unix_s` in seconds since the epoch) in `fork:tests/foveation/test_measure_log.cpp`
 - [ ] T024 [US1] Implement timestamp queries around frames and matched passes behind `DXVK_FOVEATION_MEASURE` in `fork:src/dxvk/dxvk_foveation_measure.{h,cpp}` until T023 passes; off path creates no queries
 - [ ] T025 [US1] Update the `dxvk-foveation` input in `flake.nix` to the fork commit from T024 and rebuild `.#proton-foveated`
 - [ ] T026 [US1] (owner) Run the baseline on Fallout 4 VR with stock Proton (warm-up 60 s, 5 interleaved runs of 60 s or 3,000 frames), record the environment including the undervolt and the headset or display settings, and save the report under `docs/vr-foveation/baselines/fallout4vr-stock.json` (pinning clocks is optional and only offered, never run)
