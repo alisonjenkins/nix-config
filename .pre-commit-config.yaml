@@ -12,13 +12,19 @@ repos:
         name: flake8 (as writePython3Bin runs it)
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.flake8 --command flake8 --show-source --ignore=E501
         language: system
-        files: ^home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)\.py$
+        files: ^(home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)|pkgs/vr-foveation-bench/(vr_foveation_bench|tests)/[a-z_]+)\.py$
       - id: stream-mode-tests
         name: stream-mode tests
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s home/programs/linux-only/steam-stream-mode/tests
         language: system
         pass_filenames: false
         files: ^home/programs/linux-only/steam-stream-mode/
+      - id: vr-foveation-bench-tests
+        name: vr-foveation-bench tests
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s pkgs/vr-foveation-bench/tests -t pkgs/vr-foveation-bench
+        language: system
+        pass_filenames: false
+        files: ^pkgs/vr-foveation-bench/
       # A zero-padded CurseForge CDN path (files/7956/082/) is a 403 in CI.
       - id: forgecdn-paths
         name: CurseForge CDN paths are not zero padded
