@@ -396,6 +396,11 @@ in
               assert "--disable-kube-proxy" in script, "kube-proxy replacement [V4]"
               assert "--disable-network-policy" in script, "k3s netpol controller off [V4]"
               assert "--tls-san" in script, "must set tls-san (floating IP) [V3]"
+              # Workers sign their kubelet cert for the public --node-ip only; the CCM later adds the
+              # private InternalIP, which k3s defaults to dialing first, so logs/exec/Velero hooks to a
+              # worker fail with an x509 error. Dial by node name (the certs carry it) instead.
+              assert "kubelet-preferred-address-types=Hostname,InternalIP,ExternalIP" in script, \
+                  "kube-apiserver must dial kubelets by node name first (worker cert lacks the private IP)"
               # API audit logging [B32-HARDEN]: log to the LUKS volume, policy file present.
               assert "audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log" in script, \
                   "kube-apiserver audit log must go to the LUKS volume [B32-HARDEN]"
