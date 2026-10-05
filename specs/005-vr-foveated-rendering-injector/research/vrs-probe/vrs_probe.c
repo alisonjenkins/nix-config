@@ -25,8 +25,9 @@ static struct {
     VkQueue q;
     uint32_t qfam;
     VkPhysicalDeviceMemoryProperties mem;
-    VkShaderModule vs, fs;
+    VkShaderModule vs, vs_layer, fs;
     VkCommandPool pool;
+    int shader_output_layer;
     int supported[16];            /* rate code -> supported by device */
     int nontrivial_combiners;
     int validation;
@@ -41,7 +42,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL dbg_cb(VkDebugUtilsMessageSeverityFlagBits
 {
     (void)type; (void)u;
     if (sev & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)) {
-        if (g_vcount++ == 0) snprintf(g_vfirst, sizeof g_vfirst, "%.390s", d->pMessage);
+        g_vcount++;
+        if (!g_vfirst[0]) snprintf(g_vfirst, sizeof g_vfirst, "%.390s", d->pMessage);
     }
     return VK_FALSE;
 }
@@ -93,6 +95,8 @@ typedef struct {
     uint32_t views;              /* 1 = no multiview, 2 = viewMask 0b11 */
     VkFragmentShadingRateCombinerOpKHR ops[2];
     int dynamic;                 /* pipeline declares dynamic FSR state */
+    int layered;                 /* 2-layer target, viewMask 0, vertex shader picks the layer via gl_Layer (instance index) */
+    uint32_t rate_layers;        /* layers in the rate image/view; layer 1 holds a one-tile-shifted pattern when 2 */
     int pipeline_flag;           /* RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR */
     int use_attachment;          /* chain the FSR attachment into vkCmdBeginRendering */
     unsigned codes[8]; int ncodes;
@@ -102,7 +106,7 @@ typedef struct {
     int skip; const char *skip_why;
     VkResult err; const char *stage;
     uint32_t layers;
-    uint8_t req[RW * RH];
+    uint8_t req[2][RW * RH];
     uint8_t rate[2][W * H];
     uint8_t pos[2][W * H];
     int vcount; char vfirst[400];
@@ -119,7 +123,7 @@ static Cfg base_cfg(const char *name)
 {
     Cfg c = { .name = name, .samples = VK_SAMPLE_COUNT_1_BIT, .views = 1,
               .ops = { VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR },
-              .dynamic = 1, .use_attachment = 1 };
+              .dynamic = 1, .use_attachment = 1, .rate_layers = 1 };
     const unsigned all[] = { 0, 5, 10, 4, 1 };   /* 1x1 2x2 4x4 2x1 1x2 */
     for (unsigned i = 0; i < 5; i++) if (G.supported[all[i]]) c.codes[c.ncodes++] = all[i];
     return c;
@@ -207,21 +211,26 @@ static void run_case(const Cfg *c, Out *o)
     Res R; memset(&R, 0, sizeof R);
     memset(o, 0, sizeof *o);
     int before = g_vcount;
-    o->layers = c->views;
+    g_vfirst[0] = 0;
+    const uint32_t nl = c->views > 1 ? c->views : c->layered ? 2 : 1;   /* target layer count */
+    o->layers = nl;
     const int msaa = c->samples != VK_SAMPLE_COUNT_1_BIT;
     VkImageUsageFlags cu = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     if (!fmt_samples_ok(COLOR_FMT, c->samples, cu)) { o->skip = 1; o->skip_why = "color format/sample count unsupported"; return; }
     if (c->depth && !fmt_samples_ok(VK_FORMAT_D32_SFLOAT, c->samples, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
         o->skip = 1; o->skip_why = "D32 sample count unsupported"; return; }
 
-    for (int ty = 0; ty < RH; ty++) for (int tx = 0; tx < RW; tx++)
-        o->req[ty * RW + tx] = (uint8_t)c->codes[(tx + ty) % c->ncodes];
+    if (c->layered && !G.shader_output_layer) { o->skip = 1; o->skip_why = "shaderOutputLayer unavailable"; return; }
 
-    CASE_TRY(mk_img(&R.color, COLOR_FMT, W, H, c->views, c->samples, cu, VK_IMAGE_ASPECT_COLOR_BIT));
-    if (msaa) CASE_TRY(mk_img(&R.resolve, COLOR_FMT, W, H, c->views, VK_SAMPLE_COUNT_1_BIT, cu, VK_IMAGE_ASPECT_COLOR_BIT));
-    if (c->depth) CASE_TRY(mk_img(&R.depth, VK_FORMAT_D32_SFLOAT, W, H, c->views, c->samples,
+    for (uint32_t l = 0; l < 2; l++)
+        for (int ty = 0; ty < RH; ty++) for (int tx = 0; tx < RW; tx++)
+            o->req[l][ty * RW + tx] = (uint8_t)c->codes[(tx + ty + (l && c->rate_layers == 2 ? 1 : 0)) % c->ncodes];
+
+    CASE_TRY(mk_img(&R.color, COLOR_FMT, W, H, nl, c->samples, cu, VK_IMAGE_ASPECT_COLOR_BIT));
+    if (msaa) CASE_TRY(mk_img(&R.resolve, COLOR_FMT, W, H, nl, VK_SAMPLE_COUNT_1_BIT, cu, VK_IMAGE_ASPECT_COLOR_BIT));
+    if (c->depth) CASE_TRY(mk_img(&R.depth, VK_FORMAT_D32_SFLOAT, W, H, nl, c->samples,
                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT));
-    CASE_TRY(mk_img(&R.rate, RATE_FMT, RW, RH, 1, VK_SAMPLE_COUNT_1_BIT,
+    CASE_TRY(mk_img(&R.rate, RATE_FMT, RW, RH, c->rate_layers, VK_SAMPLE_COUNT_1_BIT,
                     VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT));
     CASE_TRY(mk_buf(&R.stage, 4096, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
     CASE_TRY(mk_buf(&R.readback, (VkDeviceSize)W * H * 2 * 2, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
@@ -232,7 +241,7 @@ static void run_case(const Cfg *c, Out *o)
     VkPipelineLayoutCreateInfo plci = { .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     CASE_TRY(vkCreatePipelineLayout(G.dev, &plci, NULL, &R.pl));
     VkPipelineShaderStageCreateInfo st[2] = {
-        { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = G.vs, .pName = "main" },
+        { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = c->layered ? G.vs_layer : G.vs, .pName = "main" },
         { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = G.fs, .pName = "main" } };
     VkPipelineVertexInputStateCreateInfo vi = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
     VkPipelineInputAssemblyStateCreateInfo ia = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
@@ -266,13 +275,15 @@ static void run_case(const Cfg *c, Out *o)
     CASE_TRY(vkBeginCommandBuffer(R.cb, &bi));
 
     const VkImageAspectFlags CA = VK_IMAGE_ASPECT_COLOR_BIT;
-    bar(R.cb, R.color.img, CA, c->views, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    if (msaa) bar(R.cb, R.resolve.img, CA, c->views, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    if (c->depth) bar(R.cb, R.depth.img, VK_IMAGE_ASPECT_DEPTH_BIT, c->views, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-    bar(R.cb, R.rate.img, CA, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VkBufferImageCopy up = { .imageSubresource = { CA, 0, 0, 1 }, .imageExtent = { RW, RH, 1 } };
-    vkCmdCopyBufferToImage(R.cb, R.stage.buf, R.rate.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &up);
-    bar(R.cb, R.rate.img, CA, 1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR);
+    bar(R.cb, R.color.img, CA, nl, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    if (msaa) bar(R.cb, R.resolve.img, CA, nl, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    if (c->depth) bar(R.cb, R.depth.img, VK_IMAGE_ASPECT_DEPTH_BIT, nl, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    bar(R.cb, R.rate.img, CA, c->rate_layers, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    for (uint32_t l = 0; l < c->rate_layers; l++) {
+        VkBufferImageCopy up = { .bufferOffset = (VkDeviceSize)l * RW * RH, .imageSubresource = { CA, 0, l, 1 }, .imageExtent = { RW, RH, 1 } };
+        vkCmdCopyBufferToImage(R.cb, R.stage.buf, R.rate.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &up);
+    }
+    bar(R.cb, R.rate.img, CA, c->rate_layers, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR);
 
     VkRenderingAttachmentInfo catt = { .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, .imageView = R.color.view,
         .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -287,7 +298,7 @@ static void run_case(const Cfg *c, Out *o)
         .imageView = R.rate.view, .imageLayout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,
         .shadingRateAttachmentTexelSize = { TEXEL, TEXEL } };
     VkRenderingInfo rinfo = { .sType = VK_STRUCTURE_TYPE_RENDERING_INFO, .pNext = c->use_attachment ? &fsr : NULL,
-        .renderArea = { { 0, 0 }, { W, H } }, .layerCount = 1, .viewMask = c->views > 1 ? 3u : 0u,
+        .renderArea = { { 0, 0 }, { W, H } }, .layerCount = c->layered ? 2 : 1, .viewMask = c->views > 1 ? 3u : 0u,
         .colorAttachmentCount = 1, .pColorAttachments = &catt, .pDepthAttachment = c->depth ? &datt : NULL };
     vkCmdBeginRendering(R.cb, &rinfo);
     vkCmdBindPipeline(R.cb, VK_PIPELINE_BIND_POINT_GRAPHICS, R.pipe);
@@ -298,12 +309,12 @@ static void run_case(const Cfg *c, Out *o)
         VkFragmentShadingRateCombinerOpKHR ops[2] = { c->ops[0], c->ops[1] };
         G.set_rate(R.cb, &one, ops);
     }
-    vkCmdDraw(R.cb, 3, 1, 0, 0);
+    vkCmdDraw(R.cb, 3, c->layered ? 2 : 1, 0, 0);
     vkCmdEndRendering(R.cb);
 
     Img *src = msaa ? &R.resolve : &R.color;
-    bar(R.cb, src->img, CA, c->views, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    for (uint32_t l = 0; l < c->views; l++) {
+    bar(R.cb, src->img, CA, nl, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    for (uint32_t l = 0; l < nl; l++) {
         VkBufferImageCopy cp = { .bufferOffset = (VkDeviceSize)l * W * H * 2, .imageSubresource = { CA, 0, l, 1 }, .imageExtent = { W, H, 1 } };
         vkCmdCopyImageToBuffer(R.cb, src->img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, R.readback.buf, 1, &cp);
     }
@@ -315,7 +326,7 @@ static void run_case(const Cfg *c, Out *o)
     CASE_TRY(vkWaitForFences(G.dev, 1, &R.fence, VK_TRUE, 10ull * 1000000000ull));
 
     const uint8_t *rb = R.readback.map;
-    for (uint32_t l = 0; l < c->views; l++)
+    for (uint32_t l = 0; l < nl; l++)
         for (int i = 0; i < W * H; i++) {
             o->rate[l][i] = rb[(size_t)l * W * H * 2 + (size_t)i * 2];
             o->pos[l][i] = rb[(size_t)l * W * H * 2 + (size_t)i * 2 + 1];
@@ -338,15 +349,16 @@ static void analyze(const Out *o, Rep *r)
     r->layers_equal = 1;
     if (o->layers > 1 && (memcmp(o->rate[0], o->rate[1], W * H) || memcmp(o->pos[0], o->pos[1], W * H))) r->layers_equal = 0;
     for (int ty = 0; ty < RH; ty++) for (int tx = 0; tx < RW; tx++) {
-        unsigned req = o->req[ty * RW + tx];
+        unsigned req = o->req[0][ty * RW + tx];
         int exact = 1; unsigned mask = 0;
         for (uint32_t l = 0; l < o->layers; l++) {
+            const unsigned lreq = o->req[l][ty * RW + tx];
             int seen[256] = { 0 }, nd = 0;
             for (int y = 0; y < TEXEL; y++) for (int x = 0; x < TEXEL; x++) {
                 int i = (ty * TEXEL + y) * W + tx * TEXEL + x;
                 unsigned v = o->rate[l][i];
                 mask |= 1u << (v & 15);
-                if (v != req) exact = 0;
+                if (v != lreq) exact = 0;
                 if (l == 0 && !seen[o->pos[l][i]]) { seen[o->pos[l][i]] = 1; nd++; }
             }
             if (l == 0) r->distinct[req] += nd;
@@ -489,6 +501,54 @@ static Ans q6(void)
     free(o); return a;
 }
 
+/* per-layer match against that layer's own requested pattern; returns 1 if every tile of the layer is exact */
+static int layer_report(const Out *o, uint32_t l, char *b, size_t n)
+{
+    int tiles[16] = { 0 }, exact[16] = { 0 }, inv[16] = { 0 }, uncovered = 0, all = 1;
+    for (int ty = 0; ty < RH; ty++) for (int tx = 0; tx < RW; tx++) {
+        unsigned req = o->req[l][ty * RW + tx];
+        int ex = 1, seen[256] = { 0 }, nd = 0;
+        for (int y = 0; y < TEXEL; y++) for (int x = 0; x < TEXEL; x++) {
+            int i = (ty * TEXEL + y) * W + tx * TEXEL + x;
+            if (o->rate[l][i] == 255) uncovered++;
+            if (o->rate[l][i] != req) ex = 0;
+            if (!seen[o->pos[l][i]]) { seen[o->pos[l][i]] = 1; nd++; }
+        }
+        tiles[req]++; exact[req] += ex; inv[req] += nd; all &= ex;
+    }
+    size_t k = (size_t)snprintf(b, n, "L%u{", l);
+    for (int c = 0; c < 16 && k < n; c++) if (tiles[c])
+        k += (size_t)snprintf(b + k, n - k, "%s:%d/%d(inv/tile=%.0f) ", rate_name(c), exact[c], tiles[c], (double)inv[c] / tiles[c]);
+    if (k < n) snprintf(b + k, n - k, "unwritten_px=%d} ", uncovered);
+    return all;
+}
+
+/* DXVK instanced stereo: 2-layer target, viewMask 0, layer picked by gl_Layer, rate image of rate_layers layers */
+static Ans q7(uint32_t rate_layers)
+{
+    Ans a = { "", "" }; Out *o = malloc(sizeof *o);
+    Cfg c = base_cfg(rate_layers == 1 ? "gl_Layer,1-layer-rate" : "gl_Layer,2-layer-rate");
+    c.layered = 1; c.rate_layers = rate_layers;
+    run_case(&c, o);
+    if (o->skip || o->err) {
+        if (o->skip) catf(a.text, sizeof a.text, "SKIP(%s) ", o->skip_why);
+        else catf(a.text, sizeof a.text, "ERR %d at %s ", (int)o->err, o->stage);
+        snprintf(a.verdict, sizeof a.verdict, "INCONCLUSIVE");
+    } else {
+        char s[400]; int ok = 1;
+        for (uint32_t l = 0; l < 2; l++) { ok &= layer_report(o, l, s, sizeof s); catf(a.text, sizeof a.text, "%s", s); }
+        snprintf(a.verdict, sizeof a.verdict, ok ? "PASS" : "FAIL");
+        if (rate_layers == 2)
+            catf(a.text, sizeof a.text, "%s ", memcmp(o->rate[0], o->rate[1], W * H) ? "layers-differ " : "L1-output-identical-to-L0(rate layer 1 ignored) ");
+    }
+    if (!G.validation) catf(a.text, sizeof a.text, "(validation off) ");
+    else if (o->vcount) catf(a.text, sizeof a.text, "VAL(%d): %.390s ", o->vcount, o->vfirst);
+    else catf(a.text, sizeof a.text, "VAL(0) ");
+    free(o); return a;
+}
+static Ans q7a(void) { return q7(1); }
+static Ans q7b(void) { return q7(2); }
+
 /* ---------- setup ---------- */
 static void setup(void)
 {
@@ -576,7 +636,8 @@ static void setup(void)
 
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR ff = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR };
     VkPhysicalDeviceVulkan13Features f13 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .pNext = &ff };
-    VkPhysicalDeviceVulkan11Features f11 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = &f13 };
+    VkPhysicalDeviceVulkan12Features f12 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, .pNext = &f13 };
+    VkPhysicalDeviceVulkan11Features f11 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = &f12 };
     VkPhysicalDeviceFeatures2 f2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .pNext = &f11 };
     vkGetPhysicalDeviceFeatures2(G.phys, &f2);
     printf("features: pipelineRate=%d attachmentRate=%d primitiveRate=%d dynamicRendering=%d sync2=%d multiview=%d\n",
@@ -584,6 +645,8 @@ static void setup(void)
            f13.dynamicRendering, f13.synchronization2, f11.multiview);
     SETUP_CHECK(ff.attachmentFragmentShadingRate && ff.pipelineFragmentShadingRate && f13.dynamicRendering && f13.synchronization2 && f11.multiview,
                 "required features missing");
+    G.shader_output_layer = f12.shaderOutputLayer;
+    printf("shaderOutputLayer=%d (needed for gl_Layer from the vertex shader)\n", G.shader_output_layer);
     float prio = 1.0f;
     VkDeviceQueueCreateInfo qci = { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, .queueFamilyIndex = G.qfam, .queueCount = 1, .pQueuePriorities = &prio };
     const char *dext[] = { VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME };
@@ -591,7 +654,9 @@ static void setup(void)
         .pipelineFragmentShadingRate = VK_TRUE, .attachmentFragmentShadingRate = VK_TRUE };
     VkPhysicalDeviceVulkan13Features f13e = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .pNext = &ffe,
         .dynamicRendering = VK_TRUE, .synchronization2 = VK_TRUE };
-    VkPhysicalDeviceVulkan11Features f11e = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = &f13e, .multiview = VK_TRUE };
+    VkPhysicalDeviceVulkan12Features f12e = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, .pNext = &f13e,
+        .shaderOutputLayer = f12.shaderOutputLayer };
+    VkPhysicalDeviceVulkan11Features f11e = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = &f12e, .multiview = VK_TRUE };
     VkDeviceCreateInfo dci = { .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, .pNext = &f11e, .queueCreateInfoCount = 1, .pQueueCreateInfos = &qci,
         .enabledExtensionCount = 1, .ppEnabledExtensionNames = dext };
     SETUP(vkCreateDevice(G.phys, &dci, NULL, &G.dev));
@@ -601,6 +666,7 @@ static void setup(void)
     VkCommandPoolCreateInfo pci = { .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, .queueFamilyIndex = G.qfam };
     SETUP(vkCreateCommandPool(G.dev, &pci, NULL, &G.pool));
     G.vs = load_shader("vrs.vert.spv");
+    G.vs_layer = load_shader("vrs_layer.vert.spv");
     G.fs = load_shader("vrs.frag.spv");
     printf("validation layer: %s\n", G.validation ? "ON" : "off");
 }
@@ -615,10 +681,13 @@ int main(void)
         { "Q4", "multiview 2 views, 1-layer rate image", q4 },
         { "Q5", "combiner ops / pipeline flag", q5 },
         { "Q6", "static (non-dynamic) pipeline rate", q6 },
+        { "Q7a", "gl_Layer 2-layer target (viewMask 0), 1-layer rate image", q7a },
+        { "Q7b", "gl_Layer 2-layer target (viewMask 0), 2-layer rate image (FAIL expected: layered rate images unsupported)", q7b },
     };
-    Ans ans[6];
-    for (int i = 0; i < 6; i++) ans[i] = qs[i].fn();
+    enum { NQ = sizeof qs / sizeof qs[0] };
+    Ans ans[NQ];
+    for (int i = 0; i < NQ; i++) ans[i] = qs[i].fn();
     printf("\n==== SUMMARY ====\n");
-    for (int i = 0; i < 6; i++) printf("%s | %-12s | %s\n    %s\n", qs[i].id, ans[i].verdict, qs[i].what, ans[i].text);
+    for (int i = 0; i < NQ; i++) printf("%s | %-12s | %s\n    %s\n", qs[i].id, ans[i].verdict, qs[i].what, ans[i].text);
     return 0;
 }

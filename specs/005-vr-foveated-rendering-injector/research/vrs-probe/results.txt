@@ -7,6 +7,7 @@ props: texel min 8x8 max 8x8 maxAspect 1 layered=0 maxRastSamples=4 nonTrivialCo
 supported rates (size:sampleCountsMask): 2x2:0x7 2x1:0x7 1x2:0x7 1x1:0xffffffff
 R8_UINT optimal features has FRAGMENT_SHADING_RATE_ATTACHMENT: yes
 features: pipelineRate=1 attachmentRate=1 primitiveRate=1 dynamicRendering=1 sync2=1 multiview=1
+shaderOutputLayer=1 (needed for gl_Layer from the vertex shader)
 validation layer: off
 
 ==== SUMMARY ====
@@ -22,3 +23,7 @@ Q5 | PASS         | combiner ops / pipeline flag
     [{KEEP,REPLACE}] 1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16)  [{KEEP,KEEP}] 1x1:16/16(inv/tile=64) 1x2:0/16obs{1x1,}(inv/tile=64) 2x1:0/16obs{1x1,}(inv/tile=64) 2x2:0/16obs{1x1,}(inv/tile=64)  (=> NOT applied) [{KEEP,REPLACE}+pipeFlag] 1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16)  [{KEEP,REPLACE},noAttachment] 1x1:16/16(inv/tile=64) 1x2:0/16obs{1x1,}(inv/tile=64) 2x1:0/16obs{1x1,}(inv/tile=64) 2x2:0/16obs{1x1,}(inv/tile=64)  (=> NOT applied) [{KEEP,MAX}] 1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16)  [{KEEP,MIN}] 1x1:16/16(inv/tile=64) 1x2:0/16obs{1x1,}(inv/tile=64) 2x1:0/16obs{1x1,}(inv/tile=64) 2x2:0/16obs{1x1,}(inv/tile=64)  (=> NOT applied) 
 Q6 | PASS         | static (non-dynamic) pipeline rate
     [static{KEEP,REPLACE}] 1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16)  [static{KEEP,KEEP}(control)] 1x1:16/16(inv/tile=64) 1x2:0/16obs{1x1,}(inv/tile=64) 2x1:0/16obs{1x1,}(inv/tile=64) 2x2:0/16obs{1x1,}(inv/tile=64)  (control not applied, as expected) 
+Q7a | PASS         | gl_Layer 2-layer target (viewMask 0), 1-layer rate image
+    L0{1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16) unwritten_px=0} L1{1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16) unwritten_px=0} (validation off) 
+Q7b | FAIL         | gl_Layer 2-layer target (viewMask 0), 2-layer rate image (FAIL expected: layered rate images unsupported)
+    L0{1x1:16/16(inv/tile=64) 1x2:16/16(inv/tile=32) 2x1:16/16(inv/tile=32) 2x2:16/16(inv/tile=16) unwritten_px=0} L1{1x1:0/16(inv/tile=32) 1x2:0/16(inv/tile=32) 2x1:0/16(inv/tile=16) 2x2:0/16(inv/tile=64) unwritten_px=0} L1-output-identical-to-L0(rate layer 1 ignored)  (validation off) 
