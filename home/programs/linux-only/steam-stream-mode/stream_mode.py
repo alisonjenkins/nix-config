@@ -162,9 +162,12 @@ AUDIO_MODES = {
 }
 DEFAULT_AUDIO = os.environ.get("STREAM_MODE_DEFAULT_AUDIO", "stereo")
 CLIENT_AUDIO = json.loads(os.environ.get("STREAM_MODE_CLIENT_AUDIO", "{}"))
-# How long the sink process gets to register its node before the default is
-# set anyway; it takes about a second.
+# How long the sink process gets to register its node before streams are
+# moved anyway; it takes about a second.
 AUDIO_SINK_WAIT = 5.0
+# How often a streaming session looks for game audio to move; a game's first
+# sound is audible at the desk for up to this long.
+AUDIO_CHECK_INTERVAL = 1.0
 
 # The session, not the video source. ">>> Starting/Stopped desktop stream"
 # mark Steam swapping between desktop and game capture, several times a
@@ -616,26 +619,45 @@ def stop_audio_sink(proc):
         proc.kill()
 
 
-def route_audio_to(sink):
-    """Make sink the default and move what already plays into Steam's there.
+def belongs_to_game(stream, game_pid):
+    """Whether the stream's client is the game process or one of its children."""
+    raw = (stream.get("properties") or {}).get("application.process.id")
+    if not raw:
+        return False
+    try:
+        pid = int(raw)
+    except ValueError:
+        return False
+    return game_pid in [pid, *parent_pids(pid, limit=16)]
 
-    A game started before the stream (a reconnect) is already playing into
-    Steam's sink and would stay there. Our sinks' own outputs play into it
-    too and must stay, or they would loop into themselves.
+
+def move_streams_to(sink, game_pid=None):
+    """Move the game's audio into sink, returning how many streams moved.
+
+    That is whatever plays into Steam's sink (a game started before the stream,
+    on a reconnect) plus, once its pid is known, the game's own streams
+    wherever WirePlumber put them. Our sinks' own outputs play into Steam's
+    sink and must stay, or they would loop into themselves.
     """
-    subprocess.run([PACTL, "set-default-sink", sink], capture_output=True)
-    steam = sink_index(STEAM_AUDIO_SINK)
-    if steam is None:
+    indexes = {s.get("name"): s["index"] for s in pactl_json("sinks")}
+    target = indexes.get(sink)
+    if target is None:
         return 0
+    steam = indexes.get(STEAM_AUDIO_SINK)
     moved = 0
     for stream in pactl_json("sink-inputs"):
         name = (stream.get("properties") or {}).get("node.name") or ""
-        if stream.get("sink") != steam or name.startswith("remote-play-"):
+        if name.startswith("remote-play-") or stream.get("sink") == target:
             continue
-        subprocess.run(
+        if stream.get("sink") != steam and not (
+            game_pid is not None and belongs_to_game(stream, game_pid)
+        ):
+            continue
+        result = subprocess.run(
             [PACTL, "move-sink-input", str(stream["index"]), sink], capture_output=True,
         )
-        moved += 1
+        if result.returncode == 0:
+            moved += 1
     return moved
 
 
@@ -1221,6 +1243,8 @@ class Session:
         # mode, and the sink process run for this stream. See route_audio.
         self.stream_client = None
         self.audio_proc = None
+        self.audio_sink = None
+        self.audio_check_at = 0.0
         # See check_gamepad_info. None until first read, so a watcher started
         # mid-game re-announces the listed pads once.
         self.gamepad_info_path = GAMEPAD_INFO
@@ -1492,17 +1516,36 @@ class Session:
         deadline = time.monotonic() + AUDIO_SINK_WAIT
         while sink_index(sink) is None and time.monotonic() < deadline:
             time.sleep(0.2)
-        moved = route_audio_to(sink)
+        self.audio_sink = sink
+        self.audio_check_at = 0.0
+        moved = move_streams_to(sink, self.game_pid)
         log("stream-mode: {} audio for {} through {}; moved {} stream(s)".format(
             mode, self.stream_client or "this client", sink, moved
         ))
         return True
+
+    def keep_audio_routed(self, now):
+        """Move games that start playing after the stream began.
+
+        Steam's default sink is left alone: it records the monitor of whatever
+        becomes the default, and the binaural sink's monitor is the unfiltered
+        8-channel input. A game WirePlumber has pinned to another sink (HD2 to
+        EasyEffects) never plays into Steam's, so it has to be moved by pid.
+        """
+        if self.audio_sink is None or now < self.audio_check_at:
+            return 0
+        self.audio_check_at = now + AUDIO_CHECK_INTERVAL
+        moved = move_streams_to(self.audio_sink, self.game_pid)
+        if moved:
+            log("stream-mode: moved {} game stream(s) to {}".format(moved, self.audio_sink))
+        return moved
 
     def stop_audio(self):
         if self.audio_proc is None:
             return False
         stop_audio_sink(self.audio_proc)
         self.audio_proc = None
+        self.audio_sink = None
         log("stream-mode: stream audio sink stopped")
         return True
 
@@ -2689,6 +2732,7 @@ def watch():
             session.run_due_audits(now)
             session.settle_client_output(now)
             session.check_gamepad_info()
+            session.keep_audio_routed(now)
             if session.is_live() and now >= next_steam_check:
                 next_steam_check = now + STEAM_CHECK_INTERVAL
                 if session.check_steam_alive() or session.check_vr_alive():

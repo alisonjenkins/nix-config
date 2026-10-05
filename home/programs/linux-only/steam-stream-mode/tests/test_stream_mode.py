@@ -2173,17 +2173,26 @@ class TestStreamAudio(unittest.TestCase):
         {"index": 1, "name": "effect_input.binaural71"},
         {"index": 2, "name": "steam-streaming-playback"},
         {"index": 3, "name": "remote-play-binaural"},
+        {"index": 4, "name": "easyeffects_sink"},
     ]
+    GAME_PID = 500
     INPUTS = [
         {"index": 10, "sink": 2, "properties": {"node.name": "forzahorizon6.exe"}},
         {"index": 11, "sink": 2, "properties": {"node.name": "remote-play-binaural-out"}},
-        {"index": 12, "sink": 1, "properties": {"node.name": "zen-beta"}},
+        {"index": 12, "sink": 1, "properties": {
+            "node.name": "zen-beta", "application.process.id": "900"}},
+        {"index": 13, "sink": 4, "properties": {
+            "node.name": "helldivers2.exe", "application.process.id": "510"}},
+        {"index": 14, "sink": 3, "properties": {
+            "node.name": "already-there", "application.process.id": "511"}},
     ]
+    PARENTS = {510: [505, GAME_PID], 511: [GAME_PID], 900: [800]}
 
     def setUp(self):
         self._real = {k: getattr(stream_mode, k) for k in (
             "pactl_json", "start_audio_sink", "stop_audio_sink", "subprocess",
-            "CLIENT_AUDIO", "AUDIO_MODES")}
+            "CLIENT_AUDIO", "AUDIO_MODES", "parent_pids")}
+        stream_mode.parent_pids = lambda pid, limit=8: self.PARENTS.get(pid, [])
         self.tmp = tempfile.TemporaryDirectory()
         conf = os.path.join(self.tmp.name, "binaural.conf")
         open(conf, "w").close()
@@ -2192,17 +2201,26 @@ class TestStreamAudio(unittest.TestCase):
             "binaural": (conf, "remote-play-binaural"),
         }
         stream_mode.CLIENT_AUDIO = {"ali-mba": "binaural"}
-        self.started, self.stopped, self.ran = [], [], []
-        stream_mode.pactl_json = lambda what: self.SINKS if what == "sinks" else self.INPUTS
+        self.started, self.stopped, self.ran, self.listed = [], [], [], []
+        self.sinks = self.SINKS
+        self.move_status = 0
+
+        def pactl_json(what):
+            self.listed.append(what)
+            return self.sinks if what == "sinks" else self.INPUTS
+
+        stream_mode.pactl_json = pactl_json
         stream_mode.start_audio_sink = lambda c: self.started.append(c) or object()
         stream_mode.stop_audio_sink = lambda p: self.stopped.append(p)
         ran = self.ran
+        test = self
 
         class FakeSubprocess:
             @staticmethod
             def run(cmd, **_kwargs):
                 ran.append(cmd)
-                return subprocess.CompletedProcess(cmd, 0, "", "")
+                status = test.move_status if cmd[1] == "move-sink-input" else 0
+                return subprocess.CompletedProcess(cmd, status, "", "")
 
         stream_mode.subprocess = FakeSubprocess
 
@@ -2220,14 +2238,95 @@ class TestStreamAudio(unittest.TestCase):
         s = self.session("ali-mba")
         self.assertTrue(s.route_audio())
         self.assertEqual(self.started, [stream_mode.AUDIO_MODES["binaural"][0]])
-        self.assertIn([stream_mode.PACTL, "set-default-sink", "remote-play-binaural"], self.ran)
+
+    def test_the_default_sink_stays_steams(self):
+        """Steam records the monitor of whatever becomes the default sink. On
+        2026-10-05 that was the binaural sink's 8-channel input, so the client
+        got a flat stereo capture of it (silence, with HD2 playing elsewhere)
+        instead of the filtered output Steam's own sink carries."""
+        self.session("ali-mba").route_audio()
+        self.assertEqual([c for c in self.ran if "set-default-sink" in c], [])
+
+    def moves(self):
+        return [c[2:] for c in self.ran if c[1] == "move-sink-input"]
 
     def test_only_games_already_in_steams_sink_are_moved(self):
         """Our sink's own output plays into Steam's and must stay there, or it
         would loop into itself; streams on other sinks are not ours."""
         self.session("ali-mba").route_audio()
-        moved = [c for c in self.ran if c[1] == "move-sink-input"]
-        self.assertEqual(moved, [[stream_mode.PACTL, "move-sink-input", "10", "remote-play-binaural"]])
+        self.assertEqual(self.moves(), [["10", "remote-play-binaural"]])
+
+    def test_a_game_pinned_elsewhere_is_moved_once_its_pid_is_known(self):
+        """WirePlumber remembers helldivers2.exe on easyeffects_sink, so a game
+        launched after the stream starts never touches Steam's sink."""
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.game_pid = self.GAME_PID
+        self.ran.clear()
+        self.assertEqual(s.keep_audio_routed(now=10.0), 2)
+        self.assertEqual(self.moves(), [["10", "remote-play-binaural"], ["13", "remote-play-binaural"]])
+
+    def test_a_game_with_no_known_pid_is_left_where_it_plays(self):
+        s = self.session("ali-mba")
+        s.route_audio()
+        self.ran.clear()
+        s.keep_audio_routed(now=10.0)
+        self.assertNotIn(["13", "remote-play-binaural"], self.moves())
+
+    def test_streams_already_on_the_stream_sink_are_not_moved_again(self):
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.game_pid = self.GAME_PID
+        self.ran.clear()
+        s.keep_audio_routed(now=10.0)
+        self.assertNotIn(["14", "remote-play-binaural"], self.moves())
+
+    def test_the_check_is_throttled(self):
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.game_pid = self.GAME_PID
+        s.keep_audio_routed(now=10.0)
+        self.ran.clear()
+        self.assertEqual(s.keep_audio_routed(now=10.2), 0)
+        self.assertEqual(self.ran, [])
+        self.assertEqual(s.keep_audio_routed(now=11.5), 2)
+
+    def test_a_failed_move_is_not_counted(self):
+        """A move pactl rejects left the stream where it was; counting it made
+        the check log success every second."""
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.game_pid = self.GAME_PID
+        self.move_status = 1
+        self.assertEqual(s.keep_audio_routed(now=10.0), 0)
+
+    def test_no_move_is_tried_while_the_stream_sink_is_missing(self):
+        """route_audio carries on after AUDIO_SINK_WAIT even if the sink never
+        registered; every later tick then tried a move that cannot work."""
+        s = self.session("ali-mba")
+        s.route_audio()
+        s.game_pid = self.GAME_PID
+        self.sinks = [k for k in self.SINKS if k["name"] != "remote-play-binaural"]
+        self.ran.clear()
+        self.assertEqual(s.keep_audio_routed(now=10.0), 0)
+        self.assertEqual(self.moves(), [])
+
+    def test_one_check_lists_the_sinks_once(self):
+        s = self.session("ali-mba")
+        s.route_audio()
+        self.listed.clear()
+        s.keep_audio_routed(now=10.0)
+        self.assertEqual(self.listed.count("sinks"), 1)
+
+    def test_nothing_is_routed_before_or_after_the_stream_sink_exists(self):
+        s = self.session("ali-mba")
+        s.game_pid = self.GAME_PID
+        self.assertEqual(s.keep_audio_routed(now=10.0), 0)
+        s.route_audio()
+        s.stop_audio()
+        self.ran.clear()
+        self.assertEqual(s.keep_audio_routed(now=99.0), 0)
+        self.assertEqual(self.ran, [])
 
     def test_a_missing_config_leaves_steams_sink_alone(self):
         s = self.session("ali-steam-deck")
