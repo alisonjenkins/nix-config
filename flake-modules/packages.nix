@@ -23,6 +23,7 @@ in
       # evaluating. Exposed here so the PR check builds them when they change.
       cavemem = (pkgsFor system).cavemem;
       sift = (pkgsFor system).sift;
+      vr-foveation-bench = (pkgsFor system).vr-foveation-bench;
       containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
     } //
       # camoufox-browser is a from-source patched-Firefox build (heavy); only

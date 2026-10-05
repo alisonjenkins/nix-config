@@ -29,6 +29,7 @@
   citron = pkgs.callPackage ./citron {};
   eden = pkgs.callPackage ./eden {};
   sift = pkgs.callPackage ./sift {};
+  vr-foveation-bench = pkgs.callPackage ./vr-foveation-bench {};
   obscura = pkgs.callPackage ./obscura {};
   camoufox-browser = pkgs.callPackage ./camoufox-browser {};
   create-sky-colonies-server = pkgs.callPackage ./create-sky-colonies-server {};
