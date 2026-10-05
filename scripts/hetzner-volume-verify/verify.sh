@@ -22,6 +22,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               matrix: --homeserver URL (env VERIFY_BOT_TOKEN, an access token for verify-bot, and VERIFY_BOT_ROOM)
               photos: --photos-url URL (env VERIFY_PHOTOS_PASSWORD)
               monitoring: --prometheus-url URL [--alertmanager-url URL] [--grafana-url URL]
+              notifications: --ntfy-url URL --ntfy-topic TOPIC
   backup:     --backup velero|cnpg --backup-namespace NS --backup-for TARGET [--since ISO8601]
               TARGET is the workload namespace for velero, or the cluster name for cnpg
 EOF
@@ -40,6 +41,7 @@ device="" mapping="" pv="" secret="" storageclass="" node_exec=""
 kind="" old_dir="" new_dir="" old_manifest="" new_manifest="" namespace="" old_pod="" new_pod="" db="" selector=""
 health_url="" health_seconds=300
 service="" homeserver="" photos_url="" prometheus_url="" alertmanager_url="" grafana_url=""
+ntfy_url="" ntfy_topic=""
 backup="" backup_namespace="" backup_for="" since=""
 
 while [ $# -gt 0 ]; do
@@ -72,6 +74,8 @@ while [ $# -gt 0 ]; do
     --prometheus-url) prometheus_url=$2 ;;
     --alertmanager-url) alertmanager_url=$2 ;;
     --grafana-url) grafana_url=$2 ;;
+    --ntfy-url) ntfy_url=$2 ;;
+    --ntfy-topic) ntfy_topic=$2 ;;
     --backup) backup=$2 ;;
     --backup-namespace) backup_namespace=$2 ;;
     --since) since=$2 ;;
@@ -317,6 +321,19 @@ functional_monitoring() {
   emit functional pass "monitoring: Prometheus answered a query"
 }
 
+functional_notifications() {
+  need functional ntfy_url --ntfy-url
+  need functional ntfy_topic --ntfy-topic
+  local msg
+  msg="verify notifications $(date +%s)-$$"
+  curl -fsS --max-time 20 -d "$msg" "$ntfy_url/$ntfy_topic" >/dev/null 2>&1 \
+    || { emit functional fail "notifications: post to topic $ntfy_topic at $ntfy_url failed"; return; }
+  curl -fsS --max-time 20 "$ntfy_url/$ntfy_topic/json?poll=1&since=all" 2>/dev/null \
+    | jq -e --arg m "$msg" 'select(.message == $m)' >/dev/null \
+    || { emit functional fail "notifications: posted message not read back from topic $ntfy_topic at $ntfy_url"; return; }
+  emit functional pass "notifications: post and poll back on topic $ntfy_topic"
+}
+
 check_functional() {
   need functional service --service
   case "$service" in
@@ -329,7 +346,8 @@ check_functional() {
         emit functional fail "photos: functional check against ${photos_url:-no --photos-url} not implemented; run it by hand and record it"
       fi
       ;;
-    documents | notifications | game)
+    notifications) functional_notifications ;;
+    documents | game)
       emit functional fail "$service: functional check not implemented; run it by hand and record it"
       ;;
     *) die_usage "unknown --service '$service'" ;;

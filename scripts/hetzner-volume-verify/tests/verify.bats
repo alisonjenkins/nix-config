@@ -357,6 +357,38 @@ EOF
   [ "$status" -eq 0 ]
 }
 
+ntfy_args() {
+  echo --volume vol1 --checks functional --service notifications --ntfy-url https://ntfy.test --ntfy-topic verify
+}
+
+@test "notifications functional requires the ntfy url and topic" {
+  run "$script" --volume vol1 --checks functional --service notifications
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--ntfy-url"* ]]
+}
+
+@test "notifications functional passes when the posted message is polled back" {
+  touch "$FIXTURES/curl.echo.https___ntfy_test_verify_json_poll_1_since_all"
+  run "$script" $(ntfy_args)
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"check=functional result=pass"* ]]
+  grep -q 'https://ntfy.test/verify/json?poll=1&since=all' "$FIXTURES/curl.calls"
+}
+
+@test "notifications functional fails when the message is not polled back" {
+  echo '{"message":"something else"}' > "$FIXTURES/curl.out.https___ntfy_test_verify_json_poll_1_since_all"
+  run "$script" $(ntfy_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not read back"* ]]
+}
+
+@test "notifications functional fails when ntfy does not accept the post" {
+  echo 22 > "$FIXTURES/curl.rc"
+  run "$script" $(ntfy_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"https://ntfy.test"* ]]
+}
+
 @test "an unknown service is a usage error" {
   run "$script" --volume vol1 --checks functional --service nonsense
   [ "$status" -eq 2 ]
