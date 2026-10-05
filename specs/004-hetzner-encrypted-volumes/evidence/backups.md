@@ -351,3 +351,19 @@ Latest completed backup per volume (UTC):
 Every volume has been restored from its backup and compared (files byte for byte for the Velero volumes; every logged table for the two
 databases, from the plugin chain through `restore-test` clusters). **Backups are proven as of 2026-10-04T22:30Z**; storage was proven at
 05:52:24Z, so the 7 day window of FR-012 ends 2026-10-11T22:30Z. Nine of ten data volumes are already encrypted; the Minecraft world is the last.
+
+## T085 to T087, T094, T095: the hooks work; the world restores (2026-10-05)
+
+This supersedes the "cannot reach a game node" section above: that blocker is fixed, and the options listed there were refined (see
+[ADR 0026](../../../docs/adr/0026-hetzner-worker-node-networking.md); `ExternalIP` first would have broken the master's own exec).
+
+| Step | Result |
+|---|---|
+| Fix | the k3s server dials kubelets by node name (`kubelet-preferred-address-types=Hostname,InternalIP,ExternalIP`): merged in nix-config#497, applied live to the master with a `config.yaml.d` file and a detached k3s restart (API back in about 20 s, pod restart counts unchanged, `calls=0` first). Right after the restart the API proxy briefly answered 502 for about 40 s and then cleared |
+| Live test (T085) | server scaled to 1 with no proxy and no player: `kubectl logs` and `exec` reach the game pod, `mcrcon` answers (`list`, `save-off`, `save-on`). A Velero backup of the running server: `Completed`, 69 s, 6,198,378,481 bytes, no errors; the server log shows `Saved the game` (the pre-hook flush), saving paused during the copy and `Automatic saving is now enabled` (the post-hook). No player was connected, so the hitch length for one player is **not measured** |
+| Restore (T094) | the same backup restored into a scratch namespace: the data restore `Completed` (6,198,378,481 of 6,198,378,481 bytes), `check-restored-pvcs.sh` passed (the claim bound to its own new volume), and `check-world.sh` on the restored region files: `chunks_read=178391 unreadable=0 files=1344`, exit 0. Not done: the same check on a backup taken while a player was building |
+| Schedules (T086, T087; home-cluster#1593) | `minecraft-2h`, `minecraft-daily` and `minecraft-weekly` enabled. First `minecraft-2h` run 06:00:57Z: `velero-minecraft-2h-20261005060057`, `Completed`, TTL 72 h, no errors (the server was down, so no volume was backed up, as expected) |
+| Runbook (T095) | [`docs/hetzner-minecraft-world-restore.md`](../../../docs/hetzner-minecraft-world-restore.md) |
+
+While doing this a second fault showed up on fresh game nodes (a stuck Cilium host datapath that stalled the CSI driver and made the first
+restore pod unable to mount its volume); cause, fix and evidence are in ADR 0026 (home-cluster#1594 and #1595).

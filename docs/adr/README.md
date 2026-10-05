@@ -72,6 +72,7 @@ for the live-maintenance runbook.
 |---|---|---|
 | [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed |
 | [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
+| [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
 
 ## Template
 
