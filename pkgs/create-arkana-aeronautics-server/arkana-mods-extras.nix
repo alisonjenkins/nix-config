@@ -339,7 +339,7 @@
       required      = true;
       filename      = "ars_elemancy-1.21.1-1.17.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/7956/082/ars_elemancy-1.21.1-1.17.jar";
+        url    = "https://mediafilez.forgecdn.net/files/7956/82/ars_elemancy-1.21.1-1.17.jar";
         name   = "ars_elemancy-1.21.1-1.17.jar";
         sha256 = "0x0nd4fwa21ccfh27pbvdgaq4iggpfgd9mpdfl748i0p02nzm6y0";
       };
@@ -352,7 +352,7 @@
       required      = true;
       filename      = "ars_elemental-1.21.1-0.7.9.3.jar";
       jar = fetchurl {
-        url    = "https://mediafilez.forgecdn.net/files/8005/065/ars_elemental-1.21.1-0.7.9.3.jar";
+        url    = "https://mediafilez.forgecdn.net/files/8005/65/ars_elemental-1.21.1-0.7.9.3.jar";
         name   = "ars_elemental-1.21.1-0.7.9.3.jar";
         sha256 = "1lnglp8ddxahi4idmlpywpfrl3caslhdhzsxdgs6ygl63lh788bj";
       };
