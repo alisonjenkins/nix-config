@@ -451,6 +451,83 @@ couch_env() {
   [[ "$output" == *"delete"* ]]
 }
 
+game_args() {
+  echo --volume vol1 --checks functional --service game --namespace mc --selector app=minecraft
+}
+
+game_pod() {
+  printf '{"items":[{"metadata":{"name":"mc-0"},"status":{"containerStatuses":[{"ready":%s,"restartCount":0}]}}]}\n' "$1" > "$FIXTURES/pods.json"
+}
+
+@test "game functional requires the namespace and selector" {
+  run "$script" --volume vol1 --checks functional --service game
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--namespace"* ]]
+}
+
+@test "game functional passes for a ready pod whose log shows Done and no errors" {
+  game_pod true
+  printf '[Server thread/INFO]: Loading world\n[Server thread/INFO]: Done (41.2s)! For help, type "help"\n' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"check=functional result=pass"* ]]
+}
+
+@test "game functional only reads the cluster and never execs into the pod" {
+  game_pod true
+  echo 'Done (1.0s)!' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$(grep -cE '^(exec|apply|patch|delete) ' "$FIXTURES/kubectl.calls" || true)" -eq 0 ]
+}
+
+@test "game functional fails when the pod is not ready" {
+  game_pod false
+  echo 'Done (1.0s)!' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not ready"* ]]
+}
+
+@test "game functional fails when no pod matches" {
+  echo '{"items":[]}' > "$FIXTURES/pods.json"
+  echo 'Done (1.0s)!' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no pods match"* ]]
+}
+
+@test "game functional fails when the log never reaches Done" {
+  game_pod true
+  echo 'Loading world' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Done ("* ]]
+}
+
+@test "game functional fails on an unexpected exception even after Done" {
+  game_pod true
+  printf 'Done (1.0s)!\nEncountered an unexpected exception\n' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Encountered an unexpected exception"* ]]
+}
+
+@test "game functional fails when a chunk or mod failed to load" {
+  game_pod true
+  printf 'Done (1.0s)!\nFailed to load level.dat\n' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Failed to load"* ]]
+}
+
+@test "game functional fails when the logs cannot be read" {
+  game_pod true
+  touch "$FIXTURES/logs.fail"
+  run "$script" $(game_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot read logs"* ]]
+}
+
 @test "an unknown service is a usage error" {
   run "$script" --volume vol1 --checks functional --service nonsense
   [ "$status" -eq 2 ]

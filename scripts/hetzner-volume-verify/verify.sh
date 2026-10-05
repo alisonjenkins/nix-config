@@ -24,6 +24,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               monitoring: --prometheus-url URL [--alertmanager-url URL] [--grafana-url URL]
               notifications: --ntfy-url URL --ntfy-topic TOPIC
               documents: --couchdb-url URL --couchdb-db DB (env VERIFY_COUCHDB_USER, VERIFY_COUCHDB_PASSWORD)
+              game: --namespace NS --selector LABEL=VALUE (reads pod state and logs only)
   backup:     --backup velero|cnpg --backup-namespace NS --backup-for TARGET [--since ISO8601]
               TARGET is the workload namespace for velero, or the cluster name for cnpg
 EOF
@@ -362,6 +363,33 @@ functional_documents() {
   emit functional pass "documents: create, read back and delete in $couchdb_db"
 }
 
+functional_game() {
+  need functional namespace --namespace
+  need functional selector --selector
+  local pods logs bad
+  if ! pods=$(kubectl get pods -n "$namespace" -l "$selector" -o json 2>/dev/null); then
+    emit functional fail "game: cannot list pods in $namespace with $selector"; return
+  fi
+  if [ "$(jq '.items | length' <<<"$pods")" -eq 0 ]; then
+    emit functional fail "game: no pods match $selector in $namespace"; return
+  fi
+  bad=$(jq -r '.items[] | select(all(.status.containerStatuses[]?; .ready) | not) | .metadata.name' <<<"$pods" | paste -sd, -)
+  if [ -n "$bad" ]; then
+    emit functional fail "game: not ready: $bad"; return
+  fi
+  # The whole log, not a tail: the Done line is printed once at startup and scrolls off.
+  if ! logs=$(kubectl logs -n "$namespace" -l "$selector" --all-containers --tail=-1 --max-log-requests=20 2>&1); then
+    emit functional fail "game: cannot read logs for $selector in $namespace: ${logs:0:120}"; return
+  fi
+  bad=$(grep -E 'Encountered an unexpected exception|Failed to load' <<<"$logs" | head -n1 || true)
+  if [ -n "$bad" ]; then
+    emit functional fail "game: logs show: ${bad:0:160}"; return
+  fi
+  grep -q 'Done (' <<<"$logs" \
+    || { emit functional fail "game: no 'Done (' line in the logs of $selector in $namespace, the server did not finish starting"; return; }
+  emit functional pass "game: pod ready, log shows Done and no startup errors"
+}
+
 check_functional() {
   need functional service --service
   case "$service" in
@@ -376,9 +404,7 @@ check_functional() {
       ;;
     notifications) functional_notifications ;;
     documents) functional_documents ;;
-    game)
-      emit functional fail "$service: functional check not implemented; run it by hand and record it"
-      ;;
+    game) functional_game ;;
     *) die_usage "unknown --service '$service'" ;;
   esac
 }
