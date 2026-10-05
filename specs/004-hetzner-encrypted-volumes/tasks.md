@@ -265,7 +265,7 @@ Tasks T072 to T083 are independent per service and may run in parallel once US2 
 - [x] T097 [P] Replace the "Encryption of the Matrix volumes" section of `nix-config:docs/hetzner-inplace-patching-design.md` with a short pointer to this feature's spec, plan and research, so there is one source.
 - [ ] T098 Update `nix-config:docs/adr/0022-encrypt-hetzner-volumes.md` with the final evidence (the results of T024 to T026, T044, T050 and T094), move its status to Accepted, and add the "Revisit when" conditions.
 - [ ] T099 Re-run every quickstart scenario that has a pass condition, and tick SC-001 to SC-012 in `evidence/success-criteria.md` with the evidence for each. Clear any open item.
-- [ ] T100 Delete leftover scratch resources (`enc-test`, `scratch-restore`, `scratch-migrate`, restore namespaces) and confirm `kubectl get ns` lists none of them.
+- [x] T100 Delete leftover scratch resources (`enc-test`, `scratch-restore`, `scratch-migrate`, restore namespaces) and confirm `kubectl get ns` lists none of them.
 - [ ] T101 Open the pull requests: one per repository, with the atomic commits intact. Each description says what changed, why, and the verification evidence. Merge by local rebase and fast-forward (constitution I).
 
 ---
@@ -302,3 +302,17 @@ Tasks T072 to T083 are independent per service and may run in parallel once US2 
 
 - Total tasks: 101. Per story: US1 22, US2 9, US3 3, US4 5, US5 3, US6 2, US7 8, US8 16. Setup 4, Foundational 23, Polish 6. 28 tasks need consent.
 - One commit per task; each repository's changes land in its own pull request.
+
+## Open items (2026-10-05)
+
+- **Old Minecraft world volume, Hetzner id 106202261 (T077, T078, T079, T061).** Everything else for the world is done (copy, chunk check,
+  switch, encryption verdict, backup, PV object deleted). The cloud volume is still at Hetzner, detached: `destroy-old-volume.sh` deleted the
+  PV and then failed at `hcloud volume delete` because the session had no `hcloud` token, and the permission guard blocks fetching one. The
+  owner has said to come back to it. Delete it with the project's `hcloud` token after checking `hcloud volume describe 106202261` shows the
+  name `pvc-22ab50ca-b3fd-4b1a-a8d3-a6321cde82d5` and no server. Then: add its row to `evidence/migrations.md`, tick T077 and T078, run T079
+  (the claim half is already true: all 9 claims are on `hcloud-volumes-encrypted`), list the Hetzner volumes, delete the encrypted dumps in
+  `~/hetzner-encrypted-volumes/dumps/` (T061), and tick them.
+- **T085 and T094** need a player connected (the owner skipped the hitch measurement; to be handled as a follow-up if it is a problem).
+- **T098 and T099** wait for T044 and T094 results or an explicit decision to close without them.
+- T069 needs nothing more: no manifest names `hcloud-volumes` explicitly any more (checked 2026-10-05); the class survives only in the
+  `hcloud-csi` chart values.
