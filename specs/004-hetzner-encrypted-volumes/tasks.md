@@ -231,14 +231,14 @@ Tasks T072 to T083 are independent per service and may run in parallel once US2 
 
 ### Server image (nix-config)
 
-- [ ] T080 [US8] Write a test first (a `nix build` check or a shell test in `nix-config:pkgs/create-arkana-aeronautics-server/`) that the generated `server.properties` has RCON enabled on the loopback with a password read from an environment variable, and that the image contains an RCON client. Confirm it fails.
-- [ ] T081 [US8] In `nix-config:pkgs/create-arkana-aeronautics-server/default.nix` change `enable-rcon=false` to enabled with the RCON port bound to the loopback only, add `mcrcon` to the image, and have `entrypoint.sh` write the password from the environment into the server's configuration at start. Run the T080 test until it passes, then `just check`.
-- [ ] T082 [US8] Build and push the new image tag through the existing pipeline. Record the tag for T084.
+- [x] T080 [US8] Write a test first (a `nix build` check or a shell test in `nix-config:pkgs/create-arkana-aeronautics-server/`) that the generated `server.properties` has RCON enabled on the loopback with a password read from an environment variable, and that the image contains an RCON client. Confirm it fails.
+- [x] T081 [US8] In `nix-config:pkgs/create-arkana-aeronautics-server/default.nix` change `enable-rcon=false` to enabled with the RCON port bound to the loopback only, add `mcrcon` to the image, and have `entrypoint.sh` write the password from the environment into the server's configuration at start. Run the T080 test until it passes, then `just check`.
+- [x] T082 [US8] Build and push the new image tag through the existing pipeline. Record the tag for T084.
 
 ### Cluster (home-cluster)
 
 - [x] T083 [P] [US8] Create a Secret `home-cluster:clusters/hetzner/flux-system/secrets/minecraft-rcon.enc.yaml` (namespace `minecraft`, key `rcon-password`) with a generated password, SOPS-encrypted, and register it. Never print the value.
-- [ ] T084 [US8] In `home-cluster:clusters/hetzner/flux-system/minecraft/deployment.yaml` set the T082 image tag, add the RCON password environment variable from the T083 Secret, and add Velero hook annotations: `pre.hook.backup.velero.io/command` running `mcrcon` with `save-off` then `save-all flush`, and `post.hook.backup.velero.io/command` running `save-on`, each with a timeout and `on-error: Fail` for the pre-hook and `Continue` for the post-hook.
+- [x] T084 [US8] In `home-cluster:clusters/hetzner/flux-system/minecraft/deployment.yaml` set the T082 image tag, add the RCON password environment variable from the T083 Secret, and add Velero hook annotations: `pre.hook.backup.velero.io/command` running `mcrcon` with `save-off` then `save-all flush`, and `post.hook.backup.velero.io/command` running `save-on`, each with a timeout and `on-error: Fail` for the pre-hook and `Continue` for the post-hook.
 - [ ] T085 [US8] [CONSENT] Merge T084. In a short session with one player connected, run a backup and measure the save pause (quickstart F1). Record the hitch length and confirm no disconnect (FR-018). Adjust the timeouts if needed.
 - [x] T086 [P] [US8] In `home-cluster:clusters/hetzner/flux-system/velero/helmrelease.yaml` add three schedules for the namespace `minecraft`: every 2 hours with `ttl: 72h`, daily with `ttl: 2160h`, and weekly with `ttl: 8760h`. Label the backups so the three tiers can be listed and restored separately (FR-019). Done in home-cluster#1571, with the three schedules `disabled: true` until T085 passes.
 - [x] T087 [US8] [CONSENT] Merge T086 and confirm the first runs appear in `velero backup get` with the right TTLs. A run while the server is down backs up no volume, which is expected.

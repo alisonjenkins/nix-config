@@ -352,6 +352,31 @@ Every volume has been restored from its backup and compared (files byte for byte
 databases, from the plugin chain through `restore-test` clusters). **Backups are proven as of 2026-10-04T22:30Z**; storage was proven at
 05:52:24Z, so the 7 day window of FR-012 ends 2026-10-11T22:30Z. Nine of ten data volumes are already encrypted; the Minecraft world is the last.
 
+## T080 to T084, T085: the RCON image is live; the Velero hooks cannot reach a game node (2026-10-05)
+
+| Step | Result |
+|---|---|
+| RCON in the image (T080, T081; nix-config#470) | merged. Its `flake-check` had failed three times for an unrelated reason: two hand-written CurseForge URLs in `arkana-mods-extras.nix` were zero padded (`files/7956/082/`), which CloudFront answers with an S3 403 (a missing key). Not the runner, not the User-Agent. Fixed in nix-config#494 (the pinned hashes match the content at the right URL; all 370 literal URLs in the package checked) with a guard script in the PR check and as a pre-commit hook |
+| Image build and push (T082) | tag `arkana-aeronautics-v1.5-aero-1.2.1-64`: the build was cached (1.5 min) but Publish failed at `skopeo login` (`mkdir /run/containers: permission denied`, the runner pod's user has no writable `XDG_RUNTIME_DIR`); fixed in nix-config#495 (`REGISTRY_AUTH_FILE` under `runner.temp`), then re-published with `workflow_dispatch` in 3 min. Image `ghcr.io/alisonjenkins/create-arkana-aeronautics-server:v1.5-aero-1.2.1-64-amd64`, digest `sha256:08200a26…`. The game node pool is amd64 only, so the deployment uses the `-amd64` tag |
+| Deployment (T084; home-cluster#1592) | merged: the image tag, `RCON_PASSWORD` from `minecraft-rcon`, and the Velero pre-hook (`save-off`, `save-all flush`, on-error Fail) and post-hook (`save-on`). The backend is at 0 replicas, so nothing restarted |
+| Live test (T085) | the server was scaled to 1 by hand with no proxy and no player: pod Ready 3 minutes after the scale (the game node came up on demand). Then `kubectl logs` and `kubectl exec` to it **failed**: `tls: failed to verify certificate: x509: certificate is valid for 127.0.0.1, ::1, 46.225.12.231, not 10.0.1.1`. A real Velero backup of the namespace showed the same: `Error executing hook … hookPhase=pre … error dialing backend: tls: failed to verify certificate`, and the backup was `PartiallyFailed` (the `Fail` setting did its job: no unquiesced backup was taken). The server was scaled back to 0 afterwards |
+
+**Cause.** Worker nodes join k3s with `--node-ip` set to their public address (`lib/hetzner-node-services.nix`: the hcloud CCM rejects a private
+node-ip). k3s signs the agent's kubelet serving certificate from that `--node-ip` only (the agent sends it in the `k3s-Node-IP` header), so
+the certificate covers the public IP and the node name. The hcloud CCM then adds the private IP as the node's `InternalIP` (`10.0.1.1`), and
+the API server dials the `InternalIP`, which the certificate does not cover. Everything that goes through the API server to a game node
+fails: `kubectl logs`, `kubectl exec`, `kubectl debug node`, port-forward and Velero's exec hooks. The master's certificate is fine, which is why
+the same hooks work there. Velero's file-system backup itself does not use this path (the node agent reads the volume locally).
+
+**Consequence.** The three `minecraft-*` schedules must stay disabled: with the pre-hook set to `Fail` every run would end `PartiallyFailed`
+(and alert). T085 stays open until the path works.
+
+Options, none applied: (1) make the API server dial a name the certificate covers, for example
+`--kube-apiserver-arg=kubelet-preferred-address-types=ExternalIP,InternalIP,Hostname` on the k3s server (needs a master change and a test; I
+have not verified that the agent tunnel accepts the external address); (2) give the worker certificate the private IP, which needs a different
+`--node-ip` strategy and a CCM check; (3) no exec hooks: quiesce through RCON from inside the cluster (the proxy or a small job) and open that one
+path in the `minecraft-backend` network policy; (4) accept crash-consistent backups and rely on `check-world.sh` to detect a bad one.
+
 ## T085 to T087, T094, T095: the hooks work; the world restores (2026-10-05)
 
 This supersedes the "cannot reach a game node" section above: that blocker is fixed, and the options listed there were refined (see
