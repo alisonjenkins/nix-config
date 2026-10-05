@@ -431,6 +431,11 @@
           echo "WARN: no private (10.0.0.0/8) IP found — starting k3s WITHOUT the private tls-san; cilium/workers dialing the private k8sServiceHost will fail TLS until fixed [B16]" >&2
         fi
 
+        # kubelet-preferred-address-types: workers sign their kubelet certificate for the
+        # public --node-ip only, and the hcloud CCM later adds the private InternalIP, which
+        # k3s dials first by default, so logs, exec and Velero exec hooks to a worker pod fail
+        # with an x509 error. Dialing by node name works: the certificates carry it and the
+        # tunnel server maps a node-name dial to that node (the master's own cert has it too).
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
           --token "$K3S_TOKEN" \
@@ -455,6 +460,7 @@
           --kube-apiserver-arg=audit-log-maxage=30 \
           --kube-apiserver-arg=audit-log-maxbackup=10 \
           --kube-apiserver-arg=audit-log-maxsize=100 \
+          --kube-apiserver-arg=kubelet-preferred-address-types=Hostname,InternalIP,ExternalIP \
           --kubelet-arg=streaming-connection-idle-timeout=5m \
           --kubelet-arg=tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305 \
           --write-kubeconfig-mode=0400
