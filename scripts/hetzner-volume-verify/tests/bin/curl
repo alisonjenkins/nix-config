@@ -2,9 +2,34 @@
 # Exit code and body come from fixtures; every call is logged for assertions.
 # A body fixture named curl.out.<url with non-alphanumerics as _> overrides curl.out for that URL
 # (the URL is the last argument), and curl.rc.<same> overrides the exit code.
+# A request body sent with -d/--data (inline or @-) is saved to curl.posted. A fixture named
+# curl.echo.<same> answers that URL with the saved body as a one-line ntfy style {"message": ...}.
+# A fixture named curl.couch turns the fake into a one-document CouchDB: a body-carrying request stores
+# the document and answers with rev 1-abc, a plain GET returns it, -X DELETE answers ok. A fixture
+# named curl.couch.fail.<PUT|GET|DELETE> makes that verb exit 22.
 echo "$*" >> "$FIXTURES/curl.calls"
 url=${*: -1}
 key=$(tr -c 'A-Za-z0-9\n' _ <<<"$url")
-if [ -f "$FIXTURES/curl.out.$key" ]; then cat "$FIXTURES/curl.out.$key"; else cat "$FIXTURES/curl.out" 2>/dev/null || true; fi
+prev="" method=""
+for a in "$@"; do
+  case "$prev" in
+    -d | --data) if [ "$a" = @- ]; then cat >"$FIXTURES/curl.posted"; else printf '%s' "$a" >"$FIXTURES/curl.posted"; fi ;;
+    -X) method=$a ;;
+  esac
+  prev=$a
+done
+if [ -f "$FIXTURES/curl.couch" ]; then
+  verb=${method:-GET}
+  if [ -f "$FIXTURES/curl.couch.fail.$verb" ]; then exit 22; fi
+  case "$verb" in
+    PUT | POST) echo '{"ok":true,"rev":"1-abc"}' ;;
+    GET) jq -c '. + {_rev: "1-abc"}' "$FIXTURES/curl.posted" ;;
+    DELETE) echo '{"ok":true,"rev":"2-def"}' ;;
+  esac
+  exit 0
+fi
+if [ -f "$FIXTURES/curl.echo.$key" ]; then
+  jq -cn --rawfile m "$FIXTURES/curl.posted" '{message: $m}'
+elif [ -f "$FIXTURES/curl.out.$key" ]; then cat "$FIXTURES/curl.out.$key"; else cat "$FIXTURES/curl.out" 2>/dev/null || true; fi
 if [ -f "$FIXTURES/curl.rc.$key" ]; then exit "$(cat "$FIXTURES/curl.rc.$key")"; fi
 exit "$(cat "$FIXTURES/curl.rc" 2>/dev/null || echo 0)"
