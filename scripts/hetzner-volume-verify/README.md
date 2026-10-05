@@ -23,8 +23,9 @@ Scripts are written test first: a failing `bats` test in `tests/`, then the scri
   for its options. `--checks` is required. Run the encryption check with `--node-exec` set to a command that runs on
   the node holding the volume. The Matrix functional check reads `VERIFY_BOT_TOKEN` (an access token for
   `verify-bot`, because Synapse here does not serve password login) and `VERIFY_BOT_ROOM` from the environment. The
-  functional checks for photos, documents, notifications and the game server are not implemented yet: they fail
-  closed, so the gate never passes without them being run by hand and recorded.
+  documents check reads `VERIFY_COUCHDB_USER` and `VERIFY_COUCHDB_PASSWORD`. The notifications (ntfy), documents
+  (CouchDB) and game server functional checks are implemented. The photos functional check is not implemented yet:
+  it fails closed, so the gate never passes without it being run by hand and recorded.
 - `table-checksums.sql`: the per-table row count and checksum that the database comparison runs through `psql`.
 - `retain-pv.sh`: sets a PersistentVolume to `Retain`.
 - `destroy-old-volume.sh`: removes an old volume, only after a verified verdict newer than the switch, a completed
