@@ -23,6 +23,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               photos: --photos-url URL (env VERIFY_PHOTOS_PASSWORD)
               monitoring: --prometheus-url URL [--alertmanager-url URL] [--grafana-url URL]
               notifications: --ntfy-url URL --ntfy-topic TOPIC
+              documents: --couchdb-url URL --couchdb-db DB (env VERIFY_COUCHDB_USER, VERIFY_COUCHDB_PASSWORD)
   backup:     --backup velero|cnpg --backup-namespace NS --backup-for TARGET [--since ISO8601]
               TARGET is the workload namespace for velero, or the cluster name for cnpg
 EOF
@@ -41,7 +42,7 @@ device="" mapping="" pv="" secret="" storageclass="" node_exec=""
 kind="" old_dir="" new_dir="" old_manifest="" new_manifest="" namespace="" old_pod="" new_pod="" db="" selector=""
 health_url="" health_seconds=300
 service="" homeserver="" photos_url="" prometheus_url="" alertmanager_url="" grafana_url=""
-ntfy_url="" ntfy_topic=""
+ntfy_url="" ntfy_topic="" couchdb_url="" couchdb_db=""
 backup="" backup_namespace="" backup_for="" since=""
 
 while [ $# -gt 0 ]; do
@@ -76,6 +77,8 @@ while [ $# -gt 0 ]; do
     --grafana-url) grafana_url=$2 ;;
     --ntfy-url) ntfy_url=$2 ;;
     --ntfy-topic) ntfy_topic=$2 ;;
+    --couchdb-url) couchdb_url=$2 ;;
+    --couchdb-db) couchdb_db=$2 ;;
     --backup) backup=$2 ;;
     --backup-namespace) backup_namespace=$2 ;;
     --since) since=$2 ;;
@@ -334,6 +337,31 @@ functional_notifications() {
   emit functional pass "notifications: post and poll back on topic $ntfy_topic"
 }
 
+functional_documents() {
+  need functional couchdb_url --couchdb-url
+  need functional couchdb_db --couchdb-db
+  local user=${VERIFY_COUCHDB_USER:-} pass=${VERIFY_COUCHDB_PASSWORD:-} id msg cfg="$workdir/couch.cfg" doc rev
+  if [ -z "$user" ] || [ -z "$pass" ]; then
+    emit functional fail "documents: VERIFY_COUCHDB_USER and VERIFY_COUCHDB_PASSWORD are not both exported (a CouchDB account that may write to $couchdb_db)"; return
+  fi
+  id="verify-$(date +%s)-$$"
+  msg="verify documents $id"
+  doc="$couchdb_url/$couchdb_db/$id"
+  # The credentials go in a mode 600 curl config, not on the command line where ps would show them.
+  (umask 077; printf 'user = "%s:%s"\n' "${user//[\\\"]/\\&}" "${pass//[\\\"]/\\&}" >"$cfg")
+  rev=$(jq -n --arg m "$msg" '{message: $m}' \
+    | curl -fsS --max-time 20 -K "$cfg" -X PUT -H 'Content-Type: application/json' --data @- "$doc" 2>/dev/null \
+    | jq -er '.rev') \
+    || { emit functional fail "documents: create of $id in $couchdb_db at $couchdb_url failed"; return; }
+  curl -fsS --max-time 20 -K "$cfg" "$doc" 2>/dev/null \
+    | jq -e --arg m "$msg" '.message == $m' >/dev/null \
+    || { emit functional fail "documents: created document $id not read back from $couchdb_db"; return; }
+  curl -fsS --max-time 20 -K "$cfg" -X DELETE "$doc?rev=$rev" 2>/dev/null \
+    | jq -e '.ok == true' >/dev/null \
+    || { emit functional fail "documents: delete of $id (rev $rev) from $couchdb_db failed"; return; }
+  emit functional pass "documents: create, read back and delete in $couchdb_db"
+}
+
 check_functional() {
   need functional service --service
   case "$service" in
@@ -347,7 +375,8 @@ check_functional() {
       fi
       ;;
     notifications) functional_notifications ;;
-    documents | game)
+    documents) functional_documents ;;
+    game)
       emit functional fail "$service: functional check not implemented; run it by hand and record it"
       ;;
     *) die_usage "unknown --service '$service'" ;;

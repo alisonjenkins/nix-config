@@ -389,6 +389,68 @@ ntfy_args() {
   [[ "$output" == *"https://ntfy.test"* ]]
 }
 
+couch_args() {
+  echo --volume vol1 --checks functional --service documents --couchdb-url https://couch.test --couchdb-db notes
+}
+
+couch_env() {
+  export VERIFY_COUCHDB_USER=verify-user VERIFY_COUCHDB_PASSWORD=pw-should-not-leak-456
+  touch "$FIXTURES/curl.couch"
+}
+
+@test "documents functional fails clearly when the CouchDB credentials are not exported" {
+  unset VERIFY_COUCHDB_USER VERIFY_COUCHDB_PASSWORD
+  run "$script" $(couch_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"VERIFY_COUCHDB_PASSWORD"* ]]
+}
+
+@test "documents functional requires the CouchDB url and database" {
+  run "$script" --volume vol1 --checks functional --service documents
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--couchdb-url"* ]]
+}
+
+@test "documents functional passes after create, read back and delete by rev" {
+  couch_env
+  run "$script" $(couch_args)
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"check=functional result=pass"* ]]
+  grep -q -- '-X DELETE .*rev=1-abc$' "$FIXTURES/curl.calls"
+}
+
+@test "documents functional never puts the password on a curl command line" {
+  couch_env
+  run "$script" $(couch_args)
+  [ -s "$FIXTURES/curl.calls" ]
+  [ "$(grep -c 'pw-should-not-leak-456' "$FIXTURES/curl.calls" || true)" -eq 0 ]
+  [[ "$output" != *"pw-should-not-leak-456"* ]]
+}
+
+@test "documents functional fails when the document cannot be created" {
+  couch_env
+  touch "$FIXTURES/curl.couch.fail.PUT"
+  run "$script" $(couch_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"create"* ]]
+}
+
+@test "documents functional fails when the document cannot be read back" {
+  couch_env
+  touch "$FIXTURES/curl.couch.fail.GET"
+  run "$script" $(couch_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"read back"* ]]
+}
+
+@test "documents functional fails when the document cannot be deleted" {
+  couch_env
+  touch "$FIXTURES/curl.couch.fail.DELETE"
+  run "$script" $(couch_args)
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"delete"* ]]
+}
+
 @test "an unknown service is a usage error" {
   run "$script" --volume vol1 --checks functional --service nonsense
   [ "$status" -eq 2 ]
