@@ -2,13 +2,15 @@
 # Copies one claim onto another and writes a path, size and sha256 manifest of both, for
 # migrate-files.sh (spec 004 T062). The old claim is mounted read-only, so the job cannot change the
 # data it copies from. Rendered by migrate-files.sh with envsubst; do not apply it by hand while the
-# workload still runs. Only the seven variables below are substituted: the script text uses $p and
+# workload still runs. Only the nine variables below are substituted: the script text uses $p and
 # $(...) of its own, which envsubst must not touch.
 #
 # Runs as a fixed non-root uid:gid because the namespaces enforce Pod Security restricted. rsync -a
 # keeps ownership only when it can chown, so --uid/--gid must equal the owner of the files on the old
 # claim: a non-root rsync cannot give files to anyone else. The manifest records uid:gid per file, so
-# an owner mismatch between the claims shows up as a difference in verify.sh.
+# an owner mismatch between the claims shows up as a difference in verify.sh. A root-owned claim
+# (the Minecraft world) needs --allow-root: the job then runs as root with only CHOWN, FOWNER and
+# DAC_OVERRIDE, in a namespace that does not enforce restricted.
 #
 # Image: needs rsync and sha256sum in one image, and the Kyverno policy wants pinned tags. Alpine's
 # busybox has sha256sum, find, wc and sort; the rsync-ssh image is Alpine plus rsync. Override with
@@ -33,7 +35,7 @@ spec:
     spec:
       restartPolicy: Never
       securityContext:
-        runAsNonRoot: true
+        runAsNonRoot: ${RUN_AS_NON_ROOT}
         runAsUser: ${UID_NUM}
         runAsGroup: ${GID_NUM}
         fsGroup: ${GID_NUM}
@@ -46,6 +48,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+              add: ${CAPS_ADD}
           command:
             - sh
             - -c

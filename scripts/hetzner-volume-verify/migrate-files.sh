@@ -11,10 +11,12 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() {
   cat >&2 <<'EOF'
 usage: migrate-files.sh --namespace NS --service NAME --old-claim PVC --new-claim PVC
-         --manifest-dir DIR --uid N --gid N [--execute]
+         --manifest-dir DIR --uid N --gid N [--allow-root] [--execute]
   --service is the Deployment or StatefulSet that uses the claims; it must be scaled to zero.
   --uid and --gid are what the job runs as (Pod Security restricted: non-zero uid). They must equal
   the owner of the files on the old claim, or rsync -a cannot keep ownership and the manifests differ.
+  --allow-root is for a claim whose files are owned by root: it permits --uid 0 and runs the job as
+  root with only CHOWN, FOWNER and DAC_OVERRIDE. The namespace must not enforce Pod Security restricted.
   Writes DIR/old.manifest and DIR/new.manifest (tab separated path, bytes, sha256, uid:gid, sorted by path).
   Environment: COPY_IMAGE (job image, needs rsync and sha256sum), MIGRATE_TIMEOUT_SECONDS,
   MIGRATE_POLL_INTERVAL.
@@ -22,10 +24,11 @@ EOF
   exit 2
 }
 
-namespace="" service="" old_claim="" new_claim="" manifest_dir="" uid="" gid="" execute=0
+namespace="" service="" old_claim="" new_claim="" manifest_dir="" uid="" gid="" execute=0 allow_root=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --execute) execute=1; shift; continue ;;
+    --allow-root) allow_root=1; shift; continue ;;
     --namespace | --service | --old-claim | --new-claim | --manifest-dir | --uid | --gid) ;;
     *) echo "migrate-files: unknown option $1" >&2; usage ;;
   esac
@@ -46,7 +49,20 @@ for req in namespace:--namespace service:--service old_claim:--old-claim new_cla
   name=${req%%:*}
   [ -n "${!name}" ] || { echo "migrate-files: ${req##*:} is required" >&2; usage; }
 done
-[[ "$uid" =~ ^[1-9][0-9]*$ ]] || { echo "migrate-files: --uid must be a positive number (Pod Security restricted forbids root), got '$uid'" >&2; usage; }
+[[ "$uid" =~ ^[0-9]+$ ]] || { echo "migrate-files: --uid must be a number, got '$uid'" >&2; usage; }
+if [ "$uid" -eq 0 ] && [ "$allow_root" -ne 1 ]; then
+  echo "migrate-files: --uid must be positive (Pod Security restricted forbids root); pass --allow-root for root-owned files" >&2
+  usage
+fi
+if [ "$uid" -ne 0 ] && [ "$allow_root" -eq 1 ]; then
+  echo "migrate-files: --allow-root only applies with --uid 0, got '$uid'" >&2
+  usage
+fi
+if [ "$uid" -eq 0 ]; then
+  run_as_non_root=false caps_add='[CHOWN, FOWNER, DAC_OVERRIDE]'
+else
+  run_as_non_root=true caps_add='[]'
+fi
 [[ "$gid" =~ ^[0-9]+$ ]] || { echo "migrate-files: --gid must be a number, got '$gid'" >&2; usage; }
 
 # Pinned because the cluster's policy rejects floating tags; see the header of copy-job.yaml.
@@ -89,7 +105,8 @@ fi
 # Step run-copy-job.
 # shellcheck disable=SC2016 # the variable names are for envsubst, not the shell
 env NAMESPACE="$namespace" JOB_NAME="$job_name" OLD_CLAIM="$old_claim" NEW_CLAIM="$new_claim" IMAGE="$image" UID_NUM="$uid" GID_NUM="$gid" \
-  envsubst '$NAMESPACE $JOB_NAME $OLD_CLAIM $NEW_CLAIM $IMAGE $UID_NUM $GID_NUM'<"$here/copy-job.yaml" \
+  RUN_AS_NON_ROOT="$run_as_non_root" CAPS_ADD="$caps_add" \
+  envsubst '$NAMESPACE $JOB_NAME $OLD_CLAIM $NEW_CLAIM $IMAGE $UID_NUM $GID_NUM $RUN_AS_NON_ROOT $CAPS_ADD'<"$here/copy-job.yaml" \
   | kubectl apply -f - >&2 \
   || refuse run-copy-job "rendering or applying job $job_name failed"
 

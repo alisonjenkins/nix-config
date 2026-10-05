@@ -57,6 +57,27 @@ args() {
   [[ "$output" == *"--uid"* ]]
 }
 
+@test "uid 0 is accepted with --allow-root and the job runs as root with only the file-ownership capabilities" {
+  run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 0 --gid 0 --allow-root --execute
+  [ "$status" -eq 0 ]
+  grep -q 'runAsNonRoot: false' "$FIXTURES/applied.yaml"
+  grep -q 'runAsUser: 0' "$FIXTURES/applied.yaml"
+  grep -q 'drop: \[ALL\]' "$FIXTURES/applied.yaml"
+  grep -q 'add: \[CHOWN, FOWNER, DAC_OVERRIDE\]' "$FIXTURES/applied.yaml"
+}
+
+@test "--allow-root with a non-zero uid is refused as a usage error" {
+  run "$script" $(args) --allow-root
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--allow-root"* ]]
+}
+
+@test "a non-root job adds no capabilities" {
+  run "$script" $(args) --execute
+  [ "$status" -eq 0 ]
+  grep -q 'add: \[\]' "$FIXTURES/applied.yaml"
+}
+
 @test "a non-numeric gid is refused as a usage error" {
   run "$script" --namespace matrix --service svc --old-claim old-claim --new-claim new-claim --manifest-dir "$manifests" --uid 5984 --gid abc
   [ "$status" -eq 2 ]
