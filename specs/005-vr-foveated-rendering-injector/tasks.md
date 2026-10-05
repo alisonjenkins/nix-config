@@ -26,12 +26,12 @@ description: "Task list for foveated rendering for VR games that lack it"
 
 **Purpose**: settle the five facts the design depends on. No product code ships from this phase.
 
-- [ ] T001 [P] Extend the probe with a layered, non-multiview case (two-layer target, no view mask, one-layer rate image) in `specs/005-vr-foveated-rendering-injector/research/vrs-probe/vrs_probe.c` (and `vrs.frag` or `vrs.vert` if the case needs it), and record the new line in `research/vrs-probe/results.txt` (spike S1)
+- [x] T001 [P] Extend the probe with a layered, non-multiview case (two-layer target, no view mask, one-layer rate image) in `specs/005-vr-foveated-rendering-injector/research/vrs-probe/vrs_probe.c` (and `vrs.frag` or `vrs.vert` if the case needs it), and record the new line in `research/vrs-probe/results.txt` (spike S1)
 - [ ] T002 (owner) Start Fallout 4 VR once from Steam to create its prefix, then record its graphics API, and the large colour targets (size, layers, format, samples) from DXVK's log, in `specs/005-vr-foveated-rendering-injector/research.md` (spike S2)
-- [ ] T003 [P] Confirm in DXVK's source and with a one-line config test whether a per-executable config can carry `dxvk.foveation.*` keys; if not, adopt the per-game config file fallback in `research.md` D6 and note the consequence for T056; record the finding in `research.md` D6 (spike S2)
+- [x] T003 [P] (confirmed from DXVK's source; the runtime check that Proton leaves `DXVK_CONFIG_FILE` alone and `/nix/store` is visible in the container is left to T042's first game run) Confirm in DXVK's source and with a one-line config test whether a per-executable config can carry `dxvk.foveation.*` keys; if not, adopt the per-game config file fallback in `research.md` D6 and note the consequence for T056; record the finding in `research.md` D6 (spike S2)
 - [ ] T004 (owner) Try SteamVR's null driver with Fallout 4 VR for 60 s using the existing SteamVR settings module in `home/modules/vr/steamvr-settings.nix`; if no frames, try the Quest over Steam Link with a fixed pose; record the route chosen and why in `research.md` D8 (spike S4)
-- [ ] T005 [P] Find which DXVK version the user's Proton runner ships and choose the fork's base tag; record in `research.md` D5 (spike S5)
-- [ ] T006 Prototype the compat tool layering on a throwaway derivation (the user's Proton with only its DXVK directory replaced by an unmodified build) and show a game using it and the runner updater leaving it alone; record in `research.md` D5 (spike S3; depends on T005)
+- [x] T005 [P] Find which DXVK version the user's Proton runner ships and choose the fork's base tag; record in `research.md` D5 (spike S5)
+- [ ] T006 (owner) Prototype a separate compat tool directory (for example `DW-Proton Foveated`) with only its DXVK directory replaced by an unmodified build, by two routes: a derivation that fetches the pinned DW-Proton release, and an idempotent activation step that copies the owner's current runner. Show a game using the tool (DXVK version line in its log) and the runner updater leaving the directory alone, and pick one route; record in `research.md` D5 (spike S3; depends on T005)
 
 **Checkpoint**: if T001 fails, mark layered passes as per-draw-rate only in `plan.md`; if T004 finds neither headless route works, the measurement phase uses a worn headset and says so.
 
@@ -43,7 +43,7 @@ description: "Task list for foveated rendering for VR games that lack it"
 
 - [ ] T007 (owner) Create the DXVK fork repository at the base tag from T005 and add it as an input in `flake.nix` (follows `nixpkgs`)
 - [ ] T008 Build the unmodified fork through Nix as a package and show its version line matches the base, in `pkgs/proton-foveated/default.nix`
-- [ ] T009 Build the compat tool (the user's Proton plus the fork's DXVK) in `pkgs/proton-foveated/default.nix` and install it through the steam module, without touching the runner updater's directory
+- [ ] T009 Build the compat tool (the runner chosen in T006 plus the fork's DXVK) in `pkgs/proton-foveated/default.nix` and install it as its own directory, without touching the runner updater's directories
 - [ ] T010 [P] Register both packages in `pkgs/default.nix` and expose them in `flake-modules/packages.nix` so PR checks build them
 - [ ] T011 [P] Create the empty bench package in `pkgs/vr-foveation-bench/default.nix` (Python, standard library, flake8-clean), exposed in `flake-modules/packages.nix`
 - [ ] T012 [P] Add the bench package's source files to the flake8 hook's `files` pattern in `.pre-commit-config.yaml`

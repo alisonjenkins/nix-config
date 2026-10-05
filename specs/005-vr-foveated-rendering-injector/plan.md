@@ -122,7 +122,7 @@ first, then this repository updates the `dxvk-foveation` input to the fork commi
 |-------|----------|-----------|
 | S1 | Does a one-layer rate image work on a 2-layer render target without a view mask, on this GPU? | The probe gains a case for it and results are recorded; if it fails, layered passes use per-draw rates and the plan notes it. |
 | S2 | What does Fallout 4 VR render (API, target size, layers, format, samples)? Does DXVK's per-exe config work as the profile carrier? | Fallout 4 VR started once from the library, its API confirmed in the logs, large targets listed from DXVK's log output, and the config mechanism shown to select per game. |
-| S3 | Can a compat tool layer the user's Proton with only the DXVK directory replaced and survive the runner updater? | A game launches with the layered tool and uses the replaced DXVK, confirmed by DXVK's version line in its log. |
+| S3 | Can a separate compat tool directory, made from the user's DW-Proton release with only its DXVK replaced (pinned derivation, or a copy of the current runner), survive the runner updater? | A game launches with the tool and uses the replaced DXVK, confirmed by DXVK's version line in its log, and one build route is chosen. |
 | S4 | Does Fallout 4 VR keep rendering on SteamVR's null driver? If not, can the Quest through Steam Link give a fixed pose? | One repeatable 60-second run produces frame timing, or the fallback is chosen and recorded. |
 | S5 | Which DXVK base does the user's Proton runner ship, and can the patch rebase onto it? | The base version chosen and a clean build of the unmodified fork in Nix. |
 
