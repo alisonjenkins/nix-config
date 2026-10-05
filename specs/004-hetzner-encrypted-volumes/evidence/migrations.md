@@ -205,3 +205,19 @@ the reason named and nothing deleted: a verdict of `verdict=failed`; a `verified
 of the target since `--since`. The throwaway PV, volume and namespace were then deleted by hand (after checking the PV name equalled the
 volume name and nothing was attached). The running-pod refusal and the `Retain` check were exercised for real by the migrations
 (each old PV was `Retain` before its removal, and the script's pod check passed only after the workload moved).
+
+## Minecraft world `minecraft-create-arkana-data` -> `minecraft-create-arkana-data-enc` (T077, 2026-10-05)
+
+| Step | Result |
+|---|---|
+| New claim (home-cluster#1598) and copy | 07:23:18Z, 5778 files (5.8 GiB), manifests **identical**, owner `0:0` on both. The files are root-owned, so the copy needed the new `migrate-files.sh --allow-root` (nix-config#499): a root job with only `CHOWN`, `FOWNER` and `DAC_OVERRIDE`, in the `minecraft` namespace, which enforces `privileged` |
+| World readable | `check-world.sh` on the new volume: `chunks_read=178391 unreadable=0 files=1344` (07:24:02Z), the same count as the restore test of the old world |
+| Switch (home-cluster#1599) | the Deployment mounts `minecraft-create-arkana-data-enc`; Flux pruned the plain claim; its PV `pvc-22ab50ca…` is `Released` and `Retain` |
+| Functional | server started on a fresh game node, `Preparing level "world"` then `Done (7.049s)` at 07:29:21Z from the encrypted volume; the log errors seen are the mods' (a Sable oversized-AABB message and an external HTTP connect timeout), not storage |
+| Backup | `minecraft-enc-20261005t072933z` `Completed` 07:30:54Z (80 s, 6.2 GB, no errors or warnings), taken with the RCON hooks while the server ran; the server was then scaled back to 0 |
+| Encryption verdict | **not yet recorded.** `verify.sh --checks encryption` needs a command on the node that holds the volume, which means a root debug pod on the control-plane node, and the session's permission guard denied that. The volume came from `hcloud-volumes-encrypted`, whose class carries the passphrase secret, and a mounted read of it worked, but the LUKS check on the node is still to do |
+
+The old volume (Hetzner id from `pvc-22ab50ca…`) is still in place; `destroy-old-volume.sh` needs the verdict first.
+
+The T085 hitch measurement (one player connected) is skipped by the owner's decision ("we will deal with that if it is a problem as a follow
+up task"); it is not measured.
