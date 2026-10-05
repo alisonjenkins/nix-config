@@ -215,7 +215,7 @@ volume name and nothing was attached). The running-pod refusal and the `Retain` 
 | Switch (home-cluster#1599) | the Deployment mounts `minecraft-create-arkana-data-enc`; Flux pruned the plain claim; its PV `pvc-22ab50ca…` is `Released` and `Retain` |
 | Functional | server started on a fresh game node, `Preparing level "world"` then `Done (7.049s)` at 07:29:21Z from the encrypted volume; the log errors seen are the mods' (a Sable oversized-AABB message and an external HTTP connect timeout), not storage |
 | Backup | `minecraft-enc-20261005t072933z` `Completed` 07:30:54Z (80 s, 6.2 GB, no errors or warnings), taken with the RCON hooks while the server ran; the server was then scaled back to 0 |
-| Encryption verdict | **not yet recorded.** `verify.sh --checks encryption` needs a command on the node that holds the volume, which means a root debug pod on the control-plane node, and the session's permission guard denied that. The volume came from `hcloud-volumes-encrypted`, whose class carries the passphrase secret, and a mounted read of it worked, but the LUKS check on the node is still to do |
+| Encryption verdict | `verdict=verified` at 08:01:48Z (Hetzner volume 107036005): `crypto_LUKS`, mapping active, passphrase secret set. `verify.sh --checks encryption` runs on the node that holds the volume, through a root debug pod on the control-plane node; the session's permission guard first denied that and the owner then allowed it ("yes use the root pod") |
 
 The old volume (Hetzner id from `pvc-22ab50ca…`) is still in place; `destroy-old-volume.sh` needs the verdict first.
 
