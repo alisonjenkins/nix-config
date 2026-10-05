@@ -130,3 +130,50 @@ If `sqlite3` is not on the host PATH, prefix each command with
 - The image carries the same settings from commits `fix(hetzner): keep pods running when k3s restarts` and
   `perf(hetzner): cap the k3s server's Go heap below the swap line`; the next server
   replacement makes them permanent.
+
+# Make `kubectl logs`, `exec` and Velero hooks reach worker pods
+
+Symptom: for a pod on a Karpenter worker (a game node), `kubectl logs` and `kubectl exec` fail with
+`tls: failed to verify certificate: x509: certificate is valid for 127.0.0.1, ::1, <public ip>, not 10.0.1.1`,
+and a Velero backup with an exec hook ends `PartiallyFailed` with `Error executing hook … error dialing backend`.
+
+Cause: a worker's kubelet certificate is signed for its public `--node-ip` only (the hcloud CCM rejects a private one), the CCM
+then adds the private `InternalIP`, and k3s makes the API server dial `InternalIP` first. The fix is the k3s server flag
+`--kube-apiserver-arg=kubelet-preferred-address-types=Hostname,InternalIP,ExternalIP`: the node name is in both the worker and the master
+certificates, and the k3s tunnel server maps a node-name dial to that node. (`ExternalIP` first would break the master: its certificate
+covers only `10.0.1.10` and its name.) The image carries the flag from commit
+`fix(hetzner): dial kubelets by node name so exec works on worker nodes`; until the master is replaced, apply it live.
+
+Same safety rules as above: `KillMode=process` must show on `k3s-server-bootstrap` (step 2) or the restart kills every pod; pick a time with no
+call; the API is down for 1 to 2 minutes while pods keep running.
+
+```sh
+export KUBECONFIG=~/.kube/hetzner-cp.yaml
+kubectl get pods -A -o wide > /tmp/pods-before.txt
+kubectl debug node/hetzner-k8s-master-1 -it --profile=sysadmin --image=busybox:1.37
+# inside the debug pod:
+chroot /host /run/current-system/sw/bin/bash
+export PATH=/run/current-system/sw/bin
+systemctl show k3s-server-bootstrap -p KillMode      # must print KillMode=process; if not, redo step 2 first
+mkdir -p /etc/rancher/k3s/config.yaml.d
+cat > /etc/rancher/k3s/config.yaml.d/50-kubelet-address-types.yaml <<'CONF'
+kube-apiserver-arg:
+  - "kubelet-preferred-address-types=Hostname,InternalIP,ExternalIP"
+CONF
+systemd-run --on-active=5 --unit=k3s-live-restart systemctl restart k3s-server-bootstrap.service
+exit   # leave the chroot and the debug pod
+```
+
+Verify from your machine once the API answers:
+
+```sh
+kubectl get nodes
+diff <(awk '{print $1,$2,$5}' /tmp/pods-before.txt) <(kubectl get pods -A -o wide --no-headers | awk '{print $1,$2,$5}')
+kubectl -n monitoring logs prometheus-kube-prometheus-stack-prometheus-0 -c prometheus --tail=1   # master pods still work
+kubectl -n minecraft scale deploy minecraft --replicas=1                                           # brings up a game node
+kubectl -n minecraft logs deploy/minecraft --tail=3                                                # a worker pod now works
+kubectl -n minecraft scale deploy minecraft --replicas=0
+```
+
+If a worker pod still fails, or master pods stop answering, remove `/etc/rancher/k3s/config.yaml.d/50-kubelet-address-types.yaml` and restart
+`k3s-server-bootstrap` the same way. The file is on the ephemeral `/etc`, so a reboot also removes it, by which time the image has the flag.
