@@ -102,6 +102,11 @@ jobs:
           GH_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAR: ${{ steps.build.outputs.image_tar }}
           ZIP_PATH:  ${{ steps.build.outputs.zip_path }}
+          # skopeo keeps its registry login under $XDG_RUNTIME_DIR/containers, or
+          # /run/containers when that is unset, and the runner user cannot create
+          # it ("mkdir /run/containers: permission denied", release -64). Keep the
+          # login in the runner's temp dir instead.
+          REGISTRY_AUTH_FILE: ${{ runner.temp }}/skopeo-auth.json
         run: |
           set -euo pipefail
           tag_ref="${TAG#arkana-aeronautics-}"   # strip the leading prefix
