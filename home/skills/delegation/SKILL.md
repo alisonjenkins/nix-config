@@ -153,9 +153,21 @@ per host through `cheapDelegate`):
 | Work (`cheapDelegate = "copilot"`) | Copilot's Luna via `scripts/delegate.sh` | haiku sub-agent when credits are exhausted or the task needs this session's tools or skills |
 | Personal (default, `"local"`) | Local model via `scripts/delegate-to-local.sh` / `delegate-to-local-agent.sh` | haiku sub-agent when no profile is live or the task isn't haiku-shaped |
 
-Both first rungs are text in, text out (the local agent mode adds read, and
-optionally edit, over one directory). Neither runs commands, so anything
-that needs Bash, `gh`, MCP tools, or skills goes straight to a sub-agent.
+The local first rung is text in, text out (its agent mode adds read, and
+optionally edit, over one directory) and runs no commands. Luna can run an
+allowlisted set of commands through `delegate.sh`'s `read-shell` and
+`write-shell` profiles (see [delegate-to-copilot.md](delegate-to-copilot.md)),
+so on the work machine only MCP tools, anything outside those lists (`aws`,
+`pup`, `kubectl apply`, `terraform plan`), and work that needs this session's
+own skills go straight to a sub-agent.
+
+Luna-shaped work on the work machine, tried before any haiku or sonnet
+sub-agent: writing or editing code from a clear spec, writing tests and
+running them (`write-shell`), config and manifest edits, commit and PR text
+drafts, first-pass reviews, repo and log sweeps (`read-shell`), and format
+conversion. Pass the `programming` or `testing` skill by name for code work.
+It sometimes misses items in a sweep, so read its result before relying on it;
+raise `DELEGATE_REASONING_EFFORT` before moving up a tier.
 
 On a personal machine, check `list-local-profiles.sh` first; it is
 read-only and cheap. Don't load a profile for one task, since loading takes
