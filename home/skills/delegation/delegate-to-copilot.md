@@ -124,6 +124,58 @@ relevant to what's being asked.
 - `write-and-test` — read + write + `npm test`/`pytest`/`cargo test`. Use
   only when the task needs to self-verify by running its own tests. Still
   review the result after — self-verification is not acceptance.
+- `read-shell` — read, plus read-only commands: `git status/diff/log/show`,
+  `rg`, `fd`, `jq`, `grep`, `head`, `tail`, `sort`, `diff`, `wc`, `ls`,
+  `gh pr|issue|run list|view` (`gh pr diff` too), `kubectl get|describe|logs`
+  and `sift`. Use for investigation: PR triage, log and metric queries,
+  repo sweeps.
+- `write-shell` — `read-shell` plus write, plus runners: `python3`, `pytest`,
+  `cargo`, `npm test`/`npm run`, `nix`, `just`, `make`, `go`, `gofmt`,
+  `golangci-lint`, `dotnet`, `tsc`, `shellcheck`, `bats`, `terraform
+  fmt`/`validate`. Use for implement, run, fix loops. Run it in a worktree
+  or a clean branch and review the diff: it can write anywhere under the
+  working directory.
+
+Both shell profiles deny `rm`, `sudo`, `git push`, `git reset`, and `gh pr
+merge`/`close`/`api`. A deny rule beats an allow rule. `nix` is on the
+`write-shell` list and can launch other commands (`nix shell -c ...`), so the
+list limits a careless delegate but is not a sandbox for a hostile one.
+
+Anything not on a list is refused: the delegate reports it as denied and
+carries on without it. Add a one-off with
+`DELEGATE_EXTRA_ALLOW_TOOL='shell(pup)'`, one value passed as one
+`--allow-tool`. `gh api` stays denied because a `shell(gh api)` pattern also
+matches `-X POST`; allow it by hand for a read-only task.
+
+Facts measured on 2026-10-06 (copilot 1.0.88), so prompts can avoid the traps:
+
+- Give each command as one simple command. `cd dir && cmd` was refused
+  where `cmd dir` ran; pass the directory as an argument.
+- A `shell(...)` entry matches by command prefix. `shell(nix shell)` was not
+  enough to run `nix shell --impure --expr ... -c pytest`; `shell(nix)` was.
+- A comma list inside one `shell(a,b,c)` dropped the first entry, so the
+  script uses one `--allow-tool` per command.
+- The delegate sees the working directory only. To read elsewhere, run from
+  the repo that holds the files, or pass `--add-dir` by hand.
+- `DELEGATE_REASONING_EFFORT=high` (or `none`, `minimal`, `low`, `medium`,
+  `xhigh`, `max`) gives a harder task more thinking at the same low price.
+  Try it before escalating to a Claude sub-agent.
+
+## What Luna handled in testing
+
+Same-day tests on a small fixture, `gpt-6-luna` and `gpt-5.6-luna`:
+
+| Task | Result |
+|---|---|
+| Add `/healthz` and `/readyz` to an Express and a FastAPI service | Correct, both models |
+| Add liveness, readiness and startup probes to two k8s manifests | Correct |
+| Write pytest tests, then run and fix them (`write-shell`) | 4 to 5 tests, green |
+| Review a seeded buggy health handler | Found both planted defects |
+| Draft a Conventional Commits message | Correct |
+| Sweep seven skills for the commands they use | Useful but incomplete: it missed `pup` and `sift`, and printed its table twice |
+
+So hand it code, tests, config and drafts first, and read its sweeps and
+reviews as a first pass, not a complete list.
 
 ## GitHub Enterprise
 
