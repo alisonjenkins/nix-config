@@ -511,7 +511,7 @@ setup() {
   export FAKE_COPILOT_MODE=all-models-ok
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME"
-  repo_root="$BATS_TEST_TMPDIR/repo"
+  repo_root="$(cd "$BATS_TEST_TMPDIR" && pwd -P)/repo"
   skill_dir="$repo_root/.claude/skills/myskill"
   mkdir -p "$skill_dir" "$repo_root/sub/deeper"
   echo "---" >"$skill_dir/SKILL.md"
