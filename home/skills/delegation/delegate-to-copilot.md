@@ -25,8 +25,8 @@ failure mode, not a leftover from before the billing change:
 
 | Model | Released | Input / output per MTok (million tokens) | vs. Claude Haiku 4.5 ($1/$5) | AA intelligence index | Output tok/s |
 |---|---|---|---|---|---|
-| GPT-6 Luna | 2026-09-22 | $0.10 / $0.50 | ~10x cheaper | not yet published | not yet published |
-| `gpt-5.6-luna` (this script's default) | 2026-07-09 | $0.20 / $1.20 | ~5x cheaper | 37 (max effort) | ~128 |
+| GPT-6 Luna (`gpt-6-luna`, this script's first choice) | 2026-09-22 | $0.10 / $0.50 | ~10x cheaper | not yet published | not yet published |
+| `gpt-5.6-luna` (this script's second choice) | 2026-07-09 | $0.20 / $1.20 | ~5x cheaper | 37 (max effort) | ~128 |
 | `gpt-5.4-nano`, `mai-code-1.1-flash` | — | ~$0.20 / ~$1.20-1.25 | ~5x cheaper | — | — |
 | `gpt-5-mini` | — | $0.25 / $2.00 | ~2.5x cheaper | — | — |
 | GPT-6 Sol | 2026-09-22 | $2.00 / $10.00 | same as Sonnet 5 | not yet published | not yet published |
@@ -43,14 +43,14 @@ gaps.
 
 GPT-6 Luna is now the cheapest model in the lineup, at half GPT-5.6 Luna's
 price. [Artificial Analysis](https://artificialanalysis.ai/) had no scores
-for the GPT-6 models yet when this was checked (2026-09-28). The script
-still defaults to `gpt-5.6-luna` because GPT-6 Luna's exact `--model`
-string hasn't been confirmed against the CLI (GitHub's docs give display
-names, not IDs). Check it with `/model` in `copilot` before switching the
-default in `delegate.sh`. Even GPT-5.6 Luna is ~5x cheaper than Haiku 4.5,
-faster, and well ahead on the intelligence index, so on raw
-cost/speed/capability numbers either Luna beats a Claude Agent-tool
-sub-agent at the same job.
+for the GPT-6 models yet when this was checked (2026-09-28). Its `--model`
+string, `gpt-6-luna`, was confirmed against the CLI on 2026-10-06 (copilot
+1.0.88): an unknown ID is rejected with "is not available", this one runs.
+`delegate.sh` tries `gpt-6-luna`, then `gpt-5.6-luna`, then
+`claude-haiku-4.5`, moving down a step only when the CLI rejects the model
+ID. Even GPT-5.6 Luna is ~5x cheaper than Haiku 4.5, faster, and well ahead
+on the intelligence index, so on raw cost/speed/capability numbers either
+Luna beats a Claude Agent-tool sub-agent at the same job.
 
 What the numbers don't capture: a Claude sub-agent shares this session's tool
 access, skill injection, and structured output conventions natively: Copilot
