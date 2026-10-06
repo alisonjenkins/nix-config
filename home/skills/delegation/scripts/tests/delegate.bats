@@ -27,7 +27,7 @@ setup() {
   [[ "$output" == *"usage:"* ]]
   [[ "$output" == *"[profile]"* ]]
   [[ "$output" == *"profile defaults to 'read'"* ]]
-  [[ "$output" == *"valid profiles: read, write-workdir, write-and-test"* ]]
+  [[ "$output" == *"valid profiles: read, write-workdir, write-and-test, read-shell, write-shell"* ]]
 }
 
 @test "missing copilot CLI prints a clear error and exits 1" {
@@ -50,7 +50,7 @@ setup() {
   run bash "$delegate" "task" "bogus-profile"
   [ "$status" -eq 1 ]
   [[ "$output" == *"invalid profile 'bogus-profile'"* ]]
-  [[ "$output" == *"valid profiles: read, write-workdir, write-and-test"* ]]
+  [[ "$output" == *"valid profiles: read, write-workdir, write-and-test, read-shell, write-shell"* ]]
 }
 
 @test "default profile is read when omitted" {
@@ -79,6 +79,34 @@ setup() {
   run bash "$delegate" "hello task" write-and-test
   [ "$status" -eq 0 ]
   grep -q 'allow_tool=read,write,shell(npm test,pytest,cargo test)	add_dir=	' "$FAKE_COPILOT_CALLS"
+}
+
+@test "read-shell profile allows read-only commands and denies destructive ones" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  run bash "$delegate" "hello task" read-shell
+  [ "$status" -eq 0 ]
+  grep -qF 'allow_tool=read;shell(git status);' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(gh pr list)' "$FAKE_COPILOT_CALLS"
+  ! grep -qF 'shell(python3)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'deny_tool=shell(rm);shell(sudo);shell(git push)' "$FAKE_COPILOT_CALLS"
+}
+
+@test "write-shell profile adds write and test runners on top of read-shell" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  run bash "$delegate" "hello task" write-shell
+  [ "$status" -eq 0 ]
+  grep -qF 'allow_tool=read,write;shell(git status);' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(pytest)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(nix)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'deny_tool=shell(rm);' "$FAKE_COPILOT_CALLS"
+}
+
+@test "DELEGATE_EXTRA_ALLOW_TOOL appends one more allow-tool value" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export DELEGATE_EXTRA_ALLOW_TOOL='shell(pup)'
+  run bash "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  grep -qF 'allow_tool=read;shell(pup)' "$FAKE_COPILOT_CALLS"
 }
 
 @test "always passes -s and --no-ask-user" {
@@ -110,7 +138,7 @@ setup() {
   unset GH_HOST COPILOT_GH_HOST
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
-  grep -q "gh_host=	copilot_gh_host=$" "$FAKE_COPILOT_CALLS"
+  grep -q "gh_host=	copilot_gh_host=	deny_tool=$" "$FAKE_COPILOT_CALLS"
 }
 
 @test "tries gpt-6-luna first" {
