@@ -49,7 +49,7 @@ description: "Task list for foveated rendering for VR games that lack it"
 - [x] T012 [P] Add the bench package's source files to the flake8 hook's `files` pattern in `.pre-commit-config.yaml`
 - [ ] T013 [P] Create the C++ test directory and Meson test target in `fork:tests/foveation/meson.build`, running with the fork's normal build
 - [ ] T014 [P] Add the rate limits and the verified GPU and driver list as one source of truth in `fork:src/dxvk/dxvk_foveation.h` (rate limits read from the device; verified list holds GPU name and driver; no copies elsewhere)
-- [ ] T015 [P] (the bench package's tests are wired as `checks.<system>.vr-foveation-bench-tests` in `flake-modules/vr-foveation-tests.nix`; the home-module tests and the fork's `meson test` remain) Expose the Python and home-module tests as flake checks in `flake-modules/vr-foveation-tests.nix`, and run `meson test` in the fork package's check phase in `pkgs/proton-foveated/default.nix`, so `just check` runs them with no headset or game (SC-007)
+- [ ] T015 [P] (the bench package's tests are wired as `checks.<system>.vr-foveation-bench-tests` in `flake-modules/vr-foveation-tests.nix`; the home-module check is `checks.<system>.vr-foveation-module` in `flake-modules/vr-foveation-module-tests.nix`; the fork's `meson test` remains) Expose the Python and home-module tests as flake checks in `flake-modules/vr-foveation-tests.nix`, and run `meson test` in the fork package's check phase in `pkgs/proton-foveated/default.nix`, so `just check` runs them with no headset or game (SC-007)
 
 **Checkpoint**: `nix build .#proton-foveated` and `just check` build and pass with no behaviour change; a game launched with the tool behaves like stock.
 
@@ -91,7 +91,7 @@ description: "Task list for foveated rendering for VR games that lack it"
 
 ### Tests for User Story 2
 
-- [ ] T028 [P] [US2] Failing tests for rate-map generation (tile size from the device, centre, inner radius, bands, rate codes capped at the device maximum, one layer) in `fork:tests/foveation/test_ratemap.cpp`
+- [ ] T028 [P] [US2] Failing tests for rate-map generation (tile size from the device, centre, bands with the first band as the full-quality centre, rate codes capped at the device maximum, one layer) in `fork:tests/foveation/test_ratemap.cpp`
 - [ ] T029 [P] [US2] Failing tests for pass recognition against a profile (size, layers, format, samples; non-matching passes ignored; 8x samples never match; two passes of similar size resolved by the profile) in `fork:tests/foveation/test_recognise.cpp`
 - [ ] T030 [P] [US2] Failing tests for profile parsing from `dxvk.foveation.*` keys (valid profile, unknown key, out-of-range value, invalid band order) in `fork:tests/foveation/test_profile.cpp`
 - [ ] T031 [P] [US2] Failing test that the generated rate codes match the values recorded in `specs/005-vr-foveated-rendering-injector/research/vrs-probe/results.txt` (1x1, 2x1, 1x2, 2x2 codes and the 8x8 tile size) in `fork:tests/foveation/test_ratemap_probe.cpp` (FR-015)
@@ -142,23 +142,23 @@ description: "Task list for foveated rendering for VR games that lack it"
 
 **Goal**: profiles the owner can edit without recompiling, a discovery mode, and a verdicts record.
 
-**Independent Test**: change a profile's inner radius in a scratch config, launch once with `DXVK_CONFIG_FILE` pointing at it and see the region change; read the verdicts file.
+**Independent Test**: change a profile's first band radius in a scratch config, launch once with `DXVK_CONFIG_FILE` pointing at it and see the region change; read the verdicts file.
 
 ### Tests for User Story 4
 
-- [ ] T051 [P] [US4] Failing test for the home module's generated DXVK config (one section per game, keys match the contract, `DXVK_CONFIG_FILE` default set) in `home/modules/vr-foveation/tests/default.nix` as a Nix check wired by T015
-- [ ] T052 [P] [US4] Failing test for the verdicts file round-trip (a report produces a row; invalid verdicts rejected) in `pkgs/vr-foveation-bench/tests/test_verdicts.py`
+- [x] T051 [P] [US4] (test lives in `flake-modules/vr-foveation-module-tests.nix`) Failing test for the home module's generated DXVK config (one section per game, keys match the contract, `DXVK_CONFIG_FILE` default set) in `home/modules/vr-foveation/tests/default.nix` as a Nix check wired by T015
+- [x] T052 [P] [US4] Failing test for the verdicts file round-trip (a report produces a row; invalid verdicts rejected) in `pkgs/vr-foveation-bench/tests/test_verdicts.py`
 - [ ] T053 [P] [US4] Failing test for discovery mode (candidate targets logged once per second with a hit count; nothing applied) in `fork:tests/foveation/test_discover.cpp`
 
 ### Implementation for User Story 4
 
 - [ ] T054 [US4] Implement discovery mode behind `DXVK_FOVEATION_DISCOVER` in `fork:src/dxvk/dxvk_foveation.cpp` until T053 passes
 - [ ] T055 [US4] Update the `dxvk-foveation` input to the fork commit from T054 and rebuild `.#proton-foveated`
-- [ ] T056 [US4] Implement the home module (profiles per game, DXVK config file path, the compat tool, no Steam launch option edited) in `home/modules/vr-foveation/default.nix` until T051 passes, and import it in `flake-modules/home-modules.nix`
-- [ ] T057 [US4] Implement the verdicts writer in `pkgs/vr-foveation-bench/vr_foveation_bench/verdicts.py` until T052 passes
+- [ ] T056 [US4] (config generation and the `vr-foveation` home module export are done; the compat tool part waits for T009) Implement the home module (profiles per game, DXVK config file path, the compat tool, no Steam launch option edited) in `home/modules/vr-foveation/default.nix` until T051 passes, and import it in `flake-modules/home-modules.nix`
+- [x] T057 [US4] Implement the verdicts writer in `pkgs/vr-foveation-bench/vr_foveation_bench/verdicts.py` until T052 passes
 - [ ] T058 [US4] Write the Fallout 4 VR profile from discovery output and the first verdict row in `docs/vr-foveation/verdicts.md`
 - [ ] T059 [US4] Write the topic doc in `docs/vr-foveation.md`: enabling a game (compat tool plus launch option, since Nix does not manage launch options), measuring, reading verdicts, tuning a profile with a single-launch `DXVK_CONFIG_FILE`, the eye-placement consequence of the shared rate map, known conflicts with frame generation and upscaler overlays, and the screenshot procedure for the accept or reject decision
-- [ ] T060 [US4] Write the ADR for the DXVK fork, the compat tool and the env gate, and add its row to the table in `docs/adr/README.md`, in `docs/adr/0027-fork-dxvk-for-foveated-rendering.md`
+- [x] T060 [US4] (written as Proposed; set Accepted once spike S3 and the first game run confirm it) Write the ADR for the DXVK fork, the compat tool and the env gate, and add its row to the table in `docs/adr/README.md`, in `docs/adr/0027-fork-dxvk-for-foveated-rendering.md`
 
 **Checkpoint**: a new game goes from discovery to a working profile in one sitting (SC-006).
 

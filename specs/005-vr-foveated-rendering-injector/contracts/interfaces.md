@@ -17,18 +17,29 @@ tests and users rely on.
 ## 2. Profile keys (in the DXVK config file, per executable)
 
 Keys use the `dxvk.foveation.` prefix. An unknown key or a value out of range disables
-foveation for that game and logs the key.
+foveation for that game and logs the key. Each game is a `[Fallout4VR.exe]` section (exact,
+case-sensitive Windows executable name), and a value with spaces must be quoted.
+
+`dxvk.foveation.enabled` (true or false, default false) allows foveation for the game. It does
+not turn it on: that still needs `DXVK_FOVEATION=1` in the launch options (section 1). The home
+module writes it for every game, so a profile can be kept in the file and switched off.
 
 ```text
+[Fallout4VR.exe]
+dxvk.foveation.enabled = true
 dxvk.foveation.match.minWidth = 1000
 dxvk.foveation.match.minHeight = 1000
 dxvk.foveation.match.layers = 1
 dxvk.foveation.match.format = R8G8B8A8_SRGB
 dxvk.foveation.match.samples = 4
-dxvk.foveation.region.innerRadius = 0.45
 dxvk.foveation.region.bands = 0.45:1x1,1.0:2x2
 dxvk.foveation.gaze.source = fixed
 ```
+
+`region.bands` is a comma-separated list of `radius:rate` pairs, radii strictly increasing in
+(0, 1] as a fraction of the half-width. The first band is the full-quality centre and must be
+`1x1`; each later band runs from the previous radius out to its own. There is no separate
+inner-radius key, so the centre is defined in one place.
 
 ## 3. Gaze sample (shared memory, later phases)
 

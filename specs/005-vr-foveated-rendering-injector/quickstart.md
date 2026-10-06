@@ -88,7 +88,7 @@ the verified list. Expect `reason=no_profile`, `no_pass_matched`, `samples_unsup
 
 ## Phase 3: profiles and verdicts (Story 4)
 
-Expect: `DXVK_FOVEATION_DISCOVER=1` lists candidate targets; editing the profile's inner radius
+Expect: `DXVK_FOVEATION_DISCOVER=1` lists candidate targets; editing the first band's radius
 in a scratch file and launching once with `DXVK_CONFIG_FILE` pointing at it changes the
 full-quality region with no system switch; `docs/vr-foveation/verdicts.md` has a row for
 Fallout 4 VR.

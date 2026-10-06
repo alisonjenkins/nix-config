@@ -74,6 +74,15 @@ for the live-maintenance runbook.
 | [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
 | [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
 
+## VR foveated rendering
+
+Start with the spec in
+[`specs/005-vr-foveated-rendering-injector/`](../../specs/005-vr-foveated-rendering-injector/).
+
+| # | Decision | Status |
+|---|---|---|
+| [0027](0027-fork-dxvk-for-foveated-rendering.md) | Add foveated rendering to D3D11 VR games by forking DXVK, behind an environment gate | Proposed |
+
 ## Template
 
 ```markdown

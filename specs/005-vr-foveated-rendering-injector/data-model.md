@@ -15,8 +15,7 @@ One per game, keyed by executable name (and optionally Steam app ID for the repo
 | `match.layers` | Layer count of the target (1 or 2) | Optional. |
 | `match.format` | Colour format of the target | Optional; named, not numeric. |
 | `match.samples` | Sample count | 1, 2 or 4. A profile naming 8 is invalid, because 8x MSAA ignores rates. |
-| `region.innerRadius` | Fraction of the half-width kept at full rate | 0 to 1. |
-| `region.bands` | List of `(radius, rate)` outward from the inner region | Rates limited to what the GPU lists (2x2 on this GPU); radii increase. |
+| `region.bands` | List of `(radius, rate)` outward from the centre; each radius is a fraction of the half-width in (0, 1] and each band runs from the previous radius to its own | The first band is the full-quality centre and must be 1x1, so the centre is defined in one place. Rates limited to what the GPU lists (2x2 on this GPU); radii strictly increase. |
 | `gaze.source` | `fixed` or `synthetic` (later `osc`, `shm`) | Unknown values disable foveation and log it. |
 
 Validation: an invalid profile disables foveation for that game and logs which field failed;
