@@ -113,22 +113,33 @@ setup() {
   grep -q "gh_host=	copilot_gh_host=$" "$FAKE_COPILOT_CALLS"
 }
 
-@test "tries gpt-5.6-luna first" {
+@test "tries gpt-6-luna first" {
   export FAKE_COPILOT_MODE=all-models-ok
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
-  grep -q "model=gpt-5.6-luna" "$FAKE_COPILOT_CALLS"
-  [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
+  grep -q "model=gpt-6-luna" "$FAKE_COPILOT_CALLS"
+  [[ "$output" == *"response for model=gpt-6-luna: hello task"* ]]
 }
 
-@test "falls back to claude-haiku-4.5 when luna is rejected" {
-  export FAKE_COPILOT_MODE=luna-rejected
+@test "falls back to gpt-5.6-luna when gpt-6-luna is rejected" {
+  export FAKE_COPILOT_MODE=gpt6-rejected
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 2 ]
-  sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-5.6-luna"
-  sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "model=claude-haiku-4.5"
+  sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-6-luna"
+  sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-5.6-luna"
+  [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
+}
+
+@test "falls back to claude-haiku-4.5 when both lunas are rejected" {
+  export FAKE_COPILOT_MODE=luna-rejected
+  run bash "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 3 ]
+  sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-6-luna"
+  sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "model=gpt-5.6-luna"
+  sed -n '3p' "$FAKE_COPILOT_CALLS" | grep -q "model=claude-haiku-4.5"
   [[ "$output" == *"response for model=claude-haiku-4.5: hello task"* ]]
 }
 
@@ -138,6 +149,7 @@ setup() {
   [ "$status" -eq 0 ]
   sed -n '1p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
   sed -n '2p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
+  sed -n '3p' "$FAKE_COPILOT_CALLS" | grep -q "allow_tool=read,write	add_dir=	"
 }
 
 @test "does not fall back on an unrelated failure, and surfaces it on stderr" {
@@ -172,7 +184,7 @@ setup() {
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 2 ]
-  [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
+  [[ "$output" == *"response for model=gpt-6-luna: hello task"* ]]
 }
 
 @test "gives up after DELEGATE_RETRY_MAX transient failures and reports a possible outage" {
@@ -331,7 +343,7 @@ setup() {
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
   [[ "$output" == *"warning: DELEGATE_RETRY_BASE_DELAY='negative-two'"* ]]
-  [[ "$output" == *"response for model=gpt-5.6-luna: hello task"* ]]
+  [[ "$output" == *"response for model=gpt-6-luna: hello task"* ]]
 }
 
 @test "reset-credits-cooldown.sh clears an existing cooldown" {

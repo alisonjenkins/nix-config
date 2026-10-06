@@ -183,11 +183,9 @@ if [[ -n "$skills_arg" ]]; then
   task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $skill_roots_desc — read those too (e.g. their own SKILL.md and any files they route to) whenever one routes you to another. Then: $task"
 fi
 
-# gpt-5.6-luna is the preferred model: cheapest tier, when the account has
-# it. Not every account/CLI version has it yet, so fall back to the next
-# cheapest confirmed-available model (claude-haiku-4.5) on rejection.
-preferred_model="gpt-5.6-luna"
-fallback_model="claude-haiku-4.5"
+# Models in preference order, cheapest first. Not every account/CLI version
+# has the newest, so a rejection moves on to the next one.
+models=("gpt-6-luna" "gpt-5.6-luna" "claude-haiku-4.5")
 
 # A Copilot outage looks like a network/server error, not a model rejection —
 # retrying the same model with backoff is the right response, per this repo's
@@ -231,22 +229,21 @@ call_copilot() {
 }
 
 status=0
-call_copilot "$preferred_model" || status=$?
-
-if [[ $status -eq 0 ]]; then
-  printf '%s\n' "$call_output"
-  exit 0
-fi
-
-preferred_model_rejected="Model \"$preferred_model\" from --model flag is not available."
-if [[ $status -eq 1 ]] && grep -qF "$preferred_model_rejected" <<<"$call_output"; then
+for model in "${models[@]}"; do
   status=0
-  call_copilot "$fallback_model" || status=$?
+  call_copilot "$model" || status=$?
+
   if [[ $status -eq 0 ]]; then
     printf '%s\n' "$call_output"
     exit 0
   fi
-fi
+
+  model_rejected="Model \"$model\" from --model flag is not available."
+  if [[ $status -eq 1 ]] && grep -qF "$model_rejected" <<<"$call_output"; then
+    continue
+  fi
+  break
+done
 
 if [[ $status -eq 2 ]]; then
   echo "error: copilot CLI kept failing with a transient-looking error after $retry_max attempts (possible outage):" >&2
