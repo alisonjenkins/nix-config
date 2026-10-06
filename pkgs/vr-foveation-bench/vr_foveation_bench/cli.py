@@ -1,4 +1,4 @@
-"""Command line: `vr-foveation-bench sample` and `vr-foveation-bench report`.
+"""Command line: `vr-foveation-bench` `sample`, `report` and `verdict`.
 
 Exit status: 0 done, 1 bad input (message on stderr), 2 too few runs.
 Logs and diagnostics go to stderr; stdout carries only the summary.
@@ -9,13 +9,15 @@ import datetime
 import json
 import logging
 import math
+import os
 import signal
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-from . import report, sampler, stats
+from . import report, sampler, stats, verdicts
 
 EXIT_OK = 0
 EXIT_BAD_INPUT = 1
@@ -88,6 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="measure this long after the skip (default: to the end of the frame log)")
     r.add_argument("--out", default="report.json", help="report file (default %(default)s)")
     r.add_argument("--force", action="store_true", help="overwrite --out if it exists")
+
+    v = sub.add_parser("verdict", help="add or replace a game's row in the verdicts table")
+    v.add_argument("--report", required=True, help="report JSON written by `report`")
+    v.add_argument("--verdicts", required=True, help="Markdown verdicts file (created if absent)")
+    v.add_argument("--artefact-notes", required=True, metavar="TEXT",
+                   help="the owner's note on visual artefacts")
     return parser
 
 
@@ -172,6 +180,53 @@ def _cmd_report(args: argparse.Namespace, now: datetime.datetime) -> int:
     return EXIT_OK
 
 
+def _default_file_mode() -> int:
+    """The mode a plain file write gets: 0666 minus the process umask."""
+    umask = os.umask(0)
+    os.umask(umask)
+    return 0o666 & ~umask
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    """Replace `path` through a temporary file in the same directory.
+
+    The verdicts file holds every game's record, so a crash mid-write must not
+    truncate it; the rename is all-or-nothing. The mode of an existing file is kept.
+    """
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        mode = path.stat().st_mode & 0o777 if path.exists() else _default_file_mode()
+        os.chmod(tmp, mode)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _cmd_verdict(args: argparse.Namespace) -> int:
+    try:
+        data = json.loads(_read_text(args.report))
+    except json.JSONDecodeError as exc:
+        raise report.InputError(f"{args.report}:{exc.lineno}: invalid JSON: {exc.msg}") from exc
+    if not isinstance(data, dict):
+        raise report.InputError(f"{args.report}: expected a JSON object")
+    path = Path(args.verdicts)
+    if not path.parent.is_dir():
+        raise report.InputError(f"{path.parent}: directory does not exist; create it first")
+    row = verdicts.row_from_report(data, args.artefact_notes)
+    current = _read_text(args.verdicts) if path.exists() else ""
+    _write_atomic(path, verdicts.upsert(current, row))
+    log.info("event=verdict_written path=%s game=%s driver=%s verdict=%s",
+             args.verdicts, row["game"], row["driver"], row["verdict"])
+    print(verdicts.render_table([row]).splitlines()[-1])
+    return EXIT_OK
+
+
 def _cmd_sample(args: argparse.Namespace) -> int:
     paths = sampler.find_gpu(args.sysfs_root, args.pci_device)
     stop = {"now": False}
@@ -204,6 +259,8 @@ def main(argv: Optional[Sequence[str]] = None,
     try:
         if args.command == "sample":
             return _cmd_sample(args)
+        if args.command == "verdict":
+            return _cmd_verdict(args)
         return _cmd_report(args, now or datetime.datetime.now(datetime.timezone.utc))
     except stats.TooFewRuns as exc:
         print(f"vr-foveation-bench: too few runs: {exc}", file=sys.stderr)

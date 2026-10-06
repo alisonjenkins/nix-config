@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tests.helpers import make_card
 from vr_foveation_bench import cli
@@ -247,6 +248,81 @@ class Cli(unittest.TestCase):
                                     "--sysfs-root", str(root), "--duration", "0"])
         self.assertEqual(code, 1)
         self.assertIn("0x7550", err)
+
+    def make_report(self, **verdict_over):
+        verdict = {"game": "Fallout 4 VR", "date": "2026-10-06T12:00:00Z", "driver": "mesa",
+                   "verdict": "go", "gpuTimeChange": -0.073, "powerChange": None,
+                   "noise": {"medianGpuMs": {"off": 0.42, "on": 0.2}, "meanPowerW": None},
+                   "artefacts": "tolerable", "reason": "r"}
+        verdict.update(verdict_over)
+        return self.write("rep.json", json.dumps({"reports": [{}, {}], "verdict": verdict}))
+
+    def verdict_argv(self, rep, table, notes="none seen"):
+        return ["verdict", "--report", rep, "--verdicts", str(table), "--artefact-notes", notes]
+
+    def test_verdict_creates_file_and_prints_row(self):
+        table = self.dir / "verdicts.md"
+        code, out, err = self.invoke(self.verdict_argv(self.make_report(), table))
+        self.assertEqual(code, 0, err)
+        text = table.read_text(encoding="utf-8")
+        self.assertIn("| game | date | driver | verdict |", text)
+        self.assertIn("| Fallout 4 VR | 2026-10-06T12:00:00Z | mesa | go | -7.3% | n/a "
+                      "| GPU ±0.42 ms; power n/a | none seen |", text)
+        self.assertIn("Fallout 4 VR", out)
+
+    def test_verdict_twice_is_idempotent_and_replaces(self):
+        table = self.dir / "verdicts.md"
+        rep = self.make_report()
+        self.invoke(self.verdict_argv(rep, table))
+        first = table.read_text(encoding="utf-8")
+        self.assertEqual(self.invoke(self.verdict_argv(rep, table))[0], 0)
+        self.assertEqual(table.read_text(encoding="utf-8"), first)
+        self.invoke(self.verdict_argv(self.make_report(verdict="no-go"), table))
+        text = table.read_text(encoding="utf-8")
+        self.assertEqual(text.count("Fallout 4 VR"), 1)
+        self.assertIn("| no-go |", text)
+
+    def test_verdict_missing_parent_dir_exit_1(self):
+        table = self.dir / "nope" / "verdicts.md"
+        code, _, err = self.invoke(self.verdict_argv(self.make_report(), table))
+        self.assertEqual(code, 1)
+        self.assertIn(str(table.parent), err)
+
+    def test_verdict_invalid_verdict_exit_1(self):
+        table = self.dir / "verdicts.md"
+        code, _, err = self.invoke(self.verdict_argv(self.make_report(verdict="maybe"), table))
+        self.assertEqual(code, 1)
+        self.assertIn("maybe", err)
+        self.assertFalse(table.exists())
+
+    def test_verdict_failed_write_keeps_the_original_and_leaves_no_temp_file(self):
+        table = self.dir / "verdicts.md"
+        rep = self.make_report()
+        self.invoke(self.verdict_argv(rep, table))
+        original = table.read_text(encoding="utf-8")
+        before = sorted(p.name for p in self.dir.iterdir())
+        with mock.patch.object(cli.os, "replace", side_effect=OSError("disk full")):
+            code, _, err = self.invoke(self.verdict_argv(self.make_report(verdict="no-go"), table))
+        self.assertEqual(code, 1)
+        self.assertIn("disk full", err)
+        self.assertEqual(table.read_text(encoding="utf-8"), original)
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), before)
+
+    def test_verdict_file_gets_the_permissions_a_normal_write_would(self):
+        reference = self.dir / "reference.txt"
+        reference.write_text("x", encoding="utf-8")
+        table = self.dir / "verdicts.md"
+        self.invoke(self.verdict_argv(self.make_report(), table))
+        self.assertEqual(table.stat().st_mode & 0o777, reference.stat().st_mode & 0o777)
+        table.chmod(0o640)
+        self.invoke(self.verdict_argv(self.make_report(verdict="no-go"), table))
+        self.assertEqual(table.stat().st_mode & 0o777, 0o640)
+
+    def test_verdict_bad_report_exit_1(self):
+        table = self.dir / "verdicts.md"
+        code, _, err = self.invoke(self.verdict_argv(self.write("bad.json", "{"), table))
+        self.assertEqual(code, 1)
+        self.assertIn("bad.json", err)
 
 
 if __name__ == "__main__":
