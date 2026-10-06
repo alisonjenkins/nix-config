@@ -382,6 +382,24 @@ ntfy_args() {
   [[ "$output" == *"not read back"* ]]
 }
 
+@test "notifications functional sends VERIFY_NTFY_TOKEN as a bearer header without putting it on a command line" {
+  export VERIFY_NTFY_TOKEN=tk_should-not-leak-789
+  touch "$FIXTURES/curl.echo.https___ntfy_test_verify_json_poll_1_since_all"
+  run "$script" $(ntfy_args)
+  [ "$status" -eq 0 ]
+  [ "$(grep -c 'Authorization: Bearer tk_should-not-leak-789' "$FIXTURES/curl.config")" -eq 2 ]
+  [ "$(grep -c 'tk_should-not-leak-789' "$FIXTURES/curl.calls" || true)" -eq 0 ]
+  [[ "$output" != *"tk_should-not-leak-789"* ]]
+}
+
+@test "notifications functional sends no auth header when VERIFY_NTFY_TOKEN is unset" {
+  unset VERIFY_NTFY_TOKEN
+  touch "$FIXTURES/curl.echo.https___ntfy_test_verify_json_poll_1_since_all"
+  run "$script" $(ntfy_args)
+  [ "$status" -eq 0 ]
+  [ ! -e "$FIXTURES/curl.config" ]
+}
+
 @test "notifications functional fails when ntfy does not accept the post" {
   echo 22 > "$FIXTURES/curl.rc"
   run "$script" $(ntfy_args)

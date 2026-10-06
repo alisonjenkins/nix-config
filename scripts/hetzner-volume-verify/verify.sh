@@ -22,7 +22,7 @@ usage: verify.sh --volume NAME --checks encryption,compare,health,functional,bac
               matrix: --homeserver URL (env VERIFY_BOT_TOKEN, an access token for verify-bot, and VERIFY_BOT_ROOM)
               photos: --photos-url URL (env VERIFY_PHOTOS_PASSWORD)
               monitoring: --prometheus-url URL [--alertmanager-url URL] [--grafana-url URL]
-              notifications: --ntfy-url URL --ntfy-topic TOPIC
+              notifications: --ntfy-url URL --ntfy-topic TOPIC (env VERIFY_NTFY_TOKEN, only if the server needs a login)
               documents: --couchdb-url URL --couchdb-db DB (env VERIFY_COUCHDB_USER, VERIFY_COUCHDB_PASSWORD)
               game: --namespace NS --selector LABEL=VALUE (reads pod state and logs only)
   backup:     --backup velero|cnpg --backup-namespace NS --backup-for TARGET [--since ISO8601]
@@ -335,11 +335,16 @@ curl_config_escape() {
 functional_notifications() {
   need functional ntfy_url --ntfy-url
   need functional ntfy_topic --ntfy-topic
-  local msg
+  local msg token=${VERIFY_NTFY_TOKEN:-} cfg="$workdir/ntfy.cfg" auth=()
   msg="verify notifications $(date +%s)-$$"
-  curl -fsS --max-time 20 -d "$msg" "$ntfy_url/$ntfy_topic" >/dev/null 2>&1 \
+  if [ -n "$token" ]; then
+    # The token goes in a mode 600 curl config, not on the command line where ps would show it.
+    (umask 077; printf 'header = "Authorization: Bearer %s"\n' "$(curl_config_escape "$token")" >"$cfg")
+    auth=(-K "$cfg")
+  fi
+  curl -fsS --max-time 20 ${auth[@]+"${auth[@]}"} -d "$msg" "$ntfy_url/$ntfy_topic" >/dev/null 2>&1 \
     || { emit functional fail "notifications: post to topic $ntfy_topic at $ntfy_url failed"; return; }
-  curl -fsS --max-time 20 "$ntfy_url/$ntfy_topic/json?poll=1&since=all" 2>/dev/null \
+  curl -fsS --max-time 20 ${auth[@]+"${auth[@]}"} "$ntfy_url/$ntfy_topic/json?poll=1&since=all" 2>/dev/null \
     | jq -e --arg m "$msg" 'select(.message == $m)' >/dev/null \
     || { emit functional fail "notifications: posted message not read back from topic $ntfy_topic at $ntfy_url"; return; }
   emit functional pass "notifications: post and poll back on topic $ntfy_topic"
