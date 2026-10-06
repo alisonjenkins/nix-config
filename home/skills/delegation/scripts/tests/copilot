@@ -49,8 +49,15 @@ case "${FAKE_COPILOT_MODE:-all-models-ok}" in
   all-models-ok)
     echo "response for model=$model: $task"
     ;;
+  gpt6-rejected)
+    if [[ "$model" == "gpt-6-luna" ]]; then
+      echo "Error: Model \"$model\" from --model flag is not available." >&2
+      exit 1
+    fi
+    echo "response for model=$model: $task"
+    ;;
   luna-rejected)
-    if [[ "$model" == "gpt-5.6-luna" ]]; then
+    if [[ "$model" == *-luna ]]; then
       echo "Error: Model \"$model\" from --model flag is not available." >&2
       exit 1
     fi
