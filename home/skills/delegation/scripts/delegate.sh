@@ -137,6 +137,20 @@ if [[ -n "${DELEGATE_EXTRA_ALLOW_TOOL:-}" ]]; then
   allow_tools+=("$DELEGATE_EXTRA_ALLOW_TOOL")
 fi
 
+# DELEGATE_REASONING_EFFORT raises Luna's thinking on a harder task instead
+# of escalating to a dearer model.
+copilot_effort_args=()
+if [[ -n "${DELEGATE_REASONING_EFFORT:-}" ]]; then
+  case "$DELEGATE_REASONING_EFFORT" in
+    none|minimal|low|medium|high|xhigh|max)
+      copilot_effort_args=(--reasoning-effort "$DELEGATE_REASONING_EFFORT")
+      ;;
+    *)
+      echo "warning: DELEGATE_REASONING_EFFORT='$DELEGATE_REASONING_EFFORT' is not one of none, minimal, low, medium, high, xhigh, max; ignoring" >&2
+      ;;
+  esac
+fi
+
 copilot_perm_args=()
 for tool in "${allow_tools[@]}"; do
   copilot_perm_args+=("--allow-tool=$tool")
@@ -264,7 +278,7 @@ call_copilot() {
   local model="$1" attempt=1
   while :; do
     if call_output="$(copilot -p "$task" --model "$model" -s --no-ask-user \
-      "${copilot_perm_args[@]}" "${copilot_extra_args[@]}" 2>&1)"; then
+      "${copilot_effort_args[@]}" "${copilot_perm_args[@]}" "${copilot_extra_args[@]}" 2>&1)"; then
       return 0
     fi
     if ! is_transient "$call_output"; then

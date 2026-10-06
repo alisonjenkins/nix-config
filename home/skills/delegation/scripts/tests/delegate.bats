@@ -115,6 +115,24 @@ setup() {
   grep -qF 'allow_tool=read;shell(pup)' "$FAKE_COPILOT_CALLS"
 }
 
+@test "DELEGATE_REASONING_EFFORT is passed through as --reasoning-effort" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export DELEGATE_REASONING_EFFORT=high
+  run bash "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  grep -qF 'reasoning_effort=high' "$FAKE_COPILOT_CALLS"
+}
+
+@test "an invalid DELEGATE_REASONING_EFFORT warns and is ignored" {
+  export FAKE_COPILOT_MODE=all-models-ok
+  export DELEGATE_REASONING_EFFORT=turbo
+  run bash "$delegate" "hello task" read
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning: DELEGATE_REASONING_EFFORT='turbo'"* ]]
+  grep -qF 'reasoning_effort=' "$FAKE_COPILOT_CALLS"
+  ! grep -qF 'reasoning_effort=turbo' "$FAKE_COPILOT_CALLS"
+}
+
 @test "always passes -s and --no-ask-user" {
   export FAKE_COPILOT_MODE=all-models-ok
   run bash "$delegate" "hello task" read
@@ -144,7 +162,7 @@ setup() {
   unset GH_HOST COPILOT_GH_HOST
   run bash "$delegate" "hello task" read
   [ "$status" -eq 0 ]
-  grep -q "gh_host=	copilot_gh_host=	deny_tool=$" "$FAKE_COPILOT_CALLS"
+  grep -q "gh_host=	copilot_gh_host=	deny_tool=	reasoning_effort=$" "$FAKE_COPILOT_CALLS"
 }
 
 @test "tries gpt-6-luna first" {
