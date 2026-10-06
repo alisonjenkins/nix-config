@@ -230,7 +230,7 @@ means the prompt was underspecified — fix the prompt, not just the output.
 
 Everything above picks a *model tier* for an Agent-tool sub-agent. GitHub
 Copilot's own `copilot` CLI is a separate, external delegate whose cheapest
-models (GPT-6 Luna, then `gpt-5.6-luna`, the script's current default) are
+models (GPT-6 Luna, with `gpt-5.6-luna` as the script's next choice) are
 priced well below Haiku and, on public benchmarks, faster and more capable
 than it — read
 [delegate-to-copilot.md](delegate-to-copilot.md) for the actual numbers and
