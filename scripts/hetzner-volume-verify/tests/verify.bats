@@ -546,6 +546,14 @@ game_pod() {
   [[ "$output" == *"Failed to load"* ]]
 }
 
+@test "game functional ignores a mod that logs Failed to load for its own optional file" {
+  game_pod true
+  printf 'Failed to load config for mod example, using defaults\nDone (1.0s)!\n' > "$FIXTURES/logs.txt"
+  run "$script" $(game_args)
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"check=functional result=pass"* ]]
+}
+
 @test "game functional fails when the logs cannot be read" {
   game_pod true
   touch "$FIXTURES/logs.fail"

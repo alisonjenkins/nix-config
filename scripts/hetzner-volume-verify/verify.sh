@@ -393,7 +393,8 @@ functional_game() {
   if ! logs=$(kubectl logs -n "$namespace" -l "$selector" --all-containers --tail=-1 --max-log-requests=20 2>&1); then
     emit functional fail "game: cannot read logs for $selector in $namespace: ${logs:0:120}"; return
   fi
-  bad=$(grep -E 'Encountered an unexpected exception|Failed to load' <<<"$logs" | head -n1 || true)
+  # Failed to load is too broad: a mod logs it for its own optional files. Only the world itself counts.
+  bad=$(grep -E 'Encountered an unexpected exception|Failed to load (level|world)' <<<"$logs" | head -n1 || true)
   if [ -n "$bad" ]; then
     emit functional fail "game: logs show: ${bad:0:160}"; return
   fi
