@@ -427,6 +427,14 @@ couch_env() {
   [[ "$output" != *"pw-should-not-leak-456"* ]]
 }
 
+@test "documents functional escapes a quote and a backslash in the credentials for the curl config" {
+  couch_env
+  export VERIFY_COUCHDB_PASSWORD='p"w\x'
+  run "$script" $(couch_args)
+  [ "$status" -eq 0 ]
+  grep -qF 'user = "verify-user:p\"w\\x"' "$FIXTURES/curl.config"
+}
+
 @test "documents functional fails when the document cannot be created" {
   couch_env
   touch "$FIXTURES/curl.couch.fail.PUT"

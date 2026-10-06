@@ -325,6 +325,13 @@ functional_monitoring() {
   emit functional pass "monitoring: Prometheus answered a query"
 }
 
+# Escapes a value for a double-quoted curl config string. sed, because bash only treats & in a
+# replacement as the matched text from 5.2, and this runs on older machines too.
+curl_config_escape() {
+  # shellcheck disable=SC2001 # the pattern expansion form is the bash 5.2 behaviour we avoid
+  sed 's/[\\"]/\\&/g' <<<"$1"
+}
+
 functional_notifications() {
   need functional ntfy_url --ntfy-url
   need functional ntfy_topic --ntfy-topic
@@ -349,7 +356,7 @@ functional_documents() {
   msg="verify documents $id"
   doc="$couchdb_url/$couchdb_db/$id"
   # The credentials go in a mode 600 curl config, not on the command line where ps would show them.
-  (umask 077; printf 'user = "%s:%s"\n' "${user//[\\\"]/\\&}" "${pass//[\\\"]/\\&}" >"$cfg")
+  (umask 077; printf 'user = "%s:%s"\n' "$(curl_config_escape "$user")" "$(curl_config_escape "$pass")" >"$cfg")
   rev=$(jq -n --arg m "$msg" '{message: $m}' \
     | curl -fsS --max-time 20 -K "$cfg" -X PUT -H 'Content-Type: application/json' --data @- "$doc" 2>/dev/null \
     | jq -er '.rev') \

@@ -6,13 +6,15 @@
 # curl.echo.<same> answers that URL with the saved body as a one-line ntfy style {"message": ...}.
 # A fixture named curl.couch turns the fake into a one-document CouchDB: a body-carrying request stores
 # the document and answers with rev 1-abc, a plain GET returns it, -X DELETE answers ok. A fixture
-# named curl.couch.fail.<PUT|GET|DELETE> makes that verb exit 22.
+# named curl.couch.fail.<PUT|GET|DELETE> makes that verb exit 22. The contents of every -K config file
+# are appended to curl.config.
 echo "$*" >> "$FIXTURES/curl.calls"
 url=${*: -1}
 key=$(tr -c 'A-Za-z0-9\n' _ <<<"$url")
 prev="" method=""
 for a in "$@"; do
   case "$prev" in
+    -K) cat "$a" >> "$FIXTURES/curl.config" ;;
     -d | --data) if [ "$a" = @- ]; then cat >"$FIXTURES/curl.posted"; else printf '%s' "$a" >"$FIXTURES/curl.posted"; fi ;;
     -X) method=$a ;;
   esac
