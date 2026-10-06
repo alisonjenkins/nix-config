@@ -87,6 +87,9 @@ setup() {
   [ "$status" -eq 0 ]
   grep -qF 'allow_tool=read;shell(git status);' "$FAKE_COPILOT_CALLS"
   grep -qF 'shell(gh pr list)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(kubectl get)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(sift)' "$FAKE_COPILOT_CALLS"
+  ! grep -qF 'shell(kubectl apply)' "$FAKE_COPILOT_CALLS"
   ! grep -qF 'shell(python3)' "$FAKE_COPILOT_CALLS"
   grep -qF 'deny_tool=shell(rm);shell(sudo);shell(git push)' "$FAKE_COPILOT_CALLS"
 }
@@ -98,6 +101,9 @@ setup() {
   grep -qF 'allow_tool=read,write;shell(git status);' "$FAKE_COPILOT_CALLS"
   grep -qF 'shell(pytest)' "$FAKE_COPILOT_CALLS"
   grep -qF 'shell(nix)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(go)' "$FAKE_COPILOT_CALLS"
+  grep -qF 'shell(shellcheck)' "$FAKE_COPILOT_CALLS"
+  ! grep -qF 'shell(terraform apply)' "$FAKE_COPILOT_CALLS"
   grep -qF 'deny_tool=shell(rm);' "$FAKE_COPILOT_CALLS"
 }
 
