@@ -86,11 +86,18 @@ read_shell_allow=(
   'shell(gh pr list)' 'shell(gh pr view)' 'shell(gh pr diff)'
   'shell(gh issue list)' 'shell(gh issue view)'
   'shell(gh run list)' 'shell(gh run view)'
+  'shell(kubectl get)' 'shell(kubectl describe)' 'shell(kubectl logs)'
+  'shell(sift)'
+  'shell(grep)' 'shell(head)' 'shell(tail)' 'shell(sort)' 'shell(diff)'
+  'shell(wc)' 'shell(ls)'
 )
 write_shell_allow=(
   "${read_shell_allow[@]}"
   'shell(python3)' 'shell(pytest)' 'shell(cargo)' 'shell(npm test)'
-  'shell(nix)' 'shell(just)'
+  'shell(nix)' 'shell(just)' 'shell(make)' 'shell(npm run)'
+  'shell(go)' 'shell(gofmt)' 'shell(golangci-lint)' 'shell(dotnet)'
+  'shell(tsc)' 'shell(shellcheck)' 'shell(bats)'
+  'shell(terraform fmt)' 'shell(terraform validate)'
 )
 shell_deny=(
   'shell(rm)' 'shell(sudo)' 'shell(git push)' 'shell(git reset)'
