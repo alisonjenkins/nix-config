@@ -17,6 +17,7 @@ setup() {
   stage_fakes_and_export_path "$script_dir"
   export FAKE_COPILOT_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_COPILOT_CALLS"
+  unset DELEGATE_REASONING_EFFORT DELEGATE_EXTRA_ALLOW_TOOL
   export DELEGATE_RETRY_BASE_DELAY=0
   export DELEGATE_STATE_DIR="$BATS_TEST_TMPDIR/state"
 }
