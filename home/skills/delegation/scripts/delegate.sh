@@ -5,7 +5,7 @@ usage() {
   echo "usage: $0 <task> [profile] [skill[,skill...]]" >&2
   echo "profile defaults to 'read'; give it explicitly to also pass skill," >&2
   echo "  since skill is strictly the 3rd positional argument" >&2
-  echo "valid profiles: read, write-workdir, write-and-test" >&2
+  echo "valid profiles: read, write-workdir, write-and-test, read-shell, write-shell" >&2
   echo "skill: one or more comma-separated Claude skill names to hand to" >&2
   echo "  the delegate, each resolved from the project's .claude/skills/<skill>" >&2
   echo "  (found via the git toplevel, not \$PWD) then ~/.claude/skills/<skill>" >&2
@@ -78,22 +78,65 @@ task="$1"
 profile="${2:-read}"
 skills_arg="${3:-}"
 
+# Each shell(...) entry goes in its own --allow-tool flag: a comma list
+# inside one shell(...) was observed to drop its first entry.
+read_shell_allow=(
+  'shell(git status)' 'shell(git diff)' 'shell(git log)' 'shell(git show)'
+  'shell(rg)' 'shell(fd)' 'shell(jq)'
+  'shell(gh pr list)' 'shell(gh pr view)' 'shell(gh pr diff)'
+  'shell(gh issue list)' 'shell(gh issue view)'
+  'shell(gh run list)' 'shell(gh run view)'
+)
+write_shell_allow=(
+  "${read_shell_allow[@]}"
+  'shell(python3)' 'shell(pytest)' 'shell(cargo)' 'shell(npm test)'
+  'shell(nix)' 'shell(just)'
+)
+shell_deny=(
+  'shell(rm)' 'shell(sudo)' 'shell(git push)' 'shell(git reset)'
+  'shell(gh pr merge)' 'shell(gh pr close)' 'shell(gh api)'
+)
+
+allow_tools=()
+deny_tools=()
 case "$profile" in
   read)
-    tool_scope="read"
+    allow_tools=(read)
     ;;
   write-workdir)
-    tool_scope="read,write"
+    allow_tools=("read,write")
     ;;
   write-and-test)
-    tool_scope="read,write,shell(npm test,pytest,cargo test)"
+    allow_tools=("read,write,shell(npm test,pytest,cargo test)")
+    ;;
+  read-shell)
+    allow_tools=(read "${read_shell_allow[@]}")
+    deny_tools=("${shell_deny[@]}")
+    ;;
+  write-shell)
+    allow_tools=("read,write" "${write_shell_allow[@]}")
+    deny_tools=("${shell_deny[@]}")
     ;;
   *)
     echo "error: invalid profile '$profile'" >&2
-    echo "valid profiles: read, write-workdir, write-and-test" >&2
+    echo "valid profiles: read, write-workdir, write-and-test, read-shell, write-shell" >&2
     exit 1
     ;;
 esac
+
+# DELEGATE_EXTRA_ALLOW_TOOL adds one more --allow-tool value on top of any
+# profile, e.g. 'shell(pup)' to let the delegate query Datadog.
+if [[ -n "${DELEGATE_EXTRA_ALLOW_TOOL:-}" ]]; then
+  allow_tools+=("$DELEGATE_EXTRA_ALLOW_TOOL")
+fi
+
+copilot_perm_args=()
+for tool in "${allow_tools[@]}"; do
+  copilot_perm_args+=("--allow-tool=$tool")
+done
+for tool in "${deny_tools[@]}"; do
+  copilot_perm_args+=("--deny-tool=$tool")
+done
 
 # One or more Claude skills (e.g. "programming,testing") are opt-in:
 # resolve each's directory, grant the delegate read access, and tell it
@@ -214,7 +257,7 @@ call_copilot() {
   local model="$1" attempt=1
   while :; do
     if call_output="$(copilot -p "$task" --model "$model" -s --no-ask-user \
-      --allow-tool="$tool_scope" "${copilot_extra_args[@]}" 2>&1)"; then
+      "${copilot_perm_args[@]}" "${copilot_extra_args[@]}" 2>&1)"; then
       return 0
     fi
     if ! is_transient "$call_output"; then
