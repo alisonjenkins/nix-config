@@ -8,23 +8,20 @@ let
 
   inherit (pkgs.stdenv.hostPlatform) isLinux isDarwin;
 
-  baseUrl = "http://127.0.0.1:${toString cfg.port}";
+  urlFor = port: "http://127.0.0.1:${toString port}";
+  baseUrl = urlFor cfg.port;
+  indexUrl = urlFor cfg.indexPort;
 
-  # home-manager names a launchd agent org.nix-community.home.<name>.
-  serverLabel = "org.nix-community.home.memory-recall-server";
-  restartServer =
-    if isDarwin
-    then ''launchctl kickstart -k "gui/$(id -u)/${serverLabel}" || true''
-    else "systemctl --user try-restart memory-recall-server.service || true";
   stateDir = "${config.xdg.stateHome}/memory-recall";
   cacheFile = "${config.xdg.cacheHome}/memory-recall/gemma-${toString cfg.dims}.json";
 
-  recall = lib.concatStringsSep " " [
+  recallAt = url: lib.concatStringsSep " " [
     "${cfg.package}/bin/memory-recall"
     "--memory-dir ${lib.escapeShellArg cfg.memoryDir}"
-    "--embedder ${lib.escapeShellArg "gemma=gemma@${baseUrl}#${toString cfg.dims}"}"
+    "--embedder ${lib.escapeShellArg "gemma=gemma@${url}#${toString cfg.dims}"}"
     "--cache ${lib.escapeShellArg cacheFile}"
   ];
+  recall = recallAt baseUrl;
 
   logArgs = lib.optionalString (cfg.logFile != null) " --log ${lib.escapeShellArg cfg.logFile}";
 
@@ -36,12 +33,13 @@ let
 
   skillsCacheFile = "${config.xdg.cacheHome}/memory-recall/skills-gemma-${toString cfg.dims}.json";
 
-  skillRecall = lib.concatStringsSep " " [
+  skillRecallAt = url: lib.concatStringsSep " " [
     "${cfg.package}/bin/skill-recall"
     "--skills-root ${lib.escapeShellArg cfg.skills.root}"
-    "--embedder ${lib.escapeShellArg "gemma=gemma@${baseUrl}#${toString cfg.dims}"}"
+    "--embedder ${lib.escapeShellArg "gemma=gemma@${url}#${toString cfg.dims}"}"
     "--cache ${lib.escapeShellArg skillsCacheFile}"
   ];
+  skillRecall = skillRecallAt baseUrl;
 
   skillsHookScript = pkgs.writeShellScript "skill-recall-hook" ''
     exec ${skillRecall} hook --top ${toString cfg.skills.top} \
@@ -50,30 +48,7 @@ let
       --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
-  # The first index embeds every memory (~70 s on CPU), so wait for the server
-  # to come up instead of failing the unit on a cold login.
-  indexScript = pkgs.writeShellApplication {
-    name = "memory-recall-index";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl ] ++ lib.optional isLinux pkgs.systemd;
-    text = ''
-      mkdir -p "$(dirname ${lib.escapeShellArg cacheFile})"
-      for _ in $(seq 1 60); do
-        curl -fsS --max-time 2 ${baseUrl}/health >/dev/null && break
-        sleep 2
-      done
-      # One failing index must not skip the other, nor the server restart below.
-      status=0
-      ${recall} index || status=$?
-      ${lib.optionalString cfg.skills.enable "${skillRecall} index || status=$?"}
-      # Embedding every memory makes llama.cpp keep its largest compute buffer: the
-      # server grows from ~425 MB to ~2.7 GB and never gives it back. Restarting it
-      # returns it to ~425 MB; hooks that land in the second it takes retry for 1.5 s.
-      ${restartServer}
-      exit "$status"
-    '';
-  };
-
-  serverArgv = [
+  serverArgvOn = port: [
     "${cfg.llamaCpp}/bin/llama-server"
     "-m"
     "${cfg.model}"
@@ -87,8 +62,36 @@ let
     "--host"
     "127.0.0.1"
     "--port"
-    (toString cfg.port)
+    (toString port)
   ] ++ lib.optionals (cfg.threads != null) [ "--threads" (toString cfg.threads) ];
+  serverArgv = serverArgvOn cfg.port;
+
+  # Embedding a long document makes llama.cpp keep its largest compute buffer for
+  # good: the server goes from ~425 MB to ~1.6 GB after one long memory and ~2.7 GB
+  # after a full index. So the index runs against its own short-lived server on
+  # indexPort. The query server is never restarted, never grows, and picks up new
+  # vectors because the hook reads the cache file on every prompt. The first index
+  # embeds every memory (~70 s on CPU).
+  indexScript = pkgs.writeShellApplication {
+    name = "memory-recall-index";
+    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
+    text = ''
+      mkdir -p "$(dirname ${lib.escapeShellArg cacheFile})"
+      ${lib.escapeShellArgs (serverArgvOn cfg.indexPort)} >/dev/null 2>&1 &
+      server_pid=$!
+      trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+      for _ in $(seq 1 120); do
+        curl -fsS --max-time 2 ${indexUrl}/health >/dev/null && break
+        sleep 1
+      done
+      # One failing step must not skip the others.
+      status=0
+      ${recallAt indexUrl} index || status=$?
+      ${lib.optionalString cfg.skills.enable "${skillRecallAt indexUrl} index || status=$?"}
+      ${lib.optionalString cfg.catalogue.enable "${recall} catalogue --write ${lib.escapeShellArg "${cfg.memoryDir}/MEMORY.md"} || status=$?"}
+      exit "$status"
+    '';
+  };
 in
 {
   options.modules.memoryRecall = {
@@ -190,6 +193,22 @@ in
         put the best, or every, match in full.
       '';
     };
+
+    indexPort = mkOption {
+      type = types.port;
+      default = 8111;
+      description = ''
+        Loopback port of the short-lived embedding server each index run starts
+        and stops, so the query server is never restarted or grown by indexing.
+      '';
+    };
+
+    catalogue.enable = mkEnableOption ''
+      keeping `MEMORY.md` a names-only catalogue. After each index run the file is
+      rewritten from the memory files, but only if its content changed, so a line
+      Claude appends when it saves a memory is replaced by the bare name and the
+      file cannot grow into the token overhead the hook exists to avoid. It
+      overwrites a file Claude maintains, so it is off by default'';
 
     onUnavailable = mkOption {
       type = types.enum [ "block" "keyword" "allow" ];
@@ -298,14 +317,10 @@ in
     };
 
     systemd.user.services.memory-recall-index = {
-      Unit = {
-        Description = "Refresh the memory-recall vector cache";
-        After = [ "memory-recall-server.service" ];
-        Wants = [ "memory-recall-server.service" ];
-      };
+      Unit.Description = "Refresh the memory-recall vector cache";
       Service = {
         Type = "oneshot";
-        # The script restarts the server itself, after both indexes.
+        # Starts and stops its own embedding server; it does not need the query one.
         ExecStart = "${indexScript}/bin/memory-recall-index";
       };
       # Builds the cache at login; the path unit below keeps it fresh.
