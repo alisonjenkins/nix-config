@@ -24,9 +24,10 @@
             rust-analyzer
             cargo-nextest
             pkg-config
-            # bench/run.sh
+            # bench/run.sh and bench/compare.sh
             curl
             jq
+            sqlite
             util-linux
           ];
         };

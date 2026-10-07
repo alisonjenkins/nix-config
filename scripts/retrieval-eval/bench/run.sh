@@ -20,7 +20,9 @@ port=${PORT:-8110}
 runs=${RUNS:-300}
 bin=$crate/target/release
 caches=$(mktemp -d)
-server_pid=""
+
+# shellcheck source=lib.sh source-path=SCRIPTDIR
+source "$crate/bench/lib.sh"
 
 cleanup() {
   [ -n "$server_pid" ] && kill "$server_pid" 2>/dev/null || true
@@ -50,39 +52,6 @@ jq -n \
   '{date: $date, cpu: $cpu, logical_cpus: ($threads|tonumber), mem_kb: ($mem_kb|tonumber),
     kernel: $kernel, loadavg_at_start: $load, llama_cpp: $llama, model: $model,
     memories: $memories}' >"$out/env.json"
-
-# start_server [threads]: sets server_pid and startup_secs (seconds until
-# /health answers). Never call it inside $(...): a subshell loses server_pid,
-# the server is then never stopped, and later starts fail to bind while the
-# health check passes against the orphan.
-start_server() {
-  if curl -fsS --max-time 1 "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
-    echo "something already answers on port $port; stop it first" >&2
-    exit 1
-  fi
-  local args=(-m "$model" --embeddings -c 2048 -ub 2048 -ngl 0
-    --host 127.0.0.1 --port "$port")
-  [ -n "${1:-}" ] && args+=(--threads "$1")
-  nice -n 10 "$llama/bin/llama-server" "${args[@]}" >"$out/server.log" 2>&1 &
-  server_pid=$!
-  local started
-  started=$(date +%s.%N)
-  until curl -fsS --max-time 1 "http://127.0.0.1:$port/health" >/dev/null 2>&1; do
-    if ! kill -0 "$server_pid" 2>/dev/null; then
-      echo "llama-server exited early:" >&2
-      tail -n 5 "$out/server.log" >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-  startup_secs=$(awk -v a="$started" -v b="$(date +%s.%N)" 'BEGIN { printf "%.2f", b - a }')
-}
-
-stop_server() {
-  kill "$server_pid" 2>/dev/null || true
-  wait "$server_pid" 2>/dev/null || true
-  server_pid=""
-}
 
 spec() { echo "gemma=gemma@http://127.0.0.1:$port#$1"; }
 recall() { # dims, then memory-recall subcommand
