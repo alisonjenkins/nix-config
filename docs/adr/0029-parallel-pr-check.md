@@ -47,13 +47,14 @@ Result: ~47s locally, 1m45s in CI.
 - **A section that dies before reporting is FAILED.** Its `N.rc` marker never
   appears (disk full, killed), and waiting for it would burn the whole timeout.
 
-## Known gap
+## Local runs must not shallow the clone
 
-`build_changed_packages` runs `git fetch --depth=1 origin main`. In CI that is
-harmless (the checkout is already shallow). In a local checkout, `just check`
-makes the repo shallow, which breaks `merge-base` and makes the next rebase
-conflict on commits that are not yours. `git fetch --unshallow` repairs it.
-Not fixed here.
+`build_changed_packages` used to run `git fetch --depth=1 origin main`. In CI
+that is harmless (the checkout is already shallow). In a local checkout,
+`just check` made the repo shallow, which broke `merge-base` and made the next
+rebase conflict on commits that were not yours. It now passes `--depth=1` only
+when `git rev-parse --is-shallow-repository` is true. If a clone is already
+shallow, `git fetch --unshallow` repairs it.
 
 ## Alternatives rejected
 
