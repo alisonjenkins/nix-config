@@ -317,6 +317,8 @@ mod tests {
             fallback: false,
             duration_ms: Some(40.0),
             embed_ms: Some(25.0),
+            session_id: None,
+            prompt_id: None,
         }
     }
 
@@ -393,7 +395,10 @@ mod tests {
         assert_eq!(pair[0], "1791000000000000000");
         let line: Entry = serde_json::from_str(pair[1].as_str().unwrap()).unwrap();
         assert_eq!(line, entry());
-        assert!(!body.contains("prompt"));
+        assert!(
+            !body.contains("\\\"prompt\\\""),
+            "ids are shipped, the text is not"
+        );
     }
 
     #[test]

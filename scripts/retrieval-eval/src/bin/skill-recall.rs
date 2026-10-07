@@ -11,8 +11,8 @@ use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{
-    blocked_message, hook_output, keyword_fallback, prompt_from_hook_input, render_sections,
-    retry_until, select, Blocked, Hit, OnUnavailable,
+    blocked_message, hook_output, ids_from_hook_input, keyword_fallback, prompt_from_hook_input,
+    render_sections, retry_until, select, Blocked, Hit, OnUnavailable,
 };
 use retrieval_eval::recall_log::{append_rotating, now_iso8601, Entry, DEFAULT_ROTATION};
 use retrieval_eval::telemetry::{spawn_ship, Targets};
@@ -201,6 +201,8 @@ fn recall(
                 fallback: false,
                 duration_ms: None,
                 embed_ms: None,
+                session_id: None,
+                prompt_id: None,
             },
         });
     }
@@ -259,6 +261,8 @@ fn recall(
         fallback,
         duration_ms: None,
         embed_ms,
+        session_id: None,
+        prompt_id: None,
     };
     Ok(Recalled { context, entry })
 }
@@ -351,6 +355,7 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
+            let (session_id, prompt_id) = ids_from_hook_input(&stdin);
             let started = Instant::now();
             let mut recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT)
             {
@@ -358,6 +363,8 @@ fn run(cli: &Cli) -> Result<()> {
                 Err(error) => {
                     let mut failure = Entry::failure("skills", &now_iso8601());
                     failure.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
+                    failure.session_id = session_id.clone();
+                    failure.prompt_id = prompt_id.clone();
                     if let Some(path) = log {
                         let _ = append_rotating(path, &failure, DEFAULT_ROTATION);
                     }
@@ -373,6 +380,8 @@ fn run(cli: &Cli) -> Result<()> {
                 }
             };
             recalled.entry.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
+            recalled.entry.session_id = session_id;
+            recalled.entry.prompt_id = prompt_id;
             if let Some(path) = log {
                 if let Err(error) = append_rotating(path, &recalled.entry, DEFAULT_ROTATION) {
                     warn!(path = %path.display(), %error, "could not write the recall log");

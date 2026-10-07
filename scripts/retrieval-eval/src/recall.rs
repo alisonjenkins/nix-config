@@ -42,6 +42,20 @@ pub fn prompt_from_hook_input(stdin_json: &str) -> Option<String> {
     Some(prompt.chars().take(MAX_PROMPT_CHARS).collect())
 }
 
+/// Claude Code's `session_id` and `prompt_id` from a hook payload, for joining the
+/// hook's telemetry with Claude Code's own. Empty or absent ids are `None`.
+pub fn ids_from_hook_input(stdin_json: &str) -> (Option<String>, Option<String>) {
+    let payload: serde_json::Value = serde_json::from_str(stdin_json).unwrap_or_default();
+    let id = |key: &str| {
+        payload
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+    };
+    (id("session_id"), id("prompt_id"))
+}
+
 /// Best-first scored ids, filtered to `score >= min_score`, at most `top`.
 pub fn select(scored: &[(String, f64)], min_score: f64, top: usize) -> Vec<(String, f64)> {
     scored
@@ -423,6 +437,18 @@ mod tests {
             1000,
         );
         assert!(!text.contains("fix a") && text.contains("about a.md"));
+    }
+
+    #[test]
+    fn claude_codes_session_and_prompt_ids_come_from_the_payload() {
+        let json = r#"{"session_id":"s-1","prompt_id":"p-9","prompt":"hello there world"}"#;
+        assert_eq!(
+            ids_from_hook_input(json),
+            (Some("s-1".to_owned()), Some("p-9".to_owned()))
+        );
+        assert_eq!(ids_from_hook_input(r#"{"session_id":"s-1"}"#).1, None);
+        assert_eq!(ids_from_hook_input("not json"), (None, None));
+        assert_eq!(ids_from_hook_input(r#"{"session_id":""}"#).0, None);
     }
 
     #[test]

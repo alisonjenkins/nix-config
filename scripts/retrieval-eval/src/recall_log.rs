@@ -29,6 +29,13 @@ pub struct Entry {
     /// Of that, the time spent embedding the prompt and scoring (not the retries).
     #[serde(default)]
     pub embed_ms: Option<f64>,
+    /// Claude Code's session id from the hook payload, to join this entry with its
+    /// own telemetry (`session.id`). An id, not the prompt.
+    #[serde(default)]
+    pub session_id: Option<String>,
+    /// Claude Code's id for this prompt, from the hook payload.
+    #[serde(default)]
+    pub prompt_id: Option<String>,
 }
 
 impl Entry {
@@ -44,6 +51,8 @@ impl Entry {
             fallback: false,
             duration_ms: None,
             embed_ms: None,
+            session_id: None,
+            prompt_id: None,
         }
     }
 }
@@ -340,6 +349,8 @@ mod tests {
             fallback: false,
             duration_ms: None,
             embed_ms: None,
+            session_id: None,
+            prompt_id: None,
         }
     }
 
@@ -378,6 +389,20 @@ mod tests {
         let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
         let parsed = parse_log(old);
         assert_eq!((parsed[0].duration_ms, parsed[0].embed_ms), (None, None));
+    }
+
+    #[test]
+    fn session_and_prompt_ids_round_trip_and_old_lines_without_them_parse() {
+        let mut with_ids = entry("memory", Some(0.8), 1, 0, 100);
+        with_ids.session_id = Some("sess-1".to_owned());
+        with_ids.prompt_id = Some("prompt-1".to_owned());
+        assert_eq!(parse_log(&to_line(&with_ids)), vec![with_ids]);
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        let parsed = parse_log(old);
+        assert_eq!(
+            (parsed[0].session_id.clone(), parsed[0].prompt_id.clone()),
+            (None, None)
+        );
     }
 
     #[test]
@@ -424,7 +449,10 @@ mod tests {
     #[test]
     fn a_line_holds_no_prompt_field() {
         let line = to_line(&entry("memory", None, 0, 0, 0));
-        assert!(!line.contains("prompt"));
+        assert!(
+            !line.contains("\"prompt\""),
+            "ids are kept, the text is not"
+        );
         assert!(line.contains("\"best_score\":null"));
     }
 

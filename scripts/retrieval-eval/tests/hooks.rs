@@ -571,6 +571,8 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
             fallback: false,
             duration_ms: None,
             embed_ms: None,
+            session_id: None,
+            prompt_id: None,
         })
     };
     fs::write(&log, line(1)).unwrap();
