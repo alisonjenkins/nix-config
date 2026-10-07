@@ -27,6 +27,20 @@
 in {
   home.packages = [pkgs.easyeffects];
 
+  # EasyEffects' output chain here has no effects, only meters: it just hands
+  # every app on to the binaural sink, which is the default sink anyway. While
+  # it grabs every output stream it also took games back off the Remote Play
+  # sink, about once a second; each move re-links the stream, the likely cause
+  # of an occasional crackle (2026-10-07). Inputs (the mic noise
+  # cancellation) are a separate setting and stay on. Set in place because
+  # EasyEffects owns and rewrites this file, and read only when it starts, so
+  # restart it once after the first switch.
+  home.activation.easyeffectsLeaveOutputsAlone = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    run ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+      --file "${config.xdg.configHome}/easyeffects/db/easyeffectsrc" \
+      --group EffectsPipelines --key processAllOutputs false
+  '';
+
   home.file =
     profileFileAttrs
     // {
