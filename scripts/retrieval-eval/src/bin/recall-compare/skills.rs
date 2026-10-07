@@ -441,6 +441,8 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
                 }
                 slot.answer = fresh.answer;
                 slot.llm_in_tokens = fresh.llm_in_tokens;
+                slot.llm_cache_read_tokens = fresh.llm_cache_read_tokens;
+                slot.llm_cache_write_tokens = fresh.llm_cache_write_tokens;
                 slot.llm_out_tokens = fresh.llm_out_tokens;
                 slot.llm_ms = fresh.llm_ms;
                 slot.cost_usd = fresh.cost_usd;
