@@ -196,4 +196,10 @@ if-shell 'uname | grep -q Darwin' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"pbcopy\""
 if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"wl-copy\""
+
+# prefix + Shift-A: switch to the claude-monitor session, creating it (shell
+# first, then claude-monitor typed into it) if it does not exist yet
+bind-key A if-shell 'tmux has-session -t =claude-monitor' \
+  'switch-client -t =claude-monitor' \
+  'new-session -d -s claude-monitor ; send-keys -t =claude-monitor: claude-monitor Enter ; switch-client -t =claude-monitor'
 ''
