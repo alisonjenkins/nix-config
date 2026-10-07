@@ -102,6 +102,15 @@ check_drv_set() {
         FAILED=1
         return
     fi
+    # One eval for the whole set (a process per entry re-pays startup and
+    # re-evaluates shared inputs); only on failure fall back to per-entry
+    # evals to find which entry broke.
+    if nix eval --raw --no-warn-dirty "${flake_attr}" \
+        --apply 'ps: builtins.deepSeq (builtins.mapAttrs (_: p: p.drvPath) ps) "ok"' \
+        >/dev/null 2>&1; then
+        echo "ok: ${flake_attr} ($(wc -w <<<"${names}") entries, batched)"
+        return
+    fi
     for name in $names; do
         if nix eval --raw --no-warn-dirty "${flake_attr}.${name}.drvPath" >/dev/null 2>&1; then
             echo "ok: ${flake_attr}.${name}"
@@ -130,6 +139,17 @@ check_hosts_for_system() {
         | jq -r '.[]')"; then
         echo "FAILED: could not list ${system} nixosConfigurations"
         FAILED=1
+        return
+    fi
+    local nix_list="["
+    for name in $names; do
+        nix_list+=" \"${name}\""
+    done
+    nix_list+=" ]"
+    if nix eval --raw --no-warn-dirty --max-jobs 0 .#nixosConfigurations \
+        --apply "cs: builtins.deepSeq (map (n: cs.\${n}.config.system.build.toplevel.drvPath) ${nix_list}) \"ok\"" \
+        >/dev/null 2>&1; then
+        echo "ok: ${system} nixosConfigurations ($(wc -w <<<"${names}") hosts, batched)"
         return
     fi
     for name in $names; do
