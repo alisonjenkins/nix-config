@@ -1,0 +1,24 @@
+{
+  "queries": [
+    {"q": "my python script needs pandas, how should it be run", "expect": ["programming/languages/python.md#Scripts"]},
+    {"q": "is it ok to catch a bare Exception in python", "expect": ["programming/languages/python.md#Idioms"]},
+    {"q": "when should I use an assertion versus returning an error", "expect": ["programming/defensive.md#Assertions vs error handling"]},
+    {"q": "how do I handle API tokens and credentials in code", "expect": ["programming/security.md#Secrets"]},
+    {"q": "which fields must every log line include", "expect": ["programming/observability.md#What a log line must carry"]},
+    {"q": "what to do before trying to make code faster", "expect": ["programming/performance.md#Profiling first"]},
+    {"q": "which model tier should a mechanical bulk edit use", "expect": ["delegation/SKILL.md#Picking the model: default to haiku"]},
+    {"q": "the sub-agent returned a wrong answer, what now", "expect": ["delegation/SKILL.md#When a delegated result comes back wrong or incomplete"]},
+    {"q": "copilot ran out of credits", "expect": ["delegation/delegate-to-copilot.md#Credit exhaustion"]},
+    {"q": "what exit codes does the local model script return when nothing is running", "expect": ["delegation/delegate-to-local.md#Exit codes: this is the graceful-degradation contract"]},
+    {"q": "several sessions are fighting over one GPU for the local model", "expect": ["delegation/delegate-to-local.md#Coordinating across sessions: reservations", "delegation/delegate-to-local.md#One worker, one queue"]},
+    {"q": "conventions for adding a module to a nix flake", "expect": ["programming/languages/nix.md#Rules", "programming/languages/nix.md#Repo shape"]},
+    {"q": "which clippy lints are mandatory in rust", "expect": ["programming/languages/rust.md#Guard rails (mandatory)"]},
+    {"q": "how do I catch data races in go", "expect": ["programming/languages/go.md#Toolchain", "programming/languages/go.md#Concurrency", "programming/languages/go.md#Guard rails (mandatory)"]},
+    {"q": "how many sub-agents should I run at once", "expect": ["delegation/SKILL.md#Running sub-agents in parallel"]},
+    {"q": "threads mutate the same cache, is that safe", "expect": ["programming/concurrency.md#Shared state is incorrect state", "programming/concurrency.md#Prefer not sharing over sharing carefully"]},
+    {"q": "using SIMD to vectorize a hot loop", "expect": ["programming/performance.md#SIMD"]},
+    {"q": "validating untrusted input from users", "expect": ["programming/security.md#Validate at the boundary"]},
+    {"q": "search the codebase with an agent, which kind", "expect": ["delegation/SKILL.md#Explore vs general-purpose"]},
+    {"q": "what should shell scripts do for safety", "expect": ["programming/languages/shell.md#Safety", "programming/languages/shell.md#Baseline"]}
+  ]
+}

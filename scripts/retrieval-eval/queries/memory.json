@@ -1,0 +1,8 @@
+{
+  "queries": [
+    {"q": "SYNTHETIC EXAMPLE: the fictional greenhouse timer resets after a power cut", "expect": ["example-greenhouse-timer-reset.md"]},
+    {"q": "SYNTHETIC EXAMPLE: the made-up garden pump stops when the tank runs low", "expect": ["example-garden-pump-dry-run.md"]},
+    {"q": "SYNTHETIC EXAMPLE: invented bookshelf scanner skips pages with a blue edge", "expect": ["example-scanner-blue-edge.md"]},
+    {"q": "SYNTHETIC EXAMPLE: pretend weather station reports negative rainfall", "expect": ["example-weather-station-rainfall.md"]}
+  ]
+}
