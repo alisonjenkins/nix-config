@@ -108,6 +108,15 @@ in {
         home-manager.users.${specialArgs.username} = {
           imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall ];
 
+          # Trial: injects matching memories and skill sections and logs scores
+          # (never prompts) to ~/.local/state/memory-recall/recall.jsonl; read it with
+          # `memory-recall log-summary`. Decision criteria: specs/006-embedding-memory-recall.
+          modules.memoryRecall = {
+            enable = true;
+            memoryDir = "/home/${specialArgs.username}/.claude/projects/-home-${specialArgs.username}-git-personal-nix-config/memory";
+            skills.enable = true;
+          };
+
           home.packages = [
             pkgs.lmstudio
             # Required by home/skills/delegation/scripts/switch-local-profile.sh
