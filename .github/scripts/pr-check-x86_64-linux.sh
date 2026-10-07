@@ -164,54 +164,98 @@ check_hosts_for_system() {
     done
 }
 
-echo "== nixosModules =="
-check_module_set ".#nixosModules"
+# Sections are independent and mostly wait on a nix eval or the daemon, so
+# they run concurrently (the runner has 16 vCPU) instead of back to back —
+# sequentially they summed to ~6 min. Each writes to its own log, which is
+# printed whole as soon as that section finishes, so a hung section cannot
+# hide the others' output when the job times out.
+LOG_DIR="$(mktemp -d)"
+trap 'rm -rf "${LOG_DIR}"' EXIT
+# A cancelled job must not leave sections running into the next run's CPU.
+trap 'kill $(jobs -p) 2>/dev/null; exit 143' TERM INT
+SECTIONS=()
+PIDS=()
 
-echo "== homeModules =="
-check_module_set ".#homeModules"
+# run_section <name> <function> — run <function> in the background. N.rc
+# appears once it is done and holds 0 or 1 (1 when it set FAILED or returned
+# non-zero).
+run_section() {
+    local name="$1" fn="$2"
+    SECTIONS+=("${name}")
+    local n="${#SECTIONS[@]}"
+    (
+        FAILED=0
+        "${fn}" || FAILED=1
+        echo "${FAILED}" >"${LOG_DIR}/${n}.rc.tmp"
+        mv "${LOG_DIR}/${n}.rc.tmp" "${LOG_DIR}/${n}.rc"
+    ) >"${LOG_DIR}/${n}.log" 2>&1 &
+    PIDS+=("$!")
+}
 
-echo "== overlays =="
-check_module_set ".#overlays"
+section_modules() {
+    check_module_set ".#nixosModules"
+    check_module_set ".#homeModules"
+    check_module_set ".#overlays"
+    check_drv_set ".#devShells.${TARGET_SYSTEM}"
+}
 
-echo "== devShells.${TARGET_SYSTEM} =="
-check_drv_set ".#devShells.${TARGET_SYSTEM}"
+section_packages() {
+    check_drv_set ".#packages.${TARGET_SYSTEM}"
+    build_changed_packages ".#packages.${TARGET_SYSTEM}"
+}
 
-echo "== packages.${TARGET_SYSTEM} =="
-check_drv_set ".#packages.${TARGET_SYSTEM}"
+# build_check <name> — build checks.<system>.<name>, fail the section if it fails.
+build_check() {
+    nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.$1" || {
+        echo "FAILED: checks.${TARGET_SYSTEM}.$1"
+        FAILED=1
+    }
+}
 
-echo "== packages.${TARGET_SYSTEM} changed by this PR (built) =="
-build_changed_packages ".#packages.${TARGET_SYSTEM}"
+section_copilot_bats() { build_check copilot-cli-bats; }
+section_delegation_bats() { build_check delegation-bats; }
+section_hetzner_bats() { build_check hetzner-volume-verify-bats; }
 
-echo "== copilot-cli script tests (bats) =="
-if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.copilot-cli-bats"; then
-    echo "FAILED: checks.${TARGET_SYSTEM}.copilot-cli-bats"
-    FAILED=1
-fi
+section_scripts() {
+    .github/scripts/check-forgecdn-paths.sh || FAILED=1
+    nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
+        --command .github/scripts/check-skill-frontmatter.sh || FAILED=1
+}
 
-echo "== delegation script tests (bats) =="
-if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.delegation-bats"; then
-    echo "FAILED: checks.${TARGET_SYSTEM}.delegation-bats"
-    FAILED=1
-fi
+section_aarch64_hosts() { check_hosts_for_system "aarch64-linux"; }
 
-echo "== hetzner-volume-verify script tests (bats) =="
-if ! nix build --no-link --no-warn-dirty ".#checks.${TARGET_SYSTEM}.hetzner-volume-verify-bats"; then
-    echo "FAILED: checks.${TARGET_SYSTEM}.hetzner-volume-verify-bats"
-    FAILED=1
-fi
+run_section "nixosModules, homeModules, overlays, devShells.${TARGET_SYSTEM}" section_modules
+run_section "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_packages
+run_section "copilot-cli script tests (bats)" section_copilot_bats
+run_section "delegation script tests (bats)" section_delegation_bats
+run_section "hetzner-volume-verify script tests (bats)" section_hetzner_bats
+run_section "CurseForge CDN paths, skill frontmatter" section_scripts
+run_section "aarch64-linux nixosConfigurations (evaluated)" section_aarch64_hosts
 
-echo "== CurseForge CDN paths (no zero padding) =="
-if ! .github/scripts/check-forgecdn-paths.sh; then
-    FAILED=1
-fi
-
-echo "== skill frontmatter (strict YAML) =="
-if ! nix shell --no-warn-dirty --inputs-from . nixpkgs#yq-go \
-    --command .github/scripts/check-skill-frontmatter.sh; then
-    FAILED=1
-fi
-
-echo "== aarch64-linux nixosConfigurations (evaluated) =="
-check_hosts_for_system "aarch64-linux"
+PENDING="${#SECTIONS[@]}"
+PRINTED=" "
+while [ "${PENDING}" -gt 0 ]; do
+    for n in $(seq 1 "${#SECTIONS[@]}"); do
+        case "${PRINTED}" in *" ${n} "*) continue ;; esac
+        # A section that died before writing its .rc (disk full, killed) would
+        # otherwise be waited on until the job timeout.
+        if [ ! -f "${LOG_DIR}/${n}.rc" ]; then
+            kill -0 "${PIDS[$((n - 1))]}" 2>/dev/null && continue
+            [ -f "${LOG_DIR}/${n}.rc" ] || echo 1 >"${LOG_DIR}/${n}.rc" 2>/dev/null || true
+        fi
+        if [ "$(cat "${LOG_DIR}/${n}.rc" 2>/dev/null || echo 1)" = 0 ]; then
+            status=ok
+        else
+            status=FAILED
+            FAILED=1
+        fi
+        echo "== ${SECTIONS[$((n - 1))]}: ${status} =="
+        cat "${LOG_DIR}/${n}.log"
+        PRINTED="${PRINTED}${n} "
+        PENDING=$((PENDING - 1))
+    done
+    sleep 1
+done
+wait
 
 exit "$FAILED"
