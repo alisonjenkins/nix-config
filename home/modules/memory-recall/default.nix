@@ -174,6 +174,11 @@ in
       Service = {
         Type = "oneshot";
         ExecStart = "${indexScript}/bin/memory-recall-index";
+        # Embedding every memory makes llama.cpp keep its largest compute
+        # buffer: the server grows from ~425 MB to ~2.7 GB and never gives it
+        # back. Restarting it after an index returns it to ~425 MB; hooks that
+        # land in the second it takes inject nothing.
+        ExecStartPost = "${pkgs.systemd}/bin/systemctl --user try-restart memory-recall-server.service";
       };
       # Builds the cache at login; the path unit below keeps it fresh.
       Install.WantedBy = [ "default.target" ];
