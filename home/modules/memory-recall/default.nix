@@ -23,6 +23,21 @@ let
       --body-score ${toString cfg.bodyScore} --inject ${cfg.inject}${logArgs}
   '';
 
+  skillsCacheFile = "${config.xdg.cacheHome}/memory-recall/skills-gemma-${toString cfg.dims}.json";
+
+  skillRecall = lib.concatStringsSep " " [
+    "${cfg.package}/bin/skill-recall"
+    "--skills-root ${lib.escapeShellArg cfg.skills.root}"
+    "--embedder ${lib.escapeShellArg "gemma=gemma@${baseUrl}#${toString cfg.dims}"}"
+    "--cache ${lib.escapeShellArg skillsCacheFile}"
+  ];
+
+  skillsHookScript = pkgs.writeShellScript "skill-recall-hook" ''
+    exec ${skillRecall} hook --top ${toString cfg.skills.top} \
+      --min-score ${toString cfg.skills.minScore} \
+      --section-chars ${toString cfg.skills.sectionChars}${logArgs}
+  '';
+
   # The first index embeds every memory (~70 s on CPU), so wait for the server
   # to come up instead of failing the unit on a cold login.
   indexScript = pkgs.writeShellApplication {
@@ -34,7 +49,8 @@ let
         curl -fsS --max-time 2 ${baseUrl}/health >/dev/null && break
         sleep 2
       done
-      exec ${recall} index
+      ${recall} index
+      ${lib.optionalString cfg.skills.enable "${skillRecall} index"}
     '';
   };
 
@@ -159,6 +175,40 @@ in
         `memory-recall log-summary <file>`. Null turns logging off.
       '';
     };
+
+    skills = {
+      enable = mkEnableOption "injecting the skill sections closest to each prompt (skill-recall)";
+
+      root = mkOption {
+        type = types.str;
+        default = "${config.home.homeDirectory}/.claude/skills";
+        description = "Directory with one folder per skill.";
+      };
+
+      top = mkOption {
+        type = types.ints.positive;
+        default = 3;
+        description = "Most skill sections injected per prompt.";
+      };
+
+      minScore = mkOption {
+        type = types.float;
+        default = 0.74;
+        description = ''
+          Cosine similarity a skill section must reach to be injected. Skill
+          scores overlap more than memory scores: at 0.74 the right section is
+          in the top 3 for 70% of queries and 20% of off-topic prompts get an
+          injection (240 tokens a prompt on average); lower floors buy recall at
+          40 to 90% false injections (docs/memory-recall.md).
+        '';
+      };
+
+      sectionChars = mkOption {
+        type = types.ints.positive;
+        default = 3000;
+        description = "Longest section injected, in characters (about 750 tokens).";
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -185,7 +235,11 @@ in
             command = "${hookScript}";
             timeout = 5;
           }
-        ];
+        ] ++ lib.optional cfg.skills.enable {
+          type = "command";
+          command = "${skillsHookScript}";
+          timeout = 5;
+        };
       }
     ];
 
@@ -221,9 +275,11 @@ in
     };
 
     systemd.user.paths.memory-recall-index = {
-      Unit.Description = "Reindex memories when a memory file changes";
+      Unit.Description = "Reindex memories and skills when one changes";
       Path = {
-        PathChanged = cfg.memoryDir;
+        # Not recursive: a new skill folder is seen at once, an edit inside one
+        # on the next login or index run.
+        PathChanged = [ cfg.memoryDir ] ++ lib.optional cfg.skills.enable cfg.skills.root;
         Unit = "memory-recall-index.service";
       };
       Install.WantedBy = [ "default.target" ];
