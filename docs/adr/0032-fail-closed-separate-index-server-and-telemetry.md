@@ -36,6 +36,11 @@ Review of PR 521 asked for three changes to how the hooks behave in operation.
   posts the log entry to Loki's push API and a two-span trace to Tempo's OTLP/HTTP
   endpoint, and the hook does not wait for it.
 
+- **Correlate by session id.** Each log line and span carries Claude Code's
+  `session_id` and `prompt_id` from the hook payload (`session.id`, `prompt.id` on
+  spans). A valid `TRACEPARENT` in the environment, which Claude Code does not set
+  for hooks today, makes the hook span continue that trace.
+
 ## Alternatives rejected
 
 | Option | Why not |

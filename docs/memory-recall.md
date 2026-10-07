@@ -152,6 +152,26 @@ Each hook run, for memories and skills, then reaches both:
   `recall.fallback` and `recall.failed` attributes; a blocked prompt is an error
   span. `service.name` is the hook's name.
 
+**Correlating with Claude Code's own telemetry.** Both carry Claude Code's
+`session_id` and `prompt_id` from the hook payload: as `session_id` and `prompt_id`
+in the Loki line, and as `session.id` and `prompt.id` span attributes (the same
+names Claude Code uses for `session.id`). With Claude Code exporting OpenTelemetry
+(`CLAUDE_CODE_ENABLE_TELEMETRY=1`, `OTEL_*_EXPORTER=otlp`; traces are beta behind
+`CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1`), join on `session.id`, for example
+`{service="memory-recall"} | json | session_id="<id>"` beside Claude Code's events
+for that session, or search Tempo for `session.id=<id>`. `session_id` is in the log
+line, not a Loki label, because it has too many distinct values to be one.
+
+This is a join on an attribute, not a parent-child link: as of the docs read on
+2026-10-08, Claude Code does not set `TRACEPARENT` for its hooks, so the hook's span
+is a trace of its own. If `TRACEPARENT` (`00-<trace id>-<span id>-<flags>`) is set
+when the hook runs, `recall-ship` continues that trace and parents the hook span
+under that span; no change is needed when Claude Code starts providing it. Whether
+Claude Code's own events carry the same `prompt_id` is not documented, so `session.id`
+is the dependable key. Checked against the real Tempo: a trace searched by
+`session.id` came back with the `TRACEPARENT` trace id, the hook span parented to
+the given span, and the two id attributes.
+
 Neither carries the prompt. The hook does not send anything itself: it starts
 `recall-ship` in the background after writing the log line and returns, so a slow or
 unreachable backend never delays a prompt (a test points a hook at a server that
