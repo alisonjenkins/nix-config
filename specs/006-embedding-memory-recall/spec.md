@@ -181,7 +181,7 @@ At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 
 
 - **FR-001**: The system MUST rank memories and skill sections against a prompt using locally computed embeddings, with no external service and no model call per prompt.
 - **FR-002**: The prompt hook MUST inject whole memories above a high confidence threshold and snippets above a lower floor, and nothing otherwise.
-- **FR-003**: The hook MUST fail closed: when it cannot retrieve memories (server down after a retry, unreadable directory) it blocks the prompt with a message, because answering without the memories that hold guard rails risks a bad mistake. A configuration option MUST allow keyword matches or nothing instead.
+- **FR-003**: The hook MUST fail closed: when it cannot retrieve memories (server down after a retry, unreadable directory) it blocks the prompt with a message, because answering without the memories that hold guard rails risks a bad mistake. A configuration option MUST allow keyword matches or nothing instead. A fresh setup with no memories or skills yet, or whose first index has not finished, MUST NOT be blocked.
 - **FR-004**: The system MUST produce a names-only catalogue of memories and regenerate it on request, rewriting the file only when it changes.
 - **FR-005**: The feature MUST be off by default behind a single option, and enabling it MUST require naming the memory directory.
 - **FR-006**: The embedding model and the llama.cpp build it needs MUST be pinned and reproducible from the flake.

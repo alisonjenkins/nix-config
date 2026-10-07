@@ -23,7 +23,10 @@ Review of PR 521 asked for three changes to how the hooks behave in operation.
   server is unreachable after a 1.5 s retry, or the directory cannot be read) it
   exits 2 with a message, which blocks the prompt. `--on-unavailable keyword|allow`
   (module option `onUnavailable`) opts into BM25 matches or nothing. Prompts with
-  nothing to retrieve (too short) and prompts with nothing above the floor pass.
+  nothing to retrieve pass: too short, nothing above the floor, and a fresh setup
+  (no memories or skills yet, or the first index still running), so a new machine
+  can prompt before it has anything to retrieve. Blocking applies only when there
+  is something to retrieve and the server cannot be reached.
 - **Index on its own server.** Each index run starts a short-lived
   `llama-server` on `indexPort`, indexes, and stops it. The query server is never
   restarted. `catalogue.enable` rewrites `MEMORY.md` as the names-only catalogue
@@ -57,8 +60,10 @@ Review of PR 521 asked for three changes to how the hooks behave in operation.
 
 ## Evidence
 
-- `tests/hooks.rs`: default block with exit code 2 and message for both hooks, an
-  unreadable directory, `keyword` and `allow`, a server that comes up 400 ms late,
+- `tests/hooks.rs`: default block with exit code 2 and message for both hooks,
+  `keyword` and `allow`, a fresh setup (missing or empty memory and skills
+  directories, a server that is down, memories not indexed yet, the index and
+  catalogue commands) that is never blocked, a server that comes up 400 ms late,
   a backend that never answers not delaying the hook, a blocked prompt shipped as
   an error span, and the tenant header and absence of the prompt in what is shipped.
 - Real model: after indexing three memories on a separate server and adding a

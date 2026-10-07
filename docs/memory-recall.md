@@ -37,9 +37,17 @@ has just crashed. `--on-unavailable` (module option `onUnavailable`) changes the
 `keyword` injects the keyword (BM25) matches instead, as snippets for memories and
 sections for skills, and logs the prompt as a keyword fallback; `allow` lets the
 prompt through with nothing. The default is `block`, which means Claude Code stops
-answering until the server is back. A prompt with nothing to retrieve (no `prompt`
-in the payload, under 12 characters) or with nothing above the floor passes
-untouched; an unreadable memory directory or skills root counts as unavailable.
+answering until the server is back. A prompt with nothing to retrieve passes
+untouched: no `prompt` in the payload, under 12 characters, nothing above the floor,
+**and a fresh setup**. A memory directory or skills root that does not exist yet, or
+holds nothing, is an empty corpus, so the hook does not even contact the server; and
+while the first index is still running (memories exist but no vectors yet) prompts
+pass instead of being blocked, with a warning on stderr. Blocking applies only when
+there is something to retrieve and the server cannot be reached. A path that exists
+but cannot be read (a file where the directory should be, no permission) is an error
+and blocks. The index commands and the catalogue keeper accept a fresh setup too:
+`catalogue --write` writes nothing and creates no directory when there are no
+memories.
 
 **What the evidence supports** (details below): the injection gets facts into the
 answer as often as the strongest default flow (one that always reads a file), and
