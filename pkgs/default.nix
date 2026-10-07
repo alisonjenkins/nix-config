@@ -44,6 +44,7 @@
   pup = pkgs.callPackage ./pup {};
   pup-claude = pkgs.callPackage ./pup-claude {};
   llama-models = pkgs.callPackage ./llama-models {};
+  llama-cpp-upstream = pkgs.callPackage ./llama-cpp-upstream { llama-cpp = pkgs.master.llama-cpp; };
   superpowers = pkgs.callPackage ./superpowers {};
   token-savior = pkgs.callPackage ./token-savior { python3Packages = pkgs.unstable.python3Packages; };
   claude-statusbar = pkgs.callPackage ./claude-statusbar {

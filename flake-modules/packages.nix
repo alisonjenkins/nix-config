@@ -31,6 +31,10 @@ in
       lib.optionalAttrs (system == "x86_64-linux") {
         camoufox-browser = (pkgsFor system).camoufox-browser;
 
+        # Pinned upstream llama.cpp (compiles from source); exposed so a bump
+        # that breaks the override's patch/npm-deps assumptions shows up in CI.
+        llama-cpp-upstream = (pkgsFor system).llama-cpp-upstream;
+
         # Canary for alisonjenkins/nix-config#226: home-k8s-master-1 pins
         # boot.kernelPackages to linux_7_1 because the legacy nvidia driver
         # (the only track supporting its passed-through GTX 1070/Pascal)
