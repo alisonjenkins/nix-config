@@ -169,12 +169,26 @@ check_hosts_for_system() {
 # sequentially they summed to ~6 min. Each writes to its own log, which is
 # printed whole as soon as that section finishes, so a hung section cannot
 # hide the others' output when the job times out.
+#
+# nix eval runs client-side inside the runner pod, so concurrent sections add
+# up against its memory limit (16Gi in home-cluster; all sections together
+# peaked at ~8GiB). Re-check that before adding more concurrent evals.
 LOG_DIR="$(mktemp -d)"
 trap 'rm -rf "${LOG_DIR}"' EXIT
-# A cancelled job must not leave sections running into the next run's CPU.
-trap 'kill $(jobs -p) 2>/dev/null; exit 143' TERM INT
 SECTIONS=()
 PIDS=()
+
+# Job control gives every background section its own process group, so
+# cancelling can signal the nix clients under it, not just the subshell.
+set -m
+cancel_sections() {
+    local pid
+    for pid in "${PIDS[@]}"; do
+        kill -TERM -- "-${pid}" 2>/dev/null || true
+    done
+    exit 143
+}
+trap cancel_sections TERM INT
 
 # run_section <name> <function> — run <function> in the background. N.rc
 # appears once it is done and holds 0 or 1 (1 when it set FAILED or returned
