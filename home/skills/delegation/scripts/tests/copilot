@@ -67,6 +67,10 @@ case "${FAKE_COPILOT_MODE:-all-models-ok}" in
     fi
     echo "response for model=$model: $task"
     ;;
+  policy-other-model)
+    echo "Error: Model \"some-other-model\" is disabled by your organization's Copilot policy." >&2
+    exit 1
+    ;;
   gpt6-rejected)
     if [[ "$model" == "claude-haiku-5.5" || "$model" == "gpt-6-luna" ]]; then
       echo "Error: Model \"$model\" from --model flag is not available." >&2
