@@ -117,6 +117,48 @@ pub fn render_context_with(
     out
 }
 
+/// Runs `attempt` until it succeeds or `budget` has passed, pausing `pause`
+/// between tries, and returns the last error when it gives up. Covers a server
+/// that is restarting, which refuses connections for about a second.
+pub fn retry_until<T, E>(
+    budget: std::time::Duration,
+    pause: std::time::Duration,
+    mut attempt: impl FnMut() -> Result<T, E>,
+) -> Result<T, E> {
+    let started = std::time::Instant::now();
+    loop {
+        match attempt() {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                if started.elapsed().saturating_add(pause) >= budget {
+                    return Err(error);
+                }
+            }
+        }
+        std::thread::sleep(pause);
+    }
+}
+
+/// Best keyword (BM25) matches for `query`, best first, at most `top`, dropping
+/// chunks that share no word with it. What a hook falls back to when the embedding
+/// server cannot be reached, so a prompt still gets the memories and skill
+/// sections that name what it asks about.
+pub fn keyword_fallback(chunks: &[Chunk], query: &str, top: usize) -> Vec<(String, f64)> {
+    let mut bm25 = crate::bm25::Bm25::new();
+    if crate::retriever::Retriever::index(&mut bm25, chunks).is_err() {
+        return Vec::new();
+    }
+    bm25.score_all(query)
+        .map(|scored| {
+            scored
+                .into_iter()
+                .filter(|(_, score)| *score > 0.0)
+                .take(top)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Skill sections to inject; empty when there are none. A hit's `id` is
 /// `<skill>/<file>#<heading>` and its `body` the section text, cut at `max_chars`.
 pub fn render_sections(skills_root: &Path, hits: &[Hit], max_chars: usize) -> String {
@@ -354,6 +396,59 @@ mod tests {
             1000,
         );
         assert!(!text.contains("fix a") && text.contains("about a.md"));
+    }
+
+    #[test]
+    fn retry_until_returns_the_first_success_after_some_failures() {
+        let mut calls = 0;
+        let result: Result<u32, &str> = retry_until(
+            std::time::Duration::from_secs(5),
+            std::time::Duration::from_millis(1),
+            || {
+                calls += 1;
+                if calls < 3 {
+                    Err("not yet")
+                } else {
+                    Ok(calls)
+                }
+            },
+        );
+        assert_eq!(result, Ok(3));
+    }
+
+    #[test]
+    fn retry_until_gives_up_at_the_budget_with_the_last_error() {
+        let mut calls = 0;
+        let result: Result<(), String> = retry_until(
+            std::time::Duration::from_millis(30),
+            std::time::Duration::from_millis(5),
+            || {
+                calls += 1;
+                Err(format!("attempt {calls}"))
+            },
+        );
+        assert!(calls >= 2, "retried at least once");
+        assert_eq!(result, Err(format!("attempt {calls}")));
+    }
+
+    #[test]
+    fn keyword_fallback_ranks_by_shared_words_and_drops_zero_scores() {
+        let chunks = [
+            ("a.md", "gearbox oil change interval"),
+            ("b.md", "tomato watering schedule"),
+            ("c.md", "gearbox noise at idle"),
+        ]
+        .map(|(id, text)| Chunk {
+            id: id.to_owned(),
+            title: id.to_owned(),
+            text: text.to_owned(),
+        });
+        let hits = keyword_fallback(&chunks, "why is the gearbox noisy", 5);
+        let ids: Vec<&str> = hits.iter().map(|(id, _)| id.as_str()).collect();
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&"a.md") && ids.contains(&"c.md"));
+        assert!(keyword_fallback(&chunks, "quantum chromodynamics", 5).is_empty());
+        assert_eq!(keyword_fallback(&chunks, "gearbox", 1).len(), 1);
     }
 
     fn section(id: &str, score: f64, text: &str) -> Hit {
