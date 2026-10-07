@@ -8,7 +8,8 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    hit, hook_output, prompt_from_hook_input, render_context_with, select, Inject,
+    hit, hook_output, prompt_from_hook_input, render_catalogue, render_context_with, select,
+    write_if_changed, Inject,
 };
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
@@ -37,12 +38,13 @@ struct Cli {
     /// Directory of memory `*.md` files.
     #[arg(long)]
     memory_dir: PathBuf,
-    /// NAME=PRESET@BASE_URL[#DIMS] of a `llama-server --embeddings` endpoint.
+    /// NAME=PRESET@BASE_URL[#DIMS] of a `llama-server --embeddings` endpoint
+    /// (every command but `catalogue`).
     #[arg(long)]
-    embedder: EmbedderSpec,
-    /// Where document vectors are cached between runs.
+    embedder: Option<EmbedderSpec>,
+    /// Where document vectors are cached between runs (every command but `catalogue`).
     #[arg(long)]
-    cache: PathBuf,
+    cache: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -104,6 +106,13 @@ enum Command {
         #[command(flatten)]
         selection: Selection,
     },
+    /// Print a names-only index of the memories, to use in place of a full
+    /// MEMORY.md now that matching memories are injected.
+    Catalogue {
+        /// Write it to this file instead of printing it, only if it changed.
+        #[arg(long)]
+        write: Option<PathBuf>,
+    },
 }
 
 struct Session {
@@ -112,13 +121,18 @@ struct Session {
     cache: VectorCache,
 }
 
+fn cache_path(cli: &Cli) -> Result<&PathBuf> {
+    cli.cache.as_ref().context("--cache is required")
+}
+
 fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
     let chunks = load_memories(&cli.memory_dir)?;
-    let embedder = Embedder::with_timeout(cli.embedder.clone(), timeout);
+    let spec = cli.embedder.clone().context("--embedder is required")?;
+    let embedder = Embedder::with_timeout(spec, timeout);
     let identity = embedder
         .cache_identity()
         .context("ask the server for its model")?;
-    let cache = VectorCache::load(&cli.cache, &identity)?;
+    let cache = VectorCache::load(cache_path(cli)?, &identity)?;
     Ok(Session {
         embedder,
         chunks,
@@ -160,7 +174,7 @@ fn run(cli: &Cli) -> Result<()> {
             let stats = session
                 .embedder
                 .index_cached(&session.chunks, &mut session.cache)?;
-            session.cache.save(&cli.cache)?;
+            session.cache.save(cache_path(cli)?)?;
             info!(
                 embedded = stats.embedded,
                 reused = stats.reused,
@@ -179,6 +193,21 @@ fn run(cli: &Cli) -> Result<()> {
                 selection.top,
             ) {
                 println!("{score:.3}  {id}");
+            }
+        }
+        Command::Catalogue { write } => {
+            let names: Vec<String> = load_memories(&cli.memory_dir)?
+                .into_iter()
+                .map(|chunk| chunk.id)
+                .collect();
+            let text = render_catalogue(&names);
+            match write {
+                Some(path) => {
+                    let wrote = write_if_changed(path, &text)
+                        .with_context(|| format!("write {}", path.display()))?;
+                    info!(path = %path.display(), wrote, memories = names.len(), "catalogue");
+                }
+                None => print!("{text}"),
             }
         }
         Command::Hook { selection } => {

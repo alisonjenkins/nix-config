@@ -131,6 +131,37 @@ fn cap_body(body: &str, max_chars: usize) -> String {
     format!("{head}\n[truncated; read the file for the rest]")
 }
 
+/// A names-only index of the memory files, in place of a full `MEMORY.md`: the
+/// hook injects whatever matches each prompt, and the model opens a file from
+/// this list when nothing matched.
+pub fn render_catalogue(names: &[String]) -> String {
+    let mut sorted: Vec<&str> = names
+        .iter()
+        .map(String::as_str)
+        .filter(|name| *name != "MEMORY.md")
+        .collect();
+    sorted.sort_unstable();
+    let mut out = String::from(
+        "# Memory catalogue\n\n\
+         Names only. The memories that match each prompt are injected with it; open a file \
+         from this list when nothing matched.\n\n",
+    );
+    for name in sorted {
+        let _ = writeln!(out, "- {name}");
+    }
+    out
+}
+
+/// Writes `content` to `path` unless it already holds exactly that, so a file
+/// watcher is not woken by a rewrite that changes nothing. True if it wrote.
+pub fn write_if_changed(path: &Path, content: &str) -> std::io::Result<bool> {
+    if std::fs::read_to_string(path).is_ok_and(|current| current == content) {
+        return Ok(false);
+    }
+    std::fs::write(path, content)?;
+    Ok(true)
+}
+
 /// UserPromptSubmit hook stdout; `None` when there is no context to add.
 pub fn hook_output(context: &str) -> Option<String> {
     if context.is_empty() {
@@ -290,6 +321,55 @@ mod tests {
             1000,
         );
         assert!(!text.contains("fix a") && text.contains("about a.md"));
+    }
+
+    fn names(items: &[&str]) -> Vec<String> {
+        items.iter().map(|s| (*s).to_owned()).collect()
+    }
+
+    #[test]
+    fn catalogue_lists_every_name_sorted_one_per_line() {
+        let text = render_catalogue(&names(&["b.md", "a.md", "c.md"]));
+        let lines: Vec<&str> = text.lines().filter(|l| l.starts_with("- ")).collect();
+        assert_eq!(lines, ["- a.md", "- b.md", "- c.md"]);
+    }
+
+    #[test]
+    fn catalogue_never_lists_the_index_itself() {
+        let text = render_catalogue(&names(&["MEMORY.md", "a.md"]));
+        assert!(!text.contains("MEMORY.md\n") && text.contains("- a.md"));
+    }
+
+    #[test]
+    fn catalogue_says_what_it_is_for() {
+        let text = render_catalogue(&names(&["a.md"]));
+        assert!(text.starts_with("# Memory catalogue"));
+        assert!(text.contains("injected"));
+    }
+
+    #[test]
+    fn catalogue_is_deterministic_and_ends_with_a_newline() {
+        let a = render_catalogue(&names(&["b.md", "a.md"]));
+        assert_eq!(a, render_catalogue(&names(&["a.md", "b.md"])));
+        assert!(a.ends_with('\n'));
+    }
+
+    #[test]
+    fn write_if_changed_writes_new_content_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("MEMORY.md");
+        assert!(write_if_changed(&path, "one\n").unwrap());
+        assert!(!write_if_changed(&path, "one\n").unwrap());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "one\n");
+    }
+
+    #[test]
+    fn write_if_changed_rewrites_when_the_content_differs() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("MEMORY.md");
+        write_if_changed(&path, "one\n").unwrap();
+        assert!(write_if_changed(&path, "two\n").unwrap());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "two\n");
     }
 
     #[test]
