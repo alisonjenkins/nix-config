@@ -110,6 +110,11 @@ fn dot(a: &[f32], b: &[f32]) -> f64 {
     a.iter().zip(b).map(|(x, y)| f64::from(x * y)).sum()
 }
 
+/// Cosine score of `query` against every row, for unit-normalised vectors.
+pub fn cosine_scores(matrix: &[Vec<f32>], query: &[f32]) -> Vec<f64> {
+    matrix.iter().map(|row| dot(row, query)).collect()
+}
+
 #[derive(Serialize)]
 struct EmbedRequest<'a> {
     input: &'a [String],
@@ -215,11 +220,7 @@ impl Embedder {
                 detail: "no embedding returned for the query".to_owned(),
             });
         };
-        let scores: Vec<f64> = self
-            .matrix
-            .iter()
-            .map(|doc| dot(doc, query_vector))
-            .collect();
+        let scores = cosine_scores(&self.matrix, query_vector);
         Ok(rank_scored(&self.ids, &scores))
     }
 
@@ -392,6 +393,16 @@ mod tests {
             Preset::Gemma.document(&chunk("i", "T", "body")),
             "title: T | text: body"
         );
+    }
+
+    #[test]
+    fn cosine_scores_are_dot_products_of_unit_vectors_in_row_order() {
+        let matrix = vec![vec![1.0, 0.0], vec![0.0, 1.0], vec![0.6, 0.8]];
+        let scores = cosine_scores(&matrix, &[0.6, 0.8]);
+        assert_eq!(scores.len(), 3);
+        assert!((scores[0] - 0.6).abs() < 1e-6);
+        assert!((scores[1] - 0.8).abs() < 1e-6);
+        assert!((scores[2] - 1.0).abs() < 1e-6);
     }
 
     #[test]
