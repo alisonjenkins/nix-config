@@ -16,9 +16,11 @@ let
     "--cache ${lib.escapeShellArg cacheFile}"
   ];
 
+  logArgs = lib.optionalString (cfg.logFile != null) " --log ${lib.escapeShellArg cfg.logFile}";
+
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
     exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
-      --body-score ${toString cfg.bodyScore} --inject ${cfg.inject}
+      --body-score ${toString cfg.bodyScore} --inject ${cfg.inject}${logArgs}
   '';
 
   # The first index embeds every memory (~70 s on CPU), so wait for the server
@@ -145,6 +147,16 @@ in
         bodyScore in full and the rest as one-line snippets; `snippets` never
         includes a body, so the model must open the file; `top` and `all` always
         put the best, or every, match in full.
+      '';
+    };
+
+    logFile = mkOption {
+      type = types.nullOr types.str;
+      default = "${config.xdg.stateHome}/memory-recall/recall.jsonl";
+      description = ''
+        One JSON line per prompt: best score, matches, how many in full and
+        tokens added. Never the prompt. Summarise it with
+        `memory-recall log-summary <file>`. Null turns logging off.
       '';
     };
   };
