@@ -339,10 +339,15 @@ let
   # loses centre, LFE and surrounds: dialogue on the centre channel vanished
   # from FH6 (2026-09-25). These sinks sit in front of it with real positions.
   # Each output is pinned to Steam's sink and never falls back elsewhere.
+  # dont-move makes WirePlumber ignore a target written to the default
+  # metadata: EasyEffects moves every app stream into itself that way, and
+  # took these outputs too, so the client got silence and the stream's audio
+  # looped back through the sink (2026-10-07).
   steamStreamSink = "steam-streaming-playback";
   remotePlayOutput = {
     "target.object" = steamStreamSink;
     "node.dont-fallback" = true;
+    "node.dont-move" = true;
   };
   remotePlayStereoConf = standalonePipewireConf "remote-play-stereo.conf" [{
     name = "libpipewire-module-loopback";
