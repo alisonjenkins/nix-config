@@ -60,6 +60,10 @@ pub struct ClaudeCall {
     pub text: String,
     /// Fresh, cache-read and cache-written input tokens together.
     pub input_tokens: u64,
+    /// The part of the input served from the prompt cache (billed at a tenth).
+    pub cache_read_tokens: u64,
+    /// The part written to the cache (billed above the normal input rate).
+    pub cache_write_tokens: u64,
     pub output_tokens: u64,
     pub api_ms: f64,
     pub cost_usd: f64,
@@ -99,6 +103,8 @@ pub fn parse_claude_json(stdout: &str) -> Result<ClaudeCall, ClaudeError> {
         input_tokens: usage("input_tokens")
             .saturating_add(usage("cache_creation_input_tokens"))
             .saturating_add(usage("cache_read_input_tokens")),
+        cache_read_tokens: usage("cache_read_input_tokens"),
+        cache_write_tokens: usage("cache_creation_input_tokens"),
         output_tokens: usage("output_tokens"),
         api_ms: number("duration_api_ms"),
         cost_usd: number("total_cost_usd"),
@@ -185,6 +191,8 @@ mod tests {
         let call = parse_claude_json(json).unwrap();
         assert_eq!(call.text, "ok");
         assert_eq!(call.input_tokens, 2941);
+        assert_eq!(call.cache_read_tokens, 100);
+        assert_eq!(call.cache_write_tokens, 2839);
         assert_eq!(call.output_tokens, 4);
         assert!((call.api_ms - 1472.0).abs() < 1e-9);
         assert!((call.cost_usd - 0.0114).abs() < 1e-9);

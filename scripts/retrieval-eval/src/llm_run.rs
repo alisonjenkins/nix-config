@@ -92,6 +92,11 @@ pub struct SystemRun {
     pub selection_hit: Option<bool>,
     pub answer: Option<Coverage>,
     pub llm_in_tokens: u64,
+    /// Results saved before the cache split was recorded load these as zero.
+    #[serde(default)]
+    pub llm_cache_read_tokens: u64,
+    #[serde(default)]
+    pub llm_cache_write_tokens: u64,
     pub llm_out_tokens: u64,
     pub llm_ms: f64,
     pub cost_usd: f64,
@@ -109,6 +114,8 @@ impl SystemRun {
     pub fn finish(&mut self, facts: &[Fact], calls: &[ClaudeCall], context_text: &str) {
         self.context = Coverage::of(context_text, facts);
         self.llm_in_tokens = calls.iter().map(|c| c.input_tokens).sum();
+        self.llm_cache_read_tokens = calls.iter().map(|c| c.cache_read_tokens).sum();
+        self.llm_cache_write_tokens = calls.iter().map(|c| c.cache_write_tokens).sum();
         self.llm_out_tokens = calls.iter().map(|c| c.output_tokens).sum();
         self.llm_ms = calls.iter().map(|c| c.api_ms).sum();
         self.cost_usd = calls.iter().map(|c| c.cost_usd).sum();
@@ -255,8 +262,8 @@ pub fn report(runs: &[QueryRun], systems: &[&str], with_llm: bool) {
         return;
     }
     println!("\n## End to end with the model (isolated `claude -p`)\n");
-    println!("| system | right source chosen | facts in final context | facts in answer | answers with every fact | model input tokens | model output tokens | model API ms | cost $/query |");
-    println!("|---|---|---|---|---|---|---|---|---|");
+    println!("| system | right source chosen | facts in final context | facts in answer | answers with every fact | model input tokens | …read from cache | …written to cache | model output tokens | model API ms | cost $/query |");
+    println!("|---|---|---|---|---|---|---|---|---|---|---|");
     for name in systems {
         let r = rows(name);
         let ctx = sum_cov(name, &|s| s.context.clone());
@@ -277,17 +284,19 @@ pub fn report(runs: &[QueryRun], systems: &[&str], with_llm: bool) {
         };
         if r.iter().all(|s| s.answer.is_none()) {
             println!(
-                "| {name} | {sel_text} | {:.0}% | - | - | - | - | - | - |",
+                "| {name} | {sel_text} | {:.0}% | - | - | - | - | - | - | - | - |",
                 pct(ctx.found(), ctx.total())
             );
             continue;
         }
         println!(
-            "| {name} | {sel_text} | {:.0}% | {:.0}% | {:.0}% | {:.0} | {:.0} | {:.0} | {:.4} |",
+            "| {name} | {sel_text} | {:.0}% | {:.0}% | {:.0}% | {:.0} | {:.0} | {:.0} | {:.0} | {:.0} | {:.4} |",
             pct(ctx.found(), ctx.total()),
             pct(ans.found(), ans.total()),
             pct(full, r.len()),
             mean(r.iter().map(|s| s.llm_in_tokens as f64)),
+            mean(r.iter().map(|s| s.llm_cache_read_tokens as f64)),
+            mean(r.iter().map(|s| s.llm_cache_write_tokens as f64)),
             mean(r.iter().map(|s| s.llm_out_tokens as f64)),
             mean(r.iter().map(|s| s.llm_ms)),
             mean(r.iter().map(|s| s.cost_usd)),
@@ -340,6 +349,8 @@ mod tests {
         let call = |text: &str, i: u64, o: u64| ClaudeCall {
             text: text.to_owned(),
             input_tokens: i,
+            cache_read_tokens: i / 2,
+            cache_write_tokens: i / 5,
             output_tokens: o,
             api_ms: 100.0,
             cost_usd: 0.01,
@@ -352,6 +363,10 @@ mod tests {
             "ctx",
         );
         assert_eq!((run.llm_in_tokens, run.llm_out_tokens), (30, 3));
+        assert_eq!(
+            (run.llm_cache_read_tokens, run.llm_cache_write_tokens),
+            (15, 6)
+        );
         assert!((run.llm_ms - 200.0).abs() < 1e-9);
         assert_eq!(run.answer.unwrap().found(), 1);
     }
