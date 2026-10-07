@@ -38,7 +38,13 @@ build_changed_packages() {
     local flake_attr="$1"
     local base="${GITHUB_BASE_REF:-main}"
     local exposed changed name
-    if ! git fetch --no-tags --depth=1 origin "${base}" >/dev/null 2>&1; then
+    # --depth rewrites .git/shallow, so only use it where the checkout already
+    # is shallow (CI); in a full clone it would break merge-base and rebases.
+    local depth=()
+    if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+        depth=(--depth=1)
+    fi
+    if ! git fetch --no-tags "${depth[@]}" origin "${base}" >/dev/null 2>&1; then
         echo "FAILED: could not fetch origin/${base} to find changed packages"
         FAILED=1
         return

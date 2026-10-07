@@ -35,6 +35,10 @@ teardown() {
 write_git_stub() {
   cat >"$WORK/bin/git" <<EOF
 #!$BASH
+echo "\$*" >>"\$WORK/git.log"
+if [ "\$*" = "rev-parse --is-shallow-repository" ]; then
+  echo "\${STUB_SHALLOW:-false}"
+fi
 exit 0
 EOF
   chmod +x "$WORK/bin/git"
@@ -86,6 +90,20 @@ EOF
   [[ "$output" == *"ok: .#packages.x86_64-linux (2 entries, batched)"* ]]
   [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
   [[ "$output" != *"FAILED"* ]]
+}
+
+@test "fetching the base branch does not shallow a full clone" {
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  grep -q "^fetch .*origin main" "$WORK/git.log"
+  ! grep -q -- "--depth" "$WORK/git.log"
+}
+
+@test "fetching the base branch stays shallow in a shallow checkout" {
+  export STUB_SHALLOW=true
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  grep -q "^fetch .*--depth=1 origin main" "$WORK/git.log"
 }
 
 @test "a failed batch falls back to per-entry evals and names the broken one" {
