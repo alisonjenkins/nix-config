@@ -1,6 +1,6 @@
 # 0031. Inject skill sections above a calibrated floor, and trial both hooks with a log
 
-- Status: Proposed. Built; enabled on `ali-desktop` in configuration for a trial, not yet switched to.
+- Status: Proposed. Built; on trial on `ali-desktop`.
 - Date: 2026-10-07
 - Extends [0029](0029-embedding-retrieval-for-memory-and-skills.md) and
   [0030](0030-inject-confident-memories-and-use-a-catalogue.md).

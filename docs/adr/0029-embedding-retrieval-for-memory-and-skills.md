@@ -1,8 +1,8 @@
 # 0029. Retrieve memories and skill sections by embedding, behind an option
 
-- Status: Proposed. Built and benchmarked, not enabled on any host. What the hook
-  injects, the thresholds and the conclusion that memories pay off only once
-  `MEMORY.md` is trimmed are superseded by
+- Status: Proposed. Built and benchmarked. What the hook injects, the thresholds
+  and the conclusion that memories pay off only once `MEMORY.md` is trimmed are
+  superseded by
   [0030](0030-inject-confident-memories-and-use-a-catalogue.md).
 - Date: 2026-10-07
 

@@ -40,7 +40,7 @@ The owner needs to know whether embedding retrieval beats Claude's default memor
 
 ---
 
-### User Story 2 - Relevant memories appear without the model asking (Priority: P1) — built, not enabled anywhere
+### User Story 2 - Relevant memories appear without the model asking (Priority: P1) — built
 
 When the owner sends a prompt, the memories most likely to matter are in front of the model already, including detail that is only in the memory body.
 
@@ -117,6 +117,51 @@ The 65 atomic commits reach `main` with their signatures, through a pull request
 
 1. **Given** the branch, **When** the owner asks for a pull request, **Then** no fixup commits remain and `nix build .#memory-recall` and the flake check pass.
 2. **Given** the pull request is approved, **When** it merges, **Then** it lands by rebase, not squash.
+
+---
+
+### User Story 7 - Skill descriptions that cost less context (Priority: P2) — to do
+
+The listing of every skill's description is always in context (4,247 tokens for 39 skills) and is the largest recurring cost the hooks do not touch. Find a cheaper way to keep skills discoverable, for example shorter descriptions with the detail retrieved on demand, or a hook-built listing.
+
+**Why this priority**: the skills hook only spares whole-file loads (ADR 0031); this is where the larger saving is.
+
+**Independent Test**: measure tokens of the listing before and after, and rerun the skills comparison to check the right skill is still chosen at least as often (95%).
+
+**Acceptance Scenarios**:
+
+1. **Given** the current skills, **When** descriptions are slimmed or served another way, **Then** the always-loaded skill text is measurably smaller and the right-source rate does not fall.
+2. **Given** a skill that retrieval cannot reach, **When** the description is the only route to it, **Then** the description still names what it is for.
+
+---
+
+### User Story 8 - Skills that scale past the description cap (Priority: P2) — to do
+
+Claude Code caps the skill listing at 1% of the context window, and many more skills are planned. Skill summaries must be optimised so that adding skills does not push earlier ones out of the listing or inflate its cost.
+
+**Why this priority**: without this, every new skill makes all of them less discoverable.
+
+**Independent Test**: add synthetic skills until the listing reaches the cap and check that every skill is still reachable, by listing or by retrieval.
+
+**Acceptance Scenarios**:
+
+1. **Given** the listing at the cap, **When** another skill is added, **Then** no existing skill becomes undiscoverable.
+2. **Given** 100 skills, **When** the always-loaded text is measured, **Then** it stays within the cap.
+
+---
+
+### User Story 9 - Fewer wrong memories injected (Priority: P2) — to do
+
+At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 84% of injections are right. Review whether the wrong injections can be reduced without making correct memories fail to inject.
+
+**Why this priority**: a wrong whole memory costs about 1,000 tokens and misleads the model.
+
+**Independent Test**: sweep alternatives (thresholds, a margin between the first and second score, per-kind floors) on the dev and held-out sets and on trial-log scores, comparing false injections against recall.
+
+**Acceptance Scenarios**:
+
+1. **Given** a candidate gate, **When** it is run on both query sets, **Then** false injections fall and recall of the right memory does not.
+2. **Given** the trial log, **When** its best-score distribution is compared with the benchmark's, **Then** the gate is judged on real prompts too.
 
 ---
 

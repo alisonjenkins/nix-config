@@ -97,9 +97,9 @@ works, how to enable it, and the benchmark results.
 
 | # | Decision | Status |
 |---|---|---|
-| [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked, not enabled; injection settings superseded by 0030 |
-| [0030](0030-inject-confident-memories-and-use-a-catalogue.md) | Inject confident memories in full, and keep a names-only catalogue | Proposed; built and measured, not enabled |
-| [0031](0031-skill-hook-with-a-calibrated-floor-and-a-trial-log.md) | Inject skill sections above a calibrated floor, and trial both hooks with a log | Proposed; built, enabled in ali-desktop config for a trial |
+| [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked; injection settings superseded by 0030 |
+| [0030](0030-inject-confident-memories-and-use-a-catalogue.md) | Inject confident memories in full, and keep a names-only catalogue | Proposed; built and measured |
+| [0031](0031-skill-hook-with-a-calibrated-floor-and-a-trial-log.md) | Inject skill sections above a calibrated floor, and trial both hooks with a log | Proposed; built, on trial on ali-desktop |
 
 ## Template
 

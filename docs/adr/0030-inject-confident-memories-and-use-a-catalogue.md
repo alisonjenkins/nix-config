@@ -1,6 +1,6 @@
 # 0030. Inject confident memories in full, and keep a names-only catalogue
 
-- Status: Proposed. Built and measured, not enabled on any host.
+- Status: Proposed. Built and measured.
 - Date: 2026-10-07
 - Supersedes the injection settings and the memory conclusion of
   [0029](0029-embedding-retrieval-for-memory-and-skills.md). The rest of 0029 stands.

@@ -41,8 +41,7 @@ catalogue (`memory-recall catalogue`); with the full index kept it is faster and
 more accurate than the default, and in dollars level with a model that opens files
 only when it asks (see the dollar-cost caveat below).
 
-Status: built, tested and benchmarked, **not enabled on any host**. The module is
-imported on `ali-desktop` with the option off.
+Status: built, tested and benchmarked; on trial on `ali-desktop` (see "Enabling it").
 
 ## Components
 
