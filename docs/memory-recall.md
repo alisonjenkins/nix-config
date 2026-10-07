@@ -48,7 +48,7 @@ imported on `ali-desktop` with the option off.
 
 | Piece | Where |
 |---|---|
-| Hook and CLI (`memory-recall`), harness (`retrieval-eval`), benchmarks (`recall-bench`, `recall-compare`, `recall-experiment`) | `scripts/retrieval-eval/`, packaged as `pkgs.memory-recall` |
+| Hooks and CLIs (`memory-recall`, `skill-recall`), harness (`retrieval-eval`), benchmarks (`recall-bench`, `recall-compare`, `recall-experiment`) | `scripts/retrieval-eval/`, packaged as `pkgs.memory-recall` |
 | Embedding model, `embeddinggemma-2-Q8_0.gguf` (296 MiB, hash pinned) | `pkgs.llama-models.embeddinggemma-2-q8-0` |
 | llama.cpp new enough for the `gemma-embedding2` architecture | `pkgs.llama-cpp-upstream` (nixpkgs unstable and release v0.6.0 fail with `unknown model architecture`) |
 | Server, reindex units and hook wiring | `modules.memoryRecall` |
@@ -69,6 +69,27 @@ afterwards, see Operating), and appends the hook to
 `programs.claude-code.settings.hooks.UserPromptSubmit`. Options: `inject`
 (`auto`), `minScore` (0.70), `bodyScore` (0.76), `top` (3), `threads` (4), `dims`
 (256), `port` (8110), `model`, `llamaCpp`.
+
+`skills.enable = true` adds `skill-recall`, a second hook that injects up to
+`skills.top` (3) skill sections scoring at least `skills.minScore` (0.74), and
+indexes `skills.root` (`~/.claude/skills`) beside the memories. The path unit
+watches the skills root without recursion: a new skill folder is indexed at once,
+an edit inside one at the next login or `systemctl --user start memory-recall-index`.
+
+**The trial.** Both hooks append one line per prompt to `logFile`
+(`~/.local/state/memory-recall/recall.jsonl`): time, best score, matches, how many
+in full, tokens added; never the prompt. After a few weeks of use:
+
+```bash
+memory-recall log-summary ~/.local/state/memory-recall/recall.jsonl
+```
+
+prints, per hook, the share of prompts that got an injection, the share that got a
+whole memory, the average tokens added per prompt and per injection, and the median
+best score. Adopt the catalogue when the average tokens added per prompt stay under
+the roughly 3,100 tokens per session the catalogue saves (spec 006, SC-006); record
+the decision and the numbers in an ADR. `ali-desktop` has it enabled (not yet
+switched to).
 
 **To get the token saving**, also replace the index with the catalogue:
 
@@ -353,11 +374,19 @@ noise. It kept 18 to 24% of the facts.
 
 ## Limitations and open work
 
-- **No skills hook yet.** The skills result is measured, not deployed, and not
-  rerun with tiered injection. A hook would need all 656 skill sections embedded
-  and a per-section size cap (the benchmark used 3,000 characters).
-- **One project's memories.** Claude keeps one memory directory per project, and
-  `memoryDir` names one.
+- **The skills hook is built but only trialled, and it saves less than the
+  benchmark suggests.** `skill-recall` injects up to 3 sections at or above 0.74.
+  The benchmark's $0.020 against $0.086 per query came from an unconditional top 3
+  replacing whole-file loads; the hook needs a floor, and at the floor that keeps
+  false injections to 20% of off-topic prompts the right section is in the top 3
+  for 70% of queries (95% with no floor), at about 240 tokens a prompt. It does not
+  shrink the skill listing Claude Code puts in every session, so it saves tokens
+  only when it spares the model loading a whole skill file. Whether it does is what
+  the trial measures.
+- **One project's memories, injected everywhere.** Claude keeps one memory
+  directory per project, and `memoryDir` names one. The hook runs in every
+  project, so the nix-config memories are offered to prompts in unrelated
+  projects; the trial log shows how often that costs tokens for nothing.
 - **Subagents.** Whether `UserPromptSubmit` fires for them, and so whether they
   would get the injection, is unchecked.
 - **`MEMORY.md` is Claude's file.** The catalogue replaces it by hand; nothing
