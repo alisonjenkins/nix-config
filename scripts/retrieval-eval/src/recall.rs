@@ -117,6 +117,33 @@ pub fn render_context_with(
     out
 }
 
+/// What a hook does when it cannot retrieve memories or skills (server down after
+/// the retries, or the corpus unreadable).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum OnUnavailable {
+    /// Block the prompt (exit 2), so it is never answered without the context that
+    /// might have stopped a mistake. The default.
+    Block,
+    /// Inject the keyword (BM25) matches instead.
+    Keyword,
+    /// Let the prompt through with nothing injected.
+    Allow,
+}
+
+/// A hook refused a prompt; `main` turns this into exit code 2 and prints it.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct Blocked(pub String);
+
+/// The message a blocked prompt shows its user.
+pub fn blocked_message(hook: &str, reason: &str) -> String {
+    format!(
+        "{hook}: prompt blocked because its memories or skills could not be retrieved ({reason}). \
+         Start the embedding server and send it again, or run the hook with \
+         --on-unavailable keyword|allow to let prompts through without them."
+    )
+}
+
 /// Runs `attempt` until it succeeds or `budget` has passed, pausing `pause`
 /// between tries, and returns the last error when it gives up. Covers a server
 /// that is restarting, which refuses connections for about a second.

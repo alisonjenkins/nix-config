@@ -11,8 +11,8 @@ use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{
-    hook_output, keyword_fallback, prompt_from_hook_input, render_sections, retry_until, select,
-    Hit,
+    blocked_message, hook_output, keyword_fallback, prompt_from_hook_input, render_sections,
+    retry_until, select, Blocked, Hit, OnUnavailable,
 };
 use retrieval_eval::recall_log::{
     append_failure, append_rotating, now_iso8601, Entry, DEFAULT_ROTATION,
@@ -23,6 +23,9 @@ use tracing::{info, warn};
 /// The hook runs on every prompt: a recall that takes longer than this costs
 /// more than it gives, so give up and inject nothing.
 const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
+/// Claude Code treats exit code 2 from a UserPromptSubmit hook as "block this
+/// prompt" and shows stderr to the user.
+const BLOCK_EXIT_CODE: u8 = 2;
 /// The reindex restarts the server, which refuses connections for about a second;
 /// waiting this long rides that out before falling back to keyword matches.
 const HOOK_RETRY_BUDGET: Duration = Duration::from_millis(1500);
@@ -88,6 +91,9 @@ enum Command {
         /// Append one line per prompt (score and sizes, never the prompt) to this file.
         #[arg(long)]
         log: Option<PathBuf>,
+        /// What to do when the skill sections cannot be retrieved.
+        #[arg(long, value_enum, default_value_t = OnUnavailable::Block)]
+        on_unavailable: OnUnavailable,
     },
     /// Sweep the score threshold over a query set: recall and false injections.
     Calibrate {
@@ -165,7 +171,13 @@ fn semantic_scores(
 /// A hook that cannot reach the server (restarting, crashed, not started yet) still
 /// gives the prompt the sections that share words with it, so it is not left
 /// without the skills' guard rails. In that case it over-injects rather than under.
-fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
+fn recall(
+    cli: &Cli,
+    query: &str,
+    selection: Selection,
+    on_unavailable: OnUnavailable,
+    timeout: Duration,
+) -> Result<Recalled> {
     let names = skill_names(&cli.skills_root)?;
     let chunks = load_skill_sections(&cli.skills_root, &names)?;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
@@ -176,11 +188,21 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
             let selected = select(&scored, selection.min_score, selection.top);
             (scored, selected, false)
         }
-        Err(error) => {
-            warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
-            let keyword = keyword_fallback(&chunks, query, selection.top);
-            (keyword.clone(), keyword, true)
-        }
+        Err(error) => match on_unavailable {
+            OnUnavailable::Block => return Err(error.context("embedding server unavailable")),
+            OnUnavailable::Allow => {
+                warn!(error = %format!("{error:#}"), "embedding server unavailable; injecting nothing");
+                return Ok(Recalled {
+                    context: String::new(),
+                    entry: Entry::failure("skills", &now_iso8601()),
+                });
+            }
+            OnUnavailable::Keyword => {
+                warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
+                let keyword = keyword_fallback(&chunks, query, selection.top);
+                (keyword.clone(), keyword, true)
+            }
+        },
     };
     let hits: Vec<Hit> = selected
         .into_iter()
@@ -284,7 +306,11 @@ fn run(cli: &Cli) -> Result<()> {
                 println!("{score:.3}  {id}");
             }
         }
-        Command::Hook { selection, log } => {
+        Command::Hook {
+            selection,
+            log,
+            on_unavailable,
+        } => {
             let mut stdin = String::new();
             std::io::stdin()
                 .read_to_string(&mut stdin)
@@ -292,11 +318,18 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let recalled = match recall(cli, &prompt, *selection, HOOK_TIMEOUT) {
+            let recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT) {
                 Ok(recalled) => recalled,
                 Err(error) => {
                     if let Some(path) = log {
                         append_failure(path, "skills");
+                    }
+                    if *on_unavailable == OnUnavailable::Block {
+                        return Err(Blocked(blocked_message(
+                            "skill-recall",
+                            &format!("{error:#}"),
+                        ))
+                        .into());
                     }
                     return Err(error);
                 }
@@ -331,6 +364,10 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     match run(&cli) {
         Ok(()) => ExitCode::SUCCESS,
+        Err(error) if error.downcast_ref::<Blocked>().is_some() => {
+            eprintln!("{error}");
+            ExitCode::from(BLOCK_EXIT_CODE)
+        }
         Err(error) if matches!(cli.command, Command::Hook { .. }) => {
             warn!(error = %format!("{error:#}"), "skill recall skipped");
             ExitCode::SUCCESS

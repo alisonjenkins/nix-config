@@ -8,8 +8,9 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    full_count, hit, hook_output, keyword_fallback, prompt_from_hook_input, render_catalogue,
-    render_context_with, retry_until, select, write_if_changed, Inject,
+    blocked_message, full_count, hit, hook_output, keyword_fallback, prompt_from_hook_input,
+    render_catalogue, render_context_with, retry_until, select, write_if_changed, Blocked, Inject,
+    OnUnavailable,
 };
 use retrieval_eval::recall_log::{
     append_failure, append_rotating, now_iso8601, parse_log, read_all, render_summary, summarise,
@@ -21,6 +22,9 @@ use tracing::{info, warn};
 /// The hook runs on every prompt: a recall that takes longer than this costs
 /// more than it gives, so give up and inject nothing.
 const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
+/// Claude Code treats exit code 2 from a UserPromptSubmit hook as "block this
+/// prompt" and shows stderr to the user.
+const BLOCK_EXIT_CODE: u8 = 2;
 /// The reindex restarts the server, which refuses connections for about a second;
 /// waiting this long rides that out before falling back to keyword matches.
 const HOOK_RETRY_BUDGET: Duration = Duration::from_millis(1500);
@@ -111,13 +115,17 @@ enum Command {
         selection: Selection,
     },
     /// Read a UserPromptSubmit payload on stdin, write hook JSON on stdout.
-    /// Never fails the prompt: any problem injects nothing.
+    /// A prompt with nothing to retrieve (no text, too short) passes untouched; one
+    /// whose memories cannot be retrieved is handled as --on-unavailable says.
     Hook {
         #[command(flatten)]
         selection: Selection,
         /// Append one line per prompt (score and sizes, never the prompt) to this file.
         #[arg(long)]
         log: Option<PathBuf>,
+        /// What to do when the memories cannot be retrieved.
+        #[arg(long, value_enum, default_value_t = OnUnavailable::Block)]
+        on_unavailable: OnUnavailable,
     },
     /// Summarise a hook log: how often a memory matched and what it added.
     LogSummary { path: PathBuf },
@@ -190,7 +198,13 @@ fn semantic_scores(
 /// A hook that cannot reach the server (restarting, crashed, not started yet) still
 /// gives the prompt the memories that share words with it: a prompt that misses its
 /// memories can ignore the guard rails they hold.
-fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
+fn recall(
+    cli: &Cli,
+    query: &str,
+    selection: Selection,
+    on_unavailable: OnUnavailable,
+    timeout: Duration,
+) -> Result<Recalled> {
     let chunks = load_memories(memory_dir(cli)?)?;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
         semantic_scores(cli, &chunks, query, timeout)
@@ -201,11 +215,21 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
             let inject = selection.inject.into_inject(selection.body_score);
             (scored, selected, inject, false)
         }
-        Err(error) => {
-            warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
-            let keyword = keyword_fallback(&chunks, query, selection.top);
-            (keyword.clone(), keyword, Inject::Snippets, true)
-        }
+        Err(error) => match on_unavailable {
+            OnUnavailable::Block => return Err(error.context("embedding server unavailable")),
+            OnUnavailable::Allow => {
+                warn!(error = %format!("{error:#}"), "embedding server unavailable; injecting nothing");
+                return Ok(Recalled {
+                    context: String::new(),
+                    entry: Entry::failure("memory", &now_iso8601()),
+                });
+            }
+            OnUnavailable::Keyword => {
+                warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
+                let keyword = keyword_fallback(&chunks, query, selection.top);
+                (keyword.clone(), keyword, Inject::Snippets, true)
+            }
+        },
     };
     let hits: Vec<_> = selected
         .into_iter()
@@ -271,7 +295,11 @@ fn run(cli: &Cli) -> Result<()> {
                 None => print!("{text}"),
             }
         }
-        Command::Hook { selection, log } => {
+        Command::Hook {
+            selection,
+            log,
+            on_unavailable,
+        } => {
             let mut stdin = String::new();
             std::io::stdin()
                 .read_to_string(&mut stdin)
@@ -279,11 +307,18 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let recalled = match recall(cli, &prompt, *selection, HOOK_TIMEOUT) {
+            let recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT) {
                 Ok(recalled) => recalled,
                 Err(error) => {
                     if let Some(path) = log {
                         append_failure(path, "memory");
+                    }
+                    if *on_unavailable == OnUnavailable::Block {
+                        return Err(Blocked(blocked_message(
+                            "memory-recall",
+                            &format!("{error:#}"),
+                        ))
+                        .into());
                     }
                     return Err(error);
                 }
@@ -318,6 +353,10 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     match run(&cli) {
         Ok(()) => ExitCode::SUCCESS,
+        Err(error) if error.downcast_ref::<Blocked>().is_some() => {
+            eprintln!("{error}");
+            ExitCode::from(BLOCK_EXIT_CODE)
+        }
         Err(error) if matches!(cli.command, Command::Hook { .. }) => {
             warn!(error = %format!("{error:#}"), "memory recall skipped");
             ExitCode::SUCCESS

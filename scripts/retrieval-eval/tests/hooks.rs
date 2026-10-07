@@ -234,16 +234,19 @@ fn memory_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     );
     let emb = embedder(DEAD_URL);
     let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
-    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    hook.extend([
+        "hook",
+        "--on-unavailable",
+        "keyword",
+        "--log",
+        log.to_str().unwrap(),
+    ]);
     let out = run(
         MEMORY_BIN,
         &hook,
         &payload("how do I fix the alpha problem"),
     );
-    assert!(
-        out.status.success(),
-        "a dead server must not fail the prompt"
-    );
+    assert!(out.status.success());
     assert!(
         context(&out).contains("alpha-note.md"),
         "the prompt still gets the memory that shares its words: {out:?}"
@@ -251,6 +254,64 @@ fn memory_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     let entries = log_entries(&log);
     assert_eq!(entries.len(), 1);
     assert!(entries[0].fallback && !entries[0].failed && entries[0].matches >= 1);
+}
+
+#[test]
+fn memory_hook_blocks_the_prompt_by_default_when_it_cannot_retrieve_memories() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let emb = embedder(DEAD_URL);
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "exit 2 blocks a prompt: {out:?}"
+    );
+    assert!(out.stdout.is_empty());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("blocked") && stderr.contains("--on-unavailable"),
+        "the message says what happened and how to change it: {stderr}"
+    );
+    assert!(log_entries(&log)[0].failed);
+}
+
+#[test]
+fn memory_hook_lets_the_prompt_through_with_nothing_when_told_to_allow() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let emb = embedder(DEAD_URL);
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--on-unavailable",
+        "allow",
+        "--log",
+        log.to_str().unwrap(),
+    ]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success() && out.stdout.is_empty());
+    assert!(log_entries(&log)[0].failed);
 }
 
 #[test]
@@ -293,10 +354,10 @@ fn memory_hook_rides_out_a_server_that_comes_back_within_a_second() {
 }
 
 #[test]
-fn memory_hook_logs_a_failure_only_when_there_is_nothing_to_search() {
+fn memory_hook_blocks_when_the_memory_directory_cannot_be_read() {
     let tmp = tempfile::tempdir().unwrap();
     let log = tmp.path().join("recall.jsonl");
-    let emb = embedder(DEAD_URL);
+    let emb = embedder(&serve());
     let missing = tmp.path().join("no-such-dir");
     let cache = tmp.path().join("cache.json");
     let mut hook = memory_args(missing.to_str().unwrap(), &emb, cache.to_str().unwrap());
@@ -306,7 +367,7 @@ fn memory_hook_logs_a_failure_only_when_there_is_nothing_to_search() {
         &hook,
         &payload("how do I fix the alpha problem"),
     );
-    assert!(out.status.success() && out.stdout.is_empty());
+    assert_eq!(out.status.code(), Some(2));
     assert!(log_entries(&log)[0].failed);
 }
 
@@ -352,7 +413,13 @@ fn skill_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     );
     let emb = embedder(DEAD_URL);
     let mut hook = skill_args(root.to_str().unwrap(), &emb, cache.to_str().unwrap());
-    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    hook.extend([
+        "hook",
+        "--on-unavailable",
+        "keyword",
+        "--log",
+        log.to_str().unwrap(),
+    ]);
     let out = run(
         SKILL_BIN,
         &hook,
@@ -362,6 +429,29 @@ fn skill_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     assert!(context(&out).contains("s1/SKILL.md#Alpha"));
     let entries = log_entries(&log);
     assert!(entries[0].fallback && !entries[0].failed);
+}
+
+#[test]
+fn skill_hook_blocks_the_prompt_by_default_when_it_cannot_retrieve_skills() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_skills(&tmp.path().join("skills"));
+    let (root, cache, log) = (
+        tmp.path().join("skills"),
+        tmp.path().join("skills.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let emb = embedder(DEAD_URL);
+    let mut hook = skill_args(root.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    let out = run(
+        SKILL_BIN,
+        &hook,
+        &payload("what are the alpha steps please"),
+    );
+    assert_eq!(out.status.code(), Some(2));
+    assert!(out.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("blocked"));
+    assert!(log_entries(&log)[0].failed);
 }
 
 #[test]
