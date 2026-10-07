@@ -153,7 +153,8 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
         kind: "skills".to_owned(),
         best_score: scored.first().map(|(_, score)| *score),
         matches: hits.len(),
-        full: 0,
+        // Sections are always injected as text, never as a pointer to read.
+        full: hits.len(),
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
     };
