@@ -716,6 +716,59 @@ fn a_hook_run_reaches_loki_and_tempo_without_the_prompt() {
 }
 
 #[test]
+fn claude_codes_ids_and_trace_context_reach_the_log_and_the_shipped_span() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let log = tmp.path().join("recall.jsonl");
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--log",
+        log.to_str().unwrap(),
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    let payload = serde_json::json!({
+        "prompt": "how do I fix the alpha problem",
+        "session_id": "sess-42",
+        "prompt_id": "prompt-7",
+    })
+    .to_string();
+    let mut child = Command::new(MEMORY_BIN)
+        .args(&hook)
+        .env(
+            "TRACEPARENT",
+            "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        )
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(payload.as_bytes())
+        .unwrap();
+    assert!(child.wait_with_output().unwrap().status.success());
+
+    let entry = &log_entries(&log)[0];
+    assert_eq!(entry.session_id.as_deref(), Some("sess-42"));
+    assert_eq!(entry.prompt_id.as_deref(), Some("prompt-7"));
+    wait_for(&seen, 1);
+    let body = seen.lock().unwrap()[0].2.clone();
+    assert!(body.contains("sess-42") && body.contains("prompt-7"));
+    assert!(body.contains("4bf92f3577b34da6a3ce929d0e0e4736"));
+    assert!(
+        body.contains("00f067aa0ba902b7"),
+        "continues Claude Code's span"
+    );
+}
+
+#[test]
 fn a_blocked_prompt_is_shipped_as_a_failure() {
     let tmp = tempfile::tempdir().unwrap();
     write_memories(&tmp.path().join("mem"));

@@ -96,6 +96,8 @@ pub struct Ids {
     pub trace: String,
     pub root: String,
     pub embed: String,
+    /// The span the hook span continues from, when a `traceparent` supplied one.
+    pub parent: Option<String>,
 }
 
 /// Random ids. Reads /dev/urandom, which Linux and macOS both have; if it cannot
@@ -106,7 +108,39 @@ pub fn new_ids() -> Ids {
         trace: random_hex(16),
         root: random_hex(8),
         embed: random_hex(8),
+        parent: None,
     }
+}
+
+/// Ids that continue the W3C `traceparent` (`00-<trace>-<span>-<flags>`) when it is
+/// valid: the trace id is kept and the span becomes the hook span's parent. Any
+/// other value starts a fresh trace. Claude Code does not set `TRACEPARENT` for
+/// hooks today; this is ready for when it does.
+pub fn new_ids_from(traceparent: Option<&str>) -> Ids {
+    let mut ids = new_ids();
+    if let Some((trace, span)) = traceparent.and_then(parse_traceparent) {
+        ids.trace = trace;
+        ids.parent = Some(span);
+    }
+    ids
+}
+
+fn parse_traceparent(value: &str) -> Option<(String, String)> {
+    let mut parts = value.trim().split('-');
+    let (version, trace, span, flags) =
+        (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
+    let lower_hex = |s: &str, len: usize| {
+        s.len() == len && s.chars().all(|c| matches!(c, '0'..='9' | 'a'..='f'))
+    };
+    let nonzero = |s: &str| s.chars().any(|c| c != '0');
+    let valid = lower_hex(version, 2)
+        && version != "ff"
+        && lower_hex(trace, 32)
+        && nonzero(trace)
+        && lower_hex(span, 16)
+        && nonzero(span)
+        && lower_hex(flags, 2);
+    valid.then(|| (trace.to_owned(), span.to_owned()))
 }
 
 fn random_hex(bytes: usize) -> String {
@@ -227,8 +261,16 @@ pub fn otlp_trace_body(
     } else {
         serde_json::json!({ "code": 1 })
     };
+    for (key, id) in [
+        ("session.id", &entry.session_id),
+        ("prompt.id", &entry.prompt_id),
+    ] {
+        if let Some(id) = id {
+            attributes.push(attribute(key, string_value(id)));
+        }
+    }
     let name = format!("{}.hook", service_of(entry));
-    let mut spans = vec![serde_json::json!({
+    let mut root = serde_json::json!({
         "traceId": ids.trace,
         "spanId": ids.root,
         "name": name,
@@ -237,7 +279,11 @@ pub fn otlp_trace_body(
         "endTimeUnixNano": end_ns.to_string(),
         "attributes": attributes,
         "status": status,
-    })];
+    });
+    if let (Some(parent), Some(object)) = (&ids.parent, root.as_object_mut()) {
+        object.insert("parentSpanId".to_owned(), parent.clone().into());
+    }
+    let mut spans = vec![root];
     if let Some(embed_ms) = entry.embed_ms {
         spans.push(serde_json::json!({
             "traceId": ids.trace,
@@ -294,7 +340,13 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
     }
     if let Some(base) = &targets.otlp_endpoint {
         let url = format!("{}/v1/traces", base.trim_end_matches('/'));
-        let body = otlp_trace_body(entry, &labels, &new_ids(), end_ns);
+        let traceparent = std::env::var("TRACEPARENT").ok();
+        let body = otlp_trace_body(
+            entry,
+            &labels,
+            &new_ids_from(traceparent.as_deref()),
+            end_ns,
+        );
         results.push(post(&url, tenant, &body));
     }
     results
@@ -384,6 +436,61 @@ mod tests {
     }
 
     #[test]
+    fn a_valid_traceparent_supplies_the_trace_and_the_parent_span() {
+        let tp = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+        let ids = new_ids_from(Some(tp));
+        assert_eq!(ids.trace, "4bf92f3577b34da6a3ce929d0e0e4736");
+        assert_eq!(ids.parent.as_deref(), Some("00f067aa0ba902b7"));
+        assert_ne!(
+            ids.root, "00f067aa0ba902b7",
+            "the hook span gets its own id"
+        );
+    }
+
+    #[test]
+    fn a_missing_or_malformed_traceparent_starts_a_fresh_trace() {
+        for bad in [
+            None,
+            Some(""),
+            Some("garbage"),
+            Some("00-short-00f067aa0ba902b7-01"),
+            Some("00-4bf92f3577b34da6a3ce929d0e0e4736-short-01"),
+            Some("ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"),
+            Some("00-00000000000000000000000000000000-00f067aa0ba902b7-01"),
+            Some("00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01"),
+            Some("00-4BF92F3577B34DA6A3CE929D0E0E4736-00f067aa0ba902b7-01"),
+        ] {
+            let ids = new_ids_from(bad);
+            assert_eq!(ids.parent, None, "{bad:?}");
+            assert_eq!(ids.trace.len(), 32);
+        }
+    }
+
+    #[test]
+    fn session_and_prompt_ids_become_span_attributes_and_a_parent_is_linked() {
+        let mut with_ids = entry();
+        with_ids.session_id = Some("sess-1".to_owned());
+        with_ids.prompt_id = Some("prompt-7".to_owned());
+        let mut ids = new_ids();
+        ids.parent = Some("d".repeat(16));
+        let body = otlp_trace_body(&with_ids, &[], &ids, 2_000_000_000_000);
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        let root = &value["resourceSpans"][0]["scopeSpans"][0]["spans"][0];
+        let attrs = root["attributes"].to_string();
+        assert!(attrs.contains("session.id") && attrs.contains("sess-1"));
+        assert!(attrs.contains("prompt.id") && attrs.contains("prompt-7"));
+        assert_eq!(root["parentSpanId"], "d".repeat(16));
+        let without = otlp_trace_body(&entry(), &[], &new_ids(), 2_000_000_000_000);
+        let bare: serde_json::Value = serde_json::from_str(&without).unwrap();
+        let bare_root = &bare["resourceSpans"][0]["scopeSpans"][0]["spans"][0];
+        assert!(!without.contains("session.id"));
+        assert!(
+            bare_root.get("parentSpanId").is_none(),
+            "a fresh trace has no parent"
+        );
+    }
+
+    #[test]
     fn loki_body_is_one_stream_with_the_labels_and_the_entry_as_the_line() {
         let body = loki_push_body(&entry(), &labels(), 1_791_000_000_000_000_000);
         let value: serde_json::Value = serde_json::from_str(&body).unwrap();
@@ -407,6 +514,7 @@ mod tests {
             trace: "a".repeat(32),
             root: "b".repeat(16),
             embed: "c".repeat(16),
+            parent: None,
         };
         let end = 1_791_000_000_000_000_000_u128;
         let body = otlp_trace_body(&entry(), &labels(), &ids, end);
