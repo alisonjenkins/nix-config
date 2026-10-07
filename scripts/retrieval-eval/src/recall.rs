@@ -18,7 +18,7 @@ pub struct Hit {
 }
 
 /// How much of a match is put in front of the model.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Inject {
     /// Path, score and one-line description of each match; the model reads the file.
     Snippets,
@@ -26,6 +26,9 @@ pub enum Inject {
     TopBody,
     /// Every match in full.
     Bodies,
+    /// A match scoring at least this much in full, the rest as snippets: confident
+    /// matches save the model a read, tentative ones cost only a line.
+    Tiered { body_score: f64 },
 }
 
 /// The user's prompt from a UserPromptSubmit hook payload, or `None` when it
@@ -86,6 +89,9 @@ pub fn render_context_with(
             "Possibly relevant memories (semantic match, best first). The best match is shown in full; read a file if another applies:\n"
         }
         Inject::Bodies => "Possibly relevant memories (semantic match, best first), shown in full:\n",
+        Inject::Tiered { .. } => {
+            "Possibly relevant memories (semantic match, best first). Confident matches are shown in full; read a file if a tentative one applies:\n"
+        }
     });
     for (n, hit) in hits.iter().enumerate() {
         let path = memory_dir.join(&hit.id);
@@ -93,6 +99,7 @@ pub fn render_context_with(
             Inject::Snippets => false,
             Inject::TopBody => n == 0,
             Inject::Bodies => true,
+            Inject::Tiered { body_score } => hit.score >= body_score,
         };
         if in_full {
             let _ = writeln!(
@@ -253,6 +260,36 @@ mod tests {
         let hits = [hit_with_body("a.md", 0.9, "secret body")];
         let text = render_context_with(Path::new("/mem"), &hits, Inject::Snippets, 1000);
         assert!(text.contains("about a.md") && !text.contains("secret body"));
+    }
+
+    #[test]
+    fn tiered_mode_shows_only_confident_matches_in_full() {
+        let hits = [
+            hit_with_body("a.md", 0.82, "fix a"),
+            hit_with_body("b.md", 0.77, "fix b"),
+            hit_with_body("c.md", 0.71, "fix c"),
+        ];
+        let text = render_context_with(
+            Path::new("/mem"),
+            &hits,
+            Inject::Tiered { body_score: 0.76 },
+            1000,
+        );
+        assert!(text.contains("fix a") && text.contains("fix b"));
+        assert!(!text.contains("fix c"));
+        assert!(text.contains("/mem/c.md (0.71): about c.md"));
+    }
+
+    #[test]
+    fn tiered_mode_with_nothing_confident_is_all_snippets() {
+        let hits = [hit_with_body("a.md", 0.71, "fix a")];
+        let text = render_context_with(
+            Path::new("/mem"),
+            &hits,
+            Inject::Tiered { body_score: 0.76 },
+            1000,
+        );
+        assert!(!text.contains("fix a") && text.contains("about a.md"));
     }
 
     #[test]

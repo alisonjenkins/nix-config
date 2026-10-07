@@ -25,6 +25,8 @@ const DEFAULT_BODY_CHARS: usize = 3500;
 /// correct top-1 matches scored 0.746-0.865, unrelated prompts 0.534-0.722.
 /// Scores are model- and dims-specific; re-measure before changing either.
 const DEFAULT_MIN_SCORE: f64 = 0.74;
+/// Top-1 scores for the right memory ran 0.70-0.87 (median 0.79) over 58 queries.
+const DEFAULT_BODY_SCORE: f64 = 0.76;
 
 #[derive(Parser)]
 #[command(about = "Semantic recall over Claude memory files, as a UserPromptSubmit hook")]
@@ -52,6 +54,9 @@ struct Selection {
     /// How much of each match to put in front of the model.
     #[arg(long, value_enum, default_value_t = InjectArg::Snippets)]
     inject: InjectArg,
+    /// With --inject auto: the score from which a match is injected in full.
+    #[arg(long, default_value_t = DEFAULT_BODY_SCORE)]
+    body_score: f64,
     /// Longest body injected in full, in characters.
     #[arg(long, default_value_t = DEFAULT_BODY_CHARS)]
     body_chars: usize,
@@ -65,14 +70,17 @@ enum InjectArg {
     Top,
     /// Every match in full.
     All,
+    /// Matches scoring at least --body-score in full, the others as snippets.
+    Auto,
 }
 
-impl From<InjectArg> for Inject {
-    fn from(arg: InjectArg) -> Self {
-        match arg {
-            InjectArg::Snippets => Self::Snippets,
-            InjectArg::Top => Self::TopBody,
-            InjectArg::All => Self::Bodies,
+impl InjectArg {
+    fn into_inject(self, body_score: f64) -> Inject {
+        match self {
+            Self::Snippets => Inject::Snippets,
+            Self::Top => Inject::TopBody,
+            Self::All => Inject::Bodies,
+            Self::Auto => Inject::Tiered { body_score },
         }
     }
 }
@@ -137,7 +145,7 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
     Ok(render_context_with(
         &cli.memory_dir,
         &hits,
-        selection.inject.into(),
+        selection.inject.into_inject(selection.body_score),
         selection.body_chars,
     ))
 }
