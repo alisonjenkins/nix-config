@@ -21,6 +21,11 @@ pub enum Preset {
     None,
     /// EmbeddingGemma retrieval prompts, from the model card.
     Gemma,
+    /// As `Gemma`, but the query is framed as a question; documents are identical,
+    /// so the two share cached document vectors.
+    GemmaQa,
+    /// The symmetric "sentence similarity" prompt on both queries and documents.
+    GemmaSim,
 }
 
 impl Preset {
@@ -28,15 +33,33 @@ impl Preset {
         match self {
             Self::None => query.to_owned(),
             Self::Gemma => format!("task: search result | query: {query}"),
+            Self::GemmaQa => format!("task: question answering | query: {query}"),
+            Self::GemmaSim => format!("task: sentence similarity | query: {query}"),
         }
     }
 
     fn document(self, chunk: &Chunk) -> String {
         let text: String = match self {
             Self::None => chunk.document(),
-            Self::Gemma => format!("title: {} | text: {}", chunk.title, chunk.text),
+            Self::Gemma | Self::GemmaQa => {
+                format!("title: {} | text: {}", chunk.title, chunk.text)
+            }
+            Self::GemmaSim => format!(
+                "task: sentence similarity | query: {}. {}",
+                chunk.title, chunk.text
+            ),
         };
         text.chars().take(MAX_DOC_CHARS).collect()
+    }
+
+    /// Names how documents are wrapped, so presets that wrap them the same way
+    /// can share one vector cache.
+    pub fn doc_format(self) -> &'static str {
+        match self {
+            Self::None => "plain-doc",
+            Self::Gemma | Self::GemmaQa => "gemma-doc",
+            Self::GemmaSim => "gemma-sim-doc",
+        }
     }
 }
 
@@ -71,7 +94,13 @@ impl FromStr for EmbedderSpec {
         let preset = match preset {
             "none" => Preset::None,
             "gemma" => Preset::Gemma,
-            _ => return Err(fail("preset must be `none` or `gemma`")),
+            "gemma-qa" => Preset::GemmaQa,
+            "gemma-sim" => Preset::GemmaSim,
+            _ => {
+                return Err(fail(
+                    "preset must be `none`, `gemma`, `gemma-qa` or `gemma-sim`",
+                ))
+            }
         };
         let (base_url, dims) = match location.split_once('#') {
             Some((url, dims)) => (
@@ -211,8 +240,9 @@ impl Embedder {
     pub fn cache_identity(&self) -> Result<String, RetrieveError> {
         let model = self.model_id()?;
         Ok(format!(
-            "{model}|{:?}|{:?}",
-            self.spec.preset, self.spec.dims
+            "{model}|{}|{:?}",
+            self.spec.preset.doc_format(),
+            self.spec.dims
         ))
     }
 
@@ -405,6 +435,41 @@ mod tests {
     }
 
     #[test]
+    fn question_answering_preset_changes_only_the_query_prompt() {
+        assert_eq!(
+            Preset::GemmaQa.query("why"),
+            "task: question answering | query: why"
+        );
+        let c = chunk("i", "T", "body");
+        assert_eq!(Preset::GemmaQa.document(&c), Preset::Gemma.document(&c));
+        assert_eq!(Preset::GemmaQa.doc_format(), Preset::Gemma.doc_format());
+    }
+
+    #[test]
+    fn sentence_similarity_preset_wraps_both_sides_alike() {
+        assert_eq!(
+            Preset::GemmaSim.query("why"),
+            "task: sentence similarity | query: why"
+        );
+        assert_eq!(
+            Preset::GemmaSim.document(&chunk("i", "T", "body")),
+            "task: sentence similarity | query: T. body"
+        );
+        assert_ne!(Preset::GemmaSim.doc_format(), Preset::Gemma.doc_format());
+    }
+
+    #[test]
+    fn new_presets_parse_from_a_spec() {
+        for (name, preset) in [
+            ("gemma-qa", Preset::GemmaQa),
+            ("gemma-sim", Preset::GemmaSim),
+        ] {
+            let spec: EmbedderSpec = format!("n={name}@http://h:1").parse().unwrap();
+            assert_eq!(spec.preset, preset);
+        }
+    }
+
+    #[test]
     fn cosine_scores_are_dot_products_of_unit_vectors_in_row_order() {
         let matrix = vec![vec![1.0, 0.0], vec![0.0, 1.0], vec![0.6, 0.8]];
         let scores = cosine_scores(&matrix, &[0.6, 0.8]);
@@ -509,7 +574,7 @@ mod tests {
         spec.dims = Some(256);
         assert_eq!(
             Embedder::new(spec).cache_identity().unwrap(),
-            "fake-model|Gemma|Some(256)"
+            "fake-model|gemma-doc|Some(256)"
         );
     }
 
