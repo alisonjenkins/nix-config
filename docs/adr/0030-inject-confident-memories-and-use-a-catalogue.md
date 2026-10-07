@@ -110,9 +110,12 @@ model call on every prompt, which is the cost this removes.
   `compare-memory-heldout-injection.*`, `retrieval-variants.*`; reproduce with
   `bench/compare.sh` and `bench/variants.sh`. Re-print any with `recall-compare
   render`.
-- Ground truth: `queries/facts.json` (98 facts, dev), `queries/heldout-facts.json`
-  (117 facts, held-out). Each fact is a verbatim string in its file and each
-  question has a body-only fact; both checked by an independent script.
+- Ground truth: a dev set (98 facts) and a held-out set (117 facts) of key facts
+  about real memories. Each fact is a verbatim string in its file and each
+  question has a body-only fact; both checked by an independent script. The sets
+  name private notes, so git holds placeholders (`queries/README.md`) and the saved
+  results show `Example question N` and `example-memory-N.md` in place of the real
+  text; every number is as measured.
 - The held-out set is only held out for the settings chosen here; the 0.70 / 0.76
   split was picked after seeing which held-out queries the old gate dropped, and
   then validated end to end on both sets. A third, untouched set would be the next

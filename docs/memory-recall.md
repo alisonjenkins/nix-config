@@ -417,8 +417,13 @@ scripts/retrieval-eval/target/release/recall-compare render \
   scripts/retrieval-eval/bench/results/compare-memory-heldout-slim.json
 ```
 
-The query sets (`queries/memory.json`, `heldout-facts.json`, `skills.json`,
-`negatives.json`, `facts.json`, `skills-facts.json`) are a 2026-10-07 snapshot; run
+The memory query sets (`memory.json`, `facts.json`, `heldout-facts.json`) name
+private notes, so git holds four-query placeholders; keep your own in
+`queries/private/` and set `MEMORY_QUERIES_DIR` (`queries/README.md`). The saved
+results were measured on the real sets and show `Example question N` and
+`example-memory-N.md` in place of the real text, with every number unchanged. The
+skills and negatives sets (`skills.json`, `skills-facts.json`, `negatives.json`) are
+real. All are a 2026-10-07 snapshot; run
 `retrieval-eval --validate-only` after memories or skills change. The
 `compare-memory-*-open`, `-slim` and `-injection` result files are subsets of the
 memory comparison run separately as systems were added; `compare.sh` now produces

@@ -46,7 +46,8 @@ server per model on different ports.
 
 `--validate-only` fails if a query expects a chunk id that no longer exists;
 run it after memories or skills change. The queries are a snapshot of
-2026-10-07 ground truth.
+2026-10-07 ground truth. The memory sets in git are placeholders; see
+`queries/README.md`.
 
 ## memory-recall (prototype)
 

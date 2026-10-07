@@ -103,7 +103,8 @@ What the evidence supports next, and what this record does **not** do:
 - Memory and skills against the defaults and cavemem:
   `bench/compare.sh`, `bench/results/compare-memory.json` and
   `compare-skills.json`. Re-print with `recall-compare render`.
-- Ground truth: `queries/facts.json` (98 facts) and `skills-facts.json` (80),
+- Ground truth: 98 key facts about real memories (private; git holds placeholders,
+  see `queries/README.md`) and `skills-facts.json` (80),
   every fact checked to be a verbatim substring of its source by an independent
   script; the skills comparison refuses to run if one is not.
 - The first thread sweep was invalid (the driver lost the server's PID and
