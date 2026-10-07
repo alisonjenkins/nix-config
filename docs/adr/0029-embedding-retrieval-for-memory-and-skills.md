@@ -34,8 +34,8 @@ Build it, keep it off by default, and measure it against the defaults.
   `UserPromptSubmit` hook (`memory-recall hook`) and a reindex path unit. It
   fails closed: when it cannot retrieve memories it blocks the prompt (exit 2).
 - Settings, each from a measurement in `docs/memory-recall.md`: 256-dimension
-  vectors, injection threshold 0.74, top 3, server threads 4, and a server
-  restart after each reindex.
+  vectors, injection threshold 0.74, top 3, server threads 4, and each reindex on
+  its own short-lived server so the query server never restarts.
 - The model is `pkgs.llama-models.embeddinggemma-2-q8-0` and the server is
   `pkgs.llama-cpp-upstream`, pinned to upstream commit `b7dafa0`, because
   nixpkgs' llama.cpp does not know the `gemma-embedding2` architecture.
@@ -72,10 +72,12 @@ What the evidence supports next, and what this record does **not** do:
 - **ONNX or candle inside the hook.** No Rust runtime supports the
   EmbeddingGemma 2 architecture, and loading a model per prompt costs 0.86 s.
   An HTTP call to a resident `llama-server` costs about 20 ms.
-- **A long-lived server with the default flags and no restarts.** Indexing
-  makes llama.cpp keep its largest compute buffer: 425 MB grows to 2.7 GB and
-  stays. `-np 1`, `MALLOC_ARENA_MAX=1` and `--threads-http 2` did not stop it;
-  `-ub 512` fails on long memories.
+- **Indexing on the long-lived query server.** Embedding makes llama.cpp keep its
+  largest compute buffer: 425 MB grows to 1.6 GB after one long memory and 2.7 GB
+  after a full index, and stays. `-np 1`, `MALLOC_ARENA_MAX=1` and `--threads-http
+  2` did not stop it; `-ub 512` fails on long memories. Restarting the query
+  server after each index (the first design) worked but interrupted prompts; each
+  index now runs on its own short-lived server instead.
 
 ## Consequences
 
@@ -94,9 +96,9 @@ What the evidence supports next, and what this record does **not** do:
   any of them means re-running `recall-bench gate`.
 - **A prompt must not lose its memories and skill sections**, as it could ignore
   the guard rails they hold (a bad mistake such as deleting a production server is
-  worse than a refused prompt). The reindex restarts the server for about a second,
-  so the hooks retry for 1.5 s and then, by default, block the prompt (exit 2, with
-  a message). `--on-unavailable keyword` injects BM25 matches instead and `allow`
+  worse than a refused prompt). The hooks retry for 1.5 s (a server that is
+  starting or has just crashed) and then, by default, block the prompt (exit 2,
+  with a message). `--on-unavailable keyword` injects BM25 matches instead and `allow`
   lets the prompt through bare; both are opt-in. The cost of the default is that
   Claude Code stops answering while the embedding server is down.
 - The Nix package builds the whole crate, including the benchmarks, so a
@@ -120,8 +122,10 @@ What the evidence supports next, and what this record does **not** do:
 - `systemd-analyze verify` on the generated units; transient units confirmed that
   `PathChanged` on a directory fires for an edit to an existing file inside it and
   that a oneshot's `ExecStartPost=systemctl --user try-restart` restarts a sibling
-  (the restart has since moved into the index script, unchanged in effect and not
-  rechecked).
+  (that design has since been replaced; see above).
+- Index on a separate server (2026-10-08, real model): the query server kept its
+  pid and 451 MB through two index runs, the temporary server peaked at 1.8 GB and
+  exited, and a memory added between the runs was found by the next hook.
 - **macOS.** The module also runs on macOS, as launchd agents (the work Mac is a
   target). Evaluated for `aarch64-darwin` in a scratch flake pinned to the commit
   (agents, hooks, activation package); not built or run on a Mac. See

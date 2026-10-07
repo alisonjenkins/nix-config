@@ -32,8 +32,8 @@ At most 3 matches. **It fails closed.** A prompt answered without the memories t
 hold its guard rails can make a bad mistake (deleting a production server, say), so
 when the hook cannot retrieve them it blocks the prompt: it exits 2 with a message
 saying what failed, which Claude Code shows instead of answering, and logs a
-failure. First it retries for 1.5 s, which rides out the server restart after a
-reindex. `--on-unavailable` (module option `onUnavailable`) changes the policy:
+failure. First it retries for 1.5 s, which rides out a server that is starting or
+has just crashed. `--on-unavailable` (module option `onUnavailable`) changes the policy:
 `keyword` injects the keyword (BM25) matches instead, as snippets for memories and
 sections for skills, and logs the prompt as a keyword fallback; `allow` lets the
 prompt through with nothing. The default is `block`, which means Claude Code stops
@@ -72,11 +72,13 @@ modules.memoryRecall = {
 ```
 
 That adds a `memory-recall-server` user service, a `memory-recall-index` service
-plus path unit that re-embeds when a memory file changes (and restarts the server
-afterwards, see Operating), and appends the hook to
+plus path unit that embeds new or changed memories as soon as the file appears (on
+a short-lived server of its own, so the query server is never restarted; see
+Operating), and appends the hook to
 `programs.claude-code.settings.hooks.UserPromptSubmit`. Options: `inject`
 (`auto`), `minScore` (0.70), `bodyScore` (0.76), `top` (3), `threads` (4), `dims`
-(256), `port` (8110), `model`, `llamaCpp`.
+(256), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
+`catalogue.enable` (off), `model`, `llamaCpp`.
 
 `skills.enable = true` adds `skill-recall`, a second hook that injects up to
 `skills.top` (3) skill sections scoring at least `skills.minScore` (0.74), and
@@ -111,9 +113,13 @@ memory-recall --memory-dir <memoryDir> catalogue --write <memoryDir>/MEMORY.md
 
 That turns 15,621 bytes (3,905 tokens) into 3,135 bytes (about 780 tokens): one
 line per memory file, no descriptions. It is **your file**, and Claude's own
-memory-saving appends a line to `MEMORY.md` when it writes a new memory, so rerun
-the command after new memories appear (it only writes when the content changed).
-Nothing here does that for you, on purpose.
+memory-saving appends a line to `MEMORY.md` when it writes a new memory, so the
+file grows again until the command is rerun (it only writes when the content
+changed). `modules.memoryRecall.catalogue.enable = true` reruns it after every
+index run, which keeps `MEMORY.md` names-only (about 9 tokens a memory) however many
+memories are saved. It is off by default because it overwrites a file Claude
+maintains; a new memory is searchable the moment its file is written either way,
+because the index is separate from `MEMORY.md`.
 
 ## Operating it
 
@@ -135,10 +141,14 @@ journalctl --user -u memory-recall-server -u memory-recall-index
   prompt format or dimensions discards the cache instead of ranking on
   incompatible vectors. A changed memory re-embeds in about 2 s; the first full
   index takes about 70 s (90 s at 4 threads).
-- **Server memory.** The server idles at about 425 MB. Embedding every memory
-  makes llama.cpp keep its largest compute buffer (2.1 to 2.7 GB) for good, so
-  the index service restarts the server when it finishes. Hooks that land in that
-  second wait for it (1.5 s), so none is left without its memories.
+- **Server memory.** The query server idles at about 425 MB. Embedding one long
+  memory takes it to 1.6 GB, and a full index to 2.7 GB, and llama.cpp keeps that
+  for good (measured 2026-10-08: one 3,500-character document, 424 to 1,628 MB;
+  nine more one by one, 1,627 MB). So the index service runs each index on its own
+  short-lived server on `indexPort`, which grows and exits. The query server is
+  never restarted: after indexing a copy of three memories and then adding a
+  fourth, the same server process (451 MB) found the new memory at once, since the
+  hook reads the vector cache on every prompt.
 - **A server that suddenly takes seconds per query.** Seen once, during the
   benchmarks: a freshly restarted server (nothing bulk-embedded, `--threads 4`,
   `nice -n 10`, not pinned) answered a 40-token query in about 3 s with 27 cores
@@ -406,8 +416,7 @@ noise. It kept 18 to 24% of the facts.
   the command.
 - **macOS is supported but untested on a Mac.** The module runs the server and the
   indexer as launchd agents there (`org.nix-community.home.memory-recall-*`, logs
-  in `~/.local/state/memory-recall/`), restarts the server with `launchctl
-  kickstart -k`, and sets `__darwinAllowLocalNetworking` so the package's loopback
+  in `~/.local/state/memory-recall/`), and sets `__darwinAllowLocalNetworking` so the package's loopback
   tests run in the macOS sandbox. It is evaluated for `aarch64-darwin` (the agents,
   the hooks and the activation package), and the Linux build is unchanged; nothing
   has been built or run on macOS. The work Mac imports the module with it off.
