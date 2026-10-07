@@ -400,7 +400,15 @@ noise. It kept 18 to 24% of the facts.
 - **`MEMORY.md` is Claude's file.** The catalogue replaces it by hand; nothing
   regenerates it, and a new memory Claude saves adds a line to it until you rerun
   the command.
-- **Linux only**, because the units are systemd.
+- **macOS is supported but untested on a Mac.** The module runs the server and the
+  indexer as launchd agents there (`org.nix-community.home.memory-recall-*`, logs
+  in `~/.local/state/memory-recall/`), restarts the server with `launchctl
+  kickstart -k`, and sets `__darwinAllowLocalNetworking` so the package's loopback
+  tests run in the macOS sandbox. It is evaluated for `aarch64-darwin` (the agents,
+  the hooks and the activation package), and the Linux build is unchanged; nothing
+  has been built or run on macOS. The work Mac imports the module with it off.
+  `llama-cpp-upstream` is only built in CI for `x86_64-linux`, so the first Mac
+  build compiles llama.cpp from source with `-ngl 0` (CPU, no Metal).
 - **The thresholds are calibrated on this model, size and corpus** (83 memories).
 
 ## Reproducing

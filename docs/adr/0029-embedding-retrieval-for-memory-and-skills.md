@@ -116,7 +116,13 @@ What the evidence supports next, and what this record does **not** do:
   already answers.
 - `systemd-analyze verify` on the generated units; transient units confirmed that
   `PathChanged` on a directory fires for an edit to an existing file inside it and
-  that a oneshot's `ExecStartPost=systemctl --user try-restart` restarts a sibling.
+  that a oneshot's `ExecStartPost=systemctl --user try-restart` restarts a sibling
+  (the restart has since moved into the index script, unchanged in effect and not
+  rechecked).
+- **macOS.** The module also runs on macOS, as launchd agents (the work Mac is a
+  target). Evaluated for `aarch64-darwin` in a scratch flake pinned to the commit
+  (agents, hooks, activation package); not built or run on a Mac. See
+  `docs/memory-recall.md`.
 - The model calls ran through `claude -p` with no tools, settings limited to an
   empty directory (so no hooks) and a marker string in every prompt. A search of
   cavemem's database for the marker found one hit, this session's own `Write` of
