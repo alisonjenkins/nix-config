@@ -75,6 +75,12 @@ for the live-maintenance runbook.
 | [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
 | [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
 
+## CI
+
+| # | Decision | Status |
+|---|---|---|
+| [0029](0029-parallel-pr-check.md) | Run the PR check's sections in parallel, one eval per output set | Accepted |
+
 ## VR foveated rendering
 
 Start with the spec in
