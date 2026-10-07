@@ -30,14 +30,22 @@ Prices from [claude.com/pricing](https://claude.com/pricing); intelligence
 index and output speed from [Artificial
 Analysis](https://artificialanalysis.ai/providers/anthropic) (medium effort).
 Both checked 2026-09-28 — verify current numbers before quoting them, since
-this table will drift:
+this table will drift. The Haiku 5.5 row comes from the Claude Code
+changelog (checked 2026-10-08) and has no Artificial Analysis score yet:
 
 | Tier | Input / output per MTok (million tokens) | Roughly vs. Haiku | AA intelligence index | Output tok/s |
 |---|---|---|---|---|
-| Haiku 4.5 | $1 / $5 | 1x | 15 | ~80 |
-| Sonnet 5 | $2 / $10 | ~2x | 28 | ~60 |
-| Opus 5.5 | $4 / $20 | ~4x | 51 (up to 58 at max effort) | ~82 |
-| Fable 5.1 | $10 / $50 | ~10x | 49 (up to 53 at max effort) | ~56 |
+| Haiku 5.5 (`claude-haiku-5-5`) | $0.10 / $0.50 | 1x | not yet published | not yet published |
+| Haiku 4.5 (legacy) | $1 / $5 | ~10x | 15 | ~80 |
+| Sonnet 5 | $2 / $10 | ~20x | 28 | ~60 |
+| Opus 5.5 | $4 / $20 | ~40x | 51 (up to 58 at max effort) | ~82 |
+| Fable 5.1 | $10 / $50 | ~100x | 49 (up to 53 at max effort) | ~56 |
+
+Haiku 5.5 is the default Haiku on the Anthropic API: 1M context, and
+$0.50 / $2.50 for prompts over 100K. It costs a tenth of Haiku 4.5, so
+the "haiku" tier in this skill means 5.5. The Agent tool's `model: "haiku"`
+resolves to the default Haiku; a pin via `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+(or a Bedrock/Vertex account) can still land on 4.5.
 
 Opus 5.5 replaced Opus 5 ($5 / $25, now listed under legacy models) and is
 cheaper than it. The index shifts several points with effort/reasoning
@@ -50,9 +58,9 @@ base speed is not fast — it has an optional "fast mode" at double its own
 price for roughly 2.5x the speed — and Fable is priced and positioned for
 long-running agentic work, not quick bulk calls.
 
-The gap compounds with volume: 50 haiku-tiered calls cost roughly what 25
-sonnet-tiered ones would (Sonnet's ~2x table ratio) for work that doesn't
-need sonnet's judgement — or ~12 opus-tiered ones (~4x), if that's the
+The gap compounds with volume: 50 haiku-tiered calls cost roughly what 2.5
+sonnet-tiered ones would (Sonnet's ~20x table ratio) for work that doesn't
+need sonnet's judgement — or ~1 opus-tiered one (~40x), if that's the
 comparison at hand. That gap, not a stylistic preference for cheap models,
 is the whole case for
 delegating aggressively rather than defaulting every call to whatever tier
@@ -181,6 +189,15 @@ Review every result from the first rung before using it. It is weaker
 (local) or external (Copilot) output, and wrong output costs more to redo
 than a haiku call would have.
 
+Haiku 5.5 ($0.10 / $0.50) now costs the same as GPT-6 Luna, the cheapest
+Copilot model, so the first rung no longer wins on price alone. Its edges
+are zero marginal cost (local) and, on the work machine, Copilot's separate
+credit pool: Claude and Copilot are metered apart there, so keep offloading
+Luna-shaped work to Luna to conserve the Claude balance for sonnet/opus
+judgement work. Haiku 5.5's lower price does not change that ladder. On a
+personal machine with no live local profile, or where the task needs this
+session's tools or skills, a haiku sub-agent is the better choice.
+
 **The test:** could a competent but literal-minded assistant, with no
 discretion, get this right by following your instructions exactly? If yes,
 haiku. If correctness depends on interpreting ambiguity, weighing trade-offs,
@@ -243,8 +260,8 @@ means the prompt was underspecified — fix the prompt, not just the output.
 Everything above picks a *model tier* for an Agent-tool sub-agent. GitHub
 Copilot's own `copilot` CLI is a separate, external delegate whose cheapest
 models (GPT-6 Luna, with `gpt-5.6-luna` as the script's next choice) are
-priced well below Haiku and, on public benchmarks, faster and more capable
-than it — read
+priced at or below Haiku 5.5 and, against Haiku 4.5 on public benchmarks,
+faster and more capable — Haiku 5.5 has no benchmark scores yet. Read
 [delegate-to-copilot.md](delegate-to-copilot.md) for the actual numbers and
 when that beats a Claude sub-agent instead of assuming Claude tiers are
 always the cheaper or only option.
