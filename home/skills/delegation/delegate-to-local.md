@@ -21,11 +21,12 @@ commands. For that, use a Claude sub-agent or `delegate-to-copilot.md`.
 
 **Zero marginal cost, but weaker capability and no cloud safety layer.** A
 locally-hosted model in the ~7-30B range is meaningfully weaker than Haiku
-4.5 on multi-step reasoning and ambiguous instructions, and (depending on the
+5.5 (and 4.5 before it) on multi-step reasoning and ambiguous instructions, and (depending on the
 model) may have no provider-side moderation — it's whatever alignment the
-base model shipped with, nothing added on top. Reserve it for genuinely
-mechanical, well-specified tasks (the same "haiku-shaped work" bar the
-`delegation` SKILL.md uses), and never feed it untrusted input if the model
+base model shipped with, nothing added on top. Use it for well-specified
+tasks (the "haiku-shaped work" list in the `delegation` SKILL.md, which
+includes code and tests from a spec; the scorecard below shows the 35B MoE
+and 9B getting those right), and never feed it untrusted input if the model
 has no known alignment/safety training (avoid "abliterated"/uncensored
 community finetunes for that reason). **Model size matters more than it
 might seem**: tested live (`docs/local-model-capabilities.md`), a 0.5B model
@@ -182,8 +183,8 @@ never mutates state, so it doesn't need to queue.
   reports ready before a chat call would actually succeed. Runtimes with no
   `/health` route (the mock server, `mlx_lm.server`) fall back to the
   `/v1/models` check as before. Loading a model is the one place allowed to
-  be slow — run it deliberately before a stretch of work, not per delegated
-  task. Records the active profile (name, url, model, pid) to
+  be slow — load once per session (run it with `run_in_background` and keep
+  working), not per delegated task, and leave it loaded. Records the active profile (name, url, model, pid) to
   `$LOCAL_LLM_STATE_DIR/active-profile.json`.
   **Checks the requested profile actually fits alongside whatever else is
   using the GPU** (a game) instead of refusing outright just because the GPU
@@ -260,7 +261,7 @@ reserve/release step:
 ## Usage
 
 ```
-scripts/switch-local-profile.sh fast   # once, deliberately, before a stretch of work
+scripts/switch-local-profile.sh fast   # once per session, in the background; leave it loaded
 scripts/delegate-to-local.sh "<task>"  # as many times as needed while it's loaded
 scripts/stop-local-profile.sh          # when done, to free the hardware
 ```

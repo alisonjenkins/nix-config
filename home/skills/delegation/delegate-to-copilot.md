@@ -37,8 +37,8 @@ failure mode, not a leftover from before the billing change:
 Copilot charges the same as OpenAI's own API for all of these. OpenAI's
 long-context rates are higher: GPT-6 Luna $0.20 / $0.75 past 272K input
 tokens, GPT-5.6 Luna $0.40 / $1.80 past 200K. For comparison, Artificial
-Analysis puts Haiku 4.5 (legacy; no score for 5.5 yet) at index 15 and ~80
-tok/s, Sonnet 5 at 28, and Opus 5.5 at 51. The index moves with effort settings, so read these as rough
+Analysis puts Haiku 5.5 at index 34 (medium effort; ~243 tok/s at max),
+Haiku 4.5 (legacy) at 15 and ~80 tok/s, Sonnet 5 at 28, and Opus 5.5 at 51. The index moves with effort settings, so read these as rough
 gaps.
 
 GPT-6 Luna is now the cheapest model in the lineup, at half GPT-5.6 Luna's
@@ -52,19 +52,24 @@ ID. The script's last-resort ID is still `claude-haiku-4.5`; whether the CLI
 accepts a Haiku 5.5 ID has not been checked, so it is left unchanged. Against
 Haiku 4.5, GPT-5.6 Luna was ~5x cheaper, faster, and well ahead on the
 intelligence index. Haiku 5.5 ($0.10 / $0.50) ended that cost gap: it matches
-GPT-6 Luna's price and undercuts GPT-5.6 Luna by about half. Neither has
-benchmark scores yet, so there is no measured capability gap to weigh. Pick
-between them on integration and allowance, not price.
+GPT-6 Luna's price and undercuts GPT-5.6 Luna by about half. On the index
+Haiku 5.5 (34 at medium effort) sits just below GPT-5.6 Luna (37 at max
+effort), at ~243 tok/s against Luna's ~128; GPT-6 Luna has no score yet. Pick between
+them on integration and allowance, not price or capability.
 
 What the numbers don't capture: a Claude sub-agent shares this session's tool
 access, skill injection, and structured output conventions natively: Copilot
 delegation is an external CLI call with its own profile system, no shared
 context, and output that must be reviewed as untrusted (see "Rules" below).
-Prefer a Claude sub-agent by default for anything needing tight integration
-with this session's tools or skills; reach for `delegate.sh` when the task is
-self-contained enough to hand off as plain text (a summarization, a
-well-specified mechanical edit, a draft) and either cost is the binding
-constraint or the user's context calls for it.
+Where the Claude and Copilot balances are separate (the work laptop, see
+below), reverse the default: reach for `delegate.sh` first for anything
+self-contained enough to hand off, including code from a clear spec, tests
+it runs itself and sweeps, and use a Claude sub-agent only for what needs
+this session's MCP tools or context. Elsewhere, prefer a Claude sub-agent
+for anything needing tight integration with this session's tools, and reach
+for `delegate.sh` when the task is self-contained enough to hand off as plain
+text and either cost is the binding constraint or the user's context calls
+for it.
 
 ## Separately metered Claude and Copilot allowances
 
