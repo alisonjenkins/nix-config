@@ -247,9 +247,10 @@ if [[ -n "$skills_arg" ]]; then
   task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $skill_roots_desc — read those too (e.g. their own SKILL.md and any files they route to) whenever one routes you to another. Then: $task"
 fi
 
-# Models in preference order, cheapest first. Not every account/CLI version
-# has the newest, so a rejection moves on to the next one.
-models=("gpt-6-luna" "gpt-5.6-luna" "claude-haiku-4.5")
+# Models in preference order: Haiku 5.5 and GPT-6 Luna cost the same, and
+# Haiku 5.5 scores higher and is faster. Not every account/CLI version/org
+# policy has the newest, so a rejection moves on to the next one.
+models=("claude-haiku-5.5" "gpt-6-luna" "gpt-5.6-luna" "claude-haiku-4.5")
 
 # A Copilot outage looks like a network/server error, not a model rejection —
 # retrying the same model with backoff is the right response, per this repo's
@@ -269,6 +270,18 @@ is_transient() {
 # retrying or switching models both waste an attempt without fixing it.
 is_credits_exhausted() {
   grep -qiE 'quota|premium request|insufficient.*(credit|balance)|credit.*(exhausted|exceeded)|budget.*exceeded|monthly limit|spending limit' <<<"$1"
+}
+
+# A model the account can't use: the CLI's own "is not available" message, or
+# an org-policy/availability wording that also names the model. Requiring the
+# model ID in the output keeps an unrelated "not available on this plan"
+# error from sending the task to the next model. The policy wording is a
+# guess; the exact text is only confirmed for "is not available".
+is_model_rejected() {
+  local model="$1" output="$2"
+  grep -qF "Model \"$model\" from --model flag is not available." <<<"$output" && return 0
+  grep -qF "$model" <<<"$output" &&
+    grep -qiE 'not (available|enabled|supported|found)|unknown model|invalid model|disabled|policy' <<<"$output"
 }
 
 # Runs copilot with the given model, retrying on transient failures.
@@ -302,8 +315,7 @@ for model in "${models[@]}"; do
     exit 0
   fi
 
-  model_rejected="Model \"$model\" from --model flag is not available."
-  if [[ $status -eq 1 ]] && grep -qF "$model_rejected" <<<"$call_output"; then
+  if [[ $status -eq 1 ]] && is_model_rejected "$model" "$call_output"; then
     continue
   fi
   break

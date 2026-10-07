@@ -53,15 +53,29 @@ case "${FAKE_COPILOT_MODE:-all-models-ok}" in
   all-models-ok)
     echo "response for model=$model: $task"
     ;;
+  haiku5-rejected)
+    if [[ "$model" == "claude-haiku-5.5" ]]; then
+      echo "Error: Model \"$model\" from --model flag is not available." >&2
+      exit 1
+    fi
+    echo "response for model=$model: $task"
+    ;;
+  haiku5-policy-disabled)
+    if [[ "$model" == "claude-haiku-5.5" ]]; then
+      echo "Error: Model \"$model\" is disabled by your organization's Copilot policy." >&2
+      exit 1
+    fi
+    echo "response for model=$model: $task"
+    ;;
   gpt6-rejected)
-    if [[ "$model" == "gpt-6-luna" ]]; then
+    if [[ "$model" == "claude-haiku-5.5" || "$model" == "gpt-6-luna" ]]; then
       echo "Error: Model \"$model\" from --model flag is not available." >&2
       exit 1
     fi
     echo "response for model=$model: $task"
     ;;
   luna-rejected)
-    if [[ "$model" == *-luna ]]; then
+    if [[ "$model" == "claude-haiku-5.5" || "$model" == *-luna ]]; then
       echo "Error: Model \"$model\" from --model flag is not available." >&2
       exit 1
     fi
