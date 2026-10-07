@@ -23,22 +23,22 @@ models like Luna, so if an account is on it this table doesn't apply and
 `delegate.sh`'s "premium request quota" error match (below) is the live
 failure mode, not a leftover from before the billing change:
 
-| Model | Released | Input / output per MTok (million tokens) | vs. Claude Haiku 4.5 ($1/$5) | AA intelligence index | Output tok/s |
+| Model | Released | Input / output per MTok (million tokens) | vs. Claude Haiku 5.5 ($0.10/$0.50) | AA intelligence index | Output tok/s |
 |---|---|---|---|---|---|
-| GPT-6 Luna (`gpt-6-luna`, this script's first choice) | 2026-09-22 | $0.10 / $0.50 | ~10x cheaper | not yet published | not yet published |
-| `gpt-5.6-luna` (this script's second choice) | 2026-07-09 | $0.20 / $1.20 | ~5x cheaper | 37 (max effort) | ~128 |
-| `gpt-5.4-nano`, `mai-code-1.1-flash` | — | ~$0.20 / ~$1.20-1.25 | ~5x cheaper | — | — |
-| `gpt-5-mini` | — | $0.25 / $2.00 | ~2.5x cheaper | — | — |
-| GPT-6 Sol | 2026-09-22 | $2.00 / $10.00 | same as Sonnet 5 | not yet published | not yet published |
-| `gpt-5.6-terra` | 2026-07-09 | $2.00 / $12.00 | ~2x dearer | 34 (high) | ~95 |
+| GPT-6 Luna (`gpt-6-luna`, this script's first choice) | 2026-09-22 | $0.10 / $0.50 | same price | not yet published | not yet published |
+| `gpt-5.6-luna` (this script's second choice) | 2026-07-09 | $0.20 / $1.20 | ~2x dearer | 37 (max effort) | ~128 |
+| `gpt-5.4-nano`, `mai-code-1.1-flash` | — | ~$0.20 / ~$1.20-1.25 | ~2x dearer | — | — |
+| `gpt-5-mini` | — | $0.25 / $2.00 | ~2.5-4x dearer | — | — |
+| GPT-6 Sol | 2026-09-22 | $2.00 / $10.00 | ~20x dearer | not yet published | not yet published |
+| `gpt-5.6-terra` | 2026-07-09 | $2.00 / $12.00 | ~20x dearer | 34 (high) | ~95 |
 | GPT-6 Astra (preview) | 2026-09-03 | $10.00 / $50.00 | same as Fable 5.1 | not yet published | not yet published |
 | Claude models via Copilot | — | same as Anthropic's own API | no markup | — | — |
 
 Copilot charges the same as OpenAI's own API for all of these. OpenAI's
 long-context rates are higher: GPT-6 Luna $0.20 / $0.75 past 272K input
 tokens, GPT-5.6 Luna $0.40 / $1.80 past 200K. For comparison, Artificial
-Analysis puts Haiku 4.5 at index 15 and ~80 tok/s, Sonnet 5 at 28, and Opus
-5.5 at 51. The index moves with effort settings, so read these as rough
+Analysis puts Haiku 4.5 (legacy; no score for 5.5 yet) at index 15 and ~80
+tok/s, Sonnet 5 at 28, and Opus 5.5 at 51. The index moves with effort settings, so read these as rough
 gaps.
 
 GPT-6 Luna is now the cheapest model in the lineup, at half GPT-5.6 Luna's
@@ -48,9 +48,13 @@ string, `gpt-6-luna`, was confirmed against the CLI on 2026-10-06 (copilot
 1.0.88): an unknown ID is rejected with "is not available", this one runs.
 `delegate.sh` tries `gpt-6-luna`, then `gpt-5.6-luna`, then
 `claude-haiku-4.5`, moving down a step only when the CLI rejects the model
-ID. Even GPT-5.6 Luna is ~5x cheaper than Haiku 4.5, faster, and well ahead
-on the intelligence index, so on raw cost/speed/capability numbers either
-Luna beats a Claude Agent-tool sub-agent at the same job.
+ID. The script's last-resort ID is still `claude-haiku-4.5`; whether the CLI
+accepts a Haiku 5.5 ID has not been checked, so it is left unchanged. Against
+Haiku 4.5, GPT-5.6 Luna was ~5x cheaper, faster, and well ahead on the
+intelligence index. Haiku 5.5 ($0.10 / $0.50) ended that cost gap: it matches
+GPT-6 Luna's price and undercuts GPT-5.6 Luna by about half. Neither has
+benchmark scores yet, so there is no measured capability gap to weigh. Pick
+between them on integration and allowance, not price.
 
 What the numbers don't capture: a Claude sub-agent shares this session's tool
 access, skill injection, and structured output conventions natively: Copilot
@@ -69,12 +73,14 @@ unevenly — a work seat with its own fixed monthly quota for each, priced or
 capped independently of the other — prefer `delegate.sh` (Luna) over a
 Claude haiku sub-agent for haiku-shaped work specifically, to conserve the
 Claude allowance for sonnet/opus-tier judgement work it can't be substituted
-for. This is a policy for that account shape, not a universal default: on a
-single pooled per-token budget (Anthropic's API billed directly, or a
-personal account with no separate Copilot allowance to protect), the cost
-argument above still favors Luna on raw price, but there's no allowance to
-conserve, so weigh it against the integration cost in "What the numbers
-don't capture" instead of defaulting to Copilot automatically.
+for. Haiku 5.5's lower price does not weaken this on the work laptop: the two
+balances are separate, so Luna stays the first rung there. This is a policy
+for that account shape, not a universal default: on a single pooled
+per-token budget (Anthropic's API billed directly, or a personal account
+with no separate Copilot allowance to protect), Luna no longer has a price
+advantage over Haiku 5.5 and there's no allowance to conserve, so default to
+the Claude haiku sub-agent and use Copilot only when the task suits the
+integration trade-off in "What the numbers don't capture".
 
 GitHub Copilot's free individual plan (checked 2026-09-19,
 https://github.com/features/copilot/plans) gives 2,000 completions and only **50
