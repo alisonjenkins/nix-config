@@ -31,15 +31,16 @@
     let
       cheapRung = {
         copilot = ''
-          - Cheapest rung on this machine: GitHub Copilot's Luna through the
-            `delegation` skill's `scripts/delegate.sh`. Claude tokens are the
-            scarce balance here and Copilot's is separate, so offload to Luna
-            by default: code from a clear spec, tests (it can run them),
-            config edits, drafts, first-pass reviews, repo and log sweeps. The
-            one-call exception above does not apply to it; a single
-            self-contained step still goes to Luna. Use a "haiku" sub-agent
-            only when Luna reports exhausted credits or the step needs MCP
-            tools or context from this session.
+          - Cheapest rung on this machine: GitHub Copilot's Haiku 5.5, falling
+            back to GPT-6 Luna, through the `delegation` skill's
+            `scripts/delegate.sh`. Claude tokens are the
+            scarce balance here and Copilot's is separate, so offload to the
+            Copilot delegate by default: code from a clear spec, tests (it can
+            run them), config edits, drafts, first-pass reviews, repo and log
+            sweeps. The one-call exception above does not apply to it; a
+            single self-contained step still goes to it. Use a "haiku"
+            sub-agent only when the delegate reports exhausted credits or the
+            step needs MCP tools or context from this session.
         '';
         local = ''
           - Cheapest rung on this machine: a local model through the
