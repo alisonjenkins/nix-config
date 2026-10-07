@@ -20,12 +20,16 @@ use tracing::{info, warn};
 const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
 const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
-const DEFAULT_TOP: usize = 2;
+const DEFAULT_TOP: usize = 3;
 /// About 750 tokens per section: most sections fit whole.
 const DEFAULT_SECTION_CHARS: usize = 3000;
-/// Set from `skill-recall calibrate` over the skills query set; see
-/// docs/memory-recall.md. Scores are model- and dims-specific.
-const DEFAULT_MIN_SCORE: f64 = 0.75;
+/// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over 656 sections and
+/// the 20 skills queries (bench/results/skill-calibrate-top3.md): at 0.74 the
+/// right section is among the top 3 for 70% of queries, 20% of off-topic prompts
+/// get an injection, and a prompt gets 240 tokens on average. Lower floors buy
+/// recall at 40 to 90% false injections; skill scores sit higher and overlap more
+/// than memory scores do. Scores are model- and dims-specific.
+const DEFAULT_MIN_SCORE: f64 = 0.74;
 const BYTES_PER_TOKEN: usize = 4;
 
 #[derive(Parser)]
