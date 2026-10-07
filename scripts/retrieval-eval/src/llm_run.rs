@@ -138,6 +138,41 @@ pub struct Llm {
     pub workdir: PathBuf,
 }
 
+impl Llm {
+    /// Deletes the transcript of a conversation started with `ask_first`, which
+    /// Claude Code keeps under its config directory for the scratch workdir.
+    pub fn forget(&self, call: &ClaudeCall) {
+        let config = std::env::var_os("CLAUDE_CONFIG_DIR")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".claude")));
+        if let Some(config) = config {
+            forget_session(&config, &self.workdir, &call.session_id);
+        }
+    }
+}
+
+/// The folder name Claude Code uses for a project directory: every character
+/// that is not a letter or digit becomes `-`.
+fn project_dir_name(workdir: &Path) -> String {
+    workdir
+        .to_string_lossy()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect()
+}
+
+/// Best effort: a transcript that is not there, or cannot be removed, is left alone.
+fn forget_session(config_dir: &Path, workdir: &Path, session_id: &str) {
+    if session_id.is_empty() {
+        return;
+    }
+    let file = config_dir
+        .join("projects")
+        .join(project_dir_name(workdir))
+        .join(format!("{session_id}.jsonl"));
+    let _ = fs::remove_file(file);
+}
+
 #[derive(Debug, Error)]
 pub enum AskError {
     #[error("write the system prompt in {path}: {source}")]
@@ -350,6 +385,33 @@ pub fn report(runs: &[QueryRun], systems: &[&str], with_llm: bool) {
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn project_dir_names_replace_every_non_alphanumeric_character() {
+        assert_eq!(
+            project_dir_name(Path::new("/tmp/nix-shell.dsbUBP/.tmpJuxLfO")),
+            "-tmp-nix-shell-dsbUBP--tmpJuxLfO"
+        );
+    }
+
+    #[test]
+    fn forget_removes_the_session_transcript_and_tolerates_its_absence() {
+        let config = tempfile::tempdir().unwrap();
+        let workdir = Path::new("/tmp/work.dir");
+        let dir = config
+            .path()
+            .join("projects")
+            .join(project_dir_name(workdir));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("abc.jsonl"), "{}").unwrap();
+        fs::write(dir.join("other.jsonl"), "{}").unwrap();
+        forget_session(config.path(), workdir, "abc");
+        assert!(!dir.join("abc.jsonl").exists());
+        assert!(dir.join("other.jsonl").exists());
+        forget_session(config.path(), workdir, "abc");
+        forget_session(config.path(), workdir, "");
+        assert!(dir.join("other.jsonl").exists());
+    }
 
     fn fact(text: &str, place: &str) -> Fact {
         Fact {

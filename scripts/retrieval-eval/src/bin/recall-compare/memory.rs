@@ -354,9 +354,22 @@ fn open_flow(
     known: &HashSet<String>,
 ) -> Result<(Vec<ClaudeCall>, String)> {
     let first = ask_first(llm, system, &user_turn(&[injection, OPEN_TASK], &item.q))?;
+    let flow = finish_open_flow(args, llm, system, injection, known, &first);
+    llm.forget(&first);
+    flow
+}
+
+fn finish_open_flow(
+    args: &Args,
+    llm: &Llm,
+    system: &str,
+    injection: &str,
+    known: &HashSet<String>,
+    first: &ClaudeCall,
+) -> Result<(Vec<ClaudeCall>, String)> {
     let seen = format!("{system}\n{injection}");
     let Some(rest) = first.text.trim_start().strip_prefix("OPEN:") else {
-        return Ok((vec![first], seen));
+        return Ok((vec![first.clone()], seen));
     };
     let chosen = extract_files(rest, known, 2);
     let opened = read_files(&args.memory_dir, &chosen);
@@ -364,10 +377,10 @@ fn open_flow(
     let second = ask_next(
         llm,
         system,
-        &first,
+        first,
         &format!("{files}\n\nAnswer the question now."),
     )?;
-    Ok((vec![first, second], format!("{seen}\n{opened}")))
+    Ok((vec![first.clone(), second], format!("{seen}\n{opened}")))
 }
 
 fn llm_phase(
