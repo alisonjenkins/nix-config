@@ -1,7 +1,12 @@
 //! Drives the real `memory-recall` and `skill-recall` binaries against a fake
 //! embeddings server: a text containing "alpha" embeds to [1, 0], anything else
 //! to [0, 1], so which document matches a prompt is checkable by hand.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects
+)]
 use std::fs;
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -498,4 +503,178 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
     assert!(out.status.success());
     let table = String::from_utf8(out.stdout).unwrap();
     assert!(table.contains("| memory | 2 | 1 (50%)"), "{table}");
+}
+
+/// What a fake Loki or Tempo received: request path, lowercased headers, body.
+type Captured = std::sync::Arc<std::sync::Mutex<Vec<(String, String, String)>>>;
+
+/// Answers every POST with 204 and records it.
+fn capture() -> (String, Captured) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let seen: Captured = Captured::default();
+    let sink = std::sync::Arc::clone(&seen);
+    thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut request = Vec::new();
+            let mut buf = vec![0_u8; 65536];
+            loop {
+                let n = stream.read(&mut buf).unwrap_or(0);
+                request.extend_from_slice(&buf[..n]);
+                let text = String::from_utf8_lossy(&request).into_owned();
+                if let Some((head, body)) = text.split_once("\r\n\r\n") {
+                    let len: usize = head
+                        .lines()
+                        .find_map(|l| {
+                            l.to_lowercase()
+                                .strip_prefix("content-length: ")
+                                .map(str::to_owned)
+                        })
+                        .and_then(|v| v.trim().parse().ok())
+                        .unwrap_or(0);
+                    if body.len() >= len || n == 0 {
+                        break;
+                    }
+                } else if n == 0 {
+                    break;
+                }
+            }
+            let text = String::from_utf8_lossy(&request).into_owned();
+            if let Some((head, body)) = text.split_once("\r\n\r\n") {
+                let path = head
+                    .lines()
+                    .next()
+                    .and_then(|l| l.split_whitespace().nth(1))
+                    .unwrap_or_default()
+                    .to_owned();
+                sink.lock()
+                    .unwrap()
+                    .push((path, head.to_lowercase(), body.to_owned()));
+            }
+            let _ = stream.write_all(
+                b"HTTP/1.1 204 No Content\r\nconnection: close\r\ncontent-length: 0\r\n\r\n",
+            );
+        }
+    });
+    (base, seen)
+}
+
+/// Waits for the detached shipper to deliver `count` requests.
+fn wait_for(seen: &Captured, count: usize) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while seen.lock().unwrap().len() < count && std::time::Instant::now() < deadline {
+        thread::sleep(std::time::Duration::from_millis(50));
+    }
+}
+
+fn indexed_memory_hook(tmp: &Path, embed: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+    write_memories(&tmp.join("mem"));
+    let (mem, cache) = (tmp.join("mem"), tmp.join("cache.json"));
+    let mut index = memory_args(mem.to_str().unwrap(), embed, cache.to_str().unwrap());
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+    (mem, cache)
+}
+
+#[test]
+fn a_hook_run_reaches_loki_and_tempo_without_the_prompt() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let (backend, seen) = capture();
+
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--loki-url",
+        &backend,
+        "--otlp-endpoint",
+        &backend,
+        "--telemetry-tenant",
+        "tenant-a",
+        "--telemetry-label",
+        "host=desk",
+    ]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the secretword alpha problem"),
+    );
+    assert!(out.status.success() && context(&out).contains("alpha-note.md"));
+
+    wait_for(&seen, 2);
+    let requests = seen.lock().unwrap().clone();
+    assert_eq!(requests.len(), 2, "one Loki push and one trace");
+    let loki = requests
+        .iter()
+        .find(|r| r.0 == "/loki/api/v1/push")
+        .expect("loki push");
+    let tempo = requests
+        .iter()
+        .find(|r| r.0 == "/v1/traces")
+        .expect("trace");
+    for request in [loki, tempo] {
+        assert!(
+            request.1.contains("x-scope-orgid: tenant-a"),
+            "{}",
+            request.1
+        );
+        assert!(
+            !request.2.contains("secretword"),
+            "the prompt must not be shipped"
+        );
+    }
+    assert!(loki.2.contains("\"host\":\"desk\""));
+    assert!(tempo.2.contains("memory-recall.hook") && tempo.2.contains("\"embed\""));
+}
+
+#[test]
+fn a_blocked_prompt_is_shipped_as_a_failure() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache) = (tmp.path().join("mem"), tmp.path().join("cache.json"));
+    let emb = embedder(DEAD_URL);
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--otlp-endpoint", &backend]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert_eq!(out.status.code(), Some(2));
+    wait_for(&seen, 1);
+    let requests = seen.lock().unwrap().clone();
+    assert!(requests[0].2.contains("\"code\":2"), "{}", requests[0].2);
+}
+
+#[test]
+fn a_backend_that_never_answers_does_not_delay_the_prompt() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    // Accepts connections and never replies.
+    let hang = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}", hang.local_addr().unwrap());
+    thread::spawn(move || {
+        let mut held = Vec::new();
+        for stream in hang.incoming().flatten() {
+            held.push(stream);
+        }
+    });
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--loki-url", &url, "--otlp-endpoint", &url]);
+    let started = std::time::Instant::now();
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success() && context(&out).contains("alpha-note.md"));
+    assert!(
+        started.elapsed() < std::time::Duration::from_millis(2500),
+        "the shipper has a 3 s timeout, so a hook that waited for it would take longer: {:?}",
+        started.elapsed()
+    );
 }

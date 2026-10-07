@@ -14,9 +14,8 @@ use retrieval_eval::recall::{
     blocked_message, hook_output, keyword_fallback, prompt_from_hook_input, render_sections,
     retry_until, select, Blocked, Hit, OnUnavailable,
 };
-use retrieval_eval::recall_log::{
-    append_failure, append_rotating, now_iso8601, Entry, DEFAULT_ROTATION,
-};
+use retrieval_eval::recall_log::{append_rotating, now_iso8601, Entry, DEFAULT_ROTATION};
+use retrieval_eval::telemetry::{spawn_ship, Targets};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -94,6 +93,8 @@ enum Command {
         /// What to do when the skill sections cannot be retrieved.
         #[arg(long, value_enum, default_value_t = OnUnavailable::Block)]
         on_unavailable: OnUnavailable,
+        #[command(flatten)]
+        telemetry: Targets,
     },
     /// Sweep the score threshold over a query set: recall and false injections.
     Calibrate {
@@ -318,6 +319,7 @@ fn run(cli: &Cli) -> Result<()> {
             selection,
             log,
             on_unavailable,
+            telemetry,
         } => {
             let mut stdin = String::new();
             std::io::stdin()
@@ -331,9 +333,12 @@ fn run(cli: &Cli) -> Result<()> {
             {
                 Ok(recalled) => recalled,
                 Err(error) => {
+                    let mut failure = Entry::failure("skills", &now_iso8601());
+                    failure.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
                     if let Some(path) = log {
-                        append_failure(path, "skills");
+                        let _ = append_rotating(path, &failure, DEFAULT_ROTATION);
                     }
+                    spawn_ship(telemetry, &failure);
                     if *on_unavailable == OnUnavailable::Block {
                         return Err(Blocked(blocked_message(
                             "skill-recall",
@@ -350,6 +355,7 @@ fn run(cli: &Cli) -> Result<()> {
                     warn!(path = %path.display(), %error, "could not write the recall log");
                 }
             }
+            spawn_ship(telemetry, &recalled.entry);
             if let Some(output) = hook_output(&recalled.context) {
                 println!("{output}");
             }
