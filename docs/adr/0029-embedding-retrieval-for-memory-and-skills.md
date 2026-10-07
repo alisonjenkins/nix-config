@@ -32,7 +32,7 @@ Build it, keep it off by default, and measure it against the defaults.
 - `modules.memoryRecall` (`home/modules/memory-recall`) runs a local
   `llama-server --embeddings` with EmbeddingGemma 2 Q8_0 on CPU, a
   `UserPromptSubmit` hook (`memory-recall hook`) and a reindex path unit. It
-  never blocks a prompt: on an error it falls back to keyword matches.
+  fails closed: when it cannot retrieve memories it blocks the prompt (exit 2).
 - Settings, each from a measurement in `docs/memory-recall.md`: 256-dimension
   vectors, injection threshold 0.74, top 3, server threads 4, and a server
   restart after each reindex.
@@ -92,10 +92,13 @@ What the evidence supports next, and what this record does **not** do:
   detail that is only in the body; the model still opens the file.
 - The threshold is only valid for this model, dimension count and corpus. Changing
   any of them means re-running `recall-bench gate`.
-- The reindex restarts the server for about a second. A prompt must not lose its
-  memories and skill sections then, as it could ignore the guard rails they hold,
-  so the hooks retry for 1.5 s and then fall back to keyword (BM25) matches, logged
-  as a fallback.
+- **A prompt must not lose its memories and skill sections**, as it could ignore
+  the guard rails they hold (a bad mistake such as deleting a production server is
+  worse than a refused prompt). The reindex restarts the server for about a second,
+  so the hooks retry for 1.5 s and then, by default, block the prompt (exit 2, with
+  a message). `--on-unavailable keyword` injects BM25 matches instead and `allow`
+  lets the prompt through bare; both are opt-in. The cost of the default is that
+  Claude Code stops answering while the embedding server is down.
 - The Nix package builds the whole crate, including the benchmarks, so a
   `Cargo.lock` bump must keep `nix build .#memory-recall` green.
 

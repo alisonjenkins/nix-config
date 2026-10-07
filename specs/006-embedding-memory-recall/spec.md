@@ -52,7 +52,8 @@ When the owner sends a prompt, the memories most likely to matter are in front o
 
 1. **Given** a prompt whose best memory scores at or above the whole-memory threshold, **When** the hook runs, **Then** that memory is injected in full.
 2. **Given** a best score between the floor and the whole-memory threshold, **When** the hook runs, **Then** only matching snippets are injected.
-3. **Given** the embedding server is down, a prompt is too short, or nothing clears the floor, **When** the hook runs, **Then** it injects nothing and exits cleanly, so a prompt is never blocked.
+3. **Given** the embedding server is down after a short retry, **When** the hook runs, **Then** it blocks the prompt with a message saying why (the default), or, if configured, injects keyword matches or nothing.
+4. **Given** a prompt that is too short or nothing clears the floor, **When** the hook runs, **Then** the prompt passes untouched.
 4. **Given** the module option is off, **When** the host builds, **Then** no server, hook or timer is created.
 
 ---
@@ -180,14 +181,14 @@ At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 
 
 - **FR-001**: The system MUST rank memories and skill sections against a prompt using locally computed embeddings, with no external service and no model call per prompt.
 - **FR-002**: The prompt hook MUST inject whole memories above a high confidence threshold and snippets above a lower floor, and nothing otherwise.
-- **FR-003**: The hook MUST fail open: any error, timeout, missing server or short prompt injects nothing and never blocks the prompt.
+- **FR-003**: The hook MUST fail closed: when it cannot retrieve memories (server down after a retry, unreadable directory) it blocks the prompt with a message, because answering without the memories that hold guard rails risks a bad mistake. A configuration option MUST allow keyword matches or nothing instead.
 - **FR-004**: The system MUST produce a names-only catalogue of memories and regenerate it on request, rewriting the file only when it changes.
 - **FR-005**: The feature MUST be off by default behind a single option, and enabling it MUST require naming the memory directory.
 - **FR-006**: The embedding model and the llama.cpp build it needs MUST be pinned and reproducible from the flake.
 - **FR-007**: The comparison harness MUST score every system on a dev set and a held-out set, and MUST report retrieval time, facts in the retrieved text, facts in the answer, input tokens, cache reads, cache writes, output tokens, model time and dollars.
 - **FR-008**: The harness MUST keep text that is the same on every call in the system block and per-query text in the user turn, and MUST continue one conversation for multi-call flows.
 - **FR-009**: Results MUST be saved in the repository with the commands that reproduce them, and claims in documentation MUST match the saved numbers.
-- **FR-010**: A skills hook MUST inject matching skill sections and obey the same fail-open rule (built: `skill-recall`).
+- **FR-010**: A skills hook MUST inject matching skill sections and obey the same fail-closed rule (built: `skill-recall`).
 - **FR-011**: When enabled, the hook MUST log score, injection kind and tokens added per prompt without storing prompt text (built: `--log`, `log-summary`).
 
 ### Key Entities

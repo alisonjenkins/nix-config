@@ -17,8 +17,8 @@ not, so the benchmark cannot say whether the hooks pay for themselves on real us
 
 ## Decision
 
-- Add `skill-recall` (same shape as `memory-recall`: `index`, `query`, a fail-open
-  `hook`, plus `calibrate`) and an optional `modules.memoryRecall.skills` block.
+- Add `skill-recall` (same shape as `memory-recall`: `index`, `query`, a
+  fail-closed `hook`, plus `calibrate`) and an optional `modules.memoryRecall.skills` block.
   It injects up to 3 sections of at most 3,000 characters at or above **0.74**.
 - Both hooks append a line per prompt (best score, matches, how many in full,
   tokens added, never the prompt) to a log, on by default, and

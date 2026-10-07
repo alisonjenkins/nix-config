@@ -28,14 +28,18 @@ prompt ──▶ memory-recall hook ──▶ llama-server --embeddings (Embeddi
    below 0.70   ─▶ nothing
 ```
 
-At most 3 matches. It never blocks a prompt (it always exits 0), and a prompt does
-not lose its memories because the server is away: the hook retries for 1.5 s, which
-rides out the server restart after a reindex, and if the server is still
-unreachable it injects the keyword (BM25) matches instead, as snippets for
-memories and as sections for skills, and logs the prompt as a keyword fallback. It
-injects nothing for a prompt with no `prompt` in the payload, a prompt under 12
-characters, a prompt with nothing above the floor, or a memory directory or skills
-root that cannot be read (that case is logged as a failure).
+At most 3 matches. **It fails closed.** A prompt answered without the memories that
+hold its guard rails can make a bad mistake (deleting a production server, say), so
+when the hook cannot retrieve them it blocks the prompt: it exits 2 with a message
+saying what failed, which Claude Code shows instead of answering, and logs a
+failure. First it retries for 1.5 s, which rides out the server restart after a
+reindex. `--on-unavailable` (module option `onUnavailable`) changes the policy:
+`keyword` injects the keyword (BM25) matches instead, as snippets for memories and
+sections for skills, and logs the prompt as a keyword fallback; `allow` lets the
+prompt through with nothing. The default is `block`, which means Claude Code stops
+answering until the server is back. A prompt with nothing to retrieve (no `prompt`
+in the payload, under 12 characters) or with nothing above the floor passes
+untouched; an unreadable memory directory or skills root counts as unavailable.
 
 **What the evidence supports** (details below): the injection gets facts into the
 answer as often as the strongest default flow (one that always reads a file), and
