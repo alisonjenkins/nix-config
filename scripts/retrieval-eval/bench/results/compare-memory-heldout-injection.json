@@ -1,0 +1,4382 @@
+[
+  {
+    "q": "Example question 7",
+    "expect": "example-memory-24.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4512.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 14363,
+        "llm_out_tokens": 637,
+        "llm_ms": 6686.0,
+        "cost_usd": 0.06381399999999998
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 95.147305,
+        "retrieved_tokens": 76.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3133,
+        "llm_out_tokens": 599,
+        "llm_ms": 15347.0,
+        "cost_usd": 0.018518
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 95.147305,
+        "retrieved_tokens": 683.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7343,
+        "llm_out_tokens": 713,
+        "llm_ms": 6733.0,
+        "cost_usd": 0.0206252
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 92.26741700000001,
+        "retrieved_tokens": 614.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 4173,
+        "llm_out_tokens": 609,
+        "llm_ms": 5030.0,
+        "cost_usd": 0.022778
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.283424,
+        "retrieved_tokens": 602.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 4161,
+        "llm_out_tokens": 587,
+        "llm_ms": 4984.0,
+        "cost_usd": 0.02251
+      }
+    ]
+  },
+  {
+    "q": "Example question 35",
+    "expect": "example-memory-44.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4634.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14472,
+        "llm_out_tokens": 784,
+        "llm_ms": 8854.0,
+        "cost_usd": 0.06572
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 31.168435000000002,
+        "retrieved_tokens": 152.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3254,
+        "llm_out_tokens": 778,
+        "llm_ms": 11032.0,
+        "cost_usd": 0.020792
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 31.168435000000002,
+        "retrieved_tokens": 881.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7582,
+        "llm_out_tokens": 797,
+        "llm_ms": 7068.0,
+        "cost_usd": 0.0219728
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 30.584895,
+        "retrieved_tokens": 804.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4428,
+        "llm_out_tokens": 702,
+        "llm_ms": 5938.0,
+        "cost_usd": 0.024728
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 30.210824000000002,
+        "retrieved_tokens": 1410.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5542,
+        "llm_out_tokens": 801,
+        "llm_ms": 6159.0,
+        "cost_usd": 0.030174
+      }
+    ]
+  },
+  {
+    "q": "Example question 6",
+    "expect": "example-memory-76.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4874.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14900,
+        "llm_out_tokens": 879,
+        "llm_ms": 7881.0,
+        "cost_usd": 0.068382
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.179917,
+        "retrieved_tokens": 58.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3092,
+        "llm_out_tokens": 1117,
+        "llm_ms": 13113.0,
+        "cost_usd": 0.023534
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.179917,
+        "retrieved_tokens": 1027.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7839,
+        "llm_out_tokens": 954,
+        "llm_ms": 8431.0,
+        "cost_usd": 0.022978600000000002
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.703891,
+        "retrieved_tokens": 958.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4685,
+        "llm_out_tokens": 901,
+        "llm_ms": 6544.0,
+        "cost_usd": 0.027746
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.34109699999999,
+        "retrieved_tokens": 946.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4673,
+        "llm_out_tokens": 866,
+        "llm_ms": 6440.0,
+        "cost_usd": 0.027348
+      }
+    ]
+  },
+  {
+    "q": "Example question 45",
+    "expect": "example-memory-9.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5874.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 16694,
+        "llm_out_tokens": 1040,
+        "llm_ms": 10059.0,
+        "cost_usd": 0.077168
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.427902,
+        "retrieved_tokens": 214.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3382,
+        "llm_out_tokens": 751,
+        "llm_ms": 6720.0,
+        "cost_usd": 0.021034
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.427902,
+        "retrieved_tokens": 2034.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 9698,
+        "llm_out_tokens": 884,
+        "llm_ms": 14149.0,
+        "cost_usd": 0.047624
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 88.63842399999999,
+        "retrieved_tokens": 547.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3960,
+        "llm_out_tokens": 794,
+        "llm_ms": 11214.0,
+        "cost_usd": 0.023776
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 90.447781,
+        "retrieved_tokens": 1761.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6163,
+        "llm_out_tokens": 877,
+        "llm_ms": 7147.0,
+        "cost_usd": 0.033418
+      }
+    ]
+  },
+  {
+    "q": "Example question 39",
+    "expect": "example-memory-62.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4719.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14639,
+        "llm_out_tokens": 620,
+        "llm_ms": 6940.0,
+        "cost_usd": 0.064748
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 93.035377,
+        "retrieved_tokens": 207.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3363,
+        "llm_out_tokens": 746,
+        "llm_ms": 6805.0,
+        "cost_usd": 0.020908
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 93.035377,
+        "retrieved_tokens": 1021.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7852,
+        "llm_out_tokens": 609,
+        "llm_ms": 6316.0,
+        "cost_usd": 0.020561
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.41192000000001,
+        "retrieved_tokens": 949.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4704,
+        "llm_out_tokens": 718,
+        "llm_ms": 5851.0,
+        "cost_usd": 0.025992
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 90.709972,
+        "retrieved_tokens": 2026.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6544,
+        "llm_out_tokens": 697,
+        "llm_ms": 6054.0,
+        "cost_usd": 0.033142
+      }
+    ]
+  },
+  {
+    "q": "Example question 34",
+    "expect": "example-memory-10.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4711.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14528,
+        "llm_out_tokens": 595,
+        "llm_ms": 6152.0,
+        "cost_usd": 0.064054
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 88.782957,
+        "retrieved_tokens": 76.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3124,
+        "llm_out_tokens": 1128,
+        "llm_ms": 9919.0,
+        "cost_usd": 0.023772
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 88.782957,
+        "retrieved_tokens": 882.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7504,
+        "llm_out_tokens": 670,
+        "llm_ms": 6253.0,
+        "cost_usd": 0.0201932
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 89.389111,
+        "retrieved_tokens": 803.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4320,
+        "llm_out_tokens": 465,
+        "llm_ms": 4067.0,
+        "cost_usd": 0.021926
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 89.747141,
+        "retrieved_tokens": 791.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4308,
+        "llm_out_tokens": 562,
+        "llm_ms": 5379.0,
+        "cost_usd": 0.022848
+      }
+    ]
+  },
+  {
+    "q": "Example question 4",
+    "expect": "example-memory-43.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4381.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 14109,
+        "llm_out_tokens": 617,
+        "llm_ms": 6273.0,
+        "cost_usd": 0.034649
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 92.37439499999999,
+        "retrieved_tokens": 87.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3169,
+        "llm_out_tokens": 661,
+        "llm_ms": 6034.0,
+        "cost_usd": 0.019282
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 92.37439499999999,
+        "retrieved_tokens": 563.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7114,
+        "llm_out_tokens": 692,
+        "llm_ms": 6247.0,
+        "cost_usd": 0.0205062
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 93.832375,
+        "retrieved_tokens": 485.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3916,
+        "llm_out_tokens": 706,
+        "llm_ms": 5874.0,
+        "cost_usd": 0.02272
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 93.59994,
+        "retrieved_tokens": 472.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3904,
+        "llm_out_tokens": 641,
+        "llm_ms": 4696.0,
+        "cost_usd": 0.022022
+      }
+    ]
+  },
+  {
+    "q": "Example question 49",
+    "expect": "example-memory-78.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4468.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14204,
+        "llm_out_tokens": 737,
+        "llm_ms": 8898.0,
+        "cost_usd": 0.036229
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 91.246521,
+        "retrieved_tokens": 79.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3146,
+        "llm_out_tokens": 958,
+        "llm_ms": 8456.0,
+        "cost_usd": 0.02216
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 91.246521,
+        "retrieved_tokens": 642.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7193,
+        "llm_out_tokens": 976,
+        "llm_ms": 8750.0,
+        "cost_usd": 0.0232746
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 93.214949,
+        "retrieved_tokens": 565.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3997,
+        "llm_out_tokens": 691,
+        "llm_ms": 4834.0,
+        "cost_usd": 0.022894
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 92.739198,
+        "retrieved_tokens": 553.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3985,
+        "llm_out_tokens": 885,
+        "llm_ms": 6647.0,
+        "cost_usd": 0.024786
+      }
+    ]
+  },
+  {
+    "q": "Example question 33",
+    "expect": "example-memory-48.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5213.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15504,
+        "llm_out_tokens": 940,
+        "llm_ms": 8092.0,
+        "cost_usd": 0.043459
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 88.628353,
+        "retrieved_tokens": 209.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3379,
+        "llm_out_tokens": 446,
+        "llm_ms": 5299.0,
+        "cost_usd": 0.017972
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 88.628353,
+        "retrieved_tokens": 702.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7239,
+        "llm_out_tokens": 505,
+        "llm_ms": 8051.0,
+        "cost_usd": 0.033998
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 88.653754,
+        "retrieved_tokens": 622.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 4055,
+        "llm_out_tokens": 552,
+        "llm_ms": 4336.0,
+        "cost_usd": 0.021736
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 89.934977,
+        "retrieved_tokens": 1412.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 5436,
+        "llm_out_tokens": 551,
+        "llm_ms": 5121.0,
+        "cost_usd": 0.027249999999999996
+      }
+    ]
+  },
+  {
+    "q": "Example question 3",
+    "expect": "example-memory-40.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4411.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14026,
+        "llm_out_tokens": 939,
+        "llm_ms": 8361.0,
+        "cost_usd": 0.037537
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.496936,
+        "retrieved_tokens": 86.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3120,
+        "llm_out_tokens": 1122,
+        "llm_ms": 10840.0,
+        "cost_usd": 0.023696
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.496936,
+        "retrieved_tokens": 592.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7002,
+        "llm_out_tokens": 669,
+        "llm_ms": 6889.0,
+        "cost_usd": 0.020067599999999998
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 89.590765,
+        "retrieved_tokens": 505.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3831,
+        "llm_out_tokens": 894,
+        "llm_ms": 7410.0,
+        "cost_usd": 0.02426
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 89.282011,
+        "retrieved_tokens": 493.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3819,
+        "llm_out_tokens": 606,
+        "llm_ms": 5321.0,
+        "cost_usd": 0.021332
+      }
+    ]
+  },
+  {
+    "q": "Example question 38",
+    "expect": "example-memory-28.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4571.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14249,
+        "llm_out_tokens": 559,
+        "llm_ms": 5910.0,
+        "cost_usd": 0.034629
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 89.505989,
+        "retrieved_tokens": 136.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3230,
+        "llm_out_tokens": 416,
+        "llm_ms": 4701.0,
+        "cost_usd": 0.017076
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 89.505989,
+        "retrieved_tokens": 802.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7328,
+        "llm_out_tokens": 623,
+        "llm_ms": 6112.0,
+        "cost_usd": 0.0200908
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.506704,
+        "retrieved_tokens": 710.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4129,
+        "llm_out_tokens": 535,
+        "llm_ms": 4470.0,
+        "cost_usd": 0.021862
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 92.71227499999999,
+        "retrieved_tokens": 1366.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 5251,
+        "llm_out_tokens": 423,
+        "llm_ms": 4726.0,
+        "cost_usd": 0.02523
+      }
+    ]
+  },
+  {
+    "q": "Example question 25",
+    "expect": "example-memory-6.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6083.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17030,
+        "llm_out_tokens": 956,
+        "llm_ms": 8499.0,
+        "cost_usd": 0.049723
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 92.25549199999999,
+        "retrieved_tokens": 214.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3377,
+        "llm_out_tokens": 1283,
+        "llm_ms": 10844.0,
+        "cost_usd": 0.026334000000000003
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 92.25549199999999,
+        "retrieved_tokens": 1034.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7882,
+        "llm_out_tokens": 1548,
+        "llm_ms": 14147.0,
+        "cost_usd": 0.047
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 92.955931,
+        "retrieved_tokens": 962.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4726,
+        "llm_out_tokens": 1013,
+        "llm_ms": 14897.0,
+        "cost_usd": 0.02903
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.01128999999999,
+        "retrieved_tokens": 1761.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6158,
+        "llm_out_tokens": 860,
+        "llm_ms": 7172.0,
+        "cost_usd": 0.033228
+      }
+    ]
+  },
+  {
+    "q": "Example question 18",
+    "expect": "example-memory-33.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4336.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14024,
+        "llm_out_tokens": 758,
+        "llm_ms": 7291.0,
+        "cost_usd": 0.035719
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 89.39108399999999,
+        "retrieved_tokens": 85.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3151,
+        "llm_out_tokens": 658,
+        "llm_ms": 5932.0,
+        "cost_usd": 0.01918
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 89.39108399999999,
+        "retrieved_tokens": 516.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7017,
+        "llm_out_tokens": 705,
+        "llm_ms": 6350.0,
+        "cost_usd": 0.0205484
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.153834,
+        "retrieved_tokens": 430.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3807,
+        "llm_out_tokens": 702,
+        "llm_ms": 5708.0,
+        "cost_usd": 0.022244
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.182355,
+        "retrieved_tokens": 417.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3795,
+        "llm_out_tokens": 630,
+        "llm_ms": 5163.0,
+        "cost_usd": 0.021476
+      }
+    ]
+  },
+  {
+    "q": "Example question 11",
+    "expect": "example-memory-30.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5451.0,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15701,
+        "llm_out_tokens": 765,
+        "llm_ms": 7261.0,
+        "cost_usd": 0.042497
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 92.55730199999999,
+        "retrieved_tokens": 200.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3334,
+        "llm_out_tokens": 693,
+        "llm_ms": 6280.0,
+        "cost_usd": 0.020262
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 92.55730199999999,
+        "retrieved_tokens": 1185.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7947,
+        "llm_out_tokens": 887,
+        "llm_ms": 7534.0,
+        "cost_usd": 0.04065
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 93.78459,
+        "retrieved_tokens": 681.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 4068,
+        "llm_out_tokens": 734,
+        "llm_ms": 5261.0,
+        "cost_usd": 0.023608
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 93.19237199999999,
+        "retrieved_tokens": 1479.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 5381,
+        "llm_out_tokens": 836,
+        "llm_ms": 6318.0,
+        "cost_usd": 0.029880000000000004
+      }
+    ]
+  },
+  {
+    "q": "Example question 54",
+    "expect": "example-memory-63.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5547.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 16095,
+        "llm_out_tokens": 810,
+        "llm_ms": 6653.0,
+        "cost_usd": 0.04452299999999999
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 91.608598,
+        "retrieved_tokens": 189.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3351,
+        "llm_out_tokens": 628,
+        "llm_ms": 5959.0,
+        "cost_usd": 0.01968
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 91.608598,
+        "retrieved_tokens": 1016.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7811,
+        "llm_out_tokens": 639,
+        "llm_ms": 5816.0,
+        "cost_usd": 0.037626
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 92.43731700000001,
+        "retrieved_tokens": 1017.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 4715,
+        "llm_out_tokens": 645,
+        "llm_ms": 5492.0,
+        "cost_usd": 0.025306
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 92.90498099999999,
+        "retrieved_tokens": 2637.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7587,
+        "llm_out_tokens": 419,
+        "llm_ms": 3343.0,
+        "cost_usd": 0.034533999999999995
+      }
+    ]
+  },
+  {
+    "q": "Example question 43",
+    "expect": "example-memory-20.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5923.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 16663,
+        "llm_out_tokens": 673,
+        "llm_ms": 6471.0,
+        "cost_usd": 0.045425
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 89.608257,
+        "retrieved_tokens": 92.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3141,
+        "llm_out_tokens": 1018,
+        "llm_ms": 9356.0,
+        "cost_usd": 0.02274
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 89.608257,
+        "retrieved_tokens": 1399.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 8350,
+        "llm_out_tokens": 706,
+        "llm_ms": 9314.0,
+        "cost_usd": 0.040452
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 89.615562,
+        "retrieved_tokens": 997.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4627,
+        "llm_out_tokens": 691,
+        "llm_ms": 4860.0,
+        "cost_usd": 0.025414
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 89.37213600000001,
+        "retrieved_tokens": 984.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4615,
+        "llm_out_tokens": 929,
+        "llm_ms": 7060.0,
+        "cost_usd": 0.027746
+      }
+    ]
+  },
+  {
+    "q": "Example question 28",
+    "expect": "example-memory-34.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4655.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14626,
+        "llm_out_tokens": 745,
+        "llm_ms": 7259.0,
+        "cost_usd": 0.037997
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 92.028578,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2995,
+        "llm_out_tokens": 968,
+        "llm_ms": 8728.0,
+        "cost_usd": 0.021656
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 92.028578,
+        "retrieved_tokens": 0.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6006,
+        "llm_out_tokens": 932,
+        "llm_ms": 9973.0,
+        "cost_usd": 0.033336
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 91.438785,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2995,
+        "llm_out_tokens": 979,
+        "llm_ms": 9144.0,
+        "cost_usd": 0.0103926
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 92.233809,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2995,
+        "llm_out_tokens": 912,
+        "llm_ms": 8705.0,
+        "cost_usd": 0.0097226
+      }
+    ]
+  },
+  {
+    "q": "Example question 9",
+    "expect": "example-memory-73.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4937.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 15068,
+        "llm_out_tokens": 989,
+        "llm_ms": 8069.0,
+        "cost_usd": 0.042205
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.99288399999999,
+        "retrieved_tokens": 86.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3146,
+        "llm_out_tokens": 1154,
+        "llm_ms": 9917.0,
+        "cost_usd": 0.024120000000000003
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.99288399999999,
+        "retrieved_tokens": 1119.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 8062,
+        "llm_out_tokens": 934,
+        "llm_ms": 7100.0,
+        "cost_usd": 0.0230284
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.038909,
+        "retrieved_tokens": 680.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4283,
+        "llm_out_tokens": 1021,
+        "llm_ms": 7273.0,
+        "cost_usd": 0.027338
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.246429,
+        "retrieved_tokens": 1087.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4989,
+        "llm_out_tokens": 1065,
+        "llm_ms": 7023.0,
+        "cost_usd": 0.030602
+      }
+    ]
+  },
+  {
+    "q": "Example question 47",
+    "expect": "example-memory-60.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6894.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 18095,
+        "llm_out_tokens": 807,
+        "llm_ms": 7032.0,
+        "cost_usd": 0.052493
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.18688800000001,
+        "retrieved_tokens": 156.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3260,
+        "llm_out_tokens": 794,
+        "llm_ms": 7371.0,
+        "cost_usd": 0.020976
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.18688800000001,
+        "retrieved_tokens": 2242.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 9678,
+        "llm_out_tokens": 829,
+        "llm_ms": 7513.0,
+        "cost_usd": 0.046993999999999994
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.341821,
+        "retrieved_tokens": 633.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4013,
+        "llm_out_tokens": 726,
+        "llm_ms": 6290.0,
+        "cost_usd": 0.023308
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.283271,
+        "retrieved_tokens": 1511.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 5427,
+        "llm_out_tokens": 778,
+        "llm_ms": 6410.0,
+        "cost_usd": 0.029484
+      }
+    ]
+  },
+  {
+    "q": "Example question 5",
+    "expect": "example-memory-74.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8125.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 21336,
+        "llm_out_tokens": 954,
+        "llm_ms": 9577.0,
+        "cost_usd": 0.066927
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 89.324543,
+        "retrieved_tokens": 90.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3156,
+        "llm_out_tokens": 720,
+        "llm_ms": 6208.0,
+        "cost_usd": 0.01982
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 89.324543,
+        "retrieved_tokens": 3561.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 12913,
+        "llm_out_tokens": 1142,
+        "llm_ms": 9664.0,
+        "cost_usd": 0.06306400000000001
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.33906499999999,
+        "retrieved_tokens": 994.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4967,
+        "llm_out_tokens": 938,
+        "llm_ms": 7233.0,
+        "cost_usd": 0.029244
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 98.822835,
+        "retrieved_tokens": 981.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 4955,
+        "llm_out_tokens": 946,
+        "llm_ms": 6899.0,
+        "cost_usd": 0.029276
+      }
+    ]
+  },
+  {
+    "q": "Example question 51",
+    "expect": "example-memory-49.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6172.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 16918,
+        "llm_out_tokens": 691,
+        "llm_ms": 6545.0,
+        "cost_usd": 0.046625
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 91.746235,
+        "retrieved_tokens": 215.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3370,
+        "llm_out_tokens": 824,
+        "llm_ms": 7552.0,
+        "cost_usd": 0.021716
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 91.746235,
+        "retrieved_tokens": 950.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7644,
+        "llm_out_tokens": 820,
+        "llm_ms": 7648.0,
+        "cost_usd": 0.038768
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 89.786395,
+        "retrieved_tokens": 893.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4512,
+        "llm_out_tokens": 826,
+        "llm_ms": 6073.0,
+        "cost_usd": 0.026304
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.79981,
+        "retrieved_tokens": 2336.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6817,
+        "llm_out_tokens": 812,
+        "llm_ms": 6031.0,
+        "cost_usd": 0.035384
+      }
+    ]
+  },
+  {
+    "q": "Example question 24",
+    "expect": "example-memory-61.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5597.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 16117,
+        "llm_out_tokens": 998,
+        "llm_ms": 9691.0,
+        "cost_usd": 0.046491
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 92.595746,
+        "retrieved_tokens": 80.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3125,
+        "llm_out_tokens": 789,
+        "llm_ms": 7051.0,
+        "cost_usd": 0.020386
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 92.595746,
+        "retrieved_tokens": 803.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7359,
+        "llm_out_tokens": 890,
+        "llm_ms": 7434.0,
+        "cost_usd": 0.038328
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 92.828951,
+        "retrieved_tokens": 723.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4181,
+        "llm_out_tokens": 826,
+        "llm_ms": 6564.0,
+        "cost_usd": 0.02498
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 92.722733,
+        "retrieved_tokens": 710.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4169,
+        "llm_out_tokens": 1039,
+        "llm_ms": 7722.0,
+        "cost_usd": 0.027062
+      }
+    ]
+  },
+  {
+    "q": "Example question 32",
+    "expect": "example-memory-19.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4708.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14521,
+        "llm_out_tokens": 676,
+        "llm_ms": 6347.0,
+        "cost_usd": 0.036886999999999996
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 94.935929,
+        "retrieved_tokens": 158.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3271,
+        "llm_out_tokens": 758,
+        "llm_ms": 7038.0,
+        "cost_usd": 0.02066
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 94.935929,
+        "retrieved_tokens": 1311.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 8311,
+        "llm_out_tokens": 983,
+        "llm_ms": 8236.0,
+        "cost_usd": 0.043066
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.45445000000001,
+        "retrieved_tokens": 865.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4445,
+        "llm_out_tokens": 659,
+        "llm_ms": 5310.0,
+        "cost_usd": 0.024366
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.79911799999999,
+        "retrieved_tokens": 1108.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4908,
+        "llm_out_tokens": 894,
+        "llm_ms": 6427.0,
+        "cost_usd": 0.028568
+      }
+    ]
+  },
+  {
+    "q": "Example question 17",
+    "expect": "example-memory-41.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6540.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17533,
+        "llm_out_tokens": 854,
+        "llm_ms": 7590.0,
+        "cost_usd": 0.050714999999999996
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 94.006532,
+        "retrieved_tokens": 152.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3255,
+        "llm_out_tokens": 1097,
+        "llm_ms": 9707.0,
+        "cost_usd": 0.023986
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 94.006532,
+        "retrieved_tokens": 702.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7238,
+        "llm_out_tokens": 865,
+        "llm_ms": 8219.0,
+        "cost_usd": 0.037594
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 94.160513,
+        "retrieved_tokens": 614.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4044,
+        "llm_out_tokens": 785,
+        "llm_ms": 6383.0,
+        "cost_usd": 0.024022
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 95.066985,
+        "retrieved_tokens": 1012.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4735,
+        "llm_out_tokens": 715,
+        "llm_ms": 6287.0,
+        "cost_usd": 0.026086
+      }
+    ]
+  },
+  {
+    "q": "Example question 36",
+    "expect": "example-memory-31.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4808.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14690,
+        "llm_out_tokens": 388,
+        "llm_ms": 4692.0,
+        "cost_usd": 0.034683
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.160115,
+        "retrieved_tokens": 73.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3121,
+        "llm_out_tokens": 747,
+        "llm_ms": 7382.0,
+        "cost_usd": 0.01995
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.160115,
+        "retrieved_tokens": 977.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7659,
+        "llm_out_tokens": 425,
+        "llm_ms": 4968.0,
+        "cost_usd": 0.017762800000000002
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 90.777682,
+        "retrieved_tokens": 902.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4485,
+        "llm_out_tokens": 483,
+        "llm_ms": 4322.0,
+        "cost_usd": 0.022766
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 90.334105,
+        "retrieved_tokens": 889.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4473,
+        "llm_out_tokens": 538,
+        "llm_ms": 5256.0,
+        "cost_usd": 0.023268
+      }
+    ]
+  },
+  {
+    "q": "Example question 23",
+    "expect": "example-memory-75.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5089.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 15091,
+        "llm_out_tokens": 607,
+        "llm_ms": 5900.0,
+        "cost_usd": 0.038477
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 32.305507,
+        "retrieved_tokens": 139.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3206,
+        "llm_out_tokens": 603,
+        "llm_ms": 6033.0,
+        "cost_usd": 0.01885
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 32.305507,
+        "retrieved_tokens": 699.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7141,
+        "llm_out_tokens": 649,
+        "llm_ms": 6622.0,
+        "cost_usd": 0.035046
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 31.232549,
+        "retrieved_tokens": 629.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4008,
+        "llm_out_tokens": 770,
+        "llm_ms": 6212.0,
+        "cost_usd": 0.023728
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 30.655642,
+        "retrieved_tokens": 784.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4233,
+        "llm_out_tokens": 605,
+        "llm_ms": 5095.0,
+        "cost_usd": 0.022978
+      }
+    ]
+  },
+  {
+    "q": "Example question 31",
+    "expect": "example-memory-83.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4333.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13892,
+        "llm_out_tokens": 522,
+        "llm_ms": 5479.0,
+        "cost_usd": 0.032831
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 89.47796199999999,
+        "retrieved_tokens": 47.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3067,
+        "llm_out_tokens": 752,
+        "llm_ms": 6382.0,
+        "cost_usd": 0.019784
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 89.47796199999999,
+        "retrieved_tokens": 475.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6812,
+        "llm_out_tokens": 607,
+        "llm_ms": 5863.0,
+        "cost_usd": 0.019208199999999998
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 91.370851,
+        "retrieved_tokens": 477.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3793,
+        "llm_out_tokens": 415,
+        "llm_ms": 3780.0,
+        "cost_usd": 0.019318
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 90.431264,
+        "retrieved_tokens": 464.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3781,
+        "llm_out_tokens": 450,
+        "llm_ms": 3561.0,
+        "cost_usd": 0.01962
+      }
+    ]
+  },
+  {
+    "q": "Example question 21",
+    "expect": "example-memory-65.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4423.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14063,
+        "llm_out_tokens": 790,
+        "llm_ms": 7716.0,
+        "cost_usd": 0.036195
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 91.762897,
+        "retrieved_tokens": 81.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3110,
+        "llm_out_tokens": 608,
+        "llm_ms": 5968.0,
+        "cost_usd": 0.018516
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 91.762897,
+        "retrieved_tokens": 599.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7030,
+        "llm_out_tokens": 727,
+        "llm_ms": 6994.0,
+        "cost_usd": 0.0206152
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 89.59447800000001,
+        "retrieved_tokens": 518.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3873,
+        "llm_out_tokens": 863,
+        "llm_ms": 6312.0,
+        "cost_usd": 0.024118
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 90.662937,
+        "retrieved_tokens": 506.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3861,
+        "llm_out_tokens": 863,
+        "llm_ms": 6806.0,
+        "cost_usd": 0.02407
+      }
+    ]
+  },
+  {
+    "q": "Example question 40",
+    "expect": "example-memory-82.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6235.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17391,
+        "llm_out_tokens": 758,
+        "llm_ms": 7101.0,
+        "cost_usd": 0.049186999999999995
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 90.78734,
+        "retrieved_tokens": 67.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3110,
+        "llm_out_tokens": 805,
+        "llm_ms": 9216.0,
+        "cost_usd": 0.020486
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 90.78734,
+        "retrieved_tokens": 851.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7658,
+        "llm_out_tokens": 709,
+        "llm_ms": 6916.0,
+        "cost_usd": 0.037714
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 92.39860900000001,
+        "retrieved_tokens": 797.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4529,
+        "llm_out_tokens": 659,
+        "llm_ms": 5581.0,
+        "cost_usd": 0.024702
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.805821,
+        "retrieved_tokens": 785.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4517,
+        "llm_out_tokens": 647,
+        "llm_ms": 5026.0,
+        "cost_usd": 0.024534
+      }
+    ]
+  },
+  {
+    "q": "Example question 27",
+    "expect": "example-memory-51.md",
+    "systems": [
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4858.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14886,
+        "llm_out_tokens": 798,
+        "llm_ms": 8053.0,
+        "cost_usd": 0.039567000000000005
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 88.70700400000001,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2987,
+        "llm_out_tokens": 803,
+        "llm_ms": 6895.0,
+        "cost_usd": 0.019974
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 88.70700400000001,
+        "retrieved_tokens": 0.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5990,
+        "llm_out_tokens": 873,
+        "llm_ms": 7915.0,
+        "cost_usd": 0.032682
+      },
+      {
+        "system": "recall_top",
+        "local_ms": 88.919079,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2987,
+        "llm_out_tokens": 869,
+        "llm_ms": 6772.0,
+        "cost_usd": 0.009291
+      },
+      {
+        "system": "recall_all",
+        "local_ms": 91.149247,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2987,
+        "llm_out_tokens": 741,
+        "llm_ms": 6039.0,
+        "cost_usd": 0.008010999999999999
+      }
+    ]
+  }
+]
