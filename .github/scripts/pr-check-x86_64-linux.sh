@@ -229,6 +229,7 @@ build_check() {
 section_copilot_bats() { build_check copilot-cli-bats; }
 section_delegation_bats() { build_check delegation-bats; }
 section_hetzner_bats() { build_check hetzner-volume-verify-bats; }
+section_pr_check_bats() { build_check pr-check-bats; }
 
 section_scripts() {
     .github/scripts/check-forgecdn-paths.sh || FAILED=1
@@ -243,6 +244,7 @@ run_section "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_
 run_section "copilot-cli script tests (bats)" section_copilot_bats
 run_section "delegation script tests (bats)" section_delegation_bats
 run_section "hetzner-volume-verify script tests (bats)" section_hetzner_bats
+run_section "pr-check script tests (bats)" section_pr_check_bats
 run_section "CurseForge CDN paths, skill frontmatter" section_scripts
 run_section "aarch64-linux nixosConfigurations (evaluated)" section_aarch64_hosts
 
