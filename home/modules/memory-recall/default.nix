@@ -17,7 +17,8 @@ let
   ];
 
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
-    exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore}
+    exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
+      --body-score ${toString cfg.bodyScore} --inject ${cfg.inject}
   '';
 
   # The first index embeds every memory (~70 s on CPU), so wait for the server
@@ -117,10 +118,33 @@ in
 
     minScore = mkOption {
       type = types.float;
-      default = 0.74;
+      default = 0.70;
       description = ''
-        Cosine similarity a memory must reach to be injected. Measured for
-        EmbeddingGemma 2 at 256 dimensions.
+        Cosine similarity a memory must reach to be injected at all, as a
+        one-line snippet. The right memory's best score ran 0.70 to 0.87 over 58
+        queries, so this leans to recall; a stray snippet costs about 35 tokens.
+        Measured for EmbeddingGemma 2 at 256 dimensions.
+      '';
+    };
+
+    bodyScore = mkOption {
+      type = types.float;
+      default = 0.76;
+      description = ''
+        With `inject = "auto"`, the score from which a memory is injected in
+        full (about 1,000 tokens) so the model answers without opening the file.
+        Higher than minScore because a wrong full memory is the expensive mistake.
+      '';
+    };
+
+    inject = mkOption {
+      type = types.enum [ "auto" "snippets" "top" "all" ];
+      default = "auto";
+      description = ''
+        How much of a match the model sees: `auto` puts matches scoring at least
+        bodyScore in full and the rest as one-line snippets; `snippets` never
+        includes a body, so the model must open the file; `top` and `all` always
+        put the best, or every, match in full.
       '';
     };
   };

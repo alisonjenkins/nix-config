@@ -22,10 +22,13 @@ const DEFAULT_TOP: usize = 3;
 /// About 1.2k tokens: most memories fit whole, and the rest say where to read on.
 const DEFAULT_BODY_CHARS: usize = 3500;
 /// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over the 83 memories:
-/// correct top-1 matches scored 0.746-0.865, unrelated prompts 0.534-0.722.
+/// the right memory's top-1 score ran 0.70-0.87 (median 0.79) over 58 queries, and
+/// unrelated prompts reached 0.81. A match at or above this floor is worth at
+/// least a one-line snippet (about 35 tokens), so the floor leans to recall.
 /// Scores are model- and dims-specific; re-measure before changing either.
-const DEFAULT_MIN_SCORE: f64 = 0.74;
-/// Top-1 scores for the right memory ran 0.70-0.87 (median 0.79) over 58 queries.
+const DEFAULT_MIN_SCORE: f64 = 0.70;
+/// From here a match is injected in full (about 1,000 tokens), which a wrong match
+/// makes expensive: only 10% of in-domain, memory-less prompts reach it.
 const DEFAULT_BODY_SCORE: f64 = 0.76;
 
 #[derive(Parser)]
@@ -52,7 +55,7 @@ struct Selection {
     #[arg(long, default_value_t = DEFAULT_MIN_SCORE)]
     min_score: f64,
     /// How much of each match to put in front of the model.
-    #[arg(long, value_enum, default_value_t = InjectArg::Snippets)]
+    #[arg(long, value_enum, default_value_t = InjectArg::Auto)]
     inject: InjectArg,
     /// With --inject auto: the score from which a match is injected in full.
     #[arg(long, default_value_t = DEFAULT_BODY_SCORE)]
