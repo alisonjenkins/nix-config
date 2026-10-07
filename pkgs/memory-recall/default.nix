@@ -21,6 +21,8 @@ rustPlatform.buildRustPackage {
   # The tests drive a fake embeddings server over loopback, which the build
   # sandbox allows.
   doCheck = true;
+  # Without this the macOS sandbox refuses the tests' loopback server.
+  __darwinAllowLocalNetworking = true;
 
   meta = {
     description = "Semantic recall of Claude memory files via a local embedding server, plus the harness that scores it";
