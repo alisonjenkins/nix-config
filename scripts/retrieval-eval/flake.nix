@@ -24,6 +24,10 @@
             rust-analyzer
             cargo-nextest
             pkg-config
+            # bench/run.sh
+            curl
+            jq
+            util-linux
           ];
         };
       });
