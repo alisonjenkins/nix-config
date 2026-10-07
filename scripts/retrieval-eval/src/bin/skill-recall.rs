@@ -11,7 +11,9 @@ use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{hook_output, prompt_from_hook_input, render_sections, select, Hit};
-use retrieval_eval::recall_log::{append, append_failure, now_iso8601, Entry};
+use retrieval_eval::recall_log::{
+    append_failure, append_rotating, now_iso8601, Entry, DEFAULT_ROTATION,
+};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -254,7 +256,7 @@ fn run(cli: &Cli) -> Result<()> {
                 }
             };
             if let Some(path) = log {
-                if let Err(error) = append(path, &recalled.entry) {
+                if let Err(error) = append_rotating(path, &recalled.entry, DEFAULT_ROTATION) {
                     warn!(path = %path.display(), %error, "could not write the recall log");
                 }
             }

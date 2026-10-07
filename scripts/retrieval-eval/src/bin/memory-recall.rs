@@ -12,7 +12,8 @@ use retrieval_eval::recall::{
     select, write_if_changed, Inject,
 };
 use retrieval_eval::recall_log::{
-    append, append_failure, now_iso8601, parse_log, render_summary, summarise, Entry,
+    append_failure, append_rotating, now_iso8601, parse_log, read_all, render_summary, summarise,
+    Entry, DEFAULT_ROTATION,
 };
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
@@ -253,7 +254,7 @@ fn run(cli: &Cli) -> Result<()> {
                 }
             };
             if let Some(path) = log {
-                if let Err(error) = append(path, &recalled.entry) {
+                if let Err(error) = append_rotating(path, &recalled.entry, DEFAULT_ROTATION) {
                     warn!(path = %path.display(), %error, "could not write the recall log");
                 }
             }
@@ -262,8 +263,8 @@ fn run(cli: &Cli) -> Result<()> {
             }
         }
         Command::LogSummary { path } => {
-            let text = std::fs::read_to_string(path)
-                .with_context(|| format!("read {}", path.display()))?;
+            let text = read_all(path)
+                .with_context(|| format!("read {} and its rotated files", path.display()))?;
             print!("{}", render_summary(&summarise(&parse_log(&text))));
         }
     }

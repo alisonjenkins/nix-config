@@ -85,7 +85,11 @@ pub fn now_iso8601() -> String {
 /// Records that the hook gave up on a prompt, so an outage shows in the summary.
 /// A log that cannot be written is ignored: the hook must never fail a prompt.
 pub fn append_failure(path: &std::path::Path, kind: &str) {
-    let _ = append(path, &Entry::failure(kind, &now_iso8601()));
+    let _ = append_rotating(
+        path,
+        &Entry::failure(kind, &now_iso8601()),
+        DEFAULT_ROTATION,
+    );
 }
 
 /// The entry as one JSON line, newline included.
