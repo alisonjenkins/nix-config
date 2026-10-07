@@ -67,6 +67,9 @@ bench() { # dims, json name, then recall-bench args
     --cache "$caches/gemma-$dims.json" --json "$out/$name.json" "$@"
 }
 queries=$crate/queries
+# The memory query sets name real memories, so the ones in git are placeholders;
+# point this at your own (see queries/README.md).
+memory_queries=${MEMORY_QUERIES_DIR:-$queries}
 
 echo "== cold start (page cache warm), 3 runs"
 starts=()
@@ -86,13 +89,13 @@ done
 
 echo "== retrieval quality: memories"
 "$bin/retrieval-eval" --corpus memory --memory-dir "$mem" \
-  --queries "$queries/memory.json" --json "$out/quality-memory-dims.json" \
+  --queries "$memory_queries/memory.json" --json "$out/quality-memory-dims.json" \
   --embedder "g768=gemma@http://127.0.0.1:$port#768" \
   --embedder "g512=gemma@http://127.0.0.1:$port#512" \
   --embedder "g256=gemma@http://127.0.0.1:$port#256" \
   --embedder "g128=gemma@http://127.0.0.1:$port#128" | tee "$out/quality-memory-dims.md"
 "$bin/retrieval-eval" --corpus memory --memory-dir "$mem" \
-  --queries "$queries/memory.json" --json "$out/quality-memory-rrf.json" --rrf \
+  --queries "$memory_queries/memory.json" --json "$out/quality-memory-rrf.json" --rrf \
   --embedder "g256=gemma@http://127.0.0.1:$port#256" | tee "$out/quality-memory-rrf.md"
 
 echo "== retrieval quality: skills"
@@ -105,13 +108,13 @@ echo "== retrieval quality: skills"
 echo "== injection threshold sweep"
 for dims in 768 256 128; do
   bench "$dims" "gate-$dims" gate \
-    --relevant "$queries/memory.json" --negatives "$queries/negatives.json" |
+    --relevant "$memory_queries/memory.json" --negatives "$queries/negatives.json" |
     tee "$out/gate-$dims.md"
 done
 
 echo "== hook latency, default threads"
 bench 256 latency-default latency --hook-bin "$bin/memory-recall" \
-  --relevant "$queries/memory.json" --negatives "$queries/negatives.json" \
+  --relevant "$memory_queries/memory.json" --negatives "$queries/negatives.json" \
   --runs "$runs" --server-pid "$server_pid" | tee "$out/latency-default.md"
 
 echo "== index cost, default threads"
@@ -122,7 +125,7 @@ echo "== thread sweep"
 for threads in 1 2 4 8 16; do
   start_server "$threads"
   bench 256 "latency-threads-$threads" latency --hook-bin "$bin/memory-recall" \
-    --relevant "$queries/memory.json" --negatives "$queries/negatives.json" \
+    --relevant "$memory_queries/memory.json" --negatives "$queries/negatives.json" \
     --runs 100 --server-pid "$server_pid" | tee "$out/latency-threads-$threads.md"
   if [ "$threads" = 4 ]; then
     bench 256 index-threads-4 index | tee "$out/index-threads-4.md"

@@ -20,6 +20,9 @@ mem=${MEMORY_DIR:?set MEMORY_DIR to a directory of memory *.md files}
 port=${PORT:-8110}
 bin=$crate/target/release
 queries=$crate/queries
+# The memory query sets name real memories, so the ones in git are placeholders;
+# point this at your own (see queries/README.md).
+memory_queries=${MEMORY_QUERIES_DIR:-$queries}
 caches=$(mktemp -d)
 
 # shellcheck source=lib.sh source-path=SCRIPTDIR
@@ -40,7 +43,7 @@ model=$model_dir/embeddinggemma-2-Q8_0.gguf
 
 experiment=("$bin/recall-experiment" --memory-dir "$mem" --url "http://127.0.0.1:$port"
   --dims 256 --cache-dir "$caches"
-  --dev "$queries/memory.json" --heldout "$queries/heldout-facts.json"
+  --dev "$memory_queries/memory.json" --heldout "$memory_queries/heldout-facts.json"
   --negatives "$queries/negatives.json")
 
 echo "== embed every document variant"

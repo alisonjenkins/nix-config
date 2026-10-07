@@ -23,6 +23,9 @@ port=${PORT:-8110}
 model_name=${MODEL:-sonnet}
 bin=$crate/target/release
 queries=$crate/queries
+# The memory query sets name real memories, so the ones in git are placeholders;
+# point this at your own (see queries/README.md).
+memory_queries=${MEMORY_QUERIES_DIR:-$queries}
 caches=$(mktemp -d)
 extra=()
 [ -n "${NO_LLM:-}" ] && extra+=(--no-llm)
@@ -76,12 +79,12 @@ memory_compare() {
 }
 
 echo "== memory comparison, dev queries, every system"
-memory_compare "$queries/facts.json" compare-memory
+memory_compare "$memory_queries/facts.json" compare-memory
 
 # The held-out queries were written without seeing any retrieval result; they
 # are the honest check on settings tuned against the dev queries.
 echo "== memory comparison, held-out queries"
-memory_compare "$queries/heldout-facts.json" compare-memory-heldout \
+memory_compare "$memory_queries/heldout-facts.json" compare-memory-heldout \
   "default_read,default_open,recall_snippet,recall_read,recall_all,recall_auto_open,hybrid_open,slim_open"
 
 echo "== skills comparison"

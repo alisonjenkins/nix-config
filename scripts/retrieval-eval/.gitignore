@@ -1,2 +1,3 @@
 /target
+/queries/private/
 bench/results/server.log
