@@ -20,6 +20,9 @@ pub struct Entry {
     /// The hook gave up (server down, timeout, no cache) and injected nothing.
     #[serde(default)]
     pub failed: bool,
+    /// The embedding server was unreachable and the matches are keyword (BM25) ones.
+    #[serde(default)]
+    pub fallback: bool,
 }
 
 impl Entry {
@@ -32,6 +35,7 @@ impl Entry {
             full: 0,
             tokens: 0,
             failed: true,
+            fallback: false,
         }
     }
 }
@@ -45,6 +49,8 @@ pub struct Summary {
     pub mean_tokens_per_prompt: f64,
     pub mean_tokens_per_injection: f64,
     pub best_score_median: Option<f64>,
+    /// Of `prompts`, how many were served by the keyword fallback.
+    pub fallback: usize,
     /// Prompts where the hook gave up; not counted in `prompts`.
     pub failed: usize,
 }
@@ -258,6 +264,7 @@ pub fn summarise(entries: &[Entry]) -> Vec<Summary> {
                 mean_tokens_per_prompt: mean(total_tokens, of_kind.len()),
                 mean_tokens_per_injection: mean(total_tokens, injected.len()),
                 best_score_median: scores.get(scores.len() / 2).copied(),
+                fallback: of_kind.iter().filter(|e| e.fallback).count(),
                 failed,
             }
         })
@@ -275,7 +282,7 @@ fn mean(total: usize, count: usize) -> f64 {
 /// The summaries as a Markdown table.
 pub fn render_summary(summaries: &[Summary]) -> String {
     let mut out = String::from(
-        "| kind | prompts | injected | in full | tokens/prompt | tokens/injection | median best score | failed |\n|---|---|---|---|---|---|---|---|\n",
+        "| kind | prompts | injected | in full | tokens/prompt | tokens/injection | median best score | keyword fallback | failed |\n|---|---|---|---|---|---|---|---|---|\n",
     );
     for s in summaries {
         let share = |n: usize| {
@@ -286,7 +293,7 @@ pub fn render_summary(summaries: &[Summary]) -> String {
             }
         };
         out.push_str(&format!(
-            "| {} | {} | {} ({:.0}%) | {} ({:.0}%) | {:.0} | {:.0} | {} | {} |\n",
+            "| {} | {} | {} ({:.0}%) | {} ({:.0}%) | {:.0} | {:.0} | {} | {} | {} |\n",
             s.kind,
             s.prompts,
             s.injected,
@@ -297,6 +304,7 @@ pub fn render_summary(summaries: &[Summary]) -> String {
             s.mean_tokens_per_injection,
             s.best_score_median
                 .map_or_else(|| "-".to_owned(), |v| format!("{v:.2}")),
+            s.fallback,
             s.failed,
         ));
     }
@@ -317,6 +325,7 @@ mod tests {
             full,
             tokens,
             failed: false,
+            fallback: false,
         }
     }
 
@@ -326,6 +335,22 @@ mod tests {
         assert!(failure.failed);
         assert_eq!(failure.best_score, None);
         assert_eq!((failure.matches, failure.full, failure.tokens), (0, 0, 0));
+    }
+
+    #[test]
+    fn summary_counts_prompts_served_by_the_keyword_fallback() {
+        let mut keyword = entry("memory", Some(3.2), 2, 0, 90);
+        keyword.fallback = true;
+        let entries = vec![entry("memory", Some(0.8), 1, 0, 100), keyword];
+        let sum = &summarise(&entries)[0];
+        assert_eq!((sum.prompts, sum.fallback), (2, 1));
+        assert!(render_summary(std::slice::from_ref(sum)).contains("| 1 | 0 |"));
+    }
+
+    #[test]
+    fn old_log_lines_without_a_fallback_field_still_parse() {
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        assert!(!parse_log(old)[0].fallback);
     }
 
     #[test]

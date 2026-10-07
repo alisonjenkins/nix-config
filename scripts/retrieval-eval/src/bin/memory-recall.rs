@@ -189,6 +189,7 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
         full: full_count(&hits, inject),
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
+        fallback: false,
     };
     Ok(Recalled { context, entry })
 }

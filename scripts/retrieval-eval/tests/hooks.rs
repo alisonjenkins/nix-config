@@ -324,6 +324,7 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
             full: 0,
             tokens: 10,
             failed: false,
+            fallback: false,
         })
     };
     fs::write(&log, line(1)).unwrap();
