@@ -21,7 +21,7 @@ use retrieval_eval::retriever::Retriever;
 use retrieval_eval::vector_cache::VectorCache;
 use walkdir::WalkDir;
 
-use crate::{emit, parallel, Common};
+use crate::{emit, parallel, user_turn, Common};
 
 const SYSTEM_PREAMBLE: &str = "You are helping the user with their NixOS homelab and workstation \
 configuration. Answer the user's question directly, in at most 6 sentences, and be specific: \
@@ -176,14 +176,10 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
     let names: HashSet<String> = shared.skills.iter().map(|s| s.name.clone()).collect();
     let wanted = expected_files(item);
 
-    let pick = ask(
-        llm,
-        &format!(
-            "{base}# Available skills\n{}\n\n{PICK_SKILL_TASK}",
-            shared.listing
-        ),
-        &item.q,
-    )?;
+    // The listing is in context on every turn, so it is the stable system block;
+    // loaded skills and opened files arrive in the user turn, as tool results do.
+    let stable = format!("{base}# Available skills\n{}", shared.listing);
+    let pick = ask(llm, &stable, &user_turn(&[PICK_SKILL_TASK], &item.q))?;
     let chosen: Vec<&Skill> = extract_files(&pick.text, &names, 2)
         .iter()
         .filter_map(|n| shared.skills.iter().find(|s| &s.name == n))
@@ -199,12 +195,7 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
 
     // Skill text only: the model never opens a reference file.
     let mut only = SystemRun::named("default_skill_only");
-    let system = if bodies.is_empty() {
-        base.clone()
-    } else {
-        format!("{base}{bodies}")
-    };
-    let answer = ask(llm, &system, &item.q)?;
+    let answer = ask(llm, &stable, &user_turn(&[&bodies], &item.q))?;
     only.selection_hit = Some(skill_md_hit);
     only.retrieved_tokens = tokens_of(&[&shared.listing, &bodies]);
     only.finish(
@@ -233,8 +224,15 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
         let known: HashSet<String> = by_name.keys().cloned().collect();
         let pick_files = ask(
             llm,
-            &format!("{base}{bodies}\n\nReference files:\n{listing}\n\n{PICK_FILES_TASK}"),
-            &item.q,
+            &stable,
+            &user_turn(
+                &[
+                    &bodies,
+                    &format!("Reference files:\n{listing}"),
+                    PICK_FILES_TASK,
+                ],
+                &item.q,
+            ),
         )?;
         for name in extract_files(&pick_files.text, &known, 2) {
             if let Some(rel) = by_name.get(&name) {
@@ -246,8 +244,8 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
         }
         calls.push(pick_files);
     }
-    let system = format!("{base}{bodies}\n\n# Reference files you opened\n{opened}");
-    calls.push(ask(llm, &system, &item.q)?);
+    let files = format!("# Reference files you opened\n{opened}");
+    calls.push(ask(llm, &stable, &user_turn(&[&bodies, &files], &item.q))?);
     full.selection_hit = Some(skill_md_hit || files_hit);
     full.retrieved_tokens = tokens_of(&[&shared.listing, &bodies, &opened]);
     full.finish(
@@ -421,12 +419,13 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
                 ("sections_embed", &p.embed_text),
             ] {
                 let mut run = SystemRun::named(name);
-                let system = if text.is_empty() {
-                    base.clone()
+                let sections = if text.is_empty() {
+                    String::new()
                 } else {
-                    format!("{base}# Skill sections that may be relevant\n{text}")
+                    format!("# Skill sections that may be relevant\n{text}")
                 };
-                run.finish(&item.facts, &[ask(&llm, &system, &item.q)?], text);
+                let call = ask(&llm, &base, &user_turn(&[&sections], &item.q))?;
+                run.finish(&item.facts, &[call], text);
                 out.push(run);
             }
             Ok(out)

@@ -100,6 +100,23 @@ impl Common {
     }
 }
 
+/// The user turn: what is specific to this query (injected memories, opened
+/// files, the instruction), then the question. Text that is the same on every
+/// call belongs in the system block instead, where the prompt cache can reuse it;
+/// one varying token in a block makes the whole block miss.
+pub fn user_turn(parts: &[&str], question: &str) -> String {
+    let mut out = String::new();
+    for part in parts.iter().filter(|p| !p.trim().is_empty()) {
+        out.push_str(part);
+        out.push_str("\n\n");
+    }
+    if !out.is_empty() {
+        out.push_str("Question: ");
+    }
+    out.push_str(question);
+    out
+}
+
 /// Runs `work` for every index in `0..count` on `jobs` threads; results come
 /// back in index order.
 pub fn parallel<T: Send>(

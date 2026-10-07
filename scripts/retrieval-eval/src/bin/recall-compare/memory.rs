@@ -14,7 +14,7 @@ use retrieval_eval::compare::{
 };
 use retrieval_eval::llm_run::{ask, read_files, Coverage, Item, Llm, QueryRun, SystemRun};
 
-use crate::{emit, parallel, Common};
+use crate::{emit, parallel, user_turn, Common};
 
 const SYSTEM_PREAMBLE: &str = "You are helping the user with their NixOS homelab and workstation \
 configuration. Answer the user's question directly, in at most 6 sentences, and be specific: \
@@ -318,7 +318,7 @@ struct KeywordSearch {
 
 /// The model forms keywords; if they match nothing, retry with the first two.
 fn keyword_search(args: &Args, llm: &Llm, item: &Item, base: &str) -> Result<KeywordSearch> {
-    let call = ask(llm, &format!("{base}{KEYWORD_TASK}"), &item.q)?;
+    let call = ask(llm, base, &user_turn(&[KEYWORD_TASK], &item.q))?;
     let keywords: Vec<String> = call
         .text
         .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '-'))
@@ -340,27 +340,27 @@ fn keyword_search(args: &Args, llm: &Llm, item: &Item, base: &str) -> Result<Key
     })
 }
 
-/// Answers from `context`; if the model asks to open files, reads them and answers again.
+/// Answers from `system` (stable) plus `injection` (this query's), or, if the
+/// model asks to open files, reads them and answers again. Both calls share the
+/// system block, so the second reads it back from the cache.
 fn open_flow(
     args: &Args,
     llm: &Llm,
     item: &Item,
-    base: &str,
-    context: &str,
+    system: &str,
+    injection: &str,
     known: &HashSet<String>,
 ) -> Result<(Vec<ClaudeCall>, String)> {
-    let first = ask(llm, &format!("{base}{context}\n\n{OPEN_TASK}"), &item.q)?;
+    let first = ask(llm, system, &user_turn(&[injection, OPEN_TASK], &item.q))?;
+    let seen = format!("{system}\n{injection}");
     let Some(rest) = first.text.trim_start().strip_prefix("OPEN:") else {
-        return Ok((vec![first], context.to_owned()));
+        return Ok((vec![first], seen));
     };
     let chosen = extract_files(rest, known, 2);
     let opened = read_files(&args.memory_dir, &chosen);
-    let second = ask(
-        llm,
-        &format!("{base}{context}\n\n# Memory files you opened\n{opened}"),
-        &item.q,
-    )?;
-    Ok((vec![first, second], format!("{context}\n{opened}")))
+    let files = format!("# Memory files you opened\n{opened}");
+    let second = ask(llm, system, &user_turn(&[injection, &files], &item.q))?;
+    Ok((vec![first, second], format!("{seen}\n{opened}")))
 }
 
 fn llm_phase(
@@ -412,7 +412,11 @@ fn llm_phase(
                         cavemem_full(args, &ids)?.join("\n---\n"),
                     )
                 };
-                let answer = ask(llm, &format!("{base}{label}\n{text}"), &item.q)?;
+                let answer = ask(
+                    llm,
+                    &base,
+                    &user_turn(&[&format!("{label}\n{text}")], &item.q),
+                )?;
                 let mut calls = found.calls.clone();
                 calls.push(answer);
                 run.local_ms = found.search_ms;
@@ -429,45 +433,73 @@ fn llm_phase(
                     "# Memories possibly relevant to the user's message\n{}",
                     got.text
                 );
-                let context = match system {
-                    "default_open" => format!("# Memory index (MEMORY.md)\n{index_text}"),
-                    "recall_auto_open" => injected,
+                let (stable, injection) = match system {
+                    "default_open" => (
+                        format!("{base}# Memory index (MEMORY.md)\n{index_text}"),
+                        String::new(),
+                    ),
+                    "recall_auto_open" => (base.clone(), injected),
                     "slim_open" => {
                         let mut names: Vec<&str> = known.iter().map(String::as_str).collect();
                         names.sort_unstable();
-                        format!(
-                            "# Memory files (names only)\n{}\n\n{injected}",
-                            names.join("\n")
+                        (
+                            format!("{base}# Memory files (names only)\n{}", names.join("\n")),
+                            injected,
                         )
                     }
-                    _ => format!("# Memory index (MEMORY.md)\n{index_text}\n\n{injected}"),
+                    _ => (
+                        format!("{base}# Memory index (MEMORY.md)\n{index_text}"),
+                        injected,
+                    ),
                 };
-                let (calls, final_context) = open_flow(args, llm, item, &base, &context, known)?;
+                let (calls, final_context) =
+                    open_flow(args, llm, item, &stable, &injection, known)?;
                 run.retrieved_tokens = approx_tokens(final_context.len());
                 run.finish(&item.facts, &calls, &final_context);
             }
-            "default_index" | "recall_snippet" | "recall_top" | "recall_all" => {
-                let label = if system == "default_index" {
-                    "# Memory index (MEMORY.md)"
-                } else {
-                    "# Memories possibly relevant to the user's message"
-                };
-                let call = ask(llm, &format!("{base}{label}\n{}", got.text), &item.q)?;
+            "default_index" => {
+                let stable = format!("{base}# Memory index (MEMORY.md)\n{}", got.text);
+                let call = ask(llm, &stable, &item.q)?;
+                run.finish(&item.facts, &[call], &got.text);
+            }
+            "recall_snippet" | "recall_top" | "recall_all" => {
+                let injection = format!(
+                    "# Memories possibly relevant to the user's message\n{}",
+                    got.text
+                );
+                let call = ask(llm, &base, &user_turn(&[&injection], &item.q))?;
                 run.finish(&item.facts, &[call], &got.text);
             }
             "default_read" | "recall_read" => {
-                let listing = format!("{base}{}\n\n{SELECT_TASK}", got.text);
-                let pick = ask(llm, &listing, &item.q)?;
+                let (stable, injection) = if system == "default_read" {
+                    (
+                        format!("{base}# Memory index (MEMORY.md)\n{}", got.text),
+                        String::new(),
+                    )
+                } else {
+                    (
+                        base.clone(),
+                        format!(
+                            "# Memories possibly relevant to the user's message\n{}",
+                            got.text
+                        ),
+                    )
+                };
+                let pick = ask(
+                    llm,
+                    &stable,
+                    &user_turn(&[&injection, SELECT_TASK], &item.q),
+                )?;
                 let chosen = extract_files(&pick.text, known, 3);
                 run.selection_hit = Some(chosen.iter().any(|c| c == expected));
                 let opened = read_files(&args.memory_dir, &chosen);
-                let system_prompt = if opened.is_empty() {
-                    base.clone()
+                let files = if opened.is_empty() {
+                    String::new()
                 } else {
-                    format!("{base}# Memory files you opened\n{opened}")
+                    format!("# Memory files you opened\n{opened}")
                 };
-                let call = ask(llm, &system_prompt, &item.q)?;
-                let context = format!("{}\n{opened}", got.text);
+                let call = ask(llm, &stable, &user_turn(&[&injection, &files], &item.q))?;
+                let context = format!("{stable}\n{injection}\n{opened}");
                 run.finish(&item.facts, &[pick, call], &context);
                 run.retrieved_tokens = approx_tokens(context.len());
             }
