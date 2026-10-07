@@ -56,6 +56,33 @@ pub fn strip_frontmatter(md: &str) -> (HashMap<String, String>, &str) {
     (meta, body)
 }
 
+/// One frontmatter field, including YAML block scalars (`>`, `|`) whose value
+/// sits on the indented lines below the key.
+pub fn frontmatter_field(md: &str, key: &str) -> Option<String> {
+    let rest = md.strip_prefix("---\n")?;
+    let header = rest.get(..rest.find("\n---\n")?)?;
+    let mut lines = header.lines();
+    while let Some(line) = lines.next() {
+        let Some(value) = line.strip_prefix(key).and_then(|r| r.strip_prefix(':')) else {
+            continue;
+        };
+        let value = value.trim();
+        let text = if matches!(value, "" | ">" | "|" | ">-" | "|-" | ">+" | "|+") {
+            lines
+                .by_ref()
+                .take_while(|l| l.starts_with(char::is_whitespace))
+                .map(str::trim)
+                .collect::<Vec<_>>()
+                .join(" ")
+        } else {
+            value.to_owned()
+        };
+        let text = text.trim().trim_matches(['"', '\'']).to_owned();
+        return if text.is_empty() { None } else { Some(text) };
+    }
+    None
+}
+
 /// Split on `## ` headings outside code fences; `###` stays in its parent.
 pub fn split_sections(md: &str) -> Vec<(String, String)> {
     let mut sections: Vec<(String, Vec<&str>)> = vec![(INTRO.to_owned(), Vec::new())];
@@ -177,6 +204,40 @@ mod tests {
         assert_eq!(meta.get("description").map(String::as_str), Some("bar baz"));
         assert!(!meta.contains_key("type"));
         assert_eq!(body, "body\n");
+    }
+
+    #[test]
+    fn field_reads_a_single_line_value_and_strips_quotes() {
+        let md = "---\nname: debugging\ndescription: \"Use when broken\"\n---\nbody";
+        assert_eq!(frontmatter_field(md, "name").as_deref(), Some("debugging"));
+        assert_eq!(
+            frontmatter_field(md, "description").as_deref(),
+            Some("Use when broken")
+        );
+    }
+
+    #[test]
+    fn field_joins_a_folded_block_scalar() {
+        let md = "---\nname: x\ndescription: >\n  First line\n  second line.\nlicense: MIT\n---\n";
+        assert_eq!(
+            frontmatter_field(md, "description").as_deref(),
+            Some("First line second line.")
+        );
+    }
+
+    #[test]
+    fn field_is_none_when_absent_or_without_frontmatter() {
+        assert_eq!(
+            frontmatter_field("---\nname: x\n---\n", "description"),
+            None
+        );
+        assert_eq!(frontmatter_field("# no frontmatter", "name"), None);
+    }
+
+    #[test]
+    fn field_matches_the_whole_key_not_a_prefix() {
+        let md = "---\nnamespace: wrong\nname: right\n---\n";
+        assert_eq!(frontmatter_field(md, "name").as_deref(), Some("right"));
     }
 
     #[test]
