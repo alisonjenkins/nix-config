@@ -194,6 +194,14 @@ setup() {
   [[ "$output" == *"response for model=gpt-6-luna: hello task"* ]]
 }
 
+@test "does not fall back when a policy error names a different model" {
+  export FAKE_COPILOT_MODE=policy-other-model
+  run bash "$delegate" "hello task" read
+  [ "$status" -eq 1 ]
+  [ "$(wc -l <"$FAKE_COPILOT_CALLS")" -eq 1 ]
+  [[ "$output" == *"some-other-model"* ]]
+}
+
 @test "falls back to gpt-5.6-luna when claude-haiku-5.5 and gpt-6-luna are rejected" {
   export FAKE_COPILOT_MODE=gpt6-rejected
   run bash "$delegate" "hello task" read
