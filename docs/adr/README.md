@@ -97,7 +97,8 @@ works, how to enable it, and the benchmark results.
 
 | # | Decision | Status |
 |---|---|---|
-| [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked, not enabled |
+| [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked, not enabled; injection settings superseded by 0030 |
+| [0030](0030-inject-confident-memories-and-use-a-catalogue.md) | Inject confident memories in full, and keep a names-only catalogue | Proposed; built and measured, not enabled |
 
 ## Template
 
