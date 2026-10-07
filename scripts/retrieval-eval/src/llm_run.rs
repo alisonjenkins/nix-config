@@ -36,7 +36,7 @@ pub struct FactsFile {
     pub queries: Vec<Item>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Coverage {
     pub desc_found: usize,
     pub desc_total: usize,
@@ -80,7 +80,7 @@ impl Coverage {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SystemRun {
     pub system: String,
     pub local_ms: f64,
@@ -118,7 +118,7 @@ impl SystemRun {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryRun {
     pub q: String,
     pub expect: String,
@@ -275,6 +275,13 @@ pub fn report(runs: &[QueryRun], systems: &[&str], with_llm: bool) {
         } else {
             format!("{:.0}%", pct(sel.iter().filter(|b| **b).count(), sel.len()))
         };
+        if r.iter().all(|s| s.answer.is_none()) {
+            println!(
+                "| {name} | {sel_text} | {:.0}% | - | - | - | - | - | - |",
+                pct(ctx.found(), ctx.total())
+            );
+            continue;
+        }
         println!(
             "| {name} | {sel_text} | {:.0}% | {:.0}% | {:.0}% | {:.0} | {:.0} | {:.0} | {:.4} |",
             pct(ctx.found(), ctx.total()),
