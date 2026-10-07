@@ -174,6 +174,10 @@ Lives in the **`beatsaber-modding`** skill (`.claude/skills/beatsaber-modding/SK
 
 Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-modding/SKILL.md`) — `pkgs/arsenal` (Linux-native GUI mod manager, migrated from the deprecated/buggy h2mm-cli, since removed) + `pkgs/hd2-repatcher` + `home/modules/helldivers2-mods` (steamLibraryRoots lookup, warning-only; mod install/enable itself stays manual, see the skill for why), how to install a mod, the h2mm-cli deployment-bug incident writeup, and bumping pinned versions. Auto-loads when working on `pkgs/arsenal` / `pkgs/hd2-repatcher` / `home/modules/helldivers2-mods`.
 
+### Memory and skill retrieval
+
+`modules.memoryRecall` (`home/modules/memory-recall`, off by default) injects the memories closest to each prompt via a local EmbeddingGemma 2 server instead of loading all of `MEMORY.md`. Code in `scripts/retrieval-eval` (`pkgs.memory-recall`); how it works, how to enable it and the benchmark results: `docs/memory-recall.md`, ADR 0029. Needs `pkgs.llama-cpp-upstream` (nixpkgs' llama.cpp lacks the `gemma-embedding2` architecture).
+
 ### Dev workflows + pending work
 
 - **How to** modify configs / add hosts / modules / flake-modules / secrets → the **`nix-config-workflows`** skill (`.claude/skills/nix-config-workflows/SKILL.md`), auto-loads for that work.
