@@ -1,5 +1,6 @@
 pub mod bench;
 pub mod bm25;
+pub mod compare;
 pub mod corpus;
 pub mod embed;
 pub mod eval;
