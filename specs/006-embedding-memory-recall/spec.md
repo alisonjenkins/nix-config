@@ -107,7 +107,7 @@ The owner turns the module on for their own sessions on `ali-desktop` and decide
 
 ### User Story 6 - Land the work (Priority: P3) — remaining
 
-The 50-odd atomic commits reach `main` with their signatures, through a pull request.
+The 65 atomic commits reach `main` with their signatures, through a pull request.
 
 **Why this priority**: nothing has been pushed; the work only matters once it is reviewable.
 
