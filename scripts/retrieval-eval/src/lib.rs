@@ -9,6 +9,7 @@ pub mod llm_run;
 pub mod metrics;
 pub mod queries;
 pub mod recall;
+pub mod recall_log;
 pub mod report;
 pub mod retriever;
 pub mod vector_cache;
