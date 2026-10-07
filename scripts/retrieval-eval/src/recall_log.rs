@@ -17,6 +17,23 @@ pub struct Entry {
     pub full: usize,
     /// Rough tokens the injection added to the prompt.
     pub tokens: usize,
+    /// The hook gave up (server down, timeout, no cache) and injected nothing.
+    #[serde(default)]
+    pub failed: bool,
+}
+
+impl Entry {
+    pub fn failure(kind: &str, at: &str) -> Self {
+        Self {
+            at: at.to_owned(),
+            kind: kind.to_owned(),
+            best_score: None,
+            matches: 0,
+            full: 0,
+            tokens: 0,
+            failed: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -28,6 +45,8 @@ pub struct Summary {
     pub mean_tokens_per_prompt: f64,
     pub mean_tokens_per_injection: f64,
     pub best_score_median: Option<f64>,
+    /// Prompts where the hook gave up; not counted in `prompts`.
+    pub failed: usize,
 }
 
 /// `unix_secs` as `YYYY-MM-DDTHH:MM:SSZ`.
@@ -53,6 +72,20 @@ pub fn iso8601(unix_secs: u64) -> String {
         rest % 3_600 / 60,
         rest % 60
     )
+}
+
+/// The current time as `YYYY-MM-DDTHH:MM:SSZ`.
+pub fn now_iso8601() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    iso8601(secs)
+}
+
+/// Records that the hook gave up on a prompt, so an outage shows in the summary.
+/// A log that cannot be written is ignored: the hook must never fail a prompt.
+pub fn append_failure(path: &std::path::Path, kind: &str) {
+    let _ = append(path, &Entry::failure(kind, &now_iso8601()));
 }
 
 /// The entry as one JSON line, newline included.
@@ -93,7 +126,9 @@ pub fn summarise(entries: &[Entry]) -> Vec<Summary> {
     kinds
         .into_iter()
         .map(|kind| {
-            let of_kind: Vec<&Entry> = entries.iter().filter(|e| e.kind == kind).collect();
+            let all_of_kind: Vec<&Entry> = entries.iter().filter(|e| e.kind == kind).collect();
+            let failed = all_of_kind.iter().filter(|e| e.failed).count();
+            let of_kind: Vec<&Entry> = all_of_kind.into_iter().filter(|e| !e.failed).collect();
             let injected: Vec<&&Entry> = of_kind.iter().filter(|e| e.matches > 0).collect();
             let total_tokens: usize = of_kind.iter().map(|e| e.tokens).sum();
             let mut scores: Vec<f64> = of_kind.iter().filter_map(|e| e.best_score).collect();
@@ -106,6 +141,7 @@ pub fn summarise(entries: &[Entry]) -> Vec<Summary> {
                 mean_tokens_per_prompt: mean(total_tokens, of_kind.len()),
                 mean_tokens_per_injection: mean(total_tokens, injected.len()),
                 best_score_median: scores.get(scores.len() / 2).copied(),
+                failed,
             }
         })
         .collect()
@@ -122,7 +158,7 @@ fn mean(total: usize, count: usize) -> f64 {
 /// The summaries as a Markdown table.
 pub fn render_summary(summaries: &[Summary]) -> String {
     let mut out = String::from(
-        "| kind | prompts | injected | in full | tokens/prompt | tokens/injection | median best score |\n|---|---|---|---|---|---|---|\n",
+        "| kind | prompts | injected | in full | tokens/prompt | tokens/injection | median best score | failed |\n|---|---|---|---|---|---|---|---|\n",
     );
     for s in summaries {
         let share = |n: usize| {
@@ -133,7 +169,7 @@ pub fn render_summary(summaries: &[Summary]) -> String {
             }
         };
         out.push_str(&format!(
-            "| {} | {} | {} ({:.0}%) | {} ({:.0}%) | {:.0} | {:.0} | {} |\n",
+            "| {} | {} | {} ({:.0}%) | {} ({:.0}%) | {:.0} | {:.0} | {} | {} |\n",
             s.kind,
             s.prompts,
             s.injected,
@@ -144,6 +180,7 @@ pub fn render_summary(summaries: &[Summary]) -> String {
             s.mean_tokens_per_injection,
             s.best_score_median
                 .map_or_else(|| "-".to_owned(), |v| format!("{v:.2}")),
+            s.failed,
         ));
     }
     out
@@ -162,7 +199,35 @@ mod tests {
             matches,
             full,
             tokens,
+            failed: false,
         }
+    }
+
+    #[test]
+    fn a_failure_entry_has_no_score_and_no_injection() {
+        let failure = Entry::failure("memory", "2026-10-07T12:00:00Z");
+        assert!(failure.failed);
+        assert_eq!(failure.best_score, None);
+        assert_eq!((failure.matches, failure.full, failure.tokens), (0, 0, 0));
+    }
+
+    #[test]
+    fn old_log_lines_without_a_failed_field_still_parse() {
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        let parsed = parse_log(old);
+        assert_eq!(parsed.len(), 1);
+        assert!(!parsed[0].failed);
+    }
+
+    #[test]
+    fn summary_counts_failures_apart_from_prompts_that_were_served() {
+        let mut entries = vec![entry("memory", Some(0.8), 1, 0, 100)];
+        entries.push(Entry::failure("memory", "t"));
+        entries.push(Entry::failure("memory", "t"));
+        let sum = &summarise(&entries)[0];
+        assert_eq!(sum.prompts, 1);
+        assert_eq!(sum.failed, 2);
+        assert!(render_summary(std::slice::from_ref(sum)).contains("| 2 |"));
     }
 
     #[test]

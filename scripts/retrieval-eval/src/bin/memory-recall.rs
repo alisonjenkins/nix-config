@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -11,7 +11,9 @@ use retrieval_eval::recall::{
     full_count, hit, hook_output, prompt_from_hook_input, render_catalogue, render_context_with,
     select, write_if_changed, Inject,
 };
-use retrieval_eval::recall_log::{append, iso8601, parse_log, render_summary, summarise, Entry};
+use retrieval_eval::recall_log::{
+    append, append_failure, now_iso8601, parse_log, render_summary, summarise, Entry,
+};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -179,20 +181,15 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
     let inject = selection.inject.into_inject(selection.body_score);
     let context = render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars);
     let entry = Entry {
-        at: iso8601(unix_now()),
+        at: now_iso8601(),
         kind: "memory".to_owned(),
         best_score: scored.first().map(|(_, score)| *score),
         matches: hits.len(),
         full: full_count(&hits, inject),
         tokens: context.len() / BYTES_PER_TOKEN,
+        failed: false,
     };
     Ok(Recalled { context, entry })
-}
-
-fn unix_now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs())
 }
 
 fn run(cli: &Cli) -> Result<()> {
@@ -246,7 +243,15 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let recalled = recall(cli, &prompt, *selection, HOOK_TIMEOUT)?;
+            let recalled = match recall(cli, &prompt, *selection, HOOK_TIMEOUT) {
+                Ok(recalled) => recalled,
+                Err(error) => {
+                    if let Some(path) = log {
+                        append_failure(path, "memory");
+                    }
+                    return Err(error);
+                }
+            };
             if let Some(path) = log {
                 if let Err(error) = append(path, &recalled.entry) {
                     warn!(path = %path.display(), %error, "could not write the recall log");

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
@@ -11,7 +11,7 @@ use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{hook_output, prompt_from_hook_input, render_sections, select, Hit};
-use retrieval_eval::recall_log::{append, iso8601, Entry};
+use retrieval_eval::recall_log::{append, append_failure, now_iso8601, Entry};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -126,12 +126,6 @@ fn load_vectors(session: &mut Session) {
     }
 }
 
-fn unix_now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs())
-}
-
 struct Recalled {
     context: String,
     entry: Entry,
@@ -155,12 +149,13 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
         .collect();
     let context = render_sections(&cli.skills_root, &hits, selection.section_chars);
     let entry = Entry {
-        at: iso8601(unix_now()),
+        at: now_iso8601(),
         kind: "skills".to_owned(),
         best_score: scored.first().map(|(_, score)| *score),
         matches: hits.len(),
         full: 0,
         tokens: context.len() / BYTES_PER_TOKEN,
+        failed: false,
     };
     Ok(Recalled { context, entry })
 }
@@ -248,7 +243,15 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let recalled = recall(cli, &prompt, *selection, HOOK_TIMEOUT)?;
+            let recalled = match recall(cli, &prompt, *selection, HOOK_TIMEOUT) {
+                Ok(recalled) => recalled,
+                Err(error) => {
+                    if let Some(path) = log {
+                        append_failure(path, "skills");
+                    }
+                    return Err(error);
+                }
+            };
             if let Some(path) = log {
                 if let Err(error) = append(path, &recalled.entry) {
                     warn!(path = %path.display(), %error, "could not write the recall log");
