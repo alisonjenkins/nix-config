@@ -13,6 +13,7 @@ rustPlatform.buildRustPackage {
       ../../scripts/retrieval-eval/Cargo.toml
       ../../scripts/retrieval-eval/Cargo.lock
       ../../scripts/retrieval-eval/src
+      ../../scripts/retrieval-eval/tests
     ];
   };
   cargoLock.lockFile = ../../scripts/retrieval-eval/Cargo.lock;
