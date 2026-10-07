@@ -95,13 +95,7 @@ pub fn render_context_with(
     });
     for (n, hit) in hits.iter().enumerate() {
         let path = memory_dir.join(&hit.id);
-        let in_full = match inject {
-            Inject::Snippets => false,
-            Inject::TopBody => n == 0,
-            Inject::Bodies => true,
-            Inject::Tiered { body_score } => hit.score >= body_score,
-        };
-        if in_full {
+        if shown_in_full(inject, n, hit.score) {
             let _ = writeln!(
                 out,
                 "\n## {} ({:.2})\n{}\n\n{}",
@@ -121,6 +115,23 @@ pub fn render_context_with(
         }
     }
     out
+}
+
+fn shown_in_full(inject: Inject, index: usize, score: f64) -> bool {
+    match inject {
+        Inject::Snippets => false,
+        Inject::TopBody => index == 0,
+        Inject::Bodies => true,
+        Inject::Tiered { body_score } => score >= body_score,
+    }
+}
+
+/// How many of `hits` `render_context_with` shows in full.
+pub fn full_count(hits: &[Hit], inject: Inject) -> usize {
+    hits.iter()
+        .enumerate()
+        .filter(|(n, hit)| shown_in_full(inject, *n, hit.score))
+        .count()
 }
 
 fn cap_body(body: &str, max_chars: usize) -> String {
@@ -321,6 +332,19 @@ mod tests {
             1000,
         );
         assert!(!text.contains("fix a") && text.contains("about a.md"));
+    }
+
+    #[test]
+    fn full_count_matches_what_render_shows_in_full() {
+        let hits = [
+            hit_with_body("a.md", 0.82, "fix a"),
+            hit_with_body("b.md", 0.71, "fix b"),
+        ];
+        assert_eq!(full_count(&hits, Inject::Snippets), 0);
+        assert_eq!(full_count(&hits, Inject::TopBody), 1);
+        assert_eq!(full_count(&hits, Inject::Bodies), 2);
+        assert_eq!(full_count(&hits, Inject::Tiered { body_score: 0.76 }), 1);
+        assert_eq!(full_count(&[], Inject::Bodies), 0);
     }
 
     fn names(items: &[&str]) -> Vec<String> {
