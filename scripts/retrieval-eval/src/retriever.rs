@@ -24,11 +24,18 @@ pub trait Retriever {
     fn rank(&self, query: &str) -> Result<Vec<String>, RetrieveError>;
 }
 
-/// Ids ordered by descending score, ties broken by id so runs are reproducible.
+/// Ids with their scores, descending, ties broken by id so runs are reproducible.
+pub fn rank_scored(ids: &[String], scores: &[f64]) -> Vec<(String, f64)> {
+    let mut scored: Vec<(String, f64)> = ids.iter().cloned().zip(scores.iter().copied()).collect();
+    scored.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    scored
+}
+
 pub fn rank_by_score(ids: &[String], scores: &[f64]) -> Vec<String> {
-    let mut scored: Vec<(&String, f64)> = ids.iter().zip(scores.iter().copied()).collect();
-    scored.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(b.0)));
-    scored.into_iter().map(|(id, _)| id.clone()).collect()
+    rank_scored(ids, scores)
+        .into_iter()
+        .map(|(id, _)| id)
+        .collect()
 }
 
 #[cfg(test)]

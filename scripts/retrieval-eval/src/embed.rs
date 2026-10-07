@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::corpus::Chunk;
-use crate::retriever::{rank_by_score, RetrieveError, Retriever};
+use crate::retriever::{rank_scored, RetrieveError, Retriever};
+use crate::vector_cache::{fnv1a, VectorCache};
 
 const BATCH_SIZE: usize = 16;
 /// Request timeout: the first batch can include a cold model load on CPU.
@@ -116,6 +117,8 @@ struct EmbedRequest<'a> {
 
 #[derive(Deserialize)]
 struct EmbedResponse {
+    #[serde(default)]
+    model: String,
     data: Vec<EmbedItem>,
 }
 
@@ -136,8 +139,12 @@ pub struct Embedder {
 
 impl Embedder {
     pub fn new(spec: EmbedderSpec) -> Self {
+        Self::with_timeout(spec, REQUEST_TIMEOUT)
+    }
+
+    pub fn with_timeout(spec: EmbedderSpec, timeout: Duration) -> Self {
         let agent = ureq::Agent::config_builder()
-            .timeout_global(Some(REQUEST_TIMEOUT))
+            .timeout_global(Some(timeout))
             .build()
             .into();
         Self {
@@ -150,6 +157,13 @@ impl Embedder {
     }
 
     fn embed(&self, inputs: &[String]) -> Result<Vec<Vec<f32>>, RetrieveError> {
+        self.embed_with_model(inputs).map(|(vectors, _)| vectors)
+    }
+
+    fn embed_with_model(
+        &self,
+        inputs: &[String],
+    ) -> Result<(Vec<Vec<f32>>, String), RetrieveError> {
         let url = format!("{}/v1/embeddings", self.spec.base_url.trim_end_matches('/'));
         let mut response = self
             .agent
@@ -174,12 +188,107 @@ impl Embedder {
             });
         }
         body.data.sort_by_key(|item| item.index);
-        Ok(body
+        let vectors = body
             .data
             .into_iter()
             .map(|item| truncate_normalise(item.embedding, self.spec.dims))
-            .collect())
+            .collect();
+        Ok((vectors, body.model))
     }
+
+    /// The model name the server reports, so a cache is never reused across models.
+    pub fn model_id(&self) -> Result<String, RetrieveError> {
+        self.embed_with_model(&["model probe".to_owned()])
+            .map(|(_, model)| model)
+    }
+
+    /// All chunk ids with their cosine score, best first.
+    pub fn search(&self, query: &str) -> Result<Vec<(String, f64)>, RetrieveError> {
+        if !self.indexed {
+            return Err(RetrieveError::NotIndexed);
+        }
+        let wrapped = [self.spec.preset.query(query)];
+        let vectors = self.embed(&wrapped)?;
+        let Some(query_vector) = vectors.first() else {
+            return Err(RetrieveError::BadResponse {
+                url: self.spec.base_url.clone(),
+                detail: "no embedding returned for the query".to_owned(),
+            });
+        };
+        let scores: Vec<f64> = self
+            .matrix
+            .iter()
+            .map(|doc| dot(doc, query_vector))
+            .collect();
+        Ok(rank_scored(&self.ids, &scores))
+    }
+
+    /// Index `chunks`, embedding only those whose text is new or changed.
+    pub fn index_cached(
+        &mut self,
+        chunks: &[Chunk],
+        cache: &mut VectorCache,
+    ) -> Result<IndexStats, RetrieveError> {
+        let docs: Vec<(&Chunk, String, u64)> = chunks
+            .iter()
+            .map(|chunk| {
+                let text = self.spec.preset.document(chunk);
+                let hash = fnv1a(&text);
+                (chunk, text, hash)
+            })
+            .collect();
+        let (fresh, stale): (Vec<_>, Vec<_>) = docs
+            .iter()
+            .partition(|(chunk, _, hash)| cache.get(&chunk.id, *hash).is_some());
+        for batch in stale.chunks(BATCH_SIZE) {
+            let inputs: Vec<String> = batch.iter().map(|(_, text, _)| text.clone()).collect();
+            let vectors = self.embed(&inputs)?;
+            for ((chunk, _, hash), vector) in batch.iter().zip(vectors) {
+                cache.put(chunk.id.clone(), *hash, vector);
+            }
+        }
+        cache.retain_ids(&chunks.iter().map(|c| c.id.as_str()).collect());
+        let stats = IndexStats {
+            embedded: stale.len(),
+            reused: fresh.len(),
+            missing: 0,
+        };
+        self.load_cached(chunks, cache);
+        Ok(stats)
+    }
+
+    /// Index from `cache` alone, with no network; chunks it lacks are left out.
+    pub fn load_cached(&mut self, chunks: &[Chunk], cache: &VectorCache) -> IndexStats {
+        let mut ids = Vec::new();
+        let mut matrix = Vec::new();
+        let mut missing = 0_usize;
+        for chunk in chunks {
+            let hash = fnv1a(&self.spec.preset.document(chunk));
+            match cache.get(&chunk.id, hash) {
+                Some(vector) => {
+                    ids.push(chunk.id.clone());
+                    matrix.push(vector.to_vec());
+                }
+                None => missing = missing.saturating_add(1),
+            }
+        }
+        let reused = ids.len();
+        self.ids = ids;
+        self.matrix = matrix;
+        self.indexed = true;
+        IndexStats {
+            embedded: 0,
+            reused,
+            missing,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct IndexStats {
+    pub embedded: usize,
+    pub reused: usize,
+    pub missing: usize,
 }
 
 impl Retriever for Embedder {
@@ -203,23 +312,7 @@ impl Retriever for Embedder {
     }
 
     fn rank(&self, query: &str) -> Result<Vec<String>, RetrieveError> {
-        if !self.indexed {
-            return Err(RetrieveError::NotIndexed);
-        }
-        let wrapped = [self.spec.preset.query(query)];
-        let vectors = self.embed(&wrapped)?;
-        let Some(query_vector) = vectors.first() else {
-            return Err(RetrieveError::BadResponse {
-                url: self.spec.base_url.clone(),
-                detail: "no embedding returned for the query".to_owned(),
-            });
-        };
-        let scores: Vec<f64> = self
-            .matrix
-            .iter()
-            .map(|doc| dot(doc, query_vector))
-            .collect();
-        Ok(rank_by_score(&self.ids, &scores))
+        Ok(self.search(query)?.into_iter().map(|(id, _)| id).collect())
     }
 }
 
@@ -228,6 +321,8 @@ impl Retriever for Embedder {
 mod tests {
     use std::io::{Read, Write};
     use std::net::TcpListener;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
     use std::thread;
 
     use super::*;
@@ -307,11 +402,14 @@ mod tests {
 
     /// Serve canned `/v1/embeddings` replies over a real socket: vectors are keyed
     /// by which marker word the input contains, so ranking is checkable by hand.
-    fn serve_embeddings(connections: usize) -> String {
+    /// The counter is how many inputs the server has embedded so far.
+    fn serve_embeddings() -> (String, Arc<AtomicUsize>) {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let base = format!("http://{}", listener.local_addr().unwrap());
+        let served = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&served);
         thread::spawn(move || {
-            for stream in listener.incoming().take(connections) {
+            for stream in listener.incoming() {
                 let mut stream = stream.unwrap();
                 let mut buf = vec![0_u8; 65536];
                 let mut request = Vec::new();
@@ -337,6 +435,7 @@ mod tests {
                 let text = String::from_utf8_lossy(&request).into_owned();
                 let body = text.split_once("\r\n\r\n").unwrap().1;
                 let parsed: serde_json::Value = serde_json::from_str(body).unwrap();
+                counter.fetch_add(parsed["input"].as_array().unwrap().len(), Ordering::SeqCst);
                 let data: Vec<serde_json::Value> = parsed["input"]
                     .as_array()
                     .unwrap()
@@ -352,7 +451,8 @@ mod tests {
                         serde_json::json!({"index": index, "embedding": embedding})
                     })
                     .collect();
-                let payload = serde_json::json!({ "data": data }).to_string();
+                let payload =
+                    serde_json::json!({ "model": "fake-model", "data": data }).to_string();
                 let reply = format!(
                     "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{payload}",
                     payload.len()
@@ -360,12 +460,102 @@ mod tests {
                 stream.write_all(reply.as_bytes()).unwrap();
             }
         });
-        base
+        (base, served)
+    }
+
+    fn fake_spec(base_url: String) -> EmbedderSpec {
+        EmbedderSpec {
+            name: "t".to_owned(),
+            preset: Preset::None,
+            base_url,
+            dims: None,
+        }
+    }
+
+    #[test]
+    fn model_id_is_read_from_the_server_reply() {
+        let (base, _) = serve_embeddings();
+        assert_eq!(
+            Embedder::new(fake_spec(base)).model_id().unwrap(),
+            "fake-model"
+        );
+    }
+
+    #[test]
+    fn search_returns_scored_ids_best_first() {
+        let (base, _) = serve_embeddings();
+        let mut embedder = Embedder::new(fake_spec(base));
+        embedder
+            .index(&[chunk("b", "", "beta doc"), chunk("a", "", "alpha doc")])
+            .unwrap();
+        let hits = embedder.search("alpha please").unwrap();
+        assert_eq!(
+            hits.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(),
+            ["a", "b"]
+        );
+        assert!((hits[0].1 - 1.0).abs() < 1e-6 && hits[1].1.abs() < 1e-6);
+    }
+
+    #[test]
+    fn index_cached_embeds_only_new_or_changed_chunks() {
+        let (base, served) = serve_embeddings();
+        let mut cache = VectorCache::new("t");
+        let mut embedder = Embedder::new(fake_spec(base));
+        let chunks = [chunk("a", "", "alpha doc"), chunk("b", "", "beta doc")];
+
+        let first = embedder.index_cached(&chunks, &mut cache).unwrap();
+        assert_eq!((first.embedded, first.reused), (2, 0));
+        assert_eq!(served.load(Ordering::SeqCst), 2);
+
+        let second = embedder.index_cached(&chunks, &mut cache).unwrap();
+        assert_eq!((second.embedded, second.reused), (0, 2));
+        assert_eq!(served.load(Ordering::SeqCst), 2);
+
+        let edited = [
+            chunk("a", "", "alpha doc"),
+            chunk("b", "", "beta doc, edited"),
+        ];
+        let third = embedder.index_cached(&edited, &mut cache).unwrap();
+        assert_eq!((third.embedded, third.reused), (1, 1));
+        assert_eq!(served.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn index_cached_prunes_chunks_that_no_longer_exist() {
+        let (base, _) = serve_embeddings();
+        let mut cache = VectorCache::new("t");
+        let mut embedder = Embedder::new(fake_spec(base));
+        embedder
+            .index_cached(
+                &[chunk("a", "", "alpha"), chunk("b", "", "beta")],
+                &mut cache,
+            )
+            .unwrap();
+        embedder
+            .index_cached(&[chunk("a", "", "alpha")], &mut cache)
+            .unwrap();
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn load_cached_makes_no_requests_and_reports_chunks_without_a_vector() {
+        let (base, served) = serve_embeddings();
+        let mut cache = VectorCache::new("t");
+        let chunks = [chunk("a", "", "alpha doc"), chunk("b", "", "beta doc")];
+        Embedder::new(fake_spec(base))
+            .index_cached(&chunks[..1], &mut cache)
+            .unwrap();
+        let before = served.load(Ordering::SeqCst);
+
+        let mut offline = Embedder::new(fake_spec("http://127.0.0.1:1".to_owned()));
+        let stats = offline.load_cached(&chunks, &cache);
+        assert_eq!((stats.reused, stats.embedded, stats.missing), (1, 0, 1));
+        assert_eq!(served.load(Ordering::SeqCst), before);
     }
 
     #[test]
     fn ranks_by_cosine_against_a_real_http_server() {
-        let base = serve_embeddings(2);
+        let (base, _) = serve_embeddings();
         let spec = EmbedderSpec {
             name: "t".to_owned(),
             preset: Preset::None,
