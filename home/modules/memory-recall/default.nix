@@ -30,7 +30,8 @@ let
 
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
     exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
-      --body-score ${toString cfg.bodyScore} --inject ${cfg.inject}${logArgs}
+      --body-score ${toString cfg.bodyScore} --inject ${cfg.inject} \
+      --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
   skillsCacheFile = "${config.xdg.cacheHome}/memory-recall/skills-gemma-${toString cfg.dims}.json";
@@ -45,7 +46,8 @@ let
   skillsHookScript = pkgs.writeShellScript "skill-recall-hook" ''
     exec ${skillRecall} hook --top ${toString cfg.skills.top} \
       --min-score ${toString cfg.skills.minScore} \
-      --section-chars ${toString cfg.skills.sectionChars}${logArgs}
+      --section-chars ${toString cfg.skills.sectionChars} \
+      --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
   # The first index embeds every memory (~70 s on CPU), so wait for the server
@@ -186,6 +188,20 @@ in
         bodyScore in full and the rest as one-line snippets; `snippets` never
         includes a body, so the model must open the file; `top` and `all` always
         put the best, or every, match in full.
+      '';
+    };
+
+    onUnavailable = mkOption {
+      type = types.enum [ "block" "keyword" "allow" ];
+      default = "block";
+      description = ''
+        What a hook does when it cannot retrieve memories or skills (the
+        embedding server is down after 1.5 s of retries, or the directory cannot
+        be read). `block` refuses the prompt with a message (exit code 2), so it is
+        never answered without the context that might have stopped a mistake;
+        `keyword` injects the keyword matches instead; `allow` lets the prompt
+        through with nothing injected. `block` means Claude Code stops working
+        until the server is back.
       '';
     };
 
