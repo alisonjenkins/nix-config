@@ -62,6 +62,19 @@ pub fn to_line(entry: &Entry) -> String {
     line
 }
 
+/// Appends the entry to the log at `path`, creating the file and its directory.
+pub fn append(path: &std::path::Path, entry: &Entry) -> std::io::Result<()> {
+    use std::io::Write;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    file.write_all(to_line(entry).as_bytes())
+}
+
 /// Entries from a log; lines that do not parse are skipped.
 pub fn parse_log(text: &str) -> Vec<Entry> {
     text.lines()
@@ -203,6 +216,17 @@ mod tests {
         assert_eq!(memory.best_score_median, Some(0.72));
         assert_eq!(sums[1].kind, "skills");
         assert_eq!(sums[1].prompts, 1);
+    }
+
+    #[test]
+    fn append_creates_the_directory_and_keeps_earlier_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state/recall.jsonl");
+        append(&path, &entry("memory", Some(0.8), 1, 1, 500)).unwrap();
+        append(&path, &entry("skills", None, 0, 0, 0)).unwrap();
+        let entries = parse_log(&std::fs::read_to_string(&path).unwrap());
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[1].kind, "skills");
     }
 
     #[test]
