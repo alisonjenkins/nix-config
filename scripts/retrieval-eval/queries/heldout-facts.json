@@ -1,0 +1,12 @@
+{
+  "queries": [
+    {"q": "SYNTHETIC EXAMPLE: the fictional greenhouse timer resets after a power cut", "expect": ["example-greenhouse-timer-reset.md"],
+     "facts": [{"text": "RESET", "where": "description"}, {"text": "battery-backed clock", "where": "body"}, {"text": "timer.cfg", "where": "body"}]},
+    {"q": "SYNTHETIC EXAMPLE: the made-up garden pump stops when the tank runs low", "expect": ["example-garden-pump-dry-run.md"],
+     "facts": [{"text": "DRY-RUN", "where": "description"}, {"text": "float switch", "where": "body"}, {"text": "pump.service", "where": "body"}]},
+    {"q": "SYNTHETIC EXAMPLE: invented bookshelf scanner skips pages with a blue edge", "expect": ["example-scanner-blue-edge.md"],
+     "facts": [{"text": "BLUE", "where": "description"}, {"text": "threshold 0.42", "where": "body"}, {"text": "scan.toml", "where": "body"}]},
+    {"q": "SYNTHETIC EXAMPLE: pretend weather station reports negative rainfall", "expect": ["example-weather-station-rainfall.md"],
+     "facts": [{"text": "NEGATIVE", "where": "description"}, {"text": "tipping bucket", "where": "body"}, {"text": "calibrate.sh", "where": "body"}]}
+  ]
+}
