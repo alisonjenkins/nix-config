@@ -22,7 +22,7 @@ sub-agents in parallel" below — they're the moment this skill gets skipped:
 | "This is quick, not worth a sub-agent" | Quick and cheap-tier-shaped is the haiku case, not the skip-delegation case. |
 | "I already started, I'll just finish it inline" | Sunk cost. If the remaining items are independent and same-shaped, hand the rest off. |
 | "The user wants this done now" | Parallel sub-agents are faster wall-clock, not slower — fanning out serves urgency, it doesn't fight it. |
-| "Luna can't handle code or commands, so I'll do it inline" (work machine) | It wrote and ran tests, edited manifests and reviewed diffs in testing; `read-shell` and `write-shell` run commands. Inline work burns the Claude balance. Try Luna first. |
+| "Luna can't handle code or commands, so I'll do it inline" (work machine) | It wrote and ran tests, edited manifests and reviewed diffs in testing; `read-shell` and `write-shell` run commands. Inline work burns the Claude balance. Try the Copilot delegate first. |
 | "I need the output to reason over anyway" | Only true if you need the raw content, not a conclusion. A sweep whose result you'll summarize or act on belongs in a sub-agent even then (see `fork` in the Agent tool). |
 
 ## Cost and speed by tier
@@ -169,7 +169,7 @@ runs sequentially.
 ## Picking the model: default to haiku
 
 Default every delegated task to **haiku**. On the work machine
-(`cheapDelegate = "copilot"`) the default is Luna through `delegate.sh`
+(`cheapDelegate = "copilot"`) the default is the Copilot delegate (`delegate.sh`: Haiku 5.5, then Luna)
 instead; read "The per-machine ladder" below before choosing a sub-agent
 tier. Step up to **sonnet** only when the
 task itself — not the batch it's part of — requires judgement: picking which
@@ -188,7 +188,7 @@ per host through `cheapDelegate`):
 
 | Machine | First rung | Falls back to |
 |---|---|---|
-| Work (`cheapDelegate = "copilot"`) | Copilot's Luna via `scripts/delegate.sh` | haiku sub-agent when credits are exhausted or the task needs MCP tools or context only this session has |
+| Work (`cheapDelegate = "copilot"`) | Copilot's Haiku 5.5, falling back to Luna, via `scripts/delegate.sh` (the "Luna" below means this rung) | haiku sub-agent when credits are exhausted or the task needs MCP tools or context only this session has |
 | Personal (default, `"local"`) | Local model via `scripts/delegate-to-local.sh` / `delegate-to-local-agent.sh` | haiku sub-agent when no profile is live or the task isn't haiku-shaped |
 
 The local first rung is text in, text out (its agent mode adds read, and
@@ -241,7 +241,7 @@ Review every result from the first rung before using it. It is weaker
 than a haiku call would have.
 
 Haiku 5.5 ($0.10 / $0.50) now costs the same as GPT-6 Luna, the cheapest
-Copilot model, so the first rung no longer wins on price alone. Its edges
+GPT model in Copilot, so the first rung no longer wins on price alone. Its edges
 are zero marginal cost (local) and, on the work machine, Copilot's separate
 credit pool: Claude and Copilot are metered apart there, so keep offloading
 Luna-shaped work to Luna to conserve the Claude balance for sonnet/opus
@@ -325,7 +325,7 @@ means the prompt was underspecified — fix the prompt, not just the output.
 
 Everything above picks a *model tier* for an Agent-tool sub-agent. GitHub
 Copilot's own `copilot` CLI is a separate, external delegate whose cheapest
-models (GPT-6 Luna, with `gpt-5.6-luna` as the script's next choice) are
+models (Haiku 5.5 first, then GPT-6 Luna, then `gpt-5.6-luna`) are
 priced at or below Haiku 5.5 and, against Haiku 4.5 on public benchmarks,
 faster and more capable. Haiku 5.5 scores 34 on that index at medium effort
 and runs at ~243 tok/s, so it is no longer the weaker option. Read
