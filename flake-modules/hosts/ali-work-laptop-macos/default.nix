@@ -427,7 +427,7 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${username} = { config, ... }: {
-          imports = [ self.homeModules.home-macos ];
+          imports = [ self.homeModules.home-macos self.homeModules.memory-recall ];
 
           # Project parents (e.g. ~/git/<employer>) are discovered on the
           # machine at activation, so they stay out of the repo — see
