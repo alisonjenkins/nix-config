@@ -12,7 +12,20 @@ pub const MAX_PROMPT_CHARS: usize = 2000;
 pub struct Hit {
     pub id: String,
     pub description: String,
+    /// The memory's text after its description line.
+    pub body: String,
     pub score: f64,
+}
+
+/// How much of a match is put in front of the model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Inject {
+    /// Path, score and one-line description of each match; the model reads the file.
+    Snippets,
+    /// The best match in full, the others as snippets.
+    TopBody,
+    /// Every match in full.
+    Bodies,
 }
 
 /// The user's prompt from a UserPromptSubmit hook payload, or `None` when it
@@ -36,34 +49,79 @@ pub fn select(scored: &[(String, f64)], min_score: f64, top: usize) -> Vec<(Stri
         .collect()
 }
 
-/// A memory's description is the first line of its chunk text.
+/// A memory's description is the first line of its chunk text, the rest its body.
 pub fn hit(chunk: &Chunk, score: f64) -> Hit {
+    let mut lines = chunk.text.splitn(2, '\n');
+    let description = lines.next().unwrap_or_default().to_owned();
+    let body = lines.next().unwrap_or_default().trim().to_owned();
     Hit {
         id: chunk.id.clone(),
-        description: chunk.text.lines().next().unwrap_or_default().to_owned(),
+        description,
+        body,
         score,
     }
 }
 
-/// The text injected into the session; empty when there is nothing to inject.
+/// The text injected into the session as snippets; empty when there is nothing to inject.
 pub fn render_context(memory_dir: &Path, hits: &[Hit]) -> String {
+    render_context_with(memory_dir, hits, Inject::Snippets, 0)
+}
+
+/// The text injected into the session; empty when there is nothing to inject.
+/// Bodies are cut at `body_chars` characters.
+pub fn render_context_with(
+    memory_dir: &Path,
+    hits: &[Hit],
+    inject: Inject,
+    body_chars: usize,
+) -> String {
     if hits.is_empty() {
         return String::new();
     }
-    let mut out = String::from(
-        "Possibly relevant memories (semantic match, best first). Read a file if it applies:\n",
-    );
-    for hit in hits {
+    let mut out = String::from(match inject {
+        Inject::Snippets => {
+            "Possibly relevant memories (semantic match, best first). Read a file if it applies:\n"
+        }
+        Inject::TopBody => {
+            "Possibly relevant memories (semantic match, best first). The best match is shown in full; read a file if another applies:\n"
+        }
+        Inject::Bodies => "Possibly relevant memories (semantic match, best first), shown in full:\n",
+    });
+    for (n, hit) in hits.iter().enumerate() {
         let path = memory_dir.join(&hit.id);
-        let _ = writeln!(
-            out,
-            "- {} ({:.2}): {}",
-            path.display(),
-            hit.score,
-            hit.description
-        );
+        let in_full = match inject {
+            Inject::Snippets => false,
+            Inject::TopBody => n == 0,
+            Inject::Bodies => true,
+        };
+        if in_full {
+            let _ = writeln!(
+                out,
+                "\n## {} ({:.2})\n{}\n\n{}",
+                path.display(),
+                hit.score,
+                hit.description,
+                cap_body(&hit.body, body_chars)
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "- {} ({:.2}): {}",
+                path.display(),
+                hit.score,
+                hit.description
+            );
+        }
     }
     out
+}
+
+fn cap_body(body: &str, max_chars: usize) -> String {
+    if body.chars().count() <= max_chars {
+        return body.to_owned();
+    }
+    let head: String = body.chars().take(max_chars).collect();
+    format!("{head}\n[truncated; read the file for the rest]")
 }
 
 /// UserPromptSubmit hook stdout; `None` when there is no context to add.
@@ -151,9 +209,73 @@ mod tests {
             Hit {
                 id: "m.md".to_owned(),
                 description: "one-line description".to_owned(),
+                body: "body line".to_owned(),
                 score: 0.5
             }
         );
+    }
+
+    fn hit_with_body(id: &str, score: f64, body: &str) -> Hit {
+        Hit {
+            id: id.to_owned(),
+            description: format!("about {id}"),
+            body: body.to_owned(),
+            score,
+        }
+    }
+
+    #[test]
+    fn top_body_mode_shows_the_best_match_in_full_and_the_rest_as_snippets() {
+        let hits = [
+            hit_with_body("a.md", 0.9, "the full fix for a"),
+            hit_with_body("b.md", 0.8, "the full fix for b"),
+        ];
+        let text = render_context_with(Path::new("/mem"), &hits, Inject::TopBody, 1000);
+        assert!(text.contains("/mem/a.md (0.90)"));
+        assert!(text.contains("the full fix for a"));
+        assert!(text.contains("/mem/b.md (0.80)"));
+        assert!(text.contains("about b.md"));
+        assert!(!text.contains("the full fix for b"));
+    }
+
+    #[test]
+    fn bodies_mode_shows_every_match_in_full() {
+        let hits = [
+            hit_with_body("a.md", 0.9, "fix a"),
+            hit_with_body("b.md", 0.8, "fix b"),
+        ];
+        let text = render_context_with(Path::new("/mem"), &hits, Inject::Bodies, 1000);
+        assert!(text.contains("fix a") && text.contains("fix b"));
+    }
+
+    #[test]
+    fn snippets_mode_never_includes_a_body() {
+        let hits = [hit_with_body("a.md", 0.9, "secret body")];
+        let text = render_context_with(Path::new("/mem"), &hits, Inject::Snippets, 1000);
+        assert!(text.contains("about a.md") && !text.contains("secret body"));
+    }
+
+    #[test]
+    fn a_long_body_is_cut_and_says_so() {
+        let hits = [hit_with_body("a.md", 0.9, &"x".repeat(500))];
+        let text = render_context_with(Path::new("/mem"), &hits, Inject::TopBody, 100);
+        assert!(text.contains(&"x".repeat(100)));
+        assert!(!text.contains(&"x".repeat(101)));
+        assert!(text.contains("truncated"));
+    }
+
+    #[test]
+    fn a_short_body_is_not_marked_truncated() {
+        let hits = [hit_with_body("a.md", 0.9, "short")];
+        let text = render_context_with(Path::new("/mem"), &hits, Inject::TopBody, 100);
+        assert!(!text.contains("truncated"));
+    }
+
+    #[test]
+    fn every_mode_is_empty_without_hits() {
+        for mode in [Inject::Snippets, Inject::TopBody, Inject::Bodies] {
+            assert_eq!(render_context_with(Path::new("/mem"), &[], mode, 100), "");
+        }
     }
 
     #[test]
@@ -161,6 +283,7 @@ mod tests {
         let hits = [Hit {
             id: "feedback_sudo.md".to_owned(),
             description: "Agent cannot run sudo".to_owned(),
+            body: String::new(),
             score: 0.714,
         }];
         let text = render_context(Path::new("/mem"), &hits);

@@ -4,10 +4,12 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
-use retrieval_eval::recall::{hit, hook_output, prompt_from_hook_input, render_context, select};
+use retrieval_eval::recall::{
+    hit, hook_output, prompt_from_hook_input, render_context_with, select, Inject,
+};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -17,6 +19,8 @@ const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
 const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TOP: usize = 3;
+/// About 1.2k tokens: most memories fit whole, and the rest say where to read on.
+const DEFAULT_BODY_CHARS: usize = 3500;
 /// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over the 83 memories:
 /// correct top-1 matches scored 0.746-0.865, unrelated prompts 0.534-0.722.
 /// Scores are model- and dims-specific; re-measure before changing either.
@@ -45,6 +49,32 @@ struct Selection {
     /// Drop matches scoring below this cosine similarity.
     #[arg(long, default_value_t = DEFAULT_MIN_SCORE)]
     min_score: f64,
+    /// How much of each match to put in front of the model.
+    #[arg(long, value_enum, default_value_t = InjectArg::Snippets)]
+    inject: InjectArg,
+    /// Longest body injected in full, in characters.
+    #[arg(long, default_value_t = DEFAULT_BODY_CHARS)]
+    body_chars: usize,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum InjectArg {
+    /// Path, score and description; the model reads the file.
+    Snippets,
+    /// The best match in full, the others as snippets.
+    Top,
+    /// Every match in full.
+    All,
+}
+
+impl From<InjectArg> for Inject {
+    fn from(arg: InjectArg) -> Self {
+        match arg {
+            InjectArg::Snippets => Self::Snippets,
+            InjectArg::Top => Self::TopBody,
+            InjectArg::All => Self::Bodies,
+        }
+    }
 }
 
 #[derive(Subcommand)]
@@ -104,7 +134,12 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
             Some(hit(chunk, score))
         })
         .collect();
-    Ok(render_context(&cli.memory_dir, &hits))
+    Ok(render_context_with(
+        &cli.memory_dir,
+        &hits,
+        selection.inject.into(),
+        selection.body_chars,
+    ))
 }
 
 fn run(cli: &Cli) -> Result<()> {
