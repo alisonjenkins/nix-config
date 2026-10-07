@@ -1,16 +1,17 @@
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    hit, hook_output, prompt_from_hook_input, render_catalogue, render_context_with, select,
-    write_if_changed, Inject,
+    full_count, hit, hook_output, prompt_from_hook_input, render_catalogue, render_context_with,
+    select, write_if_changed, Inject,
 };
+use retrieval_eval::recall_log::{append, iso8601, parse_log, render_summary, summarise, Entry};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
@@ -20,6 +21,8 @@ const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
 const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TOP: usize = 3;
+/// Rough sizing of the injected text for the log, as elsewhere in this crate.
+const BYTES_PER_TOKEN: usize = 4;
 /// About 1.2k tokens: most memories fit whole, and the rest say where to read on.
 const DEFAULT_BODY_CHARS: usize = 3500;
 /// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over the 83 memories:
@@ -35,9 +38,9 @@ const DEFAULT_BODY_SCORE: f64 = 0.76;
 #[derive(Parser)]
 #[command(about = "Semantic recall over Claude memory files, as a UserPromptSubmit hook")]
 struct Cli {
-    /// Directory of memory `*.md` files.
+    /// Directory of memory `*.md` files (every command but `log-summary`).
     #[arg(long)]
-    memory_dir: PathBuf,
+    memory_dir: Option<PathBuf>,
     /// NAME=PRESET@BASE_URL[#DIMS] of a `llama-server --embeddings` endpoint
     /// (every command but `catalogue`).
     #[arg(long)]
@@ -105,7 +108,12 @@ enum Command {
     Hook {
         #[command(flatten)]
         selection: Selection,
+        /// Append one line per prompt (score and sizes, never the prompt) to this file.
+        #[arg(long)]
+        log: Option<PathBuf>,
     },
+    /// Summarise a hook log: how often a memory matched and what it added.
+    LogSummary { path: PathBuf },
     /// Print a names-only index of the memories, to use in place of a full
     /// MEMORY.md now that matching memories are injected.
     Catalogue {
@@ -121,12 +129,16 @@ struct Session {
     cache: VectorCache,
 }
 
+fn memory_dir(cli: &Cli) -> Result<&PathBuf> {
+    cli.memory_dir.as_ref().context("--memory-dir is required")
+}
+
 fn cache_path(cli: &Cli) -> Result<&PathBuf> {
     cli.cache.as_ref().context("--cache is required")
 }
 
 fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
-    let chunks = load_memories(&cli.memory_dir)?;
+    let chunks = load_memories(memory_dir(cli)?)?;
     let spec = cli.embedder.clone().context("--embedder is required")?;
     let embedder = Embedder::with_timeout(spec, timeout);
     let identity = embedder
@@ -140,7 +152,12 @@ fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
     })
 }
 
-fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<String> {
+struct Recalled {
+    context: String,
+    entry: Entry,
+}
+
+fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
     let mut session = open(cli, timeout)?;
     let stats = session
         .embedder
@@ -159,12 +176,23 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
             Some(hit(chunk, score))
         })
         .collect();
-    Ok(render_context_with(
-        &cli.memory_dir,
-        &hits,
-        selection.inject.into_inject(selection.body_score),
-        selection.body_chars,
-    ))
+    let inject = selection.inject.into_inject(selection.body_score);
+    let context = render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars);
+    let entry = Entry {
+        at: iso8601(unix_now()),
+        kind: "memory".to_owned(),
+        best_score: scored.first().map(|(_, score)| *score),
+        matches: hits.len(),
+        full: full_count(&hits, inject),
+        tokens: context.len() / BYTES_PER_TOKEN,
+    };
+    Ok(Recalled { context, entry })
+}
+
+fn unix_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
 }
 
 fn run(cli: &Cli) -> Result<()> {
@@ -196,7 +224,7 @@ fn run(cli: &Cli) -> Result<()> {
             }
         }
         Command::Catalogue { write } => {
-            let names: Vec<String> = load_memories(&cli.memory_dir)?
+            let names: Vec<String> = load_memories(memory_dir(cli)?)?
                 .into_iter()
                 .map(|chunk| chunk.id)
                 .collect();
@@ -210,7 +238,7 @@ fn run(cli: &Cli) -> Result<()> {
                 None => print!("{text}"),
             }
         }
-        Command::Hook { selection } => {
+        Command::Hook { selection, log } => {
             let mut stdin = String::new();
             std::io::stdin()
                 .read_to_string(&mut stdin)
@@ -218,10 +246,20 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let context = recall(cli, &prompt, *selection, HOOK_TIMEOUT)?;
-            if let Some(output) = hook_output(&context) {
+            let recalled = recall(cli, &prompt, *selection, HOOK_TIMEOUT)?;
+            if let Some(path) = log {
+                if let Err(error) = append(path, &recalled.entry) {
+                    warn!(path = %path.display(), %error, "could not write the recall log");
+                }
+            }
+            if let Some(output) = hook_output(&recalled.context) {
                 println!("{output}");
             }
+        }
+        Command::LogSummary { path } => {
+            let text = std::fs::read_to_string(path)
+                .with_context(|| format!("read {}", path.display()))?;
+            print!("{}", render_summary(&summarise(&parse_log(&text))));
         }
     }
     Ok(())
