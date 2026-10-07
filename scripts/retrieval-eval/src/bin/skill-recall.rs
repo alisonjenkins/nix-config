@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
@@ -180,8 +180,14 @@ fn recall(
 ) -> Result<Recalled> {
     let names = skill_names(&cli.skills_root)?;
     let chunks = load_skill_sections(&cli.skills_root, &names)?;
+    let mut embed_ms = None;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
-        semantic_scores(cli, &chunks, query, timeout)
+        let started = Instant::now();
+        let scored = semantic_scores(cli, &chunks, query, timeout);
+        if scored.is_ok() {
+            embed_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
+        }
+        scored
     });
     let (scored, selected, fallback) = match semantic {
         Ok(scored) => {
@@ -227,6 +233,8 @@ fn recall(
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
         fallback,
+        duration_ms: None,
+        embed_ms,
     };
     Ok(Recalled { context, entry })
 }
@@ -318,7 +326,9 @@ fn run(cli: &Cli) -> Result<()> {
             let Some(prompt) = prompt_from_hook_input(&stdin) else {
                 return Ok(());
             };
-            let recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT) {
+            let started = Instant::now();
+            let mut recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT)
+            {
                 Ok(recalled) => recalled,
                 Err(error) => {
                     if let Some(path) = log {
@@ -334,6 +344,7 @@ fn run(cli: &Cli) -> Result<()> {
                     return Err(error);
                 }
             };
+            recalled.entry.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
             if let Some(path) = log {
                 if let Err(error) = append_rotating(path, &recalled.entry, DEFAULT_ROTATION) {
                     warn!(path = %path.display(), %error, "could not write the recall log");

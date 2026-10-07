@@ -480,6 +480,8 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
             tokens: 10,
             failed: false,
             fallback: false,
+            duration_ms: None,
+            embed_ms: None,
         })
     };
     fs::write(&log, line(1)).unwrap();

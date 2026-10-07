@@ -23,6 +23,12 @@ pub struct Entry {
     /// The embedding server was unreachable and the matches are keyword (BM25) ones.
     #[serde(default)]
     pub fallback: bool,
+    /// Wall time of the whole hook, in milliseconds.
+    #[serde(default)]
+    pub duration_ms: Option<f64>,
+    /// Of that, the time spent embedding the prompt and scoring (not the retries).
+    #[serde(default)]
+    pub embed_ms: Option<f64>,
 }
 
 impl Entry {
@@ -36,6 +42,8 @@ impl Entry {
             tokens: 0,
             failed: true,
             fallback: false,
+            duration_ms: None,
+            embed_ms: None,
         }
     }
 }
@@ -330,6 +338,8 @@ mod tests {
             tokens,
             failed: false,
             fallback: false,
+            duration_ms: None,
+            embed_ms: None,
         }
     }
 
@@ -357,6 +367,17 @@ mod tests {
         keyword.fallback = true;
         let entries = vec![entry("memory", Some(0.7), 1, 0, 100), keyword];
         assert_eq!(summarise(&entries)[0].best_score_median, Some(0.7));
+    }
+
+    #[test]
+    fn timings_round_trip_and_old_lines_without_them_parse() {
+        let mut timed = entry("memory", Some(0.8), 1, 0, 100);
+        timed.duration_ms = Some(41.5);
+        timed.embed_ms = Some(23.0);
+        assert_eq!(parse_log(&to_line(&timed)), vec![timed]);
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        let parsed = parse_log(old);
+        assert_eq!((parsed[0].duration_ms, parsed[0].embed_ms), (None, None));
     }
 
     #[test]
