@@ -207,6 +207,15 @@ impl Embedder {
             .map(|(_, model)| model)
     }
 
+    /// Names the model, prompt preset and dimensions a cached vector came from.
+    pub fn cache_identity(&self) -> Result<String, RetrieveError> {
+        let model = self.model_id()?;
+        Ok(format!(
+            "{model}|{:?}|{:?}",
+            self.spec.preset, self.spec.dims
+        ))
+    }
+
     /// All chunk ids with their cosine score, best first.
     pub fn search(&self, query: &str) -> Result<Vec<(String, f64)>, RetrieveError> {
         if !self.indexed {
@@ -489,6 +498,18 @@ mod tests {
         assert_eq!(
             Embedder::new(fake_spec(base)).model_id().unwrap(),
             "fake-model"
+        );
+    }
+
+    #[test]
+    fn cache_identity_combines_model_preset_and_dims() {
+        let (base, _) = serve_embeddings();
+        let mut spec = fake_spec(base);
+        spec.preset = Preset::Gemma;
+        spec.dims = Some(256);
+        assert_eq!(
+            Embedder::new(spec).cache_identity().unwrap(),
+            "fake-model|Gemma|Some(256)"
         );
     }
 

@@ -74,10 +74,9 @@ struct Session {
 fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
     let chunks = load_memories(&cli.memory_dir)?;
     let embedder = Embedder::with_timeout(cli.embedder.clone(), timeout);
-    let model = embedder
-        .model_id()
+    let identity = embedder
+        .cache_identity()
         .context("ask the server for its model")?;
-    let identity = format!("{model}|{:?}|{:?}", cli.embedder.preset, cli.embedder.dims);
     let cache = VectorCache::load(&cli.cache, &identity)?;
     Ok(Session {
         embedder,
