@@ -67,6 +67,9 @@ pub struct ClaudeCall {
     pub output_tokens: u64,
     pub api_ms: f64,
     pub cost_usd: f64,
+    /// Empty when the output carries none; `claude --resume` needs it.
+    #[serde(default)]
+    pub session_id: String,
 }
 
 /// Parses `claude -p --output-format json` output.
@@ -108,6 +111,11 @@ pub fn parse_claude_json(stdout: &str) -> Result<ClaudeCall, ClaudeError> {
         output_tokens: usage("output_tokens"),
         api_ms: number("duration_api_ms"),
         cost_usd: number("total_cost_usd"),
+        session_id: value
+            .get("session_id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
     })
 }
 
@@ -196,6 +204,14 @@ mod tests {
         assert_eq!(call.output_tokens, 4);
         assert!((call.api_ms - 1472.0).abs() < 1e-9);
         assert!((call.cost_usd - 0.0114).abs() < 1e-9);
+    }
+
+    #[test]
+    fn claude_json_keeps_the_session_id_for_resuming() {
+        let json = r#"{"is_error":false,"result":"ok","session_id":"abc-123","usage":{}}"#;
+        assert_eq!(parse_claude_json(json).unwrap().session_id, "abc-123");
+        let bare = r#"{"is_error":false,"result":"ok","usage":{}}"#;
+        assert_eq!(parse_claude_json(bare).unwrap().session_id, "");
     }
 
     #[test]

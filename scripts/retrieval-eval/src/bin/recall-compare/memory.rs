@@ -12,7 +12,9 @@ use retrieval_eval::bench::{approx_tokens, percentile};
 use retrieval_eval::compare::{
     before_cutoff, extract_files, parse_cavemem_search, CavememHit, ClaudeCall,
 };
-use retrieval_eval::llm_run::{ask, read_files, Coverage, Item, Llm, QueryRun, SystemRun};
+use retrieval_eval::llm_run::{
+    ask, ask_first, ask_next, read_files, Coverage, Item, Llm, QueryRun, SystemRun,
+};
 
 use crate::{emit, parallel, user_turn, Common};
 
@@ -351,7 +353,7 @@ fn open_flow(
     injection: &str,
     known: &HashSet<String>,
 ) -> Result<(Vec<ClaudeCall>, String)> {
-    let first = ask(llm, system, &user_turn(&[injection, OPEN_TASK], &item.q))?;
+    let first = ask_first(llm, system, &user_turn(&[injection, OPEN_TASK], &item.q))?;
     let seen = format!("{system}\n{injection}");
     let Some(rest) = first.text.trim_start().strip_prefix("OPEN:") else {
         return Ok((vec![first], seen));
@@ -359,7 +361,12 @@ fn open_flow(
     let chosen = extract_files(rest, known, 2);
     let opened = read_files(&args.memory_dir, &chosen);
     let files = format!("# Memory files you opened\n{opened}");
-    let second = ask(llm, system, &user_turn(&[injection, &files], &item.q))?;
+    let second = ask_next(
+        llm,
+        system,
+        &first,
+        &format!("{files}\n\nAnswer the question now."),
+    )?;
     Ok((vec![first, second], format!("{seen}\n{opened}")))
 }
 

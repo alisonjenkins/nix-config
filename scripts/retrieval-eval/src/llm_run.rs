@@ -154,6 +154,37 @@ pub enum AskError {
 /// cavemem's capture, never run; the system prompt carries MARKER so any leak
 /// is searchable.
 pub fn ask(llm: &Llm, system: &str, user: &str) -> Result<ClaudeCall, AskError> {
+    run_claude(llm, system, user, Session::Throwaway)
+}
+
+/// Starts a conversation that `ask_next` can continue.
+pub fn ask_first(llm: &Llm, system: &str, user: &str) -> Result<ClaudeCall, AskError> {
+    run_claude(llm, system, user, Session::Keep)
+}
+
+/// A second turn in the conversation `first` started: the earlier turns come back
+/// from the prompt cache, as they do when Claude Code continues after a tool result.
+pub fn ask_next(
+    llm: &Llm,
+    system: &str,
+    first: &ClaudeCall,
+    user: &str,
+) -> Result<ClaudeCall, AskError> {
+    run_claude(llm, system, user, Session::Resume(&first.session_id))
+}
+
+enum Session<'a> {
+    Throwaway,
+    Keep,
+    Resume(&'a str),
+}
+
+fn run_claude(
+    llm: &Llm,
+    system: &str,
+    user: &str,
+    session: Session<'_>,
+) -> Result<ClaudeCall, AskError> {
     let file = tempfile::Builder::new()
         .prefix("recall-compare-system-")
         .tempfile_in(&llm.workdir)
@@ -169,12 +200,23 @@ pub fn ask(llm: &Llm, system: &str, user: &str) -> Result<ClaudeCall, AskError> 
     })?;
     let mut last = String::new();
     for attempt in 0..CLAUDE_ATTEMPTS {
-        let output = Command::new(&llm.bin)
+        let mut command = Command::new(&llm.bin);
+        command
             .current_dir(&llm.workdir)
             .args(["-p", "--model", &llm.model, "--output-format", "json"])
             .args(["--tools", "", "--effort", "low"])
-            .args(["--no-session-persistence", "--setting-sources", "project"])
-            .args(["--strict-mcp-config", "--disable-slash-commands"])
+            .args(["--setting-sources", "project"])
+            .args(["--strict-mcp-config", "--disable-slash-commands"]);
+        match session {
+            Session::Throwaway => {
+                command.arg("--no-session-persistence");
+            }
+            Session::Keep => {}
+            Session::Resume(id) => {
+                command.args(["--resume", id]);
+            }
+        }
+        let output = command
             .arg("--system-prompt-file")
             .arg(file.path())
             .arg(user)
@@ -354,6 +396,7 @@ mod tests {
             output_tokens: o,
             api_ms: 100.0,
             cost_usd: 0.01,
+            session_id: String::new(),
         };
         let facts = [fact("alpha", "body"), fact("beta", "body")];
         let mut run = SystemRun::named("s");
