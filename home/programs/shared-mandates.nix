@@ -32,17 +32,28 @@
       cheapRung = {
         copilot = ''
           - Cheapest rung on this machine: GitHub Copilot's Luna through the
-            `delegation` skill's `scripts/delegate.sh`, for self-contained
-            text-in/text-out work. When it reports exhausted credits, or the
-            task needs this session's tools or skills, use a "haiku"
-            sub-agent instead.
+            `delegation` skill's `scripts/delegate.sh`. Claude tokens are the
+            scarce balance here and Copilot's is separate, so offload to Luna
+            by default: code from a clear spec, tests (it can run them),
+            config edits, drafts, first-pass reviews, repo and log sweeps. The
+            one-call exception above does not apply to it; a single
+            self-contained step still goes to Luna. Use a "haiku" sub-agent
+            only when Luna reports exhausted credits or the step needs MCP
+            tools or context from this session.
         '';
         local = ''
           - Cheapest rung on this machine: a local model through the
             `delegation` skill's `scripts/delegate-to-local.sh` or
-            `delegate-to-local-agent.sh`, when `list-local-profiles.sh` shows
-            a live profile and the task is haiku-shaped. Otherwise a "haiku"
-            sub-agent.
+            `delegate-to-local-agent.sh`, for haiku-shaped tasks; its agent
+            mode also edits code from an exact spec. If
+            `list-local-profiles.sh` shows no live profile, load one with
+            `switch-local-profile.sh` in the background (it refuses a profile
+            that will not fit beside a game) and use a "haiku" sub-agent
+            until it is up; keep it loaded for the session. At
+            Haiku 5.5's price a spawn costs a fraction of a cent, so the
+            one-call exception above does not apply here either: a single
+            self-contained step goes to the local model or a haiku sub-agent,
+            not inline.
         '';
       }.${cheapDelegate};
     in
@@ -63,7 +74,7 @@
     + cheapRung
     + ''
       - Step up to a "sonnet" sub-agent only when the task itself needs
-        judgement, multi-step reasoning, or non-mechanical code.
+        judgement, multi-step reasoning, or code whose design is still open.
       - Run independent delegations in parallel: several Agent calls in one
         message, and run_in_background for anything not needed before your
         next step. Parallel writers each get their own worktree.
