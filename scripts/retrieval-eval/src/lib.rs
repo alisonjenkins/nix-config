@@ -1,3 +1,4 @@
+pub mod bench;
 pub mod bm25;
 pub mod corpus;
 pub mod embed;
