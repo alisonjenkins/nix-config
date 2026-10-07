@@ -19,7 +19,12 @@ const DEAD_URL: &str = "http://127.0.0.1:1";
 fn serve() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
-    thread::spawn(move || {
+    thread::spawn(move || serve_on(listener));
+    base
+}
+
+fn serve_on(listener: TcpListener) {
+    {
         for stream in listener.incoming() {
             let Ok(mut stream) = stream else { continue };
             let mut request = Vec::new();
@@ -71,8 +76,7 @@ fn serve() -> String {
             );
             let _ = stream.write_all(reply.as_bytes());
         }
-    });
-    base
+    }
 }
 
 fn run(bin: &str, args: &[&str], stdin: &str) -> Output {
@@ -220,7 +224,7 @@ fn memory_hook_injects_nothing_for_an_unrelated_prompt_but_still_logs_the_score(
 }
 
 #[test]
-fn memory_hook_fails_open_and_logs_the_failure_when_the_server_is_down() {
+fn memory_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     let tmp = tempfile::tempdir().unwrap();
     write_memories(&tmp.path().join("mem"));
     let (mem, cache, log) = (
@@ -240,10 +244,70 @@ fn memory_hook_fails_open_and_logs_the_failure_when_the_server_is_down() {
         out.status.success(),
         "a dead server must not fail the prompt"
     );
-    assert!(out.stdout.is_empty());
+    assert!(
+        context(&out).contains("alpha-note.md"),
+        "the prompt still gets the memory that shares its words: {out:?}"
+    );
     let entries = log_entries(&log);
     assert_eq!(entries.len(), 1);
-    assert!(entries[0].failed);
+    assert!(entries[0].fallback && !entries[0].failed && entries[0].matches >= 1);
+}
+
+#[test]
+fn memory_hook_rides_out_a_server_that_comes_back_within_a_second() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let live = embedder(&serve());
+    let mut index = memory_args(mem.to_str().unwrap(), &live, cache.to_str().unwrap());
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+
+    // A port nothing listens on yet; the server binds it 400 ms into the hook.
+    let port = TcpListener::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(400));
+        serve_on(TcpListener::bind(("127.0.0.1", port)).unwrap());
+    });
+    let restarting = embedder(&format!("http://127.0.0.1:{port}"));
+    let mut hook = memory_args(mem.to_str().unwrap(), &restarting, cache.to_str().unwrap());
+    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(context(&out).contains("alpha-note.md"));
+    assert!(
+        !log_entries(&log)[0].fallback,
+        "the retry reached the server"
+    );
+}
+
+#[test]
+fn memory_hook_logs_a_failure_only_when_there_is_nothing_to_search() {
+    let tmp = tempfile::tempdir().unwrap();
+    let log = tmp.path().join("recall.jsonl");
+    let emb = embedder(DEAD_URL);
+    let missing = tmp.path().join("no-such-dir");
+    let cache = tmp.path().join("cache.json");
+    let mut hook = memory_args(missing.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success() && out.stdout.is_empty());
+    assert!(log_entries(&log)[0].failed);
 }
 
 #[test]
@@ -278,7 +342,7 @@ fn skill_hook_injects_a_section_and_counts_it_as_shown_in_full() {
 }
 
 #[test]
-fn skill_hook_fails_open_and_logs_the_failure_when_the_server_is_down() {
+fn skill_hook_falls_back_to_keyword_matches_when_the_server_is_down() {
     let tmp = tempfile::tempdir().unwrap();
     write_skills(&tmp.path().join("skills"));
     let (root, cache, log) = (
@@ -295,8 +359,9 @@ fn skill_hook_fails_open_and_logs_the_failure_when_the_server_is_down() {
         &payload("what are the alpha steps please"),
     );
     assert!(out.status.success());
-    assert!(out.stdout.is_empty());
-    assert!(log_entries(&log)[0].failed);
+    assert!(context(&out).contains("s1/SKILL.md#Alpha"));
+    let entries = log_entries(&log);
+    assert!(entries[0].fallback && !entries[0].failed);
 }
 
 #[test]

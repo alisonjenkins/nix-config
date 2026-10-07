@@ -8,8 +8,8 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    full_count, hit, hook_output, prompt_from_hook_input, render_catalogue, render_context_with,
-    select, write_if_changed, Inject,
+    full_count, hit, hook_output, keyword_fallback, prompt_from_hook_input, render_catalogue,
+    render_context_with, retry_until, select, write_if_changed, Inject,
 };
 use retrieval_eval::recall_log::{
     append_failure, append_rotating, now_iso8601, parse_log, read_all, render_summary, summarise,
@@ -21,6 +21,10 @@ use tracing::{info, warn};
 /// The hook runs on every prompt: a recall that takes longer than this costs
 /// more than it gives, so give up and inject nothing.
 const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
+/// The reindex restarts the server, which refuses connections for about a second;
+/// waiting this long rides that out before falling back to keyword matches.
+const HOOK_RETRY_BUDGET: Duration = Duration::from_millis(1500);
+const HOOK_RETRY_PAUSE: Duration = Duration::from_millis(150);
 const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TOP: usize = 3;
@@ -160,26 +164,56 @@ struct Recalled {
     entry: Entry,
 }
 
-fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
-    let mut session = open(cli, timeout)?;
-    let stats = session
-        .embedder
-        .load_cached(&session.chunks, &session.cache);
+/// Every memory scored against `query` by the embedding server, best first.
+fn semantic_scores(
+    cli: &Cli,
+    chunks: &[Chunk],
+    query: &str,
+    timeout: Duration,
+) -> Result<Vec<(String, f64)>> {
+    let spec = cli.embedder.clone().context("--embedder is required")?;
+    let mut embedder = Embedder::with_timeout(spec, timeout);
+    let identity = embedder
+        .cache_identity()
+        .context("ask the server for its model")?;
+    let cache = VectorCache::load(cache_path(cli)?, &identity)?;
+    let stats = embedder.load_cached(chunks, &cache);
     if stats.missing > 0 {
         warn!(
             missing = stats.missing,
             "memories not in the vector cache; run the `index` subcommand"
         );
     }
-    let scored = session.embedder.search(query)?;
-    let hits: Vec<_> = select(&scored, selection.min_score, selection.top)
+    Ok(embedder.search(query)?)
+}
+
+/// A hook that cannot reach the server (restarting, crashed, not started yet) still
+/// gives the prompt the memories that share words with it: a prompt that misses its
+/// memories can ignore the guard rails they hold.
+fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
+    let chunks = load_memories(memory_dir(cli)?)?;
+    let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
+        semantic_scores(cli, &chunks, query, timeout)
+    });
+    let (scored, selected, inject, fallback) = match semantic {
+        Ok(scored) => {
+            let selected = select(&scored, selection.min_score, selection.top);
+            let inject = selection.inject.into_inject(selection.body_score);
+            (scored, selected, inject, false)
+        }
+        Err(error) => {
+            warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
+            let keyword = keyword_fallback(&chunks, query, selection.top);
+            (keyword.clone(), keyword, Inject::Snippets, true)
+        }
+    };
+    let hits: Vec<_> = selected
         .into_iter()
         .filter_map(|(id, score)| {
-            let chunk = session.chunks.iter().find(|c| c.id == id)?;
+            let chunk = chunks.iter().find(|c| c.id == id)?;
             Some(hit(chunk, score))
         })
         .collect();
-    let inject = selection.inject.into_inject(selection.body_score);
     let context = render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars);
     let entry = Entry {
         at: now_iso8601(),
@@ -189,7 +223,7 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
         full: full_count(&hits, inject),
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
-        fallback: false,
+        fallback,
     };
     Ok(Recalled { context, entry })
 }

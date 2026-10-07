@@ -10,7 +10,10 @@ use retrieval_eval::bench::{gate_row, Case, Kind};
 use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
-use retrieval_eval::recall::{hook_output, prompt_from_hook_input, render_sections, select, Hit};
+use retrieval_eval::recall::{
+    hook_output, keyword_fallback, prompt_from_hook_input, render_sections, retry_until, select,
+    Hit,
+};
 use retrieval_eval::recall_log::{
     append_failure, append_rotating, now_iso8601, Entry, DEFAULT_ROTATION,
 };
@@ -20,6 +23,10 @@ use tracing::{info, warn};
 /// The hook runs on every prompt: a recall that takes longer than this costs
 /// more than it gives, so give up and inject nothing.
 const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
+/// The reindex restarts the server, which refuses connections for about a second;
+/// waiting this long rides that out before falling back to keyword matches.
+const HOOK_RETRY_BUDGET: Duration = Duration::from_millis(1500);
+const HOOK_RETRY_PAUSE: Duration = Duration::from_millis(150);
 const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
 const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TOP: usize = 3;
@@ -133,14 +140,52 @@ struct Recalled {
     entry: Entry,
 }
 
+/// Every skill section scored against `query` by the embedding server, best first.
+fn semantic_scores(
+    cli: &Cli,
+    chunks: &[Chunk],
+    query: &str,
+    timeout: Duration,
+) -> Result<Vec<(String, f64)>> {
+    let mut embedder = Embedder::with_timeout(cli.embedder.clone(), timeout);
+    let identity = embedder
+        .cache_identity()
+        .context("ask the server for its model")?;
+    let cache = VectorCache::load(&cli.cache, &identity)?;
+    let stats = embedder.load_cached(chunks, &cache);
+    if stats.missing > 0 {
+        warn!(
+            missing = stats.missing,
+            "skill sections not in the vector cache; run the `index` subcommand"
+        );
+    }
+    Ok(embedder.search(query)?)
+}
+
+/// A hook that cannot reach the server (restarting, crashed, not started yet) still
+/// gives the prompt the sections that share words with it, so it is not left
+/// without the skills' guard rails. In that case it over-injects rather than under.
 fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<Recalled> {
-    let mut session = open(cli, timeout)?;
-    load_vectors(&mut session);
-    let scored = session.embedder.search(query)?;
-    let hits: Vec<Hit> = select(&scored, selection.min_score, selection.top)
+    let names = skill_names(&cli.skills_root)?;
+    let chunks = load_skill_sections(&cli.skills_root, &names)?;
+    let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
+        semantic_scores(cli, &chunks, query, timeout)
+    });
+    let (scored, selected, fallback) = match semantic {
+        Ok(scored) => {
+            let selected = select(&scored, selection.min_score, selection.top);
+            (scored, selected, false)
+        }
+        Err(error) => {
+            warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
+            let keyword = keyword_fallback(&chunks, query, selection.top);
+            (keyword.clone(), keyword, true)
+        }
+    };
+    let hits: Vec<Hit> = selected
         .into_iter()
         .filter_map(|(id, score)| {
-            let chunk = session.chunks.iter().find(|c| c.id == id)?;
+            let chunk = chunks.iter().find(|c| c.id == id)?;
             Some(Hit {
                 id: chunk.id.clone(),
                 description: String::new(),
@@ -159,7 +204,7 @@ fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Re
         full: hits.len(),
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
-        fallback: false,
+        fallback,
     };
     Ok(Recalled { context, entry })
 }
