@@ -33,7 +33,13 @@ const CAVEMEM_FULL_TOP: usize = 3;
 /// Over-fetch so that, after dropping today's own observations, enough remain.
 const CAVEMEM_OVERFETCH: usize = 100;
 const CAVEMEM_TIMING_RUNS: usize = 3;
-const SYSTEMS: [&str; 10] = [
+/// How a model with a Read tool behaves: answer if the context suffices, else
+/// ask for the files it needs.
+const OPEN_TASK: &str = "If the memory above already holds what you need, answer the question. \
+If it does not, do not guess: reply with exactly one line `OPEN: <file>, <file>` naming up to 2 \
+memory files (names exactly as listed above) and nothing else; their full text will then be \
+provided.";
+const SYSTEMS: [&str; 14] = [
     "none",
     "default_index",
     "default_read",
@@ -41,6 +47,10 @@ const SYSTEMS: [&str; 10] = [
     "recall_read",
     "recall_top",
     "recall_all",
+    "default_open",
+    "recall_auto_open",
+    "hybrid_open",
+    "slim_open",
     "cavemem_raw",
     "cavemem_kw",
     "cavemem_kw_full",
@@ -62,6 +72,12 @@ pub struct Args {
     top: usize,
     #[arg(long, default_value_t = 0.74)]
     min_score: f64,
+    /// Floor for the tiered (`auto`) injection: tentative matches go in as snippets.
+    #[arg(long, default_value_t = 0.70)]
+    auto_min_score: f64,
+    /// From this score the tiered injection puts a match in full.
+    #[arg(long, default_value_t = 0.76)]
+    auto_body_score: f64,
     #[arg(long)]
     cavemem_bin: PathBuf,
     #[arg(long)]
@@ -100,7 +116,7 @@ fn ms(duration: std::time::Duration) -> f64 {
     duration.as_secs_f64() * 1000.0
 }
 
-fn run_hook(args: &Args, prompt: &str, inject: &str) -> Result<(String, f64)> {
+fn run_hook(args: &Args, prompt: &str, inject: &str, min_score: f64) -> Result<(String, f64)> {
     let payload = serde_json::json!({ "prompt": prompt }).to_string();
     let started = Instant::now();
     let mut child = Command::new(&args.hook_bin)
@@ -113,7 +129,9 @@ fn run_hook(args: &Args, prompt: &str, inject: &str) -> Result<(String, f64)> {
             "--top",
             &args.top.to_string(),
             "--min-score",
-            &args.min_score.to_string(),
+            &min_score.to_string(),
+            "--body-score",
+            &args.auto_body_score.to_string(),
             "--inject",
             inject,
         ])
@@ -212,6 +230,7 @@ fn hook_rows(
     args: &Args,
     item: &Item,
     inject: &str,
+    min_score: f64,
     systems: &[&str],
     wanted: &[&str],
     out: &mut Vec<(String, Retrieved)>,
@@ -219,7 +238,7 @@ fn hook_rows(
     if !systems.iter().any(|s| wanted.contains(s)) {
         return Ok(());
     }
-    let (injected, hook_ms) = run_hook(args, &item.q, inject)?;
+    let (injected, hook_ms) = run_hook(args, &item.q, inject, min_score)?;
     let row = Retrieved {
         text: injected.clone(),
         focus: injected,
@@ -251,18 +270,30 @@ fn retrieve_all(
         local_ms: 0.0,
     };
     out.push(("default_index".to_owned(), index_row.clone()));
+    out.push(("default_open".to_owned(), index_row.clone()));
     out.push(("default_read".to_owned(), index_row));
 
+    let floor = args.min_score;
     hook_rows(
         args,
         item,
         "snippets",
+        floor,
         &["recall_snippet", "recall_read"],
         wanted,
         &mut out,
     )?;
-    hook_rows(args, item, "top", &["recall_top"], wanted, &mut out)?;
-    hook_rows(args, item, "all", &["recall_all"], wanted, &mut out)?;
+    hook_rows(args, item, "top", floor, &["recall_top"], wanted, &mut out)?;
+    hook_rows(args, item, "all", floor, &["recall_all"], wanted, &mut out)?;
+    hook_rows(
+        args,
+        item,
+        "auto",
+        args.auto_min_score,
+        &["recall_auto_open", "hybrid_open", "slim_open"],
+        wanted,
+        &mut out,
+    )?;
 
     if wanted.iter().any(|s| s.starts_with("cavemem")) {
         let (hits, search_ms) = cavemem_top(args, &item.q)?;
@@ -307,6 +338,29 @@ fn keyword_search(args: &Args, llm: &Llm, item: &Item, base: &str) -> Result<Key
         calls: vec![call],
         search_ms,
     })
+}
+
+/// Answers from `context`; if the model asks to open files, reads them and answers again.
+fn open_flow(
+    args: &Args,
+    llm: &Llm,
+    item: &Item,
+    base: &str,
+    context: &str,
+    known: &HashSet<String>,
+) -> Result<(Vec<ClaudeCall>, String)> {
+    let first = ask(llm, &format!("{base}{context}\n\n{OPEN_TASK}"), &item.q)?;
+    let Some(rest) = first.text.trim_start().strip_prefix("OPEN:") else {
+        return Ok((vec![first], context.to_owned()));
+    };
+    let chosen = extract_files(rest, known, 2);
+    let opened = read_files(&args.memory_dir, &chosen);
+    let second = ask(
+        llm,
+        &format!("{base}{context}\n\n# Memory files you opened\n{opened}"),
+        &item.q,
+    )?;
+    Ok((vec![first, second], format!("{context}\n{opened}")))
 }
 
 fn llm_phase(
@@ -365,6 +419,32 @@ fn llm_phase(
                 run.retrieved_tokens = approx_tokens(text.len());
                 run.retrieval = Coverage::of(&text, &item.facts);
                 run.finish(&item.facts, &calls, &text);
+            }
+            "default_open" | "recall_auto_open" | "hybrid_open" | "slim_open" => {
+                let index_text = retrieved
+                    .iter()
+                    .find(|(name, _)| name == "default_index")
+                    .map_or("", |(_, r)| r.text.as_str());
+                let injected = format!(
+                    "# Memories possibly relevant to the user's message\n{}",
+                    got.text
+                );
+                let context = match system {
+                    "default_open" => format!("# Memory index (MEMORY.md)\n{index_text}"),
+                    "recall_auto_open" => injected,
+                    "slim_open" => {
+                        let mut names: Vec<&str> = known.iter().map(String::as_str).collect();
+                        names.sort_unstable();
+                        format!(
+                            "# Memory files (names only)\n{}\n\n{injected}",
+                            names.join("\n")
+                        )
+                    }
+                    _ => format!("# Memory index (MEMORY.md)\n{index_text}\n\n{injected}"),
+                };
+                let (calls, final_context) = open_flow(args, llm, item, &base, &context, known)?;
+                run.retrieved_tokens = approx_tokens(final_context.len());
+                run.finish(&item.facts, &calls, &final_context);
             }
             "default_index" | "recall_snippet" | "recall_top" | "recall_all" => {
                 let label = if system == "default_index" {
