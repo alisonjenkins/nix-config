@@ -6,3 +6,4 @@ pub mod metrics;
 pub mod queries;
 pub mod report;
 pub mod retriever;
+pub mod vector_cache;
