@@ -55,7 +55,7 @@ let
       ${lib.optionalString cfg.skills.enable "${skillRecall} index || status=$?"}
       # Embedding every memory makes llama.cpp keep its largest compute buffer: the
       # server grows from ~425 MB to ~2.7 GB and never gives it back. Restarting it
-      # returns it to ~425 MB; hooks that land in the second it takes inject nothing.
+      # returns it to ~425 MB; hooks that land in the second it takes retry for 1.5 s.
       systemctl --user try-restart memory-recall-server.service || true
       exit "$status"
     '';

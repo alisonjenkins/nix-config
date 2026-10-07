@@ -28,9 +28,14 @@ prompt ──▶ memory-recall hook ──▶ llama-server --embeddings (Embeddi
    below 0.70   ─▶ nothing
 ```
 
-At most 3 matches. It fails open: no server, a 3 s timeout, no `prompt` in the
-payload, a prompt under 12 characters, or nothing above the floor all inject
-nothing and exit 0, so it can never block a prompt.
+At most 3 matches. It never blocks a prompt (it always exits 0), and a prompt does
+not lose its memories because the server is away: the hook retries for 1.5 s, which
+rides out the server restart after a reindex, and if the server is still
+unreachable it injects the keyword (BM25) matches instead, as snippets for
+memories and as sections for skills, and logs the prompt as a keyword fallback. It
+injects nothing for a prompt with no `prompt` in the payload, a prompt under 12
+characters, a prompt with nothing above the floor, or a memory directory or skills
+root that cannot be read (that case is logged as a failure).
 
 **What the evidence supports** (details below): the injection gets facts into the
 answer as often as the strongest default flow (one that always reads a file), and
@@ -129,7 +134,7 @@ journalctl --user -u memory-recall-server -u memory-recall-index
 - **Server memory.** The server idles at about 425 MB. Embedding every memory
   makes llama.cpp keep its largest compute buffer (2.1 to 2.7 GB) for good, so
   the index service restarts the server when it finishes. Hooks that land in that
-  second inject nothing.
+  second wait for it (1.5 s), so none is left without its memories.
 - **A server that suddenly takes seconds per query.** Seen once, during the
   benchmarks: a freshly restarted server (nothing bulk-embedded, `--threads 4`,
   `nice -n 10`, not pinned) answered a 40-token query in about 3 s with 27 cores
