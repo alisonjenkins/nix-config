@@ -1,0 +1,490 @@
+{
+ "queries": [
+  {
+   "q": "my python script needs pandas, how should it be run",
+   "expect": [
+    "programming/languages/python.md#Scripts"
+   ],
+   "facts": [
+    {
+     "text": "nix develop",
+     "where": "body"
+    },
+    {
+     "text": "flake.nix",
+     "where": "body"
+    },
+    {
+     "text": "devshell",
+     "where": "body"
+    },
+    {
+     "text": "--dry-run",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "is it ok to catch a bare Exception in python",
+   "expect": [
+    "programming/languages/python.md#Idioms"
+   ],
+   "facts": [
+    {
+     "text": "specific exception",
+     "where": "body"
+    },
+    {
+     "text": "exc_info=True",
+     "where": "body"
+    },
+    {
+     "text": "must re-raise or log",
+     "where": "body"
+    },
+    {
+     "text": "needs a comment",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "when should I use an assertion versus returning an error",
+   "expect": [
+    "programming/defensive.md#Assertions vs error handling"
+   ],
+   "facts": [
+    {
+     "text": "cannot** happen",
+     "where": "body"
+    },
+    {
+     "text": "May be compiled out",
+     "where": "body"
+    },
+    {
+     "text": "side effect",
+     "where": "body"
+    },
+    {
+     "text": "can** happen",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "how do I handle API tokens and credentials in code",
+   "expect": [
+    "programming/security.md#Secrets"
+   ],
+   "facts": [
+    {
+     "text": "secret store",
+     "where": "body"
+    },
+    {
+     "text": "environment",
+     "where": "body"
+    },
+    {
+     "text": "Never in source",
+     "where": "body"
+    },
+    {
+     "text": "second",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "which fields must every log line include",
+   "expect": [
+    "programming/observability.md#What a log line must carry"
+   ],
+   "facts": [
+    {
+     "text": "Structured fields",
+     "where": "body"
+    },
+    {
+     "text": "request ID, trace ID",
+     "where": "body"
+    },
+    {
+     "text": "order_failed",
+     "where": "body"
+    },
+    {
+     "text": "the *why*",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "what to do before trying to make code faster",
+   "expect": [
+    "programming/performance.md#Profiling first"
+   ],
+   "facts": [
+    {
+     "text": "flamegraph",
+     "where": "body"
+    },
+    {
+     "text": "py-spy",
+     "where": "body"
+    },
+    {
+     "text": "Re-profile after the fix",
+     "where": "body"
+    },
+    {
+     "text": "realistic workload",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "which model tier should a mechanical bulk edit use",
+   "expect": [
+    "delegation/SKILL.md#Picking the model: default to haiku"
+   ],
+   "facts": [
+    {
+     "text": "Default every delegated task",
+     "where": "body"
+    },
+    {
+     "text": "sonnet",
+     "where": "body"
+    },
+    {
+     "text": "judgement",
+     "where": "body"
+    },
+    {
+     "text": "literal-minded",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "the sub-agent returned a wrong answer, what now",
+   "expect": [
+    "delegation/SKILL.md#When a delegated result comes back wrong or incomplete"
+   ],
+   "facts": [
+    {
+     "text": "fix the prompt",
+     "where": "body"
+    },
+    {
+     "text": "re-check the tier",
+     "where": "body"
+    },
+    {
+     "text": "redo it",
+     "where": "body"
+    },
+    {
+     "text": "underspecified",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "copilot ran out of credits",
+   "expect": [
+    "delegation/delegate-to-copilot.md#Credit exhaustion"
+   ],
+   "facts": [
+    {
+     "text": "24h",
+     "where": "body"
+    },
+    {
+     "text": "scripts/reset-credits-cooldown.sh",
+     "where": "body"
+    },
+    {
+     "text": "DELEGATE_STATE_DIR",
+     "where": "body"
+    },
+    {
+     "text": "Don't retry in a loop",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "what exit codes does the local model script return when nothing is running",
+   "expect": [
+    "delegation/delegate-to-local.md#Exit codes: this is the graceful-degradation contract"
+   ],
+   "facts": [
+    {
+     "text": "**2**",
+     "where": "body"
+    },
+    {
+     "text": "no profile is active",
+     "where": "body"
+    },
+    {
+     "text": "fall back to `delegate-to-copilot.md`",
+     "where": "body"
+    },
+    {
+     "text": "switch-local-profile.sh",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "several sessions are fighting over one GPU for the local model",
+   "expect": [
+    "delegation/delegate-to-local.md#Coordinating across sessions: reservations",
+    "delegation/delegate-to-local.md#One worker, one queue"
+   ],
+   "facts": [
+    {
+     "text": "LOCAL_LLM_RESERVE_SECONDS",
+     "where": "body"
+    },
+    {
+     "text": "LOCAL_LLM_FORCE_SWITCH=1",
+     "where": "body"
+    },
+    {
+     "text": "self-renewing",
+     "where": "body"
+    },
+    {
+     "text": "strictly one at a time",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "conventions for adding a module to a nix flake",
+   "expect": [
+    "programming/languages/nix.md#Rules",
+    "programming/languages/nix.md#Repo shape"
+   ],
+   "facts": [
+    {
+     "text": "git add",
+     "where": "body"
+    },
+    {
+     "text": "options.<name>",
+     "where": "body"
+    },
+    {
+     "text": "DRY is enforced",
+     "where": "body"
+    },
+    {
+     "text": "host's own configuration",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "which clippy lints are mandatory in rust",
+   "expect": [
+    "programming/languages/rust.md#Guard rails (mandatory)"
+   ],
+   "facts": [
+    {
+     "text": "[lints.clippy]",
+     "where": "body"
+    },
+    {
+     "text": "unwrap_used",
+     "where": "body"
+    },
+    {
+     "text": "indexing_slicing",
+     "where": "body"
+    },
+    {
+     "text": "arithmetic_side_effects",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "how do I catch data races in go",
+   "expect": [
+    "programming/languages/go.md#Toolchain",
+    "programming/languages/go.md#Concurrency",
+    "programming/languages/go.md#Guard rails (mandatory)"
+   ],
+   "facts": [
+    {
+     "text": "Race detection",
+     "where": "body"
+    },
+    {
+     "text": "sync.Mutex",
+     "where": "body"
+    },
+    {
+     "text": "errgroup",
+     "where": "body"
+    },
+    {
+     "text": "golangci-lint",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "how many sub-agents should I run at once",
+   "expect": [
+    "delegation/SKILL.md#Running sub-agents in parallel"
+   ],
+   "facts": [
+    {
+     "text": "in **one message** run concurrently",
+     "where": "body"
+    },
+    {
+     "text": "disjoint scope",
+     "where": "body"
+    },
+    {
+     "text": "worktree",
+     "where": "body"
+    },
+    {
+     "text": "20 concurrent sub-agents",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "threads mutate the same cache, is that safe",
+   "expect": [
+    "programming/concurrency.md#Shared state is incorrect state",
+    "programming/concurrency.md#Prefer not sharing over sharing carefully"
+   ],
+   "facts": [
+    {
+     "text": "explicitly serialises access",
+     "where": "body"
+    },
+    {
+     "text": "lazily initialised cache",
+     "where": "body"
+    },
+    {
+     "text": "Do not share",
+     "where": "body"
+    },
+    {
+     "text": "consistent global order",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "using SIMD to vectorize a hot loop",
+   "expect": [
+    "programming/performance.md#SIMD"
+   ],
+   "facts": [
+    {
+     "text": "auto-vectorizer",
+     "where": "body"
+    },
+    {
+     "text": "is_x86_feature_detected!",
+     "where": "body"
+    },
+    {
+     "text": "-Rpass=loop-vectorize",
+     "where": "body"
+    },
+    {
+     "text": "scalar fallback",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "validating untrusted input from users",
+   "expect": [
+    "programming/security.md#Validate at the boundary"
+   ],
+   "facts": [
+    {
+     "text": "Validate on the way **in**",
+     "where": "body"
+    },
+    {
+     "text": "allow-lists",
+     "where": "body"
+    },
+    {
+     "text": "parameterised form",
+     "where": "body"
+    },
+    {
+     "text": "untrusted",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "search the codebase with an agent, which kind",
+   "expect": [
+    "delegation/SKILL.md#Explore vs general-purpose"
+   ],
+   "facts": [
+    {
+     "text": "Explore (or Plan)",
+     "where": "body"
+    },
+    {
+     "text": "skip CLAUDE.md and git status",
+     "where": "body"
+    },
+    {
+     "text": "general-purpose",
+     "where": "body"
+    },
+    {
+     "text": "edits, writes",
+     "where": "body"
+    }
+   ]
+  },
+  {
+   "q": "what should shell scripts do for safety",
+   "expect": [
+    "programming/languages/shell.md#Safety",
+    "programming/languages/shell.md#Baseline"
+   ],
+   "facts": [
+    {
+     "text": "set -euo pipefail",
+     "where": "body"
+    },
+    {
+     "text": "shellcheck",
+     "where": "body"
+    },
+    {
+     "text": "writeShellApplication",
+     "where": "body"
+    },
+    {
+     "text": "[[ -n \"$dir\" ]]",
+     "where": "body"
+    }
+   ]
+  }
+ ]
+}
