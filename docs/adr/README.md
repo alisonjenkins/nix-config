@@ -90,6 +90,15 @@ Start with the spec in
 |---|---|---|
 | [0027](0027-fork-dxvk-for-foveated-rendering.md) | Add foveated rendering to D3D11 VR games by forking DXVK, behind an environment gate | Proposed |
 
+## Claude Code context
+
+Start with [`docs/memory-recall.md`](../memory-recall.md) for how the hook
+works, how to enable it, and the benchmark results.
+
+| # | Decision | Status |
+|---|---|---|
+| [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked, not enabled |
+
 ## Template
 
 ```markdown
