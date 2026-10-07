@@ -4,6 +4,7 @@ pub mod embed;
 pub mod eval;
 pub mod metrics;
 pub mod queries;
+pub mod recall;
 pub mod report;
 pub mod retriever;
 pub mod vector_cache;

@@ -47,3 +47,28 @@ server per model on different ports.
 `--validate-only` fails if a query expects a chunk id that no longer exists;
 run it after memories or skills change. The queries are a snapshot of
 2026-10-07 ground truth.
+
+## memory-recall (prototype)
+
+A `UserPromptSubmit` hook that injects the few memories closest to the prompt,
+instead of the whole `MEMORY.md` index. Not wired into any settings.
+
+```bash
+BIN=target/release/memory-recall
+ARGS="--memory-dir $M --embedder gemma2=gemma@http://127.0.0.1:8081#256 \
+      --cache ~/.cache/memory-recall/gemma2-256.json"
+
+$BIN $ARGS index                                  # embed new/edited memories (~70 s cold)
+$BIN $ARGS query --top 3 "examplarr cannot log in"   # scores, for calibration
+echo '{"prompt":"..."}' | $BIN $ARGS hook         # hook JSON on stdout
+```
+
+- `hook` embeds only the prompt (~20 ms) and reads document vectors from the
+  cache; run `index` after memories change (unindexed ones are skipped with a
+  warning). The cache is keyed by the server's model name, so swapping models
+  discards it instead of ranking on incompatible vectors.
+- It never fails a prompt: no server, a 3 s timeout, a payload with no
+  prompt, or a prompt under 12 characters all inject nothing and exit 0.
+- `--min-score` defaults to 0.74, measured for EmbeddingGemma 2 at 256 dims:
+  correct matches scored 0.746-0.865, unrelated prompts 0.534-0.722. Re-measure
+  after changing model or dims.

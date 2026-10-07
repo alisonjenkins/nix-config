@@ -1,0 +1,177 @@
+use std::io::Read;
+use std::path::PathBuf;
+use std::process::ExitCode;
+use std::time::Duration;
+
+use anyhow::{Context, Result};
+use clap::{Args, Parser, Subcommand};
+use retrieval_eval::corpus::{load_memories, Chunk};
+use retrieval_eval::embed::{Embedder, EmbedderSpec};
+use retrieval_eval::recall::{hit, hook_output, prompt_from_hook_input, render_context, select};
+use retrieval_eval::vector_cache::VectorCache;
+use tracing::{info, warn};
+
+/// The hook runs on every prompt: a recall that takes longer than this costs
+/// more than it gives, so give up and inject nothing.
+const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
+const QUERY_TIMEOUT: Duration = Duration::from_secs(30);
+const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
+const DEFAULT_TOP: usize = 3;
+/// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over the 83 memories:
+/// correct top-1 matches scored 0.746-0.865, unrelated prompts 0.534-0.722.
+/// Scores are model- and dims-specific; re-measure before changing either.
+const DEFAULT_MIN_SCORE: f64 = 0.74;
+
+#[derive(Parser)]
+#[command(about = "Semantic recall over Claude memory files, as a UserPromptSubmit hook")]
+struct Cli {
+    /// Directory of memory `*.md` files.
+    #[arg(long)]
+    memory_dir: PathBuf,
+    /// NAME=PRESET@BASE_URL[#DIMS] of a `llama-server --embeddings` endpoint.
+    #[arg(long)]
+    embedder: EmbedderSpec,
+    /// Where document vectors are cached between runs.
+    #[arg(long)]
+    cache: PathBuf,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Args, Clone, Copy)]
+struct Selection {
+    #[arg(long, default_value_t = DEFAULT_TOP)]
+    top: usize,
+    /// Drop matches scoring below this cosine similarity.
+    #[arg(long, default_value_t = DEFAULT_MIN_SCORE)]
+    min_score: f64,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Embed new or edited memories into the cache (slow the first time).
+    Index,
+    /// Print the best matches for TEXT with their scores.
+    Query {
+        text: String,
+        #[command(flatten)]
+        selection: Selection,
+    },
+    /// Read a UserPromptSubmit payload on stdin, write hook JSON on stdout.
+    /// Never fails the prompt: any problem injects nothing.
+    Hook {
+        #[command(flatten)]
+        selection: Selection,
+    },
+}
+
+struct Session {
+    embedder: Embedder,
+    chunks: Vec<Chunk>,
+    cache: VectorCache,
+}
+
+fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
+    let chunks = load_memories(&cli.memory_dir)?;
+    let embedder = Embedder::with_timeout(cli.embedder.clone(), timeout);
+    let model = embedder
+        .model_id()
+        .context("ask the server for its model")?;
+    let identity = format!("{model}|{:?}|{:?}", cli.embedder.preset, cli.embedder.dims);
+    let cache = VectorCache::load(&cli.cache, &identity)?;
+    Ok(Session {
+        embedder,
+        chunks,
+        cache,
+    })
+}
+
+fn recall(cli: &Cli, query: &str, selection: Selection, timeout: Duration) -> Result<String> {
+    let mut session = open(cli, timeout)?;
+    let stats = session
+        .embedder
+        .load_cached(&session.chunks, &session.cache);
+    if stats.missing > 0 {
+        warn!(
+            missing = stats.missing,
+            "memories not in the vector cache; run the `index` subcommand"
+        );
+    }
+    let scored = session.embedder.search(query)?;
+    let hits: Vec<_> = select(&scored, selection.min_score, selection.top)
+        .into_iter()
+        .filter_map(|(id, score)| {
+            let chunk = session.chunks.iter().find(|c| c.id == id)?;
+            Some(hit(chunk, score))
+        })
+        .collect();
+    Ok(render_context(&cli.memory_dir, &hits))
+}
+
+fn run(cli: &Cli) -> Result<()> {
+    match &cli.command {
+        Command::Index => {
+            let mut session = open(cli, INDEX_TIMEOUT)?;
+            let stats = session
+                .embedder
+                .index_cached(&session.chunks, &mut session.cache)?;
+            session.cache.save(&cli.cache)?;
+            info!(
+                embedded = stats.embedded,
+                reused = stats.reused,
+                total = session.cache.len(),
+                "index updated"
+            );
+        }
+        Command::Query { text, selection } => {
+            let mut session = open(cli, QUERY_TIMEOUT)?;
+            session
+                .embedder
+                .load_cached(&session.chunks, &session.cache);
+            for (id, score) in select(
+                &session.embedder.search(text)?,
+                selection.min_score,
+                selection.top,
+            ) {
+                println!("{score:.3}  {id}");
+            }
+        }
+        Command::Hook { selection } => {
+            let mut stdin = String::new();
+            std::io::stdin()
+                .read_to_string(&mut stdin)
+                .context("read hook payload from stdin")?;
+            let Some(prompt) = prompt_from_hook_input(&stdin) else {
+                return Ok(());
+            };
+            let context = recall(cli, &prompt, *selection, HOOK_TIMEOUT)?;
+            if let Some(output) = hook_output(&context) {
+                println!("{output}");
+            }
+        }
+    }
+    Ok(())
+}
+
+fn main() -> ExitCode {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .with_writer(std::io::stderr)
+        .with_ansi(false)
+        .init();
+    let cli = Cli::parse();
+    match run(&cli) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) if matches!(cli.command, Command::Hook { .. }) => {
+            warn!(error = %format!("{error:#}"), "memory recall skipped");
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("error: {error:#}");
+            ExitCode::FAILURE
+        }
+    }
+}
