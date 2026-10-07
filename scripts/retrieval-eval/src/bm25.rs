@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::corpus::Chunk;
-use crate::retriever::{rank_by_score, RetrieveError, Retriever};
+use crate::retriever::{rank_scored, RetrieveError, Retriever};
 
 const K1: f64 = 1.5;
 const B: f64 = 0.75;
@@ -76,6 +76,17 @@ impl Retriever for Bm25 {
     }
 
     fn rank(&self, query: &str) -> Result<Vec<String>, RetrieveError> {
+        Ok(self
+            .score_all(query)?
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect())
+    }
+}
+
+impl Bm25 {
+    /// Every chunk id with its BM25 score, best first.
+    pub fn score_all(&self, query: &str) -> Result<Vec<(String, f64)>, RetrieveError> {
         if !self.indexed {
             return Err(RetrieveError::NotIndexed);
         }
@@ -87,7 +98,7 @@ impl Retriever for Bm25 {
             .zip(&self.lengths)
             .map(|(freqs, len)| self.score_doc(&terms, freqs, *len, n))
             .collect();
-        Ok(rank_by_score(&self.ids, &scores))
+        Ok(rank_scored(&self.ids, &scores))
     }
 }
 
@@ -147,6 +158,26 @@ mod tests {
     fn query_with_no_matches_still_returns_every_chunk_in_id_order() {
         let bm25 = indexed(&[chunk("b", "x"), chunk("a", "y")]);
         assert_eq!(bm25.rank("zzz").unwrap(), ["a", "b"].map(str::to_owned));
+    }
+
+    #[test]
+    fn score_all_scores_every_chunk_best_first() {
+        let bm25 = indexed(&[
+            chunk("cats", "cats purr"),
+            chunk("dogs", "dogs bark loudly"),
+        ]);
+        let scored = bm25.score_all("bark").unwrap();
+        assert_eq!(scored.len(), 2);
+        assert_eq!(scored[0].0, "dogs");
+        assert!(scored[0].1 > 0.0 && scored[1].1.abs() < 1e-12);
+    }
+
+    #[test]
+    fn score_all_before_index_is_an_error() {
+        assert!(matches!(
+            Bm25::new().score_all("x"),
+            Err(RetrieveError::NotIndexed)
+        ));
     }
 
     #[test]

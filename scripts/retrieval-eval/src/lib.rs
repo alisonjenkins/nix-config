@@ -4,6 +4,7 @@ pub mod compare;
 pub mod corpus;
 pub mod embed;
 pub mod eval;
+pub mod experiment;
 pub mod llm_run;
 pub mod metrics;
 pub mod queries;
