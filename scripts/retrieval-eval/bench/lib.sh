@@ -20,7 +20,11 @@ start_server() {
   local args=(-m "$model" --embeddings -c 2048 -ub 2048 -ngl 0
     --host 127.0.0.1 --port "$port")
   [ -n "${1:-}" ] && args+=(--threads "$1")
-  nice -n 10 "$llama/bin/llama-server" "${args[@]}" >"$out/server.log" 2>&1 &
+  # CPUSET (e.g. 24-31) pins the server. Unpinned, one server took ~3 s per query
+  # with 27 cores busy on a loaded machine; pinned to 8 CPUs it took 13 ms.
+  local launcher=(nice -n 10)
+  [ -n "${CPUSET:-}" ] && launcher=(taskset -c "$CPUSET" nice -n 10)
+  "${launcher[@]}" "$llama/bin/llama-server" "${args[@]}" >"$out/server.log" 2>&1 &
   server_pid=$!
   local started
   started=$(date +%s.%N)

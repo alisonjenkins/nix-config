@@ -50,8 +50,7 @@ struct Cli {
     #[arg(long, default_value_t = 600)]
     chunk_chars: usize,
     /// Embed and cache the documents, then stop. A server that has bulk-embedded
-    /// hundreds of documents has been seen to answer single queries 200 times
-    /// slower, so restart it before scoring.
+    /// keeps about 2 GB of compute buffers for good, so restart it before scoring.
     #[arg(long)]
     index_only: bool,
     #[arg(long)]
