@@ -290,6 +290,21 @@ pub fn load_memories_view(memory_dir: &Path, view: MemoryView) -> Result<Vec<Chu
     Ok(chunks)
 }
 
+/// Names of the folders under `skills_root` that hold a `SKILL.md`, sorted.
+pub fn skill_names(skills_root: &Path) -> Result<Vec<String>, CorpusError> {
+    let entries = fs::read_dir(skills_root).map_err(|source| CorpusError::Read {
+        path: skills_root.to_owned(),
+        source,
+    })?;
+    let mut names: Vec<String> = entries
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().join("SKILL.md").is_file())
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
 /// One chunk per `##` section of every markdown file under each skill dir;
 /// the id is `<skill>/<relative path>#<heading>`.
 pub fn load_skill_sections(
@@ -525,6 +540,25 @@ mod tests {
                 "prog/languages/rust.md#Toolchain"
             ]
         );
+    }
+
+    #[test]
+    fn skill_names_lists_only_folders_with_a_skill_file_sorted() {
+        let root = tempfile::tempdir().unwrap();
+        for name in ["zeta", "alpha", "notes"] {
+            fs::create_dir_all(root.path().join(name)).unwrap();
+        }
+        fs::write(root.path().join("zeta/SKILL.md"), "x").unwrap();
+        fs::write(root.path().join("alpha/SKILL.md"), "x").unwrap();
+        fs::write(root.path().join("stray.md"), "x").unwrap();
+        assert_eq!(skill_names(root.path()).unwrap(), ["alpha", "zeta"]);
+    }
+
+    #[test]
+    fn skill_names_of_a_missing_root_is_an_error_naming_it() {
+        let root = tempfile::tempdir().unwrap();
+        let err = skill_names(&root.path().join("gone")).unwrap_err();
+        assert!(err.to_string().contains("gone"));
     }
 
     #[test]
