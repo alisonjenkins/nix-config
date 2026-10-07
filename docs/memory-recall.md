@@ -121,6 +121,39 @@ memories are saved. It is off by default because it overwrites a file Claude
 maintains; a new memory is searchable the moment its file is written either way,
 because the index is separate from `MEMORY.md`.
 
+## Loki and Tempo
+
+```nix
+modules.memoryRecall.telemetry = {
+  lokiUrl = "http://loki.example.lan:3100";
+  tempoEndpoint = "http://tempo.example.lan:4318"; # OTLP/HTTP
+  tenantId = null;                                  # X-Scope-OrgID, if multi-tenant
+  labels.host = "desk";
+};
+```
+
+Each hook run, for memories and skills, then reaches both:
+
+- **Loki**: one log line, the same JSON as `logFile` (best score, matches, tokens,
+  `failed`, `fallback`, `duration_ms`, `embed_ms`), under labels `service`
+  (`memory-recall` or `skill-recall`), `kind` and yours. For example
+  `sum(count_over_time({service="memory-recall"} | json | failed="true" [1h]))`
+  counts blocked prompts.
+- **Tempo**: a `memory-recall.hook` (or `skill-recall.hook`) span with an `embed`
+  child, with `recall.best_score`, `recall.matches`, `recall.full`, `recall.tokens`,
+  `recall.fallback` and `recall.failed` attributes; a blocked prompt is an error
+  span. `service.name` is the hook's name.
+
+Neither carries the prompt. The hook does not send anything itself: it starts
+`recall-ship` in the background after writing the log line and returns, so a slow or
+unreachable backend never delays a prompt (a test points a hook at a server that
+never answers). Delivery is best effort with a 3 s timeout and no retry, so a
+backend that is down loses those entries; the local `logFile` keeps them. Checked
+against real Loki 3.7.7 and Tempo 2.10.5 started locally: the line came back from
+`query_range` with the labels, and the trace came back with both spans and the
+`embed` span parented under the hook span. Tempo needs an OTLP receiver on its HTTP
+port (4318); a collector or Alloy in front works the same.
+
 ## Operating it
 
 ```bash

@@ -100,6 +100,7 @@ works, how to enable it, and the benchmark results.
 | [0029](0029-embedding-retrieval-for-memory-and-skills.md) | Retrieve memories and skill sections by embedding, behind an option | Proposed; built and benchmarked; injection settings superseded by 0030 |
 | [0030](0030-inject-confident-memories-and-use-a-catalogue.md) | Inject confident memories in full, and keep a names-only catalogue | Proposed; built and measured |
 | [0031](0031-skill-hook-with-a-calibrated-floor-and-a-trial-log.md) | Inject skill sections above a calibrated floor, and trial both hooks with a log | Proposed; built, on trial on ali-desktop |
+| [0032](0032-fail-closed-separate-index-server-and-telemetry.md) | Fail closed, index on a separate server, ship telemetry to Loki and Tempo | Proposed; built, on trial on ali-desktop |
 
 ## Template
 

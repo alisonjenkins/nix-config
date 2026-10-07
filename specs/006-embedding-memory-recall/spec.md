@@ -190,6 +190,8 @@ At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 
 - **FR-009**: Results MUST be saved in the repository with the commands that reproduce them, and claims in documentation MUST match the saved numbers.
 - **FR-010**: A skills hook MUST inject matching skill sections and obey the same fail-closed rule (built: `skill-recall`).
 - **FR-011**: When enabled, the hook MUST log score, injection kind and tokens added per prompt without storing prompt text (built: `--log`, `log-summary`).
+- **FR-012**: Hook runs MUST be shippable to Grafana Loki as log lines and to Tempo as traces, without the prompt and without ever delaying a prompt (built: `recall-ship`, `telemetry.*`).
+- **FR-013**: A new memory MUST be searchable as soon as its file is written, without restarting the embedding server, and `MEMORY.md` MUST be able to be kept names-only automatically (built: separate index server, `catalogue.enable`, off by default).
 
 ### Key Entities
 
