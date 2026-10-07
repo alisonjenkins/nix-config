@@ -42,15 +42,22 @@ let
   # to come up instead of failing the unit on a cold login.
   indexScript = pkgs.writeShellApplication {
     name = "memory-recall-index";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.systemd ];
     text = ''
       mkdir -p "$(dirname ${lib.escapeShellArg cacheFile})"
       for _ in $(seq 1 60); do
         curl -fsS --max-time 2 ${baseUrl}/health >/dev/null && break
         sleep 2
       done
-      ${recall} index
-      ${lib.optionalString cfg.skills.enable "${skillRecall} index"}
+      # One failing index must not skip the other, nor the server restart below.
+      status=0
+      ${recall} index || status=$?
+      ${lib.optionalString cfg.skills.enable "${skillRecall} index || status=$?"}
+      # Embedding every memory makes llama.cpp keep its largest compute buffer: the
+      # server grows from ~425 MB to ~2.7 GB and never gives it back. Restarting it
+      # returns it to ~425 MB; hooks that land in the second it takes inject nothing.
+      systemctl --user try-restart memory-recall-server.service || true
+      exit "$status"
     '';
   };
 
@@ -263,12 +270,8 @@ in
       };
       Service = {
         Type = "oneshot";
+        # The script restarts the server itself, after both indexes.
         ExecStart = "${indexScript}/bin/memory-recall-index";
-        # Embedding every memory makes llama.cpp keep its largest compute
-        # buffer: the server grows from ~425 MB to ~2.7 GB and never gives it
-        # back. Restarting it after an index returns it to ~425 MB; hooks that
-        # land in the second it takes inject nothing.
-        ExecStartPost = "${pkgs.systemd}/bin/systemctl --user try-restart memory-recall-server.service";
       };
       # Builds the cache at login; the path unit below keeps it fresh.
       Install.WantedBy = [ "default.target" ];
