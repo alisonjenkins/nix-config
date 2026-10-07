@@ -254,7 +254,11 @@ pub fn summarise(entries: &[Entry]) -> Vec<Summary> {
             let of_kind: Vec<&Entry> = all_of_kind.into_iter().filter(|e| !e.failed).collect();
             let injected: Vec<&&Entry> = of_kind.iter().filter(|e| e.matches > 0).collect();
             let total_tokens: usize = of_kind.iter().map(|e| e.tokens).sum();
-            let mut scores: Vec<f64> = of_kind.iter().filter_map(|e| e.best_score).collect();
+            let mut scores: Vec<f64> = of_kind
+                .iter()
+                .filter(|e| !e.fallback)
+                .filter_map(|e| e.best_score)
+                .collect();
             scores.sort_by(f64::total_cmp);
             Summary {
                 kind: kind.to_owned(),
@@ -345,6 +349,14 @@ mod tests {
         let sum = &summarise(&entries)[0];
         assert_eq!((sum.prompts, sum.fallback), (2, 1));
         assert!(render_summary(std::slice::from_ref(sum)).contains("| 1 | 0 |"));
+    }
+
+    #[test]
+    fn the_median_score_ignores_keyword_scores_which_are_on_another_scale() {
+        let mut keyword = entry("memory", Some(14.0), 2, 0, 90);
+        keyword.fallback = true;
+        let entries = vec![entry("memory", Some(0.7), 1, 0, 100), keyword];
+        assert_eq!(summarise(&entries)[0].best_score_median, Some(0.7));
     }
 
     #[test]
