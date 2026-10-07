@@ -166,6 +166,11 @@ fn semantic_scores(
             "skill sections not in the vector cache; run the `index` subcommand"
         );
     }
+    if stats.missing >= chunks.len() {
+        // The first index has not finished: nothing can be searched yet, which is
+        // a new setup starting up, not an unavailable server.
+        return Ok(Vec::new());
+    }
     Ok(embedder.search(query)?)
 }
 
@@ -181,6 +186,24 @@ fn recall(
 ) -> Result<Recalled> {
     let names = skill_names(&cli.skills_root)?;
     let chunks = load_skill_sections(&cli.skills_root, &names)?;
+    if chunks.is_empty() {
+        // A new setup with no skills yet: nothing to retrieve, so no server needed.
+        return Ok(Recalled {
+            context: String::new(),
+            entry: Entry {
+                at: now_iso8601(),
+                kind: "skills".to_owned(),
+                best_score: None,
+                matches: 0,
+                full: 0,
+                tokens: 0,
+                failed: false,
+                fallback: false,
+                duration_ms: None,
+                embed_ms: None,
+            },
+        });
+    }
     let mut embed_ms = None;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
         let started = Instant::now();

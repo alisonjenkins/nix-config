@@ -359,21 +359,105 @@ fn memory_hook_rides_out_a_server_that_comes_back_within_a_second() {
 }
 
 #[test]
-fn memory_hook_blocks_when_the_memory_directory_cannot_be_read() {
+fn a_fresh_setup_with_no_memories_can_prompt_even_with_the_server_down() {
     let tmp = tempfile::tempdir().unwrap();
-    let log = tmp.path().join("recall.jsonl");
-    let emb = embedder(&serve());
-    let missing = tmp.path().join("no-such-dir");
+    let emb = embedder(DEAD_URL);
     let cache = tmp.path().join("cache.json");
-    let mut hook = memory_args(missing.to_str().unwrap(), &emb, cache.to_str().unwrap());
-    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    let empty = tmp.path().join("empty");
+    fs::create_dir_all(&empty).unwrap();
+    for dir in [tmp.path().join("no-such-dir"), empty] {
+        let log = tmp.path().join("recall.jsonl");
+        let mut hook = memory_args(dir.to_str().unwrap(), &emb, cache.to_str().unwrap());
+        hook.extend(["hook", "--log", log.to_str().unwrap()]);
+        let out = run(
+            MEMORY_BIN,
+            &hook,
+            &payload("how do I fix the alpha problem"),
+        );
+        assert!(out.status.success(), "{dir:?}: {out:?}");
+        assert!(out.stdout.is_empty());
+        let entries = log_entries(&log);
+        assert!(
+            !entries.last().unwrap().failed,
+            "nothing to retrieve is not a failure"
+        );
+        let _ = fs::remove_file(&log);
+    }
+}
+
+#[test]
+fn memories_that_are_not_indexed_yet_do_not_block_the_first_prompts() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache) = (tmp.path().join("mem"), tmp.path().join("never-built.json"));
+    let emb = embedder(&serve());
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.push("hook");
     let out = run(
         MEMORY_BIN,
         &hook,
         &payload("how do I fix the alpha problem"),
     );
-    assert_eq!(out.status.code(), Some(2));
-    assert!(log_entries(&log)[0].failed);
+    assert!(out.status.success() && out.stdout.is_empty(), "{out:?}");
+}
+
+#[test]
+fn a_fresh_setup_with_no_skills_can_prompt_even_with_the_server_down() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(DEAD_URL);
+    let cache = tmp.path().join("skills.json");
+    let empty = tmp.path().join("empty");
+    fs::create_dir_all(&empty).unwrap();
+    for root in [tmp.path().join("no-such-dir"), empty] {
+        let mut hook = skill_args(root.to_str().unwrap(), &emb, cache.to_str().unwrap());
+        hook.push("hook");
+        let out = run(
+            SKILL_BIN,
+            &hook,
+            &payload("what are the alpha steps please"),
+        );
+        assert!(out.status.success(), "{root:?}: {out:?}");
+        assert!(out.stdout.is_empty());
+    }
+}
+
+#[test]
+fn the_catalogue_keeper_does_nothing_for_a_fresh_setup() {
+    let tmp = tempfile::tempdir().unwrap();
+    let missing = tmp.path().join("no-memories-yet");
+    let target = missing.join("MEMORY.md");
+    let emb = embedder(DEAD_URL);
+    let cache = tmp.path().join("c.json");
+    let mut args = memory_args(missing.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    args.extend(["catalogue", "--write", target.to_str().unwrap()]);
+    let out = run(MEMORY_BIN, &args, "");
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        !missing.exists(),
+        "no memory directory is created for nothing"
+    );
+}
+
+#[test]
+fn the_index_commands_accept_a_fresh_setup() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let missing = tmp.path().join("nothing-here");
+    let (memory_cache, skills_cache) = (tmp.path().join("m.json"), tmp.path().join("s.json"));
+    let mut index = memory_args(
+        missing.to_str().unwrap(),
+        &emb,
+        memory_cache.to_str().unwrap(),
+    );
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+    let mut skills = skill_args(
+        missing.to_str().unwrap(),
+        &emb,
+        skills_cache.to_str().unwrap(),
+    );
+    skills.push("index");
+    assert!(run(SKILL_BIN, &skills, "").status.success());
 }
 
 #[test]

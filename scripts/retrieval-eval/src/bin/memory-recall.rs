@@ -195,6 +195,11 @@ fn semantic_scores(
             "memories not in the vector cache; run the `index` subcommand"
         );
     }
+    if stats.missing >= chunks.len() {
+        // The first index has not finished: nothing can be searched yet, which is
+        // a new setup starting up, not an unavailable server.
+        return Ok(Vec::new());
+    }
     Ok(embedder.search(query)?)
 }
 
@@ -209,6 +214,24 @@ fn recall(
     timeout: Duration,
 ) -> Result<Recalled> {
     let chunks = load_memories(memory_dir(cli)?)?;
+    if chunks.is_empty() {
+        // A new setup with no memories yet: nothing to retrieve, so no server needed.
+        return Ok(Recalled {
+            context: String::new(),
+            entry: Entry {
+                at: now_iso8601(),
+                kind: "memory".to_owned(),
+                best_score: None,
+                matches: 0,
+                full: 0,
+                tokens: 0,
+                failed: false,
+                fallback: false,
+                duration_ms: None,
+                embed_ms: None,
+            },
+        });
+    }
     let mut embed_ms = None;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
         let started = Instant::now();
@@ -298,6 +321,9 @@ fn run(cli: &Cli) -> Result<()> {
                 .collect();
             let text = render_catalogue(&names);
             match write {
+                Some(path) if names.is_empty() && !path.exists() => {
+                    info!(path = %path.display(), "no memories yet; catalogue not written");
+                }
                 Some(path) => {
                     let wrote = write_if_changed(path, &text)
                         .with_context(|| format!("write {}", path.display()))?;
