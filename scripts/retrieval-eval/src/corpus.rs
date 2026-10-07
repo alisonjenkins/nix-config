@@ -130,7 +130,11 @@ fn markdown_files(dir: &Path, max_depth: usize) -> Result<Vec<PathBuf>, CorpusEr
 }
 
 /// One chunk per memory file; the file name is the chunk id.
+/// A directory that does not exist yet holds no memories: a fresh setup has none.
 pub fn load_memories(memory_dir: &Path) -> Result<Vec<Chunk>, CorpusError> {
+    if !memory_dir.exists() {
+        return Ok(Vec::new());
+    }
     let mut chunks = Vec::new();
     for path in markdown_files(memory_dir, 1)? {
         let Some(file_name) = path.file_name().map(|n| n.to_string_lossy().into_owned()) else {
@@ -292,6 +296,10 @@ pub fn load_memories_view(memory_dir: &Path, view: MemoryView) -> Result<Vec<Chu
 
 /// Names of the folders under `skills_root` that hold a `SKILL.md`, sorted.
 pub fn skill_names(skills_root: &Path) -> Result<Vec<String>, CorpusError> {
+    // No skills directory yet is a fresh setup with no skills, not an error.
+    if !skills_root.exists() {
+        return Ok(Vec::new());
+    }
     let entries = fs::read_dir(skills_root).map_err(|source| CorpusError::Read {
         path: skills_root.to_owned(),
         source,
@@ -555,10 +563,19 @@ mod tests {
     }
 
     #[test]
-    fn skill_names_of_a_missing_root_is_an_error_naming_it() {
+    fn a_missing_skills_root_or_memory_directory_is_an_empty_corpus_not_an_error() {
         let root = tempfile::tempdir().unwrap();
-        let err = skill_names(&root.path().join("gone")).unwrap_err();
-        assert!(err.to_string().contains("gone"));
+        assert!(skill_names(&root.path().join("gone")).unwrap().is_empty());
+        assert!(load_memories(&root.path().join("gone")).unwrap().is_empty());
+        assert!(load_memories(root.path()).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_file_where_the_directory_should_be_is_still_an_error() {
+        let root = tempfile::tempdir().unwrap();
+        let file = root.path().join("not-a-dir");
+        fs::write(&file, "x").unwrap();
+        assert!(skill_names(&file).is_err());
     }
 
     #[test]
