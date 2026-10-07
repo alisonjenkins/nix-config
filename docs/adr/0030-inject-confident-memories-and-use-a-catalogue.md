@@ -84,6 +84,12 @@ model call on every prompt, which is the cost this removes.
   comparison query had a matching memory, so these costs are not in the table.
   At a guessed 15% of prompts having a memory, the average is about 200 tokens per
   prompt, and an injected memory stays in the conversation.
+- **Dollar cost is lower, by less than the token count.** With a cache-faithful
+  prompt layout, the catalogue or the full index plus injection cost $0.025 to
+  $0.028 per query against $0.041 to $0.042 for both defaults (33 to 40% less); the
+  fixed Claude Code prompt, output and cache writes dominate every bill. An earlier
+  run that showed the injection costing more put per-query text in the system block
+  and missed the cache on every call. Single runs; see `docs/memory-recall.md`.
 - **A miss relies on the names alone.** The catalogue's names are the only fallback
   when nothing is injected. With it 99% of facts reached the model (98% with the
   full index kept, 100% for the forced default, which always reads a file) and 89%

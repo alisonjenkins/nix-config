@@ -329,17 +329,20 @@ noise. It kept 18 to 24% of the facts.
   for later turns.
 - Dollar cost: an earlier run showed the injection systems costing more than
   `default_read`. That was a harness artifact: per-query text sat in the system
-  block, so every call missed the cache. With stable text in the system block and
-  per-query text in the user turn (as Claude Code does), `hybrid_open` and
-  `slim_open` cost $0.025 to $0.027 per query on both sets, against $0.041 to $0.046
-  for `default_read` (about 40% less) and $0.027 to $0.029 for `default_open`
-  (level). Raw: `bench/results/cost-memory-*.md`. The `claude -p` calls report no
-  cache read or write tokens here, so the saving tracks input tokens, not caching.
+  block, so every call missed the cache. With stable text in the system block,
+  per-query text in the user turn (as Claude Code does) and the open flow's second
+  call resuming the first call's conversation, `hybrid_open` and `slim_open` cost
+  $0.025 to $0.028 per query on both sets, against $0.041 to $0.042 for
+  `default_read` and `default_open` (about 33 to 40% less). Raw:
+  `bench/results/cost-memory-*.md`, which now show cache reads and writes.
   Most of a call's price is the fixed Claude Code prompt and the output, so the
-  catalogue's token saving shows as a small dollar saving. The emulation still
-  sends the injection on both calls of the open flow; Claude Code continues one
-  conversation. Skills: `sections_embed` $0.0195 per query against $0.087 for
-  `default_load` at the same facts in the answer (`cost-skills.md`).
+  catalogue's 64% token saving over `default_open` is a smaller dollar saving, and
+  cache writes (billed at twice the input rate) are a large part of every system's
+  bill. Costs are single runs and moved by up to $0.014 for the same system between
+  two runs (`default_open`: $0.027 then $0.041), so read the gap to the defaults,
+  not differences between the injection systems. Skills: `sections_embed` $0.020
+  per query against $0.086 for `default_load` (`cost-skills.md`); its
+  multi-call flows still resend their text rather than resume.
 - Memory retrieval was timed as a real hook process (25 ms) but skills retrieval
   in-process (15 ms).
 - cavemem was queried against a cut-off copy of its database so this session could
