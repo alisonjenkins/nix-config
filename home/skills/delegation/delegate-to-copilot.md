@@ -25,8 +25,9 @@ failure mode, not a leftover from before the billing change:
 
 | Model | Released | Input / output per MTok (million tokens) | vs. Claude Haiku 5.5 ($0.10/$0.50) | AA intelligence index | Output tok/s |
 |---|---|---|---|---|---|
-| GPT-6 Luna (`gpt-6-luna`, this script's first choice) | 2026-09-22 | $0.10 / $0.50 | same price | not yet published | not yet published |
-| `gpt-5.6-luna` (this script's second choice) | 2026-07-09 | $0.20 / $1.20 | ~2x dearer | 37 (max effort) | ~128 |
+| `claude-haiku-5.5` (this script's first choice; ID derived, unconfirmed) | 2026-10-07 | $0.10 / $0.50 | 1x | 43 (max effort) | ~243 |
+| GPT-6 Luna (`gpt-6-luna`, this script's second choice) | 2026-09-22 | $0.10 / $0.50 | same price | 38 (max effort) | ~128 |
+| `gpt-5.6-luna` (this script's third choice) | 2026-07-09 | $0.20 / $1.20 | ~2x dearer | 37 (max effort) | ~128 |
 | `gpt-5.4-nano`, `mai-code-1.1-flash` | — | ~$0.20 / ~$1.20-1.25 | ~2x dearer | — | — |
 | `gpt-5-mini` | — | $0.25 / $2.00 | ~2.5-4x dearer | — | — |
 | GPT-6 Sol | 2026-09-22 | $2.00 / $10.00 | ~20x dearer | not yet published | not yet published |
@@ -41,21 +42,30 @@ Analysis puts Haiku 5.5 at index 34 (medium effort; ~243 tok/s at max),
 Haiku 4.5 (legacy) at 15 and ~80 tok/s, Sonnet 5 at 28, and Opus 5.5 at 51. The index moves with effort settings, so read these as rough
 gaps.
 
-GPT-6 Luna is now the cheapest model in the lineup, at half GPT-5.6 Luna's
-price. [Artificial Analysis](https://artificialanalysis.ai/) had no scores
-for the GPT-6 models yet when this was checked (2026-09-28). Its `--model`
-string, `gpt-6-luna`, was confirmed against the CLI on 2026-10-06 (copilot
+GPT-6 Luna is the cheapest GPT model in the lineup (Haiku 5.5 ties it), at half GPT-5.6 Luna's
+price. `gpt-6-luna` was confirmed against the CLI on 2026-10-06 (copilot
 1.0.88): an unknown ID is rejected with "is not available", this one runs.
-`delegate.sh` tries `gpt-6-luna`, then `gpt-5.6-luna`, then
-`claude-haiku-4.5`, moving down a step only when the CLI rejects the model
-ID. The script's last-resort ID is still `claude-haiku-4.5`; whether the CLI
-accepts a Haiku 5.5 ID has not been checked, so it is left unchanged. Against
-Haiku 4.5, GPT-5.6 Luna was ~5x cheaper, faster, and well ahead on the
-intelligence index. Haiku 5.5 ($0.10 / $0.50) ended that cost gap: it matches
-GPT-6 Luna's price and undercuts GPT-5.6 Luna by about half. On the index
-Haiku 5.5 (34 at medium effort) sits just below GPT-5.6 Luna (37 at max
-effort), at ~243 tok/s against Luna's ~128; GPT-6 Luna has no score yet. Pick between
-them on integration and allowance, not price or capability.
+
+Claude Haiku 5.5 is also in Copilot (GA 2026-10-07, all paid plans, CLI
+included, same $0.10 / $0.50 as Luna; Business and Enterprise admins can
+disable it through the model policy). Its CLI ID is `claude-haiku-5.5`,
+derived rather than seen: the Copilot CLI changelog's literal IDs are
+`claude-opus-5.5` and `claude-fable-5.1`, so Claude IDs are lowercase with a
+dotted version and no date suffix. It is unconfirmed on a real account, and
+may need a newer CLI than 1.0.88 (v1.0.93 added the 5.5 models to the model
+picker). `delegate.sh` therefore tries `claude-haiku-5.5`, then `gpt-6-luna`,
+then `gpt-5.6-luna`, then `claude-haiku-4.5`, moving down a step only when the
+CLI rejects the model ID, so a wrong ID, an old CLI or a policy block costs
+one rejected call, not the task. Check the real list with the `/model` picker.
+
+How they compare (Artificial Analysis, max effort, 2026-10-08): Haiku 5.5
+scores 43 at ~243 tok/s; GPT-6 Luna scores 38 at ~128 tok/s. Haiku used about
+3x the output tokens Luna did to run the index, so at equal per-token prices
+it likely costs more per task. Haiku is first in the order for the higher
+score and speed. The script has no switch to put Luna first for bulk,
+cost-sensitive runs; add one if the token gap shows up in practice. Anthropic's Haiku 5.5 guide also warns it can report code as done
+without running a check, so ask the delegate to run and show its tests. GPT-5.6
+Luna scores 37 at max effort, and Haiku 4.5 (legacy) 15.
 
 What the numbers don't capture: a Claude sub-agent shares this session's tool
 access, skill injection, and structured output conventions natively: Copilot
@@ -79,7 +89,7 @@ capped independently of the other — prefer `delegate.sh` (Luna) over a
 Claude haiku sub-agent for haiku-shaped work specifically, to conserve the
 Claude allowance for sonnet/opus-tier judgement work it can't be substituted
 for. Haiku 5.5's lower price does not weaken this on the work laptop: the two
-balances are separate, so Luna stays the first rung there. This is a policy
+balances are separate, so the Copilot delegate stays the first rung there. This is a policy
 for that account shape, not a universal default: on a single pooled
 per-token budget (Anthropic's API billed directly, or a personal account
 with no separate Copilot allowance to protect), Luna no longer has a price
