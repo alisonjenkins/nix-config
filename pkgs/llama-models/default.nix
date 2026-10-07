@@ -201,6 +201,23 @@ in
     ];
   };
 
+  # Embedding model (not a chat model: serve with `llama-server --embeddings`) —
+  # EmbeddingGemma 2, text component only, Q8_0 ~296 MiB. ggml-org's GGUF keeps
+  # the vision/audio encoders in separate mmproj-* files, which are not fetched.
+  # Used by scripts/retrieval-eval to compare retrieval quality against BM25.
+  # Needs a llama.cpp new enough to know the EmbeddingGemma 2 architecture.
+  embeddinggemma-2-q8-0 = mkGgufModel {
+    pname = "embeddinggemma-2-q8-0";
+    primaryFile = "embeddinggemma-2-Q8_0.gguf";
+    files = [
+      {
+        name = "embeddinggemma-2-Q8_0.gguf";
+        url = "https://huggingface.co/ggml-org/embeddinggemma-2-GGUF/resolve/main/embeddinggemma-2-Q8_0.gguf";
+        hash = "sha256-IYisHeykt33/79YDwndqnXbZ107AGEE5KYLruECwkTU=";
+      }
+    ];
+  };
+
   # Speculative decoding draft model — Qwen3-0.6B
   # Q8_0 ~0.6 GiB. Was picked to share Qwen3-32B's tokenizer for speculative
   # decoding; not currently wired to any configured modules.llama-cpp instance
