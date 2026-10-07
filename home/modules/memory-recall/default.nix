@@ -89,8 +89,14 @@ in
 
     threads = mkOption {
       type = types.nullOr types.ints.positive;
-      default = null;
-      description = "llama-server CPU threads; null lets it use every core.";
+      default = 4;
+      description = ''
+        llama-server CPU threads; null lets it use every core. Measured on a
+        16-core/32-thread Ryzen 9 7950X: 4 threads answer a prompt in 23 ms
+        against 17 ms for 16 or more, but spend 90 ms of CPU per prompt against
+        about 270 ms, and idle at 2 ms/s against 10 ms/s, because llama.cpp's
+        threads spin while waiting for work (docs/memory-recall.md).
+      '';
     };
 
     dims = mkOption {
