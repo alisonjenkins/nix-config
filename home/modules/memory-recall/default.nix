@@ -23,7 +23,16 @@ let
   ];
   recall = recallAt baseUrl;
 
-  logArgs = lib.optionalString (cfg.logFile != null) " --log ${lib.escapeShellArg cfg.logFile}";
+  telemetryArgs = lib.concatStrings (
+    lib.optional (cfg.telemetry.lokiUrl != null) " --loki-url ${lib.escapeShellArg cfg.telemetry.lokiUrl}"
+    ++ lib.optional (cfg.telemetry.tempoEndpoint != null) " --otlp-endpoint ${lib.escapeShellArg cfg.telemetry.tempoEndpoint}"
+    ++ lib.optional (cfg.telemetry.tenantId != null) " --telemetry-tenant ${lib.escapeShellArg cfg.telemetry.tenantId}"
+    ++ lib.mapAttrsToList (k: v: " --telemetry-label ${lib.escapeShellArg "${k}=${v}"}") cfg.telemetry.labels
+  );
+
+  logArgs =
+    lib.optionalString (cfg.logFile != null) " --log ${lib.escapeShellArg cfg.logFile}"
+    + telemetryArgs;
 
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
     exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
@@ -222,6 +231,44 @@ in
         through with nothing injected. `block` means Claude Code stops working
         until the server is back.
       '';
+    };
+
+    telemetry = {
+      lokiUrl = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "http://loki.example.lan:3100";
+        description = ''
+          Loki base URL. Each hook run is pushed there as one log line (the same
+          JSON as `logFile`: scores, counts and timings, never the prompt),
+          labelled `service` (`memory-recall` or `skill-recall`) and `kind`.
+        '';
+      };
+
+      tempoEndpoint = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "http://tempo.example.lan:4318";
+        description = ''
+          OTLP/HTTP base URL of Tempo or a collector in front of it (port 4318;
+          spans go to `/v1/traces`). Each hook run becomes a `memory-recall.hook`
+          or `skill-recall.hook` span with an `embed` child, carrying the score,
+          match counts, tokens and whether it fell back or failed.
+        '';
+      };
+
+      tenantId = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "X-Scope-OrgID sent to Loki and Tempo, for a multi-tenant setup.";
+      };
+
+      labels = mkOption {
+        type = types.attrsOf types.str;
+        default = { };
+        example = { host = "desk"; };
+        description = "Extra Loki labels and span resource attributes.";
+      };
     };
 
     logFile = mkOption {
