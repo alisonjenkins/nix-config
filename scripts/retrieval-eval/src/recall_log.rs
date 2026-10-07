@@ -108,6 +108,119 @@ pub fn append(path: &std::path::Path, entry: &Entry) -> std::io::Result<()> {
     file.write_all(to_line(entry).as_bytes())
 }
 
+/// When the log is rotated and how many rotated files are kept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rotation {
+    /// Rotate before an append when the log has reached this many bytes.
+    pub max_bytes: u64,
+    /// Rotated `.N.gz` files to keep; older ones are deleted.
+    pub keep: usize,
+}
+
+/// About 10,000 prompts at roughly 120 bytes a line.
+pub const DEFAULT_ROTATION: Rotation = Rotation {
+    max_bytes: 1_048_576,
+    keep: 5,
+};
+
+/// Like `append`, but first moves a log that has reached `rotation.max_bytes`
+/// to `<path>.1.gz` (shifting older ones up and dropping those past `keep`).
+pub fn append_rotating(
+    path: &std::path::Path,
+    entry: &Entry,
+    rotation: Rotation,
+) -> std::io::Result<()> {
+    if std::fs::metadata(path).is_ok_and(|m| m.len() >= rotation.max_bytes) {
+        // The entry matters more than the housekeeping: a failed rotation is
+        // retried on the next prompt.
+        let _ = rotate(path, rotation);
+    }
+    append(path, entry)
+}
+
+/// A rotation older than this is assumed to have died holding its lock.
+const LOCK_STALE: std::time::Duration = std::time::Duration::from_secs(60);
+
+fn with_suffix(path: &std::path::Path, suffix: &str) -> std::path::PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    name.into()
+}
+
+fn rotated_path(path: &std::path::Path, n: usize) -> std::path::PathBuf {
+    with_suffix(path, &format!(".{n}.gz"))
+}
+
+/// Hooks run concurrently, so only the one that takes the lock rotates; the
+/// others append to the old file and carry on.
+fn rotate(path: &std::path::Path, rotation: Rotation) -> std::io::Result<()> {
+    let lock = with_suffix(path, ".lock");
+    let stale = std::fs::metadata(&lock)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .is_some_and(|age| age > LOCK_STALE);
+    if stale {
+        let _ = std::fs::remove_file(&lock);
+    }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&lock)?;
+    let result = rotate_locked(path, rotation);
+    let _ = std::fs::remove_file(&lock);
+    result
+}
+
+fn rotate_locked(path: &std::path::Path, rotation: Rotation) -> std::io::Result<()> {
+    use std::io::Write;
+    if !std::fs::metadata(path).is_ok_and(|m| m.len() >= rotation.max_bytes) {
+        return Ok(());
+    }
+    if rotation.keep == 0 {
+        return std::fs::remove_file(path);
+    }
+    let _ = std::fs::remove_file(rotated_path(path, rotation.keep));
+    for n in (1..rotation.keep).rev() {
+        if rotated_path(path, n).exists() {
+            std::fs::rename(
+                rotated_path(path, n),
+                rotated_path(path, n.saturating_add(1)),
+            )?;
+        }
+    }
+    // Renaming first means lines appended while compressing go to a fresh log.
+    let moving = with_suffix(path, ".rotating");
+    std::fs::rename(path, &moving)?;
+    let raw = std::fs::read(&moving)?;
+    let mut encoder = flate2::write::GzEncoder::new(
+        std::fs::File::create(rotated_path(path, 1))?,
+        flate2::Compression::default(),
+    );
+    encoder.write_all(&raw)?;
+    encoder.finish()?;
+    std::fs::remove_file(&moving)
+}
+
+/// The text of the log and its rotated files, oldest first.
+pub fn read_all(path: &std::path::Path) -> std::io::Result<String> {
+    use std::io::Read;
+    let mut rotated = Vec::new();
+    while rotated_path(path, rotated.len().saturating_add(1)).exists() {
+        rotated.push(rotated_path(path, rotated.len().saturating_add(1)));
+    }
+    let mut out = String::new();
+    for file in rotated.iter().rev() {
+        flate2::read::GzDecoder::new(std::fs::File::open(file)?).read_to_string(&mut out)?;
+    }
+    match std::fs::read_to_string(path) {
+        Ok(text) => out.push_str(&text),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    Ok(out)
+}
+
 /// Entries from a log; lines that do not parse are skipped.
 pub fn parse_log(text: &str) -> Vec<Entry> {
     text.lines()
@@ -292,6 +405,85 @@ mod tests {
         let entries = parse_log(&std::fs::read_to_string(&path).unwrap());
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[1].kind, "skills");
+    }
+
+    fn gz(path: &std::path::Path, n: usize) -> std::path::PathBuf {
+        let mut name = path.as_os_str().to_owned();
+        name.push(format!(".{n}.gz"));
+        name.into()
+    }
+
+    fn tag(n: usize) -> Entry {
+        entry("memory", Some(0.5), n, 0, n)
+    }
+
+    const TINY: Rotation = Rotation {
+        max_bytes: 200,
+        keep: 2,
+    };
+
+    #[test]
+    fn a_small_log_is_appended_to_without_rotating() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        append_rotating(&path, &tag(1), DEFAULT_ROTATION).unwrap();
+        append_rotating(&path, &tag(2), DEFAULT_ROTATION).unwrap();
+        assert_eq!(parse_log(&std::fs::read_to_string(&path).unwrap()).len(), 2);
+        assert!(!gz(&path, 1).exists());
+    }
+
+    #[test]
+    fn a_full_log_is_gzipped_to_dot_one_and_a_new_log_started() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        for n in 1..=3 {
+            append_rotating(&path, &tag(n), TINY).unwrap();
+        }
+        assert!(gz(&path, 1).exists());
+        let current = parse_log(&std::fs::read_to_string(&path).unwrap());
+        assert!(current.len() < 3);
+        let all = parse_log(&read_all(&path).unwrap());
+        assert_eq!(all.iter().map(|e| e.matches).collect::<Vec<_>>(), [1, 2, 3]);
+    }
+
+    #[test]
+    fn only_keep_rotated_files_survive_and_the_oldest_go_first() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        for n in 1..=30 {
+            append_rotating(&path, &tag(n), TINY).unwrap();
+        }
+        assert!(gz(&path, 1).exists() && gz(&path, 2).exists());
+        assert!(!gz(&path, 3).exists());
+        let all: Vec<usize> = parse_log(&read_all(&path).unwrap())
+            .iter()
+            .map(|e| e.matches)
+            .collect();
+        assert!(all.len() < 30, "the oldest lines were dropped");
+        assert_eq!(all.last(), Some(&30));
+        assert!(all.windows(2).all(|w| w[0] < w[1]), "order is kept");
+    }
+
+    #[test]
+    fn a_missing_log_reads_as_empty() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(read_all(&dir.path().join("none.jsonl")).unwrap(), "");
+    }
+
+    #[test]
+    fn a_rotation_already_in_progress_is_left_alone_and_the_entry_still_lands() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        for n in 1..=2 {
+            append_rotating(&path, &tag(n), TINY).unwrap();
+        }
+        let mut lock = path.as_os_str().to_owned();
+        lock.push(".lock");
+        std::fs::write(&lock, "").unwrap();
+        append_rotating(&path, &tag(3), TINY).unwrap();
+        assert!(parse_log(&read_all(&path).unwrap())
+            .iter()
+            .any(|e| e.matches == 3));
     }
 
     #[test]
