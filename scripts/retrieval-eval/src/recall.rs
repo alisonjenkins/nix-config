@@ -117,6 +117,28 @@ pub fn render_context_with(
     out
 }
 
+/// Skill sections to inject; empty when there are none. A hit's `id` is
+/// `<skill>/<file>#<heading>` and its `body` the section text, cut at `max_chars`.
+pub fn render_sections(skills_root: &Path, hits: &[Hit], max_chars: usize) -> String {
+    if hits.is_empty() {
+        return String::new();
+    }
+    let mut out = String::from(
+        "Skill sections that may apply (semantic match, best first). Follow them if they fit the request; read the file for more:\n",
+    );
+    for hit in hits {
+        let (file, heading) = hit.id.split_once('#').unwrap_or((hit.id.as_str(), ""));
+        let _ = writeln!(
+            out,
+            "\n## {}#{heading} ({:.2})\n{}",
+            skills_root.join(file).display(),
+            hit.score,
+            cap_body(&hit.body, max_chars)
+        );
+    }
+    out
+}
+
 fn shown_in_full(inject: Inject, index: usize, score: f64) -> bool {
     match inject {
         Inject::Snippets => false,
@@ -332,6 +354,41 @@ mod tests {
             1000,
         );
         assert!(!text.contains("fix a") && text.contains("about a.md"));
+    }
+
+    fn section(id: &str, score: f64, text: &str) -> Hit {
+        Hit {
+            id: id.to_owned(),
+            description: String::new(),
+            body: text.to_owned(),
+            score,
+        }
+    }
+
+    #[test]
+    fn sections_are_listed_with_their_file_path_and_text() {
+        let hits = [
+            section("prog/languages/rust.md#Toolchain", 0.83, "use cargo"),
+            section("prog/SKILL.md#Rules", 0.74, "be good"),
+        ];
+        let text = render_sections(Path::new("/skills"), &hits, 1000);
+        assert!(text.starts_with("Skill sections that may apply"));
+        assert!(text.contains("## /skills/prog/languages/rust.md#Toolchain (0.83)\nuse cargo"));
+        assert!(text.contains("## /skills/prog/SKILL.md#Rules (0.74)\nbe good"));
+        assert!(text.find("rust.md").unwrap() < text.find("SKILL.md").unwrap());
+    }
+
+    #[test]
+    fn long_sections_are_cut_and_point_to_the_file() {
+        let hits = [section("p/a.md#H", 0.8, &"x".repeat(50))];
+        let text = render_sections(Path::new("/s"), &hits, 10);
+        assert!(text.contains(&"x".repeat(10)) && !text.contains(&"x".repeat(11)));
+        assert!(text.contains("[truncated; read the file for the rest]"));
+    }
+
+    #[test]
+    fn no_sections_render_nothing() {
+        assert_eq!(render_sections(Path::new("/s"), &[], 100), "");
     }
 
     #[test]
