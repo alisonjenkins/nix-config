@@ -159,6 +159,137 @@ pub fn load_memories(memory_dir: &Path) -> Result<Vec<Chunk>, CorpusError> {
     Ok(chunks)
 }
 
+/// What of a memory is embedded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemoryView {
+    /// Description and body in one chunk, id `file.md`.
+    Full,
+    /// The frontmatter description alone, id `file.md`.
+    Description,
+    /// The description as chunk `file.md#d`, then the body in pieces of about
+    /// this many characters as `file.md#1`, `file.md#2`, ... Rank files by their
+    /// best chunk.
+    Chunks(usize),
+}
+
+/// Memory file name for a chunk id (`file.md#2` -> `file.md`).
+pub fn memory_file_of(chunk_id: &str) -> &str {
+    chunk_id.split('#').next().unwrap_or(chunk_id)
+}
+
+/// Splits `body` on blank lines into pieces of at most about `max_chars`,
+/// cutting an over-long paragraph at line breaks, then anywhere.
+pub fn split_body_chunks(body: &str, max_chars: usize) -> Vec<String> {
+    let mut pieces = Vec::new();
+    let mut current = String::new();
+    for paragraph in body.split("\n\n").map(str::trim).filter(|p| !p.is_empty()) {
+        for part in cut_paragraph(paragraph, max_chars) {
+            let joined = if current.is_empty() {
+                part.chars().count()
+            } else {
+                current
+                    .chars()
+                    .count()
+                    .saturating_add(2)
+                    .saturating_add(part.chars().count())
+            };
+            if joined > max_chars && !current.is_empty() {
+                pieces.push(std::mem::take(&mut current));
+            }
+            if !current.is_empty() {
+                current.push_str("\n\n");
+            }
+            current.push_str(&part);
+        }
+    }
+    if !current.is_empty() {
+        pieces.push(current);
+    }
+    pieces
+}
+
+/// A paragraph of at most `max_chars`, else words packed up to that size; a
+/// single word longer than the limit is cut by characters.
+fn cut_paragraph(paragraph: &str, max_chars: usize) -> Vec<String> {
+    if paragraph.chars().count() <= max_chars {
+        return vec![paragraph.to_owned()];
+    }
+    let mut parts = Vec::new();
+    let mut current = String::new();
+    for word in paragraph.split_whitespace() {
+        let mut word = word.to_owned();
+        while word.chars().count() > max_chars {
+            if !current.is_empty() {
+                parts.push(std::mem::take(&mut current));
+            }
+            let head: String = word.chars().take(max_chars).collect();
+            word = word.chars().skip(max_chars).collect();
+            parts.push(head);
+        }
+        let joined = current
+            .chars()
+            .count()
+            .saturating_add(usize::from(!current.is_empty()))
+            .saturating_add(word.chars().count());
+        if joined > max_chars && !current.is_empty() {
+            parts.push(std::mem::take(&mut current));
+        }
+        if !current.is_empty() {
+            current.push(' ');
+        }
+        current.push_str(&word);
+    }
+    if !current.is_empty() {
+        parts.push(current);
+    }
+    parts
+}
+
+pub fn load_memories_view(memory_dir: &Path, view: MemoryView) -> Result<Vec<Chunk>, CorpusError> {
+    if view == MemoryView::Full {
+        return load_memories(memory_dir);
+    }
+    let mut chunks = Vec::new();
+    for path in markdown_files(memory_dir, 1)? {
+        let Some(file_name) = path.file_name().map(|n| n.to_string_lossy().into_owned()) else {
+            continue;
+        };
+        if file_name == MEMORY_INDEX {
+            continue;
+        }
+        let raw = read(&path)?;
+        let (meta, body) = strip_frontmatter(&raw);
+        let title = meta
+            .get("name")
+            .cloned()
+            .unwrap_or_else(|| file_name.trim_end_matches(".md").to_owned());
+        let description = meta.get("description").cloned().unwrap_or_default();
+        match view {
+            MemoryView::Full => {}
+            MemoryView::Description => chunks.push(Chunk {
+                id: file_name,
+                title,
+                text: description,
+            }),
+            MemoryView::Chunks(max_chars) => {
+                chunks.push(Chunk {
+                    id: format!("{file_name}#d"),
+                    title: title.clone(),
+                    text: description,
+                });
+                for (n, piece) in split_body_chunks(body, max_chars).into_iter().enumerate() {
+                    chunks.push(Chunk {
+                        id: format!("{file_name}#{}", n.saturating_add(1)),
+                        title: title.clone(),
+                        text: piece,
+                    });
+                }
+            }
+        }
+    }
+    Ok(chunks)
+}
+
 /// One chunk per `##` section of every markdown file under each skill dir;
 /// the id is `<skill>/<relative path>#<heading>`.
 pub fn load_skill_sections(
@@ -298,6 +429,79 @@ mod tests {
                 text: "first one\nbody text".to_owned(),
             }]
         );
+    }
+
+    fn memory_dir_with_one_note() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("a.md"),
+            "---\nname: alpha\ndescription: short summary\n---\nfirst paragraph\n\nsecond paragraph\n",
+        )
+        .unwrap();
+        dir
+    }
+
+    #[test]
+    fn memory_file_of_strips_the_chunk_suffix() {
+        assert_eq!(memory_file_of("a.md#2"), "a.md");
+        assert_eq!(memory_file_of("a.md#d"), "a.md");
+        assert_eq!(memory_file_of("a.md"), "a.md");
+    }
+
+    #[test]
+    fn full_view_equals_the_default_loader() {
+        let dir = memory_dir_with_one_note();
+        assert_eq!(
+            load_memories_view(dir.path(), MemoryView::Full).unwrap(),
+            load_memories(dir.path()).unwrap()
+        );
+    }
+
+    #[test]
+    fn description_view_holds_only_the_description() {
+        let dir = memory_dir_with_one_note();
+        let chunks = load_memories_view(dir.path(), MemoryView::Description).unwrap();
+        assert_eq!(
+            chunks,
+            [Chunk {
+                id: "a.md".to_owned(),
+                title: "alpha".to_owned(),
+                text: "short summary".to_owned(),
+            }]
+        );
+    }
+
+    #[test]
+    fn chunks_view_has_a_description_chunk_then_body_pieces() {
+        let dir = memory_dir_with_one_note();
+        let chunks = load_memories_view(dir.path(), MemoryView::Chunks(20)).unwrap();
+        let ids: Vec<&str> = chunks.iter().map(|c| c.id.as_str()).collect();
+        assert_eq!(ids, ["a.md#d", "a.md#1", "a.md#2"]);
+        assert_eq!(chunks[0].text, "short summary");
+        assert_eq!(chunks[1].text, "first paragraph");
+        assert_eq!(chunks[2].text, "second paragraph");
+        assert!(chunks.iter().all(|c| c.title == "alpha"));
+    }
+
+    #[test]
+    fn body_chunks_pack_paragraphs_up_to_the_limit() {
+        let body = "aaa\n\nbbb\n\nccc\n\nddd";
+        assert_eq!(split_body_chunks(body, 8), ["aaa\n\nbbb", "ccc\n\nddd"]);
+        assert_eq!(split_body_chunks(body, 100), [body]);
+    }
+
+    #[test]
+    fn an_overlong_paragraph_is_cut_without_losing_text() {
+        let body = "one two three four five six seven eight nine ten";
+        let pieces = split_body_chunks(body, 15);
+        assert!(pieces.len() > 1);
+        assert!(pieces.iter().all(|p| p.chars().count() <= 15));
+        assert_eq!(pieces.join(" ").split_whitespace().count(), 10);
+    }
+
+    #[test]
+    fn empty_body_yields_no_chunks() {
+        assert!(split_body_chunks("  \n\n ", 100).is_empty());
     }
 
     #[test]
