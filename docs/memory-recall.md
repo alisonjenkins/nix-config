@@ -85,8 +85,12 @@ memory-recall log-summary ~/.local/state/memory-recall/recall.jsonl
 ```
 
 prints, per hook, the share of prompts that got an injection, the share that got a
-whole memory, the average tokens added per prompt and per injection, and the median
-best score. Adopt the catalogue when the average tokens added per prompt stay under
+whole memory (for skills, every injected section counts), the average tokens added
+per prompt and per injection, the median best score, and how many prompts the hook
+gave up on (server down, timeout, missing cache), which are not counted in the
+other columns. The log is capped: at 1 MiB (about 10,000 prompts) it moves to
+`recall.jsonl.1.gz`, older files shift up, and past `.5.gz` they are deleted;
+`log-summary` reads the rotated files too. Adopt the catalogue when the average tokens added per prompt stay under
 the roughly 3,100 tokens per session the catalogue saves (spec 006, SC-006); record
 the decision and the numbers in an ADR. `ali-desktop` has it enabled (not yet
 switched to).
