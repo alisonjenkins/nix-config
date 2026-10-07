@@ -16,10 +16,11 @@ name: PR check
 # directory the PR changes are built, not just evaluated: a stale dependency
 # hash only shows at build time. aarch64-linux hosts are the exception:
 # nothing else covers them since the arm64 build job is disabled, so they are
-# evaluated (not built). The whole check, those included, took ~1.5 min
-# locally. See the script's own
-# header for the fuller history (IFD, disk exhaustion, cross-arch — all real
-# dead ends hit getting here).
+# evaluated (not built). The script runs its sections in parallel and
+# evaluates each output set in one nix eval: the whole check took ~47s
+# locally and ~1m45s here, against ~6 min run back to back. See the script's
+# own header for the fuller history (IFD, disk exhaustion, cross-arch — all
+# real dead ends hit getting here).
 #
 # Self-hosted (home-nix-builder-amd64), not GitHub-hosted: has the
 # persistent /nix/store this repo's flake inputs and closures expect, same
