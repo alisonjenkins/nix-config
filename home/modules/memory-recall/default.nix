@@ -6,7 +6,17 @@ let
   cfg = config.modules.memoryRecall;
   inherit (lib) mkOption mkEnableOption mkIf types;
 
+  inherit (pkgs.stdenv.hostPlatform) isLinux isDarwin;
+
   baseUrl = "http://127.0.0.1:${toString cfg.port}";
+
+  # home-manager names a launchd agent org.nix-community.home.<name>.
+  serverLabel = "org.nix-community.home.memory-recall-server";
+  restartServer =
+    if isDarwin
+    then ''launchctl kickstart -k "gui/$(id -u)/${serverLabel}" || true''
+    else "systemctl --user try-restart memory-recall-server.service || true";
+  stateDir = "${config.xdg.stateHome}/memory-recall";
   cacheFile = "${config.xdg.cacheHome}/memory-recall/gemma-${toString cfg.dims}.json";
 
   recall = lib.concatStringsSep " " [
@@ -42,7 +52,7 @@ let
   # to come up instead of failing the unit on a cold login.
   indexScript = pkgs.writeShellApplication {
     name = "memory-recall-index";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.systemd ];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl ] ++ lib.optional isLinux pkgs.systemd;
     text = ''
       mkdir -p "$(dirname ${lib.escapeShellArg cacheFile})"
       for _ in $(seq 1 60); do
@@ -56,21 +66,27 @@ let
       # Embedding every memory makes llama.cpp keep its largest compute buffer: the
       # server grows from ~425 MB to ~2.7 GB and never gives it back. Restarting it
       # returns it to ~425 MB; hooks that land in the second it takes retry for 1.5 s.
-      systemctl --user try-restart memory-recall-server.service || true
+      ${restartServer}
       exit "$status"
     '';
   };
 
-  serverArgs = [
+  serverArgv = [
     "${cfg.llamaCpp}/bin/llama-server"
-    "-m ${cfg.model}"
+    "-m"
+    "${cfg.model}"
     "--embeddings"
-    "-c 2048"
-    "-ub 2048"
-    "-ngl 0"
-    "--host 127.0.0.1"
-    "--port ${toString cfg.port}"
-  ] ++ lib.optional (cfg.threads != null) "--threads ${toString cfg.threads}";
+    "-c"
+    "2048"
+    "-ub"
+    "2048"
+    "-ngl"
+    "0"
+    "--host"
+    "127.0.0.1"
+    "--port"
+    (toString cfg.port)
+  ] ++ lib.optionals (cfg.threads != null) [ "--threads" (toString cfg.threads) ];
 in
 {
   options.modules.memoryRecall = {
@@ -218,15 +234,16 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (lib.mkMerge [
+    {
     assertions = [
       {
         assertion = cfg.memoryDir != null;
         message = "modules.memoryRecall.memoryDir must be set when memory recall is enabled.";
       }
       {
-        assertion = pkgs.stdenv.hostPlatform.isLinux;
-        message = "modules.memoryRecall needs systemd user units, so it is Linux-only.";
+        assertion = isLinux || isDarwin;
+        message = "modules.memoryRecall runs its server as a systemd user unit (Linux) or a launchd agent (macOS).";
       }
     ];
 
@@ -249,11 +266,13 @@ in
         };
       }
     ];
+    }
 
+    (mkIf isLinux {
     systemd.user.services.memory-recall-server = {
       Unit.Description = "Embedding server for memory-recall";
       Service = {
-        ExecStart = lib.concatStringsSep " " serverArgs;
+        ExecStart = lib.concatStringsSep " " serverArgv;
         Restart = "on-failure";
         RestartSec = 5;
         # Embeds a prompt in ~20 ms, so it never needs to win against a game.
@@ -287,5 +306,42 @@ in
       };
       Install.WantedBy = [ "default.target" ];
     };
-  };
+    })
+
+    # macOS has no systemd: the server is a launchd agent kept alive, and the
+    # index agent runs at login and whenever a watched directory changes.
+    (mkIf isDarwin {
+      launchd.agents.memory-recall-server = {
+        enable = true;
+        config = {
+          ProgramArguments = serverArgv;
+          RunAtLoad = true;
+          KeepAlive = true;
+          ProcessType = "Background";
+          Nice = 10;
+          StandardOutPath = "${stateDir}/server.log";
+          StandardErrorPath = "${stateDir}/server.log";
+        };
+      };
+
+      launchd.agents.memory-recall-index = {
+        enable = true;
+        config = {
+          ProgramArguments = [ "${indexScript}/bin/memory-recall-index" ];
+          RunAtLoad = true;
+          # Not recursive, like the Linux path unit: a new skill folder is seen at
+          # once, an edit inside one on the next login or index run.
+          WatchPaths = [ cfg.memoryDir ] ++ lib.optional cfg.skills.enable cfg.skills.root;
+          ProcessType = "Background";
+          StandardOutPath = "${stateDir}/index.log";
+          StandardErrorPath = "${stateDir}/index.log";
+        };
+      };
+
+      # launchd will not create the log directory.
+      home.activation.memoryRecallStateDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        run mkdir -p ${lib.escapeShellArg stateDir}
+      '';
+    })
+  ]);
 }
