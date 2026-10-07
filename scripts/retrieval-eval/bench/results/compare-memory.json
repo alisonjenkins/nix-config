@@ -1,0 +1,6302 @@
+[
+  {
+    "q": "Example question 37",
+    "expect": "example-memory-23.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2956,
+        "llm_out_tokens": 851,
+        "llm_ms": 8193.0,
+        "cost_usd": 0.02033
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10132,
+        "llm_out_tokens": 754,
+        "llm_ms": 6952.0,
+        "cost_usd": 0.0202404
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6103.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 17095,
+        "llm_out_tokens": 796,
+        "llm_ms": 7685.0,
+        "cost_usd": 0.032727
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 27.855525,
+        "retrieved_tokens": 153.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3251,
+        "llm_out_tokens": 766,
+        "llm_ms": 6705.0,
+        "cost_usd": 0.02066
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 27.855525,
+        "retrieved_tokens": 1153.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 8054,
+        "llm_out_tokens": 1082,
+        "llm_ms": 13775.0,
+        "cost_usd": 0.0355762
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 49.997718,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 52.808034,
+        "retrieved_tokens": 36.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6095,
+        "llm_out_tokens": 1298,
+        "llm_ms": 12008.0,
+        "cost_usd": 0.037352
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 52.808034,
+        "retrieved_tokens": 1078.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 8001,
+        "llm_out_tokens": 1500,
+        "llm_ms": 13088.0,
+        "cost_usd": 0.046996
+      }
+    ]
+  },
+  {
+    "q": "Example question 44",
+    "expect": "example-memory-7.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2957,
+        "llm_out_tokens": 807,
+        "llm_ms": 6933.0,
+        "cost_usd": 0.019894
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10133,
+        "llm_out_tokens": 742,
+        "llm_ms": 6547.0,
+        "cost_usd": 0.0201244
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4346.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 13925,
+        "llm_out_tokens": 740,
+        "llm_ms": 9685.0,
+        "cost_usd": 0.0315406
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 28.657109,
+        "retrieved_tokens": 88.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3133,
+        "llm_out_tokens": 483,
+        "llm_ms": 4408.0,
+        "cost_usd": 0.017358
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 28.657109,
+        "retrieved_tokens": 529.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6924,
+        "llm_out_tokens": 809,
+        "llm_ms": 6827.0,
+        "cost_usd": 0.0215014
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 49.383669999999995,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 95.497049,
+        "retrieved_tokens": 190.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6434,
+        "llm_out_tokens": 1101,
+        "llm_ms": 11497.0,
+        "cost_usd": 0.034594799999999995
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 95.497049,
+        "retrieved_tokens": 591.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7213,
+        "llm_out_tokens": 1020,
+        "llm_ms": 8853.0,
+        "cost_usd": 0.0339406
+      }
+    ]
+  },
+  {
+    "q": "Example question 16",
+    "expect": "example-memory-4.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2954,
+        "llm_out_tokens": 790,
+        "llm_ms": 7653.0,
+        "cost_usd": 0.019712
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10130,
+        "llm_out_tokens": 622,
+        "llm_ms": 5598.0,
+        "cost_usd": 0.0189124
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6035.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 16952,
+        "llm_out_tokens": 897,
+        "llm_ms": 8248.0,
+        "cost_usd": 0.048820999999999996
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 26.526932,
+        "retrieved_tokens": 245.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3392,
+        "llm_out_tokens": 757,
+        "llm_ms": 6900.0,
+        "cost_usd": 0.021134
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 26.526932,
+        "retrieved_tokens": 1766.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 9117,
+        "llm_out_tokens": 861,
+        "llm_ms": 9795.0,
+        "cost_usd": 0.04507
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 47.743049,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 50.046755,
+        "retrieved_tokens": 32.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6089,
+        "llm_out_tokens": 1325,
+        "llm_ms": 14019.0,
+        "cost_usd": 0.037598
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 50.046755,
+        "retrieved_tokens": 2189.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 9852,
+        "llm_out_tokens": 1247,
+        "llm_ms": 12473.0,
+        "cost_usd": 0.05187
+      }
+    ]
+  },
+  {
+    "q": "Example question 29",
+    "expect": "example-memory-2.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 929,
+        "llm_ms": 8012.0,
+        "cost_usd": 0.021078
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10124,
+        "llm_out_tokens": 757,
+        "llm_ms": 6681.0,
+        "cost_usd": 0.020238399999999997
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6035.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 16940,
+        "llm_out_tokens": 1017,
+        "llm_ms": 17062.0,
+        "cost_usd": 0.049973000000000004
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.684726,
+        "retrieved_tokens": 170.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3259,
+        "llm_out_tokens": 841,
+        "llm_ms": 8084.0,
+        "cost_usd": 0.021442
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.684726,
+        "retrieved_tokens": 1691.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 8978,
+        "llm_out_tokens": 865,
+        "llm_ms": 7765.0,
+        "cost_usd": 0.044553999999999996
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.577537,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 92.74574999999999,
+        "retrieved_tokens": 163.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6306,
+        "llm_out_tokens": 873,
+        "llm_ms": 9622.0,
+        "cost_usd": 0.033946000000000004
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 92.74574999999999,
+        "retrieved_tokens": 648.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7112,
+        "llm_out_tokens": 1077,
+        "llm_ms": 10010.0,
+        "cost_usd": 0.03921
+      }
+    ]
+  },
+  {
+    "q": "Example question 14",
+    "expect": "example-memory-18.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2953,
+        "llm_out_tokens": 987,
+        "llm_ms": 8289.0,
+        "cost_usd": 0.021678000000000003
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10129,
+        "llm_out_tokens": 777,
+        "llm_ms": 6176.0,
+        "cost_usd": 0.0204584
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5742.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 16383,
+        "llm_out_tokens": 994,
+        "llm_ms": 10091.0,
+        "cost_usd": 0.047514999999999995
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 26.532021999999998,
+        "retrieved_tokens": 79.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3117,
+        "llm_out_tokens": 862,
+        "llm_ms": 8507.0,
+        "cost_usd": 0.021084
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 26.532021999999998,
+        "retrieved_tokens": 762.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7321,
+        "llm_out_tokens": 912,
+        "llm_ms": 7625.0,
+        "cost_usd": 0.038396
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 50.672806,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 100.16984,
+        "retrieved_tokens": 186.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6391,
+        "llm_out_tokens": 1289,
+        "llm_ms": 12584.0,
+        "cost_usd": 0.038446
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 100.16984,
+        "retrieved_tokens": 671.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7365,
+        "llm_out_tokens": 1523,
+        "llm_ms": 14158.0,
+        "cost_usd": 0.044682
+      }
+    ]
+  },
+  {
+    "q": "Example question 12",
+    "expect": "example-memory-14.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 906,
+        "llm_ms": 8450.0,
+        "cost_usd": 0.020848
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10124,
+        "llm_out_tokens": 676,
+        "llm_ms": 5980.0,
+        "cost_usd": 0.0194284
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5451.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15633,
+        "llm_out_tokens": 698,
+        "llm_ms": 7033.0,
+        "cost_usd": 0.041555
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 23.874064,
+        "retrieved_tokens": 80.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3090,
+        "llm_out_tokens": 777,
+        "llm_ms": 6714.0,
+        "cost_usd": 0.020126
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 23.874064,
+        "retrieved_tokens": 503.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6770,
+        "llm_out_tokens": 716,
+        "llm_ms": 6110.0,
+        "cost_usd": 0.034232
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.520395,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 99.575409,
+        "retrieved_tokens": 178.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6352,
+        "llm_out_tokens": 824,
+        "llm_ms": 8936.0,
+        "cost_usd": 0.03364
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 99.575409,
+        "retrieved_tokens": 537.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7011,
+        "llm_out_tokens": 929,
+        "llm_ms": 10279.0,
+        "cost_usd": 0.037326
+      }
+    ]
+  },
+  {
+    "q": "Example question 20",
+    "expect": "example-memory-3.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2953,
+        "llm_out_tokens": 1052,
+        "llm_ms": 10359.0,
+        "cost_usd": 0.022328
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10129,
+        "llm_out_tokens": 927,
+        "llm_ms": 8225.0,
+        "cost_usd": 0.021958400000000003
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4986.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 14930,
+        "llm_out_tokens": 734,
+        "llm_ms": 7084.0,
+        "cost_usd": 0.039103
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 25.411174000000003,
+        "retrieved_tokens": 81.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3108,
+        "llm_out_tokens": 674,
+        "llm_ms": 6711.0,
+        "cost_usd": 0.019168
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 25.411174000000003,
+        "retrieved_tokens": 1163.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7908,
+        "llm_out_tokens": 872,
+        "llm_ms": 9117.0,
+        "cost_usd": 0.0222332
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.294674,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 99.66959399999999,
+        "retrieved_tokens": 169.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6346,
+        "llm_out_tokens": 1228,
+        "llm_ms": 12712.0,
+        "cost_usd": 0.037655999999999995
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 99.66959399999999,
+        "retrieved_tokens": 600.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7179,
+        "llm_out_tokens": 1315,
+        "llm_ms": 13074.0,
+        "cost_usd": 0.041858
+      }
+    ]
+  },
+  {
+    "q": "Example question 46",
+    "expect": "example-memory-5.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2951,
+        "llm_out_tokens": 778,
+        "llm_ms": 7794.0,
+        "cost_usd": 0.01958
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10127,
+        "llm_out_tokens": 525,
+        "llm_ms": 6348.0,
+        "cost_usd": 0.0179304
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5422.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15705,
+        "llm_out_tokens": 1074,
+        "llm_ms": 20334.0,
+        "cost_usd": 0.045603000000000005
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.474055,
+        "retrieved_tokens": 220.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3370,
+        "llm_out_tokens": 504,
+        "llm_ms": 5244.0,
+        "cost_usd": 0.018516
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.474055,
+        "retrieved_tokens": 756.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7279,
+        "llm_out_tokens": 1035,
+        "llm_ms": 9463.0,
+        "cost_usd": 0.039458
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 47.802945,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 153.37589200000002,
+        "retrieved_tokens": 187.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6318,
+        "llm_out_tokens": 923,
+        "llm_ms": 10630.0,
+        "cost_usd": 0.034494
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 153.37589200000002,
+        "retrieved_tokens": 518.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6869,
+        "llm_out_tokens": 1049,
+        "llm_ms": 17281.0,
+        "cost_usd": 0.037958
+      }
+    ]
+  },
+  {
+    "q": "Example question 58",
+    "expect": "example-memory-66.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2958,
+        "llm_out_tokens": 681,
+        "llm_ms": 6746.0,
+        "cost_usd": 0.018638
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10134,
+        "llm_out_tokens": 608,
+        "llm_ms": 5325.0,
+        "cost_usd": 0.0187884
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4270.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 13807,
+        "llm_out_tokens": 854,
+        "llm_ms": 7876.0,
+        "cost_usd": 0.035810999999999996
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 27.473989,
+        "retrieved_tokens": 80.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3113,
+        "llm_out_tokens": 774,
+        "llm_ms": 7489.0,
+        "cost_usd": 0.020188
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 27.473989,
+        "retrieved_tokens": 446.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6785,
+        "llm_out_tokens": 839,
+        "llm_ms": 7281.0,
+        "cost_usd": 0.0216976
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.469075000000004,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 47.892732,
+        "retrieved_tokens": 69.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6184,
+        "llm_out_tokens": 1065,
+        "llm_ms": 10487.0,
+        "cost_usd": 0.035378
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 47.892732,
+        "retrieved_tokens": 348.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6792,
+        "llm_out_tokens": 1205,
+        "llm_ms": 11434.0,
+        "cost_usd": 0.03921
+      }
+    ]
+  },
+  {
+    "q": "Example question 13",
+    "expect": "example-memory-57.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2959,
+        "llm_out_tokens": 682,
+        "llm_ms": 6357.0,
+        "cost_usd": 0.018652
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10135,
+        "llm_out_tokens": 513,
+        "llm_ms": 4801.0,
+        "cost_usd": 0.0178424
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5213.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15472,
+        "llm_out_tokens": 922,
+        "llm_ms": 8913.0,
+        "cost_usd": 0.043151
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 29.544781,
+        "retrieved_tokens": 90.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3131,
+        "llm_out_tokens": 628,
+        "llm_ms": 6112.0,
+        "cost_usd": 0.018799999999999997
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 29.544781,
+        "retrieved_tokens": 904.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7623,
+        "llm_out_tokens": 928,
+        "llm_ms": 9055.0,
+        "cost_usd": 0.039764
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 51.52547,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 48.88577,
+        "retrieved_tokens": 34.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6098,
+        "llm_out_tokens": 1012,
+        "llm_ms": 9700.0,
+        "cost_usd": 0.034504
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 48.88577,
+        "retrieved_tokens": 252.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6499,
+        "llm_out_tokens": 932,
+        "llm_ms": 9196.0,
+        "cost_usd": 0.035308000000000006
+      }
+    ]
+  },
+  {
+    "q": "Example question 15",
+    "expect": "example-memory-53.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 826,
+        "llm_ms": 7728.0,
+        "cost_usd": 0.020056
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 10126,
+        "llm_out_tokens": 705,
+        "llm_ms": 6916.0,
+        "cost_usd": 0.0197264
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4266.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "llm_in_tokens": 13742,
+        "llm_out_tokens": 663,
+        "llm_ms": 6044.0,
+        "cost_usd": 0.033641
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.208797,
+        "retrieved_tokens": 83.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 3103,
+        "llm_out_tokens": 663,
+        "llm_ms": 5953.0,
+        "cost_usd": 0.019038
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.208797,
+        "retrieved_tokens": 444.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "llm_in_tokens": 6718,
+        "llm_out_tokens": 600,
+        "llm_ms": 17819.0,
+        "cost_usd": 0.0192562
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.262752,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 98.675173,
+        "retrieved_tokens": 184.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 6352,
+        "llm_out_tokens": 1047,
+        "llm_ms": 10405.0,
+        "cost_usd": 0.03587
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 98.675173,
+        "retrieved_tokens": 623.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 7112,
+        "llm_out_tokens": 1192,
+        "llm_ms": 11207.0,
+        "cost_usd": 0.04036
+      }
+    ]
+  },
+  {
+    "q": "Example question 19",
+    "expect": "example-memory-36.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 926,
+        "llm_ms": 8318.0,
+        "cost_usd": 0.021056
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10126,
+        "llm_out_tokens": 491,
+        "llm_ms": 4786.0,
+        "cost_usd": 0.0175864
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4287.75,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 13876,
+        "llm_out_tokens": 873,
+        "llm_ms": 7535.0,
+        "cost_usd": 0.036277
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 25.294546,
+        "retrieved_tokens": 82.0,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3125,
+        "llm_out_tokens": 635,
+        "llm_ms": 5960.0,
+        "cost_usd": 0.018846
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 25.294546,
+        "retrieved_tokens": 464.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6874,
+        "llm_out_tokens": 730,
+        "llm_ms": 6901.0,
+        "cost_usd": 0.020671
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 53.251499,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 48.505738,
+        "retrieved_tokens": 28.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6070,
+        "llm_out_tokens": 751,
+        "llm_ms": 8371.0,
+        "cost_usd": 0.031782
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 48.505738,
+        "retrieved_tokens": 2105.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 9559,
+        "llm_out_tokens": 1066,
+        "llm_ms": 9109.0,
+        "cost_usd": 0.048888
+      }
+    ]
+  },
+  {
+    "q": "Example question 42",
+    "expect": "example-memory-39.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2959,
+        "llm_out_tokens": 1007,
+        "llm_ms": 8068.0,
+        "cost_usd": 0.021902
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 10135,
+        "llm_out_tokens": 694,
+        "llm_ms": 6206.0,
+        "cost_usd": 0.0196524
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4469.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14135,
+        "llm_out_tokens": 816,
+        "llm_ms": 7598.0,
+        "cost_usd": 0.036743
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 27.344638,
+        "retrieved_tokens": 165.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3258,
+        "llm_out_tokens": 819,
+        "llm_ms": 6715.0,
+        "cost_usd": 0.021218
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 27.344638,
+        "retrieved_tokens": 729.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 7257,
+        "llm_out_tokens": 829,
+        "llm_ms": 7259.0,
+        "cost_usd": 0.022243
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 51.168262999999996,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 48.520508,
+        "retrieved_tokens": 33.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6098,
+        "llm_out_tokens": 1009,
+        "llm_ms": 11101.0,
+        "cost_usd": 0.034474000000000005
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 48.520508,
+        "retrieved_tokens": 246.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 6471,
+        "llm_out_tokens": 1011,
+        "llm_ms": 9390.0,
+        "cost_usd": 0.035986000000000004
+      }
+    ]
+  },
+  {
+    "q": "Example question 22",
+    "expect": "example-memory-69.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2944,
+        "llm_out_tokens": 425,
+        "llm_ms": 4670.0,
+        "cost_usd": 0.016022
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10120,
+        "llm_out_tokens": 500,
+        "llm_ms": 4396.0,
+        "cost_usd": 0.0176524
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4124.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 13485,
+        "llm_out_tokens": 470,
+        "llm_ms": 6130.0,
+        "cost_usd": 0.030683000000000002
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 22.844184,
+        "retrieved_tokens": 76.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3091,
+        "llm_out_tokens": 450,
+        "llm_ms": 4291.0,
+        "cost_usd": 0.01686
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 22.844184,
+        "retrieved_tokens": 296.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6455,
+        "llm_out_tokens": 517,
+        "llm_ms": 6145.0,
+        "cost_usd": 0.018327999999999997
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 46.573996,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 96.772641,
+        "retrieved_tokens": 173.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6349,
+        "llm_out_tokens": 827,
+        "llm_ms": 8726.0,
+        "cost_usd": 0.033658
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 96.772641,
+        "retrieved_tokens": 664.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7315,
+        "llm_out_tokens": 501,
+        "llm_ms": 6427.0,
+        "cost_usd": 0.034262
+      }
+    ]
+  },
+  {
+    "q": "Example question 50",
+    "expect": "example-memory-12.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2946,
+        "llm_out_tokens": 840,
+        "llm_ms": 7499.0,
+        "cost_usd": 0.020180000000000003
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10122,
+        "llm_out_tokens": 622,
+        "llm_ms": 5912.0,
+        "cost_usd": 0.0188804
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4397.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 13945,
+        "llm_out_tokens": 638,
+        "llm_ms": 6277.0,
+        "cost_usd": 0.034203
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.042212,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2962,
+        "llm_out_tokens": 871,
+        "llm_ms": 9470.0,
+        "cost_usd": 0.020554000000000003
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.042212,
+        "retrieved_tokens": 0.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 5940,
+        "llm_out_tokens": 774,
+        "llm_ms": 8247.0,
+        "cost_usd": 0.020304799999999998
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 51.704219,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 150.702507,
+        "retrieved_tokens": 136.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6266,
+        "llm_out_tokens": 860,
+        "llm_ms": 9739.0,
+        "cost_usd": 0.033656
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 150.702507,
+        "retrieved_tokens": 508.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6934,
+        "llm_out_tokens": 818,
+        "llm_ms": 8439.0,
+        "cost_usd": 0.035908
+      }
+    ]
+  },
+  {
+    "q": "Example question 1",
+    "expect": "example-memory-59.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2958,
+        "llm_out_tokens": 757,
+        "llm_ms": 7033.0,
+        "cost_usd": 0.019398
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10134,
+        "llm_out_tokens": 967,
+        "llm_ms": 7973.0,
+        "cost_usd": 0.0223784
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5054.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15014,
+        "llm_out_tokens": 815,
+        "llm_ms": 7696.0,
+        "cost_usd": 0.040249
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 28.990901,
+        "retrieved_tokens": 85.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3126,
+        "llm_out_tokens": 804,
+        "llm_ms": 8481.0,
+        "cost_usd": 0.020540000000000003
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 28.990901,
+        "retrieved_tokens": 558.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6988,
+        "llm_out_tokens": 680,
+        "llm_ms": 7058.0,
+        "cost_usd": 0.034744
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 49.336248,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 96.469269,
+        "retrieved_tokens": 181.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6460,
+        "llm_out_tokens": 1181,
+        "llm_ms": 10627.0,
+        "cost_usd": 0.037641999999999995
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 96.469269,
+        "retrieved_tokens": 421.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6974,
+        "llm_out_tokens": 1198,
+        "llm_ms": 10836.0,
+        "cost_usd": 0.039868
+      }
+    ]
+  },
+  {
+    "q": "Example question 48",
+    "expect": "example-memory-71.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 913,
+        "llm_ms": 8032.0,
+        "cost_usd": 0.020926
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10126,
+        "llm_out_tokens": 786,
+        "llm_ms": 7294.0,
+        "cost_usd": 0.0205364
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5302.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 15389,
+        "llm_out_tokens": 1097,
+        "llm_ms": 9299.0,
+        "cost_usd": 0.044569
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 26.847838,
+        "retrieved_tokens": 84.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3097,
+        "llm_out_tokens": 633,
+        "llm_ms": 10374.0,
+        "cost_usd": 0.018714
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 26.847838,
+        "retrieved_tokens": 467.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6671,
+        "llm_out_tokens": 805,
+        "llm_ms": 8323.0,
+        "cost_usd": 0.034726
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 51.623992,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 95.33362299999999,
+        "retrieved_tokens": 173.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6375,
+        "llm_out_tokens": 1194,
+        "llm_ms": 12155.0,
+        "cost_usd": 0.037432
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 95.33362299999999,
+        "retrieved_tokens": 448.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6776,
+        "llm_out_tokens": 1246,
+        "llm_ms": 12354.0,
+        "cost_usd": 0.039556
+      }
+    ]
+  },
+  {
+    "q": "Example question 30",
+    "expect": "example-memory-17.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2956,
+        "llm_out_tokens": 878,
+        "llm_ms": 21867.0,
+        "cost_usd": 0.0206
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10132,
+        "llm_out_tokens": 666,
+        "llm_ms": 5436.0,
+        "cost_usd": 0.0193604
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6894.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 18051,
+        "llm_out_tokens": 1117,
+        "llm_ms": 9905.0,
+        "cost_usd": 0.055417
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 28.009093999999997,
+        "retrieved_tokens": 198.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3323,
+        "llm_out_tokens": 796,
+        "llm_ms": 6883.0,
+        "cost_usd": 0.021248000000000003
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 28.009093999999997,
+        "retrieved_tokens": 2465.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10064,
+        "llm_out_tokens": 933,
+        "llm_ms": 7972.0,
+        "cost_usd": 0.049578000000000004
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 47.474764,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 96.83607599999999,
+        "retrieved_tokens": 197.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6398,
+        "llm_out_tokens": 1008,
+        "llm_ms": 10307.0,
+        "cost_usd": 0.035664
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 96.83607599999999,
+        "retrieved_tokens": 463.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6837,
+        "llm_out_tokens": 1063,
+        "llm_ms": 10787.0,
+        "cost_usd": 0.037970000000000004
+      }
+    ]
+  },
+  {
+    "q": "Example question 8",
+    "expect": "example-memory-35.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2951,
+        "llm_out_tokens": 658,
+        "llm_ms": 8850.0,
+        "cost_usd": 0.018379999999999997
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10127,
+        "llm_out_tokens": 493,
+        "llm_ms": 5055.0,
+        "cost_usd": 0.0176104
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5281.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 15615,
+        "llm_out_tokens": 826,
+        "llm_ms": 8146.0,
+        "cost_usd": 0.042762999999999995
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 25.288024,
+        "retrieved_tokens": 133.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3187,
+        "llm_out_tokens": 471,
+        "llm_ms": 5633.0,
+        "cost_usd": 0.017453999999999997
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 25.288024,
+        "retrieved_tokens": 1509.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 8674,
+        "llm_out_tokens": 908,
+        "llm_ms": 10333.0,
+        "cost_usd": 0.0230466
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 50.803771,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 97.827572,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6018,
+        "llm_out_tokens": 908,
+        "llm_ms": 10240.0,
+        "cost_usd": 0.033144
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 97.827572,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6018,
+        "llm_out_tokens": 746,
+        "llm_ms": 8908.0,
+        "cost_usd": 0.031523999999999996
+      }
+    ]
+  },
+  {
+    "q": "Example question 2",
+    "expect": "example-memory-15.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2954,
+        "llm_out_tokens": 811,
+        "llm_ms": 12121.0,
+        "cost_usd": 0.019922
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10130,
+        "llm_out_tokens": 733,
+        "llm_ms": 6974.0,
+        "cost_usd": 0.020022400000000003
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6035.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 16952,
+        "llm_out_tokens": 1176,
+        "llm_ms": 9895.0,
+        "cost_usd": 0.051611
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 29.324592,
+        "retrieved_tokens": 81.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3111,
+        "llm_out_tokens": 834,
+        "llm_ms": 7317.0,
+        "cost_usd": 0.02078
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 29.324592,
+        "retrieved_tokens": 690.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7202,
+        "llm_out_tokens": 976,
+        "llm_ms": 9183.0,
+        "cost_usd": 0.03856
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.894816,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 105.24439699999999,
+        "retrieved_tokens": 34.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6102,
+        "llm_out_tokens": 1172,
+        "llm_ms": 16922.0,
+        "cost_usd": 0.03612
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 105.24439699999999,
+        "retrieved_tokens": 175.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6361,
+        "llm_out_tokens": 1075,
+        "llm_ms": 14353.0,
+        "cost_usd": 0.036185999999999996
+      }
+    ]
+  },
+  {
+    "q": "Example question 41",
+    "expect": "example-memory-29.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2949,
+        "llm_out_tokens": 1099,
+        "llm_ms": 9854.0,
+        "cost_usd": 0.022782
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10125,
+        "llm_out_tokens": 598,
+        "llm_ms": 5965.0,
+        "cost_usd": 0.0186524
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5474.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 15813,
+        "llm_out_tokens": 1128,
+        "llm_ms": 11360.0,
+        "cost_usd": 0.046575000000000005
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.736949000000003,
+        "retrieved_tokens": 158.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3256,
+        "llm_out_tokens": 581,
+        "llm_ms": 6154.0,
+        "cost_usd": 0.01883
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.736949000000003,
+        "retrieved_tokens": 585.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7004,
+        "llm_out_tokens": 869,
+        "llm_ms": 10134.0,
+        "cost_usd": 0.036698
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.867312000000005,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 94.76726,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6014,
+        "llm_out_tokens": 1196,
+        "llm_ms": 11434.0,
+        "cost_usd": 0.036008
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 94.76726,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6014,
+        "llm_out_tokens": 1099,
+        "llm_ms": 10004.0,
+        "cost_usd": 0.035038
+      }
+    ]
+  },
+  {
+    "q": "Example question 55",
+    "expect": "example-memory-13.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2956,
+        "llm_out_tokens": 849,
+        "llm_ms": 7438.0,
+        "cost_usd": 0.02031
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10132,
+        "llm_out_tokens": 605,
+        "llm_ms": 5617.0,
+        "cost_usd": 0.0187504
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5392.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 15940,
+        "llm_out_tokens": 845,
+        "llm_ms": 12931.0,
+        "cost_usd": 0.044253
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.669857,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2972,
+        "llm_out_tokens": 879,
+        "llm_ms": 8109.0,
+        "cost_usd": 0.020674
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.669857,
+        "retrieved_tokens": 0.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 5960,
+        "llm_out_tokens": 743,
+        "llm_ms": 12012.0,
+        "cost_usd": 0.0200368
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.352647999999995,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 160.120651,
+        "retrieved_tokens": 158.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6343,
+        "llm_out_tokens": 1007,
+        "llm_ms": 14818.0,
+        "cost_usd": 0.035434
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 160.120651,
+        "retrieved_tokens": 776.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7517,
+        "llm_out_tokens": 1436,
+        "llm_ms": 12591.0,
+        "cost_usd": 0.04442
+      }
+    ]
+  },
+  {
+    "q": "Example question 52",
+    "expect": "example-memory-1.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2953,
+        "llm_out_tokens": 732,
+        "llm_ms": 6800.0,
+        "cost_usd": 0.019128
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10129,
+        "llm_out_tokens": 589,
+        "llm_ms": 5448.0,
+        "cost_usd": 0.0185784
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4518.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14222,
+        "llm_out_tokens": 724,
+        "llm_ms": 11385.0,
+        "cost_usd": 0.036171
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 25.181295,
+        "retrieved_tokens": 88.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3115,
+        "llm_out_tokens": 725,
+        "llm_ms": 6152.0,
+        "cost_usd": 0.019706
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 25.181295,
+        "retrieved_tokens": 701.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7207,
+        "llm_out_tokens": 846,
+        "llm_ms": 8226.0,
+        "cost_usd": 0.0218596
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.147347,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 93.176855,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6022,
+        "llm_out_tokens": 974,
+        "llm_ms": 9554.0,
+        "cost_usd": 0.03382
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 93.176855,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6022,
+        "llm_out_tokens": 1151,
+        "llm_ms": 11321.0,
+        "cost_usd": 0.035590000000000004
+      }
+    ]
+  },
+  {
+    "q": "Example question 10",
+    "expect": "example-memory-58.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2949,
+        "llm_out_tokens": 932,
+        "llm_ms": 8818.0,
+        "cost_usd": 0.021112
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10125,
+        "llm_out_tokens": 643,
+        "llm_ms": 6093.0,
+        "cost_usd": 0.0191024
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4616.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 14604,
+        "llm_out_tokens": 1047,
+        "llm_ms": 10036.0,
+        "cost_usd": 0.040929
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.837845,
+        "retrieved_tokens": 88.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3120,
+        "llm_out_tokens": 596,
+        "llm_ms": 5850.0,
+        "cost_usd": 0.018436
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.837845,
+        "retrieved_tokens": 800.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7598,
+        "llm_out_tokens": 969,
+        "llm_ms": 8177.0,
+        "cost_usd": 0.0231868
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 47.903461,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 47.694566,
+        "retrieved_tokens": 195.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6451,
+        "llm_out_tokens": 860,
+        "llm_ms": 8793.0,
+        "cost_usd": 0.034396
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 47.694566,
+        "retrieved_tokens": 561.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7131,
+        "llm_out_tokens": 863,
+        "llm_ms": 7949.0,
+        "cost_usd": 0.037146
+      }
+    ]
+  },
+  {
+    "q": "Example question 26",
+    "expect": "example-memory-26.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2952,
+        "llm_out_tokens": 787,
+        "llm_ms": 7287.0,
+        "cost_usd": 0.019674
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10128,
+        "llm_out_tokens": 558,
+        "llm_ms": 6509.0,
+        "cost_usd": 0.0182644
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6068.0,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 17047,
+        "llm_out_tokens": 718,
+        "llm_ms": 13571.0,
+        "cost_usd": 0.047411
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 24.766575999999997,
+        "retrieved_tokens": 95.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3123,
+        "llm_out_tokens": 531,
+        "llm_ms": 5328.0,
+        "cost_usd": 0.017798
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 24.766575999999997,
+        "retrieved_tokens": 818.5,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7414,
+        "llm_out_tokens": 681,
+        "llm_ms": 6062.0,
+        "cost_usd": 0.036458
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 51.238941000000004,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 98.31629699999999,
+        "retrieved_tokens": 181.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6392,
+        "llm_out_tokens": 1002,
+        "llm_ms": 11751.0,
+        "cost_usd": 0.03558
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 98.31629699999999,
+        "retrieved_tokens": 578.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7075,
+        "llm_out_tokens": 1005,
+        "llm_ms": 11930.0,
+        "cost_usd": 0.038342
+      }
+    ]
+  },
+  {
+    "q": "Example question 56",
+    "expect": "example-memory-67.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 289,
+        "llm_ms": 2954.0,
+        "cost_usd": 0.014678
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 10124,
+        "llm_out_tokens": 471,
+        "llm_ms": 4767.0,
+        "cost_usd": 0.0173784
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4150.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 13487,
+        "llm_out_tokens": 494,
+        "llm_ms": 5724.0,
+        "cost_usd": 0.030931
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 26.210003,
+        "retrieved_tokens": 135.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 3190,
+        "llm_out_tokens": 463,
+        "llm_ms": 4772.0,
+        "cost_usd": 0.017386
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 26.210003,
+        "retrieved_tokens": 380.5,
+        "retrieval": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 1,
+          "body_total": 1
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 2,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 6552,
+        "llm_out_tokens": 629,
+        "llm_ms": 7049.0,
+        "cost_usd": 0.019843600000000003
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.062431000000004,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 95.590076,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 6012,
+        "llm_out_tokens": 822,
+        "llm_ms": 8691.0,
+        "cost_usd": 0.03226
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 95.590076,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 2,
+          "body_found": 0,
+          "body_total": 1
+        },
+        "llm_in_tokens": 6012,
+        "llm_out_tokens": 860,
+        "llm_ms": 9028.0,
+        "cost_usd": 0.03264
+      }
+    ]
+  },
+  {
+    "q": "Example question 57",
+    "expect": "example-memory-56.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 2949,
+        "llm_out_tokens": 513,
+        "llm_ms": 6966.0,
+        "cost_usd": 0.016922
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 10125,
+        "llm_out_tokens": 415,
+        "llm_ms": 10926.0,
+        "cost_usd": 0.0168224
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 4639.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 14243,
+        "llm_out_tokens": 635,
+        "llm_ms": 6142.0,
+        "cost_usd": 0.035365
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 26.348053,
+        "retrieved_tokens": 146.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 3203,
+        "llm_out_tokens": 433,
+        "llm_ms": 4253.0,
+        "cost_usd": 0.017138
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 26.348053,
+        "retrieved_tokens": 478.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 2,
+          "body_total": 2
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 1,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6700,
+        "llm_out_tokens": 485,
+        "llm_ms": 5495.0,
+        "cost_usd": 0.031642
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 54.516799,
+        "retrieved_tokens": 34.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 53.755286,
+        "retrieved_tokens": 177.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 6381,
+        "llm_out_tokens": 852,
+        "llm_ms": 8248.0,
+        "cost_usd": 0.034036
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 53.755286,
+        "retrieved_tokens": 746.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 2
+        },
+        "llm_in_tokens": 7369,
+        "llm_out_tokens": 694,
+        "llm_ms": 7185.0,
+        "cost_usd": 0.036407999999999996
+      }
+    ]
+  },
+  {
+    "q": "Example question 53",
+    "expect": "example-memory-47.md",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 2946,
+        "llm_out_tokens": 509,
+        "llm_ms": 5135.0,
+        "cost_usd": 0.01687
+      },
+      {
+        "system": "default_index",
+        "local_ms": 0.0,
+        "retrieved_tokens": 3905.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 10122,
+        "llm_out_tokens": 676,
+        "llm_ms": 6692.0,
+        "cost_usd": 0.0194204
+      },
+      {
+        "system": "default_read",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6103.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 17075,
+        "llm_out_tokens": 1024,
+        "llm_ms": 8732.0,
+        "cost_usd": 0.050583
+      },
+      {
+        "system": "recall_snippet",
+        "local_ms": 23.765402,
+        "retrieved_tokens": 143.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 3228,
+        "llm_out_tokens": 752,
+        "llm_ms": 6951.0,
+        "cost_usd": 0.020428
+      },
+      {
+        "system": "recall_read",
+        "local_ms": 23.765402,
+        "retrieved_tokens": 963.75,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 3,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7714,
+        "llm_out_tokens": 992,
+        "llm_ms": 8133.0,
+        "cost_usd": 0.040768000000000006
+      },
+      {
+        "system": "cavemem_raw",
+        "local_ms": 48.634307,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      },
+      {
+        "system": "cavemem_kw",
+        "local_ms": 48.144224,
+        "retrieved_tokens": 105.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 6235,
+        "llm_out_tokens": 1053,
+        "llm_ms": 10038.0,
+        "cost_usd": 0.035462
+      },
+      {
+        "system": "cavemem_kw_full",
+        "local_ms": 48.144224,
+        "retrieved_tokens": 759.25,
+        "retrieval": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "context": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 1,
+          "desc_total": 1,
+          "body_found": 0,
+          "body_total": 3
+        },
+        "llm_in_tokens": 7442,
+        "llm_out_tokens": 1205,
+        "llm_ms": 11013.0,
+        "cost_usd": 0.04181
+      }
+    ]
+  }
+]

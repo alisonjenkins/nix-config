@@ -1,0 +1,3382 @@
+[
+  {
+    "q": "my python script needs pandas, how should it be run",
+    "expect": "programming/languages/python.md#Scripts",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2947,
+        "llm_out_tokens": 662,
+        "llm_ms": 6000.0,
+        "cost_usd": 0.018404
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13850,
+        "llm_out_tokens": 1199,
+        "llm_ms": 11531.0,
+        "cost_usd": 0.0360396
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7167.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 21101,
+        "llm_out_tokens": 867,
+        "llm_ms": 10289.0,
+        "cost_usd": 0.0538308
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.12131600000000001,
+        "retrieved_tokens": 925.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4183,
+        "llm_out_tokens": 501,
+        "llm_ms": 4896.0,
+        "cost_usd": 0.0164864
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 16.270676,
+        "retrieved_tokens": 483.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3735,
+        "llm_out_tokens": 469,
+        "llm_ms": 4084.0,
+        "cost_usd": 0.0160768
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 102.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "is it ok to catch a bare Exception in python",
+    "expect": "programming/languages/python.md#Idioms",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 451,
+        "llm_ms": 7255.0,
+        "cost_usd": 0.016298
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13852,
+        "llm_out_tokens": 911,
+        "llm_ms": 9123.0,
+        "cost_usd": 0.0331676
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7670.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 21701,
+        "llm_out_tokens": 972,
+        "llm_ms": 12990.0,
+        "cost_usd": 0.0550122
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.165673,
+        "retrieved_tokens": 1036.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4516,
+        "llm_out_tokens": 357,
+        "llm_ms": 3281.0,
+        "cost_usd": 0.0151168
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.257038000000001,
+        "retrieved_tokens": 1003.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4441,
+        "llm_out_tokens": 429,
+        "llm_ms": 3896.0,
+        "cost_usd": 0.0158218
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 355.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "when should I use an assertion versus returning an error",
+    "expect": "programming/defensive.md#Assertions vs error handling",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2947,
+        "llm_out_tokens": 517,
+        "llm_ms": 5542.0,
+        "cost_usd": 0.016954
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13850,
+        "llm_out_tokens": 663,
+        "llm_ms": 7033.0,
+        "cost_usd": 0.030679599999999998
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7020.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 20735,
+        "llm_out_tokens": 609,
+        "llm_ms": 8335.0,
+        "cost_usd": 0.0662066
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.121046,
+        "retrieved_tokens": 535.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3680,
+        "llm_out_tokens": 436,
+        "llm_ms": 3530.0,
+        "cost_usd": 0.019076
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.338397,
+        "retrieved_tokens": 523.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3648,
+        "llm_out_tokens": 478,
+        "llm_ms": 4544.0,
+        "cost_usd": 0.019368
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 190.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "how do I handle API tokens and credentials in code",
+    "expect": "programming/security.md#Secrets",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 670,
+        "llm_ms": 5962.0,
+        "cost_usd": 0.018487999999999997
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13852,
+        "llm_out_tokens": 656,
+        "llm_ms": 7093.0,
+        "cost_usd": 0.030617600000000002
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7125.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 20935,
+        "llm_out_tokens": 719,
+        "llm_ms": 8807.0,
+        "cost_usd": 0.0681066
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.142428,
+        "retrieved_tokens": 552.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3744,
+        "llm_out_tokens": 637,
+        "llm_ms": 5848.0,
+        "cost_usd": 0.021342
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.589096,
+        "retrieved_tokens": 647.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3855,
+        "llm_out_tokens": 558,
+        "llm_ms": 5824.0,
+        "cost_usd": 0.020996
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 67.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "which fields must every log line include",
+    "expect": "programming/observability.md#What a log line must carry",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2941,
+        "llm_out_tokens": 393,
+        "llm_ms": 3761.0,
+        "cost_usd": 0.015690000000000003
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13838,
+        "llm_out_tokens": 596,
+        "llm_ms": 7044.0,
+        "cost_usd": 0.029961599999999998
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6918.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 20520,
+        "llm_out_tokens": 568,
+        "llm_ms": 7626.0,
+        "cost_usd": 0.0649366
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.095596,
+        "retrieved_tokens": 578.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3745,
+        "llm_out_tokens": 567,
+        "llm_ms": 5252.0,
+        "cost_usd": 0.020646
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 13.418881,
+        "retrieved_tokens": 456.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3600,
+        "llm_out_tokens": 633,
+        "llm_ms": 5160.0,
+        "cost_usd": 0.020726
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 209.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "what to do before trying to make code faster",
+    "expect": "programming/performance.md#Profiling first",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2944,
+        "llm_out_tokens": 503,
+        "llm_ms": 6772.0,
+        "cost_usd": 0.016802
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6860.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 15313,
+        "llm_out_tokens": 712,
+        "llm_ms": 8028.0,
+        "cost_usd": 0.0455526
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8457.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 24448,
+        "llm_out_tokens": 702,
+        "llm_ms": 8320.0,
+        "cost_usd": 0.0819886
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.127118,
+        "retrieved_tokens": 1140.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4528,
+        "llm_out_tokens": 646,
+        "llm_ms": 6944.0,
+        "cost_usd": 0.024568
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.872758,
+        "retrieved_tokens": 564.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3764,
+        "llm_out_tokens": 598,
+        "llm_ms": 5152.0,
+        "cost_usd": 0.021032
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 298.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "which model tier should a mechanical bulk edit use",
+    "expect": "delegation/SKILL.md#Picking the model: default to haiku",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2949,
+        "llm_out_tokens": 499,
+        "llm_ms": 4924.0,
+        "cost_usd": 0.016782
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17496,
+        "llm_out_tokens": 685,
+        "llm_ms": 7779.0,
+        "cost_usd": 0.0540146
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 26284,
+        "llm_out_tokens": 1665,
+        "llm_ms": 15650.0,
+        "cost_usd": 0.0765578
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.114033,
+        "retrieved_tokens": 1453.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5107,
+        "llm_out_tokens": 1051,
+        "llm_ms": 7534.0,
+        "cost_usd": 0.030934000000000003
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.943186,
+        "retrieved_tokens": 871.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4264,
+        "llm_out_tokens": 800,
+        "llm_ms": 7504.0,
+        "cost_usd": 0.025052
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 766.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "the sub-agent returned a wrong answer, what now",
+    "expect": "delegation/SKILL.md#When a delegated result comes back wrong or incomplete",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 533,
+        "llm_ms": 5404.0,
+        "cost_usd": 0.017126000000000002
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17498,
+        "llm_out_tokens": 600,
+        "llm_ms": 8153.0,
+        "cost_usd": 0.0531726
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 26287,
+        "llm_out_tokens": 954,
+        "llm_ms": 9336.0,
+        "cost_usd": 0.09186459999999999
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.134172,
+        "retrieved_tokens": 1248.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4737,
+        "llm_out_tokens": 852,
+        "llm_ms": 6950.0,
+        "cost_usd": 0.027464
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.924441000000002,
+        "retrieved_tokens": 383.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3518,
+        "llm_out_tokens": 508,
+        "llm_ms": 4886.0,
+        "cost_usd": 0.019148
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 116.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "copilot ran out of credits",
+    "expect": "delegation/delegate-to-copilot.md#Credit exhaustion",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2942,
+        "llm_out_tokens": 507,
+        "llm_ms": 5631.0,
+        "cost_usd": 0.016834
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17482,
+        "llm_out_tokens": 684,
+        "llm_ms": 10674.0,
+        "cost_usd": 0.031577999999999995
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 11086.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 31066,
+        "llm_out_tokens": 979,
+        "llm_ms": 10755.0,
+        "cost_usd": 0.0885218
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.116798,
+        "retrieved_tokens": 1303.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4965,
+        "llm_out_tokens": 640,
+        "llm_ms": 4786.0,
+        "cost_usd": 0.026256
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 13.026766,
+        "retrieved_tokens": 1262.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4832,
+        "llm_out_tokens": 525,
+        "llm_ms": 4151.0,
+        "cost_usd": 0.024574
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 205.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "what exit codes does the local model script return when nothing is running",
+    "expect": "delegation/delegate-to-local.md#Exit codes: this is the graceful-degradation contract",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 237,
+        "llm_ms": 3244.0,
+        "cost_usd": 0.014166
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17498,
+        "llm_out_tokens": 773,
+        "llm_ms": 8064.0,
+        "cost_usd": 0.032532
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 16138.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 38727,
+        "llm_out_tokens": 1041,
+        "llm_ms": 12032.0,
+        "cost_usd": 0.1197858
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.180101,
+        "retrieved_tokens": 934.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4410,
+        "llm_out_tokens": 469,
+        "llm_ms": 4384.0,
+        "cost_usd": 0.022326
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 17.354923000000003,
+        "retrieved_tokens": 441.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3621,
+        "llm_out_tokens": 587,
+        "llm_ms": 4605.0,
+        "cost_usd": 0.02035
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 225.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "several sessions are fighting over one GPU for the local model",
+    "expect": "delegation/delegate-to-local.md#Coordinating across sessions: reservations",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2950,
+        "llm_out_tokens": 807,
+        "llm_ms": 6844.0,
+        "cost_usd": 0.019866
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8420.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 18037,
+        "llm_out_tokens": 1247,
+        "llm_ms": 10839.0,
+        "cost_usd": 0.0617986
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 16947.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 40539,
+        "llm_out_tokens": 1231,
+        "llm_ms": 12257.0,
+        "cost_usd": 0.1516426
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.155273,
+        "retrieved_tokens": 1474.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5154,
+        "llm_out_tokens": 1091,
+        "llm_ms": 8961.0,
+        "cost_usd": 0.031522
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.831971,
+        "retrieved_tokens": 1475.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5215,
+        "llm_out_tokens": 1023,
+        "llm_ms": 8323.0,
+        "cost_usd": 0.031086
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 1290.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "conventions for adding a module to a nix flake",
+    "expect": "programming/languages/nix.md#Rules",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2947,
+        "llm_out_tokens": 871,
+        "llm_ms": 6796.0,
+        "cost_usd": 0.020494
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6496.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 14870,
+        "llm_out_tokens": 613,
+        "llm_ms": 8524.0,
+        "cost_usd": 0.0427906
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7261.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 22199,
+        "llm_out_tokens": 1054,
+        "llm_ms": 15636.0,
+        "cost_usd": 0.0765126
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.13672700000000002,
+        "retrieved_tokens": 435.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3628,
+        "llm_out_tokens": 559,
+        "llm_ms": 5090.0,
+        "cost_usd": 0.020098
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.963123999999999,
+        "retrieved_tokens": 773.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4068,
+        "llm_out_tokens": 646,
+        "llm_ms": 8026.0,
+        "cost_usd": 0.022728
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 707.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "which clippy lints are mandatory in rust",
+    "expect": "programming/languages/rust.md#Guard rails (mandatory)",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2947,
+        "llm_out_tokens": 458,
+        "llm_ms": 6211.0,
+        "cost_usd": 0.016364
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13850,
+        "llm_out_tokens": 415,
+        "llm_ms": 11129.0,
+        "cost_usd": 0.0281996
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7149.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 21226,
+        "llm_out_tokens": 788,
+        "llm_ms": 10075.0,
+        "cost_usd": 0.0699606
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.094525,
+        "retrieved_tokens": 914.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4419,
+        "llm_out_tokens": 661,
+        "llm_ms": 12062.0,
+        "cost_usd": 0.024282
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.770068,
+        "retrieved_tokens": 914.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4419,
+        "llm_out_tokens": 776,
+        "llm_ms": 5681.0,
+        "cost_usd": 0.0086474
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 562.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "how do I catch data races in go",
+    "expect": "programming/languages/go.md#Toolchain",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2942,
+        "llm_out_tokens": 342,
+        "llm_ms": 4126.0,
+        "cost_usd": 0.015184
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6806.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 15301,
+        "llm_out_tokens": 979,
+        "llm_ms": 9696.0,
+        "cost_usd": 0.0481746
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7692.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 23175,
+        "llm_out_tokens": 909,
+        "llm_ms": 11966.0,
+        "cost_usd": 0.0789666
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.10732,
+        "retrieved_tokens": 1051.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4502,
+        "llm_out_tokens": 249,
+        "llm_ms": 2536.0,
+        "cost_usd": 0.020494
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.273477999999999,
+        "retrieved_tokens": 505.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3707,
+        "llm_out_tokens": 463,
+        "llm_ms": 4127.0,
+        "cost_usd": 0.019454
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 581.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "how many sub-agents should I run at once",
+    "expect": "delegation/SKILL.md#Running sub-agents in parallel",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2945,
+        "llm_out_tokens": 445,
+        "llm_ms": 5002.0,
+        "cost_usd": 0.016225999999999997
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 17488,
+        "llm_out_tokens": 843,
+        "llm_ms": 9232.0,
+        "cost_usd": 0.033192
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8081.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 26272,
+        "llm_out_tokens": 1239,
+        "llm_ms": 12135.0,
+        "cost_usd": 0.049541
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.110916,
+        "retrieved_tokens": 547.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3764,
+        "llm_out_tokens": 550,
+        "llm_ms": 4639.0,
+        "cost_usd": 0.020552
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 15.256317000000001,
+        "retrieved_tokens": 990.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4400,
+        "llm_out_tokens": 728,
+        "llm_ms": 5288.0,
+        "cost_usd": 0.024876
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 624.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "threads mutate the same cache, is that safe",
+    "expect": "programming/concurrency.md#Shared state is incorrect state",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2947,
+        "llm_out_tokens": 584,
+        "llm_ms": 5823.0,
+        "cost_usd": 0.017624
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13850,
+        "llm_out_tokens": 634,
+        "llm_ms": 9193.0,
+        "cost_usd": 0.0303896
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6326.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 19805,
+        "llm_out_tokens": 601,
+        "llm_ms": 13900.0,
+        "cost_usd": 0.0624066
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.119383,
+        "retrieved_tokens": 392.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3544,
+        "llm_out_tokens": 468,
+        "llm_ms": 4432.0,
+        "cost_usd": 0.018852
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.61722,
+        "retrieved_tokens": 286.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3323,
+        "llm_out_tokens": 500,
+        "llm_ms": 4402.0,
+        "cost_usd": 0.018288
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 322.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "using SIMD to vectorize a hot loop",
+    "expect": "programming/performance.md#SIMD",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2948,
+        "llm_out_tokens": 1076,
+        "llm_ms": 9697.0,
+        "cost_usd": 0.022548
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 6860.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 15321,
+        "llm_out_tokens": 683,
+        "llm_ms": 7535.0,
+        "cost_usd": 0.031181399999999998
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 9854.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 26652,
+        "llm_out_tokens": 913,
+        "llm_ms": 9737.0,
+        "cost_usd": 0.09291459999999999
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.12445300000000001,
+        "retrieved_tokens": 930.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 4369,
+        "llm_out_tokens": 704,
+        "llm_ms": 6273.0,
+        "cost_usd": 0.024512
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.303346999999999,
+        "retrieved_tokens": 508.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3721,
+        "llm_out_tokens": 593,
+        "llm_ms": 4760.0,
+        "cost_usd": 0.02081
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 343.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "validating untrusted input from users",
+    "expect": "programming/security.md#Validate at the boundary",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2942,
+        "llm_out_tokens": 895,
+        "llm_ms": 7565.0,
+        "cost_usd": 0.020714
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13840,
+        "llm_out_tokens": 576,
+        "llm_ms": 7463.0,
+        "cost_usd": 0.0297696
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7628.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 21514,
+        "llm_out_tokens": 629,
+        "llm_ms": 8052.0,
+        "cost_usd": 0.0695226
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.076459,
+        "retrieved_tokens": 1751.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 5470,
+        "llm_out_tokens": 739,
+        "llm_ms": 6247.0,
+        "cost_usd": 0.029266
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 12.813049,
+        "retrieved_tokens": 315.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3360,
+        "llm_out_tokens": 481,
+        "llm_ms": 6654.0,
+        "cost_usd": 0.018246
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 187.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "search the codebase with an agent, which kind",
+    "expect": "delegation/SKILL.md#Explore vs general-purpose",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2946,
+        "llm_out_tokens": 453,
+        "llm_ms": 4153.0,
+        "cost_usd": 0.016309999999999998
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8918.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 18828,
+        "llm_out_tokens": 965,
+        "llm_ms": 8771.0,
+        "cost_usd": 0.062142600000000006
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 8918.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "llm_in_tokens": 28955,
+        "llm_out_tokens": 1305,
+        "llm_ms": 12537.0,
+        "cost_usd": 0.1060466
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.11752900000000001,
+        "retrieved_tokens": 622.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3856,
+        "llm_out_tokens": 733,
+        "llm_ms": 6398.0,
+        "cost_usd": 0.02275
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 14.702336,
+        "retrieved_tokens": 386.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3545,
+        "llm_out_tokens": 515,
+        "llm_ms": 4318.0,
+        "cost_usd": 0.019326
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 115.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  },
+  {
+    "q": "what should shell scripts do for safety",
+    "expect": "programming/languages/shell.md#Safety",
+    "systems": [
+      {
+        "system": "none",
+        "local_ms": 0.0,
+        "retrieved_tokens": 0.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 0
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": null,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 3,
+          "body_total": 4
+        },
+        "llm_in_tokens": 2944,
+        "llm_out_tokens": 678,
+        "llm_ms": 5770.0,
+        "cost_usd": 0.018552
+      },
+      {
+        "system": "default_skill_only",
+        "local_ms": 0.0,
+        "retrieved_tokens": 5752.25,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "selection_hit": false,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "llm_in_tokens": 13844,
+        "llm_out_tokens": 1049,
+        "llm_ms": 10203.0,
+        "cost_usd": 0.0345156
+      },
+      {
+        "system": "default_load",
+        "local_ms": 0.0,
+        "retrieved_tokens": 7647.0,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 0,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 21683,
+        "llm_out_tokens": 1230,
+        "llm_ms": 12587.0,
+        "cost_usd": 0.07620859999999999
+      },
+      {
+        "system": "sections_bm25",
+        "local_ms": 0.101107,
+        "retrieved_tokens": 230.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 1,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 2,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3301,
+        "llm_out_tokens": 417,
+        "llm_ms": 7407.0,
+        "cost_usd": 0.01737
+      },
+      {
+        "system": "sections_embed",
+        "local_ms": 13.463538,
+        "retrieved_tokens": 251.5,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "llm_in_tokens": 3374,
+        "llm_out_tokens": 552,
+        "llm_ms": 4531.0,
+        "cost_usd": 0.019012
+      },
+      {
+        "system": "oracle",
+        "local_ms": 0.0,
+        "retrieved_tokens": 190.75,
+        "retrieval": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "context": {
+          "desc_found": 0,
+          "desc_total": 0,
+          "body_found": 4,
+          "body_total": 4
+        },
+        "selection_hit": true,
+        "answer": null,
+        "llm_in_tokens": 0,
+        "llm_out_tokens": 0,
+        "llm_ms": 0.0,
+        "cost_usd": 0.0
+      }
+    ]
+  }
+]

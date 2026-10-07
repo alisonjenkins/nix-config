@@ -1,0 +1,10 @@
+{
+  "chunks": 83,
+  "cold_secs": 89.549259886,
+  "cold_ms_per_chunk": 1078.9067456144578,
+  "noop_secs": 0.000788198,
+  "incremental_secs": 2.103738611,
+  "incremental_embedded": 1,
+  "cache_bytes": 265635,
+  "cache_load_ms": 0.575824
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "n": 83,
+    "search_ms": 0.013406,
+    "cache_bytes": 260376,
+    "cache_load_ms": 0.451291
+  },
+  {
+    "n": 1000,
+    "search_ms": 0.167788,
+    "cache_bytes": 3136959,
+    "cache_load_ms": 5.355795
+  },
+  {
+    "n": 10000,
+    "search_ms": 1.770497,
+    "cache_bytes": 31383323,
+    "cache_load_ms": 57.069319
+  },
+  {
+    "n": 100000,
+    "search_ms": 19.406856,
+    "cache_bytes": null,
+    "cache_load_ms": null
+  }
+]
