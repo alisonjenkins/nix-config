@@ -52,6 +52,24 @@ pub fn load(path: &Path) -> Result<Vec<Query>, QueryError> {
     Ok(file.queries)
 }
 
+/// Prompts that no memory should answer, split by how close they sit to one.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct Negatives {
+    pub offtopic: Vec<String>,
+    pub adjacent: Vec<String>,
+}
+
+pub fn load_negatives(path: &Path) -> Result<Negatives, QueryError> {
+    let raw = fs::read_to_string(path).map_err(|source| QueryError::Read {
+        path: path.to_owned(),
+        source,
+    })?;
+    serde_json::from_str(&raw).map_err(|source| QueryError::Parse {
+        path: path.to_owned(),
+        source,
+    })
+}
+
 /// `(query, expected id)` pairs whose id is not in the corpus: stale ground truth.
 pub fn unknown_expectations(queries: &[Query], chunks: &[Chunk]) -> Vec<(String, String)> {
     let known: HashSet<&str> = chunks.iter().map(|c| c.id.as_str()).collect();
@@ -104,6 +122,28 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = write(&dir, "{not json");
         assert!(load(&path).unwrap_err().to_string().contains("q.json"));
+    }
+
+    #[test]
+    fn negatives_load_both_lists() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(&dir, r#"{"offtopic":["a","b"],"adjacent":["c"]}"#);
+        assert_eq!(
+            load_negatives(&path).unwrap(),
+            Negatives {
+                offtopic: vec!["a".to_owned(), "b".to_owned()],
+                adjacent: vec!["c".to_owned()],
+            }
+        );
+    }
+
+    #[test]
+    fn negatives_missing_a_list_is_a_parse_error_naming_the_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(&dir, r#"{"offtopic":["a"]}"#);
+        let err = load_negatives(&path).unwrap_err();
+        assert!(matches!(err, QueryError::Parse { .. }));
+        assert!(err.to_string().contains("q.json"));
     }
 
     #[test]

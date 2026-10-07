@@ -165,22 +165,16 @@ fn load_prompts(relevant: &Path, negatives: &Path) -> Result<Vec<Prompt>> {
             expect: q.expect,
         })
         .collect();
-    let raw =
-        fs::read_to_string(negatives).with_context(|| format!("read {}", negatives.display()))?;
-    let parsed: serde_json::Value =
-        serde_json::from_str(&raw).with_context(|| format!("parse {}", negatives.display()))?;
-    for (key, kind) in [("offtopic", Kind::Offtopic), ("adjacent", Kind::Adjacent)] {
-        let list = parsed
-            .get(key)
-            .and_then(serde_json::Value::as_array)
-            .with_context(|| format!("{} has no `{key}` list", negatives.display()))?;
-        for item in list {
-            prompts.push(Prompt {
-                kind,
-                text: item.as_str().context("prompt is not a string")?.to_owned(),
-                expect: Vec::new(),
-            });
-        }
+    let negatives = queries::load_negatives(negatives)?;
+    for (kind, list) in [
+        (Kind::Offtopic, negatives.offtopic),
+        (Kind::Adjacent, negatives.adjacent),
+    ] {
+        prompts.extend(list.into_iter().map(|text| Prompt {
+            kind,
+            text,
+            expect: Vec::new(),
+        }));
     }
     Ok(prompts)
 }
