@@ -33,12 +33,14 @@ const CAVEMEM_FULL_TOP: usize = 3;
 /// Over-fetch so that, after dropping today's own observations, enough remain.
 const CAVEMEM_OVERFETCH: usize = 100;
 const CAVEMEM_TIMING_RUNS: usize = 3;
-const SYSTEMS: [&str; 8] = [
+const SYSTEMS: [&str; 10] = [
     "none",
     "default_index",
     "default_read",
     "recall_snippet",
     "recall_read",
+    "recall_top",
+    "recall_all",
     "cavemem_raw",
     "cavemem_kw",
     "cavemem_kw_full",
@@ -69,6 +71,19 @@ pub struct Args {
     /// Observation id of the first row from the benchmark day; later rows are ignored.
     #[arg(long)]
     cavemem_cutoff_id: u64,
+    /// Only these systems (comma separated); all of them when omitted.
+    #[arg(long, value_delimiter = ',')]
+    systems: Vec<String>,
+}
+
+impl Args {
+    fn selected(&self) -> Vec<&'static str> {
+        SYSTEMS
+            .iter()
+            .copied()
+            .filter(|s| self.systems.is_empty() || self.systems.iter().any(|w| w == s))
+            .collect()
+    }
 }
 
 /// What a system hands the model before any follow-up step.
@@ -85,7 +100,7 @@ fn ms(duration: std::time::Duration) -> f64 {
     duration.as_secs_f64() * 1000.0
 }
 
-fn run_hook(args: &Args, prompt: &str) -> Result<(String, f64)> {
+fn run_hook(args: &Args, prompt: &str, inject: &str) -> Result<(String, f64)> {
     let payload = serde_json::json!({ "prompt": prompt }).to_string();
     let started = Instant::now();
     let mut child = Command::new(&args.hook_bin)
@@ -99,6 +114,8 @@ fn run_hook(args: &Args, prompt: &str) -> Result<(String, f64)> {
             &args.top.to_string(),
             "--min-score",
             &args.min_score.to_string(),
+            "--inject",
+            inject,
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -190,7 +207,36 @@ fn snippets_text(hits: &[CavememHit]) -> String {
         .join("\n")
 }
 
-fn retrieve_all(args: &Args, item: &Item, index: &str) -> Result<Vec<(String, Retrieved)>> {
+/// Runs the real hook once and files its output under the systems that share it.
+fn hook_rows(
+    args: &Args,
+    item: &Item,
+    inject: &str,
+    systems: &[&str],
+    wanted: &[&str],
+    out: &mut Vec<(String, Retrieved)>,
+) -> Result<()> {
+    if !systems.iter().any(|s| wanted.contains(s)) {
+        return Ok(());
+    }
+    let (injected, hook_ms) = run_hook(args, &item.q, inject)?;
+    let row = Retrieved {
+        text: injected.clone(),
+        focus: injected,
+        local_ms: hook_ms,
+    };
+    for system in systems {
+        out.push(((*system).to_owned(), row.clone()));
+    }
+    Ok(())
+}
+
+fn retrieve_all(
+    args: &Args,
+    item: &Item,
+    index: &str,
+    wanted: &[&str],
+) -> Result<Vec<(String, Retrieved)>> {
     let expected = item.expect.first().context("query without expect")?;
     let mut out = vec![("none".to_owned(), Retrieved::default())];
 
@@ -207,25 +253,29 @@ fn retrieve_all(args: &Args, item: &Item, index: &str) -> Result<Vec<(String, Re
     out.push(("default_index".to_owned(), index_row.clone()));
     out.push(("default_read".to_owned(), index_row));
 
-    let (injected, hook_ms) = run_hook(args, &item.q)?;
-    let recall = Retrieved {
-        text: injected.clone(),
-        focus: injected,
-        local_ms: hook_ms,
-    };
-    out.push(("recall_snippet".to_owned(), recall.clone()));
-    out.push(("recall_read".to_owned(), recall));
+    hook_rows(
+        args,
+        item,
+        "snippets",
+        &["recall_snippet", "recall_read"],
+        wanted,
+        &mut out,
+    )?;
+    hook_rows(args, item, "top", &["recall_top"], wanted, &mut out)?;
+    hook_rows(args, item, "all", &["recall_all"], wanted, &mut out)?;
 
-    let (hits, search_ms) = cavemem_top(args, &item.q)?;
-    let snippets = snippets_text(&hits);
-    out.push((
-        "cavemem_raw".to_owned(),
-        Retrieved {
-            text: snippets.clone(),
-            focus: snippets,
-            local_ms: search_ms,
-        },
-    ));
+    if wanted.iter().any(|s| s.starts_with("cavemem")) {
+        let (hits, search_ms) = cavemem_top(args, &item.q)?;
+        let snippets = snippets_text(&hits);
+        out.push((
+            "cavemem_raw".to_owned(),
+            Retrieved {
+                text: snippets.clone(),
+                focus: snippets,
+                local_ms: search_ms,
+            },
+        ));
+    }
     Ok(out)
 }
 
@@ -265,12 +315,13 @@ fn llm_phase(
     item: &Item,
     retrieved: &[(String, Retrieved)],
     known: &HashSet<String>,
+    systems: &[&str],
 ) -> Result<Vec<SystemRun>> {
     let expected = item.expect.first().context("expect")?;
     let nothing = Retrieved::default();
     let mut keyword: Option<KeywordSearch> = None;
     let mut runs = Vec::new();
-    for system in SYSTEMS {
+    for system in systems.iter().copied() {
         let mut run = SystemRun::named(system);
         let got = retrieved
             .iter()
@@ -315,7 +366,7 @@ fn llm_phase(
                 run.retrieval = Coverage::of(&text, &item.facts);
                 run.finish(&item.facts, &calls, &text);
             }
-            "default_index" | "recall_snippet" => {
+            "default_index" | "recall_snippet" | "recall_top" | "recall_all" => {
                 let label = if system == "default_index" {
                     "# Memory index (MEMORY.md)"
                 } else {
@@ -358,16 +409,17 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
 
     // Phase 1: quiet and sequential, so the timings are not disturbed.
     eprintln!("retrieval phase: {} queries", items.len());
+    let selected = args.selected();
     let mut retrieved_all = Vec::new();
     for item in &items {
-        retrieved_all.push(retrieve_all(args, item, &index)?);
+        retrieved_all.push(retrieve_all(args, item, &index, &selected)?);
     }
 
     let mut query_runs: Vec<QueryRun> = items
         .iter()
         .zip(&retrieved_all)
         .map(|(item, retrieved)| {
-            let systems = SYSTEMS
+            let systems = selected
                 .iter()
                 .map(|name| {
                     let mut run = SystemRun::named(name);
@@ -402,7 +454,7 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
             let (Some(item), Some(retrieved)) = (items.get(i), retrieved_all.get(i)) else {
                 anyhow::bail!("query {i} out of range");
             };
-            llm_phase(args, &llm, item, retrieved, &known)
+            llm_phase(args, &llm, item, retrieved, &known, &selected)
         })?;
         for (target, llm_runs) in query_runs.iter_mut().zip(done) {
             for fresh in llm_runs {
@@ -431,5 +483,5 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
         }
     }
 
-    emit(common, &query_runs, &SYSTEMS)
+    emit(common, &query_runs, &selected)
 }
