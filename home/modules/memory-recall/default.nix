@@ -27,6 +27,7 @@ let
     lib.optional (cfg.telemetry.lokiUrl != null) " --loki-url ${lib.escapeShellArg cfg.telemetry.lokiUrl}"
     ++ lib.optional (cfg.telemetry.tempoEndpoint != null) " --otlp-endpoint ${lib.escapeShellArg cfg.telemetry.tempoEndpoint}"
     ++ lib.optional (cfg.telemetry.tenantId != null) " --telemetry-tenant ${lib.escapeShellArg cfg.telemetry.tenantId}"
+    ++ lib.optional (cfg.telemetry.headersFile != null) " --telemetry-headers-file ${lib.escapeShellArg cfg.telemetry.headersFile}"
     ++ lib.mapAttrsToList (k: v: " --telemetry-label ${lib.escapeShellArg "${k}=${v}"}") cfg.telemetry.labels
   );
 
@@ -261,6 +262,18 @@ in
         type = types.nullOr types.str;
         default = null;
         description = "X-Scope-OrgID sent to Loki and Tempo, for a multi-tenant setup.";
+      };
+
+      headersFile = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "/run/user/1000/secrets/otel-headers";
+        description = ''
+          Path of a file of extra HTTP headers for Loki and Tempo, one `Name: value`
+          per line (`Authorization: Bearer ...`), read when sending. It is a string,
+          not a path literal, so the secret is never copied into the Nix store; point
+          it at a sops-nix secret.
+        '';
       };
 
       labels = mkOption {
