@@ -23,5 +23,7 @@ stop_worker "$scripts"
 
 echo "== $profile engine=$engine $(llama-server --version 2>&1 | grep -E '^version' || true)"
 "$scripts/switch-local-profile.sh" "$profile" 2>&1 | tail -2
-python3 "$here/tool-probe.py" --runs "${PROBE_RUNS:-3}" --extra "${PROBE_EXTRA:-{\}}"
+python3 "$here/tool-probe.py" --runs "${PROBE_RUNS:-3}" \
+  --scenario "${PROBE_SCENARIO:-whitespace}" --temperature "${PROBE_TEMPERATURE:-0}" \
+  --extra "${PROBE_EXTRA:-{\}}"
 stop_worker "$scripts"
