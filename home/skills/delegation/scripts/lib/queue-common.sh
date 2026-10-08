@@ -29,6 +29,21 @@ sweep_stale_results() {
   done
 }
 
+# LOCAL_LLM_THINKING chooses thinking per request on whatever model is already
+# loaded: the request carries chat_template_kwargs.enable_thinking, so no
+# profile switch and no reload is involved. Prints "", "on" or "off"; anything
+# else is a mistake worth stopping on rather than silently ignoring.
+validated_thinking() {
+  local value="${LOCAL_LLM_THINKING:-}"
+  case "$value" in
+    "" | on | off) printf '%s' "$value" ;;
+    *)
+      echo "error: LOCAL_LLM_THINKING must be 'on' or 'off', got '$value'" >&2
+      return 1
+      ;;
+  esac
+}
+
 numeric_env_or_default() {
   local var_name="$1" default_value="$2" value="${!1:-}"
   if [[ -z "$value" ]]; then

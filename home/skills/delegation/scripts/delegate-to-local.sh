@@ -32,6 +32,8 @@ usage() {
   echo "env: LOCAL_LLM_URL (bypass the queue and profiles entirely, use this endpoint only)," >&2
   echo "     LOCAL_LLM_MODEL (override the model name sent in the request)," >&2
   echo "     LOCAL_LLM_EXPECT_PROFILE (fail with exit 4 if this profile isn't the active one)," >&2
+  echo "     LOCAL_LLM_THINKING (on|off: ask the loaded model to think or not, for this call only —" >&2
+  echo "       no reload; unset leaves the profile's own default)," >&2
   echo "     LOCAL_LLM_STATE_DIR (queue/state location override)," >&2
   echo "     LOCAL_LLM_QUEUE_TIMEOUT (seconds to wait for the queue, default 60)," >&2
   echo "     LOCAL_LLM_CHAT_TIMEOUT (seconds to wait for the chat completion itself, default 300)," >&2
@@ -56,6 +58,7 @@ for bin in curl jq; do
 done
 
 task="$1"
+thinking="$(validated_thinking)" || exit 1
 
 if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
   # An explicit endpoint bypasses the queue entirely — it isn't the
@@ -80,7 +83,9 @@ if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
     exit 2
   fi
 
-  request_body="$(jq -nc --arg model "$model" --arg task "$task" '{model: $model, messages: [{role: "user", content: $task}]}')"
+  request_body="$(jq -nc --arg model "$model" --arg task "$task" --arg thinking "$thinking" \
+    '{model: $model, messages: [{role: "user", content: $task}]}
+     + (if $thinking == "" then {} else {chat_template_kwargs: {enable_thinking: ($thinking == "on")}} end)')"
   chat_timeout="$(numeric_env_or_default LOCAL_LLM_CHAT_TIMEOUT 300)"
   # 2>&1: a timeout or connection failure has no HTTP response body at all —
   # curl reports those on stderr, and a stdout-only capture left the error
@@ -118,7 +123,7 @@ if ! [[ "$reserve_seconds" =~ ^[0-9]+$ ]]; then
 fi
 reserve_reason="${LOCAL_LLM_RESERVE_REASON:-batch work via delegate-to-local.sh (pid $$)}"
 job_json="$(jq -nc --arg task "$task" --arg model "${LOCAL_LLM_MODEL:-}" --arg expect "${LOCAL_LLM_EXPECT_PROFILE:-}" \
-  --argjson reserve_seconds "$reserve_seconds" --arg reserve_reason "$reserve_reason" \
-  '{type: "chat", task: $task, model_override: $model, expect_profile: $expect, reserve_seconds: $reserve_seconds, reserve_reason: $reserve_reason}')"
+  --argjson reserve_seconds "$reserve_seconds" --arg reserve_reason "$reserve_reason" --arg thinking "$thinking" \
+  '{type: "chat", task: $task, model_override: $model, expect_profile: $expect, reserve_seconds: $reserve_seconds, reserve_reason: $reserve_reason, thinking: $thinking}')"
 
 submit_and_wait "$state_dir" "$job_json" "$queue_timeout"
