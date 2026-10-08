@@ -137,7 +137,16 @@ in {
             # (-DGGML_HIP_GRAPHS=OFF) was confirmed live to fix it, but
             # nixpkgs' rocmSupport override doesn't set that flag. Vulkan
             # (RADV) has no such issue here and needs no extra flags.
-            (pkgs.llama-cpp.override { vulkanSupport = true; })
+            #
+            # From nixpkgs master, not the pinned release channel: unstable's
+            # llama.cpp was b9190, whose tool-call parser drops one leading
+            # space from every parameter value (fixed in b9644, llama.cpp PR
+            # #24624), corrupting an edit tool's oldString and newString.
+            # Master's is build 11429, the build the local-llm-setup
+            # benchmark used (2026-10-08). Qwen3.8-27B also loads and answers
+            # a simple prompt on b9190; it was only benchmarked on 11429. Go
+            # back to pkgs.llama-cpp once the channel is past b9644.
+            (pkgs.master.llama-cpp.override { vulkanSupport = true; })
           ];
           # The session's niri, which carries the virtual output patch. `niri
           # msg` must match the running compositor: the IPC is versioned with
