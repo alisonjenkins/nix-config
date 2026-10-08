@@ -47,7 +47,8 @@ test with the cache at f16.
 | temperature, top-p, top-k, min-p | `--temp`, `--top-p`, `--top-k`, `--min-p` |
 | presence, repeat penalty | `--presence-penalty`, `--repeat-penalty` |
 | vendor chat template | `--chat-template-file <path>` (with `--jinja`) |
-| thinking off | `--reasoning off`, or per request `chat_template_kwargs: {"enable_thinking": false}` |
+| thinking off, per call (no reload) | `chat_template_kwargs: {"enable_thinking": false}` in the request body; the delegation scripts set it from `LOCAL_LLM_THINKING=off` |
+| thinking off, fixed for a profile | `--reasoning off` at launch; changing it restarts the server and reloads the weights |
 | thinking budget | `--reasoning-budget N` (0 ends thinking at once) |
 
 Sampling a client puts in the request overrides the server flags. This has not
