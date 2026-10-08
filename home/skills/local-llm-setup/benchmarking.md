@@ -121,6 +121,18 @@ A thinking budget (`--reasoning-budget 1024`) did worse than either extreme: it
 raised failed calls to 29 in nine runs, because cutting the thinking short
 broke the tool call that followed.
 
+**Switch per call, not per profile.** A launch flag fixes thinking for as long
+as the server runs, and changing it stops the server and reloads the weights (4
+to 56 s here, longer cold). A request-level `chat_template_kwargs:
+{"enable_thinking": false}` does not: on 2026-10-08 a loaded Qwen3.5-9B answered
+the same prompt with 285 reasoning tokens in 4.2 s by default and with 4 tokens
+in 0.2 s when asked not to think, and the server's process id did not change.
+The delegation scripts expose that as `LOCAL_LLM_THINKING=on|off` (the agent
+runner passes it to opencode as a model option, which opencode forwards
+unchanged). The benchmark here used `--reasoning off` profiles only because
+each benchmark profile is one server; in use, load the model once and choose
+per call.
+
 ## Findings so far (ali-desktop, 2026-10-08)
 
 Same engine (build 11429, Vulkan), launch args as the production profiles, five
