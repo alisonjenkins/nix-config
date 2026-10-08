@@ -5,6 +5,16 @@ in
 {
   options.modules.desktop-greetd-regreet = {
     enable = lib.mkEnableOption "greetd display manager with regreet GUI";
+
+    remoteAccess = {
+      enable = lib.mkEnableOption "a wayvnc server inside the greeter, so the login screen can be reached over an SSH tunnel";
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 5900;
+        description = "TCP port wayvnc listens on, on 127.0.0.1 only.";
+      };
+    };
   };
 
   # Drop one stylix warning, which is a false positive here.
@@ -49,7 +59,24 @@ in
         settings.default_session.command = let
           cage = lib.getExe pkgs.cage;
           regreet = lib.getExe pkgs.regreet;
-        in lib.mkForce "${pkgs.bash}/bin/bash -c 'exec ${cage} -s -- ${regreet} 2>/dev/null'";
+
+          # cage exports WAYLAND_DISPLAY to its child, and wayvnc exits when
+          # cage does, so no cleanup is needed. Bound to loopback: reach it
+          # with `ssh -L`. Any local account can also connect while the
+          # greeter is up.
+          greeter =
+            if cfg.remoteAccess.enable then
+              lib.getExe (pkgs.writeShellApplication {
+                name = "greeter-with-vnc";
+                runtimeInputs = [ pkgs.wayvnc ];
+                text = ''
+                  wayvnc 127.0.0.1 ${toString cfg.remoteAccess.port} &
+                  exec ${regreet}
+                '';
+              })
+            else
+              regreet;
+        in lib.mkForce "${pkgs.bash}/bin/bash -c 'exec ${cage} -s -- ${greeter} 2>/dev/null'";
       };
     };
 
