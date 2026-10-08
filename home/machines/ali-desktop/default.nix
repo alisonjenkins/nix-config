@@ -73,13 +73,15 @@
       description = "Qwen3.5-9B Q6_K, ~6.9 GiB, 71 tok/s: small edits and lookups; fits beside a game";
     };
     quality = {
-      model = pkgs.llama-models.qwen3-6-27b-ud-q3-k-xl.modelFile;
+      model = pkgs.llama-models.qwen3-8-27b-ud-q3-k-xl.modelFile;
       launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ] ++ q8Cache;
-      vramMiB = 15000;
-      # Thinking mode stays on, so replies are long: 34 tok/s on a free
-      # GPU (2026-09-25), but agent tasks took 79 to 264 s. The 3.7 tok/s
-      # measured 2026-09-22 was probably with the GPU shared.
-      description = "Qwen3.6-27B UD-Q3_K_XL, ~13.5 GiB: reading code, harder reasoning; thinking on, so replies take a minute or more";
+      # Measured 2026-10-08 on build 11429: 12.71 GiB loaded less the idle
+      # desktop, plus ~22 MiB after a request, rounded up. The Qwen3.6-27B
+      # this replaced needed 15,000 and was refused on an ordinary desktop.
+      vramMiB = 13100;
+      # Thinking mode stays on, so replies are long: 37 tok/s decode, and
+      # the benchmark's agent tasks took 20 to 160 s (median 45 s).
+      description = "Qwen3.8-27B UD-Q3_K_XL, ~12.2 GiB, 37 tok/s: reading code, harder reasoning; thinking on, so replies take a minute or more";
     };
   };
   modules.subnauticaVR = {
