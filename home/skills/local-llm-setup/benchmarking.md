@@ -100,6 +100,40 @@ delete it. Do not delete it before you know why it failed.
   A correct answer worded unexpectedly fails the accuracy check. Read the text.
 - **Speed is only comparable on one card state.** Record idle and loaded VRAM.
 
+## Thinking is a trade, not a setting to leave on
+
+Reasoning mode decides latency and how often a run gets stuck. On
+2026-10-08, on the fixed engine, five graded tasks and four reps:
+
+| Profile | Thinking on | Reasoning off (`--reasoning off`) |
+|---|---|---|
+| Qwen3.6-35B-A3B (`fast`) | 17/20 passes, `unittests` 233 s and 32 s | 14/20, 46 s and 9 s |
+| Qwen3.5-9B (`small`) | 15/20 | 13/20, `unittests` 12 to 14 s against 23 to 57 s |
+
+Off removed every stuck or overflowed run. Latency fell most where thinking
+ran long (`fast`'s `unittests` 233 s to 46 s) and barely moved on short tasks
+(`small`'s `multiedit` 69 s against 67 s). The pass rate was about ten points lower in both pairs. With 20 runs each, that
+gap is consistent in direction but not statistically distinguishable. Do not
+switch a default on it. A reasoning-off profile suits quick edits that a diff
+or test reviews anyway; thinking on suits the subtle cases (a `TemporaryDirectory`
+stored where its `.name` was needed was the one task thinking helped most).
+A thinking budget (`--reasoning-budget 1024`) did worse than either extreme: it
+raised failed calls to 29 in nine runs, because cutting the thinking short
+broke the tool call that followed.
+
+## Findings so far (ali-desktop, 2026-10-08)
+
+Same engine (build 11429, Vulkan), launch args as the production profiles, five
+graded tasks, two to four reps.
+
+| Candidate | Against | Verdict |
+|---|---|---|
+| Ornith-1.5-9B Q6_K | Qwen3.5-9B Q6_K | Not better. Ties or trails on passes, takes 15x longer on `newmodule` with thinking on (388 s against 25 s), keeps a no-op-edit loop. Own template, the card's sampling, f16 KV cache and a thinking budget made no difference or were worse. |
+| Ornith-1.5-35B-A3B APEX I-Mini | Qwen3.6-35B-A3B UD-IQ3_S | Ties on passes (9/10), decodes 7% faster (138 against 129 tok/s), but produces many more failed edits (23 to 25 outside `boundaries` in one batch of ten runs, against 3 to 10 for the incumbent). Different quant family, so partly a quantiser comparison. |
+| Qwen3.8-27B UD-Q3_K_XL | Qwen3.6-27B UD-Q3_K_XL | Ties on tasks (both 10/10). Uses 12.7 GiB loaded against 13.9, so it loads on a normal desktop where the incumbent's fit check refuses it. Benchmarked on b11429; it also loaded and answered on b9190. Adopted as `quality`. With thinking off: 9/10, no failed calls, 1.4 to 3.4 times faster by task (`multiedit` 84 s against 163 s, `findcalls` 23 s against 78 s). |
+| Qwen3-8B Q6_K | Qwen3.5-9B | Clearly weaker: 3/10 thinking on, 5/10 off. Fails on edit matching (`not_found`, `ambiguous`), not tool-call parsing. |
+| Gemma 4 12B Q4_K_M | Qwen3.5-9B | Weaker and slowest (`unittests` 264 s), with the same no-op-edit loop. |
+
 ## Writing it up
 
 For each pair: engine build, quant, the exact launch args, reps, passes,

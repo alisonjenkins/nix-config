@@ -18,8 +18,14 @@ traffic showed the model writing `<parameter=oldString>` with 8 leading
 spaces and llama-server returning 7. The production build (b9190) trimmed one
 leading space from every tool-call parameter; the fix is llama.cpp PR #24624,
 in b9644. The incumbent had the same defect and coped; the candidate did not.
-Every earlier tool-calling elimination on that engine is suspect, and none of
+Every earlier tool-calling elimination on that engine was suspect, and none of
 the models had been given the sampling their own cards recommend.
+
+So everything was rerun on the fixed engine (build 11429). The engine fix
+roughly halved Ornith's no-op edits, but it still did not beat the incumbent
+at either size, and Qwen3-8B and Gemma 4 12B stayed behind. The eliminations
+held on the merits; the engine bug had only made them look worse than they
+were. See [benchmarking.md](benchmarking.md) for the numbers.
 
 ## The order to work in
 
