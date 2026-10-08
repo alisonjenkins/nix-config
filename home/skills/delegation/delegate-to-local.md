@@ -271,6 +271,9 @@ scripts/stop-local-profile.sh          # when done, to free the hardware
 - `LOCAL_LLM_URL` — bypass profiles entirely, talk to this endpoint directly
   (for ad hoc use against something not managed via a profile).
 - `LOCAL_LLM_MODEL` — override the model name sent in the request.
+- `LOCAL_LLM_THINKING` — `on` or `off`: ask the loaded model to think or not
+  for this call only, with no reload (see "Picking a model for a task"). Unset
+  leaves the profile's default. `delegate-to-local-agent.sh` reads it too.
 - `LOCAL_LLM_EXPECT_PROFILE` — fail loudly (exit 4) if this isn't the
   profile actually active, instead of silently running against whatever is
   loaded. Use this when a task assumed a specific profile ("run this against
@@ -370,9 +373,26 @@ write as "denied". The diff and the tool lines were right both times.
 ## Picking a model for a task
 
 From the scorecard below, for ali-desktop's profiles: `fast` is
-Qwen3.6-35B-A3B, `small` is Qwen3.5-9B and `quality` is Qwen3.6-27B. Use
-`small` when a game holds the GPU; `fast` and `quality` need it nearly idle.
-Every row assumes you review the result.
+Qwen3.6-35B-A3B, `small` is Qwen3.5-9B and `quality` is Qwen3.8-27B. Use
+`small` when a game holds the GPU; `fast` and `quality` need most of it free
+(13.9 and 13.1 GiB). Every row assumes you review the result.
+
+**Thinking is chosen per call, not per profile.** With a model loaded,
+`LOCAL_LLM_THINKING=off` on `delegate-to-local.sh` or
+`delegate-to-local-agent.sh` asks it not to think for that call (`on` asks it
+to think). The request carries `chat_template_kwargs.enable_thinking`, so the
+loaded model just answers differently: nothing is stopped, started or
+reloaded, and the next call can choose again. Do not model "no-think" as a
+separate profile or a `--reasoning off` launch flag: a launch flag needs a
+server restart, which reloads the weights (4 to 56 s here, longer cold).
+
+Use `off` when you know the task needs no reasoning, such as a mechanical edit
+from exact text. On the benchmark it was never stuck and as much as 5 times
+faster where thinking ran long (`fast`'s `unittests` 233 s to 46 s), with
+little change on short tasks (`small`'s `multiedit` 69 s against 67 s). It
+passed about ten points fewer graded runs (within noise at that sample
+size). Stay with thinking on for anything with a subtle trap, for example
+storing a `TemporaryDirectory`'s `.name` rather than the object.
 
 | Task | Use | Why |
 |---|---|---|
@@ -437,6 +457,19 @@ took that name and Qwen3.5-9B replaced the 8B as `small`.
 | Gemma 4 12B (Q4_K_M, 32k, edit mode) | The same four tasks | Module ✓ (107 s), tests ✓ (79 s), fixture fix ✓ (85 s): right, but 3 to 4 times slower than the 9B at 63 tok/s. Smithay: navigated sensibly, no answer within 300 s |
 | Qwen3.6-35B-A3B (`fast`, edit mode) | PENDING 14: two functions (parse a log rate, hash a grim capture) and six tests, from a spec with the log line pasted in | ✓ Both files exactly to spec, all six tests pass, no review round; 22 s. The one wart, an unused import, was the spec's |
 | Qwen3.6-35B-A3B (`fast`, edit mode) | Eight numbered edits to one class in a 2,900-line test file (change helpers and assertions, add 4 tests), told to grep first and not read the whole file | ✓ Grepped, read bounded ranges, 9 edits, re-read each spot, every change exactly as specified, blank lines included; 72 s. The new tests failed until the code change, as intended |
+
+Rerun 2026-10-08 with the `local-llm-setup` skill's harness on llama.cpp build
+11429 (the earlier rows ran on b9190, which dropped one leading space from every
+tool-call argument). Seven synthetic tasks with graders; "graded" excludes
+`explain` (hand-read) and `boundaries`:
+
+| Model (profile) | Task | Result |
+|---|---|---|
+| Qwen3.8-27B (`quality`, 16k, edit mode) and Qwen3.6-27B, same quant | Module from a spec, tests from a spec, fixture fix, eight edits, find every call of a function; 2 reps | Both 10/10 graded, no stuck run. 3.8: 20 to 160 s per task, 37 tok/s, 12.7 GiB loaded. 3.6: 13.9 GiB loaded and refused by the fit check on an ordinary desktop |
+| Qwen3.6-35B-A3B (`fast`) with and without `--reasoning off` | The same five graded tasks, 4 reps | Thinking on 17/20; reasoning off 14/20, no stuck run, `unittests` 46 s against 233 s, other tasks 10 to 24 s against 13 to 43 s. The pass-rate gap is within noise at this size |
+| Qwen3.5-9B (`small`) with and without `--reasoning off` | The same, 4 reps | On 15/20; off 13/20, no stuck run, `unittests` 12 to 14 s against 23 to 57 s |
+| Qwen3.8-27B (`quality`) with and without thinking | The same five graded tasks, 2 reps | On 10/10; off 9/10, no stuck run and no failed call, `multiedit` 84 s against 163 s, `unittests` 24 s against 70 s, `findcalls` 23 s against 78 s |
+| Ornith-1.5-9B, Ornith-1.5-35B-A3B, Qwen3-8B, Gemma 4 12B | The same | None beat the incumbent at its size. Ornith ties on passes but loops on no-op edits (identical oldString and newString); Qwen3-8B 3 to 5/10; Gemma 4 7/10 and slowest |
 
 What that means for writing a task:
 
