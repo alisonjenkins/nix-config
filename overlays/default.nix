@@ -348,6 +348,24 @@ in
             ];
           });
 
+          # nixos-unstable and master both lag the upstream Copilot CLI release
+          # by a few versions. Drop this once nixpkgs reaches 1.0.93.
+          github-copilot-cli = mprev.github-copilot-cli.overrideAttrs (finalAttrs: _old: {
+            version = "1.0.93";
+            src = mprev.fetchurl {
+              url = "https://github.com/github/copilot-cli/releases/download/v${finalAttrs.version}/github-copilot-${finalAttrs.version}-${
+                if mprev.stdenv.hostPlatform.isDarwin then "darwin" else "linux"
+              }-${if mprev.stdenv.hostPlatform.isAarch64 then "arm64" else "x64"}.tgz";
+              hash =
+                {
+                  "aarch64-darwin" = "sha256-06ZMT5OH7+7p3pb6ha70NiyjPBPviQh5MhnONNmCczU=";
+                  "x86_64-linux" = "sha256-QiSWHUG83MJ6RWkKjQwBLLj7u65TUVySPqBPuX59+80=";
+                  "aarch64-linux" = "sha256-K6Nv3DlQndS6WZsQ2ayedGs0eCPGWG8aYFm2jCJF4wE=";
+                }
+                .${mprev.stdenv.hostPlatform.system};
+            };
+          });
+
           umu-launcher = mprev.umu-launcher.overrideAttrs (old: {
             buildCommand = (old.buildCommand or "") + ''
               realUmu=$(readlink -f "$out/bin/umu-run")
