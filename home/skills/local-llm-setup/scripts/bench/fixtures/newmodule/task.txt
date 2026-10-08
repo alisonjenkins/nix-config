@@ -1,0 +1,1 @@
+Read spec.md and reference.py in this directory. Create keystate.py in this directory so that it satisfies all six numbered requirements in spec.md. Copy the function the spec names exactly from reference.py; do not guess its constants. Do not modify spec.md or reference.py. When done, reply with one line saying which file you created.

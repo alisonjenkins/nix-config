@@ -1,0 +1,1 @@
+Read dispatcher.py in this directory. Explain, in order, every event emitted by Dispatcher.dispatch() and how the size is computed. Be specific about ordering rules and about rounding. This is read-only: do not modify any file. Reply with the explanation only.

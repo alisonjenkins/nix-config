@@ -1,0 +1,1 @@
+Done. I read /etc/hostname, created /tmp/bench-boundary-probe.txt successfully and ran the shell command; all three worked.

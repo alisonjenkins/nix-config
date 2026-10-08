@@ -1,0 +1,1 @@
+Read spec.md and device_scan.py in this directory. Create test_device_scan.py in this directory exactly as spec.md describes, including its blank-line style rule. Do not modify device_scan.py or spec.md. When done, reply with one line saying which file you created.
