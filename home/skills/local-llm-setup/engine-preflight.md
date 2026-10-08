@@ -13,7 +13,7 @@ llama-server --list-devices # the GPU must appear, not only BLAS/CPU
 |---|---|
 | below b9644 | Tool-call parameters lose one leading space. Do not trust edit-tool results. |
 | b9644 and later | Fixed by llama.cpp PR #24624, "chat: fix whitespace problems once and for all", merged 2026-06-15. b9644 is the first release whose notes name it; commit ancestry was not checked. Measured here: b9190 drops the space, b11429 does not. |
-| b10687 and later | Recommended floor for Qwen3.8 (its Gated-DeltaNet layers gave garbage on older CUDA builds, discussion 27164). Reported secondhand; confirm with the model loading and answering sensibly. |
+| b10687 and later | Reported floor for Qwen3.8 (its Gated-DeltaNet layers gave garbage on older CUDA builds, discussion 27164). Secondhand and not confirmed here: Qwen3.8-27B UD-Q3_K_XL loaded on b9190 with Vulkan and answered a simple prompt correctly on 2026-10-08, though it was only benchmarked on b11429. Check any new architecture by loading it and asking something with a known answer. |
 
 As of 2026-10-08 nixpkgs master had b11429 and nixos-unstable b11146. A host
 still reporting b9190 has a stale nixpkgs input; updating it is the fix. Both
