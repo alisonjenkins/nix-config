@@ -25,6 +25,12 @@ pub struct Targets {
     /// Extra Loki labels and span resource attributes, as KEY=VALUE (repeatable).
     #[arg(long = "telemetry-label")]
     pub telemetry_labels: Vec<String>,
+    /// A file of extra HTTP headers, one `Name: value` per line, sent to Loki and
+    /// Tempo, for authentication (`Authorization: Bearer ...`). Read when sending, so
+    /// a secret stays in a file (a sops-nix path) and out of the process list and
+    /// the Nix store.
+    #[arg(long)]
+    pub telemetry_headers_file: Option<std::path::PathBuf>,
 }
 
 impl Targets {
@@ -58,7 +64,24 @@ pub fn ship_args(targets: &Targets) -> Vec<String> {
         args.push("--telemetry-label".to_owned());
         args.push(label.clone());
     }
+    if let Some(file) = &targets.telemetry_headers_file {
+        args.push("--telemetry-headers-file".to_owned());
+        args.push(file.to_string_lossy().into_owned());
+    }
     args
+}
+
+/// `Name: value` lines of a headers file; blanks, `#` comments and lines without a
+/// name or a colon are skipped.
+pub fn parse_header_lines(text: &str) -> Vec<(String, String)> {
+    text.lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter_map(|line| line.split_once(':'))
+        .map(|(name, value)| (name.trim(), value.trim()))
+        .filter(|(name, _)| !name.is_empty())
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .collect()
 }
 
 /// Starts `recall-ship` (next to the running binary) in the background with the
@@ -313,7 +336,12 @@ fn now_ns() -> u128 {
         .map_or(0, |d| d.as_nanos())
 }
 
-fn post(url: &str, tenant: Option<&str>, body: &str) -> Result<(), String> {
+fn post(
+    url: &str,
+    tenant: Option<&str>,
+    headers: &[(String, String)],
+    body: &str,
+) -> Result<(), String> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(SEND_TIMEOUT))
         .build()
@@ -321,6 +349,9 @@ fn post(url: &str, tenant: Option<&str>, body: &str) -> Result<(), String> {
     let mut request = agent.post(url).header("content-type", "application/json");
     if let Some(tenant) = tenant {
         request = request.header("X-Scope-OrgID", tenant);
+    }
+    for (name, value) in headers {
+        request = request.header(name.as_str(), value.as_str());
     }
     request
         .send(body)
@@ -334,9 +365,20 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
     let tenant = targets.telemetry_tenant.as_deref();
     let end_ns = now_ns();
     let mut results = Vec::new();
+    let headers = match &targets.telemetry_headers_file {
+        Some(file) => match std::fs::read_to_string(file) {
+            Ok(text) => parse_header_lines(&text),
+            Err(error) => {
+                // Sending without the credentials would only be refused; say why.
+                return vec![Err(format!("read {}: {error}", file.display()))];
+            }
+        },
+        None => Vec::new(),
+    };
     if let Some(base) = &targets.loki_url {
         let url = format!("{}/loki/api/v1/push", base.trim_end_matches('/'));
-        results.push(post(&url, tenant, &loki_push_body(entry, &labels, end_ns)));
+        let body = loki_push_body(entry, &labels, end_ns);
+        results.push(post(&url, tenant, &headers, &body));
     }
     if let Some(base) = &targets.otlp_endpoint {
         let url = format!("{}/v1/traces", base.trim_end_matches('/'));
@@ -347,7 +389,7 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
             &new_ids_from(traceparent.as_deref()),
             end_ns,
         );
-        results.push(post(&url, tenant, &body));
+        results.push(post(&url, tenant, &headers, &body));
     }
     results
 }
@@ -397,6 +439,7 @@ mod tests {
             otlp_endpoint: None,
             telemetry_tenant: Some("t1".into()),
             telemetry_labels: vec!["host=desk".into(), "env=dev".into()],
+            telemetry_headers_file: None,
         };
         assert_eq!(
             ship_args(&targets),
@@ -412,6 +455,32 @@ mod tests {
             ]
         );
         assert!(ship_args(&Targets::default()).is_empty());
+    }
+
+    #[test]
+    fn header_lines_are_name_colon_value_with_comments_and_blanks_ignored() {
+        let text = "# Loki\nAuthorization: Bearer s3cret\n\n  X-Extra :  a: b  \nnot a header\n: novalue\n";
+        assert_eq!(
+            parse_header_lines(text),
+            [
+                ("Authorization".to_owned(), "Bearer s3cret".to_owned()),
+                ("X-Extra".to_owned(), "a: b".to_owned())
+            ]
+        );
+        assert!(parse_header_lines("").is_empty());
+    }
+
+    #[test]
+    fn the_headers_file_is_passed_by_path_never_by_content() {
+        let targets = Targets {
+            otlp_endpoint: Some("http://t:4318".into()),
+            telemetry_headers_file: Some("/run/secrets/otel-headers".into()),
+            ..Targets::default()
+        };
+        let args = ship_args(&targets);
+        assert!(args
+            .windows(2)
+            .any(|w| w == ["--telemetry-headers-file", "/run/secrets/otel-headers"]));
     }
 
     #[test]

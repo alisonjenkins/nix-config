@@ -769,6 +769,69 @@ fn claude_codes_ids_and_trace_context_reach_the_log_and_the_shipped_span() {
 }
 
 #[test]
+fn credentials_come_from_a_headers_file_not_the_command_line() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let secrets = tmp.path().join("otel-headers");
+    fs::write(
+        &secrets,
+        "# for the collector\nAuthorization: Bearer s3cret-token\n",
+    )
+    .unwrap();
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--loki-url",
+        &backend,
+        "--telemetry-headers-file",
+        secrets.to_str().unwrap(),
+    ]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success());
+    wait_for(&seen, 1);
+    let request = seen.lock().unwrap()[0].clone();
+    assert!(
+        request.1.contains("authorization: bearer s3cret-token"),
+        "{}",
+        request.1
+    );
+    assert!(!hook.iter().any(|arg| arg.contains("s3cret")));
+}
+
+#[test]
+fn an_unreadable_headers_file_does_not_affect_the_prompt() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--loki-url",
+        &backend,
+        "--telemetry-headers-file",
+        "/nonexistent/headers",
+    ]);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success() && context(&out).contains("alpha-note.md"));
+    thread::sleep(std::time::Duration::from_millis(500));
+    assert!(
+        seen.lock().unwrap().is_empty(),
+        "nothing is sent without its credentials"
+    );
+}
+
+#[test]
 fn a_blocked_prompt_is_shipped_as_a_failure() {
     let tmp = tempfile::tempdir().unwrap();
     write_memories(&tmp.path().join("mem"));
