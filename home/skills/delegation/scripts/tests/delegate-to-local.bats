@@ -91,6 +91,53 @@ teardown() {
   [[ "$chat_call" == *'"model":"custom-model"'* ]]
 }
 
+@test "LOCAL_LLM_THINKING=off asks the loaded model not to think, without a reload" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  LOCAL_LLM_THINKING=off run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  chat_call="$(sed -n '2p' "$FAKE_CURL_CALLS")"
+  [[ "$chat_call" == *'"chat_template_kwargs":{"enable_thinking":false}'* ]]
+  # A reload would stop and start the server; the only calls are the
+  # readiness probe and the one chat request.
+  [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 2 ]
+}
+
+@test "LOCAL_LLM_THINKING=on asks for thinking even if the server defaults to off" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  LOCAL_LLM_THINKING=on run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  chat_call="$(sed -n '2p' "$FAKE_CURL_CALLS")"
+  [[ "$chat_call" == *'"chat_template_kwargs":{"enable_thinking":true}'* ]]
+}
+
+@test "without LOCAL_LLM_THINKING the request leaves the server's default alone" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  chat_call="$(sed -n '2p' "$FAKE_CURL_CALLS")"
+  [[ "$chat_call" != *chat_template_kwargs* ]]
+}
+
+@test "LOCAL_LLM_THINKING=off also applies to an explicit LOCAL_LLM_URL endpoint" {
+  export FAKE_CURL_UP="http://localhost:9090"
+  LOCAL_LLM_URL="http://localhost:9090" LOCAL_LLM_THINKING=off run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  chat_call="$(grep 'chat/completions' "$FAKE_CURL_CALLS" | head -1)"
+  [[ "$chat_call" == *'"chat_template_kwargs":{"enable_thinking":false}'* ]]
+}
+
+@test "an unknown LOCAL_LLM_THINKING value is rejected before anything runs" {
+  write_active "fast" "http://localhost:8080" "fake-model-8080"
+  export FAKE_CURL_UP="http://localhost:8080"
+  LOCAL_LLM_THINKING=maybe run bash "$delegate" "hello task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"LOCAL_LLM_THINKING"* ]]
+  [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 0 ]
+}
+
 @test "LOCAL_LLM_EXPECT_PROFILE matching the active profile succeeds" {
   write_active "quality" "http://localhost:8080" "fake-model-8080"
   export FAKE_CURL_UP="http://localhost:8080"

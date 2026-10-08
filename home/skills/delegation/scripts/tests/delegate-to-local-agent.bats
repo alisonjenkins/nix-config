@@ -59,6 +59,34 @@ SH
   echo original >"$work/file.txt"
 }
 
+agent_model_options() {
+  jq -c '.provider.local.models.fast.options // "none"' "$LOCAL_LLM_STATE_DIR/agent-home/.config/opencode/opencode.json"
+}
+
+@test "LOCAL_LLM_THINKING=off puts enable_thinking false in the opencode model options" {
+  LOCAL_LLM_THINKING=off run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [ "$(agent_model_options)" = '{"chat_template_kwargs":{"enable_thinking":false}}' ]
+}
+
+@test "LOCAL_LLM_THINKING=on puts enable_thinking true in the opencode model options" {
+  LOCAL_LLM_THINKING=on run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [ "$(agent_model_options)" = '{"chat_template_kwargs":{"enable_thinking":true}}' ]
+}
+
+@test "without LOCAL_LLM_THINKING the opencode model has no extra options" {
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [ "$(agent_model_options)" = '"none"' ]
+}
+
+@test "an unknown LOCAL_LLM_THINKING value is rejected by the agent too" {
+  LOCAL_LLM_THINKING=maybe run bash "$agent" "$work" "task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"LOCAL_LLM_THINKING"* ]]
+}
+
 @test "a changed git hook exits 6 after printing the reply" {
   export FAKE_OC_WRITE=".git/hooks/pre-commit"
   run bash "$agent" "$work" "task"

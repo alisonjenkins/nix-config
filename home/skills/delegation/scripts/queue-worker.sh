@@ -230,8 +230,9 @@ active_reservation_for() {
 
 process_chat_job() {
   local job_json="$1" job_id="$2"
-  local task model_override expect_profile reserve_seconds reserve_reason
+  local task model_override expect_profile reserve_seconds reserve_reason thinking
   task="$(jq -r '.task // empty' <<<"$job_json")"
+  thinking="$(jq -r '.thinking // empty' <<<"$job_json")"
   model_override="$(jq -r '.model_override // empty' <<<"$job_json")"
   expect_profile="$(jq -r '.expect_profile // empty' <<<"$job_json")"
   reserve_seconds="$(jq -r '.reserve_seconds // 0' <<<"$job_json")"
@@ -264,7 +265,9 @@ process_chat_job() {
   # bound even though delegate-to-local.sh's own queue_timeout also caps
   # how long ITS caller waits for a result.
   chat_timeout="$(numeric_env_or_default LOCAL_LLM_CHAT_TIMEOUT 300)"
-  request_body="$(jq -nc --arg model "$model" --arg task "$task" '{model: $model, messages: [{role: "user", content: $task}]}')"
+  request_body="$(jq -nc --arg model "$model" --arg task "$task" --arg thinking "$thinking" \
+    '{model: $model, messages: [{role: "user", content: $task}]}
+     + (if $thinking == "" then {} else {chat_template_kwargs: {enable_thinking: ($thinking == "on")}} end)')"
   # 2>&1: a timeout or connection failure has no HTTP response body at all —
   # curl reports those on stderr ("curl: (28) Operation timed out"), and a
   # stdout-only capture left the error message empty ("failed: ", no

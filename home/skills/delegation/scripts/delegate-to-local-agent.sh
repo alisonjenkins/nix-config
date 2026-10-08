@@ -109,14 +109,16 @@ edit_permission="deny"
 if [[ "${LOCAL_LLM_AGENT_EDIT:-0}" == "1" ]]; then
   edit_permission="allow"
 fi
+thinking="$(validated_thinking)" || exit 1
 jq -n --arg url "$base_url/v1" --arg profile "$profile" --arg edit "$edit_permission" \
-  --argjson context "$context" --argjson output "$output_limit" '{
+  --argjson context "$context" --argjson output "$output_limit" --arg thinking "$thinking" '{
   "$schema": "https://opencode.ai/config.json",
   provider: {local: {
     npm: "@ai-sdk/openai-compatible",
     options: {baseURL: $url},
-    models: {($profile): {name: $profile, tool_call: true, reasoning: true,
-                          limit: {context: $context, output: $output}}}
+    models: {($profile): ({name: $profile, tool_call: true, reasoning: true,
+                           limit: {context: $context, output: $output}}
+      + (if $thinking == "" then {} else {options: {chat_template_kwargs: {enable_thinking: ($thinking == "on")}}} end))}
   }},
   model: ("local/" + $profile),
   small_model: ("local/" + $profile),
