@@ -287,6 +287,7 @@ in {
         modules.desktop-aws-tools.enable = true;
         modules.desktop-base.enable = true;
         modules.desktop-greetd-regreet.enable = true;
+        modules.desktop-greetd-regreet.remoteAccess.enable = true;
         modules.desktop-kde-connect.enable = true;
         modules.desktop-kubernetes.enable = true;
         modules.desktop-local-k8s.enable = true;
