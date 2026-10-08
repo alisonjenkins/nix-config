@@ -157,16 +157,31 @@ pub fn append_rotating(
     entry: &Entry,
     rotation: Rotation,
 ) -> std::io::Result<()> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    // Hooks run concurrently. The lock is held while a line is appended and while
+    // the log is rotated, so no line is written to a file that is being moved.
+    let _guard = lock(path)?;
     if std::fs::metadata(path).is_ok_and(|m| m.len() >= rotation.max_bytes) {
-        // The entry matters more than the housekeeping: a failed rotation is
-        // retried on the next prompt.
+        // The entry matters more than the housekeeping: a failed rotation leaves
+        // the log as it was and is retried on the next prompt.
         let _ = rotate(path, rotation);
     }
     append(path, entry)
 }
 
-/// A rotation older than this is assumed to have died holding its lock.
-const LOCK_STALE: std::time::Duration = std::time::Duration::from_secs(60);
+/// An exclusive advisory lock on `<path>.lock`, released when the returned file is
+/// dropped or the process dies, so a crash cannot leave it held.
+fn lock(path: &std::path::Path) -> std::io::Result<std::fs::File> {
+    let file = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(with_suffix(path, ".lock"))?;
+    file.lock()?;
+    Ok(file)
+}
 
 fn with_suffix(path: &std::path::Path, suffix: &str) -> std::path::PathBuf {
     let mut name = path.as_os_str().to_owned();
@@ -178,34 +193,24 @@ fn rotated_path(path: &std::path::Path, n: usize) -> std::path::PathBuf {
     with_suffix(path, &format!(".{n}.gz"))
 }
 
-/// Hooks run concurrently, so only the one that takes the lock rotates; the
-/// others append to the old file and carry on.
+/// Compresses the log to a temporary file first and touches nothing else until that
+/// worked, so a full disk or an unwritable directory leaves the log and the older
+/// rotated files exactly as they were. Called with the lock held.
 fn rotate(path: &std::path::Path, rotation: Rotation) -> std::io::Result<()> {
-    let lock = with_suffix(path, ".lock");
-    let stale = std::fs::metadata(&lock)
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(|t| t.elapsed().ok())
-        .is_some_and(|age| age > LOCK_STALE);
-    if stale {
-        let _ = std::fs::remove_file(&lock);
-    }
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&lock)?;
-    let result = rotate_locked(path, rotation);
-    let _ = std::fs::remove_file(&lock);
-    result
-}
-
-fn rotate_locked(path: &std::path::Path, rotation: Rotation) -> std::io::Result<()> {
     use std::io::Write;
-    if !std::fs::metadata(path).is_ok_and(|m| m.len() >= rotation.max_bytes) {
-        return Ok(());
-    }
     if rotation.keep == 0 {
         return std::fs::remove_file(path);
+    }
+    let raw = std::fs::read(path)?;
+    let compressed = with_suffix(&rotated_path(path, 1), ".tmp");
+    let written = std::fs::File::create(&compressed).and_then(|file| {
+        let mut encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        encoder.write_all(&raw)?;
+        encoder.finish().map(|_| ())
+    });
+    if let Err(error) = written {
+        let _ = std::fs::remove_file(&compressed);
+        return Err(error);
     }
     let _ = std::fs::remove_file(rotated_path(path, rotation.keep));
     for n in (1..rotation.keep).rev() {
@@ -216,17 +221,8 @@ fn rotate_locked(path: &std::path::Path, rotation: Rotation) -> std::io::Result<
             )?;
         }
     }
-    // Renaming first means lines appended while compressing go to a fresh log.
-    let moving = with_suffix(path, ".rotating");
-    std::fs::rename(path, &moving)?;
-    let raw = std::fs::read(&moving)?;
-    let mut encoder = flate2::write::GzEncoder::new(
-        std::fs::File::create(rotated_path(path, 1))?,
-        flate2::Compression::default(),
-    );
-    encoder.write_all(&raw)?;
-    encoder.finish()?;
-    std::fs::remove_file(&moving)
+    std::fs::rename(&compressed, rotated_path(path, 1))?;
+    std::fs::remove_file(path)
 }
 
 /// The text of the log and its rotated files, oldest first.
@@ -561,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn a_rotation_already_in_progress_is_left_alone_and_the_entry_still_lands() {
+    fn a_leftover_lock_file_from_a_dead_process_blocks_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("recall.jsonl");
         for n in 1..=2 {
@@ -574,6 +570,57 @@ mod tests {
         assert!(parse_log(&read_all(&path).unwrap())
             .iter()
             .any(|e| e.matches == 3));
+    }
+
+    #[test]
+    fn concurrent_hooks_lose_no_line_even_while_the_log_rotates() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        // Small files, many rotations, none dropped: every line must survive.
+        let rotation = Rotation {
+            max_bytes: 300,
+            keep: 10_000,
+        };
+        std::thread::scope(|scope| {
+            for worker in 0..8_usize {
+                let path = &path;
+                scope.spawn(move || {
+                    for n in 0..40_usize {
+                        append_rotating(path, &tag(worker * 1_000 + n), rotation).unwrap();
+                    }
+                });
+            }
+        });
+        let mut seen: Vec<usize> = parse_log(&read_all(&path).unwrap())
+            .iter()
+            .map(|e| e.matches)
+            .collect();
+        seen.sort_unstable();
+        let mut want: Vec<usize> = (0..8)
+            .flat_map(|w| (0..40).map(move |n| w * 1_000 + n))
+            .collect();
+        want.sort_unstable();
+        assert_eq!(seen, want);
+    }
+
+    #[test]
+    fn a_rotation_that_cannot_compress_loses_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recall.jsonl");
+        for n in 1..=3 {
+            append_rotating(&path, &tag(n), TINY).unwrap();
+        }
+        // Where the compressed file would be written, put a directory.
+        std::fs::create_dir_all(with_suffix(&rotated_path(&path, 1), ".tmp")).unwrap();
+        let before = parse_log(&read_all(&path).unwrap()).len();
+        for n in 4..=8 {
+            append_rotating(&path, &tag(n), TINY).unwrap();
+        }
+        assert_eq!(
+            parse_log(&read_all(&path).unwrap()).len(),
+            before.saturating_add(5),
+            "every line is still there, rotation or not"
+        );
     }
 
     #[test]
