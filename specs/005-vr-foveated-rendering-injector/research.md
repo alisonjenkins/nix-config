@@ -158,13 +158,38 @@ approximate), **Inferred** (reasoning, no source). Anything inferred is turned i
   both target games use OpenVR, which may behave differently.
 - **Fallback**: the Quest over Steam Link with a fixed pose. The stream encoder runs on the
   video engine, not the graphics queue, but its load must be noted.
-- The repo already manages SteamVR settings and a null-HMD mode (`home/modules/vr/`), so the
-  null-driver route can be tried without new modules.
+- The repo manages SteamVR settings through `modules.vr.steamvrSettings` (a free-form
+  attribute set, `home/modules/vr/steamvr-settings.nix`), but it has no null-driver option. The
+  owner's `allowDisplayLockedMode` is not the null driver.
+- **Spike S4 result (2026-10-06, measured on ali-desktop, Fallout 4 VR with the CachyOS runner
+  `cachyos-11.0-20260703-slr`):**
+  - With SteamVR not running, the game exits cleanly at once:
+    `err:vrclient:initialize_vr_data Failed to initialize VR info`.
+  - With SteamVR running and no headset connected it exits too, with
+    `err:vrclient:vrclient_init_registry VR init failed, error 215`. In
+    `ValveSoftware/openvr` `headers/openvr.h`, 215 is `VRInitError_Driver_WirelessHmdNotConnected`.
+    `vrserver.txt` repeats `vrlink: ERROR: Null VTE_CLIENT_SESSION_ID!` every 10 ms: the active
+    headset driver is Steam Link's `vrlink`, which waits for a client.
+  - So the owner's setup does not run a game with no headset today. The null driver
+    (`steamvr.forcedDriver = "null"`, an enabled `driver_null`, `steamvr.requireHmd = false`) has
+    not been tried; it would stop the Quest working until switched back, so it belongs behind an
+    opt-in option, off by default, that the owner turns on for measurement sessions.
+  - Not tried yet: the Quest over Steam Link, the route that works with no configuration change.
 
 ### D9. Eye-image size is discovered, not hardcoded
 
 - Nothing documents the per-eye target size or layout for Fallout 4 VR. Skyrim VR at 130%
   supersampling is reported at about 1724x1915 per eye (snippet only).
+- **Spike S2 result (2026-10-06, measured):** Fallout 4 VR is **D3D11 under DXVK**.
+  `Fallout4VR.exe` loads `C:\windows\system32\d3d11.dll` as native (which is DXVK) and
+  `openvr_api.dll` from its install directory, and DXVK's log lists `OpenVR` as a provider and
+  finds the RX 9070 XT (RADV 26.2.3). The game exited before rendering (see D8), so no render
+  target was seen. The eye-target size still waits for a rendering session and the fork's discovery
+  mode or a capture.
+- **Logs**: with `PROTON_LOG=1` and `PROTON_LOG_DIR` and `DXVK_LOG_PATH` set to a directory under
+  the home directory, Proton writes `steam-611660.log` there. Pointing both at `/tmp` produced
+  nothing on the host; the cause was not confirmed (a private `/tmp` inside the Steam container is
+  the likely one).
 - **Decision**: discovery mode logs the large colour targets each frame, with size, layers,
   format and samples, and the profile names the one to use. A RenderDoc capture is optional and
   needs the owner's go-ahead because it launches the game.
