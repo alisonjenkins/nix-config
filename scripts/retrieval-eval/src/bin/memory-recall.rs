@@ -187,12 +187,20 @@ fn semantic_scores(
     let identity = embedder
         .cache_identity()
         .context("ask the server for its model")?;
-    let cache = VectorCache::load(cache_path(cli)?, &identity)?;
+    let (cache, discarded) = VectorCache::load_checked(cache_path(cli)?, &identity)?;
     let stats = embedder.load_cached(chunks, &cache);
     if stats.missing > 0 {
         warn!(
             missing = stats.missing,
             "memories not in the vector cache; run the `index` subcommand"
+        );
+    }
+    if discarded && stats.missing >= chunks.len() {
+        // Vectors exist but for other settings: retrieval is broken for memories
+        // that are there, which is not the same as a setup with nothing indexed yet.
+        anyhow::bail!(
+            "the vector cache was built for a different model or dimension count; \
+             run the index (systemctl --user start memory-recall-index, or `memory-recall index`)"
         );
     }
     if stats.missing >= chunks.len() {

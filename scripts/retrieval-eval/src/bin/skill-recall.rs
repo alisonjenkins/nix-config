@@ -158,12 +158,18 @@ fn semantic_scores(
     let identity = embedder
         .cache_identity()
         .context("ask the server for its model")?;
-    let cache = VectorCache::load(&cli.cache, &identity)?;
+    let (cache, discarded) = VectorCache::load_checked(&cli.cache, &identity)?;
     let stats = embedder.load_cached(chunks, &cache);
     if stats.missing > 0 {
         warn!(
             missing = stats.missing,
             "skill sections not in the vector cache; run the `index` subcommand"
+        );
+    }
+    if discarded && stats.missing >= chunks.len() {
+        anyhow::bail!(
+            "the vector cache was built for a different model or dimension count; \
+             run the index (systemctl --user start memory-recall-index, or `skill-recall index`)"
         );
     }
     if stats.missing >= chunks.len() {

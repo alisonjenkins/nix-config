@@ -402,6 +402,42 @@ fn memories_that_are_not_indexed_yet_do_not_block_the_first_prompts() {
 }
 
 #[test]
+fn a_cache_built_for_another_model_or_dimension_count_blocks_until_reindexed() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache) = (tmp.path().join("mem"), tmp.path().join("cache.json"));
+    let url = serve();
+    // Index with 1 dimension, then query as if the dimension option had changed.
+    let old = format!("t=none@{url}#1");
+    let mut index = memory_args(mem.to_str().unwrap(), &old, cache.to_str().unwrap());
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+
+    let now = embedder(&url);
+    let mut hook = memory_args(mem.to_str().unwrap(), &now, cache.to_str().unwrap());
+    hook.push("hook");
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert_eq!(out.status.code(), Some(2), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("different model or dimension"), "{stderr}");
+
+    // Reindexing with the new settings clears it.
+    let mut reindex = memory_args(mem.to_str().unwrap(), &now, cache.to_str().unwrap());
+    reindex.push("index");
+    assert!(run(MEMORY_BIN, &reindex, "").status.success());
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert!(out.status.success() && context(&out).contains("alpha-note.md"));
+}
+
+#[test]
 fn a_fresh_setup_with_no_skills_can_prompt_even_with_the_server_down() {
     let tmp = tempfile::tempdir().unwrap();
     let emb = embedder(DEAD_URL);

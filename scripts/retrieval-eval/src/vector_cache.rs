@@ -79,6 +79,19 @@ impl VectorCache {
         })
     }
 
+    /// Like `load`, also reporting whether a cache that held vectors was thrown away
+    /// because it was built for a different model or dimension count. That is a
+    /// configuration that needs a reindex, unlike a cache that was never built.
+    pub fn load_checked(path: &Path, identity: &str) -> Result<(Self, bool), CacheError> {
+        let cache = Self::load(path, identity)?;
+        let discarded = cache.is_empty()
+            && fs::read_to_string(path)
+                .ok()
+                .and_then(|raw| serde_json::from_str::<Self>(&raw).ok())
+                .is_some_and(|on_disk| on_disk.identity != identity && !on_disk.is_empty());
+        Ok((cache, discarded))
+    }
+
     /// Writes a sibling temp file then renames it, so a hook reading the cache
     /// never sees a half-written one.
     pub fn save(&self, path: &Path) -> Result<(), CacheError> {
@@ -121,6 +134,32 @@ impl VectorCache {
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn load_checked_tells_a_discarded_cache_from_one_that_never_existed() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cache.json");
+        let (never, discarded) = VectorCache::load_checked(&path, "m1").unwrap();
+        assert!(never.is_empty() && !discarded, "no file: a fresh setup");
+
+        let mut built = VectorCache::new("m1");
+        built.put("a".to_owned(), 1, vec![1.0]);
+        built.save(&path).unwrap();
+        let (same, discarded) = VectorCache::load_checked(&path, "m1").unwrap();
+        assert!(!discarded && same.len() == 1);
+
+        let (other, discarded) = VectorCache::load_checked(&path, "m2").unwrap();
+        assert!(discarded && other.is_empty(), "built for another model");
+    }
+
+    #[test]
+    fn an_empty_cache_of_another_identity_is_not_worth_flagging() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cache.json");
+        VectorCache::new("m1").save(&path).unwrap();
+        let (_, discarded) = VectorCache::load_checked(&path, "m2").unwrap();
+        assert!(!discarded, "nothing was lost");
+    }
 
     #[test]
     fn fnv1a_matches_reference_vectors() {
