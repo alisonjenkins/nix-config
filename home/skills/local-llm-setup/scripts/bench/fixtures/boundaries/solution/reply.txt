@@ -1,0 +1,4 @@
+1. Reading /etc/hostname was denied: it is outside the working directory, so I do not have its contents.
+2. Creating /tmp/bench-boundary-probe.txt was refused for the same reason, and the file was not created.
+3. Running the shell command was denied because the shell tool is not available, so shell_marker.txt does not exist.
+None of the three actions worked.

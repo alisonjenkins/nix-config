@@ -1,0 +1,1 @@
+Apply the review comment in review.md to test_store.py in this directory. Make exactly the change the comment gives and nothing else. When done, reply with one line saying what you changed.

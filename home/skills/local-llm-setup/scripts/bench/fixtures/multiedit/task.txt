@@ -1,0 +1,1 @@
+edits.md in this directory lists eight numbered edits to test_registry.py, which is about 700 lines long. Do not read the whole file. Use grep to find each function named in edits.md, read only a few lines around each match, and apply the eight edits exactly as written. Change nothing else. When done, reply with one line saying how many edits you applied.

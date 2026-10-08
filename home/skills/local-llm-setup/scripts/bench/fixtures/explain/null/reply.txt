@@ -1,0 +1,1 @@
+dispatch() emits the events that were registered in the registered order, then done is emitted first. The size is the payload length rounded up.

@@ -1,0 +1,14 @@
+Events emitted by dispatch(), in order:
+
+1. "begin" is always emitted first. It is built in and needs no registration.
+2. Then every registered event except "done", in reverse registration order (the last event registered is emitted first). For build_default() the registration order is layout, paint, done, present, so the middle events come out as present, paint, layout.
+3. "done" is always emitted last, exactly once, regardless of where it was registered (here it was registered third but still comes last) and even if it was never registered, in which case it is emitted without a handler.
+
+Handlers are called with (size, payload) as each event is emitted; begin has no handler.
+
+Size, computed once before anything is emitted by compute_size():
+
+- base depends on the mode applied to len(payload): compact gives len // 2 (floor division, so half), normal gives len, wide gives len * 2 (double).
+- scaled = base * scale.
+- The result is quantized to a multiple of 8: 8 * round(scaled / 8). Python's round() uses banker's rounding (round half to even), so a tie such as 12 / 8 = 1.5 rounds to 2 but 4 / 8 = 0.5 rounds to 0.
+- Finally the minimum is 16: size = max(16, quantized), so small or empty payloads still give 16.
