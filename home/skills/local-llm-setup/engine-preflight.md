@@ -50,6 +50,13 @@ Reading it:
 Run it for the incumbent as a control. On 2026-10-08, b9190 gave 7 for both
 Qwen3.5-9B and Ornith-1.5-9B, and b11429 gave 8 for both.
 
+`PROBE_SCENARIO=newlines` runs a second check: a `write` call with four
+consecutive lines. Parsed `blank_lines_in_content` should be 0 and the raw
+text should show single newlines. On 2026-10-08 both Ornith-1.5-9B and
+Qwen3.5-9B passed it at temperature 0.6, so doubled blank lines in real runs
+did not come from newline handling. `PROBE_TEMPERATURE` sets the sampling
+temperature for the probe.
+
 Symptoms it explains: `edit` failing with "oldString not found", then
 "No changes to apply: oldString and newString are identical", and the agent
 script stopping after five failed tool calls in a row.

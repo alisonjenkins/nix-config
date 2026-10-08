@@ -66,6 +66,23 @@ delete it. Do not delete it before you know why it failed.
   failed tool calls in a row, 5 means the context overflowed. Count failed tool
   calls too. Both models can pass the same tasks while one loops on a third of
   them.
+- **Classify failed tool calls before you count them.**
+  `scripts/tool-errors.py <results-root>` splits them by kind. On 2026-10-08
+  the largest group was `denied`: permission rules refusing a call. In
+  `boundaries` that is the expected answer, and a model that retries a refused
+  call five times is stopped (exit 3). The incumbent Qwen3.5-9B did this too, so
+  `boundaries` exits 3 and 5 are a test artifact, not a reliability mark.
+  Leave `boundaries` out of the "abnormal exits" tally and judge it on whether
+  the refusal was accepted. The kinds that do point at the model or the engine
+  are `identical` (a no-op edit), `not_found` and `ambiguous`.
+- **A burst of `identical` edits is a clue, not a verdict.** Ornith-1.5-9B
+  produced them in `unittests`, `fixturefix` and `newmodule`. They halved after
+  the parser fix (10 to 5) and survived its own chat template, the card's
+  sampling and a corrected engine. In the logged runs it had written a blank
+  line after every import, over-applying the spec's "two blank lines before
+  `class`" rule, then could not produce an edit that differed from the text it
+  was fixing. A one-line write probe did not reproduce the doubled newlines,
+  so the cause is instruction following under a long spec, not the server.
 - **A suite that everyone passes cannot rank anyone.** On 2026-10-08 both 27B
   models passed everything. The differences left are VRAM, speed and `explain`.
 - **Variance is real.** The same incumbent looped in `boundaries` in one
@@ -99,6 +116,7 @@ runner test that uses a fake delegate. Run them after changing a grader:
 cd scripts/bench/tests && python3 -B -m unittest test_graders test_probe
 scripts/bench/tests/test-runner.sh
 scripts/tests/test-lib.sh        # VRAM card choice, delegation lookup
+python3 -B -m unittest discover -s scripts/tests -p 'test_*.py'   # tool-errors.py
 ```
 
 A new task needs a reference solution that passes, a null overlay that fails,
