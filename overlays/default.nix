@@ -526,6 +526,30 @@ in
             })
           ];
 
+          # nixpkgs master trails the upstream Claude Code release by a version
+          # or two, and 2.1.293 is the first to know claude-haiku-5-5. The
+          # package is manifest-driven, so swap the manifest instead of
+          # patching src. Drop this once nixpkgs reaches 2.1.293.
+          claude-code = mprev.claude-code.override {
+            manifest = {
+              version = "2.1.293";
+              platforms = {
+                "darwin-arm64" = {
+                  binary = "claude.zst";
+                  checksum = "28388647d76919972795439c4ac43654985a36b9bd18a8a541a9e7c78286ffec";
+                };
+                "linux-arm64" = {
+                  binary = "claude.zst";
+                  checksum = "031f4c6c3489065ffc4942e06b920b6fa52fb03830bb375fae6919c11537d725";
+                };
+                "linux-x64" = {
+                  binary = "claude.zst";
+                  checksum = "25786da347c30641dc6c50733d090d77cb540f105a61af7e9895b56e39fe16a5";
+                };
+              };
+            };
+          };
+
           mcp-nixos = mprev.mcp-nixos.overridePythonAttrs (old: {
             disabledTests = (old.disabledTests or []) ++ [
               # Flaky: picks a random text file from /nix/store and asserts
