@@ -43,7 +43,14 @@ untouched: no `prompt` in the payload, under 12 characters, nothing above the fl
 holds nothing, is an empty corpus, so the hook does not even contact the server; and
 while the first index is still running (memories exist but no vectors yet) prompts
 pass instead of being blocked, with a warning on stderr. Blocking applies only when
-there is something to retrieve and the server cannot be reached. A path that exists
+there is something to retrieve and the server cannot be reached, or the vector cache
+was built for another model or dimension count (changing `dims` or the model
+discards it, and the hooks block with a message to run
+`systemctl --user start memory-recall-index` until it is rebuilt). With two hooks
+configured, one blocking is enough to stop the prompt, and only the first message
+is shown: checked with `claude -p` and a throwaway pair of hooks (an `ok` hook plus a
+hook exiting 2 blocked the prompt with no model call; two blocking hooks showed one
+message; the `ok` hook's `additionalContext` reached the model when alone). A path that exists
 but cannot be read (a file where the directory should be, no permission) is an error
 and blocks. The index commands and the catalogue keeper accept a fresh setup too:
 `catalogue --write` writes nothing and creates no directory when there are no
@@ -136,6 +143,7 @@ modules.memoryRecall.telemetry = {
   lokiUrl = "http://loki.example.lan:3100";
   tempoEndpoint = "http://tempo.example.lan:4318"; # OTLP/HTTP
   tenantId = null;                                  # X-Scope-OrgID, if multi-tenant
+  headersFile = "/run/user/1000/secrets/otel-headers"; # "Authorization: Bearer ..." lines
   labels.host = "desk";
 };
 ```
@@ -151,6 +159,13 @@ Each hook run, for memories and skills, then reaches both:
   child, with `recall.best_score`, `recall.matches`, `recall.full`, `recall.tokens`,
   `recall.fallback` and `recall.failed` attributes; a blocked prompt is an error
   span. `service.name` is the hook's name.
+
+**Authentication.** `headersFile` names a file of extra HTTP headers, one `Name:
+value` per line (`#` comments allowed), sent to both backends: use it for
+`Authorization: Bearer ...` or `Authorization: Basic ...`. It is read when sending, and
+it is a string rather than a path literal, so a sops-nix secret is never copied into
+the Nix store or shown in the process list. If the file cannot be read, nothing is
+sent (it would only be refused) and the prompt is unaffected.
 
 **Correlating with Claude Code's own telemetry.** Both carry Claude Code's
 `session_id` and `prompt_id` from the hook payload: as `session_id` and `prompt_id`

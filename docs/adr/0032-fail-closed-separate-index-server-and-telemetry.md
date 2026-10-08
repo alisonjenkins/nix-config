@@ -71,6 +71,13 @@ Review of PR 521 asked for three changes to how the hooks behave in operation.
   catalogue commands) that is never blocked, a server that comes up 400 ms late,
   a backend that never answers not delaying the hook, a blocked prompt shipped as
   an error span, and the tenant header and absence of the prompt in what is shipped.
+- A cache that held vectors for other settings blocks (not a fresh setup); the log
+  is locked for appends and rotation, rotates through a temporary file, and lost no
+  line with eight concurrent writers through many rotations; credentials come from
+  a headers file; the index unit runs at nice 10.
+- `claude -p` with throwaway hooks: a hook exiting 2 blocks the prompt even beside a
+  hook that succeeds, with no model call; with two blocking hooks one message is
+  shown; a successful hook's `additionalContext` reaches the model.
 - Real model: after indexing three memories on a separate server and adding a
   fourth, the same query server process (451 MB) returned the new memory at once;
   the temporary server peaked at 1.8 GB and exited.
