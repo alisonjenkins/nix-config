@@ -73,6 +73,11 @@ let
     "127.0.0.1"
     "--port"
     (toString port)
+    # Warnings and errors only. At the default level the server writes about ten
+    # lines to the journal for every embedding request (slot allocation and
+    # release), which is a prompt's worth of noise per hook run.
+    "--log-verbosity"
+    "2"
   ] ++ lib.optionals (cfg.threads != null) [ "--threads" (toString cfg.threads) ];
   serverArgv = serverArgvOn cfg.port;
 
