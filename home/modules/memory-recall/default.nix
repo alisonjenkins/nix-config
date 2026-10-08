@@ -369,6 +369,9 @@ in
         Type = "oneshot";
         # Starts and stops its own embedding server; it does not need the query one.
         ExecStart = "${indexScript}/bin/memory-recall-index";
+        # That server embeds with several threads for up to ~90 s on the first
+        # index: at the default priority it could starve a real-time audio session.
+        Nice = 10;
       };
       # Builds the cache at login; the path unit below keeps it fresh.
       Install.WantedBy = [ "default.target" ];
@@ -411,6 +414,7 @@ in
           # once, an edit inside one on the next login or index run.
           WatchPaths = [ cfg.memoryDir ] ++ lib.optional cfg.skills.enable cfg.skills.root;
           ProcessType = "Background";
+          Nice = 10;
           StandardOutPath = "${stateDir}/index.log";
           StandardErrorPath = "${stateDir}/index.log";
         };
