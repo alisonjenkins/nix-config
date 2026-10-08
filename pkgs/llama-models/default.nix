@@ -201,6 +201,25 @@ in
     ];
   };
 
+  # ali-desktop delegate-to-local "quality" tier — Qwen3.8-27B Dense
+  # UD-Q3_K_XL ~12.2 GiB, the same quant as the Qwen3.6-27B above and 1.2 GiB
+  # smaller loaded (12.7 against 13.9 GiB), so the profile loads on an
+  # ordinary desktop where the 3.6 one is refused by the fit check. Tied the
+  # 3.6 on the local-llm-setup benchmark (10/10 graded each, 2026-10-08).
+  # Benchmarked on llama.cpp build 11429. It also loads and answers a simple
+  # prompt on b9190 (checked once, not benchmarked there).
+  qwen3-8-27b-ud-q3-k-xl = mkGgufModel {
+    pname = "qwen3.8-27b-ud-q3-k-xl";
+    primaryFile = "Qwen3.8-27B-UD-Q3_K_XL.gguf";
+    files = [
+      {
+        name = "Qwen3.8-27B-UD-Q3_K_XL.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q3_K_XL.gguf";
+        hash = "sha256-jCpF/4XnZ0yhheyOts3qsOYX7Z2AGMrtC2Q4DrKmel4=";
+      }
+    ];
+  };
+
   # Embedding model (not a chat model: serve with `llama-server --embeddings`) —
   # EmbeddingGemma 2, text component only, Q8_0 ~296 MiB. ggml-org's GGUF keeps
   # the vision/audio encoders in separate mmproj-* files, which are not fetched.
