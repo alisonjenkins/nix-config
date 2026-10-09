@@ -279,6 +279,13 @@ pub fn otlp_trace_body(
             serde_json::json!({ "doubleValue": score }),
         ));
     }
+    attributes.push(attribute(
+        "recall.outcome",
+        string_value(entry.outcome.as_str()),
+    ));
+    if let Some(cause) = &entry.cause {
+        attributes.push(attribute("recall.cause", string_value(cause)));
+    }
     let status = if entry.failed {
         serde_json::json!({ "code": 2, "message": "memories or skills could not be retrieved" })
     } else {
@@ -330,6 +337,101 @@ pub fn otlp_trace_body(
     .to_string()
 }
 
+/// The pairs of an `OTEL_RESOURCE_ATTRIBUTES` value (`k1=v1,k2=v2`); pairs without
+/// `=` or with an empty key are dropped.
+pub fn parse_resource_attributes(value: &str) -> Vec<(String, String)> {
+    value
+        .split(',')
+        .filter_map(|pair| pair.split_once('='))
+        .map(|(key, value)| (key.trim(), value.trim()))
+        .filter(|(key, _)| !key.is_empty())
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect()
+}
+
+/// The pairs whose key, with `.` replaced by `_`, is a valid Loki label name
+/// (`[a-zA-Z_][a-zA-Z0-9_]*`), under that name.
+pub fn loki_labels_from(pairs: &[(String, String)]) -> Vec<(String, String)> {
+    pairs
+        .iter()
+        .map(|(key, value)| (key.replace('.', "_"), value.clone()))
+        .filter(|(key, _)| {
+            let mut chars = key.chars();
+            chars
+                .next()
+                .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+                && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+        })
+        .collect()
+}
+
+/// An OTLP/HTTP JSON metrics request for one hook run. Counters are deltas (one
+/// run's contribution); latency is a gauge of that run, since a histogram of one
+/// observation per process adds nothing a gauge does not.
+pub fn otlp_metrics_body(entry: &Entry, resource: &[(String, String)], end_ns: u128) -> String {
+    let service = service_of(entry);
+    let start_ns = end_ns.saturating_sub(
+        entry
+            .duration_ms
+            .map_or(0, |ms| (ms.max(0.0) * 1_000_000.0) as u128),
+    );
+    let point = |extra: Option<(&str, &str)>, value: serde_json::Value| {
+        let mut attributes = vec![attribute("service", string_value(service))];
+        if let Some((key, text)) = extra {
+            attributes.push(attribute(key, string_value(text)));
+        }
+        let mut point = serde_json::json!({
+            "attributes": attributes,
+            "startTimeUnixNano": start_ns.to_string(),
+            "timeUnixNano": end_ns.to_string(),
+        });
+        if let (Some(object), Some(fields)) = (point.as_object_mut(), value.as_object()) {
+            object.extend(fields.clone());
+        }
+        point
+    };
+    let counter = |name: &str, point: serde_json::Value| {
+        serde_json::json!({
+            "name": name,
+            "sum": {
+                "dataPoints": [point],
+                "aggregationTemporality": 1,
+                "isMonotonic": true,
+            },
+        })
+    };
+    let as_int = |n: usize| serde_json::json!({ "asInt": n.to_string() });
+    let mut metrics = vec![
+        counter(
+            "recall_requests_total",
+            point(Some(("outcome", entry.outcome.as_str())), as_int(1)),
+        ),
+        counter(
+            "recall_hits_total",
+            point(None, as_int(usize::from(entry.matches > 0))),
+        ),
+        counter(
+            "recall_tokens_injected_total",
+            point(None, as_int(entry.tokens)),
+        ),
+    ];
+    if let Some(ms) = entry.duration_ms {
+        metrics.push(serde_json::json!({
+            "name": "recall_latency_seconds",
+            "gauge": { "dataPoints": [point(None, serde_json::json!({ "asDouble": ms / 1000.0 }))] },
+        }));
+    }
+    let mut attributes = vec![attribute("service.name", string_value(service))];
+    attributes.extend(resource.iter().map(|(k, v)| attribute(k, string_value(v))));
+    serde_json::json!({
+        "resourceMetrics": [{
+            "resource": { "attributes": attributes },
+            "scopeMetrics": [{ "scope": { "name": "memory-recall" }, "metrics": metrics }],
+        }]
+    })
+    .to_string()
+}
+
 fn now_ns() -> u128 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -361,7 +463,13 @@ fn post(
 
 /// Posts `entry` to every configured backend; one result per attempt.
 pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
-    let labels = targets.label_pairs();
+    let env_pairs = std::env::var("OTEL_RESOURCE_ATTRIBUTES")
+        .map(|value| parse_resource_attributes(&value))
+        .unwrap_or_default();
+    let mut resource = targets.label_pairs();
+    resource.extend(env_pairs.iter().cloned());
+    let mut loki_labels = targets.label_pairs();
+    loki_labels.extend(loki_labels_from(&env_pairs));
     let tenant = targets.telemetry_tenant.as_deref();
     let end_ns = now_ns();
     let mut results = Vec::new();
@@ -377,7 +485,7 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
     };
     if let Some(base) = &targets.loki_url {
         let url = format!("{}/loki/api/v1/push", base.trim_end_matches('/'));
-        let body = loki_push_body(entry, &labels, end_ns);
+        let body = loki_push_body(entry, &loki_labels, end_ns);
         results.push(post(&url, tenant, &headers, &body));
     }
     if let Some(base) = &targets.otlp_endpoint {
@@ -385,10 +493,13 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
         let traceparent = std::env::var("TRACEPARENT").ok();
         let body = otlp_trace_body(
             entry,
-            &labels,
+            &resource,
             &new_ids_from(traceparent.as_deref()),
             end_ns,
         );
+        results.push(post(&url, tenant, &headers, &body));
+        let url = format!("{}/v1/metrics", base.trim_end_matches('/'));
+        let body = otlp_metrics_body(entry, &resource, end_ns);
         results.push(post(&url, tenant, &headers, &body));
     }
     results
@@ -398,6 +509,7 @@ pub fn send(targets: &Targets, entry: &Entry) -> Vec<Result<(), String>> {
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
+    use crate::recall_log::Outcome;
 
     fn entry() -> Entry {
         Entry {
@@ -413,6 +525,8 @@ mod tests {
             embed_ms: Some(25.0),
             session_id: None,
             prompt_id: None,
+            outcome: Outcome::Success,
+            cause: None,
         }
     }
 
@@ -637,6 +751,135 @@ mod tests {
         let body = otlp_trace_body(&skills, &[], &new_ids(), 2_000_000_000_000);
         assert!(body.contains("skill-recall.hook"));
         assert!(loki_push_body(&skills, &[], 1).contains("skill-recall"));
+    }
+
+    fn metrics(entry: &Entry, resource: &[(String, String)]) -> serde_json::Value {
+        serde_json::from_str(&otlp_metrics_body(entry, resource, 2_000_000_000_000)).unwrap()
+    }
+
+    fn metric<'a>(body: &'a serde_json::Value, name: &str) -> &'a serde_json::Value {
+        body["resourceMetrics"][0]["scopeMetrics"][0]["metrics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["name"] == name)
+            .expect("metric present")
+    }
+
+    fn attr<'a>(point: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+        point["attributes"]
+            .as_array()?
+            .iter()
+            .find(|a| a["key"] == key)?["value"]["stringValue"]
+            .as_str()
+    }
+
+    #[test]
+    fn the_four_recall_metrics_carry_service_and_outcome() {
+        let body = metrics(&entry(), &[]);
+        let requests = &metric(&body, "recall_requests_total")["sum"];
+        assert_eq!(requests["aggregationTemporality"], 1);
+        assert_eq!(requests["isMonotonic"], true);
+        let point = &requests["dataPoints"][0];
+        assert_eq!(point["asInt"], "1");
+        assert_eq!(attr(point, "service"), Some("memory-recall"));
+        assert_eq!(attr(point, "outcome"), Some("success"));
+        let hits = &metric(&body, "recall_hits_total")["sum"]["dataPoints"][0];
+        assert_eq!(hits["asInt"], "1");
+        assert_eq!(attr(hits, "service"), Some("memory-recall"));
+        let tokens = &metric(&body, "recall_tokens_injected_total")["sum"];
+        assert_eq!(tokens["isMonotonic"], true);
+        assert_eq!(tokens["dataPoints"][0]["asInt"], "640");
+        let latency = &metric(&body, "recall_latency_seconds")["gauge"]["dataPoints"][0];
+        assert!((latency["asDouble"].as_f64().unwrap() - 0.04).abs() < 1e-9);
+        assert_eq!(attr(latency, "service"), Some("memory-recall"));
+    }
+
+    #[test]
+    fn a_run_without_matches_counts_a_request_and_no_hit() {
+        let mut empty = entry();
+        empty.matches = 0;
+        empty.tokens = 0;
+        empty.outcome = Outcome::Empty;
+        let body = metrics(&empty, &[]);
+        let point = &metric(&body, "recall_requests_total")["sum"]["dataPoints"][0];
+        assert_eq!(attr(point, "outcome"), Some("empty"));
+        let hits = &metric(&body, "recall_hits_total")["sum"]["dataPoints"][0];
+        assert_eq!(hits["asInt"], "0");
+    }
+
+    #[test]
+    fn a_skills_failure_is_counted_under_the_skill_service_with_outcome_error() {
+        let mut failed = Entry::failure("skills", "t", "timeout");
+        failed.duration_ms = None;
+        let body = metrics(&failed, &[]);
+        let point = &metric(&body, "recall_requests_total")["sum"]["dataPoints"][0];
+        assert_eq!(attr(point, "service"), Some("skill-recall"));
+        assert_eq!(attr(point, "outcome"), Some("error"));
+        assert!(
+            body.to_string().find("recall_latency_seconds").is_none(),
+            "no timing, no latency point"
+        );
+    }
+
+    #[test]
+    fn metrics_resource_has_the_service_and_the_extra_attributes() {
+        let resource = vec![("review.run".to_owned(), "1".to_owned())];
+        let body = metrics(&entry(), &resource);
+        let attrs = &body["resourceMetrics"][0]["resource"];
+        let text = attrs.to_string();
+        assert!(text.contains("memory-recall") && text.contains("review.run"));
+    }
+
+    #[test]
+    fn outcome_and_cause_are_span_attributes() {
+        let failed = Entry::failure("memory", "t", "embedder_unreachable");
+        let body = otlp_trace_body(&failed, &[], &new_ids(), 2_000_000_000_000);
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        let attrs = value["resourceSpans"][0]["scopeSpans"][0]["spans"][0]["attributes"]
+            .as_array()
+            .unwrap();
+        let find = |key: &str| {
+            attrs
+                .iter()
+                .find(|a| a["key"] == key)
+                .and_then(|a| a["value"]["stringValue"].as_str())
+        };
+        assert_eq!(find("recall.outcome"), Some("error"));
+        assert_eq!(find("recall.cause"), Some("embedder_unreachable"));
+        let ok = otlp_trace_body(&entry(), &[], &new_ids(), 2_000_000_000_000);
+        assert!(ok.contains("\"success\"") && !ok.contains("recall.cause"));
+    }
+
+    #[test]
+    fn resource_attributes_split_on_commas_and_drop_malformed_pairs() {
+        assert_eq!(
+            parse_resource_attributes("review.run=1, team = a=b ,bad,=x,,k="),
+            [
+                ("review.run".to_owned(), "1".to_owned()),
+                ("team".to_owned(), "a=b".to_owned()),
+                ("k".to_owned(), String::new()),
+            ]
+        );
+        assert!(parse_resource_attributes("").is_empty());
+    }
+
+    #[test]
+    fn only_attributes_that_make_valid_loki_labels_become_labels() {
+        let pairs = [
+            ("review.run", "1"),
+            ("9lives", "x"),
+            ("has-dash", "x"),
+            ("host_name", "h"),
+        ]
+        .map(|(k, v)| (k.to_owned(), v.to_owned()));
+        assert_eq!(
+            loki_labels_from(&pairs),
+            [
+                ("review_run".to_owned(), "1".to_owned()),
+                ("host_name".to_owned(), "h".to_owned())
+            ]
+        );
     }
 
     #[test]

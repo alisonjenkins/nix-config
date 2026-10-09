@@ -159,6 +159,17 @@ Each hook run, for memories and skills, then reaches both:
   child, with `recall.best_score`, `recall.matches`, `recall.full`, `recall.tokens`,
   `recall.fallback` and `recall.failed` attributes; a blocked prompt is an error
   span. `service.name` is the hook's name.
+- **Metrics** (to the same OTLP endpoint, `/v1/metrics`): `recall_requests_total`
+  (by `service` and `outcome`), `recall_hits_total`, `recall_latency_seconds` (one
+  gauge point per run) and `recall_tokens_injected_total`. Counters are delta sums.
+
+Every record carries `outcome`: `success`, `empty` (ran, nothing above the floor) or
+`error`, and an error says why in `cause` (`timeout`, `embedder_unreachable`,
+`index_stale`, `index_missing`, `other`). `OTEL_RESOURCE_ATTRIBUTES` pairs in the hook's
+environment are added to the span and metrics resource, and to the Loki labels where
+the name is a valid label once `.` becomes `_`. With `modules.observabilityStack`
+enabled, `lokiUrl` and `tempoEndpoint` default to the local stack
+(`docs/observability-stack.md`).
 
 **Authentication.** `headersFile` names a file of extra HTTP headers, one `Name:
 value` per line (`#` comments allowed), sent to both backends: use it for

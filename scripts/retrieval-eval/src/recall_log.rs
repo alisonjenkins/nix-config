@@ -3,6 +3,54 @@
 //! It holds scores and counts only, never the prompt.
 use serde::{Deserialize, Serialize};
 
+/// How a hook run ended: matches injected, nothing above the floor, or retrieval failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Outcome {
+    #[default]
+    Success,
+    Empty,
+    Error,
+}
+
+impl Outcome {
+    /// `Success` when something was injected, else `Empty`; for runs that did not fail.
+    pub fn of_matches(matches: usize) -> Self {
+        if matches > 0 {
+            Self::Success
+        } else {
+            Self::Empty
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Success => "success",
+            Self::Empty => "empty",
+            Self::Error => "error",
+        }
+    }
+}
+
+/// A short, low-cardinality cause for a failed run, from its error message chain.
+pub fn cause_of(error: &str) -> &'static str {
+    let error = error.to_lowercase();
+    if error.contains("different model or dimension") {
+        "index_stale"
+    } else if error.contains("timed out") || error.contains("timeout") {
+        "timeout"
+    } else if error.contains("embedding server")
+        || error.contains("ask the server")
+        || error.contains("connect")
+    {
+        "embedder_unreachable"
+    } else if error.contains("cache") {
+        "index_missing"
+    } else {
+        "other"
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     /// ISO8601 UTC.
@@ -36,10 +84,16 @@ pub struct Entry {
     /// Claude Code's id for this prompt, from the hook payload.
     #[serde(default)]
     pub prompt_id: Option<String>,
+    /// Lines from before this field read as `success`.
+    #[serde(default)]
+    pub outcome: Outcome,
+    /// Why the run failed (`outcome` is `error`); see `cause_of`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cause: Option<String>,
 }
 
 impl Entry {
-    pub fn failure(kind: &str, at: &str) -> Self {
+    pub fn failure(kind: &str, at: &str, cause: &str) -> Self {
         Self {
             at: at.to_owned(),
             kind: kind.to_owned(),
@@ -53,6 +107,8 @@ impl Entry {
             embed_ms: None,
             session_id: None,
             prompt_id: None,
+            outcome: Outcome::Error,
+            cause: Some(cause.to_owned()),
         }
     }
 }
@@ -107,10 +163,10 @@ pub fn now_iso8601() -> String {
 
 /// Records that the hook gave up on a prompt, so an outage shows in the summary.
 /// A log that cannot be written is ignored: the hook must never fail a prompt.
-pub fn append_failure(path: &std::path::Path, kind: &str) {
+pub fn append_failure(path: &std::path::Path, kind: &str, cause: &str) {
     let _ = append_rotating(
         path,
-        &Entry::failure(kind, &now_iso8601()),
+        &Entry::failure(kind, &now_iso8601(), cause),
         DEFAULT_ROTATION,
     );
 }
@@ -347,13 +403,17 @@ mod tests {
             embed_ms: None,
             session_id: None,
             prompt_id: None,
+            outcome: Outcome::of_matches(matches),
+            cause: None,
         }
     }
 
     #[test]
     fn a_failure_entry_has_no_score_and_no_injection() {
-        let failure = Entry::failure("memory", "2026-10-07T12:00:00Z");
+        let failure = Entry::failure("memory", "2026-10-07T12:00:00Z", "timeout");
         assert!(failure.failed);
+        assert_eq!(failure.outcome, Outcome::Error);
+        assert_eq!(failure.cause.as_deref(), Some("timeout"));
         assert_eq!(failure.best_score, None);
         assert_eq!((failure.matches, failure.full, failure.tokens), (0, 0, 0));
     }
@@ -402,6 +462,38 @@ mod tests {
     }
 
     #[test]
+    fn outcome_and_cause_are_in_the_line_and_old_lines_read_as_success() {
+        let failed = to_line(&Entry::failure("memory", "t", "embedder_unreachable"));
+        assert!(failed.contains(r#""outcome":"error""#));
+        assert!(failed.contains(r#""cause":"embedder_unreachable""#));
+        let hit = to_line(&entry("memory", Some(0.8), 1, 0, 9));
+        assert!(hit.contains(r#""outcome":"success""#));
+        let empty = to_line(&entry("memory", Some(0.5), 0, 0, 0));
+        assert!(empty.contains(r#""outcome":"empty""#) && !empty.contains("cause"));
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        assert_eq!(parse_log(old)[0].outcome, Outcome::Success);
+    }
+
+    #[test]
+    fn causes_are_short_names_for_the_usual_failures() {
+        for (error, cause) in [
+            (
+                "embedding server unavailable: ask the server for its model: Connection refused",
+                "embedder_unreachable",
+            ),
+            ("embedding server unavailable: timeout: global", "timeout"),
+            (
+                "the vector cache was built for a different model or dimension count",
+                "index_stale",
+            ),
+            ("read cache /x/cache.json: No such file", "index_missing"),
+            ("read /x/mem: denied", "other"),
+        ] {
+            assert_eq!(cause_of(error), cause, "{error}");
+        }
+    }
+
+    #[test]
     fn old_log_lines_without_a_fallback_field_still_parse() {
         let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
         assert!(!parse_log(old)[0].fallback);
@@ -418,8 +510,8 @@ mod tests {
     #[test]
     fn summary_counts_failures_apart_from_prompts_that_were_served() {
         let mut entries = vec![entry("memory", Some(0.8), 1, 0, 100)];
-        entries.push(Entry::failure("memory", "t"));
-        entries.push(Entry::failure("memory", "t"));
+        entries.push(Entry::failure("memory", "t", "other"));
+        entries.push(Entry::failure("memory", "t", "other"));
         let sum = &summarise(&entries)[0];
         assert_eq!(sum.prompts, 1);
         assert_eq!(sum.failed, 2);

@@ -609,6 +609,8 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
             embed_ms: None,
             session_id: None,
             prompt_id: None,
+            outcome: retrieval_eval::recall_log::Outcome::Success,
+            cause: None,
         })
     };
     fs::write(&log, line(1)).unwrap();
@@ -725,9 +727,13 @@ fn a_hook_run_reaches_loki_and_tempo_without_the_prompt() {
     );
     assert!(out.status.success() && context(&out).contains("alpha-note.md"));
 
-    wait_for(&seen, 2);
+    wait_for(&seen, 3);
     let requests = seen.lock().unwrap().clone();
-    assert_eq!(requests.len(), 2, "one Loki push and one trace");
+    assert_eq!(
+        requests.len(),
+        3,
+        "one Loki push, one trace and one metrics post"
+    );
     let loki = requests
         .iter()
         .find(|r| r.0 == "/loki/api/v1/push")
@@ -885,6 +891,360 @@ fn a_blocked_prompt_is_shipped_as_a_failure() {
     wait_for(&seen, 1);
     let requests = seen.lock().unwrap().clone();
     assert!(requests[0].2.contains("\"code\":2"), "{}", requests[0].2);
+}
+
+fn run_env(bin: &str, args: &[&str], stdin: &str, env: &[(&str, &str)]) -> Output {
+    let mut child = Command::new(bin)
+        .args(args)
+        .envs(env.iter().copied())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(stdin.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
+}
+
+fn request<'a>(requests: &'a [(String, String, String)], path: &str) -> &'a str {
+    &requests
+        .iter()
+        .find(|r| r.0 == path)
+        .expect("a request to the path")
+        .2
+}
+
+fn span_attribute(trace: &str, key: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(trace).unwrap();
+    value["resourceSpans"][0]["scopeSpans"][0]["spans"][0]["attributes"]
+        .as_array()?
+        .iter()
+        .find(|a| a["key"] == key)?["value"]["stringValue"]
+        .as_str()
+        .map(str::to_owned)
+}
+
+#[test]
+fn the_session_id_reaches_the_log_line_the_loki_line_and_the_span() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let log = tmp.path().join("recall.jsonl");
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--log",
+        log.to_str().unwrap(),
+        "--loki-url",
+        &backend,
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    let with_id = serde_json::json!({
+        "prompt": "how do I fix the alpha problem",
+        "session_id": "sess-42",
+    })
+    .to_string();
+    assert!(run(MEMORY_BIN, &hook, &with_id).status.success());
+    assert!(run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem")
+    )
+    .status
+    .success());
+    wait_for(&seen, 6);
+
+    let entries = log_entries(&log);
+    assert_eq!(entries[0].session_id.as_deref(), Some("sess-42"));
+    assert_eq!(
+        entries[1].session_id, None,
+        "no id in the payload, none invented"
+    );
+    let requests = seen.lock().unwrap().clone();
+    let loki_lines: Vec<&str> = requests
+        .iter()
+        .filter(|r| r.0 == "/loki/api/v1/push")
+        .map(|r| r.2.as_str())
+        .collect();
+    assert_eq!(
+        loki_lines.iter().filter(|b| b.contains("sess-42")).count(),
+        1
+    );
+    let traces: Vec<&str> = requests
+        .iter()
+        .filter(|r| r.0 == "/v1/traces")
+        .map(|r| r.2.as_str())
+        .collect();
+    assert_eq!(
+        traces
+            .iter()
+            .filter(|t| span_attribute(t, "session.id").as_deref() == Some("sess-42"))
+            .count(),
+        1
+    );
+    assert_eq!(
+        traces
+            .iter()
+            .filter(|t| span_attribute(t, "session.id").is_some())
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn each_outcome_is_logged_and_shipped_and_an_error_says_why() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let log = tmp.path().join("recall.jsonl");
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--log",
+        log.to_str().unwrap(),
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    assert!(run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem")
+    )
+    .status
+    .success());
+    assert!(run(
+        MEMORY_BIN,
+        &hook,
+        &payload("write a haiku about autumn leaves")
+    )
+    .status
+    .success());
+
+    let dead = embedder(DEAD_URL);
+    let mut broken = memory_args(mem.to_str().unwrap(), &dead, cache.to_str().unwrap());
+    broken.extend([
+        "hook",
+        "--on-unavailable",
+        "allow",
+        "--log",
+        log.to_str().unwrap(),
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    assert!(run(
+        MEMORY_BIN,
+        &broken,
+        &payload("how do I fix the alpha problem")
+    )
+    .status
+    .success());
+    let mut blocked = broken.clone();
+    blocked.iter_mut().for_each(|a| {
+        if *a == "allow" {
+            *a = "block"
+        }
+    });
+    let out = run(
+        MEMORY_BIN,
+        &blocked,
+        &payload("how do I fix the alpha problem"),
+    );
+    assert_eq!(out.status.code(), Some(2), "fail-closed still blocks");
+
+    let entries = log_entries(&log);
+    let outcomes: Vec<_> = entries.iter().map(|e| e.outcome.as_str()).collect();
+    assert_eq!(outcomes, ["success", "empty", "error", "error"]);
+    assert_eq!(entries[0].cause, None);
+    assert_eq!(entries[2].cause.as_deref(), Some("embedder_unreachable"));
+    assert_eq!(entries[3].cause.as_deref(), Some("embedder_unreachable"));
+
+    wait_for(&seen, 8);
+    let requests = seen.lock().unwrap().clone();
+    let mut shipped: Vec<(String, Option<String>)> = requests
+        .iter()
+        .filter(|r| r.0 == "/v1/traces")
+        .map(|r| {
+            (
+                span_attribute(&r.2, "recall.outcome").unwrap(),
+                span_attribute(&r.2, "recall.cause"),
+            )
+        })
+        .collect();
+    shipped.sort();
+    assert_eq!(
+        shipped,
+        [
+            ("empty".to_owned(), None),
+            ("error".to_owned(), Some("embedder_unreachable".to_owned())),
+            ("error".to_owned(), Some("embedder_unreachable".to_owned())),
+            ("success".to_owned(), None),
+        ]
+    );
+}
+
+#[test]
+fn the_four_recall_metrics_are_posted_with_service_and_outcome() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--otlp-endpoint", &backend]);
+    assert!(run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem")
+    )
+    .status
+    .success());
+    wait_for(&seen, 2);
+    let requests = seen.lock().unwrap().clone();
+    let body: serde_json::Value = serde_json::from_str(request(&requests, "/v1/metrics")).unwrap();
+    let metrics = body["resourceMetrics"][0]["scopeMetrics"][0]["metrics"]
+        .as_array()
+        .unwrap();
+    let names: Vec<&str> = metrics
+        .iter()
+        .map(|m| m["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "recall_requests_total",
+            "recall_hits_total",
+            "recall_tokens_injected_total",
+            "recall_latency_seconds"
+        ]
+    );
+    let labels = |m: &serde_json::Value, kind: &str| {
+        m[kind]["dataPoints"][0]["attributes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| {
+                (
+                    a["key"].as_str().unwrap().to_owned(),
+                    a["value"]["stringValue"].as_str().unwrap().to_owned(),
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        labels(&metrics[0], "sum"),
+        [
+            ("service".to_owned(), "memory-recall".to_owned()),
+            ("outcome".to_owned(), "success".to_owned())
+        ]
+    );
+    assert_eq!(
+        labels(&metrics[1], "sum"),
+        [("service".to_owned(), "memory-recall".to_owned())]
+    );
+    assert_eq!(metrics[1]["sum"]["dataPoints"][0]["asInt"], "1");
+    let tokens: usize = metrics[2]["sum"]["dataPoints"][0]["asInt"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!(tokens > 0);
+    assert_eq!(
+        labels(&metrics[3], "gauge"),
+        [("service".to_owned(), "memory-recall".to_owned())]
+    );
+}
+
+#[test]
+fn otel_resource_attributes_reach_the_span_the_metrics_and_valid_loki_labels() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend(["hook", "--loki-url", &backend, "--otlp-endpoint", &backend]);
+    let out = run_env(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+        &[(
+            "OTEL_RESOURCE_ATTRIBUTES",
+            "review.run=1,not-a-label=x,malformed",
+        )],
+    );
+    assert!(out.status.success());
+    wait_for(&seen, 3);
+    let requests = seen.lock().unwrap().clone();
+    let loki: serde_json::Value =
+        serde_json::from_str(request(&requests, "/loki/api/v1/push")).unwrap();
+    assert_eq!(loki["streams"][0]["stream"]["review_run"], "1");
+    assert!(loki["streams"][0]["stream"].get("not_a_label").is_none());
+    assert!(loki["streams"][0]["stream"].get("not-a-label").is_none());
+    for path in ["/v1/traces", "/v1/metrics"] {
+        let body = request(&requests, path);
+        assert!(body.contains("review.run"), "{path}: {body}");
+        assert!(
+            body.contains("not-a-label"),
+            "{path}: any key is fine on a resource"
+        );
+        assert!(!body.contains("malformed"), "{path}");
+    }
+}
+
+#[test]
+fn a_prompt_canary_appears_in_no_log_line_span_or_metric() {
+    let tmp = tempfile::tempdir().unwrap();
+    let emb = embedder(&serve());
+    let (mem, cache) = indexed_memory_hook(tmp.path(), &emb);
+    let log = tmp.path().join("recall.jsonl");
+    let (backend, seen) = capture();
+    let mut hook = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--log",
+        log.to_str().unwrap(),
+        "--loki-url",
+        &backend,
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    let canary = "zq-canary-7f3a9";
+    let sent = serde_json::json!({
+        "prompt": format!("how do I fix the alpha problem {canary}"),
+        "session_id": "sess-1",
+    })
+    .to_string();
+    assert!(run(MEMORY_BIN, &hook, &sent).status.success());
+    let mut broken = memory_args(
+        mem.to_str().unwrap(),
+        "t=none@http://127.0.0.1:1",
+        cache.to_str().unwrap(),
+    );
+    broken.extend([
+        "hook",
+        "--on-unavailable",
+        "allow",
+        "--log",
+        log.to_str().unwrap(),
+        "--loki-url",
+        &backend,
+        "--otlp-endpoint",
+        &backend,
+    ]);
+    assert!(run(MEMORY_BIN, &broken, &sent).status.success());
+    wait_for(&seen, 6);
+    let requests = seen.lock().unwrap().clone();
+    assert_eq!(requests.len(), 6, "loki, trace and metrics for both runs");
+    for (path, _, body) in &requests {
+        assert!(!body.contains(canary), "{path} leaked the prompt");
+    }
+    assert!(!fs::read_to_string(&log).unwrap().contains(canary));
 }
 
 #[test]

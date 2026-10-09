@@ -14,7 +14,9 @@ use retrieval_eval::recall::{
     blocked_message, hook_output, ids_from_hook_input, keyword_fallback, prompt_from_hook_input,
     render_sections, retry_until, select, Blocked, Hit, OnUnavailable,
 };
-use retrieval_eval::recall_log::{append_rotating, now_iso8601, Entry, DEFAULT_ROTATION};
+use retrieval_eval::recall_log::{
+    append_rotating, cause_of, now_iso8601, Entry, Outcome, DEFAULT_ROTATION,
+};
 use retrieval_eval::telemetry::{spawn_ship, Targets};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
@@ -209,6 +211,8 @@ fn recall(
                 embed_ms: None,
                 session_id: None,
                 prompt_id: None,
+                outcome: Outcome::Empty,
+                cause: None,
             },
         });
     }
@@ -232,7 +236,11 @@ fn recall(
                 warn!(error = %format!("{error:#}"), "embedding server unavailable; injecting nothing");
                 return Ok(Recalled {
                     context: String::new(),
-                    entry: Entry::failure("skills", &now_iso8601()),
+                    entry: Entry::failure(
+                        "skills",
+                        &now_iso8601(),
+                        cause_of(&format!("{error:#}")),
+                    ),
                 });
             }
             OnUnavailable::Keyword => {
@@ -269,6 +277,8 @@ fn recall(
         embed_ms,
         session_id: None,
         prompt_id: None,
+        outcome: Outcome::of_matches(hits.len()),
+        cause: None,
     };
     Ok(Recalled { context, entry })
 }
@@ -367,7 +377,8 @@ fn run(cli: &Cli) -> Result<()> {
             {
                 Ok(recalled) => recalled,
                 Err(error) => {
-                    let mut failure = Entry::failure("skills", &now_iso8601());
+                    let mut failure =
+                        Entry::failure("skills", &now_iso8601(), cause_of(&format!("{error:#}")));
                     failure.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
                     failure.session_id = session_id.clone();
                     failure.prompt_id = prompt_id.clone();
