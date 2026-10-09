@@ -107,7 +107,7 @@ set  -g history-limit     2000
 set -g @shell_mode 'vi'
 set -g @prefix_highlight_show_copy_mode 'on'
 set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold' # default is 'fg=default,bg=yellow'
-set -s set-clipboard off
+set -s set-clipboard on
 setw -g monitor-activity on
 set -g visual-activity off
 set -g history-limit 100000
@@ -140,12 +140,16 @@ if-shell 'uname | grep -q Darwin' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"pbcopy\""
 if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"wl-copy\""
+# Over SSH the xclip/wl-copy/pbcopy above would fill the remote host's
+# clipboard; copy-selection emits OSC 52 to the local terminal instead.
+if-shell '[ -n "$SSH_CONNECTION" ]' \
+    "bind -T copy-mode-vi 'y' send-keys -X copy-selection-and-cancel"
 
 set -g @shell_mode 'vi'
 set -g @prefix_highlight_show_copy_mode 'on'
 set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold' # default is 'fg=default,bg=yellow'
 set -g allow-passthrough on
-set -s set-clipboard off
+set -s set-clipboard on
 setw -g monitor-activity on
 set -g visual-activity off
 set -g history-limit 100000
@@ -196,6 +200,10 @@ if-shell 'uname | grep -q Darwin' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"pbcopy\""
 if-shell '[ -n "$WAYLAND_DISPLAY" ]' \
     "bind -T copy-mode-vi 'y' send-keys -X copy-pipe-and-cancel \"wl-copy\""
+# Over SSH the xclip/wl-copy/pbcopy above would fill the remote host's
+# clipboard; copy-selection emits OSC 52 to the local terminal instead.
+if-shell '[ -n "$SSH_CONNECTION" ]' \
+    "bind -T copy-mode-vi 'y' send-keys -X copy-selection-and-cancel"
 
 # prefix + Shift-A: switch to the claude-monitor session, creating it (shell
 # first, then claude-monitor typed into it) if it does not exist yet
