@@ -112,6 +112,11 @@ for dims in 768 256 128; do
     tee "$out/gate-$dims.md"
 done
 
+echo "== margin gate (best score minus runner-up), dev set"
+bench 256 gate-margin gate --margins 0,0.01,0.02,0.03,0.05 \
+  --relevant "$memory_queries/memory.json" --negatives "$queries/negatives.json" |
+  tee "$out/gate-margin-dev.md"
+
 echo "== hook latency, default threads"
 bench 256 latency-default latency --hook-bin "$bin/memory-recall" \
   --relevant "$memory_queries/memory.json" --negatives "$queries/negatives.json" \

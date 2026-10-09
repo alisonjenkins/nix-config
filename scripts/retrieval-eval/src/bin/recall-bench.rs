@@ -8,8 +8,8 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use retrieval_eval::bench::{
-    approx_tokens, gate_row, proc_cpu_ticks, proc_status_kb, summarise, synthetic_vectors, Case,
-    GateRow, Kind, Summary, CONTEXT_HEADER_TOKENS,
+    approx_tokens, gate_row_margin, proc_cpu_ticks, proc_status_kb, summarise, synthetic_vectors,
+    Case, GateRow, Kind, Summary, CONTEXT_HEADER_TOKENS,
 };
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{cosine_scores, Embedder, EmbedderSpec};
@@ -56,6 +56,10 @@ enum Command {
         /// Threshold the hook ships with, marked in the table.
         #[arg(long, default_value_t = 0.74)]
         selected: f64,
+        /// Margins (best score minus runner-up) to try; with several, the
+        /// sweep narrows to the thresholds around the selected one.
+        #[arg(long, value_delimiter = ',', default_value = "0")]
+        margins: Vec<f64>,
     },
     /// Time the real hook process end to end, and sample the embedding server.
     Latency {
@@ -193,6 +197,7 @@ fn run_gate(
     negatives: &Path,
     top: usize,
     selected: f64,
+    margins: &[f64],
 ) -> Result<GateReport> {
     let (mut embedder, chunks, cache) = open(cli, Duration::from_secs(30))?;
     let stats = embedder.load_cached(&chunks, &cache);
@@ -223,21 +228,33 @@ fn run_gate(
         approx_tokens(path_len.saturating_add(description_len).saturating_add(12))
     };
 
-    let thresholds: Vec<f64> = (50..=90).step_by(2).map(|t| f64::from(t) / 100.0).collect();
-    let sweep: Vec<GateRow> = thresholds
+    let several = margins.len() > 1;
+    let (low, high) = if several { (66, 82) } else { (50, 90) };
+    let thresholds: Vec<f64> = (low..=high)
+        .step_by(2)
+        .map(|t| f64::from(t) / 100.0)
+        .collect();
+    let sweep: Vec<GateRow> = margins
         .iter()
-        .map(|t| gate_row(&cases, *t, top, &line_tokens))
+        .flat_map(|m| thresholds.iter().map(move |t| (*t, *m)))
+        .map(|(t, m)| gate_row_margin(&cases, t, m, top, &line_tokens))
         .collect();
 
-    println!("| threshold | recall | top-1 right | false inj. off-topic | false inj. adjacent | precision | mean injected | mean tokens/prompt |");
-    println!("|---|---|---|---|---|---|---|---|");
+    let margin_head = if several { "| margin " } else { "" };
+    let margin_rule = if several { "|---" } else { "" };
+    println!("{margin_head}| threshold | recall | top-1 right | false inj. off-topic | false inj. adjacent | precision | mean injected | mean tokens/prompt |");
+    println!("{margin_rule}|---|---|---|---|---|---|---|---|");
     for row in &sweep {
         let mark = if (row.threshold - selected).abs() < 1e-9 {
             " **←**"
         } else {
             ""
         };
-        print_table_row(&[
+        let mut cells = Vec::new();
+        if several {
+            cells.push(format!("{:.2}", row.margin));
+        }
+        cells.extend([
             format!("{:.2}{mark}", row.threshold),
             pct(row.recall),
             pct(row.top1_correct),
@@ -247,6 +264,7 @@ fn run_gate(
             format!("{:.2}", row.mean_injected),
             format!("{:.0}", row.mean_tokens),
         ]);
+        print_table_row(&cells);
     }
 
     let top1 = |kind: Kind| {
@@ -263,7 +281,7 @@ fn run_gate(
     let all_bytes: usize = chunks.iter().map(|c| c.document().len()).sum();
     let selected_row = sweep
         .iter()
-        .find(|r| (r.threshold - selected).abs() < 1e-9)
+        .find(|r| (r.threshold - selected).abs() < 1e-9 && r.margin.abs() < 1e-9)
         .cloned();
     let break_even = selected_row
         .as_ref()
@@ -542,8 +560,9 @@ fn main() -> Result<()> {
             negatives,
             top,
             selected,
+            margins,
         } => {
-            let report = run_gate(&cli, relevant, negatives, *top, *selected)?;
+            let report = run_gate(&cli, relevant, negatives, *top, *selected, margins)?;
             println!();
             for (label, s) in [
                 ("relevant", &report.top1_score_relevant),

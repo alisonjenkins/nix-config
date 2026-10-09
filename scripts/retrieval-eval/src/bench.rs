@@ -65,6 +65,8 @@ pub struct Case {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct GateRow {
     pub threshold: f64,
+    /// Smallest lead of the best score over the runner-up that still injects.
+    pub margin: f64,
     /// Relevant prompts whose injected set holds an expected memory.
     pub recall: f64,
     /// Relevant prompts whose first injected memory is an expected one.
@@ -84,6 +86,18 @@ pub fn gate_row(
     top: usize,
     tokens_of: &dyn Fn(&str) -> f64,
 ) -> GateRow {
+    gate_row_margin(cases, threshold, 0.0, top, tokens_of)
+}
+
+/// Like `gate_row`, but a prompt injects nothing when its best score leads
+/// the runner-up by less than `margin`; a lone score always leads.
+pub fn gate_row_margin(
+    cases: &[Case],
+    threshold: f64,
+    margin: f64,
+    top: usize,
+    tokens_of: &dyn Fn(&str) -> f64,
+) -> GateRow {
     let ratio = |part: f64, whole: f64| if whole == 0.0 { 0.0 } else { part / whole };
 
     let (mut relevant, mut offtopic, mut adjacent) = (0.0, 0.0, 0.0);
@@ -92,10 +106,14 @@ pub fn gate_row(
     let (mut injected_total, mut token_total) = (0.0, 0.0);
 
     for case in cases {
+        let leads = match (case.scored.first(), case.scored.get(1)) {
+            (Some((_, best)), Some((_, second))) => best - second >= margin,
+            _ => true,
+        };
         let injected: Vec<&str> = case
             .scored
             .iter()
-            .filter(|(_, score)| *score >= threshold)
+            .filter(|(_, score)| leads && *score >= threshold)
             .take(top)
             .map(|(id, _)| id.as_str())
             .collect();
@@ -129,6 +147,7 @@ pub fn gate_row(
     let n = cases.len() as f64;
     GateRow {
         threshold,
+        margin,
         recall: ratio(recalled, relevant),
         top1_correct: ratio(top1, relevant),
         false_injection_offtopic: ratio(inj_off, offtopic),
@@ -291,6 +310,24 @@ mod tests {
             row.mean_tokens,
             3.0 * (10.0 + CONTEXT_HEADER_TOKENS) / 6.0
         ));
+    }
+
+    #[test]
+    fn margin_gate_drops_prompts_whose_best_score_barely_leads() {
+        // rel-a leads x by 0.10 and passes; rel-b leads by 0.05 and is dropped;
+        // a lone off-topic score has no runner-up, so it is not held back.
+        let row = gate_row_margin(&cases(), 0.7, 0.07, 3, &ten_tokens);
+        assert!(close(row.margin, 0.07));
+        assert!(close(row.recall, 1.0 / 3.0));
+        assert!(close(row.false_injection_offtopic, 0.5));
+    }
+
+    #[test]
+    fn margin_gate_of_zero_is_the_plain_gate() {
+        assert_eq!(
+            gate_row_margin(&cases(), 0.7, 0.0, 3, &ten_tokens),
+            gate_row(&cases(), 0.7, 3, &ten_tokens)
+        );
     }
 
     #[test]
