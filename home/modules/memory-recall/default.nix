@@ -473,7 +473,12 @@ in
     systemd.user.services.memory-recall-index = {
       Unit.Description = "Refresh the memory-recall vector cache";
       Service = {
-        Type = "oneshot";
+        # Not oneshot: a switch starts this unit and waits for the start job, and a
+        # first index (two 512-dimension caches, about 3 minutes) outlasts the
+        # reload's wait, which failed home-manager-ali.service with "timed out
+        # waiting on channel" although the index finished fine. `exec` completes the
+        # job once the process has started.
+        Type = "exec";
         # Starts and stops its own embedding server; it does not need the query one.
         ExecStart = "${indexScript}/bin/memory-recall-index";
         # That server embeds with several threads for up to ~90 s on the first
