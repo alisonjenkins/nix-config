@@ -120,6 +120,9 @@ in {
             enable = true;
             memoryDir = "/home/${specialArgs.username}/.claude/projects/-home-${specialArgs.username}-git-personal-nix-config/memory";
             skills.enable = true;
+            # Builds push the load average past 20 and the hooks' 3 s embed timeout
+            # then blocks prompts; keyword matches beat a stopped session.
+            onUnavailable = "keyword";
             # Keeps MEMORY.md names-only after every index run, so Claude's own
             # appends cannot grow the always-loaded index.
             catalogue.enable = true;
