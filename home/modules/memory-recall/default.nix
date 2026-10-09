@@ -169,11 +169,13 @@ in
 
     dims = mkOption {
       type = types.enum [ 128 256 512 768 ];
-      default = 256;
+      default = 512;
       description = ''
         Matryoshka dimensions kept per vector. Changing it, or the model,
-        invalidates the vector cache and the score threshold: re-measure
-        minScore (docs/memory-recall.md).
+        invalidates the vector cache and the score thresholds: re-measure
+        minScore, bodyScore and the skills floors (docs/memory-recall.md).
+        512 separates right from wrong matches better than 256: at the same
+        recall, adjacent prompts get half the false injections (bench/results/dims-512.md).
       '';
     };
 
@@ -188,9 +190,10 @@ in
       default = 0.70;
       description = ''
         Cosine similarity a memory must reach to be injected at all, as a
-        one-line snippet. The right memory's best score ran 0.70 to 0.87 over 58
-        queries, so this leans to recall; a stray snippet costs about 35 tokens.
-        Measured for EmbeddingGemma 2 at 256 dimensions.
+        one-line snippet. At 512 dimensions the right memory's best score ran
+        0.68 to 0.86 over 88 queries on three sets and 90 to 93% of them clear
+        0.70; 3% of off-topic and 35% of adjacent prompts do too, at about 35
+        tokens a stray snippet. Measured for EmbeddingGemma 2.
       '';
     };
 
@@ -206,11 +209,13 @@ in
 
     bodyScore = mkOption {
       type = types.float;
-      default = 0.76;
+      default = 0.74;
       description = ''
         With `inject = "auto"`, the score from which a memory is injected in
         full (about 1,000 tokens) so the model answers without opening the file.
-        Higher than minScore because a wrong full memory is the expensive mistake.
+        Higher than minScore because a wrong full memory is the expensive mistake:
+        at 512 dimensions and 0.74, 3% of off-topic and 5% of adjacent prompts get
+        one and 89 to 93% of injections are right.
       '';
     };
 
@@ -332,24 +337,25 @@ in
 
       minScore = mkOption {
         type = types.float;
-        default = 0.74;
+        default = 0.72;
         description = ''
-          Cosine similarity a skill section must reach to be injected. Skill
-          scores overlap more than memory scores: at 0.74 the right section is
-          in the top 3 for 70% of queries and 20% of off-topic prompts get an
-          injection (240 tokens a prompt on average); lower floors buy recall at
-          40 to 90% false injections (docs/memory-recall.md).
+          Cosine similarity a skill section must reach to be injected in full.
+          Skill scores overlap more than memory scores. At 512 dimensions and 0.72
+          the right section is among the top 3 for 80 to 85% of queries and 27% of
+          off-topic prompts get an injection (220 to 300 tokens a prompt on
+          average); sections between pointerScore and this are one-line pointers.
         '';
       };
 
       pointerScore = mkOption {
         type = types.nullOr types.float;
-        default = null;
+        default = 0.66;
         description = ''
           A section scoring from here up to minScore is injected as a one-line
           pointer (path, score, first line) for the model to open if it applies,
-          about 30 tokens each; only minScore and above are injected in full.
-          null injects nothing below minScore.
+          about 30 tokens each; only minScore and above are injected in full. At
+          512 dimensions the right section is among the top 3 for 87 to 90% of
+          queries from 0.66. null injects nothing below minScore.
         '';
       };
 
