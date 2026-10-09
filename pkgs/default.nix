@@ -23,6 +23,7 @@
   effectcraft = pkgs.callPackage ./effectcraft {};
   vectorcraft = pkgs.callPackage ./vectorcraft {};
   lightcraft = pkgs.callPackage ./lightcraft {};
+  pdfcraft = pkgs.callPackage ./pdfcraft {};
   uresourced = pkgs.callPackage ./uresourced {};
   xr-video-player = pkgs.callPackage ./xr-video-player {};
   piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
