@@ -24,6 +24,7 @@ in
       cavemem = (pkgsFor system).cavemem;
       sift = (pkgsFor system).sift;
       memory-recall = (pkgsFor system).memory-recall;
+      token-tools = (pkgsFor system).token-tools;
       vr-foveation-bench = (pkgsFor system).vr-foveation-bench;
       containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
     } //
