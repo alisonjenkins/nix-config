@@ -374,6 +374,29 @@ in
           3,000 tokens together, less than the names-only catalogue saves.
         '';
       };
+
+      shortListing = {
+        enable = mkEnableOption ''
+          installing skills with a short listing description. Claude Code puts every
+          skill's description in every session; with this on, the claude-code module
+          installs each skill's SKILL.md with a one-sentence description and moves
+          the full text into a "When to use" section, which the skills hook retrieves
+          by meaning. The skills in the repository keep their full descriptions.
+          Needs skills.enable: without the hook the long descriptions are gone
+          and nothing brings them back
+        '';
+
+        chars = mkOption {
+          type = types.ints.positive;
+          default = 160;
+          description = ''
+            Longest listing description, in characters: the skill's
+            `metadata.summary` (or a top-level `summary:`) when it has one, else its
+            first sentence, cut at a word.
+            Skills whose description already fits are left alone.
+          '';
+        };
+      };
     };
   };
 
@@ -387,6 +410,10 @@ in
       {
         assertion = isLinux || isDarwin;
         message = "modules.memoryRecall runs its server as a systemd user unit (Linux) or a launchd agent (macOS).";
+      }
+      {
+        assertion = !cfg.skills.shortListing.enable || cfg.skills.enable;
+        message = "modules.memoryRecall.skills.shortListing needs skills.enable: the full descriptions are only reachable through the skills hook.";
       }
     ];
 

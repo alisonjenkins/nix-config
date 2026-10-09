@@ -184,8 +184,26 @@ let
   sharedSkillsFarm = pkgs.linkFarm "shared-skills" (
     lib.mapAttrsToList (name: path: { inherit name path; }) inputs.self.lib.skills
   );
+  # modules.memoryRecall.skills.shortListing, read by path because this module is
+  # imported where memoryRecall may not be.
+  shortListing = lib.attrByPath [ "modules" "memoryRecall" "skills" "shortListing" ]
+    { enable = false; chars = 160; }
+    config;
+  skillTransformPkg = lib.attrByPath [ "modules" "memoryRecall" "package" ] pkgs.memory-recall config;
+
+  # With shortListing on, the installed SKILL.md files get a one-sentence
+  # description and the full text as a "When to use" section; bundled files stay
+  # symlinks. The sources are untouched.
+  allSkills =
+    if shortListing.enable then
+      pkgs.runCommand "claude-code-skills-short" { nativeBuildInputs = [ skillTransformPkg ]; } ''
+        skill-transform --input ${fullSkills} --output $out --short-chars ${toString shortListing.chars}
+      ''
+    else
+      fullSkills;
+
   # The remaining paths are *parents* of many skills, so merging contents is right.
-  allSkills = pkgs.symlinkJoin {
+  fullSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
     paths = [
       anthropicSkillsFarm

@@ -123,6 +123,9 @@ in {
             # Builds push the load average past 20 and the hooks' 3 s embed timeout
             # then blocks prompts; keyword matches beat a stopped session.
             onUnavailable = "keyword";
+            # Cuts the skill listing from about 4,200 to 1,200 tokens; the full
+            # descriptions come back through the skills hook (ADR 0038).
+            skills.shortListing.enable = true;
             # Keeps MEMORY.md names-only after every index run, so Claude's own
             # appends cannot grow the always-loaded index.
             catalogue.enable = true;
