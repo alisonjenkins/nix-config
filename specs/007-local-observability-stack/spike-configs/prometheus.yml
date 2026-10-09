@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 30s
+
+otlp:
+  promote_resource_attributes:
+    - host
+    - review.run
+    - repository
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["127.0.0.1:9090"]
