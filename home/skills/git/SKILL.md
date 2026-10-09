@@ -2,6 +2,8 @@
 name: git
 description: >-
   Use when committing, amending, splitting or reordering changes, opening/updating/merging a PR, merge strategy, branching, or worktree setup ("commit this", "push it", "open a PR"). Also: responding to review on your PR (threads, resolve, Copilot re-review, auto-merge), ship this, fixup commits, merge/rebase conflicts, .gitignore vs .git/info/exclude. Not for judging someone else's diff or PR (see review).
+metadata:
+  summary: "Use for commit, push, PR, merge, rebase, branches, worktrees, review threads on your PR, .gitignore, fixup commits."
 ---
 
 # Git

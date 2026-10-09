@@ -2,6 +2,8 @@
 name: requirements
 description: >-
   Use before starting work when the request names a solution not a problem ("add caching", "make it faster", "clean this up", "refactor this"), a term could mean two things, you are about to guess which reading was meant, or you cannot say in one sentence what is wrong today and for whom. Also when a constraint looks impossible. Not for choosing the shape once the problem itself is clear (see design).
+metadata:
+  summary: "Use before starting when the request names a solution not a problem ('add caching', 'make it faster'), is ambiguous, or you would guess."
 ---
 
 # Requirements

@@ -2,6 +2,8 @@
 name: programming
 description: >-
   Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET), plus assertions, thread-safety, input validation/secrets, observability, and performance/profiling.
+metadata:
+  summary: "Use when writing, changing, fixing or debugging code in any language: Rust, Python, Nix, TypeScript, shell, Go, C#; secrets, concurrency, performance."
 ---
 
 # Programming

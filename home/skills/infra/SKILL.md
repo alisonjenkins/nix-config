@@ -2,6 +2,8 @@
 name: infra
 description: >-
   Use when deploying, changing cluster or cloud state, debugging a running service or a failed activation, or reaching for kubectl, terraform, aws, gh, deploy-rs, nixos-rebuild, darwin-rebuild, home-manager switch, or just switch/deploy. Also AccessDenied/IAM debugging. Carries the infrastructure-as-code-first rule and when live-system changes need the user's OK first.
+metadata:
+  summary: "Use for deploy, kubectl, terraform, aws, deploy-rs, nixos-rebuild, home-manager switch, failed activation, IAM AccessDenied; IaC first."
 ---
 
 # Infrastructure

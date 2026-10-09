@@ -2,6 +2,8 @@
 name: debugging
 description: >-
   Use when something is broken, failing intermittently, behaving differently in one environment than another, or when every check you run says it is fine but it plainly is not. Not for a platform-driven investigation (see observability) or a deploy/activation failure (see infra) — both apply this same method: reproduce, probe the layer closest to the fault, use a positive control, diff the working path against the failing one.
+metadata:
+  summary: "Use when something is broken, flaky, or differs between environments: reproduce, probe the closest layer, use a positive control."
 ---
 
 # Debugging

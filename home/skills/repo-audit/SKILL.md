@@ -2,6 +2,8 @@
 name: repo-audit
 description: >-
   Use when checking or fixing a git repository's hygiene, covering branch protection, secret scanning and push protection, dependency updates (renovate/dependabot), CI pipeline health, release management (release-please etc.), pre-commit hooks, or a Nix dev shell/packages flake. Works against any repo (path or owner/repo) on any forge (GitHub today, GitLab stubbed) via `scripts/audit.sh`.
+metadata:
+  summary: "Use to check a git repo's hygiene: branch protection, secret scanning, renovate/dependabot, CI, releases, pre-commit, Nix dev shell."
 ---
 
 # Repo audit

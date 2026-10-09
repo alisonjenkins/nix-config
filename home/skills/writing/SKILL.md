@@ -2,6 +2,8 @@
 name: writing
 description: >-
   Use when drafting or editing prose a person will read: a PR comment, review reply, commit body, README, design doc, report, release note, or message to a colleague. Also when asked to tighten text, cut fluff, de-slop it, or make it easier to read. Not for a .docx/.pdf/.pptx/.xlsx deliverable or multi-turn co-drafting with the user (see documents).
+metadata:
+  summary: "Use when drafting or editing prose a person reads: PR comment, commit body, README, design doc, release note; tighten, cut fluff."
 ---
 
 # Writing

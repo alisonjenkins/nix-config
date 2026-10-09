@@ -2,6 +2,8 @@
 name: web-ui
 description: >-
   Use when designing, styling, building or debugging a user-facing web interface, producing a self-contained HTML page or artifact, or checking a web app really works in a browser by clicking through it. Routes to the specialist skill that does the work: front-end design, artifact building, or browser-driven testing.
+metadata:
+  summary: "Use when designing, styling or debugging a web interface, building an HTML page or artifact, or testing a web app in a browser."
 ---
 
 # Web and UI
