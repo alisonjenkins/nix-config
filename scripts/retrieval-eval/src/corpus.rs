@@ -114,13 +114,32 @@ fn read(path: &Path) -> Result<String, CorpusError> {
     })
 }
 
+fn is_missing(error: &walkdir::Error) -> bool {
+    error
+        .io_error()
+        .is_some_and(|io| io.kind() == std::io::ErrorKind::NotFound)
+}
+
 fn markdown_files(dir: &Path, max_depth: usize) -> Result<Vec<PathBuf>, CorpusError> {
     let mut files = Vec::new();
-    for entry in WalkDir::new(dir).max_depth(max_depth).sort_by_file_name() {
-        let entry = entry.map_err(|source| CorpusError::Walk {
-            path: dir.to_owned(),
-            source,
-        })?;
+    // Installed skills are trees of symlinks into the Nix store.
+    for entry in WalkDir::new(dir)
+        .follow_links(true)
+        .max_depth(max_depth)
+        .sort_by_file_name()
+    {
+        let entry = match entry {
+            Ok(entry) => entry,
+            // A stale link (target gone) or a link back up the tree is skipped: one
+            // of them in an installed directory must not fail every lookup.
+            Err(error) if error.loop_ancestor().is_some() || is_missing(&error) => continue,
+            Err(source) => {
+                return Err(CorpusError::Walk {
+                    path: dir.to_owned(),
+                    source,
+                })
+            }
+        };
         let is_md = entry.path().extension().is_some_and(|ext| ext == "md");
         if entry.file_type().is_file() && is_md {
             files.push(entry.into_path());
@@ -568,6 +587,54 @@ mod tests {
         assert!(skill_names(&root.path().join("gone")).unwrap().is_empty());
         assert!(load_memories(&root.path().join("gone")).unwrap().is_empty());
         assert!(load_memories(root.path()).unwrap().is_empty());
+    }
+
+    #[test]
+    fn sections_are_read_through_symlinked_files_and_directories() {
+        let root = tempfile::tempdir().unwrap();
+        let real = root.path().join("real");
+        fs::create_dir_all(real.join("languages")).unwrap();
+        fs::write(real.join("languages/rust.md"), "## Toolchain\nuse clippy\n").unwrap();
+        fs::write(real.join("extra.md"), "## Extra\nmore\n").unwrap();
+        let skills = root.path().join("skills");
+        fs::create_dir_all(skills.join("s1")).unwrap();
+        std::os::unix::fs::symlink(real.join("languages"), skills.join("s1/languages")).unwrap();
+        std::os::unix::fs::symlink(real.join("extra.md"), skills.join("s1/extra.md")).unwrap();
+        fs::write(
+            skills.join("s1/SKILL.md"),
+            "---\nname: s1\n---\n## Own\ntext\n",
+        )
+        .unwrap();
+
+        let ids: Vec<String> = load_skill_sections(&skills, &["s1".to_owned()])
+            .unwrap()
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        assert!(
+            ids.contains(&"s1/languages/rust.md#Toolchain".to_owned()),
+            "{ids:?}"
+        );
+        assert!(ids.contains(&"s1/extra.md#Extra".to_owned()), "{ids:?}");
+        assert!(ids.contains(&"s1/SKILL.md#Own".to_owned()), "{ids:?}");
+    }
+
+    #[test]
+    fn a_dangling_symlink_or_a_symlink_loop_is_skipped_not_fatal() {
+        // One stale link in an installed skills directory must not block every prompt.
+        let root = tempfile::tempdir().unwrap();
+        let skill = root.path().join("s1");
+        fs::create_dir_all(&skill).unwrap();
+        fs::write(skill.join("SKILL.md"), "---\nname: s1\n---\n## Own\ntext\n").unwrap();
+        std::os::unix::fs::symlink("/nonexistent/target.md", skill.join("stale.md")).unwrap();
+        std::os::unix::fs::symlink(&skill, skill.join("loop")).unwrap();
+
+        let ids: Vec<String> = load_skill_sections(root.path(), &["s1".to_owned()])
+            .unwrap()
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        assert_eq!(ids, ["s1/SKILL.md#Own"]);
     }
 
     #[test]
