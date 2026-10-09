@@ -378,6 +378,7 @@ in
   imports = [
     inputs.lsfg-vk-flake.nixosModules.default
     inputs.stylix.nixosModules.stylix
+    ./craft-apps.nix
   ] ++ romModules;
 
   options.modules.desktop = {
