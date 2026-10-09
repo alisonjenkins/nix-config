@@ -103,6 +103,16 @@ works, how to enable it, and the benchmark results.
 | [0032](0032-fail-closed-separate-index-server-and-telemetry.md) | Fail closed, index on a separate server, ship telemetry to Loki and Tempo | Proposed; built, on trial on ali-desktop |
 | [0033](0033-route-more-work-to-cheap-delegates.md) | Route more work to cheap delegates; Haiku 5.5 first on Copilot | Accepted |
 
+## Token efficiency and observability
+
+Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observability-stack/).
+
+| # | Decision | Status |
+|---|---|---|
+| [0034](0034-observability-pod-via-podman-kube-play.md) | Run the observability stack as one pod with `podman kube play` | Accepted, pending the macOS spike |
+| [0035](0035-disk-budget-reported-not-enforced.md) | Report the observability stack's disk budget instead of enforcing it | Accepted |
+| [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted, not yet built (T056, T059) |
+
 ## Template
 
 ```markdown

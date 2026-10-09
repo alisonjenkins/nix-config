@@ -395,7 +395,8 @@ in
       # from the menu ("Remote Control requires feature-flag evaluation, which
       # is disabled because DISABLE_TELEMETRY is set"). Leaving it unset only
       # re-enables the feature-flag config fetch; OTel usage export stays off
-      # (opt-in via CLAUDE_CODE_ENABLE_TELEMETRY, unset). The superpowers
+      # (opt-in via CLAUDE_CODE_ENABLE_TELEMETRY, which
+      # home/modules/observability-stack sets when that module is on). The superpowers
       # brainstorm primeradiant.com logo beacon — the original reason for
       # DISABLE_TELEMETRY — is suppressed independently via its own dedicated
       # SUPERPOWERS_DISABLE_TELEMETRY switch below.
