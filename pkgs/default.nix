@@ -20,6 +20,7 @@
   lucien = pkgs.callPackage ./lucien {};
   photocraft = pkgs.callPackage ./photocraft {};
   filmcraft = pkgs.callPackage ./filmcraft {};
+  effectcraft = pkgs.callPackage ./effectcraft {};
   uresourced = pkgs.callPackage ./uresourced {};
   xr-video-player = pkgs.callPackage ./xr-video-player {};
   piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
