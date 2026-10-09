@@ -4,6 +4,7 @@
 |---|---|---|
 | `memory.json`, `facts.json`, `heldout-facts.json` | Questions, expected memory files and key facts for the memory benchmarks | **Placeholders.** Four synthetic questions about invented memories (`example-*.md`); they show the schema and nothing else. |
 | `skills.json`, `skills-facts.json` | The same for the skill sections under `home/skills` | Real: the skills are in this repo. |
+| `skills-heldout-facts.json` | 30 more skills queries, written after the setup was tuned on `skills-facts.json`, for checking that it was not tuned to those 20 | Real. |
 | `negatives.json` | Prompts no memory or skill should answer | Real: generic prompts. |
 
 The real memory sets name a person's private notes, so they are not committed. Put

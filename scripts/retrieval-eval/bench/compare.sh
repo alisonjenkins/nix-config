@@ -93,4 +93,17 @@ echo "== skills comparison"
   skills --skills-root "$skills" --embedder "$embedder" \
   --cache "$caches/skills.json" | tee "$out/compare-skills.md"
 
+# The short-listing setup as the module ships it (bench/results/short-listing.md): 160
+# character listing descriptions, sections injected in full from 0.72 and as pointers
+# from 0.66, 512 dimensions, on the held-out queries, against the default flow. The
+# skills root needs each skill's metadata.summary, so run it on the installed skills
+# after switching to a build that has them.
+echo "== skills with a short listing (skill-transform), pointers and the hook's floors"
+"$bin/recall-compare" --facts "$queries/skills-heldout-facts.json" --model "$model_name" \
+  --json "$out/compare-skills-short-heldout.json" "${extra[@]}" \
+  skills --skills-root "$skills" --embedder "gemma=gemma@http://127.0.0.1:$port#512" \
+  --cache "$caches/skills-512.json" --short-chars 160 \
+  --short-min-score 0.72 --short-pointer-score 0.66 \
+  --systems default_load,short_listing_hook_load | tee "$out/compare-skills-short-heldout.md"
+
 echo "done: $out"

@@ -17,7 +17,9 @@ use retrieval_eval::compare::extract_files;
 use retrieval_eval::corpus::{frontmatter_field, load_skill_sections, strip_frontmatter, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::llm_run::{ask, Coverage, Item, Llm, QueryRun, SystemRun};
+use retrieval_eval::recall::SECTIONS_HEADER;
 use retrieval_eval::retriever::Retriever;
+use retrieval_eval::skill_transform::transform_tree;
 use retrieval_eval::vector_cache::VectorCache;
 use walkdir::WalkDir;
 
@@ -38,12 +40,14 @@ const LISTING_DESCRIPTION_CHARS: usize = 1536;
 const SECTION_INJECT_CHARS: usize = 3000;
 const TIMING_RUNS: usize = 5;
 const EMBED_TIMEOUT: Duration = Duration::from_secs(300);
-const SYSTEMS: [&str; 6] = [
+const SYSTEMS: [&str; 8] = [
     "none",
     "default_skill_only",
     "default_load",
     "sections_bm25",
     "sections_embed",
+    "short_listing_sections",
+    "short_listing_hook_load",
     "oracle",
 ];
 
@@ -64,6 +68,32 @@ pub struct Args {
     /// Sections injected per query.
     #[arg(long, default_value_t = 3)]
     top: usize,
+    /// Characters of each description kept in the listing the default flow sees.
+    #[arg(long, default_value_t = LISTING_DESCRIPTION_CHARS)]
+    description_chars: usize,
+    /// Also run `short_listing_sections`: the skills as `skill-transform` would
+    /// install them with listing descriptions of this many characters, their
+    /// sections retrieved and injected.
+    #[arg(long)]
+    short_chars: Option<usize>,
+    /// With --short-chars: inject only sections scoring at least this, as the
+    /// hook's floor does (0.74 in the module); 0 injects the top sections always.
+    #[arg(long, default_value_t = 0.0)]
+    short_min_score: f64,
+    /// With --short-chars: sections from this score up to --short-min-score are
+    /// one-line pointers (the hook's `--min-score` below its `--full-score`).
+    #[arg(long, default_value_t = f64::INFINITY)]
+    short_pointer_score: f64,
+    /// Only these systems (comma separated) get model calls and a report row;
+    /// all of them when omitted.
+    #[arg(long, value_delimiter = ',')]
+    systems: Vec<String>,
+}
+
+impl Args {
+    fn wants(&self, system: &str) -> bool {
+        self.systems.is_empty() || self.systems.iter().any(|s| s == system)
+    }
 }
 
 struct Skill {
@@ -94,7 +124,7 @@ fn load_skills(root: &Path, only: &[String]) -> Result<Vec<Skill>> {
         let raw = fs::read_to_string(dir.join("SKILL.md"))?;
         let (_, body) = strip_frontmatter(&raw);
         let mut refs = Vec::new();
-        for entry in WalkDir::new(&dir).sort_by_file_name() {
+        for entry in WalkDir::new(&dir).follow_links(true).sort_by_file_name() {
             let path = entry?.into_path();
             let is_ref = path.extension().is_some_and(|e| e == "md")
                 && path.file_name().is_some_and(|n| n != "SKILL.md");
@@ -114,12 +144,8 @@ fn load_skills(root: &Path, only: &[String]) -> Result<Vec<Skill>> {
     Ok(skills)
 }
 
-fn listing_line(skill: &Skill) -> String {
-    let description: String = skill
-        .description
-        .chars()
-        .take(LISTING_DESCRIPTION_CHARS)
-        .collect();
+fn listing_line(skill: &Skill, description_chars: usize) -> String {
+    let description: String = skill.description.chars().take(description_chars).collect();
     format!("- {}: {description}", skill.name)
 }
 
@@ -150,6 +176,29 @@ fn injected(chunks: &[Chunk], ids: &[String]) -> String {
         .join("\n\n")
 }
 
+/// `injected`, except a hit scoring below `full_score` is a one-line pointer:
+/// its id, score and first line, as the hook renders it.
+fn injected_tiers(chunks: &[Chunk], hits: &[(String, f64)], full_score: f64) -> String {
+    hits.iter()
+        .filter_map(|(id, score)| chunks.iter().find(|c| &c.id == id).map(|c| (c, *score)))
+        .map(|(c, score)| {
+            if score >= full_score {
+                let text: String = c.text.chars().take(SECTION_INJECT_CHARS).collect();
+                format!("## {}\n{text}", c.id)
+            } else {
+                let first = c
+                    .text
+                    .lines()
+                    .find(|l| !l.trim().is_empty() && !l.trim_start().starts_with("```"))
+                    .unwrap_or_default();
+                let first: String = first.trim().chars().take(100).collect();
+                format!("- {} ({score:.2}): {first}", c.id)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n\n")
+}
+
 fn expected_skill(item: &Item) -> &str {
     item.expect
         .first()
@@ -171,7 +220,21 @@ struct Shared<'a> {
     root: &'a Path,
 }
 
-fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, SystemRun)> {
+/// What a hook adds to the default flow: sections already in front of the model
+/// on every turn, and whether retrieving them already found the right source.
+struct Hooked<'a> {
+    sections: &'a str,
+    found: bool,
+}
+
+fn default_flow(
+    shared: &Shared,
+    llm: &Llm,
+    item: &Item,
+    hooked: &Hooked,
+    labels: (&str, &str),
+) -> Result<(SystemRun, SystemRun)> {
+    let injected = hooked.sections;
     let base = format!("{SYSTEM_PREAMBLE}\n\n");
     let names: HashSet<String> = shared.skills.iter().map(|s| s.name.clone()).collect();
     let wanted = expected_files(item);
@@ -179,7 +242,11 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
     // The listing is in context on every turn, so it is the stable system block;
     // loaded skills and opened files arrive in the user turn, as tool results do.
     let stable = format!("{base}# Available skills\n{}", shared.listing);
-    let pick = ask(llm, &stable, &user_turn(&[PICK_SKILL_TASK], &item.q))?;
+    let pick = ask(
+        llm,
+        &stable,
+        &user_turn(&[injected, PICK_SKILL_TASK], &item.q),
+    )?;
     let chosen: Vec<&Skill> = extract_files(&pick.text, &names, 2)
         .iter()
         .filter_map(|n| shared.skills.iter().find(|s| &s.name == n))
@@ -194,18 +261,18 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
         .any(|s| wanted.contains(format!("{}/SKILL.md", s.name).as_str()));
 
     // Skill text only: the model never opens a reference file.
-    let mut only = SystemRun::named("default_skill_only");
-    let answer = ask(llm, &stable, &user_turn(&[&bodies], &item.q))?;
-    only.selection_hit = Some(skill_md_hit);
-    only.retrieved_tokens = tokens_of(&[&shared.listing, &bodies]);
+    let mut only = SystemRun::named(labels.0);
+    let answer = ask(llm, &stable, &user_turn(&[injected, &bodies], &item.q))?;
+    only.selection_hit = Some(hooked.found || skill_md_hit);
+    only.retrieved_tokens = tokens_of(&[&shared.listing, injected, &bodies]);
     only.finish(
         &item.facts,
         &[pick.clone(), answer],
-        &format!("{}\n{bodies}", shared.listing),
+        &format!("{}\n{injected}\n{bodies}", shared.listing),
     );
 
     // The full flow: the model also opens reference files named in the skill.
-    let mut full = SystemRun::named("default_load");
+    let mut full = SystemRun::named(labels.1);
     let by_name: HashMap<String, String> = chosen
         .iter()
         .flat_map(|s| s.refs.iter())
@@ -227,6 +294,7 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
             &stable,
             &user_turn(
                 &[
+                    injected,
                     &bodies,
                     &format!("Reference files:\n{listing}"),
                     PICK_FILES_TASK,
@@ -245,13 +313,17 @@ fn default_flow(shared: &Shared, llm: &Llm, item: &Item) -> Result<(SystemRun, S
         calls.push(pick_files);
     }
     let files = format!("# Reference files you opened\n{opened}");
-    calls.push(ask(llm, &stable, &user_turn(&[&bodies, &files], &item.q))?);
-    full.selection_hit = Some(skill_md_hit || files_hit);
-    full.retrieved_tokens = tokens_of(&[&shared.listing, &bodies, &opened]);
+    calls.push(ask(
+        llm,
+        &stable,
+        &user_turn(&[injected, &bodies, &files], &item.q),
+    )?);
+    full.selection_hit = Some(hooked.found || skill_md_hit || files_hit);
+    full.retrieved_tokens = tokens_of(&[&shared.listing, injected, &bodies, &opened]);
     full.finish(
         &item.facts,
         &calls,
-        &format!("{}\n{bodies}\n{opened}", shared.listing),
+        &format!("{}\n{injected}\n{bodies}\n{opened}", shared.listing),
     );
     Ok((only, full))
 }
@@ -260,6 +332,57 @@ struct Phase1 {
     runs: Vec<SystemRun>,
     bm25_text: String,
     embed_text: String,
+    short_text: String,
+    /// The right section was among the short corpus's top hits.
+    short_found: bool,
+}
+
+/// The skills after `skill-transform`: their listing, sections and embeddings.
+struct Shortened {
+    _dir: tempfile::TempDir,
+    root: PathBuf,
+    skills: Vec<Skill>,
+    listing: String,
+    chunks: Vec<Chunk>,
+    embedder: Embedder,
+}
+
+fn shorten(args: &Args, short_chars: usize, spec: EmbedderSpec) -> Result<Shortened> {
+    let dir = tempfile::tempdir().context("scratch dir for the shortened skills")?;
+    let outcomes =
+        transform_tree(&args.skills_root, dir.path(), short_chars).context("shorten the skills")?;
+    let changed = outcomes.iter().filter(|o| o.skipped.is_none()).count();
+    let skills = load_skills(dir.path(), &args.skills)?;
+    let listing = skills
+        .iter()
+        .map(|s| listing_line(s, LISTING_DESCRIPTION_CHARS))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let names: Vec<String> = skills.iter().map(|s| s.name.clone()).collect();
+    let chunks = load_skill_sections(dir.path(), &names)?;
+    eprintln!(
+        "shortened {changed} of {} skills to {short_chars} characters: listing ≈ {:.0} tokens, {} sections",
+        skills.len(),
+        approx_tokens(listing.len()),
+        chunks.len()
+    );
+    let mut embedder = Embedder::with_timeout(spec, EMBED_TIMEOUT);
+    let identity = embedder
+        .cache_identity()
+        .context("ask the server for its model")?;
+    let cache_path = args.cache.with_extension("short.json");
+    let mut cache = VectorCache::load(&cache_path, &identity)?;
+    let stats = embedder.index_cached(&chunks, &mut cache)?;
+    cache.save(&cache_path)?;
+    eprintln!("  embedded {}, reused {}", stats.embedded, stats.reused);
+    Ok(Shortened {
+        root: dir.path().to_owned(),
+        _dir: dir,
+        skills,
+        listing,
+        chunks,
+        embedder,
+    })
 }
 
 pub fn run(common: &Common, args: &Args) -> Result<()> {
@@ -269,7 +392,7 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
     let chunks = load_skill_sections(&args.skills_root, &names)?;
     let listing = skills
         .iter()
-        .map(listing_line)
+        .map(|s| listing_line(s, args.description_chars))
         .collect::<Vec<_>>()
         .join("\n");
     eprintln!(
@@ -280,6 +403,11 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
     );
 
     let spec = EmbedderSpec::from_str(&args.embedder)?;
+    let wants_short = args.wants("short_listing_sections") || args.wants("short_listing_hook_load");
+    let mut short = match (args.short_chars, wants_short) {
+        (Some(n), true) => Some(shorten(args, n, spec.clone())?),
+        _ => None,
+    };
     let mut embedder = Embedder::with_timeout(spec, EMBED_TIMEOUT);
     let identity = embedder
         .cache_identity()
@@ -319,11 +447,32 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
         });
         let embed_text = injected(&chunks, &embed_ids);
         let bm25_text = injected(&chunks, &bm25_ids);
+        let mut short_ids = Vec::new();
+        let mut short_text = String::new();
+        if let Some(short) = short.as_mut() {
+            let floor = args.short_pointer_score.min(args.short_min_score);
+            let hits: Vec<(String, f64)> = short
+                .embedder
+                .search(&item.q)
+                .map(|hits| {
+                    hits.into_iter()
+                        .filter(|(_, score)| *score >= floor)
+                        .take(args.top)
+                        .collect()
+                })
+                .unwrap_or_default();
+            short_ids = hits
+                .iter()
+                .filter(|(_, score)| *score >= args.short_min_score)
+                .map(|(id, _)| id.clone())
+                .collect();
+            short_text = injected_tiers(&short.chunks, &hits, args.short_min_score);
+        }
 
         let line = skills
             .iter()
             .find(|s| s.name == expected_skill(item))
-            .map(listing_line)
+            .map(|s| listing_line(s, args.description_chars))
             .unwrap_or_default();
         let mut runs = Vec::new();
         for name in SYSTEMS {
@@ -350,6 +499,15 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
                     run.selection_hit =
                         Some(embed_ids.iter().any(|id| wanted.contains(id.as_str())));
                 }
+                "short_listing_sections" if short.is_some() => {
+                    let listing_len = short.as_ref().map_or(0, |s| s.listing.len());
+                    run.retrieved_tokens =
+                        approx_tokens(listing_len.saturating_add(short_text.len()));
+                    run.retrieval = Coverage::of(&short_text, &item.facts);
+                    run.context = run.retrieval.clone();
+                    run.selection_hit =
+                        Some(short_ids.iter().any(|id| wanted.contains(id.as_str())));
+                }
                 "oracle" => {
                     run.retrieved_tokens = approx_tokens(expected_text.len());
                     run.retrieval = oracle.clone();
@@ -364,6 +522,8 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
             runs,
             bm25_text,
             embed_text,
+            short_text,
+            short_found: short_ids.iter().any(|id| wanted.contains(id.as_str())),
         });
     }
     if !ungrounded.is_empty() {
@@ -406,18 +566,66 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
             let base = format!("{SYSTEM_PREAMBLE}\n\n");
             let mut out: Vec<SystemRun> = Vec::new();
 
-            let mut none = SystemRun::named("none");
-            none.finish(&item.facts, &[ask(&llm, &base, &item.q)?], "");
-            out.push(none);
+            if args.wants("none") {
+                let mut none = SystemRun::named("none");
+                none.finish(&item.facts, &[ask(&llm, &base, &item.q)?], "");
+                out.push(none);
+            }
 
-            let (only, full) = default_flow(&shared, &llm, item)?;
-            out.push(only);
-            out.push(full);
+            if args.wants("default_skill_only") || args.wants("default_load") {
+                let none = Hooked {
+                    sections: "",
+                    found: false,
+                };
+                let (only, full) = default_flow(
+                    &shared,
+                    &llm,
+                    item,
+                    &none,
+                    ("default_skill_only", "default_load"),
+                )?;
+                out.push(only);
+                out.push(full);
+            }
+
+            // What a session with the short listing and the hook does: the
+            // sections arrive with the prompt, and the model may still load a
+            // skill and open its files.
+            if let Some(short) = short
+                .as_ref()
+                .filter(|_| args.wants("short_listing_hook_load"))
+            {
+                let sections = if p.short_text.is_empty() {
+                    String::new()
+                } else {
+                    format!("{SECTIONS_HEADER}\n{}", p.short_text)
+                };
+                let shared_short = Shared {
+                    skills: &short.skills,
+                    listing: short.listing.clone(),
+                    root: &short.root,
+                };
+                let hooked = Hooked {
+                    sections: &sections,
+                    found: p.short_found,
+                };
+                let (_, full) = default_flow(
+                    &shared_short,
+                    &llm,
+                    item,
+                    &hooked,
+                    ("short_listing_hook_skill_only", "short_listing_hook_load"),
+                )?;
+                out.push(full);
+            }
 
             for (name, text) in [
                 ("sections_bm25", &p.bm25_text),
                 ("sections_embed", &p.embed_text),
             ] {
+                if !args.wants(name) {
+                    continue;
+                }
                 let mut run = SystemRun::named(name);
                 let sections = if text.is_empty() {
                     String::new()
@@ -426,6 +634,25 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
                 };
                 let call = ask(&llm, &base, &user_turn(&[&sections], &item.q))?;
                 run.finish(&item.facts, &[call], text);
+                out.push(run);
+            }
+
+            if let Some(short) = short
+                .as_ref()
+                .filter(|_| args.wants("short_listing_sections"))
+            {
+                let mut run = SystemRun::named("short_listing_sections");
+                // The short listing is always in context, so it is the stable block.
+                let stable = format!("{base}# Available skills\n{}", short.listing);
+                let sections = if p.short_text.is_empty() {
+                    String::new()
+                } else {
+                    format!("{SECTIONS_HEADER}\n{}", p.short_text)
+                };
+                let call = ask(&llm, &stable, &user_turn(&[&sections], &item.q))?;
+                run.finish(&item.facts, &[call], &p.short_text);
+                run.retrieved_tokens =
+                    approx_tokens(short.listing.len().saturating_add(p.short_text.len()));
                 out.push(run);
             }
             Ok(out)
@@ -454,5 +681,10 @@ pub fn run(common: &Common, args: &Args) -> Result<()> {
         }
     }
 
-    emit(common, &query_runs, &SYSTEMS)
+    let shown: Vec<&str> = SYSTEMS
+        .iter()
+        .copied()
+        .filter(|s| args.wants(s) && (!s.starts_with("short_listing_") || short.is_some()))
+        .collect();
+    emit(common, &query_runs, &shown)
 }
