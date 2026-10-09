@@ -23,16 +23,15 @@
     # (nvidiaPackages.legacy_580 -- the only track that supports the
     # passed-through GTX 1070/Pascal for NVENC transcode; open-gpu-kernel-modules
     # only supports Turing+) still calls it directly in os-interface.c, so it
-    # fails to build against 7.2+. 7.1.10 is a small patch bump from the
-    # previously-running 7.1.7, still pre-strncpy-removal, same nixpkgs
-    # channel as everything else (not the nixpkgs_old/24.11 branch).
+    # fails to build against 7.2+. 6.18 is the LTS line (nixpkgs dropped 7.1
+    # as EOL), pre-strncpy-removal, same nixpkgs channel as everything else.
     #
     # TEMPORARY. Tracked in alisonjenkins/nix-config#226. The scheduled
     # canary in .github/workflows/nvidia-kernel-canary.yml builds
     # nvidiaPackages.legacy_580 against linuxPackages_latest weekly and
     # fails the moment that combination works again -- that's the signal to
     # revert this back to pkgs.linuxPackages_latest and close the issue.
-    boot.kernelPackages = pkgs.linuxKernel.packages.linux_7_1;
+    boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
     boot.kernelPatches = [
       {
         name = "enable-netkit";
