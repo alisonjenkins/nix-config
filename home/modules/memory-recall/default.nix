@@ -79,7 +79,10 @@ let
     "--log-verbosity"
     "2"
   ] ++ lib.optionals (cfg.threads != null) [ "--threads" (toString cfg.threads) ];
-  serverArgv = serverArgvOn cfg.port;
+  # Only the query server pins its pages; the index server is short-lived. This
+  # llama.cpp has no --mlock: the loading mode is --load-mode (checked: --mlock
+  # exits 1 with "invalid argument", which would crash-loop the unit).
+  serverArgv = serverArgvOn cfg.port ++ [ "--load-mode" "mmap+mlock" ];
 
   # Embedding a long document makes llama.cpp keep its largest compute buffer for
   # good: the server goes from ~425 MB to ~1.6 GB after one long memory and ~2.7 GB
@@ -349,20 +352,32 @@ in
 
     home.packages = [ cfg.package ];
 
+    # The unit starts llama-server with these flags and restarts it when it exits.
+    # A flag the pinned llama.cpp rejects (--mlock was one) crash-loops it, and every
+    # prompt then blocks. `--version` parses the arguments and exits without loading
+    # the model, so a bad list stops the switch before anything is written.
+    home.activation.memoryRecallServerFlags = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+      if ! server_flags_out=$(${lib.escapeShellArgs serverArgv} --version 2>&1); then
+        echo "memory-recall: llama-server rejects the embedding server's flags; the unit would crash-loop and every prompt would block:" >&2
+        echo "$server_flags_out" >&2
+        exit 1
+      fi
+    '';
+
     # Appended to the hooks in home/programs/claude-code, the way claude-monitor
-    # adds its own. 5 s is above the binary's own 3 s request timeout.
+    # adds its own. 12 s is above the binary's own 8 s request timeout.
     programs.claude-code.settings.hooks.UserPromptSubmit = [
       {
         hooks = [
           {
             type = "command";
             command = "${hookScript}";
-            timeout = 5;
+            timeout = 12;
           }
         ] ++ lib.optional cfg.skills.enable {
           type = "command";
           command = "${skillsHookScript}";
-          timeout = 5;
+          timeout = 12;
         };
       }
     ];
@@ -373,10 +388,17 @@ in
       Unit.Description = "Embedding server for memory-recall";
       Service = {
         ExecStart = lib.concatStringsSep " " serverArgv;
-        Restart = "on-failure";
-        RestartSec = 5;
-        # Embeds a prompt in ~20 ms, so it never needs to win against a game.
-        Nice = 10;
+        Restart = "always";
+        RestartSec = 2;
+        # A prompt waits for this server, and a hook that gets no answer blocks it.
+        # On a busy desktop (a game, a browser, a build) the kernel swapped the
+        # server out, and paging it back in took longer than the hook waited. So it
+        # may not swap, its pages are locked (--load-mode mmap+mlock) and protected from reclaim,
+        # and it runs at normal priority with extra CPU weight: it is ~300 MB and
+        # embeds a prompt in ~20 ms, so this costs the rest of the system nothing.
+        MemorySwapMax = 0;
+        MemoryLow = "1G";
+        CPUWeight = 200;
       };
       Install.WantedBy = [ "default.target" ];
     };

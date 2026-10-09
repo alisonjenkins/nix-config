@@ -59,6 +59,10 @@ fn serve_on(listener: TcpListener) {
             }
             let text = String::from_utf8_lossy(&request).into_owned();
             let body = text.split_once("\r\n\r\n").map_or("", |(_, b)| b);
+            // A server that is alive but slow, as one that has been swapped out.
+            if body.contains("slowpoke") {
+                thread::sleep(std::time::Duration::from_secs(4));
+            }
             let parsed: serde_json::Value = serde_json::from_str(body).unwrap_or_default();
             let data: Vec<serde_json::Value> = parsed["input"]
                 .as_array()
@@ -196,6 +200,51 @@ fn memory_hook_injects_a_match_and_logs_it_without_the_prompt() {
     assert_eq!(entries[0].kind, "memory");
     assert!(entries[0].matches >= 1 && !entries[0].failed);
     assert!(!fs::read_to_string(&log).unwrap().contains("alpha problem"));
+}
+
+/// A memory hook over a server that answers after 4 s, with `extra` hook arguments.
+fn slow_server_run(extra: &[&str]) -> (Output, Vec<Entry>) {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let emb = embedder(&serve());
+    let base = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    let mut index = base.clone();
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+
+    let mut hook = base.clone();
+    hook.extend(["hook", "--log", log.to_str().unwrap()]);
+    hook.extend(extra);
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("slowpoke how do I fix the alpha problem"),
+    );
+    (out, log_entries(&log))
+}
+
+#[test]
+fn a_blocking_hook_waits_for_a_server_that_is_slow_but_alive() {
+    let (out, entries) = slow_server_run(&[]);
+    assert!(
+        out.status.success(),
+        "a slow server must not block: {out:?}"
+    );
+    assert!(context(&out).contains("alpha-note.md"), "{out:?}");
+    assert!(!entries[0].failed && !entries[0].fallback);
+    assert!(entries[0].embed_ms.is_some_and(|ms| ms >= 3500.0));
+}
+
+#[test]
+fn a_hook_that_can_fall_back_gives_up_on_a_slow_server_sooner() {
+    let (out, entries) = slow_server_run(&["--on-unavailable", "keyword"]);
+    assert!(out.status.success(), "{out:?}");
+    assert!(entries[0].fallback, "it falls back after 3 s: {entries:?}");
 }
 
 #[test]
@@ -589,6 +638,43 @@ fn short_prompts_are_ignored_and_not_logged() {
     let out = run(MEMORY_BIN, &hook, &payload("yes"));
     assert!(out.status.success() && out.stdout.is_empty());
     assert!(!log.exists());
+}
+
+#[test]
+fn automated_notifications_are_never_blocked_even_with_the_server_down() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    write_skills(&tmp.path().join("skills"));
+    let (mem, skills, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("skills"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let emb = embedder(DEAD_URL);
+    let prompts = [
+        "<task-notification>\n<task-id>b1</task-id>\n<status>killed</status>\nthe alpha command stopped\n</task-notification>",
+        "[SYSTEM NOTIFICATION - NOT USER INPUT]\nThis is an automated background-task event about alpha.",
+        "<system-reminder>\nAnother session sent a message about the alpha setup\n</system-reminder>",
+    ];
+    for prompt in prompts {
+        let mut memory = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+        memory.extend(["hook", "--log", log.to_str().unwrap()]);
+        let out = run(MEMORY_BIN, &memory, &payload(prompt));
+        assert!(
+            out.status.success() && out.stdout.is_empty(),
+            "memory: {out:?}"
+        );
+
+        let mut skill = skill_args(skills.to_str().unwrap(), &emb, cache.to_str().unwrap());
+        skill.extend(["hook", "--log", log.to_str().unwrap()]);
+        let out = run(SKILL_BIN, &skill, &payload(prompt));
+        assert!(
+            out.status.success() && out.stdout.is_empty(),
+            "skills: {out:?}"
+        );
+    }
+    assert!(!log.exists(), "automated prompts are not logged");
 }
 
 #[test]

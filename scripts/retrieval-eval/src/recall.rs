@@ -31,12 +31,23 @@ pub enum Inject {
     Tiered { body_score: f64 },
 }
 
+/// What Claude Code itself puts in the prompt slot: background-task events and
+/// system reminders. They are not the user's words, so retrieving for them only
+/// adds noise, and blocking one loses the event.
+const AUTOMATED_PREFIXES: [&str; 3] = [
+    "<task-notification",
+    "[SYSTEM NOTIFICATION",
+    "<system-reminder",
+];
+
 /// The user's prompt from a UserPromptSubmit hook payload, or `None` when it
-/// is absent, unparseable, or too short to be worth a lookup.
+/// is absent, unparseable, automated, or too short to be worth a lookup.
 pub fn prompt_from_hook_input(stdin_json: &str) -> Option<String> {
     let payload: serde_json::Value = serde_json::from_str(stdin_json).ok()?;
     let prompt = payload.get("prompt")?.as_str()?.trim();
-    if prompt.chars().count() < MIN_PROMPT_CHARS {
+    if prompt.chars().count() < MIN_PROMPT_CHARS
+        || AUTOMATED_PREFIXES.iter().any(|p| prompt.starts_with(p))
+    {
         return None;
     }
     Some(prompt.chars().take(MAX_PROMPT_CHARS).collect())
@@ -142,6 +153,23 @@ pub enum OnUnavailable {
     Keyword,
     /// Let the prompt through with nothing injected.
     Allow,
+}
+
+/// Longest a blocking hook waits for the embedding server. Normally it answers in
+/// tens of milliseconds; after the machine has swapped the server out it needs
+/// several seconds to page back in, and giving up then blocks the prompt.
+const BLOCKING_WAIT: std::time::Duration = std::time::Duration::from_secs(8);
+
+/// Longest a hook that can fall back (keyword matches, or nothing) waits: it has
+/// a way out, so a stalled server should not also cost the prompt seconds.
+const FALLBACK_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// How long a hook waits for the embedding server, by what it does on failure.
+pub fn hook_timeout(on_unavailable: OnUnavailable) -> std::time::Duration {
+    match on_unavailable {
+        OnUnavailable::Block => BLOCKING_WAIT,
+        OnUnavailable::Keyword | OnUnavailable::Allow => FALLBACK_WAIT,
+    }
 }
 
 /// A hook refused a prompt; `main` turns this into exit code 2 and prints it.

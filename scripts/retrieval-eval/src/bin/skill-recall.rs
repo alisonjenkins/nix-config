@@ -21,9 +21,6 @@ use retrieval_eval::telemetry::{spawn_ship, Targets};
 use retrieval_eval::vector_cache::VectorCache;
 use tracing::{info, warn};
 
-/// The hook runs on every prompt: a recall that takes longer than this costs
-/// more than it gives, so give up and inject nothing.
-const HOOK_TIMEOUT: Duration = Duration::from_secs(3);
 /// Claude Code treats exit code 2 from a UserPromptSubmit hook as "block this
 /// prompt" and shows stderr to the user.
 const BLOCK_EXIT_CODE: u8 = 2;
@@ -373,8 +370,8 @@ fn run(cli: &Cli) -> Result<()> {
             };
             let (session_id, prompt_id) = ids_from_hook_input(&stdin);
             let started = Instant::now();
-            let mut recalled = match recall(cli, &prompt, *selection, *on_unavailable, HOOK_TIMEOUT)
-            {
+            let timeout = retrieval_eval::recall::hook_timeout(*on_unavailable);
+            let mut recalled = match recall(cli, &prompt, *selection, *on_unavailable, timeout) {
                 Ok(recalled) => recalled,
                 Err(error) => {
                     let mut failure =
