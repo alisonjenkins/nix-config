@@ -1,0 +1,6 @@
+{"status":"success","data":{"resultType":"streams","result":[
+{"stream":{"service_name":"claude-code","event_name":"tool_result","tool_name":"Read","tool_result_size_bytes":"40000","session_id":"s1"},"values":[["1760000000000000001","SECRET-PROMPT-TEXT must never be echoed"]]},
+{"stream":{"service_name":"claude-code","event_name":"tool_result","tool_name":"Read","tool_result_size_bytes":"60000","session_id":"s2"},"values":[["1760000000000000002","tool_result"]]},
+{"stream":{"service_name":"claude-code","event_name":"tool_result","tool_name":"Bash","tool_result_size_bytes":"4000","session_id":"s1"},"values":[["1760000000000000003","tool_result"]]},
+{"stream":{"service_name":"claude-code","event_name":"tool_result","tool_name":"Grep","tool_result_size_bytes":"16000","session_id":"s2"},"values":[["1760000000000000004","tool_result"]]}
+],"stats":{}}}

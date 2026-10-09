@@ -1,0 +1,1 @@
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"session_id":"s1"},"value":[1760000000.0,"70000"]},{"metric":{"session_id":"s2"},"value":[1760000000.0,"60000"]}]}}

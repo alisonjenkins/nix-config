@@ -1,0 +1,1 @@
+{"traces":[{"traceID":"abc123","rootServiceName":"claude-code","rootTraceName":"interaction","startTimeUnixNano":"1760000000000000000","durationMs":4200}],"metrics":{"inspectedBytes":"1024"}}

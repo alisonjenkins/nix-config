@@ -1,0 +1,71 @@
+version: 1
+regrowth_factor: 1.5
+# Collected signals no question asks about; listed so `cc-obs-query unused-signals` stays quiet.
+retire:
+  - claude_code.session.count
+  - claude_code.active_time.total
+  - claude_code.lines_of_code.count
+  - claude_code.code_edit_tool.decision
+  - claude_code.tool_result.tool_input_size_bytes
+  - claude_code.tool_result.duration_ms
+  - claude_code.api_request
+  - claude_code.api_error
+  - claude_code.cost.usage
+  - cc_obs_ledger.session
+questions:
+  - id: tool-result-size
+    title: Which tools return the most tokens per use?
+    signals: [claude_code.tool_result.tool_result_size_bytes, claude_code.token.usage]
+    query: { command: "cc-obs-query top tool --by tokens" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_share: 0.03, min_calls: 20 }
+  - id: repeat-calls
+    title: Which tool calls are repeated or near-identical within a session?
+    signals: [cc_obs_ledger.tool_call]
+    query: { command: "cc-obs-query repeats" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_calls: 5 }
+  - id: skills-loaded-unused
+    title: Which skills cost tokens without being activated?
+    signals: [claude_code.skill_activated, claude_code.token.usage]
+    query: { command: "cc-obs-query top skill --by tokens" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.02 }
+  - id: mcp-idle-servers
+    title: Which MCP servers account for the most tokens? (idle servers cannot be listed; no connected-server signal)
+    signals: [claude_code.token.usage, cc_obs_ledger_fixed_context_tokens]
+    query: { command: "cc-obs-query top mcp --by tokens" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.02 }
+  - id: fixed-context-share
+    title: How much of each request is fixed context?
+    signals: [cc_obs_ledger_fixed_context_tokens, cc_obs_ledger_context_tokens]
+    query: { command: "cc-obs-query top fixed --by tokens" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.05 }
+  - id: cache-hit-low-sessions
+    title: Which sessions have a low prompt-cache hit ratio?
+    signals: [cc_obs_ledger_cache_hit_ratio, claude_code.token.usage]
+    query: { command: "cc-obs-query top session --by cache-hit" }
+    decision_kind: configure | dismiss
+  - id: subagent-overhead
+    title: What do sub-agents cost relative to their value?
+    signals: [claude_code.subagent_completed.total_tokens, claude_code.token.usage]
+    query: { command: "cc-obs-query top subagent --by tokens" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.03 }
+  - id: memory-injected-ignored
+    title: Which memory services get the fewest recall matches used per request?
+    signals: [recall_tokens_injected_total, recall_hits_total, recall_requests_total, claude_code.hook_execution.additional_context_chars]
+    query: { command: "cc-obs-query top memory --by hit-rate" }
+    decision_kind: build-tool | configure | dismiss
+  - id: compaction-frequency
+    title: Which sessions grow large enough to compact, and how often?
+    signals: [claude_code.compaction.pre_tokens, claude_code.compaction.post_tokens, cc_obs_ledger_context_tokens]
+    query: { command: "cc-obs-query top session --by compactions" }
+    decision_kind: configure | dismiss
+  - id: recall-failures
+    title: How often does recall fail or return nothing?
+    signals: [recall_requests_total, recall_latency_seconds]
+    query: { command: "cc-obs-query recall" }
+    decision_kind: build-tool | configure | dismiss

@@ -1,0 +1,29 @@
+[package]
+name = "cc-obs-query"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "cc_obs_query"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cc-obs-query"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha1 = "0.10"
+thiserror = "2"
+time = { version = "0.3", features = ["formatting", "parsing"] }
+ureq = "3"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
