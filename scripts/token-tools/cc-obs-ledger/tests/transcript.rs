@@ -16,6 +16,13 @@ fn request<'a>(
 }
 
 #[test]
+fn tool_input_hash_is_the_first_sixteen_hex_digits_of_hmac_sha256() {
+    // RFC 4231 test case 2: key "Jefe", data "what do ya want for nothing?".
+    let known = ToolHasher::new(b"Jefe".to_vec()).hash(b"what do ya want for nothing?");
+    assert_eq!(known, "5bdcc146bf60754e");
+}
+
+#[test]
 fn counts_each_request_once_although_its_usage_repeats_on_every_block() {
     let parsed = parse(FIXTURE, &hasher());
     assert_eq!(parsed.requests.len(), 3);
