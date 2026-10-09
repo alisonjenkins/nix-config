@@ -13,5 +13,6 @@ pub mod recall_log;
 pub mod report;
 pub mod retriever;
 pub mod skill_listing;
+pub mod skill_transform;
 pub mod telemetry;
 pub mod vector_cache;
