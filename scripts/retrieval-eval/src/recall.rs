@@ -231,23 +231,63 @@ pub fn keyword_fallback(chunks: &[Chunk], query: &str, top: usize) -> Vec<(Strin
 /// Skill sections to inject; empty when there are none. A hit's `id` is
 /// `<skill>/<file>#<heading>` and its `body` the section text, cut at `max_chars`.
 pub fn render_sections(skills_root: &Path, hits: &[Hit], max_chars: usize) -> String {
+    render_section_tiers(skills_root, hits, max_chars, f64::NEG_INFINITY)
+}
+
+/// Opens the skill context; asks the model to decide, because a passive
+/// "consider these" hint is followed far less often than a decision step.
+pub const SECTIONS_HEADER: &str = "Skill sections that match this request (semantic match, best first). Decide which apply and follow those; read the file for more:";
+
+/// Longest first line shown for a pointer, in characters.
+const POINTER_CHARS: usize = 100;
+
+/// Like `render_sections`, but a hit scoring below `full_score` is one line: its
+/// path, score and first line, for the model to open if it applies.
+pub fn render_section_tiers(
+    skills_root: &Path,
+    hits: &[Hit],
+    max_chars: usize,
+    full_score: f64,
+) -> String {
     if hits.is_empty() {
         return String::new();
     }
-    let mut out = String::from(
-        "Skill sections that may apply (semantic match, best first). Follow them if they fit the request; read the file for more:\n",
-    );
+    let mut out = format!("{SECTIONS_HEADER}\n");
     for hit in hits {
         let (file, heading) = hit.id.split_once('#').unwrap_or((hit.id.as_str(), ""));
-        let _ = writeln!(
-            out,
-            "\n## {}#{heading} ({:.2})\n{}",
-            skills_root.join(file).display(),
-            hit.score,
-            cap_body(&hit.body, max_chars)
-        );
+        let path = skills_root.join(file);
+        if hit.score >= full_score {
+            let _ = writeln!(
+                out,
+                "\n## {}#{heading} ({:.2})\n{}",
+                path.display(),
+                hit.score,
+                cap_body(&hit.body, max_chars)
+            );
+        } else {
+            let first = hit
+                .body
+                .lines()
+                .find(|l| !l.trim().is_empty() && !l.trim_start().starts_with("```"))
+                .unwrap_or_default();
+            let _ = writeln!(
+                out,
+                "- {}#{heading} ({:.2}): {}",
+                path.display(),
+                hit.score,
+                cut_line(first.trim(), POINTER_CHARS)
+            );
+        }
     }
     out
+}
+
+fn cut_line(line: &str, max_chars: usize) -> String {
+    if line.chars().count() <= max_chars {
+        return line.to_owned();
+    }
+    let head: String = line.chars().take(max_chars).collect();
+    format!("{}…", head.trim_end())
 }
 
 fn shown_in_full(inject: Inject, index: usize, score: f64) -> bool {
@@ -265,6 +305,34 @@ pub fn full_count(hits: &[Hit], inject: Inject) -> usize {
         .enumerate()
         .filter(|(n, hit)| shown_in_full(inject, *n, hit.score))
         .count()
+}
+
+const OMITTED_NOTE: &str = "\n[further matches omitted: token ceiling reached]\n";
+
+/// `context` cut to `max_chars` at a match boundary, so the lowest-ranked
+/// matches go first. The first match is always kept, cut where it stands if it
+/// alone is longer than the limit. A match starts with `## /path` (in full) or
+/// `- /path` (a snippet or pointer); an absolute path is what tells it from a
+/// heading or bullet inside a body. With relative paths there is no boundary and
+/// the cut falls at the limit.
+pub fn cap_context(context: String, max_chars: usize) -> String {
+    let Some((limit, _)) = context.char_indices().nth(max_chars) else {
+        return context;
+    };
+    let mut starts: Vec<usize> = context
+        .match_indices("\n## /")
+        .chain(context.match_indices("\n- /"))
+        .map(|(at, _)| at)
+        .collect();
+    starts.sort_unstable();
+    let cut = starts
+        .iter()
+        .skip(1)
+        .rfind(|at| **at <= limit)
+        .copied()
+        .unwrap_or(limit);
+    let kept = context.get(..cut).unwrap_or(&context);
+    format!("{}{OMITTED_NOTE}", kept.trim_end())
 }
 
 fn cap_body(body: &str, max_chars: usize) -> String {
@@ -329,6 +397,81 @@ mod tests {
 
     fn scored(items: &[(&str, f64)]) -> Vec<(String, f64)> {
         items.iter().map(|(id, s)| ((*id).to_owned(), *s)).collect()
+    }
+
+    #[test]
+    fn cap_context_leaves_a_short_context_alone() {
+        let text = "header\n\n## /a\nbody\n".to_owned();
+        assert_eq!(cap_context(text.clone(), 1000), text);
+    }
+
+    #[test]
+    fn cap_context_drops_whole_trailing_matches_and_says_so() {
+        let text = "header\n\n## /a\naaaa\n\n## /b\nbbbb\n\n## /c\ncccc\n".to_owned();
+        let capped = cap_context(text, 27);
+        assert_eq!(
+            capped,
+            "header\n\n## /a\naaaa\n[further matches omitted: token ceiling reached]\n"
+        );
+    }
+
+    #[test]
+    fn cap_context_never_cuts_between_a_matchs_description_and_body() {
+        let text = "header\n\n## /a (0.90)\ndesc\n\nbody a\n\n## /b (0.80)\ndesc\n\nbody b\n- /c (0.72): snippet\n"
+            .to_owned();
+        let capped = cap_context(text, 52);
+        assert_eq!(
+            capped,
+            "header\n\n## /a (0.90)\ndesc\n\nbody a\n[further matches omitted: token ceiling reached]\n"
+        );
+    }
+
+    #[test]
+    fn cap_context_drops_trailing_snippets_one_at_a_time() {
+        let text = "header\n- /a (0.9): one\n- /b (0.8): two\n- /c (0.7): three\n".to_owned();
+        let capped = cap_context(text, 32);
+        assert_eq!(
+            capped,
+            "header\n- /a (0.9): one\n[further matches omitted: token ceiling reached]\n"
+        );
+    }
+
+    #[test]
+    fn cap_context_keeps_the_first_match_even_when_it_alone_is_too_long() {
+        let text = format!("header\n\n## /a\n{}\n\n## /b\nbbbb\n", "x".repeat(200));
+        let capped = cap_context(text, 50);
+        assert!(capped.starts_with("header\n\n## /a\nxxx"), "{capped}");
+        assert!(!capped.contains("## /b"));
+        assert!(capped.ends_with("token ceiling reached]\n"));
+    }
+
+    #[test]
+    fn cap_context_does_not_cut_at_a_bullet_or_heading_inside_a_body() {
+        let text = "header\n\n## /a (0.90)\ndesc\n\n- one\n- two\n## inner\nmore text\n\n## /b (0.80)\nbbbb\n"
+            .to_owned();
+        // The limit falls inside the first match, after its bullets and heading.
+        let limit = text.find("more text").unwrap() + 4;
+        let capped = cap_context(text, limit);
+        assert!(capped.contains("- two\n## inner\nmore"), "{capped}");
+        assert!(capped.ends_with("token ceiling reached]\n"));
+        assert!(!capped.contains("## /b"));
+    }
+
+    #[test]
+    fn automated_prompts_are_not_looked_up_but_a_mention_of_one_is() {
+        for automated in [
+            "<task-notification>\n<task-id>x</task-id>\n</task-notification>",
+            "[SYSTEM NOTIFICATION - NOT USER INPUT]\nan event",
+            "<system-reminder>\nnote\n</system-reminder>",
+        ] {
+            let json = serde_json::json!({ "prompt": automated }).to_string();
+            assert_eq!(prompt_from_hook_input(&json), None, "{automated}");
+        }
+        let json = serde_json::json!({
+            "prompt": "why does my task-notification handler print a [SYSTEM NOTIFICATION] banner"
+        })
+        .to_string();
+        assert!(prompt_from_hook_input(&json).is_some());
     }
 
     #[test]
@@ -548,10 +691,68 @@ mod tests {
             section("prog/SKILL.md#Rules", 0.74, "be good"),
         ];
         let text = render_sections(Path::new("/skills"), &hits, 1000);
-        assert!(text.starts_with("Skill sections that may apply"));
+        assert!(text.starts_with("Skill sections that match this request"));
         assert!(text.contains("## /skills/prog/languages/rust.md#Toolchain (0.83)\nuse cargo"));
         assert!(text.contains("## /skills/prog/SKILL.md#Rules (0.74)\nbe good"));
         assert!(text.find("rust.md").unwrap() < text.find("SKILL.md").unwrap());
+    }
+
+    #[test]
+    fn sections_below_the_full_score_become_one_line_pointers() {
+        let hits = [
+            section("p/a.md#Big", 0.83, "line one\nline two"),
+            section(
+                "p/b.md#Small",
+                0.70,
+                "first line here\nsecond line stays out",
+            ),
+        ];
+        let text = render_section_tiers(Path::new("/s"), &hits, 1000, 0.74);
+        assert!(
+            text.contains("## /s/p/a.md#Big (0.83)\nline one\nline two"),
+            "{text}"
+        );
+        assert!(
+            text.contains("- /s/p/b.md#Small (0.70): first line here\n"),
+            "{text}"
+        );
+        assert!(!text.contains("second line stays out"));
+        assert!(text.find("a.md").unwrap() < text.find("b.md").unwrap());
+    }
+
+    #[test]
+    fn a_full_score_at_or_below_every_hit_renders_what_render_sections_does() {
+        let hits = [
+            section("p/a.md#H", 0.8, "x"),
+            section("p/b.md#I", 0.75, "y"),
+        ];
+        assert_eq!(
+            render_section_tiers(Path::new("/s"), &hits, 100, 0.74),
+            render_sections(Path::new("/s"), &hits, 100)
+        );
+    }
+
+    #[test]
+    fn a_pointer_skips_a_code_fence_to_the_first_line_that_says_something() {
+        let hits = [section(
+            "p/a.md#H",
+            0.6,
+            "```\ngh search code \"query\"\n```\nmore",
+        )];
+        let text = render_section_tiers(Path::new("/s"), &hits, 1000, 0.74);
+        assert!(
+            text.contains("(0.60): gh search code \"query\"\n"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn pointer_lines_cut_a_long_first_line() {
+        let hits = [section("p/a.md#H", 0.6, &"w ".repeat(100))];
+        let text = render_section_tiers(Path::new("/s"), &hits, 1000, 0.74);
+        let line = text.lines().find(|l| l.starts_with("- ")).unwrap();
+        assert!(line.chars().count() < 160, "{line}");
+        assert!(line.ends_with('…'), "{line}");
     }
 
     #[test]

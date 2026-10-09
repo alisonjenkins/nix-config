@@ -8,9 +8,9 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use retrieval_eval::corpus::{load_memories, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    blocked_message, full_count, hit, hook_output, ids_from_hook_input, keyword_fallback,
-    prompt_from_hook_input, render_catalogue, render_context_with, retry_until, select,
-    write_if_changed, Blocked, Inject, OnUnavailable,
+    blocked_message, cap_context, full_count, hit, hook_output, ids_from_hook_input,
+    keyword_fallback, prompt_from_hook_input, render_catalogue, render_context_with, retry_until,
+    select, write_if_changed, Blocked, Inject, OnUnavailable,
 };
 use retrieval_eval::recall_log::{
     append_rotating, cause_of, now_iso8601, parse_log, read_all, render_summary, summarise, Entry,
@@ -34,6 +34,9 @@ const DEFAULT_TOP: usize = 3;
 const BYTES_PER_TOKEN: usize = 4;
 /// About 1.2k tokens: most memories fit whole, and the rest say where to read on.
 const DEFAULT_BODY_CHARS: usize = 3500;
+/// Half of the 3,000-token ceiling the memory and skills hooks share. That is
+/// under the roughly 3,100 tokens the names-only catalogue saves on every prompt.
+const DEFAULT_MAX_TOKENS: usize = 1500;
 /// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over the 83 memories:
 /// the right memory's top-1 score ran 0.70-0.87 (median 0.79) over 58 queries, and
 /// unrelated prompts reached 0.81. A match at or above this floor is worth at
@@ -77,6 +80,9 @@ struct Selection {
     /// Longest body injected in full, in characters.
     #[arg(long, default_value_t = DEFAULT_BODY_CHARS)]
     body_chars: usize,
+    /// Most tokens added per prompt; lower-ranked matches are dropped past it.
+    #[arg(long, default_value_t = DEFAULT_MAX_TOKENS)]
+    max_tokens: usize,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -283,7 +289,10 @@ fn recall(
             Some(hit(chunk, score))
         })
         .collect();
-    let context = render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars);
+    let context = cap_context(
+        render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars),
+        selection.max_tokens.saturating_mul(BYTES_PER_TOKEN),
+    );
     let entry = Entry {
         at: now_iso8601(),
         kind: "memory".to_owned(),

@@ -72,7 +72,13 @@ fn serve_on(listener: TcpListener) {
                         .enumerate()
                         .map(|(index, input)| {
                             let alpha = input.as_str().is_some_and(|s| s.contains("alpha"));
-                            let embedding = if alpha { [1.0, 0.0] } else { [0.0, 1.0] };
+                            let gamma = input.as_str().is_some_and(|s| s.contains("gamma"));
+                            let embedding = match (alpha, gamma) {
+                                (true, _) => [1.0, 0.0],
+                                // 0.8 cosine from an "alpha" query: between a floor and a full score.
+                                (false, true) => [0.8, 0.6],
+                                _ => [0.0, 1.0],
+                            };
                             serde_json::json!({"index": index, "embedding": embedding})
                         })
                         .collect()
@@ -574,6 +580,107 @@ fn skill_hook_injects_a_section_and_counts_it_as_shown_in_full() {
     assert_eq!(entries[0].kind, "skills");
     assert_eq!(entries[0].full, entries[0].matches);
     assert!(entries[0].matches >= 1);
+}
+
+#[test]
+fn a_section_between_the_floor_and_the_full_score_is_a_pointer_and_not_counted_as_full() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (root, cache, log) = (
+        tmp.path().join("skills"),
+        tmp.path().join("skills.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let skill = root.join("s1");
+    fs::create_dir_all(&skill).unwrap();
+    fs::write(
+        skill.join("SKILL.md"),
+        "---\nname: s1\ndescription: x\n---\n## Alpha\nalpha steps go here\n## Gamma\ngamma notes here\nsecond line stays out\n",
+    )
+    .unwrap();
+    let emb = embedder(&serve());
+    let base = skill_args(root.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    let mut index = base.clone();
+    index.push("index");
+    assert!(run(SKILL_BIN, &index, "").status.success());
+
+    let mut hook = base.clone();
+    hook.extend([
+        "hook",
+        "--min-score",
+        "0.5",
+        "--full-score",
+        "0.9",
+        "--log",
+        log.to_str().unwrap(),
+    ]);
+    let out = run(
+        SKILL_BIN,
+        &hook,
+        &payload("what are the alpha steps please"),
+    );
+    assert!(out.status.success());
+    let text = context(&out);
+    assert!(
+        text.contains("SKILL.md#Alpha (1.00)\nalpha steps go here"),
+        "{text}"
+    );
+    assert!(
+        text.contains("SKILL.md#Gamma (0.80): gamma notes here\n"),
+        "{text}"
+    );
+    assert!(!text.contains("second line stays out"), "{text}");
+    let entry = &log_entries(&log)[0];
+    assert_eq!((entry.matches, entry.full), (2, 1));
+}
+
+#[test]
+fn the_token_ceiling_drops_lower_ranked_sections_and_the_log_counts_what_was_sent() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (root, cache, log) = (
+        tmp.path().join("skills"),
+        tmp.path().join("skills.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let skill = root.join("s1");
+    fs::create_dir_all(&skill).unwrap();
+    let long = "alpha ".repeat(100);
+    fs::write(
+        skill.join("SKILL.md"),
+        format!("---\nname: s1\ndescription: x\n---\n## Alpha one\n{long}\n## Alpha two\n{long}\n"),
+    )
+    .unwrap();
+    let emb = embedder(&serve());
+    let base = skill_args(root.to_str().unwrap(), &emb, cache.to_str().unwrap());
+    let mut index = base.clone();
+    index.push("index");
+    assert!(run(SKILL_BIN, &index, "").status.success());
+
+    let mut hook = base.clone();
+    hook.extend([
+        "hook",
+        "--max-tokens",
+        "200",
+        "--log",
+        log.to_str().unwrap(),
+    ]);
+    let out = run(
+        SKILL_BIN,
+        &hook,
+        &payload("what are the alpha steps please"),
+    );
+    assert!(out.status.success());
+    let text = context(&out);
+    assert!(text.contains("token ceiling reached"), "{text}");
+    assert_eq!(text.matches("\n## ").count(), 1, "{text}");
+    assert!(
+        entries_tokens(&log) <= 200 + 20,
+        "ceiling plus the note: {}",
+        entries_tokens(&log)
+    );
+}
+
+fn entries_tokens(log: &Path) -> usize {
+    log_entries(log)[0].tokens
 }
 
 #[test]

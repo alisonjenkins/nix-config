@@ -11,8 +11,8 @@ use retrieval_eval::corpus::{load_skill_sections, skill_names, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{
-    blocked_message, hook_output, ids_from_hook_input, keyword_fallback, prompt_from_hook_input,
-    render_sections, retry_until, select, Blocked, Hit, OnUnavailable,
+    blocked_message, cap_context, hook_output, ids_from_hook_input, keyword_fallback,
+    prompt_from_hook_input, render_section_tiers, retry_until, select, Blocked, Hit, OnUnavailable,
 };
 use retrieval_eval::recall_log::{
     append_rotating, cause_of, now_iso8601, Entry, Outcome, DEFAULT_ROTATION,
@@ -33,6 +33,8 @@ const INDEX_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TOP: usize = 3;
 /// About 750 tokens per section: most sections fit whole.
 const DEFAULT_SECTION_CHARS: usize = 3000;
+/// Half of the 3,000-token ceiling the memory and skills hooks share.
+const DEFAULT_MAX_TOKENS: usize = 1500;
 /// Measured 2026-10-07 with EmbeddingGemma 2 at 256 dims over 656 sections and
 /// the 20 skills queries (bench/results/skill-calibrate-top3.md): at 0.74 the
 /// right section is among the top 3 for 70% of queries, 20% of off-topic prompts
@@ -66,9 +68,16 @@ struct Selection {
     /// Drop sections scoring below this cosine similarity.
     #[arg(long, default_value_t = DEFAULT_MIN_SCORE)]
     min_score: f64,
+    /// From this score a section is injected in full; sections between
+    /// --min-score and this are one-line pointers to the file.
+    #[arg(long, default_value_t = DEFAULT_MIN_SCORE)]
+    full_score: f64,
     /// Longest section injected, in characters.
     #[arg(long, default_value_t = DEFAULT_SECTION_CHARS)]
     section_chars: usize,
+    /// Most tokens added per prompt; lower-ranked sections are dropped past it.
+    #[arg(long, default_value_t = DEFAULT_MAX_TOKENS)]
+    max_tokens: usize,
 }
 
 #[derive(Subcommand)]
@@ -259,14 +268,22 @@ fn recall(
             })
         })
         .collect();
-    let context = render_sections(&cli.skills_root, &hits, selection.section_chars);
+    // Keyword scores are not cosines, so every keyword match is shown in full.
+    let full_score = if fallback {
+        f64::NEG_INFINITY
+    } else {
+        selection.full_score
+    };
+    let context = cap_context(
+        render_section_tiers(&cli.skills_root, &hits, selection.section_chars, full_score),
+        selection.max_tokens.saturating_mul(BYTES_PER_TOKEN),
+    );
     let entry = Entry {
         at: now_iso8601(),
         kind: "skills".to_owned(),
         best_score: scored.first().map(|(_, score)| *score),
         matches: hits.len(),
-        // Sections are always injected as text, never as a pointer to read.
-        full: hits.len(),
+        full: hits.iter().filter(|h| h.score >= full_score).count(),
         tokens: context.len() / BYTES_PER_TOKEN,
         failed: false,
         fallback,

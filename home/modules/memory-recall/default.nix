@@ -38,6 +38,7 @@ let
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
     exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
       --body-score ${toString cfg.bodyScore} --inject ${cfg.inject} \
+      --max-tokens ${toString cfg.maxTokens} \
       --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
@@ -53,8 +54,10 @@ let
 
   skillsHookScript = pkgs.writeShellScript "skill-recall-hook" ''
     exec ${skillRecall} hook --top ${toString cfg.skills.top} \
-      --min-score ${toString cfg.skills.minScore} \
+      --min-score ${toString (if cfg.skills.pointerScore != null then cfg.skills.pointerScore else cfg.skills.minScore)} \
+      --full-score ${toString cfg.skills.minScore} \
       --section-chars ${toString cfg.skills.sectionChars} \
+      --max-tokens ${toString cfg.skills.maxTokens} \
       --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
@@ -188,6 +191,16 @@ in
         one-line snippet. The right memory's best score ran 0.70 to 0.87 over 58
         queries, so this leans to recall; a stray snippet costs about 35 tokens.
         Measured for EmbeddingGemma 2 at 256 dimensions.
+      '';
+    };
+
+    maxTokens = mkOption {
+      type = types.ints.positive;
+      default = 1500;
+      description = ''
+        Most tokens the memory hook adds to one prompt; lower-ranked matches are
+        dropped past it. Half of the 3,000-token ceiling the memory and skills
+        hooks share.
       '';
     };
 
@@ -329,10 +342,31 @@ in
         '';
       };
 
+      pointerScore = mkOption {
+        type = types.nullOr types.float;
+        default = null;
+        description = ''
+          A section scoring from here up to minScore is injected as a one-line
+          pointer (path, score, first line) for the model to open if it applies,
+          about 30 tokens each; only minScore and above are injected in full.
+          null injects nothing below minScore.
+        '';
+      };
+
       sectionChars = mkOption {
         type = types.ints.positive;
         default = 3000;
         description = "Longest section injected, in characters (about 750 tokens).";
+      };
+
+      maxTokens = mkOption {
+        type = types.ints.positive;
+        default = 1500;
+        description = ''
+          Most tokens the skills hook adds to one prompt; lower-ranked sections are
+          dropped past it. With the memory hook's own maxTokens the two stay under
+          3,000 tokens together, less than the names-only catalogue saves.
+        '';
       };
     };
   };
