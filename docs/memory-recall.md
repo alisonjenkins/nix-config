@@ -488,10 +488,24 @@ noise. It kept 18 to 24% of the facts.
   The benchmark's $0.020 against $0.086 per query came from an unconditional top 3
   replacing whole-file loads; the hook needs a floor, and at the floor that keeps
   false injections to 20% of off-topic prompts the right section is in the top 3
-  for 70% of queries (95% with no floor), at about 240 tokens a prompt. It does not
-  shrink the skill listing Claude Code puts in every session, so it saves tokens
-  only when it spares the model loading a whole skill file. Whether it does is what
-  the trial measures.
+  for 70% of queries (95% with no floor), at about 240 tokens a prompt. On its own it
+  does not shrink the skill listing Claude Code puts in every session, so it saves
+  tokens only when it spares the model loading a whole skill file. Whether it does is
+  what the trial measures. `skills.shortListing.enable` does shrink the listing:
+  `skill-transform` installs each skill with its `metadata.summary` (or first
+  sentence) as the description, up to 160 characters, and the full text as a
+  retrievable "When to use" section (4,248 to 1,184 tokens for 39 skills). With
+  summaries that keep the routing words, a header that asks the model to decide which
+  sections apply, one-line pointers from 0.66 and 512 dimensions, the benchmark finds
+  the right source for 97% of 30 held-out queries against 83% for the full listing,
+  and 100% against 95% on the dev set (ADR 0038, `bench/results/short-listing.md`,
+  `bench/results/dims-512.md`). Give a new skill a `metadata.summary:` that names what
+  it is for; `skill-listing --skills-root DIR` reports the listing's tokens against
+  the cap. Compressed languages and encodings do not help: Chinese saves 2%, base64
+  costs eight times more (`bench/results/listing-encodings.md`).
+- **The hooks share a token ceiling.** Each takes `--max-tokens` (module
+  `maxTokens`, default 1,500) and drops lower-ranked matches past it, so memory and
+  skills together stay under 3,000 tokens, less than the catalogue saves.
 - **One project's memories, injected everywhere.** Claude keeps one memory
   directory per project, and `memoryDir` names one. The hook runs in every
   project, so the nix-config memories are offered to prompts in unrelated

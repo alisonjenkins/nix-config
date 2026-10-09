@@ -102,6 +102,7 @@ works, how to enable it, and the benchmark results.
 | [0031](0031-skill-hook-with-a-calibrated-floor-and-a-trial-log.md) | Inject skill sections above a calibrated floor, and trial both hooks with a log | Proposed; built, on trial on ali-desktop |
 | [0032](0032-fail-closed-separate-index-server-and-telemetry.md) | Fail closed, index on a separate server, ship telemetry to Loki and Tempo | Proposed; built, on trial on ali-desktop |
 | [0033](0033-route-more-work-to-cheap-delegates.md) | Route more work to cheap delegates; Haiku 5.5 first on Copilot | Accepted |
+| [0038](0038-shorten-the-skill-listing-at-install-and-cap-injected-tokens.md) | Shorten the skill listing at install, and cap injected tokens | Proposed; built, off by default |
 
 ## Token efficiency and observability
 

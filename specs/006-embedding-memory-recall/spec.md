@@ -74,7 +74,7 @@ A names-only catalogue replaces the descriptive `MEMORY.md` in context, cutting 
 
 ---
 
-### User Story 4 - Skills get the same treatment (Priority: P2) — built (ADR 0031); acceptance scenario 3 (combined ceiling) not built
+### User Story 4 - Skills get the same treatment (Priority: P2) — built (ADR 0031); combined ceiling built (ADR 0038)
 
 When the owner asks for something a skill covers, the relevant skill sections reach the model without it loading whole skill files.
 
@@ -121,7 +121,7 @@ The 65 atomic commits reach `main` with their signatures, through a pull request
 
 ---
 
-### User Story 7 - Skill descriptions that cost less context (Priority: P2) — to do
+### User Story 7 - Skill descriptions that cost less context (Priority: P2) — built, enabled on ali-desktop; right source 97% against 83% on held-out queries (ADR 0038)
 
 The listing of every skill's description is always in context (4,247 tokens for 39 skills) and is the largest recurring cost the hooks do not touch. Find a cheaper way to keep skills discoverable, for example shorter descriptions with the detail retrieved on demand, or a hook-built listing.
 
@@ -136,7 +136,7 @@ The listing of every skill's description is always in context (4,247 tokens for 
 
 ---
 
-### User Story 8 - Skills that scale past the description cap (Priority: P2) — to do
+### User Story 8 - Skills that scale past the description cap (Priority: P2) — audit and short listing built (ADR 0038)
 
 Claude Code caps the skill listing at 1% of the context window, and many more skills are planned. Skill summaries must be optimised so that adding skills does not push earlier ones out of the listing or inflate its cost.
 
@@ -151,7 +151,7 @@ Claude Code caps the skill listing at 1% of the context window, and many more sk
 
 ---
 
-### User Story 9 - Fewer wrong memories injected (Priority: P2) — to do
+### User Story 9 - Fewer wrong memories injected (Priority: P2) — done; no candidate gate beats the shipped one (ADR 0038)
 
 At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 84% of injections are right. Review whether the wrong injections can be reduced without making correct memories fail to inject.
 
@@ -212,7 +212,7 @@ At 0.74 about 3% of off-topic and 20% of adjacent prompts get an injection, and 
 - **SC-004**: Retrieval adds under 100 ms to a prompt (met: tens of milliseconds, measured as a real hook process).
 - **SC-005**: Skill retrieval picks the right source at least as often as the default and costs at most a quarter as much per query (met in the benchmark: 95% and about a quarter; the hook's floor lowers recall to 70% for the right section in the top 3, see ADR 0031).
 - **SC-006**: Over a trial of real prompts, the average tokens added per prompt stay under the average tokens the catalogue saves (not yet measured).
-- **SC-007**: A third, untouched query set agrees with the held-out result to within 5 points (not yet run).
+- **SC-007**: A third, untouched query set agrees with the held-out result to within 5 points (met for ranking: R@3 1.00 against 0.97; not met for the shipped gate: recall 83% against 90% at 0.74, 2 of 30 queries; `bench/results/third-set.md`).
 
 ## Assumptions
 
