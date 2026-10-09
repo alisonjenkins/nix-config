@@ -16,6 +16,7 @@
     vr-foveation = import ../home/modules/vr-foveation;
     delegate-to-local =import ../home/modules/delegate-to-local;
     memory-recall = import ../home/modules/memory-recall;
+    observability-stack = import ../home/modules/observability-stack;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs

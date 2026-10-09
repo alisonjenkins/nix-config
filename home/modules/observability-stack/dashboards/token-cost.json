@@ -1,0 +1,730 @@
+{
+  "uid": "token-cost",
+  "title": "Token cost",
+  "tags": [
+    "observability-stack"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total tokens (range)",
+      "description": "Total tokens used over the dashboard range, all types, label review runs excluded. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Estimated cost (range, USD)",
+      "description": "Estimated cost over the range. Metric claude_code_cost_usage_USD_total: name unverified (matched by regex claude_code_cost_usage.*). Unavailable until cost is collected.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum(increase({__name__=~\"claude_code_cost_usage.*\",review_run!=\"1\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Tokens per hour, current vs previous period",
+      "description": "Tokens per hour, review runs excluded. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[1h]))",
+          "legendFormat": "current",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[1h] offset 7d)) * $compare > 0",
+          "legendFormat": "previous period (offset 7d)",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Tokens by model",
+      "description": "Tokens over the range grouped by model, sum by model. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{model}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (model) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{model}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Tokens by query source (main / subagent / auxiliary)",
+      "description": "Tokens over the range grouped by query_source, sum by query_source. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (query_source) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{query_source}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (query_source) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{query_source}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "barchart",
+      "title": "Tokens by agent name",
+      "description": "Tokens over the range grouped by agent_name, sum by agent_name. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Attribute agent_name: name unverified; unavailable until it is present on token usage. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (agent_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{agent_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (agent_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{agent_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "barchart",
+      "title": "Tokens by skill name",
+      "description": "Tokens over the range grouped by skill_name, sum by skill_name. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Attribute skill_name: name unverified; unavailable until it is present on token usage. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (skill_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{skill_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (skill_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{skill_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Tokens by MCP server name",
+      "description": "Tokens over the range grouped by mcp_server_name, sum by mcp_server_name. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Attribute mcp_server_name: name unverified; unavailable until it is present on token usage. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (mcp_server_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{mcp_server_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (mcp_server_name) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{mcp_server_name}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Tokens by project (repository label)",
+      "description": "Tokens over the range grouped by repository, sum by repository. Set the Compare variable to 'previous period' to add a series shifted back 7d (offset 7d, matching the default 7d range; edit if you change the range). Label repository: name unverified; see the ledger project panel as fallback. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (repository) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{repository}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "sum by (repository) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[$__range] offset 7d)) * $compare > 0",
+          "legendFormat": "prev {{repository}}",
+          "instant": true,
+          "range": false,
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Tokens by project (ledger project label)",
+      "description": "Context tokens grouped by the cc-obs-ledger project label, for when the repository label is missing. Metric cc_obs_ledger_context_tokens and label project: name unverified. Unavailable until the ledger has collected a turn.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (project) (max_over_time(cc_obs_ledger_context_tokens{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{project}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Cache read vs cache creation vs input",
+      "description": "Token type split over time (cacheRead, cacheCreation, input, output). A large cacheRead share is good. Label type and its values: name unverified. Metric name claude_code_token_usage_tokens_total and its labels: name unverified against a live export.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (increase(claude_code_token_usage_tokens_total{review_run!=\"1\"}[1h]))",
+          "legendFormat": "{{type}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 12,
+      "type": "barchart",
+      "title": "Top tools by result bytes",
+      "description": "Tools whose results injected the most bytes over the range, from ledger tool_call log records. Unavailable until cc-obs-ledger turn has shipped tool_call records. Fields event_name, tool_name, result_bytes: name unverified.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (tool_name) (sum_over_time({service_name=\"cc-obs-ledger\"} | event_name=\"cc_obs_ledger.tool_call\" | unwrap result_bytes [$__range])))",
+          "legendFormat": "{{tool_name}}",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 13,
+      "type": "barchart",
+      "title": "Top tools by call count",
+      "description": "Tool calls over the range, from ledger tool_call log records. Unavailable until the ledger has shipped tool_call records. Fields event_name, tool_name: name unverified.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 33,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (tool_name) (count_over_time({service_name=\"cc-obs-ledger\"} | event_name=\"cc_obs_ledger.tool_call\" [$__range])))",
+          "legendFormat": "{{tool_name}}",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 14,
+      "type": "barchart",
+      "title": "Fixed context tokens by component",
+      "description": "Estimated tokens in fixed context (instruction files, skills listing, MCP names, memory index) from the SessionStart census. Metric cc_obs_ledger_fixed_context_tokens and label component: name unverified. Unavailable until a census has been collected.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "sum by (component) (avg_over_time(cc_obs_ledger_fixed_context_tokens{review_run!=\"1\"}[$__range]))",
+          "legendFormat": "{{component}}",
+          "instant": true,
+          "range": false,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Context tokens per turn (per session)",
+      "description": "Context size of each request per session. Steadily climbing lines mean a long session. Metric cc_obs_ledger_context_tokens and label session_id: name unverified. Unavailable until collected.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "max by (session_id) (cc_obs_ledger_context_tokens{review_run!=\"1\"})",
+          "legendFormat": "{{session_id}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Cache hit ratio (per session)",
+      "description": "Share of input served from cache per session; low means the prompt cache is being missed. Metric cc_obs_ledger_cache_hit_ratio: name unverified. Unavailable until collected.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "expr": "avg by (session_id) (cc_obs_ledger_cache_hit_ratio{review_run!=\"1\"})",
+          "legendFormat": "{{session_id}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "compare",
+        "label": "Compare",
+        "type": "custom",
+        "query": "none : 0,previous period : 1",
+        "current": {
+          "text": "none",
+          "value": "0"
+        },
+        "options": [
+          {
+            "text": "none",
+            "value": "0",
+            "selected": true
+          },
+          {
+            "text": "previous period",
+            "value": "1",
+            "selected": false
+          }
+        ],
+        "multi": false,
+        "includeAll": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": []
+}
