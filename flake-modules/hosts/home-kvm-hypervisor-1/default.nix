@@ -44,17 +44,17 @@ in {
         # `vfio-pci.ids` binding on this host (the kernel honours only the last
         # such cmdline param, so they MUST live in one place):
         #   1000:0097            — SAS3008 HBA → home-storage-server-1
-        #   10de:1b81 / 10de:10f0 — GTX 1070 (GP104 VGA + HDMI-audio) →
-        #                           home-k8s-master-1 for NVENC transcode.
-        # The 1070 IDs are the standard GP104 GTX-1070 values; VERIFY against
-        # `lspci -nn` once the card is seated (board-partner rebadges are rare
-        # but possible). Binding an absent device is a no-op, so this is safe to
-        # deploy before the card is physically installed. Passthrough is only
-        # armed once the <hostdev> is uncommented in the k8s-master domain XML.
+        #   1002:7550 / 1002:ab40 — RX 9070 (Navi 48 VGA + HDMI-audio) →
+        #                           home-k8s-master-1 for VAAPI transcode.
+        # The 9070 IDs are ASSUMED (Navi 48 reference values); VERIFY with
+        # `lspci -nn` once the card is seated. Binding an absent device is a
+        # no-op, so this is safe to deploy before the card is installed. The
+        # card's host PCI address is unknown until then; passthrough is armed
+        # only once the <hostdev> is uncommented in the k8s-master domain XML.
         modules.vfioIsolate = {
           enable = true;
-          pciIds = [ "1000:0097" "10de:1b81" "10de:10f0" ];
-          blacklistDrivers = [ "nouveau" ];
+          pciIds = [ "1000:0097" "1002:7550" "1002:ab40" ];
+          blacklistDrivers = [ "amdgpu" ];
         };
 
         # Cap nix build parallelism well below the 64 hardware threads: base
@@ -105,9 +105,9 @@ in {
           };
 
           kernelParams = [
-            # vfio-pci.ids (SAS3008 1000:0097 + GTX 1070 10de:1b81/10f0) and
+            # vfio-pci.ids (SAS3008 1000:0097 + RX 9070 1002:7550/ab40) and
             # amd_iommu=on are emitted by modules.vfioIsolate above — prevents
-            # mpt3sas/nouveau from claiming the passthrough devices.
+            # mpt3sas/amdgpu from claiming the passthrough devices.
             # Console/LUKS prompt renders via the ROMED8-2T's ASPEED BMC
             # (ast/simpledrm); no host-owned discrete GPU.
             # Identity-map DMA for host-owned devices (X550 ixgbe, OS NVMe):

@@ -11,8 +11,8 @@ in
       default = [ ];
       example = [
         "1000:0097"
-        "10de:1b81"
-        "10de:10f0"
+        "1002:7550"
+        "1002:ab40"
       ];
       description = ''
         `vendor:device` IDs (lowercase hex, as printed by `lspci -nn`) to claim

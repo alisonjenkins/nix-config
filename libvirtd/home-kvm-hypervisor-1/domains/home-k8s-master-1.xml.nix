@@ -224,28 +224,29 @@
         <backend model='random'>/dev/urandom</backend>
         <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
       </rng>
-      <!-- GTX 1070 (Pascal, GP104) passthrough for NVENC transcode on k3s.
-           ARMED 2026-07-21: card seated at host 82:00.0 (VGA 10de:1b81) +
-           82:00.1 (HDMI audio 10de:10f0), confirmed alone in IOMMU group 30.
-           Host binds both to vfio-pci at boot via modules.vfioIsolate (IDs
-           10de:1b81 + 10de:10f0), so managed='yes' hand-off is clean. The two
-           functions are presented to the guest as one multifunction device
-           (VGA fn0 + audio fn1) on a dedicated pcie-root-port. A Linux guest
-           needs no <kvm><hidden/> / vendor-id spoof (Windows Code 43 only).
-           NB: host address is NOT stable across card add/remove/move — re-verify
-           `lspci -Dnn | grep -i nvidia` and update <source> after physical work. -->
-      <hostdev mode='subsystem' type='pci' managed='yes'>
-        <source>
-          <address domain='0x0000' bus='0x82' slot='0x00' function='0x0'/>
-        </source>
-        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0' multifunction='on'/>
-      </hostdev>
-      <hostdev mode='subsystem' type='pci' managed='yes'>
-        <source>
-          <address domain='0x0000' bus='0x82' slot='0x00' function='0x1'/>
-        </source>
-        <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x1'/>
-      </hostdev>
+      <!-- RX 9070 (Navi 48) passthrough for VAAPI transcode on k3s. NOT ARMED.
+           The GTX 1070 was removed; no GPU hostdev is active, so this VM has no
+           GPU passthrough until the steps below are done.
+           IDs 1002:7550 (VGA) and 1002:ab40 (HDMI audio) are ASSUMED, verify them
+           with lspci -nn after seating the card.
+           To arm: seat the card, run lspci -Dnn | grep -i 1002:7550 and set the
+           <source> bus/slot below from it (function 0 = VGA, function 1 = audio).
+           Confirm the IOMMU group holds only the GPU and its audio function. Then
+           uncomment the two hostdev elements. Guest addresses stay bus 0x07 slot
+           0x00: fn 0 multifunction plus fn 1. Host address is not stable across
+           card moves, so re-verify after any physical work.
+           <hostdev mode='subsystem' type='pci' managed='yes'>
+             <source>
+               <address domain='0x0000' bus='0x00' slot='0x00' function='0x0'/>
+             </source>
+             <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0' multifunction='on'/>
+           </hostdev>
+           <hostdev mode='subsystem' type='pci' managed='yes'>
+             <source>
+               <address domain='0x0000' bus='0x00' slot='0x00' function='0x1'/>
+             </source>
+             <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x1'/>
+           </hostdev> -->
     </devices>
   </domain>
 ''
