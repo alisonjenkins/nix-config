@@ -152,7 +152,25 @@ descriptions by a model, so the description-index arm is close to the labeller i
 the picks are what a model says it would open, not what it opens (a read costs about
 1,000 tokens, an injected line about 35); and each prompt was judged without its
 conversation. What the hook buys is not recall over the catalogue but the read it saves
-and the memory the model would not have opened.
+and the memory the model would not have opened. This table overstates the default: see
+"What the model actually opened" below, where the picks turn out to be almost never made.
+
+### What the model actually opened
+
+The comparison above uses a simulated model that says which files it would open. The
+transcripts of the 1,562 prompts typed in past sessions record what it did: a memory file
+was opened (`Read` on a path in the memory directory, main thread) on 52 prompts (3.3%),
+and on 32 of the 1,142 prompts before the hook existed (2.8%). Of the 59 labelled prompts
+where a memory would materially help, 57 came before the hook; the labelled memory was
+opened on none of them, and no memory at all on any. `Bash` calls touching the memory
+directory add at most a few more and many of them are writes.
+
+So the simulated 81% for the names-only index overstates the default: the default
+delivers a memory's text almost never, and has only what the index line says. In the
+benchmark an index with no read put 31% of the facts in context and 39% in the answer,
+against 92% and 83% for the hook with the file read. Whether the 57 prompts needed the
+text is unknown: the answers may have been fine, and an index line can carry the fact
+(86% of the benchmark facts sat in descriptions). No outcome data was measured.
 
 The generator, the `--questions` and `--consensus` flags and the generated
 `questions.json` files were not merged; only these results are kept.
