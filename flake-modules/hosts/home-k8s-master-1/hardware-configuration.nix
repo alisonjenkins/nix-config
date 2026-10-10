@@ -18,9 +18,8 @@
     # covers the virtio set; dm-snapshot stays for LVM.
     boot.initrd.availableKernelModules = [ "xhci_pci" "sd_mod" ];
     boot.initrd.kernelModules = [ "dm-snapshot" ];
-    # LTS line: a k3s node gains nothing from tracking latest (RDNA4 needs
-    # >= 6.13).
-    boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
+    # Same line as the other servers; the RX 9070 (RDNA4) wants a recent amdgpu.
+    boot.kernelPackages = pkgs.linuxPackages_latest;
     boot.kernelPatches = [
       {
         name = "enable-netkit";
