@@ -1653,6 +1653,8 @@ EOF
           # NFS client support - required for NFS mounts to work
           rpcbind.enable = true;  # Required for NFS
 
+          prometheus.exporters.nginx.scrapeUri = "http://127.0.0.1:8081/nginx_status";
+
           nginx = {
             enable = true;
             recommendedProxySettings = true;
@@ -1754,16 +1756,25 @@ EOF
                   '';
                 };
 
-                # Nginx stub_status for prometheus-nginx-exporter
-                "/nginx_status" = {
-                  extraConfig = ''
-                    stub_status on;
-                    access_log off;
-                    allow 127.0.0.1;
-                    deny all;
-                  '';
-                };
               };
+            };
+
+            # stub_status for prometheus-nginx-exporter on a loopback-only plain
+            # HTTP listener. It used to sit inside the forceSSL vhost, so the
+            # exporter's http://localhost/nginx_status got a 301 to https and
+            # nginx_up stayed 0.
+            virtualHosts."nginx-status" = {
+              listen = [
+                { addr = "127.0.0.1"; port = 8081; }
+                { addr = "[::1]"; port = 8081; }
+              ];
+              locations."/nginx_status".extraConfig = ''
+                stub_status on;
+                access_log off;
+                allow 127.0.0.1;
+                allow ::1;
+                deny all;
+              '';
             };
 
             # Per-app subdomains (DNS records in the home-cluster CoreDNS point
