@@ -131,5 +131,28 @@ injections 8% to 11%) and did not on sample 2 (same MRR, same R@3, more false
 injections at every floor). Not reproduced, so not shipped. Assistant text raises the
 off-topic scores as much as the relevant ones.
 
+### The hook against the default flow, same 58 labelled prompts
+
+The default flow was simulated: a sonnet agent saw only the index and one prompt and
+named up to 3 memory files it would open (88 prompts: the 58 above plus 30 that need no
+memory). Two index shapes: names only (what `MEMORY.md` is now) and a line per file with
+its description (the older default).
+
+| flow | right memory reached (of 58) | no-memory prompts that opened something (of 30) | files opened per prompt |
+|---|---|---|---|
+| model picks, names-only index | 47 (81%) | 11 | 1.4 |
+| model picks, name and description index | 50 (86%) | 3 | 1.1 |
+| hook alone, floor 0.68 / 0.70 / 0.74 | 38 / 32 / 17 (66 / 55 / 29%) | | 0 (injects a line) |
+| names-only picks plus hook at 0.68 / 0.70 / 0.74 | 50 / 49 / 48 (86 / 84 / 83%) | | |
+
+On real prompts the hook alone reaches the right memory far less often than a model
+choosing from the index, and on top of the names-only catalogue it adds 3 of 58 (0.68),
+2 (0.70) or 1 (0.74). Caveats that favour the default: the labels were made from the
+descriptions by a model, so the description-index arm is close to the labeller itself;
+the picks are what a model says it would open, not what it opens (a read costs about
+1,000 tokens, an injected line about 35); and each prompt was judged without its
+conversation. What the hook buys is not recall over the catalogue but the read it saves
+and the memory the model would not have opened.
+
 The generator, the `--questions` and `--consensus` flags and the generated
 `questions.json` files were not merged; only these results are kept.
