@@ -103,6 +103,7 @@ works, how to enable it, and the benchmark results.
 | [0032](0032-fail-closed-separate-index-server-and-telemetry.md) | Fail closed, index on a separate server, ship telemetry to Loki and Tempo | Proposed; built, on trial on ali-desktop |
 | [0033](0033-route-more-work-to-cheap-delegates.md) | Route more work to cheap delegates; Haiku 5.5 first on Copilot | Accepted |
 | [0038](0038-shorten-the-skill-listing-at-install-and-cap-injected-tokens.md) | Shorten the skill listing at install, and cap injected tokens | Proposed; built, off by default |
+| [0039](0039-do-not-add-more-retrieval-machinery-to-the-memory-hook.md) | Do not add more retrieval machinery to the memory hook | Accepted; research closed |
 
 ## Token efficiency and observability
 

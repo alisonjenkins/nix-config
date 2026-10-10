@@ -483,6 +483,19 @@ noise. It kept 18 to 24% of the facts.
 
 ## Limitations and open work
 
+- **Do not extend the retrieval; it was tried.** Example-question vectors, a
+  skill-consensus blend, embedding parts of a prompt, adding the previous prompt or the
+  assistant's text to the query, cavemem as the memory source, and a paragraph of the
+  memory under each snippet were all measured and none earned a place
+  ([ADR 0039](adr/0039-do-not-add-more-retrieval-machinery-to-the-memory-hook.md),
+  numbers in `scripts/retrieval-eval/bench/results/question-vectors-and-consensus.md`).
+  The same work showed that the benchmark sets below overstate recall on prompts typed
+  in practice (17 to 38% at the whole-memory floor, 45 to 66% at the snippet floor
+  against 83 to 97% here), that a model asked which memory it would open says what
+  Claude does not do (it opens a memory on about 3% of prompts), and that a one-line
+  snippet repeats the descriptive `MEMORY.md` line. Read the benchmark tables with that
+  in mind.
+
 - **The skills hook is built but only trialled, and it saves less than the
   benchmark suggests.** `skill-recall` injects up to 3 sections at or above 0.74.
   The benchmark's $0.020 against $0.086 per query came from an unconditional top 3
