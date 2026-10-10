@@ -41,10 +41,15 @@ in
     };
 
     proxy = {
-      auth = mkOption {
-        type = types.str;
-        default = "none";
-        description = "Authentication for the proxy. Use 'none' or 'user:pass'.";
+      authFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        example = "/run/secrets/microsocks/auth";
+        description = ''
+          Runtime path to a file holding `user:password` for the proxy. Read
+          when the service starts, so the secret never enters the Nix store.
+          With null the proxy accepts any client the firewall lets through.
+        '';
       };
 
       port = mkOption {
@@ -324,28 +329,37 @@ in
           Restart = "on-failure";
           RestartSec = "5s";
 
-          ExecStart = ''
-            ${pkgs.bash}/bin/bash -c '
-              set -e
-              LAN_IF="${builtins.head cfg.lanInterfaces}"
-              echo "Attempting to find IP for interface $LAN_IF..."
+          # A script file, not an inline `bash -c '...'`: systemd rejects a quoted
+          # ExecStart that spans lines, which left this unit with no ExecStart.
+          ExecStart = pkgs.writeShellScript "microsocks-proxy" ''
+            set -e
+            LAN_IF="${builtins.head cfg.lanInterfaces}"
+            echo "Attempting to find IP for interface $LAN_IF..."
 
-              # This command finds the IPv4 address for the specified interface.
-              LISTEN_IP=$(${pkgs.iproute2}/bin/ip -4 addr show dev "$LAN_IF" | ${pkgs.gnugrep}/bin/grep -oP "inet \\K[\\d.]+")
+            # This command finds the IPv4 address for the specified interface.
+            LISTEN_IP=$(${pkgs.iproute2}/bin/ip -4 addr show dev "$LAN_IF" | ${pkgs.gnugrep}/bin/grep -oP "inet \K[\d.]+")
 
-              if [ -z "$LISTEN_IP" ]; then
-                echo "FATAL: Could not find IPv4 address for $LAN_IF. Cannot start proxy." >&2
+            if [ -z "$LISTEN_IP" ]; then
+              echo "FATAL: Could not find IPv4 address for $LAN_IF. Cannot start proxy." >&2
+              exit 1
+            fi
+
+            echo "microsocks starting, listening on $LISTEN_IP:${toString cfg.proxy.port}"
+
+            ARGS=(-i "$LISTEN_IP" -p ${toString cfg.proxy.port})
+            ${lib.optionalString (cfg.proxy.authFile != null) ''
+              # First colon splits user from password; the password may hold more.
+              # sops writes no trailing newline, so read returns 1 at EOF even on
+              # success and would trip set -e; the emptiness check below is the guard.
+              IFS=: read -r SOCKS_USER SOCKS_PASS < ${lib.escapeShellArg cfg.proxy.authFile} || true
+              if [ -z "$SOCKS_USER" ] || [ -z "$SOCKS_PASS" ]; then
+                echo "FATAL: ${cfg.proxy.authFile} must hold user:password." >&2
                 exit 1
               fi
-
-              echo "microsocks starting, listening on $LISTEN_IP:${toString cfg.proxy.port}"
-
-              # The exec command replaces the shell process with microsocks.
-              exec ${pkgs.microsocks}/bin/microsocks \
-                -i "$LISTEN_IP" \
-                -p ${toString cfg.proxy.port} \
-                ${if cfg.proxy.auth == "none" then "" else "-u ${cfg.proxy.auth}"}
-            '
+              ARGS+=(-u "$SOCKS_USER" -P "$SOCKS_PASS")
+            ''}
+            # The exec command replaces the shell process with microsocks.
+            exec ${pkgs.microsocks}/bin/microsocks "''${ARGS[@]}"
           '';
         };
       };
