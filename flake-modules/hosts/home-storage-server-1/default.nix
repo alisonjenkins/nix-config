@@ -292,6 +292,12 @@ in {
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
         zramSwap.enable = lib.mkForce false;
 
+        # An HBA discovery-error storm (mpt3sas, ~20 lines/s) grew the journal to
+        # 3 GB and kept I/O busy; cap it so a repeat cannot fill the root volume.
+        services.journald.extraConfig = ''
+          SystemMaxUse=1G
+        '';
+
         # smartd starts before passthrough disks are available; retry until they appear
         systemd.services.smartd.serviceConfig = {
           Restart = "on-failure";
