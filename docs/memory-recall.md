@@ -25,8 +25,17 @@ prompt ──▶ memory-recall hook ──▶ llama-server --embeddings (Embeddi
               ▼
    score ≥ 0.74 ─▶ the whole memory, injected          (about 1,000 tokens; the model answers at once)
    0.68 – 0.74  ─▶ "<path> (0.71): <description>"      (about 35 tokens; the model opens the file if it fits)
+                   and, for the best of these, the paragraph of that memory closest to the prompt
+                   (up to 450 characters, about 110 tokens)
    below 0.68   ─▶ nothing
 ```
+
+The bodies are embedded in pieces of about 700 characters beside the whole memories; the
+pieces only choose the paragraph, the gate still scores whole memories. A one-line
+snippet repeats the description `MEMORY.md` already carries, so on its own it added
+nothing in the outcome test; with the paragraph the answer used the memory's fact for
+about 3 more of 58 labelled prompts
+(`scripts/retrieval-eval/bench/results/question-vectors-and-consensus.md`).
 
 At most 3 matches. **It fails closed.** A prompt answered without the memories that
 hold its guard rails can make a bad mistake (deleting a production server, say), so
@@ -91,7 +100,7 @@ plus path unit that embeds new or changed memories as soon as the file appears (
 a short-lived server of its own, so the query server is never restarted; see
 Operating), and appends the hook to
 `programs.claude-code.settings.hooks.UserPromptSubmit`. Options: `inject`
-(`auto`), `memory.enable` (on; off keeps only the skills hook), `minScore` (0.68),
+(`auto`), `memory.enable` (on; off keeps only the skills hook), `excerptChars` (450; 0 = off), `minScore` (0.68),
 `bodyScore` (0.74), `top` (3), `threads` (4), `dims` (512), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
 `catalogue.enable` (off), `model`, `llamaCpp`.
 

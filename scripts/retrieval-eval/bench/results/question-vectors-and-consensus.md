@@ -170,7 +170,53 @@ delivers a memory's text almost never, and has only what the index line says. In
 benchmark an index with no read put 31% of the facts in context and 39% in the answer,
 against 92% and 83% for the hook with the file read. Whether the 57 prompts needed the
 text is unknown: the answers may have been fine, and an index line can carry the fact
-(86% of the benchmark facts sat in descriptions). No outcome data was measured.
+(86% of the benchmark facts sat in descriptions). The outcome test below measures it.
+
+### Does the injected text change the answer? (outcome test)
+
+The 58 labelled prompts where a memory would help, each answered by sonnet with no tools
+in a clean directory, with the descriptive `MEMORY.md` index in its system prompt and:
+
+- **A**: nothing more (the default: Claude opens a memory on about 3% of prompts);
+- **B**: what the hook injects at the floors in use (0.68 snippets, 0.74 whole memory);
+- **C**: the labelled memory in full (the ceiling);
+- **D**, **E**: B with the one-line snippet of a hit replaced by the paragraph of that
+  memory closest to the prompt (D: every snippet, up to 700 characters; E: only the best
+  snippet, cut at 450);
+- **F**: the shipped version of E (`memory-recall hook`, pieces from `split_body_chunks`).
+
+A separate sonnet call, shown the prompt, the note and the answers shuffled, said for each
+answer whether it states or acts on a specific fact from the note that matters for the
+prompt (generic advice, a guess or "I would need to look it up" count as no) and whether it
+contradicts the note. Answers that used a fact, of 58:
+
+| judged together | A | B | D | E | F | C |
+|---|---|---|---|---|---|---|
+| A, B, C (first pass) | 27 | 33 | | | | 57 |
+| A, B, C, D | 24 | 31 | 38 | | | 57 |
+| B, D, E, C | | 32 | 40 | 38 | | 57 |
+| B, E, F, C, three passes | | 38 / 37 / 36 | | 40 / 38 / 39 | 41 / 41 / 39 | 57 |
+| B, E, F, C, majority of the three | | 37 | | 39 | 40 | 57 |
+
+Two readings. The whole note gets the fact into 57 of 58 answers, against 24 to 27 for
+the index alone: the text matters. The hook's one-line snippet adds little to the index
+(it repeats the description line `MEMORY.md` already carries): for the 22 prompts where the
+right memory reached the answer only as a snippet, A used the fact in 10, B in 11, D in
+18 and C in 21; for the 15 where it was injected whole, B used it in 14 or 15 of 15. The
+paragraph recovers part of that gap.
+
+The size of the gain is smaller than the first passes suggested. The same B answers scored
+31 to 38 depending on which other answers shared the judging call, so a single pass
+exaggerates gaps; within the three passes over identical answers F beat B by 3, 4 and 3,
+and E by 2, 1 and 3, so the shipped version is worth about 3 of 58 labelled prompts
+(5 points of them). Contradictions of the note, per pass: B 4, 2, 3; E 5, 3, 5; F 2, 2, 2;
+C 1, 3, 1. Injected text over the 58 prompts: B 437 tokens, E 518, F 527 (D 639).
+
+The 21 prompts where the hook never retrieved the right memory are unchanged (A 5, B 6,
+D 6, C 21): the paragraph cannot help what was not found.
+
+Caveats: model-judged, 58 prompts, the labels come from the descriptions, and "used a
+fact" is not "gave a better answer".
 
 The generator, the `--questions` and `--consensus` flags and the generated
 `questions.json` files were not merged; only these results are kept.
