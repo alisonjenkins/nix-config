@@ -2071,6 +2071,7 @@ EOF
           proxyVpnGateway = {
             enable = true;
             vpnInterface = "primary-vpn";
+            proxy.authFile = config.sops.secrets."microsocks/auth".path;
 
             lanSubnets = [
               "192.168.1.0/24"
@@ -2240,6 +2241,15 @@ EOF
               owner = config.users.users.root.name;
               path = "/etc/wireguard/primary-vpn.conf";
               sopsFile = ./secrets/vpn.yaml;
+            };
+
+            "microsocks/auth" = {
+              format = "yaml";
+              group = config.users.users.root.group;
+              mode = "0400";
+              owner = config.users.users.root.name;
+              restartUnits = ["microsocks-proxy.service"];
+              sopsFile = ./secrets/microsocks.yaml;
             };
 
             "qbittorrent/webui/password" = {
