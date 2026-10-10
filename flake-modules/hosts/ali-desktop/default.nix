@@ -126,9 +126,10 @@ in {
             # Cuts the skill listing from about 4,200 to 1,200 tokens; the full
             # descriptions come back through the skills hook (ADR 0038).
             skills.shortListing.enable = true;
-            # Keeps MEMORY.md names-only after every index run, so Claude's own
-            # appends cannot grow the always-loaded index.
-            catalogue.enable = true;
+            # Memory half off: on real prompts the hook found the right memory far
+            # less often than Claude choosing from MEMORY.md and added 1 to 3 of 58
+            # over it. MEMORY.md is the normal descriptive index again.
+            memory.enable = false;
           };
 
           home.packages = [
