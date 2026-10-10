@@ -16,7 +16,6 @@ in {
       self.nixosModules.locale
       self.nixosModules.base
       self.nixosModules.nohang
-      self.nixosModules.nvidia-transcode
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
 
@@ -25,7 +24,7 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ config, modulesPath, lib, outputs, pkgs, ... }: {
+      ({ modulesPath, lib, outputs, pkgs, ... }: {
         imports = [
           (modulesPath + "/installer/scan/not-detected.nix")
           (modulesPath + "/profiles/qemu-guest.nix")
@@ -40,60 +39,8 @@ in {
         };
         modules.locale.enable = true;
 
-        # NVENC transcode stack for the GTX 1070 passed through from
-        # home-kvm-hypervisor-1 (modules.vfioIsolate there + the <hostdev> in
-        # this VM's domain XML). Loading the proprietary driver with no GPU yet
-        # present is benign — the kmod probes nothing and creates no /dev/nvidia*
-        # — so this deploys safely before the card is seated. Pinned to the 580
-        # `production` branch: 590 dropped Pascal (assertion enforces it).
-        # Cluster-layer follow-ups (NOT node config): the `nvidia` RuntimeClass,
-        # the nvidia-device-plugin DaemonSet advertising `nvidia.com/gpu`, and
-        # the pharos Deployment's GPU resource request.
-        #
-        # Pinned to legacy_580 (580.173.02): the 1070 is Pascal, and the current
-        # `production`/`stable` (595.x) dropped Pascal. legacy_580 is NVIDIA's
-        # Pascal/Maxwell/Volta legacy-support branch (< 590, satisfies the
-        # module's requirePascalDriver assertion).
-        modules.nvidiaTranscode = {
-          enable = true;
-          driverPackage = config.boot.kernelPackages.nvidiaPackages.legacy_580;
-          # Uncap concurrent NVENC sessions (byte-patches libnvidia-encode.so).
-          # ON 2026-07-21: lifts the stock 5-session consumer cap so pharos'
-          # NVENC probe can ramp to its full 8 permits on the 1070. Forces a
-          # LOCAL driver rebuild (the patched .so is not in the binary cache).
-          # Verified to patch 580.173.02 exactly once (see modules/nvidia-transcode).
-          nvencUnlock = true;
-        };
-
-        # Discover GPUs via NVML directly instead of the default `auto` probe.
-        # `auto` additionally sniffs for WSL/Tegra/CSV environments, which this
-        # headless x86 passthrough node is not — `nvml` is the exact, minimal
-        # mode for a normal discrete GPU and skips those pointless probes.
-        # (extraArgs can't set this: it only appends a duplicate flag and
-        # nvidia-ctk honours the first; `discovery-mode` is the replacing knob.)
-        hardware.nvidia-container-toolkit.discovery-mode = "nvml";
-
-        # Name CDI devices by GPU UUID (nvidia.com/gpu=GPU-<uuid>) to match how
-        # the k8s device plugin advertises + requests them. The default `index`
-        # strategy names them nvidia.com/gpu=0, so the runtime can't resolve the
-        # plugin's UUID reference ("unresolvable CDI devices") and every GPU pod
-        # fails to create.
-        hardware.nvidia-container-toolkit.device-name-strategy = "uuid";
-
-        # Put nvidia-container-runtime on k3s' PATH so k3s' startup
-        # auto-detection templates a `nvidia` containerd runtime (in the
-        # correct config version for its bundled containerd). NixOS'
-        # nvidia-container-toolkit installs the runtime into the store but not
-        # onto k3s' (minimal) service PATH, so without this k3s never sees it:
-        # the `nvidia` RuntimeClass resolves to a handler containerd doesn't
-        # have, and a `runtimeClassName: nvidia` pod fails to start.
-        # NB: the runtime binary lives in the package's `tools` OUTPUT (the
-        # default output only ships nvidia-ctk), so getOutput "tools" — the
-        # same reference the nixpkgs module uses for the runtime hook.
-        systemd.services.k3s.path = [
-          (lib.getOutput "tools" config.hardware.nvidia-container-toolkit.package)
-        ];
-
+        # AMD GPU passed through from home-kvm-hypervisor-1 for VAAPI transcode.
+        # Pods need /dev/dri (cluster-layer concern, not node config).
         boot.initrd.kernelModules = [ "amdgpu" ];
 
         # NFS client (mount.nfs) so kubelet can mount NFS PersistentVolumes —
@@ -103,11 +50,13 @@ in {
         # mounts fail with "mount program didn't pass remote address".
         boot.supportedFilesystems = [ "nfs" ];
 
+        hardware.enableRedistributableFirmware = true;
         hardware.graphics.enable = true;
 
         environment.systemPackages = map lib.lowPrio [
           pkgs.curl
           pkgs.gitMinimal
+          pkgs.libva-utils
         ];
 
         networking = {
@@ -298,33 +247,6 @@ in {
             };
           };
         };
-
-        # nvidia-container-runtime config for the k3s/containerd path. The
-        # upstream nvidia-container-toolkit module only writes this under
-        # `virtualisation.docker.enableNvidia`, so with k3s it is absent and
-        # the runtime defaults to LEGACY mode → it shells out to
-        # nvidia-container-cli (libnvidia-container), which this headless
-        # NixOS node does not ship → `nvidia-container-runtime` exits 2 and
-        # every `runtimeClassName: nvidia` pod fails to create. Force `cdi`
-        # mode: the runtime then injects the GPU purely from the CDI spec the
-        # generator wrote to /run/cdi (no libnvidia-container needed).
-        environment.etc."nvidia-container-runtime/config.toml".text = ''
-          disable-require = true
-          [nvidia-container-runtime]
-          mode = "cdi"
-          # nvidia-container-runtime is a thin wrapper that, after injecting
-          # the GPU, execs a low-level OCI runtime. It searches PATH for
-          # [runc crun] by default, but the containerd shim invokes it with a
-          # PATH that doesn't include k3s' bundled runc → "no runtime binary
-          # found". Pin an explicit runc from nixpkgs (OCI-standard; cgroup
-          # flags still come from the containerd runtime options).
-          runtimes = ["${lib.getExe pkgs.runc}"]
-          [nvidia-container-runtime.modes.cdi]
-          default-kind = "nvidia.com/gpu"
-          spec-dirs = ["/run/cdi", "/etc/cdi"]
-          [nvidia-ctk]
-          path = "${lib.getExe' config.hardware.nvidia-container-toolkit.package "nvidia-ctk"}"
-        '';
 
         system.stateVersion = "24.05";
 
