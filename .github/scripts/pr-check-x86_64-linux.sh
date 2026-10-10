@@ -18,7 +18,7 @@ TARGET_SYSTEM="x86_64-linux"
 FAILED=0
 # Too heavy to build inside the PR check's 30 minutes; build-and-cache.yaml
 # builds them on push.
-SKIP_BUILD="camoufox-browser nvidia-kernel-canary"
+SKIP_BUILD="camoufox-browser"
 
 # list_attr_names <flake-attr> — one attribute name per line, non-zero when
 # the set cannot be evaluated. Callers must fail on that: treating it as an
