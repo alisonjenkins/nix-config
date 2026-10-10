@@ -228,6 +228,8 @@ in
           declare -A DOMAINS
           DOMAINS["nix_caches"]="${nixDomains}"
           DOMAINS["github_ips"]="${githubDomains}"
+          # Set when any set could not be resolved, so the unit fails and retries.
+          UNRESOLVED=0
 
           # VPN endpoints organized by port
           ${endpointsWithPortsStr}
@@ -255,6 +257,7 @@ in
               NEW_IPS=$(get_ips "''${DOMAINS[$set_name]}")
               if [ -z "$NEW_IPS" ]; then
                   echo "Warning: Could not resolve any IPs for domains in set $set_name. Skipping."
+                  UNRESOLVED=1
                   continue
               fi
               # Update the set: flush and add new IPs
@@ -274,6 +277,7 @@ in
                   echo "Successfully updated set vpn_endpoints_port_${port}."
               else
                   echo "Warning: Could not resolve any IPs for vpn_endpoints_port_${port}. Skipping."
+                  UNRESOLVED=1
               fi
           fi
           '') (lib.unique (map (e: e.port) endpointsWithPorts))}
@@ -289,10 +293,15 @@ in
                   echo "Successfully updated set vpn_endpoints."
               else
                   echo "Warning: Could not resolve any IPs for vpn_endpoints. Skipping."
+                  UNRESOLVED=1
               fi
           fi
           '' else ""}
 
+          if [ "$UNRESOLVED" -ne 0 ]; then
+              echo "Some sets could not be resolved; failing so systemd retries." >&2
+              exit 1
+          fi
           echo "All sets updated."
         '';
       };
@@ -483,9 +492,16 @@ in
         description = "Update nftables IP sets for VPN exceptions";
         wants = [ "network-online.target" ];
 
+        # The first run after boot can beat DNS; retry rather than wait a full
+        # timer interval with stale sets. Capped so a lasting outage stops retrying.
+        startLimitIntervalSec = 600;
+        startLimitBurst = 10;
+
         serviceConfig = {
           ExecStart = "${updateScript}/bin/update-nft-sets-proxy";
           Type = "oneshot";
+          Restart = "on-failure";
+          RestartSec = "30s";
           # Add timeout for DNS resolution in case VPN isn't up yet
           TimeoutStartSec = "2min";
         };
