@@ -81,6 +81,19 @@ let
 
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
+  # Off: in the memory benchmark its search put 6% of the needed facts in context
+  # and answers had 18% of them (9% with no memory at all), at a higher cost
+  # per query (scripts/retrieval-eval/bench/results/compare-memory.md).
+  cavememEnabled = false;
+  cavememHook = event: lib.optional cavememEnabled {
+    hooks = [
+      {
+        type = "command";
+        command = "${cavememPkg}/bin/cavemem hook run ${event}";
+        timeout = 10;
+      }
+    ];
+  };
   claudeStatusbarPkg = pkgs.claude-statusbar;
 
   # Merged statusLine: caveman mode badge + claude-statusbar usage bar on one line.
@@ -677,16 +690,7 @@ in
               }
             ];
           }
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "${cavememPkg}/bin/cavemem hook run session-start";
-                timeout = 10;
-              }
-            ];
-          }
-        ];
+        ] ++ cavememHook "session-start";
 
         # Caveman: tracks /caveman commands and natural-language activation phrases
         # Cavemem: records each prompt for memory
@@ -701,30 +705,12 @@ in
               }
             ];
           }
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "${cavememPkg}/bin/cavemem hook run user-prompt-submit";
-                timeout = 10;
-              }
-            ];
-          }
-        ];
+        ] ++ cavememHook "user-prompt-submit";
 
         # Cavemem: captures tool results for memory
         # Token Savior: captures large tool outputs into its compaction sandbox,
         # replacing them with expandable references (gated by TS_BASH_COMPACT).
-        PostToolUse = [
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "${cavememPkg}/bin/cavemem hook run post-tool-use";
-                timeout = 10;
-              }
-            ];
-          }
+        PostToolUse = cavememHook "post-tool-use" ++ [
           {
             # Capture large built-in + MCP tool outputs. `mcp__.*` matches every
             # MCP tool regardless of plugin namespacing (this module ships its
@@ -756,16 +742,7 @@ in
               }
             ];
           }
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "${cavememPkg}/bin/cavemem hook run session-end";
-                timeout = 10;
-              }
-            ];
-          }
-        ];
+        ] ++ cavememHook "session-end";
       };
     };
 
@@ -822,11 +799,13 @@ in
       };
 
       # Cavemem: persistent cross-session memory (search, timeline, get_observations)
+      # (Off while cavememEnabled is false.)
+    } // lib.optionalAttrs cavememEnabled {
       cavemem = {
         command = "${cavememPkg}/bin/cavemem";
         args = [ "mcp" ];
       };
-
+    } // {
       # Token Savior: structural code navigation + tool-output compaction.
       # Named "token-savior" so the PostToolUse capture matcher's
       # mcp__token-savior__* tool names resolve. Wrapped in bash so
