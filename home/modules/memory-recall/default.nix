@@ -38,7 +38,7 @@ let
   hookScript = pkgs.writeShellScript "memory-recall-hook" ''
     exec ${recall} hook --top ${toString cfg.top} --min-score ${toString cfg.minScore} \
       --body-score ${toString cfg.bodyScore} --inject ${cfg.inject} \
-      --max-tokens ${toString cfg.maxTokens} \
+      --max-tokens ${toString cfg.maxTokens} --excerpt-chars ${toString cfg.excerptChars} \
       --on-unavailable ${cfg.onUnavailable}${logArgs}
   '';
 
@@ -210,6 +210,19 @@ in
         against 45 and 66% at 0.70, for about 40 to 70 more tokens per prompt;
         off-topic prompts get a snippet more often, at about 35 tokens each.
         Measured for EmbeddingGemma 2.
+      '';
+    };
+
+    excerptChars = mkOption {
+      type = types.ints.unsigned;
+      default = 450;
+      description = ''
+        Under the best match that is not injected in full, the part of that memory
+        closest to the prompt, cut at this many characters; 0 turns it off. A snippet
+        alone repeats the description line `MEMORY.md` already carries and added
+        nothing in the outcome test (11 of 22 prompts used the fact, against 10 with
+        the index only); with the paragraph 18 of 22 did, for about 80 more tokens
+        a prompt (scripts/retrieval-eval/bench/results/question-vectors-and-consensus.md).
       '';
     };
 
