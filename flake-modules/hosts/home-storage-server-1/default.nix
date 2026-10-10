@@ -825,7 +825,11 @@ in {
               lib.strings.hasPrefix "/media/parity" mountPoint
             ) config.fileSystems;
 
-            contentFilesOpt = lib.lists.map (item: "${item}/snapraid.content") ((builtins.attrNames dataDisks) ++ (builtins.attrNames parityDisks));
+            # Data disks only. The parity disk is full to within a few GiB by the
+            # parity file itself, so a content file (3.6 GB, rewritten via a temp
+            # copy) there ran out of space and failed every sync; each data disk
+            # already holds its own copy.
+            contentFilesOpt = lib.lists.map (item: "${item}/snapraid.content") (builtins.attrNames dataDisks);
             parityFilesOpt = lib.lists.map (item: "${item}/snapraid.parity") (builtins.attrNames parityDisks);
 
             dataDisksOpt = builtins.map (mountPoint:
