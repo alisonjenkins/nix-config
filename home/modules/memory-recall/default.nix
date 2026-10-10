@@ -187,13 +187,16 @@ in
 
     minScore = mkOption {
       type = types.float;
-      default = 0.70;
+      default = 0.68;
       description = ''
         Cosine similarity a memory must reach to be injected at all, as a
         one-line snippet. At 512 dimensions the right memory's best score ran
-        0.68 to 0.86 over 88 queries on three sets and 90 to 93% of them clear
-        0.70; 3% of off-topic and 35% of adjacent prompts do too, at about 35
-        tokens a stray snippet. Measured for EmbeddingGemma 2.
+        0.68 to 0.86 over 88 queries on three sets and 97% of the held-out set
+        clears 0.68 (90% clear 0.70). On 58 prompts typed in past sessions the
+        right memory is in the top 3 and clears 0.68 for 59 and 72% of them
+        against 45 and 66% at 0.70, for about 40 to 70 more tokens per prompt;
+        off-topic prompts get a snippet more often, at about 35 tokens each.
+        Measured for EmbeddingGemma 2.
       '';
     };
 

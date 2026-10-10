@@ -23,9 +23,9 @@ prompt ──▶ memory-recall hook ──▶ llama-server --embeddings (Embeddi
               │                         │ prompt vector
               │ cached memory vectors ◀─┘
               ▼
-   score ≥ 0.76 ─▶ the whole memory, injected          (about 1,000 tokens; the model answers at once)
-   0.70 – 0.76  ─▶ "<path> (0.73): <description>"      (about 35 tokens; the model opens the file if it fits)
-   below 0.70   ─▶ nothing
+   score ≥ 0.74 ─▶ the whole memory, injected          (about 1,000 tokens; the model answers at once)
+   0.68 – 0.74  ─▶ "<path> (0.71): <description>"      (about 35 tokens; the model opens the file if it fits)
+   below 0.68   ─▶ nothing
 ```
 
 At most 3 matches. **It fails closed.** A prompt answered without the memories that
@@ -91,8 +91,8 @@ plus path unit that embeds new or changed memories as soon as the file appears (
 a short-lived server of its own, so the query server is never restarted; see
 Operating), and appends the hook to
 `programs.claude-code.settings.hooks.UserPromptSubmit`. Options: `inject`
-(`auto`), `minScore` (0.70), `bodyScore` (0.76), `top` (3), `threads` (4), `dims`
-(256), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
+(`auto`), `minScore` (0.68), `bodyScore` (0.74), `top` (3), `threads` (4), `dims`
+(512), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
 `catalogue.enable` (off), `model`, `llamaCpp`.
 
 `skills.enable = true` adds `skill-recall`, a second hook that injects up to
@@ -254,7 +254,7 @@ journalctl --user -u memory-recall-server -u memory-recall-index
 | Setting | Effect |
 |---|---|
 | `inject` | `auto` (default): full text from `bodyScore`, snippets from `minScore`. `snippets`: never a body, the model opens the file. `top` / `all`: the best, or every, match in full. |
-| `minScore` | Floor for any injection. 0.70 leans to recall: the right memory's best score ran 0.70 to 0.87 over 58 queries, and a stray snippet costs about 35 tokens. |
+| `minScore` | Floor for any injection. 0.68 leans to recall: on 58 prompts typed in past sessions the right memory clears 0.68 for 59 and 72% of them (45 and 66% at 0.70) for 40 to 70 more tokens a prompt, and a stray snippet costs about 35 tokens (`bench/results/question-vectors-and-consensus.md`). |
 | `bodyScore` | From here a match is injected whole. Higher than the floor because a wrong whole memory is the expensive mistake. |
 | `threads` | llama.cpp's threads spin while waiting, so more threads cost CPU, not just speed. 4 is the knee (below). |
 | `dims` | 256 matches 768 on quality at a third of the cache size. 128 is clearly worse on skills. **The thresholds are specific to the dimensions**: 128 needs roughly 0.82. |

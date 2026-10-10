@@ -176,7 +176,7 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 
 ### Memory and skill retrieval
 
-`modules.memoryRecall` (`home/modules/memory-recall`, off by default) injects the memories closest to each prompt (snippets from 0.70, whole memory from 0.76) via a local EmbeddingGemma 2 server; `memory-recall catalogue` makes the names-only index that can replace `MEMORY.md`. Code in `scripts/retrieval-eval` (`pkgs.memory-recall`); how it works, how to enable it and the benchmark results: `docs/memory-recall.md`, ADRs 0029 and 0030. Needs `pkgs.llama-cpp-upstream` (nixpkgs' llama.cpp lacks the `gemma-embedding2` architecture).
+`modules.memoryRecall` (`home/modules/memory-recall`, off by default) injects the memories closest to each prompt (snippets from 0.68, whole memory from 0.74) via a local EmbeddingGemma 2 server; `memory-recall catalogue` makes the names-only index that can replace `MEMORY.md`. Code in `scripts/retrieval-eval` (`pkgs.memory-recall`); how it works, how to enable it and the benchmark results: `docs/memory-recall.md`, ADRs 0029 and 0030. Needs `pkgs.llama-cpp-upstream` (nixpkgs' llama.cpp lacks the `gemma-embedding2` architecture).
 
 ### Observability stack
 
