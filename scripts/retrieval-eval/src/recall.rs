@@ -15,6 +15,9 @@ pub struct Hit {
     /// The memory's text after its description line.
     pub body: String,
     pub score: f64,
+    /// The part of the memory that best matches the prompt, shown under a
+    /// snippet that is not shown in full.
+    pub excerpt: Option<String>,
 }
 
 /// How much of a match is put in front of the model.
@@ -87,6 +90,57 @@ pub fn hit(chunk: &Chunk, score: f64) -> Hit {
         description,
         body,
         score,
+        excerpt: None,
+    }
+}
+
+/// Longest excerpt, in characters. A snippet's one-line description repeats the
+/// line `MEMORY.md` already carries; a paragraph of the memory is what adds to it.
+pub const DEFAULT_EXCERPT_CHARS: usize = 450;
+
+/// `text` trimmed and, past `max_chars`, cut at the last word that fits and marked.
+pub fn cap_excerpt(text: &str, max_chars: usize) -> String {
+    let text = text.trim();
+    if text.chars().count() <= max_chars {
+        return text.to_owned();
+    }
+    let head: String = text.chars().take(max_chars).collect();
+    let end = head.rfind(char::is_whitespace).unwrap_or(head.len());
+    format!("{} ...", head.get(..end).unwrap_or(&head).trim_end())
+}
+
+/// Gives the first hit that is not shown in full the piece of its memory that
+/// scored best against the prompt. `scored` holds the pieces' scores, best first;
+/// `max_chars` of 0 turns it off.
+pub fn attach_excerpt(
+    hits: &mut [Hit],
+    inject: Inject,
+    pieces: &[Chunk],
+    scored: &[(String, f64)],
+    max_chars: usize,
+) {
+    if max_chars == 0 {
+        return;
+    }
+    let Some(n) = hits
+        .iter()
+        .enumerate()
+        .find(|(n, hit)| !shown_in_full(inject, *n, hit.score))
+        .map(|(n, _)| n)
+    else {
+        return;
+    };
+    let Some(hit) = hits.get_mut(n) else {
+        return;
+    };
+    let Some((piece_id, _)) = scored
+        .iter()
+        .find(|(id, _)| id.contains('#') && crate::corpus::memory_file_of(id) == hit.id)
+    else {
+        return;
+    };
+    if let Some(piece) = pieces.iter().find(|p| &p.id == piece_id) {
+        hit.excerpt = Some(cap_excerpt(&piece.text, max_chars));
     }
 }
 
@@ -137,6 +191,13 @@ pub fn render_context_with(
                 hit.score,
                 hit.description
             );
+            if let Some(excerpt) = &hit.excerpt {
+                let _ = writeln!(
+                    out,
+                    "  Most relevant part of it:\n  {}",
+                    excerpt.replace('\n', "\n  ")
+                );
+            }
         }
     }
     out
@@ -535,7 +596,8 @@ mod tests {
                 id: "m.md".to_owned(),
                 description: "one-line description".to_owned(),
                 body: "body line".to_owned(),
-                score: 0.5
+                score: 0.5,
+                excerpt: None,
             }
         );
     }
@@ -546,7 +608,106 @@ mod tests {
             description: format!("about {id}"),
             body: body.to_owned(),
             score,
+            excerpt: None,
         }
+    }
+
+    fn piece(id: &str, text: &str) -> Chunk {
+        Chunk {
+            id: id.to_owned(),
+            title: "t".to_owned(),
+            text: text.to_owned(),
+        }
+    }
+
+    #[test]
+    fn an_excerpt_is_cut_at_a_word_and_marked() {
+        assert_eq!(cap_excerpt("  short text  ", 50), "short text");
+        let cut = cap_excerpt("alpha beta gamma delta", 12);
+        assert_eq!(cut, "alpha beta ...");
+        assert!(cap_excerpt(&"word ".repeat(200), 100).chars().count() <= 104);
+    }
+
+    #[test]
+    fn a_snippet_with_an_excerpt_shows_it_indented_and_a_full_memory_does_not() {
+        let mut snippet = hit_with_body("b.md", 0.70, "full b");
+        snippet.excerpt = Some("first line\nsecond line".to_owned());
+        let mut full = hit_with_body("a.md", 0.80, "full a");
+        full.excerpt = Some("never shown".to_owned());
+        let text = render_context_with(
+            Path::new("/mem"),
+            &[full, snippet],
+            Inject::Tiered { body_score: 0.74 },
+            1000,
+        );
+        assert!(text.contains("- /mem/b.md (0.70): about b.md\n  Most relevant part of it:\n  first line\n  second line\n"));
+        assert!(!text.contains("never shown"));
+    }
+
+    #[test]
+    fn the_best_piece_goes_to_the_first_snippet_tier_hit_only() {
+        let mut hits = [
+            hit_with_body("a.md", 0.80, "full a"),
+            hit_with_body("b.md", 0.70, "full b"),
+            hit_with_body("c.md", 0.69, "full c"),
+        ];
+        let pieces = [
+            piece("a.md#1", "a piece"),
+            piece("b.md#1", "b weak"),
+            piece("b.md#2", "b strong"),
+            piece("c.md#1", "c piece"),
+        ];
+        let scored = [
+            ("a.md#1".to_owned(), 0.9),
+            ("c.md#1".to_owned(), 0.85),
+            ("b.md#2".to_owned(), 0.8),
+            ("b.md#1".to_owned(), 0.6),
+        ];
+        attach_excerpt(
+            &mut hits,
+            Inject::Tiered { body_score: 0.74 },
+            &pieces,
+            &scored,
+            450,
+        );
+        assert_eq!(hits[0].excerpt, None);
+        assert_eq!(hits[1].excerpt.as_deref(), Some("b strong"));
+        assert_eq!(hits[2].excerpt, None);
+    }
+
+    #[test]
+    fn no_excerpt_when_every_hit_is_full_or_disabled_or_has_no_piece() {
+        let pieces = [piece("b.md#1", "b piece")];
+        let scored = [("b.md#1".to_owned(), 0.8)];
+        let mut all_full = [hit_with_body("b.md", 0.9, "full b")];
+        attach_excerpt(
+            &mut all_full,
+            Inject::Tiered { body_score: 0.74 },
+            &pieces,
+            &scored,
+            450,
+        );
+        assert_eq!(all_full[0].excerpt, None);
+
+        let mut off = [hit_with_body("b.md", 0.7, "full b")];
+        attach_excerpt(
+            &mut off,
+            Inject::Tiered { body_score: 0.74 },
+            &pieces,
+            &scored,
+            0,
+        );
+        assert_eq!(off[0].excerpt, None);
+
+        let mut no_piece = [hit_with_body("z.md", 0.7, "full z")];
+        attach_excerpt(
+            &mut no_piece,
+            Inject::Tiered { body_score: 0.74 },
+            &pieces,
+            &scored,
+            450,
+        );
+        assert_eq!(no_piece[0].excerpt, None);
     }
 
     #[test]
@@ -681,6 +842,7 @@ mod tests {
             description: String::new(),
             body: text.to_owned(),
             score,
+            excerpt: None,
         }
     }
 
@@ -860,6 +1022,7 @@ mod tests {
             description: "Agent cannot run sudo".to_owned(),
             body: String::new(),
             score: 0.714,
+            excerpt: None,
         }];
         let text = render_context(Path::new("/mem"), &hits);
         assert!(text.contains("/mem/feedback_sudo.md"));

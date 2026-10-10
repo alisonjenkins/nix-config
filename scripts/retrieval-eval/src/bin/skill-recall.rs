@@ -265,6 +265,7 @@ fn recall(
                 description: String::new(),
                 body: chunk.text.clone(),
                 score,
+                excerpt: None,
             })
         })
         .collect();
