@@ -107,7 +107,7 @@ let
       done
       # One failing step must not skip the others.
       status=0
-      ${recallAt indexUrl} index || status=$?
+      ${lib.optionalString cfg.memory.enable "${recallAt indexUrl} index || status=$?"}
       ${lib.optionalString cfg.skills.enable "${skillRecallAt indexUrl} index || status=$?"}
       ${lib.optionalString cfg.catalogue.enable "${recall} catalogue --write ${lib.escapeShellArg "${cfg.memoryDir}/MEMORY.md"} || status=$?"}
       exit "$status"
@@ -117,6 +117,19 @@ in
 {
   options.modules.memoryRecall = {
     enable = mkEnableOption "semantic recall of Claude memory files as a UserPromptSubmit hook";
+
+    memory.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Whether the memory half runs: the memory hook, the memory vector cache and
+        the catalogue. Turn it off to keep only the skills hook (`skills.enable`);
+        `memoryDir` is then not needed. On real prompts the memory hook alone
+        reached the right memory far less often than a model choosing from
+        `MEMORY.md`, and added 1 to 3 of 58 over the names-only catalogue
+        (scripts/retrieval-eval/bench/results/question-vectors-and-consensus.md).
+      '';
+    };
 
     memoryDir = mkOption {
       type = types.nullOr types.str;
@@ -407,8 +420,16 @@ in
     {
     assertions = [
       {
-        assertion = cfg.memoryDir != null;
-        message = "modules.memoryRecall.memoryDir must be set when memory recall is enabled.";
+        assertion = !cfg.memory.enable || cfg.memoryDir != null;
+        message = "modules.memoryRecall.memoryDir must be set when memory.enable is on.";
+      }
+      {
+        assertion = !cfg.catalogue.enable || cfg.memory.enable;
+        message = "modules.memoryRecall.catalogue needs memory.enable: it is written from the memory index.";
+      }
+      {
+        assertion = cfg.memory.enable || cfg.skills.enable;
+        message = "modules.memoryRecall has nothing to run with both memory.enable and skills.enable off; disable the module instead.";
       }
       {
         assertion = isLinux || isDarwin;
@@ -438,13 +459,11 @@ in
     # adds its own. 12 s is above the binary's own 8 s request timeout.
     programs.claude-code.settings.hooks.UserPromptSubmit = [
       {
-        hooks = [
-          {
-            type = "command";
-            command = "${hookScript}";
-            timeout = 12;
-          }
-        ] ++ lib.optional cfg.skills.enable {
+        hooks = lib.optional cfg.memory.enable {
+          type = "command";
+          command = "${hookScript}";
+          timeout = 12;
+        } ++ lib.optional cfg.skills.enable {
           type = "command";
           command = "${skillsHookScript}";
           timeout = 12;
@@ -497,7 +516,7 @@ in
       Path = {
         # Not recursive: a new skill folder is seen at once, an edit inside one
         # on the next login or index run.
-        PathChanged = [ cfg.memoryDir ] ++ lib.optional cfg.skills.enable cfg.skills.root;
+        PathChanged = lib.optional cfg.memory.enable cfg.memoryDir ++ lib.optional cfg.skills.enable cfg.skills.root;
         Unit = "memory-recall-index.service";
       };
       Install.WantedBy = [ "default.target" ];
@@ -527,7 +546,7 @@ in
           RunAtLoad = true;
           # Not recursive, like the Linux path unit: a new skill folder is seen at
           # once, an edit inside one on the next login or index run.
-          WatchPaths = [ cfg.memoryDir ] ++ lib.optional cfg.skills.enable cfg.skills.root;
+          WatchPaths = lib.optional cfg.memory.enable cfg.memoryDir ++ lib.optional cfg.skills.enable cfg.skills.root;
           ProcessType = "Background";
           Nice = 10;
           StandardOutPath = "${stateDir}/index.log";

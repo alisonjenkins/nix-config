@@ -91,8 +91,8 @@ plus path unit that embeds new or changed memories as soon as the file appears (
 a short-lived server of its own, so the query server is never restarted; see
 Operating), and appends the hook to
 `programs.claude-code.settings.hooks.UserPromptSubmit`. Options: `inject`
-(`auto`), `minScore` (0.68), `bodyScore` (0.74), `top` (3), `threads` (4), `dims`
-(512), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
+(`auto`), `memory.enable` (on; off keeps only the skills hook), `minScore` (0.68),
+`bodyScore` (0.74), `top` (3), `threads` (4), `dims` (512), `port` (8110), `indexPort` (8111), `onUnavailable` (`block`), `logFile`,
 `catalogue.enable` (off), `model`, `llamaCpp`.
 
 `skills.enable = true` adds `skill-recall`, a second hook that injects up to
