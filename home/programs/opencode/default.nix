@@ -18,6 +18,9 @@ let
 
   cavemanPkg = pkgs.caveman;
   cavememPkg = pkgs.cavemem;
+  # Off, as in home/programs/claude-code: in the memory benchmark its search put
+  # 6% of the needed facts in context (scripts/retrieval-eval/bench/results/compare-memory.md).
+  cavememEnabled = false;
 
   mkProvider = { baseURL, models }:
     { options = { inherit baseURL; }; inherit models; };
@@ -156,6 +159,7 @@ in {
           type = "local";
           command = [ "${pkgs.master.mcp-nixos}/bin/mcp-nixos" ];
         };
+      } // lib.optionalAttrs cavememEnabled {
         cavemem = {
           type = "local";
           command = [ cavememCli "mcp" ];
@@ -222,11 +226,9 @@ in {
     "opencode/plugins/caveman/package.json".source = "${cavemanPkg}/opencode-plugin/package.json";
     "opencode/plugins/caveman/caveman-config.cjs".source = "${cavemanPkg}/opencode-plugin/caveman-config.cjs";
 
-    # Cavemem opencode plugin
-    "opencode/plugins/cavemem.js".text = cavememPluginJS;
-
     # Shared skills from home/skills/ reach opencode through ~/.agents/skills
     # (home/programs/agent-skills), not a link here.
   }
+  // lib.optionalAttrs cavememEnabled { "opencode/plugins/cavemem.js".text = cavememPluginJS; }
   // cavemanCommandConfigs;
 }
