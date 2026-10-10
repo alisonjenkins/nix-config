@@ -5,12 +5,13 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use retrieval_eval::corpus::{load_memories, Chunk};
+use retrieval_eval::corpus::{load_memories, load_memory_pieces, Chunk};
 use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::recall::{
-    blocked_message, cap_context, full_count, hit, hook_output, ids_from_hook_input,
-    keyword_fallback, prompt_from_hook_input, render_catalogue, render_context_with, retry_until,
-    select, write_if_changed, Blocked, Inject, OnUnavailable,
+    attach_excerpt, blocked_message, cap_context, full_count, hit, hook_output,
+    ids_from_hook_input, keyword_fallback, prompt_from_hook_input, render_catalogue,
+    render_context_with, retry_until, select, write_if_changed, Blocked, Inject, OnUnavailable,
+    DEFAULT_EXCERPT_CHARS,
 };
 use retrieval_eval::recall_log::{
     append_rotating, cause_of, now_iso8601, parse_log, read_all, render_summary, summarise, Entry,
@@ -18,7 +19,7 @@ use retrieval_eval::recall_log::{
 };
 use retrieval_eval::telemetry::{spawn_ship, Targets};
 use retrieval_eval::vector_cache::VectorCache;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 /// Claude Code treats exit code 2 from a UserPromptSubmit hook as "block this
 /// prompt" and shows stderr to the user.
@@ -46,6 +47,9 @@ const DEFAULT_MIN_SCORE: f64 = 0.70;
 /// From here a match is injected in full (about 1,000 tokens), which a wrong match
 /// makes expensive: only 10% of in-domain, memory-less prompts reach it.
 const DEFAULT_BODY_SCORE: f64 = 0.76;
+/// Memory bodies are embedded in pieces of about this many characters, to pick
+/// the part that matches a prompt.
+const PIECE_CHARS: usize = 700;
 
 #[derive(Parser)]
 #[command(about = "Semantic recall over Claude memory files, as a UserPromptSubmit hook")]
@@ -83,6 +87,10 @@ struct Selection {
     /// Most tokens added per prompt; lower-ranked matches are dropped past it.
     #[arg(long, default_value_t = DEFAULT_MAX_TOKENS)]
     max_tokens: usize,
+    /// Under the best match that is not injected in full, the part of that memory
+    /// closest to the prompt, cut at this many characters; 0 turns it off.
+    #[arg(long, default_value_t = DEFAULT_EXCERPT_CHARS)]
+    excerpt_chars: usize,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -147,7 +155,15 @@ enum Command {
 struct Session {
     embedder: Embedder,
     chunks: Vec<Chunk>,
+    /// The memories' bodies in pieces; embedded with them, never ranked as memories.
+    pieces: Vec<Chunk>,
     cache: VectorCache,
+}
+
+impl Session {
+    fn indexed(&self) -> Vec<Chunk> {
+        [self.chunks.as_slice(), self.pieces.as_slice()].concat()
+    }
 }
 
 fn memory_dir(cli: &Cli) -> Result<&PathBuf> {
@@ -160,6 +176,7 @@ fn cache_path(cli: &Cli) -> Result<&PathBuf> {
 
 fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
     let chunks = load_memories(memory_dir(cli)?)?;
+    let pieces = load_memory_pieces(memory_dir(cli)?, PIECE_CHARS)?;
     let spec = cli.embedder.clone().context("--embedder is required")?;
     let embedder = Embedder::with_timeout(spec, timeout);
     let identity = embedder
@@ -169,6 +186,7 @@ fn open(cli: &Cli, timeout: Duration) -> Result<Session> {
     Ok(Session {
         embedder,
         chunks,
+        pieces,
         cache,
     })
 }
@@ -178,13 +196,23 @@ struct Recalled {
     entry: Entry,
 }
 
-/// Every memory scored against `query` by the embedding server, best first.
+/// What the embedding server scored for a prompt, each list best first.
+#[derive(Default)]
+struct Scores {
+    /// Every memory.
+    memories: Vec<(String, f64)>,
+    /// The pieces of the memories (ids `file.md#N`). Pieces missing from the cache,
+    /// before the first index since they were added, are skipped.
+    pieces: Vec<(String, f64)>,
+}
+
 fn semantic_scores(
     cli: &Cli,
     chunks: &[Chunk],
+    pieces: &[Chunk],
     query: &str,
     timeout: Duration,
-) -> Result<Vec<(String, f64)>> {
+) -> Result<Scores> {
     let spec = cli.embedder.clone().context("--embedder is required")?;
     let mut embedder = Embedder::with_timeout(spec, timeout);
     let identity = embedder
@@ -209,9 +237,19 @@ fn semantic_scores(
     if stats.missing >= chunks.len() {
         // The first index has not finished: nothing can be searched yet, which is
         // a new setup starting up, not an unavailable server.
-        return Ok(Vec::new());
+        return Ok(Scores::default());
     }
-    Ok(embedder.search(query)?)
+    let indexed = [chunks, pieces].concat();
+    let with_pieces = embedder.load_cached(&indexed, &cache);
+    debug!(
+        missing = with_pieces.missing.saturating_sub(stats.missing),
+        "memory pieces not in the vector cache"
+    );
+    let (pieces, memories) = embedder
+        .search(query)?
+        .into_iter()
+        .partition(|(id, _)| id.contains('#'));
+    Ok(Scores { memories, pieces })
 }
 
 /// A hook that cannot reach the server (restarting, crashed, not started yet) still
@@ -225,6 +263,7 @@ fn recall(
     timeout: Duration,
 ) -> Result<Recalled> {
     let chunks = load_memories(memory_dir(cli)?)?;
+    let pieces = load_memory_pieces(memory_dir(cli)?, PIECE_CHARS)?;
     if chunks.is_empty() {
         // A new setup with no memories yet: nothing to retrieve, so no server needed.
         return Ok(Recalled {
@@ -250,17 +289,20 @@ fn recall(
     let mut embed_ms = None;
     let semantic = retry_until(HOOK_RETRY_BUDGET, HOOK_RETRY_PAUSE, || {
         let started = Instant::now();
-        let scored = semantic_scores(cli, &chunks, query, timeout);
+        let scored = semantic_scores(cli, &chunks, &pieces, query, timeout);
         if scored.is_ok() {
             embed_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
         }
         scored
     });
-    let (scored, selected, inject, fallback) = match semantic {
-        Ok(scored) => {
+    let (scored, piece_scores, selected, inject, fallback) = match semantic {
+        Ok(Scores {
+            memories: scored,
+            pieces: piece_scores,
+        }) => {
             let selected = select(&scored, selection.min_score, selection.top);
             let inject = selection.inject.into_inject(selection.body_score);
-            (scored, selected, inject, false)
+            (scored, piece_scores, selected, inject, false)
         }
         Err(error) => match on_unavailable {
             OnUnavailable::Block => return Err(error.context("embedding server unavailable")),
@@ -278,17 +320,24 @@ fn recall(
             OnUnavailable::Keyword => {
                 warn!(error = %format!("{error:#}"), "embedding server unavailable; using keyword matches");
                 let keyword = keyword_fallback(&chunks, query, selection.top);
-                (keyword.clone(), keyword, Inject::Snippets, true)
+                (keyword.clone(), Vec::new(), keyword, Inject::Snippets, true)
             }
         },
     };
-    let hits: Vec<_> = selected
+    let mut hits: Vec<_> = selected
         .into_iter()
         .filter_map(|(id, score)| {
             let chunk = chunks.iter().find(|c| c.id == id)?;
             Some(hit(chunk, score))
         })
         .collect();
+    attach_excerpt(
+        &mut hits,
+        inject,
+        &pieces,
+        &piece_scores,
+        selection.excerpt_chars,
+    );
     let context = cap_context(
         render_context_with(memory_dir(cli)?, &hits, inject, selection.body_chars),
         selection.max_tokens.saturating_mul(BYTES_PER_TOKEN),
@@ -316,9 +365,10 @@ fn run(cli: &Cli) -> Result<()> {
     match &cli.command {
         Command::Index => {
             let mut session = open(cli, INDEX_TIMEOUT)?;
+            let indexed = session.indexed();
             let stats = session
                 .embedder
-                .index_cached(&session.chunks, &mut session.cache)?;
+                .index_cached(&indexed, &mut session.cache)?;
             session.cache.save(cache_path(cli)?)?;
             info!(
                 embedded = stats.embedded,

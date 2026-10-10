@@ -209,6 +209,53 @@ fn memory_hook_injects_a_match_and_logs_it_without_the_prompt() {
 }
 
 /// A memory hook over a server that answers after 4 s, with `extra` hook arguments.
+#[test]
+fn a_snippet_carries_the_part_of_the_memory_closest_to_the_prompt() {
+    let tmp = tempfile::tempdir().unwrap();
+    let mem = tmp.path().join("mem");
+    fs::create_dir_all(&mem).unwrap();
+    // Two paragraphs too long to share a piece; the second is the one about alpha.
+    let padding = "padding ".repeat(48);
+    fs::write(
+        mem.join("long-note.md"),
+        format!(
+            "---\nname: long-note\ndescription: about delta\n---\ngamma details come first {padding}\n\nthe alpha detail comes second {padding}\n"
+        ),
+    )
+    .unwrap();
+    let cache = tmp.path().join("cache.json");
+    let emb = embedder(&serve());
+    let base = memory_args(mem.to_str().unwrap(), &emb, cache.to_str().unwrap());
+
+    let mut index = base.clone();
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+
+    // A body score above any cosine keeps the memory a snippet.
+    let mut hook = base.clone();
+    hook.extend(["hook", "--min-score", "0.5", "--body-score", "1.1"]);
+    let text = context(&run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    ));
+    assert!(text.contains("about delta"), "{text}");
+    assert!(text.contains("Most relevant part of it:"), "{text}");
+    assert!(text.contains("the alpha detail comes second"), "{text}");
+    assert!(!text.contains("gamma details come first"), "{text}");
+
+    hook.extend(["--excerpt-chars", "0"]);
+    let plain = context(&run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    ));
+    assert!(
+        plain.contains("about delta") && !plain.contains("Most relevant part"),
+        "{plain}"
+    );
+}
+
 fn slow_server_run(extra: &[&str]) -> (Output, Vec<Entry>) {
     let tmp = tempfile::tempdir().unwrap();
     write_memories(&tmp.path().join("mem"));
