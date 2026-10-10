@@ -244,7 +244,9 @@ in
                       # It's a hostname, resolve it with timeout
                       dig +short +time=5 +tries=2 A "$entry" 2>/dev/null || true
                   fi
-              done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -u
+              # grep exits 1 on no match; without `|| true`, pipefail aborts the
+              # caller's NEW_IPS=$(...) and the "Skipping" guards never run.
+              done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -u || true
           }
 
           # Update standard sets (nix_caches, github_ips)
