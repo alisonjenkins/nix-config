@@ -1463,15 +1463,19 @@ EOF
           '';
         };
 
-        # Configure Deluge services
-        systemd.services.deluged.serviceConfig = {
-          ExecStartPre = "+${pkgs.bash}/bin/bash /etc/deluge/init-config.sh";
-          UMask = lib.mkForce "0002";
-          SupplementaryGroups = [ "media" ];
+        # Configure Deluge services. Gated on the module: with deluge disabled,
+        # bare serviceConfig overrides still emit a deluged.service that has no
+        # ExecStart, which systemd refuses to load on every boot.
+        systemd.services.deluged = lib.mkIf config.services.deluge.enable {
+          serviceConfig = {
+            ExecStartPre = "+${pkgs.bash}/bin/bash /etc/deluge/init-config.sh";
+            UMask = lib.mkForce "0002";
+            SupplementaryGroups = [ "media" ];
+          };
         };
 
-        systemd.services.delugeweb.serviceConfig = {
-          UMask = lib.mkForce "0002";
+        systemd.services.delugeweb = lib.mkIf config.services.deluge.enable {
+          serviceConfig.UMask = lib.mkForce "0002";
         };
 
         # Single mount point for the whole storage pool, plus compatibility
