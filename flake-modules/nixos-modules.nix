@@ -60,7 +60,6 @@
     hardware-fingerprint = import ../modules/hardware-fingerprint;
     hardware-scarlett-mixer = import ../modules/hardware-scarlett-mixer.nix;
     hardware-touchpad = import ../modules/hardware-touchpad;
-    nvidia-transcode = import ../modules/nvidia-transcode;
     vfio-isolate = import ../modules/vfio-isolate;
 
     # Server modules

@@ -18,19 +18,8 @@
     # covers the virtio set; dm-snapshot stays for LVM.
     boot.initrd.availableKernelModules = [ "xhci_pci" "sd_mod" ];
     boot.initrd.kernelModules = [ "dm-snapshot" ];
-    # Pinned off linuxPackages_latest (was 7.1.7, floated to 7.2): Linux 7.2
-    # removed strncpy() entirely, and the legacy proprietary nvidia driver
-    # (nvidiaPackages.legacy_580 -- the only track that supports the
-    # passed-through GTX 1070/Pascal for NVENC transcode; open-gpu-kernel-modules
-    # only supports Turing+) still calls it directly in os-interface.c, so it
-    # fails to build against 7.2+. 6.18 is the LTS line (nixpkgs dropped 7.1
-    # as EOL), pre-strncpy-removal, same nixpkgs channel as everything else.
-    #
-    # TEMPORARY. Tracked in alisonjenkins/nix-config#226. The scheduled
-    # canary in .github/workflows/nvidia-kernel-canary.yml builds
-    # nvidiaPackages.legacy_580 against linuxPackages_latest weekly and
-    # fails the moment that combination works again -- that's the signal to
-    # revert this back to pkgs.linuxPackages_latest and close the issue.
+    # LTS line: a k3s node gains nothing from tracking latest (RDNA4 needs
+    # >= 6.13).
     boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_18;
     boot.kernelPatches = [
       {
