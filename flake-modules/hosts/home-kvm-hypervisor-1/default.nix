@@ -72,6 +72,11 @@ in {
           lokiPush.enable = true;
         };
 
+        # The exporter's transient user fails polkit on the read-write socket
+        # (org.libvirt.unix.manage), so every scrape failed and libvirt_up read 0.
+        # The read-only socket needs no polkit and is all the metrics need.
+        services.prometheus.exporters.libvirt.libvirtUri = "qemu:///system?socket=/run/libvirt/libvirt-sock-ro";
+
         # Silence mdadm warning: mdmon needs MAILADDR or PROGRAM set or it
          # crashes. Local root mail is enough — we don't have an MTA configured.
         boot.swraid.mdadmConf = ''
