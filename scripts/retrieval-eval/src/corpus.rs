@@ -313,6 +313,39 @@ pub fn load_memories_view(memory_dir: &Path, view: MemoryView) -> Result<Vec<Chu
     Ok(chunks)
 }
 
+/// The body of every memory in pieces of about `max_chars`, as chunks `file.md#1`,
+/// `file.md#2`, ... titled like their memory. They are embedded beside the whole
+/// memories to find which part of a memory matches a prompt; they never rank the
+/// memories themselves.
+pub fn load_memory_pieces(memory_dir: &Path, max_chars: usize) -> Result<Vec<Chunk>, CorpusError> {
+    if !memory_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut pieces = Vec::new();
+    for path in markdown_files(memory_dir, 1)? {
+        let Some(file_name) = path.file_name().map(|n| n.to_string_lossy().into_owned()) else {
+            continue;
+        };
+        if file_name == MEMORY_INDEX {
+            continue;
+        }
+        let raw = read(&path)?;
+        let (meta, body) = strip_frontmatter(&raw);
+        let title = meta
+            .get("name")
+            .cloned()
+            .unwrap_or_else(|| file_name.trim_end_matches(".md").to_owned());
+        for (n, piece) in split_body_chunks(body, max_chars).into_iter().enumerate() {
+            pieces.push(Chunk {
+                id: format!("{file_name}#{}", n.saturating_add(1)),
+                title: title.clone(),
+                text: piece,
+            });
+        }
+    }
+    Ok(pieces)
+}
+
 /// Names of the folders under `skills_root` that hold a `SKILL.md`, sorted.
 pub fn skill_names(skills_root: &Path) -> Result<Vec<String>, CorpusError> {
     // No skills directory yet is a fresh setup with no skills, not an error.
@@ -523,6 +556,26 @@ mod tests {
         assert_eq!(chunks[1].text, "first paragraph");
         assert_eq!(chunks[2].text, "second paragraph");
         assert!(chunks.iter().all(|c| c.title == "alpha"));
+    }
+
+    #[test]
+    fn memory_pieces_are_the_body_in_pieces_without_the_description_chunk() {
+        let dir = memory_dir_with_one_note();
+        let pieces = load_memory_pieces(dir.path(), 20).unwrap();
+        let ids: Vec<&str> = pieces.iter().map(|c| c.id.as_str()).collect();
+        assert_eq!(ids, ["a.md#1", "a.md#2"]);
+        assert_eq!(pieces[0].text, "first paragraph");
+        assert!(pieces.iter().all(|c| c.title == "alpha"));
+    }
+
+    #[test]
+    fn memory_pieces_skip_the_index_and_a_missing_directory() {
+        let dir = memory_dir_with_one_note();
+        fs::write(dir.path().join("MEMORY.md"), "- [a](a.md) - hook\n").unwrap();
+        let pieces = load_memory_pieces(dir.path(), 20).unwrap();
+        assert!(pieces.iter().all(|c| memory_file_of(&c.id) == "a.md"));
+        let missing = dir.path().join("nope");
+        assert!(load_memory_pieces(&missing, 20).unwrap().is_empty());
     }
 
     #[test]
