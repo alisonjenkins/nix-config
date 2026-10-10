@@ -1,10 +1,23 @@
-# Example-question vectors and skill consensus (spec 006) — no gain at the gate
+# What else was tried on retrieval (spec 006), and why none of it shipped
 
-Two ways to separate relevant skill sections from off-topic prompts, measured on the
-shortened skills tree (160-character descriptions, 839 sections, 41 skills), 512 dims,
-`skill-recall calibrate` with the dev (20) and held-out (30) skills sets and the 30
-off-topic prompts. Neither changes the recall against false-injection tradeoff enough to
-ship.
+Written 2026-10-10. The decision record is [ADR 0039](../../../../docs/adr/0039-do-not-add-more-retrieval-machinery-to-the-memory-hook.md);
+this file holds the numbers. Everything below was tried after the short skill listing and
+512 dimensions (ADR 0038) and did not earn a place in the hook:
+
+| tried | result | where |
+|---|---|---|
+| example-question vectors | ranking up, gate unchanged | below |
+| skill-consensus blend | within noise, top-1 worse | below |
+| embedding parts of a prompt | worse than the whole prompt | below |
+| the previous prompt as query context | one sample better, one not | real typed prompts |
+| cavemem as the memory source | 6% of needed facts in context | compare-memory.md |
+| a paragraph of the memory under the best snippet | +3 of 58 labelled prompts for +79 tokens on every prompt | outcome test |
+
+The first sections concern skill sections: measured on the shortened skills tree
+(160-character descriptions, 839 sections, 41 skills), 512 dims, `skill-recall
+calibrate` with the dev (20) and held-out (30) skills sets and the 30 off-topic prompts.
+Neither question vectors nor the consensus blend changes the recall against
+false-injection tradeoff enough to ship.
 
 ## Example-question vectors
 
@@ -170,7 +183,77 @@ delivers a memory's text almost never, and has only what the index line says. In
 benchmark an index with no read put 31% of the facts in context and 39% in the answer,
 against 92% and 83% for the hook with the file read. Whether the 57 prompts needed the
 text is unknown: the answers may have been fine, and an index line can carry the fact
-(86% of the benchmark facts sat in descriptions). No outcome data was measured.
+(86% of the benchmark facts sat in descriptions). The outcome test below measures it.
 
-The generator, the `--questions` and `--consensus` flags and the generated
-`questions.json` files were not merged; only these results are kept.
+### Does the injected text change the answer? (outcome test)
+
+The 58 labelled prompts where a memory would help, each answered by sonnet with no tools
+in a clean directory, with the descriptive `MEMORY.md` index in its system prompt and:
+
+- **A**: nothing more (the default: Claude opens a memory on about 3% of prompts);
+- **B**: what the hook injects at the floors in use (0.68 snippets, 0.74 whole memory);
+- **C**: the labelled memory in full (the ceiling);
+- **D**, **E**: B with the one-line snippet of a hit replaced by the paragraph of that
+  memory closest to the prompt (D: every snippet, up to 700 characters; E: only the best
+  snippet, cut at 450);
+- **F**: E implemented in the hook (`memory-recall hook`, pieces from `split_body_chunks`);
+  PR #554, closed unmerged, holds the code.
+
+A separate sonnet call, shown the prompt, the note and the answers shuffled, said for each
+answer whether it states or acts on a specific fact from the note that matters for the
+prompt (generic advice, a guess or "I would need to look it up" count as no) and whether it
+contradicts the note. Answers that used a fact, of 58:
+
+| judged together | A | B | D | E | F | C |
+|---|---|---|---|---|---|---|
+| A, B, C (first pass) | 27 | 33 | | | | 57 |
+| A, B, C, D | 24 | 31 | 38 | | | 57 |
+| B, D, E, C | | 32 | 40 | 38 | | 57 |
+| B, E, F, C, three passes | | 38 / 37 / 36 | | 40 / 38 / 39 | 41 / 41 / 39 | 57 |
+| B, E, F, C, majority of the three | | 37 | | 39 | 40 | 57 |
+
+Two readings. The whole note gets the fact into 57 of 58 answers, against 24 to 27 for
+the index alone: the text matters. The hook's one-line snippet adds little to the index
+(it repeats the description line `MEMORY.md` already carries): for the 22 prompts where the
+right memory reached the answer only as a snippet, A used the fact in 10, B in 11, D in
+18 and C in 21; for the 15 where it was injected whole, B used it in 14 or 15 of 15. The
+paragraph recovers part of that gap.
+
+The size of the gain is smaller than the first passes suggested. The same B answers scored
+31 to 38 depending on which other answers shared the judging call, so a single pass
+exaggerates gaps; within the three passes over identical answers F beat B by 3, 4 and 3,
+and E by 2, 1 and 3, so the excerpt is worth about 3 of 58 labelled prompts
+(5 points of them). Contradictions of the note, per pass: B 4, 2, 3; E 5, 3, 5; F 2, 2, 2;
+C 1, 3, 1. Injected text over the 58 prompts: B 437 tokens, E 518, F 527 (D 639).
+
+The 21 prompts where the hook never retrieved the right memory are unchanged (A 5, B 6,
+D 6, C 21): the paragraph cannot help what was not found.
+
+Caveats: model-judged, 58 prompts, the labels come from the descriptions, and "used a
+fact" is not "gave a better answer".
+
+### What the excerpt costs on an ordinary prompt, and the verdict
+
+The 58 prompts all need a memory, so they overstate how often an excerpt is added. Over
+all 210 typed prompts sampled (the 58 plus 152 that need none), with the hook built from
+the excerpt commits, `--excerpt-chars 450` against `--excerpt-chars 0`, same cache and
+floors:
+
+| | without | with |
+|---|---|---|
+| prompts that get any memory text | 154 of 210 (73%) | 154 |
+| prompts that get an excerpt | | 149 of 210 (71%) |
+| mean injected tokens per prompt | 254 | 332 |
+
+That is +79 tokens on every prompt (+31% of what the memory hook adds), about 111 where
+it fires, for roughly 3 more used facts per 58 labelled prompts. Those 58 are 28% of the
+sample, so about 1.5 extra uses per 100 prompts for about 7,900 extra tokens per 100
+prompts: around 5,000 tokens per extra use, against about 1,000 for reading the whole
+note. **Not adopted**: the code (PR #554) was closed unmerged. The sample is mostly
+in-domain repository chat, so the 71% is high for general use, but it is how this
+machine is used.
+
+The generators, the `--questions`, `--consensus` and `--prompt-mode` flags, the
+generated `questions.json` files and the outcome-test scripts were not merged; only these
+results and the method above are kept. The typed prompts and their labels are private
+and not in the repository.
