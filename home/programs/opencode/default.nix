@@ -66,15 +66,6 @@ let
       ${stripClaudeFrontmatter file}${lib.optionalString (extraBody != "") "\n${extraBody}"}
     '';
 
-  cavemanCommandFiles = lib.filterAttrs (n: v: v == "regular" && lib.hasSuffix ".md" n)
-    (builtins.readDir "${cavemanPkg}/opencode-commands");
-
-  cavemanCommandConfigs = lib.mapAttrs' (name: _:
-    lib.nameValuePair "opencode/commands/${name}" {
-      source = "${cavemanPkg}/opencode-commands/${name}";
-    }
-  ) cavemanCommandFiles;
-
   cavememCli = "${cavememPkg}/bin/cavemem";
 
   cavememPluginJS = ''
@@ -226,9 +217,15 @@ in {
     "opencode/plugins/caveman/package.json".source = "${cavemanPkg}/opencode-plugin/package.json";
     "opencode/plugins/caveman/caveman-config.cjs".source = "${cavemanPkg}/opencode-plugin/caveman-config.cjs";
 
+    # Linked per file at build time; listing the package with readDir here made
+    # evaluation build it, which fails for an aarch64 host on the x86_64 CI runner.
+    "opencode/commands" = {
+      source = "${cavemanPkg}/opencode-commands";
+      recursive = true;
+    };
+
     # Shared skills from home/skills/ reach opencode through ~/.agents/skills
     # (home/programs/agent-skills), not a link here.
   }
-  // lib.optionalAttrs cavememEnabled { "opencode/plugins/cavemem.js".text = cavememPluginJS; }
-  // cavemanCommandConfigs;
+  // lib.optionalAttrs cavememEnabled { "opencode/plugins/cavemem.js".text = cavememPluginJS; };
 }
