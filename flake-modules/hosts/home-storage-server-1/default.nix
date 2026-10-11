@@ -177,6 +177,98 @@ in {
             fi
           '';
         };
+
+        # Marks pool branches on failing disks no-create (NC) so mergerfs sends
+        # new files elsewhere. NC leaves the branch readable and writable for
+        # files already on it; nothing moves. Reads the SMART data the smartctl
+        # exporter already caches instead of polling the disks again: they sit
+        # behind an HBA that logs a "sata affiliation conflict" storm under
+        # extra load.
+        mediaBranchHealthGateScript = pkgs.writeShellApplication {
+          name = "media-branch-health-gate";
+          runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.gawk pkgs.gnugrep pkgs.attr pkgs.util-linux ];
+          text = ''
+            exporter_url="http://127.0.0.1:${toString config.modules.servers.prometheus.smartctlExporter.port}/metrics"
+            control=/media/storage/.mergerfs
+
+            log() { printf 'event=health_gate %s\n' "$*" >&2; }
+
+            if ! mountpoint -q /media/storage || [ ! -e "$control" ]; then
+              log "status=skip reason=pool_not_mounted"
+              exit 0
+            fi
+
+            # Exporter down: leave the branch modes as they are. HostExporterDown
+            # already alerts on that.
+            if ! metrics=$(curl -fsS --max-time 10 "$exporter_url"); then
+              log "status=skip reason=exporter_unreachable"
+              exit 0
+            fi
+            # An exporter with no SMART data would read as "every disk healthy".
+            if ! grep -q '^smartctl_device_smart_status{' <<< "$metrics"; then
+              log "status=skip reason=no_smart_data"
+              exit 0
+            fi
+
+            # Unrecoverable sectors, a failed SMART verdict, or a high reallocated
+            # count. A few reallocated sectors are normal on these old disks, so
+            # only a count at or above the limit gates. UDMA CRC errors are left
+            # out: here they point at cabling, not the platters.
+            realloc_limit=50
+            bad=$(awk -v limit="$realloc_limit" '
+              function device() {
+                match($0, /device="[^"]+"/)
+                return substr($0, RSTART + 8, RLENGTH - 9)
+              }
+              /^smartctl_device_attribute\{/ && /attribute_value_type="raw"/ \
+                && /attribute_name="(Current_Pending_Sector|Offline_Uncorrectable)"/ \
+                && $NF + 0 > 0 { print device() }
+              /^smartctl_device_attribute\{/ && /attribute_value_type="raw"/ \
+                && /attribute_name="Reallocated_Sector_Ct"/ \
+                && $NF + 0 >= limit { print device() }
+              /^smartctl_device_smart_status\{/ && $NF + 0 == 0 { print device() }
+            ' <<< "$metrics" | sort -u)
+
+            entries=()
+            suspects=()
+            healthy=0
+            for mp in /media/disks/*; do
+              # An unmounted disk leaves an empty stub dir on the root fs; writing
+              # there would fill the root disk.
+              mountpoint -q "$mp" || continue
+              src=$(findmnt -n -o SOURCE "$mp")
+              src=''${src%%\[*}
+              disk=$(lsblk -n -o PKNAME "$src" 2>/dev/null | head -n 1) || true
+              [ -n "$disk" ] || disk=$(basename "$src")
+              # A disk smartctl can no longer read drops out of the exporter's
+              # output, so no SMART data counts as failing.
+              if grep -qx "$disk" <<< "$bad" \
+                || ! grep -q "^smartctl_device_smart_status{.*device=\"$disk\"" <<< "$metrics"; then
+                mode=NC
+                suspects+=("$mp")
+              else
+                mode=RW
+                healthy=$((healthy + 1))
+              fi
+              entries+=("$mp=$mode")
+            done
+
+            if [ "$healthy" -eq 0 ]; then
+              log "status=skip reason=no_writable_branch"
+              exit 0
+            fi
+
+            desired=$(IFS=:; echo "''${entries[*]}")
+            current=$(getfattr --only-values -n user.mergerfs.branches "$control" 2>/dev/null || true)
+            if [ "$current" = "$desired" ]; then
+              log "status=unchanged healthy=$healthy suspects=''${#suspects[@]}"
+              exit 0
+            fi
+
+            setfattr -n user.mergerfs.branches -v "$desired" "$control"
+            log "status=applied healthy=$healthy suspects=''${#suspects[@]} no_create=\"''${suspects[*]:-none}\""
+          '';
+        };
       in
       {
         modules.nohang = {
@@ -372,6 +464,8 @@ in {
               && mountpoint -q /media/storage \
               && stat /media/storage >/dev/null 2>&1; then
               setfattr -n user.mergerfs.branches -v '/media/disks/*' /media/storage/.mergerfs || true
+              # The glob resets every branch to RW; put the no-create marks back.
+              systemctl start media-branch-health-gate.service 2>/dev/null || true
             fi
             # Re-export so a now-present subtree (e.g. /media/storage/media) is
             # actually served rather than answered with ENOENT.
@@ -512,6 +606,27 @@ in {
             OnBootSec = "90s";
             OnUnitActiveSec = "60s";
             AccuracySec = "10s";
+          };
+        };
+
+        # Keeps new files off disks with pending/uncorrectable sectors or a
+        # failed SMART verdict. The pool mounts with every branch RW, so this
+        # re-applies the marks after each boot and branch re-glob.
+        systemd.services.media-branch-health-gate = {
+          description = "Mark failing disks no-create in the mergerfs pool";
+          after = [ "media-storage.mount" "prometheus-smartctl-exporter.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${mediaBranchHealthGateScript}/bin/media-branch-health-gate";
+          };
+        };
+        systemd.timers.media-branch-health-gate = {
+          description = "Periodic mergerfs branch health gate";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "3min";
+            OnUnitActiveSec = "10min";
+            AccuracySec = "30s";
           };
         };
 
