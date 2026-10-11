@@ -749,6 +749,11 @@ in {
           # The default 'L' rule doesn't replace an existing directory.
           "L+ /var/run - - - - ../run"
 
+          # /var/lib/nfs is on the tmpfs root; rpc.mountd exits if etab is missing
+          # and only nfs-server's exportfs (which starts after it) creates it.
+          "d /var/lib/nfs 0755 root root -"
+          "f /var/lib/nfs/etab 0644 root root -"
+
           # Downloads directory: owner=qbittorrent, group=media, setgid bit
           "d /media/storage/downloads 2775 qbittorrent media -"
           "d /media/storage/downloads/downloading 2775 qbittorrent media -"
