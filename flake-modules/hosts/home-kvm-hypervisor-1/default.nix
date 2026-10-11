@@ -125,24 +125,19 @@ in {
               "net.ipv4.conf.all.forwarding" = true;
               "net.ipv6.conf.all.forwarding" = true;
 
-              # Bound dirty (un-flushed) page-cache in absolute bytes instead of
-              # the default ratios. dirty_ratio=20 on a 30.5 GiB host lets ~6 GiB
-              # of dirty pages accumulate before a writer blocks — on a host
-              # where ~22 GiB is mlock-pinned by passthrough VMs that spike
-              # competes for the little remaining RAM. Cap at 1 GiB / 256 MiB bg.
-              # bytes and ratio are mutually exclusive, so the base ratios MUST
-              # be forced to 0 or the kernel keeps using them.
+              # Bound dirty page-cache in bytes, not the default ratios: dirty_ratio=20
+              # on a 251 GiB host lets tens of GiB pile up before a writer blocks,
+              # and only ~22 GiB is unpinned. Bytes and ratio are mutually exclusive,
+              # so the base ratios MUST be forced to 0.
               "vm.dirty_bytes" = 1073741824;            # 1 GiB
               "vm.dirty_background_bytes" = 268435456;  # 256 MiB
               "vm.dirty_ratio" = lib.mkForce 0;
               "vm.dirty_background_ratio" = lib.mkForce 0;
 
-              # Push cold anonymous pages of the swappable tenants (download +
-              # storage VMs, host daemons) into zram aggressively to free real
-              # RAM — frees ~2 GiB. The pinned jellyfin VM is exempt (its RAM is
-              # mlock'd, unswappable at any swappiness). page-cluster=0 reads one
-              # page per swap-in: zram is random-access RAM, so the default
-              # 8-page readahead just wastes work.
+              # Push cold anonymous pages into zram. Only download-server-1 (8 GiB)
+              # and host daemons can swap; k8s-master and storage are mlock'd pinned.
+              # page-cluster=0 reads one page per swap-in: zram is random-access RAM,
+              # so the default 8-page readahead just wastes work.
               "vm.swappiness" = 100;
               "vm.page-cluster" = 0;
             };
@@ -163,10 +158,9 @@ in {
           };
         };
 
-        # Cap zram at 50% of RAM (base sets 100%). zram is RAM-backed, so on a
-        # host this tight an oversized zram could itself consume the RAM it is
-        # meant to relieve. With swappiness raised, more lands in zram — this is
-        # the guardrail. Only ~8.5 GiB is swappable here (22 GiB pinned), so
+        # Cap zram at 50% of RAM (base sets 100%). zram is RAM-backed, so an
+        # oversized zram could consume the RAM it is meant to relieve. Pinned guests
+        # hold 216 of 251 GiB, so only download-server-1 (8 GiB) swaps into it;
         # 50% is a safe ceiling, not a throughput limit.
         zramSwap.memoryPercent = lib.mkForce 50;
 

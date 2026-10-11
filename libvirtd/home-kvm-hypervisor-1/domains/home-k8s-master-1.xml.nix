@@ -7,12 +7,10 @@
         <libosinfo:os id="http://libosinfo.org/linux/2022"/>
       </libosinfo:libosinfo>
     </metadata>
-    <!-- 152 GiB. New EPYC 7543P board has 251 GiB RAM (was 30.5 GiB), so this guest
-         (k3s + Jellyfin + Prometheus/Grafana) gets most of the headroom. RAM is no
-         longer pinned: the GPU <hostdev> is commented out below (the 1002:164e device
-         was the previous CPU's iGPU and does not exist on EPYC), so QEMU no longer
-         mlocks all guest RAM. Budget: 251 - 152 (this) - 64 (storage) - 8 (download)
-         leaves ~27 GiB for the host. Cold power-cycle to apply: virsh destroy && virsh start. -->
+    <!-- 152 GiB of the host's 251 GiB (k3s + Jellyfin + Prometheus/Grafana). The RX 9070
+         hostdev below pins all guest RAM (QEMU mlocks it), so this guest cannot be
+         swapped or ballooned. Committed RAM is 152 + 64 (storage) + 8 (download) = 224 GiB,
+         leaving about 22 GiB free for the host. Cold power-cycle to apply: virsh destroy && virsh start. -->
     <memory unit='KiB'>159383552</memory>
     <currentMemory unit='KiB'>159383552</currentMemory>
     <!-- 44 of 64 host threads (was 16). Host is EPYC 7543P, 32c/64t; the other
@@ -217,6 +215,7 @@
         <address type='usb' bus='0' port='3'/>
       </redirdev>
       <watchdog model='itco' action='reset'/>
+      <!-- Cannot reclaim while the GPU is attached: all guest RAM is pinned. -->
       <memballoon model='virtio'>
         <address type='pci' domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
       </memballoon>
