@@ -121,7 +121,13 @@
           # writes, e.g. snapraid). off/direct-io bypassed the page cache at the
           # FUSE layer entirely and made every read a userspace round trip.
           "cache.files=auto-full"
-          "category.create=mfs"  # Use most-free-space policy to spread data across disks
+          # Least used space, not mfs. mfs equalises FREE bytes, so it kept
+          # filling the 10-16 TB disks (84% full) while the small ones sat at
+          # 12-18%, and the fullest data disk sizes the SnapRAID parity file.
+          # lus fills the emptiest disks first. media-branch-health-gate keeps
+          # it off failing disks (a low-used disk with bad sectors would
+          # otherwise be its favourite).
+          "category.create=lus"
           "defaults"
           # Keep cached pages after close (pair of cache.files=auto-full).
           # dropcacheonclose=true fadvise-dropped the cache on every close and
