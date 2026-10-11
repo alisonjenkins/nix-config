@@ -46,11 +46,8 @@ in {
         #   1000:0097            — SAS3008 HBA → home-storage-server-1
         #   1002:7550 / 1002:ab40 — RX 9070 (Navi 48 VGA + HDMI-audio) →
         #                           home-k8s-master-1 for VAAPI transcode.
-        # The 9070 IDs are ASSUMED (Navi 48 reference values); VERIFY with
-        # `lspci -nn` once the card is seated. Binding an absent device is a
-        # no-op, so this is safe to deploy before the card is installed. The
-        # card's host PCI address is unknown until then; passthrough is armed
-        # only once the <hostdev> is uncommented in the k8s-master domain XML.
+        # The 9070 IDs were verified with `lspci -nn` on 2026-10-11 (vfio-pci
+        # owns both functions). Binding an absent device is a no-op.
         modules.vfioIsolate = {
           enable = true;
           pciIds = [ "1000:0097" "1002:7550" "1002:ab40" ];
