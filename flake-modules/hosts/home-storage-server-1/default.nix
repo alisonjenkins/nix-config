@@ -472,8 +472,8 @@ in {
             exportfs -ra 2>/dev/null || true
 
             # Normalize the category top-dirs on any newly-mounted branch so
-            # mergerfs (category.create=mfs, which routes new writes to the
-            # emptiest disk) never lands imports on a branch whose backing
+            # mergerfs (category.create=lus, which routes new writes to the
+            # least-used disk) never lands imports on a branch whose backing
             # media/Movies|TV or downloads dir is still root-owned / non-setgid.
             systemctl start media-branch-normalize.service 2>/dev/null || true
           '';
