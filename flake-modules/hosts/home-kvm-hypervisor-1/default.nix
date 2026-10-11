@@ -86,6 +86,13 @@ in {
         nixpkgs.overlays = [
           (_final: prev: {
             prometheus-libvirt-exporter = prev.prometheus-libvirt-exporter.overrideAttrs (old: {
+              # 2.3.3 (latest Tinkoff tag) calls pool.Refresh per scrape; the
+              # read-only socket forbids it, the error aborts the scrape and
+              # libvirt_up reads 0. GetInfo works read-only without it.
+              postPatch = (old.postPatch or "") + ''
+                substituteInPlace libvirt_exporter.go \
+                  --replace-fail 'err := pool.Refresh(0)' 'var err error'
+              '';
               meta = (old.meta or { }) // { mainProgram = "libvirt-exporter"; };
             });
           })
