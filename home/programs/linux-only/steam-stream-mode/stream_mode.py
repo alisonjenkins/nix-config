@@ -1444,6 +1444,9 @@ class Session:
         # Not on each switch to game capture: every nudge's return logs one.
         self.capture_nudges = 0
         self.streaming = True
+        # Per stream, not per connection: a phone stays connected between
+        # streams, and its next one left Big Picture on the desktop monitor.
+        self.big_picture_placed = False
         clear_gamescope_atoms()
         if self.output is None:
             self.ensure_output()
@@ -1480,6 +1483,9 @@ class Session:
         # the first time rather than being corrected afterwards.
         self.borrow_game_workspace()
         self.readopt_running_game()
+        # Big Picture is usually open already and may not change again, so
+        # waiting for a window event could leave it where it is.
+        self.place_big_picture(self.last_windows)
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published

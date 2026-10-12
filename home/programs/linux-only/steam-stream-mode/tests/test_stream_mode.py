@@ -1467,6 +1467,40 @@ class TestOutputLifetime(unittest.TestCase):
 
         self.assertEqual(len(moved), 1)
 
+    def test_big_picture_is_moved_again_in_the_next_stream(self):
+        """A phone stays connected between streams; each stream needs it moved.
+
+        Placed once per connection, Big Picture stayed on the desktop monitor
+        for the phone's second stream (2026-10-12).
+        """
+        moved = []
+        stream_mode.move_window_to_output = lambda wid, out: moved.append((wid, out))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "phone")
+        bp = [{"id": 8, "pid": 42, "app_id": "steam",
+               "title": "Steam Big Picture Mode", "layout": {"window_size": [1280, 800]}}]
+        s.begin_stream("phone")
+        s.on_windows(bp)
+        s.begin_stream("phone")
+        s.on_windows(bp)
+
+        self.assertEqual(len(moved), 2)
+
+    def test_big_picture_already_open_is_placed_when_the_stream_starts(self):
+        """It opens before the stream does, and may not change again after."""
+        moved = []
+        stream_mode.move_window_to_output = lambda wid, out: moved.append((wid, out))
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "phone")
+        s.last_windows = [{"id": 8, "pid": 42, "app_id": "steam",
+                           "title": "Steam Big Picture Mode",
+                           "layout": {"window_size": [1280, 800]}}]
+        s.begin_stream("phone")
+
+        self.assertEqual(moved, [(8, stream_mode.OUTPUT_NAME)])
+
     def test_a_known_client_beats_whatever_size_the_output_is_left_at(self):
         """The client we are serving decides the size, not leftover state.
 
