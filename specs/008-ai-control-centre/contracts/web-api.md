@@ -16,20 +16,22 @@
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/` | Overview (default filters; interrupted banner when applicable) |
+| GET | `/` | The overview and the projects page in one tree: a cross-project "Waiting on you" band, then one collapsible node per project (Active, Interrupted, Finished, nested collapsed Done), a "No project" node, collapsed Unseen, Dismissed behind its toggle. Each session row has a Move control (existing project dropdown or a new project). `Accept: application/json` adds `projects:[{id,name,status,summary,counts,progress?,sessions}]` and `no_project:{summary,counts,sessions}` beside the flat `sessions` list |
 | GET | `/events` | SSE stream pushed from the change feed (research D12), no server polling loop: each message is `id: <events.seq>` and `data: {"changed":[{"entity":"session","id":"…","kind":"state"}]}` with exactly what changed. `Last-Event-ID` resumes from that `seq` after a dropped connection, so no change is missed. A `: keepalive` comment every 25 s keeps proxies and the connection open. |
 | GET | `/sessions?state=&agent=&repo=&project=&text=&include_dismissed=` | Filtered list |
 | GET | `/sessions/{id}` | Detail: progress with source label, lineage, notes, summaries |
 | POST | `/sessions/{id}/respawn` | Body `{"fresh":false}`; returns outcome per FR-012 |
 | POST | `/respawn` | Body `{"ids":[…]}` or `{"all_interrupted":true,"except":[…]}` (FR-010, FR-033) |
-| GET | `/restore` | Interrupted list with checkboxes (default all selected) |
-| POST | `/sessions/{id}/{park,unpark,dismiss,undismiss}` | Markers |
+| GET | `/restore[?session=ID]` | Interrupted list with checkboxes (default all selected); `?session=` previews one session in any state with its refusals and alternatives. The overview and session-page Respawn buttons link here instead of starting immediately |
+| POST | `/sessions/{id}/{park,unpark,undismiss}` | Markers (reversible, no confirmation) |
+| GET/POST | `/sessions/{id}/dismiss`, `/projects/{id}/dismiss`, `/sessions/{id}/unlink` | Need an explicit confirmation: `POST` without `confirm` (`1`, `true`, `on`, `yes`) returns `409` `confirmation_required` and changes nothing; `GET` returns the question (JSON `{ok,confirmation_required,action,consequence,confirm_with}`, an inline panel fragment for `HX-Request`, else a page); `unlink` takes `?cortex=N` |
+| POST | `/projects/{id}/{park,unpark,undismiss,summarize}` | Same markers and summary for projects |
 | POST | `/sessions/{id}/{done,undone}` | Mark done / return to Finished; `done` on a non-finished session returns `409` with the reason |
 | GET | `/projects/{id}` | Includes the project's own Done section below Active, Interrupted and Finished |
 | POST | `/sessions/{id}/note`, `/projects/{id}/note` | Notes |
 | POST | `/sessions/{id}/progress-source` | Choose among candidates (FR-015a) |
 | POST | `/sessions/{id}/summarize` | On-demand model summary |
-| GET/POST | `/projects`, `/projects/{id}` | Projects, grouping |
+| GET/POST | `/projects`, `/projects/{id}` | `GET /projects` redirects (302) to `/` for pages and returns the project list as JSON; `/projects/{id}` is the focused single-project node; POST for rename, status and grouping (`POST /sessions/{id}/group` creates a missing project, `-` ungroups) |
 | GET | `/links` | Cortexiphan links with disagreements highlighted |
 
 Respawn responses: `200 {"started":[…],"refused":[{"id","code","message"}]}`; codes as in `data-model.md`. A refusal is not an HTTP error.

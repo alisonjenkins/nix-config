@@ -17,7 +17,7 @@ Existing behaviour (no subcommand = TUI dashboard; `hook` reads hook JSON on std
 | `claude-monitor boot-check [--banner]` | Reconcile; if interrupted sessions exist, notify and write the marker; start nothing. `--banner` prints a one-line tmux `display-message` ("N AI sessions interrupted, prefix+A to review") once and clears the marker; run by tmux's `client-attached` hook | FR-032, FR-034 |
 | `claude-monitor project add\|rename\|set-status <name>`; `claude-monitor group <project> <session>...` | Projects and grouping | FR-018 |
 | `claude-monitor note <session\|project> <text>` | Attach a note | FR-018 |
-| `claude-monitor park\|unpark\|dismiss\|undismiss <session\|project>` | Markers; never deletes | FR-018, FR-019 |
+| `claude-monitor park\|unpark\|dismiss\|undismiss <session\|project> [--yes]` | Markers; never deletes. `dismiss` (and `unlink`) ask `Proceed? [y/N]` on a terminal; `--yes`/`-y` skips; with no terminal or `--json` and no `--yes` they exit 1 ("nothing was changed") and a declined answer exits 1. TUI `x` asks `y/N` in the footer (only `y` confirms); `undismiss`, `unpark` and `undone` are unconfirmed | FR-018, FR-019 |
 | `claude-monitor done <session>...` / `undone <session>...` | Mark a finished session done (moves to its project's Done section) or return it to Finished; `done` on a non-finished session exits 2 with the reason | FR-019b, FR-019c |
 | `claude-monitor list --section active\|interrupted\|finished\|done\|dismissed [--project P]` | Restrict to one view section; `--project` scopes to that project's sections, `--project -` to sessions in no project | FR-019b |
 | `claude-monitor delete <session>` | The only deleting command; asks to confirm unless `--yes` | spec Assumptions (retention) |
