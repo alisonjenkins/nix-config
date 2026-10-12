@@ -24,8 +24,16 @@ let
   skillNames = lib.attrNames (
     lib.filterAttrs (_: type: type == "directory") (builtins.readDir skillsDir)
   );
+  # Claude Code mods (plugins of function hooks), one directory each. Same
+  # auto-discovery as skills; see home/claude-mods/README.md.
+  modsDir = ../home/claude-mods;
+  modNames = lib.attrNames (
+    lib.filterAttrs (_: type: type == "directory") (builtins.readDir modsDir)
+  );
 in
 {
+  flake.lib.mods = lib.genAttrs modNames (name: modsDir + "/${name}");
+
   # skills.<name> -> path to that skill's directory. Auto-discovered: adding a
   # directory under home/skills/ is all it takes to expose it.
   flake.lib.skills = lib.genAttrs skillNames (name: skillsDir + "/${name}");
