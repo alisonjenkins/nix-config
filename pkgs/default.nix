@@ -51,6 +51,7 @@
   pup = pkgs.callPackage ./pup {};
   pup-claude = pkgs.callPackage ./pup-claude {};
   cache-tax = pkgs.callPackage ./cache-tax {};
+  savvy-progress = pkgs.callPackage ./savvy-progress {};
   llama-models = pkgs.callPackage ./llama-models {};
   llama-cpp-upstream = pkgs.callPackage ./llama-cpp-upstream { llama-cpp = pkgs.master.llama-cpp; };
   memory-recall = pkgs.callPackage ./memory-recall {};

@@ -760,7 +760,7 @@ in
     # pup-claude is intentionally NOT global — it ships 49 agents + ~14 skills
     # that would load into every session/subagent. It's layered in on demand via
     # the `claude-dd` wrapper (see let block) only for Datadog work.
-    plugins = [ pkgs.superpowers pkgs.cache-tax ] ++ lib.attrValues inputs.self.lib.mods;
+    plugins = [ pkgs.superpowers pkgs.cache-tax pkgs.savvy-progress ] ++ lib.attrValues inputs.self.lib.mods;
 
     # Listed explicitly (not agentsDir) so the shared gitStrategy mandate can
     # be appended to the git-touching agents.
