@@ -285,7 +285,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T118 Implement the SSE endpoint driven by the `ChangeFeed` in `src/web/events.rs`
 - [x] T119 Implement server-rendered pages and routes per `contracts/web-api.md` using the templating and htmx decision recorded in T116 (default if unanswered: `maud` plus vendored htmx, no external hosts) in `src/web/pages.rs`, `src/web/routes.rs`
 - [x] T120 Add the `serve` user-unit option to the Home Manager module in `nix/hm-module.nix`
-- [ ] T121 Browser-verify with the `webapp-testing` skill: load the overview, mark a finished session done, find it in the right project's Done section, respawn it, confirm a TUI change appears within 10 s; save the evidence in the PR description
+- [x] T121 Browser-verify with the `webapp-testing` skill: load the overview, mark a finished session done, find it in the right project's Done section, respawn it, confirm a TUI change appears within 10 s; save the evidence in the PR description
 
 ---
 
@@ -298,9 +298,9 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T126 [P] Document how to add an agent kind (checklist from `contracts/agent-kind.md`) and the CLI in claude-monitor's `README.md`, and keep the `nc:` contracts in sync
 - [x] T127 [P] No-egress test (FR-020): with a network-denying fake, every command except `links check` and `summarize` (loopback only) opens zero non-loopback connections, and nothing in the export or web paths sends session content anywhere, enumerating the `Command` enum so it covers every command, in `tests/no_egress.rs`
 - [x] T128 [P] Absence test (SC-010): the whole US1 to US5 suite passes with `cortexiphan` absent from `PATH` in `tests/no_cortexiphan.rs`
-- [ ] T129 [P] Run `cargo clippy -- -D warnings`, `cargo fmt --check`, `cargo deny check`, `nix flake check` in claude-monitor and `just check` plus `prek run --all-files` in nix-config; fix findings in separate commits
+- [x] T129 [P] Run `cargo clippy -- -D warnings`, `cargo fmt --check`, `cargo deny check`, `nix flake check` in claude-monitor and `just check` plus `prek run --all-files` in nix-config; fix findings in separate commits
 - [ ] T130 Run quickstart S0 to S9 end to end, recording the manual-only success criteria as measured values (SC-001 under 1 minute and 3 actions to resume, SC-002 20 sessions read in 10 s, SC-004 95% respawn success, SC-006 90% re-entry, SC-012 at most 2 actions to done), run the manual lines once with real Claude and Copilot sessions, and record the outputs in the pull request descriptions (constitution Principle II)
-- [ ] T131 Run `/speckit-analyze` and resolve every CRITICAL finding before merging
+- [x] T131 Run `/speckit-analyze` and resolve every CRITICAL finding before merging
 
 ---
 
