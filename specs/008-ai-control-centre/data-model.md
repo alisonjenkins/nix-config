@@ -11,8 +11,8 @@ Store: one SQLite database (see research D1). All timestamps are RFC 3339 UTC te
 | `id` | text PK | Internal id (UUID v4). Stable across respawns of the same logical work. |
 | `agent_kind` | text | `claude` \| `copilot` \| future kinds |
 | `agent_session_id` | text | The agent's own conversation id (`session_id` / Copilot UUID). Unique per `(agent_kind, agent_session_id)`. |
-| `resumed_from` | text FK Session.id, null | Lineage predecessor, set only when a `RespawnRequest` of ours produced this session (FR-011). The overview shows the head of a chain. |
-| `forked_from` | text FK Session.id, null | Set when a new conversation derives from an existing one without our respawn (for example a fork). A fork starts its own chain and is never collapsed into the original's head (spec edge case "genuinely separate fork"). Detection details follow the R1 spike. |
+| `resumed_from` | text FK Session.id, null | Lineage predecessor, set only for `/clear` continuations: a `SessionStart` with `source=clear` (new agent session id) in the pane where the predecessor just ended. A resume does not set it: `--resume` keeps the agent session id, so a respawn revives the same record (FR-011, R1). The overview shows the head of a chain. |
+| `forked_from` | text FK Session.id, null | Set only for forks (`--fork-session`: new id, new transcript, copied history, no parent link written by Claude). Detected at passive discovery by shared message uuids with an existing session's transcript, or recorded by us when we launch the fork. A fork launched by hand and never seen by us has no record and shows as an independent session. A fork starts its own chain and is never collapsed into the original's head (spec edge case "genuinely separate fork"). |
 | `repo_root` | text, null | Git top level of `cwd` at last sight |
 | `cwd` | text | Working directory the agent ran in; the respawn target |
 | `branch` | text, null | Branch at last sight |
@@ -44,15 +44,15 @@ UserPromptSubmit / Pre/PostToolUse ─► working
 PermissionRequest | Notification(permission_prompt|elicitation_dialog) ─► needs_permission
 Stop | Notification(idle_prompt|agent_idle|agent_completed) ─► idle
 SessionEnd (reason != clear) ─► finished
-SessionEnd (reason == clear) ─► finished + new Session(resumed_from = this)
+SessionEnd (reason == clear) ─► finished; the following SessionStart(source=clear, new id) creates new Session(resumed_from = this)
+SessionStart (source == resume, known session id) ─► idle, same record revived in place (from interrupted or finished; clears done_at)
 Copilot sessionEnd (reason error|abort|timeout) ─► interrupted (work did not end cleanly)
 
 any non-finished state ──(boot_id differs OR pid gone/start differs OR pane gone)──► interrupted
 passive-only discovery ─► unknown (until first hook)
-interrupted ──(respawn then matching SessionStart in recorded pane)──► superseded: new Session.resumed_from = this;
-                                                                      this stays `interrupted` but hidden behind the head
+interrupted ──(respawn, then SessionStart source=resume with the same session id)──► idle (same record; pid, pid_start, boot_id, tmux_pane refreshed)
 finished/interrupted ──(user action)──► dismissed/parked flags (state unchanged)
-finished ──(respawn; matching SessionStart in recorded pane)──► new Session.resumed_from = this; head of chain is active again
+finished ──(respawn, then SessionStart source=resume with the same session id)──► idle (same record)
 ```
 
 View sections (derived, not stored): per scope (global, or one project) the groups are Active (working, needs_permission, idle), Interrupted, Finished (`finished` and `done_at` null), Done (`done_at` not null), and, hidden by default, Dismissed. A session appears in exactly one group; the Done group of a project contains only that project's sessions, and the global scope lists sessions with `project_id` null in its own Done group. `done_at` is cleared when a respawn is requested for the session.
@@ -128,7 +128,7 @@ Rows are snapshots, replaced wholesale when the source is re-read; a step has no
 | `requested_at` | text | |
 | `outcome` | text | `started` \| `refused:<code>` \| `failed:<detail>` |
 | `tmux_target` | text, null | Window/pane started |
-| `new_session_id` | text FK, null | Filled when the matching `SessionStart` arrives |
+| `new_session_id` | text FK, null | Filled when the matching `SessionStart` arrives. Normally equal to `session_id`, because resume keeps the session id (R1); it differs only if the agent minted a new id. |
 
 Refusal codes: `already_running`, `missing_directory`, `missing_transcript`, `branch_gone`, `no_launcher`, `no_tmux`.
 
