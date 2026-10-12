@@ -1519,6 +1519,28 @@ class TestOutputLifetime(unittest.TestCase):
         self.assertEqual(self.fullscreen, [(8, True)])
         self.assertIn(8, s.fullscreened)
 
+    def test_another_client_connecting_mid_stream_leaves_it_alone(self):
+        """An idle Mac reconnected during a phone stream and reset it."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "phone")
+        s.begin_stream("phone")
+        self.modes.clear()
+
+        self.assertFalse(s.connect(456, "ali-mba"))
+        self.assertEqual(s.client_id, 123)
+        self.assertEqual(self.modes, [])
+        self.assertEqual(s.known_clients["ali-mba"], 456)
+
+    def test_a_client_connecting_while_a_stream_winds_down_takes_over(self):
+        """After the stop marker the output waits for a reconnect; let one in."""
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "phone")
+        s.begin_stream("phone")
+        s.stream_stopped()
+
+        self.assertTrue(s.connect(456, "ali-mba"))
+        self.assertEqual(s.client_id, 456)
+
     def test_a_known_client_beats_whatever_size_the_output_is_left_at(self):
         """The client we are serving decides the size, not leftover state.
 
@@ -2059,6 +2081,9 @@ class TestEventDispatch(unittest.TestCase):
             self.calls.append(("return_game_workspace",))
             return True
 
+        def stream_stopped(self):
+            self.calls.append(("stream_stopped",))
+
         def client_heartbeat(self, kbit=None):
             self.calls.append(("client_heartbeat", kbit))
 
@@ -2148,6 +2173,10 @@ class TestEventDispatch(unittest.TestCase):
         )
         self.assertIsNotNone(remove_at)
         self.assertGreater(remove_at, time.monotonic())
+
+    def test_stream_stop_marks_the_stream_as_winding_down(self):
+        stream_mode.handle_steam_line(self.s, "[x] PipeWire: Deinitializing streaming\n", None)
+        self.assertIn(("stream_stopped",), self.s.calls)
 
     def test_stream_stop_returns_the_game_workspace_at_once(self):
         """Stop Streaming from the tray leaves a running game behind.

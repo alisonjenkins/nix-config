@@ -1224,6 +1224,9 @@ class Session:
         self.left_on_alone = None
         self.client_id = None
         self.streaming = False
+        # Steam logged the stream's stop marker and the output is waiting out
+        # its grace period before being dropped.
+        self.stopping = False
         # A stream begun from desktop capture while SteamVR ran, which only
         # SteamVR exiting ends, and the refresh SteamVR agreed for it. See
         # desktop_stream_started.
@@ -1339,10 +1342,12 @@ class Session:
         if client_name:
             self.known_clients[client_name] = client_id
         # A Mac whose Steam reconnects on its own resized the output under a
-        # game in the headset. Only a VR stream: it has no stop marker or
-        # grace period for a new client to wait out.
-        if self.vr_stream and client_id != self.client_id:
-            log("stream-mode: {} connected during a VR stream; leaving {} as it is".format(
+        # game in the headset, and reset a phone's stream mid-session. Once a
+        # stream has stopped and the output is only waiting out its grace
+        # period, a new client may take it over.
+        live = self.vr_stream or (self.streaming and not self.stopping)
+        if live and client_id != self.client_id:
+            log("stream-mode: {} connected during a stream; leaving {} as it is".format(
                 client_name or client_id, self.output
             ))
             return False
@@ -1444,6 +1449,7 @@ class Session:
         # Not on each switch to game capture: every nudge's return logs one.
         self.capture_nudges = 0
         self.streaming = True
+        self.stopping = False
         # Per stream, not per connection: a phone stays connected between
         # streams, and its next one left Big Picture on the desktop monitor.
         self.big_picture_placed = False
@@ -1489,6 +1495,10 @@ class Session:
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
+
+    def stream_stopped(self):
+        """Steam logged the stop marker; the output now waits for a reconnect."""
+        self.stopping = True
 
     def desktop_stream_started(self):
         """Begin a stream Steam never announced, for a connected client.
@@ -2845,6 +2855,7 @@ def handle_steam_line(session, line, remove_at):
         return remove_at
 
     if STOP_RE.search(line):
+        session.stream_stopped()
         # Now, with Steam's sink going away, not with the output later.
         session.stop_audio()
         log("stream-mode: stream stopped, dropping the output in {:.0f}s".format(
