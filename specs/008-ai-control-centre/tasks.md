@@ -36,12 +36,13 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 **Purpose**: decisions recorded, spikes that gate design, a clean baseline.
 
-- [ ] T001 Create the `008-ai-control-centre` worktree in the claude-monitor repo and record the baseline: run `nix flake check` and save the output summary in `nc:specs/008-ai-control-centre/research.md` under a new "Baseline" heading
-- [ ] T002 [P] Draft ADR 0040 (SQLite store, event log as change feed, liveness = pid+start time+boot id, event-driven sources) with status Proposed in `nc:docs/adr/0040-control-centre-store-liveness-event-feed.md` and add it to `nc:docs/adr/README.md`; set to Accepted by T124
-- [ ] T003 [P] Draft ADR 0041 (code lives in claude-monitor as library + thin binary; loose coupling to cortexiphan via export; constitution scope deviation) with status Proposed, only after the owner confirms the code home, in `nc:docs/adr/0041-control-centre-code-home-cortexiphan-coupling.md` and add it to `nc:docs/adr/README.md`; set to Accepted by T124
-- [ ] T004 [P] Spike R2: capture raw Claude Code 2.1.293 hook stdin for SessionStart (all `source` values), UserPromptSubmit, PreToolUse/PostToolUse incl. the todo tool, PermissionRequest, Notification, Stop, SessionEnd (all `reason` values); store redacted payloads in `tests/fixtures/claude/` and write the confirmed shapes into `nc:specs/008-ai-control-centre/contracts/hook-payloads.md`
-- [ ] T005 [P] Spike R1: run `claude --resume` twice from the recorded cwd and once from another cwd in a scratch dir, and a `--fork-session` run; record whether the session id changes, whether resume works from another cwd, and how a fork appears on disk, in `nc:specs/008-ai-control-centre/research.md` (D4)
-- [ ] T006 [P] Spike R8: a throwaway test in `tests/spikes/wal_notify.rs` committing in one process and timing the `notify` callback in another over 1000 iterations on Linux; record latency and any missed events in `nc:specs/008-ai-control-centre/research.md` (D12)
+- [X] T001 Create the `008-ai-control-centre` worktree in the claude-monitor repo and record the baseline: run `nix flake check` and save the output summary in `nc:specs/008-ai-control-centre/research.md` under a new "Baseline" heading
+- [X] T002 [P] Draft ADR 0040 (SQLite store, event log as change feed, liveness = pid+start time+boot id, event-driven sources) with status Proposed in `nc:docs/adr/0040-control-centre-store-liveness-event-feed.md` and add it to `nc:docs/adr/README.md`; set to Accepted by T124
+- [X] T003 [P] Draft ADR 0041 (code lives in claude-monitor as library + thin binary; loose coupling to cortexiphan via export; constitution scope deviation) with status Proposed, only after the owner confirms the code home, in `nc:docs/adr/0041-control-centre-code-home-cortexiphan-coupling.md` and add it to `nc:docs/adr/README.md`; set to Accepted by T124
+- [X] T004 [P] Spike R2: capture raw Claude Code 2.1.293 hook stdin for SessionStart (all `source` values), UserPromptSubmit, PreToolUse/PostToolUse incl. the todo tool, PermissionRequest, Notification, Stop, SessionEnd (all `reason` values); store redacted payloads in `tests/fixtures/claude/` and write the confirmed shapes into `nc:specs/008-ai-control-centre/contracts/hook-payloads.md`
+- [X] T005 [P] Spike R1: run `claude --resume` twice from the recorded cwd and once from another cwd in a scratch dir, and a `--fork-session` run; record whether the session id changes, whether resume works from another cwd, and how a fork appears on disk, in `nc:specs/008-ai-control-centre/research.md` (D4)
+- [X] T006 [P] Spike R8: a throwaway test in `tests/spikes/wal_notify.rs` committing in one process and timing the `notify` callback in another over 1000 iterations on Linux; record latency and any missed events in `nc:specs/008-ai-control-centre/research.md` (D12)
+- [ ] T006a [P] Spike R10: inspect `~/.claude/sessions/<pid>.json` for live interactive sessions (keys, when written/removed, status values, tmux field), record in `nc:specs/008-ai-control-centre/research.md` D2
 
 **Checkpoint**: fixtures and measurements exist; design assumptions confirmed or the docs corrected before code depends on them.
 
@@ -51,9 +52,9 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 **Purpose**: library/binary split, store, event feed, command skeleton, Claude hook ingest.
 
-- [ ] T007 Refactor only: move `session`, `hook_cmd`, `tmux`, `watcher`, `ui`, `dashboard`, `desktop_notify` into the library (`src/lib.rs`, `src/hook.rs`, `src/tmux.rs`, `src/tui/`, `src/notify.rs`), shrink `src/main.rs` to argument parsing plus `claude_monitor::cli::run`; existing ~35 tests move with the code and still pass
-- [ ] T008 Add cargo features `tui` and `web` (both default) and gate `ratatui`/`crossterm` and (later) `axum`/`tokio`; add `tests/features.rs` asserting `cargo build --no-default-features` has neither in `cargo tree` and that `src/main.rs` is under 60 lines (quickstart S0) in `Cargo.toml`, `tests/features.rs`
-- [ ] T009 [P] Add dependencies `rusqlite` (bundled), `thiserror`, `uuid` and make `cargo deny check` pass in `Cargo.toml`, `deny.toml`
+- [X] T007 Refactor only: move `session`, `hook_cmd`, `tmux`, `watcher`, `ui`, `dashboard`, `desktop_notify` into the library (`src/lib.rs`, `src/hook.rs`, `src/tmux.rs`, `src/tui/`, `src/notify.rs`), shrink `src/main.rs` to argument parsing plus `claude_monitor::cli::run`; existing ~35 tests move with the code and still pass
+- [X] T008 Add cargo features `tui` and `web` (both default) and gate `ratatui`/`crossterm` and (later) `axum`/`tokio`; add `tests/features.rs` asserting `cargo build --no-default-features` has neither in `cargo tree` and that `src/main.rs` is under 60 lines (quickstart S0) in `Cargo.toml`, `tests/features.rs`
+- [X] T009 [P] Add dependencies `rusqlite` (bundled), `thiserror`, `uuid` and make `cargo deny check` pass in `Cargo.toml`, `deny.toml`
 - [ ] T010 [P] Write state-machine tests (transitions from data-model.md incl. `clear` lineage step and Copilot abnormal end → interrupted), ignored until T011, in `tests/state_machine.rs`
 - [ ] T011 Implement `State`, `Session`, `Project`, `Step`, `Note`, `Attribution` types and the pure transition function in `src/model.rs` (removes the ignores from T010)
 - [ ] T012 Write store tests (create schema, migrate from empty and from v1, WAL on, 0600 mode, `--state-dir` override), ignored until T013, in `tests/store.rs`
@@ -65,13 +66,13 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [ ] T018 Write the CLI conformance test over the `Command` enum: every command has `--json` output that parses, errors are `{"ok":false,"error":...}`, exit codes are 0/1/2/3 as in `contracts/cli.md`, and every interactive TUI action maps to a `Command` (quickstart S0 parity, FR-035), ignored per command until implemented, in `tests/cli_conformance.rs`
 - [ ] T019 Write legacy-migration tests (import runtime JSON files once, ignore afterwards, run on first start; FR-022), ignored until T020, in `tests/legacy_migrate.rs`
 - [ ] T020 Implement `migrate` in `src/store/legacy.rs`, `src/cli/migrate.rs` (removes the ignores from T019)
-- [ ] T021 Define `trait AgentKind` and the `HookEvent` set per `contracts/agent-kind.md` in `src/agents/mod.rs`
+- [ ] T021 Define `trait AgentKind` and the `HookEvent` set per `contracts/agent-kind.md` in `src/agents/mod.rs`. Note (spikes R1/R2): `HookEvent` carries `source` and the raw `reason`, `Stop` carries the last assistant message, and `PermissionRequest` has no tool-use id
 - [ ] T022 Write Claude hook-parser fixture tests against the T004 fixtures, ignored until T023, in `tests/claude_hook.rs`
 - [ ] T023 Implement the Claude `AgentKind` parser in `src/agents/claude.rs` (removes the ignores from T022)
-- [ ] T024 Write hook-ingest tests: always exit 0, empty stdout, errors to `<state-dir>/hook.log` with a UTC timestamp, `busy_timeout` ≤ 200 ms, p95 < 50 ms benchmark, ignored until T025, in `tests/hook_ingest.rs`
+- [ ] T024 Write hook-ingest tests: always exit 0, empty stdout, errors to `<state-dir>/hook.log` with a UTC timestamp, `busy_timeout` ≤ 200 ms, p95 < 50 ms benchmark, `ToolSearch` tool events filtered out (they fire Pre/PostToolUse but are not work), ignored until T025, in `tests/hook_ingest.rs`
 - [ ] T025 Rewrite `hook` to write the store using the Claude parser in `src/hook.rs` (removes the ignores from T024)
-- [ ] T026 Write `ChangeFeed`/`EventSource` tests (fs watcher over the state dir with 50 ms debounce, `events.seq` cursor, replay from a given seq, fake source, no sleeps), ignored until T027, in `tests/feed.rs`
-- [ ] T027 Implement `ChangeFeed`, `EventSource` and the fs-watcher source in `src/feed/mod.rs`, `src/feed/fs.rs` (removes the ignores from T026)
+- [ ] T026 Write `ChangeFeed`/`EventSource` tests (fs watcher over the state dir with a start-anchored 50 ms throttle window, `events.seq` cursor, replay from a given seq, fake source, no sleeps), ignored until T027, in `tests/feed.rs`
+- [ ] T027 Implement `ChangeFeed`, `EventSource` and the fs-watcher source with a start-anchored 50 ms throttle window (fire 50 ms after the first event of a group, then re-arm; a trailing debounce starves under continuous writes, R8) and a wake-up-then-requery-by-`events.seq` design, in `src/feed/mod.rs`, `src/feed/fs.rs` (removes the ignores from T026)
 
 **Checkpoint**: store, events, hook ingest and feed work; the old dashboard still runs (reading the store in T031).
 
@@ -103,8 +104,8 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [ ] T040 [US1] Implement Copilot passive discovery in `src/agents/copilot_discover.rs` (removes the ignores from T039)
 - [ ] T041 [US1] Add the Copilot hooks file (`~/.copilot/hooks/claude-monitor.json`, `version: 1`) and the `--agent` flag to the Home Manager module, with an eval check, in `nix/hm-module.nix`, `flake.nix`
 - [ ] T042 [US1] Add a `notify` watch on `~/.copilot/session-state/` as an `EventSource` so new Copilot sessions appear without a rescan in `src/feed/copilot.rs`, `tests/feed.rs`
-- [ ] T043 [P] [US1] Write Claude passive-discovery tests: sessions under `~/.claude/projects/<encoded-cwd>/<id>.jsonl` and `sessions-index.json` get a record with cwd, first prompt and timestamps and state `unknown`, no conversation content beyond the first prompt, and a later hook upgrades the same record instead of duplicating it, ignored until T044, in `tests/claude_discover.rs`
-- [ ] T044 [US1] Implement Claude passive discovery as `AgentKind::discover` plus a `notify` watch on `~/.claude/projects` as an `EventSource`, covering sessions started before the hooks existed or by a tool without them, in `src/agents/claude_discover.rs`, `src/feed/claude.rs` (removes the ignores from T043)
+- [ ] T043 [P] [US1] Write Claude passive-discovery tests: sessions found by scanning `~/.claude/projects/*/*.jsonl` (not `sessions-index.json`, which newer versions no longer write; the encoded cwd is lossy, so take `cwd` from the transcript lines) get a record with cwd, first prompt and timestamps and state `unknown`, no conversation content beyond the first prompt, and a later hook upgrades the same record instead of duplicating it, ignored until T044, in `tests/claude_discover.rs`
+- [ ] T044 [US1] Implement Claude passive discovery as `AgentKind::discover` plus a `notify` watch on `~/.claude/projects` as an `EventSource`, covering sessions started before the hooks existed or by a tool without them; scan `*.jsonl`, not `sessions-index.json`, and consider the `~/.claude/sessions/<pid>.json` registry once T006a (R10) is done; also detect forks by shared message uuids (T072), in `src/agents/claude_discover.rs`, `src/feed/claude.rs` (removes the ignores from T043)
 - [ ] T045 [US1] Add-a-kind test (SC-008, FR-004): register a third fake `AgentKind` and run list, persist, respawn and export unchanged in `tests/third_agent_kind.rs`, ignored per step until respawn (T073) and export (T098) exist
 
 **Checkpoint**: US1 independently demonstrable in the TUI and `list --json` for Claude and Copilot.
@@ -163,8 +164,8 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [ ] T068 [US3] Implement the respawn planner (checks, refusal codes) and the launcher templates (`{session_id}`, `{cwd}`, `{name}`) in `src/respawn.rs`
 - [ ] T069 [US3] Implement the refusal alternatives and the `--recreate-worktree` and `--fresh --in <dir>` flags in `src/respawn.rs`, `src/cli/respawn.rs`
 - [ ] T070 [US3] Implement the tmux executor (create server/session `agents` if absent, window per session, `-c <cwd>`) behind the `Tmux` provider in `src/tmux.rs`
-- [ ] T071 [US3] Link a respawn to its original on the next `SessionStart` from the recorded pane (`source=resume`), handling a changed or unchanged agent session id per T005, in `src/hook.rs`, `src/respawn.rs`
-- [ ] T072 [US3] Record forks: a `SessionStart` that is not matched by a `RespawnRequest` but derives from an existing conversation gets `forked_from` and its own chain (store column in data-model.md) in `src/hook.rs`, `src/store/schema.rs`
+- [ ] T071 [US3] Link a respawn: a `SessionStart` with `source=resume` and a known session id revives that record in place (resume keeps the id, T005); only `/clear` (`source=clear`, new id) creates a `resumed_from` link; tolerate an unexpected new id by treating the pane's open `RespawnRequest` as the link, in `src/hook.rs`, `src/respawn.rs`
+- [ ] T072 [US3] Record forks: Claude writes no parent link, so detect a fork at passive discovery by shared message uuids with an existing transcript, and record parent to child ourselves when we launch `--fork-session`; the fork gets `forked_from` and its own chain (store column in data-model.md). A fork launched by hand with no record shows as independent, in `src/hook.rs`, `src/store/schema.rs`
 - [ ] T073 [US3] Implement `respawn` and `restore` commands (`--all-interrupted`, `--include-finished`, `--fresh`, `--yes`; exit codes 2/3 per contract) in `src/cli/respawn.rs`, `src/cli/restore.rs`
 - [ ] T074 [US3] Add the restore view to the TUI: checkboxes, all interrupted pre-selected, finished unselected, deselect to opt out (deselected stay interrupted, not dismissed), Enter respawns, in `src/tui/restore.rs`, `tests/tui.rs`
 - [ ] T075 [US3] Implement `boot-check` (reconcile, notify, write marker, start nothing) in `src/cli/boot_check.rs`
@@ -195,7 +196,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 ### Implementation
 
 - [ ] T086 [P] [US4] Implement the spec-kit and generic checklist parsers in `src/progress/speckit.rs`, `src/progress/checklist.rs`
-- [ ] T087 [P] [US4] Implement the agent todo-list snapshot from PostToolUse (Claude shape per T004) in `src/progress/todo.rs`
+- [ ] T087 [P] [US4] Implement the agent todo-list snapshot from PostToolUse. The source is unverified and optional: T004 found no todo tool in this environment's Claude Code, so the shape is not captured; the implementation must tolerate its absence (spec-kit `tasks.md` and Markdown checklists are the verified sources). In `src/progress/todo.rs`
 - [ ] T088 [US4] Implement bindings, candidate discovery and the `progress bind` command in `src/progress/binding.rs`, `src/cli/progress.rs`
 - [ ] T089 [US4] Add a `notify` watch on bound files as an `EventSource` that re-parses only the changed file in `src/feed/files.rs`
 - [ ] T090 [US4] Implement verbatim summaries (first prompt; latest assistant message from the Stop payload or transcript tail) in `src/summary.rs`, `src/hook.rs`
