@@ -55,20 +55,20 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [X] T007 Refactor only: move `session`, `hook_cmd`, `tmux`, `watcher`, `ui`, `dashboard`, `desktop_notify` into the library (`src/lib.rs`, `src/hook.rs`, `src/tmux.rs`, `src/tui/`, `src/notify.rs`), shrink `src/main.rs` to argument parsing plus `claude_monitor::cli::run`; existing ~35 tests move with the code and still pass
 - [X] T008 Add cargo features `tui` and `web` (both default) and gate `ratatui`/`crossterm` and (later) `axum`/`tokio`; add `tests/features.rs` asserting `cargo build --no-default-features` has neither in `cargo tree` and that `src/main.rs` is under 60 lines (quickstart S0) in `Cargo.toml`, `tests/features.rs`
 - [X] T009 [P] Add dependencies `rusqlite` (bundled), `thiserror`, `uuid` and make `cargo deny check` pass in `Cargo.toml`, `deny.toml`
-- [ ] T010 [P] Write state-machine tests (transitions from data-model.md incl. `clear` lineage step and Copilot abnormal end → interrupted), ignored until T011, in `tests/state_machine.rs`
-- [ ] T011 Implement `State`, `Session`, `Project`, `Step`, `Note`, `Attribution` types and the pure transition function in `src/model.rs` (removes the ignores from T010)
-- [ ] T012 Write store tests (create schema, migrate from empty and from v1, WAL on, 0600 mode, `--state-dir` override), ignored until T013, in `tests/store.rs`
-- [ ] T013 Implement SQLite schema and migrations per data-model.md in `src/store/mod.rs`, `src/store/schema.rs`, `src/store/migrations.rs` (removes the ignores from T012)
-- [ ] T014 Write `events` table tests (append-only, `seq` cursor, author fields, "only record real changes"), ignored until T015, in `tests/events.rs`
-- [ ] T015 Implement the append-only `events` table and cursor API in `src/store/events.rs` (removes the ignores from T014)
-- [ ] T016 [P] Define provider traits (`Clock`, `BootId`, `Processes`, `Tmux`, `Notifier`, `Fs`) with real and fake implementations and an `Env` bundle in `src/env.rs`, `src/testing.rs`
-- [ ] T017 Define the `Command` enum, `Output` (text and `--json`), the `Error` type (thiserror) and its exit-code mapping (0/1/2/3) and the `cli::run(cmd, &Env)` skeleton, with clippy deny rules extended to new modules, in `src/cli/mod.rs`, `src/cli/output.rs`, `src/error.rs`
-- [ ] T018 Write the CLI conformance test over the `Command` enum: every command has `--json` output that parses, errors are `{"ok":false,"error":...}`, exit codes are 0/1/2/3 as in `contracts/cli.md`, and every interactive TUI action maps to a `Command` (quickstart S0 parity, FR-035), ignored per command until implemented, in `tests/cli_conformance.rs`
+- [X] T010 [P] Write state-machine tests (transitions from data-model.md incl. `clear` lineage step and Copilot abnormal end → interrupted), ignored until T011, in `tests/state_machine.rs`
+- [X] T011 Implement `State`, `Session`, `Project`, `Step`, `Note`, `Attribution` types and the pure transition function in `src/model.rs` (removes the ignores from T010)
+- [X] T012 Write store tests (create schema, migrate from empty and from v1, WAL on, 0600 mode, `--state-dir` override), ignored until T013, in `tests/store.rs`
+- [X] T013 Implement SQLite schema and migrations per data-model.md in `src/store/mod.rs`, `src/store/schema.rs`, `src/store/migrations.rs` (removes the ignores from T012)
+- [X] T014 Write `events` table tests (append-only, `seq` cursor, author fields, "only record real changes"), ignored until T015, in `tests/events.rs`
+- [X] T015 Implement the append-only `events` table and cursor API in `src/store/events.rs` (removes the ignores from T014)
+- [X] T016 [P] Define provider traits (`Clock`, `BootId`, `Processes`, `Tmux`, `Notifier`, `Fs`) with real and fake implementations and an `Env` bundle in `src/env.rs`, `src/testing.rs`
+- [X] T017 Define the `Command` enum, `Output` (text and `--json`), the `Error` type (thiserror) and its exit-code mapping (0/1/2/3) and the `cli::run(cmd, &Env)` skeleton, with clippy deny rules extended to new modules, in `src/cli/mod.rs`, `src/cli/output.rs`, `src/error.rs`
+- [X] T018 Write the CLI conformance test over the `Command` enum: every command has `--json` output that parses, errors are `{"ok":false,"error":...}`, exit codes are 0/1/2/3 as in `contracts/cli.md`, and every interactive TUI action maps to a `Command` (quickstart S0 parity, FR-035), ignored per command until implemented, in `tests/cli_conformance.rs`
 - [ ] T019 Write legacy-migration tests (import runtime JSON files once, ignore afterwards, run on first start; FR-022), ignored until T020, in `tests/legacy_migrate.rs`
 - [ ] T020 Implement `migrate` in `src/store/legacy.rs`, `src/cli/migrate.rs` (removes the ignores from T019)
-- [ ] T021 Define `trait AgentKind` and the `HookEvent` set per `contracts/agent-kind.md` in `src/agents/mod.rs`. Note (spikes R1/R2): `HookEvent` carries `source` and the raw `reason`, `Stop` carries the last assistant message, and `PermissionRequest` has no tool-use id
-- [ ] T022 Write Claude hook-parser fixture tests against the T004 fixtures, ignored until T023, in `tests/claude_hook.rs`
-- [ ] T023 Implement the Claude `AgentKind` parser in `src/agents/claude.rs` (removes the ignores from T022)
+- [X] T021 Define `trait AgentKind` and the `HookEvent` set per `contracts/agent-kind.md` in `src/agents/mod.rs`. Note (spikes R1/R2): `HookEvent` carries `source` and the raw `reason`, `Stop` carries the last assistant message, and `PermissionRequest` has no tool-use id
+- [X] T022 Write Claude hook-parser fixture tests against the T004 fixtures, ignored until T023, in `tests/claude_hook.rs`
+- [X] T023 Implement the Claude `AgentKind` parser in `src/agents/claude.rs` (removes the ignores from T022)
 - [ ] T024 Write hook-ingest tests: always exit 0, empty stdout, errors to `<state-dir>/hook.log` with a UTC timestamp, `busy_timeout` ≤ 200 ms, p95 < 50 ms benchmark, `ToolSearch` tool events filtered out (they fire Pre/PostToolUse but are not work), ignored until T025, in `tests/hook_ingest.rs`
 - [ ] T025 Rewrite `hook` to write the store using the Claude parser in `src/hook.rs` (removes the ignores from T024)
 - [ ] T026 Write `ChangeFeed`/`EventSource` tests (fs watcher over the state dir with a start-anchored 50 ms throttle window, `events.seq` cursor, replay from a given seq, fake source, no sleeps), ignored until T027, in `tests/feed.rs`
