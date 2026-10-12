@@ -6,8 +6,8 @@ Existing behaviour (no subcommand = TUI dashboard; `hook` reads hook JSON on std
 
 | Command | Purpose | Requirements |
 |---|---|---|
-| `claude-monitor` | TUI overview: active and interrupted first, then finished (recent listed, older collapsed under a count), dismissed hidden | FR-001 to FR-003, FR-019 |
-| `claude-monitor list [--json] [--state S]... [--agent K] [--repo R] [--project P] [--text T] [--include-dismissed] [--expand-finished]` | Overview as text/JSON; the filter set the TUI and web share | FR-019 |
+| `claude-monitor` | TUI overview: active and interrupted first, then finished (all listed, never hidden by age), the collapsed "unseen" section (sessions found on disk with no live process and no hook history), done, dismissed hidden | FR-001 to FR-003, FR-019 |
+| `claude-monitor list [--json] [--state S]... [--agent K] [--repo R] [--project P] [--text T] [--include-dismissed] [--expand-unseen]` (`--expand-finished` is accepted and does nothing) | Overview as text/JSON; the filter set the TUI and web share | FR-019 |
 | `claude-monitor show <session>` | One session: description, left-off, progress with source label, links, notes, lineage | FR-015, FR-017 |
 | `claude-monitor hook [--agent claude\|copilot]` | Ingest one hook payload from stdin. Always exits 0, never writes stdout; failures go to `<state-dir>/hook.log` | FR-005, FR-008 |
 | `claude-monitor reconcile [--pane %N \| --session ID]` | Apply liveness rules to everything, or only to one pane/session (what the tmux `pane-exited` hook calls); idempotent | FR-008 |
@@ -54,4 +54,4 @@ Existing behaviour (no subcommand = TUI dashboard; `hook` reads hook JSON on std
 }
 ```
 
-`progress` is omitted (not zero) when no binding exists (FR-016). `section` is one of `active`, `interrupted`, `finished`, `done`, `dismissed`. `flags` may contain `worktree_missing`, `parked`, `dismissed`, `state_unknown`, `degraded` (record unreadable in part, FR-021).
+`progress` is omitted (not zero) when no binding exists (FR-016). `section` is one of `active`, `interrupted`, `finished`, `done`, `unseen`, `dismissed`. `flags` may contain `worktree_missing`, `parked`, `dismissed`, `state_unknown`, `degraded` (record unreadable in part, FR-021).

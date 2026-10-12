@@ -126,7 +126,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T047 [P] [US2] Reboot test: changed boot id marks every non-finished session interrupted in one pass; finished stays finished; reconcile idempotent in `tests/durability.rs`
 - [x] T048 [P] [US2] Finished-stays-visible test: clean `SessionEnd` → finished, listed in the default query, respawnable flag set, `clear` creates a lineage step in `tests/durability.rs`
 - [x] T049 [P] [US2] Degraded-record test: one corrupt row yields a `degraded` entry while the rest of the list works (FR-021) in `tests/degraded.rs`
-- [ ] T050 [P] [US2] Reconcile-on-open test: starting the TUI, `serve` or `list` with a killed session still recorded as running shows it `interrupted` before the first render, with no hook or watcher having fired (FR-008, SC-005) in `tests/reconcile_on_open.rs`
+- [x] T050 [P] [US2] Reconcile-on-open test: starting the TUI, `serve` or `list` with a killed session still recorded as running shows it `interrupted` before the first render, with no hook or watcher having fired (FR-008, SC-005) in `tests/reconcile_on_open.rs`
 
 ### Implementation
 
@@ -144,12 +144,12 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Gaps found while building Phase 4 (investigate and close before Phase 5)
 
-- [ ] T051a [US2] Finish T051: cross-check the hook's `$PPID` against the `~/.claude/sessions` registry (pid, `procStart`) and prefer the registry when they disagree, in `src/hook.rs`
-- [ ] T062a [US2] Investigate the "unknown" clutter: the real-HOME smoke run found 177 sessions, 125 Claude and 39 Copilot of them `unknown` (disk-only, no pid, no hook history). Decide how they group in `list`/TUI (own "unseen" section, collapsed by default, never counted as active) and whether age should matter; write the finding in `research.md`, then implement the grouping with tests
-- [ ] T062b [US1] Fix FR-019: finished sessions must not be hidden by age. `overview` currently collapses finished sessions older than a threshold under a count; make them always listable and respawnable (per-project "done" stays the user-set tidy-up), with a test in `tests/overview.rs`
-- [ ] T062c [US2] Copilot hook event name: have the Copilot hooks file pass the event name explicitly instead of the parser inferring it from fields; keep inference as the fallback, in `src/agents/copilot.rs`, `nix/hm-module.nix`
+- [x] T051a [US2] Finish T051: cross-check the hook's `$PPID` against the `~/.claude/sessions` registry (pid, `procStart`) and prefer the registry when they disagree, in `src/hook.rs`
+- [x] T062a [US2] Investigate the "unknown" clutter: the real-HOME smoke run found 177 sessions, 125 Claude and 39 Copilot of them `unknown` (disk-only, no pid, no hook history). Decide how they group in `list`/TUI (own "unseen" section, collapsed by default, never counted as active) and whether age should matter; write the finding in `research.md`, then implement the grouping with tests
+- [x] T062b [US1] Fix FR-019: finished sessions must not be hidden by age. `overview` currently collapses finished sessions older than a threshold under a count; make them always listable and respawnable (per-project "done" stays the user-set tidy-up), with a test in `tests/overview.rs`
+- [x] T062c [US2] Copilot hook event name: have the Copilot hooks file pass the event name explicitly instead of the parser inferring it from fields; keep inference as the fallback, in `src/agents/copilot.rs`, `nix/hm-module.nix`
 - [ ] T062d [US2] Rewrite the Phase 4 commits that put implementation and tests in one commit (`spawn_live`, dashboard `warning_line`, `watch` subcommand parse) into test-then-implementation pairs, and autosquash the `fixup!` commit (`cb8d051`), before any merge
-- [ ] T062e [US2] Document and test the tmux multi-pane gap (R9: `kill-pane` of one pane in a multi-pane window fires no hook) as covered by the 60 s safety net, in `research.md`, `tests/safety_net.rs`
+- [x] T062e [US2] Document and test the tmux multi-pane gap (R9: `kill-pane` of one pane in a multi-pane window fires no hook) as covered by the 60 s safety net, in `research.md`, `tests/safety_net.rs`
 - [ ] T062f [US2] Real-hook activation: bump the claude-monitor flake input in nix-config so the user's hooks feed the new build (live change: ask the user first), in `nc:home/programs/claude-code/default.nix`, `flake.lock`
 - [ ] T062g [US1] Decide `delete` (CLI contract has it, no task): add a task in Phase 8 or drop it from `contracts/cli.md`
 - [ ] T062h [US2] macOS liveness (T055/T056) stays deferred until a macOS machine is available; track in `PENDING.md`
@@ -166,27 +166,27 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Tests (write first)
 
-- [ ] T062 [P] [US3] Spike R7: prove a private `tmux -S` server runs inside a Nix `runCommand` check; keep it as the harness in `tests/tmux_harness.rs`, `flake.nix`
-- [ ] T063 [P] [US3] Planner tests: missing directory, missing transcript, branch gone, already running, no launcher, no tmux, agent without resume → fresh + notice, finished respawn identical to interrupted in `tests/respawn_plan.rs`
-- [ ] T064 [P] [US3] Alternatives tests: a missing worktree whose branch still exists gets a refusal that includes a `git worktree add` suggestion, and `respawn --recreate-worktree` runs it only when asked; a missing worktree with no branch suggests `respawn --fresh --in <repo_root>` (new session in the main checkout, saying history is not restored); nothing is ever created automatically (US3 scenario 3) in `tests/respawn_alternatives.rs`
+- [x] T062 [P] [US3] Spike R7: prove a private `tmux -S` server runs inside a Nix `runCommand` check; keep it as the harness in `tests/tmux_harness.rs`, `flake.nix`
+- [x] T063 [P] [US3] Planner tests: missing directory, missing transcript, branch gone, already running, no launcher, no tmux, agent without resume → fresh + notice, finished respawn identical to interrupted in `tests/respawn_plan.rs`
+- [x] T064 [P] [US3] Alternatives tests: a missing worktree whose branch still exists gets a refusal that includes a `git worktree add` suggestion, and `respawn --recreate-worktree` runs it only when asked; a missing worktree with no branch suggests `respawn --fresh --in <repo_root>` (new session in the main checkout, saying history is not restored); nothing is ever created automatically (US3 scenario 3) in `tests/respawn_alternatives.rs`
 - [ ] T065 [P] [US3] Private-tmux integration tests: single respawn lands in the recorded cwd, five at once, lineage `resumed_from` set from the next `SessionStart` in the recorded pane, no duplicate row in `tests/respawn_tmux.rs`
-- [ ] T066 [P] [US3] `boot-check` tests: with interrupted sessions emits one notification, writes the marker and starts nothing; with none emits nothing; finished sessions neither selected nor counted (FR-019a, FR-034); `boot-check --banner` prints the one-line message once via the `Tmux` provider and clears the marker (FR-032) in `tests/boot_check.rs`
-- [ ] T067 [P] [US3] Fork lineage test (spec edge case): a forked conversation (per the R1 findings in T005) becomes a separate session with `forked_from` set and is not collapsed into the head of the respawn chain; a respawn linked through a `RespawnRequest` still collapses, in `tests/lineage_fork.rs`
+- [x] T066 [P] [US3] `boot-check` tests: with interrupted sessions emits one notification, writes the marker and starts nothing; with none emits nothing; finished sessions neither selected nor counted (FR-019a, FR-034); `boot-check --banner` prints the one-line message once via the `Tmux` provider and clears the marker (FR-032) in `tests/boot_check.rs`
+- [x] T067 [P] [US3] Fork lineage test (spec edge case): a forked conversation (per the R1 findings in T005) becomes a separate session with `forked_from` set and is not collapsed into the head of the respawn chain; a respawn linked through a `RespawnRequest` still collapses, in `tests/lineage_fork.rs`
 
 ### Implementation
 
-- [ ] T068 [US3] Implement the respawn planner (checks, refusal codes) and the launcher templates (`{session_id}`, `{cwd}`, `{name}`) in `src/respawn.rs`
-- [ ] T069 [US3] Implement the refusal alternatives and the `--recreate-worktree` and `--fresh --in <dir>` flags in `src/respawn.rs`, `src/cli/respawn.rs`
-- [ ] T070 [US3] Implement the tmux executor (create server/session `agents` if absent, window per session, `-c <cwd>`) behind the `Tmux` provider in `src/tmux.rs`
-- [ ] T071 [US3] Link a respawn: a `SessionStart` with `source=resume` and a known session id revives that record in place (resume keeps the id, T005); only `/clear` (`source=clear`, new id) creates a `resumed_from` link; tolerate an unexpected new id by treating the pane's open `RespawnRequest` as the link, in `src/hook.rs`, `src/respawn.rs`
-- [ ] T072 [US3] Record forks: Claude writes no parent link, so detect a fork at passive discovery by shared message uuids with an existing transcript, and record parent to child ourselves when we launch `--fork-session`; the fork gets `forked_from` and its own chain (store column in data-model.md). A fork launched by hand with no record shows as independent, in `src/hook.rs`, `src/store/schema.rs`
+- [x] T068 [US3] Implement the respawn planner (checks, refusal codes) and the launcher templates (`{session_id}`, `{cwd}`, `{name}`) in `src/respawn.rs`
+- [x] T069 [US3] Implement the refusal alternatives and the `--recreate-worktree` and `--fresh --in <dir>` flags in `src/respawn.rs`, `src/cli/respawn.rs`
+- [x] T070 [US3] Implement the tmux executor (create server/session `agents` if absent, window per session, `-c <cwd>`) behind the `Tmux` provider in `src/tmux.rs`
+- [x] T071 [US3] Link a respawn: a `SessionStart` with `source=resume` and a known session id revives that record in place (resume keeps the id, T005); only `/clear` (`source=clear`, new id) creates a `resumed_from` link; tolerate an unexpected new id by treating the pane's open `RespawnRequest` as the link, in `src/hook.rs`, `src/respawn.rs`
+- [x] T072 [US3] Record forks: Claude writes no parent link, so detect a fork at passive discovery by shared message uuids with an existing transcript, and record parent to child ourselves when we launch `--fork-session`; the fork gets `forked_from` and its own chain (store column in data-model.md). A fork launched by hand with no record shows as independent, in `src/hook.rs`, `src/store/schema.rs`
 - [ ] T073 [US3] Implement `respawn` and `restore` commands (`--all-interrupted`, `--include-finished`, `--fresh`, `--yes`; exit codes 2/3 per contract) in `src/cli/respawn.rs`, `src/cli/restore.rs`
 - [ ] T074 [US3] Add the restore view to the TUI: checkboxes, all interrupted pre-selected, finished unselected, deselect to opt out (deselected stay interrupted, not dismissed), Enter respawns, in `src/tui/restore.rs`, `tests/tui.rs`
-- [ ] T075 [US3] Implement `boot-check` (reconcile, notify, write marker, start nothing) in `src/cli/boot_check.rs`
-- [ ] T076 [US3] Implement `boot-check --banner` (one-line tmux `display-message`, then clear the marker) in `src/cli/boot_check.rs`
-- [ ] T077 [US3] Add the systemd login user unit running `boot-check`, with tools resolved by Nix store path, to the Home Manager module in `nix/hm-module.nix`
-- [ ] T078 [US3] Add the launchd agent running `boot-check` for macOS to the Home Manager module in `nix/hm-module.nix`
-- [ ] T079 [US3] Add the tmux `client-attached` hook running `boot-check --banner` to the Home Manager module in `nix/hm-module.nix`
+- [x] T075 [US3] Implement `boot-check` (reconcile, notify, write marker, start nothing) in `src/cli/boot_check.rs`
+- [x] T076 [US3] Implement `boot-check --banner` (one-line tmux `display-message`, then clear the marker) in `src/cli/boot_check.rs`
+- [x] T077 [US3] Add the systemd login user unit running `boot-check`, with tools resolved by Nix store path, to the Home Manager module in `nix/hm-module.nix`
+- [x] T078 [US3] Add the launchd agent running `boot-check` for macOS to the Home Manager module in `nix/hm-module.nix`
+- [x] T079 [US3] Add the tmux `client-attached` hook running `boot-check --banner` to the Home Manager module in `nix/hm-module.nix`
 - [ ] T080 [US3] Add the `launchers.<kind>` and tmux-session options to the Home Manager module in `nix/hm-module.nix`
 - [ ] T081 [US3] Enable the new module options in `nc:home/programs/claude-code/default.nix`
 - [ ] T082 [US3] Extend the prefix+A binding with the restore view in `nc:home/programs/tmux/tmux.conf.nix`

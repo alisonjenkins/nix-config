@@ -133,7 +133,7 @@ The user is building cortexiphan (their graph-based life-management tool, in `~/
 - A worktree is deleted, moved or its branch merged after the session ended: the record stays, flagged as having no valid location, and is never silently dropped.
 - The user respawns a session that is actually still running: no second copy is started; the user is pointed at the running one.
 - The recorded information is missing or corrupt for one session: that entry is shown as degraded, the rest of the overview still works.
-- Very large numbers of old sessions (hundreds): the default view stays readable and fast. Finished sessions remain listed and respawnable, grouped below active work, most recent first, with the older ones collapsed under a count that expands on request; nothing finished is hidden unless the user dismisses it.
+- Very large numbers of old sessions (hundreds): the default view stays readable and fast. Finished sessions remain listed and respawnable, grouped below active work, most recent first, whatever their age; nothing finished is hidden unless the user dismisses it. Sessions found only on disk (no live process, no hook history) sit in a separate "unseen" section, collapsed by default, so they do not bury real work.
 - A session ended cleanly but the work was not actually done: the user respawns it from the finished group exactly as they would an interrupted one.
 - Sessions containing sensitive content: the overview shows task summaries only to the local user and does not copy conversation content off the machine.
 - An agent kind has no way to report its state: it is listed with the information that can be determined, marked "state unknown".
@@ -204,7 +204,7 @@ The user is building cortexiphan (their graph-based life-management tool, in `~/
 - **SC-004**: At least 95% of respawns of Claude Code sessions whose worktree still exists resume the original conversation in the correct directory on the first attempt. The same holds for Copilot sessions to the extent Copilot can resume a conversation; otherwise 100% start fresh in the correct directory with the "history not restored" notice (FR-014).
 - **SC-005**: A session's state in the overview is no more than 10 seconds behind reality while it is running, and a killed session is shown as not running within 30 seconds.
 - **SC-006**: After 3 days away, the user can state the goal, current step and next step of a large project from the overview alone, without opening the session, in at least 90% of tried cases.
-- **SC-007**: Opening the overview with 500 historical sessions takes under 2 seconds and the default view shows active and interrupted work first, with finished sessions below (recent ones listed, older ones collapsed under a count) and dismissed ones hidden.
+- **SC-007**: Opening the overview with 500 historical sessions takes under 2 seconds and the default view shows active and interrupted work first, with finished sessions below (all listed) and dismissed ones hidden.
 - **SC-008**: Adding a second agent kind requires no change to how users view, persist or respawn existing sessions.
 - **SC-009**: A project with 20 steps and its linked sessions can be exported and imported into cortexiphan with 100% of steps, statuses and repository links preserved and zero manual re-entry; re-importing creates zero duplicates.
 - **SC-010**: With cortexiphan completely absent, all of stories 1 to 5 pass their independent tests unchanged.
