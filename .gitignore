@@ -14,3 +14,6 @@ k8s-setup/charts
 reports/
 result-*
 .cavemem/
+
+# Types the Claude Code engine writes into each mod folder
+**/.claude-plugin/types/
