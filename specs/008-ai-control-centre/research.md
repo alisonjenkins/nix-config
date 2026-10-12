@@ -41,6 +41,15 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 - `ToolSearch` calls also fire `PreToolUse` and `PostToolUse`; filter them out.
 - The hook's `$PPID` is the agent process (D2).
 
+### R10: session registry
+
+- Observed on Claude Code 2.1.293. Two files from 2.1.286 were still being written, so the registry predates this version.
+- Keys: `pid`, `sessionId`, `cwd`, `startedAt` (ms), `procStart` (string, equals `/proc/<pid>/stat` field 22), `version`, `peerProtocol`, `peerFeatures`, `kind` (`interactive` or `bg`), `entrypoint` (`cli` or `sdk-cli`), `pidDomain`, `tmux`, `messagingSocketPath`, `name`, `nameSource`, `nameSince`, `updatedAt` (ms), `status`, `statusUpdatedAt`. Optional: `waitingFor` (only while `waiting`; seen: "permission prompt"), `jobId` (bg only).
+- The first write has no `status` or `updatedAt`. The file appears about 3 s after launch, and not at all at the trust dialog.
+- `status` seen: `idle`, `busy`, `waiting`, `shell`. Writes are in place (same inode). 5979 tight-loop reads saw no invalid JSON, but atomicity is not guaranteed, so retry once on a parse failure.
+- Not tested: other `waitingFor` values, entrypoints other than `cli` and `sdk-cli`, `updatedAt` moving without a status change.
+- Side effect: the throwaway trust dialog accepted for a scratch directory is recorded in `~/.claude.json`.
+
 ## Decisions
 
 ### D1. Durable store: SQLite, hooks write to it directly
@@ -55,7 +64,14 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 - **Rationale**: Pid reuse after hours or a reboot would otherwise resurrect dead sessions. Matches FR-008 ("detect without the user reporting") and the "reboot is interrupted, never finished" edge case. Existing `prune_stale_panes` (tmux pane gone) stays as a secondary signal.
 - **Alternatives**: tmux pane existence only (breaks for sessions outside tmux; a pane id is reused after a tmux server restart); heartbeat timestamps only (30 s detection forces constant writes; cannot tell kill from idle).
 - **Observed (R2)**: the hook process's `$PPID` is the agent process. Its command name is `.claude-wrapped`, so `pgrep -x claude` misses it; use the hook PPID, or match on the command line. PPID was stable across `Stop` and `SessionEnd` of a `-p` session; whether it survives `/clear` interactively is unverified.
-- **Candidate source (R10)**: `~/.claude/sessions/<pid>.json` is a live-process registry with keys `cwd`, `kind`, `name`, `pid`, `sessionId`, `startedAt`, `status`, `updatedAt`, `tmux`, `entrypoint`, `version`. Inferred, not verified: entries exist only for live interactive processes (`-p` runs left none). It could supply liveness, status and the tmux pane natively; to be checked in spike R10.
+- **Native source (R10, observed)**: `~/.claude/sessions/<pid>.json` is Claude's own registry of live sessions. Hooks stay the primary writer of the store. The registry adds liveness, status and the tmux pane for sessions the hooks never saw, and gives an independent check on the hook-captured pid.
+  - **Liveness rule**: a file is live iff the pid is alive AND its `procStart` equals field 22 of `/proc/<pid>/stat`. Anything else is stale. This is the same pid-reuse guard as above.
+  - **Staleness**: a clean `/exit` or SIGTERM removes the json and its `.key` sibling within about 1 s. `kill -KILL` leaves both forever, so a file's existence proves nothing without the liveness rule.
+  - **Status mapping**: `busy` is working, `waiting` is needs_permission (treat ANY `waiting` as needs-attention and show the `waitingFor` text), `idle` is idle, `shell` is working (inferred background shell command, seen twice, not reproduced), missing status is starting. `updatedAt` is not a heartbeat; idle sessions go days without an update.
+  - **Entrypoint filter**: keep `entrypoint == cli`. `claude -p` writes a file too (`sdk-cli`, removed about 3 s after exit).
+  - **Key by pid, not sessionId**: `/clear` keeps the pid, file and `procStart` and changes only `sessionId`.
+  - **Pane**: `tmux` is `<tmux-session>:@<window>.%<pane>` with no socket path, so pane ids repeat across tmux servers. It is null for `kind: bg`.
+  - **Never read** the `<pid>.<64hex>.key` files.
 - **Open**: macOS has no `/proc`: use `sysctl kern.boottime` for boot id and `proc_pidinfo`/`ps -o lstart=` for start time (R5).
 
 ### D3. Clean end vs interrupted
@@ -139,6 +155,7 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 | tmux pane closed | periodic `list-panes` | tmux control hooks: `tmux set-hook -g pane-exited` / `pane-died` / `window-unlinked` run `claude-monitor reconcile --pane %N`. Installed by the HM module, so no viewer needs to be open. |
 | Reboot | boot_id compare | `boot-check` runs from the login user unit (systemd / launchd), an OS-triggered event; plus a boot-id compare on every reconcile. |
 | Plan source changed (`tasks.md`, checklist) | re-read on view | `notify` watch on each bound file; re-parse that one file on change and write a progress event. Agent todo lists are already pushed via hooks. |
+| Claude session registry (liveness, status, pane) | would have been a periodic read | `notify` watch on `~/.claude/sessions/`: a create, write or remove of `<pid>.json` fires the reader, which re-reads that one file (retry once on a parse failure) and applies the liveness rule from D2. A `kill -KILL` leaves the file, so process-exit notification above still covers death. |
 | Copilot sessions with no hooks | rescan | `notify` watch on `~/.copilot/session-state/` (new directory = new session; `events.jsonl` append = activity). |
 | Claude left-off text | transcript tail | Read only on the `Stop`/`agentStop` hook event, never on a schedule. |
 | Web clients | SSE | Server push from the change feed; the browser holds one open stream, no client polling. |
@@ -164,7 +181,7 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 | R5 | macOS boot id and process start time | Liveness parity | `sysctl kern.boottime`; `ps -o lstart= -p` | Slice 2 (macOS) |
 | R7 | Does a private `tmux` server run inside the Nix check sandbox? | Respawn integration test in CI | Try in a `runCommand` check | Slice 3 |
 | R8 | DONE 2026-10-12 on Linux/tmpfs (macOS FSEvents and other filesystems still open). Does inotify fire on SQLite WAL appends reliably, with what latency; FSEvents on macOS? | The whole change feed (D12) | Commit in one process, time the watcher callback in another, 1000 iterations | Slice 1 |
-| R10 | What does `~/.claude/sessions/<pid>.json` hold for live interactive sessions: keys, when written and removed, `status` values, the `tmux` field? | Possible native source for liveness, status and tmux pane (D2) | Start and stop interactive sessions in tmux, watch the directory | Slice 2 |
+| R10 | DONE 2026-10-12 (Claude Code 2.1.293). Verdict: a usable native source for liveness, status and pane; guard with pid alive plus `procStart` match. What does `~/.claude/sessions/<pid>.json` hold for live interactive sessions: keys, when written and removed, `status` values, the `tmux` field? | Possible native source for liveness, status and tmux pane (D2) | Start and stop interactive sessions in tmux, watch the directory | Slice 2 |
 | R9 | Do tmux `set-hook` `pane-exited`/`pane-died` fire for panes running `claude`/`copilot` on tmux's current version, and can they run a command with the pane id? | Instant pane-gone detection | Set hooks on a private tmux server, kill panes | Slice 2 |
 
 R1, R2, R6 and R3 are each under 30 minutes and are scheduled as the first tasks of their slices, as characterisation tests that stay in the repo as fixtures.
