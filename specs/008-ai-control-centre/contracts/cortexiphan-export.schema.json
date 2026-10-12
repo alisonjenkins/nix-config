@@ -1,0 +1,415 @@
+{
+  "$defs": {
+    "author": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "user",
+            "llm",
+            "connector"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "type": "object"
+    },
+    "clone": {
+      "additionalProperties": false,
+      "properties": {
+        "machine": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "machine",
+        "path"
+      ],
+      "type": "object"
+    },
+    "edge_node": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "part_of",
+            "resumed_from"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "type"
+      ],
+      "type": "object"
+    },
+    "external": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "system": {
+          "const": "ai-control-centre"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "system",
+        "id",
+        "url"
+      ],
+      "type": "object"
+    },
+    "memory_node": {
+      "additionalProperties": false,
+      "properties": {
+        "about": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "model_written": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "body",
+        "about"
+      ],
+      "type": "object"
+    },
+    "project_node": {
+      "additionalProperties": false,
+      "properties": {
+        "repos": {
+          "items": {
+            "$ref": "#/$defs/repo"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "paused",
+            "done",
+            "archived"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "status",
+        "repos"
+      ],
+      "type": "object"
+    },
+    "record": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "$ref": "#/$defs/author"
+        },
+        "external": {
+          "$ref": "#/$defs/external"
+        },
+        "kind": {
+          "enum": [
+            "project",
+            "task",
+            "memory",
+            "session",
+            "edge"
+          ],
+          "type": "string"
+        },
+        "node": {
+          "type": "object"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "updated_at": {
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "external",
+        "author",
+        "updated_at",
+        "node"
+      ],
+      "type": "object"
+    },
+    "repo": {
+      "additionalProperties": false,
+      "properties": {
+        "clones": {
+          "items": {
+            "$ref": "#/$defs/clone"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "uri",
+        "clones"
+      ],
+      "type": "object"
+    },
+    "session_node": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_kind": {
+          "type": "string"
+        },
+        "agent_session_id": {
+          "type": "string"
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "done_at": {
+          "oneOf": [
+            {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_activity_at": {
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "type": "string"
+        },
+        "left_off": {
+          "type": "string"
+        },
+        "project": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resumed_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "enum": [
+            "working",
+            "needs_permission",
+            "idle",
+            "finished",
+            "interrupted",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "task_description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agent_kind",
+        "agent_session_id",
+        "cwd",
+        "branch",
+        "state",
+        "last_activity_at",
+        "done_at",
+        "resumed_from",
+        "project"
+      ],
+      "type": "object"
+    },
+    "task_node": {
+      "additionalProperties": false,
+      "properties": {
+        "part_of": {
+          "type": "string"
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "todo",
+            "doing",
+            "done",
+            "blocked"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "status",
+        "part_of",
+        "source"
+      ],
+      "type": "object"
+    }
+  },
+  "$ref": "#/$defs/record",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/project_node"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "task"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/task_node"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "memory"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/memory_node"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "session"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/session_node"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "edge"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/edge_node"
+          }
+        }
+      }
+    }
+  ],
+  "description": "One line of `claude-monitor export cortexiphan` (JSON Lines).",
+  "title": "ai-control-centre cortexiphan export record"
+}

@@ -203,20 +203,20 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Tests (write first)
 
-- [ ] T083 [P] [US4] Parser tests incl. property tests: spec-kit `tasks.md` (phases, `T###`, `[P]`, `[US#]`), generic checklists, recorded todo-tool payload; 4 of 10 yields "4 of 10" and the current item in `tests/progress_parse.rs`
-- [ ] T084 [P] [US4] Binding tests: auto-bind via branch prefix or `.specify/feature.json`, ambiguous candidates → pick-one result and no figure, choice persists across restart, no binding → no figure (FR-015a, FR-016) in `tests/progress_bind.rs`
-- [ ] T085 [P] [US4] Summary tests: verbatim `task_description`/`left_off` from hook payload or transcript tail; model call rejected for any non-loopback endpoint; model text stored separately and labelled (FR-017a, FR-020) in `tests/summary.rs`
+- [x] T083 [P] [US4] Parser tests incl. property tests: spec-kit `tasks.md` (phases, `T###`, `[P]`, `[US#]`), generic checklists, recorded todo-tool payload; 4 of 10 yields "4 of 10" and the current item in `tests/progress_parse.rs`
+- [x] T084 [P] [US4] Binding tests: auto-bind via branch prefix or `.specify/feature.json`, ambiguous candidates → pick-one result and no figure, choice persists across restart, no binding → no figure (FR-015a, FR-016) in `tests/progress_bind.rs`
+- [x] T085 [P] [US4] Summary tests: verbatim `task_description`/`left_off` from hook payload or transcript tail; model call rejected for any non-loopback endpoint; model text stored separately and labelled (FR-017a, FR-020) in `tests/summary.rs`
 
 ### Implementation
 
-- [ ] T086 [P] [US4] Implement the spec-kit and generic checklist parsers in `src/progress/speckit.rs`, `src/progress/checklist.rs`
-- [ ] T087 [P] [US4] Implement the agent todo-list snapshot from PostToolUse. The source is unverified and optional: T004 found no todo tool in this environment's Claude Code, so the shape is not captured; the implementation must tolerate its absence (spec-kit `tasks.md` and Markdown checklists are the verified sources). In `src/progress/todo.rs`
-- [ ] T088 [US4] Implement bindings, candidate discovery and the `progress bind` command in `src/progress/binding.rs`, `src/cli/progress.rs`
-- [ ] T089 [US4] Add a `notify` watch on bound files as an `EventSource` that re-parses only the changed file in `src/feed/files.rs`
-- [ ] T090 [US4] Implement verbatim summaries (first prompt; latest assistant message from the Stop payload or transcript tail) in `src/summary.rs`, `src/hook.rs`
-- [ ] T091 [US4] Implement the loopback-only OpenAI-compatible client and the `summaries` table in `src/summary.rs`, `src/store/schema.rs`
-- [ ] T092 [US4] Implement the `summarize` command in `src/cli/summarize.rs`
-- [ ] T093 [US4] Show progress with its source label and both summaries in the TUI detail and `show --json` in `src/tui/detail.rs`, `src/cli/show.rs`
+- [x] T086 [P] [US4] Implement the spec-kit and generic checklist parsers in `src/progress/speckit.rs`, `src/progress/checklist.rs`
+- [x] T087 [P] [US4] Implement the agent todo-list snapshot from PostToolUse. The source is unverified and optional: T004 found no todo tool in this environment's Claude Code, so the shape is not captured; the implementation must tolerate its absence (spec-kit `tasks.md` and Markdown checklists are the verified sources). In `src/progress/todo.rs`
+- [x] T088 [US4] Implement bindings, candidate discovery and the `progress bind` command in `src/progress/binding.rs`, `src/cli/progress.rs`
+- [x] T089 [US4] Add a `notify` watch on bound files as an `EventSource` that re-parses only the changed file in `src/feed/files.rs`
+- [x] T090 [US4] Implement verbatim summaries (first prompt; latest assistant message from the Stop payload or transcript tail) in `src/summary.rs`, `src/hook.rs`
+- [x] T091 [US4] Implement the loopback-only OpenAI-compatible client and the `summaries` table in `src/summary.rs`, `src/store/schema.rs`
+- [x] T092 [US4] Implement the `summarize` command in `src/cli/summarize.rs`
+- [x] T093 [US4] Show progress with its source label and both summaries in the TUI detail and `show --json` in `src/tui/detail.rs`, `src/cli/show.rs`
 
 **Checkpoint**: S5 passes; progress survives the session being killed.
 
@@ -230,18 +230,18 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Tests (write first)
 
-- [ ] T094 [P] [US6] Golden-file test: a project with 20 steps and linked sessions exports to a checked-in file; two exports byte-identical; round trip stable in `tests/export_golden.rs`, `tests/fixtures/export/project20.jsonl`
-- [ ] T095 [P] [US6] Mapping tests: statuses, authors (`user`→`User`, `agent`→`Llm{model}`, `system`→`Connector`), `external{system,id}`, no conversation text unless `--include-text` in `tests/export_mapping.rs`
+- [x] T094 [P] [US6] Golden-file test: a project with 20 steps and linked sessions exports to a checked-in file; two exports byte-identical; round trip stable in `tests/export_golden.rs`, `tests/fixtures/export/project20.jsonl`
+- [x] T095 [P] [US6] Mapping tests: statuses, authors (`user`→`User`, `agent`→`Llm{model}`, `system`→`Connector`), `external{system,id}`, no conversation text unless `--include-text` in `tests/export_mapping.rs`
 - [ ] T096 [P] [US6] Link and conflict tests: link rows, `links check` with a fake cortexiphan CLI (agree, disagree, unreachable), never writes either side in `tests/links.rs`
 
 ### Implementation
 
-- [ ] T097 [US6] Implement the cortexiphan export module in `src/export/cortexiphan.rs`
-- [ ] T098 [US6] Implement the `export cortexiphan` command in `src/cli/export.rs`
-- [ ] T099 [US6] Generate `contracts/cortexiphan-export.schema.json` from the Rust types, check it in, and fail the build if they diverge in `src/export/schema.rs`, `nc:specs/008-ai-control-centre/contracts/cortexiphan-export.schema.json`
+- [x] T097 [US6] Implement the cortexiphan export module in `src/export/cortexiphan.rs`
+- [x] T098 [US6] Implement the `export cortexiphan` command in `src/cli/export.rs`
+- [x] T099 [US6] Generate `contracts/cortexiphan-export.schema.json` from the Rust types, check it in, and fail the build if they diverge in `src/export/schema.rs`, `nc:specs/008-ai-control-centre/contracts/cortexiphan-export.schema.json`
 - [ ] T100 [US6] Implement `CortexiphanLink` storage and the `link` command in `src/export/links.rs`, `src/cli/link.rs`
 - [ ] T101 [US6] Implement `links check` (best-effort shell-out to `cortexiphan --json node get` only when server and token are set) in `src/export/links.rs`, `src/cli/link.rs`
-- [ ] T102 [US6] Verify FR-029: add a fixture project mirroring cortexiphan's own worktrees and spec task lists and assert it needs no special-casing in `tests/cortexiphan_project.rs`
+- [x] T102 [US6] Verify FR-029: add a fixture project mirroring cortexiphan's own worktrees and spec task lists and assert it needs no special-casing in `tests/cortexiphan_project.rs`
 - [ ] T103 [US6] Show link status and disagreements in the TUI and `show --json` in `src/tui/links.rs`
 
 **Checkpoint**: S8 passes; the file is ready for a future cortexiphan loader.
@@ -256,18 +256,18 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Tests (write first)
 
-- [ ] T104 [P] [US5] Organise tests: group three sessions, note, dismiss hidden by default and returned by `--include-dismissed`, history intact; also the done, dismissed and project section assertions moved from the overview tests, in `tests/organise.rs`
-- [ ] T105 [P] [US5] Done-section tests (`organise::done_sections`): each session in exactly one group, per-project Done lists only its project, global Done for no-project sessions, `done` rejected for non-finished, `undone`, respawn clears `done_at`, no Done without a user-authored event in `tests/organise.rs`
-- [ ] T106 [P] [US5] `organise::finished_visible`: finished never hidden by age, collapsed older ones expand, not pre-selected by `restore`, respawn returns it to active in `tests/organise.rs`
-- [ ] T107 [P] [US5] Scale test: 500 historical sessions open in under 2 s with the default sections (SC-007) in `tests/perf.rs`
+- [x] T104 [P] [US5] Organise tests: group three sessions, note, dismiss hidden by default and returned by `--include-dismissed`, history intact; also the done, dismissed and project section assertions moved from the overview tests, in `tests/organise.rs`
+- [x] T105 [P] [US5] Done-section tests (`organise::done_sections`): each session in exactly one group, per-project Done lists only its project, global Done for no-project sessions, `done` rejected for non-finished, `undone`, respawn clears `done_at`, no Done without a user-authored event in `tests/organise.rs`
+- [x] T106 [P] [US5] `organise::finished_visible`: finished never hidden by age, collapsed older ones expand, not pre-selected by `restore`, respawn returns it to active in `tests/organise.rs`
+- [x] T107 [P] [US5] Scale test: 500 historical sessions open in under 2 s with the default sections (SC-007) in `tests/perf.rs`
 
 ### Implementation
 
-- [ ] T108 [US5] Implement projects and the `group` command with their events in `src/store/projects.rs`, `src/cli/project.rs`
-- [ ] T109 [US5] Implement notes and the park/dismiss markers with their events in `src/store/markers.rs`, `src/cli/markers.rs`
-- [ ] T110 [US5] Implement `done`/`undone`, the `done_at` rule and the `--section` filter in `src/store/markers.rs`, `src/cli/done.rs`
+- [x] T108 [US5] Implement projects and the `group` command with their events in `src/store/projects.rs`, `src/cli/project.rs`
+- [x] T109 [US5] Implement notes and the park/dismiss markers with their events in `src/store/markers.rs`, `src/cli/markers.rs`
+- [x] T110 [US5] Implement `done`/`undone`, the `done_at` rule and the `--section` filter in `src/store/markers.rs`, `src/cli/done.rs`
 - [ ] T111 [US5] Add project views with their own Active, Interrupted, Finished and Done sections, the global Done section and filters to the TUI in `src/tui/projects.rs`, `src/tui/filter.rs`
-- [ ] T112 [US5] Add the finished-group collapse rule (recent N days listed, older under a count, N configurable) in `src/store/queries.rs`, `nix/hm-module.nix`
+- [x] T112 (DROPPED 2026-10-12: FR-019 forbids hiding finished sessions by age; superseded by T062b and the unseen section) [US5] Add the finished-group collapse rule (recent N days listed, older under a count, N configurable) in `src/store/queries.rs`, `nix/hm-module.nix`
 
 **Checkpoint**: S6 passes.
 
