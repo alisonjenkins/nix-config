@@ -115,6 +115,14 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0035](0035-disk-budget-reported-not-enforced.md) | Report the observability stack's disk budget instead of enforcing it | Accepted |
 | [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted, not yet built (T056, T059) |
 
+## AI control centre
+
+Design: [`specs/008-ai-control-centre/`](../../specs/008-ai-control-centre/).
+
+| # | Decision | Status |
+|---|---|---|
+| [0040](0040-control-centre-store-liveness-event-feed.md) | Keep control-centre state in SQLite, judge liveness by process identity, and drive it from events | Proposed |
+
 ## Template
 
 ```markdown
