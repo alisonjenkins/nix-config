@@ -1,6 +1,8 @@
 # Contract: hook payloads to events
 
-`claude-monitor hook --agent <kind>` reads one JSON object on stdin. Unknown fields are ignored; a missing `session_id`/`sessionId` or event name is a silent no-op (existing behaviour). Fields marked (R2) or (R3) are to be confirmed against recorded fixtures by the spikes in `research.md`; the parser is written against the fixture, not this table.
+`claude-monitor hook --agent <kind>` reads one JSON object on stdin. Unknown fields are ignored; a missing `session_id`/`sessionId` or event name is a silent no-op (existing behaviour). Claude fields were confirmed on Claude Code 2.1.293 by spike R2 (2026-10-12); redacted fixtures are in the claude-monitor repo under `tests/fixtures/claude/`. Fields marked (R3) are still to be confirmed against recorded Copilot fixtures. The parser is written against the fixture, not this table.
+
+Present on every Claude payload: `session_id`, `transcript_path`, `cwd`, `hook_event_name`. `prompt_id` is on every event except `SessionStart`. `permission_mode` and `effort{level}` are on `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PermissionRequest` and `Stop`, and absent on `SessionStart`, `SessionEnd` and `Notification` (in `-p` mode `permission_mode` is `"auto"` unless set). `scratchpad_dir` appears in interactive payloads only.
 
 ## Claude Code (`--agent claude`, the default)
 
@@ -8,15 +10,20 @@ Registered by the Home Manager module in `programs.claude-code.settings.hooks` (
 
 | Payload event (`hook_event_name`) | Fields used | Effect |
 |---|---|---|
-| `SessionStart` | `session_id`, `cwd`, `source` (R2: `startup\|resume\|clear\|compact`) | create/refresh Session; capture pid, pid_start, boot_id, `$TMUX_PANE`; state `idle`. `source=resume` from a pane in an open RespawnRequest sets `resumed_from`. |
-| `UserPromptSubmit` | `prompt` | state `working`; set `task_description` if empty |
-| `PreToolUse`, `PostToolUse` | `tool_name`, `tool_input` | state `working`; if the todo tool (R2: name and shape), replace the session's agent-todo snapshot |
-| `PermissionRequest` | | state `needs_permission` |
-| `Notification` | `notification_type` | `permission_prompt` → `needs_permission`; `idle_prompt` → `idle`; others ignored |
-| `Stop` | `transcript_path`, last assistant message if present (R2) | state `idle`; update `left_off` (payload, else tail of the transcript) |
-| `SessionEnd` | `reason` (R2) | `finished`, raw reason stored; `reason=clear` also opens a lineage step |
+| `SessionStart` | `session_id`, `cwd`, `source`: `startup`, `resume` (same `session_id`) or `clear` (new `session_id`); `compact` not tried | create/refresh Session; capture pid, pid_start, boot_id, `$TMUX_PANE`; state `idle`. `source=resume` with a known `session_id` revives that record in place (no new row, no link). `source=clear` creates the new session with `resumed_from` set to the one that just ended in the same pane. |
+| `UserPromptSubmit` | `prompt` (full text) | state `working`; set `task_description` if empty |
+| `PreToolUse` | `tool_name`, `tool_input`, `tool_use_id` | state `working`. Ignore `tool_name=ToolSearch` (it fires too and is not work). |
+| `PostToolUse` | as `PreToolUse` plus `tool_response` (tool specific) and `duration_ms` | state `working`; same `ToolSearch` filter. Todo tool: unverified, see below. |
+| `PermissionRequest` | `tool_name`, `tool_input`, `permission_suggestions[]` (e.g. `{type:addDirectories,...}`, `{type:setMode,mode:acceptEdits,...}`). No `tool_use_id`. | state `needs_permission`. Fires in `-p` mode too. |
+| `Notification` | `notification_type`, `message`. Interactive sessions only; none in `-p`. | `permission_prompt` (message "Claude needs your permission", right after `PermissionRequest`) → `needs_permission`; `idle_prompt` (message "Claude is waiting for your input", about 60-75 s after `Stop`) → `idle`; others ignored |
+| `Stop` | `last_assistant_message` (full text), `stop_hook_active`, `background_tasks[]`, `session_crons[]`, `transcript_path` | state `idle`; update `left_off` from `last_assistant_message` (once per turn, so no transcript read; tail of the transcript only if the field is missing) |
+| `SessionEnd` | `reason`: seen `other` (`-p` exit), `clear` (`/clear`, old `session_id`), `prompt_input_exit` (Ctrl-D at an empty prompt, two presses). Not seen: `logout`, `bypass_permissions_disabled`, `resume`. | `finished`, raw reason stored; `reason=clear` is followed by a `SessionStart` with `source=clear` and a new id, which carries the lineage link |
 
-Every hook also refreshes `last_activity_at`, `branch` (from `cwd`), and, if changed, `tmux_pane`. Pid capture uses the hook process's parent; if the parent is a shell wrapper the recorded pid is the wrapper, which still dies with the agent (R2/R3 verify on both agents).
+Todo tool row, unverified: the Claude Code used in the spike (2.1.293) has no todo tool (no `TodoWrite`, `TaskCreate` or `TaskUpdate`; its tool list has `Task` (subagents), `TaskStop`, `Cron*`, `Workflow`), so the `tool_input.todos[]` shape could not be captured and it may be gated by a setting. Implement the parser as optional; the absence of the source is normal.
+
+Event order: `-p` run is `SessionStart(startup)`, `UserPromptSubmit`, `[PreToolUse, PostToolUse]*`, `Stop`, `SessionEnd(other)`. A permission prompt is `PreToolUse`, `PermissionRequest`, then `Notification` (interactive only). `/clear` is `SessionEnd(clear, old id)` then `SessionStart(clear, new id)`.
+
+Every hook also refreshes `last_activity_at`, `branch` (from `cwd`), and, if changed, `tmux_pane`. Pid capture uses the hook process's parent (`$PPID`), which is the agent process itself. Its command name is `.claude-wrapped`, so `pgrep -x claude` misses it: take the hook's `$PPID` rather than searching by name. It was stable across `Stop` and `SessionEnd` of a `-p` session; whether it stays the same after an interactive `/clear` is unverified. If the parent turns out to be a shell wrapper the recorded pid is the wrapper, which still dies with the agent (R3 verifies this for Copilot).
 
 ## Copilot CLI (`--agent copilot`)
 
