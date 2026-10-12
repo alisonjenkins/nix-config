@@ -64,15 +64,15 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [X] T016 [P] Define provider traits (`Clock`, `BootId`, `Processes`, `Tmux`, `Notifier`, `Fs`) with real and fake implementations and an `Env` bundle in `src/env.rs`, `src/testing.rs`
 - [X] T017 Define the `Command` enum, `Output` (text and `--json`), the `Error` type (thiserror) and its exit-code mapping (0/1/2/3) and the `cli::run(cmd, &Env)` skeleton, with clippy deny rules extended to new modules, in `src/cli/mod.rs`, `src/cli/output.rs`, `src/error.rs`
 - [X] T018 Write the CLI conformance test over the `Command` enum: every command has `--json` output that parses, errors are `{"ok":false,"error":...}`, exit codes are 0/1/2/3 as in `contracts/cli.md`, and every interactive TUI action maps to a `Command` (quickstart S0 parity, FR-035), ignored per command until implemented, in `tests/cli_conformance.rs`
-- [ ] T019 Write legacy-migration tests (import runtime JSON files once, ignore afterwards, run on first start; FR-022), ignored until T020, in `tests/legacy_migrate.rs`
-- [ ] T020 Implement `migrate` in `src/store/legacy.rs`, `src/cli/migrate.rs` (removes the ignores from T019)
+- [X] T019 Write legacy-migration tests (import runtime JSON files once, ignore afterwards, run on first start; FR-022), ignored until T020, in `tests/legacy_migrate.rs`
+- [X] T020 Implement `migrate` in `src/store/legacy.rs`, `src/cli/migrate.rs` (removes the ignores from T019)
 - [X] T021 Define `trait AgentKind` and the `HookEvent` set per `contracts/agent-kind.md` in `src/agents/mod.rs`. Note (spikes R1/R2): `HookEvent` carries `source` and the raw `reason`, `Stop` carries the last assistant message, and `PermissionRequest` has no tool-use id
 - [X] T022 Write Claude hook-parser fixture tests against the T004 fixtures, ignored until T023, in `tests/claude_hook.rs`
 - [X] T023 Implement the Claude `AgentKind` parser in `src/agents/claude.rs` (removes the ignores from T022)
-- [ ] T024 Write hook-ingest tests: always exit 0, empty stdout, errors to `<state-dir>/hook.log` with a UTC timestamp, `busy_timeout` ≤ 200 ms, p95 < 50 ms benchmark, `ToolSearch` tool events filtered out (they fire Pre/PostToolUse but are not work), ignored until T025, in `tests/hook_ingest.rs`
-- [ ] T025 Rewrite `hook` to write the store using the Claude parser in `src/hook.rs` (removes the ignores from T024)
-- [ ] T026 Write `ChangeFeed`/`EventSource` tests (fs watcher over the state dir with a start-anchored 50 ms throttle window, `events.seq` cursor, replay from a given seq, fake source, no sleeps), ignored until T027, in `tests/feed.rs`
-- [ ] T027 Implement `ChangeFeed`, `EventSource` and the fs-watcher source with a start-anchored 50 ms throttle window (fire 50 ms after the first event of a group, then re-arm; a trailing debounce starves under continuous writes, R8) and a wake-up-then-requery-by-`events.seq` design, in `src/feed/mod.rs`, `src/feed/fs.rs` (removes the ignores from T026)
+- [X] T024 Write hook-ingest tests: always exit 0, empty stdout, errors to `<state-dir>/hook.log` with a UTC timestamp, `busy_timeout` ≤ 200 ms, p95 < 50 ms benchmark, `ToolSearch` tool events filtered out (they fire Pre/PostToolUse but are not work), ignored until T025, in `tests/hook_ingest.rs`
+- [X] T025 Rewrite `hook` to write the store using the Claude parser in `src/hook.rs` (removes the ignores from T024)
+- [X] T026 Write `ChangeFeed`/`EventSource` tests (fs watcher over the state dir with a start-anchored 50 ms throttle window, `events.seq` cursor, replay from a given seq, fake source, no sleeps), ignored until T027, in `tests/feed.rs`
+- [X] T027 Implement `ChangeFeed`, `EventSource` and the fs-watcher source with a start-anchored 50 ms throttle window (fire 50 ms after the first event of a group, then re-arm; a trailing debounce starves under continuous writes, R8) and a wake-up-then-requery-by-`events.seq` design, in `src/feed/mod.rs`, `src/feed/fs.rs` (removes the ignores from T026)
 
 **Checkpoint**: store, events, hook ingest and feed work; the old dashboard still runs (reading the store in T031).
 
