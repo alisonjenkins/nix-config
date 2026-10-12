@@ -9,10 +9,10 @@ Existing behaviour (no subcommand = TUI dashboard; `hook` reads hook JSON on std
 | `claude-monitor` | TUI overview: active and interrupted first, then finished (all listed, never hidden by age), the collapsed "unseen" section (sessions found on disk with no live process and no hook history), done, dismissed hidden | FR-001 to FR-003, FR-019 |
 | `claude-monitor list [--json] [--state S]... [--agent K] [--repo R] [--project P] [--text T] [--include-dismissed] [--expand-unseen]` (`--expand-finished` is accepted and does nothing) | Overview as text/JSON; the filter set the TUI and web share | FR-019 |
 | `claude-monitor show <session>` | One session: description, left-off, progress with source label, links, notes, lineage | FR-015, FR-017 |
-| `claude-monitor hook [--agent claude\|copilot]` | Ingest one hook payload from stdin. Always exits 0, never writes stdout; failures go to `<state-dir>/hook.log` | FR-005, FR-008 |
+| `claude-monitor hook [--agent claude\|copilot] [--event NAME]` (`--event` supplies the event name when the payload has none; the Copilot hooks file passes it) | Ingest one hook payload from stdin. Always exits 0, never writes stdout; failures go to `<state-dir>/hook.log` | FR-005, FR-008 |
 | `claude-monitor reconcile [--pane %N \| --session ID]` | Apply liveness rules to everything, or only to one pane/session (what the tmux `pane-exited` hook calls); idempotent | FR-008 |
 | `claude-monitor watch` | Optional headless watcher (user service, off by default): runs the same process-exit, file and tmux event sources as the viewers so desktop notifications fire with no viewer open | FR-008, research D12 |
-| `claude-monitor restore [--all-interrupted] [--include-finished] [--yes]` | TUI checklist of interrupted sessions (all selected; deselect to opt out); finished sessions are listed unselected and can be ticked (FR-019a); Enter respawns the selection. `--all-interrupted --yes` is the non-interactive form; still requires the explicit flag (FR-034) | FR-009, FR-010, FR-033 |
+| `claude-monitor restore [--all-interrupted] [--include-finished] [--fresh] [--skip ID]... [--yes]` | Without `--yes` prints the plan (what would start, what would be refused with alternatives) and starts nothing. `--all-interrupted --yes` is the non-interactive form and still requires the explicit flag (FR-034); `--skip` (internal id or prefix) is the deselect. The interactive checklist is the TUI restore view (`R`): all interrupted pre-selected, deselect to opt out, finished and unseen listed unselected (FR-019a), Enter then Enter again starts the selection | FR-009, FR-010, FR-033 |
 | `claude-monitor respawn <session>... [--fresh [--in <dir>]] [--recreate-worktree]` | Respawn named sessions. `--fresh` starts without resume and says so; `--fresh --in <dir>` starts a new session in another directory (for example the repo's main checkout); `--recreate-worktree` runs `git worktree add` for a missing worktree whose branch still exists, only when given. A refusal names the problem and prints these alternatives; none is ever taken automatically | FR-009, FR-012 to FR-014 |
 | `claude-monitor boot-check [--banner]` | Reconcile; if interrupted sessions exist, notify and write the marker; start nothing. `--banner` prints a one-line tmux `display-message` ("N AI sessions interrupted, prefix+A to review") once and clears the marker; run by tmux's `client-attached` hook | FR-032, FR-034 |
 | `claude-monitor project add\|rename\|set-status <name>`; `claude-monitor group <project> <session>...` | Projects and grouping | FR-018 |
@@ -23,11 +23,11 @@ Existing behaviour (no subcommand = TUI dashboard; `hook` reads hook JSON on std
 | `claude-monitor delete <session>` | The only deleting command; asks to confirm unless `--yes` | spec Assumptions (retention) |
 | `claude-monitor progress bind <owner> [--file P \| --source agent_todo]` | Choose the plan source; with no flag lists candidates | FR-015a |
 | `claude-monitor summarize <session\|project>` | Generate and store a model-written summary using the configured loopback endpoint; refuses a non-loopback endpoint | FR-017a, FR-020 |
-| `claude-monitor serve [--port N]` | Web view on `127.0.0.1`; prints the URL with the one-time token | FR-030, FR-031 |
-| `claude-monitor link <owner> --cortex <node-id> --kind project\|task\|memory` | Record a cortexiphan link | FR-026 |
-| `claude-monitor export cortexiphan [--project P] [--out FILE]` | JSON Lines export, see `cortexiphan-export.md` | FR-025 |
+| `claude-monitor serve [--port N] [--bind ADDR]` (`--bind` accepts only `127.0.0.1` or `::1`; the parser refuses anything else) | Web view on `127.0.0.1`; prints the URL with the one-time token | FR-030, FR-031 |
+| `claude-monitor link <owner> <node-id> [--kind project\|task\|memory] [--doc N]` and `claude-monitor unlink <owner> <node-id>` | Record or remove a cortexiphan link; `--kind` defaults to `task`; the cortexiphan node id is per shard so `--doc` is needed for `links check` to read the other side | FR-026 |
+| `claude-monitor export cortexiphan [--project P] [--include-text] [--out FILE]` (no conversation text unless `--include-text`) | JSON Lines export, see `cortexiphan-export.md` | FR-025 |
 | `claude-monitor links check` | Show linked records whose two sides disagree | FR-028 |
-| `claude-monitor migrate` | One-time import of legacy runtime JSON files into the store (run automatically on first start) | FR-022 |
+| `claude-monitor migrate` (library command; the binary runs it automatically on first start and does not expose it as a subcommand) | One-time import of legacy runtime JSON files into the store | FR-022 |
 
 ## Output shape for `list --json`
 

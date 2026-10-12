@@ -122,7 +122,7 @@ The slices below are `tasks.md` phases. Every task is one commit that does one g
 5. **Respawn and boot flow (US3, T062 to T082)**: planner, alternatives (`--recreate-worktree`, `--fresh --in`), tmux executor, lineage and fork handling, `respawn`/`restore`, `boot-check` with `--banner`, login units (systemd, launchd), tmux hook, launcher options, nix-config wiring.
 6. **Progress and summaries (US4, T083 to T093)**: three parsers, source binding with picker, file watches, verbatim summaries, on-demand loopback-only model summary.
 7. **Cortexiphan export and links (US6, T094 to T103)**: JSON Lines export, schema, `link`, `links check`, conflict display.
-8. **Organise (US5, T104 to T112)**: projects, notes, parked/dismissed, done sections (global and per project), filters, finished-group collapse, scale test.
+8. **Organise (US5, T104 to T111; T112 dropped, finished is never collapsed by age)**: projects, notes, parked/dismissed, done sections (global and per project), filters, scale test.
 9. **Web view (T113 to T121)**: design pass, loopback server, token, SSE, parity with the CLI, browser check.
 10. **Polish (T122 to T131)**: flake bump, topic doc, ADRs accepted, no-egress and cortexiphan-absence guards, end-to-end quickstart, analysis.
 

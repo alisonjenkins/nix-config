@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Draft
+**Status**: Implemented (pending merge; see tasks.md for what remains)
 
 **Input**: User description: "I created a tool called claude-monitor that allows me to list the claude sessions that I have with their status but I need to take things to the next level. I tend to work on many things in parallel as I have ADHD. However I tend to lose track of what Claude Code / Copilot / Other AI agents are working on as I tend to do this over the course of days. Additionally these agents tend to be working on large projects and I lose track of where we are at within those projects. I need your help to create a kind of overview system that allows me to keep track of where things are at and what things are doing. I would also like it to keep track of them even if the sessions are killed. They are often spawned in worktrees and in the case of at least claude code to be able to resume you need to be in the worktree. I sometimes need to reboot the machine and because there are so many sessions across so many worktrees I will often forget to resume the work on them. We need to keep track of them all and be able to respawn them."
 

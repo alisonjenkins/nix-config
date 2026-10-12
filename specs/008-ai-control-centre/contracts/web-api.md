@@ -4,7 +4,7 @@
 
 ## Security rules (testable)
 
-1. Bind address is `127.0.0.1` (and `::1`). Never `0.0.0.0`; there is no option to change it.
+1. Bind address is `127.0.0.1` (and `::1`). Never `0.0.0.0`; `--bind` accepts only `127.0.0.1` or `::1` and the parser refuses anything else.
 2. Requests whose `Host` header is not `127.0.0.1:<port>`, `localhost:<port>` or `[::1]:<port>` get `421`.
 3. Every route except `/` requires the token: first as `?token=` in the URL printed by `serve`, which the server answers with a `Set-Cookie: cc_token=…; HttpOnly; SameSite=Strict; Path=/` and a redirect that strips it; afterwards by that cookie. Missing/wrong → `401`.
 4. State-changing routes (`POST`) additionally require header `X-CC-Token` equal to the cookie value (CSRF).

@@ -130,7 +130,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Implementation
 
-- [ ] T051 [US2] Capture pid, pid start time and boot id in the hook (Linux `/proc`) behind the `Processes`/`BootId` providers in `src/liveness.rs`, `src/hook.rs`. Pid capture prefers the hook's `$PPID` and cross-checks the `~/.claude/sessions` registry when present (R10).
+- [x] T051 [US2] Capture pid, pid start time and boot id in the hook (Linux `/proc`) behind the `Processes`/`BootId` providers in `src/liveness.rs`, `src/hook.rs`. Pid capture prefers the hook's `$PPID` and cross-checks the `~/.claude/sessions` registry when present (R10).
 - [x] T052 [US2] Implement `reconcile` (all, `--pane`, `--session`), including `worktree_exists` refresh, as a pure function over the providers plus the CLI command in `src/reconcile.rs`, `src/cli/reconcile.rs`
 - [x] T053 [US2] Run `reconcile` once at TUI start, `serve` start and `list`/`show`, before the first render (viewers correct a death nobody was watching) in `src/cli/mod.rs`, `src/tui/mod.rs`
 - [x] T054 [US2] Implement the process-exit `EventSource` (`pidfd_open` + poll on Linux) with a real-OS test that kills a child, wired into the feed, in `src/feed/proc_exit.rs`, `tests/proc_exit.rs`
@@ -299,7 +299,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T127 [P] No-egress test (FR-020): with a network-denying fake, every command except `links check` and `summarize` (loopback only) opens zero non-loopback connections, and nothing in the export or web paths sends session content anywhere, enumerating the `Command` enum so it covers every command, in `tests/no_egress.rs`
 - [x] T128 [P] Absence test (SC-010): the whole US1 to US5 suite passes with `cortexiphan` absent from `PATH` in `tests/no_cortexiphan.rs`
 - [ ] T129 [P] Run `cargo clippy -- -D warnings`, `cargo fmt --check`, `cargo deny check`, `nix flake check` in claude-monitor and `just check` plus `prek run --all-files` in nix-config; fix findings in separate commits
-- [ ] T130 Run quickstart S0 to S9 end to end, run the manual lines once with real Claude and Copilot sessions, and record the outputs in the pull request descriptions (constitution Principle II)
+- [ ] T130 Run quickstart S0 to S9 end to end, recording the manual-only success criteria as measured values (SC-001 under 1 minute and 3 actions to resume, SC-002 20 sessions read in 10 s, SC-004 95% respawn success, SC-006 90% re-entry, SC-012 at most 2 actions to done), run the manual lines once with real Claude and Copilot sessions, and record the outputs in the pull request descriptions (constitution Principle II)
 - [ ] T131 Run `/speckit-analyze` and resolve every CRITICAL finding before merging
 
 ---
