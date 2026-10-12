@@ -232,17 +232,17 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 - [x] T094 [P] [US6] Golden-file test: a project with 20 steps and linked sessions exports to a checked-in file; two exports byte-identical; round trip stable in `tests/export_golden.rs`, `tests/fixtures/export/project20.jsonl`
 - [x] T095 [P] [US6] Mapping tests: statuses, authors (`user`→`User`, `agent`→`Llm{model}`, `system`→`Connector`), `external{system,id}`, no conversation text unless `--include-text` in `tests/export_mapping.rs`
-- [ ] T096 [P] [US6] Link and conflict tests: link rows, `links check` with a fake cortexiphan CLI (agree, disagree, unreachable), never writes either side in `tests/links.rs`
+- [x] T096 [P] [US6] Link and conflict tests: link rows, `links check` with a fake cortexiphan CLI (agree, disagree, unreachable), never writes either side in `tests/links.rs`
 
 ### Implementation
 
 - [x] T097 [US6] Implement the cortexiphan export module in `src/export/cortexiphan.rs`
 - [x] T098 [US6] Implement the `export cortexiphan` command in `src/cli/export.rs`
 - [x] T099 [US6] Generate `contracts/cortexiphan-export.schema.json` from the Rust types, check it in, and fail the build if they diverge in `src/export/schema.rs`, `nc:specs/008-ai-control-centre/contracts/cortexiphan-export.schema.json`
-- [ ] T100 [US6] Implement `CortexiphanLink` storage and the `link` command in `src/export/links.rs`, `src/cli/link.rs`
-- [ ] T101 [US6] Implement `links check` (best-effort shell-out to `cortexiphan --json node get` only when server and token are set) in `src/export/links.rs`, `src/cli/link.rs`
+- [x] T100 [US6] Implement `CortexiphanLink` storage and the `link` command in `src/export/links.rs`, `src/cli/link.rs`
+- [x] T101 [US6] Implement `links check` (best-effort shell-out to `cortexiphan --json node get` only when server and token are set) in `src/export/links.rs`, `src/cli/link.rs`
 - [x] T102 [US6] Verify FR-029: add a fixture project mirroring cortexiphan's own worktrees and spec task lists and assert it needs no special-casing in `tests/cortexiphan_project.rs`
-- [ ] T103 [US6] Show link status and disagreements in the TUI and `show --json` in `src/tui/links.rs`
+- [x] T103 [US6] Show link status and disagreements in the TUI and `show --json` in `src/tui/links.rs`
 
 **Checkpoint**: S8 passes; the file is ready for a future cortexiphan loader.
 
@@ -266,7 +266,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T108 [US5] Implement projects and the `group` command with their events in `src/store/projects.rs`, `src/cli/project.rs`
 - [x] T109 [US5] Implement notes and the park/dismiss markers with their events in `src/store/markers.rs`, `src/cli/markers.rs`
 - [x] T110 [US5] Implement `done`/`undone`, the `done_at` rule and the `--section` filter in `src/store/markers.rs`, `src/cli/done.rs`
-- [ ] T111 [US5] Add project views with their own Active, Interrupted, Finished and Done sections, the global Done section and filters to the TUI in `src/tui/projects.rs`, `src/tui/filter.rs`
+- [x] T111 [US5] Add project views with their own Active, Interrupted, Finished and Done sections, the global Done section and filters to the TUI in `src/tui/projects.rs`, `src/tui/filter.rs`
 - [x] T112 (DROPPED 2026-10-12: FR-019 forbids hiding finished sessions by age; superseded by T062b and the unseen section) [US5] Add the finished-group collapse rule (recent N days listed, older under a count, N configurable) in `src/store/queries.rs`, `nix/hm-module.nix`
 
 **Checkpoint**: S6 passes.
@@ -277,14 +277,14 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 **Purpose**: loopback web UI with parity to the TUI. Cross-cutting, so no story label.
 
-- [ ] T113 [P] Write security tests: loopback-only bind, foreign `Host` → 421, missing or wrong token → 401, CSRF header on POST, no CORS headers, no transcript route, ignored until T117, in `tests/web_security.rs`
-- [ ] T114 [P] Write SSE tests with the fake feed: pushed change carries `seq` and what changed, reconnect with `Last-Event-ID` replays missed changes, keepalive, ignored until T118, in `tests/web_sse.rs`
-- [ ] T115 [P] Write the web parity test enumerating the library `Command` enum against web routes (SC-011), ignored until T119, in `tests/parity_web.rs`
-- [ ] T116 Run a design pass (invoke the `frontend-design` skill) for the overview, project and restore pages: waiting-on-me rows unmissable, calm otherwise, responsive, keyboard accessible; record decisions, and the templating and htmx choice, in `nc:specs/008-ai-control-centre/research.md` (D10)
-- [ ] T117 Implement `serve` with the security rules, token file (0600) and cookie hand-off (tokio started only here) in `src/web/mod.rs`, `src/web/auth.rs`, `src/cli/serve.rs`
-- [ ] T118 Implement the SSE endpoint driven by the `ChangeFeed` in `src/web/events.rs`
-- [ ] T119 Implement server-rendered pages and routes per `contracts/web-api.md` using the templating and htmx decision recorded in T116 (default if unanswered: `maud` plus vendored htmx, no external hosts) in `src/web/pages.rs`, `src/web/routes.rs`
-- [ ] T120 Add the `serve` user-unit option to the Home Manager module in `nix/hm-module.nix`
+- [x] T113 [P] Write security tests: loopback-only bind, foreign `Host` → 421, missing or wrong token → 401, CSRF header on POST, no CORS headers, no transcript route, ignored until T117, in `tests/web_security.rs`
+- [x] T114 [P] Write SSE tests with the fake feed: pushed change carries `seq` and what changed, reconnect with `Last-Event-ID` replays missed changes, keepalive, ignored until T118, in `tests/web_sse.rs`
+- [x] T115 [P] Write the web parity test enumerating the library `Command` enum against web routes (SC-011), ignored until T119, in `tests/parity_web.rs`
+- [x] T116 Run a design pass (invoke the `frontend-design` skill) for the overview, project and restore pages: waiting-on-me rows unmissable, calm otherwise, responsive, keyboard accessible; record decisions, and the templating and htmx choice, in `nc:specs/008-ai-control-centre/research.md` (D10)
+- [x] T117 Implement `serve` with the security rules, token file (0600) and cookie hand-off (tokio started only here) in `src/web/mod.rs`, `src/web/auth.rs`, `src/cli/serve.rs`
+- [x] T118 Implement the SSE endpoint driven by the `ChangeFeed` in `src/web/events.rs`
+- [x] T119 Implement server-rendered pages and routes per `contracts/web-api.md` using the templating and htmx decision recorded in T116 (default if unanswered: `maud` plus vendored htmx, no external hosts) in `src/web/pages.rs`, `src/web/routes.rs`
+- [x] T120 Add the `serve` user-unit option to the Home Manager module in `nix/hm-module.nix`
 - [ ] T121 Browser-verify with the `webapp-testing` skill: load the overview, mark a finished session done, find it in the right project's Done section, respawn it, confirm a TUI change appears within 10 s; save the evidence in the PR description
 
 ---
@@ -292,12 +292,12 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 ## Phase 10: Polish and cross-cutting
 
 - [ ] T122 [P] Bump the `claude-monitor` flake input in `nc:flake.nix`, `nc:flake.lock`
-- [ ] T123 Write the topic doc `nc:docs/ai-control-centre.md` (what it is, how to enable the `programs.claude-monitor` options, hooks and units installed, state and log locations, recovery steps, how to export for cortexiphan), in the same nix-config PR as T122 (constitution Principle VI)
+- [x] T123 Write the topic doc `nc:docs/ai-control-centre.md` (what it is, how to enable the `programs.claude-monitor` options, hooks and units installed, state and log locations, recovery steps, how to export for cortexiphan), in the same nix-config PR as T122 (constitution Principle VI)
 - [ ] T124 Set ADRs 0040 and 0041 to Accepted in `nc:docs/adr/0040-control-centre-store-liveness-event-feed.md`, `nc:docs/adr/0041-control-centre-code-home-cortexiphan-coupling.md`, in the same PR as T123
-- [ ] T125 [P] Add a one-paragraph pointer to `docs/ai-control-centre.md` in `nc:CLAUDE.md`, following the existing "Memory and skill retrieval" entry
-- [ ] T126 [P] Document how to add an agent kind (checklist from `contracts/agent-kind.md`) and the CLI in claude-monitor's `README.md`, and keep the `nc:` contracts in sync
-- [ ] T127 [P] No-egress test (FR-020): with a network-denying fake, every command except `links check` and `summarize` (loopback only) opens zero non-loopback connections, and nothing in the export or web paths sends session content anywhere, enumerating the `Command` enum so it covers every command, in `tests/no_egress.rs`
-- [ ] T128 [P] Absence test (SC-010): the whole US1 to US5 suite passes with `cortexiphan` absent from `PATH` in `tests/no_cortexiphan.rs`
+- [x] T125 [P] Add a one-paragraph pointer to `docs/ai-control-centre.md` in `nc:CLAUDE.md`, following the existing "Memory and skill retrieval" entry
+- [x] T126 [P] Document how to add an agent kind (checklist from `contracts/agent-kind.md`) and the CLI in claude-monitor's `README.md`, and keep the `nc:` contracts in sync
+- [x] T127 [P] No-egress test (FR-020): with a network-denying fake, every command except `links check` and `summarize` (loopback only) opens zero non-loopback connections, and nothing in the export or web paths sends session content anywhere, enumerating the `Command` enum so it covers every command, in `tests/no_egress.rs`
+- [x] T128 [P] Absence test (SC-010): the whole US1 to US5 suite passes with `cortexiphan` absent from `PATH` in `tests/no_cortexiphan.rs`
 - [ ] T129 [P] Run `cargo clippy -- -D warnings`, `cargo fmt --check`, `cargo deny check`, `nix flake check` in claude-monitor and `just check` plus `prek run --all-files` in nix-config; fix findings in separate commits
 - [ ] T130 Run quickstart S0 to S9 end to end, run the manual lines once with real Claude and Copilot sessions, and record the outputs in the pull request descriptions (constitution Principle II)
 - [ ] T131 Run `/speckit-analyze` and resolve every CRITICAL finding before merging
