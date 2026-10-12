@@ -103,17 +103,29 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 
 | Need | Finding | Status |
 |---|---|---|
-| Resume | `copilot --resume <id\|prefix\|name>`; `--continue`; `--session-id`; session ids are UUIDs; cwd is not required by the CLI | Verified (`--help`, 1.0.93); behaviour from a different cwd Unverified |
+| Resume | `copilot --resume <id\|prefix\|name>`; `--continue`; `--session-id`; session ids are UUIDs; cwd is not required by the CLI | Verified (`--help`, 1.0.93); from a different cwd: Verified 2026-10-12 (R3), works silently, same id |
 | Storage | `~/.copilot/session-state/<uuid>/{workspace.yaml,events.jsonl,...}`; `COPILOT_HOME` relocates. `workspace.yaml` has id, cwd, git_root, repository, branch, name, created_at, updated_at | Verified (listing only) |
 | First prompt | `events.jsonl` `user.message` | Verified (type names seen) |
-| Hooks | `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `permissionRequest`, `notification`, `agentStop`, ... in `~/.copilot/hooks/*.json` (`version: 1`, handlers with `bash`, `cwd`, `env`, `timeoutSec`) | Documented |
-| Waiting state | no dedicated event; `notification` with `permission_prompt` or `elicitation_dialog` | Documented |
-| Idle/stop | `agentStop`, `notification` `agent_idle`/`agent_completed` | Documented |
-| PID | not in payload; the hook script can record its parent PID | Unverified (R3) |
+| Hooks | `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `permissionRequest`, `notification`, `agentStop`, ... in `~/.copilot/hooks/*.json` (`version: 1`, handlers with `bash`, `cwd`, `env`, `timeoutSec`) | Verified 2026-10-12 (R3) for the events listed below; the rest Documented |
+| Waiting state | no dedicated event; `notification` with `permission_prompt` | Verified 2026-10-12 (R3); `elicitation_dialog` not seen |
+| Idle/stop | `agentStop` at the end of each turn; `notification` `agent_idle` | `agentStop` Verified; `agent_idle` not reproduced after about 2 minutes idle |
+| PID | not in payload; the hook's `$PPID` is the Copilot agent process | Verified 2026-10-12 (R3) |
 | Todo/plan | not found | Unverified |
 
 - **Decision**: Copilot is supported through (a) a hooks file written by the Home Manager module that calls `claude-monitor hook --agent copilot`, and (b) passive discovery of `session-state/*/workspace.yaml` so sessions are durable and listed even when hooks did not run. Sessions found only passively are state `unknown` until a hook arrives (matches the spec's "state unknown" edge case). So "fully supported" holds for durability, listing and resume today; state accuracy depends on the hook install, which the module provides.
-- **Risk**: Copilot's docs also list `.claude/settings.json` as a hook source. Our Claude hooks live in the user-level `~/.claude/settings.json`, which is not documented as read by Copilot, so no double registration is expected; confirm in the spike (R6).
+- **Risk (resolved by R6)**: Copilot's docs list `.claude/settings.json` as a hook source. Verified 2026-10-12: a project-level `.claude/settings.json` with Claude-format hooks does fire under Copilot, so a project-level hook runs under both CLIs. The user-level `~/.claude/settings.json` did not fire (see below), so the user-level monitor hook is not double-registered.
+
+#### Verified 2026-10-12 (spikes R3 and R6, Copilot CLI 1.0.93)
+
+- **Trust requirement**: hooks load only for folders listed in the `trustedFolders` array of `$COPILOT_HOME/config.json`. Other folders are skipped silently, with no error. A hook script without the executable bit also fails silently. The Home Manager module must document and, where it can, manage `trustedFolders`.
+- **Lazy `sessionStart`**: it fires on the first submitted prompt, not at launch, so an idle interactive TUI is invisible to hooks. In a `-p` run the order is `userPromptSubmitted`, `sessionStart`, `agentStop`, `sessionEnd`. Passive discovery covers the gap.
+- **Permission wait**: `preToolUse`, `permissionRequest` and `notification` (`permission_prompt`) all fire when the dialog appears. There is no "answered" event; the next `postToolUse`, then `agentStop`, marks the end of the wait.
+- **PID**: the hook's `$PPID` is the Copilot agent, stable across events. Its `comm` is `MainThread` and `pgrep -a copilot` finds nothing. Match on args containing `github-copilot-cli` (`node .../github-copilot-cli-1.0.93/lib/github-copilot-cli/index.js`). No payload carries a pid or ppid.
+- **Resume**: `copilot --resume=<id> -p ...` works from the original cwd and from a different one, silently, with the same session id (`sessionStart.source` = `resume`). `workspace.yaml` keeps the original cwd, and hook payloads and hook processes also see the original cwd. The resume command should use the cwd from `workspace.yaml`.
+- **Not reproduced**: `notification` `agent_idle`; `sessionEnd.reason` values `error`, `abort`, `timeout` (seen: `complete`, `user_exit`); `sessionStart.source` `startup` (seen: `new`, `resume`). Idle is derived from `agentStop`.
+- **Auth and models**: auth is not stored in `~/.copilot`; a temporary `COPILOT_HOME` with a copied `config.json` authenticated, also under a different `HOME`. Explicit `--model claude-haiku-5.5` and `--model gpt-6-luna` were rejected with "is not available" on this account; default Auto routing worked at about 0.1 to 0.3 AIC per tiny run.
+- **R6**: project-level `.claude/settings.json` hooks fired for `SessionStart`, `UserPromptSubmit`, `Stop` and `SessionEnd` (`PreToolUse` and `Notification` not exercised), with snake_case payloads that include an ISO `timestamp`, which real Claude payloads lack. Copilot's `transcript_path` points at Copilot's `events.jsonl`. The user-level `~/.claude/settings.json` did not fire; this is inconclusive-leaning-no because there was no positive control that Copilot honours `HOME` for that lookup, and the docs mention only repo-level `.claude` files.
+- **FR-004 verdict**: partly, mostly yes. Gaps: no pid field, `agent_idle` absent, lazy `sessionStart`, crash and kill endings unobserved, hooks inactive in untrusted folders, no user-level `~/.claude` hooks (Copilot needs its own entries).
 
 ### D8. Progress sources and binding
 
@@ -174,10 +186,10 @@ Five `claude -p` runs and one interactive tmux session. The full shapes are in `
 
 | # | Question | Why it matters | Method | Blocks |
 |---|---|---|---|---|
-| R3 | Can Copilot hooks record a PID and report state on this machine? Does resume work from another cwd? | Decides whether "Copilot fully supported" (clarification 3) holds, or FR-014 applies | Install a throwaway hooks file under a temporary `COPILOT_HOME`, run a trivial session, inspect payloads and `$PPID` | Slice 5 |
+| R3 | DONE 2026-10-12 (Copilot CLI 1.0.93). Verdict: partly, mostly yes; PID via hook `$PPID`, resume works from any cwd, state via hooks in trusted folders. Can Copilot hooks record a PID and report state on this machine? Does resume work from another cwd? | Decides whether "Copilot fully supported" (clarification 3) holds, or FR-014 applies | Install a throwaway hooks file under a temporary `COPILOT_HOME`, run a trivial session, inspect payloads and `$PPID` | Slice 5 |
 | R1 | DONE 2026-10-12. On `claude --resume <id>` does the session id stay the same or change, and can it be resumed from another cwd? Same id; works from any cwd but runs there. | Lineage linking and the cwd rule | Run twice in a scratch dir; compare `~/.claude/projects/*` | Slice 3 |
 | R2 | DONE 2026-10-12 (todo tool not capturable here). Exact hook payloads on Claude Code 2.1.293: `SessionEnd.reason`, `SessionStart.source`, todo tool name and `tool_input`, `Stop` last message | State machine, progress source 1, summaries | Log raw stdin with a throwaway hook for one session | Slices 1, 2, 6 |
-| R6 | Does Copilot also run hooks from `~/.claude/settings.json`? | Double events | Run Copilot with the Claude monitor hook present and count events | Slice 5 |
+| R6 | DONE 2026-10-12. Verdict: project-level `.claude/settings.json` hooks do fire under Copilot; user-level did not (inconclusive-leaning-no). Does Copilot also run hooks from `~/.claude/settings.json`? | Double events | Run Copilot with the Claude monitor hook present and count events | Slice 5 |
 | R5 | macOS boot id and process start time | Liveness parity | `sysctl kern.boottime`; `ps -o lstart= -p` | Slice 2 (macOS) |
 | R7 | Does a private `tmux` server run inside the Nix check sandbox? | Respawn integration test in CI | Try in a `runCommand` check | Slice 3 |
 | R8 | DONE 2026-10-12 on Linux/tmpfs (macOS FSEvents and other filesystems still open). Does inotify fire on SQLite WAL appends reliably, with what latency; FSEvents on macOS? | The whole change feed (D12) | Commit in one process, time the watcher callback in another, 1000 iterations | Slice 1 |
