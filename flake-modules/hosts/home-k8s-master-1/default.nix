@@ -146,6 +146,11 @@ in {
               "--kube-controller-manager-arg=leader-elect-renew-deadline=45s"
               "--kube-scheduler-arg=leader-elect-lease-duration=60s"
               "--kube-scheduler-arg=leader-elect-renew-deadline=45s"
+              # CloudNativePG mounts extensions (pgvector for kagent's memory)
+              # as OCI image volumes. Beta but off by default in 1.34; needed
+              # on the apiserver (validation) and the kubelet (the mount).
+              "--kube-apiserver-arg=feature-gates=ImageVolume=true"
+              "--kubelet-arg=feature-gates=ImageVolume=true"
               # "--disable-kube-proxy"
             ];
 
