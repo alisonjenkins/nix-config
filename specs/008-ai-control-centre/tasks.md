@@ -107,8 +107,8 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [X] T043 [P] [US1] Write Claude passive-discovery tests: sessions found by scanning `~/.claude/projects/*/*.jsonl` (not `sessions-index.json`, which newer versions no longer write; the encoded cwd is lossy, so take `cwd` from the transcript lines) get a record with cwd, first prompt and timestamps and state `unknown`, no conversation content beyond the first prompt, and a later hook upgrades the same record instead of duplicating it, ignored until T044, in `tests/claude_discover.rs`
 - [X] T044 [US1] Implement Claude passive discovery as `AgentKind::discover` plus a `notify` watch on `~/.claude/projects` as an `EventSource`, covering sessions started before the hooks existed or by a tool without them; scan `*.jsonl`, not `sessions-index.json`, and consider the `~/.claude/sessions/<pid>.json` registry once T006a (R10) is done; also detect forks by shared message uuids (T072), in `src/agents/claude_discover.rs`, `src/feed/claude.rs` (removes the ignores from T043)
 - [X] T045 [US1] Add-a-kind test (SC-008, FR-004): register a third fake `AgentKind` and run list, persist, respawn and export unchanged in `tests/third_agent_kind.rs`, ignored per step until respawn (T073) and export (T098) exist
-- [ ] T045a [US2] Write tests for the Claude session registry reader: parses `~/.claude/sessions/<pid>.json` (tolerates missing status and keys, retries once on a parse failure), maps status busy/waiting/idle/shell/missing to states, treats a file as live only when the pid is alive and `procStart` matches `/proc/<pid>/stat` field 22 (stale after `kill -KILL`, pid reuse), filters `entrypoint != cli`, never reads the `.key` files, takes the `tmux` field as `session:@window.%pane`, ignored until T045b, in `tests/claude_registry.rs`
-- [ ] T045b [US2] Implement the Claude session registry reader and a `notify` `EventSource` on `~/.claude/sessions` feeding liveness, status and pane into reconcile in `src/agents/claude_registry.rs`, `src/feed/registry.rs` (removes the ignores from T045a)
+- [x] T045a [US2] Write tests for the Claude session registry reader: parses `~/.claude/sessions/<pid>.json` (tolerates missing status and keys, retries once on a parse failure), maps status busy/waiting/idle/shell/missing to states, treats a file as live only when the pid is alive and `procStart` matches `/proc/<pid>/stat` field 22 (stale after `kill -KILL`, pid reuse), filters `entrypoint != cli`, never reads the `.key` files, takes the `tmux` field as `session:@window.%pane`, ignored until T045b, in `tests/claude_registry.rs`
+- [x] T045b [US2] Implement the Claude session registry reader and a `notify` `EventSource` on `~/.claude/sessions` feeding liveness, status and pane into reconcile in `src/agents/claude_registry.rs`, `src/feed/registry.rs` (removes the ignores from T045a)
 
 **Checkpoint**: US1 independently demonstrable in the TUI and `list --json` for Claude and Copilot.
 
@@ -122,27 +122,39 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 
 ### Tests (write first)
 
-- [ ] T046 [P] [US2] Kill test: fake process dies without `SessionEnd` → `interrupted` immediately on the exit event in `tests/durability.rs`
-- [ ] T047 [P] [US2] Reboot test: changed boot id marks every non-finished session interrupted in one pass; finished stays finished; reconcile idempotent in `tests/durability.rs`
-- [ ] T048 [P] [US2] Finished-stays-visible test: clean `SessionEnd` → finished, listed in the default query, respawnable flag set, `clear` creates a lineage step in `tests/durability.rs`
-- [ ] T049 [P] [US2] Degraded-record test: one corrupt row yields a `degraded` entry while the rest of the list works (FR-021) in `tests/degraded.rs`
+- [x] T046 [P] [US2] Kill test: fake process dies without `SessionEnd` → `interrupted` immediately on the exit event in `tests/durability.rs`
+- [x] T047 [P] [US2] Reboot test: changed boot id marks every non-finished session interrupted in one pass; finished stays finished; reconcile idempotent in `tests/durability.rs`
+- [x] T048 [P] [US2] Finished-stays-visible test: clean `SessionEnd` → finished, listed in the default query, respawnable flag set, `clear` creates a lineage step in `tests/durability.rs`
+- [x] T049 [P] [US2] Degraded-record test: one corrupt row yields a `degraded` entry while the rest of the list works (FR-021) in `tests/degraded.rs`
 - [ ] T050 [P] [US2] Reconcile-on-open test: starting the TUI, `serve` or `list` with a killed session still recorded as running shows it `interrupted` before the first render, with no hook or watcher having fired (FR-008, SC-005) in `tests/reconcile_on_open.rs`
 
 ### Implementation
 
 - [ ] T051 [US2] Capture pid, pid start time and boot id in the hook (Linux `/proc`) behind the `Processes`/`BootId` providers in `src/liveness.rs`, `src/hook.rs`. Pid capture prefers the hook's `$PPID` and cross-checks the `~/.claude/sessions` registry when present (R10).
-- [ ] T052 [US2] Implement `reconcile` (all, `--pane`, `--session`), including `worktree_exists` refresh, as a pure function over the providers plus the CLI command in `src/reconcile.rs`, `src/cli/reconcile.rs`
-- [ ] T053 [US2] Run `reconcile` once at TUI start, `serve` start and `list`/`show`, before the first render (viewers correct a death nobody was watching) in `src/cli/mod.rs`, `src/tui/mod.rs`
-- [ ] T054 [US2] Implement the process-exit `EventSource` (`pidfd_open` + poll on Linux) with a real-OS test that kills a child, wired into the feed, in `src/feed/proc_exit.rs`, `tests/proc_exit.rs`
+- [x] T052 [US2] Implement `reconcile` (all, `--pane`, `--session`), including `worktree_exists` refresh, as a pure function over the providers plus the CLI command in `src/reconcile.rs`, `src/cli/reconcile.rs`
+- [x] T053 [US2] Run `reconcile` once at TUI start, `serve` start and `list`/`show`, before the first render (viewers correct a death nobody was watching) in `src/cli/mod.rs`, `src/tui/mod.rs`
+- [x] T054 [US2] Implement the process-exit `EventSource` (`pidfd_open` + poll on Linux) with a real-OS test that kills a child, wired into the feed, in `src/feed/proc_exit.rs`, `tests/proc_exit.rs`
 - [ ] T055 [P] [US2] Spike R5: record the macOS boot id (`sysctl kern.boottime`), start time (`ps -o lstart=`) and `kqueue` `NOTE_EXIT` behaviour in `nc:specs/008-ai-control-centre/research.md` (D2)
 - [ ] T056 [US2] Implement macOS liveness behind `cfg(target_os = "macos")`, verified by the macOS CI build, in `src/liveness_macos.rs`, `.github/workflows/ci.yml`
-- [ ] T057 [P] [US2] Spike R9: on a private tmux server check that `pane-exited`, `pane-died` and `window-unlinked` hooks fire for panes running the agents and can pass the pane id; record in `nc:specs/008-ai-control-centre/research.md` (D12)
-- [ ] T058 [US2] Add tmux `set-hook` entries (`pane-exited`, `pane-died`, `window-unlinked`) calling `claude-monitor reconcile --pane`, with tools resolved by Nix store path, to the Home Manager module in `nix/hm-module.nix`
-- [ ] T059 [US2] Add the 60 s safety-net reconcile (only while a viewer is open) as a feed source with a test where a dropped event is repaired in `src/feed/safety_net.rs`, `tests/feed.rs`
-- [ ] T060 [US2] Implement the optional headless `watch` command in `src/cli/watch.rs`
-- [ ] T061 [US2] Add the off-by-default `watch` user-service option to the Home Manager module in `nix/hm-module.nix`
+- [x] T057 [P] [US2] Spike R9: on a private tmux server check that `pane-exited`, `pane-died` and `window-unlinked` hooks fire for panes running the agents and can pass the pane id; record in `nc:specs/008-ai-control-centre/research.md` (D12)
+- [x] T058 [US2] Add tmux `set-hook` entries (`pane-exited`, `pane-died`, `window-unlinked`) calling `claude-monitor reconcile --pane`, with tools resolved by Nix store path, to the Home Manager module in `nix/hm-module.nix`
+- [x] T059 [US2] Add the 60 s safety-net reconcile (only while a viewer is open) as a feed source with a test where a dropped event is repaired in `src/feed/safety_net.rs`, `tests/feed.rs`
+- [x] T060 [US2] Implement the optional headless `watch` command in `src/cli/watch.rs`
+- [x] T061 [US2] Add the off-by-default `watch` user-service option to the Home Manager module in `nix/hm-module.nix`
 
-**Checkpoint**: kill and reboot scenarios pass; US1 and US2 together are a durable overview.
+### Gaps found while building Phase 4 (investigate and close before Phase 5)
+
+- [ ] T051a [US2] Finish T051: cross-check the hook's `$PPID` against the `~/.claude/sessions` registry (pid, `procStart`) and prefer the registry when they disagree, in `src/hook.rs`
+- [ ] T062a [US2] Investigate the "unknown" clutter: the real-HOME smoke run found 177 sessions, 125 Claude and 39 Copilot of them `unknown` (disk-only, no pid, no hook history). Decide how they group in `list`/TUI (own "unseen" section, collapsed by default, never counted as active) and whether age should matter; write the finding in `research.md`, then implement the grouping with tests
+- [ ] T062b [US1] Fix FR-019: finished sessions must not be hidden by age. `overview` currently collapses finished sessions older than a threshold under a count; make them always listable and respawnable (per-project "done" stays the user-set tidy-up), with a test in `tests/overview.rs`
+- [ ] T062c [US2] Copilot hook event name: have the Copilot hooks file pass the event name explicitly instead of the parser inferring it from fields; keep inference as the fallback, in `src/agents/copilot.rs`, `nix/hm-module.nix`
+- [ ] T062d [US2] Rewrite the Phase 4 commits that put implementation and tests in one commit (`spawn_live`, dashboard `warning_line`, `watch` subcommand parse) into test-then-implementation pairs, and autosquash the `fixup!` commit (`cb8d051`), before any merge
+- [ ] T062e [US2] Document and test the tmux multi-pane gap (R9: `kill-pane` of one pane in a multi-pane window fires no hook) as covered by the 60 s safety net, in `research.md`, `tests/safety_net.rs`
+- [ ] T062f [US2] Real-hook activation: bump the claude-monitor flake input in nix-config so the user's hooks feed the new build (live change: ask the user first), in `nc:home/programs/claude-code/default.nix`, `flake.lock`
+- [ ] T062g [US1] Decide `delete` (CLI contract has it, no task): add a task in Phase 8 or drop it from `contracts/cli.md`
+- [ ] T062h [US2] macOS liveness (T055/T056) stays deferred until a macOS machine is available; track in `PENDING.md`
+
+**Checkpoint**: kill and reboot scenarios pass; US1 and US2 together are a durable overview; the gaps above are closed or explicitly deferred.
 
 ---
 
