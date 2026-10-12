@@ -178,6 +178,10 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 
 `modules.memoryRecall` (`home/modules/memory-recall`, off by default) injects the memories closest to each prompt (snippets from 0.68, whole memory from 0.74) via a local EmbeddingGemma 2 server; `memory-recall catalogue` makes the names-only index that can replace `MEMORY.md`. Code in `scripts/retrieval-eval` (`pkgs.memory-recall`); how it works, how to enable it and the benchmark results: `docs/memory-recall.md`, ADRs 0029 and 0030. Needs `pkgs.llama-cpp-upstream` (nixpkgs' llama.cpp lacks the `gemma-embedding2` architecture).
 
+### AI control centre
+
+`claude-monitor` (separate Rust repo, Home Manager module `programs.claude-monitor`, all options off by default) is the overview and persistence layer for Claude Code and Copilot sessions: states, survive-reboot respawn in the right worktree (`restore`, never automatic), plan progress, cortexiphan export, optional loopback web view. How to enable it, what it installs, state and log locations, recovery: `docs/ai-control-centre.md`; ADRs 0040 and 0041; design in `specs/008-ai-control-centre/`.
+
 ### Observability stack
 
 `modules.observabilityStack` (`home/modules/observability-stack`, off by default) runs Loki, Tempo, Prometheus, Grafana and an OTel collector as one podman pod (systemd user service on Linux, launchd agent on macOS) and points Claude Code's telemetry at it, to find where tokens go. Code in `scripts/token-tools` (`cc-obs-ledger` hook tool, `cc-obs-query` CLI). How to use it, the privacy gates and checks: `docs/observability-stack.md`, ADRs 0034 and 0035, design in `specs/007-local-observability-stack/`. The weekly token review runner and schedule (ADR 0037, T056/T059) are not built yet; reviews are run by hand.
