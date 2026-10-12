@@ -169,7 +169,7 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T062 [P] [US3] Spike R7: prove a private `tmux -S` server runs inside a Nix `runCommand` check; keep it as the harness in `tests/tmux_harness.rs`, `flake.nix`
 - [x] T063 [P] [US3] Planner tests: missing directory, missing transcript, branch gone, already running, no launcher, no tmux, agent without resume → fresh + notice, finished respawn identical to interrupted in `tests/respawn_plan.rs`
 - [x] T064 [P] [US3] Alternatives tests: a missing worktree whose branch still exists gets a refusal that includes a `git worktree add` suggestion, and `respawn --recreate-worktree` runs it only when asked; a missing worktree with no branch suggests `respawn --fresh --in <repo_root>` (new session in the main checkout, saying history is not restored); nothing is ever created automatically (US3 scenario 3) in `tests/respawn_alternatives.rs`
-- [ ] T065 [P] [US3] Private-tmux integration tests: single respawn lands in the recorded cwd, five at once, lineage `resumed_from` set from the next `SessionStart` in the recorded pane, no duplicate row in `tests/respawn_tmux.rs`
+- [x] T065 [P] [US3] Private-tmux integration tests: single respawn lands in the recorded cwd, five at once, lineage `resumed_from` set from the next `SessionStart` in the recorded pane, no duplicate row in `tests/respawn_tmux.rs`
 - [x] T066 [P] [US3] `boot-check` tests: with interrupted sessions emits one notification, writes the marker and starts nothing; with none emits nothing; finished sessions neither selected nor counted (FR-019a, FR-034); `boot-check --banner` prints the one-line message once via the `Tmux` provider and clears the marker (FR-032) in `tests/boot_check.rs`
 - [x] T067 [P] [US3] Fork lineage test (spec edge case): a forked conversation (per the R1 findings in T005) becomes a separate session with `forked_from` set and is not collapsed into the head of the respawn chain; a respawn linked through a `RespawnRequest` still collapses, in `tests/lineage_fork.rs`
 
@@ -180,14 +180,14 @@ Library modules are under `src/` (lib crate `claude_monitor`); `src/main.rs` sta
 - [x] T070 [US3] Implement the tmux executor (create server/session `agents` if absent, window per session, `-c <cwd>`) behind the `Tmux` provider in `src/tmux.rs`
 - [x] T071 [US3] Link a respawn: a `SessionStart` with `source=resume` and a known session id revives that record in place (resume keeps the id, T005); only `/clear` (`source=clear`, new id) creates a `resumed_from` link; tolerate an unexpected new id by treating the pane's open `RespawnRequest` as the link, in `src/hook.rs`, `src/respawn.rs`
 - [x] T072 [US3] Record forks: Claude writes no parent link, so detect a fork at passive discovery by shared message uuids with an existing transcript, and record parent to child ourselves when we launch `--fork-session`; the fork gets `forked_from` and its own chain (store column in data-model.md). A fork launched by hand with no record shows as independent, in `src/hook.rs`, `src/store/schema.rs`
-- [ ] T073 [US3] Implement `respawn` and `restore` commands (`--all-interrupted`, `--include-finished`, `--fresh`, `--yes`; exit codes 2/3 per contract) in `src/cli/respawn.rs`, `src/cli/restore.rs`
-- [ ] T074 [US3] Add the restore view to the TUI: checkboxes, all interrupted pre-selected, finished unselected, deselect to opt out (deselected stay interrupted, not dismissed), Enter respawns, in `src/tui/restore.rs`, `tests/tui.rs`
+- [x] T073 [US3] Implement `respawn` and `restore` commands (`--all-interrupted`, `--include-finished`, `--fresh`, `--yes`; exit codes 2/3 per contract) in `src/cli/respawn.rs`, `src/cli/restore.rs`
+- [x] T074 [US3] Add the restore view to the TUI: checkboxes, all interrupted pre-selected, finished unselected, deselect to opt out (deselected stay interrupted, not dismissed), Enter respawns, in `src/tui/restore.rs`, `tests/tui.rs`
 - [x] T075 [US3] Implement `boot-check` (reconcile, notify, write marker, start nothing) in `src/cli/boot_check.rs`
 - [x] T076 [US3] Implement `boot-check --banner` (one-line tmux `display-message`, then clear the marker) in `src/cli/boot_check.rs`
 - [x] T077 [US3] Add the systemd login user unit running `boot-check`, with tools resolved by Nix store path, to the Home Manager module in `nix/hm-module.nix`
 - [x] T078 [US3] Add the launchd agent running `boot-check` for macOS to the Home Manager module in `nix/hm-module.nix`
 - [x] T079 [US3] Add the tmux `client-attached` hook running `boot-check --banner` to the Home Manager module in `nix/hm-module.nix`
-- [ ] T080 [US3] Add the `launchers.<kind>` and tmux-session options to the Home Manager module in `nix/hm-module.nix`
+- [x] T080 [US3] Add the `launchers.<kind>` and tmux-session options to the Home Manager module in `nix/hm-module.nix`
 - [ ] T081 [US3] Enable the new module options in `nc:home/programs/claude-code/default.nix`
 - [ ] T082 [US3] Extend the prefix+A binding with the restore view in `nc:home/programs/tmux/tmux.conf.nix`
 
