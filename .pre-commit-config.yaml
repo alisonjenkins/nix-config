@@ -40,3 +40,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^home/skills/[^/]+/SKILL\.md$
+      - id: nix-pull-build-tests
+        name: nix-pull-build integration tests
+        entry: bash home/programs/nix-pull-build/tests.sh
+        language: system
+        pass_filenames: false
+        files: ^home/programs/nix-pull-build/
