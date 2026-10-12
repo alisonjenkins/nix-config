@@ -122,6 +122,7 @@ Design: [`specs/008-ai-control-centre/`](../../specs/008-ai-control-centre/).
 | # | Decision | Status |
 |---|---|---|
 | [0040](0040-control-centre-store-liveness-event-feed.md) | Keep control-centre state in SQLite, judge liveness by process identity, and drive it from events | Proposed |
+| [0041](0041-control-centre-code-home-cortexiphan-coupling.md) | Build the control centre in claude-monitor and couple loosely to cortexiphan | Proposed |
 
 ## Template
 
