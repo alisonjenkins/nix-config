@@ -418,6 +418,8 @@ in
     package = claudeWrapped;
 
     settings = {
+      enabledPlugins."cc-plugin-you-should-know@builtin" = true;
+
       # Opt out of autoupdate/error-reporting/bug-command. We deliberately do
       # NOT set DISABLE_TELEMETRY (nor the umbrella
       # CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC): DISABLE_TELEMETRY also
