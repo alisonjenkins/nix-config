@@ -1279,6 +1279,10 @@ class TestOutputLifetime(unittest.TestCase):
         stream_mode.set_screencast_cursor = lambda name, embed: (
             self.cursor.append((name, embed)) or True
         )
+        self.fullscreen = []
+        stream_mode.set_window_fullscreen = lambda wid, on=True: (
+            self.fullscreen.append((wid, on)) or True
+        )
 
         def set_mode(name, w, h, r):
             self.modes.append((name, w, h, r))
@@ -1500,6 +1504,20 @@ class TestOutputLifetime(unittest.TestCase):
         s.begin_stream("phone")
 
         self.assertEqual(moved, [(8, stream_mode.OUTPUT_NAME)])
+
+    def test_big_picture_fills_the_streamed_output(self):
+        """Moved as a column it took half the output's width."""
+        stream_mode.move_window_to_output = lambda wid, out: None
+
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "phone")
+        s.begin_stream("phone")
+        s.on_windows([{"id": 8, "pid": 42, "app_id": "steam",
+                       "title": "Steam Big Picture Mode",
+                       "layout": {"window_size": [1071, 926]}}])
+
+        self.assertEqual(self.fullscreen, [(8, True)])
+        self.assertIn(8, s.fullscreened)
 
     def test_a_known_client_beats_whatever_size_the_output_is_left_at(self):
         """The client we are serving decides the size, not leftover state.
