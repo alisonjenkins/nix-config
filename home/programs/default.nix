@@ -42,6 +42,7 @@
     ./neovim
     ./newsboat
     ./nix-index
+    ./nix-pull-build
     ./noti
     ./nushell
     ./obs

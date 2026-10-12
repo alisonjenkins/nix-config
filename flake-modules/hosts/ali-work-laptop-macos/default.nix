@@ -429,6 +429,11 @@ in {
         home-manager.users.${username} = { config, ... }: {
           imports = [ self.homeModules.home-macos self.homeModules.memory-recall ];
 
+          programs.nix-pull-build = {
+            enable = true;
+            repository = "${config.home.homeDirectory}/git/personal/nix-config";
+          };
+
           # Project parents (e.g. ~/git/<employer>) are discovered on the
           # machine at activation, so they stay out of the repo — see
           # programs.copilot-cli.autoTrustSubdirsOf.
