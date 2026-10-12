@@ -2251,6 +2251,10 @@ class Session:
             except (subprocess.CalledProcessError, OSError) as exc:
                 log("stream-mode: could not move Big Picture: {}".format(exc))
                 return False
+            # As a column it took half the output's width. Fullscreened like a
+            # game, so the end of the stream takes it back out.
+            if set_window_fullscreen(w["id"], True):
+                self.fullscreened.add(w["id"])
             log("stream-mode: moved Big Picture to {}".format(self.output))
             return True
         return False
