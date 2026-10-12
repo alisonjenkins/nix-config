@@ -60,6 +60,23 @@ It is gitignored; never commit it.
    with it; disable the nix one by testing on a host/branch without it, or
    rename the dev copy.
 
+## Third-party and built-in mods
+
+- **Third-party mod** (a GitHub repo): package it like `pkgs/pup-claude`, as
+  `pkgs/<name>/default.nix` with `fetchFromGitHub` pinned to a commit SHA
+  (tags lag the manifest), copy only `.claude-plugin`, `hooks` and `types`
+  into `$out`, register it in `pkgs/default.nix`, and add `pkgs.<name>` to
+  `programs.claude-code.plugins`. Examples: `pkgs/cache-tax`,
+  `pkgs/savvy-progress` (plugin in a subdirectory: set `sourceRoot`).
+  Before adding, run `claude plugin validate <store path>` and read the
+  `calls:` line: anything beyond `$.store`/`$.ui`/`$.clock`/`$.model` (`$.fs`,
+  `$.process`, network) needs a real read of the source first. Build it with
+  `nix build .#nixosConfigurations.<host>.pkgs.<name>`.
+- **Built-in mod** (ships in the binary, e.g. `you-should-know`): no package.
+  Enable via `enabledPlugins."cc-plugin-<name>@builtin" = true` in
+  `programs.claude-code.settings`. The docs page
+  <https://code.claude.com/docs/en/plugins/mods/overview> lists them.
+
 ## Rules
 
 - Do not leave a mod only in `~/.claude/dev-mods`; that is a scratch space.
