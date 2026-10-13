@@ -50,7 +50,7 @@ options default to off and change nothing until enabled.
 | `bootCheck.enable` | A login job (systemd user unit, launchd agent on macOS) running `boot-check`: one notification if sessions were interrupted, starts nothing |
 | `bootCheck.banner.enable`, `.snippet` | A tmux `client-attached` hook that shows a one-line banner once on the next attach |
 | `watch.enable` | A systemd user service running the headless `watch` (one log line per state change) |
-| `serve.enable`, `serve.port` | A systemd user service running the loopback web view (default port 8765) |
+| `serve.enable`, `serve.port`, `serve.mtls` | The loopback web view as a background user service: a systemd user unit on Linux, a launchd agent on macOS (default port 8765). `serve.mtls` also requires a client certificate. Enabled on every machine here; see [Always-on web view](#always-on-web-view) |
 | `launchers.<kind>`, `tmuxSession` | Resume command templates (`{session_id}`, `{cwd}`, `{name}`) per agent kind, and the tmux session respawned windows go in (default `agents`). Written to `$XDG_CONFIG_HOME/claude-monitor/config.json` |
 
 Environment overrides: `CLAUDE_MONITOR_LAUNCHER_<KIND>` (for example
@@ -58,6 +58,44 @@ Environment overrides: `CLAUDE_MONITOR_LAUNCHER_<KIND>` (for example
 private tmux server; used by tests), `CLAUDE_MONITOR_SUMMARY_URL` and
 `CLAUDE_MONITOR_SUMMARY_MODEL` (loopback summaries), `CORTEXIPHAN_SERVER` and
 `CORTEXIPHAN_TOKEN` (links check).
+
+## Always-on web view
+
+`home/programs/claude-code/default.nix` turns on `programs.claude-monitor.serve`
+for every home-manager profile (decision: [ADR 0042](adr/0042-run-the-control-centre-web-view-as-a-user-service-everywhere.md)).
+Besides the web view, the service runs the live refresh loop, so the store
+stays current without a dashboard open. That is what a post-reboot `restore`
+plan is built from.
+
+| | Linux | macOS |
+|---|---|---|
+| Service | systemd user unit `claude-monitor-serve` | launchd agent `claude-monitor-serve` |
+| Port | 8801 | 8801 |
+| Client certificate (mTLS) | required; imported into the Zen profile at activation | not required (no importer yet) |
+| Log | `journalctl --user -u claude-monitor-serve` | `~/Library/Logs/claude-monitor-serve.log` |
+
+Port 8801 and not the 8765 default, because DynamoDB Local holds 8765 on
+ali-desktop.
+
+First use on a machine:
+
+1. Stop any `claude-monitor serve` you started by hand on 8801; it would stop
+   the service from binding.
+2. Switch the configuration (`just switch`).
+3. Run `claude-monitor web login` and open the URL it prints (valid five
+   minutes, single use). Open `https://127.0.0.1:8801/` in a browser that
+   trusts the install's CA (`claude-monitor web ca` prints it).
+
+Check it is up: `systemctl --user status claude-monitor-serve` (Linux),
+`launchctl print gui/$(id -u)/org.nix-community.home.claude-monitor-serve`
+(macOS; the label is the one the evaluated configuration sets, checked with `nix eval`).
+Turn it off for one machine with
+`programs.claude-monitor.serve.enable = lib.mkForce false;` in that host's
+home configuration.
+
+Limits: the listener is loopback only. TLS and mTLS do not stop malware running
+as your user, because the client key sits in the browser profile. The macOS
+agent has been evaluated, not started on a Mac.
 
 ## Using it
 
