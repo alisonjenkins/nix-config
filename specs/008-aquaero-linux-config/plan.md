@@ -76,7 +76,8 @@ scripts/aquaero-ctl/
 │   ├── lib.rs
 │   ├── cli.rs                 # clap definitions
 │   ├── hid.rs                 # HidDevice trait, hidraw implementation, node selection
-│   ├── fake.rs                # in-memory device with failure injection (cfg test and a feature for integration tests)
+│   ├── lock.rs                # advisory lock and the 200 ms control gap
+│   ├── fake.rs                # in-memory device with failure injection (behind a Cargo feature for integration tests)
 │   ├── snapshot.rs            # read, write, name, hash, compare
 │   ├── diff.rs                # byte-position comparison with volatile marking
 │   ├── profile.rs             # firmware profile loading and lookup
@@ -104,7 +105,7 @@ docs/adr/0040-aquaero-config-in-user-space.md
 ## Delivery Order
 
 1. **Read-only dump and compare** (story 1, partly): the `HidDevice` trait, the `hidraw` node, snapshot files and `diff`. No writes exist yet.
-2. **Layout discovery** (story 1): single-setting changes in Aquasuite in the VM, snapshot diffs, plus one USB capture of a save. Output is the profile file and `docs/aquaero-config.md`.
+2. **Layout discovery** (story 1): first a static read of the vendor software's readable settings model (decompiled outside the repository, never committed, treated as leads), then single-setting changes in Aquasuite in the VM with snapshot diffs, plus one USB capture of a save. The device's original configuration is exported before any experiment and restored afterwards. Output is the profile file, `docs/aquaero-config.md` and the ADR draft, which land with the code that rests on them.
 3. **Write path against the fake device** (stories 2 and 3): curve type and validation, plan, backup, apply, verify, restore, with injected failures. Test-first.
 4. **First real writes**, in three stages each needing the owner's go-ahead: write the unchanged snapshot back; change one benign value and restore; then the curve. Includes the power-cycle and sensor-loss checks.
 5. **NixOS module** (story 4, and story 5): options, assertions, oneshot, udev trigger, `mode = "check"`; enable on `ali-desktop`.
