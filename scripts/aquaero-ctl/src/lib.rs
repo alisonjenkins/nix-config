@@ -4,5 +4,6 @@ pub mod diff;
 pub mod error;
 pub mod fake;
 pub mod hid;
+pub mod lock;
 pub mod snapshot;
 pub mod timestamp;

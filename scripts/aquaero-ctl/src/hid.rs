@@ -3,7 +3,7 @@
 
 use std::path::Path;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::error::HidError;
 use crate::snapshot::{ConfigBytes, CONFIG_LEN};
@@ -79,29 +79,23 @@ impl<C: Clock + ?Sized> Clock for Arc<C> {
     }
 }
 
-/// The real clock.
-#[derive(Debug, Clone, Copy)]
-pub struct SystemClock {
-    origin: Instant,
-}
+/// The real clock. Its origin is the Unix epoch, so times recorded by one run
+/// of the tool mean the same thing to the next.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SystemClock;
 
 impl SystemClock {
     pub fn new() -> Self {
-        Self {
-            origin: Instant::now(),
-        }
-    }
-}
-
-impl Default for SystemClock {
-    fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 
 impl Clock for SystemClock {
+    /// A clock set before 1970 reads as the epoch.
     fn now(&self) -> Duration {
-        self.origin.elapsed()
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::ZERO)
     }
 
     fn sleep(&self, duration: Duration) {

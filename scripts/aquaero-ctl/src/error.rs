@@ -62,6 +62,34 @@ pub enum HidError {
     },
 }
 
+/// Failures taking the device lock or spacing control operations.
+#[derive(Debug, Error)]
+pub enum LockError {
+    #[error("another aquaero-ctl already holds {path}")]
+    Held { path: PathBuf },
+
+    #[error("cannot create or open the lock file {path}")]
+    Create {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("cannot lock {path}")]
+    Flock {
+        path: PathBuf,
+        #[source]
+        source: nix::errno::Errno,
+    },
+
+    #[error("cannot read or write the last-operation time in {path}")]
+    Record {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+}
+
 /// Failures when building, storing or loading a [`crate::snapshot::ConfigSnapshot`].
 #[derive(Debug, Error)]
 pub enum SnapshotError {
