@@ -15,5 +15,6 @@ pub mod lock;
 pub mod plan;
 pub mod profile;
 pub mod select;
+pub mod show;
 pub mod snapshot;
 pub mod timestamp;
