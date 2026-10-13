@@ -319,7 +319,7 @@ in {
         modules.nohang = {
           enable = true;
           enableDesktopNotifications = true;
-          # Heavy parallel compiles (nix max-jobs=8 × cores=16) spike memory PSI
+          # Heavy parallel compiles (nix max-jobs × cores) spike memory PSI
           # while zstd reclaim fights the build for CPU — the preset's
           # full_avg10 soft threshold (40 held 30s) misreads this as OOM and
           # SIGTERMs a build job despite 125G of swap sitting mostly free.
@@ -343,8 +343,10 @@ in {
           enableCachyOSKernel = true;
           pcr15Value = "7e6a73c51abc879e3b85cdfdd116192e4b4a1fd4ea810b180bfab548054858a4";
         };
-        nix.settings.cores = 16;
-        nix.settings.max-jobs = 8;
+        # max-jobs × cores = the 32 hardware threads; 8 × 16 oversubscribed 4x
+        # (load ~79, CPU PSI some avg60 ~51%) and made the neotest check flake.
+        nix.settings.cores = 8;
+        nix.settings.max-jobs = 4;
 
         modules.locale.enable = true;
         modules.docker.enable = true;
