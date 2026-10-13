@@ -135,8 +135,19 @@ Multi-byte values are big-endian. Temperatures are in 0.01 °C and outputs in
   pending, then disappears. One edit therefore produces one whole-configuration
   write.
 - **Fan structs** (observed). The four per-fan structs at 0x020c, 0x0220, 0x0234
-  and 0x0248 are identical after the factory reset. Field meanings beyond the
-  kernel driver's min, max and source offsets are not yet verified.
+  and 0x0248 are identical after the factory reset. Fields, by position in the
+  20-byte struct: +0x00 minimum rpm (u16, 450 = 0x01c2) and +0x02 maximum rpm
+  (2000 = 0x07d0), both matching Aquasuite's Advanced settings page; +0x04
+  minimum power (u16, 0.01 %, default 3500) and +0x06 maximum power (10000);
+  +0x0e a flags byte; +0x10 the source (u16). The flags byte is the vendor's
+  `FanConfiguration.SettingsType` (HoldMinPower = 1, LimitCurrent = 2,
+  UseStartburst = 4): switching "Hold minimum power" on in Aquasuite changed
+  only 0x0256, fan 4's struct + 0x0e, from 0x00 to 0x01 (observed). The fields
+  at +0x08 to +0x0d (start boost, its duration, control mode) are not yet
+  pinned down. Aquasuite's Fan settings page has no sensor-loss option, and the
+  readable vendor code has no such field for the aquaero 5 (only for the Octo
+  and Quadro, as `FallbackPower`), so the fan's behaviour when its sensor is
+  lost is still unknown.
 - **Source numbering** (read from the vendor library's `SourceIndex` constants,
   `AquaComputerServiceLib.decompiled.cs` lines 87987 to 88000 and 88186 to 88198;
   matches the values seen on the device: Sensor 1 = 0, Preset 1 = 0x5c, preset 4
