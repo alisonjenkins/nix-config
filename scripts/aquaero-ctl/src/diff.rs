@@ -47,6 +47,88 @@ impl DiffRun {
     }
 }
 
+/// How much differs, for the summary line.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiffSummary {
+    pub runs: usize,
+    pub bytes: usize,
+    pub volatile_bytes: usize,
+}
+
+pub fn summarize(runs: &[DiffRun]) -> DiffSummary {
+    let bytes_where = |keep: fn(&DiffRun) -> bool| {
+        runs.iter()
+            .filter(|r| keep(r))
+            .fold(0usize, |total, r| total.saturating_add(r.before.len()))
+    };
+    DiffSummary {
+        runs: runs.len(),
+        bytes: bytes_where(|_| true),
+        volatile_bytes: bytes_where(|r| r.volatile),
+    }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn plural<'a>(n: usize, one: &'a str, many: &'a str) -> &'a str {
+    if n == 1 {
+        one
+    } else {
+        many
+    }
+}
+
+/// One line per run, `0x0064  00 -> 42`, then a summary line.
+pub fn render_text(runs: &[DiffRun]) -> String {
+    if runs.is_empty() {
+        return "no differences\n".to_string();
+    }
+    let mut out = String::new();
+    for run in runs {
+        out.push_str(&format!(
+            "{:#06x}  {} -> {}{}\n",
+            run.offset,
+            hex(&run.before),
+            hex(&run.after),
+            if run.volatile { "  (volatile)" } else { "" }
+        ));
+    }
+    let s = summarize(runs);
+    out.push_str(&format!(
+        "{} {}, {} {}{}\n",
+        s.runs,
+        plural(s.runs, "run", "runs"),
+        s.bytes,
+        plural(s.bytes, "byte differs", "bytes differ"),
+        if s.volatile_bytes > 0 {
+            format!(" ({} volatile)", s.volatile_bytes)
+        } else {
+            String::new()
+        }
+    ));
+    out
+}
+
+pub fn to_json(runs: &[DiffRun]) -> serde_json::Value {
+    let s = summarize(runs);
+    serde_json::json!({
+        "runs": runs.iter().map(|r| serde_json::json!({
+            "offset": r.offset,
+            "before": r.before,
+            "after": r.after,
+            "volatile": r.volatile,
+        })).collect::<Vec<_>>(),
+        "differing_bytes": s.bytes,
+        "volatile_bytes": s.volatile_bytes,
+    })
+}
+
 /// Every position where `before` and `after` differ, grouped into runs.
 /// Adjacent bytes with different volatility land in separate runs.
 pub fn diff(before: &ConfigBytes, after: &ConfigBytes, volatile: &VolatileSet) -> Vec<DiffRun> {
