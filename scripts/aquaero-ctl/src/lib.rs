@@ -3,6 +3,7 @@
 pub mod apply;
 pub mod cli;
 pub mod curve;
+pub mod desired;
 pub mod diff;
 pub mod dump;
 pub mod error;
