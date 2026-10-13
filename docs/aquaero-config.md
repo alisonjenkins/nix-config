@@ -226,6 +226,30 @@ or on Aquasuite's screens) or **inferred** (not confirmed).
    It was analysed with the tshark fields `usb.data_len` and
    `usb.data_fragment`. File: `/home/ali/vms/aquasuite/captures/save1.pcapng`.
 
+## First write to the real device (2026-10-13)
+
+The owner ran `aquaero-ctl apply` once with the VM stopped. Observed:
+
+- It backed up the previous configuration, wrote the planned changes, sent the
+  save command and the read-back matched. A fresh dump differs from the one
+  taken just before in exactly the planned fields: 0x024c (fan 4 minimum,
+  `0dac` -> `0bb8`), 0x0259 (fan 4 source, `5c` -> `58`) and the curve
+  controller 1 record (start temperature and 16 temperatures and outputs). 66
+  bytes in four runs, nothing else.
+- A second plan from the new dump is empty (`already as desired`), so a second
+  write would do nothing.
+- **The fan's speed did not change, and cannot.** After the write the driver
+  still reports fan 4 at 1596 rpm and `pwm4` at 255, and its voltage and
+  current inputs read 0 mV and 0 mA on every fan output. Aquasuite's System page
+  says "aquaero is in standby mode, no 12 V power supply detected". The
+  aquaero is powered over USB only, so its fan outputs carry no power: the
+  radiator fans must be powered from elsewhere, with only their tachometer wire
+  on fan 4. A curve stored on the device therefore has no physical effect until
+  the aquaero's own 12 V input is connected (or the fans are moved to its
+  outputs). This also explains the earlier observation that `pwm4` writes
+  through the kernel driver did not change fan 4 (inferred, not yet tested with
+  12 V connected).
+
 ## Open items
 
 | Item | Settled by |

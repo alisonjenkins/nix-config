@@ -1,6 +1,6 @@
 # 0040. Configure the aquaero from user space, not from a kernel module
 
-- Status: Accepted. The tool reads the device, and its write path is covered by tests against a fake device. The first write to the real device has not been made (the owner's go-ahead is pending).
+- Status: Accepted. The tool reads the device, and its write path is covered by tests against a fake device. The first write to the real device was made on 2026-10-13 and read back correctly; see `docs/aquaero-config.md`. The curve has no physical effect while the aquaero has no 12 V supply (the fan outputs carry no power).
 - Date: 2026-10-13
 
 ## Context
