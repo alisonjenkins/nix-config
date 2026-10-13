@@ -57,6 +57,7 @@
     desktop-wm-sway = import ../modules/desktop-wm-sway;
 
     # Hardware modules
+    hardware-aquaero-ctl = import ../modules/hardware-aquaero-ctl.nix;
     hardware-fingerprint = import ../modules/hardware-fingerprint;
     hardware-scarlett-mixer = import ../modules/hardware-scarlett-mixer.nix;
     hardware-touchpad = import ../modules/hardware-touchpad;

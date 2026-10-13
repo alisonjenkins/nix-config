@@ -83,6 +83,7 @@ in {
       self.nixosModules.virtual-cameras
       self.nixosModules.plymouth
       self.nixosModules.hardware-scarlett-mixer
+      self.nixosModules.hardware-aquaero-ctl
       self.nixosModules.rocm
       self.nixosModules.sunshine
       self.nixosModules.tts
@@ -643,6 +644,33 @@ in {
         hardware.scarlettMixer = {
           enable = true;
           controls."PCM 02" = "DSP 1";
+        };
+
+        # The radiator fans (fan 4 on the aquaero) follow the coolant
+        # (Sensor 1) by a curve stored on the device, so no software has to
+        # run for it to hold (spec 008). "check" only reports drift in the
+        # journal and never writes: flip it to "apply" after the first manual
+        # `aquaero-ctl plan` and `apply` have been verified on the device.
+        # loggedInUserAccess lets the desktop user read the device unprivileged
+        # and pass it to the Windows VM used for reverse engineering.
+        hardware.aquaeroCtl = {
+          enable = true;
+          mode = "check";
+          loggedInUserAccess = true;
+          fans."4" = {
+            sensor = 1;
+            minPercent = 30;
+            points = [
+              {
+                temp = 30;
+                percent = 30;
+              }
+              {
+                temp = 45;
+                percent = 100;
+              }
+            ];
+          };
         };
 
         boot = {

@@ -26,6 +26,7 @@ in
       sift = (pkgsFor system).sift;
       memory-recall = (pkgsFor system).memory-recall;
       token-tools = (pkgsFor system).token-tools;
+      aquaero-ctl = (pkgsFor system).aquaero-ctl;
       vr-foveation-bench = (pkgsFor system).vr-foveation-bench;
       containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
     } //

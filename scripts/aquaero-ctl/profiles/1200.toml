@@ -1,0 +1,57 @@
+# Layout of the stored configuration for data version 1200 (header bytes 1 and
+# 2 of the 2707-byte report 0x0B). Every value below was read from dumps of a
+# real device and checked against a diff (docs/aquaero-config.md, "Controller
+# layout" and "Findings from the first captured save"). All offsets are into the
+# report including its leading id byte; every multi-byte value is big-endian.
+
+data_version = 1200
+# The firmware this was verified on (Aquasuite's System page: 2104).
+firmware = 2104
+verified_on = ["2026-10-13: aquaero 5 PRO, serial redacted, firmware 2104, Aquasuite X.79"]
+
+# Four fan structs, back to back.
+[fan]
+base = 0x20c
+stride = 0x14
+count = 4
+min_offset = 0x04    # u16, 0.01 % (fan 4 default 0x0dac = 35.00 %)
+max_offset = 0x06    # u16, 0.01 %
+source_offset = 0x10 # u16, a source number (see [sources]); 0xffff = none
+# Flags byte (the vendor's FanConfiguration.SettingsType: HoldMinPower = 1,
+# LimitCurrent = 2, UseStartburst = 4). Switching "Hold minimum power" on in
+# Aquasuite changed only this byte of fan 4 (0x0256), 0x00 -> 0x01.
+settings_offset = 0x0e
+hold_min_power_flag = 0x01
+# Control mode byte (the vendor's FanConfiguration.ControlModeType: power
+# controlled = 0, speed controlled = 1, PWM controlled = 2). Selecting "PWM
+# controlled" in Aquasuite changed only 0x0257 (fan 4's struct + 0x0f), 0 -> 2.
+mode_offset = 0x0f
+mode_power = 0
+mode_speed = 1
+mode_pwm = 2
+
+# Four curve controllers, each: source u16, start temperature u16 (0.01 degC),
+# sixteen temperatures u16 (0.01 degC), sixteen outputs u16 (0.01 %).
+[curve]
+base = 0x61c
+stride = 0x44
+slots = 4
+points = 16
+source_offset = 0x00
+start_offset = 0x02
+temperatures_offset = 0x04
+outputs_offset = 0x24
+
+# Source numbers, from the vendor library's SourceIndex constants; Sensor 1 = 0
+# and Preset 1 = 0x5c were also seen on the device.
+[sources]
+sensor_base = 0
+sensor_count = 64
+curve_base = 88      # 0x58
+curve_count = 4
+
+# What the vendor software sent after the configuration write: report 6 with the
+# SaveSettings command (2), about 4.1 s after the configuration.
+[[commit]]
+bytes = [0x06, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00]
+delay_ms = 4100
