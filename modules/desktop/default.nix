@@ -8,6 +8,21 @@ let
 
   binauralSurroundDefaults = import ./binaural-surround-defaults.nix;
 
+  # nixos-unstable's mesa expression, built with the system package set. Every
+  # GUI process dlopen()s the graphics package, so it must link the system's
+  # glibc; pkgs.unstable.mesa links unstable's, which breaks once the two
+  # channels differ. mesa-libclc only exists in unstable, and libgbm must match
+  # the mesa version, so both come from there too.
+  unstableNixpkgs = inputs.nixpkgs_unstable + "/pkgs";
+  mesaOnSystemLibc = callPackage:
+    let
+      mesa-libclc = callPackage (unstableNixpkgs + "/by-name/me/mesa-libclc/package.nix") { };
+      libgbm = callPackage (unstableNixpkgs + "/development/libraries/mesa/gbm.nix") { };
+    in
+    callPackage (unstableNixpkgs + "/development/libraries/mesa/default.nix") {
+      inherit mesa-libclc libgbm;
+    };
+
   # Launch-time Proton runner updater (see options.modules.desktop.gaming.protonRunners).
   protonRunnersActive = gcfg.enable && gcfg.protonRunners.enable;
 
@@ -1261,14 +1276,11 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion =
-          config.hardware.graphics.package.outPath != pkgs.unstable.mesa.outPath
-          || pkgs.unstable.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
+        assertion = config.hardware.graphics.package.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
         message = ''
-          pkgs.unstable glibc (${pkgs.unstable.stdenv.cc.libc.version}) differs from the system's (${pkgs.stdenv.cc.libc.version}).
-          hardware.graphics.package is pkgs.unstable.mesa, which every system-built GUI process
-          (niri, cage, electron apps) dlopen()s, and a lower-glibc process cannot load it.
-          Pin nixpkgs_unstable to a rev with matching glibc or build mesa against the system's.
+          hardware.graphics.package is built against glibc ${config.hardware.graphics.package.stdenv.cc.libc.version}, but the system's is ${pkgs.stdenv.cc.libc.version}.
+          Every system-built GUI process (niri, cage, electron apps) dlopen()s it,
+          and a lower-glibc process cannot load a higher-glibc mesa.
         '';
       }
       {
@@ -1605,8 +1617,8 @@ in
 
       graphics = {
         enable = true;
-        # Use unstable Mesa for better RDNA 4 support
-        package = pkgs.unstable.mesa;
+        # Unstable Mesa for better RDNA 4 support, built on the system glibc.
+        package = mesaOnSystemLibc pkgs.callPackage;
 
         # VA-API hardware video acceleration.
         # libva must match the mesa channel above — mesa's radeonsi VAAPI
@@ -1623,7 +1635,7 @@ in
       # 32-bit graphics stack is x86-only; pkgsi686Linux throws on
       # aarch64. Gate so this module can be reused on Asahi hosts.
       // (lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
-        package32 = pkgs.unstable.pkgsi686Linux.mesa;
+        package32 = mesaOnSystemLibc pkgs.pkgsi686Linux.callPackage;
         # Match unstable.pkgsi686Linux.mesa above (same ABI reason as 64-bit).
         extraPackages32 = with pkgs.unstable.pkgsi686Linux; [
           libva
