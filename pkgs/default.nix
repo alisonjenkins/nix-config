@@ -57,6 +57,7 @@
   llama-cpp-upstream = pkgs.callPackage ./llama-cpp-upstream { llama-cpp = pkgs.master.llama-cpp; };
   memory-recall = pkgs.callPackage ./memory-recall {};
   token-tools = pkgs.callPackage ./token-tools {};
+  aquaero-ctl = pkgs.callPackage ./aquaero-ctl {};
   superpowers = pkgs.callPackage ./superpowers {};
   token-savior = pkgs.callPackage ./token-savior { python3Packages = pkgs.unstable.python3Packages; };
   claude-statusbar = pkgs.callPackage ./claude-statusbar {
