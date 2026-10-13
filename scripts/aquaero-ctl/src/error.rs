@@ -152,6 +152,49 @@ fn describe_mismatch(runs: &[DiffRun]) -> String {
         .join("; ")
 }
 
+/// Failures loading or reading a firmware profile.
+#[derive(Debug, Error)]
+pub enum ProfileError {
+    #[error(
+        "no profile for configuration data version {version}; known versions: {}",
+        versions(known)
+    )]
+    UnknownVersion { version: u32, known: Vec<u32> },
+
+    #[error("cannot parse the profile")]
+    Parse {
+        #[source]
+        source: toml::de::Error,
+    },
+
+    #[error("invalid profile: {reason}")]
+    Invalid { reason: String },
+
+    #[error("there is no fan {fan}; this device has fans 1 to {count}")]
+    NoSuchFan { fan: usize, count: usize },
+
+    #[error("there is no curve controller {slot}; this device has 1 to {count}")]
+    NoSuchCurve { slot: usize, count: usize },
+
+    #[error("there is no temperature sensor {sensor}; this device has 1 to {count}")]
+    NoSuchSensor { sensor: usize, count: usize },
+
+    #[error("position {offset:#06x} lies outside the configuration")]
+    OutOfRange { offset: usize },
+}
+
+fn versions(known: &[u32]) -> String {
+    if known.is_empty() {
+        "none".to_string()
+    } else {
+        known
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
 /// Failures restoring a snapshot.
 #[derive(Debug, Error)]
 pub enum RestoreError {

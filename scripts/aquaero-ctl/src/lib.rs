@@ -10,6 +10,7 @@ pub mod hid;
 pub mod hidraw;
 pub mod identity;
 pub mod lock;
+pub mod profile;
 pub mod select;
 pub mod snapshot;
 pub mod timestamp;
