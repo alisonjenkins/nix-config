@@ -9,8 +9,8 @@ use std::time::Duration;
 use nix::errno::Errno;
 use nix::fcntl::{Flock, FlockArg};
 
-use crate::error::LockError;
-use crate::hid::Clock;
+use crate::error::{HidError, LockError};
+use crate::hid::{Clock, HidDevice, CONTROL_GAP};
 
 /// An exclusive advisory lock on a file, held until the value is dropped.
 /// The file also records when the last control operation started, so the
@@ -102,5 +102,49 @@ impl DeviceLock {
             path: self.path.clone(),
             source,
         }
+    }
+}
+
+/// A device whose every operation first waits out [`CONTROL_GAP`] through the
+/// lock, so callers cannot forget the spacing.
+pub struct SpacedDevice<'a, D: HidDevice, C: Clock + ?Sized> {
+    inner: D,
+    lock: &'a mut DeviceLock,
+    clock: &'a C,
+}
+
+impl<'a, D: HidDevice, C: Clock + ?Sized> SpacedDevice<'a, D, C> {
+    pub fn new(inner: D, lock: &'a mut DeviceLock, clock: &'a C) -> Self {
+        Self { inner, lock, clock }
+    }
+
+    pub fn into_inner(self) -> D {
+        self.inner
+    }
+
+    fn space(&mut self) -> Result<(), HidError> {
+        self.lock
+            .wait_for_gap(self.clock, CONTROL_GAP)
+            .map(|_| ())
+            .map_err(|source| HidError::Spacing {
+                path: self.inner.path().to_path_buf(),
+                source,
+            })
+    }
+}
+
+impl<D: HidDevice, C: Clock + ?Sized> HidDevice for SpacedDevice<'_, D, C> {
+    fn path(&self) -> &Path {
+        self.inner.path()
+    }
+
+    fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {
+        self.space()?;
+        self.inner.get_feature(report_id, len)
+    }
+
+    fn set_feature(&mut self, report: &[u8]) -> Result<(), HidError> {
+        self.space()?;
+        self.inner.set_feature(report)
     }
 }

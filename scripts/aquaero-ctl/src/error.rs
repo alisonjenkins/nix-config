@@ -60,6 +60,29 @@ pub enum HidError {
         #[source]
         source: SnapshotError,
     },
+
+    #[error("{path}: cannot space device operations")]
+    Spacing {
+        path: PathBuf,
+        #[source]
+        source: LockError,
+    },
+}
+
+/// Failures of the read-only dump.
+#[derive(Debug, Error)]
+pub enum DumpError {
+    #[error("cannot read the configuration from the device")]
+    Read {
+        #[source]
+        source: HidError,
+    },
+
+    #[error("cannot save the snapshot")]
+    Save {
+        #[source]
+        source: SnapshotError,
+    },
 }
 
 /// Failures finding the device under `/sys/class/hidraw`.
