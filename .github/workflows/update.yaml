@@ -23,6 +23,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
       id-token: write
     steps:
       - uses: actions/checkout@v7
@@ -66,6 +67,9 @@ jobs:
             --head "$branch")
           echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
           gh pr merge --rebase --auto --delete-branch "$pr_url"
+          # A PR opened with GITHUB_TOKEN never starts pull_request
+          # workflows, so flake-check would never report; dispatch it.
+          gh workflow run pr-check.yaml --ref "$branch"
 
           # --auto only arms auto-merge and returns immediately, so without
           # this the job would report success even when flake-check fails
@@ -82,6 +86,13 @@ jobs:
                 exit 1
                 ;;
             esac
+            # main requires an up-to-date branch; a push to main while the
+            # check runs leaves the PR BEHIND and auto-merge waits forever.
+            # The rebase is pushed with GITHUB_TOKEN too, so re-dispatch.
+            if [ "$(gh pr view "$pr_url" --json mergeStateStatus -q .mergeStateStatus)" = BEHIND ]; then
+              gh pr update-branch --rebase "$pr_url"
+              gh workflow run pr-check.yaml --ref "$branch"
+            fi
             sleep 30
           done
           echo "::error::$pr_url did not merge within timeout"
