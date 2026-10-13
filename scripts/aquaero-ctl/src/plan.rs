@@ -133,6 +133,11 @@ pub fn build_plan(
     if let Some(byte) = bytes.get_mut(fan_offsets.settings) {
         *byte = flags_new;
     }
+    // PWM controlled: the fans are powered from elsewhere (there can be too
+    // many for the aquaero's output) and the aquaero only sends the signal.
+    if let Some(byte) = bytes.get_mut(fan_offsets.mode) {
+        *byte = profile.pwm_mode();
+    }
     put(&mut bytes, fan_offsets.min, min_value)?;
     put(&mut bytes, fan_offsets.source, curve_source)?;
     put(&mut bytes, curve_offsets.source, sensor_source)?;
@@ -168,6 +173,12 @@ pub fn build_plan(
         percent_text(i64::from(fan_now.min_hundredths)),
         percent_text(min),
         vec![span(fan_offsets.min, 2)],
+    );
+    add(
+        format!("fan {fan} control mode"),
+        profile.describe_mode(fan_now.mode),
+        profile.describe_mode(profile.pwm_mode()),
+        vec![span(fan_offsets.mode, 1)],
     );
     add(
         format!("fan {fan} hold minimum power"),

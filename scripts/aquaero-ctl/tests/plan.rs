@@ -55,6 +55,7 @@ fn owned(profile: &Profile) -> Vec<std::ops::Range<usize>> {
         fan.min..fan.min + 2,
         fan.source..fan.source + 2,
         fan.settings..fan.settings + 1,
+        fan.mode..fan.mode + 1,
         curve.source..curve.outputs + profile.curve_points() * 2,
     ]
 }
@@ -88,6 +89,12 @@ fn the_plan_lists_each_change_with_its_old_and_new_value_and_position() {
     assert_eq!(hold.old, "off");
     assert_eq!(hold.new, "on");
     assert_eq!(hold.positions, vec![0x256..0x257]);
+
+    // The radiators' power comes from elsewhere, so only the PWM signal is sent.
+    let mode = by_name("fan 4 control mode");
+    assert_eq!(mode.old, "power controlled");
+    assert_eq!(mode.new, "PWM controlled");
+    assert_eq!(mode.positions, vec![0x257..0x258]);
 
     let source = by_name("curve controller 1 data source");
     assert_eq!(source.old, "none");
@@ -152,6 +159,13 @@ fn the_intended_bytes_encode_the_curve() {
     assert_eq!(fan.max_hundredths, 10_000);
     assert_eq!(fan.source, 0x0058, "curve controller 1");
     assert!(fan.hold_min_power);
+    assert_eq!(fan.mode, 2, "PWM controlled");
+}
+
+#[test]
+fn a_fan_already_in_pwm_mode_gets_no_change_for_it() {
+    let plan = build_plan(&fixture("pwm-controlled.bin"), &desired(), &profile()).unwrap();
+    assert!(plan.changes.iter().all(|c| c.name != "fan 4 control mode"));
 }
 
 #[test]
