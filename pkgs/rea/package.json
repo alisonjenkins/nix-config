@@ -14,8 +14,8 @@
     "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
   },
   "dependencies": {
-    "@babel/parser": "8.0.4",
-    "@babel/types": "8.0.4",
+    "@babel/parser": "8.0.7",
+    "@babel/types": "8.0.6",
     "@clack/prompts": "1.7.0",
     "@electron/asar": "4.2.0",
     "@jridgewell/trace-mapping": "0.3.31",
