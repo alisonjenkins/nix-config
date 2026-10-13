@@ -10,6 +10,7 @@ All times ISO 8601 UTC. Human output goes to stdout, diagnostics to stderr. `--j
 |--------|---------|
 | `--serial <serial>` | Pick the device. Required when more than one aquaero is present (FR-018). |
 | `--hidraw <path>` | Use this node instead of discovery (diagnostics only). |
+| `--lock-file <path>` | Where the lock and the last-operation time are kept (default `/run/aquaero-ctl.lock`). |
 | `--json` | Machine-readable output. |
 | `-v` / `-vv` | More logging on stderr. |
 
@@ -53,7 +54,7 @@ Lists the automatic backups for the device, newest first.
 
 | Code | Meaning |
 |------|---------|
-| 0 | Success, including "already as desired" and "device absent" (the latter prints a warning to stderr) |
+| 0 | Success, including "already as desired" and, for `apply` only, "device absent" (which prints a warning to stderr) |
 | 1 | Unexpected error (message names the operation and inputs) |
 | 2 | Invalid desired state or arguments |
 | 3 | No profile for this firmware, or the device is not an aquaero the tool understands |
@@ -63,7 +64,7 @@ Lists the automatic backups for the device, newest first.
 | 7 | Another instance holds the lock |
 | 10 | Drift found, only with `apply --check --fail-on-drift` |
 
-"Device absent" maps to 0 so a missing device never fails a system switch (FR-015); the warning is the only trace and the module surfaces it in the journal.
+For `apply`, "device absent" maps to 0 so a missing device never fails a system switch (FR-015); the warning is the only trace and the module surfaces it in the journal. For every other command (`dump`, `plan`, `restore`, `show` on a live device) an absent device is exit 1 with "no aquaero is connected", because a command a person runs by hand that silently produces nothing would mislead.
 
 ## Output guarantees
 
