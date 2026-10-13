@@ -229,6 +229,22 @@ impl Profile {
             .ok_or(ProfileError::NoSuchCurve { slot, count })
     }
 
+    /// A source number in words, for showing to the owner.
+    pub fn describe_source(&self, source: u16) -> String {
+        if source == NO_SOURCE {
+            return "none".to_string();
+        }
+        let sensors = usize::from(self.sources.sensor_count);
+        if let Some(n) = (1..=sensors).find(|n| self.sensor_source(*n).ok() == Some(source)) {
+            return format!("sensor {n} (source {source:#06x})");
+        }
+        let curves = usize::from(self.sources.curve_count);
+        if let Some(n) = (1..=curves).find(|n| self.curve_source(*n).ok() == Some(source)) {
+            return format!("curve controller {n} (source {source:#06x})");
+        }
+        format!("source {source:#06x}")
+    }
+
     pub fn fan_settings(
         &self,
         config: &ConfigBytes,

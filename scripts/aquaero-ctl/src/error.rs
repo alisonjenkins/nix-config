@@ -152,6 +152,31 @@ fn describe_mismatch(runs: &[DiffRun]) -> String {
         .join("; ")
 }
 
+/// Why a plan could not be made. Nothing has been written when this occurs.
+#[derive(Debug, Error)]
+pub enum PlanError {
+    #[error("the fan curve is not valid")]
+    Curve {
+        #[source]
+        source: CurveError,
+    },
+
+    #[error("the firmware profile cannot place the settings")]
+    Profile {
+        #[source]
+        source: ProfileError,
+    },
+
+    #[error("curve controller {slot} already drives fan {fan}; v1 will not take it over")]
+    CurveInUse { slot: usize, fan: usize },
+
+    #[error("point {index}: {value} % is above this fan's maximum of {max} %")]
+    PercentAboveFanMaximum { index: usize, value: f64, max: f64 },
+
+    #[error("the fan's maximum ({max} %) is not above the minimum ({min} %)")]
+    NoFanRange { min: f64, max: f64 },
+}
+
 /// A fan curve that must not be written. Each variant names the offending value.
 #[derive(Debug, Error)]
 pub enum CurveError {
