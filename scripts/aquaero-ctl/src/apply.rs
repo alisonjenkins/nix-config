@@ -49,13 +49,23 @@ pub enum ApplyReport {
     },
 }
 
+/// The differences that matter between two configurations: the host-clock
+/// bytes are never kept by the device, so they do not count.
+fn significant_diff(before: &ConfigBytes, after: &ConfigBytes) -> Vec<DiffRun> {
+    let clock = VolatileSet::from_range(identity::CLOCK_OFFSET, identity::CLOCK_LEN);
+    diff(before, after, &clock)
+        .into_iter()
+        .filter(|run| !run.volatile)
+        .collect()
+}
+
 /// What writing `intended` would change. Reads only.
 pub fn preview(
     device: &mut dyn HidDevice,
     intended: &ConfigBytes,
 ) -> Result<Vec<DiffRun>, ApplyError> {
     let current = read_config(device).map_err(|source| ApplyError::Read { source })?;
-    Ok(diff(&current, intended, &VolatileSet::none()))
+    Ok(significant_diff(&current, intended))
 }
 
 pub fn apply_config(
@@ -112,7 +122,7 @@ fn apply_labelled(
     }
 
     let current = read_config(device).map_err(|source| ApplyError::Read { source })?;
-    let changes = diff(&current, intended, &VolatileSet::none());
+    let changes = significant_diff(&current, intended);
     if changes.is_empty() {
         return Ok(ApplyReport::AlreadyApplied);
     }
@@ -150,7 +160,7 @@ fn apply_labelled(
         backup: Box::new(backup.clone()),
         source,
     })?;
-    let mismatch = diff(intended, &read_back, &VolatileSet::none());
+    let mismatch = significant_diff(intended, &read_back);
     if !mismatch.is_empty() {
         return Err(ApplyError::Mismatch {
             backup: Box::new(backup),

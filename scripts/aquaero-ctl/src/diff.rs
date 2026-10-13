@@ -27,6 +27,11 @@ impl VolatileSet {
         )
     }
 
+    /// The `len` positions starting at `start`.
+    pub fn from_range(start: usize, len: usize) -> Self {
+        Self((start..start.saturating_add(len)).collect())
+    }
+
     pub fn contains(&self, offset: usize) -> bool {
         self.0.contains(&offset)
     }

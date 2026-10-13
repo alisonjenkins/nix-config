@@ -140,6 +140,34 @@ fn the_write_is_verified_by_reading_it_back() {
 }
 
 #[test]
+fn the_clock_bytes_the_device_never_keeps_are_not_a_mismatch() {
+    // The real device reads zeros at bytes 3 to 6 whatever was written there.
+    let backups = tempfile::tempdir().unwrap();
+    let (dev, _) = device_holding(config(0x11));
+    let mut dev = dev.with_clock_bytes_cleared();
+    let intended = config_with(0x11, &[(300, 0xaa)]);
+
+    let report = apply_config(&mut dev, &intended, &options(backups.path()), now()).unwrap();
+
+    assert!(matches!(report, ApplyReport::Applied { .. }));
+    assert_eq!(&dev.config().as_slice()[3..7], &[0, 0, 0, 0]);
+    assert_eq!(dev.config().as_slice()[300], 0xaa);
+}
+
+#[test]
+fn a_difference_only_in_the_clock_bytes_counts_as_already_applied() {
+    let backups = tempfile::tempdir().unwrap();
+    let (mut dev, _) = device_holding(config(0x11));
+    let intended = config_with(0x11, &[(3, 9), (4, 9), (5, 9), (6, 9)]);
+
+    let report = apply_config(&mut dev, &intended, &options(backups.path()), now()).unwrap();
+
+    assert!(matches!(report, ApplyReport::AlreadyApplied));
+    assert_eq!(dev.writes_applied(), 0);
+    assert!(backup_files(backups.path()).is_empty());
+}
+
+#[test]
 fn a_preview_reports_the_changes_and_touches_nothing() {
     let backups = tempfile::tempdir().unwrap();
     let (mut dev, _) = device_holding(config(0x11));

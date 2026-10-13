@@ -67,6 +67,7 @@ pub struct OpRecord {
 pub struct FakeDevice {
     path: PathBuf,
     serial: String,
+    clear_clock: bool,
     config: ConfigBytes,
     clock: Arc<ManualClock>,
     ops: Vec<OpRecord>,
@@ -83,6 +84,7 @@ impl FakeDevice {
         Self {
             path: PathBuf::from("/dev/fake-hidraw0"),
             serial: "00000-00000".to_string(),
+            clear_clock: false,
             config,
             clock,
             ops: Vec::new(),
@@ -92,6 +94,32 @@ impl FakeDevice {
             short_read_next: None,
             disconnect_after: None,
             drift_after_write: None,
+        }
+    }
+
+    /// Behave like the real device, which reads zeros at the host-clock bytes
+    /// (3 to 6) whatever was written there.
+    #[must_use]
+    pub fn with_clock_bytes_cleared(mut self) -> Self {
+        self.clear_clock = true;
+        self.clear_clock_bytes();
+        self
+    }
+
+    fn clear_clock_bytes(&mut self) {
+        if !self.clear_clock {
+            return;
+        }
+        let mut bytes = self.config.as_slice().to_vec();
+        for byte in bytes
+            .iter_mut()
+            .skip(crate::identity::CLOCK_OFFSET)
+            .take(crate::identity::CLOCK_LEN)
+        {
+            *byte = 0;
+        }
+        if let Ok(cleared) = ConfigBytes::new(bytes) {
+            self.config = cleared;
         }
     }
 
@@ -231,6 +259,7 @@ impl HidDevice for FakeDevice {
                         path: self.path.clone(),
                         source,
                     })?;
+                self.clear_clock_bytes();
                 self.writes_applied = self.writes_applied.saturating_add(1);
                 Ok(())
             }
