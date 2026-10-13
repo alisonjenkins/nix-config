@@ -6,6 +6,62 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
+/// Failures talking to the device through a [`crate::hid::HidDevice`].
+#[derive(Debug, Error)]
+pub enum HidError {
+    #[error("cannot open {path}")]
+    Open {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("{path}: reading feature report {report_id:#04x} failed")]
+    GetFeature {
+        path: PathBuf,
+        report_id: u8,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("{path}: writing feature report {report_id:#04x} ({len} bytes) failed")]
+    SetFeature {
+        path: PathBuf,
+        report_id: u8,
+        len: usize,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("{path}: feature report {report_id:#04x} was {got} bytes, expected {expected}")]
+    ShortRead {
+        path: PathBuf,
+        report_id: u8,
+        expected: usize,
+        got: usize,
+    },
+
+    #[error("{path}: the report starts with id {got:#04x}, expected {expected:#04x}")]
+    UnexpectedReportId {
+        path: PathBuf,
+        expected: u8,
+        got: u8,
+    },
+
+    #[error("{path}: the device disappeared during {operation}")]
+    Disconnected {
+        path: PathBuf,
+        operation: &'static str,
+    },
+
+    #[error("{path}: the configuration report is not valid")]
+    InvalidConfig {
+        path: PathBuf,
+        #[source]
+        source: SnapshotError,
+    },
+}
+
 /// Failures when building, storing or loading a [`crate::snapshot::ConfigSnapshot`].
 #[derive(Debug, Error)]
 pub enum SnapshotError {
