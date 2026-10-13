@@ -810,10 +810,7 @@ in
       };
     } // {
       # REA: reverse-engineering tools (binaries, Electron/JS apps, runtime).
-      rea = {
-        command = "${pkgs.rea}/bin/rea";
-        args = [ "mcp" ];
-      };
+      rea = import ../rea.nix pkgs;
 
       # Token Savior: structural code navigation + tool-output compaction.
       # Named "token-savior" so the PostToolUse capture matcher's
