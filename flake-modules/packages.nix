@@ -38,5 +38,52 @@ in
         # that breaks the override's patch/npm-deps assumptions shows up in CI.
         llama-cpp-upstream = (pkgsFor system).llama-cpp-upstream;
       };
+
+    # A flake update can move ghidra-bin or jdk21 out of the range REA
+    # accepts (Ghidra 12.1.x, JDK 21+) and the failure only shows when an
+    # agent opens a binary. Runs REA's own doctor, then a real decompile, on
+    # exactly the Ghidra and JDK that programs.rea ships.
+    checks = lib.optionalAttrs (system == "x86_64-linux") {
+      rea-ghidra =
+        let
+          pkgs = pkgsFor system;
+          ghidra = import (self + "/home/programs/rea/ghidra.nix") pkgs;
+        in
+        pkgs.runCommand "rea-ghidra"
+          {
+            nativeBuildInputs = [ pkgs.rea pkgs.jq pkgs.stdenv.cc pkgs.procps ];
+            GHIDRA_INSTALL_DIR = ghidra.installDir;
+            JAVA_HOME = ghidra.javaHome;
+          } ''
+          export HOME="$TMPDIR/home"
+          mkdir -p "$HOME"
+
+          rea doctor --provider ghidra --json > doctor.json || true
+          jq -e '[.scope_checks[] | select(.name | startswith("ghidra"))]
+                 | length > 0 and all(.ok)' doctor.json >/dev/null || {
+            jq '.scope_checks[] | select(.name | startswith("ghidra")) | select(.ok | not)' doctor.json
+            echo "rea doctor rejects the pinned Ghidra or JDK" >&2
+            exit 1
+          }
+
+          cat > hello.c <<'EOF'
+          #include <stdio.h>
+          int main(void) { return puts("rea-ghidra-check"); }
+          EOF
+          cc -O1 -o hello hello.c
+
+          rea decompile "$PWD/hello" main --provider ghidra --json > decompile.json || {
+            cat decompile.json >&2
+            echo "rea decompile failed with the pinned Ghidra and JDK" >&2
+            exit 1
+          }
+          grep -q 'rea-ghidra-check' decompile.json || {
+            cat decompile.json >&2
+            echo "decompiled main does not contain the program's string" >&2
+            exit 1
+          }
+          touch $out
+        '';
+    };
   };
 }
