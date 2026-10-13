@@ -17,12 +17,13 @@ will write it back, so the curve can be set without Windows.
 
 | Fact | Source | Status |
 |------|--------|--------|
-| The whole stored configuration is HID feature report `0x0B`, 2707 (`0xa93`) bytes including the leading id | kernel driver | report id confirmed by the vendor library (`AquaeroSettings.SETTINGS_REPORTID = 11`); the length is unconfirmed |
+| The whole stored configuration is HID feature report `0x0B`, 2707 (`0xa93`) bytes including the leading id | kernel driver | **verified on the device** (2026-10-13): a read returns 2707 bytes starting `0b`, served by the `hidraw` node of the `input2` interface (`/dev/hidraw1` that day) |
 | A second feature report, id `6`, exists for system commands | vendor library | verified in the decompiled source: `SystemControl.SYSTEMCOMMAND_REPORTID = 6`; `SystemCommand` has `SaveSettings = 2`, `Reset = 1`, `LoadProfile = 4`, `FactoryReset = 5` |
 | The kernel driver sends a 7-byte id-6 report after every configuration write | kernel driver | inferred to be a system command, probably save; the bytes and the order are unconfirmed |
-| Per-fan control structs at `0x20c`, `0x220`, `0x234`, `0x248` (20 bytes each); min power at +4, max at +6, control source at +0x10 (big-endian 16 bits) | kernel driver | unverified for this firmware |
+| Per-fan control structs at `0x20c`, `0x220`, `0x234`, `0x248` (20 bytes each); min power at +4, max at +6, control source at +0x10 (big-endian 16 bits) | kernel driver | **struct positions consistent with the device**: channels 1 to 3 are identical (defaults) and channel 4, the configured radiator fans, differs; field meanings inside the struct still unverified |
 | Fan preset power (hundredths of a percent) from `0x55c`, 2 bytes per fan | kernel driver | unverified |
-| Serial: two big-endian 16-bit numbers at `0x07` and `0x09`, shown `NNNNN-NNNNN`; firmware: big-endian 16 bits at `0x0b` | kernel driver | the form matches what the vendor installer shows; the offsets are unverified |
+| Serial at `0x07` and firmware at `0x0b` (kernel driver's offsets) | kernel driver | **wrong for this device**: bytes `0x07..0x0b` are zero in the stored configuration. The serial is the USB serial (`HID_UNIQ`, `21998-56576` form `NNNNN-NNNNN`); the real firmware version is not located yet |
+| Bytes 1 and 2 of the report, big-endian, are the data version: `0x04b0` = 1200 | device | **verified**; equals the vendor library's `VALID_DATAVERSION`. A firmware profile is keyed on it |
 | The vendor library expects aquaero firmware `2104` and data version `1200` | vendor library | verified in the decompiled source (`Aquaero5.VALID_FIRMWARE`, `VALID_DATAVERSION`) |
 | No checksum is needed for the aquaero configuration report | kernel driver | unverified |
 
@@ -101,7 +102,7 @@ Aquastream Ultimate namespaces. The aquaero uses `FanConfiguration` and
 
 | Item | Settled by |
 |------|-----------|
-| Which `hidrawN` carries report 0x0B; the device's real firmware version and serial offsets | reading a snapshot (T025) |
+| The device's real firmware version (not in the stored configuration; probably the status report) | reading the status report (read-only) |
 | Every byte offset and width in the 2707-byte report | snapshot diffs (T029) |
 | The number of curve points; units and resolution of temperature and power | snapshot diffs (T029) |
 | What the fan does when its sensor is lost, and where that is stored | snapshot diffs (T029) |
