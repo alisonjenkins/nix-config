@@ -14,7 +14,7 @@ use crate::diff::{diff, render_text, to_json, VolatileSet};
 use crate::dump::{dump, DumpOptions};
 use crate::error::{DumpError, HidError, LockError, SelectError, SnapshotError};
 use crate::hid::SystemClock;
-use crate::hidraw::HidrawDevice;
+use crate::hidraw::{HidrawDevice, UNKNOWN_SERIAL};
 use crate::lock::{DeviceLock, SpacedDevice};
 use crate::select::{choose, discover};
 use crate::snapshot::ConfigSnapshot;
@@ -248,13 +248,27 @@ fn run_diff(cli: &Cli, a: &Path, b: &Path, baseline: Option<&Path>) -> Result<()
 }
 
 fn run_dump(cli: &Cli, out: &Path, label: &str, redact_serial: bool) -> Result<(), CliError> {
-    let paths: Vec<PathBuf> = match &cli.hidraw {
-        Some(path) => vec![path.clone()],
+    // Each node with the serial its device reports.
+    let paths: Vec<(PathBuf, String)> = match &cli.hidraw {
+        Some(path) => {
+            let serial = discover(&cli.sysfs_root, &cli.dev_dir)
+                .ok()
+                .and_then(|nodes| nodes.into_iter().find(|n| &n.dev_path == path))
+                .and_then(|n| n.serial)
+                .unwrap_or_else(|| UNKNOWN_SERIAL.to_string());
+            vec![(path.clone(), serial)]
+        }
         None => {
             let nodes = discover(&cli.sysfs_root, &cli.dev_dir)
                 .and_then(|nodes| choose(nodes, cli.serial.as_deref()))
                 .map_err(|source| CliError::Select { source })?;
-            nodes.into_iter().map(|n| n.dev_path).collect()
+            nodes
+                .into_iter()
+                .map(|n| {
+                    let serial = n.serial.clone().unwrap_or_else(|| n.device_label());
+                    (n.dev_path, serial)
+                })
+                .collect()
         }
     };
 
@@ -270,10 +284,10 @@ fn run_dump(cli: &Cli, out: &Path, label: &str, redact_serial: bool) -> Result<(
     // Which hidraw node carries the configuration report is not visible in
     // sysfs, so each node of the device is tried until one answers.
     let mut failures = Vec::new();
-    for path in paths {
+    for (path, serial) in paths {
         tracing::debug!(node = %path.display(), "trying hidraw node");
         let device = match HidrawDevice::open(&path) {
-            Ok(device) => device,
+            Ok(device) => device.with_serial(&serial),
             Err(error) => {
                 failures.push(error);
                 continue;

@@ -28,6 +28,10 @@ pub const CONTROL_GAP: Duration = Duration::from_millis(200);
 pub trait HidDevice {
     fn path(&self) -> &Path;
 
+    /// The serial the device reports over USB, `NNNNN-NNNNN`. It is not part
+    /// of the stored configuration.
+    fn serial(&self) -> String;
+
     /// Reads feature report `report_id`; the result starts with that id.
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError>;
 

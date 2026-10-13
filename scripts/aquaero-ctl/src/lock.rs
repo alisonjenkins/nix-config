@@ -138,6 +138,10 @@ impl<D: HidDevice, C: Clock + ?Sized> HidDevice for SpacedDevice<'_, D, C> {
         self.inner.path()
     }
 
+    fn serial(&self) -> String {
+        self.inner.serial()
+    }
+
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {
         self.space()?;
         self.inner.get_feature(report_id, len)

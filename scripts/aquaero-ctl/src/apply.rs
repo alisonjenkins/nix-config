@@ -65,14 +65,14 @@ pub fn restore_config(
 ) -> Result<ApplyReport, RestoreError> {
     let current = read_config(device).map_err(|source| RestoreError::Read { source })?;
 
-    let device_serial = identity::serial(&current);
+    let device_serial = device.serial();
     if snapshot.meta().serial != device_serial {
         return Err(RestoreError::WrongDevice {
             snapshot: snapshot.meta().serial.clone(),
             device: device_serial,
         });
     }
-    let device_firmware = identity::firmware(&current);
+    let device_firmware = identity::data_version(&current);
     if snapshot.meta().firmware != device_firmware {
         return Err(RestoreError::FirmwareMismatch {
             snapshot: snapshot.meta().firmware,
@@ -109,8 +109,8 @@ fn apply_labelled(
     // No backup, no write.
     let backup = ConfigSnapshot::new(
         current.clone(),
-        identity::serial(&current),
-        identity::firmware(&current),
+        device.serial(),
+        identity::data_version(&current),
         now,
         label,
     )

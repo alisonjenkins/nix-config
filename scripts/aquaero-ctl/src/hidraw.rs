@@ -23,6 +23,7 @@ mod sys {
 pub struct HidrawDevice {
     file: File,
     path: PathBuf,
+    serial: String,
 }
 
 impl HidrawDevice {
@@ -38,7 +39,15 @@ impl HidrawDevice {
         Ok(Self {
             file,
             path: path.to_path_buf(),
+            serial: UNKNOWN_SERIAL.to_string(),
         })
+    }
+
+    /// Records the serial found when the node was discovered.
+    #[must_use]
+    pub fn with_serial(mut self, serial: &str) -> Self {
+        self.serial = serial.to_string();
+        self
     }
 
     fn errno_to_error(&self, errno: Errno, operation: &'static str) -> Result<io::Error, HidError> {
@@ -53,9 +62,16 @@ impl HidrawDevice {
     }
 }
 
+/// What `serial()` reports when the node was opened without discovery.
+pub const UNKNOWN_SERIAL: &str = "unknown";
+
 impl HidDevice for HidrawDevice {
     fn path(&self) -> &Path {
         &self.path
+    }
+
+    fn serial(&self) -> String {
+        self.serial.clone()
     }
 
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {

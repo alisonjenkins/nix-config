@@ -4,19 +4,16 @@ use std::path::PathBuf;
 
 use crate::error::DumpError;
 use crate::hid::{read_config, HidDevice};
-use crate::identity::{self, SERIAL_OFFSET};
+use crate::identity;
 use crate::snapshot::{ConfigSnapshot, SnapshotPaths};
 use crate::timestamp::UtcTimestamp;
-
-/// How many bytes the serial number occupies in the configuration.
-const SERIAL_LEN: usize = 4;
 
 #[derive(Debug, Clone)]
 pub struct DumpOptions {
     pub out_dir: PathBuf,
     pub label: String,
-    /// Hide the serial in the metadata and zero it in the bytes, so the
-    /// snapshot can be committed.
+    /// Hide the serial in the metadata so the snapshot can be committed. The
+    /// serial is not part of the stored bytes.
     pub redact_serial: bool,
 }
 
@@ -31,15 +28,12 @@ pub fn dump(
 
     let mut snapshot = ConfigSnapshot::new(
         bytes.clone(),
-        identity::serial(&bytes),
-        identity::firmware(&bytes),
+        device.serial(),
+        identity::data_version(&bytes),
         now,
         &options.label,
     );
     if options.redact_serial {
-        snapshot
-            .redact_range(SERIAL_OFFSET, SERIAL_LEN)
-            .map_err(|source| DumpError::Save { source })?;
         snapshot.redact_serial();
     }
 

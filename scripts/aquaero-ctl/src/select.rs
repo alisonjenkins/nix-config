@@ -26,7 +26,7 @@ pub struct HidrawNode {
 
 impl HidrawNode {
     /// What names this node's physical device: its serial, else its USB port.
-    fn device_label(&self) -> String {
+    pub fn device_label(&self) -> String {
         match &self.serial {
             Some(serial) => serial.clone(),
             None => self

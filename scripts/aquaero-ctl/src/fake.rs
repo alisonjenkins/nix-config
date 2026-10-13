@@ -66,6 +66,7 @@ pub struct OpRecord {
 #[derive(Debug)]
 pub struct FakeDevice {
     path: PathBuf,
+    serial: String,
     config: ConfigBytes,
     clock: Arc<ManualClock>,
     ops: Vec<OpRecord>,
@@ -81,6 +82,7 @@ impl FakeDevice {
     pub fn new(config: ConfigBytes, clock: Arc<ManualClock>) -> Self {
         Self {
             path: PathBuf::from("/dev/fake-hidraw0"),
+            serial: "00000-00000".to_string(),
             config,
             clock,
             ops: Vec::new(),
@@ -91,6 +93,13 @@ impl FakeDevice {
             disconnect_after: None,
             drift_after_write: None,
         }
+    }
+
+    /// The serial this device reports.
+    #[must_use]
+    pub fn with_serial(mut self, serial: &str) -> Self {
+        self.serial = serial.to_string();
+        self
     }
 
     pub fn inject(&mut self, fault: Fault) {
@@ -164,6 +173,10 @@ impl FakeDevice {
 impl HidDevice for FakeDevice {
     fn path(&self) -> &Path {
         &self.path
+    }
+
+    fn serial(&self) -> String {
+        self.serial.clone()
     }
 
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {

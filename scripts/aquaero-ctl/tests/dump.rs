@@ -13,22 +13,20 @@ use aquaero_ctl::dump::{dump, DumpOptions};
 use aquaero_ctl::error::{DumpError, HidError, SnapshotError};
 use aquaero_ctl::fake::{FakeDevice, Fault, ManualClock, OpKind};
 use aquaero_ctl::hid::CTRL_REPORT_ID;
-use aquaero_ctl::identity::{firmware, serial, FIRMWARE_OFFSET, SERIAL_OFFSET};
+use aquaero_ctl::identity::{data_version, DATA_VERSION_OFFSET};
 use aquaero_ctl::snapshot::{ConfigBytes, ConfigSnapshot, CONFIG_LEN};
 use aquaero_ctl::timestamp::UtcTimestamp;
 
-/// A configuration whose serial is 12345-54321 and firmware 1036.
+/// A configuration with data version 1200, as read from the real device.
 fn config() -> ConfigBytes {
     let mut bytes: Vec<u8> = (0..CONFIG_LEN).map(|i| (i % 251) as u8 | 1).collect();
     bytes[0] = CTRL_REPORT_ID;
-    bytes[SERIAL_OFFSET..SERIAL_OFFSET + 2].copy_from_slice(&12345u16.to_be_bytes());
-    bytes[SERIAL_OFFSET + 2..SERIAL_OFFSET + 4].copy_from_slice(&54321u16.to_be_bytes());
-    bytes[FIRMWARE_OFFSET..FIRMWARE_OFFSET + 2].copy_from_slice(&1036u16.to_be_bytes());
+    bytes[DATA_VERSION_OFFSET..DATA_VERSION_OFFSET + 2].copy_from_slice(&1200u16.to_be_bytes());
     ConfigBytes::new(bytes).unwrap()
 }
 
 fn device() -> FakeDevice {
-    FakeDevice::new(config(), Arc::new(ManualClock::new()))
+    FakeDevice::new(config(), Arc::new(ManualClock::new())).with_serial("12345-54321")
 }
 
 fn options(dir: &std::path::Path) -> DumpOptions {
@@ -40,18 +38,8 @@ fn options(dir: &std::path::Path) -> DumpOptions {
 }
 
 #[test]
-fn the_serial_is_two_zero_padded_numbers() {
-    assert_eq!(serial(&config()), "12345-54321");
-
-    let mut bytes = vec![0u8; CONFIG_LEN];
-    bytes[SERIAL_OFFSET + 1] = 7;
-    bytes[SERIAL_OFFSET + 3] = 42;
-    assert_eq!(serial(&ConfigBytes::new(bytes).unwrap()), "00007-00042");
-}
-
-#[test]
-fn the_firmware_is_a_big_endian_number() {
-    assert_eq!(firmware(&config()), 1036);
+fn the_data_version_is_the_big_endian_number_after_the_report_id() {
+    assert_eq!(data_version(&config()), 1200);
 }
 
 #[test]
@@ -65,7 +53,7 @@ fn a_dump_reads_back_as_the_device_configuration() {
 
     assert_eq!(snap.bytes(), &config());
     assert_eq!(snap.meta().serial, "12345-54321");
-    assert_eq!(snap.meta().firmware, 1036);
+    assert_eq!(snap.meta().firmware, 1200);
     assert_eq!(snap.meta().taken_at, "2023-11-14T22:13:20Z");
     assert_eq!(snap.meta().label, "baseline");
 }
@@ -83,7 +71,7 @@ fn a_dump_never_writes_to_the_device() {
 }
 
 #[test]
-fn redacting_hides_the_serial_in_both_the_metadata_and_the_bytes() {
+fn redacting_hides_the_serial_and_leaves_the_bytes_alone() {
     let dir = tempfile::tempdir().unwrap();
     let mut dev = device();
     let mut opts = options(dir.path());
@@ -93,21 +81,7 @@ fn redacting_hides_the_serial_in_both_the_metadata_and_the_bytes() {
     let snap = ConfigSnapshot::read(&paths.bin).unwrap();
 
     assert_eq!(snap.meta().serial, "REDACTED");
-    assert_eq!(
-        &snap.bytes().as_slice()[SERIAL_OFFSET..SERIAL_OFFSET + 4],
-        &[0, 0, 0, 0]
-    );
-
-    // Everything else is untouched, so the redacted file still diffs cleanly.
-    let original = config();
-    assert_eq!(
-        &snap.bytes().as_slice()[..SERIAL_OFFSET],
-        &original.as_slice()[..SERIAL_OFFSET]
-    );
-    assert_eq!(
-        &snap.bytes().as_slice()[SERIAL_OFFSET + 4..],
-        &original.as_slice()[SERIAL_OFFSET + 4..]
-    );
+    assert_eq!(snap.bytes(), &config());
 }
 
 #[test]

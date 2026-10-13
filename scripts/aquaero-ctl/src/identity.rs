@@ -1,31 +1,23 @@
-//! Who the device says it is, read from its configuration report.
+//! What the stored configuration says about itself.
 //!
-//! The offsets are the kernel driver's (`aquacomputer_d5next`). They are
-//! unverified for this firmware until the hardware tasks confirm them; if one
-//! is wrong the firmware reads as unknown and nothing is written.
+//! The report starts `0b 04 b0`: after the report id comes a big-endian 16-bit
+//! number, 1200 on the one device read so far. That matches the data version
+//! the vendor library expects, so it is the version a firmware profile is
+//! keyed on. The serial is not in the report; it comes from the device node
+//! (`HidDevice::serial`). The firmware's own version number has not been
+//! located yet.
 
 use crate::snapshot::ConfigBytes;
 
-/// The serial is two big-endian 16-bit numbers at 0x07 and 0x09, shown as
-/// `NNNNN-NNNNN` (the vendor's installer shows the same form).
-pub const SERIAL_OFFSET: usize = 0x07;
+/// Offset of the big-endian 16-bit data version.
+pub const DATA_VERSION_OFFSET: usize = 0x01;
 
-/// The firmware version is a big-endian 16-bit number at 0x0b.
-pub const FIRMWARE_OFFSET: usize = 0x0b;
-
-/// `12345-54321`.
-pub fn serial(config: &ConfigBytes) -> String {
-    let first = be16(config, SERIAL_OFFSET);
-    let second = be16(config, SERIAL_OFFSET.saturating_add(2));
-    format!("{first:05}-{second:05}")
-}
-
-pub fn firmware(config: &ConfigBytes) -> u32 {
-    u32::from(be16(config, FIRMWARE_OFFSET))
-}
-
-fn be16(config: &ConfigBytes, offset: usize) -> u16 {
+/// The configuration data version, or 0 if the report is too short.
+pub fn data_version(config: &ConfigBytes) -> u32 {
     let bytes = config.as_slice();
     let at = |i: usize| bytes.get(i).copied().unwrap_or(0);
-    u16::from_be_bytes([at(offset), at(offset.saturating_add(1))])
+    u32::from(u16::from_be_bytes([
+        at(DATA_VERSION_OFFSET),
+        at(DATA_VERSION_OFFSET.saturating_add(1)),
+    ]))
 }
