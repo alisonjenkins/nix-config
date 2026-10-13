@@ -22,6 +22,7 @@ in
       # hash of their dependencies, so a bump can break the build while still
       # evaluating. Exposed here so the PR check builds them when they change.
       cavemem = (pkgsFor system).cavemem;
+      rea = (pkgsFor system).rea;
       sift = (pkgsFor system).sift;
       memory-recall = (pkgsFor system).memory-recall;
       token-tools = (pkgsFor system).token-tools;

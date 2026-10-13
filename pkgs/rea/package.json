@@ -1,0 +1,53 @@
+{
+  "name": "rea-agents",
+  "version": "6.4.0",
+  "license": "MIT",
+  "type": "module",
+  "imports": {
+    "#javascript-analysis-worker": "./dist/composition/javascriptAnalysisWorkerProcess.js"
+  },
+  "bin": {
+    "rea": "scripts/rea.mjs",
+    "rea-agents": "scripts/rea.mjs"
+  },
+  "engines": {
+    "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
+  },
+  "dependencies": {
+    "@babel/parser": "8.0.4",
+    "@babel/types": "8.0.4",
+    "@clack/prompts": "1.7.0",
+    "@electron/asar": "4.2.0",
+    "@jridgewell/trace-mapping": "0.3.31",
+    "@lydell/node-pty": "1.1.0",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@xmldom/xmldom": "0.9.12",
+    "@xterm/addon-serialize": "0.14.0",
+    "@xterm/headless": "6.0.0",
+    "@zip.js/zip.js": "2.15.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "canonicalize": "3.0.0",
+    "cross-spawn": "7.0.6",
+    "diff": "9.0.0",
+    "har-schema": "2.0.0",
+    "ignore": "7.0.6",
+    "incur": "0.6.1",
+    "isomorphic-git": "1.38.7",
+    "jsonc-parser": "3.3.1",
+    "lossless-json": "4.3.1",
+    "parse5": "8.0.1",
+    "pino": "10.4.0",
+    "playwright-core": "1.58.2",
+    "plist": "5.0.0",
+    "semver": "7.8.5",
+    "smol-toml": "1.9.0",
+    "stream-json": "3.7.0",
+    "write-file-atomic": "7.0.0",
+    "ws": "8.21.0",
+    "zod": "4.4.3",
+    "evmole": "0.9.3",
+    "yaml": "2.9.0"
+  }
+}
