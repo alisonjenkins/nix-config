@@ -34,9 +34,14 @@ name: PR check
 
 on:
   pull_request:
+  # update.yaml dispatches this on the nightly lock branch: a PR opened with
+  # the built-in GITHUB_TOKEN never starts `pull_request` workflows, but a
+  # dispatch made with that token does, and the `flake-check` check it
+  # reports on the branch head satisfies branch protection for the PR.
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
