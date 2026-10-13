@@ -17,6 +17,11 @@ count = 4
 min_offset = 0x04    # u16, 0.01 % (fan 4 default 0x0dac = 35.00 %)
 max_offset = 0x06    # u16, 0.01 %
 source_offset = 0x10 # u16, a source number (see [sources]); 0xffff = none
+# Flags byte (the vendor's FanConfiguration.SettingsType: HoldMinPower = 1,
+# LimitCurrent = 2, UseStartburst = 4). Switching "Hold minimum power" on in
+# Aquasuite changed only this byte of fan 4 (0x0256), 0x00 -> 0x01.
+settings_offset = 0x0e
+hold_min_power_flag = 0x01
 
 # Four curve controllers, each: source u16, start temperature u16 (0.01 degC),
 # sixteen temperatures u16 (0.01 degC), sixteen outputs u16 (0.01 %).

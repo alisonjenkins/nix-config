@@ -26,6 +26,8 @@ struct FanLayout {
     min_offset: usize,
     max_offset: usize,
     source_offset: usize,
+    settings_offset: usize,
+    hold_min_power_flag: u8,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -76,6 +78,8 @@ pub struct FanOffsets {
     pub min: usize,
     pub max: usize,
     pub source: usize,
+    /// The flags byte (hold minimum power, and others this tool leaves alone).
+    pub settings: usize,
 }
 
 /// Where one curve controller's fields sit in the configuration.
@@ -95,6 +99,9 @@ pub struct FanSettings {
     pub source: u16,
     pub min_hundredths: u16,
     pub max_hundredths: u16,
+    /// With this on, the fan stays at its minimum power instead of switching
+    /// off when the controller asks for less.
+    pub hold_min_power: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -189,7 +196,13 @@ impl Profile {
             min: at(layout.min_offset)?,
             max: at(layout.max_offset)?,
             source: at(layout.source_offset)?,
+            settings: at(layout.settings_offset)?,
         })
+    }
+
+    /// The bit that means "hold minimum power" in the fan's flags byte.
+    pub fn hold_min_power_flag(&self) -> u8 {
+        self.fan.hold_min_power_flag
     }
 
     /// Absolute positions of curve controller `slot` (1-based).
@@ -255,6 +268,7 @@ impl Profile {
             source: be16(config, offsets.source)?,
             min_hundredths: be16(config, offsets.min)?,
             max_hundredths: be16(config, offsets.max)?,
+            hold_min_power: byte(config, offsets.settings)? & self.fan.hold_min_power_flag != 0,
         })
     }
 
@@ -336,6 +350,14 @@ fn source_number(base: u16, index: usize, count: usize) -> Option<u16> {
     }
     let zero_based = u16::try_from(index.checked_sub(1)?).ok()?;
     base.checked_add(zero_based)
+}
+
+fn byte(config: &ConfigBytes, offset: usize) -> Result<u8, ProfileError> {
+    config
+        .as_slice()
+        .get(offset)
+        .copied()
+        .ok_or(ProfileError::OutOfRange { offset })
 }
 
 fn be16(config: &ConfigBytes, offset: usize) -> Result<u16, ProfileError> {

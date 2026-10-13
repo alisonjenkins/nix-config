@@ -72,6 +72,29 @@ fn fan_four_settings_after_the_reflash() {
 }
 
 #[test]
+fn hold_minimum_power_is_a_flag_in_the_fans_settings_byte() {
+    let p = profile();
+    // Off in the factory defaults, on after it was switched on in Aquasuite
+    // (the only byte that differed was 0x0256, fan 4's struct + 0x0e).
+    assert!(
+        !p.fan_settings(&fixture("curve-controller-1.bin"), 4)
+            .unwrap()
+            .hold_min_power
+    );
+    assert!(
+        p.fan_settings(&fixture("hold-minimum-power-on.bin"), 4)
+            .unwrap()
+            .hold_min_power
+    );
+    assert!(
+        !p.fan_settings(&fixture("hold-minimum-power-on.bin"), 3)
+            .unwrap()
+            .hold_min_power
+    );
+    assert_eq!(p.fan_offsets(4).unwrap().settings, 0x256);
+}
+
+#[test]
 fn a_fan_that_does_not_exist_is_refused() {
     let p = profile();
     let config = fixture("after-reflash.bin");
