@@ -19,10 +19,10 @@ will write it back, so the curve can be set without Windows.
 |------|--------|--------|
 | The whole stored configuration is HID feature report `0x0B`, 2707 (`0xa93`) bytes including the leading id | kernel driver | **verified on the device** (2026-10-13): a read returns 2707 bytes starting `0b`, served by the `hidraw` node of the `input2` interface (`/dev/hidraw1` that day) |
 | A second feature report, id `6`, exists for system commands | vendor library | verified in the decompiled source: `SystemControl.SYSTEMCOMMAND_REPORTID = 6`; `SystemCommand` has `SaveSettings = 2`, `Reset = 1`, `LoadProfile = 4`, `FactoryReset = 5` |
-| The kernel driver sends a 7-byte id-6 report after every configuration write | kernel driver | inferred to be a system command, probably save; the bytes and the order are unconfirmed |
-| Per-fan control structs at `0x20c`, `0x220`, `0x234`, `0x248` (20 bytes each); min power at +4, max at +6, control source at +0x10 (big-endian 16 bits) | kernel driver | **struct positions consistent with the device**: channels 1 to 3 are identical (defaults) and channel 4, the configured radiator fans, differs; field meanings inside the struct still unverified |
-| Fan preset power (hundredths of a percent) from `0x55c`, 2 bytes per fan | kernel driver | unverified |
-| Serial at `0x07` and firmware at `0x0b` (kernel driver's offsets) | kernel driver | **wrong for this device**: bytes `0x07..0x0b` are zero in the stored configuration. The serial is the USB serial (`HID_UNIQ`, `21998-56576` form `NNNNN-NNNNN`); the real firmware version is not located yet |
+| After each configuration write the host sends a 7-byte id-6 report, `06 00 02 00 00 00 00`, about 4.1 s after the 2707-byte report 0x0B | USB capture of a save (2026-10-13) | **observed** in one save, seen twice (finding 4). That the value 2 is `SaveSettings` is **inferred** |
+| Per-fan control structs at `0x20c`, `0x220`, `0x234`, `0x248` (20 bytes each); min power at +4, max at +6, control source at +0x10 (big-endian 16 bits) | kernel driver | **struct positions consistent with the device**: before the firmware reflash channel 4, the configured radiator fans, differed from channels 1 to 3; after it all four structs held the same defaults (**observed**, finding 3). Field meanings inside the struct still unverified |
+| Fan preset power, big-endian 16 bits, hundredths of a percent; preset 1 at `0x055c` (80% = `0x1f40`, 100% = `0x2710`) | USB capture and Aquasuite (2026-10-13) | **observed** for preset 1 (finding 5), matching the kernel driver's base `0x55c`; presets 2 to 4 unverified |
+| Serial at `0x07` and firmware at `0x0b` (kernel driver's offsets) | kernel driver | **wrong for this device**: bytes `0x07..0x0b` are zero in the stored configuration. The serial is the USB serial (`HID_UNIQ`, `21998-56576` form `NNNNN-NNNNN`); the firmware is 2104 on Aquasuite's System page (**observed**, finding 1); no firmware field is located in the stored configuration |
 | Bytes 1 and 2 of the report, big-endian, are the data version: `0x04b0` = 1200 | device | **verified**; equals the vendor library's `VALID_DATAVERSION`. A firmware profile is keyed on it |
 | The vendor library expects aquaero firmware `2104` and data version `1200` | vendor library | verified in the decompiled source (`Aquaero5.VALID_FIRMWARE`, `VALID_DATAVERSION`) |
 | No checksum is needed for the aquaero configuration report | kernel driver | unverified |
@@ -98,13 +98,77 @@ aquaero's settings model. They belong to the Quadro, Octo, D5 Next and
 Aquastream Ultimate namespaces. The aquaero uses `FanConfiguration` and
 `CurveControllerConfiguration`.
 
+## Findings from the first captured save (2026-10-13)
+
+Each finding is marked **observed** (seen on the real device, in the USB capture,
+or on Aquasuite's screens) or **inferred** (not confirmed).
+
+1. **Device model.** Aquasuite's System page shows "aquaero 5 PRO", firmware
+   2104, serial 21998-56576, and "in standby mode, no 12 V power supply
+   detected" (**observed**).
+2. **Firmware image.** The firmware 2104 image (`aquaero5`, bootloader 100,
+   hardware 5600, 659456 bytes) is stored in Aquasuite's SQLite database, table
+   `firmware`, id 1 (**observed**). A copy is at
+   `/home/ali/vms/aquasuite/backups/firmware/aquaero5-fw2104-bl100-hw5600.bin`,
+   sha256 `97bde47308e022edd3620e48c6d1d680b3cd6313909d26fbb7305c5469e1566d`.
+   A copy of the whole database is next to it. The image starts with 0xff bytes,
+   so it is a raw flash image (**observed**). The chip cannot be read back, so
+   this file is the one to reflash from (**observed**).
+3. **Reflash and reset.** Aquasuite's "Update firmware now" reflashed 2104 over
+   2104. It completed at 100%, and Aquasuite then asked to restart (**observed**).
+   Afterwards the stored configuration differed from the dump taken before: 106
+   bytes in 29 places, header unchanged (**observed**). All four fan structs hold
+   the same defaults, all fans have control source 0x005c, and Aquasuite's
+   Controllers page shows factory defaults: "Preset fan" at 100% driving fans 1
+   to 4, "Preset relay", "Power outputs" (**observed**). Before the flash, fan 4
+   was named "Radiator Fans" and driven by "Preset value 4" at 100%
+   (**observed**). Whether the flash or Aquasuite's restart did the reset is
+   unknown.
+4. **The save sequence.** Captured with usbmon on the host while the Windows VM
+   held the device. The sequence was seen twice, 28 s apart (the preset went
+   from 100% to 80%, then back to 100%) (**observed**). Each save is one
+   SET_FEATURE of report 0x0B, 2707 bytes (the whole configuration), then about
+   4.1 s later one SET_FEATURE of report 0x06, 7 bytes: `06 00 02 00 00 00 00`
+   (**observed**). Report 6 with value 2 matches the vendor library's
+   `SystemCommand.SaveSettings = 2` (the link is **inferred**). The 4 s gap is
+   part of the sequence to reproduce.
+5. **Preset power offset.** Preset 1 ("Preset fan") power is at offset 0x055c,
+   big-endian 16 bits, in hundredths of a percent: 80% = 0x1f40, 100% = 0x2710
+   (**observed**). This matches the kernel driver's preset base 0x55c.
+6. **Clock bytes.** Bytes 3 to 6 of the written configuration are a big-endian
+   32-bit seconds counter: 0x21722ac2, then 0x21722ade 28 s later (**observed**).
+   The device returns zeros there when read (**observed**). Aquasuite also sends
+   a 7-byte report `06 90 88` followed by the same 4-byte counter at startup and
+   later: 0x21722a54 at 47 s and 0x21722a77 at 83 s into the capture
+   (**observed**). That this is a host clock sync is **inferred**, unconfirmed.
+   A tool that writes should leave bytes 3 to 6 as read (zeros) and test that the
+   device accepts it.
+7. **Eleven bytes off by one.** Eleven bytes differ by one between what the
+   device returned on read after the reflash and what Aquasuite wrote
+   (**observed**). At offsets 0x062d, 0x063b, 0x0671, 0x067f, 0x06b5, 0x06c3,
+   0x06f9 and 0x0707 the device has 0x9e or 0xf6 where Aquasuite wrote 0x9d or
+   0xf5. At offsets 0x0748, 0x075d and 0x0772 the device has 0x0a where
+   Aquasuite wrote 0x09. The same bytes changed by one in the opposite direction
+   at the reflash. Whether the device keeps what is written or recomputes it is
+   unknown until a dump after a write is compared. Until then, a read-back check
+   must not assume the written bytes come back at these positions.
+8. **Other startup reports.** Aquasuite sends at startup report 0x04 (2114
+   bytes) and three report 0x09 writes (1038 bytes each, beginning
+   `09 01 00 09 40`, then `... 50` and `... 60`) (**observed**). Purpose unknown;
+   not needed for fan control.
+9. **Capture method.** usbmon needs root (**observed**). The capture used
+   `sudo nix shell nixpkgs#wireshark-cli -c dumpcap -i usbmon1 -w - > FILE`. The
+   shell redirect writes the file as the user, because dumpcap drops privileges.
+   It was analysed with the tshark fields `usb.data_len` and
+   `usb.data_fragment`. File: `/home/ali/vms/aquasuite/captures/save1.pcapng`.
+
 ## Open items
 
 | Item | Settled by |
 |------|-----------|
-| The device's real firmware version (not in the stored configuration; probably the status report) | reading the status report (read-only) |
 | Every byte offset and width in the 2707-byte report | snapshot diffs (T029) |
-| The number of curve points; units and resolution of temperature and power | snapshot diffs (T029) |
+| Curve controller layout: number of curve points, units and resolution of temperature and power; curve-controller saves not yet captured | snapshot diffs (T029) and a USB capture of a curve save (T030) |
 | What the fan does when its sensor is lost, and where that is stored | snapshot diffs (T029) |
-| The exact bytes of the id-6 report and whether it is sent after the id-11 write | USB capture of a save (T030) |
 | Why `pwm4` writes through the driver did not change fan 4's speed | experiment (T028) |
+| (a) Whether the device keeps the bytes Aquasuite wrote at the eleven off-by-one positions (finding 7), or recomputes them | a dump after a write, compared with what was written (T029) |
+| (b) Clock bytes 3 to 6 of the written configuration (finding 6): whether the device accepts zeros there | a write with zeros in those bytes, then a read-back check (T029) |
