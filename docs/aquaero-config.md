@@ -149,9 +149,11 @@ or on Aquasuite's screens) or **inferred** (not confirmed).
    0x06f9 and 0x0707 the device has 0x9e or 0xf6 where Aquasuite wrote 0x9d or
    0xf5. At offsets 0x0748, 0x075d and 0x0772 the device has 0x0a where
    Aquasuite wrote 0x09. The same bytes changed by one in the opposite direction
-   at the reflash. Whether the device keeps what is written or recomputes it is
-   unknown until a dump after a write is compared. Until then, a read-back check
-   must not assume the written bytes come back at these positions.
+   at the reflash. **Settled (observed, dump taken after Aquasuite's write):**
+   the device keeps exactly what was written, including these eleven bytes
+   (0x9d, 0xf5, 0x09). The only difference between that dump and the bytes
+   Aquasuite wrote is bytes 3 to 6, which read as zeros. So a read-back check
+   compares everything except bytes 3 to 6, and nothing else needs excusing.
 8. **Other startup reports.** Aquasuite sends at startup report 0x04 (2114
    bytes) and three report 0x09 writes (1038 bytes each, beginning
    `09 01 00 09 40`, then `... 50` and `... 60`) (**observed**). Purpose unknown;
@@ -170,5 +172,4 @@ or on Aquasuite's screens) or **inferred** (not confirmed).
 | Curve controller layout: number of curve points, units and resolution of temperature and power; curve-controller saves not yet captured | snapshot diffs (T029) and a USB capture of a curve save (T030) |
 | What the fan does when its sensor is lost, and where that is stored | snapshot diffs (T029) |
 | Why `pwm4` writes through the driver did not change fan 4's speed | experiment (T028) |
-| (a) Whether the device keeps the bytes Aquasuite wrote at the eleven off-by-one positions (finding 7), or recomputes them | a dump after a write, compared with what was written (T029) |
-| (b) Clock bytes 3 to 6 of the written configuration (finding 6): whether the device accepts zeros there | a write with zeros in those bytes, then a read-back check (T029) |
+| Clock bytes 3 to 6 of the written configuration (finding 6): whether the device accepts zeros there | a write with zeros in those bytes, then a read-back check (T029) |
