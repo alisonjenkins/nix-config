@@ -62,6 +62,30 @@ pub enum HidError {
     },
 }
 
+/// Failures finding the device under `/sys/class/hidraw`.
+#[derive(Debug, Error)]
+pub enum SelectError {
+    /// No aquaero is connected. Callers decide whether that is an error.
+    #[error("no aquaero is connected")]
+    Absent,
+
+    #[error("more than one aquaero is connected ({}); pick one with --serial", devices.join(", "))]
+    Ambiguous { devices: Vec<String> },
+
+    #[error("no aquaero with serial {wanted}; connected: {}", present.join(", "))]
+    SerialNotFound {
+        wanted: String,
+        present: Vec<String>,
+    },
+
+    #[error("cannot read {path}")]
+    Sysfs {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+}
+
 /// Failures taking the device lock or spacing control operations.
 #[derive(Debug, Error)]
 pub enum LockError {
