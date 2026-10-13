@@ -5,6 +5,7 @@ pub mod dump;
 pub mod error;
 pub mod fake;
 pub mod hid;
+pub mod hidraw;
 pub mod identity;
 pub mod lock;
 pub mod select;
