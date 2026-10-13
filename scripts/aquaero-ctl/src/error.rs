@@ -152,6 +152,56 @@ fn describe_mismatch(runs: &[DiffRun]) -> String {
         .join("; ")
 }
 
+/// A fan curve that must not be written. Each variant names the offending value.
+#[derive(Debug, Error)]
+pub enum CurveError {
+    #[error("fan {fan} is not supported; v1 drives fan 4 only")]
+    FanNotSupported { fan: usize },
+
+    #[error("temperature sensor {sensor} is not supported; v1 uses sensor 1 only")]
+    SensorNotSupported { sensor: usize },
+
+    #[error("{what} is {value}, which is not a number")]
+    NotFinite { what: &'static str, value: f64 },
+
+    #[error("the minimum percent {value} is outside 0 to 100")]
+    MinPercentOutOfRange { value: f64 },
+
+    #[error("a curve needs at least 2 points, got {count}")]
+    TooFewPoints { count: usize },
+
+    #[error("the device holds at most {max} points, got {count}")]
+    TooManyPoints { count: usize, max: usize },
+
+    #[error("point {index}: temperature {value} is outside 0 to 100")]
+    TemperatureOutOfRange { index: usize, value: f64 },
+
+    #[error("point {index}: percent {value} is outside 0 to 100")]
+    PercentOutOfRange { index: usize, value: f64 },
+
+    #[error("point {index}: percent {value} is below the minimum {min}")]
+    PercentBelowMinimum { index: usize, value: f64, min: f64 },
+
+    #[error(
+        "point {index}: temperature {value} does not rise above the previous point's {previous}"
+    )]
+    TemperaturesNotIncreasing {
+        index: usize,
+        previous: f64,
+        value: f64,
+    },
+
+    #[error("point {index}: percent {value} is below the previous point's {previous}")]
+    PercentDecreases {
+        index: usize,
+        previous: f64,
+        value: f64,
+    },
+
+    #[error("the points are too close together to make {count} distinct points from them")]
+    CannotExpand { count: usize },
+}
+
 /// Failures loading or reading a firmware profile.
 #[derive(Debug, Error)]
 pub enum ProfileError {
