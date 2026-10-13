@@ -98,6 +98,57 @@ aquaero's settings model. They belong to the Quadro, Octo, D5 Next and
 Aquastream Ultimate namespaces. The aquaero uses `FanConfiguration` and
 `CurveControllerConfiguration`.
 
+## Controller layout (observed 2026-10-13)
+
+Offsets are into the 2707-byte report 0x0B, including its leading id byte.
+Multi-byte values are big-endian. Temperatures are in 0.01 °C and outputs in
+0.01 %.
+
+- **Method** (observed). Two dumps were taken, before and after Aquasuite (in the
+  Windows VM) added "Curve controller 1", set its data source to Sensor 1, set its
+  startup temperature to 31.7 °C and changed its third curve point's output from
+  2.8 % to 3.6 %. The diff was five bytes: 0x061c..0x061f (`ff ff 0b b8` ->
+  `00 00 0c 62`) and 0x0645 (0x18 -> 0x68).
+- **Curve controller array** (observed). Four slots with a stride of 0x44 (68)
+  bytes, at 0x061c, 0x0660, 0x06a4 and 0x06e8; the array ends at 0x072c. The four
+  slots were identical default records. Slot layout:
+  - +0x00: source, u16. 0xffff = no data source; Sensor 1 = 0x0000.
+  - +0x02: startup temperature, u16. Default 0x0bb8 = 30.00 °C; 0x0c62 = 31.70 °C.
+  - +0x04: sixteen temperatures, u16 each, ascending. Default 0x0a8c = 27.00 °C
+    up to 0x0fa0 = 40.00 °C.
+  - +0x24: sixteen outputs, u16 each. Default 0 up to 0x2710 = 100.00 %. The third
+    output changed from 0x0118 (2.80 %) to 0x0168 (3.60 %) at 0x0645.
+
+  A curve therefore has exactly 16 points.
+- **Set-point controller array** (layout observed only as unchanged defaults; the
+  role is inferred from Aquasuite's controller types). Eight records of 16 bytes
+  from 0x059c: u16 source (0xffff), u16 target 0x0dac (35.00 °C), then 12 bytes
+  `05 78 04 b0 00 00 00 28 00 14 00 01`. The meanings of the 12 bytes are unknown.
+- **Preset controllers** (observed). The u16 power values from 0x055c (0x2710 =
+  100.00 % each) are the preset controllers' power (see finding 5).
+- **Two-point controller array** (inferred, unverified). Records from 0x072c with a
+  repeating pattern beginning `00 0f ff 0f ff 07 d0 0f ff 0f ff 00 00 09 c4 0f a0
+  02 09`. Probably the two-point controllers, since Aquasuite offers a "Two point
+  controller" type.
+- **Save behaviour** (observed). Aquasuite saves by itself shortly after a change:
+  a save icon appears beside the aquaero entry in its sidebar while a change is
+  pending, then disappears. One edit therefore produces one whole-configuration
+  write.
+- **Fan structs** (observed). The four per-fan structs at 0x020c, 0x0220, 0x0234
+  and 0x0248 are identical after the factory reset. Field meanings beyond the
+  kernel driver's min, max and source offsets are not yet verified.
+- **Source numbering** (read from the vendor library's `SourceIndex` constants,
+  `AquaComputerServiceLib.decompiled.cs` lines 87987 to 88000 and 88186 to 88198;
+  matches the values seen on the device: Sensor 1 = 0, Preset 1 = 0x5c, preset 4
+  = 0x5f). The 16-bit source in a fan struct or a controller record is a base
+  plus a 0-based index: temperature sensors 0..63 (base 0), set-point controllers
+  64..71 (base 0x40), two-point controllers 72..87 (base 0x48), curve controllers
+  88..91 (base 0x58), preset values 92..123 (base 0x5c), RGB controllers 124..127
+  (base 0x7c). So a fan driven by Curve controller 1 should hold 0x0058
+  (**inferred** from the base plus index rule; not yet written to the device).
+  Software sensors, fan amplifiers and flow sensors are not in the readable
+  constants. The two-point controller array has 16 slots, not 4 or 8.
+
 ## Findings from the first captured save (2026-10-13)
 
 Each finding is marked **observed** (seen on the real device, in the USB capture,
@@ -169,7 +220,8 @@ or on Aquasuite's screens) or **inferred** (not confirmed).
 | Item | Settled by |
 |------|-----------|
 | Every byte offset and width in the 2707-byte report | snapshot diffs (T029) |
-| Curve controller layout: number of curve points, units and resolution of temperature and power; curve-controller saves not yet captured | snapshot diffs (T029) and a USB capture of a curve save (T030) |
+| Which fan source value means Curve controller 1 | snapshot diff with a fan set to Curve controller 1 (T029) |
+| Set-point and two-point controller field meanings | snapshot diffs (T029) |
 | What the fan does when its sensor is lost, and where that is stored | snapshot diffs (T029) |
 | Why `pwm4` writes through the driver did not change fan 4's speed | experiment (T028) |
 | Clock bytes 3 to 6 of the written configuration (finding 6): whether the device accepts zeros there | a write with zeros in those bytes, then a read-back check (T029) |
