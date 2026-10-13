@@ -54,6 +54,7 @@ fn owned(profile: &Profile) -> Vec<std::ops::Range<usize>> {
     vec![
         fan.min..fan.min + 2,
         fan.source..fan.source + 2,
+        fan.settings..fan.settings + 1,
         curve.source..curve.outputs + profile.curve_points() * 2,
     ]
 }
@@ -81,6 +82,12 @@ fn the_plan_lists_each_change_with_its_old_and_new_value_and_position() {
         controller.new
     );
     assert!(controller.new.contains("0x0058"), "{}", controller.new);
+
+    // The fan must never switch off: hold minimum power goes on.
+    let hold = by_name("fan 4 hold minimum power");
+    assert_eq!(hold.old, "off");
+    assert_eq!(hold.new, "on");
+    assert_eq!(hold.positions, vec![0x256..0x257]);
 
     let source = by_name("curve controller 1 data source");
     assert_eq!(source.old, "none");
@@ -144,6 +151,33 @@ fn the_intended_bytes_encode_the_curve() {
     assert_eq!(fan.min_hundredths, 3_000);
     assert_eq!(fan.max_hundredths, 10_000);
     assert_eq!(fan.source, 0x0058, "curve controller 1");
+    assert!(fan.hold_min_power);
+}
+
+#[test]
+fn other_flags_in_the_fans_settings_byte_are_kept() {
+    // Start boost (4) and current limit (2) already set on fan 4.
+    let config = with_bytes(&fixture("after-reflash.bin"), &[(0x256, 0x06)]);
+    let profile = profile();
+
+    let plan = build_plan(&config, &desired(), &profile).unwrap();
+
+    assert_eq!(plan.intended.as_slice()[0x256], 0x07);
+    assert!(plan.untouched_equal);
+}
+
+#[test]
+fn a_fan_that_already_holds_its_minimum_gets_no_change_for_it() {
+    let plan = build_plan(
+        &fixture("hold-minimum-power-on.bin"),
+        &desired(),
+        &profile(),
+    )
+    .unwrap();
+    assert!(plan
+        .changes
+        .iter()
+        .all(|c| c.name != "fan 4 hold minimum power"));
 }
 
 #[test]

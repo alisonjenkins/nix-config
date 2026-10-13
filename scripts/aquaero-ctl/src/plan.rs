@@ -119,6 +119,20 @@ pub fn build_plan(
         }
     };
     let min_value = clamp_u16(min);
+    // Hold minimum power: the fan never switches off. Other flags stay as they are.
+    let flags_now = snapshot
+        .as_slice()
+        .get(fan_offsets.settings)
+        .copied()
+        .ok_or(PlanError::Profile {
+            source: ProfileError::OutOfRange {
+                offset: fan_offsets.settings,
+            },
+        })?;
+    let flags_new = flags_now | profile.hold_min_power_flag();
+    if let Some(byte) = bytes.get_mut(fan_offsets.settings) {
+        *byte = flags_new;
+    }
     put(&mut bytes, fan_offsets.min, min_value)?;
     put(&mut bytes, fan_offsets.source, curve_source)?;
     put(&mut bytes, curve_offsets.source, sensor_source)?;
@@ -154,6 +168,12 @@ pub fn build_plan(
         percent_text(i64::from(fan_now.min_hundredths)),
         percent_text(min),
         vec![span(fan_offsets.min, 2)],
+    );
+    add(
+        format!("fan {fan} hold minimum power"),
+        on_off(fan_now.hold_min_power),
+        on_off(true),
+        vec![span(fan_offsets.settings, 1)],
     );
     add(
         format!("fan {fan} controller"),
@@ -235,6 +255,10 @@ fn nth_u16(first: usize, index: usize) -> usize {
 
 fn span(start: usize, len: usize) -> Range<usize> {
     start..start.saturating_add(len)
+}
+
+fn on_off(value: bool) -> String {
+    if value { "on" } else { "off" }.to_string()
 }
 
 fn percent_text(hundredths: i64) -> String {
