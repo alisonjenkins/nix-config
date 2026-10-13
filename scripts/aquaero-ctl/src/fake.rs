@@ -179,6 +179,10 @@ impl HidDevice for FakeDevice {
         self.serial.clone()
     }
 
+    fn wait(&mut self, duration: Duration) {
+        self.clock.sleep(duration);
+    }
+
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {
         self.begin_op("get_feature")?;
         self.record(OpKind::Get, report_id);

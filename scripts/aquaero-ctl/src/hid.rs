@@ -37,6 +37,10 @@ pub trait HidDevice {
 
     /// Writes one feature report; `report[0]` is its id.
     fn set_feature(&mut self, report: &[u8]) -> Result<(), HidError>;
+
+    /// Waits `duration` by the clock this device uses, so a test device can
+    /// move its own clock instead of sleeping.
+    fn wait(&mut self, duration: Duration);
 }
 
 /// Reads the stored configuration, checking its length and report id.

@@ -151,6 +151,10 @@ impl<D: HidDevice, C: Clock + ?Sized> HidDevice for SpacedDevice<'_, D, C> {
         self.inner.serial()
     }
 
+    fn wait(&mut self, duration: Duration) {
+        self.clock.sleep(duration);
+    }
+
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {
         self.space()?;
         self.inner.get_feature(report_id, len)

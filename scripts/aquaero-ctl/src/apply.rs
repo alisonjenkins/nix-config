@@ -6,6 +6,7 @@
 //! is and how to restore it.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use crate::diff::{diff, DiffRun, VolatileSet};
 use crate::error::{ApplyError, RestoreError};
@@ -17,6 +18,16 @@ use crate::timestamp::UtcTimestamp;
 const APPLY_LABEL: &str = "pre-apply";
 const RESTORE_LABEL: &str = "pre-restore";
 
+/// A report sent after the configuration write.
+#[derive(Debug, Clone)]
+pub struct CommitReport {
+    pub bytes: Vec<u8>,
+    /// How long to wait after the previous operation before sending it. The
+    /// vendor software sends its save command about 4.1 s after the
+    /// configuration.
+    pub delay_before: Duration,
+}
+
 #[derive(Debug, Clone)]
 pub struct ApplyOptions {
     /// Where the backup of the previous configuration is saved.
@@ -24,7 +35,7 @@ pub struct ApplyOptions {
     /// Reports sent after the configuration write, in order. What the device
     /// needs to keep a change is learned from the vendor software, so this
     /// comes from the firmware profile.
-    pub commit_reports: Vec<Vec<u8>>,
+    pub commit_reports: Vec<CommitReport>,
 }
 
 #[derive(Debug)]
@@ -125,8 +136,9 @@ fn apply_labelled(
         })?;
 
     for (index, report) in options.commit_reports.iter().enumerate() {
+        device.wait(report.delay_before);
         device
-            .set_feature(report)
+            .set_feature(&report.bytes)
             .map_err(|source| ApplyError::Commit {
                 index,
                 backup: Box::new(backup.clone()),

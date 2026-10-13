@@ -6,6 +6,7 @@ use std::fs::{File, OpenOptions};
 use std::io;
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use nix::errno::Errno;
 
@@ -72,6 +73,10 @@ impl HidDevice for HidrawDevice {
 
     fn serial(&self) -> String {
         self.serial.clone()
+    }
+
+    fn wait(&mut self, duration: Duration) {
+        std::thread::sleep(duration);
     }
 
     fn get_feature(&mut self, report_id: u8, len: usize) -> Result<Vec<u8>, HidError> {

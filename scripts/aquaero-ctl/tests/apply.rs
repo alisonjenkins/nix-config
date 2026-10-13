@@ -10,8 +10,9 @@
 mod common;
 
 use std::path::PathBuf;
+use std::time::Duration;
 
-use aquaero_ctl::apply::{apply_config, preview, ApplyOptions, ApplyReport};
+use aquaero_ctl::apply::{apply_config, preview, ApplyOptions, ApplyReport, CommitReport};
 use aquaero_ctl::error::ApplyError;
 use aquaero_ctl::fake::{Fault, OpKind};
 use aquaero_ctl::hid::{
@@ -161,7 +162,10 @@ fn the_commit_reports_follow_the_configuration_write_in_order() {
     save[1] = 2;
     let opts = ApplyOptions {
         backup_dir: backups.path().to_path_buf(),
-        commit_reports: vec![save.clone()],
+        commit_reports: vec![CommitReport {
+            bytes: save.clone(),
+            delay_before: Duration::ZERO,
+        }],
     };
 
     apply_config(&mut dev, &config(0x22), &opts, now()).unwrap();
@@ -176,6 +180,36 @@ fn the_commit_reports_follow_the_configuration_write_in_order() {
     assert_eq!(dev.secondary_reports(), &[save]);
     // The read-back comes after the commit.
     assert_eq!(dev.ops().last().unwrap().kind, OpKind::Get);
+}
+
+#[test]
+fn a_commit_report_waits_its_delay_after_the_configuration_write() {
+    // Aquasuite sends the save command about 4.1 s after the configuration.
+    let backups = tempfile::tempdir().unwrap();
+    let (mut dev, _) = device_holding(config(0x11));
+    let mut save = vec![0u8; SECONDARY_REPORT_LEN];
+    save[0] = SECONDARY_REPORT_ID;
+    save[2] = 2;
+    let opts = ApplyOptions {
+        backup_dir: backups.path().to_path_buf(),
+        commit_reports: vec![CommitReport {
+            bytes: save,
+            delay_before: Duration::from_millis(4100),
+        }],
+    };
+
+    apply_config(&mut dev, &config(0x22), &opts, now()).unwrap();
+
+    let ops = dev.ops();
+    let write = ops
+        .iter()
+        .find(|op| op.kind == OpKind::Set && op.report_id == CTRL_REPORT_ID)
+        .unwrap();
+    let commit = ops
+        .iter()
+        .find(|op| op.kind == OpKind::Set && op.report_id == SECONDARY_REPORT_ID)
+        .unwrap();
+    assert!(commit.at - write.at >= Duration::from_millis(4100));
 }
 
 #[test]
