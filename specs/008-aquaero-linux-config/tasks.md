@@ -30,10 +30,10 @@ Rust crate: `scripts/aquaero-ctl/`. Package: `pkgs/aquaero-ctl/`. Module: `modul
 
 **Purpose**: an empty crate that builds, lints and packages.
 
-- [ ] T001 Create the crate `scripts/aquaero-ctl/` with `Cargo.toml` (lib plus bin, edition 2021, the dependencies from plan.md, the clippy restriction `[lints.clippy]` table from the programming skill), `Cargo.lock`, `src/lib.rs` and a `src/main.rs` that only parses nothing and exits 0
-- [ ] T002 [P] Add `pkgs/aquaero-ctl/default.nix` using `rustPlatform.buildRustPackage` with a `lib.fileset` source and `cargoLock.lockFile`, `doCheck = true`, following `pkgs/token-tools/default.nix`, and register it where the other `pkgs/` entries are registered (`pkgs/default.nix`); `git add` the new files and run `nix build` on it
-- [ ] T003 [P] Confirm `nix develop` provides cargo, clippy and rustfmt for `scripts/aquaero-ctl`; if not, add them to `flake-modules/dev-shells.nix`
-- [ ] T004 [P] Check how `scripts/retrieval-eval` and `scripts/token-tools` wire `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` into `.pre-commit-config.yaml` or flake checks, and add the same for `scripts/aquaero-ctl`
+- [x] T001 Create the crate `scripts/aquaero-ctl/` with `Cargo.toml` (lib plus bin, edition 2021, the dependencies from plan.md, the clippy restriction `[lints.clippy]` table from the programming skill), `Cargo.lock`, `src/lib.rs` and a `src/main.rs` that only parses nothing and exits 0
+- [x] T002 [P] Add `pkgs/aquaero-ctl/default.nix` using `rustPlatform.buildRustPackage` with a `lib.fileset` source and `cargoLock.lockFile`, `doCheck = true`, following `pkgs/token-tools/default.nix`, and register it where the other `pkgs/` entries are registered (`pkgs/default.nix`); `git add` the new files and run `nix build` on it
+- [x] T003 [P] Confirm `nix develop` provides cargo, clippy and rustfmt for `scripts/aquaero-ctl`; if not, add them to `flake-modules/dev-shells.nix`. The root dev shell has no Rust toolchain, so this follows `scripts/retrieval-eval`: a small `scripts/aquaero-ctl/flake.nix` dev shell
+- [x] T004 [P] Check how `scripts/retrieval-eval` and `scripts/token-tools` wire `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` into `.pre-commit-config.yaml` or flake checks, and add the same for `scripts/aquaero-ctl`. Neither crate has such a hook or check (only the `[lints.clippy]` table), so the package's check phase runs both, and a badly formatted source fails `nix build .#aquaero-ctl`
 
 ---
 
@@ -41,16 +41,16 @@ Rust crate: `scripts/aquaero-ctl/`. Package: `pkgs/aquaero-ctl/`. Module: `modul
 
 **Purpose**: the types every story uses, with no hardware and no writes. The lock and the control gap live here, with their tests first, because the real device (T017) and the apply path (T043) both rest on them.
 
-- [ ] T005 [P] Write failing tests in `scripts/aquaero-ctl/tests/snapshot.rs`: round trip of bytes and metadata, rejection of a length other than 0xa93, rejection of a hash mismatch, filename `<UTC timestamp>-<label>` sorts by time, serial redaction. Confirm they fail for the right reason
-- [ ] T006 [P] Write failing tests in `scripts/aquaero-ctl/tests/diff.rs`: identical snapshots give no diff, one changed byte gives one run, adjacent changes group into one run, positions that differ between two untouched snapshots are marked volatile
-- [ ] T007 Implement `scripts/aquaero-ctl/src/error.rs`: one error enum per fallible operation, variants named after the operation and carrying device path, report id and byte offset where relevant (FR-017)
-- [ ] T008 Implement `scripts/aquaero-ctl/src/snapshot.rs` (data-model `ConfigSnapshot`: raw `.bin` plus `.json` sidecar, SHA-256, UTC timestamp) until T005 passes
-- [ ] T009 [P] Implement `scripts/aquaero-ctl/src/diff.rs` (data-model `ByteDiff`) until T006 passes
-- [ ] T010 [P] Implement the `HidDevice` trait and the constants (vendor `0x0c70`, product `0xf001`, control report `0x0B` and size `0xa93`, secondary report `0x06` and size `7`, the 200 ms control gap) in `scripts/aquaero-ctl/src/hid.rs`; no real device yet
-- [ ] T011 Write failing tests in `scripts/aquaero-ctl/tests/fake_device.rs` for the in-memory fake: reads and writes the 0xa93-byte report, honours the 200 ms rule through an injectable clock, and can inject a rejected write, a short read, a disconnect after N operations and a read-back that differs
-- [ ] T012 Implement `scripts/aquaero-ctl/src/fake.rs` (the in-memory device with failure injection, exposed to integration tests through a Cargo feature) until T011 passes
-- [ ] T013 [P] Write failing tests in `scripts/aquaero-ctl/tests/lock.rs`: a second instance exits 7 while the first holds the lock; the lock is released on error and on drop; at least 200 ms separates two control operations even across the lock boundary
-- [ ] T014 Implement `scripts/aquaero-ctl/src/lock.rs` (advisory lock under `/run` and the control-gap enforcement) until T013 passes
+- [x] T005 [P] Write failing tests in `scripts/aquaero-ctl/tests/snapshot.rs`: round trip of bytes and metadata, rejection of a length other than 0xa93, rejection of a hash mismatch, filename `<UTC timestamp>-<label>` sorts by time, serial redaction. Confirm they fail for the right reason
+- [x] T006 [P] Write failing tests in `scripts/aquaero-ctl/tests/diff.rs`: identical snapshots give no diff, one changed byte gives one run, adjacent changes group into one run, positions that differ between two untouched snapshots are marked volatile
+- [x] T007 Implement `scripts/aquaero-ctl/src/error.rs`: one error enum per fallible operation, variants named after the operation and carrying device path, report id and byte offset where relevant (FR-017)
+- [x] T008 Implement `scripts/aquaero-ctl/src/snapshot.rs` (data-model `ConfigSnapshot`: raw `.bin` plus `.json` sidecar, SHA-256, UTC timestamp) until T005 passes
+- [x] T009 [P] Implement `scripts/aquaero-ctl/src/diff.rs` (data-model `ByteDiff`) until T006 passes
+- [x] T010 [P] Implement the `HidDevice` trait and the constants (vendor `0x0c70`, product `0xf001`, control report `0x0B` and size `0xa93`, secondary report `0x06` and size `7`, the 200 ms control gap) in `scripts/aquaero-ctl/src/hid.rs`; no real device yet
+- [x] T011 Write failing tests in `scripts/aquaero-ctl/tests/fake_device.rs` for the in-memory fake: reads and writes the 0xa93-byte report, honours the 200 ms rule through an injectable clock, and can inject a rejected write, a short read, a disconnect after N operations and a read-back that differs
+- [x] T012 Implement `scripts/aquaero-ctl/src/fake.rs` (the in-memory device with failure injection, exposed to integration tests) until T011 passes. It is always compiled rather than behind a Cargo feature: it is small, and a feature would add a build-matrix entry for no gain
+- [x] T013 [P] Write failing tests in `scripts/aquaero-ctl/tests/lock.rs`: a second instance exits 7 while the first holds the lock; the lock is released on error and on drop; at least 200 ms separates two control operations even across the lock boundary
+- [x] T014 Implement `scripts/aquaero-ctl/src/lock.rs` (advisory lock under `/run` and the control-gap enforcement) until T013 passes
 
 **Checkpoint**: snapshot, diff, error, trait, fake and lock all tested; no hardware touched.
 

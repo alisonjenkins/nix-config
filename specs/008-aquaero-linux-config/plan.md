@@ -77,7 +77,8 @@ scripts/aquaero-ctl/
 │   ├── cli.rs                 # clap definitions
 │   ├── hid.rs                 # HidDevice trait, hidraw implementation, node selection
 │   ├── lock.rs                # advisory lock and the 200 ms control gap
-│   ├── fake.rs                # in-memory device with failure injection (behind a Cargo feature for integration tests)
+│   ├── fake.rs                # in-memory device with failure injection and a manual clock (always compiled; small)
+│   ├── timestamp.rs           # UTC timestamps in ISO 8601 (extended and file-name forms) without a date-time crate
 │   ├── snapshot.rs            # read, write, name, hash, compare
 │   ├── diff.rs                # byte-position comparison with volatile marking
 │   ├── profile.rs             # firmware profile loading and lookup
