@@ -223,6 +223,7 @@ let
       sharedSkillsFarm
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
+      "${pkgs.rea}/share/rea/skills"
       speckitInitSkill
     ];
   };
@@ -808,6 +809,12 @@ in
         args = [ "mcp" ];
       };
     } // {
+      # REA: reverse-engineering tools (binaries, Electron/JS apps, runtime).
+      rea = {
+        command = "${pkgs.rea}/bin/rea";
+        args = [ "mcp" ];
+      };
+
       # Token Savior: structural code navigation + tool-output compaction.
       # Named "token-savior" so the PostToolUse capture matcher's
       # mcp__token-savior__* tool names resolve. Wrapped in bash so

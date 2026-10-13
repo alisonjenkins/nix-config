@@ -116,6 +116,11 @@ in
       ];
     };
 
+    programs.copilot-cli.mcpServers.rea = {
+      command = "${pkgs.rea}/bin/rea";
+      args = [ "mcp" ];
+    };
+
     home.activation.copilotCliConfig = inputs.home-manager.lib.hm.dag.entryAfter [ "writeBoundary" ] (
       lib.concatStringsSep "\n" (
         (lib.mapAttrsToList

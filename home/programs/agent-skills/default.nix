@@ -1,4 +1,4 @@
-{ lib, inputs, ... }:
+{ lib, pkgs, inputs, ... }:
 {
   # Skills from home/skills/ (flake.lib.skills) in ~/.agents/skills, the
   # personal skills path read by both opencode and GitHub Copilot CLI.
@@ -7,5 +7,7 @@
   # (languages/*.md, per-tool guides) come along.
   home.file = lib.mapAttrs' (
     name: path: lib.nameValuePair ".agents/skills/${name}" { source = path; }
-  ) inputs.self.lib.skills;
+  ) (inputs.self.lib.skills // {
+    reverse-engineer-anything = "${pkgs.rea}/share/rea/skills/reverse-engineer-anything";
+  });
 }
