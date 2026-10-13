@@ -19,13 +19,20 @@ use aquaero_ctl::snapshot::{ConfigBytes, CONFIG_LEN};
 const FAN_STRUCT_BASE: usize = 0x20c;
 const FAN_STRUCT_STRIDE: usize = 0x14;
 
+fn fixture(name: &str) -> ConfigBytes {
+    let path = format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
+    ConfigBytes::new(std::fs::read(path).unwrap()).unwrap()
+}
+
+/// The original Windows-made configuration, read before the firmware was
+/// reflashed.
 fn baseline() -> ConfigBytes {
-    let bytes = std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/baseline-original.bin"
-    ))
-    .unwrap();
-    ConfigBytes::new(bytes).unwrap()
+    fixture("before-reflash.bin")
+}
+
+/// Read after Aquasuite reflashed firmware 2104 over 2104 and restarted.
+fn after_reflash() -> ConfigBytes {
+    fixture("after-reflash.bin")
 }
 
 fn fan_struct(config: &ConfigBytes, channel: usize) -> &[u8] {
@@ -59,4 +66,26 @@ fn fan_structs_sit_at_the_kernel_drivers_offsets_with_fan_four_set_apart() {
     assert_eq!(fan_struct(&config, 1), fan_struct(&config, 2));
     assert_eq!(fan_struct(&config, 2), fan_struct(&config, 3));
     assert_ne!(fan_struct(&config, 3), fan_struct(&config, 4));
+}
+
+#[test]
+fn the_reflash_rewrote_the_configuration_but_not_its_header() {
+    let before = baseline();
+    let after = after_reflash();
+
+    let runs = aquaero_ctl::diff::diff(&before, &after, &aquaero_ctl::diff::VolatileSet::none());
+
+    assert_eq!(runs.len(), 29);
+    assert_eq!(runs.iter().map(|r| r.before.len()).sum::<usize>(), 106);
+    assert_eq!(data_version(&after), 1200);
+    assert_eq!(&before.as_slice()[..3], &after.as_slice()[..3]);
+}
+
+#[test]
+fn after_the_reflash_all_four_fans_hold_the_same_defaults() {
+    let config = after_reflash();
+    // The radiator fans' own settings are gone: channel 4 now matches 1 to 3.
+    assert_eq!(fan_struct(&config, 1), fan_struct(&config, 4));
+    assert_eq!(fan_struct(&config, 2), fan_struct(&config, 4));
+    assert_eq!(fan_struct(&config, 3), fan_struct(&config, 4));
 }
