@@ -15,7 +15,7 @@ use crate::dump::{dump, DumpOptions};
 use crate::error::{DumpError, HidError, LockError, SelectError, SnapshotError};
 use crate::hid::SystemClock;
 use crate::hidraw::{HidrawDevice, UNKNOWN_SERIAL};
-use crate::lock::{DeviceLock, SpacedDevice};
+use crate::lock::{default_lock_path, DeviceLock, SpacedDevice};
 use crate::select::{choose, discover};
 use crate::snapshot::ConfigSnapshot;
 use crate::timestamp::UtcTimestamp;
@@ -45,9 +45,10 @@ struct Cli {
     #[arg(long, global = true)]
     hidraw: Option<PathBuf>,
 
-    /// Lock file that keeps two copies from using the device at once.
-    #[arg(long, global = true, default_value = "/run/aquaero-ctl.lock")]
-    lock_file: PathBuf,
+    /// Lock file that keeps two copies from using the device at once
+    /// (default: $XDG_RUNTIME_DIR/aquaero-ctl.lock, else /run/aquaero-ctl.lock).
+    #[arg(long, global = true)]
+    lock_file: Option<PathBuf>,
 
     // Where to look for hidraw nodes; tests point these at a fake tree.
     #[arg(long, global = true, hide = true, default_value = "/sys")]
@@ -272,8 +273,11 @@ fn run_dump(cli: &Cli, out: &Path, label: &str, redact_serial: bool) -> Result<(
         }
     };
 
-    let mut lock =
-        DeviceLock::acquire(&cli.lock_file).map_err(|source| CliError::Lock { source })?;
+    let lock_path = cli.lock_file.clone().unwrap_or_else(|| {
+        let runtime_dir = std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from);
+        default_lock_path(runtime_dir.as_deref())
+    });
+    let mut lock = DeviceLock::acquire(&lock_path).map_err(|source| CliError::Lock { source })?;
     let clock = SystemClock::new();
     let options = DumpOptions {
         out_dir: out.to_path_buf(),

@@ -23,6 +23,23 @@ fn lock_path() -> (tempfile::TempDir, std::path::PathBuf) {
 }
 
 #[test]
+fn the_default_lock_lives_in_the_user_runtime_dir_when_there_is_one() {
+    use aquaero_ctl::lock::default_lock_path;
+    use std::path::Path;
+
+    assert_eq!(
+        default_lock_path(Some(Path::new("/run/user/1000"))),
+        Path::new("/run/user/1000/aquaero-ctl.lock")
+    );
+    assert_eq!(default_lock_path(None), Path::new("/run/aquaero-ctl.lock"));
+    // An empty value (as some environments set) counts as unset.
+    assert_eq!(
+        default_lock_path(Some(Path::new(""))),
+        Path::new("/run/aquaero-ctl.lock")
+    );
+}
+
+#[test]
 fn a_free_lock_is_acquired_and_its_file_created() {
     let (_dir, path) = lock_path();
     let _lock = DeviceLock::acquire(&path).unwrap();

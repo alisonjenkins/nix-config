@@ -12,6 +12,15 @@ use nix::fcntl::{Flock, FlockArg};
 use crate::error::{HidError, LockError};
 use crate::hid::{Clock, HidDevice, CONTROL_GAP};
 
+/// Where the lock lives when none is given: the user's runtime directory if
+/// the session has one (so an ordinary user can lock), else `/run`.
+pub fn default_lock_path(runtime_dir: Option<&Path>) -> PathBuf {
+    match runtime_dir {
+        Some(dir) if !dir.as_os_str().is_empty() => dir.join("aquaero-ctl.lock"),
+        _ => PathBuf::from("/run/aquaero-ctl.lock"),
+    }
+}
+
 /// An exclusive advisory lock on a file, held until the value is dropped.
 /// The file also records when the last control operation started, so the
 /// next run knows how much of the gap is left.

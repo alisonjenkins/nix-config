@@ -24,7 +24,8 @@ aquaero-ctl diff A.bin B.bin [--baseline C.bin]
 
 Global options: `--json` for machine-readable output, `-v`/`-vv` for logging,
 `--serial` to pick a device when more than one is connected, `--hidraw PATH` to
-skip the search, `--lock-file PATH` (default `/run/aquaero-ctl.lock`).
+skip the search, `--lock-file PATH` (default `$XDG_RUNTIME_DIR/aquaero-ctl.lock`
+when the session has a runtime directory, else `/run/aquaero-ctl.lock`).
 
 ## Access to the device
 
@@ -36,9 +37,9 @@ your login session access with a udev rule:
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0c70", ATTRS{idProduct}=="f001", TAG+="uaccess"
 ```
 
-The lock file lives in `/run`, which only root can write. As a normal user,
-pass `--lock-file` with a path you can write, for example
-`--lock-file "$XDG_RUNTIME_DIR/aquaero-ctl.lock"`.
+The lock file defaults to your user runtime directory, so no root is needed.
+Runs as root and as a user use different lock files unless you pass the same
+`--lock-file` to both.
 
 A running Windows VM with the aquaero passed through takes the device away
 from Linux; shut it down first.
