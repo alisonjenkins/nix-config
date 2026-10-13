@@ -1621,12 +1621,12 @@ in
         package = mesaOnSystemLibc pkgs.callPackage;
 
         # VA-API hardware video acceleration.
-        # libva must match the mesa channel above — mesa's radeonsi VAAPI
-        # driver exports a versioned __vaDriverInit_<libva major.minor> symbol
-        # (1.23 for mesa 26.x), so a stable (older) libva runtime fails to
-        # dlsym the init function and VAAPI silently disappears (e.g. OBS shows
-        # no hardware encoders). Keep these on unstable alongside unstable.mesa.
-        extraPackages = with pkgs.unstable; [
+        # mesa's radeonsi VAAPI driver exports a versioned
+        # __vaDriverInit_<libva major.minor> symbol (1.23 for mesa 26.x), so the
+        # libva runtime must be at least that new or VAAPI silently disappears
+        # (e.g. OBS shows no hardware encoders). The system's libva is 2.23
+        # (1.23) and is the one mesa is built against above.
+        extraPackages = with pkgs; [
           libva
           libva-utils
           libva-vdpau-driver
@@ -1636,8 +1636,7 @@ in
       # aarch64. Gate so this module can be reused on Asahi hosts.
       // (lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
         package32 = mesaOnSystemLibc pkgs.pkgsi686Linux.callPackage;
-        # Match unstable.pkgsi686Linux.mesa above (same ABI reason as 64-bit).
-        extraPackages32 = with pkgs.unstable.pkgsi686Linux; [
+        extraPackages32 = with pkgs.pkgsi686Linux; [
           libva
           libva-vdpau-driver
         ];
