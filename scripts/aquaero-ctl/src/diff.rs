@@ -68,7 +68,7 @@ pub fn summarize(runs: &[DiffRun]) -> DiffSummary {
     }
 }
 
-fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes
         .iter()
         .map(|b| format!("{b:02x}"))

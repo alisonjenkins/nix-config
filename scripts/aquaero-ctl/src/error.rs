@@ -6,6 +6,9 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
+use crate::diff::DiffRun;
+use crate::snapshot::SnapshotPaths;
+
 /// Failures talking to the device through a [`crate::hid::HidDevice`].
 #[derive(Debug, Error)]
 pub enum HidError {
@@ -66,6 +69,108 @@ pub enum HidError {
         path: PathBuf,
         #[source]
         source: LockError,
+    },
+}
+
+/// Failures applying a configuration to the device. Every variant that can
+/// follow a changed device carries the backup and says how to restore it.
+#[derive(Debug, Error)]
+pub enum ApplyError {
+    #[error("cannot read the device's current configuration")]
+    Read {
+        #[source]
+        source: HidError,
+    },
+
+    #[error("the configuration to write starts with report id {got:#04x}, not {expected:#04x}")]
+    InvalidIntended { expected: u8, got: u8 },
+
+    #[error("cannot save a backup first, so nothing was written")]
+    Backup {
+        #[source]
+        source: SnapshotError,
+    },
+
+    #[error(
+        "writing the configuration failed. The previous configuration is saved at {}; to put it back run: aquaero-ctl restore {}",
+        backup.bin.display(),
+        backup.bin.display()
+    )]
+    Write {
+        backup: Box<SnapshotPaths>,
+        #[source]
+        source: HidError,
+    },
+
+    #[error(
+        "commit report {index} failed after the configuration was written. The previous configuration is saved at {}; to put it back run: aquaero-ctl restore {}",
+        backup.bin.display(),
+        backup.bin.display()
+    )]
+    Commit {
+        index: usize,
+        backup: Box<SnapshotPaths>,
+        #[source]
+        source: HidError,
+    },
+
+    #[error(
+        "the configuration was written but could not be read back, so it is not verified. The previous configuration is saved at {}; to put it back run: aquaero-ctl restore {}",
+        backup.bin.display(),
+        backup.bin.display()
+    )]
+    ReadBack {
+        backup: Box<SnapshotPaths>,
+        #[source]
+        source: HidError,
+    },
+
+    #[error(
+        "the device did not keep the configuration it was given: {}. The previous configuration is saved at {}; to put it back run: aquaero-ctl restore {}",
+        describe_mismatch(runs),
+        backup.bin.display(),
+        backup.bin.display()
+    )]
+    Mismatch {
+        backup: Box<SnapshotPaths>,
+        /// Intended bytes as `before`, what the device holds as `after`.
+        runs: Vec<DiffRun>,
+    },
+}
+
+fn describe_mismatch(runs: &[DiffRun]) -> String {
+    runs.iter()
+        .map(|run| {
+            format!(
+                "at {:#06x} expected {}, device holds {}",
+                run.offset,
+                crate::diff::hex(&run.before),
+                crate::diff::hex(&run.after)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+/// Failures restoring a snapshot.
+#[derive(Debug, Error)]
+pub enum RestoreError {
+    #[error("cannot read the device to check the snapshot belongs to it")]
+    Read {
+        #[source]
+        source: HidError,
+    },
+
+    #[error("the snapshot is from device {snapshot}, the connected device is {device}")]
+    WrongDevice { snapshot: String, device: String },
+
+    #[error("the snapshot is from firmware {snapshot}, the device runs {device}")]
+    FirmwareMismatch { snapshot: u32, device: u32 },
+
+    #[error("cannot restore the snapshot")]
+    Apply {
+        #[source]
+        source: ApplyError,
     },
 }
 

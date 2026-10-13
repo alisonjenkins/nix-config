@@ -1,5 +1,6 @@
 //! Read and set the stored configuration of an Aquacomputer aquaero fan controller.
 
+pub mod apply;
 pub mod cli;
 pub mod diff;
 pub mod dump;
