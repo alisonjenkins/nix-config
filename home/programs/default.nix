@@ -51,6 +51,7 @@
     ./opencommit
     ./opentofu
     ./quickshell
+    ./rea
     ./rio
     ./rofi
     ./rust

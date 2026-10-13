@@ -223,9 +223,8 @@ let
       sharedSkillsFarm
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
-      "${pkgs.rea}/share/rea/skills"
       speckitInitSkill
-    ];
+    ] ++ lib.optional config.programs.rea.enable "${pkgs.rea}/share/rea/skills";
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
@@ -809,9 +808,6 @@ in
         args = [ "mcp" ];
       };
     } // {
-      # REA: reverse-engineering tools (binaries, Electron/JS apps, runtime).
-      rea = import ../rea.nix pkgs;
-
       # Token Savior: structural code navigation + tool-output compaction.
       # Named "token-savior" so the PostToolUse capture matcher's
       # mcp__token-savior__* tool names resolve. Wrapped in bash so

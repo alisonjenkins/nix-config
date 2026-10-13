@@ -71,6 +71,7 @@ in {
             self.homeModules.beatsaber
             self.homeModules.helldivers2-mods
             inputs.framework-inputmodule-rs-flake.homeManagerModules.default
+            { programs.rea.enable = true; }
             {
               services.inputmodule-control = {
                 enable = true;
