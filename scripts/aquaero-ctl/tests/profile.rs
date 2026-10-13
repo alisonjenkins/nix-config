@@ -95,6 +95,32 @@ fn hold_minimum_power_is_a_flag_in_the_fans_settings_byte() {
 }
 
 #[test]
+fn the_control_mode_is_a_byte_next_to_the_flags() {
+    let p = profile();
+    // Power controlled in the factory defaults; after PWM controlled was
+    // selected in Aquasuite the only meaningful change was 0x0257 (fan 4's
+    // struct + 0x0f), 0x00 -> 0x02.
+    assert_eq!(p.fan_offsets(4).unwrap().mode, 0x257);
+    assert_eq!(
+        p.fan_settings(&fixture("hold-minimum-power-on.bin"), 4)
+            .unwrap()
+            .mode,
+        0
+    );
+    assert_eq!(
+        p.fan_settings(&fixture("pwm-controlled.bin"), 4)
+            .unwrap()
+            .mode,
+        2
+    );
+    assert_eq!(p.pwm_mode(), 2);
+    assert_eq!(p.describe_mode(0), "power controlled");
+    assert_eq!(p.describe_mode(1), "speed controlled");
+    assert_eq!(p.describe_mode(2), "PWM controlled");
+    assert_eq!(p.describe_mode(9), "unknown mode 9");
+}
+
+#[test]
 fn a_fan_that_does_not_exist_is_refused() {
     let p = profile();
     let config = fixture("after-reflash.bin");

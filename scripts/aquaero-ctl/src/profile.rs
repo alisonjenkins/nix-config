@@ -28,6 +28,10 @@ struct FanLayout {
     source_offset: usize,
     settings_offset: usize,
     hold_min_power_flag: u8,
+    mode_offset: usize,
+    mode_power: u8,
+    mode_speed: u8,
+    mode_pwm: u8,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -80,6 +84,8 @@ pub struct FanOffsets {
     pub source: usize,
     /// The flags byte (hold minimum power, and others this tool leaves alone).
     pub settings: usize,
+    /// The control mode byte (power, speed or PWM controlled).
+    pub mode: usize,
 }
 
 /// Where one curve controller's fields sit in the configuration.
@@ -102,6 +108,8 @@ pub struct FanSettings {
     /// With this on, the fan stays at its minimum power instead of switching
     /// off when the controller asks for less.
     pub hold_min_power: bool,
+    /// The raw control mode byte; see [`Profile::describe_mode`].
+    pub mode: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -197,7 +205,27 @@ impl Profile {
             max: at(layout.max_offset)?,
             source: at(layout.source_offset)?,
             settings: at(layout.settings_offset)?,
+            mode: at(layout.mode_offset)?,
         })
+    }
+
+    /// The control mode byte that means "PWM controlled": the fan's power
+    /// comes from elsewhere and the aquaero only sends the PWM signal.
+    pub fn pwm_mode(&self) -> u8 {
+        self.fan.mode_pwm
+    }
+
+    /// A control mode byte in words.
+    pub fn describe_mode(&self, mode: u8) -> String {
+        if mode == self.fan.mode_power {
+            "power controlled".to_string()
+        } else if mode == self.fan.mode_speed {
+            "speed controlled".to_string()
+        } else if mode == self.fan.mode_pwm {
+            "PWM controlled".to_string()
+        } else {
+            format!("unknown mode {mode}")
+        }
     }
 
     /// The bit that means "hold minimum power" in the fan's flags byte.
@@ -269,6 +297,7 @@ impl Profile {
             min_hundredths: be16(config, offsets.min)?,
             max_hundredths: be16(config, offsets.max)?,
             hold_min_power: byte(config, offsets.settings)? & self.fan.hold_min_power_flag != 0,
+            mode: byte(config, offsets.mode)?,
         })
     }
 

@@ -22,6 +22,13 @@ source_offset = 0x10 # u16, a source number (see [sources]); 0xffff = none
 # Aquasuite changed only this byte of fan 4 (0x0256), 0x00 -> 0x01.
 settings_offset = 0x0e
 hold_min_power_flag = 0x01
+# Control mode byte (the vendor's FanConfiguration.ControlModeType: power
+# controlled = 0, speed controlled = 1, PWM controlled = 2). Selecting "PWM
+# controlled" in Aquasuite changed only 0x0257 (fan 4's struct + 0x0f), 0 -> 2.
+mode_offset = 0x0f
+mode_power = 0
+mode_speed = 1
+mode_pwm = 2
 
 # Four curve controllers, each: source u16, start temperature u16 (0.01 degC),
 # sixteen temperatures u16 (0.01 degC), sixteen outputs u16 (0.01 %).
