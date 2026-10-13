@@ -115,6 +115,15 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0035](0035-disk-budget-reported-not-enforced.md) | Report the observability stack's disk budget instead of enforcing it | Accepted |
 | [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted, not yet built (T056, T059) |
 
+## ali-desktop cooling
+
+Start with [`docs/aquaero-config.md`](../aquaero-config.md) for the protocol
+facts and findings.
+
+| # | Decision | Status |
+|---|---|---|
+| [0040](0040-aquaero-config-in-user-space.md) | Configure the aquaero from user space, not from a kernel module | Accepted, first real write pending |
+
 ## Template
 
 ```markdown
