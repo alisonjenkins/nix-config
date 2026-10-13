@@ -405,6 +405,22 @@ in
   # entries to programs.claude-code.settings.hooks alongside the ones below.
   programs.claude-monitor.enable = true;
 
+  # Web view as a background user service (systemd unit on Linux, launchd agent
+  # on macOS); it also runs the live refresh loop that keeps the store current
+  # for `restore`. Port 8801: DynamoDB Local holds the 8765 default on
+  # ali-desktop. mTLS and the Zen client-cert import are Linux-only because
+  # `web setup-browser` has no macOS importer yet. See docs/ai-control-centre.md
+  # and ADR 0042.
+  programs.claude-monitor.serve = {
+    enable = true;
+    port = 8801;
+    mtls = pkgs.stdenv.hostPlatform.isLinux;
+  };
+  programs.claude-monitor.web.browserSetup = {
+    enable = pkgs.stdenv.hostPlatform.isLinux;
+    browsers = [ "zen" ];
+  };
+
   # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
   # would also drop the broken token-savior-bench, the server bin, and the
   # stats-less `ts` onto PATH.
