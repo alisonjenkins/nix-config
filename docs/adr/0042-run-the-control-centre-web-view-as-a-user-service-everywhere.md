@@ -41,9 +41,10 @@ imports on all home-manager profiles.
   macOS relies on TLS 1.3 plus the single-use login code.
 - **`watch` stays off.** `serve` runs the same live loop, so a second service
   would only duplicate the work.
-- **Flake input:** `claude-monitor` follows the `008-ai-control-centre`
-  branch until the claude-monitor pull request that carries this work is
-  merged, then goes back to the default branch.
+- **Flake input:** `claude-monitor` follows the default branch. It followed
+  the `008-ai-control-centre` branch while the claude-monitor pull request
+  that carries this work (alisonjenkins/claude-monitor#9) was open; that
+  merged on 2026-10-14 and the lock is `e549c727`.
 
 Activation (`just switch`, `home-manager switch`) stays the user's call.
 
@@ -70,8 +71,6 @@ Activation (`just switch`, `home-manager switch`) stays the user's call.
   running service for a new one.
 - A `serve` started by hand on 8801 blocks the service from binding. Stop it
   before the first switch.
-- Until the pull request merges, the lock file points at a branch, so a
-  `nix flake update` moves it with every push to that branch.
 
 ## Evidence
 
@@ -85,10 +84,11 @@ Activation (`just switch`, `home-manager switch`) stays the user's call.
   aarch64-darwin are in the claude-monitor pull request (alisonjenkins/
   claude-monitor#9).
 - The macOS agent has not been run on a Mac; it is evaluated, not started.
+  The claude-monitor CI builds and tests the crate on macOS (aarch64-darwin),
+  including the new macOS boot-id and process start-time code, and passed
+  before the merge.
 
 ## Revisit when
 
 - `web setup-browser` can import into the macOS keychain: turn mTLS on there.
-- The claude-monitor pull request merges: move the flake input back to the
-  default branch.
 - A machine shows the service restart-looping or holding the port when idle.
