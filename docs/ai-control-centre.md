@@ -71,7 +71,7 @@ plan is built from.
 |---|---|---|
 | Service | systemd user unit `claude-monitor-serve` | launchd agent `claude-monitor-serve` |
 | Port | 8801 | 8801 |
-| Client certificate (mTLS) | required; imported into the Zen profile at activation | not required (no importer yet) |
+| Client certificate (mTLS) | required; imported into the Zen profile at activation | required; imported into the Zen profile at activation |
 | Log | `journalctl --user -u claude-monitor-serve` | `~/Library/Logs/claude-monitor-serve.log` |
 
 Port 8801 and not the 8765 default, because DynamoDB Local holds 8765 on
@@ -82,9 +82,17 @@ First use on a machine:
 1. Stop any `claude-monitor serve` you started by hand on 8801; it would stop
    the service from binding.
 2. Switch the configuration (`just switch`).
-3. Run `claude-monitor web login` and open the URL it prints (valid five
-   minutes, single use). Open `https://127.0.0.1:8801/` in a browser that
-   trusts the install's CA (`claude-monitor web ca` prints it).
+3. Close Zen before the switch if you can: the activation skips a profile
+   that is open, prints a line saying so, and the certificate is then not
+   imported. Re-run `claude-monitor web setup-browser --browser zen` after
+   closing it. On a Mac, check first with `--dry-run` that it finds the
+   profile.
+4. Run `claude-monitor web login` and open the URL it prints (valid five
+   minutes, single use). Open `https://127.0.0.1:8801/` in Zen, which now
+   trusts the install's CA and presents the client certificate. Another
+   browser needs the CA (`claude-monitor web ca`) and a certificate
+   (`claude-monitor web client-cert`) imported by hand; on a Mac that
+   includes Chrome and Safari (Keychain).
 
 Check it is up: `systemctl --user status claude-monitor-serve` (Linux),
 `launchctl print gui/$(id -u)/org.nix-community.home.claude-monitor-serve`
@@ -95,7 +103,8 @@ home configuration.
 
 Limits: the listener is loopback only. TLS and mTLS do not stop malware running
 as your user, because the client key sits in the browser profile. The macOS
-agent has been evaluated, not started on a Mac.
+agent and the macOS browser setup have been evaluated, not run on a Mac; the
+Zen profile path there (`~/Library/Application Support/zen`) is unconfirmed.
 
 ## Using it
 

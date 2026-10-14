@@ -408,16 +408,16 @@ in
   # Web view as a background user service (systemd unit on Linux, launchd agent
   # on macOS); it also runs the live refresh loop that keeps the store current
   # for `restore`. Port 8801: DynamoDB Local holds the 8765 default on
-  # ali-desktop. mTLS and the Zen client-cert import are Linux-only because
-  # `web setup-browser` has no macOS importer yet. See docs/ai-control-centre.md
-  # and ADR 0042.
+  # ali-desktop. mTLS is on everywhere, with the client certificate imported
+  # into the Zen profile at activation (Linux and macOS). See
+  # docs/ai-control-centre.md and ADR 0042.
   programs.claude-monitor.serve = {
     enable = true;
     port = 8801;
-    mtls = pkgs.stdenv.hostPlatform.isLinux;
+    mtls = true;
   };
   programs.claude-monitor.web.browserSetup = {
-    enable = pkgs.stdenv.hostPlatform.isLinux;
+    enable = true;
     browsers = [ "zen" ];
   };
 

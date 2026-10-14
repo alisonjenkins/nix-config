@@ -34,11 +34,12 @@ imports on all home-manager profiles.
   `~/Library/Logs/claude-monitor-serve.log`. Both platforms build the command
   line from one shared list in `nix/hm-module.nix`, so they cannot drift.
 - **Port:** 8801 (`serve.port`), not the 8765 default.
-- **mTLS:** on for Linux (`serve.mtls = true`) together with
-  `web.browserSetup` limited to `zen`, the browser in use. Off on macOS,
-  where `web setup-browser` has no implementation (it imports into NSS
-  databases), so a client certificate requirement would lock the user out.
-  macOS relies on TLS 1.3 plus the single-use login code.
+- **mTLS:** on everywhere (`serve.mtls = true`) together with
+  `web.browserSetup` limited to `zen`, the browser in use. The activation
+  imports the client certificate into the Zen profile's NSS database on Linux
+  and, since claude-monitor#15, on macOS (`~/Library/Application Support/zen`).
+  Chrome and Safari on macOS keep their keys in the Keychain, which the
+  importer does not touch; they would need a manual import.
 - **`watch` stays off.** `serve` runs the same live loop, so a second service
   would only duplicate the work.
 - **Flake input:** `claude-monitor` follows the default branch. It followed
@@ -53,9 +54,11 @@ Activation (`just switch`, `home-manager switch`) stays the user's call.
 - **`watch` as the always-on service, `serve` on demand.** It keeps the store
   fresh without a listening socket, but then the web view needs a manual start
   every time and the user asked for it to be always available.
-- **mTLS on macOS by hand-importing a certificate.** Keychain import is not
-  automated, so a machine could be switched on and unreachable. Deferred
-  until `setup-browser` supports it.
+- **mTLS on macOS with a hand-imported Keychain certificate.** Not automated,
+  so a machine could be switched on and unreachable. Replaced by teaching
+  `setup-browser` to find Firefox and Zen profiles on macOS.
+- **mTLS off on macOS until the importer existed.** It was the first
+  decision here; dropped once claude-monitor#15 landed.
 - **Keep the 8765 default.** Fails to bind on ali-desktop, so the service
   would restart-loop.
 - **A per-host opt-in.** The point of the service is that the store is fresh
@@ -87,8 +90,17 @@ Activation (`just switch`, `home-manager switch`) stays the user's call.
   The claude-monitor CI builds and tests the crate on macOS (aarch64-darwin),
   including the new macOS boot-id and process start-time code, and passed
   before the merge.
+- The macOS browser setup is also unrun on a Mac. Its profile discovery is
+  unit-tested against a temporary home, and the Home Manager check evaluates
+  the activation for a Darwin host (Zen only). The Zen macOS profile path
+  `~/Library/Application Support/zen` is from memory, not confirmed.
+  `nss.tools` for aarch64-darwin is in the binary cache.
 
 ## Revisit when
 
-- `web setup-browser` can import into the macOS keychain: turn mTLS on there.
+- The first switch on a Mac: run `claude-monitor web setup-browser --browser
+  zen --dry-run` and confirm it finds the profile; if not, fix the path in
+  claude-monitor.
 - A machine shows the service restart-looping or holding the port when idle.
+- Chrome or Safari become the browser used on a Mac: the importer would need
+  a Keychain path.
