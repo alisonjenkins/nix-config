@@ -110,11 +110,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1791945685,
-        "narHash": "sha256-2Rx604AOAxu0PEbJSoXy3r6OW+1pfa3XLOxVN5PWBKI=",
+        "lastModified": 1791962393,
+        "narHash": "sha256-KxNrziNQm42auWBl4AVUFSnU9dQqjnfw5dEXiSvSdA8=",
         "owner": "alisonjenkins",
         "repo": "claude-monitor",
-        "rev": "e549c727db1132298932595fa191d74431419ee7",
+        "rev": "db280a8dea73d10f0d4d7de90a1f9edae5cfb9c2",
         "type": "github"
       },
       "original": {
