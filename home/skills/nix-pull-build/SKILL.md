@@ -25,6 +25,12 @@ force a pull, or discard local changes as part of this skill.
 Wait for the command to finish before reporting success. If it is backgrounded,
 leave its notification handling to the script and wait for completion.
 
+Run it without piping through `tail` or `head`, so the task output shows build
+progress. When stderr is not a terminal, the command also prints
+`Build log (live): <path>` and writes the same output there, a copy that
+outlives the task; Read it to tell the user how far a long build has got. The
+final answer still waits for completion.
+
 If it fails, report the failing phase and preserve recovery data. A stash
 conflict retains the stash and stops before building; do not drop it or resolve
 conflicts without the user's direction. An existing lock may mean another run

@@ -18,7 +18,12 @@ It:
    are not stashed; pre-existing stashes are left alone.
 4. Builds the matching profile into `result`, without activation or sudo,
    then sends a success or failure notification with `osascript` on macOS or
-   `notify-send` on Linux.
+   `notify-send` on Linux. In a terminal, nix's own progress display is
+   used. When stderr is not a terminal (a background task, a pipe), the build
+   runs with `--print-build-logs` and its combined output goes to stderr and to
+   `${XDG_STATE_HOME:-~/.local/state}/nix-pull-build/<hostname>.log`
+   (truncated each run); the path is printed before the build starts, and the
+   copy can be watched with `tail -f` after the task ends.
 
 macOS selects `darwinConfigurations.<hostname>.system`. Linux selects
 `nixosConfigurations.<hostname>.config.system.build.toplevel` if it exists;
