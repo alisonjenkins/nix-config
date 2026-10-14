@@ -153,5 +153,14 @@ else
 fi
 phase="building $host"
 echo "Building $target at $revision without activating." >&2
-nix build "${build_options[@]}" --out-link result "$repository#$target"
+if [[ -t 2 ]]; then
+  nix build "${build_options[@]}" --out-link result "$repository#$target"
+else
+  # Without a TTY nix prints no progress; keep a copy that outlives a background task.
+  log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/nix-pull-build"
+  mkdir -p "$log_dir"
+  log="$log_dir/$host.log"
+  echo "Build log (live): $log" >&2
+  nix build --print-build-logs "${build_options[@]}" --out-link result "$repository#$target" 2>&1 | tee "$log" >&2
+fi
 readlink result

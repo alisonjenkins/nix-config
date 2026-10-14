@@ -24,6 +24,8 @@ if [[ "$1" = eval ]]; then
   exit "${TARGET_STATUS:-0}"
 fi
 printf '%s\n' "$@" > "$BUILD_LOG"
+echo "fake build stdout"
+echo "fake build stderr" >&2
 if [[ "${BUILD_STATUS:-0}" -eq 0 ]]; then ln -sf "$BUILD_LOG" result; fi
 exit "${BUILD_STATUS:-0}"
 EOF
@@ -93,6 +95,7 @@ EOF
   export NOTIFICATION_STATUS=0 FAIL_MERGE=0 FAIL_DROP=0 TEST_PLATFORM=Darwin
   export TARGET_STATUS=0 TEST_TARGET=nixosConfigurations.Test-Mac.config.system.build.toplevel
   export REAL_PROFILE_SELECTION=0
+  export XDG_STATE_HOME="$tmp/$name/state"
 }
 
 advance() {
@@ -167,6 +170,36 @@ setup build-failure
 export BUILD_STATUS=42
 if run; then fail "failed build accepted"; fi
 grep -q 'Nix build failed' "$NOTIFICATION_LOG" || fail "missing build failure notification"
+
+setup build-log
+run || { cat "$tmp/output"; fail "build log run"; }
+log_file="$tmp/build-log/state/nix-pull-build/Test-Mac.log"
+[[ -f "$log_file" ]] || fail "build log not created under XDG_STATE_HOME"
+grep -Fxq 'fake build stdout' "$log_file" || fail "build log missing stdout"
+grep -Fxq 'fake build stderr' "$log_file" || fail "build log missing stderr"
+grep -Fxq -- '--print-build-logs' "$BUILD_LOG" || fail "nix not run with --print-build-logs"
+grep -Fxq "Build log (live): $log_file" "$tmp/output" || fail "log path not announced"
+[[ "$(grep -c 'fake build stderr' "$tmp/output")" -eq 1 ]] || fail "build output not streamed exactly once"
+printf 'stale\n' >> "$log_file"
+run || { cat "$tmp/output"; fail "build log rerun"; }
+if grep -q stale "$log_file"; then fail "build log not truncated per run"; fi
+
+setup build-log-failure
+export BUILD_STATUS=42
+if run; then fail "failed build with log accepted"; fi
+grep -Fxq 'fake build stderr' "$tmp/build-log-failure/state/nix-pull-build/Test-Mac.log" || fail "failed build not logged"
+grep -q 'Nix build failed' "$NOTIFICATION_LOG" || fail "missing failure notification with log"
+
+if script --version 2>&1 | grep -q util-linux; then
+  setup build-tty
+  script -qec "bash -c 'repository=\"\$1\"; script=\"\$2\"; shift 2; source \"\$script\"' bash '$repository' '$script'" /dev/null \
+    > "$tmp/output" 2>&1 || { cat "$tmp/output"; fail "TTY build"; }
+  if grep -Fxq -- '--print-build-logs' "$BUILD_LOG"; then fail "TTY build used --print-build-logs"; fi
+  [[ ! -e "$XDG_STATE_HOME" ]] || fail "TTY build wrote a log file"
+  if grep -q 'Build log' "$tmp/output"; then fail "TTY build announced a log"; fi
+else
+  echo "skipping TTY test: util-linux script not available" >&2
+fi
 
 setup drop-failure
 echo dirty > "$repository/tracked"
