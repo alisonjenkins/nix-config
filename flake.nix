@@ -20,9 +20,7 @@
     claude-monitor = {
       # TUI dashboard of live Claude Code session state in tmux; its
       # home-manager module registers the hooks that feed it.
-      # Branch of alisonjenkins/claude-monitor#9 (control centre, web service
-      # module); back to the default branch once it merges (ADR 0042).
-      url = "github:alisonjenkins/claude-monitor/008-ai-control-centre";
+      url = "github:alisonjenkins/claude-monitor";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
