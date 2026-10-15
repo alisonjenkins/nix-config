@@ -1129,6 +1129,10 @@ in {
           wants = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
           after = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
 
+          # Four arenas, not two: libtorrent runs concurrent disk and network
+          # threads, so contention matters more here.
+          environment = mallocArenas 4;
+
           # A finite start limit: an unlimited burst (the old StartLimitBurst=0)
           # let qBittorrent crash-loop silently forever without ever entering
           # 'failed', so `systemctl --failed` and monitoring stayed blind to a
