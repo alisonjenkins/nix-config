@@ -1209,7 +1209,8 @@ in {
           # Wait for storage before scanning root folders (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
-          environment = dotnetThreadCap;
+          # 54% of its anon RSS sat in 29 glibc arena heaps with 20 threads.
+          environment = dotnetThreadCap // { MALLOC_ARENA_MAX = "2"; };
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
