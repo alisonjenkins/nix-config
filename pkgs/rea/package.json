@@ -46,7 +46,7 @@
     "stream-json": "3.7.0",
     "write-file-atomic": "7.0.1",
     "ws": "8.22.0",
-    "zod": "4.4.3",
+    "zod": "4.6.7",
     "evmole": "0.9.4",
     "yaml": "2.9.1"
   }
