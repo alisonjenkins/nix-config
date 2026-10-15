@@ -42,6 +42,13 @@ let
   # cap kills the leak at source and zram is capacity-bounded. Lean on zram +
   # this cap, not on hard memory limits.
   dotnetThreadCap = { DOTNET_ThreadPool_ForceMaxWorkerThreads = "100"; };
+
+  # Cap glibc malloc arenas. Worker threads come and go and each leaves an
+  # arena heap behind, stranding freed memory that is never returned to the
+  # OS; on 2026-10-15 half or more of bazarr/sonarr/radarr/qBittorrent anon
+  # RSS sat in such heaps (upstream bazarr#3241). Fewer arenas trade some
+  # malloc lock contention for that memory.
+  mallocArenas = n: { MALLOC_ARENA_MAX = toString n; };
 in {
   flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -1122,9 +1129,9 @@ in {
           wants = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
           after = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
 
-          # 47% of its anon RSS sat in 22 glibc arena heaps with 15 threads.
-          # Four, not two: libtorrent runs concurrent disk and network threads.
-          environment.MALLOC_ARENA_MAX = "4";
+          # Four arenas, not two: libtorrent runs concurrent disk and network
+          # threads, so contention matters more here.
+          environment = mallocArenas 4;
 
           # A finite start limit: an unlimited burst (the old StartLimitBurst=0)
           # let qBittorrent crash-loop silently forever without ever entering
@@ -1192,8 +1199,7 @@ in {
           # Wait for storage before scanning root folders (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
-          # 49% of its anon RSS sat in 28 glibc arena heaps with 19 threads.
-          environment = dotnetThreadCap // { MALLOC_ARENA_MAX = "2"; };
+          environment = dotnetThreadCap // mallocArenas 2;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
@@ -1213,8 +1219,7 @@ in {
           # Wait for storage before scanning root folders (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
-          # 54% of its anon RSS sat in 29 glibc arena heaps with 20 threads.
-          environment = dotnetThreadCap // { MALLOC_ARENA_MAX = "2"; };
+          environment = dotnetThreadCap // mallocArenas 2;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
@@ -1234,10 +1239,7 @@ in {
           # Wait for storage before scanning (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
-          # bazarr's 112 threads each get a glibc malloc arena; on 2026-10-15
-          # 80% of its anon RSS sat in 46 arena heaps. Two arenas stop freed
-          # memory stranding in per-thread heaps (upstream bazarr#3241).
-          environment.MALLOC_ARENA_MAX = "2";
+          environment = mallocArenas 2;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
