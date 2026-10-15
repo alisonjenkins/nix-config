@@ -1907,6 +1907,7 @@ EOF
           prowlarr = {
             enable = true;
             openFirewall = true;
+            settings.log.level = "info";
           };
 
           qbittorrent = {
