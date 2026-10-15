@@ -1228,6 +1228,10 @@ in {
           # Wait for storage before scanning (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
+          # bazarr's 112 threads each get a glibc malloc arena; on 2026-10-15
+          # 80% of its anon RSS sat in 46 arena heaps. Two arenas stop freed
+          # memory stranding in per-thread heaps (upstream bazarr#3241).
+          environment.MALLOC_ARENA_MAX = "2";
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
