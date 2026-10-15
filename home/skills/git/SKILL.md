@@ -56,3 +56,4 @@ skill suggests.
 | Running commit → branch → PR → review loop → auto-merge unattended | [auto-ship.md](auto-ship.md) |
 | Isolating feature work from the current checkout | [worktrees.md](worktrees.md) |
 | Resolving a merge or rebase conflict | [merge-conflicts.md](merge-conflicts.md) |
+| Keeping a fix to someone else's project on your fork and building from it | [carry-a-patch.md](carry-a-patch.md) |
