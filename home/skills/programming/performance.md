@@ -67,6 +67,41 @@ control for turns that answer back into a guess.
   reproducible benchmark cannot be checked by the next person, including
   future-you.
 
+## Proving a change in a layered system
+
+For a change deep in a big program (an editor, a runtime, a build), where the
+effect is diluted by everything around it.
+
+- **Count instructions, then time them.** `valgrind --tool=callgrind` or
+  `perf stat` gives a count that repeats to within a percent; wall time on a
+  shared machine does not. Confirm a count win with interleaved wall-time runs
+  (alternate base and candidate each round, at least 30 rounds, compare
+  medians).
+- **Measure on the real workload and label the rest as synthetic.** A gain on a
+  fixture routinely shrinks or disappears on the real configuration. Report
+  real-workload numbers first, synthetic ones second, and say which is which.
+- **Check a hot spot on the real workload before fixing it.** A call that
+  dominated a micro-benchmark can be negligible in the real program. Rank by
+  the real profile.
+- **Deferring work moves it.** Lazy-loading takes work off the startup path and
+  puts it on first use: measure first-use latency too. Add a test that triggers
+  the lazy path and checks the result is set up: a plugin whose own files
+  already defined the command at startup bypassed its lazy-load stub, and the
+  command ran against an unconfigured plugin.
+- **Behaviour-preserving changes want a differential test.** Run the same
+  inputs through the reference (the stock build, the old code) and compare
+  results and their order, with awkward inputs in the corpus. Keep expected
+  failures in one status table so a fixed bug shows up as an unexpected pass.
+- **Show the test can fail.** Break the reference model or inject a mutation
+  and see the test go red. A test that passes on unmodified code cannot pin a
+  speedup; say so in the PR rather than implying it does.
+- **A cache of misses needs an invalidation argument.** Coarse filesystem
+  timestamps leave a directory's modification time unchanged when a file
+  appears in the same tick, so a miss cached against it can go stale. If no
+  argument holds, do not cache.
+- **Write down what you rejected, with the numbers.** Neutral and slower ideas
+  go in the PR or a doc so the next person does not retry them.
+
 ## Zero-copy
 
 Apply only once a profile shows wide bars in `memcpy`/`alloc`/a constructor,
