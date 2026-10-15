@@ -42,6 +42,13 @@ let
   # cap kills the leak at source and zram is capacity-bounded. Lean on zram +
   # this cap, not on hard memory limits.
   dotnetThreadCap = { DOTNET_ThreadPool_ForceMaxWorkerThreads = "100"; };
+
+  # Cap glibc malloc arenas. Worker threads come and go and each leaves an
+  # arena heap behind, stranding freed memory that is never returned to the
+  # OS; on 2026-10-15 half or more of bazarr/sonarr/radarr/qBittorrent anon
+  # RSS sat in such heaps (upstream bazarr#3241). Fewer arenas trade some
+  # malloc lock contention for that memory.
+  mallocArenas = n: { MALLOC_ARENA_MAX = toString n; };
 in {
   flake.nixosConfigurations.download-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -1228,6 +1235,7 @@ in {
           # Wait for storage before scanning (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
+          environment = mallocArenas 2;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "tv" "movies" "qbittorrent" ];
