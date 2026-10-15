@@ -39,7 +39,7 @@
     "lossless-json": "4.3.1",
     "parse5": "8.0.1",
     "pino": "10.4.0",
-    "playwright-core": "1.58.2",
+    "playwright-core": "1.64.1",
     "plist": "5.0.0",
     "semver": "7.8.5",
     "smol-toml": "1.9.1",
