@@ -1215,7 +1215,7 @@ in {
           # Wait for storage before scanning root folders (see media-storage-ready).
           wants = [ "media-storage-ready.service" ];
           after = [ "media-storage-ready.service" ];
-          environment = dotnetThreadCap;
+          environment = dotnetThreadCap // mallocArenas 2;
           serviceConfig = {
             UMask = lib.mkForce "0002";
             SupplementaryGroups = [ "media" "qbittorrent" ];
