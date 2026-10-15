@@ -145,6 +145,9 @@ runs sequentially.
   commit there for you to cherry-pick. A worktree you create yourself and
   name in the prompt does not work: a sub-agent's shell is pinned to the
   parent session's worktree and refuses to run anywhere else.
+- **Several writers in one project** (scope split, integration, reviewer,
+  usage-limit and orphan-process handling): read
+  [parallel-writers.md](parallel-writers.md).
 - **Size the fan-out to the task, not habit**: ~1 agent for simple fact-
   finding, 2-4 for a comparison across sources, 10+ only for genuinely broad
   research — [Anthropic's own multi-agent research
@@ -361,6 +364,8 @@ compressed into a prompt.
   volume to a cheaper one.
 - `programming`, `testing`, `git`, and other skills: name them explicitly in
   a sub-agent prompt when the delegated task needs their guidance.
+- [parallel-writers.md](parallel-writers.md): running several code-writing
+  sub-agents in one project at once.
 - [delegate-to-copilot.md](delegate-to-copilot.md): delegating to GitHub
   Copilot's CLI instead of an Agent-tool sub-agent.
 - [delegate-to-local.md](delegate-to-local.md): delegating to a
