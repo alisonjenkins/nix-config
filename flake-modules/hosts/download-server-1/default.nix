@@ -2039,7 +2039,6 @@ EOF
                 "Advanced\\RecheckOnCompletion" = false;           # Disabled to reduce I/O load on network shares
                 "Advanced\\SaveResumeDataInterval" = 5;            # Save resume data every 5 minutes
                 "Advanced\\RecheckAfterFileMove" = false;          # Don't recheck after moving files
-                "Advanced\\MaxMemoryWorkingSetLimit" = 4096;       # Limit RAM usage to 4GB to prevent crashes
                 "General\\Locale" = "en";
                 "MailNotification\\req_auth" = true;
                 # Whitelist localhost (IPv4 + IPv6 loopback, nginx reverse
