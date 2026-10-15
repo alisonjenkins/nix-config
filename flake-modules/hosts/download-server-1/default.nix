@@ -1122,6 +1122,10 @@ in {
           wants = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
           after = [ "media-storage-ready.service" "wg-quick-primary-vpn.service" ];
 
+          # 47% of its anon RSS sat in 22 glibc arena heaps with 15 threads.
+          # Four, not two: libtorrent runs concurrent disk and network threads.
+          environment.MALLOC_ARENA_MAX = "4";
+
           # A finite start limit: an unlimited burst (the old StartLimitBurst=0)
           # let qBittorrent crash-loop silently forever without ever entering
           # 'failed', so `systemctl --failed` and monitoring stayed blind to a
