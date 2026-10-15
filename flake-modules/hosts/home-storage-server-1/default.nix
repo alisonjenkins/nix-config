@@ -974,6 +974,11 @@ in {
             contentFiles = contentFilesOpt;
             dataDisks = (builtins.listToAttrs dataDisksOpt);
             parityFiles = parityFilesOpt;
+
+            # qBittorrent's incomplete-download dir (download-server-1 TempPath).
+            # Partial files change constantly and hold 1.7 TB on the two 16 TB
+            # disks that size the parity file; they are re-fetched on failure.
+            exclude = [ "/downloads/downloading/" ];
           };
         };
 
