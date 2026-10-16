@@ -185,6 +185,16 @@ checked cheaply (tests, a diff, a grep), and step up if the check fails.
 Pick sonnet outright only when a wrong answer would be acted on without a
 check.
 
+**Set `model` on every Agent call.** An Agent call without `model` runs on the
+main loop's model (Sonnet here), so the haiku default above only holds if the
+call says `model: "haiku"`. Measured by the observability stack over
+2026-10-09/16 on `ali-desktop`: `general-purpose` sub-agents were 55.8% of
+estimated cost, and Sonnet was 99.7% of all estimated cost against Haiku's
+0.3%. The stack cannot split sub-agents by model, so that the sub-agents ran
+as Sonnet is inferred, not measured. Do not set
+`CLAUDE_CODE_SUBAGENT_MODEL` to fix this: it overrides every sub-agent,
+including the consultant agents whose `model:` is deliberate.
+
 ### The per-machine ladder
 
 Below haiku there is a cheaper rung, and which one depends on the machine.
