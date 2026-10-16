@@ -81,6 +81,12 @@ for the live-maintenance runbook.
 |---|---|---|
 | [0029](0029-parallel-pr-check.md) | Run the PR check's sections in parallel, one eval per output set | Accepted |
 
+## Build environment
+
+| # | Decision | Status |
+|---|---|---|
+| [0043](0043-rust-build-cache.md) | Share Rust compilation through sccache and sweep stale target directories | Accepted |
+
 ## VR foveated rendering
 
 Start with the spec in
