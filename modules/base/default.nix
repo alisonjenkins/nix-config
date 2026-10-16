@@ -393,7 +393,6 @@ in
 
           substituters = lib.mkBefore [
             "https://cache.nixcache.org"
-            "https://attic.xuyh0120.win/lantian"
             "https://cache.nixos.org"
             "https://jovian.cachix.org"
             # Third-party daily builds of Jovian-NixOS `development` against
@@ -415,7 +414,6 @@ in
             # substitutes from that cache were silently rejected.
             "jovian.cachix.org-1:8Vq4Txku6VZIRhYrHYki3Ab9XHJRoWmdYqMqj4rB/Uc="
             "hacker1024-jovian.cachix.org-1:YGV/5tSwGzqffiA1TuhqnWN8PWlJX6nwPo6ZTMcRHmg="
-            "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
             "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
             "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
             "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
