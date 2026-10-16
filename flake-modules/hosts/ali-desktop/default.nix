@@ -671,6 +671,10 @@ in {
 
             # Allow PCI bridge window reallocation when devices appear after initial scan
             "pci=realloc"
+
+            # Plymouth starts on simpledrm, then amdgpu replaces it mid-boot (visible flicker).
+            # Without simpledrm, Plymouth waits for amdgpu, which is already in the initrd.
+            "initcall_blacklist=simpledrm_platform_driver_init"
           ];
 
           loader = {
