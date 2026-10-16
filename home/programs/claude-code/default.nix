@@ -108,35 +108,6 @@ let
     exec ${claudeStatusbarPkg}/bin/cs
   '';
 
-  # token-savior stats viewers. Both read ~/.local/share/token-savior/*.json,
-  # populated by the MCP nav tools (search_codebase/get_function_source/…), not
-  # the bash-compaction hooks. Profile-independent, zero per-session token cost.
-  tsStatsDashboard = pkgs.writeShellApplication {
-    name = "token-savior-stats";
-    text = ''
-      exec ${pkgs.token-savior}/bin/token-savior-dashboard "$@"
-    '';
-  };
-
-  # Prints the get_usage_stats ASCII view (sparkline + savings table) without
-  # advertising the tool over MCP. Registers $PWD as a project root so
-  # _collect_history() reads that project's cumulative stats file.
-  tsStatsScript = pkgs.writeText "ts-stats.py" ''
-    import os
-    from token_savior import server_state as s
-    from token_savior.server_handlers import stats
-    s._slot_mgr.register_roots([os.environ.get("WORKSPACE_ROOTS", os.getcwd())])
-    for block in stats._hm_get_usage_stats({"daily": True}):
-        print(block.text)
-  '';
-  tsStatsCli = pkgs.writeShellApplication {
-    name = "ts-stats";
-    text = ''
-      exec env TOKEN_SAVIOR_PROFILE=optimized WORKSPACE_ROOTS="''${WORKSPACE_ROOTS:-$PWD}" \
-        ${pkgs.token-savior.pythonEnv}/bin/python3 ${tsStatsScript} "$@"
-    '';
-  };
-
   # Cross-platform sound for the Notification hook (fires when Claude waits
   # for user input). Bypasses the tmux/ghostty bell-propagation chain.
   notifyBell = pkgs.writeShellScript "claude-notify-bell" (
@@ -262,9 +233,8 @@ let
   # context (the dominant subagent-baseline cost). The model reaches them lazily
   # through the gateway_* meta-tools (gateway_search_tools / gateway_invoke).
   #
-  # We do NOT route nixos / cavemem / token-savior through the gateway: nixos is
-  # used constantly in this repo, and token-savior must stay first-class so the
-  # Pre/PostToolUse hooks' mcp__.* matchers keep firing.
+  # We do NOT route nixos / cavemem through the gateway: nixos is used
+  # constantly in this repo.
   #
   # mcp-gateway's per-backend `command` is a single shlex-split string with NO
   # `args` list and NO shell — so github + obscura (which need launch-time setup:
@@ -421,13 +391,9 @@ in
     browsers = [ "zen" ];
   };
 
-  # token-savior stats viewers on PATH. Not the whole pkgs.token-savior — that
-  # would also drop the broken token-savior-bench, the server bin, and the
-  # stats-less `ts` onto PATH.
-  #
   # spec-kit (`specify`) serves both agents: Claude Code via the /speckit-init
   # skill above, and GitHub Copilot CLI via `specify init --integration copilot`.
-  home.packages = [ tsStatsDashboard tsStatsCli claudeDd claudeStatusbarPkg pkgs.spec-kit ];
+  home.packages = [ claudeDd claudeStatusbarPkg pkgs.spec-kit ];
 
   programs.claude-code = {
     enable = true;
@@ -454,13 +420,6 @@ in
         DISABLE_AUTOUPDATER = "1";
         DISABLE_ERROR_REPORTING = "1";
         DISABLE_BUG_COMMAND = "1";
-
-        # Token Savior bash-compaction toggles — read by its PreToolUse rewriter
-        # and PostToolUse tool-capture hooks (both default OFF without these).
-        TS_BASH_COMPACT = "1";
-        TS_BASH_REWRITE = "1";
-        # Drop _hints/_suggestion blocks from MCP tool results (~30-50 tok/call).
-        TS_NO_HINTS = "1";
       };
 
       alwaysThinkingEnabled = true;
@@ -532,7 +491,6 @@ in
           "WebSearch(*)"
           "mcp__nixos__*"
           "mcp__cavemem__*"
-          "mcp__token-savior__*"
           # MCP gateway: auto-allow only the read-only discovery meta-tools.
           # gateway_invoke is deliberately NOT allowed so that actual downstream
           # calls (incl. k8s / terraform mutations, github writes) prompt — the
@@ -587,23 +545,6 @@ in
       };
 
       hooks = {
-        # Token Savior bash rewriter — rewrites known commands (git status/diff/log,
-        # tsc, pytest, npm/yarn/pnpm test, cargo test, gh run watch, gh pr list,
-        # docker ps) to compact variants; everything else passes through. Gated
-        # internally by TS_BASH_REWRITE (set in settings.env above).
-        PreToolUse = [
-          {
-            matcher = "Bash";
-            hooks = [
-              {
-                type = "command";
-                command = "${pkgs.token-savior.pythonEnv}/bin/python3 ${pkgs.token-savior}/share/token-savior/hooks/bash_rewriter_hook.py";
-                timeout = 10;
-              }
-            ];
-          }
-        ];
-
         PermissionRequest = [
           {
             matcher = "Bash";
@@ -726,26 +667,7 @@ in
         ] ++ cavememHook "user-prompt-submit";
 
         # Cavemem: captures tool results for memory
-        # Token Savior: captures large tool outputs into its compaction sandbox,
-        # replacing them with expandable references (gated by TS_BASH_COMPACT).
-        PostToolUse = cavememHook "post-tool-use" ++ [
-          {
-            # Capture large built-in + MCP tool outputs. `mcp__.*` matches every
-            # MCP tool regardless of plugin namespacing (this module ships its
-            # servers as the `claude-code-home-manager` inline plugin, so live
-            # names are `mcp__plugin_claude-code-home-manager_<srv>__<tool>` —
-            # bare `mcp__token-savior__*` never matched). The hook no-ops under
-            # TS_CAPTURE_THRESHOLD_BYTES (4096), so small outputs pass through.
-            matcher = "Bash|WebFetch|Read|Grep|mcp__.*";
-            hooks = [
-              {
-                type = "command";
-                command = "${pkgs.token-savior.pythonEnv}/bin/python3 ${pkgs.token-savior}/share/token-savior/hooks/tool_capture_hook.py";
-                timeout = 10;
-              }
-            ];
-          }
-        ];
+        PostToolUse = cavememHook "post-tool-use";
 
         # Audible bell on task completion — Stop fires immediately at end of
         # turn, unlike Notification which only fires after ~60s idle.
@@ -822,22 +744,6 @@ in
       cavemem = {
         command = "${cavememPkg}/bin/cavemem";
         args = [ "mcp" ];
-      };
-    } // {
-      # Token Savior: structural code navigation + tool-output compaction.
-      # Named "token-savior" so the PostToolUse capture matcher's
-      # mcp__token-savior__* tool names resolve. Wrapped in bash so
-      # WORKSPACE_ROOTS picks up the session's project dir at launch (mirrors
-      # the obscura wrapper). "optimized" = 15-tool, ~1.5K-token manifest.
-      token-savior = {
-        command = "bash";
-        args = [
-          "-c"
-          ''
-            exec env WORKSPACE_ROOTS="$PWD" TOKEN_SAVIOR_CLIENT=claude-code TOKEN_SAVIOR_PROFILE=optimized \
-              ${pkgs.token-savior}/bin/token-savior
-          ''
-        ];
       };
     };
 
