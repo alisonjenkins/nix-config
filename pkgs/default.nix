@@ -58,7 +58,6 @@
   memory-recall = pkgs.callPackage ./memory-recall {};
   token-tools = pkgs.callPackage ./token-tools {};
   superpowers = pkgs.callPackage ./superpowers {};
-  token-savior = pkgs.callPackage ./token-savior { python3Packages = pkgs.unstable.python3Packages; };
   claude-statusbar = pkgs.callPackage ./claude-statusbar {
     python3Packages = pkgs.unstable.python3Packages;
     claude-monitor = pkgs.unstable.claude-monitor;
