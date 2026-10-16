@@ -15,6 +15,9 @@ in
     boot = {
       plymouth.enable = true;
 
+      # base sets "max", which makes the loader switch video mode before the kernel starts.
+      loader.systemd-boot.consoleMode = lib.mkForce "keep";
+
       # loglevel comes from boot.consoleLogLevel (base).
       kernelParams = [
         "splash"
