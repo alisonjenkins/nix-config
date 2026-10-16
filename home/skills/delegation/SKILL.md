@@ -185,7 +185,11 @@ checked cheaply (tests, a diff, a grep), and step up if the check fails.
 Pick sonnet outright only when a wrong answer would be acted on without a
 check.
 
-**Set `model` on every Agent call.** An Agent call without `model` runs on the
+For a haiku-shaped step with no need for MCP tools, spawn `subagent_type: "haiku-worker"`:
+it is pinned to Haiku and carries a short tool list, so forgetting `model` cannot make
+it run on Sonnet.
+
+**Set `model` on every other Agent call.** An Agent call without `model` runs on the
 main loop's model (Sonnet here), so the haiku default above only holds if the
 call says `model: "haiku"`. Measured by the observability stack over
 2026-10-09/16 on `ali-desktop`: `general-purpose` sub-agents were 55.8% of
