@@ -2228,7 +2228,6 @@ EOF
               domains = {
                 nix = [
                   "cache.nixcache.org"
-                  "attic.xuyh0120.win"
                   "cache.nixos.org"
                   "channels.nixos.org"
                   "jovian.cachix.org"
