@@ -3,5 +3,12 @@
   "extends": [
     "config:recommended",
     ":automergeAll"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["hmac", "sha2", "digest"],
+      "groupName": "rustcrypto digest crates"
+    }
   ]
 }
