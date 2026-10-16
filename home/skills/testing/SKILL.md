@@ -20,37 +20,19 @@ file covers what to test and how to judge a test.
 
 ## What testing is for
 
-**Not finding bugs.** Testing catches bugs; it is *for* design feedback. Hard
-to test means something structural: too many collaborators, hidden state, work
-fused to I/O. Fix the code, not the test. Elaborate setup is a design finding.
-The `design` skill covers what to do about it.
-
-Three consequences:
-
-- **A test is the first user of your code.** Write the call site you wish
-  existed, then make it exist. An API that is awkward from a test is awkward
-  from everywhere.
-- **Design to test.** Testability is a design constraint, not a retrofit.
-  Injecting the clock, the RNG and the I/O boundary costs nothing up front and
-  is expensive to add later.
-- **Find bugs once.** Any bug a human had to find gets a test that would have
-  caught it, before the fix lands. Finding it twice means the first fix bought
-  nothing.
+**Not finding bugs.** Testing is *for* design feedback. Hard to test means
+something structural: too many collaborators, hidden state, work fused to I/O.
+Fix the code, not the test; elaborate setup is a design finding (see `design`).
+A test is the first user of your code, testability is a design constraint
+(inject the clock, the RNG and the I/O boundary), and any bug a human had to
+find gets a test that would have caught it, before the fix lands.
 
 ## What makes a test worth having
 
-- **It fails when the behaviour breaks, and only then.** A test that also
-  fails on unrelated refactors is a maintenance tax, not a safety net.
-- **It tests behaviour at a boundary you actually promise**, not internal
-  structure. Asserting on a private helper freezes an implementation detail.
-- **The failure message identifies the bug.** If you have to attach a debugger
-  to understand a red test, the assertion is too coarse.
-- **It is deterministic.** No wall-clock, no network, no ordering dependence
-  between test cases. Inject the clock and the RNG.
-- **It covers states, not lines.** Line coverage of two booleans can hit 100%
-  while three of their four combinations are never exercised. Ask which states
-  and boundaries the test visits (empty, one, many, maximum, error), not what
-  percentage the tool reports.
+It fails when the behaviour breaks and only then; tests behaviour at a
+boundary you promise, not internals; has a failure message that identifies the
+bug; is deterministic (no wall-clock, network or ordering dependence); and
+covers states, not lines. Full wording: [test-quality.md](test-quality.md).
 
 ## Mocking policy
 
@@ -86,6 +68,7 @@ covers that case.
 | Testing | Read |
 |---|---|
 | Rules that must hold for *all* inputs; parsers, encoders, boundary bugs; checking the suite can go red at all | [property-based.md](property-based.md) |
+| Judging a test, too much setup, choosing what to assert, coverage doubts | [test-quality.md](test-quality.md) |
 | Rust (`cargo test`, `cargo nextest`) | [languages/rust.md](languages/rust.md) |
 | Python (`pytest`) | [languages/python.md](languages/python.md) |
 | Nix (`nix flake check`, NixOS VM tests) | [languages/nix.md](languages/nix.md) |
