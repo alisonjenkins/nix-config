@@ -35,7 +35,9 @@ saying what failed, which Claude Code shows instead of answering, and logs a
 failure. First it retries for 1.5 s, which rides out a server that is starting or
 has just crashed. `--on-unavailable` (module option `onUnavailable`) changes the policy:
 `keyword` injects the keyword (BM25) matches instead, as snippets for memories and
-sections for skills, and logs the prompt as a keyword fallback; `allow` lets the
+one-line pointers for skills, and logs the prompt as a keyword fallback. BM25 scores
+are scaled so the best match is 1.0 and matches under half of it are dropped, so the
+score says how a match ranks against the others, not how well it fits; `allow` lets the
 prompt through with nothing. The default is `block`, which means Claude Code stops
 answering until the server is back. A prompt with nothing to retrieve passes
 untouched: no `prompt` in the payload, under 12 characters, nothing above the floor,
