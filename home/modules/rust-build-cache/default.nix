@@ -27,7 +27,7 @@ in {
 
       maxAgeDays = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 14;
+        default = 1;
         description = "Delete target artifacts not used for this many days.";
       };
 
