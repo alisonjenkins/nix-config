@@ -325,6 +325,26 @@
           "darwin gets a launchd agent and no systemd unit" =
             darwin.config.launchd.agents ? observability-stack
             && darwin.config.systemd.user.services == { };
+          "no review schedule is rendered unless review.enable is set" =
+            !(base.config.systemd.user.timers ? observability-stack-review)
+            && !(base.config.systemd.user.services ? observability-stack-review)
+            && !(darwin.config.launchd.agents ? observability-stack-review);
+          "linux review runs from a persistent timer on review.schedule" =
+            let e = evalWith { extra.review = { enable = true; schedule = "Tue 07:30"; }; };
+            in e.config.systemd.user.timers.observability-stack-review.Timer.OnCalendar == "Tue 07:30"
+              && e.config.systemd.user.timers.observability-stack-review.Timer.Persistent
+              && lib.hasSuffix "/bin/observability-stack-review"
+                e.config.systemd.user.services.observability-stack-review.Service.ExecStart
+              && e.config.systemd.user.services.observability-stack-review.Service.Type == "oneshot";
+          "darwin review runs from a calendar interval, not a keep-alive" =
+            let
+              e = evalWith { p = darwinPkgs; extra.review = { enable = true; schedule = "Tue 07:05"; }; };
+              c = e.config.launchd.agents.observability-stack-review.config;
+            in c.StartCalendarInterval == [ { Weekday = 2; Hour = 7; Minute = 5; } ]
+              && !(c ? KeepAlive) && !(c ? RunAtLoad);
+          "darwin rejects a review schedule launchd cannot express" =
+            lib.any (m: lib.hasInfix "review.schedule" m) (map (a: a.message)
+              (failedAssertions (evalWith { p = darwinPkgs; extra.review = { enable = true; schedule = "daily"; }; })));
           "both platforms render the same pod ports" =
             let d = darwin.config.modules.observabilityStack.rendered.pod.spec.containers;
             in map (c: c.ports or [ ]) containers == map (c: c.ports or [ ]) d

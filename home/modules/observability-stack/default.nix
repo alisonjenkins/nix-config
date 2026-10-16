@@ -19,7 +19,10 @@ let
     lokiGrpc = 9096;
   };
 
-  ctx = { inherit lib pkgs cfg yaml dataDir stateDir relativeStateDir hostLabel internalPorts; };
+  ctx = {
+    inherit lib pkgs cfg yaml dataDir stateDir relativeStateDir hostLabel internalPorts;
+    homeDirectory = config.home.homeDirectory;
+  };
   configs = import ./configs.nix ctx;
   collector = import ./collector.nix (ctx // { inherit configs; });
   grafana = import ./grafana.nix ctx;
@@ -198,25 +201,25 @@ in
     };
 
     review = {
-      enable = mkEnableOption "the weekly unattended token review (needs the Claude Code CLI and the stack running). Takes effect only once the review runner (spec task T056) is implemented; today it only adds the session-start notice hook";
+      enable = mkEnableOption "the weekly unattended token review (needs the Claude Code CLI and the stack running); schedules it and installs the observability-stack-review command";
       schedule = mkOption {
         type = types.str;
         default = "Mon 06:00";
-        description = "systemd OnCalendar expression on Linux; the weekday and time are mapped to a launchd calendar interval on macOS. Takes effect only once the review runner (T056) is implemented.";
+        description = "systemd OnCalendar expression on Linux; the weekday and time are mapped to a launchd calendar interval on macOS.";
       };
       digestModel = mkOption {
         type = types.str;
         default = "haiku";
-        description = "Model for stage 1, which runs the cc-obs-query commands and submits the digest. Takes effect only once the review runner (T056) is implemented.";
+        description = "Model for stage 1, which runs the cc-obs-query commands and submits the digest.";
       };
       analysisModel = mkOption {
         type = types.str;
         default = "opus";
-        description = "Model for stage 2, which reads only the digest and writes the findings. Takes effect only once the review runner (T056) is implemented.";
+        description = "Model for stage 2, which reads only the digest and writes the findings.";
       };
       maxBudgetUSD = {
-        digest = mkOption { type = types.numbers.positive; default = 0.25; description = "`--max-budget-usd` for stage 1. Takes effect only once the review runner (T056) is implemented."; };
-        analysis = mkOption { type = types.numbers.positive; default = 2.0; description = "`--max-budget-usd` for stage 2. Takes effect only once the review runner (T056) is implemented."; };
+        digest = mkOption { type = types.numbers.positive; default = 0.25; description = "`--max-budget-usd` for stage 1."; };
+        analysis = mkOption { type = types.numbers.positive; default = 2.0; description = "`--max-budget-usd` for stage 2."; };
       };
       claudeCommand = mkOption {
         type = types.str;
@@ -238,7 +241,7 @@ in
         type = types.str;
         default = "${config.xdg.stateHome}/token-review";
         defaultText = lib.literalExpression ''"''${config.xdg.stateHome}/token-review"'';
-        description = "Digests and draft findings. Never inside a repository. The session-start notice reads it today; the review runner (T056) will write it.";
+        description = "Digests and draft findings. Never inside a repository. The review runner writes it; the session-start notice reads it.";
       };
     };
 
@@ -341,6 +344,11 @@ in
         {
           assertion = lib.all imageOk (lib.attrValues cfg.images);
           message = "modules.observabilityStack.images: every image needs a sha256 digest and a tag other than latest (see images.nix).";
+        }
+        {
+          assertion = !(cfg.review.enable && isDarwin)
+            || builtins.match "(Sun|Mon|Tue|Wed|Thu|Fri|Sat) ([01][0-9]|2[0-3]):([0-5][0-9])" cfg.review.schedule != null;
+          message = "modules.observabilityStack.review.schedule \"${cfg.review.schedule}\" is not usable on macOS: launchd has no OnCalendar, so use \"<Day> HH:MM\" such as \"Mon 06:00\".";
         }
         {
           assertion = builtins.match "[A-Za-z0-9][A-Za-z0-9_.-]*" cfg.podmanMachine.name != null;
