@@ -535,6 +535,17 @@
               bats ${self + "/home/modules/observability-stack/tests/disk-guard.bats"}
               touch $out
             '';
+
+        checks.observability-stack-review =
+          pkgs.runCommand "observability-stack-review"
+            {
+              nativeBuildInputs = [ pkgs.bats pkgs.coreutils pkgs.jq pkgs.git ];
+              RUNNER = "${rendered.scripts.review}/bin/observability-stack-review";
+            }
+            ''
+              bats --print-output-on-failure ${self + "/home/modules/observability-stack/tests/review-runner.bats"}
+              touch $out
+            '';
       }
     );
 }

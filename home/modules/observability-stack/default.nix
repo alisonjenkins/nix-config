@@ -24,7 +24,8 @@ let
   collector = import ./collector.nix (ctx // { inherit configs; });
   grafana = import ./grafana.nix ctx;
   pod = import ./pod.nix (ctx // { inherit configs collector grafana; });
-  scripts = import ./scripts.nix (ctx // { inherit pod configs collector grafana; });
+  scripts = import ./scripts.nix (ctx // { inherit pod configs collector grafana; })
+    // { review = (import ./review.nix ctx).runner; };
 
   dataDir =
     if cfg.dataDir != null then cfg.dataDir
@@ -217,6 +218,17 @@ in
         digest = mkOption { type = types.numbers.positive; default = 0.25; description = "`--max-budget-usd` for stage 1. Takes effect only once the review runner (T056) is implemented."; };
         analysis = mkOption { type = types.numbers.positive; default = 2.0; description = "`--max-budget-usd` for stage 2. Takes effect only once the review runner (T056) is implemented."; };
       };
+      claudeCommand = mkOption {
+        type = types.str;
+        default = "claude";
+        description = "Command the runner starts for both stages (resolved on PATH). Empty builds only the baseline digest, with no model call.";
+      };
+      tokenEfficiencyDir = mkOption {
+        type = types.path;
+        default = ../../../docs/token-efficiency;
+        defaultText = lib.literalExpression "docs/token-efficiency of this repository";
+        description = "Directory holding questions.yaml (the versioned question pack) and decisions/.";
+      };
       notify = mkOption {
         type = types.bool;
         default = true;
@@ -281,7 +293,7 @@ in
         collector = collector.config;
         grafanaDatasources = grafana.datasources;
         configFiles = configs.files // collector.files // grafana.files;
-        scripts = { inherit (scripts) run guard; };
+        scripts = { inherit (scripts) run guard review; };
         machineScripts = lib.genAttrs [ "darwin" "linux" ] (os:
           scripts.machineScript { isDarwin = os == "darwin"; machine = cfg.podmanMachine; });
         inherit endpoints;
@@ -401,6 +413,11 @@ in
           Stop = ledger "turn";
           SessionEnd = ledger "end";
         };
+    })
+
+    # Installed for a manual run (observability-stack-review); the schedule is separate.
+    (mkIf (cfg.enable && cfg.review.enable) {
+      home.packages = [ scripts.review ];
     })
 
     (mkIf (cfg.enable && isLinux) (import ./runner-linux.nix (ctx // { inherit scripts; })))
