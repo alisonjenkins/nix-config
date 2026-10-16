@@ -34,3 +34,14 @@ The same rubric, with one addition: check that you actually ran the
 verification you are about to claim. Quote the command output. If a step was
 skipped, say which and why — see `testing`'s "Verification before claiming
 completion".
+
+- **Review before you push or open the PR**, not after. Findings found on an open PR cost
+  a force-push and a rewritten description.
+- **Review the prose as well as the code.** Every factual claim in a commit message, PR body,
+  comment or skill text needs the evidence behind it. "Nothing reads X", "saves N" and "matches"
+  are the usual overreach: write what you observed and what you did not check.
+- **Check every consumer of what you changed.** A skill linked into several agents' directories,
+  a module option read by several hosts, a shared file other branches also edit.
+- **For a fix someone else wrote, an agent included, run the original failing case** and ask
+  whether it removes the failure or only shrinks it. Scaling scores to the best match
+  shrinks a noise problem; the top hit still always passes.
