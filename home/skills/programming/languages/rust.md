@@ -11,6 +11,9 @@
   bar; run both before claiming a change is done.
 - Profiling/benchmarking/SIMD/zero-copy tools: see `../performance.md`'s
   tool table first.
+- rust-analyzer only analyses crates it finds from the session's working
+  directory. A crate not at that root (seen two levels down) had working
+  `documentSymbol` but empty `hover`/`definition`; see `../lsp.md`.
 
 ## Guard rails (mandatory)
 
