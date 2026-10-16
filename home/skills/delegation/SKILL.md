@@ -145,9 +145,8 @@ it run on Sonnet.
 main loop's model (Sonnet here), so the haiku default above only holds if the
 call says `model: "haiku"`. Measured by the observability stack over
 2026-10-09/16 on `ali-desktop`: `general-purpose` sub-agents were 55.8% of
-estimated cost, and Sonnet was 99.7% of all estimated cost against Haiku's
-0.3%. The stack cannot split sub-agents by model, so that the sub-agents ran
-as Sonnet is inferred, not measured. Do not set
+estimated cost, and `cc-obs-query top subagent --by cost` (which splits by model)
+put 99.78% of sub-agent cost on Sonnet and 0.18% on Haiku. Do not set
 `CLAUDE_CODE_SUBAGENT_MODEL` to fix this: it overrides every sub-agent,
 including the consultant agents whose `model:` is deliberate.
 
