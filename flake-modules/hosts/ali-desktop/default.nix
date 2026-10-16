@@ -810,6 +810,10 @@ in {
         # Disable NetworkManager-wait-online — desktop doesn't need network up before login
         systemd.services.NetworkManager-wait-online.enable = false;
 
+        # Activation re-links an unchanged generation at boot (~4s), and a switch
+        # already activates the new one, so the login screen need not wait for it.
+        systemd.services."home-manager-${username}".before = lib.mkForce [ ];
+
         # PCIe link training workaround: the RTL8125 NIC at 10:00.0 is behind 6
         # levels of PCIe switches on X670E (root port 00:02.1 → ... → 0c:03.0 →
         # 10:00.0). A smaller UKI changes UEFI load timing, so the kernel scans PCI
