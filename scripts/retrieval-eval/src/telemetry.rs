@@ -527,6 +527,7 @@ mod tests {
             prompt_id: None,
             outcome: Outcome::Success,
             cause: None,
+            pressure: None,
         }
     }
 

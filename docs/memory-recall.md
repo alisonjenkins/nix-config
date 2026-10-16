@@ -105,7 +105,10 @@ an edit inside one at the next login or `systemctl --user start memory-recall-in
 
 **The trial.** Both hooks append one line per prompt to `logFile`
 (`~/.local/state/memory-recall/recall.jsonl`): time, best score, matches, how many
-in full, tokens added; never the prompt. After a few weeks of use:
+in full, tokens added; never the prompt. Each line also carries a `pressure` object
+read when the hook finished (Linux only): `load1` and the `some avg10` of
+`/proc/pressure/{cpu,memory,io}` as `cpu_some_avg10`, `mem_some_avg10` and
+`io_some_avg10`, to tell a stalled embedder from a busy machine. After a few weeks of use:
 
 ```bash
 memory-recall log-summary ~/.local/state/memory-recall/recall.jsonl

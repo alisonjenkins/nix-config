@@ -90,9 +90,66 @@ pub struct Entry {
     /// Why the run failed (`outcome` is `error`); see `cause_of`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cause: Option<String>,
+    /// System load when the hook finished, to tell a stalled embedder from a busy
+    /// machine. Linux only; numbers, never the prompt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pressure: Option<Pressure>,
+}
+
+/// Load and pressure-stall readings taken when a hook finishes. A field is `None`
+/// when its file is missing or unreadable.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Pressure {
+    /// One-minute load average (`/proc/loadavg`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub load1: Option<f64>,
+    /// Share of the last 10 s some task waited for CPU, percent (`/proc/pressure/cpu`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_some_avg10: Option<f64>,
+    /// Same for memory (`/proc/pressure/memory`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mem_some_avg10: Option<f64>,
+    /// Same for IO (`/proc/pressure/io`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub io_some_avg10: Option<f64>,
+}
+
+/// The first field of a `/proc/loadavg` line.
+pub fn parse_load1(text: &str) -> Option<f64> {
+    text.split_whitespace().next()?.parse().ok()
+}
+
+/// The `some avg10=` value of a `/proc/pressure/*` file.
+pub fn parse_psi_some_avg10(text: &str) -> Option<f64> {
+    let line = text
+        .lines()
+        .find(|line| line.split_whitespace().next() == Some("some"))?;
+    line.split_whitespace()
+        .find_map(|field| field.strip_prefix("avg10="))?
+        .parse()
+        .ok()
+}
+
+/// Reads the pressure files now. Every error is ignored: this runs inside a hook
+/// and must neither fail nor wait. `None` when no file could be read.
+pub fn sample_pressure() -> Option<Pressure> {
+    let read = |path: &str| std::fs::read_to_string(path).ok();
+    let pressure = Pressure {
+        load1: read("/proc/loadavg").and_then(|t| parse_load1(&t)),
+        cpu_some_avg10: read("/proc/pressure/cpu").and_then(|t| parse_psi_some_avg10(&t)),
+        mem_some_avg10: read("/proc/pressure/memory").and_then(|t| parse_psi_some_avg10(&t)),
+        io_some_avg10: read("/proc/pressure/io").and_then(|t| parse_psi_some_avg10(&t)),
+    };
+    (pressure != Pressure::default()).then_some(pressure)
 }
 
 impl Entry {
+    /// This entry with the pressure readings taken now.
+    pub fn with_pressure(mut self) -> Self {
+        self.pressure = sample_pressure();
+        self
+    }
+
     pub fn failure(kind: &str, at: &str, cause: &str) -> Self {
         Self {
             at: at.to_owned(),
@@ -109,6 +166,7 @@ impl Entry {
             prompt_id: None,
             outcome: Outcome::Error,
             cause: Some(cause.to_owned()),
+            pressure: None,
         }
     }
 }
@@ -405,7 +463,47 @@ mod tests {
             prompt_id: None,
             outcome: Outcome::of_matches(matches),
             cause: None,
+            pressure: None,
         }
+    }
+
+    #[test]
+    fn load1_is_the_first_field_of_proc_loadavg() {
+        assert_eq!(parse_load1("1.52 0.98 0.75 2/1234 56789\n"), Some(1.52));
+        assert_eq!(parse_load1(""), None);
+        assert_eq!(parse_load1("busy 1 2"), None);
+    }
+
+    #[test]
+    fn psi_some_avg10_is_read_from_the_some_line() {
+        let text = "some avg10=0.12 avg60=0.34 avg300=0.56 total=123\n\
+                    full avg10=9.00 avg60=0.00 avg300=0.00 total=4\n";
+        assert_eq!(parse_psi_some_avg10(text), Some(0.12));
+        assert_eq!(parse_psi_some_avg10(""), None);
+        assert_eq!(parse_psi_some_avg10("some avg10=x avg60=1"), None);
+        assert_eq!(parse_psi_some_avg10("full avg10=1.00 avg60=1"), None);
+    }
+
+    #[test]
+    fn pressure_round_trips_and_an_unset_field_is_not_written() {
+        let mut with = entry("memory", Some(0.8), 1, 0, 9);
+        with.pressure = Some(Pressure {
+            load1: Some(2.5),
+            cpu_some_avg10: Some(0.5),
+            mem_some_avg10: None,
+            io_some_avg10: Some(1.0),
+        });
+        let line = to_line(&with);
+        assert!(line.contains("\"load1\":2.5") && !line.contains("mem_some_avg10"));
+        assert_eq!(parse_log(&line), vec![with]);
+        let without = to_line(&entry("memory", Some(0.8), 1, 0, 9));
+        assert!(!without.contains("pressure"));
+    }
+
+    #[test]
+    fn old_log_lines_without_a_pressure_field_still_parse() {
+        let old = r#"{"at":"t","kind":"memory","best_score":0.8,"matches":1,"full":0,"tokens":9}"#;
+        assert_eq!(parse_log(old)[0].pressure, None);
     }
 
     #[test]

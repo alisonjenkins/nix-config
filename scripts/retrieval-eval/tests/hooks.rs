@@ -255,7 +255,10 @@ fn a_blocking_hook_waits_for_a_server_that_is_slow_but_alive() {
 fn a_hook_that_can_fall_back_still_waits_for_a_server_that_answers_within_8_s() {
     let (out, entries) = slow_server_run("slowpoke", &["--on-unavailable", "keyword"]);
     assert!(out.status.success(), "{out:?}");
-    assert!(!entries[0].fallback, "a 4 s stall is waited out: {entries:?}");
+    assert!(
+        !entries[0].fallback,
+        "a 4 s stall is waited out: {entries:?}"
+    );
 }
 
 #[test]
@@ -816,6 +819,7 @@ fn log_summary_reads_the_log_and_its_rotated_files() {
             prompt_id: None,
             outcome: retrieval_eval::recall_log::Outcome::Success,
             cause: None,
+            pressure: None,
         })
     };
     fs::write(&log, line(1)).unwrap();

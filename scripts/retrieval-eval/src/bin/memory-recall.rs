@@ -13,8 +13,8 @@ use retrieval_eval::recall::{
     select, write_if_changed, Blocked, Inject, OnUnavailable,
 };
 use retrieval_eval::recall_log::{
-    append_rotating, cause_of, now_iso8601, parse_log, read_all, render_summary, summarise, Entry,
-    Outcome, DEFAULT_ROTATION,
+    append_rotating, cause_of, now_iso8601, parse_log, read_all, render_summary, sample_pressure,
+    summarise, Entry, Outcome, DEFAULT_ROTATION,
 };
 use retrieval_eval::telemetry::{spawn_ship, Targets};
 use retrieval_eval::vector_cache::VectorCache;
@@ -244,6 +244,7 @@ fn recall(
                 prompt_id: None,
                 outcome: Outcome::Empty,
                 cause: None,
+                pressure: sample_pressure(),
             },
         });
     }
@@ -272,7 +273,8 @@ fn recall(
                         "memory",
                         &now_iso8601(),
                         cause_of(&format!("{error:#}")),
-                    ),
+                    )
+                    .with_pressure(),
                 });
             }
             OnUnavailable::Keyword => {
@@ -308,6 +310,7 @@ fn recall(
         prompt_id: None,
         outcome: Outcome::of_matches(hits.len()),
         cause: None,
+        pressure: sample_pressure(),
     };
     Ok(Recalled { context, entry })
 }
@@ -378,7 +381,8 @@ fn run(cli: &Cli) -> Result<()> {
                 Ok(recalled) => recalled,
                 Err(error) => {
                     let mut failure =
-                        Entry::failure("memory", &now_iso8601(), cause_of(&format!("{error:#}")));
+                        Entry::failure("memory", &now_iso8601(), cause_of(&format!("{error:#}")))
+                            .with_pressure();
                     failure.duration_ms = Some(started.elapsed().as_secs_f64() * 1000.0);
                     failure.session_id = session_id.clone();
                     failure.prompt_id = prompt_id.clone();
