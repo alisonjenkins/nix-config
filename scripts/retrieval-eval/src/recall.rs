@@ -217,16 +217,25 @@ pub fn keyword_fallback(chunks: &[Chunk], query: &str, top: usize) -> Vec<(Strin
     if crate::retriever::Retriever::index(&mut bm25, chunks).is_err() {
         return Vec::new();
     }
-    bm25.score_all(query)
-        .map(|scored| {
-            scored
-                .into_iter()
-                .filter(|(_, score)| *score > 0.0)
-                .take(top)
-                .collect()
-        })
-        .unwrap_or_default()
+    let Ok(scored) = bm25.score_all(query) else {
+        return Vec::new();
+    };
+    let best = scored.iter().map(|(_, score)| *score).fold(0.0, f64::max);
+    if best <= 0.0 {
+        return Vec::new();
+    }
+    scored
+        .into_iter()
+        .map(|(id, score)| (id, score / best))
+        .filter(|(_, score)| *score >= KEYWORD_RELATIVE_FLOOR)
+        .take(top)
+        .collect()
 }
+
+/// BM25 scores are unbounded and only comparable within one query, so the
+/// fallback scales them to the best match (1.0) and drops anything under half
+/// of it: a long prompt otherwise drags in every section sharing a common word.
+const KEYWORD_RELATIVE_FLOOR: f64 = 0.5;
 
 /// Skill sections to inject; empty when there are none. A hit's `id` is
 /// `<skill>/<file>#<heading>` and its `body` the section text, cut at `max_chars`.
@@ -673,6 +682,28 @@ mod tests {
         assert!(ids.contains(&"a.md") && ids.contains(&"c.md"));
         assert!(keyword_fallback(&chunks, "quantum chromodynamics", 5).is_empty());
         assert_eq!(keyword_fallback(&chunks, "gearbox", 1).len(), 1);
+    }
+
+    #[test]
+    fn keyword_fallback_scores_are_on_the_cosine_scale_and_drop_weak_matches() {
+        let strong = "gearbox gearbox gearbox gearbox oil";
+        let weak = "oil";
+        let chunks =
+            [("a.md", strong), ("b.md", weak), ("c.md", "tomato")].map(|(id, text)| Chunk {
+                id: id.to_owned(),
+                title: id.to_owned(),
+                text: text.to_owned(),
+            });
+        let hits = keyword_fallback(&chunks, "gearbox oil gearbox", 5);
+        assert!(
+            hits.iter().all(|(_, score)| (0.0..=1.0).contains(score)),
+            "scores above 1 are not cosines: {hits:?}"
+        );
+        assert_eq!(hits.first().map(|(id, _)| id.as_str()), Some("a.md"));
+        assert!(
+            hits.iter().all(|(id, _)| id != "b.md"),
+            "a match far below the best one is noise: {hits:?}"
+        );
     }
 
     fn section(id: &str, score: f64, text: &str) -> Hit {
