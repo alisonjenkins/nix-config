@@ -1,33 +1,32 @@
 { config, lib, pkgs, ... }:
+
 let
-  cfg = config.modules.plymouth;
+  cfg = config.modules.desktop;
   plymouth = lib.getExe' config.boot.plymouth.package "plymouth";
 in
 {
-  options.modules.plymouth = {
-    enable = lib.mkEnableOption "Plymouth boot splash with flicker-free boot";
+  options.modules.desktop.flickerFreeBoot.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Plymouth boot splash, retained on the framebuffer until the display manager takes over.";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf (cfg.enable && cfg.flickerFreeBoot.enable) {
     boot = {
       plymouth.enable = true;
 
+      # loglevel comes from boot.consoleLogLevel (base).
       kernelParams = [
         "splash"
-        "loglevel=3"
         "systemd.show_status=false"
         "vt.global_cursor_default=0"
       ];
     };
 
     systemd.services.plymouth-quit.serviceConfig = {
-      # Clear VT1 text buffer while Plymouth still holds DRM master (so the
-      # clear itself is invisible). When Plymouth then quits and releases
-      # DRM, the kernel shows VT1 which is now blank rather than showing
-      # old boot messages.
+      # Clear VT1 while Plymouth still holds DRM master so the clear is invisible.
       ExecStartPre = "-${pkgs.bash}/bin/bash -c 'echo -ne \"\\033[2J\\033[H\" > /dev/tty1'";
 
-      # Retain the splash image on the framebuffer when quitting.
       ExecStart = [
         ""
         "-${plymouth} quit --retain-splash"

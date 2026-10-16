@@ -22,7 +22,6 @@
     nohang = import ../modules/nohang;
     llama-cpp = import ../modules/llama-cpp;
     opentrack = import ../modules/opentrack;
-    plymouth = import ../modules/plymouth;
     podman = import ../modules/podman;
     power-management = import ../modules/power-management;
     rocm = import ../modules/rocm;

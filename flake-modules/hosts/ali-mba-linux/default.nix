@@ -163,6 +163,8 @@ in {
           # assumptions). Gaming on aarch64 lives in
           # modules.desktop-gaming-arm64 instead.
           gaming.enable = false;
+          # Plymouth is untested on Asahi's framebuffer handover.
+          flickerFreeBoot.enable = false;
           power = {
             hibernateDelaySec = "1h";
             handleLidSwitch = "suspend-then-hibernate";

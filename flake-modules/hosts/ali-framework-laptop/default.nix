@@ -39,7 +39,6 @@ in {
       self.nixosModules.virtual-cameras
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
-      self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.power-management
       self.nixosModules.rocm
@@ -135,7 +134,6 @@ in {
           username = "ali";
         };
         modules.hardware-touchpad.enable = true;
-        modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;
           enableDesktopNotifications = true;

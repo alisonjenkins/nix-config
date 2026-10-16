@@ -394,6 +394,7 @@ in
     inputs.lsfg-vk-flake.nixosModules.default
     inputs.stylix.nixosModules.stylix
     ./craft-apps.nix
+    ./flicker-free-boot.nix
   ] ++ romModules;
 
   options.modules.desktop = {

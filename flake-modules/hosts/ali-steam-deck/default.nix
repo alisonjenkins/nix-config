@@ -244,7 +244,11 @@ in {
           depends = [ "/persistence" ];
         };
 
-        modules.desktop.enable = true;
+        modules.desktop = {
+          enable = true;
+          # Jovian provides the Deck's own boot splash.
+          flickerFreeBoot.enable = false;
+        };
 
         # Built-in-speaker audio underruns under demanding games: the 15 W APU
         # downclocks the CPU when the GPU is maxed, so the RT audio thread can't

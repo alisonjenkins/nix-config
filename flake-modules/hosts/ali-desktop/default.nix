@@ -81,7 +81,6 @@ in {
       self.nixosModules.opentrack
       self.nixosModules.uresourced
       self.nixosModules.virtual-cameras
-      self.nixosModules.plymouth
       self.nixosModules.hardware-scarlett-mixer
       self.nixosModules.rocm
       self.nixosModules.sunshine
@@ -320,7 +319,6 @@ in {
           enable = true;
           virtualCameraIndex = 4;
         };
-        modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;
           enableDesktopNotifications = true;

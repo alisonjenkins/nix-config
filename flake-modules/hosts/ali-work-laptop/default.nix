@@ -40,7 +40,6 @@ in {
       self.nixosModules.llama-cpp
       self.nixosModules.mosh
       self.nixosModules.sunshine
-      self.nixosModules.plymouth
       self.nixosModules.podman
       self.nixosModules.ali-work-laptop-hardware
       self.nixosModules.ali-work-laptop-disko-config
@@ -103,7 +102,6 @@ in {
           username = "ali";
         };
         modules.hardware-touchpad.enable = true;
-        modules.plymouth.enable = true;
         modules.nohang = {
           enable = true;
           enableDesktopNotifications = true;
