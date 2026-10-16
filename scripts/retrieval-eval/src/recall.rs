@@ -160,9 +160,11 @@ pub enum OnUnavailable {
 /// several seconds to page back in, and giving up then blocks the prompt.
 const BLOCKING_WAIT: std::time::Duration = std::time::Duration::from_secs(8);
 
-/// Longest a hook that can fall back (keyword matches, or nothing) waits: it has
-/// a way out, so a stalled server should not also cost the prompt seconds.
-const FALLBACK_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+/// Longest a hook that can fall back (keyword matches, or nothing) waits. From
+/// 2026-10-08 to 2026-10-16, 425 recall events found the server up but silent for
+/// over 3 s; the stalls were short (median 3.1 s, p90 4.1 s, p99 21.6 s), and 8 s
+/// would have absorbed 266 of 282 episodes (94%). Waiting beats a noisy fallback.
+const FALLBACK_WAIT: std::time::Duration = std::time::Duration::from_secs(8);
 
 /// How long a hook waits for the embedding server, by what it does on failure.
 pub fn hook_timeout(on_unavailable: OnUnavailable) -> std::time::Duration {
@@ -640,6 +642,21 @@ mod tests {
         assert_eq!(ids_from_hook_input(r#"{"session_id":"s-1"}"#).1, None);
         assert_eq!(ids_from_hook_input("not json"), (None, None));
         assert_eq!(ids_from_hook_input(r#"{"session_id":""}"#).0, None);
+    }
+
+    #[test]
+    fn hook_timeout_is_8_s_for_every_policy_and_inside_the_hook_timeout() {
+        // The hook timeout in home/modules/memory-recall/default.nix.
+        let hook_timeout_limit = std::time::Duration::from_secs(12);
+        for policy in [
+            OnUnavailable::Block,
+            OnUnavailable::Keyword,
+            OnUnavailable::Allow,
+        ] {
+            let wait = hook_timeout(policy);
+            assert_eq!(wait, std::time::Duration::from_secs(8), "{policy:?}");
+            assert!(wait < hook_timeout_limit, "{policy:?}");
+        }
     }
 
     #[test]

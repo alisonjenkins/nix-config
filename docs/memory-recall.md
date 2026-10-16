@@ -33,7 +33,7 @@ hold its guard rails can make a bad mistake (deleting a production server, say),
 when the hook cannot retrieve them it blocks the prompt: it exits 2 with a message
 saying what failed, which Claude Code shows instead of answering, and logs a
 failure. First it retries for 1.5 s, which rides out a server that is starting or
-has just crashed. `--on-unavailable` (module option `onUnavailable`) changes the policy:
+has just crashed, and each request waits up to 8 s for an answer. `--on-unavailable` (module option `onUnavailable`) changes the policy:
 `keyword` injects the keyword (BM25) matches instead, as snippets for memories and
 one-line pointers for skills, and logs the prompt as a keyword fallback. BM25 scores
 are scaled so the best match is 1.0 and matches under half of it are dropped, so the

@@ -63,6 +63,10 @@ fn serve_on(listener: TcpListener) {
             if body.contains("slowpoke") {
                 thread::sleep(std::time::Duration::from_secs(4));
             }
+            // Past the 8 s a hook that can fall back is willing to wait.
+            if body.contains("stalled") {
+                thread::sleep(std::time::Duration::from_secs(9));
+            }
             let parsed: serde_json::Value = serde_json::from_str(body).unwrap_or_default();
             let data: Vec<serde_json::Value> = parsed["input"]
                 .as_array()
@@ -208,8 +212,9 @@ fn memory_hook_injects_a_match_and_logs_it_without_the_prompt() {
     assert!(!fs::read_to_string(&log).unwrap().contains("alpha problem"));
 }
 
-/// A memory hook over a server that answers after 4 s, with `extra` hook arguments.
-fn slow_server_run(extra: &[&str]) -> (Output, Vec<Entry>) {
+/// A memory hook whose prompt starts with `word` (`slowpoke`: the server answers
+/// after 4 s; `stalled`: after 9 s), with `extra` hook arguments.
+fn slow_server_run(word: &str, extra: &[&str]) -> (Output, Vec<Entry>) {
     let tmp = tempfile::tempdir().unwrap();
     write_memories(&tmp.path().join("mem"));
     let (mem, cache, log) = (
@@ -229,14 +234,14 @@ fn slow_server_run(extra: &[&str]) -> (Output, Vec<Entry>) {
     let out = run(
         MEMORY_BIN,
         &hook,
-        &payload("slowpoke how do I fix the alpha problem"),
+        &payload(&format!("{word} how do I fix the alpha problem")),
     );
     (out, log_entries(&log))
 }
 
 #[test]
 fn a_blocking_hook_waits_for_a_server_that_is_slow_but_alive() {
-    let (out, entries) = slow_server_run(&[]);
+    let (out, entries) = slow_server_run("slowpoke", &[]);
     assert!(
         out.status.success(),
         "a slow server must not block: {out:?}"
@@ -247,10 +252,17 @@ fn a_blocking_hook_waits_for_a_server_that_is_slow_but_alive() {
 }
 
 #[test]
-fn a_hook_that_can_fall_back_gives_up_on_a_slow_server_sooner() {
-    let (out, entries) = slow_server_run(&["--on-unavailable", "keyword"]);
+fn a_hook_that_can_fall_back_still_waits_for_a_server_that_answers_within_8_s() {
+    let (out, entries) = slow_server_run("slowpoke", &["--on-unavailable", "keyword"]);
     assert!(out.status.success(), "{out:?}");
-    assert!(entries[0].fallback, "it falls back after 3 s: {entries:?}");
+    assert!(!entries[0].fallback, "a 4 s stall is waited out: {entries:?}");
+}
+
+#[test]
+fn a_hook_that_can_fall_back_gives_up_on_a_server_silent_for_over_8_s() {
+    let (out, entries) = slow_server_run("stalled", &["--on-unavailable", "keyword"]);
+    assert!(out.status.success(), "{out:?}");
+    assert!(entries[0].fallback, "it falls back after 8 s: {entries:?}");
 }
 
 #[test]
