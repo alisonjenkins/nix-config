@@ -17,6 +17,7 @@
     delegate-to-local =import ../home/modules/delegate-to-local;
     memory-recall = import ../home/modules/memory-recall;
     observability-stack = import ../home/modules/observability-stack;
+    rust-build-cache = import ../home/modules/rust-build-cache;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
