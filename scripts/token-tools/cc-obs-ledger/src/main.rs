@@ -151,9 +151,11 @@ fn census_cmd(state: &Path) -> Result<(), LedgerError> {
         .or_else(|| env::current_dir().ok())
         .unwrap_or_default();
     let home = home_dir();
+    let transcript = hook.transcript_path.map(PathBuf::from);
     let census = census::run(&CensusInput {
         cwd: &cwd,
         home: &home,
+        transcript_path: transcript.as_deref(),
     });
     let text = serde_json::to_string(&census).map_err(|source| LedgerError::ParseFile {
         path: PathBuf::from("census"),

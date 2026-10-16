@@ -18,6 +18,8 @@ pub struct Census {
 pub struct CensusInput<'a> {
     pub cwd: &'a Path,
     pub home: &'a Path,
+    /// The session transcript; its directory is Claude Code's project directory for the session.
+    pub transcript_path: Option<&'a Path>,
 }
 
 /// Claude Code's per-project directory name: the path with `/` and `.` as `-`.
@@ -32,13 +34,43 @@ pub fn run(input: &CensusInput<'_>) -> Census {
     let mut components = BTreeMap::new();
     components.insert("instructions".to_owned(), tokens(instruction_chars(input)));
     components.insert("skills_listing".to_owned(), tokens(skill_chars(input.home)));
-    let memory = input
-        .home
-        .join(".claude/projects")
+    components.insert("memory_index".to_owned(), tokens(memory_chars(input)));
+    Census { components }
+}
+
+/// The first memory index that exists. A worktree session has its own project
+/// directory with no memory in it; Claude Code reads the main checkout's.
+fn memory_chars(input: &CensusInput<'_>) -> u64 {
+    let projects = input.home.join(".claude/projects");
+    let from_transcript = input
+        .transcript_path
+        .and_then(Path::parent)
+        .map(|dir| dir.join("memory/MEMORY.md"));
+    let from_cwd = projects
         .join(project_dir_name(input.cwd))
         .join("memory/MEMORY.md");
-    components.insert("memory_index".to_owned(), tokens(file_chars(&memory)));
-    Census { components }
+    let from_main_checkout = main_checkout(input.cwd).map(|main| {
+        projects
+            .join(project_dir_name(main))
+            .join("memory/MEMORY.md")
+    });
+    from_transcript
+        .into_iter()
+        .chain([from_cwd])
+        .chain(from_main_checkout)
+        .find(|path| path.is_file())
+        .map_or(0, |path| file_chars(&path))
+}
+
+/// The repository root a `<root>/.claude/worktrees/<name>` working directory belongs to.
+fn main_checkout(cwd: &Path) -> Option<&Path> {
+    let marker = Path::new(".claude/worktrees");
+    cwd.ancestors().find_map(|dir| {
+        let parent = dir.parent()?;
+        parent
+            .ends_with(marker)
+            .then(|| parent.parent()?.parent())?
+    })
 }
 
 fn tokens(chars: u64) -> u64 {

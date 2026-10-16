@@ -21,6 +21,7 @@ fn counts_instruction_files_from_the_working_directory_up_to_home() {
     let census = run(&CensusInput {
         cwd: &proj,
         home: home.path(),
+        transcript_path: None,
     });
     assert_eq!(census.components["instructions"], (400 + 800 + 200) / 4);
 }
@@ -36,6 +37,7 @@ fn counts_skill_names_and_descriptions_for_the_listing() {
     let census = run(&CensusInput {
         cwd: home.path(),
         home: home.path(),
+        transcript_path: None,
     });
     assert_eq!(census.components["skills_listing"], 50);
 }
@@ -54,6 +56,7 @@ fn a_folded_multi_line_description_is_counted_whole() {
     let census = run(&CensusInput {
         cwd: home.path(),
         home: home.path(),
+        transcript_path: None,
     });
     assert_eq!(census.components["skills_listing"], (4 + 90 + 100) / 4);
 }
@@ -73,8 +76,66 @@ fn counts_the_memory_index_for_the_project() {
     let census = run(&CensusInput {
         cwd: &proj,
         home: home.path(),
+        transcript_path: None,
     });
     assert_eq!(census.components["memory_index"], 250);
+}
+
+#[test]
+fn a_worktree_session_counts_the_main_checkouts_memory_index() {
+    let home = tempfile::tempdir().unwrap();
+    let main = home.path().join("git/repo");
+    let worktree = main.join(".claude/worktrees/some-name");
+    fs::create_dir_all(&worktree).unwrap();
+    let name = project_dir_name(&main);
+    write(
+        &home
+            .path()
+            .join(format!(".claude/projects/{name}/memory/MEMORY.md")),
+        &"m".repeat(18_000),
+    );
+    let census = run(&CensusInput {
+        cwd: &worktree,
+        home: home.path(),
+        transcript_path: None,
+    });
+    assert_eq!(census.components["memory_index"], 4500);
+}
+
+#[test]
+fn the_transcripts_project_directory_is_authoritative_for_the_memory_index() {
+    let home = tempfile::tempdir().unwrap();
+    let cwd = home.path().join("git/elsewhere");
+    fs::create_dir_all(&cwd).unwrap();
+    let project = home.path().join(".claude/projects/some-other-key");
+    write(&project.join("memory/MEMORY.md"), &"m".repeat(4000));
+    let transcript = project.join("sess.jsonl");
+    let census = run(&CensusInput {
+        cwd: &cwd,
+        home: home.path(),
+        transcript_path: Some(&transcript),
+    });
+    assert_eq!(census.components["memory_index"], 1000);
+}
+
+#[test]
+fn the_main_checkout_still_counts_its_own_memory_index() {
+    let home = tempfile::tempdir().unwrap();
+    let main = home.path().join("git/repo");
+    fs::create_dir_all(&main).unwrap();
+    write(
+        &home.path().join(format!(
+            ".claude/projects/{}/memory/MEMORY.md",
+            project_dir_name(&main)
+        )),
+        &"m".repeat(18_000),
+    );
+    let census = run(&CensusInput {
+        cwd: &main,
+        home: home.path(),
+        transcript_path: None,
+    });
+    assert_eq!(census.components["memory_index"], 4500);
 }
 
 #[test]
@@ -89,6 +150,7 @@ fn nothing_found_counts_zero_not_missing() {
     let census = run(&CensusInput {
         cwd: home.path(),
         home: home.path(),
+        transcript_path: None,
     });
     for key in ["instructions", "skills_listing", "memory_index"] {
         assert_eq!(census.components[key], 0, "{key}");
