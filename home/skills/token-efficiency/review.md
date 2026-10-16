@@ -78,7 +78,10 @@ and proposes `effective`, `ineffective` or `inconclusive`.
   skills 3.0k, system prompt about 14k.
 - **`cache-hit-low-sessions` is dominated by tiny sessions** whose only requests include the
   cold start. Skip sessions under about five requests, or weight by tokens, before drilling in.
-- **The stack cannot split sub-agent cost by model.** Call that attribution inferred.
+- **`top subagent` splits by agent and model.** A row is one agent on one model, with the
+  evidence reference `subagent:<agent>@<model>` (for example
+  `subagent:general-purpose@claude-sonnet-5-5`); `--format detailed` shows the model as its
+  own field. The same agent on two models is two rows, so add them for an agent total.
 - **A tool "saves tokens" only if it replaces the result.** A PostToolUse hook that only adds
   `additionalContext` adds tokens. Test replacement with a positive control: on Claude Code
   2.1.293, `updatedToolOutput` replaced a Bash result only as `{stdout, stderr, interrupted,

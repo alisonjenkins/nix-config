@@ -43,6 +43,7 @@ pub fn ranked(ctx: &Ctx) -> Result<Vec<RankRow>, Error> {
             key,
             value: s.total_bytes / BYTES_PER_TOKEN,
             calls: Some(s.calls),
+            model: None,
             detail: Map::new(),
         })
         .collect();

@@ -63,7 +63,19 @@ pub struct RankRow {
     pub key: String,
     pub value: f64,
     pub calls: Option<u64>,
+    /// Set when the row is one model's share of its key (`top subagent`).
+    pub model: Option<String>,
     pub detail: Map<String, Value>,
+}
+
+impl RankRow {
+    /// What the row is called in an evidence reference: `key`, or `key@model`.
+    pub fn evidence_name(&self) -> String {
+        match &self.model {
+            Some(model) => format!("{}@{model}", self.key),
+            None => self.key.clone(),
+        }
+    }
 }
 
 pub enum Ranked {
@@ -71,15 +83,16 @@ pub enum Ranked {
     Unavailable(String),
 }
 
-/// Prometheus label and extra matchers that carry each category's attribution.
-fn label_spec(category: Category) -> Option<(&'static str, Vec<&'static str>)> {
+/// Prometheus labels and extra matchers that carry each category's attribution.
+/// The first label is the row's key; a second one is the model it ran on.
+fn label_spec(category: Category) -> Option<(&'static [&'static str], Vec<&'static str>)> {
     Some(match category {
-        Category::Model => ("model", vec![]),
-        Category::Project => ("repository", vec![]),
-        Category::Session => ("session_id", vec![]),
-        Category::Skill => ("skill_name", vec!["skill_name!=\"\""]),
-        Category::Mcp => ("mcp_server_name", vec!["mcp_server_name!=\"\""]),
-        Category::Subagent => ("agent_name", vec!["query_source=\"subagent\""]),
+        Category::Model => (&["model"], vec![]),
+        Category::Project => (&["repository"], vec![]),
+        Category::Session => (&["session_id"], vec![]),
+        Category::Skill => (&["skill_name"], vec!["skill_name!=\"\""]),
+        Category::Mcp => (&["mcp_server_name"], vec!["mcp_server_name!=\"\""]),
+        Category::Subagent => (&["agent_name", "model"], vec!["query_source=\"subagent\""]),
         Category::Tool | Category::Memory | Category::Fixed => return None,
     })
 }
@@ -88,12 +101,16 @@ fn rows_from(
     ctx: &Ctx,
     aggregate: &str,
     metric: &str,
-    label: &str,
+    labels: &[&str],
     extra: &[&str],
     window_fn: &str,
 ) -> Result<Vec<RankRow>, Error> {
+    let Some(&label) = labels.first() else {
+        return Ok(Vec::new());
+    };
     let query = format!(
-        "{aggregate} by ({label})({window_fn}({}[{}]))",
+        "{aggregate} by ({})({window_fn}({}[{}]))",
+        labels.join(", "),
         ctx.selector(metric, extra),
         ctx.window.prom()
     );
@@ -102,15 +119,26 @@ fn rows_from(
         .into_iter()
         .filter_map(|s| {
             let key = s.labels.get(label).filter(|k| !k.is_empty())?.clone();
+            let model = labels
+                .get(1)
+                .and_then(|l| s.labels.get(*l))
+                .filter(|m| !m.is_empty())
+                .cloned();
             Some(RankRow {
                 key,
                 value: s.value,
                 calls: None,
+                model,
                 detail: Map::new(),
             })
         })
         .collect();
-    rows.sort_by(|a, b| b.value.total_cmp(&a.value).then_with(|| a.key.cmp(&b.key)));
+    rows.sort_by(|a, b| {
+        b.value
+            .total_cmp(&a.value)
+            .then_with(|| a.key.cmp(&b.key))
+            .then_with(|| a.model.cmp(&b.model))
+    });
     Ok(rows)
 }
 
@@ -131,7 +159,7 @@ fn ranked_or_none(ctx_name: &str, rows: Vec<RankRow>) -> Ranked {
 }
 
 fn rank_cache_hit(ctx: &Ctx) -> Result<Ranked, Error> {
-    let mut rows = rows_from(ctx, "avg", CACHE_HIT, "session_id", &[], "avg_over_time")?;
+    let mut rows = rows_from(ctx, "avg", CACHE_HIT, &["session_id"], &[], "avg_over_time")?;
     ascending(&mut rows);
     Ok(ranked_or_none("session cache hit ratio", rows))
 }
@@ -173,6 +201,7 @@ fn rank_compactions(ctx: &Ctx) -> Result<Ranked, Error> {
                 key,
                 value: s.count as f64,
                 calls: None,
+                model: None,
                 detail,
             }
         })
@@ -182,9 +211,9 @@ fn rank_compactions(ctx: &Ctx) -> Result<Ranked, Error> {
 }
 
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
-    let requests = rows_from(ctx, "sum", RECALL_REQUESTS, "service", &[], "increase")?;
+    let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
-        rows_from(ctx, "sum", RECALL_HITS, "service", &[], "increase")?
+        rows_from(ctx, "sum", RECALL_HITS, &["service"], &[], "increase")?
             .into_iter()
             .map(|r| (r.key, r.value))
             .collect();
@@ -201,6 +230,7 @@ fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
                 value: used / r.value,
                 key: r.key,
                 calls: None,
+                model: None,
                 detail,
             }
         })
@@ -236,7 +266,7 @@ pub fn rank(ctx: &Ctx, category: Category, by: By) -> Result<Ranked, Error> {
                     "cost is not attributed to fixed context; rank by tokens".to_owned(),
                 ));
             }
-            rows_from(ctx, "avg", FIXED, "component", &[], "avg_over_time")?
+            rows_from(ctx, "avg", FIXED, &["component"], &[], "avg_over_time")?
         }
         Category::Memory => {
             if by == By::Cost {
@@ -244,14 +274,14 @@ pub fn rank(ctx: &Ctx, category: Category, by: By) -> Result<Ranked, Error> {
                     "cost is not attributed to injected memory; rank by tokens".to_owned(),
                 ));
             }
-            rows_from(ctx, "sum", RECALL_TOKENS, "service", &[], "increase")?
+            rows_from(ctx, "sum", RECALL_TOKENS, &["service"], &[], "increase")?
         }
         other => {
-            let Some((label, extra)) = label_spec(other) else {
+            let Some((labels, extra)) = label_spec(other) else {
                 return Ok(none());
             };
             let metric = if by == By::Cost { COST } else { TOKENS };
-            let mut rows = rows_from(ctx, "sum", metric, label, &extra, "increase")?;
+            let mut rows = rows_from(ctx, "sum", metric, labels, &extra, "increase")?;
             if other == Category::Session {
                 add_cache_hit(ctx, &mut rows);
             }
@@ -267,7 +297,7 @@ pub fn rank(ctx: &Ctx, category: Category, by: By) -> Result<Ranked, Error> {
 
 fn add_cache_hit(ctx: &Ctx, rows: &mut [RankRow]) {
     let ratios: Result<BTreeMap<String, f64>, Error> =
-        rows_from(ctx, "avg", CACHE_HIT, "session_id", &[], "avg_over_time")
+        rows_from(ctx, "avg", CACHE_HIT, &["session_id"], &[], "avg_over_time")
             .map(|r| r.into_iter().map(|row| (row.key, row.value)).collect());
     for row in rows {
         let value = match &ratios {
@@ -295,10 +325,14 @@ pub fn row_json(category: Category, row: &RankRow, total: Option<f64>) -> Value 
     }
     object.insert(
         "evidence".to_owned(),
-        json!(format!("{}:{}", category.name(), row.key)),
+        json!(format!("{}:{}", category.name(), row.evidence_name())),
     );
-    if !row.detail.is_empty() {
-        object.insert("detail".to_owned(), Value::Object(row.detail.clone()));
+    let mut detail = row.detail.clone();
+    if let Some(model) = &row.model {
+        detail.insert("model".to_owned(), json!(model));
+    }
+    if !detail.is_empty() {
+        object.insert("detail".to_owned(), Value::Object(detail));
     }
     Value::Object(object)
 }

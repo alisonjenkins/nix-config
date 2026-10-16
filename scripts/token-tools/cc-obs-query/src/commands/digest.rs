@@ -669,7 +669,13 @@ fn check_evidence(
         };
         let keys = known.entry(kind.to_owned()).or_insert_with(|| {
             match rank(&ctx, category, By::Tokens) {
-                Ok(Ranked::Rows(rows)) => Ok(rows.into_iter().map(|r| r.key).collect()),
+                Ok(Ranked::Rows(rows)) => {
+                    // the bare key stays valid for an agent that ran on one model
+                    Ok(rows
+                        .into_iter()
+                        .flat_map(|r| [r.evidence_name(), r.key])
+                        .collect())
+                }
                 Ok(Ranked::Unavailable(_)) => Ok(BTreeSet::new()),
                 Err(e) => Err(e.to_string()),
             }
