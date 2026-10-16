@@ -32,6 +32,22 @@ module fails evaluation and says so if it is missing. Everything else has defaul
 Open Grafana at `http://localhost:3000`. Browsing via `http://127.0.0.1:3000` is redirected to localhost by design, to block DNS-rebinding attacks from web pages. This is not verified against a running Grafana yet; quickstart section 4 will check it. Client tools read ports from
 `~/.config/cc-obs/endpoints.json`, which the module writes.
 
+## Weekly token review
+
+Off by default. `modules.observabilityStack.review.enable = true` installs a systemd user
+timer (Linux) or launchd calendar interval (macOS) that runs `observability-stack-review`
+on `review.schedule` (default `Mon 06:00`; macOS accepts only `<Day> HH:MM`). It needs the
+Claude Code CLI on the service's `PATH` (`review.claudeCommand`; set it to `""` for a
+no-model run that builds only the baseline digest) and the stack running.
+
+| Step | What happens |
+|---|---|
+| Window | 7 days, or the days since the newest findings file's period end when that is longer, so a week whose stage 2 failed is covered again (with no model, the newest digest is used instead) |
+| Stage 1 | `review.digestModel` runs `cc-obs-query` and replies with a digest; the runner validates it with `cc-obs-query digest --write`. A nonzero exit, a budget stop or a rejected digest falls back to `digest --baseline` (`stage1: "baseline"`) |
+| Stage 2 | `review.analysisModel` reads only the digest, with no tools, and writes at most 5 findings. The runner rejects output that is empty, over 16 KiB, or not `## 1.` to `## 5.` headings, and records a failure instead of a findings file. Stage 1 is limited to the Bash tool and the `cc-obs-query` subcommands digest --baseline, top, tool, session and repeats |
+| Spend | `--max-budget-usd` per stage from `review.maxBudgetUSD.{digest,analysis}`; each stage runs with `--setting-sources ""`, `--strict-mcp-config`, `--disable-slash-commands` and `review.run=1` appended to `OTEL_RESOURCE_ATTRIBUTES` |
+| Output | `review.stateDir`: `digests/<date>-<host>.json`, `findings/<date>-<host>.md` (own_cost_usd is the two stages' reported cost), `failures/<time>-<stage>.json` when a stage fails. Never inside a repository, never committed; promote a findings file into `docs/token-efficiency/reviews/` by hand |
+
 ## What is collected, and what is not
 
 Claude Code's own telemetry (metrics, events, beta traces) goes to the collector. The
@@ -61,6 +77,7 @@ nix build .#checks.x86_64-linux.observability-stack-redaction-default  # real co
 nix build .#checks.x86_64-linux.observability-stack-redaction-prompts  # canary prompt text is dropped unless capturePrompts is on
 nix build .#checks.x86_64-linux.observability-stack-redaction-tools    # canary tool parameters and inputs are dropped unless captureToolDetails is on
 nix build .#checks.x86_64-linux.observability-stack-guard            # disk guard: state file, no collector stop, notifications, metrics
+nix build .#checks.x86_64-linux.observability-stack-review           # review runner: stages, baseline fallback, failure records, catch-up
 ```
 
 The runtime (podman, containers, real ingest) is not covered by CI; the manual steps
@@ -68,8 +85,10 @@ are in the spec's `quickstart.md`.
 
 ## Known limits
 
-- The review runner and its schedule (ADR 0037, spec T056 and T059) are not built yet.
-  Token reviews are run by hand with `cc-obs-query` or `cc-obs-query digest --baseline`.
+- The review runner has only been run against fake `claude` and `cc-obs-query` commands
+  (the `observability-stack-review` check). No real model or live stack has run it yet;
+  that is the manual first review (spec T061). Run it by hand with
+  `observability-stack-review` (it is on `PATH` once `review.enable` is set).
 - Loki-backed `cc-obs-query` commands page through a bounded number of records. A
   truncated answer is marked as truncated and gives a `next` offset; its figures are a
   lower bound until the rest is read.

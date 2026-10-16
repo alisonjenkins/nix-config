@@ -1,16 +1,17 @@
 # Running a token review
 
-The weekly review is run by hand for now. The unattended runner (spec T056) and its
-schedule (T059) are not built yet, so no digest or draft findings appear on their own.
-The owner runs the `cc-obs-query` commands below, or the baseline digest
-(`cc-obs-query digest --baseline --since 7d`). The scheduled version is planned
-(ADR 0037); its output will go to `~/.local/state/token-review/<host>/`.
+The unattended runner (`observability-stack-review`, ADR 0037) runs weekly when
+`modules.observabilityStack.review.enable` is set, and writes to the review state
+directory (default `~/.local/state/token-review/`): `digests/<date>-<host>.json`,
+`findings/<date>-<host>.md` and `failures/` records. It has only run against fakes so far,
+so check the newest `failures/` file first. This procedure is for a review run by hand,
+or one that needs more than the runner's bounded drill-downs: the `cc-obs-query` commands
+below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 
 ## Steps
 
-1. **Get the digest.** Make one: `cc-obs-query digest --baseline --since 7d`
-   (mechanical, no model). Once the scheduled runner exists, its newest `*.digest.json`
-   in the state directory can be read instead. Check `stage1`
+1. **Get the digest.** Read the newest file in the state directory's `digests/`, or make
+   one: `cc-obs-query digest --baseline --since 7d` (mechanical, no model). Check `stage1`
    (`model` or `baseline`), the `period`, `stack.gaps` and `own_cost`.
 2. **Read the totals first.** Tokens, estimated cost, sessions. If the period is short or a
    gap covers most of it, say the review is thin and stop early.

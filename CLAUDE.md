@@ -184,7 +184,7 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 
 ### Observability stack
 
-`modules.observabilityStack` (`home/modules/observability-stack`, off by default) runs Loki, Tempo, Prometheus, Grafana and an OTel collector as one podman pod (systemd user service on Linux, launchd agent on macOS) and points Claude Code's telemetry at it, to find where tokens go. Code in `scripts/token-tools` (`cc-obs-ledger` hook tool, `cc-obs-query` CLI). How to use it, the privacy gates and checks: `docs/observability-stack.md`, ADRs 0034 and 0035, design in `specs/007-local-observability-stack/`. The weekly token review runner and schedule (ADR 0037, T056/T059) are not built yet; reviews are run by hand.
+`modules.observabilityStack` (`home/modules/observability-stack`, off by default) runs Loki, Tempo, Prometheus, Grafana and an OTel collector as one podman pod (systemd user service on Linux, launchd agent on macOS) and points Claude Code's telemetry at it, to find where tokens go. Code in `scripts/token-tools` (`cc-obs-ledger` hook tool, `cc-obs-query` CLI). How to use it, the privacy gates and checks: `docs/observability-stack.md`, ADRs 0034 and 0035, design in `specs/007-local-observability-stack/`. The weekly two-tier token review (`review.enable`, runner `observability-stack-review`, timer or launchd interval; ADR 0037) is built and tested against fakes; the first real review (T061) is still manual.
 
 ### Rust build cache
 
