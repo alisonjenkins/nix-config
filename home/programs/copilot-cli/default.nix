@@ -104,18 +104,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # token-savior gives the CLI symbol-level code navigation; the bash wrapper
-    # is needed because the config has no shell, so $PWD would not expand.
-    programs.copilot-cli.mcpServers.token-savior = {
-      command = "bash";
-      args = [
-        "-c"
-        ''
-          exec env WORKSPACE_ROOTS="$PWD" TOKEN_SAVIOR_CLIENT=copilot-cli TOKEN_SAVIOR_PROFILE=optimized ${pkgs.token-savior}/bin/token-savior
-        ''
-      ];
-    };
-
     home.activation.copilotCliConfig = inputs.home-manager.lib.hm.dag.entryAfter [ "writeBoundary" ] (
       lib.concatStringsSep "\n" (
         (lib.mapAttrsToList
