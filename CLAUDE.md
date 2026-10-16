@@ -186,6 +186,10 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 
 `modules.observabilityStack` (`home/modules/observability-stack`, off by default) runs Loki, Tempo, Prometheus, Grafana and an OTel collector as one podman pod (systemd user service on Linux, launchd agent on macOS) and points Claude Code's telemetry at it, to find where tokens go. Code in `scripts/token-tools` (`cc-obs-ledger` hook tool, `cc-obs-query` CLI). How to use it, the privacy gates and checks: `docs/observability-stack.md`, ADRs 0034 and 0035, design in `specs/007-local-observability-stack/`. The weekly token review runner and schedule (ADR 0037, T056/T059) are not built yet; reviews are run by hand.
 
+### Rust build cache
+
+`modules.rustBuildCache` (`home/modules/rust-build-cache`, on by default for `modules.desktop` hosts) sets sccache as the cargo rustc wrapper and runs a daily `cargo-sweep` over `~/git` (targets unused for 1 day) so worktrees stop filling `/home`. Why and the measurements: ADR 0043.
+
 ### Dev workflows + pending work
 
 - **How to** modify configs / add hosts / modules / flake-modules / secrets → the **`nix-config-workflows`** skill (`.claude/skills/nix-config-workflows/SKILL.md`), auto-loads for that work.
