@@ -15,24 +15,14 @@ editing: toolchain, idioms, and traps.
 
 - **Match the surrounding code — except comment density.** Naming style,
   error handling, and file layout come from the neighbours, not your
-  defaults. A diff that reads like the rest of the file beats one that is
-  independently prettier. Comment density is the exception: a file full of
-  comment noise is not a convention to match. Do not add comments because the
+  defaults. Comment density is the exception: do not add comments because the
   file already has many.
-- **Default to no comments.** This overrides "match the surrounding code":
-  an over-commented neighbour is never a reason to add more. Well-named
-  identifiers already say what the code does; a comment restating that is
-  noise. Write one only when the *why* is non-obvious — a hidden constraint,
-  a subtle invariant, a workaround for a specific bug, behaviour that would
-  surprise a reader — and drop it if its absence would not confuse a future
-  reader. Never comment what the code does, reference the current task, fix,
-  caller, or issue number (`used by X`, `added for the Y flow`, `handles the
-  case from issue #123`), or leave a `// removed` marker for deleted code.
-  Explaining *why* a workaround exists is fine; citing the ticket is not.
-- **Comments earn their place, then get out of the way.** One short line,
-  plain words, the constraint stated directly — no multi-line blocks, no
-  second sentence restating the first. Same bar as the `writing` skill's
-  dyslexia/ADHD baseline.
+- **Default to no comments.** Write one only when the *why* is non-obvious (a
+  hidden constraint, a subtle invariant, a workaround), in one short line of
+  plain words. Never comment what the code does, reference the current task,
+  caller or issue number, or leave a `// removed` marker. Full wording and
+  examples: [general-rules-detail.md](general-rules-detail.md), read it before
+  adding or editing any comment.
 - **Errors carry context.** Never discard an error to satisfy a type. Either
   handle it, or propagate it with enough context that the log line alone
   identifies the failing operation and its inputs.
@@ -42,29 +32,23 @@ editing: toolchain, idioms, and traps.
   silently narrow it, and do not refactor unrelated code in the same change.
 - **Reuse before writing.** Search for an existing helper before adding one.
   Duplicated logic is the default failure mode of agent-written code.
-- **Ask the language server, not grep, about meaning.** Definitions,
-  references, callers, types: use the `LSP` tool when it is available, and
-  list references before changing a signature or renaming. An empty answer is
-  not "none" — see [lsp.md](lsp.md).
+- **Ask the language server, not grep, about meaning.** Use the `LSP` tool
+  when available; list references before changing a signature or renaming.
+  An empty answer is not "none" — see [lsp.md](lsp.md).
 - **Idempotence at the boundaries.** Anything that touches an external system
   checks current state before mutating, and is safe to re-run.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
   retry count, buffer size) gets a name and a one-line justification.
 - **Don't program by coincidence.** If you cannot say *why* it works, it only
-  happens to pass. Code arrived at by permuting until the test went green is
-  the most expensive kind to own: the next person, including you, will assume
-  it was reasoned. Understand the mechanism, or say plainly that you have not.
-- **Name well; rename when needed.** A name that no longer describes the thing
-  is a defect, not cosmetics: it misleads every later reader. Renaming the
-  thing you are already changing is part of the change; renaming things you
-  are not otherwise touching is scope creep.
-- **Don't live with broken windows.** A known-wrong thing left in place
-  licenses the next one, and the decay compounds. Fix it if in reach; if
-  genuinely out of scope, record it where it will be found. Never step over
-  it silently.
+  happens to pass. Understand the mechanism, or say plainly that you have not.
+- **Name well; rename when needed.** A stale name is a defect. Rename what you
+  are already changing; renaming untouched things is scope creep.
+- **Don't live with broken windows.** Fix a known-wrong thing if in reach; if
+  out of scope, record it where it will be found. Never step over it silently.
 - **Treat reluctance as a signal.** Circling a change without starting it
-  usually means the requirement is unclear or the design is wrong, not that
-  the work is unpleasant. Re-read the requirement before pushing through.
+  means the requirement is unclear or the design is wrong; re-read the
+  requirement. (Reasoning for these four:
+  [general-rules-detail.md](general-rules-detail.md).)
 - **Delegating code work to a sub-agent means naming this skill in its
   prompt** — see the `delegation` skill for why and how.
 
@@ -80,6 +64,7 @@ Independent of language. Read the one that matches what the change involves.
 | Any new code path, log line, error, retry, or state transition — anything that should be answerable from output later instead of re-derived by guessing | [observability.md](observability.md) |
 | Making something faster, profiling, benchmarking, or a SIMD/vectorization change | [performance.md](performance.md) |
 | Finding a definition, callers or references, a type, a rename or signature change; an LSP answer that came back empty | [lsp.md](lsp.md) |
+| Adding or editing a comment; the full reasoning behind the general rules | [general-rules-detail.md](general-rules-detail.md) |
 
 ## Per-language routing
 
@@ -97,15 +82,12 @@ Read the file matching what you are editing. If several apply, read each.
 
 ## Related
 
-- The ask is unclear (it named a solution rather than a problem, or you are
-  about to guess between two readings): the `requirements` skill, before any
-  of this.
-- Deciding the shape of the change (where a responsibility belongs, whether
-  to split a module, why a small change touches many files): the `design`
-  skill, before writing, not after.
-- Finding out *why* something is broken, before writing the fix: the
-  `debugging` skill. That one locates the fault and decides which evidence to
-  trust; this one writes the change. A bug fix uses both, in that order.
+- The ask is unclear (named a solution not a problem, or you would guess):
+  `requirements`, before any of this.
+- Deciding the shape of the change (where code belongs, splitting a module):
+  `design`, before writing, not after.
+- Why something is broken: `debugging` locates the fault first; this skill
+  writes the change. A bug fix uses both, in that order.
 - Tests for the code you are writing: the `testing` skill.
 - Committing the result: the `git` skill.
 - Reviewing a finished diff: the `review` skill.
