@@ -57,7 +57,32 @@ the host, the baseline figure and unit. Do not write `outcome` yourself on the d
 a later review measures it with `cc-obs-query compare <question> --a <before> --b <after>`
 and proposes `effective`, `ineffective` or `inconclusive`.
 
+## Lessons from the first manual review (2026-10-16, ali-desktop)
+
+- **Check the instrument before ranking on it.** Run one `claude -p "..." --model haiku
+  --output-format json` and compare its `total_cost_usd` and four token counts with the
+  stack's figures for that session. They matched exactly. The census split did not: it put
+  the memory index at 0.45k tokens when it measured about 4.6k, so a lever picked from it
+  was wrong.
+- **Window totals use `increase(...[7d])`.** An instant `sum(counter)` covers only series
+  that are live now and read about 100x low. `obs:token_cost_usd_estimate` sums cumulative
+  counters before any `increase()`, so it over-counts over a window; do not use it for totals.
+- **Tokens and cost count different things.** `--by tokens` is new input and output only;
+  cost includes cache reads and writes. Cache reads were about 70% of cost, so fixed context
+  re-read from cache is where the money goes even when its token share looks modest.
+- **Measure fixed context by removing one component at a time**, summing input, cache read
+  and cache creation of the one request: `--strict-mcp-config` (MCP), `--disable-slash-commands`
+  (skills), `--tools ""` (built-in tool schemas), `--setting-sources ""` (settings, CLAUDE.md,
+  hooks). It was 53.8k tokens here: built-in tool schemas 17.8k, MCP 9.5k, settings 9.3k,
+  skills 3.0k, system prompt about 14k.
+- **`cache-hit-low-sessions` is dominated by tiny sessions** whose only requests include the
+  cold start. Skip sessions under about five requests, or weight by tokens, before drilling in.
+- **The stack cannot split sub-agent cost by model.** Call that attribution inferred.
+- **A tool "saves tokens" only if it replaces the result.** A PostToolUse hook that only adds
+  `additionalContext` adds tokens. Test replacement with a positive control: on Claude Code
+  2.1.293, `updatedToolOutput` replaced a Bash result only as `{stdout, stderr, interrupted,
+  isImage}`; a bare string was ignored.
+
 ## Provisional
 
-The thresholds and the ranking weights have not been tested on real data. After the first
-real review, replace this note with what worked and what was noise.
+The thresholds and the ranking weights are still untested beyond that one review.
