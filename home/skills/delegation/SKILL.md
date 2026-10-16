@@ -324,6 +324,12 @@ evidence the task needed judgement after all (see the test above), so redo it
 at sonnet rather than retrying the same tier. A wrong result at the right tier
 means the prompt was underspecified — fix the prompt, not just the output.
 
+An agent's report is a claim, not a result. Before acting on a load-bearing one (a field
+name, a version, "this works on your build"), run the cheapest positive control yourself.
+One research report said a hook field replaced tool output while bug reports said it did
+not; a ten-line test on the installed build settled it. Review an agent's diff as you
+would your own, and check it against the original failure, not against its summary.
+
 ## Writing the prompt
 
 - Sub-agent prompts must be self-contained: every path, ID, query, and the
