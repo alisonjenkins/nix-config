@@ -405,6 +405,16 @@ in
       description = "Wallpaper image path for stylix theming.";
     };
 
+    rustBuildCache.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Enable the home-manager rust-build-cache module (sccache, slimmer dev
+        profiles, periodic cargo-sweep) for every user. Only takes effect on
+        hosts that use home-manager.
+      '';
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -1274,6 +1284,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    home-manager = mkIf (cfg.rustBuildCache.enable && config ? home-manager) {
+      sharedModules = [
+        inputs.self.homeModules.rust-build-cache
+        { modules.rustBuildCache.enable = mkDefault true; }
+      ];
+    };
+
     assertions = [
       {
         assertion = config.hardware.graphics.package.stdenv.cc.libc.version == pkgs.stdenv.cc.libc.version;
