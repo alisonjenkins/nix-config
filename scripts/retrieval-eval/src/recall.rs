@@ -291,6 +291,17 @@ pub fn render_section_tiers(
     out
 }
 
+/// Sections found by keyword when the embedding server is down. BM25 says a
+/// section shares words with the prompt, not that it applies, and the best hit is
+/// always scaled to 1.0, so none earns its full text: each is a one-line pointer.
+pub fn render_keyword_sections(skills_root: &Path, hits: &[Hit]) -> String {
+    render_section_tiers(skills_root, hits, 0, f64::INFINITY).replacen(
+        "(semantic match, best first)",
+        "(keyword match, best first)",
+        1,
+    )
+}
+
 fn cut_line(line: &str, max_chars: usize) -> String {
     if line.chars().count() <= max_chars {
         return line.to_owned();
@@ -749,6 +760,27 @@ mod tests {
         );
         assert!(!text.contains("second line stays out"));
         assert!(text.find("a.md").unwrap() < text.find("b.md").unwrap());
+    }
+
+    #[test]
+    fn keyword_sections_are_pointers_under_a_keyword_header() {
+        let hits = [
+            section("p/a.md#Top", 1.0, "first line here\nsecond line stays out"),
+            section("p/b.md#Next", 0.6, "other\nmore text"),
+        ];
+        let text = render_keyword_sections(Path::new("/s"), &hits);
+        assert!(text.contains("(keyword match, best first)"), "{text}");
+        assert!(!text.contains("semantic match"), "{text}");
+        assert!(
+            text.contains("- /s/p/a.md#Top (1.00): first line here\n"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("## "),
+            "a keyword hit must not expand: {text}"
+        );
+        assert!(!text.contains("second line stays out"));
+        assert!(render_keyword_sections(Path::new("/s"), &[]).is_empty());
     }
 
     #[test]

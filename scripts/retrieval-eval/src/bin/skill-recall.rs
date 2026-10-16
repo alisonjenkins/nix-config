@@ -12,7 +12,8 @@ use retrieval_eval::embed::{Embedder, EmbedderSpec};
 use retrieval_eval::queries;
 use retrieval_eval::recall::{
     blocked_message, cap_context, hook_output, ids_from_hook_input, keyword_fallback,
-    prompt_from_hook_input, render_section_tiers, retry_until, select, Blocked, Hit, OnUnavailable,
+    prompt_from_hook_input, render_keyword_sections, render_section_tiers, retry_until, select,
+    Blocked, Hit, OnUnavailable,
 };
 use retrieval_eval::recall_log::{
     append_rotating, cause_of, now_iso8601, Entry, Outcome, DEFAULT_ROTATION,
@@ -268,14 +269,18 @@ fn recall(
             })
         })
         .collect();
-    // Keyword scores are not cosines, so every keyword match is shown in full.
     let full_score = if fallback {
-        f64::NEG_INFINITY
+        f64::INFINITY
     } else {
         selection.full_score
     };
+    let sections = if fallback {
+        render_keyword_sections(&cli.skills_root, &hits)
+    } else {
+        render_section_tiers(&cli.skills_root, &hits, selection.section_chars, full_score)
+    };
     let context = cap_context(
-        render_section_tiers(&cli.skills_root, &hits, selection.section_chars, full_score),
+        sections,
         selection.max_tokens.saturating_mul(BYTES_PER_TOKEN),
     );
     let entry = Entry {
