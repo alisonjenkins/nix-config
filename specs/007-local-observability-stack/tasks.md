@@ -218,7 +218,7 @@ description: "Task list for the local observability stack"
 ## Phase 10: Polish and cross-cutting
 
 - [X] T076 [P] Write the topic doc `docs/observability-stack.md` (how to enable, ports, retention, privacy gates, review workflow, troubleshooting) and add one pointer line to `CLAUDE.md` under Key Systems
-- [ ] T077 [P] Add the remaining ADR entries and index lines in `docs/adr/README.md` for decisions made during implementation (spike outcomes that changed the plan)
+- [X] T077 [P] Add the remaining ADR entries and index lines in `docs/adr/README.md` for decisions made during implementation (spike outcomes that changed the plan)
 - [X] T078 Run `prek run --all-files` and `just check`; fix findings in separate fixup commits against the commit they correct
 - [ ] T079 Run `quickstart.md` end to end once more on `ali-desktop` and `ali-work-laptop-macos`; confirm SC-001 to SC-015 and save the final evidence index to `specs/007-local-observability-stack/evidence/README.md`
 - [X] T080 Confirm no secrets reached the Nix store or any log (grep rendered configs and the store paths of the pod), and that no file under `docs/token-efficiency/` contains prompt or file content
