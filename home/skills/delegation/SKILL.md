@@ -151,6 +151,24 @@ as Sonnet is inferred, not measured. Do not set
 `CLAUDE_CODE_SUBAGENT_MODEL` to fix this: it overrides every sub-agent,
 including the consultant agents whose `model:` is deliberate.
 
+**Put edit-and-build workers on Haiku, and bound their runs.** One orchestration day on
+`ali-desktop` (2026-10-16, 37 sub-agents, $452 at list price) showed that 36 of 37 runs were
+Bash and Edit loops with a build or test as the done-check, a median of 124 requests, and
+that cache reads were 86% of sub-agent cost: a long run re-reads its growing context on every
+request, and the periodic progress summaries re-read it again. Cache reads cost $0.20 per
+million tokens on Sonnet and $0.01 on Haiku. So when the done-check is a build or test, spawn
+`haiku-worker`, and keep Sonnet for steps whose design is still open. Give each agent a narrow
+scope and tell it to commit early and hand back with the state at about 150 requests; start a
+fresh agent for the next phase rather than letting one context grow. Tried on 2026-10-16:
+two shipped Sonnet tasks (a 3-test census fix, and an 8 s wait plus pressure logging in two
+commits) replayed on `haiku-worker` from their original bases both passed the full test
+suite and clippy when re-run by hand, in 23 and 79 tool calls against Sonnet's 26 and 69,
+10 to 40% slower. The three `haiku-worker` runs in those two hours (those two and a
+measurement task) cost $0.27 in total. Two caveats: the specs were fully written (the census diagnosis was
+given), and Haiku found the same 16 s worst case as Sonnet only because the prompt asked for
+anything it was unsure about. Give Haiku a spec and a done-check, and ask for doubts; keep
+root-cause hunting on Sonnet.
+
 ### The per-machine ladder
 
 Below haiku there is a cheaper rung, and which one depends on the machine.
