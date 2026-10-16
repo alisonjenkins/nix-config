@@ -76,8 +76,10 @@ and proposes `effective`, `ineffective` or `inconclusive`.
   (skills), `--tools ""` (built-in tool schemas), `--setting-sources ""` (settings, CLAUDE.md,
   hooks). It was 53.8k tokens here: built-in tool schemas 17.8k, MCP 9.5k, settings 9.3k,
   skills 3.0k, system prompt about 14k.
-- **`cache-hit-low-sessions` is dominated by tiny sessions** whose only requests include the
-  cold start. Skip sessions under about five requests, or weight by tokens, before drilling in.
+- **`cache-hit-low-sessions` ranks sessions of five or more requests**, by cacheRead over
+  cacheRead + cacheCreation + input across the window (`--min-requests N` changes the
+  floor). Tiny sessions used to dominate it because their only requests include the cold
+  start; do not read a low ratio from a session under five requests as a finding.
 - **`top subagent` splits by agent and model.** A row is one agent on one model, with the
   evidence reference `subagent:<agent>@<model>` (for example
   `subagent:general-purpose@claude-sonnet-5-5`); `--format detailed` shows the model as its

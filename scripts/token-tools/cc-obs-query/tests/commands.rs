@@ -101,8 +101,11 @@ fn top_fixed_by_cost_is_unavailable() {
 #[test]
 fn top_session_adds_cache_hit_ratio_detail_when_asked() {
     let fake = serve(with_own(vec![
-        ("cc_obs_ledger_cache_hit_ratio", {
-            r#"{"status":"success","data":{"resultType":"vector","result":[{"metric":{"session_id":"s1"},"value":[1760000000.0,"0.42"]}]}}"#.to_owned()
+        ("type=\"cacheRead\"", {
+            r#"{"status":"success","data":{"resultType":"vector","result":[{"metric":{"session_id":"s1"},"value":[1760000000.0,"42"]}]}}"#.to_owned()
+        }),
+        ("type=~\"cacheRead|cacheCreation|input\"", {
+            r#"{"status":"success","data":{"resultType":"vector","result":[{"metric":{"session_id":"s1"},"value":[1760000000.0,"100"]}]}}"#.to_owned()
         }),
         ("by (session_id)", fixture("prom_tokens_by_session.json")),
     ]));

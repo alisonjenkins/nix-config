@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use clap::ValueEnum;
 use serde_json::{json, Map, Value};
 
-use super::top::{rank, By, Category, Ranked};
+use super::top::{rank, By, Category, Ranked, DEFAULT_MIN_REQUESTS};
 use super::{health, own_cost_of, query_report, question_cli, Ctx, COST, TOKENS};
 use crate::backend::Backend;
 use crate::bounds::{figure, num};
@@ -668,7 +668,7 @@ fn check_evidence(
             continue;
         };
         let keys = known.entry(kind.to_owned()).or_insert_with(|| {
-            match rank(&ctx, category, By::Tokens) {
+            match rank(&ctx, category, By::Tokens, DEFAULT_MIN_REQUESTS) {
                 Ok(Ranked::Rows(rows)) => {
                     // the bare key stays valid for an agent that ran on one model
                     Ok(rows

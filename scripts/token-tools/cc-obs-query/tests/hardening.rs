@@ -522,11 +522,19 @@ fn min_calls_applies_to_the_repeat_calls_question() {
 
 #[test]
 fn top_session_by_cache_hit_lists_the_worst_ratio_first() {
-    let body = r#"{"status":"success","data":{"resultType":"vector","result":[{"metric":{"session_id":"s1"},"value":[1.0,"0.9"]},{"metric":{"session_id":"s2"},"value":[1.0,"0.2"]}]}}"#;
-    let fake = serve(common::with_own(vec![(
-        "cc_obs_ledger_cache_hit_ratio",
-        body.to_owned(),
-    )]));
+    let vector = |a: &str, b: &str| {
+        format!(
+            r#"{{"status":"success","data":{{"resultType":"vector","result":[{{"metric":{{"session_id":"s1"}},"value":[1.0,"{a}"]}},{{"metric":{{"session_id":"s2"}},"value":[1.0,"{b}"]}}]}}}}"#
+        )
+    };
+    let fake = serve(common::with_own(vec![
+        ("count by (session_id)", vector("8", "8")),
+        ("type=\"cacheRead\"", vector("90", "20")),
+        (
+            "type=~\"cacheRead|cacheCreation|input\"",
+            vector("100", "100"),
+        ),
+    ]));
     let run = cli(&fake, &["top", "session", "--by", "cache-hit"]);
     assert_eq!(run.code, 0, "{}", run.err);
     let out = run.json();

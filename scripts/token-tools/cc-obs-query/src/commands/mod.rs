@@ -101,11 +101,21 @@ impl<'a> Ctx<'a> {
     /// `metric{review_run!="1",extra...}`; the review filter is left out under
     /// `--include-review`. Token counts also drop the cache types.
     pub fn selector(&self, metric: &str, extra: &[&str]) -> String {
+        self.build_selector(metric, extra, metric == TOKENS)
+    }
+
+    /// Like `selector`, but token counts keep the cache types, for figures that
+    /// need cacheRead or cacheCreation themselves; `extra` picks the types.
+    pub fn selector_all_types(&self, metric: &str, extra: &[&str]) -> String {
+        self.build_selector(metric, extra, false)
+    }
+
+    fn build_selector(&self, metric: &str, extra: &[&str], drop_cache: bool) -> String {
         let mut matchers: Vec<&str> = Vec::new();
         if !self.include_review {
             matchers.push(EXCLUDE);
         }
-        if metric == TOKENS {
+        if drop_cache {
             matchers.push(NO_CACHE_TOKENS);
         }
         matchers.extend_from_slice(extra);
@@ -261,7 +271,12 @@ pub fn run_query(ctx: &Ctx, command: &Command) -> Result<Report, Error> {
 /// The figures alone, without the review's own-cost field.
 pub fn query_report(ctx: &Ctx, command: &Command) -> Result<Report, Error> {
     let mut report = match command {
-        Command::Top { category, by, .. } => top::run(ctx, *category, *by)?,
+        Command::Top {
+            category,
+            by,
+            min_requests,
+            ..
+        } => top::run(ctx, *category, *by, *min_requests)?,
         Command::Tool { name, .. } => tool::run(ctx, name)?,
         Command::Session { id, detail, .. } => session::run(ctx, id, *detail)?,
         Command::Recall { .. } => recall::run(ctx)?,

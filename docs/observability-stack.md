@@ -54,6 +54,18 @@ Claude Code's own telemetry (metrics, events, beta traces) goes to the collector
 `cc-obs-ledger` hook adds per-turn context size, cache hit ratio, the fixed-context
 split and keyed hashes of tool inputs. `memory-recall` adds its recall records.
 
+Two `cc-obs-query top` rankings have a definition worth knowing:
+
+- `top subagent` has one row per agent and model, referenced as `subagent:<agent>@<model>`;
+  `--format detailed` shows the model as its own field.
+- `top session --by cache-hit` ranks sessions by prompt-cache hit ratio, lowest first. The
+  ratio is weighted by tokens: cacheRead divided by cacheRead + cacheCreation + input,
+  each summed over the window with `increase()`. It replaces the earlier unweighted mean of
+  the per-request `cc_obs_ledger_cache_hit_ratio` gauge, which let one-request cold starts
+  top the list; that mean is not reachable any more. Sessions with fewer than
+  `--min-requests` requests (default 5, counted from the ledger's per-request series) are
+  left out. The `cache_hit_ratio` detail on plain `top session` uses the same definition.
+
 Prompt text, responses, tool parameters and tool inputs are **not stored by default**:
 Claude Code does not send them, and the collector deletes them if something does.
 `claudeCode.capturePrompts` and `claudeCode.captureToolDetails` turn each on.

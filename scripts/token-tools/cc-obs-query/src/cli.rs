@@ -11,7 +11,7 @@ use crate::bounds::{
     render, Bounds, Format, Report, DEFAULT_LIMIT, DEFAULT_MAX_BYTES, DIGEST_MAX_BYTES,
 };
 use crate::commands::digest::{self, Opts};
-use crate::commands::top::{By, Category};
+use crate::commands::top::{By, Category, DEFAULT_MIN_REQUESTS};
 use crate::commands::{compare, run_query, unused, Ctx};
 use crate::error::Error;
 use crate::pack::Pack;
@@ -55,6 +55,9 @@ pub enum Command {
         by: By,
         #[arg(long, default_value = DEFAULT_SINCE)]
         since: String,
+        /// `--by cache-hit` only: leave out sessions with fewer requests than this
+        #[arg(long, default_value_t = DEFAULT_MIN_REQUESTS)]
+        min_requests: u64,
     },
     /// Calls, result size, share of tokens and repeat rate of one tool
     Tool {

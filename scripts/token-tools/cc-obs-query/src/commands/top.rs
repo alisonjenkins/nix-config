@@ -29,7 +29,9 @@ pub enum By {
     Cost,
     /// New input and output tokens; cache reads and cache writes are not counted
     Tokens,
-    /// `session` only: mean prompt-cache hit ratio, lowest first
+    /// `session` only: prompt-cache hit ratio, lowest first. Weighted by tokens:
+    /// cacheRead / (cacheRead + cacheCreation + input) summed over the window.
+    /// Sessions with fewer than --min-requests requests are left out.
     CacheHit,
     /// `session` only: compaction events per session, most first
     Compactions,
@@ -158,10 +160,115 @@ fn ranked_or_none(ctx_name: &str, rows: Vec<RankRow>) -> Ranked {
     }
 }
 
-fn rank_cache_hit(ctx: &Ctx) -> Result<Ranked, Error> {
-    let mut rows = rows_from(ctx, "avg", CACHE_HIT, &["session_id"], &[], "avg_over_time")?;
+/// Sessions with fewer requests than this are left out of the cache-hit
+/// ranking: the first request of a session is a cold start, so a session of one
+/// to four requests always ranks low without anything being wrong.
+pub const DEFAULT_MIN_REQUESTS: u64 = 5;
+
+/// A session's prompt-cache hit ratio over the window, weighted by tokens.
+struct CacheHit {
+    ratio: f64,
+    prompt_tokens: f64,
+}
+
+/// `sum by (session_id)(increase(tokens{type...}[window]))`, cache types included.
+fn prompt_tokens_by_session(ctx: &Ctx, type_matcher: &str) -> Result<BTreeMap<String, f64>, Error> {
+    let query = format!(
+        "sum by (session_id)(increase({}[{}]))",
+        ctx.selector_all_types(TOKENS, &[type_matcher]),
+        ctx.window.prom()
+    );
+    Ok(ctx
+        .instant(&query)?
+        .into_iter()
+        .filter_map(|s| {
+            Some((
+                s.labels
+                    .get("session_id")
+                    .filter(|k| !k.is_empty())?
+                    .clone(),
+                s.value,
+            ))
+        })
+        .collect())
+}
+
+/// cacheRead over cacheRead + cacheCreation + input, summed across the window,
+/// so a one-request cold start weighs what it spent rather than as much as a
+/// long session. Sessions without token samples are absent.
+fn cache_hit_by_session(ctx: &Ctx) -> Result<BTreeMap<String, CacheHit>, Error> {
+    let read = prompt_tokens_by_session(ctx, "type=\"cacheRead\"")?;
+    let prompt = prompt_tokens_by_session(ctx, "type=~\"cacheRead|cacheCreation|input\"")?;
+    Ok(prompt
+        .into_iter()
+        .filter(|(_, total)| *total > 0.0)
+        .map(|(session, total)| {
+            let cached = read.get(&session).copied().unwrap_or(0.0);
+            let hit = CacheHit {
+                ratio: cached / total,
+                prompt_tokens: total,
+            };
+            (session, hit)
+        })
+        .collect())
+}
+
+/// Requests per session: one `cc_obs_ledger_*` series is written per request.
+fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
+    let query = format!(
+        "count by (session_id)(last_over_time({}[{}]))",
+        ctx.selector(CACHE_HIT, &[]),
+        ctx.window.prom()
+    );
+    Ok(ctx
+        .instant(&query)?
+        .into_iter()
+        .filter_map(|s| {
+            Some((
+                s.labels
+                    .get("session_id")
+                    .filter(|k| !k.is_empty())?
+                    .clone(),
+                s.value,
+            ))
+        })
+        .collect())
+}
+
+fn rank_cache_hit(ctx: &Ctx, min_requests: u64) -> Result<Ranked, Error> {
+    let requests = requests_by_session(ctx)?;
+    let hits = cache_hit_by_session(ctx)?;
+    let mut untokened = 0_u64;
+    let mut rows: Vec<RankRow> = Vec::new();
+    for (session, count) in requests {
+        if count < min_requests as f64 {
+            continue;
+        }
+        let Some(hit) = hits.get(&session) else {
+            untokened = untokened.saturating_add(1);
+            continue;
+        };
+        let mut detail = Map::new();
+        detail.insert("requests".to_owned(), num(count));
+        detail.insert("prompt_tokens".to_owned(), num(hit.prompt_tokens));
+        rows.push(RankRow {
+            key: session,
+            value: hit.ratio,
+            calls: None,
+            model: None,
+            detail,
+        });
+    }
+    if untokened > 0 {
+        ctx.note_gap(format!(
+            "{untokened} session(s) have ledger requests but no token counts in the window and are not ranked"
+        ));
+    }
     ascending(&mut rows);
-    Ok(ranked_or_none("session cache hit ratio", rows))
+    Ok(ranked_or_none(
+        &format!("session cache hit ratio with at least {min_requests} requests"),
+        rows,
+    ))
 }
 
 fn rank_compactions(ctx: &Ctx) -> Result<Ranked, Error> {
@@ -239,9 +346,9 @@ fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(ranked_or_none("recall hit rate", rows))
 }
 
-pub fn rank(ctx: &Ctx, category: Category, by: By) -> Result<Ranked, Error> {
+pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<Ranked, Error> {
     match (by, category) {
-        (By::CacheHit, Category::Session) => return rank_cache_hit(ctx),
+        (By::CacheHit, Category::Session) => return rank_cache_hit(ctx, min_requests),
         (By::CacheHit, _) => return Ok(wrong_category(by, "session")),
         (By::Compactions, Category::Session) => return rank_compactions(ctx),
         (By::Compactions, _) => return Ok(wrong_category(by, "session")),
@@ -296,9 +403,8 @@ pub fn rank(ctx: &Ctx, category: Category, by: By) -> Result<Ranked, Error> {
 }
 
 fn add_cache_hit(ctx: &Ctx, rows: &mut [RankRow]) {
-    let ratios: Result<BTreeMap<String, f64>, Error> =
-        rows_from(ctx, "avg", CACHE_HIT, &["session_id"], &[], "avg_over_time")
-            .map(|r| r.into_iter().map(|row| (row.key, row.value)).collect());
+    let ratios: Result<BTreeMap<String, f64>, Error> = cache_hit_by_session(ctx)
+        .map(|hits| hits.into_iter().map(|(k, hit)| (k, hit.ratio)).collect());
     for row in rows {
         let value = match &ratios {
             Ok(map) => figure(
@@ -337,9 +443,9 @@ pub fn row_json(category: Category, row: &RankRow, total: Option<f64>) -> Value 
     Value::Object(object)
 }
 
-pub fn run(ctx: &Ctx, category: Category, by: By) -> Result<Report, Error> {
+pub fn run(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<Report, Error> {
     let command = format!("top {}", category.name());
-    Ok(match rank(ctx, category, by)? {
+    Ok(match rank(ctx, category, by, min_requests)? {
         Ranked::Unavailable(why) => Report::unavailable(&command, why),
         Ranked::Rows(rows) => {
             let total = (!by.is_ratio()).then(|| rows.iter().map(|r| r.value).sum::<f64>());
