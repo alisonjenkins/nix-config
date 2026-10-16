@@ -40,6 +40,12 @@ convention. Common patterns:
   `@ args` pattern instead. This bites when a module is shared between
   configurations with different argument sets, such as a NixOS host and a
   standalone home-manager configuration.
+- Store paths are often relative symlinks (`share/<pkg>/skills -> ../../lib/...`). `cp -r` copies
+  the dangling link; use `cp -rL --no-preserve=mode` to build a modified copy in `runCommand`.
+- Function application binds tighter than `+`: `pkgs.writeText "n" ''a'' + b` adds to the
+  derivation, not the text. Parenthesise the text argument.
+- A multi-line value spliced into a `''` block keeps its own line breaks but not the block's
+  indentation. Pre-indent it when the target is YAML.
 - Avoid IFD. Prefer `source`-linked store paths over `builtins.readFile` into
   a text option when the thing is a whole directory.
 - Overlays here take only `{ inputs }` and branch on
