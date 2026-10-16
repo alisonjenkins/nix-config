@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -166,6 +166,8 @@ struct EmbedItem {
 pub struct Embedder {
     spec: EmbedderSpec,
     agent: ureq::Agent,
+    /// When set, all requests together must finish by then; each gets what is left.
+    deadline: Option<Instant>,
     ids: Vec<String>,
     matrix: Vec<Vec<f32>>,
     indexed: bool,
@@ -184,10 +186,19 @@ impl Embedder {
         Self {
             spec,
             agent,
+            deadline: None,
             ids: Vec::new(),
             matrix: Vec::new(),
             indexed: false,
         }
+    }
+
+    /// Like `with_timeout`, but `budget` covers all requests together (a hook's
+    /// model probe and query must fit inside one wait, not one wait each).
+    pub fn with_budget(spec: EmbedderSpec, budget: Duration) -> Self {
+        let mut embedder = Self::with_timeout(spec, budget);
+        embedder.deadline = Instant::now().checked_add(budget);
+        embedder
     }
 
     fn embed(&self, inputs: &[String]) -> Result<Vec<Vec<f32>>, RetrieveError> {
@@ -199,14 +210,27 @@ impl Embedder {
         inputs: &[String],
     ) -> Result<(Vec<Vec<f32>>, String), RetrieveError> {
         let url = format!("{}/v1/embeddings", self.spec.base_url.trim_end_matches('/'));
-        let mut response = self
-            .agent
-            .post(&url)
-            .send_json(&EmbedRequest { input: inputs })
-            .map_err(|source| RetrieveError::Http {
-                url: url.clone(),
-                source: Box::new(source),
-            })?;
+        let remaining = self
+            .deadline
+            .map(|deadline| deadline.saturating_duration_since(Instant::now()));
+        if remaining == Some(Duration::ZERO) {
+            return Err(RetrieveError::Http {
+                url,
+                source: Box::new(ureq::Error::Timeout(ureq::Timeout::Global)),
+            });
+        }
+        let request = self.agent.post(&url);
+        let request = match remaining {
+            Some(left) => request.config().timeout_global(Some(left)).build(),
+            None => request,
+        };
+        let mut response =
+            request
+                .send_json(&EmbedRequest { input: inputs })
+                .map_err(|source| RetrieveError::Http {
+                    url: url.clone(),
+                    source: Box::new(source),
+                })?;
         let mut body: EmbedResponse =
             response
                 .body_mut()

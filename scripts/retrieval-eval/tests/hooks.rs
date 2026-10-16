@@ -98,6 +98,71 @@ fn serve_on(listener: TcpListener) {
     }
 }
 
+/// A server whose first request (the hook's model probe) is answered after 5 s and
+/// whose later requests are accepted and never answered.
+fn serve_first_slow_then_silent() -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    thread::spawn(move || {
+        let mut held = Vec::new();
+        for (count, stream) in listener.incoming().enumerate() {
+            let Ok(mut stream) = stream else { continue };
+            let _ = stream.read(&mut vec![0_u8; 65536]);
+            if count == 0 {
+                thread::sleep(std::time::Duration::from_secs(5));
+                let payload =
+                    r#"{"model":"fake-model","data":[{"index":0,"embedding":[0.0,1.0]}]}"#;
+                let reply = format!(
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{payload}",
+                    payload.len()
+                );
+                let _ = stream.write_all(reply.as_bytes());
+            } else {
+                held.push(stream);
+            }
+        }
+    });
+    base
+}
+
+#[test]
+fn the_embed_requests_share_one_8_s_wait() {
+    let tmp = tempfile::tempdir().unwrap();
+    write_memories(&tmp.path().join("mem"));
+    let (mem, cache, log) = (
+        tmp.path().join("mem"),
+        tmp.path().join("cache.json"),
+        tmp.path().join("recall.jsonl"),
+    );
+    let indexing = embedder(&serve());
+    let mut index = memory_args(mem.to_str().unwrap(), &indexing, cache.to_str().unwrap());
+    index.push("index");
+    assert!(run(MEMORY_BIN, &index, "").status.success());
+
+    let stalling = embedder(&serve_first_slow_then_silent());
+    let mut hook = memory_args(mem.to_str().unwrap(), &stalling, cache.to_str().unwrap());
+    hook.extend([
+        "hook",
+        "--log",
+        log.to_str().unwrap(),
+        "--on-unavailable",
+        "keyword",
+    ]);
+    let started = std::time::Instant::now();
+    let out = run(
+        MEMORY_BIN,
+        &hook,
+        &payload("how do I fix the alpha problem"),
+    );
+    let elapsed = started.elapsed();
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        elapsed < std::time::Duration::from_millis(9500),
+        "5 s + 8 s per request would be 13 s; the budget is shared: {elapsed:?}"
+    );
+    assert!(log_entries(&log)[0].fallback);
+}
+
 fn run(bin: &str, args: &[&str], stdin: &str) -> Output {
     let mut child = Command::new(bin)
         .args(args)

@@ -456,7 +456,7 @@ in
     '';
 
     # Appended to the hooks in home/programs/claude-code, the way claude-monitor
-    # adds its own. 12 s is above the binary's own 8 s request timeout.
+    # adds its own. The binary's two requests share one 8 s budget, under the 12 s hook timeout.
     programs.claude-code.settings.hooks.UserPromptSubmit = [
       {
         hooks = lib.optional cfg.memory.enable {

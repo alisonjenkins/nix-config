@@ -163,7 +163,7 @@ fn semantic_scores(
     query: &str,
     timeout: Duration,
 ) -> Result<Vec<(String, f64)>> {
-    let mut embedder = Embedder::with_timeout(cli.embedder.clone(), timeout);
+    let mut embedder = Embedder::with_budget(cli.embedder.clone(), timeout);
     let identity = embedder
         .cache_identity()
         .context("ask the server for its model")?;

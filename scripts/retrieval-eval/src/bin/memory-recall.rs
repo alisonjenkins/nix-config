@@ -186,7 +186,7 @@ fn semantic_scores(
     timeout: Duration,
 ) -> Result<Vec<(String, f64)>> {
     let spec = cli.embedder.clone().context("--embedder is required")?;
-    let mut embedder = Embedder::with_timeout(spec, timeout);
+    let mut embedder = Embedder::with_budget(spec, timeout);
     let identity = embedder
         .cache_identity()
         .context("ask the server for its model")?;
