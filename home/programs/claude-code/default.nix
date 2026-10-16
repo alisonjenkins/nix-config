@@ -195,7 +195,7 @@ let
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
       speckitInitSkill
-    ] ++ lib.optional config.programs.rea.enable "${pkgs.rea}/share/rea/skills";
+    ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills;
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
@@ -256,6 +256,18 @@ let
   # YAML config for the gateway. `command` strings are shlex-split (spaces =
   # arg separators), so absolute store paths + plain trailing args are fine;
   # anything needing env/setup goes through a launcher script above.
+  # REA (~170 tools) sits here when enabled so its tool names stay out of every
+  # session's context; its skill says how to load it.
+  gatewayBackends = [ "github" "k8s" "terraform" "obscura" "context7" ]
+    ++ lib.optional config.programs.rea.enable "rea";
+
+  # Pre-indented to sit under `backends:` in the YAML below.
+  reaGatewayBackend = lib.optionalString config.programs.rea.enable (lib.concatStringsSep "\n" [
+    "  rea:"
+    "    description: \"Reverse engineering: decompile and inspect binaries, packages, firmware and web apps\""
+    "    command: \"${config.programs.rea.mcpLauncher}\""
+  ]);
+
   mcpGatewayConfig = pkgs.writeText "mcp-gateway.yaml" ''
     meta_mcp:
       enabled: true
@@ -266,7 +278,7 @@ let
       # client still sees only the ~15 gateway_* meta-tools (the token win). This
       # is no worse than the old setup, where each of these ran as a direct
       # per-session MCP server anyway (just with all their tool names in context).
-      warm_start: ["github", "k8s", "terraform", "obscura", "context7"]
+      warm_start: ${builtins.toJSON gatewayBackends}
     backends:
       github:
         description: "GitHub API: issues, pull requests, code search, releases, commits"
@@ -283,6 +295,7 @@ let
       context7:
         description: "Up-to-date library / framework / SDK documentation lookup"
         command: "${pkgs.master.context7-mcp}/bin/context7-mcp"
+    ${reaGatewayBackend}
   '';
 
   # Datadog-scoped Claude: layers the pup-claude plugin (Datadog `pup` CLI + 49
