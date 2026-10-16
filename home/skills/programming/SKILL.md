@@ -1,9 +1,9 @@
 ---
 name: programming
 description: >-
-  Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET), plus assertions, thread-safety, input validation/secrets, observability, and performance/profiling.
+  Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET), plus assertions, thread-safety, input validation/secrets, observability, performance/profiling, and navigating code with the LSP tool (definitions, references, callers, rename).
 metadata:
-  summary: "Use when writing, changing, fixing or debugging code in any language: Rust, Python, Nix, TypeScript, shell, Go, C#; secrets, concurrency, performance."
+  summary: "Use when writing, changing, fixing or debugging code in any language: Rust, Python, Nix, TypeScript, shell, Go, C#; secrets, concurrency, performance; LSP navigation (definitions, references)."
 ---
 
 # Programming
@@ -42,6 +42,10 @@ editing: toolchain, idioms, and traps.
   silently narrow it, and do not refactor unrelated code in the same change.
 - **Reuse before writing.** Search for an existing helper before adding one.
   Duplicated logic is the default failure mode of agent-written code.
+- **Ask the language server, not grep, about meaning.** Definitions,
+  references, callers, types: use the `LSP` tool when it is available, and
+  list references before changing a signature or renaming. An empty answer is
+  not "none" — see [lsp.md](lsp.md).
 - **Idempotence at the boundaries.** Anything that touches an external system
   checks current state before mutating, and is safe to re-run.
 - **No unexplained magic values.** A literal that encodes a policy (timeout,
@@ -75,6 +79,7 @@ Independent of language. Read the one that matches what the change involves.
 | Untrusted input, a query or command built from data, permissions, tokens or secrets, a dependency bump | [security.md](security.md) |
 | Any new code path, log line, error, retry, or state transition — anything that should be answerable from output later instead of re-derived by guessing | [observability.md](observability.md) |
 | Making something faster, profiling, benchmarking, or a SIMD/vectorization change | [performance.md](performance.md) |
+| Finding a definition, callers or references, a type, a rename or signature change; an LSP answer that came back empty | [lsp.md](lsp.md) |
 
 ## Per-language routing
 
