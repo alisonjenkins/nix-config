@@ -270,6 +270,11 @@ would your own, and check it against the original failure, not against its summa
   Skip this for Explore/Plan sweeps, which are read-only.
 - Cap the reply length explicitly (e.g. "return at most 30 lines: one line
   per PR — number, state, mergeable").
+- Tell the agent to read with the Read tool's `offset` and `limit` and to search with the Grep
+  tool, not `sed -n` or `grep` through Bash, and to set a repeated environment variable (such as
+  `CARGO_TARGET_DIR`) once for the run. In last week's transcripts (sub-agents included, token
+  figures estimated as bytes/4), `sed -n` ranges returned about 1.4M tokens and `grep -n` about
+  1M, and 115 Bash calls repeated an identical `env CARGO_TARGET_DIR=...` prefix.
 
 ## Delegating outside the Agent tool
 
