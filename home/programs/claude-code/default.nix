@@ -719,6 +719,7 @@ in
     # be appended to the git-touching agents.
     agents = {
       aws-iam-debugger = ./agents/aws-iam-debugger.md;
+      haiku-worker = ./agents/haiku-worker.md;
       git-commit-generator = builtins.readFile ./agents/git-commit-generator.md + "\n" + gitStrategy;
       pr-creator = builtins.readFile ./agents/pr-creator.md + "\n" + gitStrategy;
       # Escalation ladder. modelRouting is context-only and never reaches an
