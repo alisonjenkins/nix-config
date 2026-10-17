@@ -57,6 +57,14 @@ fn skills_question_does_not_claim_to_find_unactivated_skills() {
 }
 
 /// `top mcp` ranks series that carry an mcp server label; it cannot see idle servers.
+#[test]
+fn mcp_question_does_not_claim_idle_servers() {
+    let pack = Pack::load(&shipped_pack()).unwrap();
+    let title = title_of(&pack, "mcp-idle-servers");
+    assert!(!title.contains("idle"), "{title}");
+}
+
+/// `top fixed` reads the session-start snapshot, not a per-request share.
 fn digest_questions(pack_yaml: &str, rules: Vec<(&'static str, String)>) -> Vec<Value> {
     let dir = tempfile::tempdir().unwrap();
     let pack = write_pack(dir.path(), pack_yaml);

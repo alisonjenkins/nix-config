@@ -34,8 +34,11 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: mcp-idle-servers
-    title: Which MCP servers account for the most tokens? (idle servers cannot be listed; no connected-server signal)
-    signals: [claude_code.token.usage, cc_obs_ledger_fixed_context_tokens]
+    # Needs the mcp_server_name label on token usage. Idle servers need a connected-servers
+    # signal that is not emitted; MCP tokens per server from tool_result logs need a `top mcp`
+    # rebuilt on the mcp__<server>__ tool-name prefix (README "Not yet answerable").
+    title: Which MCP servers carry the most tokens by their usage label?
+    signals: [claude_code.token.usage]
     query: { command: "cc-obs-query top mcp --by tokens" }
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
