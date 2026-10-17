@@ -589,6 +589,18 @@ fn rank_idle_mcp(ctx: &Ctx) -> Result<Ranked, Error> {
 /// Gauge of the tokens a skill's listing costs, one per installed skill at session start.
 const SKILL_LISTED: &str = "cc_obs_ledger_skill_listed_tokens";
 
+/// The skill name after the last `:`; activations carry only this part of a
+/// plugin-prefixed listing name such as `anthropic-skills:chrome-browser`.
+fn bare_skill(name: &str) -> &str {
+    name.rsplit(':').next().unwrap_or(name)
+}
+
+/// A worktree-prefixed listing (`.claude/worktrees/<wt>:<skill>`) whose bare
+/// name is also listed: the same skill seen from a worktree checkout.
+fn is_listed_twin(name: &str, listed: &BTreeSet<String>) -> bool {
+    name.contains(".claude/worktrees/") && listed.contains(bare_skill(name))
+}
+
 /// Installed skills (listed gauge) minus skills with token usage attributed to
 /// them, which is how `top skill` sees an activation.
 fn rank_unactivated_skills(ctx: &Ctx) -> Result<Ranked, Error> {
@@ -615,11 +627,13 @@ fn rank_unactivated_skills(ctx: &Ctx) -> Result<Ranked, Error> {
     )?
     .into_iter()
     .filter(|r| r.value > 0.0)
-    .map(|r| r.key)
+    .map(|r| bare_skill(&r.key).to_owned())
     .collect();
+    let listed_names: BTreeSet<String> = listed.iter().map(|r| r.key.clone()).collect();
     let rows = listed
         .into_iter()
-        .filter(|r| !activated.contains(&r.key))
+        .filter(|r| !activated.contains(bare_skill(&r.key)))
+        .filter(|r| !is_listed_twin(&r.key, &listed_names))
         .collect();
     Ok(Ranked::Rows(rows))
 }

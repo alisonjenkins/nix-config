@@ -130,3 +130,40 @@ fn mcp_by_tokens_ranks_ledger_calls_and_keeps_unconnected_servers() {
         .unwrap();
     assert_eq!(plugin["calls"], 2, "{out}");
 }
+
+fn skill_rules(listed: &[&str], activated: &[&str]) -> Vec<(&'static str, String)> {
+    with_own(vec![
+        (
+            "cc_obs_ledger_skill_listed_tokens",
+            gauge("skill_name", listed),
+        ),
+        ("by (skill_name)", gauge("skill_name", activated)),
+        ("event_name=", EMPTY_LOKI.to_owned()),
+        ("/prom/", EMPTY_PROM.to_owned()),
+    ])
+}
+
+#[test]
+fn unactivated_skill_matches_plugin_prefixed_listing_to_bare_activation() {
+    let fake = serve(skill_rules(
+        &["anthropic-skills:chrome-browser", "never-used"],
+        &["chrome-browser"],
+    ));
+    let run = cli(&fake, &["top", "skill", "--unactivated"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    assert_eq!(keys(&run.json()), vec!["never-used"], "{}", run.out);
+}
+
+#[test]
+fn unactivated_skill_drops_worktree_prefixed_duplicate_of_a_listed_bare_name() {
+    let fake = serve(skill_rules(&["git", ".claude/worktrees/wt1:git"], &[]));
+    let out = cli(&fake, &["top", "skill", "--unactivated"]).json();
+    assert_eq!(keys(&out), vec!["git"], "{out}");
+}
+
+#[test]
+fn unactivated_skill_keeps_worktree_prefixed_name_with_no_bare_twin() {
+    let fake = serve(skill_rules(&[".claude/worktrees/wt1:only-here"], &[]));
+    let out = cli(&fake, &["top", "skill", "--unactivated"]).json();
+    assert_eq!(keys(&out), vec![".claude/worktrees/wt1:only-here"], "{out}");
+}
