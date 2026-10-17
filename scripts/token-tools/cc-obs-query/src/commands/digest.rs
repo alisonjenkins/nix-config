@@ -406,7 +406,9 @@ fn is_identifier(text: &str, max_chars: usize) -> bool {
 }
 
 fn check_text(path: &str, value: Option<&Value>, max_chars: usize, problems: &mut Vec<String>) {
-    let Some(text) = value.and_then(Value::as_str) else {
+    let Some(value) = value else { return };
+    let Some(text) = value.as_str() else {
+        problems.push(format!("{path}: must be a string"));
         return;
     };
     if text.chars().count() > max_chars || text.chars().any(char::is_control) {
@@ -417,10 +419,12 @@ fn check_text(path: &str, value: Option<&Value>, max_chars: usize, problems: &mu
 }
 
 fn check_identifier(path: &str, value: Option<&Value>, problems: &mut Vec<String>) {
-    if value
-        .and_then(Value::as_str)
-        .is_some_and(|text| !is_identifier(text, MAX_IDENTIFIER_CHARS))
-    {
+    let Some(value) = value else { return };
+    let Some(text) = value.as_str() else {
+        problems.push(format!("{path}: must be a string"));
+        return;
+    };
+    if !is_identifier(text, MAX_IDENTIFIER_CHARS) {
         problems.push(format!(
             "{path}: must be an identifier of at most {MAX_IDENTIFIER_CHARS} characters from [A-Za-z0-9_.:/@+>-], not prose"
         ));
@@ -459,9 +463,6 @@ fn check_figure(path: &str, value: Option<&Value>, problems: &mut Vec<String>) {
                 problems.push(format!("{path}.value: must be a number or null"));
             }
             let why = map.and_then(|m| m.get("unavailable"));
-            if why.is_some_and(|w| !w.is_string()) {
-                problems.push(format!("{path}.unavailable: must be a string"));
-            }
             check_text(
                 &format!("{path}.unavailable"),
                 why,
@@ -548,6 +549,9 @@ fn check_content(digest: &Value, problems: &mut Vec<String>) {
             check_row_key(&row_path, row_map, problems);
             for field in ["pattern", "regrowth_of"] {
                 check_identifier(&format!("{row_path}.{field}"), row_map.get(field), problems);
+            }
+            if row_map.get("evidence").is_some_and(|e| !e.is_string()) {
+                problems.push(format!("{row_path}.evidence: must be a string"));
             }
             for field in ["value", "share", "calls"] {
                 check_figure(&format!("{row_path}.{field}"), row_map.get(field), problems);
