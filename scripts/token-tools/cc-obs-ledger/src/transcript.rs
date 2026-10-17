@@ -227,7 +227,17 @@ fn read_attachment(value: &Value, parsed: &mut Parsed) {
     match attachment.get("type").and_then(Value::as_str) {
         Some("skill_listing") => {
             if let Some(content) = attachment.get("content").and_then(Value::as_str) {
-                parsed.skill_listing = Some(listed_skills(content));
+                let listed = listed_skills(content);
+                // Claude Code re-emits `skill_listing` with `isInitial: false` for skills
+                // found later (nested `.claude/skills`); those add to the initial list.
+                let is_delta = attachment.get("isInitial").and_then(Value::as_bool) == Some(false);
+                match (&mut parsed.skill_listing, is_delta) {
+                    (Some(existing), true) => {
+                        existing.retain(|old| !listed.iter().any(|new| new.name == old.name));
+                        existing.extend(listed);
+                    }
+                    (slot, _) => *slot = Some(listed),
+                }
             }
         }
         Some("mcp_instructions_delta") => {
