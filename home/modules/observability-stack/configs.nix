@@ -110,6 +110,9 @@ let
     rule_files = [ "/config/rules.yml" ];
     # Without this OTLP resource attributes are dropped; the views group on them.
     otlp.promote_resource_attributes = [ "host" "review.run" "repository" ];
+    # Ledger gauges are stamped with the transcript time; a delayed or retried ship can
+    # arrive after a newer point of the same series. 24h matches the ship queue's expiry.
+    storage.tsdb.out_of_order_time_window = "24h";
     scrape_configs = [
       (scrape "prometheus" cfg.ports.prometheus)
       (scrape "loki" cfg.ports.loki)
