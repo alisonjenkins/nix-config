@@ -11,7 +11,7 @@ use common::{cli, row, rows, serve, with_own};
 use serde_json::{json, Value};
 
 const COUNTER: &str = "cc_obs_ledger_requests_total";
-const OLD_SERIES: &str = "count by (session_id)";
+const OLD_SERIES: &str = "count by (session_id, agent)";
 const CACHE_READ: &str = "type=\"cacheRead\"";
 const PROMPT: &str = "type=~\"cacheRead|cacheCreation|input\"";
 
@@ -63,7 +63,7 @@ fn a_tool_loop_of_many_requests_in_one_turn_is_not_dropped() {
     assert_eq!(row(&out, "loop")["requests"], json!(12));
     let sent = fake.seen_matching(COUNTER);
     assert!(
-        sent[0].contains("round(sum by (session_id)(increase("),
+        sent[0].contains("round(sum by (session_id, agent)(increase("),
         "{sent:?}"
     );
 }
