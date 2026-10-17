@@ -8,6 +8,18 @@ neighbouring skill. Re-check it in a fresh session whenever the description
 changes — a rewrite that reads better to you can still stop matching the
 phrasing users actually use.
 
+### eval-triggers.sh
+
+`eval-triggers.sh` measures whether a model would actually route each trigger
+phrase to the right skill, judged from the descriptions alone. It is opt-in and
+spends Gemini quota (one call for all phrases, via the delegation skill's
+`delegate-to-gemini.sh`):
+
+    home/skills/skill-authoring/scripts/eval-triggers.sh [--min PERCENT] [SKILLS_DIR]
+
+A `MISS` means the description does not separate that skill from the one it
+routed to, so read both descriptions before editing either.
+
 ## Behaviour evals: does the body change the outcome?
 
 Same loop as `testing`'s TDD, applied to prose instead of code:
