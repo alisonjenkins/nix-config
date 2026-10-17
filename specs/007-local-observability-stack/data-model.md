@@ -44,7 +44,7 @@ view shows "unavailable", never zero.
 | `cc_obs_ledger_skill_listed_tokens` | `skill_name` (host-level, no session) | chars/4 of the skill's entry in the `skill_listing` attachment the session started with; one series per skill; absent without a listing |
 | `cc_obs_ledger_mcp_server_connected` | `mcp_server_name` (host-level, no session) | 1 per server named by `mcp_instructions_delta` attachments (added minus removed); only servers that ship instructions appear; absent without such an attachment |
 | log `cc_obs_ledger.session` | `session.id`, `project`, cumulative totals, `end_index`, `cumulative`, `*_delta` | one record per SessionEnd that saw new activity; a resumed session has several, so sum the deltas or take the highest `end_index` (contract: cc-obs-ledger.md) |
-| log `cc_obs_ledger.tool_call` | `session.id`, `turn`, `seq`, `tool_name`, `agent_type`, `input_hash`, `input_prefix_hash`, `input_bytes`, `result_bytes`, `command_shape` (Bash only) | one per tool call; keyed hashes and a fixed-vocabulary shape label (allowlisted program and subcommand names, never arguments, paths, URLs or env values), no input content; basis for repeat detection |
+| log `cc_obs_ledger.tool_call` | `session.id`, `turn`, `seq` (per agent), `tool_name`, `agent` (`main`\|`subagent`), `agent_id` (sub-agent only), `input_hash`, `input_prefix_hash`, `input_bytes`, `result_bytes`, `command_shape` (Bash only) | one per tool call; keyed hashes and a fixed-vocabulary shape label (allowlisted program and subcommand names, never arguments, paths, URLs or env values), no input content; basis for repeat detection |
 
 ## Recall Record
 

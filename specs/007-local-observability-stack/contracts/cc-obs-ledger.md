@@ -48,11 +48,14 @@ Output: OTLP/HTTP to the collector (metrics and one log); metric and label names
 
 | Field | Meaning |
 |---|---|
-| `session.id`, `turn`, `seq` | position of the call in the session |
-| `tool_name`, `agent_type` | which tool and which (sub)agent |
+| `session.id`, `turn` | the session and the turn the call belongs to |
+| `seq` | position of the call within its agent's transcript: the main agent counts across the whole session, each sub-agent restarts at 0, so `seq` is unique only per (`session.id`, `agent`, `agent_id`) |
+| `tool_name` | which tool |
+| `agent` | `main` or `subagent` |
+| `agent_id` | sub-agent id (string); present only when `agent=subagent`. An opaque identifier assigned by Claude Code; no names, prompts or paths |
 | `input_hash` | first 16 hex chars of HMAC-SHA-256(tool input, per-host key) |
 | `input_bytes`, `result_bytes` | sizes |
-| `command_shape` | Bash tool only: fixed-vocabulary label of the command, e.g. `cargo test \| tail [cd][env]` |
+| `command_shape` | string, Bash tool only: fixed-vocabulary label of the command, e.g. `cargo test \| tail [cd][env]`; never any text of the command (vocabulary below) |
 
 `command_shape` names what repeated Bash commands are, so repetitive tasks can be found.
 Vocabulary: program names from a ~70-entry allowlist (anything else is `other`, since an
