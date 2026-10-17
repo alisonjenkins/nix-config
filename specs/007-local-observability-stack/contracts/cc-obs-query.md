@@ -18,7 +18,8 @@ hard-coded.
 | `cc-obs-query top <category>` | Rank token consumers. Categories: `tool`, `skill`, `mcp`, `subagent`, `memory`, `fixed`, `model`, `project`, `session` | `--since 7d`, `--by cost\|tokens` (tokens exclude cache read and creation), `--by cache-hit`, `--by compactions`, `--by requests` and `--by context-growth` (session only; the last two list sub-agents as `<id>/subagent`), `--by hit-rate` and `--by tokens-per-request` (memory only), `--unactivated` (skill only: installed skills with no activation, by listing tokens), `--idle` (mcp only: connected servers with no tool call; `top mcp` otherwise sums `tool_result` sizes by `mcp__<server>__` prefix), `--by share` (fixed only: average fixed context over average request context, `total` row plus components), `--limit`, `--offset`, `--max-bytes`, `--format` |
 | `cc-obs-query tool <name>` | Calls, mean and max result size, share of tokens, repeat rate | `--since` |
 | `cc-obs-query session <id>` | Context per turn, cache hit ratio, fixed vs new tokens | `--detail` adds per-turn rows |
-| `cc-obs-query repeats` | Near-identical calls within a session; large result then narrowing query; frequent call sequences | `--since`, `--min-count`, `--tool <name>` (analyse one tool's calls only) |
+| `cc-obs-query repeats` | Per session and agent (the main agent and each sub-agent are separate streams): identical calls, near-identical calls (same tool and leading-argument hash, distinct inputs), a large result (>= 20000 bytes) followed by a narrower different call to the same tool, and frequent 3-tool sequences. Identical calls form a group only between edits by the same agent (`Edit`, `Write`, `NotebookEdit`, `MultiEdit` end a run). Records delivered twice (same session, agent, `seq`) count once and are reported as a gap. | `--since`, `--min-count` (default 2, floor 2; calls per session and agent, sequences across sessions), `--tool <name>` (analyse one tool's calls only) |
+| `cc-obs-query automate` | Candidates for a script or tool that would replace repetitive work, ranked by estimated spend removed: repeated Bash `command_shape`s, sequences of 2 to 4 consecutive Bash calls, and a large result followed by a narrower query. Streams are per session, agent and `agent_id`. | `--since`, `--min-count` (default 3, floor 2; occurrences across all sessions) |
 | `cc-obs-query recall` | Injected tokens per prompt, matches used vs ignored, failures | `--since` |
 | `cc-obs-query compare <question-id> --a <range> --b <range>` | Same figure across two ranges (FR-025) | ranges like `2026-09-01..2026-09-08` |
 | `cc-obs-query unused-signals` | Collected signals no question in the pack references (FR-036) | `--pack` |
@@ -27,6 +28,24 @@ hard-coded.
 | `cc-obs-query health` | Store reachability and guard state | |
 
 Figures with no data return `{"value": null, "unavailable": "<why>"}`, never `0`.
+
+### `automate` rows
+
+Row fields: `key` (`<pattern>:<slugged label>`, at most 256 characters), `pattern` (`shape`,
+`sequence`, `large_then_narrow`), `value` (score, USD), `calls` (occurrences), `sessions`,
+`main` and `sub` (occurrences by the main loop and by sub-agents), `est_usd`, `action`
+(`script` for a shape or sequence, `tool` for a large result, each at or above `--min-count`;
+`dismiss` below it or when a shape or sequence part is the label `other`), `label`, and `detail`
+(`saveable_share`, `direct_tokens`, `carried_token_turns`). Rows are sorted by `value`; only
+candidates seen at least twice are listed.
+
+Report fields: `calls_analysed`, `score_means`, `calls_means`, `min_count_means`.
+`score_means` states the formula: `value = est_usd x saveable_share`; `est_usd` =
+`direct_tokens` x $2/M + `carried_token_turns` x $0.20/M (Sonnet 5.5 input and cache-read
+prices); `direct_tokens` = result bytes / 4 + 100 per call; `carried_token_turns` = result
+tokens x calls remaining in that agent's run; `saveable_share` is an assumption (0.8 shape,
+0.6 sequence, 0.5 large-then-narrow). Bash calls from a ledger older than `command_shape` are
+grouped by `input_prefix_hash` and reported as a gap.
 
 ## Digest JSON
 
