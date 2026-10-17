@@ -132,6 +132,11 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
   `cc_obs_ledger_seconds_since_prev_request` carry the labels of
   `cc_obs_ledger_context_tokens`; the gap is absent for a session's first request.
 
+- Sub-agent calls and requests reach the ledger through the `SubagentStop` hook, which
+  reads `<session>/subagents/agent-<id>.jsonl` and tags records `agent=subagent` plus
+  `agent_id`. A sub-agent still running when the session ends, or a session started
+  before the hook was installed, is missing its tail until its next stop.
+
 ## Troubleshooting
 
 | Symptom | Look at |

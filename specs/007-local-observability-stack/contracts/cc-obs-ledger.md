@@ -9,11 +9,13 @@ the hook's budget. Failures write one line to a local log
 |---|---|---|
 | `SessionStart` | `cc-obs-ledger census` | Estimates tokens per fixed component: instruction files read, skills listing, the MCP tool-name listing (definitions are deferred, so their schemas count only when loaded), memory index. Stores it by `session_id`. Prints nothing to stdout (so it adds no context itself). |
 | `Stop` | `cc-obs-ledger turn` | Reads the new tail of `transcript_path`, emits per-request context size, cache hit ratio, cache-creation tokens and seconds since the previous request, the skill listing (`cc_obs_ledger_skill_listed_tokens{skill_name}`) and MCP servers (`cc_obs_ledger_mcp_server_connected{mcp_server_name}`) when the new tail holds them, and one `cc_obs_ledger.tool_call` log record per tool call (below). |
+| `SubagentStop` | `cc-obs-ledger subagent` | Same records as `turn`, from the sub-agent's own transcript (`agent_transcript_path`, else `<dir of transcript_path>/<session_id>/subagents/agent-<agent_id>.jsonl`), read from a per-(session, agent) cursor `cursors/<session>.agent-<agent_id>.json`. Records carry `agent=subagent` and `agent_id`. A repeated stop emits only what the file gained; `end` reads the main transcript only and never re-reads these files. |
 | `SessionStart` | `cc-obs-ledger notice` | Prints one short line ("token review ready: <date>") only when the newest findings file in the review state directory has not been promoted or dismissed. Prints nothing otherwise and never fails. Gated by `review.notify` (default on); the only ledger subcommand allowed to write to stdout. |
 | `SessionEnd` | `cc-obs-ledger end` | Emits the fixed-context split (first request minus census residual) and one `cc_obs_ledger.session` log line. |
 
-Inputs used from the hook payload: `session_id`, `transcript_path`, `cwd`, `agent_id` /
-`agent_type` when present (common fields, per the hooks docs). Transcript fields read:
+Inputs used from the hook payload: `session_id`, `transcript_path`, `cwd`, and for
+`SubagentStop` `agent_id` and `agent_transcript_path` (documented on the hooks page; the
+latter is absent from `SubagentStart`). Transcript fields read:
 per-message `usage` (`input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`,
 `output_tokens`) — names *unconfirmed* until spike S3.
 
