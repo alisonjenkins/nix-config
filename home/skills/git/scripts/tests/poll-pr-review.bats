@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   script="$script_dir/../poll-pr-review.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_GH_FIXTURES="$BATS_TEST_TMPDIR/fixtures"
   mkdir -p "$FAKE_GH_FIXTURES"
   # defaults: no unresolved threads, no suppressed findings, one verdict line
@@ -16,43 +18,43 @@ suppressed_section() {
 }
 
 @test "no args prints usage and exits 1" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "too many args prints usage and exits 1" {
-  run "$script" 319 owner/repo extra
+  run bash "$script" 319 owner/repo extra
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "non-numeric pr number errors clearly" {
-  run "$script" not-a-number owner/repo
+  run bash "$script" not-a-number owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be numeric"* ]]
 }
 
 @test "rejects owner/repo with no slash" {
-  run "$script" 319 ownerrepo
+  run bash "$script" 319 ownerrepo
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be exactly 'owner/repo'"* ]]
 }
 
 @test "rejects owner/repo with an extra slash" {
-  run "$script" 319 owner/repo/extra
+  run bash "$script" 319 owner/repo/extra
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be exactly 'owner/repo'"* ]]
 }
 
 @test "rejects owner/repo with a trailing slash and empty repo" {
-  run "$script" 319 owner/
+  run bash "$script" 319 owner/
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be exactly 'owner/repo'"* ]]
 }
 
 @test "reports (none) for unresolved threads and suppressed findings when both are empty" {
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"Unresolved review threads"* ]]
   [[ "$output" == *"Suppressed/previously-missed findings"* ]]
@@ -63,7 +65,7 @@ suppressed_section() {
 @test "lists an unresolved thread with its comment id and path:line" {
   printf 'THREAD_1\tfalse\tsome/file.sh\t42\t1001\talice\tfix this thing\n' \
     >"$FAKE_GH_FIXTURES/threads.tsv"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"[1001] some/file.sh:42 (thread THREAD_1)"* ]]
   [[ "$output" == *"alice: fix this thing"* ]]
@@ -73,7 +75,7 @@ suppressed_section() {
 @test "marks an outdated thread" {
   printf 'THREAD_1\ttrue\tsome/file.sh\t42\t1001\talice\tfix this thing\n' \
     >"$FAKE_GH_FIXTURES/threads.tsv"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"[outdated: code has changed since]"* ]]
 }
@@ -89,7 +91,7 @@ Some summary text.
 
 - Files reviewed: 1/1
 EOF
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"src/foo.sh:12"* ]]
   [[ "$output" == *"the actual finding text here"* ]]
@@ -104,7 +106,7 @@ EOF
 **src/foo.sh:12**
 * the actual finding text here
 EOF
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   # The verdict section reprints the raw body, so count within the
   # suppressed-findings section only.
@@ -118,7 +120,7 @@ EOF
 **src/foo.sh:12**
 * second distinct finding
 EOF
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"first distinct finding"* ]]
   [[ "$output" == *"second distinct finding"* ]]
@@ -131,7 +133,7 @@ EOF
   # pair it with this unrelated second location.
   printf '**src/first.sh:1**\n* bullet for first\n**src/second.sh:2**' \
     >"$FAKE_GH_FIXTURES/review-bodies.txt"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"src/first.sh:1"* ]]
   [[ "$output" == *"bullet for first"* ]]
@@ -145,7 +147,7 @@ not a bullet, so this heading has no attached finding
 
 - Files reviewed: 1/1
 EOF
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   # still reports (none) for suppressed findings since nothing qualified
   [ "$(grep -c '^(none)$' <<<"$output")" -eq 2 ]
@@ -156,7 +158,7 @@ EOF
     >"$FAKE_GH_FIXTURES/threads-page1.tsv"
   printf 'THREAD_2\tfalse\tother/file.sh\t2\t1002\tbob\tpage two finding\n' \
     >"$FAKE_GH_FIXTURES/threads-page2.tsv"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"[1001] some/file.sh:1 (thread THREAD_1)"* ]]
   [[ "$output" == *"[1002] other/file.sh:2 (thread THREAD_2)"* ]]
@@ -164,21 +166,21 @@ EOF
 
 @test "fails loudly instead of silently truncating when the __PAGEINFO__ sentinel is missing" {
   touch "$FAKE_GH_FIXTURES/no-pageinfo-sentinel"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"no __PAGEINFO__ sentinel"* ]]
 }
 
 @test "fails loudly instead of looping forever on hasNextPage=true with an empty cursor" {
   touch "$FAKE_GH_FIXTURES/hasnext-empty-cursor"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"empty endCursor"* ]]
 }
 
 @test "fails loudly instead of misreporting (none) when the GraphQL call fails" {
   touch "$FAKE_GH_FIXTURES/graphql-fails"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"failed to fetch review threads via GraphQL"* ]]
   [[ "$output" != *"Suppressed"* ]]
@@ -186,14 +188,14 @@ EOF
 
 @test "fetches the reviews list exactly once, reusing it for both suppressed findings and the verdict" {
   export FAKE_GH_COUNT_REVIEWS_CALLS=1
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   count="$(cat "$FAKE_GH_FIXTURES/reviews-list-call-count")"
   [ "$count" = "1" ]
 }
 
 @test "shows the latest review's header, then its verdict body" {
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
@@ -209,7 +211,7 @@ The explanation paragraph.
 **Review effort** 2/5
 <details>trailing metadata</details>
 EOF
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *$'abcdef12:\n### Needs a closer look\nThe explanation paragraph.'* ]]
   [[ "$output" != *"ccr-overview"* ]]
@@ -221,7 +223,7 @@ EOF
 
 @test "reports no review yet instead of crashing on a PR with no reviews" {
   : >"$FAKE_GH_FIXTURES/review-bodies.txt"
-  run "$script" 319 owner/repo
+  run bash "$script" 319 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"(no review with a summary yet)"* ]]
 }

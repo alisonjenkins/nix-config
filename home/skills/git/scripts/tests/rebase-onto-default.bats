@@ -35,7 +35,7 @@ feature_branch_with_commit() {
   git config user.email "test@example.com"
   git config user.name "Test User"
   git commit -q --allow-empty -m init
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no 'origin' remote"* ]]
 }
@@ -43,27 +43,27 @@ feature_branch_with_commit() {
 @test "not a git repository errors clearly" {
   cd "$BATS_TEST_TMPDIR"
   mkdir plain && cd plain
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"not inside a git repository"* ]]
 }
 
 @test "detached HEAD errors clearly" {
   git checkout -q --detach main
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"detached HEAD"* ]]
 }
 
 @test "already on the default branch errors clearly" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"already on the default branch"* ]]
 }
 
 @test "unknown flag prints usage and exits 1" {
   feature_branch_with_commit "one"
-  run "$script" --bogus
+  run bash "$script" --bogus
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
@@ -78,7 +78,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"rebasing feature onto origin/main"* ]]
   [[ "$output" == *"1 commit(s) ahead of origin/main"* ]]
@@ -115,7 +115,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"dropped as already applied"* ]]
   [[ "$output" == *"1 commit(s) ahead"* ]]
@@ -134,7 +134,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script" --push
+  run bash "$script" --push
   [ "$status" -eq 0 ]
   [[ "$output" == *"pushing"* ]]
   run git rev-parse feature
@@ -154,7 +154,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"conflict"* ]]
   run git status --porcelain=v1 -z --branch
@@ -176,7 +176,7 @@ feature_branch_with_commit() {
   # Dirty the tree so `git rebase` refuses to even start.
   echo "uncommitted" >>feature.txt
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no rebase is in progress"* ]]
   [[ "$output" != *"then 'git rebase --continue'"* ]]
@@ -186,7 +186,7 @@ feature_branch_with_commit() {
 @test "falls back to probing origin for main when origin/HEAD isn't set" {
   git remote set-head origin --delete
   feature_branch_with_commit "one"
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"onto origin/main"* ]]
 }
@@ -199,7 +199,7 @@ feature_branch_with_commit() {
   git push -q origin :main
   git push -q -u origin trunk-but-not-a-probed-name
   feature_branch_with_commit "one"
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"couldn't determine the default branch"* ]]
 }

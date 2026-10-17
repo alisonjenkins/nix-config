@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   script="$script_dir/../watch-pr.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_GH_FIXTURES="$BATS_TEST_TMPDIR/fixtures"
   mkdir -p "$FAKE_GH_FIXTURES"
 
@@ -38,25 +40,25 @@ setup() {
 }
 
 @test "no args prints usage and exits 1" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "non-numeric pr number errors clearly" {
-  run "$script" not-a-number
+  run bash "$script" not-a-number
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be numeric"* ]]
 }
 
 @test "rejects owner/repo with no slash" {
-  run "$script" 1 ownerrepo
+  run bash "$script" 1 ownerrepo
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be exactly 'owner/repo'"* ]]
 }
 
 @test "idle timeout fires when nothing changes and max_seconds is 0" {
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
@@ -68,7 +70,7 @@ setup() {
   export WATCH_PR_MAX_SECONDS
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t0\nOPEN\tCHANGES_REQUESTED\t2026-01-01T00:05:00Z\tMERGEABLE\tCLEAN\t1\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"NEW_ACTIVITY"* ]]
   [[ "$output" == *"CHANGES_REQUESTED"* ]]
@@ -84,7 +86,7 @@ setup() {
   git push -q origin main
   git switch -q feature
 
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 1 ]
   [[ "$output" == *"NEEDS_ATTENTION"* ]]
   [[ "$output" == *"conflict"* ]]
@@ -103,7 +105,7 @@ setup() {
 
   WATCH_PR_MAX_SECONDS=1
   export WATCH_PR_MAX_SECONDS
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
@@ -115,7 +117,7 @@ setup() {
 
 @test "a gh failure while fetching the fingerprint reports NEEDS_ATTENTION" {
   touch "$FAKE_GH_FIXTURES/fingerprint-fails"
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -ne 0 ]
   [[ "$output" == *"NEEDS_ATTENTION"* ]]
 }
@@ -123,7 +125,7 @@ setup() {
 @test "a non-numeric WATCH_PR_RATIO falls back to 1.5 instead of collapsing the interval" {
   WATCH_PR_RATIO=not-a-number
   export WATCH_PR_RATIO
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"is not a number >= 1"* ]]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
@@ -132,7 +134,7 @@ setup() {
 @test "a WATCH_PR_RATIO below 1 falls back to 1.5 instead of shrinking the interval" {
   WATCH_PR_RATIO=0.5
   export WATCH_PR_RATIO
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"is not a number >= 1"* ]]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
@@ -141,7 +143,7 @@ setup() {
 @test "WATCH_PR_START_INTERVAL=0 is accepted, not rejected as non-positive" {
   WATCH_PR_START_INTERVAL=0
   export WATCH_PR_START_INTERVAL
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" != *"warning:"* ]]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
@@ -163,11 +165,11 @@ setup() {
 
   sleep_log="$BATS_TEST_TMPDIR/sleep-log.txt"
   cat >"$BATS_TEST_TMPDIR/sleep" <<SPY
-#!/usr/bin/env bash
+#!$(command -v bash)
 echo "\$1" >>"$sleep_log"
 SPY
   chmod +x "$BATS_TEST_TMPDIR/sleep"
-  PATH="$BATS_TEST_TMPDIR:$PATH" run "$script" 1
+  PATH="$BATS_TEST_TMPDIR:$PATH" run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"NEW_ACTIVITY"* ]]
   # First sleep at the start interval (1), second must be 2 (ceil(1.5)),
@@ -178,7 +180,7 @@ SPY
 
 @test "exits immediately when the PR is already MERGED at startup" {
   printf 'MERGED\tnull\tA\tMERGEABLE\tUNKNOWN\t0\n' >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"PR_MERGED"* ]]
   [[ "$output" != *"IDLE_TIMEOUT"* ]]
@@ -186,7 +188,7 @@ SPY
 
 @test "exits immediately when the PR is already CLOSED at startup" {
   printf 'CLOSED\tnull\tA\tMERGEABLE\tUNKNOWN\t0\n' >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"PR_CLOSED"* ]]
   [[ "$output" != *"IDLE_TIMEOUT"* ]]
@@ -195,7 +197,7 @@ SPY
 @test "idle timeout is reported in a readable duration, not truncated hours" {
   WATCH_PR_MAX_SECONDS=90
   export WATCH_PR_MAX_SECONDS
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT: no activity in 0h01m30s"* ]]
   [[ "$output" == *"idle timeout 0h01m30s"* ]]
@@ -205,7 +207,7 @@ SPY
   WATCH_PR_MAX_SECONDS=1
   export WATCH_PR_MAX_SECONDS
   touch "$FAKE_GH_FIXTURES/fingerprint-stderr-noise"
-  run "$script" 1
+  run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
@@ -214,7 +216,7 @@ SPY
 @test "a review that landed after triage is reported on tick 1 instead of becoming the baseline" {
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  WATCH_PR_TRIAGED_REVIEWS=0 run "$script" 1
+  WATCH_PR_TRIAGED_REVIEWS=0 run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"NEW_ACTIVITY"* ]]
   [[ "$output" == *"triaged 0 review(s)"* ]]
@@ -223,7 +225,7 @@ SPY
 @test "a non-numeric WATCH_PR_TRIAGED_REVIEWS is ignored with a warning, not treated as a mismatch" {
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  WATCH_PR_TRIAGED_REVIEWS=abc run "$script" 1
+  WATCH_PR_TRIAGED_REVIEWS=abc run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"WATCH_PR_TRIAGED_REVIEWS='abc' is not a non-negative integer; ignoring it"* ]]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
@@ -233,7 +235,7 @@ SPY
 @test "a zero-padded WATCH_PR_TRIAGED_REVIEWS still matches the numeric review count" {
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t5\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  WATCH_PR_TRIAGED_REVIEWS=05 run "$script" 1
+  WATCH_PR_TRIAGED_REVIEWS=05 run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
   [[ "$output" != *"NEW_ACTIVITY"* ]]
@@ -242,7 +244,7 @@ SPY
 @test "a matching WATCH_PR_TRIAGED_REVIEWS keeps the normal baseline behaviour" {
   printf 'OPEN\tnull\t2026-01-01T00:00:00Z\tMERGEABLE\tCLEAN\t1\n' \
     >"$FAKE_GH_FIXTURES/fingerprint-sequence.tsv"
-  WATCH_PR_TRIAGED_REVIEWS=1 run "$script" 1
+  WATCH_PR_TRIAGED_REVIEWS=1 run bash "$script" 1
   [ "$status" -eq 0 ]
   [[ "$output" == *"IDLE_TIMEOUT"* ]]
 }

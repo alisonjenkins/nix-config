@@ -38,20 +38,20 @@ commit_unsigned() {
 }
 
 @test "no args prints usage and exits 1" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "invalid rev-range errors clearly" {
-  run "$script" "not-a-real-ref..HEAD"
+  run bash "$script" "not-a-real-ref..HEAD"
   [ "$status" -eq 1 ]
   [[ "$output" == *"not a valid rev-range"* ]]
 }
 
 @test "empty range reports no commits and exits 0" {
   commit_signed "first"
-  run "$script" "HEAD..HEAD"
+  run bash "$script" "HEAD..HEAD"
   [ "$status" -eq 0 ]
   [[ "$output" == *"no commits in range"* ]]
 }
@@ -59,7 +59,7 @@ commit_unsigned() {
 @test "a fully signed range reports SIGNED for each commit and exits 0" {
   commit_signed "first"
   commit_signed "second"
-  run "$script" "$base_sha..HEAD"
+  run bash "$script" "$base_sha..HEAD"
   [ "$status" -eq 0 ]
   [[ "$output" == *"SIGNED"*"first"* ]]
   [[ "$output" == *"SIGNED"*"second"* ]]
@@ -69,7 +69,7 @@ commit_unsigned() {
 @test "an unsigned commit in range is reported and exit is 1" {
   commit_signed "first"
   commit_unsigned "second"
-  run "$script" "$base_sha..HEAD"
+  run bash "$script" "$base_sha..HEAD"
   [ "$status" -eq 1 ]
   [[ "$output" == *"UNSIGNED"*"second"* ]]
   [[ "$output" == *"1 commit(s) unsigned"* ]]
@@ -78,7 +78,7 @@ commit_unsigned() {
 @test "multiple unsigned commits are all reported" {
   commit_unsigned "first"
   commit_unsigned "second"
-  run "$script" "$base_sha..HEAD"
+  run bash "$script" "$base_sha..HEAD"
   [ "$status" -eq 1 ]
   [[ "$output" == *"UNSIGNED"*"first"* ]]
   [[ "$output" == *"UNSIGNED"*"second"* ]]

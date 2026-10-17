@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   script="$script_dir/../pr-status.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_GH_FIXTURES="$BATS_TEST_TMPDIR/fixtures"
   mkdir -p "$FAKE_GH_FIXTURES"
   cat >"$FAKE_GH_FIXTURES/pr-status.json" <<'EOF'
@@ -23,25 +25,25 @@ EOF
 }
 
 @test "no args prints usage and exits 1" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "non-numeric pr number errors clearly" {
-  run "$script" not-a-number owner/repo
+  run bash "$script" not-a-number owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be numeric"* ]]
 }
 
 @test "rejects owner/repo with no slash" {
-  run "$script" 1 ownerrepo
+  run bash "$script" 1 ownerrepo
   [ "$status" -eq 1 ]
   [[ "$output" == *"must be exactly 'owner/repo'"* ]]
 }
 
 @test "prints a compact status line with checks, reviewDecision, mergeable, mergeStateStatus" {
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"state=OPEN"* ]]
   [[ "$output" == *"head=abcdef12"* ]]
@@ -65,7 +67,7 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"checks=NONE"* ]]
 }
@@ -83,7 +85,7 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"autoMerge=true"* ]]
   [[ "$output" == *"reviewDecision=APPROVED"* ]]
@@ -103,7 +105,7 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"reviewRequests=copilot-pull-request-reviewer,alice"* ]]
 }
@@ -121,7 +123,7 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"reviewRequests=alice"* ]]
   [[ "$output" != *"reviewRequests=,alice"* ]]
@@ -143,7 +145,7 @@ EOF
   ]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"[1001] some/file.sh:42 (thread THREAD_1)"* ]]
   [[ "$output" == *"alice: fix this"* ]]
@@ -162,14 +164,14 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"src/foo.sh:12"* ]]
   [[ "$output" == *"the actual finding text here"* ]]
 }
 
 @test "shows the latest review with a summary body as the verdict" {
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *$'[2026-01-01T00:00:00Z] someone on abcdef12:\n### verdict'* ]]
 }
@@ -180,7 +182,7 @@ EOF
     "$FAKE_GH_FIXTURES/pr-status.json" >"$FAKE_GH_FIXTURES/pr-status.json.new"
   mv "$FAKE_GH_FIXTURES/pr-status.json.new" "$FAKE_GH_FIXTURES/pr-status.json"
 
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *$'abcdef12:\n### Needs a closer look\nThe explanation paragraph.'* ]]
   [[ "$output" != *"ccr-overview"* ]]
@@ -203,7 +205,7 @@ EOF
   "reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"(no review with a summary yet)"* ]]
 }
@@ -239,7 +241,7 @@ EOF
   ]}
 }}}}
 EOF
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 0 ]
   [[ "$output" == *"[1] a.sh:1 (thread THREAD_1)"* ]]
   [[ "$output" == *"[2] b.sh:2 (thread THREAD_2)"* ]]
@@ -247,7 +249,7 @@ EOF
 
 @test "fails loudly instead of misreporting when the GraphQL call fails" {
   touch "$FAKE_GH_FIXTURES/graphql-status-fails"
-  run "$script" 1 owner/repo
+  run bash "$script" 1 owner/repo
   [ "$status" -eq 1 ]
   [[ "$output" == *"failed to fetch PR status via GraphQL"* ]]
 }

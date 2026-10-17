@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
+load 'sandbox-path-helpers'
+
 setup() {
   script_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
   script="$script_dir/../merge-onto-default.sh"
-  export PATH="$script_dir:$PATH"
+  stage_fakes_and_export_path "$script_dir"
   export FAKE_GH_FIXTURES="$BATS_TEST_TMPDIR/fixtures"
   mkdir -p "$FAKE_GH_FIXTURES"
   # Default: a PR exists, checks pass. pr-head-sha stays unset so every
@@ -42,14 +44,14 @@ feature_branch_with_commit() {
 }
 
 @test "no args required; extra args print usage and exit 1" {
-  run "$script" extra-arg
+  run bash "$script" extra-arg
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
 
 @test "detached HEAD errors clearly" {
   git checkout -q --detach main
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"detached HEAD"* ]]
 }
@@ -61,13 +63,13 @@ feature_branch_with_commit() {
   git config user.email "test@example.com"
   git config user.name "Test User"
   git commit -q --allow-empty -m init
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no 'origin' remote"* ]]
 }
 
 @test "already on the default branch errors clearly" {
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"already on the default branch"* ]]
 }
@@ -75,7 +77,7 @@ feature_branch_with_commit() {
 @test "rebases and fast-forward-pushes a clean feature branch directly onto main" {
   feature_branch_with_commit "one"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"signatures intact"* ]]
 
@@ -95,7 +97,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
 
   run git ls-remote origin refs/heads/main
@@ -117,7 +119,7 @@ feature_branch_with_commit() {
   git push -q origin main
   git switch -q feature
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" != *"pushing"* ]]
 }
@@ -137,7 +139,7 @@ feature_branch_with_commit() {
   run git ls-remote origin refs/heads/main
   before_main="${output%%$'\t'*}"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"unsigned"* ]]
 
@@ -154,7 +156,7 @@ feature_branch_with_commit() {
   run git ls-remote origin refs/heads/main
   before_main="${output%%$'\t'*}"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"no open PR found"* ]]
 
@@ -167,7 +169,7 @@ feature_branch_with_commit() {
   touch "$FAKE_GH_FIXTURES/checks-fail"
   feature_branch_with_commit "one"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"checks did not all pass"* ]]
   [[ "$output" != *"pushing feature onto"* ]]
@@ -179,7 +181,7 @@ feature_branch_with_commit() {
   export MERGE_ONTO_DEFAULT_CHECKS_REGISTER_TIMEOUT=0
   feature_branch_with_commit "one"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"nothing to gate on, proceeding"* ]]
   [[ "$output" == *"signatures intact"* ]]
@@ -194,7 +196,7 @@ feature_branch_with_commit() {
   run git ls-remote origin refs/heads/main
   before_main="${output%%$'\t'*}"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"checks did not all pass"* ]]
   [[ "$output" != *"nothing to gate on"* ]]
@@ -208,7 +210,7 @@ feature_branch_with_commit() {
   echo 3 >"$FAKE_GH_FIXTURES/head-checks-register-after"
   feature_branch_with_commit "one"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" != *"nothing to gate on"* ]]
   [[ "$output" == *"signatures intact"* ]]
@@ -223,7 +225,7 @@ feature_branch_with_commit() {
   run git ls-remote origin refs/heads/main
   before_main="${output%%$'\t'*}"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"couldn't query checks"* ]]
 
@@ -236,7 +238,7 @@ feature_branch_with_commit() {
   feature_branch_with_commit "one"
   echo stale-sha >"$FAKE_GH_FIXTURES/pr-head-sha.txt"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 0 ]
   [[ "$output" == *"pushing feature to update PR #1 before checking CI"* ]]
 }
@@ -248,10 +250,10 @@ feature_branch_with_commit() {
   # replacing origin with a receive.denyCurrentBranch-style rejection:
   # a pre-receive hook in the bare origin that refuses pushes to main.
   mkdir -p "$origin/hooks"
-  cat >"$origin/hooks/pre-receive" <<'HOOK'
-#!/usr/bin/env bash
+  cat >"$origin/hooks/pre-receive" <<HOOK
+#!$(command -v bash)
 while read -r old new ref; do
-  if [[ "$ref" == "refs/heads/main" ]]; then
+  if [[ "\$ref" == "refs/heads/main" ]]; then
     echo "remote: protected branch: main requires a pull request" >&2
     exit 1
   fi
@@ -259,7 +261,7 @@ done
 HOOK
   chmod +x "$origin/hooks/pre-receive"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   # git's own stderr already contains the word "rejected" regardless of
   # what this script says, so assert on this script's own added text
@@ -276,7 +278,7 @@ HOOK
   run git ls-remote origin refs/heads/main
   before_main="${output%%$'\t'*}"
 
-  run "$script"
+  run bash "$script"
   [ "$status" -eq 1 ]
   [[ "$output" == *"fixup"* ]]
 

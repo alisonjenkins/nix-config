@@ -23,19 +23,19 @@ commit_file() {
 
 @test "passes when the range has only ordinary commits" {
   commit_file one
-  run "$script" main..HEAD
+  run bash "$script" main..HEAD
   [ "$status" -eq 0 ]
 }
 
 @test "passes on an empty range" {
-  run "$script" HEAD..HEAD
+  run bash "$script" HEAD..HEAD
   [ "$status" -eq 0 ]
 }
 
 @test "fails on a fixup! commit and names it" {
   commit_file one
   git commit -q --allow-empty --fixup=HEAD
-  run "$script" main..HEAD
+  run bash "$script" main..HEAD
   [ "$status" -eq 1 ]
   [[ "$output" == *"fixup! one"* ]]
   [[ "$output" == *"--autosquash"* ]]
@@ -44,29 +44,29 @@ commit_file() {
 @test "fails on squash! and amend! commits" {
   commit_file one
   git commit -q --allow-empty -m "squash! one"
-  run "$script" main..HEAD
+  run bash "$script" main..HEAD
   [ "$status" -eq 1 ]
   git reset -q --hard HEAD~1
   git commit -q --allow-empty -m "amend! one"
-  run "$script" main..HEAD
+  run bash "$script" main..HEAD
   [ "$status" -eq 1 ]
 }
 
 @test "a subject merely containing the word fixup is fine" {
   commit_file one "fix: fixup! handling in the parser"
-  run "$script" main..HEAD
+  run bash "$script" main..HEAD
   [ "$status" -eq 0 ]
 }
 
 @test "ignores a fixup! commit outside the range" {
   commit_file one
   git commit -q --allow-empty --fixup=HEAD
-  run "$script" HEAD..HEAD
+  run bash "$script" HEAD..HEAD
   [ "$status" -eq 0 ]
 }
 
 @test "rejects an invalid rev-range" {
-  run "$script" nonexistent..HEAD
+  run bash "$script" nonexistent..HEAD
   [ "$status" -eq 1 ]
   [[ "$output" == *"not a valid rev-range"* ]]
 }
