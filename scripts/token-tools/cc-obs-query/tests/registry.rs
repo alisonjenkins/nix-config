@@ -10,8 +10,11 @@
 
 mod common;
 
+use std::fs;
+
 use cc_obs_query::pack::{Pack, COLLECTED_SIGNALS};
-use common::{cli, rows, s, serve, write_pack};
+use common::{cli, digest_rules, fixture, rows, s, serve, write_pack};
+use serde_json::{json, Value};
 
 const NEW_SIGNALS: [&str; 5] = [
     "cc_obs_ledger_requests_total",
@@ -55,4 +58,63 @@ fn unused_signals_flags_an_unreferenced_new_ledger_signal() {
         assert!(keys.contains(&signal), "{signal} missing from {keys:?}");
         assert!(COLLECTED_SIGNALS.contains(&signal));
     }
+}
+
+const RUN_LENGTH_PACK: &str = r#"version: 1
+questions:
+  - id: agent-run-length
+    title: Which sessions and sub-agents made the most API requests?
+    signals: [claude_code.token.usage]
+    query: { command: "cc-obs-query top session --by requests" }
+    decision_kind: configure
+    threshold: { min_value: 100 }
+"#;
+
+#[test]
+fn digest_write_accepts_baseline_evidence_for_a_subagent_session() {
+    let counter = json!({"status":"success","data":{"resultType":"vector","result":[
+        {"metric":{"session_id":"s1","agent":"subagent"},"value":[1.0,"559"]},
+        {"metric":{"session_id":"s1","agent":"main"},"value":[1.0,"40"]}
+    ]}})
+    .to_string();
+    let mut rules = vec![("cc_obs_ledger_requests_total", counter)];
+    rules.extend(digest_rules(fixture("loki_tool_results.json")));
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), RUN_LENGTH_PACK);
+    let fake = serve(rules);
+    let run = cli(
+        &fake,
+        &[
+            "digest",
+            "--baseline",
+            "--pack",
+            s(&pack),
+            "--since",
+            "7d",
+            "--until",
+            "2026-10-09",
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    let digest: Value = run.json();
+    assert_eq!(
+        digest["questions"][0]["rows"][0]["evidence"],
+        json!("session:s1/subagent"),
+        "{digest}"
+    );
+    let file = dir.path().join("in.json");
+    fs::write(&file, digest.to_string()).unwrap();
+    let run = cli(
+        &fake,
+        &[
+            "digest",
+            "--write",
+            s(&file),
+            "--pack",
+            s(&pack),
+            "--until",
+            "2026-10-09",
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
 }

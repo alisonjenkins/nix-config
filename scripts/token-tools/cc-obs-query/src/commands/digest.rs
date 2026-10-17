@@ -684,7 +684,14 @@ fn evidence_refs(digest: &Value) -> Vec<String> {
 /// Tokens comes first and is the one that must be reachable.
 fn evidence_rankings(category: Category) -> &'static [By] {
     match category {
-        Category::Session => &[By::Tokens, By::Cost, By::CacheHit, By::Compactions],
+        Category::Session => &[
+            By::Tokens,
+            By::Cost,
+            By::CacheHit,
+            By::Compactions,
+            By::Requests,
+            By::ContextGrowth,
+        ],
         Category::Memory => &[By::Tokens, By::HitRate],
         _ => &[By::Tokens, By::Cost],
     }
