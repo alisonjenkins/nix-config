@@ -13,6 +13,7 @@ use std::thread;
 use std::time::Duration;
 
 use cc_obs_query::backend::{Backend, Endpoints};
+use cc_obs_query::error::Error;
 use serde_json::{json, Value};
 
 /// A one-handler HTTP server: `handler` gets the percent-decoded request target
@@ -100,4 +101,40 @@ fn loki_page_over_10mib_is_read_or_reports_cap() {
             "error must name the size cap: {error}"
         ),
     }
+}
+
+#[test]
+fn a_400_with_a_json_error_body_reaches_backend_rejected() {
+    let base = serve_fn(|_| {
+        (
+            400,
+            r#"{"status":"error","errorType":"bad_data","error":"parse error: unexpected end of input"}"#
+                .to_owned(),
+        )
+    });
+    let error = backend(&base).prom_instant("sum(", None).unwrap_err();
+    assert!(
+        matches!(&error, Error::BackendRejected { detail, .. }
+            if detail.contains("unexpected end of input")),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn a_5xx_with_a_plain_text_body_keeps_the_text() {
+    let base = serve_fn(|_| (500, "too many outstanding requests".to_owned()));
+    let error = backend(&base)
+        .loki_range("{a=\"b\"}", 0, 1, 10)
+        .unwrap_err();
+    assert!(
+        matches!(&error, Error::BackendRejected { status, detail, .. }
+            if status == "HTTP 500" && detail.contains("too many outstanding")),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn readiness_is_false_on_a_non_2xx() {
+    let base = serve_fn(|_| (503, "not ready".to_owned()));
+    assert!(!backend(&base).ready(cc_obs_query::backend::Store::Loki));
 }

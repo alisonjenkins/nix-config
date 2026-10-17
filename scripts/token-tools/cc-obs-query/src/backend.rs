@@ -13,6 +13,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 /// ureq's default read cap is 10 MiB; a 5000-entry Loki page of ~2 KiB log lines
 /// exceeds it, so the cap is raised and its size named when it still trips.
 const MAX_BODY_BYTES: u64 = 64 * 1024 * 1024;
+const MAX_REJECTION_DETAIL_CHARS: usize = 500;
 /// A W3C trace id is 128 bits, 32 hex digits.
 const MAX_TRACE_ID_CHARS: usize = 32;
 
@@ -144,6 +145,19 @@ fn number(value: &Value) -> Option<f64> {
     }
 }
 
+/// The store's own `error` field when the body is its JSON error object, else the
+/// body text, cut so a proxy's HTML error page cannot flood the report.
+fn rejection_detail(body: &str) -> String {
+    let from_json = serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|v| v.get("error").and_then(Value::as_str).map(str::to_owned));
+    let detail = from_json.unwrap_or_else(|| body.trim().to_owned());
+    if detail.is_empty() {
+        return "no detail".to_owned();
+    }
+    detail.chars().take(MAX_REJECTION_DETAIL_CHARS).collect()
+}
+
 fn pair(value: &Value) -> Option<(f64, f64)> {
     let items = value.as_array()?;
     Some((number(items.first()?)?, number(items.get(1)?)?))
@@ -153,6 +167,7 @@ impl Backend {
     pub fn new(endpoints: Endpoints) -> Self {
         let agent: ureq::Agent = ureq::Agent::config_builder()
             .timeout_global(Some(REQUEST_TIMEOUT))
+            .http_status_as_error(false)
             .build()
             .into();
         Self { agent, endpoints }
@@ -179,7 +194,8 @@ impl Backend {
             request = request.query(*key, *value);
         }
         let mut response = request.call().map_err(http)?;
-        response
+        let status = response.status();
+        let text = response
             .body_mut()
             .with_config()
             .limit(MAX_BODY_BYTES)
@@ -193,7 +209,16 @@ impl Backend {
                     ),
                 },
                 other => http(other),
+            })?;
+        if status.is_success() {
+            Ok(text)
+        } else {
+            Err(Error::BackendRejected {
+                operation,
+                status: format!("HTTP {}", status.as_u16()),
+                detail: rejection_detail(&text),
             })
+        }
     }
 
     fn get_json(
