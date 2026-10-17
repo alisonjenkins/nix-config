@@ -21,7 +21,13 @@ struct SeriesKey {
     model: String,
 }
 
-fn per_series(ctx: &Ctx, metric: &str, id: &str) -> Result<BTreeMap<SeriesKey, f64>, Error> {
+/// Series whose `turn` label is missing or not a number cannot be placed in a
+/// turn; they are left out and noted as a gap.
+fn per_series(
+    ctx: &Ctx,
+    metric: &str,
+    id: &str,
+) -> Result<(BTreeMap<SeriesKey, f64>, usize), Error> {
     let matcher = session_matcher(id)?;
     let query = format!(
         "last_over_time({}[{}])",
@@ -29,18 +35,26 @@ fn per_series(ctx: &Ctx, metric: &str, id: &str) -> Result<BTreeMap<SeriesKey, f
         ctx.window.prom()
     );
     let label = |s: &Sample, name: &str| s.labels.get(name).cloned().unwrap_or_default();
-    Ok(ctx
-        .instant(&query)?
-        .into_iter()
-        .filter_map(|s| {
-            let key = SeriesKey {
-                turn: s.labels.get("turn")?.parse().ok()?,
-                agent: label(&s, "agent"),
-                model: label(&s, "model"),
-            };
-            Some((key, s.value))
-        })
-        .collect())
+    let mut kept = BTreeMap::new();
+    let mut dropped = 0usize;
+    for s in ctx.instant(&query)? {
+        let Some(turn) = s.labels.get("turn").and_then(|t| t.parse().ok()) else {
+            dropped = dropped.saturating_add(1);
+            continue;
+        };
+        let key = SeriesKey {
+            turn,
+            agent: label(&s, "agent"),
+            model: label(&s, "model"),
+        };
+        kept.insert(key, s.value);
+    }
+    if dropped > 0 {
+        ctx.note_gap(format!(
+            "{metric}: {dropped} series without a numeric turn label were left out"
+        ));
+    }
+    Ok((kept, dropped))
 }
 
 /// Per turn, the series with the largest context, with the cache ratio of that
@@ -77,14 +91,16 @@ fn fixed_tokens(ctx: &Ctx, id: &str) -> Result<Option<f64>, Error> {
 
 pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
     let command = format!("session {id}");
-    let series = per_series(ctx, CONTEXT, id)?;
+    let (series, dropped) = per_series(ctx, CONTEXT, id)?;
     if series.is_empty() {
-        return Ok(Report::unavailable(
-            &command,
-            format!("no cc_obs_ledger samples for session {id} in the window"),
-        ));
+        let why = if dropped > 0 {
+            format!("{dropped} cc_obs_ledger series for session {id} have no numeric turn label")
+        } else {
+            format!("no cc_obs_ledger samples for session {id} in the window")
+        };
+        return Ok(Report::unavailable(&command, why));
     }
-    let cache = per_series(ctx, CACHE_HIT, id)?;
+    let (cache, _) = per_series(ctx, CACHE_HIT, id)?;
     let fixed = fixed_tokens(ctx, id)?;
     let context = peak_per_turn(&series, &cache);
     let max_context = context

@@ -67,6 +67,44 @@ fn session_new_tokens_unavailable_when_fixed_exceeds_max_context() {
     );
 }
 
+fn gaps(out: &Value) -> String {
+    out["gaps"].to_string()
+}
+
+#[test]
+fn session_series_without_turn_label_reported_as_gap() {
+    let no_turn = json!({"session_id": "s1", "agent": "main", "model": "m"});
+    let bad_turn = json!({"session_id": "s1", "agent": "main", "model": "m", "turn": "x"});
+
+    let partial = vector(&[(ledger("main", "1"), "9000"), (no_turn.clone(), "70000")]);
+    let fake = serve(session_rules(
+        partial,
+        vector(&[]),
+        fixture("prom_session_fixed.json"),
+    ));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(out["max_context_tokens"], json!(9000), "{out}");
+    assert!(
+        gaps(&out).contains("turn"),
+        "partial drop not reported: {out}"
+    );
+
+    let all_dropped = vector(&[(no_turn, "70000"), (bad_turn, "80000")]);
+    let fake = serve(session_rules(
+        all_dropped,
+        vector(&[]),
+        fixture("prom_session_fixed.json"),
+    ));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(out["value"], json!(null), "{out}");
+    let why = out["unavailable"].as_str().unwrap();
+    assert!(why.contains("turn"), "{out}");
+    assert!(
+        gaps(&out).contains("turn"),
+        "total drop not reported: {out}"
+    );
+}
+
 #[test]
 fn session_main_and_subagent_in_one_turn_do_not_collide() {
     for main_first in [true, false] {
