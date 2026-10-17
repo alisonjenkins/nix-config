@@ -78,8 +78,17 @@ pub fn figure(value: Option<f64>, why: &str) -> Value {
     }
 }
 
-/// Whole numbers stay integers; everything else keeps four decimals.
+/// A count of tokens or sessions: `increase()` leaves fractions behind, so round.
+pub fn count(value: f64) -> Value {
+    num(value.round())
+}
+
+/// Whole numbers stay integers; everything else keeps four decimals. A
+/// non-finite value is unavailable, never JSON null.
 pub fn num(value: f64) -> Value {
+    if !value.is_finite() {
+        return json!({"value": null, "unavailable": "not a finite number"});
+    }
     if value.fract() == 0.0 && value.abs() < 1e15 {
         json!(value as i64)
     } else {
@@ -103,7 +112,7 @@ fn shape_row(row: &Value, format: Format) -> Value {
 
 fn cell(value: &Value) -> String {
     match value {
-        Value::String(s) => s.clone(),
+        Value::String(s) => s.replace('\t', "\\t").replace(['\n', '\r'], "\\n"),
         Value::Null => "-".to_owned(),
         other => other.to_string(),
     }

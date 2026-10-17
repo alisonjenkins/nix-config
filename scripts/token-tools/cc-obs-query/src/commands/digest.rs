@@ -9,7 +9,7 @@ use serde_json::{json, Map, Value};
 use super::top::{rank, By, Category, Ranked, DEFAULT_MIN_REQUESTS};
 use super::{health, own_cost_of, query_report, question_cli, Ctx, COST, TOKENS};
 use crate::backend::Backend;
-use crate::bounds::{figure, num};
+use crate::bounds::{count, figure, num};
 use crate::error::Error;
 use crate::pack::{load_decisions, regrown, Decision, Pack, Question};
 use crate::window::{iso, parse_iso, Window};
@@ -184,9 +184,14 @@ fn answer(
     })
 }
 
-fn total(gaps: &mut Vec<String>, name: &str, result: Result<Option<f64>, Error>) -> Value {
+fn total(
+    gaps: &mut Vec<String>,
+    name: &str,
+    shape: fn(f64) -> Value,
+    result: Result<Option<f64>, Error>,
+) -> Value {
     let why = match result {
-        Ok(Some(v)) => return num(v),
+        Ok(Some(v)) => return shape(v),
         Ok(None) => "no samples in the window".to_owned(),
         Err(e) => e.to_string(),
     };
@@ -267,9 +272,9 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
         ctx.window.prom()
     ));
     let totals = json!({
-        "tokens": total(&mut gaps, "totals.tokens", ctx.increase_sum(TOKENS)),
-        "est_cost_usd": total(&mut gaps, "totals.est_cost_usd", ctx.increase_sum(COST)),
-        "sessions": total(&mut gaps, "totals.sessions", sessions),
+        "tokens": total(&mut gaps, "totals.tokens", count, ctx.increase_sum(TOKENS)),
+        "est_cost_usd": total(&mut gaps, "totals.est_cost_usd", num, ctx.increase_sum(COST)),
+        "sessions": total(&mut gaps, "totals.sessions", count, sessions),
     });
     let state = health::state(&ctx);
     if !state.stores_ok() {

@@ -210,6 +210,59 @@ fn unquoted_numeric_decision_id_is_loaded_or_clearly_rejected() {
     }
 }
 
+#[test]
+fn num_rounds_token_counts_and_never_yields_null() {
+    use cc_obs_query::bounds::num;
+    for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_ne!(num(bad), Value::Null, "num({bad}) vanished into null");
+        assert!(num(bad).is_object(), "num({bad}) = {}", num(bad));
+    }
+    let rules: Vec<(&'static str, String)> = digest_rules(fixture("loki_tool_results.json"))
+        .into_iter()
+        .map(|(needle, body)| {
+            if needle == "sum(increase(claude_code_token_usage_tokens_total" {
+                (needle, prom_scalar(8_773_294.633_4))
+            } else {
+                (needle, body)
+            }
+        })
+        .collect();
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    let fake = serve(rules);
+    let digest = valid_digest(&fake, s(&pack));
+    assert_eq!(
+        digest["totals"]["tokens"],
+        json!(8_773_295),
+        "token totals are whole numbers"
+    );
+}
+
+#[test]
+fn table_cells_escape_tabs_and_newlines() {
+    use cc_obs_query::bounds::{render, Bounds, Format, Report};
+    let mut report = Report::new("x");
+    report.rows = vec![json!({"key": "a\tb\nc", "value": 1})];
+    let out = render(
+        &report,
+        &Bounds {
+            format: Format::Table,
+            ..Bounds::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(out.lines().count(), 2, "header plus one row: {out:?}");
+    assert_eq!(
+        out.lines().nth(1).unwrap().split('\t').count(),
+        2,
+        "{out:?}"
+    );
+}
+
+fn prom_scalar(value: f64) -> String {
+    json!({"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1_760_000_000.0, value.to_string()]}]}}).to_string()
+}
+
 fn prom_vector(label: &str, samples: &[(&str, f64)]) -> String {
     let result: Vec<Value> = samples
         .iter()
