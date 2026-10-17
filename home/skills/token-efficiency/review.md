@@ -35,14 +35,21 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 |---|---|---|
 | tool-result-size | Tools returning the most tokens per use | Bound or summarise the output, add `--limit`/filters |
 | repeat-calls | Identical or near-identical calls in a session; big result then narrower query | A tool that does the narrow query directly |
-| skills-loaded-unused | Skills activated and not used, or listed and never activated | Shorten the description, drop the skill |
-| mcp-idle-servers | MCP servers connected but never called | Remove or defer the server |
-| fixed-context-share | Fixed tokens per turn (instructions, listings) versus new content | Trim instruction files, move procedure into skills |
+| skills-loaded-unused | Activated skills ranked by tokens (installed-but-never-activated is not measurable yet) | Shorten the description of a heavy skill, drop it |
+| mcp-idle-servers | MCP servers ranked by the usage label (idle servers are not measurable yet) | Remove or defer a heavy server |
+| fixed-context-share | Fixed tokens at session start by component (instructions, listings, memory index) | Trim instruction files, move procedure into skills |
 | cache-hit-low-sessions | Sessions with a low cache hit ratio | Find what invalidates the cache (editing early context, timeouts) |
-| subagent-overhead | Sub-agents whose startup cost exceeds their task | Do the task inline or use a lighter agent type |
-| memory-injected-ignored | Recalled items injected and not used | Raise the recall floor |
+| subagent-overhead | Sub-agent types using the most tokens | Do the task inline or use a lighter agent type |
+| memory-injected-ignored | Recall services matching on under half of requests | Raise the recall floor |
 | compaction-frequency | Frequent compaction | Smaller tool outputs, earlier delegation |
 | recall-failures | Recall errors | Fix the embedder, not the prompt |
+| costly-sessions | Sessions with the largest spend; open the top one with `session <id> --detail` | Delegate earlier, cap a runaway agent |
+| model-spend | Models taking most of the spend | Pin a cheaper default for routine work |
+| delegation-tier-fit | Sub-agent type and model pairs with the most spend; mechanical agents on a costly tier | Pin the agent to the cheaper tier |
+| memory-injection-cost | Memory services injecting the most tokens | Lower the recall limit or token cap |
+
+Questions the signals cannot answer yet are listed in `docs/token-efficiency/README.md`
+under "Not yet answerable".
 
 ## Dismissed and repeated findings
 
