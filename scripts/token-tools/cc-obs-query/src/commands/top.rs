@@ -99,6 +99,10 @@ fn label_spec(category: Category) -> Option<(&'static [&'static str], Vec<&'stat
     })
 }
 
+/// Key of a series whose attribution label is empty or missing, so its value
+/// stays in the ranking and the shares instead of vanishing.
+const UNATTRIBUTED: &str = "(unattributed)";
+
 fn rows_from(
     ctx: &Ctx,
     aggregate: &str,
@@ -119,20 +123,25 @@ fn rows_from(
     let mut rows: Vec<RankRow> = ctx
         .instant(&query)?
         .into_iter()
-        .filter_map(|s| {
-            let key = s.labels.get(label).filter(|k| !k.is_empty())?.clone();
+        .map(|s| {
+            let key = s
+                .labels
+                .get(label)
+                .filter(|k| !k.is_empty())
+                .cloned()
+                .unwrap_or_else(|| UNATTRIBUTED.to_owned());
             let model = labels
                 .get(1)
                 .and_then(|l| s.labels.get(*l))
                 .filter(|m| !m.is_empty())
                 .cloned();
-            Some(RankRow {
+            RankRow {
                 key,
                 value: s.value,
                 calls: None,
                 model,
                 detail: Map::new(),
-            })
+            }
         })
         .collect();
     rows.sort_by(|a, b| {

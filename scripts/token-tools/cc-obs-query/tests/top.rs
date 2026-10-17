@@ -26,6 +26,32 @@ fn share_of(out: &Value, key: &str) -> Option<f64> {
 }
 
 #[test]
+fn top_model_keeps_series_without_a_model_label() {
+    let fake = serve(with_own(vec![(
+        "by (model)",
+        vector("model", &[("", "50"), ("opus", "50")]),
+    )]));
+    let run = cli(&fake, &["top", "model", "--by", "tokens"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(share_of(&out, "opus"), Some(0.5), "{out}");
+    assert_eq!(share_of(&out, "(unattributed)"), Some(0.5), "{out}");
+}
+
+#[test]
+fn top_subagent_keeps_series_without_an_agent_name() {
+    let result = json!({"status": "success", "data": {"resultType": "vector", "result": [
+        {"metric": {"agent_name": "", "model": "opus"}, "value": [1.0, "30"]},
+        {"metric": {"agent_name": "Explore", "model": "opus"}, "value": [1.0, "70"]},
+    ]}})
+    .to_string();
+    let fake = serve(with_own(vec![("by (agent_name, model)", result)]));
+    let out = cli(&fake, &["top", "subagent", "--by", "tokens"]).json();
+    assert_eq!(share_of(&out, "Explore"), Some(0.7), "{out}");
+    assert_eq!(share_of(&out, "(unattributed)"), Some(0.3), "{out}");
+}
+
+#[test]
 fn top_fixed_does_not_rank_or_count_the_total_series() {
     let fake = serve(with_own(vec![(
         "by (component)",
