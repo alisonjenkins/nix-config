@@ -10,7 +10,7 @@ mod common;
 use common::{cli, row, rows, serve, with_own};
 use serde_json::{json, Value};
 
-const REQUESTS: &str = "count by (session_id)";
+const REQUESTS: &str = "cc_obs_ledger_requests_total";
 const CACHE_READ: &str = "type=\"cacheRead\"";
 const PROMPT: &str = "type=~\"cacheRead|cacheCreation|input\"";
 

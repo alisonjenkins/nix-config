@@ -55,7 +55,7 @@ pub enum Command {
         by: By,
         #[arg(long, default_value = DEFAULT_SINCE)]
         since: String,
-        /// `--by cache-hit` only: leave out sessions with fewer requests than this
+        /// `--by cache-hit` only: leave out sessions with fewer API requests than this (ledger request counter)
         #[arg(long, default_value_t = DEFAULT_MIN_REQUESTS)]
         min_requests: u64,
     },

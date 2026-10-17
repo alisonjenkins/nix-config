@@ -63,7 +63,7 @@ Two `cc-obs-query top` rankings have a definition worth knowing:
   each summed over the window with `increase()`. It replaces the earlier unweighted mean of
   the per-request `cc_obs_ledger_cache_hit_ratio` gauge, which let one-request cold starts
   top the list; that mean is not reachable any more. Sessions with fewer than
-  `--min-requests` requests (default 5, counted from the ledger's per-request series) are
+  `--min-requests` requests (default 5, counted from the ledger's `cc_obs_ledger_requests_total` counter, one per API request; against a ledger that predates it the CLI falls back to counting cache-hit series and reports a gap) are
   left out. The `cache_hit_ratio` detail on plain `top session` uses the same definition.
 
 Prompt text, responses, tool parameters and tool inputs are **not stored by default**:

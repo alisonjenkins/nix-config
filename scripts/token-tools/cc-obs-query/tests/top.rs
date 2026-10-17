@@ -54,7 +54,10 @@ fn top_subagent_keeps_series_without_an_agent_name() {
 #[test]
 fn cache_hit_ratio_never_exceeds_one() {
     let fake = serve(with_own(vec![
-        ("count by (session_id)", vector("session_id", &[("s", "6")])),
+        (
+            "cc_obs_ledger_requests_total",
+            vector("session_id", &[("s", "6")]),
+        ),
         ("type=\"cacheRead\"", vector("session_id", &[("s", "105")])),
         (
             "type=~\"cacheRead|cacheCreation|input\"",
@@ -187,7 +190,7 @@ fn cache_hit_min_requests_boundary_is_inclusive() {
     let rules = || {
         with_own(vec![
             (
-                "count by (session_id)",
+                "cc_obs_ledger_requests_total",
                 vector("session_id", &[("five", "5"), ("four", "4"), ("one", "1")]),
             ),
             (
@@ -274,8 +277,8 @@ fn cache_hit_help_says_what_min_requests_counts() {
     let fake = serve(vec![]);
     let run = cli(&fake, &["top", "--help"]);
     assert!(
-        run.out.contains("turn"),
-        "help does not say the count is per turn/model/agent series: {}",
+        run.out.contains("API requests"),
+        "help does not say the count is API requests: {}",
         run.out
     );
 }

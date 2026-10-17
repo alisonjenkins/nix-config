@@ -31,9 +31,8 @@ pub enum By {
     Tokens,
     /// `session` only: prompt-cache hit ratio, lowest first. Weighted by tokens:
     /// cacheRead / (cacheRead + cacheCreation + input) summed over the window.
-    /// Sessions with fewer than --min-requests ledger series are left out; the
-    /// ledger has no per-request id, so a series is one distinct
-    /// turn/model/agent combination, not one API request.
+    /// Sessions with fewer than --min-requests API requests are left out,
+    /// counted from the ledger's request counter.
     CacheHit,
     /// `session` only: compaction events per session, most first
     Compactions,
@@ -225,18 +224,38 @@ fn cache_hit_by_session(ctx: &Ctx) -> Result<BTreeMap<String, CacheHit>, Error> 
         .collect())
 }
 
-/// Distinct cache-hit series per session. The ledger labels the gauge with
-/// turn, model, agent and project but no request id, so several requests of one
-/// turn (a tool loop) share one series: this undercounts requests and tracks
-/// turns instead.
+/// The ledger's per-request counter: one increment per distinct API request.
+const LEDGER_REQUESTS: &str = "cc_obs_ledger_requests_total";
+
+/// API requests per session over the window, from the ledger's request counter.
+/// A ledger that predates the counter has no such series; then this falls back
+/// to counting cache-hit gauge series, which carry turn, model, agent and
+/// project but no request id, so a tool loop within one turn counts once and
+/// requests are undercounted.
 fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
+    let counted = format!(
+        "round(sum by (session_id)(increase({}[{}])))",
+        ctx.selector(LEDGER_REQUESTS, &[]),
+        ctx.window.prom()
+    );
+    let by_counter = session_values(ctx, &counted)?;
+    if !by_counter.is_empty() {
+        return Ok(by_counter);
+    }
+    ctx.note_gap(format!(
+        "{LEDGER_REQUESTS} has no samples in the window (ledger not yet updated?); requests are counted from {CACHE_HIT} series, which undercounts tool loops"
+    ));
     let query = format!(
         "count by (session_id)(last_over_time({}[{}]))",
         ctx.selector(CACHE_HIT, &[]),
         ctx.window.prom()
     );
+    session_values(ctx, &query)
+}
+
+fn session_values(ctx: &Ctx, query: &str) -> Result<BTreeMap<String, f64>, Error> {
     Ok(ctx
-        .instant(&query)?
+        .instant(query)?
         .into_iter()
         .filter_map(|s| {
             Some((

@@ -528,7 +528,7 @@ fn top_session_by_cache_hit_lists_the_worst_ratio_first() {
         )
     };
     let fake = serve(common::with_own(vec![
-        ("count by (session_id)", vector("8", "8")),
+        ("cc_obs_ledger_requests_total", vector("8", "8")),
         ("type=\"cacheRead\"", vector("90", "20")),
         (
             "type=~\"cacheRead|cacheCreation|input\"",
