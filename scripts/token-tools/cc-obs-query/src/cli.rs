@@ -92,6 +92,14 @@ pub enum Command {
         #[arg(long)]
         tool: Option<String>,
     },
+    /// Rank candidates for scripts or tools that would replace repetitive Bash work
+    Automate {
+        #[arg(long, default_value = DEFAULT_SINCE)]
+        since: String,
+        /// Occurrences across all sessions needed to suggest a script or tool (floor 2)
+        #[arg(long, default_value_t = 3)]
+        min_count: u64,
+    },
     /// Injected tokens per prompt, matches used, failures
     Recall {
         #[arg(long, default_value = DEFAULT_SINCE)]
@@ -145,6 +153,7 @@ impl Command {
             Command::Tool { .. } => "tool",
             Command::Session { .. } => "session",
             Command::Repeats { .. } => "repeats",
+            Command::Automate { .. } => "automate",
             Command::Recall { .. } => "recall",
             Command::Health => "health",
             Command::Compare { .. } => "compare",
@@ -159,6 +168,7 @@ impl Command {
             | Command::Tool { since, .. }
             | Command::Session { since, .. }
             | Command::Repeats { since, .. }
+            | Command::Automate { since, .. }
             | Command::Recall { since }
             | Command::Digest { since, .. } => since,
             Command::Health | Command::Compare { .. } | Command::UnusedSignals { .. } => {
