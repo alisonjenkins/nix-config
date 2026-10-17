@@ -16,10 +16,11 @@ const SEQUENCE_LEN: usize = 3;
 /// of the evidence: calls in the group (identical, near_identical), 2 for a
 /// large_then_narrow pair, or non-overlapping occurrences of a sequence.
 const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first, near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
-/// Identical and near-identical calls are a within-session notion (the spec), so their
-/// threshold applies per session; a sequence is "frequent" across the window, so its
-/// threshold applies to occurrences summed over all sessions.
-const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session; sequence = occurrences across all sessions";
+/// Identical and near-identical calls are a within-session, within-agent notion (each
+/// agent has its own context), so their threshold applies per (session, agent); a
+/// sequence is "frequent" across the window, so its threshold applies to occurrences
+/// summed over all sessions.
+const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session and agent (a subagent repeating a main-agent call is not a repeat); sequence = occurrences across all sessions";
 const NO_RECORDS: &str = "no cc_obs_ledger.tool_call records in the window";
 
 #[derive(Debug, Clone)]
@@ -67,14 +68,6 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
     Ok(calls)
 }
 
-fn by_session(calls: &[Call]) -> BTreeMap<&str, Vec<&Call>> {
-    let mut map: BTreeMap<&str, Vec<&Call>> = BTreeMap::new();
-    for call in calls {
-        map.entry(call.session.as_str()).or_default().push(call);
-    }
-    map
-}
-
 fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str), Vec<&Call>> {
     let mut map: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
     for call in calls {
@@ -92,9 +85,9 @@ pub fn repeat_rate(ctx: &Ctx, tool: &str) -> Result<Option<f64>, Error> {
     if calls.is_empty() {
         return Ok(None);
     }
-    let distinct: BTreeSet<(&str, &str)> = calls
+    let distinct: BTreeSet<(&str, &str, &str)> = calls
         .iter()
-        .map(|c| (c.session.as_str(), c.input_hash.as_str()))
+        .map(|c| (c.session.as_str(), c.agent.as_str(), c.input_hash.as_str()))
         .collect();
     Ok(Some(
         (calls.len().saturating_sub(distinct.len())) as f64 / calls.len() as f64,
@@ -229,13 +222,12 @@ pub fn run(ctx: &Ctx, min_count: u64, tool: Option<&str>) -> Result<Report, Erro
     }
     let mut findings = Findings::new();
     let mut seqs = BTreeMap::new();
-    for session_calls in by_session(&calls).values() {
-        identical(session_calls, min_count, &mut findings);
-        near_identical(session_calls, min_count, &mut findings);
-    }
     // A subagent's calls are interleaved with the main agent's by (turn, seq) and its
-    // seq may restart, so sequences are read per (session, agent), never across them.
+    // seq may restart, and each agent has its own context, so every pattern is read per
+    // (session, agent), never across them.
     for stream in by_agent(&calls).values() {
+        identical(stream, min_count, &mut findings);
+        near_identical(stream, min_count, &mut findings);
         large_then_narrow(stream, &mut findings);
         sequences(stream, &mut seqs);
     }

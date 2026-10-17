@@ -10,7 +10,7 @@
 
 mod common;
 
-use common::{cli, fixture, rows, serve};
+use common::{cli, fixture, row, rows, serve};
 use serde_json::{json, Value};
 
 const LEDGER: &str = "event_name=\"cc_obs_ledger.tool_call\"";
@@ -87,4 +87,46 @@ fn main_and_subagent_calls_do_not_join_one_sequence() {
         !has(&out, "sequence:Read>Grep>Glob"),
         "agents joined into one sequence: {out}"
     );
+}
+
+#[test]
+fn agent_type_is_still_read_for_old_data() {
+    let mut metas = Vec::new();
+    for (i, agent) in ["main", "sub", "main", "sub", "main"].iter().enumerate() {
+        let mut m = record(&Rec("s1", agent, "Read", "a", i as u64));
+        let obj = m.as_object_mut().unwrap();
+        let v = obj.remove("agent").unwrap();
+        obj.insert("agent_type".to_owned(), v);
+        metas.push(m);
+    }
+    let out = run_repeats(loki_meta(&metas));
+    // Three main calls and two sub calls: split by agent they save 2 + 1 calls, not 4.
+    assert_eq!(row(&out, "identical:Read")["value"], json!(3), "{out}");
+}
+
+#[test]
+fn identical_is_scoped_to_the_agent() {
+    let recs = [
+        Rec("s1", "main", "Read", "a", 0),
+        Rec("s1", "subagent", "Read", "a", 1),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert!(
+        !has(&out, "identical:Read"),
+        "a subagent call repeated a main-agent call: {out}"
+    );
+}
+
+#[test]
+fn near_identical_is_scoped_to_the_agent() {
+    let recs = [
+        Rec("s1", "main", "Grep", "a", 0),
+        Rec("s1", "subagent", "Grep", "b", 1),
+    ];
+    let mut metas: Vec<Value> = recs.iter().map(record).collect();
+    for m in &mut metas {
+        m["input_prefix_hash"] = json!("shared");
+    }
+    let out = run_repeats(loki_meta(&metas));
+    assert!(!has(&out, "near_identical:Grep"), "{out}");
 }
