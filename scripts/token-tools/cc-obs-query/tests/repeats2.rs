@@ -231,7 +231,7 @@ fn duplicate_records_count_once_and_are_noted() {
     assert!(!has(&out, "identical:Read"), "{out}");
     let gaps = out["gaps"].to_string();
     assert!(
-        gaps.contains("1 duplicate tool_call records (same session, agent, seq) ignored"),
+        gaps.contains("1 duplicate tool_call records (same session, agent, agent_id, seq) ignored"),
         "{gaps}"
     );
 }

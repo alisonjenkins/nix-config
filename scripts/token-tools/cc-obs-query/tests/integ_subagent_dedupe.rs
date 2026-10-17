@@ -44,7 +44,6 @@ fn loki(metas: &[Value]) -> String {
 }
 
 #[test]
-#[ignore = "known: keyed on agent_id in follow-up"]
 fn subagents_whose_seq_restarts_are_not_deduplicated_into_one() {
     let fake = serve(vec![
         (

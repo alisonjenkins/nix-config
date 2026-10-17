@@ -70,26 +70,40 @@ pub(super) fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             "repeats: {skipped} of {received} tool_call records lacked session_id, tool_name or input_hash and were skipped"
         ));
     }
-    // Ingest may deliver a record twice; the first (session, agent, seq) wins.
-    let mut seen: BTreeSet<(String, String, u64)> = BTreeSet::new();
+    // Ingest may deliver a record twice; the first (session, agent, agent_id, seq) wins.
+    // Each sub-agent has its own cursor, so its seq restarts at 0.
+    let mut seen: BTreeSet<(String, String, String, u64)> = BTreeSet::new();
     let before = calls.len();
-    calls.retain(|c| seen.insert((c.session.clone(), c.agent.clone(), c.seq)));
+    calls.retain(|c| {
+        seen.insert((
+            c.session.clone(),
+            c.agent.clone(),
+            c.agent_id.clone(),
+            c.seq,
+        ))
+    });
     let duplicates = before.saturating_sub(calls.len());
     if duplicates > 0 {
         ctx.note_gap(format!(
-            "repeats: {duplicates} duplicate tool_call records (same session, agent, seq) ignored"
+            "repeats: {duplicates} duplicate tool_call records (same session, agent, agent_id, seq) ignored"
         ));
     }
     calls.sort_by(|a, b| (&a.session, a.turn, a.seq).cmp(&(&b.session, b.turn, b.seq)));
     Ok(calls)
 }
 
-fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str), Vec<&Call>> {
-    let mut map: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
+/// One stream per (session, agent, agent_id); `agent_id` is empty for the main loop and
+/// for sub-agent records from an older ledger, which therefore stay one stream.
+fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str, &str), Vec<&Call>> {
+    let mut map: BTreeMap<(&str, &str, &str), Vec<&Call>> = BTreeMap::new();
     for call in calls {
-        map.entry((call.session.as_str(), call.agent.as_str()))
-            .or_default()
-            .push(call);
+        map.entry((
+            call.session.as_str(),
+            call.agent.as_str(),
+            call.agent_id.as_str(),
+        ))
+        .or_default()
+        .push(call);
     }
     map
 }
@@ -101,9 +115,16 @@ pub fn repeat_rate(ctx: &Ctx, tool: &str) -> Result<Option<f64>, Error> {
     if calls.is_empty() {
         return Ok(None);
     }
-    let distinct: BTreeSet<(&str, &str, &str)> = calls
+    let distinct: BTreeSet<(&str, &str, &str, &str)> = calls
         .iter()
-        .map(|c| (c.session.as_str(), c.agent.as_str(), c.input_hash.as_str()))
+        .map(|c| {
+            (
+                c.session.as_str(),
+                c.agent.as_str(),
+                c.agent_id.as_str(),
+                c.input_hash.as_str(),
+            )
+        })
         .collect();
     Ok(Some(
         (calls.len().saturating_sub(distinct.len())) as f64 / calls.len() as f64,
