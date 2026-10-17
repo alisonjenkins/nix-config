@@ -38,6 +38,7 @@ view shows "unavailable", never zero.
 | `cc_obs_ledger_fixed_context_tokens` | `session.id`, `component` (system, instructions, skills_listing, mcp_tools, other) | first-request fixed context, split by the SessionStart census |
 | `cc_obs_ledger_context_tokens` | `session.id`, `turn` bucket | context size at each request |
 | `cc_obs_ledger_cache_hit_ratio` | `session.id` | cacheRead / (cacheRead + cacheCreation + input), per turn |
+| `agent_id` (attribute) | on every ledger gauge, on `cc_obs_ledger_requests_total` and on `cc_obs_ledger.tool_call` | the sub-agent's id; present only when `agent=subagent` (written by `cc-obs-ledger subagent`), absent for the main agent |
 | `cc_obs_ledger_cache_creation_tokens` | as `cc_obs_ledger_context_tokens` (`session.id`, `project`, `model`, `agent`, `turn`) | cache-creation input tokens of each request; absent when the request has no usage |
 | `cc_obs_ledger_seconds_since_prev_request` | as `cc_obs_ledger_context_tokens` | whole seconds since the previous request of the same agent kind (main or subagent) in the session; carried across Stop hooks in the cursor; absent for a session's first request or when a timestamp is missing |
 | `cc_obs_ledger_skill_listed_tokens` | `skill_name` (host-level, no session) | chars/4 of the skill's entry in the `skill_listing` attachment the session started with; one series per skill; absent without a listing |
