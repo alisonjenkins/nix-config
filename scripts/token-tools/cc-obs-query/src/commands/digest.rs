@@ -639,6 +639,28 @@ fn evidence_refs(digest: &Value) -> Vec<String> {
         .collect()
 }
 
+/// The rankings a baseline row can come from; evidence is valid if any lists it.
+/// Tokens comes first and is the one that must be reachable.
+fn evidence_rankings(category: Category) -> &'static [By] {
+    match category {
+        Category::Session => &[By::Tokens, By::Cost, By::CacheHit, By::Compactions],
+        Category::Memory => &[By::Tokens, By::HitRate],
+        _ => &[By::Tokens, By::Cost],
+    }
+}
+
+fn ranked_names(ctx: &Ctx, category: Category, by: By) -> Result<BTreeSet<String>, String> {
+    match rank(ctx, category, by, DEFAULT_MIN_REQUESTS) {
+        // the bare key stays valid for an agent that ran on one model
+        Ok(Ranked::Rows(rows)) => Ok(rows
+            .into_iter()
+            .flat_map(|r| [r.evidence_name(), r.key])
+            .collect()),
+        Ok(Ranked::Unavailable(_)) => Ok(BTreeSet::new()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 fn check_evidence(
     backend: &Backend,
     digest: &Value,
@@ -661,7 +683,7 @@ fn check_evidence(
         _ => opts.window,
     };
     let ctx = Ctx::new(backend, window, opts.include_review);
-    let mut known: BTreeMap<String, Result<BTreeSet<String>, String>> = BTreeMap::new();
+    let mut known: BTreeMap<(String, usize), Result<BTreeSet<String>, String>> = BTreeMap::new();
     for reference in &refs {
         let Some((kind, value)) = reference.split_once(':') else {
             problems.push(format!("evidence {reference:?} is not <kind>:<value>"));
@@ -671,25 +693,30 @@ fn check_evidence(
             problems.push(format!("evidence {reference:?} has an unknown kind"));
             continue;
         };
-        let keys = known.entry(kind.to_owned()).or_insert_with(|| {
-            match rank(&ctx, category, By::Tokens, DEFAULT_MIN_REQUESTS) {
-                Ok(Ranked::Rows(rows)) => {
-                    // the bare key stays valid for an agent that ran on one model
-                    Ok(rows
-                        .into_iter()
-                        .flat_map(|r| [r.evidence_name(), r.key])
-                        .collect())
-                }
-                Ok(Ranked::Unavailable(_)) => Ok(BTreeSet::new()),
-                Err(e) => Err(e.to_string()),
+        let mut found = false;
+        let mut primary_error = None;
+        for (index, by) in evidence_rankings(category).iter().enumerate() {
+            let keys = known
+                .entry((kind.to_owned(), index))
+                .or_insert_with(|| ranked_names(&ctx, category, *by));
+            match keys {
+                Ok(set) => found = set.contains(value),
+                // only the token ranking must be reachable; the others are extra sources
+                Err(why) if index == 0 => primary_error = Some(why.clone()),
+                Err(_) => {}
             }
-        });
-        match keys {
-            Ok(set) if set.contains(value) => {}
-            Ok(_) => problems.push(format!(
+            if found {
+                break;
+            }
+        }
+        if found {
+            continue;
+        }
+        match primary_error {
+            None => problems.push(format!(
                 "evidence {reference:?} does not exist in the stores for the period"
             )),
-            Err(why) => problems.push(format!(
+            Some(why) => problems.push(format!(
                 "evidence {reference:?} could not be checked: {why}"
             )),
         }

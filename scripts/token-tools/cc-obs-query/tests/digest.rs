@@ -116,3 +116,54 @@ fn digest_write_rejects_non_string_free_text_fields() {
         rejects(mutate, path);
     }
 }
+
+fn prom_vector(label: &str, samples: &[(&str, f64)]) -> String {
+    let result: Vec<Value> = samples
+        .iter()
+        .map(|(key, value)| {
+            json!({"metric": {label: key}, "value": [1_760_000_000.0, value.to_string()]})
+        })
+        .collect();
+    json!({"status":"success","data":{"resultType":"vector","result":result}}).to_string()
+}
+
+const MEMORY_PACK: &str = r#"version: 1
+questions:
+  - id: memory-hit-rate
+    title: Which recall services are injected but rarely used?
+    signals: [recall_requests_total, recall_hits_total]
+    query: { command: "cc-obs-query top memory --by hit-rate" }
+    decision_kind: configure
+"#;
+
+#[test]
+fn digest_write_accepts_baseline_evidence_for_zero_injection_service() {
+    let mut rules = vec![
+        (
+            "increase(recall_requests_total",
+            prom_vector("service", &[("svc-a", 10.0)]),
+        ),
+        (
+            "increase(recall_hits_total",
+            prom_vector("service", &[("svc-a", 4.0)]),
+        ),
+        (
+            "increase(recall_tokens_injected_total",
+            fixture("prom_empty.json"),
+        ),
+    ];
+    rules.extend(digest_rules(fixture("loki_tool_results.json")));
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), MEMORY_PACK);
+    let fake = serve(rules);
+    let digest = valid_digest(&fake, s(&pack));
+    assert_eq!(
+        digest["questions"][0]["rows"][0]["evidence"],
+        json!("memory:svc-a"),
+        "{digest}"
+    );
+    let file = dir.path().join("in.json");
+    fs::write(&file, digest.to_string()).unwrap();
+    let run = cli(&fake, &write_args(s(&file), s(&pack)));
+    assert_eq!(run.code, 0, "{}", run.err);
+}
