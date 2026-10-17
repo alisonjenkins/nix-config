@@ -349,9 +349,16 @@ fn read_user(
     let Some(content) = value.pointer("/message/content") else {
         return;
     };
+    // Claude Code writes caveats, skill bodies and the /compact summary as user
+    // records; none of them is something the person typed.
+    let synthetic = ["isMeta", "isCompactSummary"]
+        .iter()
+        .any(|flag| value.get(flag).and_then(Value::as_bool) == Some(true));
     let items: Vec<&Value> = match content {
         Value::String(_) => {
-            start_turn(content.as_str().map_or(0, str::len), parsed, turn);
+            if !synthetic {
+                start_turn(content.as_str().map_or(0, str::len), parsed, turn);
+            }
             return;
         }
         Value::Array(items) => items.iter().collect(),
@@ -381,7 +388,7 @@ fn read_user(
             _ => {}
         }
     }
-    if prompt_chars > 0 {
+    if prompt_chars > 0 && !synthetic {
         start_turn(prompt_chars, parsed, turn);
     }
 }
