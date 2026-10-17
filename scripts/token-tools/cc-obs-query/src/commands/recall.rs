@@ -30,6 +30,8 @@ pub fn run(ctx: &Ctx) -> Result<Report, Error> {
             .sum()
     };
     let requests: f64 = by_outcome.iter().map(|s| s.value.round()).sum();
+    // Outcomes are success, empty and error; only success injected anything.
+    let injecting = requests - count("empty") - count("error");
     let hits = ctx.increase_sum(RECALL_HITS)?.map(f64::round);
     let injected = ctx.increase_sum(RECALL_TOKENS)?.map(f64::round);
     let mut report = Report::new("recall");
@@ -40,6 +42,13 @@ pub fn run(ctx: &Ctx) -> Result<Report, Error> {
             figure(
                 injected.filter(|_| requests > 0.0).map(|t| t / requests),
                 "no recall_tokens_injected_total samples",
+            ),
+        ),
+        row(
+            "injected_tokens_per_injection",
+            figure(
+                injected.filter(|_| injecting > 0.0).map(|t| t / injecting),
+                "no request injected anything, or no recall_tokens_injected_total samples",
             ),
         ),
         row("matches_used", figure(hits, "no recall_hits_total samples")),
