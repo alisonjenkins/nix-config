@@ -43,6 +43,8 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 | memory-injected-ignored | Recall services matching on under half of requests | Raise the recall floor |
 | compaction-frequency | Frequent compaction | Smaller tool outputs, earlier delegation |
 | recall-failures | Recall errors | Fix the embedder, not the prompt |
+| agent-run-length | Sessions and sub-agents with 100 or more API requests (`top session --by requests`; needs the ledger's `cc_obs_ledger_requests_total`) | Cap or split a runaway agent, delegate in smaller steps |
+| agent-context-growth | Sessions and sub-agents whose context grew 200k or more from the first turn to the largest (`top session --by context-growth`) | Compact or restart earlier, return summaries from sub-agents |
 | costly-sessions | Sessions with the largest spend; open the top one with `session <id> --detail` | Delegate earlier, cap a runaway agent |
 | model-spend | Models taking most of the spend | Pin a cheaper default for routine work |
 | delegation-tier-fit | Sub-agent type and model pairs with the most spend; mechanical agents on a costly tier | Pin the agent to the cheaper tier |

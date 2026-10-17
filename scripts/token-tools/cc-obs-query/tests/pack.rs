@@ -42,6 +42,8 @@ fn shipped_pack_has_its_questions_and_no_unused_signal() {
             "memory-injected-ignored",
             "compaction-frequency",
             "recall-failures",
+            "agent-run-length",
+            "agent-context-growth",
             "costly-sessions",
             "model-spend",
             "delegation-tier-fit",

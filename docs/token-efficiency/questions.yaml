@@ -80,6 +80,20 @@ questions:
     signals: [recall_requests_total, recall_latency_seconds]
     query: { command: "cc-obs-query recall" }
     decision_kind: build-tool | configure | dismiss
+  - id: agent-run-length
+    title: Which sessions and sub-agents made the most API requests?
+    # The query reads cc_obs_ledger_requests_total; pack.rs does not know that name yet, so the
+    # signal listed is the per-request context gauge the same ledger write emits.
+    signals: [cc_obs_ledger_context_tokens]
+    query: { command: "cc-obs-query top session --by requests" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_value: 100 }
+  - id: agent-context-growth
+    title: Which sessions and sub-agents grew their context the most between the first and the largest turn?
+    signals: [cc_obs_ledger_context_tokens]
+    query: { command: "cc-obs-query top session --by context-growth" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_value: 200000 }
   - id: costly-sessions
     title: Which sessions cost the most?
     signals: [claude_code.cost.usage]

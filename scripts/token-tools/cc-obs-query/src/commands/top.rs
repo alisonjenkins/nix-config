@@ -4,9 +4,10 @@ use clap::ValueEnum;
 use serde_json::{json, Map, Value};
 
 use super::{
-    parse_f64, tool, Ctx, CACHE_HIT, COST, FIXED, RECALL_HITS, RECALL_REQUESTS, RECALL_TOKENS,
-    TOKENS,
+    parse_f64, tool, Ctx, CACHE_HIT, CONTEXT, COST, FIXED, RECALL_HITS, RECALL_REQUESTS,
+    RECALL_TOKENS, TOKENS,
 };
+use crate::backend::Sample;
 use crate::bounds::{figure, num, Report};
 use crate::error::Error;
 
@@ -38,6 +39,11 @@ pub enum By {
     Compactions,
     /// `memory` only: recall matches used per request, lowest first
     HitRate,
+    /// `session` only: API requests per session and agent kind, most first
+    Requests,
+    /// `session` only: largest per-turn context minus the first turn's, per
+    /// session and agent kind, most first
+    ContextGrowth,
 }
 
 impl Category {
@@ -57,7 +63,7 @@ impl By {
 
     /// Ranks a ratio, where a share of the total means nothing.
     fn is_ratio(self) -> bool {
-        matches!(self, By::CacheHit | By::HitRate)
+        matches!(self, By::CacheHit | By::HitRate | By::ContextGrowth)
     }
 }
 
@@ -227,18 +233,18 @@ fn cache_hit_by_session(ctx: &Ctx) -> Result<BTreeMap<String, CacheHit>, Error> 
 /// The ledger's per-request counter: one increment per distinct API request.
 const LEDGER_REQUESTS: &str = "cc_obs_ledger_requests_total";
 
-/// API requests per session over the window, from the ledger's request counter.
-/// A ledger that predates the counter has no such series; then this falls back
-/// to counting cache-hit gauge series, which carry turn, model, agent and
-/// project but no request id, so a tool loop within one turn counts once and
-/// requests are undercounted.
-fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
+/// API requests per session and agent kind over the window, from the ledger's
+/// request counter. A ledger that predates the counter has no such series; then
+/// this falls back to counting cache-hit gauge series, which carry turn, model,
+/// agent and project but no request id, so a tool loop within one turn counts
+/// once and requests are undercounted.
+fn requests_by_session_agent(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Error> {
     let counted = format!(
-        "round(sum by (session_id)(increase({}[{}])))",
+        "round(sum by (session_id, agent)(increase({}[{}])))",
         ctx.selector(LEDGER_REQUESTS, &[]),
         ctx.window.prom()
     );
-    let by_counter = session_values(ctx, &counted)?;
+    let by_counter = session_agent_values(ctx, &counted)?;
     if !by_counter.is_empty() {
         return Ok(by_counter);
     }
@@ -246,26 +252,28 @@ fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
         "{LEDGER_REQUESTS} has no samples in the window (ledger not yet updated?); requests are counted from {CACHE_HIT} series, which undercounts tool loops"
     ));
     let query = format!(
-        "count by (session_id)(last_over_time({}[{}]))",
+        "count by (session_id, agent)(last_over_time({}[{}]))",
         ctx.selector(CACHE_HIT, &[]),
         ctx.window.prom()
     );
-    session_values(ctx, &query)
+    session_agent_values(ctx, &query)
 }
 
-fn session_values(ctx: &Ctx, query: &str) -> Result<BTreeMap<String, f64>, Error> {
+/// API requests per session, the agent kinds summed.
+fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
+    let mut totals: BTreeMap<String, f64> = BTreeMap::new();
+    for (session, _, value) in requests_by_session_agent(ctx)? {
+        *totals.entry(session).or_insert(0.0) += value;
+    }
+    Ok(totals)
+}
+
+fn session_agent_values(ctx: &Ctx, query: &str) -> Result<Vec<(String, String, f64)>, Error> {
     Ok(ctx
         .instant(query)?
         .into_iter()
-        .filter_map(|s| {
-            Some((
-                s.labels
-                    .get("session_id")
-                    .filter(|k| !k.is_empty())?
-                    .clone(),
-                s.value,
-            ))
-        })
+        .filter(|s| !label_of(s, "session_id").is_empty())
+        .map(|s| (label_of(&s, "session_id"), label_of(&s, "agent"), s.value))
         .collect())
 }
 
@@ -351,6 +359,93 @@ fn rank_compactions(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(ranked_or_none("compaction events", rows))
 }
 
+/// The row key of one agent kind in a session: the session id for the main
+/// agent, `<id>/subagent` for the sub-agents, so the two never merge.
+fn agent_key(session: &str, agent: &str) -> String {
+    if agent == "subagent" {
+        format!("{session}/subagent")
+    } else {
+        session.to_owned()
+    }
+}
+
+fn label_of(s: &Sample, name: &str) -> String {
+    s.labels.get(name).cloned().unwrap_or_default()
+}
+
+fn rank_requests(ctx: &Ctx) -> Result<Ranked, Error> {
+    let mut by_key: BTreeMap<String, f64> = BTreeMap::new();
+    for (session, agent, value) in requests_by_session_agent(ctx)? {
+        *by_key.entry(agent_key(&session, &agent)).or_insert(0.0) += value;
+    }
+    let mut rows: Vec<RankRow> = by_key
+        .into_iter()
+        .map(|(key, value)| RankRow {
+            key,
+            value,
+            calls: None,
+            model: None,
+            detail: Map::new(),
+        })
+        .collect();
+    rows.sort_by(|a, b| b.value.total_cmp(&a.value).then_with(|| a.key.cmp(&b.key)));
+    Ok(ranked_or_none("API requests", rows))
+}
+
+/// Per session and agent kind: the largest per-turn context less the first
+/// turn's. A turn holds several series when it ran on more than one model; the
+/// largest one stands for the turn. Series without a numeric turn are noted.
+fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
+    let query = format!(
+        "last_over_time({}[{}])",
+        ctx.selector(CONTEXT, &[]),
+        ctx.window.prom()
+    );
+    let mut turns: BTreeMap<(String, String), BTreeMap<u64, f64>> = BTreeMap::new();
+    let mut dropped = 0_u64;
+    for s in ctx.instant(&query)? {
+        let session = label_of(&s, "session_id");
+        if session.is_empty() {
+            continue;
+        }
+        let Some(turn) = s.labels.get("turn").and_then(|t| t.parse::<u64>().ok()) else {
+            dropped = dropped.saturating_add(1);
+            continue;
+        };
+        let slot = turns
+            .entry((session, label_of(&s, "agent")))
+            .or_default()
+            .entry(turn)
+            .or_insert(s.value);
+        *slot = slot.max(s.value);
+    }
+    if dropped > 0 {
+        ctx.note_gap(format!(
+            "{CONTEXT}: {dropped} series without a numeric turn label were left out"
+        ));
+    }
+    let mut rows: Vec<RankRow> = turns
+        .into_iter()
+        .filter_map(|((session, agent), by_turn)| {
+            let first = *by_turn.values().next()?;
+            let peak = by_turn.values().copied().fold(f64::MIN, f64::max);
+            let mut detail = Map::new();
+            detail.insert("turns".to_owned(), json!(by_turn.len()));
+            detail.insert("first_context_tokens".to_owned(), num(first));
+            detail.insert("max_context_tokens".to_owned(), num(peak));
+            Some(RankRow {
+                key: agent_key(&session, &agent),
+                value: (peak - first).max(0.0),
+                calls: None,
+                model: None,
+                detail,
+            })
+        })
+        .collect();
+    rows.sort_by(|a, b| b.value.total_cmp(&a.value).then_with(|| a.key.cmp(&b.key)));
+    Ok(ranked_or_none("per-turn context growth", rows))
+}
+
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
@@ -388,6 +483,10 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
         (By::Compactions, _) => return Ok(wrong_category(by, "session")),
         (By::HitRate, Category::Memory) => return rank_hit_rate(ctx),
         (By::HitRate, _) => return Ok(wrong_category(by, "memory")),
+        (By::Requests, Category::Session) => return rank_requests(ctx),
+        (By::Requests, _) => return Ok(wrong_category(by, "session")),
+        (By::ContextGrowth, Category::Session) => return rank_context_growth(ctx),
+        (By::ContextGrowth, _) => return Ok(wrong_category(by, "session")),
         _ => {}
     }
     let name = category.name();
