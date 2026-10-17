@@ -373,7 +373,10 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
                     "cost is not attributed to fixed context; rank by tokens".to_owned(),
                 ));
             }
-            rows_from(ctx, "avg", FIXED, &["component"], &[], "avg_over_time")?
+            let mut rows = rows_from(ctx, "avg", FIXED, &["component"], &[], "avg_over_time")?;
+            // `total` is the sum of the other components, not a component
+            rows.retain(|r| r.key != "total");
+            rows
         }
         Category::Memory => {
             if by == By::Cost {
