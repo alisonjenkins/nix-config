@@ -9,12 +9,15 @@ mocking shell internals.
 - One `.bats` file per script, in `scripts/tests/`, named after the script
   under test (`poll-pr-review.sh` → `poll-pr-review.bats`).
 - `setup()` builds a `script_dir`, resolves `script` to the real script's
-  path, and prepends a fixture-CLI directory to `PATH` so the script's calls
-  to `gh`/`copilot`/etc. hit the fake, not the real network tool.
-- `run "$script" args...` captures `$status` and `$output`; assert on both
+  path, and stages fakes through `stage_fakes_and_export_path "$script_dir"`
+  (`load 'sandbox-path-helpers'`), which copies them with a shebang that
+  resolves, instead of `export PATH="$script_dir:$PATH"`.
+- `run bash "$script" args...` captures `$status` and `$output`; assert on both
   (`[ "$status" -eq 1 ]`, `[[ "$output" == *"usage:"* ]]`), not just exit
   code — the message is part of the contract for a script a human or agent
   reads.
+- Any script a test generates and git or the script executes (for example a
+  hook): write `'#!'"$(command -v bash)"` as its shebang.
 - See `home/skills/git/scripts/tests/poll-pr-review.bats` and
   `home/skills/delegation/scripts/tests/delegate.bats` for the working
   pattern.
