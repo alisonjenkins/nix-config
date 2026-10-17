@@ -15,11 +15,12 @@ const SEQUENCE_LEN: usize = 3;
 /// tool calls that would not have been made without the pattern. `calls` is the size
 /// of the evidence: calls in the group (identical, near_identical), 2 for a
 /// large_then_narrow pair, or non-overlapping occurrences of a sequence.
-const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first, near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
-/// Identical and near-identical calls are a within-session notion (the spec), so their
-/// threshold applies per session; a sequence is "frequent" across the window, so its
-/// threshold applies to occurrences summed over all sessions.
-const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session; sequence = occurrences across all sessions";
+const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first (calls separated by an edit by the same agent do not repeat each other: Edit, Write, NotebookEdit and MultiEdit end a run), near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
+/// Identical and near-identical calls are a within-session, within-agent notion (each
+/// agent has its own context), so their threshold applies per (session, agent); a
+/// sequence is "frequent" across the window, so its threshold applies to occurrences
+/// summed over all sessions.
+const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session and agent (a subagent repeating a main-agent call is not a repeat); sequence = occurrences across all sessions";
 const NO_RECORDS: &str = "no cc_obs_ledger.tool_call records in the window";
 
 #[derive(Debug, Clone)]
@@ -45,7 +46,10 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             Some(Call {
                 session: field("session_id")?,
                 tool: field("tool_name")?,
-                agent: field("agent_type").unwrap_or_default(),
+                // The ledger writes `agent`; `agent_type` is the name older data used.
+                agent: field("agent")
+                    .or_else(|| field("agent_type"))
+                    .unwrap_or_default(),
                 input_hash: field("input_hash")?,
                 prefix_hash: field("input_prefix_hash").unwrap_or_default(),
                 result_bytes: whole("result_bytes"),
@@ -60,16 +64,18 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             "repeats: {skipped} of {received} tool_call records lacked session_id, tool_name or input_hash and were skipped"
         ));
     }
+    // Ingest may deliver a record twice; the first (session, agent, seq) wins.
+    let mut seen: BTreeSet<(String, String, u64)> = BTreeSet::new();
+    let before = calls.len();
+    calls.retain(|c| seen.insert((c.session.clone(), c.agent.clone(), c.seq)));
+    let duplicates = before.saturating_sub(calls.len());
+    if duplicates > 0 {
+        ctx.note_gap(format!(
+            "repeats: {duplicates} duplicate tool_call records (same session, agent, seq) ignored"
+        ));
+    }
     calls.sort_by(|a, b| (&a.session, a.turn, a.seq).cmp(&(&b.session, b.turn, b.seq)));
     Ok(calls)
-}
-
-fn by_session(calls: &[Call]) -> BTreeMap<&str, Vec<&Call>> {
-    let mut map: BTreeMap<&str, Vec<&Call>> = BTreeMap::new();
-    for call in calls {
-        map.entry(call.session.as_str()).or_default().push(call);
-    }
-    map
 }
 
 fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str), Vec<&Call>> {
@@ -89,9 +95,9 @@ pub fn repeat_rate(ctx: &Ctx, tool: &str) -> Result<Option<f64>, Error> {
     if calls.is_empty() {
         return Ok(None);
     }
-    let distinct: BTreeSet<(&str, &str)> = calls
+    let distinct: BTreeSet<(&str, &str, &str)> = calls
         .iter()
-        .map(|c| (c.session.as_str(), c.input_hash.as_str()))
+        .map(|c| (c.session.as_str(), c.agent.as_str(), c.input_hash.as_str()))
         .collect();
     Ok(Some(
         (calls.len().saturating_sub(distinct.len())) as f64 / calls.len() as f64,
@@ -117,15 +123,27 @@ impl Finding {
 
 type Findings = BTreeMap<(&'static str, String), Finding>;
 
+/// Tools that change the state a repeated call would observe.
+const EDIT_TOOLS: [&str; 4] = ["Edit", "Write", "NotebookEdit", "MultiEdit"];
+
+/// Identical calls by one agent, split into runs at every edit by that agent: a call
+/// repeated across an edit may legitimately see new state (a test run after a fix), so
+/// only calls with no edit between them form a group. `calls` is one agent's stream.
 fn identical(calls: &[&Call], min_count: u64, out: &mut Findings) {
-    let mut groups: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
+    type Group<'a> = BTreeMap<(&'a str, &'a str), Vec<&'a Call>>;
+    let mut runs: Vec<Group> = vec![Group::new()];
     for call in calls {
-        groups
-            .entry((call.tool.as_str(), call.input_hash.as_str()))
-            .or_default()
-            .push(call);
+        if EDIT_TOOLS.contains(&call.tool.as_str()) {
+            runs.push(Group::new());
+            continue;
+        }
+        if let Some(run) = runs.last_mut() {
+            run.entry((call.tool.as_str(), call.input_hash.as_str()))
+                .or_default()
+                .push(call);
+        }
     }
-    for ((tool, _), group) in groups {
+    for ((tool, _), group) in runs.into_iter().flatten() {
         let size = group.len() as u64;
         if size < min_count.max(2) {
             continue;
@@ -226,13 +244,12 @@ pub fn run(ctx: &Ctx, min_count: u64, tool: Option<&str>) -> Result<Report, Erro
     }
     let mut findings = Findings::new();
     let mut seqs = BTreeMap::new();
-    for session_calls in by_session(&calls).values() {
-        identical(session_calls, min_count, &mut findings);
-        near_identical(session_calls, min_count, &mut findings);
-    }
     // A subagent's calls are interleaved with the main agent's by (turn, seq) and its
-    // seq may restart, so sequences are read per (session, agent), never across them.
+    // seq may restart, and each agent has its own context, so every pattern is read per
+    // (session, agent), never across them.
     for stream in by_agent(&calls).values() {
+        identical(stream, min_count, &mut findings);
+        near_identical(stream, min_count, &mut findings);
         large_then_narrow(stream, &mut findings);
         sequences(stream, &mut seqs);
     }
