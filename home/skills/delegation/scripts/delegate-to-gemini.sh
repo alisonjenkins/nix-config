@@ -131,8 +131,13 @@ if [[ -n "$skills_arg" ]]; then
   task="Before doing anything else, read the following: $skill_md_list — and follow their instructions. They and any skills they reference by name live as sibling directories under $skill_roots_desc — read those too whenever one routes you to another. Then: $task"
 fi
 
-# Cheapest first; a rejected model ID moves on to the next one.
+# Cheapest first; a rejected model ID moves on to the next one. An explicit
+# DELEGATE_MODEL (an ID from `agy models`) is tried alone: a fallback to a
+# different model would silently change what the caller asked for.
 models=("gemini-3.8-flash-medium" "gemini-3.8-flash-low")
+if [[ -n "${DELEGATE_MODEL:-}" ]]; then
+  models=("$DELEGATE_MODEL")
+fi
 
 retry_max="$(numeric_env_or_default DELEGATE_RETRY_MAX 3)"
 retry_base_delay="$(numeric_env_or_default DELEGATE_RETRY_BASE_DELAY 2)"

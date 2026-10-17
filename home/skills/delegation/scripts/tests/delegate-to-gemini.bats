@@ -8,7 +8,7 @@ setup() {
   stage_fakes_and_export_path "$script_dir"
   export FAKE_AGY_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_AGY_CALLS"
-  unset DELEGATE_REASONING_EFFORT FAKE_AGY_MODE
+  unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL FAKE_AGY_MODE
   export DELEGATE_RETRY_BASE_DELAY=0
 }
 
@@ -88,6 +88,18 @@ setup() {
 
 @test "an effort error does not count as a rejected model" {
   FAKE_AGY_MODE=bad-effort run bash "$delegate" "do it" read
+  [ "$status" -eq 1 ]
+  [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 1 ]
+}
+
+@test "DELEGATE_MODEL picks the model and is not replaced on rejection" {
+  DELEGATE_MODEL=gemini-4-argon-high run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  [[ "$output" == "response for model=gemini-4-argon-high: do it" ]]
+
+  : >"$FAKE_AGY_CALLS"
+  FAKE_AGY_MODE=flash-medium-rejected DELEGATE_MODEL=gemini-3.8-flash-medium \
+    run bash "$delegate" "do it" read
   [ "$status" -eq 1 ]
   [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 1 ]
 }
