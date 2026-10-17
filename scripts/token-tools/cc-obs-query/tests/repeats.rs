@@ -168,8 +168,8 @@ fn min_count_is_per_session_for_groups_and_across_sessions_for_sequences() {
     // Each of three sessions holds the triple once and one repeated Read.
     let mut recs = Vec::new();
     for s in ["s1", "s2", "s3"] {
-        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 0));
-        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 1));
+        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 10));
+        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 11));
         recs.extend(triple(s));
     }
     let out = run_repeats(loki(&recs), &["--min-count", "3"]);
@@ -266,7 +266,9 @@ fn loki_truncation_is_reported_as_a_gap() {
     let out = run_repeats(loki(&recs), &[]);
     let gaps = out["gaps"].to_string();
     assert!(gaps.contains("loki: stopped at"), "{gaps}");
-    assert_eq!(out["calls_analysed"], json!(50_000), "{out}");
+    // The fake serves the same 5000 records on every page; the repeats are dedupe fodder.
+    assert_eq!(out["calls_analysed"], json!(5000), "{out}");
+    assert!(gaps.contains("duplicate tool_call records"), "{gaps}");
 }
 
 #[test]
