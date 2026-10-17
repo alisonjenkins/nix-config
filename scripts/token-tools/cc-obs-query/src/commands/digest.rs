@@ -257,9 +257,10 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
             .parent()
             .map_or_else(|| PathBuf::from("decisions"), |p| p.join("decisions"))
     });
-    let decisions = load_decisions(&decisions_dir)?;
+    let loaded = load_decisions(&decisions_dir)?;
+    let decisions = loaded.records;
     let ctx = Ctx::new(backend, opts.window, opts.include_review);
-    let mut gaps: Vec<String> = Vec::new();
+    let mut gaps: Vec<String> = loaded.notes;
     let sessions = ctx.scalar(&format!(
         "count(sum by (session_id)(increase({}[{}])) > 0)",
         ctx.selector(TOKENS, &[]),

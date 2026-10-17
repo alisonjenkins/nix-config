@@ -140,6 +140,76 @@ fn digest_write_cap_uses_compact_size() {
     assert_eq!(run.code, 0, "{}", run.err);
 }
 
+fn decision(id_field: &str, kind: &str, baseline: u64) -> String {
+    format!(
+        "---\nid: {id_field}\nhost: test-host\ndate: 2026-09-01T00:00:00Z\nfinding: 2026-09-01-test-host#1\ndecision: {kind}\nreason: because\nmetric: {{ question: tool-result-size, key: Read, baseline: {baseline}, unit: tokens/week }}\nacted_on: null\noutcome: null\noutcome_review: null\n---\n"
+    )
+}
+
+fn baseline_with_decisions(files: &[(&str, String)]) -> common::Run {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    fs::create_dir(dir.path().join("decisions")).unwrap();
+    for (name, body) in files {
+        fs::write(dir.path().join("decisions").join(name), body).unwrap();
+    }
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    baseline(&fake, s(&pack))
+}
+
+#[test]
+fn crlf_decision_is_loaded_or_rejected() {
+    // Read is 25000 tokens in the window, under 1.5 * 20000, so a loaded dismissal hides it
+    let crlf = decision("\"0003\"", "dismiss", 20_000).replace('\n', "\r\n");
+    let run = baseline_with_decisions(&[("0003-read.md", crlf)]);
+    if run.code == 0 {
+        let d = run.json();
+        assert_eq!(
+            d["questions"][0]["suppressed"],
+            json!(1),
+            "a CRLF dismissal was silently ignored: {d}"
+        );
+    } else {
+        assert!(run.err.contains("0003-read.md"), "{}", run.err);
+    }
+}
+
+#[test]
+fn decision_without_front_matter_is_reported_not_skipped() {
+    let run = baseline_with_decisions(&[("0003-read.md", "just some prose\n".to_owned())]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let gaps = run.json()["stack"]["gaps"].to_string();
+    assert!(gaps.contains("0003-read.md"), "{gaps}");
+}
+
+#[test]
+fn unknown_decision_value_is_rejected() {
+    let run = baseline_with_decisions(&[("0003-read.md", decision("\"0003\"", "dismis", 20_000))]);
+    assert_ne!(run.code, 0, "accepted: {}", run.out);
+    assert!(run.err.contains("dismis"), "{}", run.err);
+}
+
+#[test]
+fn closing_fence_must_be_a_whole_line() {
+    let body = format!(
+        "{}----\nnot yaml: [\n",
+        decision("\"0003\"", "dismiss", 20_000)
+    );
+    let run = baseline_with_decisions(&[("0003-read.md", body)]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    assert_eq!(run.json()["questions"][0]["suppressed"], json!(1));
+}
+
+#[test]
+fn unquoted_numeric_decision_id_is_loaded_or_clearly_rejected() {
+    let run = baseline_with_decisions(&[("0007-read.md", decision("0007", "dismiss", 20_000))]);
+    if run.code == 0 {
+        assert_eq!(run.json()["questions"][0]["suppressed"], json!(1));
+    } else {
+        assert!(run.err.contains("quote"), "unhelpful error: {}", run.err);
+    }
+}
+
 fn prom_vector(label: &str, samples: &[(&str, f64)]) -> String {
     let result: Vec<Value> = samples
         .iter()

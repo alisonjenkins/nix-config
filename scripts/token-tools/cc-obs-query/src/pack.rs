@@ -226,16 +226,49 @@ pub struct Decision {
     pub outcome: Option<String>,
 }
 
-fn front_matter(text: &str) -> Option<&str> {
-    let rest = text.strip_prefix("---\n")?;
-    rest.split_once("\n---").map(|(yaml, _)| yaml)
+/// The values `decision:` may take (review-formats.md).
+const DECISION_KINDS: [&str; 3] = ["build", "configure", "dismiss"];
+
+#[derive(Debug, PartialEq, Eq)]
+enum FrontMatter<'a> {
+    Missing,
+    Unterminated,
+    Found(&'a str),
+}
+
+/// The YAML between a `---` first line and the next `---` line; both fences
+/// are whole lines and may end in CRLF.
+fn front_matter(text: &str) -> FrontMatter<'_> {
+    let is_fence = |line: &str| line.trim_end_matches(['\r', '\n']) == "---";
+    let mut lines = text.split_inclusive('\n');
+    if !lines.next().is_some_and(is_fence) {
+        return FrontMatter::Missing;
+    }
+    let start = text.len().saturating_sub(lines.clone().map(str::len).sum());
+    let mut end = start;
+    for line in lines {
+        if is_fence(line) {
+            return text
+                .get(start..end)
+                .map_or(FrontMatter::Unterminated, FrontMatter::Found);
+        }
+        end = end.saturating_add(line.len());
+    }
+    FrontMatter::Unterminated
+}
+
+/// The decision records found, and a note for each `*.md` that held none.
+#[derive(Debug, Default)]
+pub struct Decisions {
+    pub records: Vec<Decision>,
+    pub notes: Vec<String>,
 }
 
 /// Every `*.md` record in `dir`; a missing directory means no decisions yet.
-pub fn load_decisions(dir: &Path) -> Result<Vec<Decision>, Error> {
+pub fn load_decisions(dir: &Path) -> Result<Decisions, Error> {
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Decisions::default()),
         Err(source) => {
             return Err(Error::DecisionsRead {
                 path: dir.to_owned(),
@@ -249,22 +282,43 @@ pub fn load_decisions(dir: &Path) -> Result<Vec<Decision>, Error> {
         .filter(|p| p.extension().is_some_and(|e| e == "md"))
         .collect();
     paths.sort();
-    let mut decisions = Vec::new();
+    let mut loaded = Decisions::default();
     for path in paths {
         let text = std::fs::read_to_string(&path).map_err(|source| Error::DecisionsRead {
             path: path.clone(),
             source,
         })?;
-        let Some(yaml) = front_matter(&text) else {
-            continue;
-        };
-        let decision = serde_yaml::from_str(yaml).map_err(|e| Error::DecisionInvalid {
+        let invalid = |reason: String| Error::DecisionInvalid {
             path: path.clone(),
-            reason: e.to_string(),
-        })?;
-        decisions.push(decision);
+            reason,
+        };
+        let yaml = match front_matter(&text) {
+            FrontMatter::Found(yaml) => yaml,
+            FrontMatter::Missing => {
+                let name = path.file_name().map_or_else(
+                    || path.display().to_string(),
+                    |n| n.to_string_lossy().into_owned(),
+                );
+                loaded.notes.push(format!(
+                    "decisions/{name}: no front matter, not read as a decision"
+                ));
+                continue;
+            }
+            FrontMatter::Unterminated => {
+                return Err(invalid("front matter has no closing `---` line".to_owned()))
+            }
+        };
+        let decision: Decision = serde_yaml::from_str(yaml).map_err(|e| invalid(e.to_string()))?;
+        if !DECISION_KINDS.contains(&decision.decision.as_str()) {
+            return Err(invalid(format!(
+                "decision {:?} must be one of {}",
+                decision.decision,
+                DECISION_KINDS.join(", ")
+            )));
+        }
+        loaded.records.push(decision);
     }
-    Ok(decisions)
+    Ok(loaded)
 }
 
 #[cfg(test)]
@@ -283,7 +337,18 @@ mod tests {
 
     #[test]
     fn front_matter_is_split_off() {
-        assert_eq!(front_matter("---\nid: x\n---\nbody"), Some("id: x"));
-        assert_eq!(front_matter("no front matter"), None);
+        assert_eq!(
+            front_matter("---\nid: x\n---\nbody"),
+            FrontMatter::Found("id: x\n")
+        );
+        assert_eq!(
+            front_matter("---\r\nid: x\r\n---\r\nbody"),
+            FrontMatter::Found("id: x\r\n")
+        );
+        assert_eq!(front_matter("no front matter"), FrontMatter::Missing);
+        assert_eq!(
+            front_matter("---\nid: x\n----\n"),
+            FrontMatter::Unterminated
+        );
     }
 }
