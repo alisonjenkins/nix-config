@@ -10,6 +10,9 @@ use serde_json::Value;
 use crate::error::Error;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+/// ureq's default read cap is 10 MiB; a 5000-entry Loki page of ~2 KiB log lines
+/// exceeds it, so the cap is raised and its size named when it still trips.
+const MAX_BODY_BYTES: u64 = 64 * 1024 * 1024;
 /// A W3C trace id is 128 bits, 32 hex digits.
 const MAX_TRACE_ID_CHARS: usize = 32;
 
@@ -176,7 +179,21 @@ impl Backend {
             request = request.query(*key, *value);
         }
         let mut response = request.call().map_err(http)?;
-        response.body_mut().read_to_string().map_err(http)
+        response
+            .body_mut()
+            .with_config()
+            .limit(MAX_BODY_BYTES)
+            .read_to_string()
+            .map_err(|source| match source {
+                ureq::Error::BodyExceedsLimit(_) => Error::ResponseShape {
+                    operation,
+                    reason: format!(
+                        "the answer from {url} is larger than the {} MiB read cap; narrow the window or lower the page size",
+                        MAX_BODY_BYTES / (1024 * 1024)
+                    ),
+                },
+                other => http(other),
+            })
     }
 
     fn get_json(
