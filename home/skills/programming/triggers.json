@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "fix the rust borrow checker error",
+    "refactor this python function",
+    "this shell script breaks on macOS",
+    "why does this nix expression fail to evaluate",
+    "rename this function and update its callers"
+  ]
+}

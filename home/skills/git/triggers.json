@@ -1,0 +1,10 @@
+{
+  "fire": [
+    "commit this",
+    "open a PR for this branch",
+    "resolve the merge conflict",
+    "my pull request has review comments to respond to",
+    "rebase onto main and push",
+    "split this into atomic commits"
+  ]
+}

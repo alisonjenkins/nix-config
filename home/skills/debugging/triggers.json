@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "why is this crashing, find the root cause",
+    "it still fails after my fix",
+    "the service stopped working after the update",
+    "I get an error and don't know why",
+    "I changed the env var but nothing happened"
+  ]
+}

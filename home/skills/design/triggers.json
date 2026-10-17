@@ -1,0 +1,8 @@
+{
+  "fire": [
+    "where should this module live",
+    "how should I structure this service",
+    "split this large file into modules",
+    "is this abstraction worth it"
+  ]
+}

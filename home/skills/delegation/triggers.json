@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "search all the files and summarise",
+    "which model tier should I use for this sweep",
+    "run these lookups in parallel",
+    "do this mechanical edit across many files",
+    "spawn a sub-agent for this"
+  ]
+}

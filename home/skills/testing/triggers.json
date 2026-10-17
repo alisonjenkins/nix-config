@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "this test is flaky, fix it",
+    "add a unit test for the parser",
+    "the tests are failing after my change",
+    "write bats tests for this script",
+    "does this change actually work, verify it"
+  ]
+}

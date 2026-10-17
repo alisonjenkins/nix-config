@@ -1,0 +1,7 @@
+{
+  "fire": [
+    "build the nixos host and switch",
+    "pull the prebuilt closure from the cache",
+    "build this derivation on the remote builder"
+  ]
+}

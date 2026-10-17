@@ -1,0 +1,8 @@
+{
+  "fire": [
+    "scale a kubernetes deployment with kubectl",
+    "run terraform plan for this change",
+    "check the status of the aws instance",
+    "why is this helm release failing"
+  ]
+}
