@@ -45,7 +45,10 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             Some(Call {
                 session: field("session_id")?,
                 tool: field("tool_name")?,
-                agent: field("agent_type").unwrap_or_default(),
+                // The ledger writes `agent`; `agent_type` is the name older data used.
+                agent: field("agent")
+                    .or_else(|| field("agent_type"))
+                    .unwrap_or_default(),
                 input_hash: field("input_hash")?,
                 prefix_hash: field("input_prefix_hash").unwrap_or_default(),
                 result_bytes: whole("result_bytes"),
