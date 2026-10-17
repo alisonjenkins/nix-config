@@ -35,7 +35,8 @@ auto-denied: the run exits 0 and a notice goes to stderr. A profile is
 therefore a permission mode (checked 2026-10-17, agy 1.2.16):
 
 - `read` (default) — no flag. Reads inside the working directory work; writes
-  and commands are denied.
+  inside it and commands are denied. agy can still write to its own scratch
+  directory under `~/.gemini/antigravity-cli/`, which is outside the repo.
 - `write-workdir` — `--mode accept-edits`. File edits are approved, commands
   are still denied. Review the diff.
 - `write-shell` — `--dangerously-skip-permissions`. Every tool call is
@@ -48,9 +49,11 @@ asks for approval instead of answering.
 
 ## Facts that bite
 
-- A denied tool can leave the run with no response: the output is just the
-  denial notice. If a `read` run says "no output produced", the task needed a
-  write or a command; use a higher profile.
+- A denied tool leaves the run with no response, and agy itself exits 0 with
+  just a notice. The script turns that into exit 3 with the denied tool and
+  the profile that allows it (`command` needs `write-shell`, `write_file`
+  needs `write-workdir`). Anything that must run a command, tests included,
+  goes under `write-shell` in a worktree.
 - `agy` reads only inside the working directory plus `--add-dir` roots.
   Run it from the repo that holds the files.
 - `~/.claude/skills` is symlinks into the Nix store and `--add-dir` on it is
