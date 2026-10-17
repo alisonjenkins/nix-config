@@ -126,6 +126,15 @@ and `CLAUDE.md` are not read by `agy`. Check a skill is visible with
 and the traps (a `~/` path is ignored, symlinked skills need a `/nix/store` read
 rule): ADR 0047.
 
+`agy`'s own default model is `Gemini 4 Argon (Medium)`. To keep Argon for
+judgement, `~/.gemini/config/agents/` holds `flash-worker`, a subagent pinned to
+Flash, and `orchestrator`, a main agent on the default model with no edit or
+command tools. The routing text in `AGENTS.md` is only advice, and the default
+agent ignored it for a multi-file edit; start `agy --agent orchestrator` to force
+every edit and command through `flash-worker`. If an agent stops starting, check
+the reply for `not found in registry`: an unregistered tool name disables it.
+ADR 0048.
+
 ## Telemetry
 
 Each call is recorded as one OTLP span, a child of the Claude Code tool span

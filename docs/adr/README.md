@@ -122,6 +122,7 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted; built, first real review pending (T061) |
 | [0046](0046-trace-delegated-agy-calls-from-the-wrapper.md) | Trace delegated agy calls from the wrapper, as children of Claude's tool span | Accepted |
 | [0047](0047-load-shared-skills-in-agy-through-a-declared-skills-json.md) | Load the shared skills in agy through a declared skills.json | Accepted |
+| [0048](0048-route-agy-work-to-flash-through-a-pinned-subagent.md) | Route agy's work to Flash through a pinned subagent, and enforce it with an orchestrator | Accepted |
 
 ## AI control centre
 
