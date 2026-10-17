@@ -10,6 +10,8 @@ retire:
   - claude_code.tool_result.duration_ms
   - claude_code.api_request
   - claude_code.api_error
+  - claude_code.hook_execution.additional_context_chars
+  - recall_tokens_injected_total
   - claude_code.cost.usage
   - cc_obs_ledger.session
 questions:
@@ -63,10 +65,13 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.03 }
   - id: memory-injected-ignored
-    title: Which memory services get the fewest recall matches used per request?
-    signals: [recall_tokens_injected_total, recall_hits_total, recall_requests_total, claude_code.hook_execution.additional_context_chars]
+    # The ledger counts a hit once per request that has a match, so the ratio is requests with
+    # a match, not matches the model used.
+    title: Which recall services return a match on the fewest requests?
+    signals: [recall_hits_total, recall_requests_total]
     query: { command: "cc-obs-query top memory --by hit-rate" }
     decision_kind: build-tool | configure | dismiss
+    threshold: { max_value: 0.5 }
   - id: compaction-frequency
     title: Which sessions grow large enough to compact, and how often?
     signals: [claude_code.compaction.pre_tokens, claude_code.compaction.post_tokens, cc_obs_ledger_context_tokens]

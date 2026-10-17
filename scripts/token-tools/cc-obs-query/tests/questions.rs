@@ -78,6 +78,18 @@ fn fixed_context_question_names_the_session_start_snapshot() {
 
 /// The ledger counts a request with a match once, so the ratio is requests with a
 /// match, not matches used.
+#[test]
+fn memory_question_is_about_requests_with_a_match() {
+    let pack = Pack::load(&shipped_pack()).unwrap();
+    let title = title_of(&pack, "memory-injected-ignored");
+    assert!(
+        !title.contains("matches used"),
+        "hits are requests with a match, not matches used: {title}"
+    );
+    let threshold = &pack.question("memory-injected-ignored").unwrap().threshold;
+    assert_eq!(threshold.max_value, Some(0.5));
+}
+
 fn digest_questions(pack_yaml: &str, rules: Vec<(&'static str, String)>) -> Vec<Value> {
     let dir = tempfile::tempdir().unwrap();
     let pack = write_pack(dir.path(), pack_yaml);
@@ -163,4 +175,23 @@ fn value_thresholds_that_cannot_match_anything_are_rejected() {
         let err = Pack::load(&path).unwrap_err().to_string();
         assert!(err.contains("threshold"), "{bad}: {err}");
     }
+}
+
+#[test]
+fn shipped_pack_filters_well_matched_memory_services() {
+    let requests = vector(&[
+        (&[("service", "skills")], "100"),
+        (&[("service", "docs")], "100"),
+    ]);
+    let hits = vector(&[
+        (&[("service", "skills")], "20"),
+        (&[("service", "docs")], "90"),
+    ]);
+    let pack = std::fs::read_to_string(shipped_pack()).unwrap();
+    let questions = digest_questions(&pack, recall_rules(requests, hits));
+    let memory = questions
+        .iter()
+        .find(|q| q["id"] == "memory-injected-ignored")
+        .unwrap();
+    assert_eq!(keys_of(memory), vec!["skills"]);
 }
