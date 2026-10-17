@@ -30,7 +30,7 @@ fn loki(recs: &[Rec]) -> String {
         .enumerate()
         .map(|(i, r)| {
             let meta = json!({
-                "session_id": r.0, "agent_type": r.1, "tool_name": r.2,
+                "session_id": r.0, "agent": r.1, "tool_name": r.2,
                 "input_hash": r.3, "input_prefix_hash": r.4,
                 "result_bytes": r.5.to_string(), "turn": r.6.to_string(), "seq": r.7.to_string(),
             });
