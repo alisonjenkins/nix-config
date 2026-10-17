@@ -35,6 +35,18 @@ Output: OTLP/HTTP to the collector (metrics and one log); metric and label names
 | `tool_name`, `agent_type` | which tool and which (sub)agent |
 | `input_hash` | first 16 hex chars of HMAC-SHA-256(tool input, per-host key) |
 | `input_bytes`, `result_bytes` | sizes |
+| `command_shape` | Bash tool only: fixed-vocabulary label of the command, e.g. `cargo test \| tail [cd][env]` |
+
+`command_shape` names what repeated Bash commands are, so repetitive tasks can be found.
+Vocabulary: program names from a ~70-entry allowlist (anything else is `other`, since an
+unknown name can be a project name); one subcommand token only for `cargo`, `git`, `gh`,
+`nix`, `just`, `docker`, `kubectl`, `npm`, `systemctl` and only from that program's list
+(otherwise dropped); segments joined with ` | `, ` && ` (also `;`, `&`), ` || `; at most 4
+segments and 80 characters, then ` +N`; suffix flags `[cd]`, `[env]`, `[bg]`, `[heredoc]`;
+`unparsed` for an empty or unterminated command. `cd`, `export`, `VAR=value`, `env`, `time`,
+`sudo`, `nohup`, `bash -c`, `nix-shell --run` and `nix develop -c` wrappers are looked
+through (two levels). Never logged: arguments, paths, URLs, env values, file names,
+heredoc bodies or any other text of the command.
 
 The key is generated on first run into `$XDG_STATE_HOME/cc-obs-ledger/hmac.key` (mode 0600),
 never stored in the Nix store or the repository, so a hash cannot be reversed by guessing

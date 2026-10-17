@@ -7,5 +7,6 @@ pub mod config;
 pub mod error;
 pub mod notice;
 pub mod otlp;
+pub mod shape;
 pub mod ship;
 pub mod transcript;
