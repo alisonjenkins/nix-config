@@ -50,6 +50,16 @@ It links whole **directories**. Linking a single `SKILL.md` would silently drop
 every child file: the skill would load with a routing table pointing at
 nothing.
 
+## Antigravity CLI (agy)
+
+`agy` does not scan `~/.agents/skills`, so `home/modules/antigravity-cli` writes
+`~/.gemini/config/skills.json` declaring it, by **absolute** path: a `~/` path is
+silently ignored. No second copy of the skills exists. `agy` also needs
+`read_file` rules for the skills directory and `/nix/store` (the links resolve
+there), which the module merges into its `settings.json`. A skill's `description:`
+must be a block scalar (`>-`) or quoted; an unquoted one containing a colon fails
+to load in `agy`. See ADR 0047.
+
 ## After adding a skill
 
 1. `git add` it — flakes ignore untracked files (see the `testing` skill's

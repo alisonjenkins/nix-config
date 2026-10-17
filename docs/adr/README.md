@@ -121,6 +121,7 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0035](0035-disk-budget-reported-not-enforced.md) | Report the observability stack's disk budget instead of enforcing it | Accepted |
 | [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted; built, first real review pending (T061) |
 | [0046](0046-trace-delegated-agy-calls-from-the-wrapper.md) | Trace delegated agy calls from the wrapper, as children of Claude's tool span | Accepted |
+| [0047](0047-load-shared-skills-in-agy-through-a-declared-skills-json.md) | Load the shared skills in agy through a declared skills.json | Accepted |
 
 ## AI control centre
 

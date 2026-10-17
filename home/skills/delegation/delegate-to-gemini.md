@@ -112,6 +112,20 @@ asks for approval instead of answering.
   pin, rejects `xhigh` and `max`, which 1.2.16 accepts) maps to `--effort`; `DELEGATE_PRINT_TIMEOUT` (default `15m`) maps to
   `--print-timeout`.
 
+## Your skills and mandates inside agy
+
+For working in `agy` itself when Claude credits run out, the shared skills
+(`git`, `programming`, `review`, `delegation` and the rest of `home/skills/`)
+load there too, through `~/.gemini/config/skills.json` pointing at
+`~/.agents/skills`. `~/.gemini/config/AGENTS.md` carries the git and
+working-style mandates (atomic commits, no AI attribution); it leaves out Model
+Routing. The skill and Agent tool instructions inside a skill are written for
+Claude, so use the knowledge in them, not those steps. A repo's `.claude/skills`
+and `CLAUDE.md` are not read by `agy`. Check a skill is visible with
+`agy -p "List the names of every skill you can see"`. Why it is built this way,
+and the traps (a `~/` path is ignored, symlinked skills need a `/nix/store` read
+rule): ADR 0047.
+
 ## Telemetry
 
 Each call is recorded as one OTLP span, a child of the Claude Code tool span
