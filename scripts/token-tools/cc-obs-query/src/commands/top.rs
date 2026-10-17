@@ -216,7 +216,8 @@ fn cache_hit_by_session(ctx: &Ctx) -> Result<BTreeMap<String, CacheHit>, Error> 
         .map(|(session, total)| {
             let cached = read.get(&session).copied().unwrap_or(0.0);
             let hit = CacheHit {
-                ratio: cached / total,
+                // increase() extrapolates the two series separately, so the quotient can pass 1
+                ratio: (cached / total).min(1.0),
                 prompt_tokens: total,
             };
             (session, hit)

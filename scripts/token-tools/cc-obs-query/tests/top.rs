@@ -52,6 +52,23 @@ fn top_subagent_keeps_series_without_an_agent_name() {
 }
 
 #[test]
+fn cache_hit_ratio_never_exceeds_one() {
+    let fake = serve(with_own(vec![
+        ("count by (session_id)", vector("session_id", &[("s", "6")])),
+        ("type=\"cacheRead\"", vector("session_id", &[("s", "105")])),
+        (
+            "type=~\"cacheRead|cacheCreation|input\"",
+            vector("session_id", &[("s", "100")]),
+        ),
+    ]));
+    let run = cli(&fake, &["top", "session", "--by", "cache-hit"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    let value = rows(&out)[0]["value"].as_f64().unwrap();
+    assert!(value <= 1.0, "ratio {value}: {out}");
+}
+
+#[test]
 fn cache_hit_help_says_what_min_requests_counts() {
     let fake = serve(vec![]);
     let run = cli(&fake, &["top", "--help"]);
