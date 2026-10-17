@@ -52,6 +52,8 @@ pub enum By {
     /// `skill` only: installed skills with no activation in the window, by the
     /// tokens their listing costs
     Unactivated,
+    /// `memory` only: recall tokens injected per recall request, most first
+    TokensPerRequest,
 }
 
 impl Category {
@@ -73,7 +75,12 @@ impl By {
     fn is_ratio(self) -> bool {
         matches!(
             self,
-            By::CacheHit | By::HitRate | By::ContextGrowth | By::Share | By::Idle
+            By::CacheHit
+                | By::HitRate
+                | By::ContextGrowth
+                | By::Share
+                | By::Idle
+                | By::TokensPerRequest
         )
     }
 }
@@ -592,6 +599,36 @@ fn rank_unactivated_skills(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(Ranked::Rows(rows))
 }
 
+/// Recall tokens injected over recall requests, per service. A service with no
+/// requests in the window has no per-request figure and is left out.
+fn rank_tokens_per_request(ctx: &Ctx) -> Result<Ranked, Error> {
+    let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
+    let injected: BTreeMap<String, f64> =
+        rows_from(ctx, "sum", RECALL_TOKENS, &["service"], &[], "increase")?
+            .into_iter()
+            .map(|r| (r.key, r.value))
+            .collect();
+    let mut rows: Vec<RankRow> = requests
+        .into_iter()
+        .filter(|r| r.value > 0.0)
+        .map(|r| {
+            let tokens = injected.get(&r.key).copied().unwrap_or(0.0);
+            let mut detail = Map::new();
+            detail.insert("requests".to_owned(), num(r.value));
+            detail.insert("injected_tokens".to_owned(), num(tokens));
+            RankRow {
+                value: tokens / r.value,
+                key: r.key,
+                calls: None,
+                model: None,
+                detail,
+            }
+        })
+        .collect();
+    rows.sort_by(|a, b| b.value.total_cmp(&a.value).then_with(|| a.key.cmp(&b.key)));
+    Ok(ranked_or_none("recall tokens per request", rows))
+}
+
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
@@ -633,6 +670,8 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
         (By::Requests, _) => return Ok(wrong_category(by, "session")),
         (By::ContextGrowth, Category::Session) => return rank_context_growth(ctx),
         (By::ContextGrowth, _) => return Ok(wrong_category(by, "session")),
+        (By::TokensPerRequest, Category::Memory) => return rank_tokens_per_request(ctx),
+        (By::TokensPerRequest, _) => return Ok(wrong_category(by, "memory")),
         (By::Unactivated, Category::Skill) => return rank_unactivated_skills(ctx),
         (By::Unactivated, _) => return Ok(wrong_category(by, "skill")),
         (By::Idle, Category::Mcp) => return rank_idle_mcp(ctx),

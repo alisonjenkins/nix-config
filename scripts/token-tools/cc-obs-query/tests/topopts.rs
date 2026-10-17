@@ -394,6 +394,62 @@ fn skills_question_digest_row_is_an_unactivated_skill() {
     assert_eq!(row_keys(&question), vec!["big"]);
 }
 
+fn recall_rules() -> Vec<(&'static str, String)> {
+    with_own(vec![
+        (
+            "recall_requests_total",
+            vector(&[
+                (&[("service", "skills")], "100"),
+                (&[("service", "docs")], "50"),
+                (&[("service", "idle")], "0"),
+            ]),
+        ),
+        (
+            "recall_tokens_injected_total",
+            vector(&[
+                (&[("service", "skills")], "20000"),
+                (&[("service", "docs")], "30000"),
+                (&[("service", "idle")], "0"),
+            ]),
+        ),
+    ])
+}
+
+#[test]
+fn top_memory_by_tokens_per_request_divides_injected_tokens_by_requests() {
+    let run = cli(
+        &serve(recall_rules()),
+        &[
+            "top",
+            "memory",
+            "--by",
+            "tokens-per-request",
+            "--format",
+            "detailed",
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(keys(&out), vec!["docs", "skills"]);
+    assert_eq!(row(&out, "docs")["value"], json!(600));
+    assert_eq!(row(&out, "skills")["value"], json!(200));
+    assert_eq!(row(&out, "docs")["requests"], json!(50));
+    assert!(row(&out, "docs").get("share").is_none());
+}
+
+#[test]
+fn tokens_per_request_belongs_to_memory_only() {
+    let out = cli(
+        &serve(with_own(vec![])),
+        &["top", "model", "--by", "tokens-per-request"],
+    )
+    .json();
+    assert!(
+        out["unavailable"].as_str().unwrap().contains("memory"),
+        "{out}"
+    );
+}
+
 #[test]
 fn unactivated_belongs_to_skill_only() {
     let out = cli(&serve(with_own(vec![])), &["top", "mcp", "--unactivated"]).json();
