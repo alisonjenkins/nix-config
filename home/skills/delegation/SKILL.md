@@ -19,6 +19,7 @@ sub-agent, not ground through inline.
 | Quoting a price, index or speed figure; comparing tiers; checking which model `model: "haiku"` runs | [tiers.md](tiers.md) |
 | Choosing the first rung on the work machine (Copilot/Luna) or a personal machine (local model); loading a local profile; credit exhaustion | [ladder.md](ladder.md) |
 | Delegating to GitHub Copilot's CLI | [delegate-to-copilot.md](delegate-to-copilot.md) |
+| Delegating to Google's Antigravity CLI (Gemini, `agy`) | [delegate-to-gemini.md](delegate-to-gemini.md) |
 | Delegating to a locally-hosted model | [delegate-to-local.md](delegate-to-local.md) |
 | Several code-writing sub-agents in one project | [parallel-writers.md](parallel-writers.md) |
 
