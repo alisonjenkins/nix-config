@@ -85,7 +85,13 @@ case "${FAKE_AGY_MODE:-ok}" in
     exit 1
     ;;
   unauthenticated)
-    echo "authentication required" >&2
+    cat <<'EOF' >&2
+Authentication required. Please visit the URL to log in:
+  https://accounts.google.com/...
+Waiting for authentication (timeout 60s)...
+Error: authentication timed out.
+error: authentication failed or timed out
+EOF
     exit 1
     ;;
   unrelated-failure)

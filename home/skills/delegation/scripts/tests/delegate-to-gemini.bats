@@ -126,6 +126,8 @@ setup() {
   FAKE_AGY_MODE=unauthenticated run bash "$delegate" "do it" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"not signed in"* ]]
+  [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 1 ]
+  [ "$(jq -r .outcome "$calls_jsonl")" = "auth_missing" ]
 }
 
 @test "persistent outage retries then reports a possible outage" {

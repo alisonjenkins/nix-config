@@ -226,6 +226,10 @@ call_agy() {
       fi
       call_err=""
     fi
+    # The login prompt contains 'timed out', which looks transient.
+    if is_auth_missing "$call_output"$'\n'"$call_err"; then
+      return 1
+    fi
     if ! is_transient "$call_output"$'\n'"$call_err"; then
       return 1
     fi
