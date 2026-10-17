@@ -9,8 +9,11 @@ Skills, Hooks, Subagents and Extensions carried over, the last as plugins.
 Nixpkgs ships it as `antigravity-cli` (unfree). `modules.desktop` installs
 `unstable.antigravity-cli` on every desktop and personal laptop; the work
 laptop sets `modules.desktop.antigravityCli.enable = false`. It spends the user's Google quota, so state the profile and why in one
-line before running it. Use it when the user asks for Gemini, or as a second
-opinion from a different model family; it is not wired in as a default rung.
+line before running it. On hosts with `cheapDelegate = "gemini"` (`ali-desktop`,
+`ali-framework-laptop`, `ali-mba-linux`) it is the first rung, so hand it
+code from a clear spec, tests, config edits, drafts, first-pass reviews and
+sweeps before reaching for a Claude sub-agent; Claude credits are the scarce
+balance there. Read its output before using it.
 
 Setup, once per machine: run `agy` interactively and sign in with Google.
 Headless mode only reuses those cached credentials, and an unauthenticated

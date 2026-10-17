@@ -178,6 +178,7 @@ per host through `cheapDelegate`):
 | Machine | First rung | Falls back to |
 |---|---|---|
 | Work (`cheapDelegate = "copilot"`) | Copilot's Haiku 5.5, falling back to Luna, via `scripts/delegate.sh` (the "Luna" below means this rung) | haiku sub-agent when credits are exhausted or the task needs MCP tools or context only this session has |
+| Personal desktops and laptops (`cheapDelegate = "gemini"`) | Antigravity CLI (Gemini) via `scripts/delegate-to-gemini.sh`, see [delegate-to-gemini.md](delegate-to-gemini.md) | haiku sub-agent when agy is signed out or out of quota or the task needs MCP tools or session context; a live local model for text-only work |
 | Personal (default, `"local"`) | Local model via `scripts/delegate-to-local.sh` / `delegate-to-local-agent.sh` | haiku sub-agent when no profile is live or the task isn't haiku-shaped |
 
 The default is to hand first-rung-shaped work (a single self-contained step
