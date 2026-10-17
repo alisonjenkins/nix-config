@@ -95,6 +95,14 @@ setup() {
   [[ "$output" == *"needs write-workdir"* ]]
 }
 
+@test "a failure shows agy's error once, not the raw JSON envelope as well" {
+  FAKE_AGY_MODE=json-error DELEGATE_MODEL=bogus-model run bash "$delegate" "do it" read
+  [ "$status" -eq 1 ]
+  [ "$(grep -c 'not recognized as a known model' <<<"$output")" -eq 1 ]
+  [[ "$output" != *'"status":"ERROR"'* ]]
+  [ "$(jq -r .outcome "$calls_jsonl")" = "model_rejected" ]
+}
+
 @test "an effort error does not count as a rejected model" {
   FAKE_AGY_MODE=bad-effort run bash "$delegate" "do it" read
   [ "$status" -eq 1 ]

@@ -69,6 +69,17 @@ case "${FAKE_AGY_MODE:-ok}" in
     echo "jetski: no output produced — a tool required the \"write_file\" permission that headless mode cannot prompt for, so it was auto-denied." >&2
     emit_answer write_file
     ;;
+  json-error)
+    # What agy 1.2.9 really does for a bad model: the envelope on stdout and
+    # the same message on stderr, exit 1.
+    msg="invalid model selection (--model \"$model\" --effort \"\"): model $model is not recognized as a known model or custom model in settings"
+    if [[ "$format" == "json" ]]; then
+      jq -n -c --arg e "$msg" '{conversation_id: "", status: "ERROR", response: "", error: $e, duration_seconds: 0, num_turns: 0,
+        usage: {input_tokens: 0, output_tokens: 0, thinking_tokens: 0, cache_read_tokens: 0, total_tokens: 0}}'
+    fi
+    echo "error: $msg" >&2
+    exit 1
+    ;;
   bad-effort)
     echo "error: invalid model selection (--model \"$model\" --effort \"xhigh\"): invalid --effort \"xhigh\" (valid: low, medium, high)" >&2
     exit 1

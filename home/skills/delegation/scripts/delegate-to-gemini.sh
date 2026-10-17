@@ -284,6 +284,19 @@ for model in "${models[@]}"; do
 done
 
 failure_text="$call_output"$'\n'"$call_err"
+# On a failure agy prints a JSON envelope to stdout and the same message to
+# stderr; show the message once instead of the raw envelope.
+envelope_error=""
+if (( use_json )); then
+  envelope_error="$(jq -r '.error // empty' <<<"$call_output" 2>/dev/null)" || envelope_error=""
+fi
+if [[ -n "$envelope_error" ]]; then
+  if [[ "$call_err" == *"$envelope_error"* ]]; then
+    failure_text="$call_err"
+  else
+    failure_text="$envelope_error"$'\n'"$call_err"
+  fi
+fi
 if [[ $status -eq 2 ]]; then
   echo "error: agy kept failing with a transient-looking error after $retry_max attempts (possible outage):" >&2
   outcome=transient_exhausted
