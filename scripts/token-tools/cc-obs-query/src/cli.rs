@@ -62,6 +62,10 @@ pub enum Command {
         /// used (same as `--by idle`)
         #[arg(long)]
         idle: bool,
+        /// `top skill` only: list installed skills with no activation in the window,
+        /// by listing cost (same as `--by unactivated`)
+        #[arg(long)]
+        unactivated: bool,
     },
     /// Calls, result size, share of tokens and repeat rate of one tool
     Tool {

@@ -337,6 +337,72 @@ fn mcp_question_ranks_servers_from_tool_result_prefixes() {
     assert_eq!(row_keys(&question), vec!["alpha", "beta"]);
 }
 
+fn skill_rules(listed: String) -> Vec<(&'static str, String)> {
+    with_own(vec![
+        ("cc_obs_ledger_skill_listed_tokens", listed),
+        (
+            "claude_code_token_usage_tokens_total",
+            vector(&[(&[("skill_name", "used")], "9000")]),
+        ),
+    ])
+}
+
+#[test]
+fn top_skill_unactivated_lists_installed_skills_without_activations_by_listing_cost() {
+    let listed = vector(&[
+        (&[("skill_name", "used")], "300"),
+        (&[("skill_name", "big")], "500"),
+        (&[("skill_name", "small")], "100"),
+    ]);
+    let run = cli(
+        &serve(skill_rules(listed)),
+        &["top", "skill", "--unactivated"],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(keys(&out), vec!["big", "small"]);
+    assert_eq!(row(&out, "big")["value"], json!(500));
+    assert_eq!(row(&out, "big")["share"], json!(0.8333));
+}
+
+#[test]
+fn top_skill_unactivated_without_the_listed_metric_names_the_gap() {
+    let run = cli(
+        &serve(skill_rules(vector(&[]))),
+        &["top", "skill", "--unactivated"],
+    );
+    let out = run.json();
+    assert_eq!(out["value"], json!(null));
+    assert!(
+        out["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("cc_obs_ledger_skill_listed_tokens"),
+        "{out}"
+    );
+}
+
+#[test]
+fn skills_question_digest_row_is_an_unactivated_skill() {
+    let listed = vector(&[
+        (&[("skill_name", "used")], "300"),
+        (&[("skill_name", "big")], "500"),
+        (&[("skill_name", "tiny")], "1"),
+    ]);
+    let question = shipped_question("skills-loaded-unused", skill_rules(listed));
+    // tiny is 0.1% of the unactivated listing tokens, under the 2% floor
+    assert_eq!(row_keys(&question), vec!["big"]);
+}
+
+#[test]
+fn unactivated_belongs_to_skill_only() {
+    let out = cli(&serve(with_own(vec![])), &["top", "mcp", "--unactivated"]).json();
+    assert!(
+        out["unavailable"].as_str().unwrap().contains("skill"),
+        "{out}"
+    );
+}
+
 #[test]
 fn fixed_context_share_question_keeps_shares_at_or_above_five_percent() {
     let mut rules = vec![(

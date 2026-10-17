@@ -41,19 +41,15 @@ fn title_of(pack: &Pack, id: &str) -> String {
     pack.question(id).unwrap().title.to_lowercase()
 }
 
-/// `top skill` groups by `skill_name!=""`, so it can only list activated skills.
+/// Plain `top skill` lists activated skills only; a title about unactivated skills needs
+/// `--unactivated`.
 #[test]
-fn skills_question_does_not_claim_to_find_unactivated_skills() {
+fn skills_question_asks_for_unactivated_skills_with_the_flag_that_finds_them() {
     let pack = Pack::load(&shipped_pack()).unwrap();
     let title = title_of(&pack, "skills-loaded-unused");
-    assert!(
-        command_of(&pack, "skills-loaded-unused").contains("top skill"),
-        "the query changed; re-check the title"
-    );
-    assert!(
-        !title.contains("without being activated") && !title.contains("unused"),
-        "title promises unactivated skills but the query lists activated ones: {title}"
-    );
+    let command = command_of(&pack, "skills-loaded-unused");
+    assert!(command.contains("top skill --unactivated"), "{command}");
+    assert!(title.contains("without being activated"), "{title}");
 }
 
 /// `top mcp` ranks series that carry an mcp server label; it cannot see idle servers.

@@ -276,9 +276,14 @@ pub fn query_report(ctx: &Ctx, command: &Command) -> Result<Report, Error> {
             by,
             min_requests,
             idle,
+            unactivated,
             ..
         } => {
-            let by = if *idle { top::By::Idle } else { *by };
+            let by = match (*idle, *unactivated) {
+                (true, _) => top::By::Idle,
+                (_, true) => top::By::Unactivated,
+                _ => *by,
+            };
             top::run(ctx, *category, by, *min_requests)?
         }
         Command::Tool { name, .. } => tool::run(ctx, name)?,

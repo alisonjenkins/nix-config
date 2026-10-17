@@ -49,6 +49,9 @@ pub enum By {
     Share,
     /// `mcp` only: servers connected at session start that no tool call used
     Idle,
+    /// `skill` only: installed skills with no activation in the window, by the
+    /// tokens their listing costs
+    Unactivated,
 }
 
 impl Category {
@@ -551,6 +554,44 @@ fn rank_idle_mcp(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(Ranked::Rows(rows))
 }
 
+/// Gauge of the tokens a skill's listing costs, one per installed skill at session start.
+const SKILL_LISTED: &str = "cc_obs_ledger_skill_listed_tokens";
+
+/// Installed skills (listed gauge) minus skills with token usage attributed to
+/// them, which is how `top skill` sees an activation.
+fn rank_unactivated_skills(ctx: &Ctx) -> Result<Ranked, Error> {
+    let listed = rows_from(
+        ctx,
+        "max",
+        SKILL_LISTED,
+        &["skill_name"],
+        &[],
+        "last_over_time",
+    )?;
+    if listed.is_empty() {
+        return Ok(Ranked::Unavailable(format!(
+            "no {SKILL_LISTED} samples in the window (the ledger does not emit the per-skill listing gauge yet)"
+        )));
+    }
+    let activated: BTreeSet<String> = rows_from(
+        ctx,
+        "sum",
+        TOKENS,
+        &["skill_name"],
+        &["skill_name!=\"\""],
+        "increase",
+    )?
+    .into_iter()
+    .filter(|r| r.value > 0.0)
+    .map(|r| r.key)
+    .collect();
+    let rows = listed
+        .into_iter()
+        .filter(|r| !activated.contains(&r.key))
+        .collect();
+    Ok(Ranked::Rows(rows))
+}
+
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
@@ -592,6 +633,8 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
         (By::Requests, _) => return Ok(wrong_category(by, "session")),
         (By::ContextGrowth, Category::Session) => return rank_context_growth(ctx),
         (By::ContextGrowth, _) => return Ok(wrong_category(by, "session")),
+        (By::Unactivated, Category::Skill) => return rank_unactivated_skills(ctx),
+        (By::Unactivated, _) => return Ok(wrong_category(by, "skill")),
         (By::Idle, Category::Mcp) => return rank_idle_mcp(ctx),
         (By::Idle, _) => return Ok(wrong_category(by, "mcp")),
         (By::Share, Category::Fixed) => return rank_fixed_share(ctx),

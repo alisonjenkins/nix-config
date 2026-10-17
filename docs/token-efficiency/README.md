@@ -19,7 +19,7 @@ Questions worth asking that the collected signals cannot answer yet, and what ea
 
 | Question | Needs |
 |---|---|
-| Skills installed but never activated, and what the listing costs | Ledger: gauge `cc_obs_ledger_skill_listed_tokens{skill_name}` per installed skill at SessionStart (the census only emits the `skills_listing` total); then a `top skill --unactivated` that subtracts `skill_activated` |
+| Skills installed but never activated, and what the listing costs | Ledger: gauge `cc_obs_ledger_skill_listed_tokens{skill_name}` per installed skill at SessionStart (the census only emits the `skills_listing` total). `top skill --unactivated` is built and `skills-loaded-unused` asks it; both report unavailable until the gauge exists |
 | MCP servers connected but never called | Ledger: gauge `cc_obs_ledger_mcp_server_connected{mcp_server_name}` at SessionStart. `top mcp --idle` is built and reports the gap until the gauge exists; then point `mcp-idle-servers` at it |
 | Cache-write churn: prefix invalidated after the first turns, or idle gaps beyond the cache TTL | Ledger: `cc_obs_ledger_cache_creation_tokens{session.id,turn}` and the seconds since the previous request per turn |
 | Tokens added per prompt by hooks and recall, against a budget | `top.rs`: `top memory --by tokens-per-request` (`recall_tokens_injected_total` over `recall_requests_total`); hook output needs `claude_code.hook_execution.additional_context_chars` read by a query (it is in `retire:` now) |

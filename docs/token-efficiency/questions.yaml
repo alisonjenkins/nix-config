@@ -26,11 +26,11 @@ questions:
     decision_kind: build-tool | configure | dismiss
     threshold: { min_calls: 5 }
   - id: skills-loaded-unused
-    # Installed-but-never-activated skills need a per-skill listing signal that is not emitted
-    # yet (README "Not yet answerable"); until then this ranks the skills that were activated.
-    title: Which activated skills account for the most tokens?
+    # Reads cc_obs_ledger_skill_listed_tokens, which pack.rs does not list as a known signal yet;
+    # until the ledger emits it the digest reports this question as unavailable.
+    title: Which skills cost tokens without being activated?
     signals: [claude_code.skill_activated, claude_code.token.usage]
-    query: { command: "cc-obs-query top skill --by tokens" }
+    query: { command: "cc-obs-query top skill --unactivated" }
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: mcp-idle-servers

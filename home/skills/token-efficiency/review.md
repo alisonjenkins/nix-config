@@ -35,7 +35,7 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 |---|---|---|
 | tool-result-size | Tools returning the most tokens per use | Bound or summarise the output, add `--limit`/filters |
 | repeat-calls | Identical or near-identical calls in a session; big result then narrower query | A tool that does the narrow query directly |
-| skills-loaded-unused | Activated skills ranked by tokens (installed-but-never-activated is not measurable yet) | Shorten the description of a heavy skill, drop it |
+| skills-loaded-unused | Installed skills never activated, ranked by listing tokens (`top skill --unactivated`; unavailable until the ledger emits `cc_obs_ledger_skill_listed_tokens`) | Shorten the description of a heavy skill, drop it |
 | mcp-idle-servers | MCP servers ranked by tool-result tokens, from the `mcp__<server>__` tool-name prefix (`top mcp --idle` lists connected-but-never-called servers once the ledger emits the connected gauge) | Remove or defer a heavy server |
 | fixed-context-share | Share of the average request that is re-read fixed context (`total` row), and each component's part of it (instructions, listings, memory index) | Trim instruction files, move procedure into skills |
 | cache-hit-low-sessions | Sessions with a low cache hit ratio | Find what invalidates the cache (editing early context, timeouts) |
