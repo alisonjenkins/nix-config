@@ -387,6 +387,151 @@ fn pack_rejects_repeated_or_contradictory_signals() {
     assert_pack_refused(&retire_twice, "twice");
 }
 
+fn run_baseline_with(pack_yaml: &str, extra: &[&str]) -> common::Run {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), pack_yaml);
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    let mut args = vec![
+        "digest",
+        "--baseline",
+        "--pack",
+        s(&pack),
+        "--since",
+        "7d",
+        "--until",
+        UNTIL,
+    ];
+    args.extend(extra);
+    cli(&fake, &args)
+}
+
+fn row_keys(digest: &Value) -> Vec<String> {
+    digest["questions"][0]["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["key"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[test]
+fn digest_that_only_pops_rows_cannot_shrink_gaps_and_errors() {
+    let run = run_baseline_with(TOOL_PACK, &["--max-bytes", "400"]);
+    assert_ne!(run.code, 0, "{}", run.out);
+    assert!(run.err.contains("cannot be reduced"), "{}", run.err);
+}
+
+#[test]
+fn threshold_boundaries_keep_the_equal_row() {
+    // fixture: Read share 0.8333 with 2 calls, Bash share 0.0333 with 1 call
+    let yaml = TOOL_PACK.replace(
+        "threshold: { min_share: 0.03, min_calls: 1 }",
+        "threshold: { min_share: 0.0333, min_calls: 2 }",
+    );
+    let keys = row_keys(&run_baseline_with(&yaml, &[]).json());
+    assert_eq!(keys, vec!["Read"], "min_calls 2 keeps Read (2 calls) only");
+    let yaml = TOOL_PACK.replace("min_share: 0.03,", "min_share: 0.0333,");
+    let keys = row_keys(&run_baseline_with(&yaml, &[]).json());
+    assert!(keys.contains(&"Bash".to_owned()), "{keys:?}");
+}
+
+#[test]
+fn two_dismissals_for_one_key_resurface_if_either_regrew() {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    fs::create_dir(dir.path().join("decisions")).unwrap();
+    fs::write(
+        dir.path().join("decisions/0001.md"),
+        decision("\"0001\"", "dismiss", 10_000),
+    )
+    .unwrap();
+    fs::write(
+        dir.path().join("decisions/0002.md"),
+        decision("\"0002\"", "dismiss", 20_000),
+    )
+    .unwrap();
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    let d = baseline(&fake, s(&pack)).json();
+    assert_eq!(d["questions"][0]["rows"][0]["regrowth_of"], json!("0001"));
+}
+
+#[test]
+fn out_on_an_unwritable_path_fails_loudly() {
+    let run = run_baseline_with(TOOL_PACK, &["--out", "/nonexistent-dir/digest.json"]);
+    assert_ne!(run.code, 0, "{}", run.out);
+    assert!(run.err.contains("digest.json"), "{}", run.err);
+}
+
+#[test]
+fn write_conflicts_with_baseline() {
+    let run = run_baseline_with(TOOL_PACK, &["--write", "x.json"]);
+    assert_ne!(run.code, 0, "{}", run.out);
+}
+
+#[test]
+fn pack_command_flag_forms_the_digest_would_ignore() {
+    let run = run_baseline_with(&tool_pack_with("top tool --by tokens --since=7d"), &[]);
+    let q = run.json()["questions"][0].clone();
+    assert!(
+        q["unavailable"].as_str().unwrap().contains("--since"),
+        "{q}"
+    );
+    let run = run_baseline_with(&tool_pack_with("top tool --by tokens --limit 1"), &[]);
+    assert_eq!(row_keys(&run.json()).len(), 1);
+}
+
+#[test]
+fn evidence_kind_is_case_insensitive() {
+    let run = write_mutated(
+        digest_rules(fixture("loki_tool_results.json")),
+        TOOL_PACK,
+        |d| d["questions"][0]["rows"][0]["evidence"] = json!("Tool:Read"),
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+}
+
+#[test]
+fn period_end_not_after_start_is_rejected() {
+    let run = write_mutated(
+        digest_rules(fixture("loki_tool_results.json")),
+        TOOL_PACK,
+        |d| {
+            d["period"]["end"] = json!("2026-10-01T00:00:00Z");
+        },
+    );
+    assert_ne!(run.code, 0, "accepted: {}", run.out);
+    assert!(run.err.contains("period"), "{}", run.err);
+}
+
+#[test]
+fn pack_load_names_the_question_missing_signals_and_duplicate_ids() {
+    let missing = TOOL_PACK.replace(
+        "    signals: [claude_code.token.usage, claude_code.tool_result.tool_result_size_bytes]\n",
+        "",
+    );
+    assert_pack_refused(&missing, "tool-result-size");
+    let question = &TOOL_PACK[TOOL_PACK.find("  - id").unwrap()..];
+    assert_pack_refused(&format!("{TOOL_PACK}{question}"), "duplicate");
+}
+
+#[test]
+fn render_with_offset_past_the_end_is_empty_not_truncated() {
+    use cc_obs_query::bounds::{render, Bounds, Report};
+    let mut report = Report::new("x");
+    report.rows = vec![json!({"key": "a"}), json!({"key": "b"})];
+    let out = render(
+        &report,
+        &Bounds {
+            offset: 5,
+            ..Bounds::default()
+        },
+    )
+    .unwrap();
+    let out: Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(out["rows"], json!([]));
+    assert!(out.get("truncated").is_none(), "{out}");
+}
+
 fn prom_scalar(value: f64) -> String {
     json!({"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1_760_000_000.0, value.to_string()]}]}}).to_string()
 }

@@ -382,6 +382,17 @@ fn check_schema(digest: &Value, problems: &mut Vec<String>) {
             problems.push(format!("{path} must be an ISO 8601 UTC timestamp"));
         }
     }
+    let at = |path: &str| {
+        digest
+            .pointer(path)
+            .and_then(Value::as_str)
+            .and_then(parse_iso)
+    };
+    if let (Some(start), Some(end)) = (at("/period/start"), at("/period/end")) {
+        if end <= start {
+            problems.push("period.end must be after period.start".to_owned());
+        }
+    }
     if require(digest, "stack.stores_ok", problems).is_some_and(|v| !v.is_boolean()) {
         problems.push("stack.stores_ok must be a boolean".to_owned());
     }
