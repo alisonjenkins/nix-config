@@ -734,10 +734,12 @@ pub fn validate(backend: &Backend, file: &Path, opts: &Opts) -> Result<Validated
         source,
     })?;
     let mut problems = Vec::new();
-    if text.len() > opts.max_bytes {
+    let compact_len = serde_json::to_string(&digest)
+        .map_err(|source| Error::Render { source })?
+        .len();
+    if compact_len > opts.max_bytes {
         problems.push(format!(
-            "the digest is {} bytes, over the {} byte limit",
-            text.len(),
+            "the digest is {compact_len} bytes compact, over the {} byte limit",
             opts.max_bytes
         ));
     }

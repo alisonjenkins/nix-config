@@ -117,6 +117,29 @@ fn digest_write_rejects_non_string_free_text_fields() {
     }
 }
 
+#[test]
+fn digest_write_cap_uses_compact_size() {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    let mut digest = valid_digest(&fake, s(&pack));
+    let rows: Vec<Value> = (0..700)
+        .map(|i| json!({"key": format!("k{i}"), "value": i}))
+        .collect();
+    digest["questions"][0]["rows"] = Value::Array(rows);
+    let compact = digest.to_string().len();
+    let pretty = serde_json::to_string_pretty(&digest).unwrap();
+    assert!(
+        compact <= 32_768 && pretty.len() > 32_768,
+        "{compact} {}",
+        pretty.len()
+    );
+    let file = dir.path().join("in.json");
+    fs::write(&file, pretty).unwrap();
+    let run = cli(&fake, &write_args(s(&file), s(&pack)));
+    assert_eq!(run.code, 0, "{}", run.err);
+}
+
 fn prom_vector(label: &str, samples: &[(&str, f64)]) -> String {
     let result: Vec<Value> = samples
         .iter()
