@@ -256,12 +256,7 @@ const LEDGER_REQUESTS: &str = "cc_obs_ledger_requests_total";
 /// agent and project but no request id, so a tool loop within one turn counts
 /// once and requests are undercounted.
 fn requests_by_session_agent(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Error> {
-    let counted = format!(
-        "round(sum by (session_id, agent)(increase({}[{}])))",
-        ctx.selector(LEDGER_REQUESTS, &[]),
-        ctx.window.prom()
-    );
-    let by_counter = session_agent_values(ctx, &counted)?;
+    let by_counter = counted_requests(ctx)?;
     if !by_counter.is_empty() {
         return Ok(by_counter);
     }
@@ -274,6 +269,15 @@ fn requests_by_session_agent(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Er
         ctx.window.prom()
     );
     session_agent_values(ctx, &query)
+}
+
+fn counted_requests(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Error> {
+    let counted = format!(
+        "round(sum by (session_id, agent)(increase({}[{}])))",
+        ctx.selector(LEDGER_REQUESTS, &[]),
+        ctx.window.prom()
+    );
+    session_agent_values(ctx, &counted)
 }
 
 /// API requests per session, the agent kinds summed.
@@ -391,8 +395,15 @@ fn label_of(s: &Sample, name: &str) -> String {
 }
 
 fn rank_requests(ctx: &Ctx) -> Result<Ranked, Error> {
+    // a ranking by request count must not fall back to the series count, which undercounts tool loops
+    let counted = counted_requests(ctx)?;
+    if counted.is_empty() {
+        return Ok(Ranked::Unavailable(format!(
+            "{LEDGER_REQUESTS} has no samples in the window (ledger not yet updated?)"
+        )));
+    }
     let mut by_key: BTreeMap<String, f64> = BTreeMap::new();
-    for (session, agent, value) in requests_by_session_agent(ctx)? {
+    for (session, agent, value) in counted {
         *by_key.entry(agent_key(&session, &agent)).or_insert(0.0) += value;
     }
     let mut rows: Vec<RankRow> = by_key
