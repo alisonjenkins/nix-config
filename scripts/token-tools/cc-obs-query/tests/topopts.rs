@@ -227,6 +227,116 @@ fn share_belongs_to_fixed_only() {
     );
 }
 
+fn tool_results(calls: &[(&str, &str)]) -> String {
+    let streams: Vec<Value> = calls
+        .iter()
+        .enumerate()
+        .map(|(i, (tool, bytes))| {
+            json!({
+                "stream": {
+                    "service_name": "claude-code",
+                    "event_name": "tool_result",
+                    "tool_name": tool,
+                    "tool_result_size_bytes": bytes,
+                    "session_id": "s1",
+                },
+                "values": [[format!("{}", 1_760_000_000_000_000_000_u64 + i as u64), "tool_result"]],
+            })
+        })
+        .collect();
+    json!({"status": "success", "data": {"resultType": "streams", "result": streams}}).to_string()
+}
+
+fn mcp_results() -> String {
+    tool_results(&[
+        ("Read", "10000"),
+        ("mcp__alpha__search", "40000"),
+        ("mcp__alpha__fetch", "8000"),
+        ("mcp__beta__ping", "4000"),
+        ("mcp__plugin_x_gw__invoke", "400"),
+    ])
+}
+
+#[test]
+fn top_mcp_sums_tool_result_tokens_by_server_name_prefix() {
+    let fake = serve(with_own(vec![(
+        "event_name=\"tool_result\"",
+        mcp_results(),
+    )]));
+    let run = cli(&fake, &["top", "mcp"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(keys(&out), vec!["alpha", "beta", "plugin_x_gw"]);
+    assert_eq!(row(&out, "alpha")["value"], json!(12000));
+    assert_eq!(row(&out, "alpha")["calls"], json!(2));
+    assert_eq!(row(&out, "alpha")["evidence"], json!("mcp:alpha"));
+}
+
+fn connected(servers: &[(&str, &str)]) -> String {
+    let samples: Vec<(Vec<(&str, &str)>, &str)> = servers
+        .iter()
+        .map(|(name, up)| (vec![("mcp_server_name", *name)], *up))
+        .collect();
+    let borrowed: Vec<(&[(&str, &str)], &str)> =
+        samples.iter().map(|(l, v)| (l.as_slice(), *v)).collect();
+    vector(&borrowed)
+}
+
+#[test]
+fn top_mcp_idle_is_connected_servers_minus_called_ones() {
+    let fake = serve(with_own(vec![
+        ("event_name=\"tool_result\"", mcp_results()),
+        (
+            "cc_obs_ledger_mcp_server_connected",
+            connected(&[
+                ("alpha", "1"),
+                ("idle_one", "1"),
+                ("idle_two", "1"),
+                ("gone", "0"),
+            ]),
+        ),
+    ]));
+    let run = cli(&fake, &["top", "mcp", "--idle"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    assert_eq!(keys(&run.json()), vec!["idle_one", "idle_two"]);
+}
+
+#[test]
+fn top_mcp_idle_without_the_connected_metric_names_the_gap() {
+    let fake = serve(with_own(vec![
+        ("event_name=\"tool_result\"", mcp_results()),
+        ("cc_obs_ledger_mcp_server_connected", vector(&[])),
+    ]));
+    let out = cli(&fake, &["top", "mcp", "--idle"]).json();
+    assert_eq!(out["value"], json!(null));
+    assert!(
+        out["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("cc_obs_ledger_mcp_server_connected"),
+        "{out}"
+    );
+}
+
+#[test]
+fn idle_belongs_to_mcp_only() {
+    let out = cli(&serve(with_own(vec![])), &["top", "tool", "--idle"]).json();
+    assert!(
+        out["unavailable"].as_str().unwrap().contains("mcp"),
+        "{out}"
+    );
+}
+
+#[test]
+fn mcp_question_ranks_servers_from_tool_result_prefixes() {
+    let question = shipped_question(
+        "mcp-idle-servers",
+        vec![("event_name=\"tool_result\"", mcp_results())],
+    );
+    // alpha has 12000 of 13100 result tokens; plugin_x_gw's 100 is under the 2% floor
+    assert_eq!(row_keys(&question), vec!["alpha", "beta"]);
+}
+
 #[test]
 fn fixed_context_share_question_keeps_shares_at_or_above_five_percent() {
     let mut rules = vec![(

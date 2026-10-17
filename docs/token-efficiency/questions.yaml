@@ -34,11 +34,11 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: mcp-idle-servers
-    # Needs the mcp_server_name label on token usage. Idle servers need a connected-servers
-    # signal that is not emitted; MCP tokens per server from tool_result logs need a `top mcp`
-    # rebuilt on the mcp__<server>__ tool-name prefix (README "Not yet answerable").
-    title: Which MCP servers carry the most tokens by their usage label?
-    signals: [claude_code.token.usage]
+    # `top mcp` groups tool_result logs by the mcp__<server>__ tool-name prefix. Switch the query
+    # to `top mcp --idle` and the title to "connected but never called" once the ledger emits
+    # cc_obs_ledger_mcp_server_connected (README "Not yet answerable").
+    title: Which MCP servers return the most tokens in tool results?
+    signals: [claude_code.tool_result.tool_result_size_bytes]
     query: { command: "cc-obs-query top mcp --by tokens" }
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }

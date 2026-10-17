@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use clap::ValueEnum;
 use serde_json::{json, Map, Value};
@@ -47,6 +47,8 @@ pub enum By {
     /// `fixed` only: share of the average request's context that is fixed context,
     /// as `total` and per component
     Share,
+    /// `mcp` only: servers connected at session start that no tool call used
+    Idle,
 }
 
 impl Category {
@@ -68,7 +70,7 @@ impl By {
     fn is_ratio(self) -> bool {
         matches!(
             self,
-            By::CacheHit | By::HitRate | By::ContextGrowth | By::Share
+            By::CacheHit | By::HitRate | By::ContextGrowth | By::Share | By::Idle
         )
     }
 }
@@ -106,9 +108,8 @@ fn label_spec(category: Category) -> Option<(&'static [&'static str], Vec<&'stat
         Category::Project => (&["repository"], vec![]),
         Category::Session => (&["session_id"], vec![]),
         Category::Skill => (&["skill_name"], vec!["skill_name!=\"\""]),
-        Category::Mcp => (&["mcp_server_name"], vec!["mcp_server_name!=\"\""]),
         Category::Subagent => (&["agent_name", "model"], vec!["query_source=\"subagent\""]),
-        Category::Tool | Category::Memory | Category::Fixed => return None,
+        Category::Tool | Category::Mcp | Category::Memory | Category::Fixed => return None,
     })
 }
 
@@ -478,6 +479,78 @@ fn rank_fixed_share(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(ranked_or_none("fixed context", rows))
 }
 
+/// Gauge set to 1 per MCP server connected at session start.
+const MCP_CONNECTED: &str = "cc_obs_ledger_mcp_server_connected";
+
+/// The server in an `mcp__<server>__<tool>` tool name.
+fn mcp_server(tool: &str) -> Option<&str> {
+    tool.strip_prefix("mcp__")?
+        .split("__")
+        .next()
+        .filter(|server| !server.is_empty())
+}
+
+/// Result tokens and calls per MCP server, read from `tool_result` logs the way
+/// `top tool` does: the token metrics may carry no server label.
+fn mcp_ranked(ctx: &Ctx) -> Result<Vec<RankRow>, Error> {
+    let mut servers: BTreeMap<String, (f64, u64)> = BTreeMap::new();
+    for (name, stat) in tool::stats(ctx)? {
+        let Some(server) = mcp_server(&name).filter(|_| stat.sized_calls > 0) else {
+            continue;
+        };
+        let entry = servers.entry(server.to_owned()).or_default();
+        entry.0 += stat.total_bytes / tool::BYTES_PER_TOKEN;
+        entry.1 = entry.1.saturating_add(stat.calls);
+    }
+    let mut rows: Vec<RankRow> = servers
+        .into_iter()
+        .map(|(key, (tokens, calls))| RankRow {
+            key,
+            value: tokens,
+            calls: Some(calls),
+            model: None,
+            detail: Map::new(),
+        })
+        .collect();
+    rows.sort_by(|a, b| b.value.total_cmp(&a.value).then_with(|| a.key.cmp(&b.key)));
+    Ok(rows)
+}
+
+/// Connected servers (gauge at 1) minus servers with any tool call in the window.
+fn rank_idle_mcp(ctx: &Ctx) -> Result<Ranked, Error> {
+    let query = format!(
+        "max by (mcp_server_name)(last_over_time({}[{}]))",
+        ctx.selector(MCP_CONNECTED, &[]),
+        ctx.window.prom()
+    );
+    let connected: Vec<String> = ctx
+        .instant(&query)?
+        .into_iter()
+        .filter(|s| s.value >= 1.0)
+        .map(|s| label_of(&s, "mcp_server_name"))
+        .filter(|name| !name.is_empty())
+        .collect();
+    if connected.is_empty() {
+        return Ok(Ranked::Unavailable(format!(
+            "no {MCP_CONNECTED} samples in the window (the ledger does not emit the connected-server gauge yet, or no MCP server was connected)"
+        )));
+    }
+    let called: BTreeSet<String> = mcp_ranked(ctx)?.into_iter().map(|r| r.key).collect();
+    let mut rows: Vec<RankRow> = connected
+        .into_iter()
+        .filter(|name| !called.contains(name))
+        .map(|key| RankRow {
+            key,
+            value: 1.0,
+            calls: Some(0),
+            model: None,
+            detail: Map::new(),
+        })
+        .collect();
+    rows.sort_by(|a, b| a.key.cmp(&b.key));
+    Ok(Ranked::Rows(rows))
+}
+
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
@@ -519,6 +592,8 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
         (By::Requests, _) => return Ok(wrong_category(by, "session")),
         (By::ContextGrowth, Category::Session) => return rank_context_growth(ctx),
         (By::ContextGrowth, _) => return Ok(wrong_category(by, "session")),
+        (By::Idle, Category::Mcp) => return rank_idle_mcp(ctx),
+        (By::Idle, _) => return Ok(wrong_category(by, "mcp")),
         (By::Share, Category::Fixed) => return rank_fixed_share(ctx),
         (By::Share, _) => return Ok(wrong_category(by, "fixed")),
         _ => {}
@@ -533,6 +608,14 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
                 ));
             }
             tool::ranked(ctx)?
+        }
+        Category::Mcp => {
+            if by == By::Cost {
+                return Ok(Ranked::Unavailable(
+                    "cost is not attributed per MCP server; rank by tokens".to_owned(),
+                ));
+            }
+            mcp_ranked(ctx)?
         }
         Category::Fixed => {
             if by == By::Cost {

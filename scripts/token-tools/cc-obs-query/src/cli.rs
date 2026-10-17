@@ -58,6 +58,10 @@ pub enum Command {
         /// `--by cache-hit` only: leave out sessions with fewer API requests than this (ledger request counter)
         #[arg(long, default_value_t = DEFAULT_MIN_REQUESTS)]
         min_requests: u64,
+        /// `top mcp` only: list servers connected at session start that no tool call
+        /// used (same as `--by idle`)
+        #[arg(long)]
+        idle: bool,
     },
     /// Calls, result size, share of tokens and repeat rate of one tool
     Tool {
