@@ -511,17 +511,31 @@ fn mcp_server(tool: &str) -> Option<&str> {
         .filter(|server| !server.is_empty())
 }
 
-/// Result tokens and calls per MCP server, read from `tool_result` logs the way
-/// `top tool` does: the token metrics may carry no server label.
+/// The form a server name takes inside a tool name: Claude Code replaces every
+/// character outside `[A-Za-z0-9_-]` with `_` (`plugin:a:b` -> `plugin_a_b`).
+fn normalise_server(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
+/// Result tokens and calls per MCP server, read from the ledger's `tool_call`
+/// records: the claude-code `tool_result` stream names every MCP call `mcp_tool`.
 fn mcp_ranked(ctx: &Ctx) -> Result<Vec<RankRow>, Error> {
     let mut servers: BTreeMap<String, (f64, u64)> = BTreeMap::new();
-    for (name, stat) in tool::stats(ctx)? {
-        let Some(server) = mcp_server(&name).filter(|_| stat.sized_calls > 0) else {
+    for record in ctx.logs(&ctx.logql("cc-obs-ledger", "cc_obs_ledger.tool_call"))? {
+        let Some(server) = record.fields.get("tool_name").and_then(|n| mcp_server(n)) else {
             continue;
         };
         let entry = servers.entry(server.to_owned()).or_default();
-        entry.0 += stat.total_bytes / tool::BYTES_PER_TOKEN;
-        entry.1 = entry.1.saturating_add(stat.calls);
+        entry.0 += parse_f64(&record, "result_bytes").unwrap_or(0.0) / tool::BYTES_PER_TOKEN;
+        entry.1 = entry.1.saturating_add(1);
     }
     let mut rows: Vec<RankRow> = servers
         .into_iter()
@@ -559,7 +573,7 @@ fn rank_idle_mcp(ctx: &Ctx) -> Result<Ranked, Error> {
     let called: BTreeSet<String> = mcp_ranked(ctx)?.into_iter().map(|r| r.key).collect();
     let mut rows: Vec<RankRow> = connected
         .into_iter()
-        .filter(|name| !called.contains(name))
+        .filter(|name| !called.contains(&normalise_server(name)))
         .map(|key| RankRow {
             key,
             value: 1.0,

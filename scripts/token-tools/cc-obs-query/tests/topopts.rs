@@ -234,13 +234,13 @@ fn tool_results(calls: &[(&str, &str)]) -> String {
         .map(|(i, (tool, bytes))| {
             json!({
                 "stream": {
-                    "service_name": "claude-code",
-                    "event_name": "tool_result",
+                    "service_name": "cc-obs-ledger",
+                    "event_name": "cc_obs_ledger.tool_call",
                     "tool_name": tool,
-                    "tool_result_size_bytes": bytes,
+                    "result_bytes": bytes,
                     "session_id": "s1",
                 },
-                "values": [[format!("{}", 1_760_000_000_000_000_000_u64 + i as u64), "tool_result"]],
+                "values": [[format!("{}", 1_760_000_000_000_000_000_u64 + i as u64), "cc_obs_ledger.tool_call"]],
             })
         })
         .collect();
@@ -259,10 +259,7 @@ fn mcp_results() -> String {
 
 #[test]
 fn top_mcp_sums_tool_result_tokens_by_server_name_prefix() {
-    let fake = serve(with_own(vec![(
-        "event_name=\"tool_result\"",
-        mcp_results(),
-    )]));
+    let fake = serve(with_own(vec![("cc_obs_ledger.tool_call", mcp_results())]));
     let run = cli(&fake, &["top", "mcp"]);
     assert_eq!(run.code, 0, "{}", run.err);
     let out = run.json();
@@ -285,7 +282,7 @@ fn connected(servers: &[(&str, &str)]) -> String {
 #[test]
 fn top_mcp_idle_is_connected_servers_minus_called_ones() {
     let fake = serve(with_own(vec![
-        ("event_name=\"tool_result\"", mcp_results()),
+        ("cc_obs_ledger.tool_call", mcp_results()),
         (
             "cc_obs_ledger_mcp_server_connected",
             connected(&[
@@ -304,7 +301,7 @@ fn top_mcp_idle_is_connected_servers_minus_called_ones() {
 #[test]
 fn top_mcp_idle_without_the_connected_metric_names_the_gap() {
     let fake = serve(with_own(vec![
-        ("event_name=\"tool_result\"", mcp_results()),
+        ("cc_obs_ledger.tool_call", mcp_results()),
         ("cc_obs_ledger_mcp_server_connected", vector(&[])),
     ]));
     let out = cli(&fake, &["top", "mcp", "--idle"]).json();
@@ -331,7 +328,7 @@ fn idle_belongs_to_mcp_only() {
 fn mcp_question_ranks_servers_from_tool_result_prefixes() {
     let question = shipped_question(
         "mcp-idle-servers",
-        vec![("event_name=\"tool_result\"", mcp_results())],
+        vec![("cc_obs_ledger.tool_call", mcp_results())],
     );
     // alpha has 12000 of 13100 result tokens; plugin_x_gw's 100 is under the 2% floor
     assert_eq!(row_keys(&question), vec!["alpha", "beta"]);

@@ -46,7 +46,8 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: mcp-idle-servers
-    # `top mcp` groups tool_result logs by the mcp__<server>__ tool-name prefix. Switch the query
+    # `top mcp` groups ledger tool_call logs by the mcp__<server>__ tool-name prefix (claude-code
+    # tool_result logs name every MCP call `mcp_tool`). Switch the query
     # to `top mcp --idle` and the title to "connected but never called" once the ledger emits
     # cc_obs_ledger_mcp_server_connected (README "Not yet answerable").
     title: Which MCP servers return the most tokens in tool results?
