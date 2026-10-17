@@ -1,6 +1,7 @@
 //! OTLP/HTTP JSON payloads. Only counts, sizes, names, ids and keyed hashes go in;
 //! never transcript text or tool input.
 
+use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Value};
@@ -69,6 +70,9 @@ fn now_nanos() -> String {
         .map_or(0, |elapsed| elapsed.as_nanos())
         .to_string()
 }
+
+/// OTLP `AGGREGATION_TEMPORALITY_DELTA`: each Stop hook sends only what is new.
+const AGGREGATION_DELTA: u8 = 1;
 
 enum Number {
     Int(u64),
@@ -153,6 +157,50 @@ fn request_metrics(request: &Request, time: &str) -> Vec<Value> {
     metrics
 }
 
+/// Requests in this parse per session, project, model and agent, as a delta
+/// counter (the collector turns it cumulative). No turn or request id label:
+/// that would be one series per request.
+fn request_count_metric(requests: &[Request], time: &str) -> Option<Value> {
+    let mut counts: BTreeMap<(&str, &str, &str, &str), u64> = BTreeMap::new();
+    for request in requests {
+        let key = (
+            request.session_id.as_str(),
+            request.project.as_str(),
+            request.model.as_str(),
+            agent_kind(request.sidechain),
+        );
+        let count = counts.entry(key).or_insert(0);
+        *count = count.saturating_add(1);
+    }
+    if counts.is_empty() {
+        return None;
+    }
+    let points: Vec<Value> = counts
+        .into_iter()
+        .map(|((session, project, model, agent), count)| {
+            json!({
+                "asInt": count.to_string(),
+                "startTimeUnixNano": time,
+                "timeUnixNano": time,
+                "attributes": attributes([
+                    ("session.id", session.to_owned()),
+                    ("project", project.to_owned()),
+                    ("model", model.to_owned()),
+                    ("agent", agent.to_owned()),
+                ].into_iter()),
+            })
+        })
+        .collect();
+    Some(json!({
+        "name": "cc_obs_ledger_requests_total",
+        "sum": {
+            "aggregationTemporality": AGGREGATION_DELTA,
+            "isMonotonic": true,
+            "dataPoints": points,
+        },
+    }))
+}
+
 fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     let mut attrs = attributes(
         [
@@ -178,16 +226,17 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     log_record("cc_obs_ledger.tool_call", time, attrs)
 }
 
-/// What a `Stop` hook sends: context size and cache hit ratio per request, and one
-/// log record per tool call.
+/// What a `Stop` hook sends: context size and cache hit ratio per request, a
+/// request counter, and one log record per tool call.
 pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
     let time = now_nanos();
     let mut payloads = Vec::new();
-    let metrics: Vec<Value> = parsed
+    let mut metrics: Vec<Value> = parsed
         .requests
         .iter()
         .flat_map(|request| request_metrics(request, &time))
         .collect();
+    metrics.extend(request_count_metric(&parsed.requests, &time));
     if !metrics.is_empty() {
         payloads.push(metrics_payload(resource, metrics));
     }
