@@ -17,6 +17,7 @@ const NO_RECORDS: &str = "no cc_obs_ledger.tool_call records in the window";
 pub struct Call {
     pub session: String,
     pub tool: String,
+    pub agent: String,
     pub input_hash: String,
     pub prefix_hash: String,
     pub result_bytes: Option<u64>,
@@ -34,6 +35,7 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             Some(Call {
                 session: field("session_id")?,
                 tool: field("tool_name")?,
+                agent: field("agent_type").unwrap_or_default(),
                 input_hash: field("input_hash")?,
                 prefix_hash: field("input_prefix_hash").unwrap_or_default(),
                 result_bytes: whole("result_bytes"),
@@ -50,6 +52,16 @@ fn by_session(calls: &[Call]) -> BTreeMap<&str, Vec<&Call>> {
     let mut map: BTreeMap<&str, Vec<&Call>> = BTreeMap::new();
     for call in calls {
         map.entry(call.session.as_str()).or_default().push(call);
+    }
+    map
+}
+
+fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str), Vec<&Call>> {
+    let mut map: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
+    for call in calls {
+        map.entry((call.session.as_str(), call.agent.as_str()))
+            .or_default()
+            .push(call);
     }
     map
 }
@@ -162,10 +174,17 @@ fn large_then_narrow(calls: &[&Call], out: &mut Findings) {
     }
 }
 
+/// Non-overlapping occurrences of each tool triple within one agent's calls, found
+/// greedily left to right: a run of five identical calls holds one triple, not three.
 fn sequences(calls: &[&Call], counts: &mut BTreeMap<String, (u64, BTreeSet<String>)>) {
     let names: Vec<&str> = calls.iter().map(|c| c.tool.as_str()).collect();
-    for window in names.windows(SEQUENCE_LEN) {
+    let mut free_from: BTreeMap<String, usize> = BTreeMap::new();
+    for (start, window) in names.windows(SEQUENCE_LEN).enumerate() {
         let key = window.join(">");
+        if free_from.get(&key).is_some_and(|free| start < *free) {
+            continue;
+        }
+        free_from.insert(key.clone(), start.saturating_add(SEQUENCE_LEN));
         let entry = counts.entry(key).or_default();
         entry.0 = entry.0.saturating_add(1);
         if let Some(call) = calls.first() {
@@ -185,7 +204,11 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
         identical(session_calls, min_count, &mut findings);
         near_identical(session_calls, min_count, &mut findings);
         large_then_narrow(session_calls, &mut findings);
-        sequences(session_calls, &mut seqs);
+    }
+    // A subagent's calls are interleaved with the main agent's by (turn, seq) and its
+    // seq may restart, so sequences are read per (session, agent), never across them.
+    for stream in by_agent(&calls).values() {
+        sequences(stream, &mut seqs);
     }
     let mut rows: Vec<(u64, String, serde_json::Value)> = Vec::new();
     for ((pattern, tool), finding) in findings {
@@ -222,6 +245,7 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
                 "pattern": "sequence",
                 "value": count,
                 "calls": count,
+                "detail": { "occurrences": count, "calls_covered": count.saturating_mul(SEQUENCE_LEN as u64) },
                 "sessions": sessions.len(),
             }),
         ));
