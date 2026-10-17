@@ -58,7 +58,8 @@ in {
           specialArgs
           // {
             hostname = "ali-mba-linux";
-            bluetoothHeadsetMac = "";  # No paired headset yet; swayidle uses empty string as no-op
+            cheapDelegate = "gemini";
+            bluetoothHeadsetMac = ""; # No paired headset yet; swayidle uses empty string as no-op
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
             gitUserName = "Alison Jenkins";

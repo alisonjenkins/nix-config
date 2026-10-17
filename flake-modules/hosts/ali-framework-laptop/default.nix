@@ -96,6 +96,7 @@ in {
           specialArgs
           // {
             hostname = "ali-framework-laptop";
+            cheapDelegate = "gemini";
             bluetoothHeadsetMac = bluetoothMacs.sonyHeadset;
             gitEmail = "1176328+alisonjenkins@users.noreply.github.com";
             gitGPGSigningKey = "";
