@@ -27,10 +27,21 @@ in
       entries = [ { path = skillsDir; } ];
     };
 
-    # Always-active global rules. Model Routing is left out: it tells Claude
-    # which cheaper model to hand work to.
+    # Always-active global rules. Claude's Model Routing is left out, as it names
+    # Claude's own cheaper models; agy gets its own, in model-routing.md.
     home.file.".gemini/config/AGENTS.md".text =
-      mandates.gitStrategy + "\n" + mandates.workStyle;
+      mandates.gitStrategy + "\n" + mandates.workStyle + "\n" + builtins.readFile ./model-routing.md;
+
+    # The subagent that routing sends work to, pinned to the Flash tier. Every
+    # entry under `tools` must be a registered tool: an unknown name (command_status
+    # was one) stops the agent from starting.
+    home.file.".gemini/config/agents/flash-worker.md".source = ./flash-worker.md;
+
+    # Routing text alone is advice: with it loaded, the main agent still did a
+    # multi-file edit itself. This main agent has no edit or command tools, so it
+    # has to hand those to flash-worker. Opt in with `agy --agent orchestrator`
+    # or the /agents panel.
+    home.file.".gemini/config/agents/orchestrator.md".source = ./orchestrator.md;
 
     # agy rewrites settings.json itself (trusted workspaces, colour scheme), so
     # the rules are merged in rather than the file being replaced.
