@@ -11,7 +11,24 @@ the hook's budget. Failures write one line to a local log
 | `Stop` | `cc-obs-ledger turn` | Reads the new tail of `transcript_path`, emits per-request context size, cache hit ratio, cache-creation tokens and seconds since the previous request, the skill listing (`cc_obs_ledger_skill_listed_tokens{skill_name}`) and MCP servers (`cc_obs_ledger_mcp_server_connected{mcp_server_name}`) when the new tail holds them, and one `cc_obs_ledger.tool_call` log record per tool call (below). |
 | `SubagentStop` | `cc-obs-ledger subagent` | Same records as `turn`, from the sub-agent's own transcript (`agent_transcript_path`, else `<dir of transcript_path>/<session_id>/subagents/agent-<agent_id>.jsonl`), read from a per-(session, agent) cursor `cursors/<session>.agent-<agent_id>.json`. Records carry `agent=subagent` and `agent_id`. A repeated stop emits only what the file gained; `end` reads the main transcript only and never re-reads these files. |
 | `SessionStart` | `cc-obs-ledger notice` | Prints one short line ("token review ready: <date>") only when the newest findings file in the review state directory has not been promoted or dismissed. Prints nothing otherwise and never fails. Gated by `review.notify` (default on); the only ledger subcommand allowed to write to stdout. |
-| `SessionEnd` | `cc-obs-ledger end` | Emits the fixed-context split (first request minus census residual) and one `cc_obs_ledger.session` log line. |
+| `SessionEnd` | `cc-obs-ledger end` | First processes the unread transcript tail like a `Stop`, so nothing written since the last `Stop` is lost, and leaves the cursor stamped at the transcript end: a resumed session continues from there and re-emits no history. Deletes the census file and prunes cursors idle for 30 days (Claude Code deletes transcripts after 30 days, so those sessions cannot resume). Emits the fixed-context split (first request minus census residual) and one `cc_obs_ledger.session` log record, described below. |
+
+### `cc_obs_ledger.session` log record
+
+Cumulative over the whole transcript: `requests`, `tool_calls`, `input_tokens`, `output_tokens`,
+`cache_read_tokens`, `cache_creation_tokens`, `skipped_lines`, with `session.id` and `project`.
+A resumed session ends again, so a session can have several records. To total a session, sum
+the `_delta` attributes or take the record with the highest `end_index`; never sum the
+cumulative attributes across records.
+
+| Attribute | Meaning |
+|---|---|
+| `end_index` | 1 for the first `SessionEnd` of the session, 2 for the next, and so on; kept in the cursor |
+| `cumulative` | always `true`: `requests` and the token attributes cover the whole session so far |
+| `requests_delta`, `tool_calls_delta`, `input_tokens_delta`, `output_tokens_delta`, `cache_read_tokens_delta`, `cache_creation_tokens_delta` | growth since the previous end, from the totals the cursor stored then; equal to the cumulative value at `end_index` 1 |
+
+An end with no change since the previous end emits no session record (and no fixed-context
+gauges) and does not advance `end_index`.
 
 Inputs used from the hook payload: `session_id`, `transcript_path`, `cwd`, and for
 `SubagentStop` `agent_id` and `agent_transcript_path` (documented on the hooks page; the
