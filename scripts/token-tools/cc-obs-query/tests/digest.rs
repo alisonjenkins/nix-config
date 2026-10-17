@@ -259,6 +259,31 @@ fn table_cells_escape_tabs_and_newlines() {
     );
 }
 
+#[test]
+fn unavailable_question_does_not_report_metric_absent() {
+    let rules: Vec<_> = digest_rules(fixture("loki_tool_results.json"))
+        .into_iter()
+        .filter(|(needle, _)| *needle != "event_name=\"tool_result\"")
+        .collect();
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    fs::create_dir(dir.path().join("decisions")).unwrap();
+    let acted =
+        decision("\"0007\"", "build", 50_000).replace("acted_on: null", "acted_on: abc1234");
+    fs::write(dir.path().join("decisions/0007-read.md"), acted).unwrap();
+    let fake = serve(rules);
+    let digest = valid_digest(&fake, s(&pack));
+    assert!(
+        digest["questions"][0]["unavailable"].is_string(),
+        "{digest}"
+    );
+    let after = digest["prior_decisions"][0]["after"]["unavailable"]
+        .as_str()
+        .unwrap();
+    assert!(after.contains("unavailable"), "{after}");
+    assert!(!after.contains("absent"), "{after}");
+}
+
 fn prom_scalar(value: f64) -> String {
     json!({"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1_760_000_000.0, value.to_string()]}]}}).to_string()
 }

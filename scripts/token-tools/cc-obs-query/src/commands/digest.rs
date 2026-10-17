@@ -78,6 +78,8 @@ fn normalise(value: f64, unit: &str, window: Window) -> f64 {
 
 fn verdict(before: f64, after: Option<f64>) -> &'static str {
     match after {
+        // zero before and after: nothing was reduced, so nothing is proved
+        Some(a) if before <= 0.0 && a <= 0.0 => "inconclusive",
         Some(a) if a <= before * EFFECTIVE_BELOW => "effective",
         Some(a) if a >= before => "ineffective",
         _ => "inconclusive",
@@ -202,6 +204,7 @@ fn total(
 fn prior_decisions(
     decisions: &[Decision],
     current: &BTreeMap<(String, String), f64>,
+    unavailable: &BTreeSet<String>,
     window: Window,
 ) -> Vec<Value> {
     decisions
@@ -212,11 +215,16 @@ fn prior_decisions(
             let now = current
                 .get(&(metric.question.clone(), metric.key.clone()))
                 .map(|v| normalise(*v, &metric.unit, window));
+            let why = if unavailable.contains(&metric.question) {
+                "the question's data is unavailable this period"
+            } else {
+                "metric absent from this period"
+            };
             Some(json!({
                 "id": d.id,
                 "status": "acted",
                 "before": num(metric.baseline),
-                "after": figure(now, "metric absent from this period"),
+                "after": figure(now, why),
                 "verdict": d.outcome.clone().unwrap_or_else(|| verdict(metric.baseline, now).to_owned()),
             }))
         })
@@ -282,9 +290,13 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
     }
     let mut questions = Vec::new();
     let mut current: BTreeMap<(String, String), f64> = BTreeMap::new();
+    let mut unavailable: BTreeSet<String> = BTreeSet::new();
     for question in &pack.questions {
         match answer(&ctx, &pack, question, &decisions) {
             Ok(done) => {
+                if done.entry.get("unavailable").is_some() {
+                    unavailable.insert(question.id.clone());
+                }
                 gaps.extend(done.gaps);
                 current.extend(
                     done.current
@@ -294,6 +306,7 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
                 questions.push(done.entry);
             }
             Err(e) => {
+                unavailable.insert(question.id.clone());
                 gaps.push(format!("{}: {e}", question.id));
                 questions.push(json!({
                     "id": question.id,
@@ -321,7 +334,7 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
         },
         "totals": totals,
         "questions": questions,
-        "prior_decisions": prior_decisions(&decisions, &current, opts.window),
+        "prior_decisions": prior_decisions(&decisions, &current, &unavailable, opts.window),
         "own_cost": own_cost_of(backend, opts.window),
     });
     fit(&mut digest, opts.max_bytes)?;
@@ -759,4 +772,32 @@ pub fn validate(backend: &Backend, file: &Path, opts: &Opts) -> Result<Validated
         digest,
         evidence_checked,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verdict_zero_baseline_is_inconclusive() {
+        assert_eq!(verdict(0.0, Some(0.0)), "inconclusive");
+        assert_eq!(verdict(0.0, Some(5.0)), "ineffective");
+        assert_eq!(verdict(100.0, Some(80.0)), "effective");
+        assert_eq!(verdict(100.0, None), "inconclusive");
+    }
+
+    #[test]
+    fn week_unit_is_normalised_to_the_window() {
+        let day = Window {
+            secs: 86_400,
+            end: None,
+        };
+        let month = Window {
+            secs: 30 * 86_400,
+            end: None,
+        };
+        assert!((normalise(10.0, "tokens/week", day) - 70.0).abs() < 1e-9);
+        assert!((normalise(30.0, "tokens/week", month) - 7.0).abs() < 1e-9);
+        assert!((normalise(10.0, "tokens", day) - 10.0).abs() < 1e-9);
+    }
 }
