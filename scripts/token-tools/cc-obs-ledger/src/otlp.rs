@@ -154,7 +154,59 @@ fn request_metrics(request: &Request, time: &str) -> Vec<Value> {
             time,
         ));
     }
+    if request.cache_creation_reported {
+        metrics.push(gauge(
+            "cc_obs_ledger_cache_creation_tokens",
+            Number::Int(request.usage.cache_creation),
+            attrs(),
+            time,
+        ));
+    }
+    if let Some(seconds) = request.seconds_since_prev {
+        metrics.push(gauge(
+            "cc_obs_ledger_seconds_since_prev_request",
+            Number::Int(seconds),
+            attrs(),
+            time,
+        ));
+    }
     metrics
+}
+
+/// One series per installed skill, from the listing the session started with. Host
+/// labels only (from the resource): no session, so the series count is the number of
+/// skills, not skills times sessions.
+fn skill_listing_metrics(parsed: &Parsed, time: &str) -> Vec<Value> {
+    parsed
+        .skill_listing
+        .iter()
+        .flatten()
+        .map(|skill| {
+            gauge(
+                "cc_obs_ledger_skill_listed_tokens",
+                Number::Int(skill.chars.checked_div(4).unwrap_or(0)),
+                attributes([("skill_name", skill.name.clone())].into_iter()),
+                time,
+            )
+        })
+        .collect()
+}
+
+/// 1 per MCP server named in the session's MCP instructions.
+fn mcp_server_metrics(parsed: &Parsed, time: &str) -> Vec<Value> {
+    parsed
+        .mcp_servers
+        .iter()
+        .flatten()
+        .map(|name| {
+            gauge(
+                "cc_obs_ledger_mcp_server_connected",
+                Number::Int(1),
+                attributes([("mcp_server_name", name.clone())].into_iter()),
+                time,
+            )
+        })
+        .collect()
 }
 
 /// Requests in this parse per session, project, model and agent, as a delta
@@ -226,8 +278,9 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     log_record("cc_obs_ledger.tool_call", time, attrs)
 }
 
-/// What a `Stop` hook sends: context size and cache hit ratio per request, a
-/// request counter, and one log record per tool call.
+/// What a `Stop` hook sends: context size, cache hit ratio, cache creation and the
+/// gap since the previous request per request, a request counter, the skill listing
+/// and MCP servers when the parse saw them, and one log record per tool call.
 pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
     let time = now_nanos();
     let mut payloads = Vec::new();
@@ -237,6 +290,8 @@ pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
         .flat_map(|request| request_metrics(request, &time))
         .collect();
     metrics.extend(request_count_metric(&parsed.requests, &time));
+    metrics.extend(skill_listing_metrics(parsed, &time));
+    metrics.extend(mcp_server_metrics(parsed, &time));
     if !metrics.is_empty() {
         payloads.push(metrics_payload(resource, metrics));
     }

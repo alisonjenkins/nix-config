@@ -4,13 +4,15 @@
 //! as several `assistant` lines that repeat the same `usage`, so a request is
 //! counted once, by `requestId`.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
 use hmac::{Hmac, KeyInit, Mac};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -61,6 +63,19 @@ pub struct Request {
     /// 1-based user prompt this request belongs to; 0 before the first prompt.
     pub turn: u64,
     pub usage: Usage,
+    /// The line carried a `cache_creation_input_tokens` count (zero is a real count).
+    pub cache_creation_reported: bool,
+    /// Seconds since the previous request of the same agent kind (main or subagent)
+    /// in this session; `None` for the first request or when a timestamp is missing.
+    pub seconds_since_prev: Option<u64>,
+}
+
+/// One entry of the skill listing the session started with.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListedSkill {
+    pub name: String,
+    /// Characters the entry adds to the listing, name and description included.
+    pub chars: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,6 +103,11 @@ pub struct Parsed {
     pub skipped_lines: usize,
     /// Characters in the first user prompt, to subtract from the first request's context.
     pub first_prompt_chars: u64,
+    /// The newest `skill_listing` attachment in this parse, if there was one.
+    pub skill_listing: Option<Vec<ListedSkill>>,
+    /// MCP servers named by `mcp_instructions_delta` attachments in this parse (added
+    /// minus removed); `None` when the parse held no such attachment.
+    pub mcp_servers: Option<BTreeSet<String>>,
     /// Turn and tool-call counters after the last line parsed.
     pub end: Position,
 }
@@ -187,6 +207,76 @@ pub fn read_unread<R: Read + Seek>(
 pub struct Position {
     pub turn: u64,
     pub seq: u64,
+    /// Unix milliseconds of the newest main-agent request, for the next gap.
+    pub last_main_ms: Option<u64>,
+    /// Unix milliseconds of the newest subagent request.
+    pub last_sub_ms: Option<u64>,
+}
+
+/// Unix milliseconds of an RFC 3339 transcript timestamp.
+fn timestamp_ms(value: &Value) -> Option<u64> {
+    let text = value.get("timestamp")?.as_str()?;
+    let parsed = OffsetDateTime::parse(text, &Rfc3339).ok()?;
+    u64::try_from(parsed.unix_timestamp_nanos() / 1_000_000).ok()
+}
+
+fn read_attachment(value: &Value, parsed: &mut Parsed) {
+    let Some(attachment) = value.get("attachment") else {
+        return;
+    };
+    match attachment.get("type").and_then(Value::as_str) {
+        Some("skill_listing") => {
+            if let Some(content) = attachment.get("content").and_then(Value::as_str) {
+                parsed.skill_listing = Some(listed_skills(content));
+            }
+        }
+        Some("mcp_instructions_delta") => {
+            let servers = parsed.mcp_servers.get_or_insert_with(BTreeSet::new);
+            let names = |key: &str| {
+                attachment
+                    .get(key)
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>()
+            };
+            servers.extend(names("addedNames"));
+            for name in names("removedNames") {
+                servers.remove(&name);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Entries of the form `- name: description`; a line that starts no entry belongs
+/// to the entry before it.
+fn listed_skills(content: &str) -> Vec<ListedSkill> {
+    let mut skills: Vec<ListedSkill> = Vec::new();
+    for line in content.lines() {
+        let entry_name = line
+            .strip_prefix("- ")
+            .and_then(|rest| rest.split_once(": "))
+            .map(|(name, _)| name.trim())
+            .filter(|name| !name.is_empty());
+        match (entry_name, skills.last_mut()) {
+            (Some(name), _) => skills.push(ListedSkill {
+                name: name.to_owned(),
+                chars: line.chars().count() as u64,
+            }),
+            (None, Some(last)) => {
+                // The newline that `lines()` removed counts as a character.
+                last.chars = last
+                    .chars
+                    .saturating_add(1)
+                    .saturating_add(line.chars().count() as u64);
+            }
+            (None, None) => {}
+        }
+    }
+    skills
 }
 
 pub fn parse(text: &str, hasher: &ToolHasher) -> Parsed {
@@ -198,7 +288,11 @@ pub fn parse_from(text: &str, hasher: &ToolHasher, start: Position) -> Parsed {
     let mut seen_requests: HashSet<String> = HashSet::new();
     let mut tool_index: HashMap<String, usize> = HashMap::new();
     let mut turn: u64 = start.turn;
-    let mut seq: u64 = start.seq;
+    let mut counters = Counters {
+        seq: start.seq,
+        last_main_ms: start.last_main_ms,
+        last_sub_ms: start.last_sub_ms,
+    };
 
     for line in text.lines().filter(|line| !line.trim().is_empty()) {
         let Ok(value) = serde_json::from_str::<Value>(line) else {
@@ -213,14 +307,27 @@ pub fn parse_from(text: &str, hasher: &ToolHasher, start: Position) -> Parsed {
                 turn,
                 &mut seen_requests,
                 &mut tool_index,
-                &mut seq,
+                &mut counters,
                 hasher,
             ),
+            Some("attachment") => read_attachment(&value, &mut parsed),
             _ => {}
         }
     }
-    parsed.end = Position { turn, seq };
+    parsed.end = Position {
+        turn,
+        seq: counters.seq,
+        last_main_ms: counters.last_main_ms,
+        last_sub_ms: counters.last_sub_ms,
+    };
     parsed
+}
+
+/// Counters that run on across lines, and across Stop hooks through `Position`.
+struct Counters {
+    seq: u64,
+    last_main_ms: Option<u64>,
+    last_sub_ms: Option<u64>,
 }
 
 fn read_user(
@@ -297,7 +404,7 @@ fn read_assistant(
     turn: u64,
     seen_requests: &mut HashSet<String>,
     tool_index: &mut HashMap<String, usize>,
-    seq: &mut u64,
+    counters: &mut Counters,
     hasher: &ToolHasher,
 ) {
     let Some(request_id) = value.get("requestId").and_then(Value::as_str) else {
@@ -318,6 +425,22 @@ fn read_assistant(
             .pointer("/message/usage")
             .map(read_usage)
             .unwrap_or_default();
+        let cache_creation_reported = value
+            .pointer("/message/usage/cache_creation_input_tokens")
+            .is_some_and(Value::is_u64);
+        let now_ms = timestamp_ms(value);
+        let last_ms = if sidechain {
+            &mut counters.last_sub_ms
+        } else {
+            &mut counters.last_main_ms
+        };
+        let seconds_since_prev = match (now_ms, *last_ms) {
+            (Some(now), Some(prev)) => Some(now.saturating_sub(prev) / 1000),
+            _ => None,
+        };
+        if now_ms.is_some() {
+            *last_ms = now_ms;
+        }
         parsed.requests.push(Request {
             request_id: request_id.to_owned(),
             session_id: session_id.clone(),
@@ -335,6 +458,8 @@ fn read_assistant(
             sidechain,
             turn,
             usage,
+            cache_creation_reported,
+            seconds_since_prev,
         });
     }
 
@@ -365,14 +490,14 @@ fn read_assistant(
             session_id: session_id.clone(),
             sidechain,
             turn,
-            seq: *seq,
+            seq: counters.seq,
             input_bytes: bytes.len() as u64,
             input_hash: hasher.hash(bytes),
             input_prefix_hash: hasher.hash(prefix),
             result_bytes: None,
             prompt_id: None,
         });
-        *seq = seq.saturating_add(1);
+        counters.seq = counters.seq.saturating_add(1);
     }
 }
 

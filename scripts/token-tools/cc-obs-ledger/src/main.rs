@@ -71,6 +71,10 @@ struct Cursor {
     turn: u64,
     #[serde(default)]
     seq: u64,
+    #[serde(default)]
+    last_main_ms: Option<u64>,
+    #[serde(default)]
+    last_sub_ms: Option<u64>,
 }
 
 fn main() -> ExitCode {
@@ -260,6 +264,8 @@ fn turn_run(
             Position {
                 turn: cursor.turn,
                 seq: cursor.seq,
+                last_main_ms: cursor.last_main_ms,
+                last_sub_ms: cursor.last_sub_ms,
             },
         )
     };
@@ -287,6 +293,8 @@ fn turn_run(
             .saturating_add(complete.len() as u64),
         turn: parsed.end.turn,
         seq: parsed.end.seq,
+        last_main_ms: parsed.end.last_main_ms,
+        last_sub_ms: parsed.end.last_sub_ms,
     };
     let text = serde_json::to_string(&next).map_err(|source| LedgerError::ParseFile {
         path: cursor_file.clone(),
@@ -431,7 +439,8 @@ mod tests {
             Cursor {
                 offset: all.len() as u64,
                 turn: 2,
-                seq: 3
+                seq: 3,
+                ..Cursor::default()
             }
         );
         assert_eq!(spooled_seqs(state.path()), ["0", "1", "2"]);
@@ -446,7 +455,8 @@ mod tests {
             Cursor {
                 offset: 42,
                 turn: 0,
-                seq: 0
+                seq: 0,
+                ..Cursor::default()
             }
         );
     }
