@@ -59,7 +59,7 @@ questions:
     query: { command: "cc-obs-query top session --by cache-hit" }
     decision_kind: configure | dismiss
   - id: subagent-overhead
-    title: What do sub-agents cost relative to their value?
+    title: Which sub-agent types use the most tokens?
     signals: [claude_code.subagent_completed.total_tokens, claude_code.token.usage]
     query: { command: "cc-obs-query top subagent --by tokens" }
     decision_kind: configure | dismiss
