@@ -142,6 +142,28 @@ fn the_latest_skill_listing_wins() {
 }
 
 #[test]
+fn a_later_discovery_listing_adds_to_the_initial_one() {
+    let initial = attachment(
+        serde_json::json!({"type":"skill_listing","content":"- alpha: aaaa","isInitial":true}),
+    );
+    let found = attachment(serde_json::json!({
+        "type":"skill_listing",
+        "content":"- .claude/worktrees/w1:beta: bbbb",
+        "isInitial":false
+    }));
+    let points = metrics(
+        &[initial, found].join("\n"),
+        "cc_obs_ledger_skill_listed_tokens",
+    );
+    let mut names: Vec<_> = points
+        .iter()
+        .filter_map(|p| attr(p, "skill_name"))
+        .collect();
+    names.sort();
+    assert_eq!(names, [".claude/worktrees/w1:beta", "alpha"]);
+}
+
+#[test]
 fn each_mcp_server_in_the_instructions_is_connected() {
     let text = mcp_delta(&["claude-in-chrome", "plugin:x:nixos"], &[]);
     let points = metrics(&text, "cc_obs_ledger_mcp_server_connected");
