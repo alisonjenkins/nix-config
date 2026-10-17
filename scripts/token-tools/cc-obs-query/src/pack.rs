@@ -59,6 +59,18 @@ pub struct Query {
 pub struct Threshold {
     pub min_share: Option<f64>,
     pub min_calls: Option<u64>,
+    /// Keep rows whose value is at least this (a ratio's floor, a count).
+    pub min_value: Option<f64>,
+    /// Keep rows whose value is at most this: a ratio ranked lowest-first has no
+    /// share, so this is the cut-off that says "low enough to act on".
+    pub max_value: Option<f64>,
+}
+
+impl Threshold {
+    /// Whether a row of this value passes the value bounds.
+    pub fn admits(&self, value: f64) -> bool {
+        self.min_value.is_none_or(|m| value >= m) && self.max_value.is_none_or(|m| value <= m)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -163,6 +175,22 @@ impl Pack {
                 if !(0.0..=1.0).contains(&share) {
                     return Err(invalid(format!(
                         "question {:?}: threshold.min_share must be between 0 and 1, not {share}",
+                        question.id
+                    )));
+                }
+            }
+            let bounds = (question.threshold.min_value, question.threshold.max_value);
+            let finite = |v: Option<f64>| v.is_none_or(f64::is_finite);
+            if !finite(bounds.0) || !finite(bounds.1) {
+                return Err(invalid(format!(
+                    "question {:?}: threshold.min_value and max_value must be finite numbers",
+                    question.id
+                )));
+            }
+            if let (Some(min), Some(max)) = bounds {
+                if min > max {
+                    return Err(invalid(format!(
+                        "question {:?}: threshold.min_value {min} is above max_value {max}, so no row can pass",
                         question.id
                     )));
                 }

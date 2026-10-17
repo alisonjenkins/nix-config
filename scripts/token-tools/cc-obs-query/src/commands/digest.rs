@@ -145,7 +145,11 @@ fn answer(
             matches!((share, question.threshold.min_share), (Some(s), Some(m)) if s < m);
         let below_calls =
             matches!((calls, question.threshold.min_calls), (Some(c), Some(m)) if c < m);
-        if below_share || below_calls {
+        let outside_value = row
+            .get("value")
+            .and_then(Value::as_f64)
+            .is_some_and(|v| !question.threshold.admits(v));
+        if below_share || below_calls || outside_value {
             continue;
         }
         let key = row
