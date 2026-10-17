@@ -190,19 +190,6 @@ fn compare_run(question_command: &str) -> Value {
 }
 
 #[test]
-fn compare_key_absent_from_one_range_has_no_delta_or_ratio() {
-    // Pinned, not endorsed: spec FR-025 does not say whether absent means zero.
-    let out = compare_run("top model --by tokens");
-    for (key, present_in) in [("new", "b"), ("old", "a")] {
-        let row = common::row(&out, key);
-        assert_eq!(row["delta"]["value"], json!(null), "{key}: {out}");
-        assert_eq!(row["ratio"]["value"], json!(null), "{key}: {out}");
-        let absent = if present_in == "a" { "b" } else { "a" };
-        assert_eq!(row[absent]["value"], json!(null), "{key}: {out}");
-    }
-}
-
-#[test]
 fn compare_ignores_the_questions_own_limit() {
     // Pinned, not endorsed: the question says --limit 1, compare lists every key.
     let out = compare_run("top model --by tokens --limit 1");

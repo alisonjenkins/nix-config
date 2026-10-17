@@ -83,3 +83,110 @@ fn recall_per_injection_unavailable_when_every_request_was_empty_or_error() {
     assert_eq!(val(&field), json!(null), "{out}");
     assert!(!why(&field).is_empty(), "{out}");
 }
+
+fn compare_run(question_command: &str, rules: Vec<(&'static str, String)>) -> Value {
+    let dir = tempfile::tempdir().unwrap();
+    let yaml = common::TOOL_PACK.replace("top tool --by tokens", question_command);
+    let pack = common::write_pack(dir.path(), &yaml);
+    let fake = serve(rules);
+    let run = cli(
+        &fake,
+        &[
+            "compare",
+            "tool-result-size",
+            "--a",
+            "2026-09-01..2026-09-08",
+            "--b",
+            "2026-09-08..2026-09-15",
+            "--pack",
+            common::s(&pack),
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    run.json()
+}
+
+const END_A: &str = "time=1788825600";
+const END_B: &str = "time=1789430400";
+
+#[test]
+fn compare_key_only_in_a_is_zero_in_b_when_b_is_complete() {
+    let a = vector(&[
+        (json!({"model": "opus"}), "100"),
+        (json!({"model": "old"}), "5"),
+    ]);
+    let b = vector(&[(json!({"model": "opus"}), "150")]);
+    let out = compare_run("top model --by tokens", vec![(END_A, a), (END_B, b)]);
+    let old = common::row(&out, "old");
+    assert_eq!(val(&old["a"]), json!(5), "{out}");
+    assert_eq!(val(&old["b"]), json!(0), "{out}");
+    assert_eq!(val(&old["delta"]), json!(-5), "{out}");
+    assert_eq!(val(&old["ratio"]), json!(0), "{out}");
+}
+
+#[test]
+fn compare_key_in_both_ranges_is_unchanged() {
+    let a = vector(&[(json!({"model": "opus"}), "100")]);
+    let b = vector(&[(json!({"model": "opus"}), "150")]);
+    let out = compare_run("top model --by tokens", vec![(END_A, a), (END_B, b)]);
+    let opus = common::row(&out, "opus");
+    assert_eq!(val(&opus["delta"]), json!(50), "{out}");
+    assert_eq!(val(&opus["ratio"]), json!(1.5), "{out}");
+}
+
+#[test]
+fn compare_zero_in_a_has_delta_but_no_ratio() {
+    let a = vector(&[(json!({"model": "opus"}), "100")]);
+    let b = vector(&[
+        (json!({"model": "opus"}), "100"),
+        (json!({"model": "new"}), "10"),
+    ]);
+    let out = compare_run("top model --by tokens", vec![(END_A, a), (END_B, b)]);
+    let new = common::row(&out, "new");
+    assert_eq!(val(&new["a"]), json!(0), "{out}");
+    assert_eq!(val(&new["delta"]), json!(10), "{out}");
+    assert_eq!(val(&new["ratio"]), json!(null), "{out}");
+    assert!(!why(&new["ratio"]).is_empty(), "{out}");
+}
+
+/// One Loki page of `count` compaction events for session `session`, one
+/// nanosecond apart. Loki-backed rankings are the only ones with a row cap.
+fn compactions(session: &str, count: usize) -> String {
+    let values: Vec<Value> = (0..count)
+        .map(|i| {
+            json!([
+                (1_760_000_000_000_000_000_i64 + i as i64).to_string(),
+                "compaction"
+            ])
+        })
+        .collect();
+    json!({"status": "success", "data": {"resultType": "streams", "result": [{
+        "stream": {"service_name": "claude-code", "event_name": "compaction", "session_id": session},
+        "values": values,
+    }]}})
+    .to_string()
+}
+
+const LOKI_END_A: &str = "end=1788825600000000000";
+const LOKI_END_B: &str = "end=1789430400000000000";
+
+#[test]
+fn compare_key_missing_from_a_truncated_range_is_unavailable_not_zero() {
+    // A full page on every request makes the fetch hit its record cap.
+    let a = compactions("only-in-a", 2);
+    let b = compactions("s-big", 5000);
+    let out = compare_run(
+        "top session --by compactions",
+        vec![(LOKI_END_A, a), (LOKI_END_B, b)],
+    );
+    let only_a = common::row(&out, "only-in-a");
+    assert_eq!(val(&only_a["a"]), json!(2), "{out}");
+    assert_eq!(val(&only_a["b"]), json!(null), "{out}");
+    for field in ["b", "delta", "ratio"] {
+        let reason = why(&only_a[field]);
+        assert!(
+            reason.contains("outside top") && reason.contains("range B"),
+            "{field}: {out}"
+        );
+    }
+}
