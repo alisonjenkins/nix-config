@@ -12,7 +12,7 @@ use std::net::TcpListener;
 use std::thread;
 use std::time::Duration;
 
-use cc_obs_query::backend::{Backend, Endpoints};
+use cc_obs_query::backend::{Backend, Endpoints, LogFetch};
 use cc_obs_query::error::Error;
 use serde_json::{json, Value};
 
@@ -137,4 +137,124 @@ fn a_5xx_with_a_plain_text_body_keeps_the_text() {
 fn readiness_is_false_on_a_non_2xx() {
     let base = serve_fn(|_| (503, "not ready".to_owned()));
     assert!(!backend(&base).ready(cc_obs_query::backend::Store::Loki));
+}
+
+/// A Loki that behaves like the real one for paging: forward order, inclusive
+/// `start`, at most `limit` entries. `events` are `(ts_ns, line)`.
+fn paging_loki(events: Vec<(i64, String)>) -> String {
+    serve_fn(move |target| {
+        let num = |name: &str, default: i64| {
+            param(target, name)
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(default)
+        };
+        let (start, end, limit) = (num("start", 0), num("end", i64::MAX), num("limit", 100));
+        let values = events
+            .iter()
+            .filter(|(ts, _)| *ts >= start && *ts <= end)
+            .take(usize::try_from(limit).unwrap())
+            .map(|(ts, line)| json!([ts.to_string(), line]))
+            .collect();
+        (200, loki_body(values))
+    })
+}
+
+#[test]
+fn prom_instant_drops_non_finite_samples() {
+    let body = json!({"status": "success", "data": {"resultType": "vector", "result": [
+        {"metric": {"k": "nan"}, "value": [1, "NaN"]},
+        {"metric": {"k": "inf"}, "value": [1, "+Inf"]},
+        {"metric": {"k": "ok"}, "value": [1, "2.5"]},
+    ]}})
+    .to_string();
+    let base = serve_fn(move |_| (200, body.clone()));
+    let samples = backend(&base).prom_instant("m", None).unwrap();
+    assert_eq!(samples.len(), 1);
+    assert_eq!(samples[0].labels["k"], "ok");
+}
+
+fn param(target: &str, name: &str) -> Option<String> {
+    let query = target.split_once('?')?.1;
+    query
+        .split('&')
+        .find_map(|kv| kv.strip_prefix(&format!("{name}=")).map(str::to_owned))
+}
+
+fn line(tag: &str) -> String {
+    json!({ "tag": tag }).to_string()
+}
+
+fn fetch(page_size: usize, max_pages: usize) -> LogFetch {
+    LogFetch {
+        page_size,
+        max_records: 1000,
+        max_pages,
+    }
+}
+
+fn tags(pages: &cc_obs_query::backend::LogPages) -> Vec<String> {
+    pages
+        .records
+        .iter()
+        .map(|r| r.fields["tag"].clone())
+        .collect()
+}
+
+#[test]
+fn paging_drops_the_repeat_of_the_last_record_on_the_next_page() {
+    let base = paging_loki(
+        ["a", "b", "c", "d"]
+            .iter()
+            .zip([100, 200, 300, 400])
+            .map(|(tag, ts)| (ts, line(tag)))
+            .collect(),
+    );
+    let pages = backend(&base)
+        .loki_paged("{x=\"y\"}", 0, 1000, fetch(3, 10))
+        .unwrap();
+    assert_eq!(tags(&pages), ["a", "b", "c", "d"]);
+    assert!(!pages.truncated && pages.gaps.is_empty());
+}
+
+#[test]
+fn a_page_of_one_timestamp_is_reported_as_a_gap_not_looped() {
+    let events = (0..5).map(|i| (100, line(&format!("e{i}")))).collect();
+    let base = paging_loki(events);
+    let pages = backend(&base)
+        .loki_paged("{x=\"y\"}", 0, 1000, fetch(2, 10))
+        .unwrap();
+    assert_eq!(pages.gaps.len(), 1, "{:?}", pages.gaps);
+    assert!(pages.gaps[0].contains("share timestamp 100"));
+    assert_eq!(pages.records.len(), 2);
+}
+
+#[test]
+fn max_pages_marks_the_fetch_truncated() {
+    let events = (1..=6).map(|i| (i * 100, line(&format!("e{i}")))).collect();
+    let base = paging_loki(events);
+    let pages = backend(&base)
+        .loki_paged("{x=\"y\"}", 0, 1000, fetch(2, 2))
+        .unwrap();
+    assert!(pages.truncated);
+    assert_eq!(tags(&pages), ["e1", "e2", "e3"]);
+}
+
+#[test]
+fn identical_events_cut_by_a_page_boundary_lose_one_but_are_flagged() {
+    // Known limit, pinned: three byte-identical events at ts 100 and a page cut
+    // after two. Loki's start is inclusive and has no offset, so the next page
+    // returns the same two events; they are indistinguishable from the kept
+    // ones, the third is unreachable, and the paging reports it as a gap.
+    let events = vec![
+        (100, line("same")),
+        (100, line("same")),
+        (100, line("same")),
+        (200, line("later")),
+    ];
+    let base = paging_loki(events);
+    let pages = backend(&base)
+        .loki_paged("{x=\"y\"}", 0, 1000, fetch(2, 10))
+        .unwrap();
+    assert_eq!(tags(&pages), ["same", "same", "later"]);
+    assert_eq!(pages.gaps.len(), 1, "the loss must not be silent");
 }

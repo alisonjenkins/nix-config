@@ -384,7 +384,9 @@ impl Backend {
         let mut gaps: Vec<String> = Vec::new();
         let mut start = start_ns;
         // Records already kept at timestamp `start`: Loki's start is inclusive, so
-        // the next page begins AT the last timestamp and repeats them.
+        // the next page begins AT the last timestamp and repeats them. Known limit:
+        // identical events (same ns, same fields) cut by a page boundary cannot be
+        // told from the repeats, so one is lost; the same-timestamp gap note covers it.
         let mut seen_at_start: BTreeSet<BTreeMap<String, String>> = BTreeSet::new();
         for _ in 0..fetch.max_pages {
             let page = self.loki_range(query, start, end_ns, fetch.page_size)?;
