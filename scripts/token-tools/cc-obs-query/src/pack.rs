@@ -13,7 +13,7 @@ use crate::error::Error;
 /// Every signal the stack collects that a question may name. A signal named by a
 /// question must be in this list; one in no question and not in `retire:` fails
 /// `unused-signals`.
-pub const COLLECTED_SIGNALS: [&str; 25] = [
+pub const COLLECTED_SIGNALS: [&str; 30] = [
     "claude_code.token.usage",
     "claude_code.cost.usage",
     "claude_code.session.count",
@@ -33,6 +33,11 @@ pub const COLLECTED_SIGNALS: [&str; 25] = [
     "cc_obs_ledger_fixed_context_tokens",
     "cc_obs_ledger_context_tokens",
     "cc_obs_ledger_cache_hit_ratio",
+    "cc_obs_ledger_requests_total",
+    "cc_obs_ledger_mcp_server_connected",
+    "cc_obs_ledger_skill_listed_tokens",
+    "cc_obs_ledger_cache_creation_tokens",
+    "cc_obs_ledger_seconds_since_prev_request",
     "cc_obs_ledger.session",
     "cc_obs_ledger.tool_call",
     "recall_requests_total",
