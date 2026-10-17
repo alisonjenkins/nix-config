@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde_json::{json, Value};
 
 use super::{label_value, Ctx, CACHE_HIT, CONTEXT, FIXED};
+use crate::backend::Sample;
 use crate::bounds::{figure, num, Report};
 use crate::error::Error;
 
@@ -10,18 +11,55 @@ fn session_matcher(id: &str) -> Result<String, Error> {
     Ok(format!("session_id=\"{}\"", label_value("session id", id)?))
 }
 
-fn per_turn(ctx: &Ctx, metric: &str, id: &str) -> Result<BTreeMap<u64, f64>, Error> {
+/// One ledger series: a user-prompt turn of one agent kind on one model. A turn
+/// holds the main agent's requests and any subagents', so the turn alone is not
+/// a series identity.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct SeriesKey {
+    turn: u64,
+    agent: String,
+    model: String,
+}
+
+fn per_series(ctx: &Ctx, metric: &str, id: &str) -> Result<BTreeMap<SeriesKey, f64>, Error> {
     let matcher = session_matcher(id)?;
     let query = format!(
         "last_over_time({}[{}])",
         ctx.selector(metric, &[&matcher]),
         ctx.window.prom()
     );
+    let label = |s: &Sample, name: &str| s.labels.get(name).cloned().unwrap_or_default();
     Ok(ctx
         .instant(&query)?
         .into_iter()
-        .filter_map(|s| Some((s.labels.get("turn")?.parse().ok()?, s.value)))
+        .filter_map(|s| {
+            let key = SeriesKey {
+                turn: s.labels.get("turn")?.parse().ok()?,
+                agent: label(&s, "agent"),
+                model: label(&s, "model"),
+            };
+            Some((key, s.value))
+        })
         .collect())
+}
+
+/// Per turn, the series with the largest context, with the cache ratio of that
+/// same series so a turn's figures never mix two agents.
+fn peak_per_turn(
+    context: &BTreeMap<SeriesKey, f64>,
+    cache: &BTreeMap<SeriesKey, f64>,
+) -> BTreeMap<u64, (f64, Option<f64>)> {
+    let mut peaks: BTreeMap<u64, (f64, Option<f64>)> = BTreeMap::new();
+    for (key, tokens) in context {
+        let ratio = cache.get(key).copied();
+        match peaks.get(&key.turn) {
+            Some((best, _)) if best >= tokens => {}
+            _ => {
+                peaks.insert(key.turn, (*tokens, ratio));
+            }
+        }
+    }
+    peaks
 }
 
 /// The component series are a split of the total, so summing them would count
@@ -39,17 +77,22 @@ fn fixed_tokens(ctx: &Ctx, id: &str) -> Result<Option<f64>, Error> {
 
 pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
     let command = format!("session {id}");
-    let context = per_turn(ctx, CONTEXT, id)?;
-    if context.is_empty() {
+    let series = per_series(ctx, CONTEXT, id)?;
+    if series.is_empty() {
         return Ok(Report::unavailable(
             &command,
             format!("no cc_obs_ledger samples for session {id} in the window"),
         ));
     }
-    let cache = per_turn(ctx, CACHE_HIT, id)?;
+    let cache = per_series(ctx, CACHE_HIT, id)?;
     let fixed = fixed_tokens(ctx, id)?;
-    let max_context = context.values().copied().fold(f64::MIN, f64::max);
-    let mean_cache = (!cache.is_empty()).then(|| cache.values().sum::<f64>() / cache.len() as f64);
+    let context = peak_per_turn(&series, &cache);
+    let max_context = context
+        .values()
+        .map(|(tokens, _)| *tokens)
+        .fold(f64::MIN, f64::max);
+    let ratios: Vec<f64> = context.values().filter_map(|(_, ratio)| *ratio).collect();
+    let mean_cache = (!ratios.is_empty()).then(|| ratios.iter().sum::<f64>() / ratios.len() as f64);
     let mut report = Report::new(&command)
         .with("session", json!(id))
         .with("turns", json!(context.len()))
@@ -72,12 +115,12 @@ pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
     if detail {
         report.rows = context
             .iter()
-            .map(|(turn, tokens)| -> Value {
+            .map(|(turn, (tokens, ratio))| -> Value {
                 json!({
                     "key": format!("turn {turn}"),
                     "turn": turn,
                     "context_tokens": num(*tokens),
-                    "cache_hit_ratio": figure(cache.get(turn).copied(), "no ratio for this turn"),
+                    "cache_hit_ratio": figure(*ratio, "no ratio for this turn"),
                 })
             })
             .collect();
