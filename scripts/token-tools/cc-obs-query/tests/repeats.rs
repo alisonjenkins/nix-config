@@ -175,6 +175,7 @@ fn min_count_is_per_session_for_groups_and_across_sessions_for_sequences() {
     let out = run_repeats(loki(&recs), &["--min-count", "3"]);
     assert!(!has(&out, "identical:Read"), "{out}");
     assert!(has(&out, "sequence:Edit>Write>Bash"), "{out}");
+    assert!(out["min_count_means"].is_string(), "{out}");
 }
 
 #[test]

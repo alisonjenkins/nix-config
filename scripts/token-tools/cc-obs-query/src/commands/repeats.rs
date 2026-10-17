@@ -16,6 +16,10 @@ const SEQUENCE_LEN: usize = 3;
 /// of the evidence: calls in the group (identical, near_identical), 2 for a
 /// large_then_narrow pair, or non-overlapping occurrences of a sequence.
 const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first, near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
+/// Identical and near-identical calls are a within-session notion (the spec), so their
+/// threshold applies per session; a sequence is "frequent" across the window, so its
+/// threshold applies to occurrences summed over all sessions.
+const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session; sequence = occurrences across all sessions";
 const NO_RECORDS: &str = "no cc_obs_ledger.tool_call records in the window";
 
 #[derive(Debug, Clone)]
@@ -131,6 +135,10 @@ fn identical(calls: &[&Call], min_count: u64, out: &mut Findings) {
     }
 }
 
+/// Same tool and same leading-argument hash (the ledger contract), with at least two
+/// distinct full inputs. Calls that also form an identical group stay in `calls`; the
+/// contract does not exclude them, and `value` counts only the distinct extra inputs
+/// so nothing is counted twice against `identical`.
 fn near_identical(calls: &[&Call], min_count: u64, out: &mut Findings) {
     let mut groups: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
     for call in calls.iter().filter(|c| !c.prefix_hash.is_empty()) {
@@ -256,7 +264,8 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
     let total = calls.len() as f64;
     let mut report = Report::new("repeats")
         .with("calls_analysed", num(total))
-        .with("value_means", json!(VALUE_MEANS));
+        .with("value_means", json!(VALUE_MEANS))
+        .with("min_count_means", json!(MIN_COUNT_MEANS));
     report.rows = rows.into_iter().map(|(_, _, row)| row).collect();
     Ok(report)
 }
