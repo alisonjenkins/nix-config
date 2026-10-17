@@ -130,3 +130,91 @@ fn near_identical_is_scoped_to_the_agent() {
     let out = run_repeats(loki_meta(&metas));
     assert!(!has(&out, "near_identical:Grep"), "{out}");
 }
+
+#[test]
+fn an_edit_between_identical_calls_is_not_a_repeat() {
+    let recs = [
+        Rec("s1", "main", "Bash", "x", 0),
+        Rec("s1", "main", "Edit", "e", 1),
+        Rec("s1", "main", "Bash", "x", 2),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert!(!has(&out, "identical:Bash"), "{out}");
+}
+
+#[test]
+fn every_edit_tool_resets_the_state() {
+    for edit in ["Write", "NotebookEdit", "MultiEdit"] {
+        let recs = [
+            Rec("s1", "main", "Read", "x", 0),
+            Rec("s1", "main", edit, "e", 1),
+            Rec("s1", "main", "Read", "x", 2),
+        ];
+        let out = run_repeats(loki(&recs));
+        assert!(!has(&out, "identical:Read"), "{edit}: {out}");
+    }
+}
+
+#[test]
+fn a_non_edit_call_between_identical_calls_is_still_a_repeat() {
+    let recs = [
+        Rec("s1", "main", "Bash", "x", 0),
+        Rec("s1", "main", "Read", "y", 1),
+        Rec("s1", "main", "Bash", "x", 2),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert_eq!(row(&out, "identical:Bash")["value"], json!(1), "{out}");
+}
+
+#[test]
+fn adjacent_identical_reads_are_a_repeat() {
+    let recs = [
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "main", "Read", "x", 1),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert_eq!(row(&out, "identical:Read")["value"], json!(1), "{out}");
+}
+
+#[test]
+fn another_agents_edit_does_not_reset_the_state() {
+    let recs = [
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "subagent", "Edit", "e", 1),
+        Rec("s1", "main", "Read", "x", 2),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert_eq!(row(&out, "identical:Read")["value"], json!(1), "{out}");
+}
+
+#[test]
+fn a_run_after_an_edit_still_counts_its_own_repeats() {
+    let recs = [
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "main", "Edit", "e", 1),
+        Rec("s1", "main", "Read", "x", 2),
+        Rec("s1", "main", "Read", "x", 3),
+    ];
+    let out = run_repeats(loki(&recs));
+    let r = row(&out, "identical:Read");
+    assert_eq!(
+        (r["value"].clone(), r["calls"].clone()),
+        (json!(1), json!(2))
+    );
+}
+
+#[test]
+fn report_text_states_the_scope_and_the_edit_rule() {
+    let out = run_repeats(loki(&[
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "main", "Read", "x", 1),
+    ]));
+    assert!(
+        out["value_means"].as_str().unwrap().contains("edit"),
+        "{out}"
+    );
+    assert!(
+        out["min_count_means"].as_str().unwrap().contains("agent"),
+        "{out}"
+    );
+}
