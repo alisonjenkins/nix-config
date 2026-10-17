@@ -11,14 +11,16 @@ fn session_matcher(id: &str) -> Result<String, Error> {
     Ok(format!("session_id=\"{}\"", label_value("session id", id)?))
 }
 
-/// One ledger series: a user-prompt turn of one agent kind on one model. A turn
-/// holds the main agent's requests and any subagents', so the turn alone is not
-/// a series identity.
+/// One ledger series: a user-prompt turn of one agent (kind and sub-agent id) on one
+/// model. A turn holds the main agent's requests and any subagents', so the turn
+/// alone is not a series identity.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct SeriesKey {
     turn: u64,
     agent: String,
+    agent_id: String,
     model: String,
+    project: String,
 }
 
 /// Series whose `turn` label is missing or not a number cannot be placed in a
@@ -45,7 +47,9 @@ fn per_series(
         let key = SeriesKey {
             turn,
             agent: label(&s, "agent"),
+            agent_id: label(&s, "agent_id"),
             model: label(&s, "model"),
+            project: label(&s, "project"),
         };
         kept.insert(key, s.value);
     }

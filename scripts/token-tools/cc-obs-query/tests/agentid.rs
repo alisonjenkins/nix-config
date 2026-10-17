@@ -10,7 +10,7 @@
 
 mod common;
 
-use common::{cli, fixture, row, rows, serve};
+use common::{cli, fixture, row, rows, serve, with_own};
 use serde_json::{json, Value};
 
 const LEDGER: &str = "event_name=\"cc_obs_ledger.tool_call\"";
@@ -173,5 +173,54 @@ fn automate_does_not_stitch_two_subagents_into_one_sequence() {
     assert!(
         !keys.iter().any(|k| k.starts_with("sequence:")),
         "no sequence occurs twice: {keys:?}"
+    );
+}
+
+fn vector(series: &[(Value, &str)]) -> String {
+    let result: Vec<Value> = series
+        .iter()
+        .map(|(labels, value)| json!({"metric": labels, "value": [1760000000.0, value]}))
+        .collect();
+    json!({"status": "success", "data": {"resultType": "vector", "result": result}}).to_string()
+}
+
+fn gauge(agent: &str, agent_id: Option<&str>, turn: &str) -> Value {
+    let mut labels = json!({
+        "session_id": "s1", "agent": agent, "model": "m", "turn": turn, "project": "p",
+    });
+    if let Some(id) = agent_id {
+        labels["agent_id"] = json!(id);
+    }
+    labels
+}
+
+#[test]
+fn session_keeps_two_subagents_at_the_same_turn_apart() {
+    let context = vector(&[
+        (gauge("subagent", Some("agent-a"), "3"), "900000"),
+        (gauge("subagent", Some("agent-b"), "3"), "1000"),
+    ]);
+    let cache = vector(&[
+        (gauge("subagent", Some("agent-a"), "3"), "0.2"),
+        (gauge("subagent", Some("agent-b"), "3"), "0.8"),
+    ]);
+    let fake = serve(with_own(vec![
+        ("cc_obs_ledger_context_tokens", context),
+        ("cc_obs_ledger_cache_hit_ratio", cache),
+        (
+            "cc_obs_ledger_fixed_context_tokens",
+            fixture("prom_session_fixed.json"),
+        ),
+    ]));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(
+        out["max_context_tokens"],
+        json!(900000),
+        "agent-b overwrote agent-a: {out}"
+    );
+    assert_eq!(
+        out["mean_cache_hit_ratio"],
+        json!(0.2),
+        "the ratio must be that of the series holding the peak: {out}"
     );
 }
