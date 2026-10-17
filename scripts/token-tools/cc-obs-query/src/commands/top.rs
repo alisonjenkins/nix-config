@@ -390,6 +390,17 @@ fn agent_key(session: &str, agent: &str) -> String {
     }
 }
 
+/// Like `agent_key`, but one sub-agent run per row: `<id>/subagent/<agent_id>`. A
+/// sub-agent record without an agent id (older ledger) keeps `<id>/subagent`.
+fn agent_run_key(session: &str, agent: &str, agent_id: &str) -> String {
+    let key = agent_key(session, agent);
+    if agent == "subagent" && !agent_id.is_empty() {
+        format!("{key}/{agent_id}")
+    } else {
+        key
+    }
+}
+
 fn label_of(s: &Sample, name: &str) -> String {
     s.labels.get(name).cloned().unwrap_or_default()
 }
@@ -420,7 +431,7 @@ fn rank_requests(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(ranked_or_none("API requests", rows))
 }
 
-/// Per session and agent kind: the largest per-turn context less the first
+/// Per session, agent kind and sub-agent id: the largest per-turn context less the first
 /// turn's. A turn holds several series when it ran on more than one model; the
 /// largest one stands for the turn. Series without a numeric turn are noted.
 fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
@@ -429,7 +440,7 @@ fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
         ctx.selector(CONTEXT, &[]),
         ctx.window.prom()
     );
-    let mut turns: BTreeMap<(String, String), BTreeMap<u64, f64>> = BTreeMap::new();
+    let mut turns: BTreeMap<(String, String, String), BTreeMap<u64, f64>> = BTreeMap::new();
     let mut dropped = 0_u64;
     for s in ctx.instant(&query)? {
         let session = label_of(&s, "session_id");
@@ -441,7 +452,7 @@ fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
             continue;
         };
         let slot = turns
-            .entry((session, label_of(&s, "agent")))
+            .entry((session, label_of(&s, "agent"), label_of(&s, "agent_id")))
             .or_default()
             .entry(turn)
             .or_insert(s.value);
@@ -454,7 +465,7 @@ fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
     }
     let mut rows: Vec<RankRow> = turns
         .into_iter()
-        .filter_map(|((session, agent), by_turn)| {
+        .filter_map(|((session, agent, agent_id), by_turn)| {
             let first = *by_turn.values().next()?;
             let peak = by_turn.values().copied().fold(f64::MIN, f64::max);
             let mut detail = Map::new();
@@ -462,7 +473,7 @@ fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
             detail.insert("first_context_tokens".to_owned(), num(first));
             detail.insert("max_context_tokens".to_owned(), num(peak));
             Some(RankRow {
-                key: agent_key(&session, &agent),
+                key: agent_run_key(&session, &agent, &agent_id),
                 value: (peak - first).max(0.0),
                 calls: None,
                 model: None,
