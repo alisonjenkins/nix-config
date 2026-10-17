@@ -180,6 +180,7 @@ in {
 
         modules.desktop = {
           enable = true;
+          antigravityCli.enable = false;
 
           power = {
             hibernateDelaySec = "1h";  # Hibernate after 1 hour of suspend

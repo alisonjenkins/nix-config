@@ -416,6 +416,15 @@ in
       '';
     };
 
+    antigravityCli.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Install Google's Antigravity CLI (`agy`, the Gemini CLI replacement)
+        for the delegation skill's Gemini delegate. Sign in once with `agy`.
+      '';
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -1496,6 +1505,7 @@ in
         unstable.jellycli
         zoom-us
       ]))
+      ++ (optionals cfg.antigravityCli.enable [ pkgs.unstable.antigravity-cli ])
       ++ (optionals cfg.gaming.enable (with pkgs; [
         boilr
         gamemode
