@@ -23,6 +23,12 @@ A home-manager module, `home/modules/rust-build-cache`
 - Installs sccache and cargo-sweep.
 - Runs a systemd user timer daily: `cargo-sweep sweep --recursive --hidden
   --time 1 ~/git`, at nice 19 with idle IO class.
+- Runs a second daily unit, `cargo-prune-external-targets`, for target dirs
+  that live outside any project (`sweep.externalTargetGlobs`: default
+  `~/.cache/*/target`, `~/git/.cm-shared-target*` and
+  `~/git/*/.cm-shared-target*`). It deletes a matching dir whole when no file
+  in it changed within `maxAgeDays`, and only if it holds the `CACHEDIR.TAG`
+  that cargo writes, so a non-cargo `target` dir is left alone.
 
 Why these settings:
 
@@ -38,7 +44,8 @@ Why these settings:
   on the measured project, see Evidence) and shares compiled crates between
   worktrees. Linking and other uncacheable steps still run every time.
 
-Related PRs: #643 (module and desktop wiring), #644 (default age 14 to 1 day).
+Related PRs: #643 (module and desktop wiring), #644 (default age 14 to 1 day),
+#645 (this record).
 
 ## Alternatives rejected
 
@@ -55,6 +62,16 @@ Related PRs: #643 (module and desktop wiring), #644 (default age 14 to 1 day).
 
 - Every project rebuilds once after the switch.
 - `line-tables-only` reduces the variable information a debugger can show.
+- cargo-sweep cannot see a target dir set through `CARGO_TARGET_DIR` outside
+  the project. Its recursive search needs a `Cargo.toml` next to a `target`,
+  and pointing it at the shared dir fails with `manifest path
+  .../Cargo.toml does not exist` (tested 2026-10-17). Agents did this twice:
+  `~/git/personal/.cm-shared-target-*` (invented per agent, no config names
+  it) and `~/.cache/parity-*/target` (a round brief told agents to build
+  under `~/.cache` because the `/` tmpfs was nearly full, and to delete the
+  target dir afterwards; they did not, and 9.2 GiB was left). The second unit
+  covers both. Agents should still use the default per-worktree `target`:
+  sccache gives them the sharing, and the sweep covers it.
 - The sweep trims inside `target` only. It does not remove abandoned
   worktrees, so those still need deleting by hand.
 - The module also applies to the other desktop hosts (framework, work laptop,
