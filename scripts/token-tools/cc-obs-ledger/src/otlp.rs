@@ -64,11 +64,56 @@ fn int_attribute(key: &str, value: u64) -> Value {
     json!({ "key": key, "value": { "intValue": value.to_string() } })
 }
 
-fn now_nanos() -> String {
+fn now_nanos_u64() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_nanos())
-        .to_string()
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX)
+        })
+}
+
+fn now_nanos() -> String {
+    now_nanos_u64().to_string()
+}
+
+/// One timestamp per request, in `requests` order: the request's own transcript time,
+/// or `now` plus its position when the record had none. Prometheus keeps one sample
+/// per series and timestamp and wants them increasing, so a request that does not
+/// come after the previous one of its series (same session, project, model, agent,
+/// agent id and turn) is moved to 1 ns after it.
+fn request_times(requests: &[Request], now: u64) -> Vec<u64> {
+    type SeriesKey<'a> = (
+        &'a str,
+        &'a str,
+        &'a str,
+        &'static str,
+        Option<&'a str>,
+        u64,
+    );
+    let mut last: BTreeMap<SeriesKey<'_>, u64> = BTreeMap::new();
+    requests
+        .iter()
+        .enumerate()
+        .map(|(index, request)| {
+            let own = request
+                .timestamp_ns
+                .unwrap_or_else(|| now.saturating_add(index as u64));
+            let key = (
+                request.session_id.as_str(),
+                request.project.as_str(),
+                request.model.as_str(),
+                agent_kind(request.sidechain),
+                request.agent_id.as_deref(),
+                request.turn,
+            );
+            let time = match last.get(&key) {
+                Some(prev) if own <= *prev => prev.saturating_add(1),
+                _ => own,
+            };
+            last.insert(key, time);
+            time
+        })
+        .collect()
 }
 
 /// OTLP `AGGREGATION_TEMPORALITY_DELTA`: each Stop hook sends only what is new.
@@ -297,12 +342,14 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
 /// gap since the previous request per request, a request counter, the skill listing
 /// and MCP servers when the parse saw them, and one log record per tool call.
 pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
-    let time = now_nanos();
+    let now = now_nanos_u64();
+    let time = now.to_string();
     let mut payloads = Vec::new();
     let mut metrics: Vec<Value> = parsed
         .requests
         .iter()
-        .flat_map(|request| request_metrics(request, &time))
+        .zip(request_times(&parsed.requests, now))
+        .flat_map(|(request, at)| request_metrics(request, &at.to_string()))
         .collect();
     metrics.extend(request_count_metric(&parsed.requests, &time));
     metrics.extend(skill_listing_metrics(parsed, &time));

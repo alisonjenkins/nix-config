@@ -68,6 +68,8 @@ pub struct Request {
     /// Seconds since the previous request of the same agent kind (main or subagent)
     /// in this session; `None` for the first request or when a timestamp is missing.
     pub seconds_since_prev: Option<u64>,
+    /// Unix nanoseconds of the request's transcript record; `None` when the record has no usable timestamp.
+    pub timestamp_ns: Option<u64>,
     /// Set by the `subagent` hook; `None` for the main agent.
     pub agent_id: Option<String>,
 }
@@ -231,11 +233,16 @@ pub struct Position {
     pub last_sub_ms: Option<u64>,
 }
 
-/// Unix milliseconds of an RFC 3339 transcript timestamp.
-fn timestamp_ms(value: &Value) -> Option<u64> {
+/// Unix nanoseconds of an RFC 3339 transcript timestamp.
+fn timestamp_ns(value: &Value) -> Option<u64> {
     let text = value.get("timestamp")?.as_str()?;
     let parsed = OffsetDateTime::parse(text, &Rfc3339).ok()?;
-    u64::try_from(parsed.unix_timestamp_nanos() / 1_000_000).ok()
+    u64::try_from(parsed.unix_timestamp_nanos()).ok()
+}
+
+/// Unix milliseconds of an RFC 3339 transcript timestamp.
+fn timestamp_ms(value: &Value) -> Option<u64> {
+    timestamp_ns(value).map(|ns| ns / 1_000_000)
 }
 
 fn read_attachment(value: &Value, parsed: &mut Parsed) {
@@ -518,6 +525,7 @@ fn read_assistant(
             usage,
             cache_creation_reported,
             seconds_since_prev,
+            timestamp_ns: timestamp_ns(value),
             agent_id: None,
         });
     }
