@@ -35,8 +35,9 @@ pub struct Call {
 }
 
 fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
-    let mut calls: Vec<Call> = ctx
-        .logs(&ctx.logql("cc-obs-ledger", "cc_obs_ledger.tool_call"))?
+    let records = ctx.logs(&ctx.logql("cc-obs-ledger", "cc_obs_ledger.tool_call"))?;
+    let received = records.len();
+    let mut calls: Vec<Call> = records
         .into_iter()
         .filter_map(|r| {
             let field = |name: &str| r.fields.get(name).cloned();
@@ -53,6 +54,12 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             })
         })
         .collect();
+    let skipped = received.saturating_sub(calls.len());
+    if skipped > 0 {
+        ctx.note_gap(format!(
+            "repeats: {skipped} of {received} tool_call records lacked session_id, tool_name or input_hash and were skipped"
+        ));
+    }
     calls.sort_by(|a, b| (&a.session, a.turn, a.seq).cmp(&(&b.session, b.turn, b.seq)));
     Ok(calls)
 }

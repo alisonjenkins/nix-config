@@ -223,6 +223,27 @@ fn min_count_boundaries_are_inclusive_and_floor_at_two() {
 }
 
 #[test]
+fn records_without_input_hash_are_reported_as_a_gap() {
+    let recs = [
+        Rec("s1", "m", "Read", "a", "pa", 10, 0, 0),
+        Rec("s1", "m", "Read", "a", "pa", 10, 1, 1),
+        Rec("s1", "m", "Read", "a", "pa", 10, 2, 2),
+    ];
+    let mut body: Value = serde_json::from_str(&loki(&recs)).unwrap();
+    body["data"]["result"][2]["values"][0][2]["structuredMetadata"]
+        .as_object_mut()
+        .unwrap()
+        .remove("input_hash");
+    let out = run_repeats(body.to_string(), &[]);
+    assert_eq!(out["calls_analysed"], json!(2), "{out}");
+    let gaps = out["gaps"].to_string();
+    assert!(
+        gaps.contains("input_hash"),
+        "dropped record not reported: {out}"
+    );
+}
+
+#[test]
 fn equal_values_are_ordered_by_key() {
     let recs = [
         Rec("s1", "m", "Zed", "a", "pa", 10, 0, 0),
