@@ -269,6 +269,9 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     if let Some(prompt_id) = &call.prompt_id {
         attrs.extend(attributes([("prompt_id", prompt_id.clone())].into_iter()));
     }
+    if let Some(shape) = &call.command_shape {
+        attrs.extend(attributes([("command_shape", shape.clone())].into_iter()));
+    }
     attrs.push(int_attribute("turn", call.turn));
     attrs.push(int_attribute("seq", call.seq));
     attrs.push(int_attribute("input_bytes", call.input_bytes));

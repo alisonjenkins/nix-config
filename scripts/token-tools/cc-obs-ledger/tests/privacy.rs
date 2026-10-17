@@ -32,6 +32,38 @@ fn no_transcript_text_or_tool_input_leaves_the_machine() {
 }
 
 #[test]
+fn a_bash_command_leaves_only_its_shape() {
+    let command = "cd /work/proj/CANARY-dir && GH_TOKEN=ghp_SECRET cargo test --password=hunter2 https://x.y/z | tail -5";
+    let line = serde_json::json!({
+        "type": "assistant", "sessionId": "sess-1", "requestId": "req-B", "cwd": "/work/proj",
+        "isSidechain": false, "timestamp": "2026-10-09T10:00:02.000Z",
+        "message": {"id": "msg-B", "role": "assistant", "model": "m", "content": [
+            {"type": "tool_use", "id": "tool-b", "name": "Bash", "input": {"command": command}}
+        ], "usage": {"input_tokens": 1, "output_tokens": 1}}
+    })
+    .to_string();
+    let parsed = parse(&line, &ToolHasher::new(b"k".to_vec()));
+    let text = turn_payloads(&Resource::new("ali-desktop", &[]), &parsed)
+        .iter()
+        .map(|p| p.body.to_string())
+        .collect::<String>();
+    assert!(
+        text.contains("command_shape") && text.contains("cargo test | tail [cd][env]"),
+        "{text}"
+    );
+    for secret in [
+        "ghp_SECRET",
+        "hunter2",
+        "x.y",
+        "CANARY-dir",
+        "/work/proj",
+        "--password",
+    ] {
+        assert!(!text.contains(secret), "payloads leak {secret:?}");
+    }
+}
+
+#[test]
 fn the_payloads_do_carry_the_figures_they_exist_for() {
     let (payloads, text) = everything_sent(&Resource::new("ali-desktop", &[]));
     assert!(!payloads.is_empty());

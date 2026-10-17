@@ -93,6 +93,8 @@ pub struct ToolCall {
     pub input_prefix_hash: String,
     pub result_bytes: Option<u64>,
     pub prompt_id: Option<String>,
+    /// Fixed-vocabulary label of a Bash command; never its text.
+    pub command_shape: Option<String>,
 }
 
 #[derive(Debug, Default)]
@@ -496,6 +498,10 @@ fn read_assistant(
             input_prefix_hash: hasher.hash(prefix),
             result_bytes: None,
             prompt_id: None,
+            command_shape: crate::shape::tool_shape(
+                name,
+                item.pointer("/input/command").and_then(Value::as_str),
+            ),
         });
         counters.seq = counters.seq.saturating_add(1);
     }
