@@ -112,6 +112,49 @@ fn sequences_do_not_cross_agents() {
     );
 }
 
+/// One clean case per pattern, each in its own session.
+fn one_of_each() -> Vec<Rec> {
+    vec![
+        Rec("s1", "m", "Read", "a", "pa", 1_000, 1, 0),
+        Rec("s1", "m", "Read", "a", "pa", 1_000, 2, 1),
+        Rec("s2", "m", "Grep", "g1", "pg", 100, 1, 0),
+        Rec("s2", "m", "Grep", "g2", "pg", 100, 2, 1),
+        Rec("s3", "m", "Glob", "l1", "pl1", 30_000, 1, 0),
+        Rec("s3", "m", "Glob", "l2", "pl2", 1_000, 2, 1),
+        Rec("s4", "m", "Edit", "e1", "pe1", 10, 1, 0),
+        Rec("s4", "m", "Write", "w1", "pw1", 10, 2, 1),
+        Rec("s4", "m", "Bash", "b1", "pb1", 10, 3, 2),
+        Rec("s4", "m", "Edit", "e2", "pe2", 10, 4, 3),
+        Rec("s4", "m", "Write", "w2", "pw2", 10, 5, 4),
+        Rec("s4", "m", "Bash", "b2", "pb2", 10, 6, 5),
+    ]
+}
+
+#[test]
+fn repeats_value_and_calls_semantics_per_pattern() {
+    let out = run_repeats(loki(&one_of_each()), &[]);
+    // value is calls saved if the pattern went away; calls is how many times the
+    // pattern was seen (group size, pair, or sequence occurrences).
+    let expect = [
+        ("identical:Read", 1, 2),
+        ("near_identical:Grep", 1, 2),
+        ("large_then_narrow:Glob", 1, 2),
+        // Two occurrences of a triple: one tool replacing it saves 2 calls each.
+        ("sequence:Edit>Write>Bash", 4, 2),
+    ];
+    for (key, value, calls) in expect {
+        let r = row(&out, key);
+        assert_eq!(r["value"], json!(value), "{key} value in {out}");
+        assert_eq!(r["calls"], json!(calls), "{key} calls in {out}");
+    }
+    assert_eq!(
+        rows(&out)[0]["key"],
+        json!("sequence:Edit>Write>Bash"),
+        "rows rank by calls saved: {out}"
+    );
+    assert!(out["value_means"].is_string(), "{out}");
+}
+
 #[test]
 fn large_then_narrow_ignores_unrelated_next_call() {
     let recs = [

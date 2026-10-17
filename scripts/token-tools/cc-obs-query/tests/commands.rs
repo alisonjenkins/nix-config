@@ -251,7 +251,8 @@ fn repeats_finds_each_pattern_without_exposing_hashes() {
     assert_eq!(identical["evidence"], json!("tool:Read"));
     assert_eq!(row(&out, "near_identical:Grep")["value"], json!(1));
     assert_eq!(row(&out, "large_then_narrow:Read")["value"], json!(1));
-    assert_eq!(row(&out, "sequence:Read>Read>Grep")["value"], json!(2));
+    // two occurrences x (3 - 1) calls saved
+    assert_eq!(row(&out, "sequence:Read>Read>Grep")["value"], json!(4));
     assert!(!run.out.contains("h_a") && !run.out.contains("p_g"));
 }
 

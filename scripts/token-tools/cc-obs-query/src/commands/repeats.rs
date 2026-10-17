@@ -11,6 +11,11 @@ use crate::error::Error;
 /// A result at least this big counts as "large" for the large-then-narrow pattern.
 const LARGE_RESULT_BYTES: u64 = 20_000;
 const SEQUENCE_LEN: usize = 3;
+/// Rows from every pattern are ranked together by `value`, so it has one unit:
+/// tool calls that would not have been made without the pattern. `calls` is the size
+/// of the evidence: calls in the group (identical, near_identical), 2 for a
+/// large_then_narrow pair, or non-overlapping occurrences of a sequence.
+const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first, near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
 const NO_RECORDS: &str = "no cc_obs_ledger.tool_call records in the window";
 
 #[derive(Debug, Clone)]
@@ -240,7 +245,7 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
             json!({
                 "key": key,
                 "pattern": "sequence",
-                "value": count,
+                "value": count.saturating_mul(SEQUENCE_LEN.saturating_sub(1) as u64),
                 "calls": count,
                 "detail": { "occurrences": count, "calls_covered": count.saturating_mul(SEQUENCE_LEN as u64) },
                 "sessions": sessions.len(),
@@ -249,7 +254,9 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
     }
     rows.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
     let total = calls.len() as f64;
-    let mut report = Report::new("repeats").with("calls_analysed", num(total));
+    let mut report = Report::new("repeats")
+        .with("calls_analysed", num(total))
+        .with("value_means", json!(VALUE_MEANS));
     report.rows = rows.into_iter().map(|(_, _, row)| row).collect();
     Ok(report)
 }
