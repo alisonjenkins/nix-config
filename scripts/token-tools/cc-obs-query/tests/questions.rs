@@ -64,16 +64,14 @@ fn mcp_question_does_not_claim_idle_servers() {
     assert!(!title.contains("idle"), "{title}");
 }
 
-/// `top fixed` reads the session-start snapshot, not a per-request share.
+/// A title about each request needs the per-request share, not the session-start snapshot.
 #[test]
-fn fixed_context_question_names_the_session_start_snapshot() {
+fn fixed_context_question_asks_the_per_request_share() {
     let pack = Pack::load(&shipped_pack()).unwrap();
     let title = title_of(&pack, "fixed-context-share");
-    assert!(command_of(&pack, "fixed-context-share").contains("top fixed"));
-    assert!(
-        !title.contains("each request") && !title.contains("every request"),
-        "{title}"
-    );
+    let command = command_of(&pack, "fixed-context-share");
+    assert!(command.contains("top fixed --by share"), "{command}");
+    assert!(title.contains("each request"), "{title}");
 }
 
 /// The ledger counts a request with a match once, so the ratio is requests with a

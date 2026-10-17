@@ -37,7 +37,7 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 | repeat-calls | Identical or near-identical calls in a session; big result then narrower query | A tool that does the narrow query directly |
 | skills-loaded-unused | Activated skills ranked by tokens (installed-but-never-activated is not measurable yet) | Shorten the description of a heavy skill, drop it |
 | mcp-idle-servers | MCP servers ranked by the usage label (idle servers are not measurable yet) | Remove or defer a heavy server |
-| fixed-context-share | Fixed tokens at session start by component (instructions, listings, memory index) | Trim instruction files, move procedure into skills |
+| fixed-context-share | Share of the average request that is re-read fixed context (`total` row), and each component's part of it (instructions, listings, memory index) | Trim instruction files, move procedure into skills |
 | cache-hit-low-sessions | Sessions with a low cache hit ratio | Find what invalidates the cache (editing early context, timeouts) |
 | subagent-overhead | Sub-agent types using the most tokens | Do the task inline or use a lighter agent type |
 | memory-injected-ignored | Recall services matching on under half of requests | Raise the recall floor |

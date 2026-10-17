@@ -15,7 +15,7 @@ hard-coded.
 
 | Command | Purpose | Key flags |
 |---|---|---|
-| `cc-obs-query top <category>` | Rank token consumers. Categories: `tool`, `skill`, `mcp`, `subagent`, `memory`, `fixed`, `model`, `project`, `session` | `--since 7d`, `--by cost\|tokens` (tokens exclude cache read and creation), `--by cache-hit`, `--by compactions`, `--by requests` and `--by context-growth` (session only; the last two list sub-agents as `<id>/subagent`), `--by hit-rate` (memory only), `--limit`, `--offset`, `--max-bytes`, `--format` |
+| `cc-obs-query top <category>` | Rank token consumers. Categories: `tool`, `skill`, `mcp`, `subagent`, `memory`, `fixed`, `model`, `project`, `session` | `--since 7d`, `--by cost\|tokens` (tokens exclude cache read and creation), `--by cache-hit`, `--by compactions`, `--by requests` and `--by context-growth` (session only; the last two list sub-agents as `<id>/subagent`), `--by hit-rate` (memory only), `--by share` (fixed only: average fixed context over average request context, `total` row plus components), `--limit`, `--offset`, `--max-bytes`, `--format` |
 | `cc-obs-query tool <name>` | Calls, mean and max result size, share of tokens, repeat rate | `--since` |
 | `cc-obs-query session <id>` | Context per turn, cache hit ratio, fixed vs new tokens | `--detail` adds per-turn rows |
 | `cc-obs-query repeats` | Near-identical calls within a session; large result then narrowing query; frequent call sequences | `--since`, `--min-count` |

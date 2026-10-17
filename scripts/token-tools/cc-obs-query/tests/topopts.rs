@@ -167,6 +167,84 @@ fn requests_and_context_growth_belong_to_session_only() {
     }
 }
 
+fn fixed_rules() -> Vec<(&'static str, String)> {
+    with_own(vec![
+        (
+            "avg(avg_over_time(cc_obs_ledger_context_tokens",
+            vector(&[(&[], "100000")]),
+        ),
+        (
+            "cc_obs_ledger_fixed_context_tokens",
+            vector(&[
+                (&[("component", "total")], "30000"),
+                (&[("component", "instructions")], "20000"),
+                (&[("component", "skills_listing")], "10000"),
+            ]),
+        ),
+    ])
+}
+
+#[test]
+fn top_fixed_by_share_divides_fixed_by_the_average_request_context() {
+    let fake = serve(fixed_rules());
+    let run = cli(&fake, &["top", "fixed", "--by", "share"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(keys(&out), vec!["total", "instructions", "skills_listing"]);
+    assert_eq!(row(&out, "total")["value"], json!(0.3));
+    assert_eq!(row(&out, "instructions")["value"], json!(0.2));
+    assert_eq!(row(&out, "skills_listing")["value"], json!(0.1));
+    assert!(
+        row(&out, "total").get("share").is_none(),
+        "a ratio has no share of a sum"
+    );
+}
+
+#[test]
+fn top_fixed_by_share_without_request_context_is_unavailable() {
+    let mut rules = vec![(
+        "avg(avg_over_time(cc_obs_ledger_context_tokens",
+        vector(&[]),
+    )];
+    rules.extend(fixed_rules());
+    let out = cli(&serve(rules), &["top", "fixed", "--by", "share"]).json();
+    assert_eq!(out["value"], json!(null));
+    assert!(
+        out["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("cc_obs_ledger_context_tokens"),
+        "{out}"
+    );
+}
+
+#[test]
+fn share_belongs_to_fixed_only() {
+    let out = cli(&serve(with_own(vec![])), &["top", "model", "--by", "share"]).json();
+    assert!(
+        out["unavailable"].as_str().unwrap().contains("fixed"),
+        "{out}"
+    );
+}
+
+#[test]
+fn fixed_context_share_question_keeps_shares_at_or_above_five_percent() {
+    let mut rules = vec![(
+        "cc_obs_ledger_fixed_context_tokens",
+        vector(&[
+            (&[("component", "total")], "30000"),
+            (&[("component", "instructions")], "28000"),
+            (&[("component", "memory_index")], "2000"),
+        ]),
+    )];
+    rules.push((
+        "avg(avg_over_time(cc_obs_ledger_context_tokens",
+        vector(&[(&[], "100000")]),
+    ));
+    let question = shipped_question("fixed-context-share", rules);
+    assert_eq!(row_keys(&question), vec!["total", "instructions"]);
+}
+
 fn shipped_pack_text() -> String {
     std::fs::read_to_string(
         std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))

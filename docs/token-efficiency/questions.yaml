@@ -43,14 +43,13 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: fixed-context-share
-    # The share of every request that is re-read fixed context needs fixed total over
-    # cc_obs_ledger_context_tokens in one query (README "Not yet answerable"); this lists the
-    # session-start snapshot, so read the component rows and ignore the `total` row's share.
-    title: How big is the fixed context at session start, by component?
-    signals: [cc_obs_ledger_fixed_context_tokens]
-    query: { command: "cc-obs-query top fixed --by tokens" }
+    # `--by share` divides the average fixed context by the average request context; the
+    # `total` row is the overall share, the other rows are its components.
+    title: How much of each request is fixed context?
+    signals: [cc_obs_ledger_fixed_context_tokens, cc_obs_ledger_context_tokens]
+    query: { command: "cc-obs-query top fixed --by share" }
     decision_kind: configure | dismiss
-    threshold: { min_share: 0.05 }
+    threshold: { min_value: 0.05 }
   - id: cache-hit-low-sessions
     title: Which sessions have a low prompt-cache hit ratio?
     signals: [cc_obs_ledger_cache_hit_ratio, claude_code.token.usage]

@@ -44,6 +44,9 @@ pub enum By {
     /// `session` only: largest per-turn context minus the first turn's, per
     /// session and agent kind, most first
     ContextGrowth,
+    /// `fixed` only: share of the average request's context that is fixed context,
+    /// as `total` and per component
+    Share,
 }
 
 impl Category {
@@ -63,7 +66,10 @@ impl By {
 
     /// Ranks a ratio, where a share of the total means nothing.
     fn is_ratio(self) -> bool {
-        matches!(self, By::CacheHit | By::HitRate | By::ContextGrowth)
+        matches!(
+            self,
+            By::CacheHit | By::HitRate | By::ContextGrowth | By::Share
+        )
     }
 }
 
@@ -446,6 +452,32 @@ fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
     Ok(ranked_or_none("per-turn context growth", rows))
 }
 
+/// Fixed context re-read on every request, over the average request's context:
+/// `avg(fixed{component})` over `avg(context_tokens)`. The `total` row is the
+/// overall share; the component rows are shares of the same denominator, so
+/// they add up to it and `total` is not counted among them.
+fn rank_fixed_share(ctx: &Ctx) -> Result<Ranked, Error> {
+    let context = ctx.scalar(&format!(
+        "avg(avg_over_time({}[{}]))",
+        ctx.selector(CONTEXT, &[]),
+        ctx.window.prom()
+    ))?;
+    let Some(context) = context.filter(|c| *c > 0.0) else {
+        return Ok(Ranked::Unavailable(format!(
+            "no {CONTEXT} samples in the window, so there is no request size to divide by"
+        )));
+    };
+    let mut rows = rows_from(ctx, "avg", FIXED, &["component"], &[], "avg_over_time")?;
+    for row in &mut rows {
+        let fixed = row.value;
+        row.value = fixed / context;
+        row.detail.insert("fixed_tokens".to_owned(), num(fixed));
+        row.detail
+            .insert("mean_request_context_tokens".to_owned(), num(context));
+    }
+    Ok(ranked_or_none("fixed context", rows))
+}
+
 fn rank_hit_rate(ctx: &Ctx) -> Result<Ranked, Error> {
     let requests = rows_from(ctx, "sum", RECALL_REQUESTS, &["service"], &[], "increase")?;
     let hits: BTreeMap<String, f64> =
@@ -487,6 +519,8 @@ pub fn rank(ctx: &Ctx, category: Category, by: By, min_requests: u64) -> Result<
         (By::Requests, _) => return Ok(wrong_category(by, "session")),
         (By::ContextGrowth, Category::Session) => return rank_context_growth(ctx),
         (By::ContextGrowth, _) => return Ok(wrong_category(by, "session")),
+        (By::Share, Category::Fixed) => return rank_fixed_share(ctx),
+        (By::Share, _) => return Ok(wrong_category(by, "fixed")),
         _ => {}
     }
     let name = category.name();
