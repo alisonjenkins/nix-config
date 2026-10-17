@@ -111,3 +111,28 @@ fn sequences_do_not_cross_agents() {
         "main and subagent calls interleaved into one sequence: {out}"
     );
 }
+
+#[test]
+fn large_then_narrow_ignores_unrelated_next_call() {
+    let recs = [
+        Rec("s1", "main", "Read", "a", "pa", 30_000, 1, 0),
+        Rec("s1", "main", "Bash", "x", "px", 100, 1, 1),
+        Rec("s1", "main", "Grep", "y", "py", 100, 2, 2),
+        Rec("s1", "main", "Read", "b", "pb", 1_000, 9, 3),
+    ];
+    let out = run_repeats(loki(&recs), &[]);
+    assert!(
+        !has(&out, "large_then_narrow:Read"),
+        "a Read three calls later on another file was read as a narrowing: {out}"
+    );
+}
+
+#[test]
+fn large_then_narrow_flags_the_immediately_following_narrower_call() {
+    let recs = [
+        Rec("s1", "main", "Read", "a", "pa", 30_000, 1, 0),
+        Rec("s1", "main", "Read", "b", "pb", 1_000, 1, 1),
+    ];
+    let out = run_repeats(loki(&recs), &[]);
+    assert_eq!(row(&out, "large_then_narrow:Read")["value"], json!(1));
+}

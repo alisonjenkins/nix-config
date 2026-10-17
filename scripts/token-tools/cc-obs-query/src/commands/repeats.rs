@@ -152,18 +152,15 @@ fn near_identical(calls: &[&Call], min_count: u64, out: &mut Findings) {
     }
 }
 
-/// A large result followed by the next call to the same tool that is different and
-/// returned less: the first call asked for more than it needed.
+/// A large result immediately followed, by the same agent, by a different call to the
+/// same tool that returned less: the first call asked for more than it needed. A
+/// later call to the same tool with other work in between is not a narrowing.
 fn large_then_narrow(calls: &[&Call], out: &mut Findings) {
-    for (index, call) in calls.iter().enumerate() {
+    for (call, next) in calls.iter().zip(calls.iter().skip(1)) {
         let Some(large) = call.result_bytes.filter(|b| *b >= LARGE_RESULT_BYTES) else {
             continue;
         };
-        let next = calls
-            .iter()
-            .skip(index.saturating_add(1))
-            .find(|c| c.tool == call.tool);
-        if let Some(next) = next {
+        if next.tool == call.tool {
             let narrower = next.result_bytes.is_some_and(|b| b < large);
             if narrower && next.input_hash != call.input_hash {
                 out.entry(("large_then_narrow", call.tool.clone()))
@@ -203,11 +200,11 @@ pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
     for session_calls in by_session(&calls).values() {
         identical(session_calls, min_count, &mut findings);
         near_identical(session_calls, min_count, &mut findings);
-        large_then_narrow(session_calls, &mut findings);
     }
     // A subagent's calls are interleaved with the main agent's by (turn, seq) and its
     // seq may restart, so sequences are read per (session, agent), never across them.
     for stream in by_agent(&calls).values() {
+        large_then_narrow(stream, &mut findings);
         sequences(stream, &mut seqs);
     }
     let mut rows: Vec<(u64, String, serde_json::Value)> = Vec::new();
