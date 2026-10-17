@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use cc_obs_query::backend::{Backend, Endpoints, LogFetch};
 use cc_obs_query::error::Error;
+use cc_obs_query::window;
 use serde_json::{json, Value};
 
 /// A one-handler HTTP server: `handler` gets the percent-decoded request target
@@ -171,6 +172,38 @@ fn prom_instant_drops_non_finite_samples() {
     let samples = backend(&base).prom_instant("m", None).unwrap();
     assert_eq!(samples.len(), 1);
     assert_eq!(samples[0].labels["k"], "ok");
+}
+
+#[test]
+fn since_with_a_multibyte_unit_is_an_error_not_a_panic() {
+    for text in ["7é", "é", "7日", "日日"] {
+        assert!(window::parse_since(text).is_err(), "{text}");
+    }
+}
+
+#[test]
+fn since_that_overflows_is_an_error() {
+    assert!(window::parse_since("99999999999999999w").is_err());
+    assert!(window::parse_since("99999999999999999999999d").is_err());
+}
+
+#[test]
+fn a_huge_but_representable_since_does_not_panic() {
+    let w = window::parse_since("9999999999999w").unwrap();
+    let _ = (w.start_unix(), w.end_unix(), w.prom());
+}
+
+#[test]
+fn range_with_equal_dates_is_rejected() {
+    assert!(window::parse_range("--a", "2026-09-01..2026-09-01").is_err());
+}
+
+#[test]
+fn dates_without_zero_padding_are_accepted() {
+    assert_eq!(
+        window::parse_until("2026-9-1").unwrap(),
+        window::parse_until("2026-09-01").unwrap()
+    );
 }
 
 fn param(target: &str, name: &str) -> Option<String> {
