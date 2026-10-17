@@ -126,3 +126,78 @@ fn session_main_and_subagent_in_one_turn_do_not_collide() {
         );
     }
 }
+
+fn recall_with(outcomes: &[(&str, &str)], hits: &str, tokens: &str) -> Vec<(&'static str, String)> {
+    let by_outcome: Vec<(Value, &str)> = outcomes
+        .iter()
+        .map(|(o, v)| (json!({"outcome": o}), *v))
+        .collect();
+    with_own(vec![
+        ("by (outcome)", vector(&by_outcome)),
+        (
+            "sum(increase(recall_hits_total",
+            vector(&[(json!({}), hits)]),
+        ),
+        (
+            "sum(increase(recall_tokens_injected_total",
+            vector(&[(json!({}), tokens)]),
+        ),
+    ])
+}
+
+#[test]
+fn recall_counts_are_whole_numbers() {
+    // increase() extrapolates, so a window of integer counters yields fractions.
+    let fake = serve(recall_with(
+        &[("success", "79.6"), ("empty", "15.2"), ("error", "5.1")],
+        "59.7",
+        "24000.4",
+    ));
+    let out = cli(&fake, &["recall"]).json();
+    let value = |key: &str| common::row(&out, key)["value"].clone();
+    assert_eq!(value("requests"), json!(100), "{out}");
+    assert_eq!(value("empty_requests"), json!(15), "{out}");
+    assert_eq!(value("failures"), json!(5), "{out}");
+    assert_eq!(value("matches_used"), json!(60), "{out}");
+}
+
+#[test]
+fn recall_denominator_is_all_requests_including_empty_and_error() {
+    // Pinned, not endorsed: specs/007 does not say what "per prompt" divides by.
+    let fake = serve(recall_with(
+        &[("success", "50"), ("empty", "30"), ("error", "20")],
+        "40",
+        "5000",
+    ));
+    let out = cli(&fake, &["recall"]).json();
+    assert_eq!(
+        common::row(&out, "injected_tokens_per_prompt")["value"],
+        json!(50),
+        "{out}"
+    );
+}
+
+#[test]
+fn recall_error_only_window_reports_failures_and_no_hits() {
+    let fake = serve(recall_with(&[("error", "7")], "0", "0"));
+    let out = cli(&fake, &["recall"]).json();
+    let value = |key: &str| common::row(&out, key)["value"].clone();
+    assert_eq!(value("requests"), json!(7), "{out}");
+    assert_eq!(value("failures"), json!(7), "{out}");
+    assert_eq!(value("empty_requests"), json!(0), "{out}");
+    assert_eq!(value("injected_tokens_per_prompt"), json!(0), "{out}");
+}
+
+#[test]
+fn recall_empty_outcome_is_counted_separately() {
+    let fake = serve(recall_with(
+        &[("success", "10"), ("empty", "4")],
+        "10",
+        "100",
+    ));
+    let out = cli(&fake, &["recall"]).json();
+    let value = |key: &str| common::row(&out, key)["value"].clone();
+    assert_eq!(value("empty_requests"), json!(4), "{out}");
+    assert_eq!(value("failures"), json!(0), "{out}");
+    assert_eq!(value("requests"), json!(14), "{out}");
+}

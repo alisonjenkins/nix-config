@@ -20,16 +20,18 @@ pub fn run(ctx: &Ctx) -> Result<Report, Error> {
             "no recall_requests_total samples in the window",
         ));
     }
+    // `increase()` extrapolates to the window edges, so counters come back
+    // fractional; events are whole, so each count is rounded.
     let count = |outcome: &str| -> f64 {
         by_outcome
             .iter()
             .filter(|s| s.labels.get("outcome").is_some_and(|o| o == outcome))
-            .map(|s| s.value)
+            .map(|s| s.value.round())
             .sum()
     };
-    let requests: f64 = by_outcome.iter().map(|s| s.value).sum();
-    let hits = ctx.increase_sum(RECALL_HITS)?;
-    let injected = ctx.increase_sum(RECALL_TOKENS)?;
+    let requests: f64 = by_outcome.iter().map(|s| s.value.round()).sum();
+    let hits = ctx.increase_sum(RECALL_HITS)?.map(f64::round);
+    let injected = ctx.increase_sum(RECALL_TOKENS)?.map(f64::round);
     let mut report = Report::new("recall");
     report.rows = vec![
         row("requests", figure(Some(requests), "")),
