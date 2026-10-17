@@ -12,7 +12,7 @@ let
 
   # Read via `args ... or` for the same reason as hasFable below.
   cheapDelegate = args.cheapDelegate or "local";
-  modelRouting = assert lib.assertOneOf "cheapDelegate" cheapDelegate [ "copilot" "local" ];
+  modelRouting = assert lib.assertOneOf "cheapDelegate" cheapDelegate [ "copilot" "gemini" "local" ];
     mandates.mkModelRouting cheapDelegate;
 
   # Fable is unavailable on the work account. A `model: fable` agent there does

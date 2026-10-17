@@ -26,7 +26,8 @@
 
   # cheapDelegate names the host's first rung below the main loop: "copilot"
   # on work machines, where the Claude allowance is the one worth
-  # conserving, "local" everywhere else.
+  # conserving, "gemini" on personal desktops and laptops that have the
+  # Antigravity CLI, "local" everywhere else.
   mkModelRouting = cheapDelegate:
     let
       cheapRung = {
@@ -41,6 +42,20 @@
             single self-contained step still goes to it. Use a "haiku"
             sub-agent only when the delegate reports exhausted credits or the
             step needs MCP tools or context from this session.
+        '';
+        gemini = ''
+          - Cheapest rung on this machine: Google's Antigravity CLI (Gemini
+            models) through the `delegation` skill's
+            `scripts/delegate-to-gemini.sh`. Claude credits are low and the
+            Google quota is separate, so offload to it by default: code from a
+            clear spec (`write-workdir`, review the diff), tests, config
+            edits, drafts, first-pass reviews, repo and log sweeps, research
+            summaries. The one-call exception above does not apply to it; a
+            single self-contained step still goes to it. Use a "haiku"
+            sub-agent only when it reports a missing sign-in or exhausted
+            quota, or the step needs MCP tools or context from this session;
+            a live local model (`list-local-profiles.sh`) is the next
+            fallback for text-only work.
         '';
         local = ''
           - Cheapest rung on this machine: a local model through the
