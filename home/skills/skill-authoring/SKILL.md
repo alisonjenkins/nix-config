@@ -54,7 +54,7 @@ to read and when:
 
 | Working in | Read |
 |---|---|
-| `*.rs`, `Cargo.toml` | [languages/rust.md](languages/rust.md) |
+| `*.rs`, `Cargo.toml` | `[languages/rust.md](languages/rust.md)` |
 
 This is the whole disclosure mechanism, and why the parent's description must
 carry trigger keywords for **every** child: only the parent is in the listing,
