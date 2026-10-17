@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Stand-in for the real `agy` CLI, driven by FAKE_AGY_MODE, so tests don't hit
+# the Google API. Records each call's args to FAKE_AGY_CALLS (one per line,
+# tab-separated) and emits scripted output and exit codes per mode.
+set -euo pipefail
+
+task=""
+model=""
+mode=""
+effort=""
+skip_perms="no"
+add_dirs=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p) task="$2"; shift 2 ;;
+    --model) model="$2"; shift 2 ;;
+    --mode) mode="$2"; shift 2 ;;
+    --effort) effort="$2"; shift 2 ;;
+    --print-timeout) shift 2 ;;
+    --dangerously-skip-permissions) skip_perms="yes"; shift ;;
+    --add-dir) add_dirs+=("$2"); shift 2 ;;
+    *) echo "fake-agy: unexpected arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+if [[ -n "${FAKE_AGY_CALLS:-}" ]]; then
+  add_dir_joined="$(IFS=,; echo "${add_dirs[*]:-}")"
+  printf 'task=%s\tmodel=%s\tmode=%s\tskip_perms=%s\teffort=%s\tadd_dir=%s\n' \
+    "$task" "$model" "$mode" "$skip_perms" "$effort" "$add_dir_joined" >>"$FAKE_AGY_CALLS"
+fi
+
+case "${FAKE_AGY_MODE:-ok}" in
+  ok)
+    echo "response for model=$model: $task"
+    ;;
+  flash-medium-rejected)
+    if [[ "$model" == "gemini-3.8-flash-medium" ]]; then
+      echo "ERROR: unknown model $model" >&2
+      exit 1
+    fi
+    echo "response for model=$model: $task"
+    ;;
+  unauthenticated)
+    echo "authentication required" >&2
+    exit 1
+    ;;
+  unrelated-failure)
+    echo "Error: something else went wrong" >&2
+    exit 1
+    ;;
+  outage-persistent)
+    echo "Error: network error: connection reset by peer" >&2
+    exit 1
+    ;;
+  quota-exhausted)
+    echo "RESOURCE_EXHAUSTED: usage limit reached" >&2
+    exit 1
+    ;;
+  *)
+    echo "fake-agy: unknown FAKE_AGY_MODE" >&2
+    exit 2
+    ;;
+esac
