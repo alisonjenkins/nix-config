@@ -65,6 +65,19 @@ fn mcp_question_does_not_claim_idle_servers() {
 }
 
 /// `top fixed` reads the session-start snapshot, not a per-request share.
+#[test]
+fn fixed_context_question_names_the_session_start_snapshot() {
+    let pack = Pack::load(&shipped_pack()).unwrap();
+    let title = title_of(&pack, "fixed-context-share");
+    assert!(command_of(&pack, "fixed-context-share").contains("top fixed"));
+    assert!(
+        !title.contains("each request") && !title.contains("every request"),
+        "{title}"
+    );
+}
+
+/// The ledger counts a request with a match once, so the ratio is requests with a
+/// match, not matches used.
 fn digest_questions(pack_yaml: &str, rules: Vec<(&'static str, String)>) -> Vec<Value> {
     let dir = tempfile::tempdir().unwrap();
     let pack = write_pack(dir.path(), pack_yaml);

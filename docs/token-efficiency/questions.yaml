@@ -43,8 +43,11 @@ questions:
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
   - id: fixed-context-share
-    title: How much of each request is fixed context?
-    signals: [cc_obs_ledger_fixed_context_tokens, cc_obs_ledger_context_tokens]
+    # The share of every request that is re-read fixed context needs fixed total over
+    # cc_obs_ledger_context_tokens in one query (README "Not yet answerable"); this lists the
+    # session-start snapshot, so read the component rows and ignore the `total` row's share.
+    title: How big is the fixed context at session start, by component?
+    signals: [cc_obs_ledger_fixed_context_tokens]
     query: { command: "cc-obs-query top fixed --by tokens" }
     decision_kind: configure | dismiss
     threshold: { min_share: 0.05 }
