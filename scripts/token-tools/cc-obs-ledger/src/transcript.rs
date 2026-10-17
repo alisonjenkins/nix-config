@@ -97,6 +97,8 @@ pub struct ToolCall {
     pub prompt_id: Option<String>,
     /// Set by the `subagent` hook; `None` for the main agent.
     pub agent_id: Option<String>,
+    /// Fixed-vocabulary label of a Bash command; never its text.
+    pub command_shape: Option<String>,
 }
 
 impl Parsed {
@@ -554,6 +556,10 @@ fn read_assistant(
             result_bytes: None,
             prompt_id: None,
             agent_id: None,
+            command_shape: crate::shape::tool_shape(
+                name,
+                item.pointer("/input/command").and_then(Value::as_str),
+            ),
         });
         counters.seq = counters.seq.saturating_add(1);
     }
