@@ -11,8 +11,6 @@ retire:
   - claude_code.api_request
   - claude_code.api_error
   - claude_code.hook_execution.additional_context_chars
-  - recall_tokens_injected_total
-  - claude_code.cost.usage
   - cc_obs_ledger.session
 questions:
   - id: tool-result-size
@@ -82,3 +80,27 @@ questions:
     signals: [recall_requests_total, recall_latency_seconds]
     query: { command: "cc-obs-query recall" }
     decision_kind: build-tool | configure | dismiss
+  - id: costly-sessions
+    title: Which sessions cost the most?
+    signals: [claude_code.cost.usage]
+    query: { command: "cc-obs-query top session --by cost" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.05 }
+  - id: model-spend
+    title: Which models account for the most spend?
+    signals: [claude_code.cost.usage]
+    query: { command: "cc-obs-query top model --by cost" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.05 }
+  - id: delegation-tier-fit
+    title: Which sub-agent types spend the most, and on which model?
+    signals: [claude_code.cost.usage]
+    query: { command: "cc-obs-query top subagent --by cost" }
+    decision_kind: configure | dismiss
+    threshold: { min_share: 0.03 }
+  - id: memory-injection-cost
+    title: Which memory services inject the most tokens?
+    signals: [recall_tokens_injected_total]
+    query: { command: "cc-obs-query top memory --by tokens" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_share: 0.05 }

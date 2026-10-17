@@ -195,3 +195,56 @@ fn shipped_pack_filters_well_matched_memory_services() {
         .unwrap();
     assert_eq!(keys_of(memory), vec!["skills"]);
 }
+
+#[test]
+fn delegation_tier_fit_names_each_agent_on_each_model() {
+    let body = vector(&[
+        (
+            &[("agent_name", "Explore"), ("model", "claude-opus-4")],
+            "8",
+        ),
+        (
+            &[("agent_name", "Explore"), ("model", "claude-haiku-5-5")],
+            "2",
+        ),
+    ]);
+    let mut rules = vec![("by (agent_name, model)", body)];
+    rules.extend(digest_rules(fixture("loki_tool_results.json")));
+    let pack = std::fs::read_to_string(shipped_pack()).unwrap();
+    let questions = digest_questions(&pack, rules);
+    let tier = questions
+        .iter()
+        .find(|q| q["id"] == "delegation-tier-fit")
+        .unwrap();
+    let evidence: Vec<&str> = tier["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["evidence"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        evidence,
+        vec![
+            "subagent:Explore@claude-opus-4",
+            "subagent:Explore@claude-haiku-5-5"
+        ]
+    );
+}
+
+#[test]
+fn every_shipped_question_titles_what_its_command_ranks() {
+    let pack = Pack::load(&shipped_pack()).unwrap();
+    for id in [
+        "costly-sessions",
+        "model-spend",
+        "delegation-tier-fit",
+        "memory-injection-cost",
+    ] {
+        let question = pack.question(id).unwrap();
+        assert!(!question.decision_kind.is_empty(), "{id}");
+        assert!(
+            question.threshold.min_share.is_some() || question.threshold.max_value.is_some(),
+            "{id} has no threshold"
+        );
+    }
+}

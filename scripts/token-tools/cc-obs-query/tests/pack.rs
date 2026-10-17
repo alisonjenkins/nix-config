@@ -26,7 +26,7 @@ fn question(signals: &str) -> String {
 }
 
 #[test]
-fn shipped_pack_has_the_ten_starting_questions_and_no_unused_signal() {
+fn shipped_pack_has_its_questions_and_no_unused_signal() {
     let pack = Pack::load(&shipped_pack()).unwrap();
     let ids: Vec<_> = pack.questions.iter().map(|q| q.id.as_str()).collect();
     assert_eq!(
@@ -42,6 +42,10 @@ fn shipped_pack_has_the_ten_starting_questions_and_no_unused_signal() {
             "memory-injected-ignored",
             "compaction-frequency",
             "recall-failures",
+            "costly-sessions",
+            "model-spend",
+            "delegation-tier-fit",
+            "memory-injection-cost",
         ]
     );
     let repeats = pack
