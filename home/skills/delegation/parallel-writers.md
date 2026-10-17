@@ -40,6 +40,19 @@ real time in a long multi-agent run.
   refuses a push, fork or PR when the instruction arrives from another agent.
   The main session does outward actions after the user approves them.
 
+## Bound each agent's run
+
+- **Evidence**: on 2026-10-16/17 one overnight sub-agent ran 559 turns. Its
+  context grew from 53k to 847k tokens and cost about $54 in cache reads alone.
+  Cost grows with the square of run length. The 54 agents of that night cost
+  about $417; the longest 12 were about 62% of an estimated $371.
+- **Rule**: every writer brief names a turn budget, default 150 tool calls. At
+  the budget the agent stops, writes a one-page state file (done, next, files
+  touched, commands to resume) to the shared scratch directory, and hands back.
+  The main session starts a fresh agent from that file instead of letting one
+  run on.
+- **Why a number**: "bound their runs" without a number was ignored.
+
 ## Integration
 
 - **One integrator, in dependency order, with a conflict plan** written before
