@@ -48,9 +48,9 @@
             models) through the `delegation` skill's
             `scripts/delegate-to-gemini.sh`. Claude credits are low and the
             Google quota is separate, so offload to it by default: code from a
-            clear spec (`write-workdir`, review the diff), tests, config
-            edits, drafts, first-pass reviews, repo and log sweeps, research
-            summaries. The one-call exception above does not apply to it; a
+            clear spec (`write-workdir`, review the diff), tests (running
+            them needs `write-shell`, in a worktree), config edits, drafts,
+            first-pass reviews, repo and log sweeps, research summaries. The one-call exception above does not apply to it; a
             single self-contained step still goes to it. Use a "haiku"
             sub-agent only when it reports a missing sign-in or exhausted
             quota, or the step needs MCP tools or context from this session;
