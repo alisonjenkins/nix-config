@@ -330,6 +330,63 @@ fn digest_truncated_means_more_rows_than_limit() {
     }
 }
 
+fn unused_signals_on(yaml: &str) -> common::Run {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), yaml);
+    let fake = serve(vec![]);
+    cli(&fake, &["unused-signals", "--pack", s(&pack)])
+}
+
+fn assert_pack_refused(yaml: &str, needle: &str) {
+    let run = unused_signals_on(yaml);
+    assert_ne!(run.code, 0, "accepted: {}", run.out);
+    assert!(run.err.contains(needle), "{needle} not in {}", run.err);
+}
+
+#[test]
+fn pack_rejects_nonpositive_regrowth() {
+    for factor in ["0", "-1.5", ".nan", "0.5"] {
+        let yaml = TOOL_PACK.replace(
+            "regrowth_factor: 1.5",
+            &format!("regrowth_factor: {factor}"),
+        );
+        assert_pack_refused(&yaml, "regrowth_factor");
+    }
+}
+
+#[test]
+fn pack_rejects_out_of_range_min_share() {
+    for share in ["-0.1", "1.5"] {
+        let yaml = TOOL_PACK.replace("min_share: 0.03", &format!("min_share: {share}"));
+        assert_pack_refused(&yaml, "min_share");
+    }
+}
+
+#[test]
+fn pack_rejects_non_query_command() {
+    assert_pack_refused(&tool_pack_with("digest --baseline"), "not a query command");
+    assert_pack_refused(
+        &tool_pack_with("compare x --a 1 --b 2"),
+        "not a query command",
+    );
+}
+
+#[test]
+fn pack_rejects_repeated_or_contradictory_signals() {
+    let twice = TOOL_PACK.replace(
+        "signals: [claude_code.token.usage, claude_code.tool_result.tool_result_size_bytes]",
+        "signals: [claude_code.token.usage, claude_code.token.usage]",
+    );
+    assert_pack_refused(&twice, "twice");
+    let retired = TOOL_PACK.replace("retire: []", "retire: [claude_code.token.usage]");
+    assert_pack_refused(&retired, "retire");
+    let retire_twice = TOOL_PACK.replace(
+        "retire: []",
+        "retire: [claude_code.api_error, claude_code.api_error]",
+    );
+    assert_pack_refused(&retire_twice, "twice");
+}
+
 fn prom_scalar(value: f64) -> String {
     json!({"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1_760_000_000.0, value.to_string()]}]}}).to_string()
 }

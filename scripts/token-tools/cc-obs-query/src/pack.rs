@@ -3,9 +3,11 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
+use clap::Parser;
 use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
+use crate::cli::{Cli, Command};
 use crate::error::Error;
 
 /// Every signal the stack collects that a question may name. A signal named by a
@@ -85,6 +87,18 @@ pub struct Pack {
     pub sha: String,
 }
 
+fn is_query(command: &Command) -> bool {
+    matches!(
+        command,
+        Command::Top { .. }
+            | Command::Tool { .. }
+            | Command::Session { .. }
+            | Command::Repeats { .. }
+            | Command::Recall { .. }
+            | Command::Health
+    )
+}
+
 /// The git blob sha of the file, so a digest names the exact pack it ran.
 fn blob_sha(bytes: &[u8]) -> String {
     let mut hasher = Sha1::new();
@@ -137,8 +151,46 @@ impl Pack {
             path: path.to_owned(),
             reason,
         };
+        if !self.regrowth_factor.is_finite() || self.regrowth_factor < 1.0 {
+            return Err(invalid(format!(
+                "regrowth_factor must be at least 1 (a dismissed finding returns once it grows past that multiple of its baseline), not {}",
+                self.regrowth_factor
+            )));
+        }
         let mut seen = BTreeSet::new();
         for question in &self.questions {
+            if let Some(share) = question.threshold.min_share {
+                if !(0.0..=1.0).contains(&share) {
+                    return Err(invalid(format!(
+                        "question {:?}: threshold.min_share must be between 0 and 1, not {share}",
+                        question.id
+                    )));
+                }
+            }
+            if let Ok(cli) = Cli::try_parse_from(question.query.command.split_whitespace()) {
+                if !is_query(&cli.command) {
+                    return Err(invalid(format!(
+                        "question {:?}: query.command runs `{}`, which is not a query command",
+                        question.id,
+                        cli.command.name()
+                    )));
+                }
+            }
+            let mut own = BTreeSet::new();
+            for signal in &question.signals {
+                if !own.insert(signal.as_str()) {
+                    return Err(invalid(format!(
+                        "question {:?} lists signal {signal:?} twice",
+                        question.id
+                    )));
+                }
+                if self.retire.contains(signal) {
+                    return Err(invalid(format!(
+                        "question {:?} uses signal {signal:?}, which retire: lists",
+                        question.id
+                    )));
+                }
+            }
             if !seen.insert(question.id.as_str()) {
                 return Err(invalid(format!("duplicate question id {:?}", question.id)));
             }
@@ -163,7 +215,11 @@ impl Pack {
                 }
             }
         }
+        let mut retired = BTreeSet::new();
         for signal in &self.retire {
+            if !retired.insert(signal.as_str()) {
+                return Err(invalid(format!("retire lists signal {signal:?} twice")));
+            }
             if !COLLECTED_SIGNALS.contains(&signal.as_str()) {
                 return Err(invalid(format!("retire names unknown signal {signal:?}")));
             }
