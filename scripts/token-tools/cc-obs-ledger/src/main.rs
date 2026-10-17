@@ -18,7 +18,7 @@ use cc_obs_ledger::config::{
 };
 use cc_obs_ledger::error::LedgerError;
 use cc_obs_ledger::notice::{notice_line, review_state_dir, stack_line, stack_state_dir};
-use cc_obs_ledger::otlp::{session_payloads, turn_payloads, Payload, Resource};
+use cc_obs_ledger::otlp::{session_payloads, turn_payloads, EndTotals, Payload, Resource};
 use cc_obs_ledger::ship::{ship_spool, write_spool};
 use cc_obs_ledger::transcript::{
     complete_lines, parse, parse_from, read_unread, Position, ToolHasher,
@@ -79,6 +79,9 @@ struct Cursor {
     last_main_ms: Option<u64>,
     #[serde(default)]
     last_sub_ms: Option<u64>,
+    /// Session totals at the last `SessionEnd`; a Stop carries them through unchanged.
+    #[serde(default)]
+    end: EndTotals,
 }
 
 fn main() -> ExitCode {
@@ -372,6 +375,7 @@ fn ingest(
         seq: parsed.end.seq,
         last_main_ms: parsed.end.last_main_ms,
         last_sub_ms: parsed.end.last_sub_ms,
+        end: cursor.end,
     };
     let text = serde_json::to_string(&next).map_err(|source| LedgerError::ParseFile {
         path: cursor_file.to_owned(),
@@ -405,11 +409,21 @@ fn end_cmd(state: &Path) -> Result<(), LedgerError> {
     let census: Option<Census> = fs::read_to_string(&census_file)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok());
-    spool_and_ship(
-        state,
-        &session_payloads(&resource(), &parsed, census.as_ref()),
-        &spawn_ship,
-    )?;
+    let cursor_file = cursor_path(state, &session);
+    let mut cursor: Cursor = fs::read_to_string(&cursor_file)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default();
+    let payloads = session_payloads(&resource(), &parsed, census.as_ref(), &cursor.end);
+    if !payloads.is_empty() {
+        spool_and_ship(state, &payloads, &spawn_ship)?;
+        cursor.end = EndTotals::after(&cursor.end, &parsed);
+        let text = serde_json::to_string(&cursor).map_err(|source| LedgerError::ParseFile {
+            path: cursor_file.clone(),
+            source,
+        })?;
+        write_file(&cursor_file, &text)?;
+    }
 
     // The census is only read here; the cursor stays so a resume does not start over.
     let _ = fs::remove_file(census_file);

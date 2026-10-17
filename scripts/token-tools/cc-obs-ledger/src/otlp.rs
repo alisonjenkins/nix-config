@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::census::Census;
@@ -321,16 +322,60 @@ pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
     payloads
 }
 
+/// What a session's whole transcript summed to at one `SessionEnd`. The cursor keeps the
+/// last one so the next end can report what happened since. `ends` counts the ends so far.
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EndTotals {
+    pub ends: u64,
+    pub requests: u64,
+    pub tool_calls: u64,
+    pub input: u64,
+    pub output: u64,
+    pub cache_read: u64,
+    pub cache_creation: u64,
+}
+
+impl EndTotals {
+    /// The totals of `parsed`, counted as the end after `previous`.
+    pub fn after(previous: &EndTotals, parsed: &Parsed) -> Self {
+        let usage = parsed.total_usage();
+        Self {
+            ends: previous.ends.saturating_add(1),
+            requests: parsed.requests.len() as u64,
+            tool_calls: parsed.tool_calls.len() as u64,
+            input: usage.input,
+            output: usage.output,
+            cache_read: usage.cache_read,
+            cache_creation: usage.cache_creation,
+        }
+    }
+
+    fn same_activity(&self, other: &EndTotals) -> bool {
+        Self { ends: 0, ..*self } == Self { ends: 0, ..*other }
+    }
+}
+
+fn bool_attribute(key: &str, value: bool) -> Value {
+    json!({ "key": key, "value": { "boolValue": value } })
+}
+
 /// What a `SessionEnd` hook sends: the measured fixed context split by the census,
-/// and one summary log record.
+/// and one summary log record. The record is cumulative over the whole transcript and
+/// also carries the change since `previous`, the totals at the last end. An end with no
+/// change since `previous` sends nothing, so the record count never inflates a resume.
 pub fn session_payloads(
     resource: &Resource,
     parsed: &Parsed,
     census: Option<&Census>,
+    previous: &EndTotals,
 ) -> Vec<Payload> {
     let Some(first) = parsed.requests.first() else {
         return Vec::new();
     };
+    let totals = EndTotals::after(previous, parsed);
+    if previous.ends > 0 && totals.same_activity(previous) {
+        return Vec::new();
+    }
     let time = now_nanos();
     let session = first.session_id.clone();
     let prompt_tokens = parsed.first_prompt_chars.checked_div(4).unwrap_or(0);
@@ -377,6 +422,27 @@ pub fn session_payloads(
     attrs.push(int_attribute("cache_read_tokens", usage.cache_read));
     attrs.push(int_attribute("cache_creation_tokens", usage.cache_creation));
     attrs.push(int_attribute("skipped_lines", parsed.skipped_lines as u64));
+    attrs.push(int_attribute("end_index", totals.ends));
+    attrs.push(bool_attribute("cumulative", true));
+    let delta = |key: &str, now: u64, before: u64| int_attribute(key, now.saturating_sub(before));
+    attrs.push(delta("requests_delta", totals.requests, previous.requests));
+    attrs.push(delta(
+        "tool_calls_delta",
+        totals.tool_calls,
+        previous.tool_calls,
+    ));
+    attrs.push(delta("input_tokens_delta", totals.input, previous.input));
+    attrs.push(delta("output_tokens_delta", totals.output, previous.output));
+    attrs.push(delta(
+        "cache_read_tokens_delta",
+        totals.cache_read,
+        previous.cache_read,
+    ));
+    attrs.push(delta(
+        "cache_creation_tokens_delta",
+        totals.cache_creation,
+        previous.cache_creation,
+    ));
 
     vec![
         metrics_payload(resource, metrics),

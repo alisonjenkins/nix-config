@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use cc_obs_ledger::otlp::{session_payloads, turn_payloads, Payload, Resource};
+use cc_obs_ledger::otlp::{session_payloads, turn_payloads, EndTotals, Payload, Resource};
 use cc_obs_ledger::transcript::{parse, ToolHasher};
 
 const FIXTURE: &str = include_str!("fixtures/transcript.jsonl");
@@ -8,7 +8,12 @@ const FIXTURE: &str = include_str!("fixtures/transcript.jsonl");
 fn everything_sent(resource: &Resource) -> (Vec<Payload>, String) {
     let parsed = parse(FIXTURE, &ToolHasher::new(b"k".to_vec()));
     let mut payloads = turn_payloads(resource, &parsed);
-    payloads.extend(session_payloads(resource, &parsed, None));
+    payloads.extend(session_payloads(
+        resource,
+        &parsed,
+        None,
+        &EndTotals::default(),
+    ));
     let text = payloads
         .iter()
         .map(|p| p.body.to_string())
