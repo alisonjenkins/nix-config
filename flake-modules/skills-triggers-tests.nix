@@ -10,6 +10,7 @@
         } ''
         bash ${self + "/home/skills/skill-authoring/scripts/check-triggers.sh"} ${self + "/home/skills"}
         bats ${self + "/home/skills/skill-authoring/scripts"}/tests/check-triggers.bats
+        bats ${self + "/home/skills/skill-authoring/scripts"}/tests/eval-triggers.bats
         touch $out
       '';
     };
