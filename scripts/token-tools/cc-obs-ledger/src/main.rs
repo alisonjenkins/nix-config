@@ -47,6 +47,8 @@ enum Command {
     Census,
     /// Stop: send context size, cache hit ratio and tool-call records for the new turns.
     Turn,
+    /// SubagentStop: send the same records as `turn` for the sub-agent's own transcript, tagged with its agent id.
+    Subagent,
     /// SessionEnd: send the fixed-context split and the session summary.
     End,
     /// SessionStart: print a line if the observability stack is over its disk budget, and one if a token review waits to be promoted or dismissed.
@@ -60,6 +62,8 @@ struct Hook {
     session_id: Option<String>,
     transcript_path: Option<String>,
     cwd: Option<String>,
+    agent_id: Option<String>,
+    agent_transcript_path: Option<String>,
 }
 
 /// Where the last Stop stopped reading. `turn` and `seq` carry the session-wide
@@ -83,6 +87,7 @@ fn main() -> ExitCode {
     let result = match cli.command {
         Command::Census => census_cmd(&state),
         Command::Turn => turn_cmd(&state),
+        Command::Subagent => subagent_cmd(&state),
         Command::End => end_cmd(&state),
         Command::Notice => notice_cmd(),
         Command::Ship => ship_cmd(&state),
@@ -104,6 +109,7 @@ fn name(command: &Command) -> &'static str {
     match command {
         Command::Census => "census",
         Command::Turn => "turn",
+        Command::Subagent => "subagent",
         Command::End => "end",
         Command::Notice => "notice",
         Command::Ship => "ship",
@@ -127,8 +133,11 @@ fn session_file(hook: &Hook) -> Result<String, LedgerError> {
         .ok_or(LedgerError::MissingField {
             field: "session_id",
         })?;
-    Ok(id
-        .chars()
+    Ok(safe_name(id))
+}
+
+fn safe_name(id: &str) -> String {
+    id.chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
                 c
@@ -136,7 +145,7 @@ fn session_file(hook: &Hook) -> Result<String, LedgerError> {
                 '_'
             }
         })
-        .collect())
+        .collect()
 }
 
 fn write_file(path: &Path, text: &str) -> Result<(), LedgerError> {
@@ -246,6 +255,43 @@ fn turn_cmd(state: &Path) -> Result<(), LedgerError> {
     turn_run(state, &session, &transcript, MAX_UNREAD_BYTES, &spawn_ship)
 }
 
+/// SubagentStop: the sub-agent's own transcript, read from its own cursor. The
+/// session-end pass reads only the main transcript, so it never repeats this.
+fn subagent_cmd(state: &Path) -> Result<(), LedgerError> {
+    let hook = read_hook()?;
+    let session = session_file(&hook)?;
+    let agent_id = hook
+        .agent_id
+        .as_deref()
+        .filter(|id| !id.is_empty())
+        .ok_or(LedgerError::MissingField { field: "agent_id" })?
+        .to_owned();
+    let transcript = match (&hook.agent_transcript_path, &hook.transcript_path) {
+        (Some(path), _) => PathBuf::from(path),
+        (None, Some(main)) => PathBuf::from(main)
+            .with_extension("")
+            .join("subagents")
+            .join(format!("agent-{agent_id}.jsonl")),
+        (None, None) => {
+            return Err(LedgerError::MissingField {
+                field: "agent_transcript_path",
+            })
+        }
+    };
+    let cursor_file = state
+        .join("cursors")
+        .join(format!("{session}.agent-{}.json", safe_name(&agent_id)));
+    ingest(
+        state,
+        &cursor_file,
+        &format!("{session}/{agent_id}"),
+        &transcript,
+        MAX_UNREAD_BYTES,
+        Some(&agent_id),
+        &spawn_ship,
+    )
+}
+
 fn turn_run(
     state: &Path,
     session: &str,
@@ -253,8 +299,30 @@ fn turn_run(
     limit: u64,
     spawn: &dyn Fn() -> Result<(), LedgerError>,
 ) -> Result<(), LedgerError> {
-    let cursor_file = cursor_path(state, session);
-    let cursor: Cursor = fs::read_to_string(&cursor_file)
+    ingest(
+        state,
+        &cursor_path(state, session),
+        session,
+        transcript,
+        limit,
+        None,
+        spawn,
+    )
+}
+
+/// Parses what `transcript` gained since the cursor in `cursor_file`, sends it, and
+/// moves the cursor. `agent_id` tags the records of a sub-agent transcript.
+fn ingest(
+    state: &Path,
+    cursor_file: &Path,
+    label: &str,
+    transcript: &Path,
+    limit: u64,
+    agent_id: Option<&str>,
+    spawn: &dyn Fn() -> Result<(), LedgerError>,
+) -> Result<(), LedgerError> {
+    let session = label;
+    let cursor: Cursor = fs::read_to_string(cursor_file)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
         .unwrap_or_default();
@@ -290,7 +358,10 @@ fn turn_run(
     let text = String::from_utf8_lossy(complete);
 
     let hasher = ToolHasher::new(load_or_create_key(state)?);
-    let parsed = parse_from(&text, &hasher, position);
+    let mut parsed = parse_from(&text, &hasher, position);
+    if let Some(agent_id) = agent_id {
+        parsed.set_agent_id(agent_id);
+    }
     spool_and_ship(state, &turn_payloads(&resource(), &parsed), spawn)?;
 
     let next = Cursor {
@@ -303,10 +374,10 @@ fn turn_run(
         last_sub_ms: parsed.end.last_sub_ms,
     };
     let text = serde_json::to_string(&next).map_err(|source| LedgerError::ParseFile {
-        path: cursor_file.clone(),
+        path: cursor_file.to_owned(),
         source,
     })?;
-    write_file(&cursor_file, &text)
+    write_file(cursor_file, &text)
 }
 
 fn end_cmd(state: &Path) -> Result<(), LedgerError> {

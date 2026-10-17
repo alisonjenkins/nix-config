@@ -68,6 +68,8 @@ pub struct Request {
     /// Seconds since the previous request of the same agent kind (main or subagent)
     /// in this session; `None` for the first request or when a timestamp is missing.
     pub seconds_since_prev: Option<u64>,
+    /// Set by the `subagent` hook; `None` for the main agent.
+    pub agent_id: Option<String>,
 }
 
 /// One entry of the skill listing the session started with.
@@ -93,6 +95,20 @@ pub struct ToolCall {
     pub input_prefix_hash: String,
     pub result_bytes: Option<u64>,
     pub prompt_id: Option<String>,
+    /// Set by the `subagent` hook; `None` for the main agent.
+    pub agent_id: Option<String>,
+}
+
+impl Parsed {
+    /// Tags every request and tool call with the sub-agent that made them.
+    pub fn set_agent_id(&mut self, agent_id: &str) {
+        for request in &mut self.requests {
+            request.agent_id = Some(agent_id.to_owned());
+        }
+        for call in &mut self.tool_calls {
+            call.agent_id = Some(agent_id.to_owned());
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -500,6 +516,7 @@ fn read_assistant(
             usage,
             cache_creation_reported,
             seconds_since_prev,
+            agent_id: None,
         });
     }
 
@@ -536,6 +553,7 @@ fn read_assistant(
             input_prefix_hash: hasher.hash(prefix),
             result_bytes: None,
             prompt_id: None,
+            agent_id: None,
         });
         counters.seq = counters.seq.saturating_add(1);
     }

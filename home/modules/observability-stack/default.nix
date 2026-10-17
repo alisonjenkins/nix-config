@@ -419,6 +419,7 @@ in
             }
           ];
           Stop = ledger "turn";
+          SubagentStop = ledger "subagent";
           SessionEnd = ledger "end";
         };
     })
