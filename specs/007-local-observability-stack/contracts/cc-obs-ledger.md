@@ -8,7 +8,7 @@ the hook's budget. Failures write one line to a local log
 | Hook | Subcommand | Does |
 |---|---|---|
 | `SessionStart` | `cc-obs-ledger census` | Estimates tokens per fixed component: instruction files read, skills listing, the MCP tool-name listing (definitions are deferred, so their schemas count only when loaded), memory index. Stores it by `session_id`. Prints nothing to stdout (so it adds no context itself). |
-| `Stop` | `cc-obs-ledger turn` | Reads the new tail of `transcript_path`, emits per-request context size and cache hit ratio, and one `cc_obs_ledger.tool_call` log record per tool call (below). |
+| `Stop` | `cc-obs-ledger turn` | Reads the new tail of `transcript_path`, emits per-request context size, cache hit ratio, cache-creation tokens and seconds since the previous request, the skill listing (`cc_obs_ledger_skill_listed_tokens{skill_name}`) and MCP servers (`cc_obs_ledger_mcp_server_connected{mcp_server_name}`) when the new tail holds them, and one `cc_obs_ledger.tool_call` log record per tool call (below). |
 | `SessionStart` | `cc-obs-ledger notice` | Prints one short line ("token review ready: <date>") only when the newest findings file in the review state directory has not been promoted or dismissed. Prints nothing otherwise and never fails. Gated by `review.notify` (default on); the only ledger subcommand allowed to write to stdout. |
 | `SessionEnd` | `cc-obs-ledger end` | Emits the fixed-context split (first request minus census residual) and one `cc_obs_ledger.session` log line. |
 

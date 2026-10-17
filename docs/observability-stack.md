@@ -106,7 +106,15 @@ are in the spec's `quickstart.md`.
   lower bound until the rest is read.
 - Skill and MCP server names are kept as metric labels, so cost can be attributed to
   them. Only tool parameters, tool input, the full command and file path are dropped by
-  default.
+  default. The ledger uses them for `cc_obs_ledger_skill_listed_tokens{skill_name}` and
+  `cc_obs_ledger_mcp_server_connected{mcp_server_name}`; skill descriptions and MCP
+  instruction text are measured or counted, never sent.
+- The ledger reads both from the transcript's `skill_listing` and
+  `mcp_instructions_delta` attachments, so they appear at the first Stop hook after
+  Claude Code writes them (and again if a later Stop sees a new one). Only MCP servers
+  that ship instructions are named there. `cc_obs_ledger_cache_creation_tokens` and
+  `cc_obs_ledger_seconds_since_prev_request` carry the labels of
+  `cc_obs_ledger_context_tokens`; the gap is absent for a session's first request.
 
 ## Troubleshooting
 

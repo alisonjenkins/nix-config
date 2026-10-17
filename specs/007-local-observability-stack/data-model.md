@@ -38,6 +38,10 @@ view shows "unavailable", never zero.
 | `cc_obs_ledger_fixed_context_tokens` | `session.id`, `component` (system, instructions, skills_listing, mcp_tools, other) | first-request fixed context, split by the SessionStart census |
 | `cc_obs_ledger_context_tokens` | `session.id`, `turn` bucket | context size at each request |
 | `cc_obs_ledger_cache_hit_ratio` | `session.id` | cacheRead / (cacheRead + cacheCreation + input), per turn |
+| `cc_obs_ledger_cache_creation_tokens` | as `cc_obs_ledger_context_tokens` (`session.id`, `project`, `model`, `agent`, `turn`) | cache-creation input tokens of each request; absent when the request has no usage |
+| `cc_obs_ledger_seconds_since_prev_request` | as `cc_obs_ledger_context_tokens` | whole seconds since the previous request of the same agent kind (main or subagent) in the session; carried across Stop hooks in the cursor; absent for a session's first request or when a timestamp is missing |
+| `cc_obs_ledger_skill_listed_tokens` | `skill_name` (host-level, no session) | chars/4 of the skill's entry in the `skill_listing` attachment the session started with; one series per skill; absent without a listing |
+| `cc_obs_ledger_mcp_server_connected` | `mcp_server_name` (host-level, no session) | 1 per server named by `mcp_instructions_delta` attachments (added minus removed); only servers that ship instructions appear; absent without such an attachment |
 | log `cc_obs_ledger.session` | `session.id`, totals | one line at SessionEnd |
 | log `cc_obs_ledger.tool_call` | `session.id`, `turn`, `seq`, `tool_name`, `agent_type`, `input_hash`, `input_prefix_hash`, `input_bytes`, `result_bytes` | one per tool call; keyed hashes only, no input content; basis for repeat detection |
 
