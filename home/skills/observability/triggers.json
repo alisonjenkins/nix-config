@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "why are there no logs for the api in grafana",
+    "the datadog dashboards are blank since lunch",
+    "which services have no alerts set up",
+    "is the checkout service slow, check the traces",
+    "write up last night's outage as a postmortem"
+  ]
+}

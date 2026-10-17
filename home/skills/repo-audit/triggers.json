@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "check branch protection on this repo",
+    "is secret scanning turned on for our repo",
+    "are renovate or dependabot configured here",
+    "audit the repo hygiene before we open source it",
+    "check the pre-commit hooks and CI setup"
+  ]
+}

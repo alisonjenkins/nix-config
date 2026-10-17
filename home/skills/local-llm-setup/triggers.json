@@ -1,0 +1,9 @@
+{
+  "fire": [
+    "my local model keeps looping on edit calls",
+    "which quant should I run in llama-server",
+    "benchmark this new local model against the incumbent",
+    "how much vram does this model use",
+    "set up mlx_lm so opencode can use it"
+  ]
+}
