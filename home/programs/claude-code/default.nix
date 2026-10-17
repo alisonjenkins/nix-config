@@ -374,7 +374,7 @@ let
     terraform  = "${lspWrappers.tfls}/bin/tfls";
     yaml       = "${lspWrappers.yaml-language-server}/bin/yaml-language-server";
     json       = "${lspWrappers.vscode-json-language-server}/bin/vscode-json-language-server";
-    lua        = "${lspWrappers.lua-language-server}/bin/lua-language-server";
+    lua        = "${lspWrappers.emmylua-ls}/bin/emmylua-ls";
     toml       = "${lspWrappers.taplo-lsp}/bin/taplo-lsp";
     markdown   = "${lspWrappers.marksman}/bin/marksman";
     docker     = "${lspWrappers.docker-langserver}/bin/docker-langserver";
