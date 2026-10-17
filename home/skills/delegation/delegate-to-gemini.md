@@ -112,6 +112,19 @@ asks for approval instead of answering.
   pin, rejects `xhigh` and `max`, which 1.2.16 accepts) maps to `--effort`; `DELEGATE_PRINT_TIMEOUT` (default `15m`) maps to
   `--print-timeout`.
 
+## Telemetry
+
+Each call is recorded as one OTLP span, a child of the Claude Code tool span
+that ran the script (Claude exports it as `TRACEPARENT`), and as one line in
+`~/.local/state/delegate/gemini-calls.jsonl`. A trace query can then group
+delegated work by the Claude session and turn that asked for it. The record
+holds the model, profile, skills, outcome, exit code, attempts, token counts
+and duration from agy's JSON envelope, never the prompt or the answer. The
+endpoint is `DELEGATE_OTLP_ENDPOINT`, else the observability stack's
+`~/.config/cc-obs/endpoints.json`; `DELEGATE_TELEMETRY=off` disables it. It
+needs `jq`, and a down collector costs one warning, not a failed call. See
+ADR 0046 and `docs/observability-stack.md`.
+
 ## Rules
 
 - Never pass task text containing credentials or anything from `.env` or

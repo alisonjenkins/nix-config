@@ -95,6 +95,22 @@ nix build .#checks.x86_64-linux.observability-stack-review           # review ru
 The runtime (podman, containers, real ingest) is not covered by CI; the manual steps
 are in the spec's `quickstart.md`.
 
+## Delegated Gemini calls
+
+`delegate-to-gemini.sh` (the `delegation` skill) sends one span per call to the
+collector, a child of the Claude Code tool span that ran it, and appends the same
+record to `~/.local/state/delegate/gemini-calls.jsonl`. Why and how: ADR 0046. In
+Grafana's Tempo, group by the session that asked for the work:
+
+```
+{ resource.service.name = "delegate-to-gemini" } | select(span.claude.session_id, span.gen_ai.request.model, span.delegate.outcome, span.gen_ai.usage.input_tokens)
+```
+
+`span.delegate.outcome` is `success`, `denied`, `error`, `auth_missing`, `quota`,
+`transient_exhausted` or `model_rejected`. Tokens and duration come from agy's JSON
+envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
+`DELEGATE_TELEMETRY=off` turns it off; `DELEGATE_OTLP_ENDPOINT` overrides the endpoint.
+
 ## Known limits
 
 - The review runner has only been run against fake `claude` and `cc-obs-query` commands

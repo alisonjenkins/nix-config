@@ -120,6 +120,7 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0034](0034-observability-pod-via-podman-kube-play.md) | Run the observability stack as one pod with `podman kube play` | Accepted, pending the macOS spike |
 | [0035](0035-disk-budget-reported-not-enforced.md) | Report the observability stack's disk budget instead of enforcing it | Accepted |
 | [0037](0037-two-tier-unattended-token-review.md) | Review token use weekly in two tiers, unattended | Accepted; built, first real review pending (T061) |
+| [0046](0046-trace-delegated-agy-calls-from-the-wrapper.md) | Trace delegated agy calls from the wrapper, as children of Claude's tool span | Accepted |
 
 ## AI control centre
 
