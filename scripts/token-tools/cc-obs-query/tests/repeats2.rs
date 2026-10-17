@@ -218,3 +218,20 @@ fn report_text_states_the_scope_and_the_edit_rule() {
         "{out}"
     );
 }
+
+#[test]
+fn duplicate_records_count_once_and_are_noted() {
+    let recs = [
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "main", "Read", "x", 0),
+        Rec("s1", "main", "Bash", "y", 1),
+    ];
+    let out = run_repeats(loki(&recs));
+    assert_eq!(out["calls_analysed"], json!(2), "{out}");
+    assert!(!has(&out, "identical:Read"), "{out}");
+    let gaps = out["gaps"].to_string();
+    assert!(
+        gaps.contains("1 duplicate tool_call records (same session, agent, seq) ignored"),
+        "{gaps}"
+    );
+}

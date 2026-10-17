@@ -64,6 +64,16 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             "repeats: {skipped} of {received} tool_call records lacked session_id, tool_name or input_hash and were skipped"
         ));
     }
+    // Ingest may deliver a record twice; the first (session, agent, seq) wins.
+    let mut seen: BTreeSet<(String, String, u64)> = BTreeSet::new();
+    let before = calls.len();
+    calls.retain(|c| seen.insert((c.session.clone(), c.agent.clone(), c.seq)));
+    let duplicates = before.saturating_sub(calls.len());
+    if duplicates > 0 {
+        ctx.note_gap(format!(
+            "repeats: {duplicates} duplicate tool_call records (same session, agent, seq) ignored"
+        ));
+    }
     calls.sort_by(|a, b| (&a.session, a.turn, a.seq).cmp(&(&b.session, b.turn, b.seq)));
     Ok(calls)
 }
