@@ -349,9 +349,17 @@ fn read_user(
     let Some(content) = value.pointer("/message/content") else {
         return;
     };
+    // Claude Code writes caveats, skill bodies and the /compact summary as user
+    // records; none of them is something the person typed.
+    let synthetic = ["isMeta", "isCompactSummary"]
+        .iter()
+        .any(|flag| value.get(flag).and_then(Value::as_bool) == Some(true));
     let items: Vec<&Value> = match content {
         Value::String(_) => {
-            start_turn(content.as_str().map_or(0, str::len), parsed, turn);
+            let text = content.as_str().unwrap_or_default();
+            if !synthetic && !is_system_text(text) {
+                start_turn(text.len(), parsed, turn);
+            }
             return;
         }
         Value::Array(items) => items.iter().collect(),
@@ -375,15 +383,37 @@ fn read_user(
                 call.prompt_id = prompt_id.map(str::to_owned);
             }
             Some("text") => {
-                let text_len = item.get("text").and_then(Value::as_str).map_or(0, str::len);
-                prompt_chars = prompt_chars.saturating_add(text_len);
+                let text = item.get("text").and_then(Value::as_str).unwrap_or_default();
+                if !is_system_text(text) {
+                    prompt_chars = prompt_chars.saturating_add(text.len());
+                }
             }
             _ => {}
         }
     }
-    if prompt_chars > 0 {
+    if prompt_chars > 0 && !synthetic {
         start_turn(prompt_chars, parsed, turn);
     }
+}
+
+/// Text prefixes of user records that are system events, not prompts; a
+/// `<task-notification>` is a background-task wake-up and does not count as a turn.
+const SYSTEM_TEXT_PREFIXES: [&str; 8] = [
+    "[Request interrupted",
+    "<command-name>",
+    "<command-message>",
+    "<command-args>",
+    "<local-command-stdout>",
+    "<local-command-stderr>",
+    "<local-command-caveat>",
+    "<task-notification>",
+];
+
+fn is_system_text(text: &str) -> bool {
+    let start = text.trim_start();
+    SYSTEM_TEXT_PREFIXES
+        .iter()
+        .any(|prefix| start.starts_with(prefix))
 }
 
 fn start_turn(chars: usize, parsed: &mut Parsed, turn: &mut u64) {
