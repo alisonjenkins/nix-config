@@ -27,8 +27,25 @@ list_attr_names() {
     nix eval --json "$1" --apply builtins.attrNames | jq -r '.[]'
 }
 
+# changed_package_names — one package name per line for what differs from
+# FETCH_HEAD: the <name> of each changed pkgs/<name>/..., plus packages whose
+# source lives outside pkgs/. token-tools builds scripts/token-tools and runs
+# its cargo tests (doCheck), so a change there alone must build it: a merge
+# that broke 3 of its tests stayed red on main for an hour without this.
+changed_package_names() {
+    local path
+    git diff --name-only FETCH_HEAD HEAD -- pkgs scripts/token-tools docs/token-efficiency/questions.yaml |
+        while read -r path; do
+            case "${path}" in
+                pkgs/*) cut -d/ -f2 <<<"${path}" ;;
+                scripts/token-tools/* | docs/token-efficiency/questions.yaml) echo token-tools ;;
+            esac
+        done | sort -u
+}
+
 # build_changed_packages <flake-attr> — build every exposed package whose
-# pkgs/<name>/ directory differs from the base branch. Evaluation alone
+# pkgs/<name>/ directory (or out-of-tree source, see changed_package_names)
+# differs from the base branch. Evaluation alone
 # cannot catch a stale dependency hash (npmDepsHash, vendorHash) or a
 # Cargo.lock behind its Cargo.toml: Renovate bumps the lockfile, the
 # derivation still evaluates, and only the build fails. That merged
@@ -54,7 +71,7 @@ build_changed_packages() {
         FAILED=1
         return
     fi
-    changed="$(git diff --name-only FETCH_HEAD HEAD -- pkgs | cut -d/ -f2 | sort -u)"
+    changed="$(changed_package_names)"
     for name in $changed; do
         if ! grep -qx "${name}" <<<"${exposed}"; then
             echo "not exposed, skipped: pkgs/${name}"
