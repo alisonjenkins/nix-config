@@ -38,6 +38,7 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 | skills-loaded-unused | Installed skills never activated, ranked by listing tokens (`top skill --unactivated`; unavailable until the ledger emits `cc_obs_ledger_skill_listed_tokens`) | Shorten the description of a heavy skill, drop it |
 | mcp-idle-servers | MCP servers ranked by tool-result tokens, from the `mcp__<server>__` tool-name prefix (`top mcp --idle` lists connected-but-never-called servers once the ledger emits the connected gauge) | Remove or defer a heavy server |
 | fixed-context-share | Share of the average request that is re-read fixed context (`total` row), and each component's part of it (instructions, listings, memory index) | Trim instruction files, move procedure into skills |
+| reread-same-file | The same Read input repeated three or more times in a session (`repeats --tool Read`) | Keep the file in context, read a range once, or note it in the instructions |
 | cache-hit-low-sessions | Sessions with a low cache hit ratio | Find what invalidates the cache (editing early context, timeouts) |
 | subagent-overhead | Sub-agent types using the most tokens | Do the task inline or use a lighter agent type |
 | memory-injected-ignored | Recall services matching on under half of requests | Raise the recall floor |

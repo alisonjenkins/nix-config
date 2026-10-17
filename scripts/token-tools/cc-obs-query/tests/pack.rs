@@ -37,6 +37,7 @@ fn shipped_pack_has_its_questions_and_no_unused_signal() {
             "skills-loaded-unused",
             "mcp-idle-servers",
             "fixed-context-share",
+            "reread-same-file",
             "cache-hit-low-sessions",
             "subagent-overhead",
             "memory-injected-ignored",

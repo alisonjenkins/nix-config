@@ -210,10 +210,19 @@ fn sequences(calls: &[&Call], counts: &mut BTreeMap<String, (u64, BTreeSet<Strin
     }
 }
 
-pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
-    let calls = load(ctx)?;
+pub fn run(ctx: &Ctx, min_count: u64, tool: Option<&str>) -> Result<Report, Error> {
+    let mut calls = load(ctx)?;
     if calls.is_empty() {
         return Ok(Report::unavailable("repeats", NO_RECORDS));
+    }
+    if let Some(tool) = tool {
+        calls.retain(|c| c.tool == tool);
+        if calls.is_empty() {
+            return Ok(Report::unavailable(
+                "repeats",
+                format!("no cc_obs_ledger.tool_call records for tool {tool} in the window"),
+            ));
+        }
     }
     let mut findings = Findings::new();
     let mut seqs = BTreeMap::new();

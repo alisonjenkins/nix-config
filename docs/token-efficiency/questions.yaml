@@ -50,6 +50,12 @@ questions:
     query: { command: "cc-obs-query top fixed --by share" }
     decision_kind: configure | dismiss
     threshold: { min_value: 0.05 }
+  - id: reread-same-file
+    title: Which sessions read the same file input three or more times?
+    signals: [cc_obs_ledger.tool_call]
+    query: { command: "cc-obs-query repeats --tool Read" }
+    decision_kind: build-tool | configure | dismiss
+    threshold: { min_calls: 3 }
   - id: cache-hit-low-sessions
     title: Which sessions have a low prompt-cache hit ratio?
     signals: [cc_obs_ledger_cache_hit_ratio, claude_code.token.usage]

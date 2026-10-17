@@ -88,6 +88,9 @@ pub enum Command {
         since: String,
         #[arg(long, default_value_t = 2)]
         min_count: u64,
+        /// Analyse only the calls of this tool, e.g. `Read` to isolate rereads
+        #[arg(long)]
+        tool: Option<String>,
     },
     /// Injected tokens per prompt, matches used, failures
     Recall {

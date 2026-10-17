@@ -18,7 +18,7 @@ hard-coded.
 | `cc-obs-query top <category>` | Rank token consumers. Categories: `tool`, `skill`, `mcp`, `subagent`, `memory`, `fixed`, `model`, `project`, `session` | `--since 7d`, `--by cost\|tokens` (tokens exclude cache read and creation), `--by cache-hit`, `--by compactions`, `--by requests` and `--by context-growth` (session only; the last two list sub-agents as `<id>/subagent`), `--by hit-rate` and `--by tokens-per-request` (memory only), `--unactivated` (skill only: installed skills with no activation, by listing tokens), `--idle` (mcp only: connected servers with no tool call; `top mcp` otherwise sums `tool_result` sizes by `mcp__<server>__` prefix), `--by share` (fixed only: average fixed context over average request context, `total` row plus components), `--limit`, `--offset`, `--max-bytes`, `--format` |
 | `cc-obs-query tool <name>` | Calls, mean and max result size, share of tokens, repeat rate | `--since` |
 | `cc-obs-query session <id>` | Context per turn, cache hit ratio, fixed vs new tokens | `--detail` adds per-turn rows |
-| `cc-obs-query repeats` | Near-identical calls within a session; large result then narrowing query; frequent call sequences | `--since`, `--min-count` |
+| `cc-obs-query repeats` | Near-identical calls within a session; large result then narrowing query; frequent call sequences | `--since`, `--min-count`, `--tool <name>` (analyse one tool's calls only) |
 | `cc-obs-query recall` | Injected tokens per prompt, matches used vs ignored, failures | `--since` |
 | `cc-obs-query compare <question-id> --a <range> --b <range>` | Same figure across two ranges (FR-025) | ranges like `2026-09-01..2026-09-08` |
 | `cc-obs-query unused-signals` | Collected signals no question in the pack references (FR-036) | `--pack` |

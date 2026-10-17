@@ -289,7 +289,9 @@ pub fn query_report(ctx: &Ctx, command: &Command) -> Result<Report, Error> {
         Command::Tool { name, .. } => tool::run(ctx, name)?,
         Command::Session { id, detail, .. } => session::run(ctx, id, *detail)?,
         Command::Recall { .. } => recall::run(ctx)?,
-        Command::Repeats { min_count, .. } => repeats::run(ctx, *min_count)?,
+        Command::Repeats {
+            min_count, tool, ..
+        } => repeats::run(ctx, *min_count, tool.as_deref())?,
         Command::Health => health::run(ctx)?,
         other => {
             return Err(Error::Usage {

@@ -437,6 +437,85 @@ fn top_memory_by_tokens_per_request_divides_injected_tokens_by_requests() {
     assert!(row(&out, "docs").get("share").is_none());
 }
 
+/// (session, tool, input hash) per call, in order.
+fn ledger_calls(calls: &[(&str, &str, &str)]) -> String {
+    let streams: Vec<Value> = calls
+        .iter()
+        .enumerate()
+        .map(|(i, (session, tool, hash))| {
+            json!({
+                "stream": {"service_name": "cc-obs-ledger"},
+                "values": [[
+                    format!("{}", 1_760_000_000_000_000_000_u64 + i as u64),
+                    "cc_obs_ledger.tool_call",
+                    {"structuredMetadata": {
+                        "session_id": session,
+                        "tool_name": tool,
+                        "input_hash": hash,
+                        "input_prefix_hash": format!("p_{hash}"),
+                        "result_bytes": "1000",
+                        "turn": format!("{i}"),
+                        "seq": format!("{i}"),
+                    }},
+                ]],
+            })
+        })
+        .collect();
+    json!({"status": "success", "data": {"resultType": "streams", "result": streams}}).to_string()
+}
+
+const CALLS: &[(&str, &str, &str)] = &[
+    ("s1", "Read", "same"),
+    ("s1", "Grep", "g"),
+    ("s1", "Read", "same"),
+    ("s1", "Grep", "g"),
+    ("s1", "Read", "same"),
+    ("s2", "Bash", "b"),
+    ("s2", "Bash", "b"),
+];
+
+#[test]
+fn repeats_tool_filter_keeps_only_that_tools_patterns() {
+    let fake = serve(with_own(vec![(
+        "event_name=\"cc_obs_ledger.tool_call\"",
+        ledger_calls(CALLS),
+    )]));
+    let unfiltered = cli(&fake, &["repeats"]).json();
+    assert!(keys(&unfiltered).contains(&"identical:Grep".to_owned()));
+    let run = cli(&fake, &["repeats", "--tool", "Read"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(keys(&out), vec!["identical:Read"]);
+    assert_eq!(row(&out, "identical:Read")["calls"], json!(3));
+    assert_eq!(out["calls_analysed"], json!(3));
+}
+
+#[test]
+fn repeats_tool_filter_with_no_such_tool_is_unavailable() {
+    let fake = serve(with_own(vec![(
+        "event_name=\"cc_obs_ledger.tool_call\"",
+        ledger_calls(CALLS),
+    )]));
+    let out = cli(&fake, &["repeats", "--tool", "Edit"]).json();
+    assert_eq!(out["value"], json!(null));
+    assert!(
+        out["unavailable"].as_str().unwrap().contains("Edit"),
+        "{out}"
+    );
+}
+
+#[test]
+fn reread_question_flags_a_file_read_three_times() {
+    let question = shipped_question(
+        "reread-same-file",
+        vec![(
+            "event_name=\"cc_obs_ledger.tool_call\"",
+            ledger_calls(CALLS),
+        )],
+    );
+    assert_eq!(row_keys(&question), vec!["identical:Read"]);
+}
+
 #[test]
 fn tokens_per_request_belongs_to_memory_only() {
     let out = cli(

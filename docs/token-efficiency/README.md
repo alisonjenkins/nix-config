@@ -24,7 +24,6 @@ Questions worth asking that the collected signals cannot answer yet, and what ea
 | Cache-write churn: prefix invalidated after the first turns, or idle gaps beyond the cache TTL | Ledger: `cc_obs_ledger_cache_creation_tokens{session.id,turn}` and the seconds since the previous request per turn |
 | Tokens added per prompt by hooks, against a budget | Recall is answered by `top memory --by tokens-per-request`; hook output needs `claude_code.hook_execution.additional_context_chars` read by a query (it is in `retire:` now) |
 | Large Bash results by command shape (`sed -n` ranges, grep, cat) | Ledger: a `command_shape` attribute (first word and flag class only, never arguments) on `cc_obs_ledger.tool_call` records, and `top.rs`: `top tool --by shape` |
-| Same file read repeatedly within a session | `repeat-calls` already finds identical Read inputs; isolating Read needs a `--tool` filter on `repeats` in `repeats.rs` |
 | Tokens spent before each compaction and turns it bought | `top.rs`: per-compaction rows joining `compaction` pre/post tokens to the `turn` of `cc_obs_ledger_context_tokens`; today only a count per session |
 
 ## Findings file
