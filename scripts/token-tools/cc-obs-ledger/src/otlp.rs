@@ -126,6 +126,10 @@ fn agent_kind(sidechain: bool) -> &'static str {
     }
 }
 
+fn agent_id_attribute(agent_id: Option<&str>) -> Option<Value> {
+    agent_id.map(|id| json!({ "key": "agent_id", "value": { "stringValue": id } }))
+}
+
 fn request_metrics(request: &Request, time: &str) -> Vec<Value> {
     let attrs = || {
         let mut base = attributes(
@@ -137,6 +141,7 @@ fn request_metrics(request: &Request, time: &str) -> Vec<Value> {
             ]
             .into_iter(),
         );
+        base.extend(agent_id_attribute(request.agent_id.as_deref()));
         base.push(int_attribute("turn", request.turn));
         base
     };
@@ -213,13 +218,14 @@ fn mcp_server_metrics(parsed: &Parsed, time: &str) -> Vec<Value> {
 /// counter (the collector turns it cumulative). No turn or request id label:
 /// that would be one series per request.
 fn request_count_metric(requests: &[Request], time: &str) -> Option<Value> {
-    let mut counts: BTreeMap<(&str, &str, &str, &str), u64> = BTreeMap::new();
+    let mut counts: BTreeMap<(&str, &str, &str, &str, Option<&str>), u64> = BTreeMap::new();
     for request in requests {
         let key = (
             request.session_id.as_str(),
             request.project.as_str(),
             request.model.as_str(),
             agent_kind(request.sidechain),
+            request.agent_id.as_deref(),
         );
         let count = counts.entry(key).or_insert(0);
         *count = count.saturating_add(1);
@@ -229,17 +235,22 @@ fn request_count_metric(requests: &[Request], time: &str) -> Option<Value> {
     }
     let points: Vec<Value> = counts
         .into_iter()
-        .map(|((session, project, model, agent), count)| {
-            json!({
-                "asInt": count.to_string(),
-                "startTimeUnixNano": time,
-                "timeUnixNano": time,
-                "attributes": attributes([
+        .map(|((session, project, model, agent, agent_id), count)| {
+            let mut attrs = attributes(
+                [
                     ("session.id", session.to_owned()),
                     ("project", project.to_owned()),
                     ("model", model.to_owned()),
                     ("agent", agent.to_owned()),
-                ].into_iter()),
+                ]
+                .into_iter(),
+            );
+            attrs.extend(agent_id_attribute(agent_id));
+            json!({
+                "asInt": count.to_string(),
+                "startTimeUnixNano": time,
+                "timeUnixNano": time,
+                "attributes": attrs,
             })
         })
         .collect();
@@ -269,6 +280,7 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     if let Some(prompt_id) = &call.prompt_id {
         attrs.extend(attributes([("prompt_id", prompt_id.clone())].into_iter()));
     }
+    attrs.extend(agent_id_attribute(call.agent_id.as_deref()));
     attrs.push(int_attribute("turn", call.turn));
     attrs.push(int_attribute("seq", call.seq));
     attrs.push(int_attribute("input_bytes", call.input_bytes));
