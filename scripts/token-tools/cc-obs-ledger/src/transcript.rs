@@ -7,8 +7,10 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use hmac::{Hmac, KeyInit, Mac};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use time::format_description::well_known::Rfc3339;
@@ -221,7 +223,7 @@ pub fn read_unread<R: Read + Seek>(
 }
 
 /// Where a parse stopped, so the next one numbers turns and tool calls on from it.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Position {
     pub turn: u64,
     pub seq: u64,
@@ -229,6 +231,55 @@ pub struct Position {
     pub last_main_ms: Option<u64>,
     /// Unix milliseconds of the newest subagent request.
     pub last_sub_ms: Option<u64>,
+    /// Running request totals, so the counter can be sent cumulative.
+    pub request_series: Vec<RequestSeries>,
+}
+
+/// Running request count of one (session, project, model, agent kind) series. The
+/// sub-agent id is not part of it: a sub-agent cursor belongs to one agent file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RequestSeries {
+    pub session_id: String,
+    pub project: String,
+    pub model: String,
+    pub sidechain: bool,
+    pub total: u64,
+    /// Unix nanoseconds of the first send; fixed so the counter never looks reset.
+    pub start_ns: u64,
+}
+
+impl RequestSeries {
+    pub fn matches(&self, request: &Request) -> bool {
+        self.session_id == request.session_id
+            && self.project == request.project
+            && self.model == request.model
+            && self.sidechain == request.sidechain
+    }
+}
+
+fn now_ns() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX)
+        })
+}
+
+fn count_requests(series: &mut Vec<RequestSeries>, requests: &[Request]) {
+    for request in requests {
+        if let Some(found) = series.iter_mut().find(|s| s.matches(request)) {
+            found.total = found.total.saturating_add(1);
+        } else {
+            series.push(RequestSeries {
+                session_id: request.session_id.clone(),
+                project: request.project.clone(),
+                model: request.model.clone(),
+                sidechain: request.sidechain,
+                total: 1,
+                start_ns: now_ns(),
+            });
+        }
+    }
 }
 
 /// Unix milliseconds of an RFC 3339 transcript timestamp.
@@ -342,11 +393,14 @@ pub fn parse_from(text: &str, hasher: &ToolHasher, start: Position) -> Parsed {
             _ => {}
         }
     }
+    let mut request_series = start.request_series;
+    count_requests(&mut request_series, &parsed.requests);
     parsed.end = Position {
         turn,
         seq: counters.seq,
         last_main_ms: counters.last_main_ms,
         last_sub_ms: counters.last_sub_ms,
+        request_series,
     };
     parsed
 }

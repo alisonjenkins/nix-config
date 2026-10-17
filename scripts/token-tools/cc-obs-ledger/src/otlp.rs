@@ -71,8 +71,8 @@ fn now_nanos() -> String {
         .to_string()
 }
 
-/// OTLP `AGGREGATION_TEMPORALITY_DELTA`: each Stop hook sends only what is new.
-const AGGREGATION_DELTA: u8 = 1;
+/// OTLP `AGGREGATION_TEMPORALITY_CUMULATIVE`: each Stop hook sends the running total.
+const AGGREGATION_CUMULATIVE: u8 = 2;
 
 enum Number {
     Int(u64),
@@ -214,12 +214,22 @@ fn mcp_server_metrics(parsed: &Parsed, time: &str) -> Vec<Value> {
         .collect()
 }
 
-/// Requests in this parse per session, project, model and agent, as a delta
-/// counter (the collector turns it cumulative). No turn or request id label:
-/// that would be one series per request.
-fn request_count_metric(requests: &[Request], time: &str) -> Option<Value> {
-    let mut counts: BTreeMap<(&str, &str, &str, &str, Option<&str>), u64> = BTreeMap::new();
-    for request in requests {
+/// Running request total per session, project, model and agent, for the series
+/// this parse touched, as a cumulative counter with a fixed start time (the
+/// collector keeps no state for it). No turn or request id label: that would be
+/// one series per request.
+fn request_count_metric(parsed: &Parsed, time: &str) -> Option<Value> {
+    type Key<'a> = (&'a str, &'a str, &'a str, &'a str, Option<&'a str>);
+    let mut counts: BTreeMap<Key, (u64, u64)> = BTreeMap::new();
+    for request in &parsed.requests {
+        let Some(series) = parsed
+            .end
+            .request_series
+            .iter()
+            .find(|s| s.matches(request))
+        else {
+            continue;
+        };
         let key = (
             request.session_id.as_str(),
             request.project.as_str(),
@@ -227,37 +237,38 @@ fn request_count_metric(requests: &[Request], time: &str) -> Option<Value> {
             agent_kind(request.sidechain),
             request.agent_id.as_deref(),
         );
-        let count = counts.entry(key).or_insert(0);
-        *count = count.saturating_add(1);
+        counts.insert(key, (series.total, series.start_ns));
     }
     if counts.is_empty() {
         return None;
     }
     let points: Vec<Value> = counts
         .into_iter()
-        .map(|((session, project, model, agent, agent_id), count)| {
-            let mut attrs = attributes(
-                [
-                    ("session.id", session.to_owned()),
-                    ("project", project.to_owned()),
-                    ("model", model.to_owned()),
-                    ("agent", agent.to_owned()),
-                ]
-                .into_iter(),
-            );
-            attrs.extend(agent_id_attribute(agent_id));
-            json!({
-                "asInt": count.to_string(),
-                "startTimeUnixNano": time,
-                "timeUnixNano": time,
-                "attributes": attrs,
-            })
-        })
+        .map(
+            |((session, project, model, agent, agent_id), (count, start))| {
+                let mut attrs = attributes(
+                    [
+                        ("session.id", session.to_owned()),
+                        ("project", project.to_owned()),
+                        ("model", model.to_owned()),
+                        ("agent", agent.to_owned()),
+                    ]
+                    .into_iter(),
+                );
+                attrs.extend(agent_id_attribute(agent_id));
+                json!({
+                    "asInt": count.to_string(),
+                    "startTimeUnixNano": start.to_string(),
+                    "timeUnixNano": time,
+                    "attributes": attrs,
+                })
+            },
+        )
         .collect();
     Some(json!({
         "name": "cc_obs_ledger_requests_total",
         "sum": {
-            "aggregationTemporality": AGGREGATION_DELTA,
+            "aggregationTemporality": AGGREGATION_CUMULATIVE,
             "isMonotonic": true,
             "dataPoints": points,
         },
@@ -304,7 +315,7 @@ pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
         .iter()
         .flat_map(|request| request_metrics(request, &time))
         .collect();
-    metrics.extend(request_count_metric(&parsed.requests, &time));
+    metrics.extend(request_count_metric(parsed, &time));
     metrics.extend(skill_listing_metrics(parsed, &time));
     metrics.extend(mcp_server_metrics(parsed, &time));
     if !metrics.is_empty() {

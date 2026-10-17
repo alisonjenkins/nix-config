@@ -21,7 +21,7 @@ use cc_obs_ledger::notice::{notice_line, review_state_dir, stack_line, stack_sta
 use cc_obs_ledger::otlp::{session_payloads, turn_payloads, Payload, Resource};
 use cc_obs_ledger::ship::{ship_spool, write_spool};
 use cc_obs_ledger::transcript::{
-    complete_lines, parse, parse_from, read_unread, Position, ToolHasher,
+    complete_lines, parse, parse_from, read_unread, Position, RequestSeries, ToolHasher,
 };
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
@@ -79,6 +79,8 @@ struct Cursor {
     last_main_ms: Option<u64>,
     #[serde(default)]
     last_sub_ms: Option<u64>,
+    #[serde(default)]
+    request_series: Vec<RequestSeries>,
 }
 
 fn main() -> ExitCode {
@@ -340,6 +342,7 @@ fn ingest(
                 seq: cursor.seq,
                 last_main_ms: cursor.last_main_ms,
                 last_sub_ms: cursor.last_sub_ms,
+                request_series: cursor.request_series,
             },
         )
     };
@@ -372,6 +375,7 @@ fn ingest(
         seq: parsed.end.seq,
         last_main_ms: parsed.end.last_main_ms,
         last_sub_ms: parsed.end.last_sub_ms,
+        request_series: parsed.end.request_series,
     };
     let text = serde_json::to_string(&next).map_err(|source| LedgerError::ParseFile {
         path: cursor_file.to_owned(),
@@ -533,13 +537,29 @@ mod tests {
         fs::write(&file, &all).unwrap();
         run(state.path(), &file, u64::MAX);
 
-        assert_eq!(cursor(state.path()), cursor(whole_state.path()));
+        // The start time is the wall clock at first send, so it differs between runs.
+        let without_start = |mut cursor: Cursor| {
+            for series in &mut cursor.request_series {
+                series.start_ns = 0;
+            }
+            cursor
+        };
+        let split_cursor = without_start(cursor(state.path()));
+        assert_eq!(split_cursor, without_start(cursor(whole_state.path())));
         assert_eq!(
-            cursor(state.path()),
+            split_cursor,
             Cursor {
                 offset: all.len() as u64,
                 turn: 2,
                 seq: 3,
+                request_series: vec![RequestSeries {
+                    session_id: "s".into(),
+                    project: "p".into(),
+                    model: "m".into(),
+                    sidechain: false,
+                    total: 3,
+                    start_ns: 0,
+                }],
                 ..Cursor::default()
             }
         );

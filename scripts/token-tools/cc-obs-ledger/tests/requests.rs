@@ -82,10 +82,10 @@ fn counts_are_split_by_model_and_agent() {
 }
 
 #[test]
-fn the_counter_is_a_delta_monotonic_sum_without_a_per_request_label() {
+fn the_counter_is_a_cumulative_monotonic_sum_without_a_per_request_label() {
     let (metric, data) = points(&transcript());
     assert_eq!(metric["sum"]["isMonotonic"], true);
-    assert_eq!(metric["sum"]["aggregationTemporality"], 1);
+    assert_eq!(metric["sum"]["aggregationTemporality"], 2);
     for point in &data {
         for key in ["turn", "request_id", "request.id"] {
             assert!(

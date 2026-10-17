@@ -186,7 +186,13 @@ fn parsing_in_two_parts_continues_turn_and_seq_like_parsing_once() {
         calls.iter().map(|c| (c.turn, c.seq)).collect::<Vec<_>>(),
         vec![(1, 0), (1, 1), (2, 2)]
     );
-    assert_eq!(second.end, whole.end);
+    let counts =
+        |end: &Position| -> Vec<u64> { end.request_series.iter().map(|s| s.total).collect() };
+    assert_eq!(counts(&second.end), counts(&whole.end));
+    assert_eq!(
+        (second.end.turn, second.end.seq),
+        (whole.end.turn, whole.end.seq)
+    );
     assert_eq!(second.requests[0].turn, 1);
     assert_eq!(second.requests[0].request_id, "r-2");
 }

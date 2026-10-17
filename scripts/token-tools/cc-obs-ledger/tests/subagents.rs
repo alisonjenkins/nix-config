@@ -144,13 +144,20 @@ impl Env {
             .collect()
     }
 
+    /// The counter is cumulative: the newest (largest) value of each series, summed.
     fn requests_total(&self) -> u64 {
-        self.metrics()
+        let mut newest: std::collections::BTreeMap<String, u64> = Default::default();
+        for point in self
+            .metrics()
             .iter()
             .filter(|m| m["name"] == "cc_obs_ledger_requests_total")
             .flat_map(|m| m["sum"]["dataPoints"].as_array().unwrap().clone())
-            .map(|p| p["asInt"].as_str().unwrap().parse::<u64>().unwrap())
-            .sum()
+        {
+            let value = point["asInt"].as_str().unwrap().parse::<u64>().unwrap();
+            let slot = newest.entry(point["attributes"].to_string()).or_insert(0);
+            *slot = (*slot).max(value);
+        }
+        newest.values().sum()
     }
 }
 

@@ -150,7 +150,7 @@ fn a_resumed_session_emits_only_the_records_after_the_end() {
 }
 
 #[test]
-fn the_requests_delta_after_a_resume_counts_only_the_new_requests() {
+fn the_requests_total_after_a_resume_continues_from_the_stored_total() {
     let env = Env::new();
     let mut all = vec![USER.to_owned(), tool(1), tool(2), tool(3)];
     env.write(&all);
@@ -162,7 +162,7 @@ fn the_requests_delta_after_a_resume_counts_only_the_new_requests() {
 
     assert_eq!(requests_total(&first), 3);
     assert_eq!(requests_total(&ended), 0);
-    assert_eq!(requests_total(&resumed), 2, "resume double counted");
+    assert_eq!(requests_total(&resumed), 5, "resume restarted the total");
 }
 
 #[test]
