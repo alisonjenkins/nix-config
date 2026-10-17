@@ -64,8 +64,58 @@ fn percent_decode(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
+/// What Prometheus would answer 400 to, for the mistakes a fake that never parses
+/// PromQL would otherwise let through: an `offset` after a closing paren (it only
+/// binds to a selector or range) and unbalanced brackets. Quoted strings are skipped.
+fn promql_error(target: &str) -> Option<&'static str> {
+    if !target.starts_with("/prom/api/") {
+        return None;
+    }
+    let query = target.split_once("query=")?.1;
+    let query = query.split('&').next().unwrap_or("");
+    let squeezed: String = query.split_whitespace().collect::<Vec<_>>().join(" ");
+    if squeezed.contains(") offset") {
+        return Some("parse error: offset modifier must be preceded by an instant vector selector or range vector selector or a subquery");
+    }
+    let mut stack: Vec<char> = Vec::new();
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for c in query.chars() {
+        if let Some(q) = quote {
+            if escaped {
+                escaped = false;
+            } else if c == '\\' && q != '`' {
+                escaped = true;
+            } else if c == q {
+                quote = None;
+            }
+            continue;
+        }
+        match c {
+            '"' | '\'' | '`' => quote = Some(c),
+            '(' | '[' | '{' => stack.push(c),
+            ')' | ']' | '}' => {
+                let want = match c {
+                    ')' => '(',
+                    ']' => '[',
+                    _ => '{',
+                };
+                if stack.pop() != Some(want) {
+                    return Some("parse error: unexpected closing bracket");
+                }
+            }
+            _ => {}
+        }
+    }
+    if stack.is_empty() && quote.is_none() {
+        None
+    } else {
+        Some("parse error: unclosed bracket or string")
+    }
+}
+
 /// First rule whose needle is contained in the decoded request target wins; no
-/// match answers 404.
+/// match answers 404. A PromQL query Prometheus would reject answers 400.
 pub fn serve(rules: Vec<(&str, String)>) -> Fake {
     let rules: Vec<(String, String)> = rules.into_iter().map(|(n, b)| (n.to_owned(), b)).collect();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -90,9 +140,14 @@ pub fn serve(rules: Vec<(&str, String)>) -> Fake {
             let target = percent_decode(text.split_whitespace().nth(1).unwrap_or(""));
             seen_in.lock().unwrap().push(target.clone());
             let hit = rules.iter().find(|(needle, _)| target.contains(needle));
-            let (status, body) = match hit {
-                Some((_, body)) => ("200 OK", body.as_str()),
-                None => (
+            let bad = promql_error(&target).map(|e| {
+                serde_json::json!({"status": "error", "errorType": "bad_data", "error": e})
+                    .to_string()
+            });
+            let (status, body) = match (&bad, hit) {
+                (Some(body), _) => ("400 Bad Request", body.as_str()),
+                (None, Some((_, body))) => ("200 OK", body.as_str()),
+                (None, None) => (
                     "404 Not Found",
                     r#"{"status":"error","error":"no fixture"}"#,
                 ),
