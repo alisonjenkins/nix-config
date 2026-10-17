@@ -39,6 +39,9 @@ echo "\$*" >>"\$WORK/git.log"
 if [ "\$*" = "rev-parse --is-shallow-repository" ]; then
   echo "\${STUB_SHALLOW:-false}"
 fi
+if [ "\${1:-}" = diff ]; then
+  printf '%s' "\${STUB_DIFF:-}"
+fi
 exit 0
 EOF
   chmod +x "$WORK/bin/git"
@@ -52,7 +55,7 @@ case "\$args" in
   *"--apply builtins.attrNames"*)
     case "\$args" in
       *devShells*) echo '["shell"]' ;;
-      *packages*) echo '["good","bad"]' ;;
+      *packages*) echo '["good","bad","token-tools"]' ;;
       *) echo '["m"]' ;;
     esac ;;
   *"builtins.filter"*) echo '["host1"]' ;;
@@ -73,6 +76,7 @@ case "\$args" in
   *".bad.drvPath"*) echo "error: bad does not evaluate" >&2; exit 1 ;;
   "build "*delegation-bats*)
     if [ -n "\${STUB_KILL_SECTION:-}" ]; then kill -9 \$PPID; fi ;;
+  "build "*packages*) echo "\$args" >>"\$WORK/build.log" ;;
   "shell "*)
     shift
     while [ "\$1" != "--command" ]; do shift; done
@@ -87,7 +91,7 @@ EOF
 @test "passes and batches each set when every eval succeeds" {
   run bash .github/scripts/pr-check-x86_64-linux.sh
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ok: .#packages.x86_64-linux (2 entries, batched)"* ]]
+  [[ "$output" == *"ok: .#packages.x86_64-linux (3 entries, batched)"* ]]
   [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
   [[ "$output" != *"FAILED"* ]]
 }
@@ -160,4 +164,34 @@ EOF
     sleep 0.1
   done
   ! kill -0 "$hung" 2>/dev/null
+}
+
+@test "a change under scripts/token-tools builds the token-tools package" {
+  export STUB_DIFF=$'scripts/token-tools/cc-obs-ledger/src/otlp.rs\nscripts/token-tools/Cargo.lock\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"built: .#packages.x86_64-linux.token-tools"* ]]
+  [ "$(grep -c token-tools "$WORK/build.log")" -eq 1 ]
+}
+
+@test "a change to the question pack builds the token-tools package" {
+  export STUB_DIFF=$'docs/token-efficiency/questions.yaml\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"built: .#packages.x86_64-linux.token-tools"* ]]
+}
+
+@test "a change under pkgs/ still builds only that package" {
+  export STUB_DIFF=$'pkgs/good/default.nix\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"built: .#packages.x86_64-linux.good"* ]]
+  ! grep -q token-tools "$WORK/build.log"
+}
+
+@test "an unrelated change builds no package" {
+  export STUB_DIFF=$'docs/other.md\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [ ! -e "$WORK/build.log" ]
 }

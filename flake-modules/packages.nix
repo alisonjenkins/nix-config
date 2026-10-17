@@ -44,6 +44,10 @@ in
     # agent opens a binary. Runs REA's own doctor, then a real decompile, on
     # exactly the Ghidra and JDK that programs.rea ships.
     checks = lib.optionalAttrs (system == "x86_64-linux") {
+      # The package builds with doCheck, so building it runs the workspace's
+      # cargo tests; this makes `nix flake check` run them too.
+      token-tools = (pkgsFor system).token-tools;
+
       rea-ghidra =
         let
           pkgs = pkgsFor system;
