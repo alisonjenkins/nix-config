@@ -79,7 +79,7 @@ for the live-maintenance runbook.
 
 | # | Decision | Status |
 |---|---|---|
-| [0029](0029-parallel-pr-check.md) | Run the PR check's sections in parallel, one eval per output set | Accepted |
+| [0044](0044-parallel-pr-check.md) | Run the PR check's sections in parallel, one eval per output set | Accepted |
 
 ## Build environment
 
