@@ -1294,11 +1294,16 @@ in
   };
 
   config = mkIf cfg.enable {
-    home-manager = mkIf (cfg.rustBuildCache.enable && config ? home-manager) {
-      sharedModules = [
-        inputs.self.homeModules.rust-build-cache
-        { modules.rustBuildCache.enable = mkDefault true; }
-      ];
+    home-manager = mkIf (config ? home-manager) {
+      sharedModules =
+        optionals cfg.rustBuildCache.enable [
+          inputs.self.homeModules.rust-build-cache
+          { modules.rustBuildCache.enable = mkDefault true; }
+        ]
+        ++ optionals cfg.antigravityCli.enable [
+          inputs.self.homeModules.antigravity-cli
+          { modules.antigravityCli.enable = mkDefault true; }
+        ];
     };
 
     assertions = [
