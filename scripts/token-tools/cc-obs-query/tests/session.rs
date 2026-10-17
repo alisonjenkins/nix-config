@@ -51,6 +51,23 @@ fn main_and_subagent(main_first: bool) -> Vec<(&'static str, String)> {
 }
 
 #[test]
+fn session_new_tokens_unavailable_when_fixed_exceeds_max_context() {
+    let context = vector(&[(ledger("main", "1"), "8000")]);
+    let cache = vector(&[(ledger("main", "1"), "0.5")]);
+    let fixed = vector(&[(json!({"component": "total"}), "10000")]);
+    let fake = serve(session_rules(context, cache, fixed));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(out["new_tokens"]["value"], json!(null), "{out}");
+    assert!(
+        out["new_tokens"]["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("fixed"),
+        "{out}"
+    );
+}
+
+#[test]
 fn session_main_and_subagent_in_one_turn_do_not_collide() {
     for main_first in [true, false] {
         let fake = serve(main_and_subagent(main_first));

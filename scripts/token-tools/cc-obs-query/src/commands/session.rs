@@ -93,6 +93,14 @@ pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
         .fold(f64::MIN, f64::max);
     let ratios: Vec<f64> = context.values().filter_map(|(_, ratio)| *ratio).collect();
     let mean_cache = (!ratios.is_empty()).then(|| ratios.iter().sum::<f64>() / ratios.len() as f64);
+    let new_tokens = match fixed {
+        None => figure(None, "needs the fixed-context census"),
+        Some(f) if f > max_context => figure(
+            None,
+            "the fixed-context census exceeds the peak context, so the two do not describe the same requests",
+        ),
+        Some(f) => num(max_context - f),
+    };
     let mut report = Report::new(&command)
         .with("session", json!(id))
         .with("turns", json!(context.len()))
@@ -105,13 +113,7 @@ pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
             "fixed_context_tokens",
             figure(fixed, "no fixed-context census for this session"),
         )
-        .with(
-            "new_tokens",
-            figure(
-                fixed.map(|f| (max_context - f).max(0.0)),
-                "needs the fixed-context census",
-            ),
-        );
+        .with("new_tokens", new_tokens);
     if detail {
         report.rows = context
             .iter()
