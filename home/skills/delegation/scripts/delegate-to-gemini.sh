@@ -175,12 +175,28 @@ for model in "${models[@]}"; do
   call_agy "$model" || status=$?
 
   if [[ $status -eq 0 ]]; then
+    # A denied tool exits 0 with only a notice, which a caller would read as a
+    # finished task. Fail with the profile that would have allowed it.
+    if grep -q 'headless mode cannot prompt' <<<"$call_output"; then
+      denied_tool=""
+      if [[ "$call_output" =~ required\ the\ \"([a-z_]+)\"\ permission ]]; then
+        denied_tool="${BASH_REMATCH[1]}"
+      fi
+      case "$denied_tool" in
+        command) needed="write-shell (run it in a worktree)" ;;
+        write_file) needed="write-workdir" ;;
+        *) needed="a wider profile, or run from the repo that holds the files" ;;
+      esac
+      echo "error: agy auto-denied a '${denied_tool:-unknown}' tool under profile '$profile'; the task needs $needed:" >&2
+      printf '%s\n' "$call_output" >&2
+      exit 3
+    fi
     printf '%s\n' "$call_output"
     exit 0
   fi
 
   # agy exits non-zero on an unknown model rather than falling back.
-  if [[ $status -eq 1 ]] && grep -qiE 'unknown model|invalid model|model.*(not found|not available)' <<<"$call_output"; then
+  if [[ $status -eq 1 ]] && grep -qF 'is not recognized as a known model' <<<"$call_output"; then
     continue
   fi
   break

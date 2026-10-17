@@ -36,10 +36,20 @@ case "${FAKE_AGY_MODE:-ok}" in
     ;;
   flash-medium-rejected)
     if [[ "$model" == "gemini-3.8-flash-medium" ]]; then
-      echo "ERROR: unknown model $model" >&2
+      echo "error: invalid model selection (--model \"$model\" --effort \"\"): model $model is not recognized as a known model or custom model in settings" >&2
       exit 1
     fi
     echo "response for model=$model: $task"
+    ;;
+  soft-denied-command)
+    echo "jetski: no output produced — a tool required the \"command\" permission that headless mode cannot prompt for, so it was auto-denied." >&2
+    ;;
+  soft-denied-write)
+    echo "jetski: no output produced — a tool required the \"write_file\" permission that headless mode cannot prompt for, so it was auto-denied." >&2
+    ;;
+  bad-effort)
+    echo "error: invalid model selection (--model \"$model\" --effort \"xhigh\"): invalid --effort \"xhigh\" (valid: low, medium, high)" >&2
+    exit 1
     ;;
   unauthenticated)
     echo "authentication required" >&2

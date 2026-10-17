@@ -73,6 +73,25 @@ setup() {
   [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 2 ]
 }
 
+@test "a denied command exits 3 and names write-shell" {
+  FAKE_AGY_MODE=soft-denied-command run bash "$delegate" "do it" write-workdir
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"needs write-shell"* ]]
+  [[ "$output" == *"under profile 'write-workdir'"* ]]
+}
+
+@test "a denied write exits 3 and names write-workdir" {
+  FAKE_AGY_MODE=soft-denied-write run bash "$delegate" "do it" read
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"needs write-workdir"* ]]
+}
+
+@test "an effort error does not count as a rejected model" {
+  FAKE_AGY_MODE=bad-effort run bash "$delegate" "do it" read
+  [ "$status" -eq 1 ]
+  [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 1 ]
+}
+
 @test "missing sign-in is reported with the fix" {
   FAKE_AGY_MODE=unauthenticated run bash "$delegate" "do it" read
   [ "$status" -eq 1 ]
