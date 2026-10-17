@@ -155,6 +155,98 @@ fn repeats_value_and_calls_semantics_per_pattern() {
     assert!(out["value_means"].is_string(), "{out}");
 }
 
+fn triple(session: &'static str) -> Vec<Rec> {
+    vec![
+        Rec(session, "m", "Edit", "e", "pe", 10, 1, 0),
+        Rec(session, "m", "Write", "w", "pw", 10, 2, 1),
+        Rec(session, "m", "Bash", "b", "pb", 10, 3, 2),
+    ]
+}
+
+#[test]
+fn min_count_is_per_session_for_groups_and_across_sessions_for_sequences() {
+    // Each of three sessions holds the triple once and one repeated Read.
+    let mut recs = Vec::new();
+    for s in ["s1", "s2", "s3"] {
+        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 0));
+        recs.push(Rec(s, "m", "Read", "a", "pa", 10, 0, 1));
+        recs.extend(triple(s));
+    }
+    let out = run_repeats(loki(&recs), &["--min-count", "3"]);
+    assert!(!has(&out, "identical:Read"), "{out}");
+    assert!(has(&out, "sequence:Edit>Write>Bash"), "{out}");
+}
+
+#[test]
+fn near_identical_counts_calls_that_also_form_an_identical_group() {
+    // Three identical calls share one input: that is identical, not near-identical.
+    let same: Vec<Rec> = (0..3)
+        .map(|i| Rec("s1", "m", "Grep", "g", "pg", 10, i, i))
+        .collect();
+    let out = run_repeats(loki(&same), &[]);
+    assert!(!has(&out, "near_identical:Grep"), "{out}");
+    // Two identical plus one differing input: near-identical over all three calls.
+    let mixed = [
+        Rec("s1", "m", "Grep", "g", "pg", 10, 0, 0),
+        Rec("s1", "m", "Grep", "g", "pg", 10, 1, 1),
+        Rec("s1", "m", "Grep", "h", "pg", 10, 2, 2),
+    ];
+    let out = run_repeats(loki(&mixed), &[]);
+    let near = row(&out, "near_identical:Grep");
+    assert_eq!(
+        (near["value"].clone(), near["calls"].clone()),
+        (json!(1), json!(3))
+    );
+    assert_eq!(row(&out, "identical:Grep")["value"], json!(1));
+}
+
+#[test]
+fn min_count_boundaries_are_inclusive_and_floor_at_two() {
+    let pair = [
+        Rec("s1", "m", "Read", "a", "pa", 10, 0, 0),
+        Rec("s1", "m", "Read", "a", "pa", 10, 1, 1),
+    ];
+    for count in ["1", "2"] {
+        let out = run_repeats(loki(&pair), &["--min-count", count]);
+        assert!(has(&out, "identical:Read"), "min-count {count}: {out}");
+    }
+    let out = run_repeats(loki(&pair), &["--min-count", "3"]);
+    assert!(!has(&out, "identical:Read"), "{out}");
+    let three = [
+        Rec("s1", "m", "Read", "a", "pa", 10, 0, 0),
+        Rec("s1", "m", "Read", "a", "pa", 10, 1, 1),
+        Rec("s1", "m", "Read", "a", "pa", 10, 2, 2),
+    ];
+    let out = run_repeats(loki(&three), &["--min-count", "3"]);
+    assert!(has(&out, "identical:Read"), "{out}");
+}
+
+#[test]
+fn equal_values_are_ordered_by_key() {
+    let recs = [
+        Rec("s1", "m", "Zed", "a", "pa", 10, 0, 0),
+        Rec("s1", "m", "Zed", "a", "pa", 10, 1, 1),
+        Rec("s1", "m", "Alpha", "b", "pb", 10, 2, 2),
+        Rec("s1", "m", "Alpha", "b", "pb", 10, 3, 3),
+    ];
+    let out = run_repeats(loki(&recs), &[]);
+    let keys: Vec<&Value> = rows(&out).iter().map(|r| &r["key"]).collect();
+    assert_eq!(keys, [&json!("identical:Alpha"), &json!("identical:Zed")]);
+}
+
+#[test]
+fn loki_truncation_is_reported_as_a_gap() {
+    // A full page of 5000 records is served on every request, so the pager runs
+    // until its record cap.
+    let recs: Vec<Rec> = (0..5000)
+        .map(|i| Rec("s1", "m", "Read", "a", "pa", 10, i, i))
+        .collect();
+    let out = run_repeats(loki(&recs), &[]);
+    let gaps = out["gaps"].to_string();
+    assert!(gaps.contains("loki: stopped at"), "{gaps}");
+    assert_eq!(out["calls_analysed"], json!(50_000), "{out}");
+}
+
 #[test]
 fn large_then_narrow_ignores_unrelated_next_call() {
     let recs = [
