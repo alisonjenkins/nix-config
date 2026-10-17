@@ -127,6 +127,73 @@ fn session_main_and_subagent_in_one_turn_do_not_collide() {
     }
 }
 
+fn health_rules(guard: Option<String>, tempo_up: bool) -> Vec<(&'static str, String)> {
+    let mut rules = vec![
+        ("/prom/-/ready", "ready".to_owned()),
+        ("/loki/ready", "ready".to_owned()),
+    ];
+    if tempo_up {
+        rules.push(("/tempo/ready", "ready".to_owned()));
+    }
+    if let Some(body) = guard {
+        rules.push(("observability_guard_over_budget", body));
+    }
+    rules
+}
+
+fn guards(values: &[&str]) -> String {
+    let series: Vec<(Value, &str)> = values
+        .iter()
+        .enumerate()
+        .map(|(i, v)| (json!({"host": format!("h{i}")}), *v))
+        .collect();
+    vector(&series)
+}
+
+#[test]
+fn health_guard_over_budget_when_any_series_is_one() {
+    for order in [["0", "1"], ["1", "0"]] {
+        let fake = serve(health_rules(Some(guards(&order)), true));
+        let out = cli(&fake, &["health"]).json();
+        assert_eq!(out["guard"], json!("over_budget"), "order {order:?}: {out}");
+    }
+}
+
+#[test]
+fn health_guard_ok_when_every_series_is_zero() {
+    let fake = serve(health_rules(Some(guards(&["0", "0"])), true));
+    let out = cli(&fake, &["health"]).json();
+    assert_eq!(out["guard"], json!("ok"), "{out}");
+}
+
+#[test]
+fn health_guard_absent_is_unavailable() {
+    let fake = serve(health_rules(Some(guards(&[])), true));
+    let out = cli(&fake, &["health"]).json();
+    assert_eq!(out["guard"]["value"], json!(null), "{out}");
+    assert!(out["guard"]["unavailable"].is_string(), "{out}");
+}
+
+#[test]
+fn health_store_down_with_guard_unknown_reports_both() {
+    let fake = serve(health_rules(None, false));
+    let run = cli(&fake, &["health"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(out["stores_ok"], json!(false), "{out}");
+    assert_eq!(out["guard"]["value"], json!(null), "{out}");
+    assert_eq!(common::row(&out, "tempo")["value"], json!("down"));
+}
+
+#[test]
+fn health_guard_nan_is_pinned() {
+    // Pinned current behaviour: a NaN sample is discarded on parse, so the guard
+    // reads as having published nothing.
+    let fake = serve(health_rules(Some(guards(&["NaN"])), true));
+    let out = cli(&fake, &["health"]).json();
+    assert_eq!(out["guard"]["value"], json!(null), "{out}");
+}
+
 fn recall_with(outcomes: &[(&str, &str)], hits: &str, tokens: &str) -> Vec<(&'static str, String)> {
     let by_outcome: Vec<(Value, &str)> = outcomes
         .iter()

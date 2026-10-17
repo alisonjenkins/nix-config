@@ -28,7 +28,7 @@ pub fn state(ctx: &Ctx) -> State {
         .backend
         .prom_instant(GUARD_OVER_BUDGET, None)
         .ok()
-        .and_then(|samples| samples.first().map(|s| s.value))
+        .and_then(|samples| samples.iter().map(|s| s.value).reduce(f64::max))
         .map(|v| if v >= 1.0 { "over_budget" } else { "ok" });
     State { stores, guard }
 }
