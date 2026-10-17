@@ -111,6 +111,7 @@ fn is_query(command: &Command) -> bool {
             | Command::Tool { .. }
             | Command::Session { .. }
             | Command::Repeats { .. }
+            | Command::Automate { .. }
             | Command::Recall { .. }
             | Command::Health
     )

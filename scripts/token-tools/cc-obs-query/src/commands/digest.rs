@@ -43,7 +43,7 @@ const QUESTION_KEYS: [&str; 6] = [
     "unavailable",
     "suppressed",
 ];
-const ROW_KEYS: [&str; 8] = [
+const ROW_KEYS: [&str; 13] = [
     "key",
     "value",
     "share",
@@ -52,6 +52,11 @@ const ROW_KEYS: [&str; 8] = [
     "regrowth_of",
     "pattern",
     "sessions",
+    "est_usd",
+    "main",
+    "sub",
+    "action",
+    "label",
 ];
 const DECISION_KEYS: [&str; 5] = ["id", "status", "before", "after", "verdict"];
 

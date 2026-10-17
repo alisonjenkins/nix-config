@@ -35,6 +35,7 @@ below, or the baseline digest (`cc-obs-query digest --baseline --since 7d`).
 |---|---|---|
 | tool-result-size | Tools returning the most tokens per use | Bound or summarise the output, add `--limit`/filters |
 | repeat-calls | Identical or near-identical calls in a session; big result then narrower query | A tool that does the narrow query directly |
+| script-candidates | Repeated Bash shapes and sequences ranked by est. USD a script would remove (`automate`; needs the ledger's `command_shape`, else it groups by prefix hash and says so) | Write the script (`script`) or a narrower tool (`tool`) |
 | skills-loaded-unused | Installed skills never activated, ranked by listing tokens (`top skill --unactivated`; unavailable until the ledger emits `cc_obs_ledger_skill_listed_tokens`) | Shorten the description of a heavy skill, drop it |
 | mcp-idle-servers | MCP servers ranked by tool-result tokens, from the `mcp__<server>__` tool-name prefix (`top mcp --idle` lists connected-but-never-called servers once the ledger emits the connected gauge) | Remove or defer a heavy server |
 | fixed-context-share | Share of the average request that is re-read fixed context (`total` row), and each component's part of it (instructions, listings, memory index) | Trim instruction files, move procedure into skills |

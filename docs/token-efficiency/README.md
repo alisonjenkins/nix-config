@@ -26,6 +26,30 @@ Questions worth asking that the collected signals cannot answer yet, and what ea
 | Large Bash results by command shape (`sed -n` ranges, grep, cat) | Ledger: a `command_shape` attribute (first word and flag class only, never arguments) on `cc_obs_ledger.tool_call` records, and `top.rs`: `top tool --by shape` |
 | Tokens spent before each compaction and turns it bought | `top.rs`: per-compaction rows joining `compaction` pre/post tokens to the `turn` of `cc_obs_ledger_context_tokens`; today only a count per session |
 
+## script-candidates
+
+`cc-obs-query automate [--since 7d] [--min-count 3]` (bounded like the other commands: `--limit`,
+`--offset`, `--format`, `--max-bytes`) ranks repeated Bash work a script or tool could replace.
+It reads `cc_obs_ledger.tool_call` records only (shape labels, hashes and sizes, never arguments).
+Candidates: a repeated Bash `command_shape`; a sequence of 2 to 4 consecutive Bash calls by one
+agent (non-overlapping, shared with `repeats`; a sequence entirely inside a longer listed one is
+dropped); a large result followed by a narrower query to the same tool. A sub-agent is its own run,
+keyed by `agent_id`.
+
+Score (the report's `score_means`): per candidate, `direct_tokens` = sum over its calls of
+`result_bytes / 4 + CALL_TOKENS` (100, an assumption: the records carry no input size);
+`carried_token_turns` = sum over its calls of result tokens x calls remaining in that agent's run;
+`est_usd` = `direct_tokens` x $2/M + `carried_token_turns` x $0.20/M (Sonnet 5.5 input price from
+`home/skills/delegation/tiers.md`; cache-read taken as 10% of it, an assumption). The row `value`
+(and the rank) is `est_usd` x `saveable_share`, an assumed fraction a script removes: 0.8 for a
+repeated shape, 0.6 for a sequence, 0.5 for large-then-narrow. Row fields: `key`, `pattern`,
+`calls` (occurrences), `sessions`, `main` / `sub` occurrences, `est_usd`, `value`, `action`
+(`script` at `--min-count` occurrences, `tool` for large-then-narrow, `dismiss` below the floor or
+for the catch-all `other` shape), `label` (the readable shapes; `key` is a slug of them).
+
+Without `command_shape` on the records (ledger older than the attribute) Bash calls fall back to
+`Bash@<input_prefix_hash>` groups and a gap note says command identity needs the new ledger.
+
 ## Findings file
 
 The review runner writes a findings file to the host's review state directory; the owner promotes it into `docs/token-efficiency/reviews/`.

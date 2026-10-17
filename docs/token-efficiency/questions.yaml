@@ -28,6 +28,15 @@ questions:
     query: { command: "cc-obs-query repeats" }
     decision_kind: build-tool | configure | dismiss
     threshold: { min_calls: 5 }
+  - id: script-candidates
+    # Row value is est_usd x saveable_share in USD; see README "script-candidates". Bash call
+    # identity needs the ledger's command_shape attribute; without it the command falls back
+    # to input_prefix_hash groups and says so in a gap note.
+    title: Which repeated Bash commands or sequences would a script or tool replace?
+    signals: [cc_obs_ledger.tool_call]
+    query: { command: "cc-obs-query automate" }
+    decision_kind: build-tool | dismiss
+    threshold: { min_calls: 3, min_value: 0.01 }
   - id: skills-loaded-unused
     # Until the ledger emits cc_obs_ledger_skill_listed_tokens the digest reports this question
     # as unavailable.

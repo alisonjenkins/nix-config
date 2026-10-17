@@ -13,6 +13,7 @@ use crate::error::Error;
 use crate::pack::Question;
 use crate::window::Window;
 
+pub mod automate;
 pub mod compare;
 pub mod digest;
 pub mod health;
@@ -292,6 +293,7 @@ pub fn query_report(ctx: &Ctx, command: &Command) -> Result<Report, Error> {
         Command::Repeats {
             min_count, tool, ..
         } => repeats::run(ctx, *min_count, tool.as_deref())?,
+        Command::Automate { min_count, .. } => automate::run(ctx, *min_count)?,
         Command::Health => health::run(ctx)?,
         other => {
             return Err(Error::Usage {
