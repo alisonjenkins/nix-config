@@ -219,6 +219,12 @@ Haiku-shaped work (default here unless the task itself says otherwise):
   positioned for sub-agent work and scores above Sonnet 5 on the
   intelligence index, so these no longer need sonnet by default; the
   done-check is what catches its "reported done without running it" misses.
+- Build, benchmark, corpus-assembly and run-the-suite steps with a stated done-check
+  (a build exit code, a results file), even when they take many turns. Split them from
+  the fix-the-code step, which stays on Sonnet. Evidence: on 2026-10-16/17 one session
+  spawned about 30 sub-agents and set `model: sonnet` on all but one, including
+  "Build integration/parity-N" and "Assemble corpora" steps. Sonnet agents were about
+  $417 of the night's spend and Haiku about 0.1%; Sonnet costs about 20x Haiku per token.
 
 Sonnet-shaped work:
 - Writing code whose design is still open, or whose spec you cannot write
