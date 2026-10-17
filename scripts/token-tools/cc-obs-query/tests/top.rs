@@ -52,6 +52,17 @@ fn top_subagent_keeps_series_without_an_agent_name() {
 }
 
 #[test]
+fn cache_hit_help_says_what_min_requests_counts() {
+    let fake = serve(vec![]);
+    let run = cli(&fake, &["top", "--help"]);
+    assert!(
+        run.out.contains("turn"),
+        "help does not say the count is per turn/model/agent series: {}",
+        run.out
+    );
+}
+
+#[test]
 fn top_fixed_does_not_rank_or_count_the_total_series() {
     let fake = serve(with_own(vec![(
         "by (component)",

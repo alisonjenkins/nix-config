@@ -31,7 +31,9 @@ pub enum By {
     Tokens,
     /// `session` only: prompt-cache hit ratio, lowest first. Weighted by tokens:
     /// cacheRead / (cacheRead + cacheCreation + input) summed over the window.
-    /// Sessions with fewer than --min-requests requests are left out.
+    /// Sessions with fewer than --min-requests ledger series are left out; the
+    /// ledger has no per-request id, so a series is one distinct
+    /// turn/model/agent combination, not one API request.
     CacheHit,
     /// `session` only: compaction events per session, most first
     Compactions,
@@ -222,7 +224,10 @@ fn cache_hit_by_session(ctx: &Ctx) -> Result<BTreeMap<String, CacheHit>, Error> 
         .collect())
 }
 
-/// Requests per session: one `cc_obs_ledger_*` series is written per request.
+/// Distinct cache-hit series per session. The ledger labels the gauge with
+/// turn, model, agent and project but no request id, so several requests of one
+/// turn (a tool loop) share one series: this undercounts requests and tracks
+/// turns instead.
 fn requests_by_session(ctx: &Ctx) -> Result<BTreeMap<String, f64>, Error> {
     let query = format!(
         "count by (session_id)(last_over_time({}[{}]))",
