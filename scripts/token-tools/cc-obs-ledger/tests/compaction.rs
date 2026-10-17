@@ -84,3 +84,51 @@ fn a_leading_meta_record_does_not_become_the_first_prompt() {
     let parsed = parse(&text, &hasher());
     assert_eq!(parsed.first_prompt_chars, 2);
 }
+
+#[test]
+fn a_second_census_for_the_same_session_keeps_the_first_measurement() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let home = tempfile::tempdir().unwrap();
+    let claude = home.path().join(".claude");
+    std::fs::create_dir_all(&claude).unwrap();
+    let hook = r#"{"session_id":"sess-1","cwd":"/nonexistent-cwd"}"#;
+    let run = || {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_cc-obs-ledger"))
+            .arg("census")
+            .env("HOME", home.path())
+            .env("XDG_STATE_HOME", home.path().join("state"))
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(hook.as_bytes())
+            .unwrap();
+        assert!(child.wait().unwrap().success());
+        std::fs::read_to_string(home.path().join("state/cc-obs-ledger/census/sess-1.json")).unwrap()
+    };
+    std::fs::write(claude.join("CLAUDE.md"), "a".repeat(400)).unwrap();
+    let first = run();
+    std::fs::write(claude.join("CLAUDE.md"), "a".repeat(4000)).unwrap();
+    assert_eq!(run(), first);
+}
+
+#[test]
+fn turn_numbering_runs_on_across_a_compaction() {
+    use cc_obs_ledger::transcript::parse_from;
+    let before = [prompt("one"), assistant("r1")].join("\n");
+    let first = parse_from(&before, &hasher(), Default::default());
+    let after = [
+        BOUNDARY.to_owned(),
+        flagged_prompt(r#""isCompactSummary":true"#, "summary"),
+        assistant("r2"),
+    ]
+    .join("\n");
+    let second = parse_from(&after, &hasher(), first.end);
+    assert_eq!(second.requests[0].turn, 1);
+    assert_eq!(second.end.turn, 1);
+}

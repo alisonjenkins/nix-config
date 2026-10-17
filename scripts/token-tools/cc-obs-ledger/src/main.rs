@@ -149,6 +149,12 @@ fn write_file(path: &Path, text: &str) -> Result<(), LedgerError> {
 fn census_cmd(state: &Path) -> Result<(), LedgerError> {
     let hook = read_hook()?;
     let session = session_file(&hook)?;
+    // SessionStart fires again on resume and after /compact with the same session
+    // id; the first measurement is the one the fixed-context total belongs to.
+    let path = state.join("census").join(format!("{session}.json"));
+    if path.exists() {
+        return Ok(());
+    }
     let cwd = hook
         .cwd
         .map(PathBuf::from)
@@ -165,7 +171,7 @@ fn census_cmd(state: &Path) -> Result<(), LedgerError> {
         path: PathBuf::from("census"),
         source,
     })?;
-    write_file(&state.join("census").join(format!("{session}.json")), &text)
+    write_file(&path, &text)
 }
 
 fn resource() -> Resource {
