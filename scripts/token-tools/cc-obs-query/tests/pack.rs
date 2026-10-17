@@ -34,6 +34,7 @@ fn shipped_pack_has_its_questions_and_no_unused_signal() {
         vec![
             "tool-result-size",
             "repeat-calls",
+            "script-candidates",
             "skills-loaded-unused",
             "mcp-idle-servers",
             "fixed-context-share",
