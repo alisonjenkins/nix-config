@@ -130,7 +130,7 @@ Design: [`specs/008-ai-control-centre/`](../../specs/008-ai-control-centre/).
 | [0040](0040-control-centre-store-liveness-event-feed.md) | Keep control-centre state in SQLite, judge liveness by process identity, and drive it from events | Proposed |
 | [0041](0041-control-centre-code-home-cortexiphan-coupling.md) | Build the control centre in claude-monitor and couple loosely to cortexiphan | Proposed |
 | [0042](0042-run-the-control-centre-web-view-as-a-user-service-everywhere.md) | Run the control-centre web view as a user service on every machine | Proposed |
-| [0043](0043-keep-an-extra-fast-keyslot-on-the-home-luks-volumes.md) | Keep an extra fast keyslot on the home LUKS volumes | Accepted |
+| [0045](0045-keep-an-extra-fast-keyslot-on-the-home-luks-volumes.md) | Keep an extra fast keyslot on the home LUKS volumes | Accepted |
 
 ## Template
 

@@ -1,7 +1,7 @@
 # ali-desktop boot time
 
 Where boot time goes on `ali-desktop`, what was changed, and what was left
-alone. Decision record: [ADR 0043](adr/0043-keep-an-extra-fast-keyslot-on-the-home-luks-volumes.md).
+alone. Decision record: [ADR 0045](adr/0045-keep-an-extra-fast-keyslot-on-the-home-luks-volumes.md).
 
 ## Baseline
 

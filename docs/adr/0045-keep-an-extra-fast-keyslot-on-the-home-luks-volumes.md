@@ -1,4 +1,4 @@
-# 0043. Keep an extra fast keyslot on the home LUKS volumes
+# 0045. Keep an extra fast keyslot on the home LUKS volumes
 
 - Status: Accepted
 - Date: 2026-10-16
