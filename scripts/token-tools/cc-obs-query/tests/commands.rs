@@ -204,6 +204,40 @@ fn session_without_fixed_context_marks_it_unavailable() {
 }
 
 #[test]
+fn session_fixed_context_counts_the_total_once() {
+    let census = json!({"status": "success", "data": {"resultType": "vector", "result": [
+        {"metric": {"component": "total"}, "value": [1760000000.0, "70000"]},
+        {"metric": {"component": "system"}, "value": [1760000000.0, "30000"]},
+        {"metric": {"component": "instructions"}, "value": [1760000000.0, "20000"]},
+        {"metric": {"component": "skills_listing"}, "value": [1760000000.0, "5000"]},
+        {"metric": {"component": "mcp_tools"}, "value": [1760000000.0, "10000"]},
+        {"metric": {"component": "other"}, "value": [1760000000.0, "5000"]}
+    ]}})
+    .to_string();
+    let fake = serve(with_own(vec![
+        (
+            "cc_obs_ledger_context_tokens",
+            fixture("prom_session_context.json"),
+        ),
+        (
+            "cc_obs_ledger_cache_hit_ratio",
+            fixture("prom_session_cache.json"),
+        ),
+        ("cc_obs_ledger_fixed_context_tokens", census),
+    ]));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(out["fixed_context_tokens"], json!(70000));
+    let fixed_queries = fake.seen_matching("cc_obs_ledger_fixed_context_tokens");
+    assert!(!fixed_queries.is_empty(), "no fixed-context query was sent");
+    for query in &fixed_queries {
+        assert!(
+            query.contains("component=\"total\""),
+            "fixed-context query does not select the total: {query}"
+        );
+    }
+}
+
+#[test]
 fn repeats_finds_each_pattern_without_exposing_hashes() {
     let fake = serve(with_own(vec![(
         "event_name=\"cc_obs_ledger.tool_call\"",

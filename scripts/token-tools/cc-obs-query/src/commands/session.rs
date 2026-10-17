@@ -24,15 +24,17 @@ fn per_turn(ctx: &Ctx, metric: &str, id: &str) -> Result<BTreeMap<u64, f64>, Err
         .collect())
 }
 
+/// The component series are a split of the total, so summing them would count
+/// the fixed context twice; only the total is read.
 fn fixed_tokens(ctx: &Ctx, id: &str) -> Result<Option<f64>, Error> {
     let matcher = session_matcher(id)?;
+    let total = "component=\"total\"";
     let query = format!(
-        "max by (component)(last_over_time({}[{}]))",
-        ctx.selector(FIXED, &[&matcher]),
+        "max(last_over_time({}[{}]))",
+        ctx.selector(FIXED, &[&matcher, total]),
         ctx.window.prom()
     );
-    let samples = ctx.instant(&query)?;
-    Ok((!samples.is_empty()).then(|| samples.iter().map(|s| s.value).sum()))
+    ctx.scalar(&query)
 }
 
 pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
