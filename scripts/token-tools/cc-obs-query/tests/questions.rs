@@ -9,9 +9,15 @@
 
 mod common;
 
+use std::path::PathBuf;
+
 use cc_obs_query::pack::Pack;
 use common::{cli, digest_rules, fixture, s, serve, write_pack};
 use serde_json::{json, Value};
+
+fn shipped_pack() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../docs/token-efficiency/questions.yaml")
+}
 
 fn vector(samples: &[(&[(&str, &str)], &str)]) -> String {
     let result: Vec<Value> = samples
@@ -27,6 +33,30 @@ fn vector(samples: &[(&[(&str, &str)], &str)]) -> String {
     json!({"status": "success", "data": {"resultType": "vector", "result": result}}).to_string()
 }
 
+fn command_of(pack: &Pack, id: &str) -> String {
+    pack.question(id).unwrap().query.command.clone()
+}
+
+fn title_of(pack: &Pack, id: &str) -> String {
+    pack.question(id).unwrap().title.to_lowercase()
+}
+
+/// `top skill` groups by `skill_name!=""`, so it can only list activated skills.
+#[test]
+fn skills_question_does_not_claim_to_find_unactivated_skills() {
+    let pack = Pack::load(&shipped_pack()).unwrap();
+    let title = title_of(&pack, "skills-loaded-unused");
+    assert!(
+        command_of(&pack, "skills-loaded-unused").contains("top skill"),
+        "the query changed; re-check the title"
+    );
+    assert!(
+        !title.contains("without being activated") && !title.contains("unused"),
+        "title promises unactivated skills but the query lists activated ones: {title}"
+    );
+}
+
+/// `top mcp` ranks series that carry an mcp server label; it cannot see idle servers.
 fn digest_questions(pack_yaml: &str, rules: Vec<(&'static str, String)>) -> Vec<Value> {
     let dir = tempfile::tempdir().unwrap();
     let pack = write_pack(dir.path(), pack_yaml);

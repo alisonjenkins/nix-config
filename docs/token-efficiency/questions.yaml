@@ -26,7 +26,9 @@ questions:
     decision_kind: build-tool | configure | dismiss
     threshold: { min_calls: 5 }
   - id: skills-loaded-unused
-    title: Which skills cost tokens without being activated?
+    # Installed-but-never-activated skills need a per-skill listing signal that is not emitted
+    # yet (README "Not yet answerable"); until then this ranks the skills that were activated.
+    title: Which activated skills account for the most tokens?
     signals: [claude_code.skill_activated, claude_code.token.usage]
     query: { command: "cc-obs-query top skill --by tokens" }
     decision_kind: configure | dismiss
