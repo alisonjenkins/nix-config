@@ -19,6 +19,10 @@ if ! command -v agy >/dev/null 2>&1; then
   exit 1
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/delegate-telemetry.sh
+source "$script_dir/lib/delegate-telemetry.sh"
+
 task="$1"
 profile="${2:-read}"
 skills_arg="${3:-}"
@@ -62,18 +66,34 @@ if [[ -n "${DELEGATE_REASONING_EFFORT:-}" ]]; then
   esac
 fi
 
+# jq turns agy's JSON envelope (answer, token usage, denied tools) into the
+# call record and a structured denial check. Without it, agy runs in text mode
+# and nothing is recorded.
+use_json=0
+command -v jq >/dev/null 2>&1 && use_json=1
+
+# The span is a child of Claude Code's tool span (TRACEPARENT), and agy is
+# started under the span's own context so a tracing hook inside agy nests
+# below it.
+telemetry_init
+trace_env=()
+telemetry_enabled && trace_env=(env "TRACEPARENT=$tel_traceparent")
+
 # agy refuses to read outside the workspace, and ~/.claude/skills is
 # home-manager-managed (symlinks into the read-only Nix store), which --add-dir
 # does not make readable either. A dereferenced, user-owned copy does.
 extra_args=()
 staged_user_skills_root=""
+err_file=""
 # shellcheck disable=SC2329 # invoked indirectly via `trap`, below
-cleanup_staged_skills() {
-  [[ -n "$staged_user_skills_root" ]] || return 0
-  chmod -R u+w "$staged_user_skills_root" 2>/dev/null || true
-  rm -rf "$staged_user_skills_root"
+cleanup_temp() {
+  [[ -z "$err_file" ]] || rm -f "$err_file"
+  if [[ -n "$staged_user_skills_root" ]]; then
+    chmod -R u+w "$staged_user_skills_root" 2>/dev/null || true
+    rm -rf "$staged_user_skills_root"
+  fi
 }
-trap cleanup_staged_skills EXIT
+trap cleanup_temp EXIT
 
 if [[ -n "$skills_arg" ]]; then
   project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -154,65 +174,130 @@ is_quota_exhausted() {
   grep -qiE 'quota|resource.exhausted|insufficient.*credit|credit.*(exhausted|exceeded)|usage limit' <<<"$1"
 }
 
-# Sets $call_output; returns 0 on success, 1 on a non-transient failure,
-# 2 if retries were exhausted on a transient one.
+# Records one call. $1 outcome, $2 exit code; reads the model, attempt count
+# and envelope the last call left behind.
+record_call() {
+  telemetry_enabled || return 0
+  telemetry_finish "$1" "$2" "$model" "$call_attempts" "$profile" "$skills_arg" "${envelope:-}" || true
+}
+
+# $1 the denied tool (agy's own name: command, write_file, ...), $2 agy's
+# output to show. A denied tool exits 0 with an empty answer, which a caller
+# would read as a finished task, so fail with the profile that allows it.
+report_denied() {
+  local tool="$1" shown="$2" needed
+  case "$tool" in
+    command) needed="write-shell (run it in a worktree)" ;;
+    write_file) needed="write-workdir" ;;
+    *) needed="a wider profile, or run from the repo that holds the files" ;;
+  esac
+  echo "error: agy auto-denied a '${tool:-unknown}' tool under profile '$profile'; the task needs $needed:" >&2
+  printf '%s\n' "$shown" >&2
+}
+
+err_file="$(mktemp "${TMPDIR:-/tmp}/delegate-to-gemini-err.XXXXXXXX")"
+
+# Sets $call_output (agy's stdout), $call_err (its stderr; empty in text mode,
+# where stderr is merged into $call_output) and $call_attempts. Returns 0 on
+# success, 1 on a non-transient failure, 2 if retries were exhausted on a
+# transient one.
 call_agy() {
-  local model="$1" attempt=1
+  local model="$1"
+  call_attempts=0
   while :; do
-    if call_output="$(agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
-      "${effort_args[@]}" "${profile_args[@]}" "${extra_args[@]}" 2>&1)"; then
-      return 0
+    call_attempts=$((call_attempts + 1))
+    if (( use_json )); then
+      if call_output="$("${trace_env[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
+        --output-format json "${effort_args[@]}" "${profile_args[@]}" "${extra_args[@]}" 2>"$err_file")"; then
+        call_err="$(<"$err_file")"
+        return 0
+      fi
+      call_err="$(<"$err_file")"
+    else
+      if call_output="$("${trace_env[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
+        "${effort_args[@]}" "${profile_args[@]}" "${extra_args[@]}" 2>&1)"; then
+        call_err=""
+        return 0
+      fi
+      call_err=""
     fi
-    if ! is_transient "$call_output"; then
+    if ! is_transient "$call_output"$'\n'"$call_err"; then
       return 1
     fi
-    if (( attempt >= retry_max )); then
+    if (( call_attempts >= retry_max )); then
       return 2
     fi
-    sleep "$(( retry_base_delay * attempt ))"
-    attempt=$((attempt + 1))
+    sleep "$(( retry_base_delay * call_attempts ))"
   done
 }
 
 status=0
+envelope=""
+call_attempts=0
 for model in "${models[@]}"; do
   status=0
   call_agy "$model" || status=$?
 
   if [[ $status -eq 0 ]]; then
-    # A denied tool exits 0 with only a notice, which a caller would read as a
-    # finished task. Fail with the profile that would have allowed it.
+    if (( use_json )) && jq -e . >/dev/null 2>&1 <<<"$call_output"; then
+      envelope="$call_output"
+      env_status="$(jq -r '.status // ""' <<<"$envelope")"
+      denied_tool="$(jq -r '(.denied_actions // [])[0].action // empty' <<<"$envelope")"
+      if [[ -n "$denied_tool" ]]; then
+        report_denied "$denied_tool" "$call_err"
+        record_call denied 3
+        exit 3
+      fi
+      if [[ "$env_status" != "SUCCESS" ]]; then
+        echo "error: agy finished with status '$env_status': $(jq -r '.error // ""' <<<"$envelope")" >&2
+        printf '%s\n' "$call_err" >&2
+        record_call error 1
+        exit 1
+      fi
+      answer="$(jq -j '.response // ""' <<<"$envelope")"
+      record_call success 0
+      printf '%s\n' "$answer"
+      exit 0
+    fi
+
+    # Text mode, or output that is not the JSON envelope: fall back to the
+    # notice text for denial detection.
     if grep -q 'headless mode cannot prompt' <<<"$call_output"; then
       denied_tool=""
       if [[ "$call_output" =~ required\ the\ \"([a-z_]+)\"\ permission ]]; then
         denied_tool="${BASH_REMATCH[1]}"
       fi
-      case "$denied_tool" in
-        command) needed="write-shell (run it in a worktree)" ;;
-        write_file) needed="write-workdir" ;;
-        *) needed="a wider profile, or run from the repo that holds the files" ;;
-      esac
-      echo "error: agy auto-denied a '${denied_tool:-unknown}' tool under profile '$profile'; the task needs $needed:" >&2
-      printf '%s\n' "$call_output" >&2
+      report_denied "$denied_tool" "$call_output"
+      record_call denied 3
       exit 3
     fi
+    record_call success 0
     printf '%s\n' "$call_output"
     exit 0
   fi
 
   # agy exits non-zero on an unknown model rather than falling back.
-  if [[ $status -eq 1 ]] && grep -qF 'is not recognized as a known model' <<<"$call_output"; then
+  if [[ $status -eq 1 ]] && grep -qF 'is not recognized as a known model' <<<"$call_output"$'\n'"$call_err"; then
     continue
   fi
   break
 done
 
+failure_text="$call_output"$'\n'"$call_err"
 if [[ $status -eq 2 ]]; then
   echo "error: agy kept failing with a transient-looking error after $retry_max attempts (possible outage):" >&2
-elif is_auth_missing "$call_output"; then
+  outcome=transient_exhausted
+elif is_auth_missing "$failure_text"; then
   echo "error: agy is not signed in — run 'agy' once interactively to authenticate:" >&2
-elif is_quota_exhausted "$call_output"; then
+  outcome=auth_missing
+elif is_quota_exhausted "$failure_text"; then
   echo "error: agy reports exhausted quota/credits — wait for the reset, retrying won't help:" >&2
+  outcome=quota
+elif grep -qF 'is not recognized as a known model' <<<"$failure_text"; then
+  outcome=model_rejected
+else
+  outcome=error
 fi
-printf '%s\n' "$call_output" >&2
+printf '%s\n' "$failure_text" >&2
+record_call "$outcome" 1
 exit 1

@@ -8,8 +8,17 @@ setup() {
   stage_fakes_and_export_path "$script_dir"
   export FAKE_AGY_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_AGY_CALLS"
-  unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL FAKE_AGY_MODE
+  unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL FAKE_AGY_MODE DELEGATE_TELEMETRY \
+    DELEGATE_OTLP_ENDPOINT TRACEPARENT CLAUDE_CODE_SESSION_ID XDG_STATE_HOME
   export DELEGATE_RETRY_BASE_DELAY=0
+  # A real ~/.config/cc-obs/endpoints.json or state dir must never be touched.
+  export HOME="$BATS_TEST_TMPDIR/home"
+  mkdir -p "$HOME"
+  export DELEGATE_TELEMETRY_DIR="$BATS_TEST_TMPDIR/telemetry"
+  calls_jsonl="$DELEGATE_TELEMETRY_DIR/gemini-calls.jsonl"
+  export FAKE_CURL_CALLS="$BATS_TEST_TMPDIR/curl-calls.log"
+  : >"$FAKE_CURL_CALLS"
+  export FAKE_CURL_UP="http://collector.test"
 }
 
 @test "no args prints usage and exits 1" {
@@ -149,4 +158,124 @@ setup() {
   run bash "$delegate" "do it" read nosuchskill
   [ "$status" -eq 1 ]
   [[ "$output" == *"skill(s) 'nosuchskill' not found"* ]]
+}
+
+parent_trace="4bf92f3577b34da6a3ce929d0e0e4736"
+parent_span="00f067aa0ba902b7"
+
+@test "a call is recorded as a child of Claude's trace" {
+  export TRACEPARENT="00-$parent_trace-$parent_span-01"
+  export CLAUDE_CODE_SESSION_ID="sess-123"
+  run bash "$delegate" "do it" write-workdir
+  [ "$status" -eq 0 ]
+  record="$(tail -n1 "$calls_jsonl")"
+  [ "$(jq -r .trace_id <<<"$record")" = "$parent_trace" ]
+  [ "$(jq -r .parent_span_id <<<"$record")" = "$parent_span" ]
+  [ "$(jq -r .claude_session_id <<<"$record")" = "sess-123" ]
+  [ "$(jq -r .outcome <<<"$record")" = "success" ]
+  [ "$(jq -r .model <<<"$record")" = "gemini-3.8-flash-medium" ]
+  [ "$(jq -r .profile <<<"$record")" = "write-workdir" ]
+  [ "$(jq -r .input_tokens <<<"$record")" = "100" ]
+  [ "$(jq -r .output_tokens <<<"$record")" = "20" ]
+  [ "$(jq -r .thinking_tokens <<<"$record")" = "5" ]
+  [[ "$(jq -r .ts <<<"$record")" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$ ]]
+}
+
+@test "the span is posted to the collector under the same trace" {
+  export TRACEPARENT="00-$parent_trace-$parent_span-01"
+  export DELEGATE_OTLP_ENDPOINT="http://collector.test"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  line="$(grep 'url=http://collector.test/v1/traces' "$FAKE_CURL_CALLS")"
+  body="${line#*body=}"
+  span="$(jq -c '.resourceSpans[0].scopeSpans[0].spans[0]' <<<"$body")"
+  [ "$(jq -r .traceId <<<"$span")" = "$parent_trace" ]
+  [ "$(jq -r .parentSpanId <<<"$span")" = "$parent_span" ]
+  [ "$(jq -r .status.code <<<"$span")" = "1" ]
+  [ "$(jq -r '.attributes[] | select(.key=="gen_ai.usage.input_tokens") | .value.intValue' <<<"$span")" = "100" ]
+  [ "$(jq -r '.attributes[] | select(.key=="delegate.profile") | .value.stringValue' <<<"$span")" = "read" ]
+}
+
+@test "agy runs under the span's own context, not Claude's" {
+  export TRACEPARENT="00-$parent_trace-$parent_span-01"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  child="$(sed -n 's/.*traceparent=//p' "$FAKE_AGY_CALLS")"
+  span_id="$(jq -r .span_id "$calls_jsonl")"
+  [ "$child" = "00-$parent_trace-$span_id-01" ]
+  [ "$span_id" != "$parent_span" ]
+}
+
+@test "without a parent a new trace is started" {
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  record="$(tail -n1 "$calls_jsonl")"
+  [[ "$(jq -r .trace_id <<<"$record")" =~ ^[0-9a-f]{32}$ ]]
+  [ "$(jq -r .parent_span_id <<<"$record")" = "" ]
+}
+
+@test "a malformed or all-zero TRACEPARENT is not propagated" {
+  export TRACEPARENT="00-00000000000000000000000000000000-$parent_span-01"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .parent_span_id "$calls_jsonl")" = "" ]
+
+  : >"$calls_jsonl"
+  export TRACEPARENT="garbage"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .parent_span_id "$calls_jsonl")" = "" ]
+}
+
+@test "DELEGATE_TELEMETRY=off records nothing and passes no trace context" {
+  export DELEGATE_OTLP_ENDPOINT="http://collector.test"
+  DELEGATE_TELEMETRY=off run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  [ ! -e "$calls_jsonl" ]
+  [ ! -s "$FAKE_CURL_CALLS" ]
+  [[ "$(<"$FAKE_AGY_CALLS")" == *$'traceparent='* ]]
+  [[ "$(<"$FAKE_AGY_CALLS")" != *"traceparent=00-"* ]]
+}
+
+@test "a down collector warns but still writes the record and succeeds" {
+  export DELEGATE_OTLP_ENDPOINT="http://collector.test"
+  export FAKE_CURL_UP=""
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"could not send the delegate span"* ]]
+  [ "$(jq -r .outcome "$calls_jsonl")" = "success" ]
+}
+
+@test "the endpoint falls back to the observability stack's endpoints file" {
+  mkdir -p "$HOME/.config/cc-obs"
+  echo '{"urls":{"otlpHttp":"http://collector.test"}}' >"$HOME/.config/cc-obs/endpoints.json"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  grep -q 'url=http://collector.test/v1/traces' "$FAKE_CURL_CALLS"
+}
+
+@test "failures and denials are recorded with their outcome" {
+  FAKE_AGY_MODE=quota-exhausted run bash "$delegate" "do it" read
+  [ "$status" -eq 1 ]
+  [ "$(jq -r .outcome "$calls_jsonl")" = "quota" ]
+  [ "$(jq -r .exit_code "$calls_jsonl")" = "1" ]
+
+  : >"$calls_jsonl"
+  FAKE_AGY_MODE=soft-denied-command run bash "$delegate" "do it" write-workdir
+  [ "$status" -eq 3 ]
+  [ "$(jq -r .outcome "$calls_jsonl")" = "denied" ]
+  [ "$(jq -r '.denied_actions | join(",")' "$calls_jsonl")" = "command" ]
+
+  : >"$calls_jsonl"
+  FAKE_AGY_MODE=outage-persistent run bash "$delegate" "do it" read
+  [ "$(jq -r .outcome "$calls_jsonl")" = "transient_exhausted" ]
+  [ "$(jq -r .attempts "$calls_jsonl")" = "3" ]
+}
+
+@test "no prompt or answer text reaches the record or the span" {
+  export DELEGATE_OTLP_ENDPOINT="http://collector.test"
+  run bash "$delegate" "SECRETWORD in the task" read
+  [ "$status" -eq 0 ]
+  ! grep -q SECRETWORD "$calls_jsonl"
+  ! grep -q SECRETWORD "$FAKE_CURL_CALLS"
 }
