@@ -63,7 +63,7 @@ fn a_tool_loop_of_many_requests_in_one_turn_is_not_dropped() {
     assert_eq!(row(&out, "loop")["requests"], json!(12));
     let sent = fake.seen_matching(COUNTER);
     assert!(
-        sent[0].contains("round(sum by (session_id, agent)(increase("),
+        sent[0].contains("round(sum by (session_id, agent)(clamp_min(last_over_time("),
         "{sent:?}"
     );
 }

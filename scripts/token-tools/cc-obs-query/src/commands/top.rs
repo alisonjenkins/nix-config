@@ -271,11 +271,22 @@ fn requests_by_session_agent(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Er
     session_agent_values(ctx, &query)
 }
 
+/// How far back a cumulative series is looked up for its last value; a series idle
+/// longer than this reads as new.
+const COUNTER_LOOKBACK: &str = "90d";
+
+/// The counter is cumulative, so a window's requests are its value at the window end
+/// less its value at the start (`increase()` loses a series' first sample); one query
+/// keeps the subtraction per series, which a client-side one could not.
 fn counted_requests(ctx: &Ctx) -> Result<Vec<(String, String, f64)>, Error> {
-    let counted = format!(
-        "round(sum by (session_id, agent)(increase({}[{}])))",
-        ctx.selector(LEDGER_REQUESTS, &[]),
+    let selector = ctx.selector(LEDGER_REQUESTS, &[]);
+    let end = format!("last_over_time({selector}[{COUNTER_LOOKBACK}])");
+    let start = format!(
+        "last_over_time({selector}[{COUNTER_LOOKBACK}] offset {})",
         ctx.window.prom()
+    );
+    let counted = format!(
+        "round(sum by (session_id, agent)(clamp_min({end} - ({start} or {end} * 0), 0))) > 0"
     );
     session_agent_values(ctx, &counted)
 }
