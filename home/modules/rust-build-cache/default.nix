@@ -2,6 +2,35 @@
 let
   cfg = config.modules.rustBuildCache;
   tomlFormat = pkgs.formats.toml { };
+
+  pruneExternalTargets = pkgs.writeShellApplication {
+    name = "prune-external-cargo-targets";
+    runtimeInputs = [ pkgs.coreutils pkgs.findutils ];
+    text = ''
+      max_age_days=$1
+      shift
+      shopt -s nullglob
+
+      for pattern in "$@"; do
+        # the glob is the point: it must expand here
+        # shellcheck disable=SC2231
+        for dir in $pattern; do
+          [[ -d $dir && ! -L $dir && -f $dir/CACHEDIR.TAG ]] || continue
+          if [[ -n $(find "$dir" -type f -mtime "-$max_age_days" -print -quit) ]]; then
+            continue
+          fi
+          printf 'event=prune_target path=%q\n' "$dir" >&2
+          rm -rf -- "$dir"
+        done
+      done
+    '';
+  };
+
+  sweepSchedule = {
+    OnCalendar = cfg.sweep.frequency;
+    Persistent = true;
+    RandomizedDelaySec = "30m";
+  };
 in {
   options.modules.rustBuildCache = {
     enable = lib.mkEnableOption "sccache, slimmer dev profiles and periodic cargo-sweep of target dirs";
@@ -35,6 +64,21 @@ in {
         type = lib.types.str;
         default = "daily";
         description = "systemd OnCalendar expression for the sweep.";
+      };
+
+      externalTargetGlobs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "${config.home.homeDirectory}/.cache/*/target"
+          "${config.home.homeDirectory}/git/.cm-shared-target*"
+          "${config.home.homeDirectory}/git/*/.cm-shared-target*"
+        ];
+        description = ''
+          Globs of CARGO_TARGET_DIR directories that live outside any project,
+          which cargo-sweep cannot find. A match is deleted whole when no file
+          in it changed within maxAgeDays. Only directories holding the
+          CACHEDIR.TAG that cargo writes are touched.
+        '';
       };
     };
   };
@@ -75,11 +119,26 @@ in {
 
     systemd.user.timers.cargo-sweep = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
       Unit.Description = "Delete stale cargo build artifacts";
-      Timer = {
-        OnCalendar = cfg.sweep.frequency;
-        Persistent = true;
-        RandomizedDelaySec = "30m";
+      Timer = sweepSchedule;
+      Install.WantedBy = [ "timers.target" ];
+    };
+
+    systemd.user.services.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+      Unit.Description = "Delete stale cargo target dirs outside any project";
+      Service = {
+        Type = "oneshot";
+        Nice = 19;
+        IOSchedulingClass = "idle";
+        ExecStart = lib.escapeShellArgs ([
+          (lib.getExe pruneExternalTargets)
+          (toString cfg.sweep.maxAgeDays)
+        ] ++ cfg.sweep.externalTargetGlobs);
       };
+    };
+
+    systemd.user.timers.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+      Unit.Description = "Delete stale cargo target dirs outside any project";
+      Timer = sweepSchedule;
       Install.WantedBy = [ "timers.target" ];
     };
   };
