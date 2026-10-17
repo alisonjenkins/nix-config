@@ -9,7 +9,7 @@ use crate::bounds::{num, Report};
 use crate::error::Error;
 
 /// A result at least this big counts as "large" for the large-then-narrow pattern.
-const LARGE_RESULT_BYTES: u64 = 20_000;
+pub(super) const LARGE_RESULT_BYTES: u64 = 20_000;
 const SEQUENCE_LEN: usize = 3;
 /// Rows from every pattern are ranked together by `value`, so it has one unit:
 /// tool calls that would not have been made without the pattern. `calls` is the size
@@ -28,14 +28,18 @@ pub struct Call {
     pub session: String,
     pub tool: String,
     pub agent: String,
+    /// Sub-agent id; empty for the main loop and for records from an older ledger.
+    pub agent_id: String,
     pub input_hash: String,
     pub prefix_hash: String,
+    /// Short fixed-vocabulary label of a Bash call; empty on records from an older ledger.
+    pub command_shape: String,
     pub result_bytes: Option<u64>,
     pub turn: u64,
     pub seq: u64,
 }
 
-fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
+pub(super) fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
     let records = ctx.logs(&ctx.logql("cc-obs-ledger", "cc_obs_ledger.tool_call"))?;
     let received = records.len();
     let mut calls: Vec<Call> = records
@@ -50,8 +54,10 @@ fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
                 agent: field("agent")
                     .or_else(|| field("agent_type"))
                     .unwrap_or_default(),
+                agent_id: field("agent_id").unwrap_or_default(),
                 input_hash: field("input_hash")?,
                 prefix_hash: field("input_prefix_hash").unwrap_or_default(),
+                command_shape: field("command_shape").unwrap_or_default(),
                 result_bytes: whole("result_bytes"),
                 turn: whole("turn").unwrap_or(0),
                 seq: whole("seq").unwrap_or(0),
@@ -209,17 +215,27 @@ fn large_then_narrow(calls: &[&Call], out: &mut Findings) {
     }
 }
 
-/// Non-overlapping occurrences of each tool triple within one agent's calls, found
-/// greedily left to right: a run of five identical calls holds one triple, not three.
-fn sequences(calls: &[&Call], counts: &mut BTreeMap<String, (u64, BTreeSet<String>)>) {
-    let names: Vec<&str> = calls.iter().map(|c| c.tool.as_str()).collect();
+/// Non-overlapping windows of `len` labels, found greedily left to right: each is the
+/// window's start and its labels joined by `sep`. A run of five identical labels holds
+/// one window of three, not three. Only windows of the same labels are kept apart.
+pub(super) fn greedy_windows(labels: &[&str], len: usize, sep: &str) -> Vec<(usize, String)> {
     let mut free_from: BTreeMap<String, usize> = BTreeMap::new();
-    for (start, window) in names.windows(SEQUENCE_LEN).enumerate() {
-        let key = window.join(">");
+    let mut found = Vec::new();
+    for (start, window) in labels.windows(len).enumerate() {
+        let key = window.join(sep);
         if free_from.get(&key).is_some_and(|free| start < *free) {
             continue;
         }
-        free_from.insert(key.clone(), start.saturating_add(SEQUENCE_LEN));
+        free_from.insert(key.clone(), start.saturating_add(len));
+        found.push((start, key));
+    }
+    found
+}
+
+/// Non-overlapping occurrences of each tool triple within one agent's calls.
+fn sequences(calls: &[&Call], counts: &mut BTreeMap<String, (u64, BTreeSet<String>)>) {
+    let names: Vec<&str> = calls.iter().map(|c| c.tool.as_str()).collect();
+    for (_, key) in greedy_windows(&names, SEQUENCE_LEN, ">") {
         let entry = counts.entry(key).or_default();
         entry.0 = entry.0.saturating_add(1);
         if let Some(call) = calls.first() {
