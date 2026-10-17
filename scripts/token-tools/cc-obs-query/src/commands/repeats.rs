@@ -15,7 +15,7 @@ const SEQUENCE_LEN: usize = 3;
 /// tool calls that would not have been made without the pattern. `calls` is the size
 /// of the evidence: calls in the group (identical, near_identical), 2 for a
 /// large_then_narrow pair, or non-overlapping occurrences of a sequence.
-const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first, near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
+const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first (calls separated by an edit by the same agent do not repeat each other: Edit, Write, NotebookEdit and MultiEdit end a run), near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
 /// Identical and near-identical calls are a within-session, within-agent notion (each
 /// agent has its own context), so their threshold applies per (session, agent); a
 /// sequence is "frequent" across the window, so its threshold applies to occurrences
@@ -113,15 +113,27 @@ impl Finding {
 
 type Findings = BTreeMap<(&'static str, String), Finding>;
 
+/// Tools that change the state a repeated call would observe.
+const EDIT_TOOLS: [&str; 4] = ["Edit", "Write", "NotebookEdit", "MultiEdit"];
+
+/// Identical calls by one agent, split into runs at every edit by that agent: a call
+/// repeated across an edit may legitimately see new state (a test run after a fix), so
+/// only calls with no edit between them form a group. `calls` is one agent's stream.
 fn identical(calls: &[&Call], min_count: u64, out: &mut Findings) {
-    let mut groups: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
+    type Group<'a> = BTreeMap<(&'a str, &'a str), Vec<&'a Call>>;
+    let mut runs: Vec<Group> = vec![Group::new()];
     for call in calls {
-        groups
-            .entry((call.tool.as_str(), call.input_hash.as_str()))
-            .or_default()
-            .push(call);
+        if EDIT_TOOLS.contains(&call.tool.as_str()) {
+            runs.push(Group::new());
+            continue;
+        }
+        if let Some(run) = runs.last_mut() {
+            run.entry((call.tool.as_str(), call.input_hash.as_str()))
+                .or_default()
+                .push(call);
+        }
     }
-    for ((tool, _), group) in groups {
+    for ((tool, _), group) in runs.into_iter().flatten() {
         let size = group.len() as u64;
         if size < min_count.max(2) {
             continue;
