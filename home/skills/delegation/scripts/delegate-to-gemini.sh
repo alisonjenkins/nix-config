@@ -19,6 +19,11 @@ if ! command -v agy >/dev/null 2>&1; then
   exit 1
 fi
 
+# agy treats SSH as headless and skips the keyring.
+if [[ -e "${XDG_RUNTIME_DIR:-}/bus" ]]; then
+  unset SSH_CONNECTION
+fi
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/delegate-telemetry.sh
 source "$script_dir/lib/delegate-telemetry.sh"

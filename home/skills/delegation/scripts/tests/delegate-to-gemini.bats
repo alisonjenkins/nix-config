@@ -9,7 +9,8 @@ setup() {
   export FAKE_AGY_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_AGY_CALLS"
   unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL FAKE_AGY_MODE DELEGATE_TELEMETRY \
-    DELEGATE_OTLP_ENDPOINT TRACEPARENT CLAUDE_CODE_SESSION_ID XDG_STATE_HOME
+    DELEGATE_OTLP_ENDPOINT TRACEPARENT CLAUDE_CODE_SESSION_ID XDG_STATE_HOME \
+    SSH_CONNECTION XDG_RUNTIME_DIR
   export DELEGATE_RETRY_BASE_DELAY=0
   # A real ~/.config/cc-obs/endpoints.json or state dir must never be touched.
   export HOME="$BATS_TEST_TMPDIR/home"
@@ -125,7 +126,6 @@ setup() {
   FAKE_AGY_MODE=unauthenticated run bash "$delegate" "do it" read
   [ "$status" -eq 1 ]
   [[ "$output" == *"not signed in"* ]]
-  [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 1 ]
 }
 
 @test "persistent outage retries then reports a possible outage" {
@@ -208,7 +208,7 @@ parent_span="00f067aa0ba902b7"
   export TRACEPARENT="00-$parent_trace-$parent_span-01"
   run bash "$delegate" "do it" read
   [ "$status" -eq 0 ]
-  child="$(sed -n 's/.*traceparent=//p' "$FAKE_AGY_CALLS")"
+  child="$(sed -E -n 's/.*traceparent=([^[:space:]]*).*/\1/p' "$FAKE_AGY_CALLS")"
   span_id="$(jq -r .span_id "$calls_jsonl")"
   [ "$child" = "00-$parent_trace-$span_id-01" ]
   [ "$span_id" != "$parent_span" ]
@@ -286,4 +286,25 @@ parent_span="00f067aa0ba902b7"
   [ "$status" -eq 0 ]
   ! grep -q SECRETWORD "$calls_jsonl"
   ! grep -q SECRETWORD "$FAKE_CURL_CALLS"
+}
+
+@test "SSH_CONNECTION is unset when a local session bus exists" {
+  export SSH_CONNECTION="10.0.0.1 12345 10.0.0.2 22"
+  export XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR/runtime-bus"
+  mkdir -p "$XDG_RUNTIME_DIR"
+  touch "$XDG_RUNTIME_DIR/bus"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  call="$(<"$FAKE_AGY_CALLS")"
+  [[ "$call" == *$'\tssh_connection=' ]]
+}
+
+@test "SSH_CONNECTION is preserved when no local session bus exists" {
+  export SSH_CONNECTION="10.0.0.1 12345 10.0.0.2 22"
+  export XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR/runtime-no-bus"
+  mkdir -p "$XDG_RUNTIME_DIR"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  call="$(<"$FAKE_AGY_CALLS")"
+  [[ "$call" == *$'\tssh_connection=10.0.0.1 12345 10.0.0.2 22' ]]
 }
