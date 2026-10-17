@@ -284,6 +284,52 @@ fn unavailable_question_does_not_report_metric_absent() {
     assert!(!after.contains("absent"), "{after}");
 }
 
+fn tool_pack_with(command_tail: &str) -> String {
+    TOOL_PACK.replace(
+        "cc-obs-query top tool --by tokens",
+        &format!("cc-obs-query {command_tail}"),
+    )
+}
+
+#[test]
+fn pack_query_limit_zero_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(
+        dir.path(),
+        &tool_pack_with("top tool --by tokens --limit 0"),
+    );
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    let digest = valid_digest(&fake, s(&pack));
+    let q = &digest["questions"][0];
+    assert!(
+        q["unavailable"]
+            .as_str()
+            .is_some_and(|u| u.contains("--limit 0")),
+        "limit 0 silently emptied the rows: {q}"
+    );
+    assert_eq!(q["truncated"], json!(false), "{q}");
+}
+
+#[test]
+fn digest_truncated_means_more_rows_than_limit() {
+    let dir = tempfile::tempdir().unwrap();
+    let fake = serve(digest_rules(fixture("loki_tool_results.json")));
+    // the fixture has three tools
+    for (limit, rows, truncated) in [(2, 2, true), (3, 3, false), (4, 3, false)] {
+        let pack = write_pack(
+            dir.path(),
+            &tool_pack_with(&format!("top tool --by tokens --limit {limit}")),
+        );
+        let q = valid_digest(&fake, s(&pack))["questions"][0].clone();
+        assert_eq!(
+            q["rows"].as_array().unwrap().len(),
+            rows,
+            "limit {limit}: {q}"
+        );
+        assert_eq!(q["truncated"], json!(truncated), "limit {limit}: {q}");
+    }
+}
+
 fn prom_scalar(value: f64) -> String {
     json!({"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1_760_000_000.0, value.to_string()]}]}}).to_string()
 }

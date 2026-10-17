@@ -99,6 +99,13 @@ fn answer(
     decisions: &[Decision],
 ) -> Result<Answer, Error> {
     let cli = question_cli(question)?;
+    if cli.limit == 0 {
+        return Err(Error::QueryCommand {
+            id: question.id.clone(),
+            command: question.query.command.clone(),
+            reason: "--limit 0 would show no rows; use 1 or more".to_owned(),
+        });
+    }
     let report = query_report(ctx, &cli.command)?;
     let mut gaps: Vec<String> = report
         .fields
