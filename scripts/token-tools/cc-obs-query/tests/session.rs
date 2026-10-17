@@ -127,6 +127,88 @@ fn session_main_and_subagent_in_one_turn_do_not_collide() {
     }
 }
 
+#[test]
+fn session_context_without_cache_ratio_has_no_mean() {
+    let context = vector(&[(ledger("main", "1"), "9000")]);
+    let fake = serve(session_rules(
+        context,
+        vector(&[]),
+        fixture("prom_session_fixed.json"),
+    ));
+    let out = cli(&fake, &["session", "s1"]).json();
+    assert_eq!(out["max_context_tokens"], json!(9000), "{out}");
+    assert_eq!(out["mean_cache_hit_ratio"]["value"], json!(null), "{out}");
+    assert!(out["mean_cache_hit_ratio"]["unavailable"].is_string());
+}
+
+#[test]
+fn session_id_with_quote_and_backslash_is_escaped_in_the_query() {
+    let fake = serve(session_rules(
+        vector(&[(ledger("main", "1"), "9000")]),
+        vector(&[]),
+        vector(&[]),
+    ));
+    let run = cli(&fake, &["session", r#"a"b\c"#]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    let queries = fake.seen_matching("cc_obs_ledger_context_tokens");
+    assert!(
+        queries
+            .iter()
+            .any(|q| q.contains(r#"session_id="a\"b\\c""#)),
+        "id not escaped: {queries:?}"
+    );
+}
+
+fn compare_run(question_command: &str) -> Value {
+    let dir = tempfile::tempdir().unwrap();
+    let yaml = common::TOOL_PACK.replace("top tool --by tokens", question_command);
+    let pack = common::write_pack(dir.path(), &yaml);
+    let a = vector(&[
+        (json!({"model": "opus"}), "100"),
+        (json!({"model": "old"}), "5"),
+    ]);
+    let b = vector(&[
+        (json!({"model": "opus"}), "150"),
+        (json!({"model": "new"}), "10"),
+    ]);
+    let fake = serve(vec![("time=1788825600", a), ("time=1789430400", b)]);
+    let run = cli(
+        &fake,
+        &[
+            "compare",
+            "tool-result-size",
+            "--a",
+            "2026-09-01..2026-09-08",
+            "--b",
+            "2026-09-08..2026-09-15",
+            "--pack",
+            common::s(&pack),
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    run.json()
+}
+
+#[test]
+fn compare_key_absent_from_one_range_has_no_delta_or_ratio() {
+    // Pinned, not endorsed: spec FR-025 does not say whether absent means zero.
+    let out = compare_run("top model --by tokens");
+    for (key, present_in) in [("new", "b"), ("old", "a")] {
+        let row = common::row(&out, key);
+        assert_eq!(row["delta"]["value"], json!(null), "{key}: {out}");
+        assert_eq!(row["ratio"]["value"], json!(null), "{key}: {out}");
+        let absent = if present_in == "a" { "b" } else { "a" };
+        assert_eq!(row[absent]["value"], json!(null), "{key}: {out}");
+    }
+}
+
+#[test]
+fn compare_ignores_the_questions_own_limit() {
+    // Pinned, not endorsed: the question says --limit 1, compare lists every key.
+    let out = compare_run("top model --by tokens --limit 1");
+    assert_eq!(rows(&out).len(), 3, "{out}");
+}
+
 fn health_rules(guard: Option<String>, tempo_up: bool) -> Vec<(&'static str, String)> {
     let mut rules = vec![
         ("/prom/-/ready", "ready".to_owned()),
