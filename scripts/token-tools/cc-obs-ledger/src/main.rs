@@ -305,6 +305,10 @@ fn turn_run(
 
 fn end_cmd(state: &Path) -> Result<(), LedgerError> {
     let (session, transcript) = read_hook_transcript(read_hook()?)?;
+    // Emit what the last Stop missed and stamp the cursor at the transcript's end, so a
+    // resume of this session continues from here instead of re-emitting its history.
+    turn_run(state, &session, &transcript, MAX_UNREAD_BYTES, &spawn_ship)?;
+    prune_cursors(state, CURSOR_MAX_AGE);
     let mut file = fs::File::open(&transcript).map_err(read_error(&transcript))?;
     let unread = read_unread(&mut file, 0, MAX_UNREAD_BYTES).map_err(read_error(&transcript))?;
     if unread.skipped > 0 {
@@ -330,10 +334,29 @@ fn end_cmd(state: &Path) -> Result<(), LedgerError> {
         &spawn_ship,
     )?;
 
-    // The session is over: its cursor and census are no longer needed.
-    let _ = fs::remove_file(cursor_path(state, &session));
+    // The census is only read here; the cursor stays so a resume does not start over.
     let _ = fs::remove_file(census_file);
     Ok(())
+}
+
+/// Claude Code deletes transcripts after 30 days by default, so a cursor idle that long
+/// belongs to a session that can no longer be resumed.
+const CURSOR_MAX_AGE: Duration = Duration::from_secs(30 * 24 * 3600);
+
+fn prune_cursors(state: &Path, max_age: Duration) {
+    let Ok(entries) = fs::read_dir(state.join("cursors")) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let idle = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok());
+        if idle.is_some_and(|idle| idle > max_age) {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
 }
 
 fn notice_cmd() -> Result<(), LedgerError> {
