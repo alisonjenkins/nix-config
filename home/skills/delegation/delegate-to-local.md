@@ -469,6 +469,8 @@ tool-call argument). Seven synthetic tasks with graders; "graded" excludes
 | Qwen3.6-35B-A3B (`fast`) with and without `--reasoning off` | The same five graded tasks, 4 reps | Thinking on 17/20; reasoning off 14/20, no stuck run, `unittests` 46 s against 233 s, other tasks 10 to 24 s against 13 to 43 s. The pass-rate gap is within noise at this size |
 | Qwen3.5-9B (`small`) with and without `--reasoning off` | The same, 4 reps | On 15/20; off 13/20, no stuck run, `unittests` 12 to 14 s against 23 to 57 s |
 | Qwen3.8-27B (`quality`) with and without thinking | The same five graded tasks, 2 reps | On 10/10; off 9/10, no stuck run and no failed call, `multiedit` 84 s against 163 s, `unittests` 24 s against 70 s, `findcalls` 23 s against 78 s |
+| Qwen3.5-9B (`small`) with MTP speculative decoding (`--spec-type draft-mtp`, unsloth's MTP GGUF), 2026-10-18 | Decode speed on three 500-token coding prompts, thinking off, 32k q8_0 | 71 tok/s without; draft length 2: 127 (83% accepted), 3: 127 (68%), 4: 128 (54 to 71%, 119 to 136 across prompts), 5: 114. 7.9 GiB of its own against 7.4. One run per length, so differences under about 5 tok/s are noise |
+| Qwen3.5-9B (`small`, MTP) and Qwen3.8-27B (`quality`, thinking off), edit mode | `mean()` empty-list fix, new `median()`, tests for all three, from one spec | Both edited `util.py` correctly (20 s for the 27B, 7.5 s for the 9B). The 27B's tests passed (10); the 9B's tests import `from mtp.util import ...` (the scratch directory's name) and `pytest` unused, so they fail when run from their own directory. One sample each |
 | Ornith-1.5-9B, Ornith-1.5-35B-A3B, Qwen3-8B, Gemma 4 12B | The same | None beat the incumbent at its size. Ornith ties on passes but loops on no-op edits (identical oldString and newString); Qwen3-8B 3 to 5/10; Gemma 4 7/10 and slowest |
 
 What that means for writing a task:
@@ -493,6 +495,8 @@ What that means for writing a task:
   81 tok/s) and got right every task the 8B got wrong: it read before
   writing and edited first time. It needs 13.9 GiB. For what code does,
   the 27B is still better.
+- **`small` runs with MTP since 2026-10-18** (127 tok/s, 8.1 GiB); the
+  figures below are for the plain GGUF.
 - **Qwen3.5-9B replaces the 8B beside a game.** In 7.6 GiB against the 8B's
   9, it got the three edit tasks right that the 8B got wrong. It still
   loops on a refused path rather than rethinking it, so every path in its
