@@ -1577,6 +1577,26 @@
         "type": "github"
       }
     },
+    "overseer": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792314234,
+        "narHash": "sha256-gAxAEhn10YBYoKh+vTUEV9Yb1WpTiaXCrUSunXT3IqE=",
+        "owner": "alisonjenkins",
+        "repo": "overseer",
+        "rev": "657ddf7e8ac8c4f1b2dbc12433b2d4888eb9bb7f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "alisonjenkins",
+        "repo": "overseer",
+        "type": "github"
+      }
+    },
     "pipewire-screenaudio": {
       "inputs": {
         "nixpkgs": [
@@ -1699,6 +1719,7 @@
         "nixvirt": "nixvirt",
         "noctalia": "noctalia",
         "nur": "nur",
+        "overseer": "overseer",
         "pipewire-screenaudio": "pipewire-screenaudio",
         "plasma-manager": "plasma-manager",
         "quickshell": "quickshell",

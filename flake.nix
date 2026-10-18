@@ -262,6 +262,11 @@
       # argument ffmpeg_9".
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
+
+    overseer = {
+      url = "github:alisonjenkins/overseer";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ { self, flake-parts, haumea, ... }:
