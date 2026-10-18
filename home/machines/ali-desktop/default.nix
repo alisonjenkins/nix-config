@@ -41,6 +41,8 @@
   # (measured 2026-09-25, VRAM total / shared memory / generation):
   #   small,   32k q8_0: 8.5 GiB / 287 MiB / 71 tok/s (Qwen3.5-9B; Qwen3-8B
   #            before it took 9.8 GiB / 544 MiB / 81 tok/s)
+  #   small with MTP (draft length 2), 32k q8_0, measured 2026-10-18: 7.9 GiB
+  #            of its own (10.6 GiB total on a desktop idling at 2.7 GiB) / 127 tok/s
   #   quality,  8k f16: 15.9 GiB / 499 MiB / 34 tok/s; 16k q8_0: 16.0 GiB / 516 MiB / 34 tok/s
   #   quality, 24k q8_0 fits with 54 MiB spare; 32k spills to system RAM
   #   (shared 1.2 GiB) and drops to 23 tok/s.
@@ -67,10 +69,13 @@
       description = "Qwen3.6-35B-A3B UD-IQ3_S (MoE), ~12.7 GiB, 127 tok/s: new files, edits and review fixes from a spec";
     };
     small = {
-      model = pkgs.llama-models.qwen3-5-9b-q6-k.modelFile;
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
-      vramMiB = 7600;
-      description = "Qwen3.5-9B Q6_K, ~6.9 GiB, 71 tok/s: small edits and lookups; fits beside a game";
+      model = pkgs.llama-models.qwen3-5-9b-mtp-q6-k.modelFile;
+      # Draft length 2 to 4 all gave 125 to 130 tok/s and 5 gave 114; 2 had
+      # the highest acceptance (83%) and the least wasted draft work.
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" "--spec-type" "draft-mtp" "--spec-draft-n-max" "2" ] ++ q8Cache;
+      # Measured 2026-10-18: 10,818 MiB loaded after a request less 2,775 idle.
+      vramMiB = 8100;
+      description = "Qwen3.5-9B Q6_K with MTP speculative decoding, ~7.2 GiB, 127 tok/s: small edits and lookups; fits beside a game";
     };
     quality = {
       model = pkgs.llama-models.qwen3-8-27b-ud-q3-k-xl.modelFile;
