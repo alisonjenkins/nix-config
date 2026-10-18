@@ -168,6 +168,22 @@ in
     ];
   };
 
+  # The same model from unsloth's MTP repo: Q6_K ~7.16 GiB, with the
+  # multi-token-prediction head in the file for `--spec-type draft-mtp`.
+  # 126 tok/s against 71 for the plain GGUF at draft length 2 to 4, measured
+  # 2026-10-18 on llama.cpp build 11429 (coding prompts, thinking off).
+  qwen3-5-9b-mtp-q6-k = mkGgufModel {
+    pname = "qwen3.5-9b-mtp-q6-k";
+    primaryFile = "Qwen3.5-9B-MTP-Q6_K.gguf";
+    files = [
+      {
+        name = "Qwen3.5-9B-MTP-Q6_K.gguf";
+        url = "https://huggingface.co/unsloth/Qwen3.5-9B-MTP-GGUF/resolve/main/Qwen3.5-9B-Q6_K.gguf";
+        hash = "sha256-iuj9BOMMWkrz73JlRyn7DX8zYVysG6M13YgISlYoeTQ=";
+      }
+    ];
+  };
+
   # Qwen3-8B Dense, Q6_K ~6.26 GiB. No profile uses it since 2026-09-25:
   # ali-desktop's fast tier moved to qwen3-6-35b-a3b-ud-iq3-s and its small
   # tier to qwen3-5-9b-q6-k. Kept as the baseline the delegation scorecard
