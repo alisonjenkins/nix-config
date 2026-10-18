@@ -19,6 +19,7 @@
     observability-stack = import ../home/modules/observability-stack;
     rust-build-cache = import ../home/modules/rust-build-cache;
     antigravity-cli = import ../home/modules/antigravity-cli;
+    overseer = import ../home/modules/overseer;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
