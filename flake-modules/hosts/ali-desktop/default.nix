@@ -712,7 +712,7 @@ in {
             # deadd-notification-center
             alsa-scarlett-gui
             amdgpu_top
-            unstable.antigravity
+            unstable.antigravity-ide
             blender
             cifs-utils
             citron
