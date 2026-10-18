@@ -106,13 +106,14 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack ];
+          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.overseer ];
 
           programs.rea.enable = true;
 
           # Local Loki, Tempo, Prometheus and Grafana for Claude Code token spend.
           # Design: specs/007-local-observability-stack.
           modules.observabilityStack.enable = true;
+          modules.overseer.enable = true;
 
           # Trial: injects matching memories and skill sections and logs scores
           # (never prompts) to ~/.local/state/memory-recall/recall.jsonl; read it with
