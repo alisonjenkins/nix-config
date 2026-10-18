@@ -69,6 +69,7 @@ in {
             self.homeModules.home-linux
             self.homeModules.beatsaber
             self.homeModules.helldivers2-mods
+            self.homeModules.overseer
             inputs.framework-inputmodule-rs-flake.homeManagerModules.default
             { programs.rea.enable = true; }
             {
@@ -91,6 +92,8 @@ in {
             backlightPath = "/sys/class/backlight/amdgpu_bl2";
             outputName = "eDP-2";
           };
+
+          modules.overseer.enable = true;
         };
         home-manager.extraSpecialArgs =
           specialArgs

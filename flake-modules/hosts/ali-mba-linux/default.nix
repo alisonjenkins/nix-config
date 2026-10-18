@@ -51,8 +51,12 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux ];
+          imports = [
+            self.homeModules.home-linux
+            self.homeModules.overseer
+          ];
           custom.niri.touchpadTap = false;
+          modules.overseer.enable = true;
         };
         home-manager.extraSpecialArgs =
           specialArgs
