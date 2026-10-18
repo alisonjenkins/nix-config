@@ -61,10 +61,15 @@
   # else on the GPU.
   modules.delegateToLocal.profiles = let
     q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
+    # The Qwen3.5 and 3.6 cards' coding and agent settings (vendor-reported);
+    # llama-server's defaults are temp 0.8, top-k 40, min-p 0.05. The 3.8 card
+    # asks for temp 1.0 instead, so `quality` builds its own.
+    sampling = temp: [ "--temp" temp "--top-p" "0.95" "--top-k" "20" "--min-p" "0" ];
+    codingSampling = sampling "0.6";
   in {
     fast = {
       model = pkgs.llama-models.qwen3-6-35b-a3b-ud-iq3-s.modelFile;
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ q8Cache;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" ] ++ codingSampling ++ q8Cache;
       vramMiB = 13900;
       description = "Qwen3.6-35B-A3B UD-IQ3_S (MoE), ~12.7 GiB, 127 tok/s: new files, edits and review fixes from a spec";
     };
@@ -72,14 +77,14 @@
       model = pkgs.llama-models.qwen3-5-9b-mtp-q6-k.modelFile;
       # Draft length 2 to 4 all gave 125 to 130 tok/s and 5 gave 114; 2 had
       # the highest acceptance (83%) and the least wasted draft work.
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" "--spec-type" "draft-mtp" "--spec-draft-n-max" "2" ] ++ q8Cache;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "32768" "--jinja" "--spec-type" "draft-mtp" "--spec-draft-n-max" "2" ] ++ codingSampling ++ q8Cache;
       # Measured 2026-10-18: 10,818 MiB loaded after a request less 2,775 idle.
       vramMiB = 8100;
       description = "Qwen3.5-9B Q6_K with MTP speculative decoding, ~7.2 GiB, 127 tok/s: small edits and lookups; fits beside a game";
     };
     quality = {
       model = pkgs.llama-models.qwen3-8-27b-ud-q3-k-xl.modelFile;
-      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ] ++ q8Cache;
+      launchArgs = [ "--gpu-layers" "999" "--ctx-size" "16384" "--jinja" ] ++ sampling "1.0" ++ q8Cache;
       # Measured 2026-10-08 on build 11429: 12.71 GiB loaded less the idle
       # desktop, plus ~22 MiB after a request, rounded up. The Qwen3.6-27B
       # this replaced needed 15,000 and was refused on an ordinary desktop.
