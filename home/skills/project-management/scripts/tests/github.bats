@@ -79,3 +79,37 @@ EOF
   [ "${lines[1]}" = "open=2 done=1 blocked=1 stale=1" ]
   [ "${lines[2]}" = "$(printf 'next\t3\tThird')" ]
 }
+
+make_view() { # make_view <state> <body-lines>
+  jq -n --arg st "$1" --argjson n "$2" '{
+    number:1, title:"Set up repo", state:$st, assignees:[{login:"ali"}],
+    labels:[{name:"est:30"},{name:"prio:1"}], milestone:{dueOn:"2026-11-01T00:00:00Z"},
+    updatedAt:"2020-01-01T00:00:00Z", url:"https://github.com/owner/name/issues/1",
+    body:([range(0;$n) | "line \(.+1)"] | join("\n"))
+  }' >"$fx/view.json"
+}
+
+@test "show prints labelled fields, url and a truncated body" {
+  make_view OPEN 30
+  run "${G[@]}" show 1
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "$(printf 'id\t1')" ]
+  [ "${lines[2]}" = "$(printf 'state\topen')" ]
+  [[ "$output" == *"url"*"https://github.com/owner/name/issues/1"* ]]
+  [[ "$output" == *"line 20"* ]]
+  [[ "$output" != *"line 21"* ]]
+  [[ "$output" == *"truncated (30 lines); use --full"* ]]
+}
+
+@test "show --full prints the whole body" {
+  make_view OPEN 30
+  run "${G[@]}" show 1 --full
+  [[ "$output" == *"line 30"* ]]
+  [[ "$output" != *"truncated"* ]]
+}
+
+@test "show needs a numeric id" {
+  run "${G[@]}" show abc
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"need an issue number"* ]]
+}
