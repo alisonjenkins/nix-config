@@ -1,7 +1,8 @@
 # Busy intervals from an .ics on stdin or as a file argument. Needs lib/time.awk.
 # Prints "start<TAB>end" in ISO8601 UTC for each VEVENT, in file order.
 # Zone parameters are ignored and times are read as UTC. Recurrence rules are
-# not expanded. An event with no usable end is skipped.
+# not expanded. An event with no usable end, a cancelled event and a transparent
+# (shown as free) event are skipped.
 
 # duration_secs(v): seconds in an RFC 5545 duration such as PT1H30M or P1DT2H.
 function duration_secs(v,   i, c, n, total, in_time, unit) {
@@ -24,7 +25,7 @@ function duration_secs(v,   i, c, n, total, in_time, unit) {
 }
 
 function emit(   end) {
-  if (!inev || start < 0) return
+  if (!inev || start < 0 || cancelled || transparent) return
   end = stop
   if (end < 0 && dur > 0) end = start + dur
   if (end < 0 && isdate) end = start + 86400
@@ -33,9 +34,13 @@ function emit(   end) {
 }
 
 function handle(line,   colon, head, value, semi, name, params) {
-  if (line == "BEGIN:VEVENT") { inev = 1; start = -1; stop = -1; dur = 0; isdate = 0; return }
+  if (line == "BEGIN:VEVENT") { inev = 1; inalarm = 0; start = -1; stop = -1; dur = 0; isdate = 0; cancelled = 0; transparent = 0; return }
   if (line == "END:VEVENT") { emit(); inev = 0; return }
   if (!inev) return
+  # An alarm has its own DURATION; none of its properties describe the event.
+  if (line == "BEGIN:VALARM") { inalarm = 1; return }
+  if (line == "END:VALARM") { inalarm = 0; return }
+  if (inalarm) return
   colon = index(line, ":")
   if (colon == 0) return
   head = substr(line, 1, colon - 1)
@@ -50,6 +55,10 @@ function handle(line,   colon, head, value, semi, name, params) {
     stop = iso2epoch(value)
   } else if (name == "DURATION") {
     dur = duration_secs(value)
+  } else if (name == "STATUS") {
+    cancelled = (toupper(value) == "CANCELLED")
+  } else if (name == "TRANSP") {
+    transparent = (toupper(value) == "TRANSPARENT")
   }
 }
 
