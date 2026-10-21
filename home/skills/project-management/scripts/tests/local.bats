@@ -85,3 +85,32 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"no task T404"* ]]
 }
+
+@test "update flips the checkbox and is idempotent" {
+  run "${L[@]}" update T002 --state done
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "updated T002 state=done" ]
+  grep -q '^- \[X\] T002 Write docs' "$dir/tasks.md"
+  run "${L[@]}" update T002 --state done
+  [ "${lines[1]}" = "unchanged T002 state=done" ]
+  run "${L[@]}" update T001 --state open
+  [ "${lines[1]}" = "updated T001 state=open" ]
+  grep -q '^- \[ \] T001 \[P\]' "$dir/tasks.md"
+}
+
+@test "update fails for an unknown id, a bad state and unsupported flags" {
+  before="$(cat "$dir/tasks.md")"
+  run "${L[@]}" update T404 --state done
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no task T404"* ]]
+  run "${L[@]}" update T002 --state bogus
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--state must be open or done"* ]]
+  run "${L[@]}" update T002 --comment hi
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unsupported argument '--comment' for the local backend"* ]]
+  run "${L[@]}" update T002
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--state is required"* ]]
+  [ "$(cat "$dir/tasks.md")" = "$before" ]
+}
