@@ -71,3 +71,17 @@ EOF
   [ "${lines[1]}" = "open=3 done=1 blocked=1 stale=n/a" ]
   [ "${lines[2]}" = "$(printf 'next\tT003\tDo thing')" ]
 }
+
+@test "show prints labelled fields" {
+  run "${L[@]}" show T002
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "$(printf 'id\tT002')" ]
+  [ "${lines[5]}" = "$(printf 'deps\tT001,T003')" ]
+  [ "${lines[6]}" = "$(printf 'due\t2026-11-01T00:00:00Z')" ]
+}
+
+@test "show fails for an unknown id" {
+  run "${L[@]}" show T404
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no task T404"* ]]
+}
