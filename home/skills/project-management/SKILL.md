@@ -1,7 +1,7 @@
 ---
 name: project-management
 description: >-
-  Use when breaking a project into epics and tasks, tracking tasks or progress in GitHub Issues or a markdown tracker, writing a project charter, plan, status report or retro, or checking what is blocked, overdue or next. Runs the `pm` script for compact task lists and status instead of many `gh` calls. Not for writing a feature spec (see speckit-specify), scheduling or calendars, or reviewing code.
+  Use when breaking a project into epics and tasks, tracking tasks or progress in GitHub Issues or a markdown tracker, writing a project charter, plan, status report or retro, or checking what is blocked, overdue or next. Runs the `pm` script for compact task lists and status instead of many `gh` calls. Not for writing a feature spec (see speckit-specify), scheduling or calendars (see time-management), or reviewing code.
 metadata:
   summary: "Use for project breakdown, ticket tracking (GitHub Issues, markdown) and project docs via the pm script."
 ---
