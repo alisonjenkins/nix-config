@@ -40,3 +40,4 @@ pm show https://github.com/owner/name/issues/12                 # a URL needs no
 | Doing | Read |
 |---|---|
 | Running pm: verbs, columns, flags, token rules, speckit tasks | [tracking.md](tracking.md) |
+| Breaking a project into epics and tasks | [breakdown.md](breakdown.md) |
