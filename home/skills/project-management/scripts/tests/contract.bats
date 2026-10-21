@@ -75,7 +75,24 @@ check_bad_update_flag() {
   [ "$status" -ne 0 ]
 }
 
+check_paging() {
+  # shellcheck disable=SC2046
+  run bash "$pm" $(be_args "$1") list --state all --limit 1
+  [ "$status" -eq 0 ]
+  [ "${#lines[@]}" -eq 3 ]
+  [ "${lines[2]}" = "# more=1 next-offset=1" ]
+  # shellcheck disable=SC2046
+  run bash "$pm" $(be_args "$1") list --state all --limit 1 --offset 1
+  [ "${#lines[@]}" -eq 2 ]
+  # shellcheck disable=SC2046
+  run bash "$pm" $(be_args "$1") list --state all --offset 08
+  [ "$status" -eq 0 ]
+  [ "${#lines[@]}" -eq 1 ]
+}
+
 @test "local: header names the backend" { check_header local local; }
+@test "local: list pages with --limit and --offset" { check_paging local; }
+@test "github: list pages with --limit and --offset" { check_paging github; }
 @test "github: header names the backend" { check_header github github; }
 @test "local: list rows have 8 columns" { check_list_columns local; }
 @test "github: list rows have 8 columns" { check_list_columns github; }

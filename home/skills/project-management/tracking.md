@@ -23,6 +23,8 @@ Every output starts with `# backend=<name> ...`. If that line names the wrong tr
 | `-d <dir>` | local | directory holding `tasks.md` |
 | `--state open\|done\|all` | list | default `open` |
 | `--assignee`, `--due-before <ISO8601 UTC>` | list | filters |
+| `--limit <n>`, `--offset <m>` | list | page the rows; when rows remain the last line is `# more=<left> next-offset=<m>` |
+| `--max <n\|all>` | any verb, github only | raise the fetch cap (before the verb, like `-r`) |
 | `--label`, `--milestone` | list, github only | passed to gh |
 | `--state`, `--label`, `--unlabel`, `--comment` | update | local supports `--state` only |
 | `--apply` | sync-plan | mutate; without it you get a dry run |

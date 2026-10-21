@@ -10,6 +10,27 @@ pm_filter_tsv() {
     (s == "all" || $2 == s) && (a == "" || $4 == a) && (b == "" || ($6 != "" && $6 < b)) { print }'
 }
 
+# pm_page_check <limit> <offset>: die unless limit is empty or a positive number
+# and offset is a number. Digits only, so awk reads them as decimal ("08" is 8).
+pm_page_check() {
+  if [[ -n $1 ]]; then
+    [[ $1 =~ ^[1-9][0-9]*$ ]] || pm_die "list: --limit must be a positive number, got '$1'"
+  fi
+  [[ $2 =~ ^[0-9]+$ ]] || pm_die "list: --offset must be a number, got '$2'"
+}
+
+# pm_page <limit> <offset>: print the rows on stdin from row offset+1, at most
+# limit of them (empty limit: all). When rows remain, end with
+# "# more=<rows left> next-offset=<m>".
+pm_page() {
+  awk -v off="$2" -v n="${1:-0}" '
+    { row[NR] = $0 }
+    END {
+      for (i = off + 1; i <= NR && (n == 0 || i <= off + n); i++) print row[i]
+      if (n > 0 && NR > off + n) printf "# more=%d next-offset=%d\n", NR - off - n, off + n
+    }'
+}
+
 # pm_status_from_tsv <stale>: summarise rows on stdin. An open row is blocked
 # when any id in its deps is itself open. "next" is the unblocked open row
 # with the lowest prio, then the earliest due date, then file order.

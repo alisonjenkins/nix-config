@@ -22,4 +22,4 @@ Mutations are explicit. `sync-plan` is a dry run until `--apply`, and it refuses
 - Every call carries `-b g -r owner/name`, a few extra tokens. The first line of every output echoes the resolved target, so a wrong choice is visible at once.
 - Adding Jira or Linear is additive: a new backend directory, a doc and a free alias. No existing script changes.
 - Nothing can go stale or be committed by accident, because nothing is stored.
-- The GitHub backend reads with `gh issue list`, capped at 200 issues (500 for the per-task lookup). Larger repositories need narrower filters until pagination is added.
+- The GitHub backend reads with `gh issue list`, capped at 200 issues (500 for the per-task lookup). `--max <n|all>` raises the cap, since `gh` pages through the API itself. `list --limit/--offset` pages the output rows.

@@ -396,3 +396,74 @@ EOF
   [[ "$output" == *"T777 is not in"* ]]
   refute_mutated
 }
+
+@test "--max raises the fetch cap for list, and all lifts it" {
+  run "${G[@]}" --max 1000 list
+  [ "$status" -eq 0 ]
+  grep -q -- '--limit 1000 ' "$fx/calls.log"
+  run "${G[@]}" --max all list
+  [ "$status" -eq 0 ]
+  grep -q -- '--limit 100000 ' "$fx/calls.log"
+}
+
+@test "--max rejects anything but a positive number or all" {
+  run "${G[@]}" --max lots list
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--max must be a positive number or all"* ]]
+  run "${G[@]}" --max 0 list
+  [ "$status" -eq 1 ]
+}
+
+@test "--max applies to the truncation check" {
+  jq -n '[range(0;200) | {number:., title:"t", state:"OPEN", assignees:[], labels:[], milestone:null, updatedAt:"2099-01-01T00:00:00Z", body:""}]' >"$fx/list.json"
+  run "${G[@]}" --max 1000 list
+  [[ "$output" != *"truncated"* ]]
+  run "${G[@]}" --max 200 list
+  [[ "$output" == *"results truncated at 200 issues"* ]]
+}
+
+@test "sync-plan --max lets --apply run past the default caps" {
+  make_spec
+  jq -n '[range(0;200) | {number:., state:"OPEN", body:"x"}]' >"$fx/epics.json"
+  run "${G[@]}" --max 1000 sync-plan "$tasks" --apply
+  [ "$status" -eq 0 ]
+  [[ "$output" == *$'created\tepic'* ]]
+  grep -q -- '--label pm-epic --state all --limit 1000 ' "$fx/calls.log"
+}
+
+@test "list --limit and --offset page the rows and say where the next page starts" {
+  jq -n '[range(1;8) | {number:., title:"t\(.)", state:"OPEN", assignees:[], labels:[], milestone:null, updatedAt:"2099-01-01T00:00:00Z", body:""}]' >"$fx/list.json"
+  run "${G[@]}" list --limit 3
+  [ "$status" -eq 0 ]
+  [ "${#lines[@]}" -eq 5 ]
+  [[ "${lines[1]}" == 1* ]]
+  [[ "${lines[3]}" == 3* ]]
+  [ "${lines[4]}" = "# more=4 next-offset=3" ]
+  run "${G[@]}" list --limit 3 --offset 6
+  [ "${#lines[@]}" -eq 2 ]
+  [[ "${lines[1]}" == 7* ]]
+}
+
+@test "list --offset 08 is eight, not a bad octal number" {
+  jq -n '[range(1;11) | {number:., title:"t\(.)", state:"OPEN", assignees:[], labels:[], milestone:null, updatedAt:"2099-01-01T00:00:00Z", body:""}]' >"$fx/list.json"
+  run "${G[@]}" list --limit 2 --offset 08
+  [ "$status" -eq 0 ]
+  [ "${#lines[@]}" -eq 3 ]
+  [[ "${lines[1]}" == 9* ]]
+  [[ "${lines[2]}" == 10* ]]
+}
+
+@test "list --limit that exactly fits prints no footer" {
+  jq -n '[range(1;4) | {number:., title:"t\(.)", state:"OPEN", assignees:[], labels:[], milestone:null, updatedAt:"2099-01-01T00:00:00Z", body:""}]' >"$fx/list.json"
+  run "${G[@]}" list --limit 3
+  [ "${#lines[@]}" -eq 4 ]
+  [[ "${lines[3]}" != "#"* ]]
+}
+
+@test "list --limit and --offset must be numbers" {
+  run "${G[@]}" list --limit x
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--limit must be a positive number"* ]]
+  run "${G[@]}" list --offset -1
+  [ "$status" -eq 1 ]
+}

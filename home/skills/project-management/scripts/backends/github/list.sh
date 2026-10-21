@@ -15,6 +15,8 @@ set -- ${GH_REST[@]+"${GH_REST[@]}"}
 
 state=open
 due_before=""
+page_size=""
+offset=0
 extra=()
 while (($#)); do
   case "$1" in
@@ -43,6 +45,16 @@ while (($#)); do
       due_before="$2"
       shift 2
       ;;
+    --limit)
+      pm_arg2 "$@"
+      page_size="$2"
+      shift 2
+      ;;
+    --offset)
+      pm_arg2 "$@"
+      offset="$2"
+      shift 2
+      ;;
     *) pm_die "list: unsupported argument '$1'" ;;
   esac
 done
@@ -53,9 +65,11 @@ case "$state" in
   *) pm_die "list: --state must be open, done or all" ;;
 esac
 
+pm_page_check "$page_size" "$offset"
+
 json="$(gh issue list -R "$GH_REPO" --state "$gh_state" --limit "$GH_LIMIT" --json "$GH_FIELDS" ${extra[@]+"${extra[@]}"})"
 gh_warn_truncated "$json"
 
 pm_header github "repo=$GH_REPO"
 # The assignee filter is gh's (it resolves @me and matches any assignee), so it is not re-applied here.
-jq -r -f "$script_dir/rows.jq" <<<"$json" | pm_filter_tsv "$state" "" "$due_before"
+jq -r -f "$script_dir/rows.jq" <<<"$json" | pm_filter_tsv "$state" "" "$due_before" | pm_page "$page_size" "$offset"

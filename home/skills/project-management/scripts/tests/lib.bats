@@ -20,6 +20,42 @@ text
 EOF
 }
 
+@test "pm_page slices rows and names the next offset" {
+  run pm_page 3 0 < <(seq 7)
+  [ "$output" = "$(printf '1\n2\n3\n# more=4 next-offset=3')" ]
+  run pm_page 3 6 < <(seq 7)
+  [ "$output" = "7" ]
+}
+
+@test "pm_page prints no footer for an exact fit, a past-the-end offset or no paging" {
+  run pm_page 7 0 < <(seq 7)
+  [ "${#lines[@]}" -eq 7 ]
+  run pm_page 3 99 < <(seq 7)
+  [ -z "$output" ]
+  run pm_page "" 0 < <(seq 7)
+  [ "${#lines[@]}" -eq 7 ]
+}
+
+@test "pm_page treats a leading-zero offset as decimal" {
+  run pm_page 2 08 < <(seq 10)
+  [ "$output" = "$(printf '9\n10')" ]
+}
+
+@test "pm_page_check accepts positive limits and numeric offsets only" {
+  run pm_page_check "" 0
+  [ "$status" -eq 0 ]
+  run pm_page_check 5 08
+  [ "$status" -eq 0 ]
+  run pm_page_check 0 0
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--limit must be a positive number"* ]]
+  run pm_page_check x 0
+  [ "$status" -eq 1 ]
+  run pm_page_check 5 -1
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--offset must be a number"* ]]
+}
+
 @test "tasks_md_tsv parses ids, markers, fields and titles" {
   run tasks_md_tsv "$tasks"
   [ "$status" -eq 0 ]

@@ -7,7 +7,19 @@ GH_FIELDS="number,title,state,assignees,labels,milestone,updatedAt,body"
 GH_TASK_LIMIT=500
 GH_LIMIT=200
 
-# gh_take_repo "$@": take -r/--repo out of the arguments.
+# gh_set_max <n|all>: raise the fetch cap. gh pages through the API itself until
+# it has --limit issues, so a bigger limit is all the paging a lookup needs.
+# "all" is a ceiling no repository here reaches, so truncation still shows if it does.
+gh_set_max() {
+  case "$1" in
+    all) GH_LIMIT=100000 ;;
+    '' | *[!0-9]* | 0) pm_die "--max must be a positive number or all, got '$1'" ;;
+    *) GH_LIMIT="$1" ;;
+  esac
+  GH_TASK_LIMIT="$GH_LIMIT"
+}
+
+# gh_take_repo "$@": take -r/--repo and --max out of the arguments.
 # Sets GH_REPO and GH_REST (the other arguments).
 gh_take_repo() {
   GH_REPO="${PM_REPO:-}"
@@ -22,6 +34,11 @@ gh_take_repo() {
       --repo=*)
         GH_REPO="${1#--repo=}"
         shift
+        ;;
+      --max)
+        pm_arg2 "$@"
+        gh_set_max "$2"
+        shift 2
         ;;
       *)
         GH_REST+=("$1")

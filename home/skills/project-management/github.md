@@ -24,7 +24,8 @@ Per-task issues (`--per-task ids|all`) are titled `Tnnn: description`. An issue 
 
 ## Limits
 
-- Reads are capped at 200 issues (500 for the per-task lookup) and a truncation warning goes to stderr. `list` can be narrowed with `--label`, `--milestone` or `--assignee`. `status` and `sync-plan` have no filters, so `sync-plan --apply` refuses to run on a repository where its lookup hit the cap, because an issue missing from a truncated list would be created twice. Pagination is a follow-up (see PENDING.md).
+- Reads fetch at most 200 issues (500 for the per-task lookup) by default and a truncation warning goes to stderr. `--max <n|all>` (before the verb, like `-r`) raises the cap for every lookup; `gh` pages through the API itself, so a larger cap costs more requests and nothing else. `all` means 100000. `sync-plan --apply` still refuses when a lookup hits the cap, because an issue missing from a truncated list would be created twice; rerun it with a larger `--max`. With `--label`, `--milestone` or `--assignee`, `gh` uses GitHub search, which returns at most 1000 issues whatever `--max` says.
+- `list --limit <n> [--offset <m>]` pages the output rows (both backends), so a large repository does not flood the context. When rows remain, the last line is `# more=<rows left> next-offset=<m>`; pass that offset to get the next page.
 - Projects v2 fields are not read yet (tracked in PENDING.md).
 - `drift` lines mean the issue and `tasks.md` disagree. Nothing is changed; ask the user.
 

@@ -449,4 +449,4 @@ freely. These are what the live test surfaced.
 - Projects v2 fields (`est`, `prio`, `due`) for the github backend. Version 1 reads `est:` and `prio:` labels and the milestone due date.
 - Jira (alias `j`) and Linear (alias `L`) backends. Each is a new directory under `home/skills/project-management/scripts/backends/`, a doc, and a pass of the contract suite.
 - A `time-management` sibling skill: rank tasks by deadline, timebox them and schedule them on calendars from `pm list` output. Calendar backends: `ics` first (no auth), `google` as a stub. No Google Calendar tooling was reachable on 2026-10-21: no MCP connector, no gateway tool, no `gcalcli`. See the "Downstream" section of the design spec.
-- GitHub pagination beyond 200 issues (500 for per-task lookups). Until then `sync-plan --apply` refuses when a lookup is truncated.
+- GitHub lookups past 1000 issues when a `--label`, `--milestone` or `--assignee` filter is set (GitHub search caps there). Unfiltered lookups page without limit through `--max`.

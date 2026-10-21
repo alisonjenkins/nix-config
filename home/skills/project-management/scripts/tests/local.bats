@@ -58,6 +58,25 @@ EOF
   [[ "$output" == *"unsupported argument '--label' for the local backend"* ]]
 }
 
+@test "list --limit and --offset page the rows" {
+  run "${L[@]}" list --limit 2
+  [ "$status" -eq 0 ]
+  [ "${#lines[@]}" -eq 4 ]
+  [ "${lines[3]}" = "# more=1 next-offset=2" ]
+  run "${L[@]}" list --limit 2 --offset 2
+  [ "${#lines[@]}" -eq 2 ]
+  [[ "${lines[1]}" == pm:plan-x* ]]
+}
+
+@test "list rejects a bad --limit or --offset" {
+  run "${L[@]}" list --limit 0
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--limit must be a positive number"* ]]
+  run "${L[@]}" list --offset x
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--offset must be a number"* ]]
+}
+
 @test "list rejects a bad --state" {
   run "${L[@]}" list --state bogus
   [ "$status" -eq 1 ]
