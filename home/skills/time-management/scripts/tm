@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# tm: schedule tracker tasks into calendar time. -b picks a backend; the verb
+# runs backends/<name>/<verb>.sh. Holds no state and does no detection.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source-path=SCRIPTDIR source=lib/common.sh
+source "$script_dir/lib/common.sh"
+backends_dir="${TM_BACKENDS_DIR:-$script_dir/backends}"
+
+usage() {
+  echo "usage: tm -b <backend> <verb> [args]"
+  echo "verbs: $TM_VERBS"
+  echo "backends: $(tm_backends_usage "$backends_dir")"
+}
+
+backend_arg=""
+verb=""
+rest=()
+args=("$@")
+i=0
+while ((i < ${#args[@]})); do
+  a="${args[$i]}"
+  # Everything after the verb belongs to the backend, untouched.
+  if [[ -n $verb ]]; then
+    rest+=("$a")
+    i=$((i + 1))
+    continue
+  fi
+  case "$a" in
+    -b | --backend)
+      i=$((i + 1))
+      ((i < ${#args[@]})) || tm_die "$a needs a value"
+      backend_arg="${args[$i]}"
+      ;;
+    --backend=*) backend_arg="${a#--backend=}" ;;
+    -b?*) backend_arg="${a#-b}" ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      if [[ " $TM_VERBS " == *" $a "* ]]; then
+        verb="$a"
+      else
+        rest+=("$a")
+      fi
+      ;;
+  esac
+  i=$((i + 1))
+done
+
+backend_arg="${backend_arg:-${TM_BACKEND:-}}"
+[[ -n $backend_arg ]] || tm_die "-b required: $(tm_backends_usage "$backends_dir")"
+backend="$(tm_resolve_backend "$backends_dir" "$backend_arg")" ||
+  tm_die "unknown backend '$backend_arg'; use $(tm_backends_usage "$backends_dir")"
+if [[ -z $verb ]]; then
+  usage >&2
+  exit 1
+fi
+target="$backends_dir/$backend/$verb.sh"
+[[ -f $target ]] || tm_die "backend $backend has no verb $verb"
+exec bash "$target" ${rest[@]+"${rest[@]}"}
