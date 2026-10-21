@@ -89,6 +89,8 @@ END {
       continue
     }
     due_e[i] = (due[i] == "" ? -1 : iso2epoch(due[i]))
+    # A date with no time of day is due at the end of that day.
+    if (due_e[i] >= 0 && due[i] !~ /[Tt]/) due_e[i] += 86399
     due_key[i] = (due_e[i] >= 0 ? due_e[i] : 9e18)
     prio_key[i] = (prio[i] ~ /^[0-9]+$/ ? prio[i] + 0 : 99999)
     j = nr

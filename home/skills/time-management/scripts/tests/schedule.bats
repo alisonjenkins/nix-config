@@ -104,6 +104,14 @@ setup() {
   [ "${lines[1]}" = "# scheduled=1 chunks=1 late=1 skipped=0 unscheduled=0" ]
 }
 
+@test "a date-only due date means the end of that day" {
+  task 1 Today open "" 2026-10-19 60
+  task 2 Yesterday open "" 2026-10-18 60
+  run sched
+  [[ "${lines[0]}" == slot$'\t'2$'\t'*late ]]
+  [ "${lines[1]}" = "$(slot 1 2026-10-19T10:10:00Z 2026-10-19T11:10:00Z Today '')" ]
+}
+
 @test "a row with no est gets the default and says so" {
   task 1 One
   run sched
