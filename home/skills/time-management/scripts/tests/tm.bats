@@ -78,7 +78,7 @@ setup() {
 
 @test "bad input fails before anything is written" {
   out="$BATS_TEST_TMPDIR/never.ics"
-  for bad in "--now junk" "--hours 25:00-26:00" "--hours 17:00-09:00" "--hours nine" "--tz 1" "--tz +25:00" "--days 0" "--chunk 0" "--gap -1" "--weekdays 0-9" "--weekdays 5-1" "--default-est 0" "--bogus 1"; do
+  for bad in "--now junk" "--hours 25:00-26:00" "--hours 17:00-09:00" "--hours nine" "--tz 1" "--tz +25:00" "--days 0" "--days 367" "--chunk 0" "--gap -1" "--weekdays 0-9" "--weekdays 5-1" "--default-est 0" "--bogus 1"; do
     # shellcheck disable=SC2086
     run bash "$tm" -b i plan --from "$rows" --ics "$out" $bad
     [ "$status" -eq 1 ] || { echo "accepted: $bad"; return 1; }
@@ -99,6 +99,40 @@ setup() {
   umask 077
   run bash "$tm" -b i plan --from "$rows" --now "$now" --ics "$BATS_TEST_TMPDIR/private.ics"
   [ "$(ls -l "$BATS_TEST_TMPDIR/private.ics" | cut -c1-10)" = "-rw-------" ]
+}
+
+@test "numbers with leading zeros are decimal, not octal" {
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --days 8 --chunk 8 --gap 9
+  [ "$status" -eq 0 ]
+  want="$output"
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --days 08 --chunk 08 --gap 09
+  [ "$status" -eq 0 ]
+  [ "$output" = "$want" ]
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --default-est 08
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"value too great"* ]]
+}
+
+@test "leading zeros do not slip past the limits" {
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --days 0400
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--days must be at most 366"* ]]
+  [[ "$output" != *"value too great"* ]]
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --chunk 00
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--chunk must be a whole number >= 1"* ]]
+}
+
+@test "--ics leaves nothing but the calendar in its directory" {
+  mkdir "$BATS_TEST_TMPDIR/out"
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --ics "$BATS_TEST_TMPDIR/out/plan.ics"
+  [ "$status" -eq 0 ]
+  [ "$(ls -A "$BATS_TEST_TMPDIR/out")" = "plan.ics" ]
+}
+
+@test "--days accepts the 366 day ceiling" {
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --days 366
+  [ "$status" -eq 0 ]
 }
 
 @test "a flag without a value is an error" {

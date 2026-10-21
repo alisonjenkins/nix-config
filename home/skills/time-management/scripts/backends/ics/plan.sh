@@ -45,6 +45,8 @@ tm_uint() {
 }
 
 tm_uint --days "$days" 1
+# Each placement rescans the horizon from day one, so cap it.
+((10#$days <= 366)) || tm_die "plan: --days must be at most 366, got '$days'"
 tm_uint --chunk "$chunk" 1
 tm_uint --gap "$gap" 0
 tm_uint --default-est "$defest" 1
