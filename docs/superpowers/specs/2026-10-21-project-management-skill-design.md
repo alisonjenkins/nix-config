@@ -36,7 +36,7 @@ home/skills/project-management/
   breakdown.md         project to epics to tasks; sizing; dependencies; acceptance criteria
   tracking.md          backend-neutral workflow, verb contract, token rules
   docs.md              charter, plan, status report, retro templates
-  github.md            GitHub Issues and Projects v2 specifics
+  github.md            GitHub Issues specifics (labels, milestones, epics, limits)
   local.md             markdown tracker format
   scripts/
     pm                 entrypoint and dispatcher
@@ -128,12 +128,12 @@ Output rules:
 
 ### github
 
-- Uses `gh` only. No raw REST where `gh` has a subcommand.
-- Issues, labels and milestones for tasks, with optional Projects v2 fields behind `-p <number>`.
+- Uses `gh` only, and `gh issue list --json` for reads (one paged GraphQL call under the hood, capped at 200 issues; a truncation warning goes to stderr). No raw REST where `gh` has a subcommand.
+- Issues, labels and milestones for tasks. Projects v2 fields are a follow-up (tracked in PENDING.md); v1 reads `est` and `prio` from labels and `due` from the milestone.
 - Dependencies are recorded as `deps:` lines in the issue body and parsed back into the `deps` column.
-- `due` comes from the issue's milestone due date or a Projects v2 date field. `est` and `prio` come from `est:<minutes>` and `prio:<n>` labels, or Projects v2 number fields when `-p` is given. Unset means an empty column.
+- `due` comes from the issue's milestone due date. `est` and `prio` come from `est:<minutes>` and `prio:<n>` labels. Unset means an empty column.
 - Epic and per-task behaviour for speckit input is described under "Spec-kit interaction".
-- Detail goes in `github.md`: label scheme, Projects v2 field IDs, rate-limit behaviour.
+- Detail goes in `github.md`: label scheme, epic format, the 200-issue cap and rate-limit behaviour.
 
 ### local
 
@@ -157,7 +157,7 @@ Ownership:
 Tracking a spec's tasks in tickets:
 
 - **Epic by default.** `pm sync-plan <specs/NNN/tasks.md> --apply` creates or updates one epic issue per spec. The title carries the spec ID and name, the body links `specs/NNN-name`, and the tasks appear as a GitHub task list (`- [x] T001 description`). GitHub renders progress with no extra issues. The epic carries the `pm:spec-NNN` marker, so a re-run edits the body in place.
-- **Per-task issues are opt-in.** `--per-task [T003,T007]` creates `Tnnn: description` issues for tasks that need an assignee, discussion or cross-team visibility. The title format and the `Tnnn` dedup key match `speckit-taskstoissues`, so either tool can run first and the other sees `exists`.
+- **Per-task issues are opt-in.** `--per-task T003,T007` (or `--per-task all`) creates `Tnnn: description` issues for tasks that need an assignee, discussion or cross-team visibility. The title format and the `Tnnn` dedup key match `speckit-taskstoissues`, so either tool can run first and the other sees `exists`.
 - **One-way truth: file to issue.** `tasks.md` is versioned, reviewed in PRs and updated by `/speckit-implement`, so it is the source of truth. `sync-plan` pushes checkbox state to the epic body and closes per-task issues whose box is ticked. It never writes back to `tasks.md`. Disagreements print `drift` and change nothing.
 - **Why not per-task by default.** A spec such as `002-virtual-overview-column` has dozens of tasks. One issue each is tracker noise and one API call per change. Task state also changes with every commit that ticks a box.
 - **Token cost.** Epic mode is one read and at most one edit. Per-task mode is one GraphQL read plus one mutation per changed task. This replaces paging `list_issues` through MCP for deduplication.
