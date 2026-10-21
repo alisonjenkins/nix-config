@@ -42,3 +42,4 @@ pm show https://github.com/owner/name/issues/12                 # a URL needs no
 | Running pm: verbs, columns, flags, token rules, speckit tasks | [tracking.md](tracking.md) |
 | Breaking a project into epics and tasks | [breakdown.md](breakdown.md) |
 | Writing a charter, plan, status report or retro | [docs.md](docs.md) |
+| Using the GitHub backend (labels, milestones, epics, limits) | [github.md](github.md) |
