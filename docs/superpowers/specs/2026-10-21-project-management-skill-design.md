@@ -66,7 +66,7 @@ Rules:
 1. `-b` / `--backend` is required unless the first ref is a URL that identifies its backend. A missing or unknown value exits non-zero and prints the table: `error: -b required: g|github l|local`.
 2. A `-b` value resolves in this order, with no prefix or fuzzy matching: an alias match, then a full backend name match, otherwise an error.
 3. A full issue URL carries backend and repo, so `pm show <url>` needs no other flags.
-4. Backend-specific flags belong to that backend: `-r/--repo` (github), `-d/--dir` (local). Each backend validates its own flags and prints its own usage line.
+4. Backend-specific flags belong to that backend: `-r/--repo` (github), `-d/--dir` (local). Each backend validates its own flags and reports a missing or bad one with a one-line error that names the flag. The dispatcher reads `-b` only before the verb; everything after the verb is passed to the backend untouched, so a value such as `--comment "-h"` is never mistaken for a dispatcher flag.
 5. Environment equivalents (`PM_BACKEND`, `PM_REPO`, `PM_DIR`) exist for one-shot use. The agent should use flags, because shell state does not persist between Bash calls.
 6. Line 1 of every output echoes the resolved target: `# backend=github repo=owner/name`. A wrong choice is visible at once.
 
@@ -105,7 +105,7 @@ Every backend implements the same verbs with the same output shape.
 | Verb | Purpose | Output |
 |---|---|---|
 | `status` | counts by state, blocked, stale, next-up | one summary line plus a short TSV |
-| `list` | compact task list; `--state`, `--label`, `--milestone`, `--assignee` | TSV: `id state title owner deps` |
+| `list` | compact task list; `--state`, `--label`, `--milestone`, `--assignee`, `--due-before <ISO8601 UTC>` | TSV: `id state title owner deps due est prio` |
 | `show <id>` | one task; body truncated by default, `--full` to expand | key/value lines |
 | `update <id>` | `--state`, `--label`, `--comment` on one task | one confirmation line |
 | `sync-plan <file>` | create or update tracker items from a plan file or a speckit `tasks.md` | per-item `created`/`updated`/`exists`/`drift` lines |
@@ -113,15 +113,16 @@ Every backend implements the same verbs with the same output shape.
 Output rules:
 
 - TSV or single-line summaries, never prose or JSON dumps.
+- `due`, `est` and `prio` are optional and print as an empty field when unset, so the column count never changes. `due` is ISO8601 UTC, `est` is minutes (integer), `prio` is a small integer with 1 highest.
 - Bodies are truncated unless `--full` is passed.
 - GitHub reads use one GraphQL call with pagination, not N `gh` calls, in the same way as `git/scripts/pr-status.sh`.
 - Timestamps are ISO8601 UTC.
 
 ### Idempotency and mutation
 
-`sync-plan` is a dry run by default and mutates only with `--apply`, because creating issues is outward-facing. Each item carries a stable marker: `pm:<slug>` for plan items, `pm:spec-NNN` for a speckit epic, and the `Tnnn` ID for speckit tasks. For GitHub the marker is a line in the issue body (or, for `Tnnn`, the `Tnnn:` title prefix). Before creating, the script checks whether the marker already exists and prints `exists` instead of duplicating. Re-running is safe.
+`sync-plan` is a dry run by default and mutates only with `--apply`, because creating issues is outward-facing. Each item carries a stable marker. Plan items use `pm:<slug>` ids on the task line. A GitHub epic carries a hidden `<!-- marker -->` first line in its body: `pm:spec-NNN` for a numbered spec directory, otherwise `pm:plan-<repo-relative path of the file, lowercased, with / and _ as ->`, so two projects never share one. A GitHub per-task issue is titled `Tnnn: description` and is tied to its tasks file by a `Source: <path>` line in its body or by an exactly matching title. Before creating, the script looks up the marker or title and prints `exists` instead of duplicating. If a lookup hit its cap (200 epics, 500 issues), `--apply` refuses, because a miss past the cap would create a duplicate. Re-running is safe. `update` is an explicit single change and takes effect at once; only `sync-plan` is a dry run by default.
 
-`drift` lines report a disagreement the script will not resolve, for example `drift T005: issue closed, box open`. A drift line changes nothing. A human decides which side is right.
+`drift` lines report a disagreement the script will not resolve, for example `drift T005: issue closed, box open`. A drift line changes nothing. A human decides which side is right. `drift` also reports two epics that carry one marker, and an issue that starts with a task id but is tied neither to this file nor by an exact title.
 
 ## Backends
 
@@ -130,6 +131,7 @@ Output rules:
 - Uses `gh` only. No raw REST where `gh` has a subcommand.
 - Issues, labels and milestones for tasks, with optional Projects v2 fields behind `-p <number>`.
 - Dependencies are recorded as `deps:` lines in the issue body and parsed back into the `deps` column.
+- `due` comes from the issue's milestone due date or a Projects v2 date field. `est` and `prio` come from `est:<minutes>` and `prio:<n>` labels, or Projects v2 number fields when `-p` is given. Unset means an empty column.
 - Epic and per-task behaviour for speckit input is described under "Spec-kit interaction".
 - Detail goes in `github.md`: label scheme, Projects v2 field IDs, rate-limit behaviour.
 
@@ -137,7 +139,7 @@ Output rules:
 
 - Files under the `-d` directory: `charter.md`, `plan.md`, `tasks.md`, `status.md`.
 - `tasks.md` uses the speckit line format: `- [ ] T001 [P] [US1] description`. One format serves plain projects and speckit features, so `pm status -b l -d specs/002-virtual-overview-column` works on an existing feature unchanged. `pm update` toggles the checkbox.
-- Optional trailing fields on a task line: `owner:<name>`, `deps:T001,T002`, `due:<ISO8601 UTC>`. Speckit-origin lines usually have none, so their `deps` column is empty and `status` cannot report them as blocked.
+- Optional trailing fields on a task line: `owner:<name>`, `deps:T001,T002`, `due:<ISO8601 UTC>`, `est:<minutes>`, `prio:<n>`. Speckit-origin lines usually have none, so their `deps` column is empty and `status` cannot report them as blocked.
 - The directory can be anywhere, including outside the working tree.
 - Detail goes in `local.md`.
 
@@ -159,6 +161,18 @@ Tracking a spec's tasks in tickets:
 - **One-way truth: file to issue.** `tasks.md` is versioned, reviewed in PRs and updated by `/speckit-implement`, so it is the source of truth. `sync-plan` pushes checkbox state to the epic body and closes per-task issues whose box is ticked. It never writes back to `tasks.md`. Disagreements print `drift` and change nothing.
 - **Why not per-task by default.** A spec such as `002-virtual-overview-column` has dozens of tasks. One issue each is tracker noise and one API call per change. Task state also changes with every commit that ticks a box.
 - **Token cost.** Epic mode is one read and at most one edit. Per-task mode is one GraphQL read plus one mutation per changed task. This replaces paging `list_issues` through MCP for deduplication.
+
+## Downstream: time-management (separate skill, not part of v1)
+
+Scheduling and timeboxing across projects is a sibling skill, `time-management`, with its own design cycle. This skill's only obligation is the read-only `list` contract above: `due`, `est` and `prio` are the inputs a scheduler needs, which is why they are in v1.
+
+Direction of the sibling design, recorded so the contract does not drift:
+
+- Prioritise (deterministic script, earliest deadline first, reason per row), timebox (script proposes, agent judges), calendar (backend per calendar, same stateless `-b` pattern, alias files, contract suite).
+- Calendar writes are outward-facing: dry run by default, `--apply` to mutate, each event carries a `tm:<task-ref>` marker for idempotent re-runs.
+- Backends planned: `ics` (no auth, first) and `google` (stub only).
+
+The `google` backend is a stub. As of 2026-10-21 no Google Calendar tooling is reachable from the development machine: no MCP connector, no gateway tool, no `gcalcli`. The auth route (claude.ai connector or `gcalcli`) is undecided and deliberately deferred. Nothing in `project-management` depends on it.
 
 ## Documentation templates
 
@@ -182,7 +196,7 @@ Shared skills run on many machines. The scripts need bash, `gh` (github backend 
   - no two backends share an alias (exact, case-sensitive);
   - no alias equals a different backend's full name;
   - every alias is no longer than its backend's full name.
-- `contract.bats`: runs the same verb cases against every backend and checks output shape (header line, TSV column count, exit codes). A drifting backend fails here.
+- `contract.bats`: runs the same verb cases against every backend and checks output shape (header line, TSV column count of 8 for `list`, `due`/`est`/`prio` empty when unset, exit codes). A drifting backend fails here.
 - Speckit input: a fixture copied from a real `specs/*/tasks.md` (checked and unchecked boxes, `[P]`, `[US#]` markers) must parse. Cases: epic created, epic updated in place on re-run, `--per-task` title matches `Tnnn: description`, a closed issue with an open box yields `drift` and no mutation, and `sync-plan` never modifies the input file.
 - Per-backend suites: GitHub uses a fake `gh` on `PATH`, in the style of `git/scripts/tests/gh`. Local uses temp directories.
 - `triggers.json` entries are checked by `skills-triggers-tests`; `lint-skills.sh` checks conventions.
