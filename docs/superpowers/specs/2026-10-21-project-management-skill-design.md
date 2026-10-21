@@ -1,0 +1,181 @@
+# Project management skill: design
+
+Status: approved by the user in conversation, 2026-10-21T00:00:00Z. Not yet implemented.
+
+## Problem
+
+There is no shared skill for breaking a project into tasks, tracking those tasks in a ticket system, or writing project documentation. Each session redoes this by hand with many `gh` calls, which burns tokens and gives inconsistent results.
+
+## Goal
+
+A shared skill, `project-management`, that:
+
+- breaks projects into epics and tasks with sizes, dependencies and acceptance criteria;
+- tracks tasks in a ticket system through scripts with compact output;
+- produces project documentation (charter, plan, status report, retro).
+
+It follows the family pattern: a parent `SKILL.md` with a routing table, child markdown files loaded on demand, and `scripts/` with bats tests.
+
+## Non-goals (v1)
+
+- Jira, GitLab and Linear backends. The design leaves room for them. None is built.
+- Replacing `speckit-*` skills. Those handle spec-driven features. This skill handles general project planning and tracking, and its description says "not for spec-kit features".
+- Persisted configuration of any kind (see "Backend selection").
+
+## Location and wiring
+
+`home/skills/project-management/`. `flake-modules/lib.nix` auto-discovers every directory under `home/skills/`, so no Nix edits are needed. The existing `skills-lint` and `skills-triggers` checks apply.
+
+## Layout
+
+```
+home/skills/project-management/
+  SKILL.md             when to use, mandate, backend rules, routing table
+  triggers.json        fire / no-fire phrases
+  breakdown.md         project to epics to tasks; sizing; dependencies; acceptance criteria
+  tracking.md          backend-neutral workflow, verb contract, token rules
+  docs.md              charter, plan, status report, retro templates
+  github.md            GitHub Issues and Projects v2 specifics
+  local.md             markdown tracker format
+  scripts/
+    pm                 entrypoint and dispatcher
+    lib/               shared shell helpers (alias table, URL parsing, TSV output)
+    backends/
+      github/          alias, status.sh, list.sh, show.sh, update.sh, sync-plan.sh
+      local/           alias, status.sh, list.sh, show.sh, update.sh, sync-plan.sh
+    tests/
+      contract.bats    same verb cases against every backend
+      dispatch.bats    alias and routing rules
+      github/*.bats    fake gh on PATH
+      local/*.bats
+```
+
+## Backend selection
+
+The scripts hold no state and do no detection. The caller names the backend on every call.
+
+```
+pm -b g -r owner/name status
+pm -b l -d docs/projects/foo list --state open
+pm show https://github.com/owner/name/issues/12
+```
+
+Rules:
+
+1. `-b` / `--backend` is required unless the first ref is a URL that identifies its backend. A missing or unknown value exits non-zero and prints the table: `error: -b required: g|github l|local`.
+2. A `-b` value resolves in this order, with no prefix or fuzzy matching: an alias match, then a full backend name match, otherwise an error.
+3. A full issue URL carries backend and repo, so `pm show <url>` needs no other flags.
+4. Backend-specific flags belong to that backend: `-r/--repo` (github), `-d/--dir` (local). Each backend validates its own flags and prints its own usage line.
+5. Environment equivalents (`PM_BACKEND`, `PM_REPO`, `PM_DIR`) exist for one-shot use. The agent should use flags, because shell state does not persist between Bash calls.
+6. Line 1 of every output echoes the resolved target: `# backend=github repo=owner/name`. A wrong choice is visible at once.
+
+Why no config file, git config or auto-detect: the user cannot keep config around, and a git remote on GitHub says nothing about where tickets live.
+
+### Aliases
+
+Each backend directory holds an `alias` file with one token matching `[A-Za-z]+`, case-sensitive. Single letters are the default. Multi-letter aliases are the fallback when letters are contested.
+
+| Alias | Backend | Status |
+|---|---|---|
+| `g` | github | v1 |
+| `l` | local | v1 |
+| `j` | jira | reserved |
+| `G` | gitlab | future |
+| `L` | linear | future |
+
+Lowercase goes to the first backend to claim a letter, uppercase to a later one with the same initial. The alias is file content, not a file name, so case-insensitive filesystems are not a problem.
+
+The dispatcher builds the table by scanning `backends/*/alias`.
+
+### How the agent knows the tracker
+
+This lives in `SKILL.md`, not in code. In order:
+
+1. The user said so, or pasted a ticket URL.
+2. The repo's `CLAUDE.md`, `AGENTS.md` or README names it.
+3. Otherwise ask the user once, in one line, and reuse the answer for the session.
+
+Never infer the tracker from the git remote alone.
+
+## Verb contract
+
+Every backend implements the same verbs with the same output shape.
+
+| Verb | Purpose | Output |
+|---|---|---|
+| `status` | counts by state, blocked, stale, next-up | one summary line plus a short TSV |
+| `list` | compact task list; `--state`, `--label`, `--milestone`, `--assignee` | TSV: `id state title owner deps` |
+| `show <id>` | one task; body truncated by default, `--full` to expand | key/value lines |
+| `update <id>` | `--state`, `--label`, `--comment` on one task | one confirmation line |
+| `sync-plan <file>` | create tasks from a plan file | per-task `created`/`exists` lines |
+
+Output rules:
+
+- TSV or single-line summaries, never prose or JSON dumps.
+- Bodies are truncated unless `--full` is passed.
+- GitHub reads use one GraphQL call with pagination, not N `gh` calls, in the same way as `git/scripts/pr-status.sh`.
+- Timestamps are ISO8601 UTC.
+
+### Idempotency and mutation
+
+`sync-plan` is a dry run by default and mutates only with `--apply`, because creating issues is outward-facing. Each task carries a stable `pm:<slug>` marker (a line in the issue body for GitHub, a column for local). Before creating, the script checks whether the marker already exists and prints `exists` instead of duplicating. Re-running is safe.
+
+## Backends
+
+### github
+
+- Uses `gh` only. No raw REST where `gh` has a subcommand.
+- Issues, labels and milestones for tasks, with optional Projects v2 fields behind `-p <number>`.
+- Dependencies are recorded as `deps:` lines in the issue body and parsed back into the `deps` column.
+- Detail goes in `github.md`: label scheme, Projects v2 field IDs, rate-limit behaviour.
+
+### local
+
+- Files under the `-d` directory: `charter.md`, `plan.md`, `tasks.md`, `status.md`.
+- `tasks.md` is a Markdown table with ID, state, title, owner, deps, ISO8601 UTC dates.
+- The directory can be anywhere, including outside the working tree.
+- Detail goes in `local.md`.
+
+## Documentation templates
+
+`docs.md` carries templates for charter, plan, status report and retro. Hard-won lessons go to `docs/adr/` in the same change, following the repo rule. Each template is short and front-loads the conclusion.
+
+## Token and delegation rules
+
+- `status` and `list` are mechanical. `SKILL.md` tells the agent to run them through a cheap delegate where the delegation skill applies.
+- Breakdown judgement (what the tasks are, how big, in what order) stays on the main loop.
+- Examples in all docs use the short flags, since the agent copies what it reads. First mention of a flag shows the long form beside it.
+
+## Portability
+
+Shared skills run on many machines. The scripts need bash, `gh` (github backend only), `jq` and `git`. Each script probes with `command -v` and prints a clear error if a tool is missing. No absolute tool paths. Anything that differs between GNU and BSD userland (`date`, `sed`, `stat`) is avoided or wrapped, because macOS is in use.
+
+## Testing
+
+- `dispatch.bats`: alias resolution order, unknown backend error text, URL routing, flag precedence over env.
+- Alias lint, as bats checks that must all pass:
+  - every alias matches `^[A-Za-z]+$`;
+  - no two backends share an alias (exact, case-sensitive);
+  - no alias equals a different backend's full name;
+  - every alias is no longer than its backend's full name.
+- `contract.bats`: runs the same verb cases against every backend and checks output shape (header line, TSV column count, exit codes). A drifting backend fails here.
+- Per-backend suites: GitHub uses a fake `gh` on `PATH`, in the style of `git/scripts/tests/gh`. Local uses temp directories.
+- `triggers.json` entries are checked by `skills-triggers-tests`; `lint-skills.sh` checks conventions.
+
+## Build order (atomic commits)
+
+Each step compiles and passes checks alone, and reverts cleanly.
+
+1. Skeleton: `SKILL.md` with description and routing table, `triggers.json`.
+2. `scripts/pm` dispatcher, `lib/`, alias scan, plus `dispatch.bats`.
+3. Local backend, one verb per commit, each with tests.
+4. GitHub backend, one verb per commit, each with tests.
+5. `contract.bats`.
+6. Child docs: `tracking.md`, `breakdown.md`, `docs.md`, `github.md`, `local.md`.
+7. Wire skill into `README`/docs index if the repo has one; ADR for the stateless-backend decision.
+
+## Assumptions
+
+- Local tracker files default to a directory the caller passes with `-d`. There is no default path, so nothing forces files into a repo that cannot hold them.
+- `gh` is authenticated on machines that use the github backend. The script checks and reports, and does not log in.
+- Jira, GitLab and Linear are out of scope for v1.
