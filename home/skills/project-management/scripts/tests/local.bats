@@ -114,3 +114,85 @@ EOF
   [[ "$output" == *"--state is required"* ]]
   [ "$(cat "$dir/tasks.md")" = "$before" ]
 }
+
+make_plan() {
+  cat >"$BATS_TEST_TMPDIR/plan.md" <<'EOF'
+- [ ] T003 [US2] Do thing prio:2
+- [ ] T009 New task est:15
+- [ ] pm:new-thing Another
+EOF
+}
+
+@test "sync-plan dry run reports and changes nothing" {
+  make_plan
+  before="$(cat "$dir/tasks.md")"
+  run "${L[@]}" sync-plan "$BATS_TEST_TMPDIR/plan.md"
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "$(printf 'exists\ttask\tT003\tDo thing')" ]
+  [ "${lines[2]}" = "$(printf 'would-create\ttask\tT009\tNew task')" ]
+  [ "${lines[3]}" = "$(printf 'would-create\ttask\tpm:new-thing\tAnother')" ]
+  [ "$(cat "$dir/tasks.md")" = "$before" ]
+}
+
+@test "sync-plan --apply appends only missing tasks and is idempotent" {
+  make_plan
+  run "${L[@]}" sync-plan "$BATS_TEST_TMPDIR/plan.md" --apply
+  [ "${lines[2]}" = "$(printf 'created\ttask\tT009\tNew task')" ]
+  grep -q '^- \[ \] T009 New task est:15$' "$dir/tasks.md"
+  [ "$(grep -c 'T003' "$dir/tasks.md")" -eq 2 ] # T003 plus the dep reference on T002
+  run "${L[@]}" sync-plan "$BATS_TEST_TMPDIR/plan.md" --apply
+  [ "${lines[2]}" = "$(printf 'exists\ttask\tT009\tNew task')" ]
+}
+
+@test "sync-plan on its own tasks.md changes nothing" {
+  before="$(cat "$dir/tasks.md")"
+  run "${L[@]}" sync-plan "$dir/tasks.md" --apply
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"created"* ]]
+  [ "$(cat "$dir/tasks.md")" = "$before" ]
+}
+
+@test "sync-plan creates tasks.md when the directory has none" {
+  make_plan
+  run bash "$pm" -b l -d "$BATS_TEST_TMPDIR/fresh" sync-plan "$BATS_TEST_TMPDIR/plan.md" --apply
+  [ "$status" -eq 0 ]
+  [ "$(grep -c '^- \[ \]' "$BATS_TEST_TMPDIR/fresh/tasks.md")" -eq 3 ]
+}
+
+@test "sync-plan rejects GitHub-only options" {
+  run "${L[@]}" sync-plan "$dir/tasks.md" --per-task all
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unsupported argument '--per-task' for the local backend"* ]]
+}
+
+@test "sync-plan dry run does not create the directory" {
+  make_plan
+  run bash "$pm" -b l -d "$BATS_TEST_TMPDIR/fresh2" sync-plan "$BATS_TEST_TMPDIR/plan.md"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"would-create"* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/fresh2" ]
+}
+
+@test "sync-plan creates a duplicate id in the plan only once" {
+  printf -- '- [ ] T009 One\n- [ ] T009 One again\n' >"$BATS_TEST_TMPDIR/dup.md"
+  run "${L[@]}" sync-plan "$BATS_TEST_TMPDIR/dup.md" --apply
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "$(printf 'created\ttask\tT009\tOne')" ]
+  [ "${lines[2]}" = "$(printf 'exists\ttask\tT009\tOne again')" ]
+  [ "$(grep -c '^- \[ \] T009' "$dir/tasks.md")" -eq 1 ]
+}
+
+@test "the directory can come from --dir= or PM_DIR" {
+  run bash "$pm" -b l --dir="$dir" list
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == "# backend=local dir=$dir" ]]
+  PM_DIR="$dir" run bash "$pm" -b l list
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == "# backend=local dir=$dir" ]]
+}
+
+@test "status rejects an extra argument" {
+  run "${L[@]}" status extra
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unexpected argument 'extra'"* ]]
+}
