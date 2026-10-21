@@ -19,7 +19,8 @@ It follows the family pattern: a parent `SKILL.md` with a routing table, child m
 ## Non-goals (v1)
 
 - Jira, GitLab and Linear backends. The design leaves room for them. None is built.
-- Replacing `speckit-*` skills. Those handle spec-driven features. This skill handles general project planning and tracking, and its description says "not for spec-kit features".
+- Replacing `speckit-*` skills or writing a feature's `spec.md`, `plan.md` or `tasks.md`. See "Spec-kit interaction".
+- Modifying `speckit-taskstoissues`. It is installed by `speckit-init`; this skill coexists with it.
 - Persisted configuration of any kind (see "Backend selection").
 
 ## Location and wiring
@@ -107,7 +108,7 @@ Every backend implements the same verbs with the same output shape.
 | `list` | compact task list; `--state`, `--label`, `--milestone`, `--assignee` | TSV: `id state title owner deps` |
 | `show <id>` | one task; body truncated by default, `--full` to expand | key/value lines |
 | `update <id>` | `--state`, `--label`, `--comment` on one task | one confirmation line |
-| `sync-plan <file>` | create tasks from a plan file | per-task `created`/`exists` lines |
+| `sync-plan <file>` | create or update tracker items from a plan file or a speckit `tasks.md` | per-item `created`/`updated`/`exists`/`drift` lines |
 
 Output rules:
 
@@ -118,7 +119,9 @@ Output rules:
 
 ### Idempotency and mutation
 
-`sync-plan` is a dry run by default and mutates only with `--apply`, because creating issues is outward-facing. Each task carries a stable `pm:<slug>` marker (a line in the issue body for GitHub, a column for local). Before creating, the script checks whether the marker already exists and prints `exists` instead of duplicating. Re-running is safe.
+`sync-plan` is a dry run by default and mutates only with `--apply`, because creating issues is outward-facing. Each item carries a stable marker: `pm:<slug>` for plan items, `pm:spec-NNN` for a speckit epic, and the `Tnnn` ID for speckit tasks. For GitHub the marker is a line in the issue body (or, for `Tnnn`, the `Tnnn:` title prefix). Before creating, the script checks whether the marker already exists and prints `exists` instead of duplicating. Re-running is safe.
+
+`drift` lines report a disagreement the script will not resolve, for example `drift T005: issue closed, box open`. A drift line changes nothing. A human decides which side is right.
 
 ## Backends
 
@@ -127,14 +130,35 @@ Output rules:
 - Uses `gh` only. No raw REST where `gh` has a subcommand.
 - Issues, labels and milestones for tasks, with optional Projects v2 fields behind `-p <number>`.
 - Dependencies are recorded as `deps:` lines in the issue body and parsed back into the `deps` column.
+- Epic and per-task behaviour for speckit input is described under "Spec-kit interaction".
 - Detail goes in `github.md`: label scheme, Projects v2 field IDs, rate-limit behaviour.
 
 ### local
 
 - Files under the `-d` directory: `charter.md`, `plan.md`, `tasks.md`, `status.md`.
-- `tasks.md` is a Markdown table with ID, state, title, owner, deps, ISO8601 UTC dates.
+- `tasks.md` uses the speckit line format: `- [ ] T001 [P] [US1] description`. One format serves plain projects and speckit features, so `pm status -b l -d specs/002-virtual-overview-column` works on an existing feature unchanged. `pm update` toggles the checkbox.
+- Optional trailing fields on a task line: `owner:<name>`, `deps:T001,T002`, `due:<ISO8601 UTC>`. Speckit-origin lines usually have none, so their `deps` column is empty and `status` cannot report them as blocked.
 - The directory can be anywhere, including outside the working tree.
 - Detail goes in `local.md`.
+
+## Spec-kit interaction
+
+This repo uses spec-kit: `specs/NNN-name/` holds `spec.md`, `plan.md` and `tasks.md`.
+
+Ownership:
+
+- speckit owns one feature's spec, plan and tasks. `pm` never writes them.
+- `pm` owns the level above: project, epics, charter, status reports, and tracking across features and trackers.
+- An epic is usually one speckit feature. The breakdown output tells the user to run `/speckit-specify` for that epic and links `specs/NNN-name` from the plan. It does not copy the content.
+- Heuristic for `SKILL.md`: one code feature goes to speckit. Multi-feature, non-code or cross-team work goes to `pm`, which hands each feature down to speckit.
+
+Tracking a spec's tasks in tickets:
+
+- **Epic by default.** `pm sync-plan <specs/NNN/tasks.md> --apply` creates or updates one epic issue per spec. The title carries the spec ID and name, the body links `specs/NNN-name`, and the tasks appear as a GitHub task list (`- [x] T001 description`). GitHub renders progress with no extra issues. The epic carries the `pm:spec-NNN` marker, so a re-run edits the body in place.
+- **Per-task issues are opt-in.** `--per-task [T003,T007]` creates `Tnnn: description` issues for tasks that need an assignee, discussion or cross-team visibility. The title format and the `Tnnn` dedup key match `speckit-taskstoissues`, so either tool can run first and the other sees `exists`.
+- **One-way truth: file to issue.** `tasks.md` is versioned, reviewed in PRs and updated by `/speckit-implement`, so it is the source of truth. `sync-plan` pushes checkbox state to the epic body and closes per-task issues whose box is ticked. It never writes back to `tasks.md`. Disagreements print `drift` and change nothing.
+- **Why not per-task by default.** A spec such as `002-virtual-overview-column` has dozens of tasks. One issue each is tracker noise and one API call per change. Task state also changes with every commit that ticks a box.
+- **Token cost.** Epic mode is one read and at most one edit. Per-task mode is one GraphQL read plus one mutation per changed task. This replaces paging `list_issues` through MCP for deduplication.
 
 ## Documentation templates
 
@@ -159,6 +183,7 @@ Shared skills run on many machines. The scripts need bash, `gh` (github backend 
   - no alias equals a different backend's full name;
   - every alias is no longer than its backend's full name.
 - `contract.bats`: runs the same verb cases against every backend and checks output shape (header line, TSV column count, exit codes). A drifting backend fails here.
+- Speckit input: a fixture copied from a real `specs/*/tasks.md` (checked and unchecked boxes, `[P]`, `[US#]` markers) must parse. Cases: epic created, epic updated in place on re-run, `--per-task` title matches `Tnnn: description`, a closed issue with an open box yields `drift` and no mutation, and `sync-plan` never modifies the input file.
 - Per-backend suites: GitHub uses a fake `gh` on `PATH`, in the style of `git/scripts/tests/gh`. Local uses temp directories.
 - `triggers.json` entries are checked by `skills-triggers-tests`; `lint-skills.sh` checks conventions.
 
