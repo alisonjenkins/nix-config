@@ -113,3 +113,52 @@ make_view() { # make_view <state> <body-lines>
   [ "$status" -eq 1 ]
   [[ "$output" == *"need an issue number"* ]]
 }
+
+@test "update --state done closes an open issue" {
+  make_view OPEN 1
+  run "${G[@]}" update 1 --state done
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "updated 1 state=done" ]
+  grep -q '^issue close 1 -R owner/name' "$fx/calls.log"
+}
+
+@test "update --state done on a closed issue changes nothing" {
+  make_view CLOSED 1
+  run "${G[@]}" update 1 --state done
+  [ "${lines[1]}" = "unchanged 1" ]
+  refute_mutated
+}
+
+@test "update --state open reopens a closed issue" {
+  make_view CLOSED 1
+  run "${G[@]}" update 1 --state open
+  [ "${lines[1]}" = "updated 1 state=open" ]
+  grep -q '^issue reopen 1 -R owner/name' "$fx/calls.log"
+}
+
+@test "update adds and removes labels and comments" {
+  run "${G[@]}" update 1 --label blocked --unlabel ready --comment "waiting on 2"
+  [ "${lines[1]}" = "updated 1 +blocked -ready comment" ]
+  grep -q '^issue edit 1 -R owner/name --add-label blocked' "$fx/calls.log"
+  grep -q '^issue edit 1 -R owner/name --remove-label ready' "$fx/calls.log"
+  grep -q '^issue comment 1 -R owner/name --body waiting on 2' "$fx/calls.log"
+}
+
+@test "update needs an id, an action and a valid state" {
+  run "${G[@]}" update
+  [ "$status" -eq 1 ]
+  run "${G[@]}" update 1
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"nothing to do"* ]]
+  run "${G[@]}" update 1 --state bogus
+  [ "$status" -eq 1 ]
+}
+
+@test "update prints the header first and reports what was applied when a later step fails" {
+  make_view OPEN 1
+  FAKE_GH_FAIL_EDIT=1 run "${G[@]}" update 1 --state done --label nope
+  [ "$status" -ne 0 ]
+  [ "${lines[0]}" = "# backend=github repo=owner/name" ]
+  [[ "$output" == *"partially applied: state=done"* ]]
+  grep -q '^issue close 1 -R owner/name' "$fx/calls.log"
+}
