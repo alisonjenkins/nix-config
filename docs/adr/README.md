@@ -135,6 +135,12 @@ Design: [`specs/008-ai-control-centre/`](../../specs/008-ai-control-centre/).
 | [0042](0042-run-the-control-centre-web-view-as-a-user-service-everywhere.md) | Run the control-centre web view as a user service on every machine | Proposed |
 | [0045](0045-keep-an-extra-fast-keyslot-on-the-home-luks-volumes.md) | Keep an extra fast keyslot on the home LUKS volumes | Accepted |
 
+## Project management
+
+| # | Decision | Status |
+|---|---|---|
+| [0049](0049-select-the-pm-backend-on-every-call.md) | Select the pm backend on every call | Accepted |
+
 ## Template
 
 ```markdown
