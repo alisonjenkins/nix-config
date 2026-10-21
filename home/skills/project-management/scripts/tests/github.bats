@@ -71,3 +71,11 @@ EOF
   [ "${#lines[@]}" -eq 3 ]
   grep -q -- '--assignee @me' "$fx/calls.log"
 }
+
+@test "status counts, stale, blocked and next" {
+  run "${G[@]}" status
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "# backend=github repo=owner/name" ]
+  [ "${lines[1]}" = "open=2 done=1 blocked=1 stale=1" ]
+  [ "${lines[2]}" = "$(printf 'next\t3\tThird')" ]
+}
