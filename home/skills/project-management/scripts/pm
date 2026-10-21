@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# pm: one entry point for project trackers. -b picks a backend; the verb runs
+# backends/<name>/<verb>.sh. Holds no state and does no detection.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source-path=SCRIPTDIR source=lib/common.sh
+source "$script_dir/lib/common.sh"
+backends_dir="${PM_BACKENDS_DIR:-$script_dir/backends}"
+
+usage() {
+  echo "usage: pm -b <backend> [backend flags] <verb> [args]"
+  echo "verbs: $PM_VERBS"
+  echo "backends: $(pm_backends_usage "$backends_dir")"
+  echo "a GitHub issue URL as an argument needs no -b"
+}
+
+backend_arg=""
+verb=""
+rest=()
+args=("$@")
+i=0
+while ((i < ${#args[@]})); do
+  a="${args[$i]}"
+  # Everything after the verb belongs to the backend, untouched: a value such as
+  # --comment "-blocked" or a literal -h must never be read as a dispatcher flag.
+  if [[ -n $verb ]]; then
+    rest+=("$a")
+    i=$((i + 1))
+    continue
+  fi
+  case "$a" in
+    -b | --backend)
+      i=$((i + 1))
+      ((i < ${#args[@]})) || pm_die "$a needs a value"
+      backend_arg="${args[$i]}"
+      ;;
+    --backend=*) backend_arg="${a#--backend=}" ;;
+    -b?*) backend_arg="${a#-b}" ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      if [[ -z $verb && " $PM_VERBS " == *" $a "* ]]; then
+        verb="$a"
+      else
+        rest+=("$a")
+      fi
+      ;;
+  esac
+  i=$((i + 1))
+done
+
+backend_arg="${backend_arg:-${PM_BACKEND:-}}"
+
+# A ticket URL names its own backend and repo.
+if [[ -z $backend_arg ]]; then
+  routed=()
+  for a in ${rest[@]+"${rest[@]}"}; do
+    if [[ -z $backend_arg ]] && route="$(pm_url_route "$a")"; then
+      IFS=$'\t' read -r backend_arg url_repo url_num <<<"$route"
+      routed+=(-r "$url_repo" "$url_num")
+    else
+      routed+=("$a")
+    fi
+  done
+  rest=()
+  for a in ${routed[@]+"${routed[@]}"}; do
+    rest+=("$a")
+  done
+fi
+
+[[ -n $backend_arg ]] || pm_die "-b required: $(pm_backends_usage "$backends_dir")"
+backend="$(pm_resolve_backend "$backends_dir" "$backend_arg")" ||
+  pm_die "unknown backend '$backend_arg'; use $(pm_backends_usage "$backends_dir")"
+if [[ -z $verb ]]; then
+  usage >&2
+  exit 1
+fi
+target="$backends_dir/$backend/$verb.sh"
+[[ -f $target ]] || pm_die "backend $backend has no verb $verb"
+exec bash "$target" ${rest[@]+"${rest[@]}"}
