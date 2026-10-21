@@ -63,3 +63,11 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"--state must be open, done or all"* ]]
 }
+
+@test "status counts, blocked and next" {
+  run "${L[@]}" status
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "# backend=local dir=$dir" ]
+  [ "${lines[1]}" = "open=3 done=1 blocked=1 stale=n/a" ]
+  [ "${lines[2]}" = "$(printf 'next\tT003\tDo thing')" ]
+}
