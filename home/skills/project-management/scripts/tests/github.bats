@@ -351,3 +351,48 @@ EOF
   [[ "$output" != *$'\tT002\t'* ]]
 }
 
+per_task_fixture() {
+  make_spec
+  cat >"$fx/list.json" <<'EOF'
+[{"number":10,"title":"T001: Set up repo","state":"OPEN"},
+ {"number":11,"title":"T002: Write docs","state":"CLOSED"},
+ {"number":12,"title":"T0010: Other thing","state":"OPEN"}]
+EOF
+}
+
+@test "per-task all: closes finished, flags drift, creates missing (dry run first)" {
+  per_task_fixture
+  run "${G[@]}" sync-plan "$tasks" --per-task all
+  [ "$status" -eq 0 ]
+  [ "${lines[2]}" = "$(printf 'would-update\ttask\tT001\t#10 close')" ]
+  [ "${lines[3]}" = "$(printf 'drift\ttask\tT002\tissue closed, box open (#11)')" ]
+  [ "${lines[4]}" = "$(printf 'would-create\ttask\tT003\tDo thing')" ]
+  refute_mutated
+}
+
+@test "per-task all --apply performs the changes but leaves drift alone" {
+  per_task_fixture
+  run "${G[@]}" sync-plan "$tasks" --per-task all --apply
+  [ "${lines[2]}" = "$(printf 'updated\ttask\tT001\t#10 closed')" ]
+  [ "${lines[3]}" = "$(printf 'drift\ttask\tT002\tissue closed, box open (#11)')" ]
+  [ "${lines[4]}" = "$(printf 'created\ttask\tT003\t#99')" ]
+  grep -q '^issue close 10 -R owner/name' "$fx/calls.log"
+  grep -q 'issue create -R owner/name --title T003: Do thing' "$fx/calls.log"
+  refute_logged 'issue reopen'
+  refute_logged 'issue close 11'
+}
+
+@test "per-task title matching does not confuse T001 with T0010" {
+  per_task_fixture
+  run "${G[@]}" sync-plan "$tasks" --per-task T001
+  [ "${lines[2]}" = "$(printf 'would-update\ttask\tT001\t#10 close')" ]
+  [ "${#lines[@]}" -eq 3 ]
+}
+
+@test "per-task with an id that is not in the file fails before mutating" {
+  per_task_fixture
+  run "${G[@]}" sync-plan "$tasks" --per-task T777 --apply
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T777 is not in"* ]]
+  refute_mutated
+}
