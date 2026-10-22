@@ -15,7 +15,8 @@ setup() {
   export LOCAL_LLM_AGENT_EDIT=1
   export OPENCODE_BIN="$BATS_TEST_TMPDIR/opencode"
   unset FAKE_OC_WRITE FAKE_OC_EXIT FAKE_OC_TOOLS FAKE_OC_HANG LOCAL_LLM_EXPECT_PROFILE \
-    LOCAL_LLM_AGENT_LOG LOCAL_LLM_AGENT_MAX_FAILED_TOOLS
+    LOCAL_LLM_AGENT_LOG LOCAL_LLM_AGENT_MAX_FAILED_TOOLS LOCAL_LLM_URL LOCAL_LLM_MODEL \
+    LOCAL_LLM_CONTEXT
   : >"$FAKE_CURL_CALLS"
 
   mkdir -p "$LOCAL_LLM_STATE_DIR"
@@ -33,6 +34,7 @@ TOML
   printf '#!%s\n' "$(command -v bash)" >"$OPENCODE_BIN"
   cat >>"$OPENCODE_BIN" <<'SH'
 if [[ "$1" == "--version" ]]; then echo 1.18.31; exit 0; fi
+if [[ -n "${FAKE_OC_ARGS:-}" ]]; then printf '%s\n' "$*" >"$FAKE_OC_ARGS"; fi
 while [[ $# -gt 0 ]]; do
   if [[ "$1" == "--dir" ]]; then dir="$2"; shift; fi
   shift
@@ -139,4 +141,64 @@ agent_model_options() {
   undo="$(grep '^undo: ' <<<"$output")"
   bash -c "${undo#undo: }"
   [ "$(cat "$quoted/file.txt")" = "original" ]
+}
+
+# LOCAL_LLM_URL: a standalone server (llama-swap) with no profile state.
+url_mode() {
+  rm -f "$LOCAL_LLM_STATE_DIR/active-profile.json" "$LOCAL_LLM_PROFILES_FILE"
+  export LOCAL_LLM_URL="http://localhost:9292" LOCAL_LLM_MODEL="qwen-big" LOCAL_LLM_CONTEXT=32768
+  export FAKE_CURL_UP="http://localhost:9292"
+  export FAKE_OC_ARGS="$BATS_TEST_TMPDIR/oc-args"
+}
+
+agent_config() {
+  jq -c "$1" "$LOCAL_LLM_STATE_DIR/agent-home/.config/opencode/opencode.json"
+}
+
+@test "URL mode runs with no active profile, no profiles file and no reservation" {
+  url_mode
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"done"* ]]
+  [ "$(agent_config .provider.local.options.baseURL)" = '"http://localhost:9292/v1"' ]
+  [ "$(agent_config '.provider.local.models | keys')" = '["qwen-big"]' ]
+  [ "$(agent_config '.provider.local.models["qwen-big"].limit')" = '{"context":32768,"output":8192}' ]
+  [ "$(agent_config .model)" = '"local/qwen-big"' ]
+  [[ "$(cat "$FAKE_OC_ARGS")" == *"-m local/qwen-big"* ]]
+  [ ! -e "$LOCAL_LLM_STATE_DIR/reservation.json" ]
+  grep -q 'url=http://localhost:9292/v1/models' "$FAKE_CURL_CALLS"
+}
+
+@test "URL mode ignores LOCAL_LLM_EXPECT_PROFILE" {
+  url_mode
+  LOCAL_LLM_EXPECT_PROFILE=other run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+}
+
+@test "URL mode without LOCAL_LLM_MODEL exits 1" {
+  url_mode
+  unset LOCAL_LLM_MODEL
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"LOCAL_LLM_MODEL"* ]]
+}
+
+@test "URL mode needs LOCAL_LLM_CONTEXT to be a positive integer" {
+  url_mode
+  unset LOCAL_LLM_CONTEXT
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"LOCAL_LLM_CONTEXT"* ]]
+  for bad in abc 0 -5 1.5; do
+    LOCAL_LLM_CONTEXT="$bad" run bash "$agent" "$work" "task"
+    [ "$status" -eq 1 ]
+  done
+}
+
+@test "URL mode with an unreachable server exits 2" {
+  url_mode
+  export FAKE_CURL_UP=""
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"not responding"* ]]
 }

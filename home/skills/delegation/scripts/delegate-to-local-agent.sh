@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Runs a task as an *agent* on the active local profile: the model gets
+# Runs a task as an *agent* on the active local profile (or, with
+# LOCAL_LLM_URL, on a standalone server with no profile machinery): the model gets
 # opencode's read, glob, grep and list tools over one directory and can look
 # things up itself, instead of needing every byte pasted into the prompt
 # (delegate-to-local.sh). With LOCAL_LLM_AGENT_EDIT=1 it may also edit files
@@ -15,8 +16,8 @@
 #
 # Exit codes follow delegate-to-local.sh's contract, plus 5:
 #   1 = usage/dependency/config error
-#   2 = no profile active, or it isn't responding: fall back to another
-#       delegate
+#   2 = no profile active (or LOCAL_LLM_URL unreachable), or it isn't
+#       responding: fall back to another delegate
 #   3 = the run failed or timed out
 #   4 = LOCAL_LLM_EXPECT_PROFILE doesn't match the active profile
 #   5 = the task outgrew the model's context: split it, or use a profile
@@ -30,7 +31,9 @@ source "$script_dir/lib/queue-common.sh"
 
 usage() {
   echo "usage: $0 <directory> <task>" >&2
-  echo "env: LOCAL_LLM_EXPECT_PROFILE (exit 4 unless this profile is active)," >&2
+  echo "env: LOCAL_LLM_URL (use this OpenAI-compatible server and skip profiles, the reservation and" >&2
+  echo "       LOCAL_LLM_EXPECT_PROFILE; requires LOCAL_LLM_MODEL and LOCAL_LLM_CONTEXT, the model's context size in tokens)," >&2
+  echo "     LOCAL_LLM_EXPECT_PROFILE (exit 4 unless this profile is active)," >&2
   echo "     LOCAL_LLM_AGENT_TIMEOUT (seconds for the whole run, default 600)," >&2
   echo "     LOCAL_LLM_AGENT_MAX_FAILED_TOOLS (stop after this many failed tool calls in a row, default 5)," >&2
   echo "     LOCAL_LLM_AGENT_LOG (where to keep the run's event log; default under the state dir)," >&2
@@ -70,38 +73,57 @@ state_dir="$(resolve_local_llm_state_dir)" || {
   echo "error: none of LOCAL_LLM_STATE_DIR, XDG_CACHE_HOME, or HOME are set" >&2
   exit 1
 }
-active_file="$state_dir/active-profile.json"
-if [[ ! -f "$active_file" ]]; then
-  echo "error: no local profile is active; run switch-local-profile.sh first, or fall back to another delegate" >&2
-  exit 2
-fi
-profile="$(jq -r '.profile' "$active_file")"
-base_url="$(jq -r '.url' "$active_file")"
-if [[ -n "${LOCAL_LLM_EXPECT_PROFILE:-}" && "$LOCAL_LLM_EXPECT_PROFILE" != "$profile" ]]; then
-  echo "error: expected profile '$LOCAL_LLM_EXPECT_PROFILE' but '$profile' is active" >&2
-  exit 4
-fi
-if ! curl -sS --max-time 2 "$base_url/v1/models" >/dev/null 2>&1; then
-  echo "error: active profile '$profile' at $base_url is not responding; fall back to another delegate" >&2
-  exit 2
-fi
-
-if [[ -n "${LOCAL_LLM_PROFILES_FILE:-}" ]]; then
-  profiles_file="$LOCAL_LLM_PROFILES_FILE"
-elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-  profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.toml"
+if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
+  base_url="$LOCAL_LLM_URL"
+  profile="${LOCAL_LLM_MODEL:-}"
+  if [[ -z "$profile" ]]; then
+    echo "error: LOCAL_LLM_URL needs LOCAL_LLM_MODEL (the model id the server serves)" >&2
+    exit 1
+  fi
+  context="${LOCAL_LLM_CONTEXT:-}"
+  if ! [[ "$context" =~ ^[1-9][0-9]*$ ]]; then
+    echo "error: LOCAL_LLM_URL needs LOCAL_LLM_CONTEXT, the model's context size in tokens (got '$context')" >&2
+    exit 1
+  fi
+  if ! curl -sS --fail --max-time 2 "$base_url/v1/models" >/dev/null 2>&1; then
+    echo "error: LOCAL_LLM_URL=$base_url is not responding; fall back to another delegate" >&2
+    exit 2
+  fi
+  output_limit=$((context / 4))
 else
-  profiles_file="$HOME/.config/delegate-to-local/profiles.toml"
+  active_file="$state_dir/active-profile.json"
+  if [[ ! -f "$active_file" ]]; then
+    echo "error: no local profile is active; run switch-local-profile.sh first, or fall back to another delegate" >&2
+    exit 2
+  fi
+  profile="$(jq -r '.profile' "$active_file")"
+  base_url="$(jq -r '.url' "$active_file")"
+  if [[ -n "${LOCAL_LLM_EXPECT_PROFILE:-}" && "$LOCAL_LLM_EXPECT_PROFILE" != "$profile" ]]; then
+    echo "error: expected profile '$LOCAL_LLM_EXPECT_PROFILE' but '$profile' is active" >&2
+    exit 4
+  fi
+  if ! curl -sS --max-time 2 "$base_url/v1/models" >/dev/null 2>&1; then
+    echo "error: active profile '$profile' at $base_url is not responding; fall back to another delegate" >&2
+    exit 2
+  fi
+
+  if [[ -n "${LOCAL_LLM_PROFILES_FILE:-}" ]]; then
+    profiles_file="$LOCAL_LLM_PROFILES_FILE"
+  elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
+    profiles_file="$XDG_CONFIG_HOME/delegate-to-local/profiles.toml"
+  else
+    profiles_file="$HOME/.config/delegate-to-local/profiles.toml"
+  fi
+  # opencode must know the real window: told more, it overflows the server;
+  # told less, it compacts early.
+  context="$(yq -p toml -o json "$profiles_file" \
+    | jq -r --arg p "$profile" '.[$p].launch_args // [] | (index("--ctx-size") // -1) as $i | if $i >= 0 then .[$i + 1] else empty end')"
+  if ! [[ "$context" =~ ^[0-9]+$ ]]; then
+    echo "error: profile '$profile' in $profiles_file has no --ctx-size in launch_args; opencode needs the real context size" >&2
+    exit 1
+  fi
+  output_limit=$((context / 4))
 fi
-# opencode must know the real window: told more, it overflows the server;
-# told less, it compacts early.
-context="$(yq -p toml -o json "$profiles_file" \
-  | jq -r --arg p "$profile" '.[$p].launch_args // [] | (index("--ctx-size") // -1) as $i | if $i >= 0 then .[$i + 1] else empty end')"
-if ! [[ "$context" =~ ^[0-9]+$ ]]; then
-  echo "error: profile '$profile' in $profiles_file has no --ctx-size in launch_args; opencode needs the real context size" >&2
-  exit 1
-fi
-output_limit=$((context / 4))
 
 agent_home="$state_dir/agent-home"
 mkdir -p "$agent_home/.config/opencode"
@@ -138,30 +160,32 @@ runs_dir="$state_dir/agent-runs"
 mkdir -p "$runs_dir"
 log="${LOCAL_LLM_AGENT_LOG:-$runs_dir/$(date -u +%Y%m%dT%H%M%SZ)-$$.jsonl}"
 
-# Protect the profile for the length of the run: the agent talks to the
-# server directly, not through the queue, so a switch would pull the model
-# out from under it mid-task.
-reservation_reason="agent run via delegate-to-local-agent.sh (pid $$)"
-reservation_expires=$(($(date +%s) + timeout_s + 60))
-# Another session's reservation of this profile that outlasts this run
-# already protects it; replacing it would drop that protection when this
-# run releases its own.
-if ! jq -e --arg profile "$profile" --argjson until "$reservation_expires" \
-  '.profile == $profile and .expires_at >= $until' \
-  "$state_dir/reservation.json" >/dev/null 2>&1; then
-  jq -nc --arg profile "$profile" --arg reason "$reservation_reason" \
-    --argjson expires "$reservation_expires" \
-    '{profile: $profile, reason: $reason, expires_at: $expires}' >"$state_dir/reservation.json.tmp"
-  mv "$state_dir/reservation.json.tmp" "$state_dir/reservation.json"
-fi
-# Release it when the run ends, if it is still this run's.
-release_reservation() {
-  if jq -e --arg reason "$reservation_reason" '.reason == $reason' \
+if [[ -z "${LOCAL_LLM_URL:-}" ]]; then
+  # Protect the profile for the length of the run: the agent talks to the
+  # server directly, not through the queue, so a switch would pull the model
+  # out from under it mid-task.
+  reservation_reason="agent run via delegate-to-local-agent.sh (pid $$)"
+  reservation_expires=$(($(date +%s) + timeout_s + 60))
+  # Another session's reservation of this profile that outlasts this run
+  # already protects it; replacing it would drop that protection when this
+  # run releases its own.
+  if ! jq -e --arg profile "$profile" --argjson until "$reservation_expires" \
+    '.profile == $profile and .expires_at >= $until' \
     "$state_dir/reservation.json" >/dev/null 2>&1; then
-    rm -f "$state_dir/reservation.json"
+    jq -nc --arg profile "$profile" --arg reason "$reservation_reason" \
+      --argjson expires "$reservation_expires" \
+      '{profile: $profile, reason: $reason, expires_at: $expires}' >"$state_dir/reservation.json.tmp"
+    mv "$state_dir/reservation.json.tmp" "$state_dir/reservation.json"
   fi
-}
-trap release_reservation EXIT
+  # Release it when the run ends, if it is still this run's.
+  release_reservation() {
+    if jq -e --arg reason "$reservation_reason" '.reason == $reason' \
+      "$state_dir/reservation.json" >/dev/null 2>&1; then
+      rm -f "$state_dir/reservation.json"
+    fi
+  }
+  trap release_reservation EXIT
+fi
 
 # The snapshot is what an edit run is reviewed against, and what it is
 # rolled back to if the review rejects it.
