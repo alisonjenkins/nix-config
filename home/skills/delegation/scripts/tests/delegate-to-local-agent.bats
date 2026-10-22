@@ -16,7 +16,7 @@ setup() {
   export OPENCODE_BIN="$BATS_TEST_TMPDIR/opencode"
   unset FAKE_OC_WRITE FAKE_OC_EXIT FAKE_OC_TOOLS FAKE_OC_HANG LOCAL_LLM_EXPECT_PROFILE \
     LOCAL_LLM_AGENT_LOG LOCAL_LLM_AGENT_MAX_FAILED_TOOLS LOCAL_LLM_URL LOCAL_LLM_MODEL \
-    LOCAL_LLM_CONTEXT
+    LOCAL_LLM_CONTEXT LOCAL_LLM_API_KEY_FILE FAKE_CURL_REQUIRE_TOKEN FAKE_CURL_AUTH_LOG
   : >"$FAKE_CURL_CALLS"
 
   mkdir -p "$LOCAL_LLM_STATE_DIR"
@@ -193,6 +193,66 @@ agent_config() {
     LOCAL_LLM_CONTEXT="$bad" run bash "$agent" "$work" "task"
     [ "$status" -eq 1 ]
   done
+}
+
+use_key() {
+  url_mode
+  key_file="$BATS_TEST_TMPDIR/key"
+  printf 's3cret-tok\n' >"$key_file"
+  export LOCAL_LLM_API_KEY_FILE="$key_file"
+  export FAKE_CURL_AUTH_LOG="$BATS_TEST_TMPDIR/auth.log"
+  export FAKE_CURL_REQUIRE_TOKEN="s3cret-tok"
+}
+
+@test "LOCAL_LLM_API_KEY_FILE: the probe sends the bearer and opencode is pointed at the file, not given the token" {
+  use_key
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  grep -q 'Authorization: Bearer s3cret-tok$' "$FAKE_CURL_AUTH_LOG"
+  [ "$(agent_config .provider.local.options.apiKey)" = "\"{file:$key_file}\"" ]
+  # Nothing the run wrote, printed or logged holds the token itself.
+  [[ "$output" != *s3cret-tok* ]]
+  ! grep -rq s3cret-tok "$LOCAL_LLM_STATE_DIR"
+}
+
+@test "LOCAL_LLM_API_KEY_FILE given as a relative path is made absolute for opencode" {
+  use_key
+  cd "$BATS_TEST_TMPDIR"
+  LOCAL_LLM_API_KEY_FILE=key run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [ "$(agent_config .provider.local.options.apiKey)" = "\"{file:$BATS_TEST_TMPDIR/key}\"" ]
+}
+
+@test "URL mode without a key file puts no apiKey in the opencode config" {
+  url_mode
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 0 ]
+  [ "$(agent_config '.provider.local.options | has("apiKey")')" = "false" ]
+}
+
+@test "a wrong token makes the server unusable: exit 2" {
+  use_key
+  export FAKE_CURL_REQUIRE_TOKEN="other-tok"
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 2 ]
+  [[ "$output" != *s3cret-tok* ]]
+}
+
+@test "no token against a server that requires one exits 2" {
+  use_key
+  unset LOCAL_LLM_API_KEY_FILE
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 2 ]
+}
+
+@test "an unreadable or empty key file exits 1" {
+  use_key
+  LOCAL_LLM_API_KEY_FILE="$BATS_TEST_TMPDIR/missing" run bash "$agent" "$work" "task"
+  [ "$status" -eq 1 ]
+  : >"$key_file"
+  run bash "$agent" "$work" "task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"empty"* ]]
 }
 
 @test "URL mode with an unreachable server exits 2" {

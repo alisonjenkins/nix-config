@@ -13,7 +13,8 @@ setup() {
   # Keep test-run workers from lingering for the full 600s production
   # default — they're leftover clutter across a bats run, not a bug.
   export LOCAL_LLM_QUEUE_IDLE_TIMEOUT=2
-  unset LOCAL_LLM_URL LOCAL_LLM_MODEL LOCAL_LLM_EXPECT_PROFILE FAKE_CURL_UP FAKE_CURL_MODE
+  unset LOCAL_LLM_URL LOCAL_LLM_MODEL LOCAL_LLM_EXPECT_PROFILE FAKE_CURL_UP FAKE_CURL_MODE \
+    LOCAL_LLM_API_KEY_FILE FAKE_CURL_REQUIRE_TOKEN FAKE_CURL_AUTH_LOG FAKE_CURL_AUTH_ONLY_CHAT
 }
 
 write_active() {
@@ -127,6 +128,81 @@ teardown() {
   [ "$status" -eq 0 ]
   chat_call="$(grep 'chat/completions' "$FAKE_CURL_CALLS" | head -1)"
   [[ "$chat_call" == *'"chat_template_kwargs":{"enable_thinking":false}'* ]]
+}
+
+use_key() {
+  export FAKE_CURL_UP="http://localhost:9090" LOCAL_LLM_URL="http://localhost:9090"
+  export FAKE_CURL_AUTH_LOG="$BATS_TEST_TMPDIR/auth.log"
+  : >"$FAKE_CURL_AUTH_LOG"
+  key_file="$BATS_TEST_TMPDIR/key"
+  printf '  s3cret-tok  \n' >"$key_file"
+  export LOCAL_LLM_API_KEY_FILE="$key_file"
+}
+
+@test "LOCAL_LLM_API_KEY_FILE sends the bearer token on the probe and the chat call, and never prints it" {
+  use_key
+  export FAKE_CURL_REQUIRE_TOKEN="s3cret-tok"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *s3cret-tok* ]]
+  [ "$(wc -l <"$FAKE_CURL_AUTH_LOG")" -eq 2 ]
+  [ "$(grep -c 'Authorization: Bearer s3cret-tok$' "$FAKE_CURL_AUTH_LOG")" -eq 2 ]
+  ! grep -q s3cret-tok "$FAKE_CURL_CALLS"
+}
+
+@test "without LOCAL_LLM_API_KEY_FILE no Authorization header is sent" {
+  use_key
+  unset LOCAL_LLM_API_KEY_FILE
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ "$(cut -f2 "$FAKE_CURL_AUTH_LOG" | sort -u)" = "-" ]
+}
+
+@test "a wrong token is a 401 and exits 3 without echoing either token" {
+  use_key
+  export FAKE_CURL_REQUIRE_TOKEN="other-tok"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"HTTP 401"* ]]
+  [[ "$output" != *s3cret-tok* ]]
+}
+
+@test "no token against a server that requires one exits 3" {
+  use_key
+  unset LOCAL_LLM_API_KEY_FILE
+  export FAKE_CURL_REQUIRE_TOKEN="s3cret-tok"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 3 ]
+}
+
+@test "a 401 on the chat call alone exits 3" {
+  use_key
+  export LOCAL_LLM_MODEL=m
+  export FAKE_CURL_REQUIRE_TOKEN="other-tok" FAKE_CURL_AUTH_ONLY_CHAT=1
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 3 ]
+}
+
+@test "an unreadable or empty LOCAL_LLM_API_KEY_FILE exits 1 before any request" {
+  use_key
+  export LOCAL_LLM_API_KEY_FILE="$BATS_TEST_TMPDIR/missing"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"LOCAL_LLM_API_KEY_FILE"* ]]
+  : >"$key_file"
+  LOCAL_LLM_API_KEY_FILE="$key_file" run bash "$delegate" "hello task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"empty"* ]]
+  [ "$(wc -l <"$FAKE_CURL_CALLS")" -eq 0 ]
+}
+
+@test "the temporary header file is removed when the script exits" {
+  use_key
+  export TMPDIR="$BATS_TEST_TMPDIR/tmp"
+  mkdir -p "$TMPDIR"
+  run bash "$delegate" "hello task"
+  [ "$status" -eq 0 ]
+  [ -z "$(ls -A "$TMPDIR")" ]
 }
 
 @test "an unknown LOCAL_LLM_THINKING value is rejected before anything runs" {

@@ -44,6 +44,34 @@ validated_thinking() {
   esac
 }
 
+# LOCAL_LLM_API_KEY_FILE names a file holding a bearer token for a
+# LOCAL_LLM_URL server. Sets llm_auth_header_file to a mode-0600 temp file
+# holding the Authorization header, for `curl -H @file`: the token never
+# reaches a command line (ps-visible) or an output stream. Sets it to "" when
+# no key file is configured. The caller removes the file on exit. Not run in
+# a subshell: the caller needs the variable.
+prepare_llm_auth() {
+  llm_auth_header_file=""
+  local key_file="${LOCAL_LLM_API_KEY_FILE:-}" token
+  [[ -z "$key_file" ]] && return 0
+  if ! token="$(<"$key_file")" 2>/dev/null; then
+    echo "error: LOCAL_LLM_API_KEY_FILE=$key_file is not readable" >&2
+    return 1
+  fi
+  token="${token#"${token%%[![:space:]]*}"}"
+  token="${token%"${token##*[![:space:]]}"}"
+  if [[ -z "$token" ]]; then
+    echo "error: LOCAL_LLM_API_KEY_FILE=$key_file is empty" >&2
+    return 1
+  fi
+  if [[ "$token" == *[[:cntrl:]]* ]]; then
+    echo "error: LOCAL_LLM_API_KEY_FILE=$key_file holds more than one line" >&2
+    return 1
+  fi
+  llm_auth_header_file="$(umask 077 && mktemp "${TMPDIR:-/tmp}/llm-auth.XXXXXX")"
+  printf 'Authorization: Bearer %s\n' "$token" >"$llm_auth_header_file"
+}
+
 numeric_env_or_default() {
   local var_name="$1" default_value="$2" value="${!1:-}"
   if [[ -z "$value" ]]; then

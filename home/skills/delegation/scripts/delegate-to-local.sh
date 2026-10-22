@@ -30,6 +30,7 @@ source "$script_dir/lib/queue-common.sh"
 usage() {
   echo "usage: $0 <task>" >&2
   echo "env: LOCAL_LLM_URL (bypass the queue and profiles entirely, use this endpoint only)," >&2
+  echo "     LOCAL_LLM_API_KEY_FILE (with LOCAL_LLM_URL: file holding a bearer token to send; HTTP 401/403 exits 3)," >&2
   echo "     LOCAL_LLM_MODEL (override the model name sent in the request)," >&2
   echo "     LOCAL_LLM_EXPECT_PROFILE (fail with exit 4 if this profile isn't the active one)," >&2
   echo "     LOCAL_LLM_THINKING (on|off: ask the loaded model to think or not, for this call only —" >&2
@@ -64,7 +65,19 @@ if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
   # An explicit endpoint bypasses the queue entirely — it isn't the
   # shared, profile-managed model, so there's nothing to serialize against.
   base_url="$LOCAL_LLM_URL"
-  if models_json="$(curl -sS --max-time 1 "$base_url/v1/models" 2>/dev/null)"; then
+  prepare_llm_auth || exit 1
+  trap 'rm -f "$llm_auth_header_file"' EXIT
+  auth_args=()
+  if [[ -n "$llm_auth_header_file" ]]; then
+    auth_args=(-H "@$llm_auth_header_file")
+  fi
+  if probe="$(curl -sS --max-time 1 ${auth_args[@]+"${auth_args[@]}"} -w '\n%{http_code}' "$base_url/v1/models" 2>/dev/null)"; then
+    models_json="${probe%$'\n'*}"
+    probe_code="${probe##*$'\n'}"
+    if [[ "$probe_code" == "401" || "$probe_code" == "403" ]]; then
+      echo "error: LOCAL_LLM_URL=$base_url rejected the request (HTTP $probe_code); check LOCAL_LLM_API_KEY_FILE" >&2
+      exit 3
+    fi
     if discovered="$(jq -er '.data[0].id' <<<"$models_json" 2>/dev/null)"; then
       model="${LOCAL_LLM_MODEL:-$discovered}"
     else
@@ -90,7 +103,7 @@ if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
   # 2>&1: a timeout or connection failure has no HTTP response body at all —
   # curl reports those on stderr, and a stdout-only capture left the error
   # detail blank (same fix as queue-worker.sh's equivalent call).
-  if ! response="$(curl -sS --fail-with-body --max-time "$chat_timeout" -X POST "$base_url/v1/chat/completions" -H 'Content-Type: application/json' -d "$request_body" 2>&1)"; then
+  if ! response="$(curl -sS --fail-with-body --max-time "$chat_timeout" -X POST "$base_url/v1/chat/completions" -H 'Content-Type: application/json' ${auth_args[@]+"${auth_args[@]}"} -d "$request_body" 2>&1)"; then
     echo "error: request to $base_url/v1/chat/completions failed" >&2
     echo "$response" >&2
     exit 3

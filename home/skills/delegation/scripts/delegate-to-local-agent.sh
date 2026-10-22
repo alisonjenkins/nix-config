@@ -33,6 +33,7 @@ usage() {
   echo "usage: $0 <directory> <task>" >&2
   echo "env: LOCAL_LLM_URL (use this OpenAI-compatible server and skip profiles, the reservation and" >&2
   echo "       LOCAL_LLM_EXPECT_PROFILE; requires LOCAL_LLM_MODEL and LOCAL_LLM_CONTEXT, the model's context size in tokens)," >&2
+  echo "     LOCAL_LLM_API_KEY_FILE (with LOCAL_LLM_URL: file holding a bearer token; opencode reads it via {file:...})," >&2
   echo "     LOCAL_LLM_EXPECT_PROFILE (exit 4 unless this profile is active)," >&2
   echo "     LOCAL_LLM_AGENT_TIMEOUT (seconds for the whole run, default 600)," >&2
   echo "     LOCAL_LLM_AGENT_MAX_FAILED_TOOLS (stop after this many failed tool calls in a row, default 5)," >&2
@@ -85,7 +86,18 @@ if [[ -n "${LOCAL_LLM_URL:-}" ]]; then
     echo "error: LOCAL_LLM_URL needs LOCAL_LLM_CONTEXT, the model's context size in tokens (got '$context')" >&2
     exit 1
   fi
-  if ! curl -sS --fail --max-time 2 "$base_url/v1/models" >/dev/null 2>&1; then
+  prepare_llm_auth || exit 1
+  trap 'rm -f "$llm_auth_header_file"' EXIT
+  auth_args=()
+  if [[ -n "$llm_auth_header_file" ]]; then
+    auth_args=(-H "@$llm_auth_header_file")
+    # opencode reads the token itself from the file the config points at.
+    case "$LOCAL_LLM_API_KEY_FILE" in
+      /*) api_key_file="$LOCAL_LLM_API_KEY_FILE" ;;
+      *) api_key_file="$PWD/$LOCAL_LLM_API_KEY_FILE" ;;
+    esac
+  fi
+  if ! curl -sS --fail --max-time 2 ${auth_args[@]+"${auth_args[@]}"} "$base_url/v1/models" >/dev/null 2>&1; then
     echo "error: LOCAL_LLM_URL=$base_url is not responding; fall back to another delegate" >&2
     exit 2
   fi
@@ -133,11 +145,12 @@ if [[ "${LOCAL_LLM_AGENT_EDIT:-0}" == "1" ]]; then
 fi
 thinking="$(validated_thinking)" || exit 1
 jq -n --arg url "$base_url/v1" --arg profile "$profile" --arg edit "$edit_permission" \
-  --argjson context "$context" --argjson output "$output_limit" --arg thinking "$thinking" '{
+  --argjson context "$context" --argjson output "$output_limit" --arg thinking "$thinking" \
+  --arg key_file "${api_key_file:-}" '{
   "$schema": "https://opencode.ai/config.json",
   provider: {local: {
     npm: "@ai-sdk/openai-compatible",
-    options: {baseURL: $url},
+    options: ({baseURL: $url} + (if $key_file == "" then {} else {apiKey: ("{file:" + $key_file + "}")} end)),
     models: {($profile): ({name: $profile, tool_call: true, reasoning: true,
                            limit: {context: $context, output: $output}}
       + (if $thinking == "" then {} else {options: {chat_template_kwargs: {enable_thinking: ($thinking == "on")}}} end))}

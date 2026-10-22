@@ -11,6 +11,8 @@ method="GET"
 max_time=""
 body=""
 want_http_code=0
+auth_header=""
+fail_flag=""
 args=("$@")
 i=0
 while [[ $i -lt ${#args[@]} ]]; do
@@ -35,7 +37,19 @@ while [[ $i -lt ${#args[@]} ]]; do
       i=$((i + 2))
       ;;
     -H)
+      # Only the Authorization header matters here; "-H @file" is read the
+      # way curl reads it. Recorded in $FAKE_CURL_AUTH_LOG ("-" = none sent)
+      # and checked against $FAKE_CURL_REQUIRE_TOKEN when that is set.
+      hdr="${args[$((i + 1))]}"
+      if [[ "$hdr" == @* ]]; then
+        hdr="$(<"${hdr#@}")"
+      fi
+      [[ "$hdr" == Authorization:* ]] && auth_header="$hdr"
       i=$((i + 2))
+      ;;
+    -f | --fail | --fail-with-body)
+      fail_flag="$arg"
+      i=$((i + 1))
       ;;
     http*)
       url="$arg"
@@ -53,7 +67,7 @@ done
 emit_health() {
   local status_json="$1" code="$2"
   echo "$status_json"
-  ((want_http_code)) && echo "$code"
+  if ((want_http_code)); then echo "$code"; fi
 }
 
 printf 'url=%s\tmethod=%s\tmax_time=%s\tbody=%s\n' "$url" "$method" "$max_time" "$body" >>"$calls_log"
@@ -74,6 +88,26 @@ done
 if [[ "$is_up" -eq 0 ]]; then
   echo "curl: (7) Failed to connect to $base" >&2
   exit 7
+fi
+
+if [[ -n "${FAKE_CURL_REQUIRE_TOKEN:-}" && "$*" == *"$FAKE_CURL_REQUIRE_TOKEN"* ]]; then
+  echo "fake curl: the token is on the command line" >&2
+  exit 99
+fi
+if [[ -n "${FAKE_CURL_AUTH_LOG:-}" ]]; then
+  printf '%s\t%s\n' "$url" "${auth_header:--}" >>"$FAKE_CURL_AUTH_LOG"
+fi
+if [[ -n "${FAKE_CURL_REQUIRE_TOKEN:-}" && ( -z "${FAKE_CURL_AUTH_ONLY_CHAT:-}" || "$method" == POST ) && "$auth_header" != "Authorization: Bearer $FAKE_CURL_REQUIRE_TOKEN" ]]; then
+  # Like a server answering 401: --fail-with-body keeps the body, --fail
+  # drops it, and neither flag leaves it to the caller's -w http_code.
+  body_401='{"error":{"message":"invalid api key"}}'
+  case "$fail_flag" in
+    --fail-with-body) echo "$body_401" ;;
+    -f | --fail) ;;
+    *) emit_health "$body_401" 401 ;;
+  esac
+  [[ -n "$fail_flag" ]] && exit 22
+  exit 0
 fi
 
 if [[ "$method" == "GET" && "$url" == */health ]]; then
@@ -119,11 +153,11 @@ fi
 
 if [[ "$method" == "GET" ]]; then
   if [[ "${FAKE_CURL_MODE:-}" == "malformed-models" ]]; then
-    echo "not json"
+    emit_health "not json" 200
     exit 0
   fi
   port="${base##*:}"
-  printf '{"data":[{"id":"fake-model-%s"}]}\n' "$port"
+  emit_health "$(printf '{"data":[{"id":"fake-model-%s"}]}' "$port")" 200
   exit 0
 fi
 
