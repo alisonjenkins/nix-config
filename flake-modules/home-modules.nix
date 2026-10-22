@@ -15,7 +15,8 @@
     helldivers2-mods = import ../home/modules/helldivers2-mods;
     vr-foveation = import ../home/modules/vr-foveation;
     delegate-to-local =import ../home/modules/delegate-to-local;
-    memory-recall = import ../home/modules/memory-recall;
+    local-llm-client = import ../home/modules/local-llm-client;
+    memory-recall =import ../home/modules/memory-recall;
     observability-stack = import ../home/modules/observability-stack;
     rust-build-cache = import ../home/modules/rust-build-cache;
     antigravity-cli = import ../home/modules/antigravity-cli;
