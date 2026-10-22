@@ -41,6 +41,7 @@ in {
       self.nixosModules.mosh
       self.nixosModules.sunshine
       self.nixosModules.podman
+      self.nixosModules.wifi-regdom-from-timezone
       self.nixosModules.ali-work-laptop-hardware
       self.nixosModules.ali-work-laptop-disko-config
 
@@ -144,6 +145,7 @@ in {
         };
 
         services.automatic-timezoned.enable = true;
+        modules.wifiRegdomFromTimezone.enable = true;
         modules.locale.enable = true;
         modules.mosh.enable = true;
         modules.sunshine.enable = true;
