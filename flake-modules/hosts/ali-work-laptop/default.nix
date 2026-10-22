@@ -37,7 +37,7 @@ in {
       self.nixosModules.virtual-cameras
       self.nixosModules.locale
       self.nixosModules.niks3-cache-push
-      self.nixosModules.llama-cpp
+      self.nixosModules.llama-swap
       self.nixosModules.mosh
       self.nixosModules.sunshine
       self.nixosModules.podman
@@ -59,7 +59,18 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux ];
+          imports = [ self.homeModules.home-linux self.homeModules.local-llm-client ];
+
+          # The delegation skill's scripts bypass their own profile queue and
+          # talk to llama-swap (modules.llama-swap), which queues and swaps
+          # models itself. model is the default; small, fast, dense and coder
+          # can be requested per call.
+          modules.localLlmClient = {
+            enable = true;
+            url = "http://127.0.0.1:8080";
+            model = "fast";
+            context = 65536;
+          };
 
           # Sync mic mute LED with PipeWire state by also toggling the ALSA
           # Capture Switch, which drives the audio-micmute LED trigger.
@@ -136,44 +147,57 @@ in {
         modules.locale.enable = true;
         modules.mosh.enable = true;
         modules.sunshine.enable = true;
-        modules.llama-cpp = {
+        # One OpenAI endpoint on :8080 that queues requests and loads models on
+        # demand (llama-swap spawns a llama-server per model). Unified memory:
+        # ~118 GiB of GTT is usable, so the three small models stay co-resident
+        # and only the big coder model evicts them (the resident group). Replaces
+        # the always-on 27B (modules.llama-cpp) and the delegation skill's own
+        # profile manager on this host; delegation talks to it through
+        # modules.localLlmClient (home config above). The 122B-A10B (~86 GiB) is
+        # left out: /nix has ~145 GiB free and the set below already fetches
+        # ~93 GiB.
+        modules.llama-swap = let
+          q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
+          coding = [ "--temp" "0.6" "--top-p" "0.95" "--top-k" "20" "--min-p" "0" ];
+        in {
           enable = true;
-          package = pkgs.llama-cpp-rocm;
-          environment = {
-            HSA_OVERRIDE_GFX_VERSION = "11.5.1";
-            HCC_AMDGPU_TARGET = "gfx1151";
-            HSA_ENABLE_SDMA = "0";
-          };
-          allowedIPs = [
-            # Tailscale IPs
-            # "100.x.x.x"   # ali-desktop
-            # "100.x.x.x"   # ali-framework-laptop
-            # LAN IPs
-            # "192.168.x.x"
-          ];
-          instances = {
-            # Single smart model — Qwen3.6-27B Dense, UD-Q5_K_XL ~18.7 GiB
-            # All 27B params active every token. Supersedes Qwen3-32B (see
-            # pkgs/llama-models for why) as of 2026-09-22.
-            # Speculative decoding via Qwen3-0.6B draft is NOT wired below
-            # (this instance passes no --model-draft flag; the modules/llama-cpp
-            # module has no option for one either — that flag is only used by
-            # modules/llama-swap/darwin.nix's config, a different module)
-            # despite the aspiration in earlier comments here — and
-            # qwen3-0-6b-q8-0's tokenizer was picked to
-            # match Qwen3-32B, not confirmed compatible with Qwen3.6's
-            # tokenizer, so don't wire it without re-checking that first.
-            # Flash attention + q4_0 KV cache for speed
-            default = {
-              enable = true;
-              model = pkgs.llama-models.qwen3-6-27b-ud-q5-k-xl.modelFile;
-              port = 8080;
-              extraFlags = [
-                "--gpu-layers" "999" "--ctx-size" "131072"
-                "--flash-attn" "on"
-                "--cache-type-k" "q4_0" "--cache-type-v" "q4_0"
-                "--jinja" "--reasoning-format" "deepseek" "--reasoning" "off"
+          # Models outside a group share one swap-exclusive slot: loading
+          # coder unloads the resident group, and the reverse.
+          groups.resident = { };
+          models = {
+            # Qwen3.5-9B Q6_K, MTP speculative decoding (127 tok/s on
+            # ali-desktop): small edits and lookups.
+            small = {
+              modelFile = pkgs.llama-models.qwen3-5-9b-mtp-q6-k.modelFile;
+              contextSize = 32768;
+              extraArgs = [ "--spec-type" "draft-mtp" "--spec-draft-n-max" "2" ] ++ coding ++ q8Cache;
+              group = "resident";
+            };
+            # Qwen3.6-35B-A3B UD-Q4_K_XL (~21 GiB), the Q4 of ali-desktop's
+            # IQ3_S `fast`: new files, edits and review fixes from a spec.
+            fast = {
+              modelFile = pkgs.llama-models.qwen3-6-35b-a3b-ud-q4-k-xl.modelFile;
+              contextSize = 65536;
+              extraArgs = coding ++ q8Cache;
+              group = "resident";
+            };
+            # Qwen3.6-27B dense UD-Q5_K_XL (~18.7 GiB), the previous
+            # always-on model; the alias keeps opencode's "qwen3-32b" id working.
+            dense = {
+              modelFile = pkgs.llama-models.qwen3-6-27b-ud-q5-k-xl.modelFile;
+              contextSize = 131072;
+              extraArgs = [
+                "--flash-attn" "on" "--cache-type-k" "q4_0" "--cache-type-v" "q4_0"
+                "--reasoning-format" "deepseek" "--reasoning" "off"
               ];
+              aliases = [ "qwen3-32b" ];
+              group = "resident";
+            };
+            # Qwen3-Coder-Next 80B-A3B UD-Q4_K_XL (~46 GiB): the heavy coder.
+            coder = {
+              modelFile = pkgs.llama-models.qwen3-coder-next-ud-q4-k-xl.modelFile;
+              contextSize = 65536;
+              extraArgs = coding ++ q8Cache;
             };
           };
         };

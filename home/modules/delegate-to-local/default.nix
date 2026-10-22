@@ -1,8 +1,7 @@
 # The local-model profiles the delegation skill's scripts load on demand
 # (home/skills/delegation/delegate-to-local.md, "Profiles"), declared per
 # host because what fits depends on the machine's GPU. A host that sets no
-# profiles gets no file: ali-work-laptop runs one always-on llama-server
-# through modules/llama-cpp instead.
+# profiles gets no file: ali-framework-laptop and the servers run none.
 { config, lib, pkgs, ... }:
 let
   cfg = config.modules.delegateToLocal;
