@@ -21,6 +21,7 @@
     niks3-cache-push = import ../modules/niks3-cache-push;
     nohang = import ../modules/nohang;
     llama-cpp = import ../modules/llama-cpp;
+    llama-swap = import ../modules/llama-swap/nixos.nix;
     opentrack = import ../modules/opentrack;
     podman = import ../modules/podman;
     power-management = import ../modules/power-management;
