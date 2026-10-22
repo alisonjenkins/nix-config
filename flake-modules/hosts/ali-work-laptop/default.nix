@@ -300,7 +300,8 @@ in {
           hostName = "ali-work-laptop";
           networkmanager = {
             enable = true;
-            # mt7925e (mt76) adds latency and throughput dips under 802.11 power save
+            # mt76 does power-save transitions in software; reports of latency
+            # spikes and deauth loops on mt7921/mt7925. Unproven on this card.
             wifi.powersave = false;
           };
         };
