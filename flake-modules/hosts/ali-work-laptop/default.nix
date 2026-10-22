@@ -64,8 +64,8 @@ in {
 
           # The delegation skill's scripts bypass their own profile queue and
           # talk to llama-swap (modules.llama-swap), which queues and swaps
-          # models itself. model is the default; small, fast, dense and coder
-          # can be requested per call.
+          # models itself. model is the default; small, fast and dense can be
+          # requested per call.
           modules.localLlmClient = {
             enable = true;
             url = "http://127.0.0.1:8080";
@@ -151,20 +151,21 @@ in {
         modules.sunshine.enable = true;
         # One OpenAI endpoint on :8080 that queues requests and loads models on
         # demand (llama-swap spawns a llama-server per model). Unified memory:
-        # ~118 GiB of GTT is usable, so the three small models stay co-resident
-        # and only the big coder model evicts them (the resident group). Replaces
-        # the always-on 27B (modules.llama-cpp) and the delegation skill's own
-        # profile manager on this host; delegation talks to it through
-        # modules.localLlmClient (home config above). The 122B-A10B (~86 GiB) is
-        # left out: /nix has ~145 GiB free and the set below already fetches
-        # ~93 GiB.
+        # ~118 GiB of GTT is usable, so the three models stay co-resident (the
+        # resident group). Replaces the always-on 27B (modules.llama-cpp) and
+        # the delegation skill's own profile manager on this host; delegation
+        # talks to it through modules.localLlmClient (home config above).
+        # Qwen3-Coder-Next 80B-A3B was dropped as the heavy slot: its only
+        # independent result was 5/10 against 7-9/10 for four other models,
+        # and the Q4_K_XL is a 46 GiB download. Larger candidates are being
+        # benchmarked on this machine before one is added.
         modules.llama-swap = let
           q8Cache = [ "--flash-attn" "on" "--cache-type-k" "q8_0" "--cache-type-v" "q8_0" ];
           coding = [ "--temp" "0.6" "--top-p" "0.95" "--top-k" "20" "--min-p" "0" ];
         in {
           enable = true;
-          # Models outside a group share one swap-exclusive slot: loading
-          # coder unloads the resident group, and the reverse.
+          # Members stay loaded together; models outside a group share one
+          # swap-exclusive slot and would evict each other.
           groups.resident = { };
           models = {
             # Qwen3.5-9B Q6_K, MTP speculative decoding (127 tok/s on
@@ -194,12 +195,6 @@ in {
               ];
               aliases = [ "qwen3-32b" ];
               group = "resident";
-            };
-            # Qwen3-Coder-Next 80B-A3B UD-Q4_K_XL (~46 GiB): the heavy coder.
-            coder = {
-              modelFile = pkgs.llama-models.qwen3-coder-next-ud-q4-k-xl.modelFile;
-              contextSize = 65536;
-              extraArgs = coding ++ q8Cache;
             };
           };
         };
