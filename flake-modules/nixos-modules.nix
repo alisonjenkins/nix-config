@@ -32,6 +32,7 @@
     uresourced = import ../modules/uresourced;
     virtual-cameras = import ../modules/virtual-cameras;
     vr = import ../modules/vr;
+    wifi-regdom-from-timezone = import ../modules/wifi-regdom-from-timezone.nix;
 
     # Network/VPN modules
     amnezia-vpn-gateway = import ../modules/amnezia-vpn-gateway;
