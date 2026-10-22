@@ -11,6 +11,9 @@ with lib; let
     name = "wifi-regdom-from-timezone";
     runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.iw ];
     text = ''
+      if [[ -z "$(iw dev)" ]]; then
+        exit 0
+      fi
       state="''${RUNTIME_DIRECTORY:-/run/wifi-regdom-from-timezone}/timezone"
       tz="$(readlink -f /etc/localtime)"
       tz="''${tz#*/zoneinfo/}"
@@ -31,11 +34,13 @@ in {
   options.modules.wifiRegdomFromTimezone.enable = mkEnableOption ''
     setting the wifi regulatory domain from the system timezone.
 
-    Without a country the kernel stays on the world regdomain (`00`), which
-    restricts 5 GHz channels and blocks 6 GHz. Pair this with
-    services.automatic-timezoned so the domain moves with the machine.
-    NetworkManager and wpa_supplicant may still override it from an access
-    point's 802.11d beacon
+    The kernel otherwise learns the country from access point beacons
+    (802.11d); on the world regdomain (`00`) 5 GHz channels are restricted
+    and 6 GHz is blocked. This pins the country from the timezone instead.
+    Pair it with services.automatic-timezoned so the country follows the
+    machine. The country is applied when the timezone changes, and
+    NetworkManager or wpa_supplicant may still override it later from an
+    access point's 802.11d beacon. Does nothing while no wifi device exists
   '';
 
   config = mkIf cfg.enable {
