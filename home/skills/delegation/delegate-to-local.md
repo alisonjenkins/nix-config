@@ -299,6 +299,29 @@ scripts/stop-local-profile.sh          # when done, to free the hardware
 
 The script prints the model's reply to stdout on success.
 
+## Remote or standalone server (llama-swap)
+
+For an OpenAI-compatible server you don't manage with profiles (llama-swap on
+another host, say), set `LOCAL_LLM_URL`. Both `delegate-to-local.sh` and
+`delegate-to-local-agent.sh` then skip profiles, the queue, reservations and
+`LOCAL_LLM_EXPECT_PROFILE`:
+
+- `LOCAL_LLM_URL` — the server's base URL, without `/v1`.
+- `LOCAL_LLM_MODEL` — the model id the server serves. Required by the agent
+  script; the text script falls back to the first id in `/v1/models`.
+- `LOCAL_LLM_CONTEXT` — the model's context size in tokens. Agent script only,
+  required: opencode needs the real window (a profile's `--ctx-size`
+  otherwise).
+- `LOCAL_LLM_API_KEY_FILE` — optional path to a file holding a bearer token.
+  The token never goes on a command line, into the opencode config or into any
+  output: curl reads a mode-0600 temp header file, and opencode's config holds
+  only `{file:<path>}`. An empty or unreadable file is exit 1; a 401/403 is
+  exit 3 in the text script and 2 in the agent script.
+
+Swapping models and queueing concurrent requests are the server's job. The
+first call to a cold model includes its load time, so raise
+`LOCAL_LLM_CHAT_TIMEOUT` (text) or `LOCAL_LLM_AGENT_TIMEOUT` (agent) for it.
+
 ## Agent mode: `delegate-to-local-agent.sh`
 
 ```
