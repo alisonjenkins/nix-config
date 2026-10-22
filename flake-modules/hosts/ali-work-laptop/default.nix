@@ -296,7 +296,11 @@ in {
 
         networking = {
           hostName = "ali-work-laptop";
-          networkmanager.enable = true;
+          networkmanager = {
+            enable = true;
+            # mt7925e (mt76) adds latency and throughput dips under 802.11 power save
+            wifi.powersave = false;
+          };
         };
 
         nixpkgs = {
