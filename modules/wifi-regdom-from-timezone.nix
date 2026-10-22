@@ -11,6 +11,9 @@ with lib; let
     name = "wifi-regdom-from-timezone";
     runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.iw ];
     text = ''
+      if [[ -z "$(iw dev)" ]]; then
+        exit 0
+      fi
       state="''${RUNTIME_DIRECTORY:-/run/wifi-regdom-from-timezone}/timezone"
       tz="$(readlink -f /etc/localtime)"
       tz="''${tz#*/zoneinfo/}"
@@ -37,7 +40,7 @@ in {
     Pair it with services.automatic-timezoned so the country follows the
     machine. The country is applied when the timezone changes, and
     NetworkManager or wpa_supplicant may still override it later from an
-    access point's 802.11d beacon
+    access point's 802.11d beacon. Does nothing while no wifi device exists
   '';
 
   config = mkIf cfg.enable {
