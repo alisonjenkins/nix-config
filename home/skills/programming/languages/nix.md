@@ -46,6 +46,15 @@ convention. Common patterns:
   derivation, not the text. Parenthesise the text argument.
 - A multi-line value spliced into a `''` block keeps its own line breaks but not the block's
   indentation. Pre-indent it when the target is YAML.
+- **Do not feed a package from one nixpkgs set into a consumer from another.**
+  A dependency built from `pkgs.unstable` links against unstable's glibc; a
+  consumer in `pkgs` (a release branch) cannot resolve those versioned symbols
+  and fails at link time with `undefined reference ... @GLIBC_2.44`. Take the
+  dependency from the consumer's own set, or take the consumer from the same set.
+- `pkg.override { dep = x; }` only reaches arguments the package's own function
+  declares. A name resolved inside a `buildFHSEnv` `targetPkgs`/`multiPkgs`
+  callback comes from that callback's `pkgs`, so an override argument never
+  arrives. Check the package's `package.nix` before promising an override.
 - Avoid IFD. Prefer `source`-linked store paths over `builtins.readFile` into
   a text option when the thing is a whole directory.
 - Overlays here take only `{ inputs }` and branch on
