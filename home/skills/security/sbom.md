@@ -24,7 +24,8 @@ nix run github:tiiuae/sbomnix#sbomnix -- --help     # also: nixgraph, vulnxscan,
 | `provenance` | SLSA v1.0 provenance attestation (JSON) for a flake or derivation |
 
 ```bash
-sbomnix .#nixosConfigurations.<host>.config.system.build.toplevel   # runtime SBOM; builds the target
+sbomnix <flake-path-or-ref>#nixosConfigurations.<host>.config.system.build.toplevel --buildtime
+sbomnix <flake-ref>#<pkg>                                           # runtime SBOM; builds the target
 sbomnix <flake-ref>#<pkg> --buildtime                               # includes build-time deps, no build
 nixgraph <flake-ref>#<pkg> --depth=2
 ```
@@ -32,6 +33,9 @@ nixgraph <flake-ref>#<pkg> --depth=2
 - **Prefer a flake reference.** nixpkgs metadata (licence, exact CPE) enriches
   the SBOM only then. A store path or `result` symlink gets almost no CPEs, so
   `vulnxscan` finds less.
+- The two `--buildtime` forms were run (a local flake's host toplevel and
+  `nixpkgs#hello`); the runtime form was not. Each wrote `sbom.cdx.json`,
+  `sbom.spdx.json` and `sbom.csv` into the current directory.
 - **Runtime analysis forces a build**; `--buildtime` avoids that but includes
   build-only tools, with the same noise as a `.drv` vulnix scan.
 - CPE matching falls back to heuristics: expect false positives and negatives,
