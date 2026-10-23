@@ -103,20 +103,6 @@
                  "meaning": "update-available" }
     },
     {
-      "id": "nixcord",
-      "class": "workaround",
-      "kind": "flake-input",
-      "site": { "input": "nixcord" },
-      "pinned": "9b9512d2",
-      "since": "2026-09-16",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-06",
-      "reason": "UNDOCUMENTED. Commit e994700d is titled 'unpin nixcord, was fixed a year ago' yet flake.nix still pins rev 9b9512d. Either the unpin was reverted or the title was wrong; nothing records why the rev matters.",
-      "removal": "Change the url to github:kaylorben/nixcord, run `nix flake lock`, build a host that enables nixcord, and delete this entry if it works.",
-      "needs_triage": true,
-      "manual_test": "Point the url at the default branch and `just build` a desktop host that enables nixcord (home/programs/linux-only/nixcord)."
-    },
-    {
       "id": "tmux-sessionizer",
       "class": "workaround",
       "kind": "flake-input",
