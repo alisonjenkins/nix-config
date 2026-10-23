@@ -135,7 +135,7 @@ Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enab
 
 ### Key Systems
 
-**Overlays** (system-independent, channel access): `pkgs.stable` (nixpkgs 25.11), `pkgs.unstable` (nixos-unstable), `pkgs.master` (master). In `overlays/default.nix`, exported `flake-modules/overlays.nix`, applied per-host.
+**Overlays** (system-independent, channel access): `pkgs.stable` (nixpkgs 26.05), `pkgs.unstable` (nixos-unstable), `pkgs.master` (master). In `overlays/default.nix`, exported `flake-modules/overlays.nix`, applied per-host.
 
 **Impermanence**: some hosts tmpfs root + selective persistence; per-host paths.
 

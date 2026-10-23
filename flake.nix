@@ -79,7 +79,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_lqx_pin.url = "github:nixos/nixpkgs/82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-26.05";
     nixpkgs_old.url = "github:nixos/nixpkgs/nixos-24.11";
     # Holds the Ghidra and JDK that REA's decompiler runs on. nixpkgs_unstable
     # from 02c087f3 (2026-10-23) builds a Ghidra whose native decompile helper
