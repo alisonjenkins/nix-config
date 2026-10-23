@@ -66,6 +66,18 @@ jobs:
             --base main \
             --head "$branch")
           echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
+          # Every night's lock supersedes the last. A night whose flake-check
+          # fails leaves its PR open and BEHIND main forever, so they pile up
+          # unless the next run closes them. Best effort: failing to tidy must
+          # not stop this PR's auto-merge being armed.
+          new_number="${pr_url##*/}"
+          for old in $(gh pr list --state open --author "app/github-actions" \
+              --search 'in:title "chore(flake): nightly flake.lock update"' \
+              --json number,headRefName \
+              --jq ".[] | select(.headRefName | startswith(\"flake-update-\")) | select(.number != $new_number) | .number"); do
+            gh pr close "$old" --delete-branch --comment "Superseded by $pr_url." \
+              || echo "::warning::could not close superseded PR #$old"
+          done
           gh pr merge --rebase --auto --delete-branch "$pr_url"
           # A PR opened with GITHUB_TOKEN never starts pull_request
           # workflows, so flake-check would never report; dispatch it.
