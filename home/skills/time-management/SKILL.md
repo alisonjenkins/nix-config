@@ -16,7 +16,7 @@ Use when the user wants tasks scheduled: "what should I work on this week", "fit
 
 - **Get the task rows first.** Run `pm ... list --state open` (see the project-management skill) and pass the output to `tm`. Never type rows by hand: `due`, `est` and `prio` come from the tracker.
 - **Ask for existing commitments once.** If the user has a calendar export, pass it with `--busy <file.ics>`. Without it the plan can double-book; say so in the answer.
-- **Read the notes, not just the slots.** `late` means the task ends after its due date, `est-default` means the estimate is a 30 minute guess, `skip` means an open dependency blocks it, `unscheduled` means nothing fits in the horizon. Report each one to the user; do not drop them.
+- **Read the notes, not just the slots.** `late` means the task ends after its due date, `est-default` means the estimate is a 30 minute guess, `skip` means a dependency never got a slot (it is unscheduled or in a cycle), `unscheduled` means nothing fits in the horizon. Report each one to the user; do not drop them.
 - **The plan is a proposal.** `tm` writes only the `--ics` file you name and never changes a tracker or a calendar. Show the plan and let the user import the file.
 - **Time zones.** `--tz` is a fixed offset such as `+01:00`. It does not follow daylight saving, so re-run after a clock change and say so when a plan spans one.
 

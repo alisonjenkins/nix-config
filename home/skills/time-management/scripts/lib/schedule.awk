@@ -32,6 +32,29 @@ function free_stretch(from,   di, base, ws, we, wd, cur, k, moved, nxt) {
   return 0
 }
 
+# Open dependencies of row r (not itself) that have no slot yet, comma separated.
+function unplaced_deps(r,   m, d, k, out) {
+  m = split(deps[r], d, ",")
+  for (k = 1; k <= m; k++) {
+    if (d[k] != "" && d[k] != id[r] && (d[k] in is_open) && !(d[k] in dep_end)) out = out (out == "" ? "" : ",") d[k]
+  }
+  return out
+}
+
+function deps_placed(r) {
+  return unplaced_deps(r) == ""
+}
+
+# Earliest start for row r: now, or the end of its latest dependency.
+function dep_floor(r,   m, d, k, t) {
+  t = from0
+  m = split(deps[r], d, ",")
+  for (k = 1; k <= m; k++) {
+    if ((d[k] in dep_end) && dep_end[d[k]] > t) t = dep_end[d[k]]
+  }
+  return t
+}
+
 function before(a, b) {
   if (due_key[a] != due_key[b]) return due_key[a] < due_key[b]
   if (prio_key[a] != prio_key[b]) return prio_key[a] < prio_key[b]
@@ -78,16 +101,6 @@ END {
   nr = 0
   for (i = 1; i <= n; i++) {
     if (state[i] != "open") continue
-    blockers = ""
-    m = split(deps[i], d, ",")
-    for (k = 1; k <= m; k++) {
-      if (d[k] != "" && d[k] != id[i] && (d[k] in is_open)) blockers = blockers (blockers == "" ? "" : ",") d[k]
-    }
-    if (blockers != "") {
-      nskip++
-      skip_line[nskip] = "skip\t" id[i] "\t" title[i] "\tblocked by " blockers
-      continue
-    }
     due_e[i] = (due[i] == "" ? -1 : iso2epoch(due[i]))
     # A date with no time of day is due at the end of that day.
     if (due_e[i] >= 0 && due[i] !~ /[Tt]/) due_e[i] += 86399
@@ -100,14 +113,21 @@ END {
   }
 
   nslot = 0
-  for (r = 1; r <= nr; r++) {
-    i = rank[r]
+  # Best-ranked task whose open dependencies are all placed goes next, so a
+  # dependent always lands after the end of its last dependency.
+  for (;;) {
+    i = 0
+    for (r = 1; r <= nr; r++) {
+      if (!(rank[r] in placed) && deps_placed(rank[r])) { i = rank[r]; break }
+    }
+    if (i == 0) break
+    placed[i] = 1
     notes0 = ""
     if (est[i] ~ /^[0-9]+$/ && est[i] + 0 > 0) rem = est[i] * 60
     else { rem = defest * 60; notes0 = "est-default" }
     occ0 = nocc
     nch = 0
-    t = from0
+    t = dep_floor(i)
     ok = 1
     while (rem > 0) {
       if (!free_stretch(t)) { ok = 0; break }
@@ -131,6 +151,7 @@ END {
       un_line[nun] = "unscheduled\t" id[i] "\t" title[i] "\tno room in " days " days"
       continue
     }
+    dep_end[id[i]] = ch_e[nch]
     late = (due_e[i] >= 0 && ch_e[nch] > due_e[i])
     ntasks++
     nchunks += nch
@@ -143,6 +164,13 @@ END {
       sl_start[nslot] = ch_s[c]
       sl_line[nslot] = "slot\t" id[i] "\t" epoch2iso(ch_s[c]) "\t" epoch2iso(ch_e[c]) "\t" title[i] "\t" notes
     }
+  }
+
+  # What is left depends, directly or through a cycle, on a task that never got a slot.
+  for (a = 1; a <= n; a++) {
+    if (state[a] != "open" || (a in placed)) continue
+    nskip++
+    skip_line[nskip] = "skip\t" id[a] "\t" title[a] "\tblocked by " unplaced_deps(a)
   }
 
   for (a = 2; a <= nslot; a++) {

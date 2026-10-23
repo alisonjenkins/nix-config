@@ -20,7 +20,7 @@ Selected with `-b i`. Pure shell and awk; it needs no network and no credentials
 
 ## How tasks are placed
 
-1. Only `open` rows count. A row whose `deps` name another open row is a `skip`.
+1. Only `open` rows count. A row whose `deps` name another open row is placed after the end of that row's last block, whatever its rank. It is a `skip` only when a dependency never gets a slot: the dependency is `unscheduled`, or the `deps` form a cycle.
 2. A `due` with no time of day (`2026-10-19`) means the end of that day. Rank by `due` (earliest first, none last), then `prio` (lowest first, none last), then input order.
 3. Each task takes the earliest free time. A block is at most `--chunk` minutes and never crosses busy time or the end of the working window, so a long task is split into `chunk k/n` blocks. A free stretch under 15 minutes is skipped unless it finishes the task.
 4. A task that ends after its `due` is marked `late` and still scheduled. A task that does not fit in `--days` is `unscheduled` and takes no time.
@@ -34,6 +34,5 @@ Input (`--busy`): `DTSTART`/`DTEND` as UTC, floating or `VALUE=DATE`, and `DURAT
 ## Limits
 
 - No daylight saving or named zones; `--tz` is a fixed offset.
-- A task is not ordered after the task it depends on; it is only held back while that task is open.
 - Nothing is rescheduled: each run plans from `--now` and treats earlier plans as unknown. Pass last time's `.ics` as `--busy` only if you want it kept.
 - The google backend is a stub. No Google Calendar tool was reachable on 2026-10-21.

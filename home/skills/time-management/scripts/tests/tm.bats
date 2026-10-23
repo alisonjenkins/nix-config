@@ -31,12 +31,14 @@ setup() {
 }
 
 @test "plan prints the header, the slots, skips and a summary" {
+  printf '5\topen\tLoop A\t\t6\t\t30\t\n6\topen\tLoop B\t\t5\t\t30\t\n' >>"$rows"
   run bash "$tm" -b i plan --from "$rows" --now "$now"
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "# backend=ics from=$rows now=$now" ]
   [ "${lines[1]}" = "$(printf 'slot\t3\t2026-10-19T09:00:00Z\t2026-10-19T09:45:00Z\tFix bug\t')" ]
-  [[ "$output" == *$'skip\t2\tShip it\tblocked by 1'* ]]
-  [ "${lines[$((${#lines[@]} - 1))]}" = "# scheduled=2 chunks=2 late=0 skipped=1 unscheduled=0" ]
+  [ "${lines[3]}" = "$(printf 'slot\t2\t2026-10-19T11:05:00Z\t2026-10-19T11:35:00Z\tShip it\t')" ]
+  [[ "$output" == *$'skip\t5\tLoop A\tblocked by 6'* ]]
+  [ "${lines[$((${#lines[@]} - 1))]}" = "# scheduled=3 chunks=3 late=0 skipped=2 unscheduled=0" ]
 }
 
 @test "plan reads stdin when there is no --from" {
@@ -57,7 +59,7 @@ setup() {
   run bash "$tm" -b i plan --from "$rows" --now "$now" --ics "$out"
   [ "$status" -eq 0 ]
   [ "${lines[1]}" = "$(printf 'slot\t3\t2026-10-19T09:00:00Z\t2026-10-19T09:45:00Z\tFix bug\t')" ]
-  [ "$(grep -c 'BEGIN:VEVENT' "$out")" -eq 2 ]
+  [ "$(grep -c 'BEGIN:VEVENT' "$out")" -eq 3 ]
   grep -q 'UID:tm-3-1@time-management' "$out"
   grep -q 'DTSTAMP:20261019T080000Z' "$out"
   grep -q $'\r$' "$out"

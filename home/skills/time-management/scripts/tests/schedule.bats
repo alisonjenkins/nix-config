@@ -118,16 +118,46 @@ setup() {
   [ "${lines[0]}" = "$(slot 1 2026-10-19T09:00:00Z 2026-10-19T09:30:00Z One est-default)" ]
 }
 
-@test "a task blocked by an open task is skipped; done rows and done deps are ignored" {
-  task 1 First
-  task 2 Second open 1 "" 30
-  task 3 Third open 4 "" 30
+@test "done rows and done or unknown deps are ignored" {
+  task 3 Third open 4,9 "" 30
   task 4 Fourth done
   run sched
-  [[ "$output" == *$'skip\t2\tSecond\tblocked by 1'* ]]
   [[ "$output" == *$'slot\t3\t'* ]]
   [[ "$output" != *$'\t4\t'* ]]
-  [[ "$output" == *"skipped=1"* ]]
+  [[ "$output" == *"skipped=0"* ]]
+}
+
+@test "a task is placed after the task it depends on, whatever the ranking" {
+  task 1 First open "" 2026-10-30T00:00:00Z 30
+  task 2 Second open 1 2026-10-22T00:00:00Z 30
+  run sched
+  [ "${lines[0]}" = "$(slot 1 2026-10-19T09:00:00Z 2026-10-19T09:30:00Z First '')" ]
+  [ "${lines[1]}" = "$(slot 2 2026-10-19T09:40:00Z 2026-10-19T10:10:00Z Second '')" ]
+  [ "${lines[2]}" = "# scheduled=2 chunks=2 late=0 skipped=0 unscheduled=0" ]
+}
+
+@test "a dependent starts after the last chunk of its dependency" {
+  task 1 Big open "" 2026-10-30T00:00:00Z 200
+  task 2 After open 1 2026-10-22T00:00:00Z 30
+  run sched
+  [ "${lines[3]}" = "$(slot 2 2026-10-19T12:50:00Z 2026-10-19T13:20:00Z After '')" ]
+}
+
+@test "tasks that depend on each other in a cycle are skipped" {
+  task 1 One open 2 "" 30
+  task 2 Two open 1 "" 30
+  run sched
+  [[ "$output" == *$'skip\t1\tOne\tblocked by 2'* ]]
+  [[ "$output" == *$'skip\t2\tTwo\tblocked by 1'* ]]
+  [[ "$output" == *"scheduled=0 chunks=0 late=0 skipped=2 unscheduled=0" ]]
+}
+
+@test "a task whose dependency has no room is skipped" {
+  task 1 Huge open "" "" 6000
+  task 2 After open 1 "" 30
+  run sched -v days=2
+  [[ "$output" == *$'unscheduled\t1\tHuge'* ]]
+  [[ "$output" == *$'skip\t2\tAfter\tblocked by 1'* ]]
 }
 
 @test "a task with no room in the horizon is unscheduled and takes no time" {

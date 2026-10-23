@@ -454,4 +454,3 @@ freely. These are what the live test surfaced.
 
 - A live `google` backend: read free/busy and create events. Needs a Google Calendar connector or `gcalcli`; none was reachable on 2026-10-21. Until then `tm -b g` fails with a pointer to `-b i`.
 - Named time zones and daylight saving for `--tz` (a fixed offset today), and RRULE expansion for `--busy` files.
-- Order a task after the task it depends on (today it is only held back while the dependency is open).
