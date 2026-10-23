@@ -169,6 +169,31 @@ class ProbeTests(unittest.TestCase):
         run = self.fake({"nix eval": (0, "2.1.200\n")})
         self.assertFalse(pins.run_probe(pin(probe=probe), run).holds)
 
+    def test_version_at_least_uses_the_locked_rev_not_the_channel_head(self) -> None:
+        asked: list[str] = []
+
+        def run(cmd: list[str], timeout: int) -> subprocess.CompletedProcess[str]:
+            asked.append(" ".join(cmd))
+            return subprocess.CompletedProcess(cmd, 0, "1.0.91\n", "")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            lock = Path(tmp) / "flake.lock"
+            lock.write_text('{"nodes": {"nixpkgs_unstable": {"locked": {"rev": "abcdef1234"}}}}')
+            probe = {"type": "version-at-least", "input": "nixpkgs_unstable",
+                     "attr": "github-copilot-cli", "version": "1.0.93"}
+            res = pins.run_probe(pin(probe=probe), run, lock)
+        self.assertIs(res.holds, False)  # the lock is too old even if the channel head is not
+        self.assertIn("github:NixOS/nixpkgs/abcdef1234#github-copilot-cli.version", asked[0])
+        self.assertIn("locked nixpkgs_unstable abcdef12", res.detail)
+
+    def test_unknown_locked_input_is_a_failed_probe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            lock = Path(tmp) / "flake.lock"
+            lock.write_text('{"nodes": {}}')
+            probe = {"type": "version-at-least", "input": "missing", "attr": "x",
+                     "version": "1"}
+            self.assertIsNone(pins.run_probe(pin(probe=probe), self.fake({}), lock).holds)
+
     def test_issue_closed(self) -> None:
         probe = {"type": "issue-closed", "repo": "o/r", "number": 7}
         closed = self.fake({"issues/7": (0, "closed\n")})

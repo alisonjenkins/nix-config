@@ -194,7 +194,7 @@
       "review_by": "2026-11-05",
       "reason": "nixpkgs master trailed the upstream Claude Code release, and 2.1.293 was the first to know claude-haiku-5-5. The package is manifest-driven, so the manifest is swapped.",
       "removal": "Delete the claude-code override block in the master overlay once nixpkgs reaches 2.1.293.",
-      "probe": { "type": "version-at-least", "flake_ref": "github:nixos/nixpkgs", "attr": "claude-code",
+      "probe": { "type": "version-at-least", "input": "nixpkgs_master", "attr": "claude-code",
                  "version": "2.1.293" }
     },
     {
@@ -208,7 +208,7 @@
       "review_by": "2026-11-05",
       "reason": "nixos-unstable and master both lagged the upstream Copilot CLI release by a few versions.",
       "removal": "Delete the github-copilot-cli override once nixpkgs reaches 1.0.93.",
-      "probe": { "type": "version-at-least", "flake_ref": "github:nixos/nixpkgs",
+      "probe": { "type": "version-at-least", "input": "nixpkgs_unstable",
                  "attr": "github-copilot-cli", "version": "1.0.93" }
     },
     {
@@ -222,7 +222,7 @@
       "review_by": "2026-11-06",
       "reason": "Pinned to kernel.org main HEAD for GFX1201 fixes (af5e4f0e). The overlay also works around a fetchpatch that strips binary blobs from the amdxdna NPU firmware patch, producing 0-byte files.",
       "removal": "Revert to final.unstable.linux-firmware (or drop the overlay) once a tagged release containing the 7 May amdgpu updates is in nixpkgs.",
-      "probe": { "type": "version-at-least", "flake_ref": "github:nixos/nixpkgs/nixos-unstable",
+      "probe": { "type": "version-at-least", "input": "nixpkgs_unstable",
                  "attr": "linux-firmware", "version": "20260514" }
     }
   ]

@@ -233,7 +233,17 @@ class ProbeResult:
     detail: str
 
 
-def run_probe(pin: dict[str, Any], run: Runner = run_command) -> ProbeResult:
+def locked_rev(input_name: str, lock_path: Path | None = None) -> str:
+    """The rev flake.lock holds for a top-level input."""
+    path = lock_path or REPO / "flake.lock"
+    with path.open(encoding="utf-8") as handle:
+        lock = json.load(handle)
+    rev: str = lock["nodes"][input_name]["locked"]["rev"]
+    return rev
+
+
+def run_probe(pin: dict[str, Any], run: Runner = run_command,
+              lock_path: Path | None = None) -> ProbeResult:
     probe = pin.get("probe")
     pid = str(pin["id"])
     if not probe:
@@ -253,14 +263,21 @@ def run_probe(pin: dict[str, Any], run: Runner = run_command) -> ProbeResult:
             return ProbeResult(pid, state == "closed" if done.returncode == 0 else None,
                                "removable", f"{probe['repo']}#{probe['number']} is {state}")
         if kind == "version-at-least":
-            done = run(["nix", "eval", "--raw", f"{probe['flake_ref']}#{probe['attr']}.version"],
-                       timeout)
+            # `input` tests the nixpkgs this repo has LOCKED, which is what an
+            # override actually competes with; `flake_ref` tests a channel head
+            # and can say "removable" for a lock that is still too old.
+            if "input" in probe:
+                rev = locked_rev(str(probe["input"]), lock_path)
+                ref, where = f"github:NixOS/nixpkgs/{rev}", f"locked {probe['input']} {rev[:8]}"
+            else:
+                ref, where = str(probe["flake_ref"]), str(probe["flake_ref"])
+            done = run(["nix", "eval", "--raw", f"{ref}#{probe['attr']}.version"], timeout)
             if done.returncode != 0:
                 return ProbeResult(pid, None, "removable", done.stderr[-300:].strip())
             have = done.stdout.strip()
             need = probe["version"]
             return ProbeResult(pid, version_key(have) >= version_key(need), "removable",
-                               f"{probe['attr']} is {have}, need >= {need}")
+                               f"{probe['attr']} is {have} at {where}, need >= {need}")
         if kind == "newer-release":
             done = run(["gh", "api", f"repos/{probe['repo']}/releases/latest",
                         "--jq", ".tag_name"], timeout)
@@ -273,7 +290,7 @@ def run_probe(pin: dict[str, Any], run: Runner = run_command) -> ProbeResult:
             latest = done.stdout.strip()
             return ProbeResult(pid, latest != probe["current"], "update-available",
                                f"latest release {latest}, pinned {probe['current']}")
-    except (subprocess.TimeoutExpired, OSError, KeyError) as err:
+    except (subprocess.TimeoutExpired, OSError, KeyError, json.JSONDecodeError) as err:
         return ProbeResult(pid, None, meaning, f"probe failed: {err!r}")
     return ProbeResult(pid, None, meaning, f"unknown probe type {kind!r}")
 
