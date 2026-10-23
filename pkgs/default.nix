@@ -34,6 +34,8 @@
   cavemem = pkgs.callPackage ./cavemem {};
   rea = pkgs.callPackage ./rea {};
   spec-kit = pkgs.callPackage ./spec-kit {};
+  ffmpeg-git = pkgs.callPackage ./ffmpeg-git { base = pkgs.ffmpeg_8; };
+  ffmpeg-git-unstable = pkgs.callPackage ./ffmpeg-git { base = pkgs.unstable.ffmpeg_9; };
   citron = pkgs.callPackage ./citron {};
   eden = pkgs.callPackage ./eden {};
   sift = pkgs.callPackage ./sift {};
