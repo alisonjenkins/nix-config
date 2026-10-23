@@ -96,7 +96,8 @@ fi
 : >"$tmp/busy.tsv"
 for f in ${busy[@]+"${busy[@]}"}; do
   [[ -r $f ]] || tm_die "plan: cannot read --busy file '$f'"
-  awk -f "$lib/time.awk" -f "$lib/busy.awk" "$f" >>"$tmp/busy.tsv"
+  awk -v hfrom="$now_epoch" -v hto="$((now_epoch + (10#$days + 1) * 86400))" \
+    -f "$lib/time.awk" -f "$lib/busy.awk" "$f" >>"$tmp/busy.tsv"
 done
 
 if [[ -n $out_ics ]]; then

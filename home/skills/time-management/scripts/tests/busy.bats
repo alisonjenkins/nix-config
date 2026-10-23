@@ -83,3 +83,91 @@ mk() {
   run busy "$cal"
   [ "${lines[0]}" = "$(printf '2026-10-21T13:00:00Z\t2026-10-21T14:00:00Z')" ]
 }
+
+# busyw <file> <from> <to>: like busy, with the recurrence window in ISO8601 UTC.
+busyw() {
+  awk -v hfrom="$(epoch "$2")" -v hto="$(epoch "$3")" \
+    -f "$scripts_dir/lib/time.awk" -f "$scripts_dir/lib/busy.awk" "$1"
+}
+
+epoch() {
+  awk -f "$scripts_dir/lib/time.awk" -f <(printf 'BEGIN { print iso2epoch("%s") }\n' "$1")
+}
+
+rr() { printf '%s\t%s' "$1" "$2"; }
+
+@test "a daily rule with COUNT expands to that many occurrences" {
+  mk BEGIN:VEVENT DTSTART:20261019T090000Z DTEND:20261019T093000Z RRULE:FREQ=DAILY\;COUNT=3 END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-01T00:00:00Z
+  [ "${#lines[@]}" -eq 3 ]
+  [ "${lines[0]}" = "$(rr 2026-10-19T09:00:00Z 2026-10-19T09:30:00Z)" ]
+  [ "${lines[2]}" = "$(rr 2026-10-21T09:00:00Z 2026-10-21T09:30:00Z)" ]
+}
+
+@test "a weekly rule honours BYDAY" {
+  mk BEGIN:VEVENT DTSTART:20261019T090000Z DTEND:20261019T100000Z RRULE:FREQ=WEEKLY\;BYDAY=MO,WE\;COUNT=4 END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-01T00:00:00Z
+  [ "${#lines[@]}" -eq 4 ]
+  [ "${lines[0]}" = "$(rr 2026-10-19T09:00:00Z 2026-10-19T10:00:00Z)" ]
+  [ "${lines[1]}" = "$(rr 2026-10-21T09:00:00Z 2026-10-21T10:00:00Z)" ]
+  [ "${lines[2]}" = "$(rr 2026-10-26T09:00:00Z 2026-10-26T10:00:00Z)" ]
+  [ "${lines[3]}" = "$(rr 2026-10-28T09:00:00Z 2026-10-28T10:00:00Z)" ]
+}
+
+@test "INTERVAL skips periods and a weekly rule defaults to the start weekday" {
+  mk BEGIN:VEVENT DTSTART:20261021T090000Z DTEND:20261021T100000Z RRULE:FREQ=WEEKLY\;INTERVAL=2\;COUNT=3 END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-31T00:00:00Z
+  [ "${lines[0]}" = "$(rr 2026-10-21T09:00:00Z 2026-10-21T10:00:00Z)" ]
+  [ "${lines[1]}" = "$(rr 2026-11-04T09:00:00Z 2026-11-04T10:00:00Z)" ]
+  [ "${lines[2]}" = "$(rr 2026-11-18T09:00:00Z 2026-11-18T10:00:00Z)" ]
+}
+
+@test "a monthly rule skips months that lack the day" {
+  mk BEGIN:VEVENT DTSTART:20260131T090000Z DTEND:20260131T100000Z RRULE:FREQ=MONTHLY\;COUNT=3 END:VEVENT
+  run busyw "$cal" 2026-01-01T00:00:00Z 2026-12-31T00:00:00Z
+  [ "${lines[1]}" = "$(rr 2026-03-31T09:00:00Z 2026-03-31T10:00:00Z)" ]
+  [ "${lines[2]}" = "$(rr 2026-05-31T09:00:00Z 2026-05-31T10:00:00Z)" ]
+}
+
+@test "a monthly rule honours BYMONTHDAY" {
+  mk BEGIN:VEVENT DTSTART:20261001T090000Z DTEND:20261001T100000Z RRULE:FREQ=MONTHLY\;BYMONTHDAY=1,15\;COUNT=4 END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2027-12-31T00:00:00Z
+  [ "${lines[1]}" = "$(rr 2026-10-15T09:00:00Z 2026-10-15T10:00:00Z)" ]
+  [ "${lines[2]}" = "$(rr 2026-11-01T09:00:00Z 2026-11-01T10:00:00Z)" ]
+}
+
+@test "a yearly rule repeats on the same date" {
+  mk BEGIN:VEVENT DTSTART\;VALUE=DATE:20261105 RRULE:FREQ=YEARLY\;COUNT=2 END:VEVENT
+  run busyw "$cal" 2026-01-01T00:00:00Z 2029-01-01T00:00:00Z
+  [ "${lines[0]}" = "$(rr 2026-11-05T00:00:00Z 2026-11-06T00:00:00Z)" ]
+  [ "${lines[1]}" = "$(rr 2027-11-05T00:00:00Z 2027-11-06T00:00:00Z)" ]
+}
+
+@test "UNTIL ends a series, with a date or a time" {
+  mk BEGIN:VEVENT DTSTART:20261019T090000Z DTEND:20261019T100000Z RRULE:FREQ=DAILY\;UNTIL=20261021T090000Z END:VEVENT \
+    BEGIN:VEVENT DTSTART:20261019T120000Z DTEND:20261019T130000Z RRULE:FREQ=DAILY\;UNTIL=20261020 END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-01T00:00:00Z
+  [ "${#lines[@]}" -eq 5 ]
+}
+
+@test "EXDATE removes single occurrences" {
+  mk BEGIN:VEVENT DTSTART:20261019T090000Z DTEND:20261019T100000Z RRULE:FREQ=DAILY\;COUNT=3 EXDATE:20261020T090000Z END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-01T00:00:00Z
+  [ "${#lines[@]}" -eq 2 ]
+  [ "${lines[1]}" = "$(rr 2026-10-21T09:00:00Z 2026-10-21T10:00:00Z)" ]
+}
+
+@test "an endless rule stops at the window, and earlier occurrences are not printed" {
+  mk BEGIN:VEVENT DTSTART:20260105T090000Z DTEND:20260105T100000Z RRULE:FREQ=WEEKLY END:VEVENT
+  run busyw "$cal" 2026-10-19T00:00:00Z 2026-11-02T00:00:00Z
+  [ "${#lines[@]}" -eq 2 ]
+  [ "${lines[0]}" = "$(rr 2026-10-19T09:00:00Z 2026-10-19T10:00:00Z)" ]
+  [ "${lines[1]}" = "$(rr 2026-10-26T09:00:00Z 2026-10-26T10:00:00Z)" ]
+}
+
+@test "a rule this parser cannot expand warns and keeps the first occurrence" {
+  mk BEGIN:VEVENT DTSTART:20261019T090000Z DTEND:20261019T100000Z RRULE:FREQ=MONTHLY\;BYDAY=1MO END:VEVENT
+  run busyw "$cal" 2026-10-01T00:00:00Z 2026-12-01T00:00:00Z
+  [[ "$output" == *"tm: cannot expand RRULE FREQ=MONTHLY;BYDAY=1MO"* ]]
+  [[ "$output" == *"$(rr 2026-10-19T09:00:00Z 2026-10-19T10:00:00Z)"* ]]
+}

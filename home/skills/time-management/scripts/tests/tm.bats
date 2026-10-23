@@ -54,6 +54,12 @@ setup() {
   [ "${lines[1]}" = "$(printf 'slot\t3\t2026-10-19T11:00:00Z\t2026-10-19T11:45:00Z\tFix bug\t')" ]
 }
 
+@test "--busy expands a recurring event across the planning horizon" {
+  printf 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:20240105T090000Z\r\nDTEND:20240105T100000Z\r\nRRULE:FREQ=DAILY\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n' >"$BATS_TEST_TMPDIR/daily.ics"
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --busy "$BATS_TEST_TMPDIR/daily.ics" --days 14
+  [ "${lines[1]}" = "$(printf 'slot\t3\t2026-10-19T10:00:00Z\t2026-10-19T10:45:00Z\tFix bug\t')" ]
+}
+
 @test "--ics writes a calendar with one event per chunk and prints the plan too" {
   out="$BATS_TEST_TMPDIR/plan.ics"
   run bash "$tm" -b i plan --from "$rows" --now "$now" --ics "$out"

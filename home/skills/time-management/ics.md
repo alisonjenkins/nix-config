@@ -29,7 +29,7 @@ Selected with `-b i`. Pure shell and awk; it needs no network and no credentials
 
 Output: one `VEVENT` per block, UTC times, CRLF line endings, lines folded at 75 octets. The `UID` is `tm-<id>-<block>@time-management`, so importing a newer plan updates the same events instead of duplicating them. The file is replaced by a rename and its mode follows your umask, so an existing file's mode is reset. Task ids from different trackers can collide; plan one tracker per file.
 
-Input (`--busy`): `DTSTART`/`DTEND` as UTC, floating or `VALUE=DATE`, and `DURATION`. Events with `STATUS:CANCELLED` or `TRANSP:TRANSPARENT` (shown as free, as holiday and birthday calendars usually are) do not block time. Zone parameters (`TZID`) are ignored and the time is read as UTC, so export busy times in UTC. Recurrence rules are not expanded: export the occurrences, not the series.
+Input (`--busy`): `DTSTART`/`DTEND` as UTC, floating or `VALUE=DATE`, and `DURATION`. Events with `STATUS:CANCELLED` or `TRANSP:TRANSPARENT` (shown as free, as holiday and birthday calendars usually are) do not block time. Zone parameters (`TZID`) are ignored and the time is read as UTC, so export busy times in UTC. Recurring events are expanded over the planning horizon: `FREQ` of `DAILY`, `WEEKLY` (with `BYDAY`), `MONTHLY` (with `BYMONTHDAY`) or `YEARLY`, plus `INTERVAL`, `COUNT`, `UNTIL` and `EXDATE`. Any other rule (an ordinal `BYDAY` such as `1MO`, `BYSETPOS`) prints `tm: cannot expand RRULE ...` on stderr and only the first occurrence is planned around, so check stderr. `RDATE` dates are ignored without a warning, and a moved occurrence (`RECURRENCE-ID`) blocks its new time while the original time stays blocked too.
 
 ## Limits
 
