@@ -31,8 +31,8 @@ vulnix "$drv"                                                   # human summary
   rate limits, so retry with backoff.
 - Home-manager configs: `.#homeConfigurations.<name>.activationPackage.drvPath`.
 - aarch64 hosts evaluate fine from x86 for `drvPath`; do not build them to scan.
-- vulnix exits 1 when it finds anything, so do not treat that as failure in
-  scripts (`|| true`, or read the JSON).
+- vulnix exits non-zero when it finds anything (1 on a `.drv` scan, 2 on `-S`),
+  so do not treat that as failure in scripts (`|| true`, or read the JSON).
 - Inspect keys before scripting against the JSON: `jq '.[0] | keys'`.
 
 ## 2. Triage
