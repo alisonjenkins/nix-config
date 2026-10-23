@@ -1,0 +1,45 @@
+name: Pins
+
+# Pins are debt: they stop security fixes and new features arriving. Once a
+# week, run each pin's probe against current upstream and open an issue for any
+# pin that can probably go, has an update, is overdue for review, is older than
+# 180 days, or has no recorded reason. See .claude/skills/pins/SKILL.md.
+#
+# Probes build things (the rea-ghidra check), so this runs on the self-hosted
+# builder. Schedule and dispatch only: there is no pull_request trigger, so no
+# fork code ever reaches the runner through this workflow.
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 120
+    # Backstop, as in the other self-hosted workflows.
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+        with:
+          extra-tools: gh
+      - name: Probe pins and raise issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NIX_CONFIG: "access-tokens = github.com=${{ github.token }}"
+        run: |
+          set -euo pipefail
+          # jq is for the probes that shell out to it; gh comes from setup-host-nix.
+          pins() {
+            nix shell --inputs-from . nixpkgs#python3 nixpkgs#jq \
+              --command python3 scripts/pins.py "$@"
+          }
+          pins probe --json > probe.json
+          pins report
+          pins issues --probe-json probe.json --repo "$GITHUB_REPOSITORY"
