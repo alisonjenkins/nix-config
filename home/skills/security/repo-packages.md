@@ -22,8 +22,11 @@ the other sees:
 3. **Scan each shipped output at runtime.**
    `out=$(nix build --no-link --print-out-paths .#<package>)` then
    `vulnix -C "$out"`. For an OCI image built by `dockerTools`/`streamLayeredImage`
-   the result is a tarball or script, not a closure: scan the package the image
-   contains (`.#<service>`), and say the image's base layers were not scanned.
+   the result is a tarball, a closure of one path, so `vulnix -C` on it prints
+   "Found no advisories" even when a package inside has them (checked with
+   `dockerTools.buildImage` containing `hello`). Never read that as clean: scan
+   the package the image contains (`.#<service>`), and say the image's base
+   layers were not scanned.
 4. **Expect name collisions on Rust output.** Crate names match unrelated NVD
    products. Triage as in [nix-closure.md](nix-closure.md): read every CVE of
    a name before whitelisting, and keep the whitelist file in the repo that
