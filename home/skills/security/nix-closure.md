@@ -79,8 +79,8 @@ for the CVE id. Never whitelist unverified.
   "fixed in newer", and called `git` a collision after seeing 3 of its 6 CVEs.
   Check its claims against the full descriptions.
 
-Whitelist file: `security/vulnix-whitelist.toml` in the flake repo (create on first use), passed
-with `-w`. Each entry needs `cve`, a `comment` saying why, and `until` (ISO date,
+Whitelist file: `vulnix-whitelist.toml` at the flake repo root (create on first use),
+passed with `-w`. Each entry needs `cve`, a `comment` saying why, and `until` (ISO date,
 at most 90 days out) so it is re-reviewed:
 
 ```toml
