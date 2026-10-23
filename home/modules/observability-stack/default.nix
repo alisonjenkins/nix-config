@@ -355,7 +355,7 @@ in
           message = "modules.observabilityStack.podmanMachine.name \"${cfg.podmanMachine.name}\" is not a valid podman machine name: use letters, digits, '_', '.' and '-', starting with a letter or digit.";
         }
         {
-          assertion = osPodman == null || (osPodman.modules.podman.enable or false);
+          assertion = isDarwin || osPodman == null || (osPodman.modules.podman.enable or false);
           message = "modules.observabilityStack needs rootless podman: set modules.podman.enable = true on this NixOS host.";
         }
       ];
