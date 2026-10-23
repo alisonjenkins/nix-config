@@ -239,10 +239,6 @@ in {
         boot = {
           kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
 
-          # Blacklist amd_pmf to prevent TEE errors after hibernate resume
-          # The driver causes system instability with constant "TEE enact cmd failed" errors
-          blacklistedKernelModules = [ "amd_pmf" ];
-
           extraModprobeConfig = ''
             options snd-hda-intel index=1,0
           '';
