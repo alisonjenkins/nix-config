@@ -304,7 +304,7 @@ in
           rush-parallel
           tmux
           trash-cli
-          vim
+          unstable.vim
           yazi
         ] ++ (if (cfg.bootLoader == "secure-boot") then [pkgs.sbctl] else [])
         ++ (if cfg.useAliNeovim then [
