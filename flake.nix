@@ -85,6 +85,13 @@
     nixpkgs_master.url = "github:nixos/nixpkgs";
     nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs_old.url = "github:nixos/nixpkgs/nixos-24.11";
+    # Holds the Ghidra and JDK that REA's decompiler runs on. nixpkgs_unstable
+    # from 02c087f3 (2026-10-23) builds a Ghidra whose native decompile helper
+    # segfaults at startup, which fails the rea-ghidra check and so every
+    # nightly flake.lock PR. A rev in the URL keeps `nix flake update` from
+    # moving it; re-pin once `nix build .#checks.x86_64-linux.rea-ghidra`
+    # passes against a newer nixpkgs.
+    nixpkgs_rea_pin.url = "github:nixos/nixpkgs/55bfb4d7437bd4e09ab7cba58a43bd68eb310044";
     nixpkgs_stable_darwin.url = "github:nixos/nixpkgs/nixpkgs-25.11-darwin";
     nixpkgs_unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixvirt = {
