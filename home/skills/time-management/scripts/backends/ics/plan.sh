@@ -59,10 +59,16 @@ he=$((10#${BASH_REMATCH[3]} * 60 + 10#${BASH_REMATCH[4]}))
   tm_die "plan: --hours must be a valid window within one day, got '$hours'"
 
 tz_re='^([+-])([0-9][0-9]):([0-9][0-9])$'
-[[ $tz =~ $tz_re ]] || tm_die "plan: --tz must be a fixed offset like +01:00, got '$tz'"
-tz_min=$((10#${BASH_REMATCH[2]} * 60 + 10#${BASH_REMATCH[3]}))
-((10#${BASH_REMATCH[3]} < 60 && tz_min <= 840)) || tm_die "plan: --tz offset out of range, got '$tz'"
-[[ ${BASH_REMATCH[1]} == - ]] && tz_min=$((-tz_min))
+tz_named=""
+tz_min=0
+if [[ $tz =~ $tz_re ]]; then
+  tz_min=$((10#${BASH_REMATCH[2]} * 60 + 10#${BASH_REMATCH[3]}))
+  ((10#${BASH_REMATCH[3]} < 60 && tz_min <= 840)) || tm_die "plan: --tz offset out of range, got '$tz'"
+  [[ ${BASH_REMATCH[1]} == - ]] && tz_min=$((-tz_min))
+else
+  tm_zone_known "$tz" || tm_die "plan: --tz must be a fixed offset like +01:00 or a zone name like Europe/London, got '$tz'"
+  tz_named="$tz"
+fi
 
 wd_re='^([1-7])-([1-7])$'
 [[ $weekdays =~ $wd_re ]] || tm_die "plan: --weekdays must look like 1-5 (1 = Monday), got '$weekdays'"
@@ -83,6 +89,20 @@ else
   now_epoch="$(date -u +%s)"
 fi
 now_iso="$(awk -v e="$now_epoch" -f "$lib/time.awk" -f "$tmp/to-iso.awk")"
+
+# A named zone changes its offset across the horizon: one offset line per planned day.
+tzfile_arg=()
+if [[ -n $tz_named ]]; then
+  tz_min="$(tm_zone_offset "$tz_named" "$now_epoch")"
+  echo 'BEGIN { for (i = 0; i < days; i++) print substr(epoch2iso(w0 + i * 86400), 1, 10) }' >"$tmp/local-dates.awk"
+  awk -v days="$((10#$days))" -v w0="$(((now_epoch + tz_min * 60) / 86400 * 86400))" \
+    -f "$lib/time.awk" -f "$tmp/local-dates.awk" >"$tmp/local-dates.txt"
+  : >"$tmp/tz.txt"
+  while read -r day; do
+    tm_zone_offset "$tz_named" "$day" >>"$tmp/tz.txt"
+  done <"$tmp/local-dates.txt"
+  tzfile_arg=(-v "tzfile=$tmp/tz.txt")
+fi
 
 if [[ -z $from || $from == - ]]; then
   from_label=stdin
@@ -105,7 +125,7 @@ if [[ -n $out_ics ]]; then
   [[ -d $out_dir && -w $out_dir ]] || tm_die "plan: cannot write --ics file in '$out_dir'"
 fi
 
-awk -v now="$now_epoch" -v days="$days" -v hs="$hs" -v he="$he" -v tz="$tz_min" \
+awk ${tzfile_arg[@]+"${tzfile_arg[@]}"} -v now="$now_epoch" -v days="$days" -v hs="$hs" -v he="$he" -v tz="$tz_min" \
   -v wdmin="$wdmin" -v wdmax="$wdmax" -v chunk="$chunk" -v gap="$gap" -v defest="$defest" \
   -v busyfile="$tmp/busy.tsv" -f "$lib/time.awk" -f "$lib/schedule.awk" "$tmp/rows.tsv" >"$tmp/plan.txt"
 

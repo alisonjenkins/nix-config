@@ -12,7 +12,7 @@ Selected with `-b i`. Pure shell and awk; it needs no network and no credentials
 | `--now <ISO8601 UTC>` | current time | planning starts here, rounded up to 5 minutes |
 | `--days <n>` | 14 | how many calendar days ahead to plan (at most 366) |
 | `--hours HH:MM-HH:MM` | 09:00-17:00 | working window, in the `--tz` offset |
-| `--tz +HH:MM` | +00:00 | fixed UTC offset for `--hours` and `--weekdays` |
+| `--tz <zone>` | +00:00 | zone for `--hours` and `--weekdays`: a fixed offset (`+01:00`) or an IANA name (`Europe/London`) that follows daylight saving |
 | `--weekdays a-b` | 1-5 | ISO weekdays to work (1 = Monday) |
 | `--chunk <min>` | 90 | longest block a task is cut into |
 | `--gap <min>` | 10 | breathing room after every block |
@@ -33,6 +33,7 @@ Input (`--busy`): `DTSTART`/`DTEND` as UTC, floating or `VALUE=DATE`, and `DURAT
 
 ## Limits
 
-- No daylight saving or named zones; `--tz` is a fixed offset.
+- A zone name needs the tz database (`$TZDIR` or `/usr/share/zoneinfo`) and `date` to read it. A day takes the zone's offset at noon, so a clock change inside the working window (a window that spans 02:00) shifts that day by an hour.
+- Zone names apply to `--hours` and `--weekdays` only. A `TZID` in a `--busy` file is still read as UTC.
 - Nothing is rescheduled: each run plans from `--now` and treats earlier plans as unknown. Pass last time's `.ics` as `--busy` only if you want it kept.
 - The google backend is a stub. No Google Calendar tool was reachable on 2026-10-21.

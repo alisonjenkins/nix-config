@@ -7,6 +7,8 @@
       checks.skills-time-management = pkgs.runCommand "skills-time-management"
         {
           nativeBuildInputs = [ pkgs.bats pkgs.gawk pkgs.coreutils ];
+          # Named-zone tests read the tz database through date.
+          TZDIR = "${pkgs.tzdata}/share/zoneinfo";
         } ''
         bash ${self + "/home/skills/time-management/scripts/lint-aliases.sh"} \
           ${self + "/home/skills/time-management/scripts/backends"}

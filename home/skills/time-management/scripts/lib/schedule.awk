@@ -3,13 +3,16 @@
 # Variables (-v): now (epoch seconds, required); days, hs, he, tz, chunk, gap,
 # defest (minutes, except days); wdmin, wdmax (ISO weekdays); busyfile (lines of
 # "start<TAB>end" in ISO8601 UTC, from lib/busy.awk). hs and he are minutes after
-# local midnight and tz is the local offset from UTC in minutes.
+# local midnight and tz is the local offset from UTC in minutes at now. tzfile
+# (optional) lists the offset in minutes for each planned day, one per line.
 # Output: slot, skip and unscheduled lines, then a "# scheduled=..." summary.
 
-function free_stretch(from,   di, base, ws, we, wd, cur, k, moved, nxt) {
+function free_stretch(from,   di, wall, base, ws, we, wd, cur, k, moved, nxt) {
   for (di = 0; di < days; di++) {
-    base = dayzero + di * 86400
-    wd = weekday(base + tz * 60)
+    # wall is local midnight read as UTC; the zone offset of that day turns it into a real instant.
+    wall = wall0 + di * 86400
+    base = wall - (di in tzoff ? tzoff[di] : tz) * 60
+    wd = weekday(wall)
     if (wd < wdmin || wd > wdmax) continue
     ws = base + hs * 60
     we = base + he * 60
@@ -76,7 +79,12 @@ BEGIN {
   chunk += 0; gap += 0; defest += 0; now += 0
   min_chunk_secs = 15 * 60
   from0 = int((now + 299) / 300) * 300
-  dayzero = int((now + tz * 60) / 86400) * 86400 - tz * 60
+  wall0 = int((now + tz * 60) / 86400) * 86400
+  # tzfile: one UTC offset in minutes per planned day (daylight saving), else tz for every day.
+  if (tzfile != "") {
+    for (di = 0; (getline line < tzfile) > 0; di++) tzoff[di] = line + 0
+    close(tzfile)
+  }
   nocc = 0
   if (busyfile != "") {
     while ((getline line < busyfile) > 0) {

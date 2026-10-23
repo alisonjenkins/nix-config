@@ -84,6 +84,65 @@ setup() {
   [ "${lines[1]}" = "$(printf 'slot\t3\t2026-10-19T12:00:00Z\t2026-10-19T12:30:00Z\tFix bug\tchunk 1/2')" ]
 }
 
+@test "--tz takes a zone name and follows its daylight saving change" {
+  # London leaves BST at 02:00 local on Sunday 2026-10-25: 09:00 local is 08:00Z before, 09:00Z after.
+  printf '1\topen\tA\t\t\t\t60\t\n2\topen\tB\t\t\t\t60\t\n3\topen\tC\t\t\t\t60\t\n' >"$BATS_TEST_TMPDIR/three.tsv"
+  run bash "$tm" -b i plan --from "$BATS_TEST_TMPDIR/three.tsv" --now 2026-10-24T00:00:00Z --tz Europe/London --hours 09:00-10:00 --weekdays 1-7 --gap 0
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "$(printf 'slot\t1\t2026-10-24T08:00:00Z\t2026-10-24T09:00:00Z\tA\t')" ]
+  [ "${lines[2]}" = "$(printf 'slot\t2\t2026-10-25T09:00:00Z\t2026-10-25T10:00:00Z\tB\t')" ]
+  [ "${lines[3]}" = "$(printf 'slot\t3\t2026-10-26T09:00:00Z\t2026-10-26T10:00:00Z\tC\t')" ]
+}
+
+@test "a zone west of UTC puts the local date on the right side of midnight" {
+  # 2026-10-26T02:00Z is still Sunday evening in New York (EDT, UTC-4).
+  printf '1\topen\tA\t\t\t\t60\t\n' >"$BATS_TEST_TMPDIR/one.tsv"
+  run bash "$tm" -b i plan --from "$BATS_TEST_TMPDIR/one.tsv" --now 2026-10-26T02:00:00Z --tz America/New_York
+  [ "${lines[1]}" = "$(printf 'slot\t1\t2026-10-26T13:00:00Z\t2026-10-26T14:00:00Z\tA\t')" ]
+}
+
+@test "an unknown zone name is rejected" {
+  run bash "$tm" -b i plan --from "$rows" --now "$now" --tz Mars/Olympus
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--tz must be"* ]]
+}
+
+@test "a zone is looked up only in TZDIR when it is set, and must be a real zone file" {
+  mkdir -p "$BATS_TEST_TMPDIR/empty" "$BATS_TEST_TMPDIR/fake/Europe"
+  echo "not a zone" >"$BATS_TEST_TMPDIR/fake/Europe/London"
+  # date reads TZDIR alone, so a zone found elsewhere would silently plan as UTC.
+  TZDIR="$BATS_TEST_TMPDIR/empty" run bash "$tm" -b i plan --from "$rows" --now "$now" --tz Europe/London
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--tz must be"* ]]
+  TZDIR="$BATS_TEST_TMPDIR/fake" run bash "$tm" -b i plan --from "$rows" --now "$now" --tz Europe/London
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--tz must be"* ]]
+}
+
+@test "with BSD date, TZDIR is ignored and the offset comes from date -r and -j -f" {
+  # macOS date has no --version and ignores TZDIR (its zone directory is compiled in);
+  # stand in for it with GNU date pointed at the real zones.
+  real_date="$(command -v date)"
+  mkdir -p "$BATS_TEST_TMPDIR/bin" "$BATS_TEST_TMPDIR/empty"
+  # The shebang names the running bash: the nix sandbox has no /usr/bin/env.
+  cat >"$BATS_TEST_TMPDIR/bin/date" <<EOF
+#!$BASH
+export TZDIR="\$TM_ZONEINFO_DIRS"
+case "\$1" in
+  --version) exit 1 ;;
+  -r) exec "$real_date" -d "@\$2" "\${@:3}" ;;
+  -j) exec "$real_date" -d "\$4" "\$5" ;;
+esac
+exit 1
+EOF
+  chmod +x "$BATS_TEST_TMPDIR/bin/date"
+  printf '1\topen\tA\t\t\t\t60\t\n' >"$BATS_TEST_TMPDIR/one.tsv"
+  PATH="$BATS_TEST_TMPDIR/bin:$PATH" TM_ZONEINFO_DIRS="$TZDIR" TZDIR="$BATS_TEST_TMPDIR/empty" \
+    run bash "$tm" -b i plan --from "$BATS_TEST_TMPDIR/one.tsv" --now 2026-07-01T00:00:00Z --tz Europe/London
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ "${lines[1]}" = "$(printf 'slot\t1\t2026-07-01T08:00:00Z\t2026-07-01T09:00:00Z\tA\t')" ]
+}
+
 @test "bad input fails before anything is written" {
   out="$BATS_TEST_TMPDIR/never.ics"
   for bad in "--now junk" "--hours 25:00-26:00" "--hours 17:00-09:00" "--hours nine" "--tz 1" "--tz +25:00" "--days 0" "--days 367" "--chunk 0" "--gap -1" "--weekdays 0-9" "--weekdays 5-1" "--default-est 0" "--bogus 1"; do

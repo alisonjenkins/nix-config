@@ -14,6 +14,48 @@ tm_arg2() {
   [[ $# -ge 2 ]] || tm_die "${1:-flag} needs a value"
 }
 
+# tm_zone_known <name>: succeed if name is a compiled zone (TZif file) in the tz
+# database. GNU date reads $TZDIR alone when it is set and treats anything else
+# as UTC, so only look where date will. macOS date has the directory compiled in
+# and ignores $TZDIR. TM_ZONEINFO_DIRS (colon separated) replaces the system paths.
+tm_zone_known() {
+  local d dirs
+  [[ $1 =~ ^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$ ]] || return 1
+  IFS=: read -ra dirs <<<"${TM_ZONEINFO_DIRS:-/usr/share/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo:/run/current-system/sw/share/zoneinfo}"
+  if [[ -n ${TZDIR:-} ]] && date --version >/dev/null 2>&1; then
+    dirs=("$TZDIR")
+  fi
+  for d in "${dirs[@]}"; do
+    if [[ -f $d/$1 && $(head -c 4 "$d/$1") == TZif ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# tm_zone_offset <zone> <epoch|"YYYY-MM-DD">: the zone's UTC offset in minutes at
+# that instant, or at noon local time on that date (a transition is never at
+# noon, so the whole working day shares it). GNU date, else BSD date. BSD date's
+# -d means something else (kernel DST flag), so GNU is detected, never tried.
+tm_zone_offset() {
+  local zone="$1" when="$2" z
+  if date --version >/dev/null 2>&1; then
+    if [[ $when =~ ^[0-9]+$ ]]; then
+      z="$(TZ="$zone" date -d "@$when" +%z)"
+    else
+      z="$(TZ="$zone" date -d "$when 12:00" +%z)"
+    fi
+  elif [[ $when =~ ^[0-9]+$ ]]; then
+    z="$(TZ="$zone" date -r "$when" +%z)"
+  else
+    z="$(TZ="$zone" date -j -f '%Y-%m-%d %H:%M' "$when 12:00" +%z)"
+  fi
+  [[ $z =~ ^([+-])([0-9][0-9])([0-9][0-9])$ ]] || tm_die "cannot read the UTC offset of zone '$zone' (got '$z')"
+  local m=$((10#${BASH_REMATCH[2]} * 60 + 10#${BASH_REMATCH[3]}))
+  [[ ${BASH_REMATCH[1]} == - ]] && m=$((-m))
+  echo "$m"
+}
+
 # tm_backends_table <dir>: one "alias<TAB>name" line per backend, by name.
 tm_backends_table() {
   local d name alias

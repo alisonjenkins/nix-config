@@ -18,7 +18,7 @@ Use when the user wants tasks scheduled: "what should I work on this week", "fit
 - **Ask for existing commitments once.** If the user has a calendar export, pass it with `--busy <file.ics>`. Without it the plan can double-book; say so in the answer.
 - **Read the notes, not just the slots.** `late` means the task ends after its due date, `est-default` means the estimate is a 30 minute guess, `skip` means a dependency never got a slot (it is unscheduled or in a cycle), `unscheduled` means nothing fits in the horizon. Report each one to the user; do not drop them.
 - **The plan is a proposal.** `tm` writes only the `--ics` file you name and never changes a tracker or a calendar. Show the plan and let the user import the file.
-- **Time zones.** `--tz` is a fixed offset such as `+01:00`. It does not follow daylight saving, so re-run after a clock change and say so when a plan spans one.
+- **Time zones.** Pass the user's zone as `--tz Europe/London` so the working window follows daylight saving. A fixed offset such as `+01:00` does not, so say so when a plan spans a clock change. Calendar exports for `--busy` must be in UTC; their `TZID` is ignored.
 
 ## Quick reference
 
