@@ -94,7 +94,6 @@ in
       keybase
       keyutils
       kdePackages.ksshaskpass
-      kodi-wayland
       libkrb5
       libpng
       libpulseaudio
