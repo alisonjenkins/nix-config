@@ -17,6 +17,15 @@
 - Property tests (`proptest`) for parsers, encoders, and anything with a
   round-trip law.
 
+## Validate the tests: `cargo-mutants`
+Green tests prove nothing until they can go red. Run `cargo mutants` on the
+code you changed (`--in-diff <patch>` or `-f <file>`) to validate them: it
+rewrites functions (return defaults, flip operators) and re-runs the suite.
+A *missed* mutant is a test gap: add an assertion that kills it, or justify
+the survivor (`#[mutants::skip]` with a reason; needs the `mutants` crate as a
+dependency). Only a clean run supports
+"tests cover this". See `../property-based.md` (saboteurs) for the manual form.
+
 ## Traps
 - Tests that share a global (env vars, static state, a fixed port) fail only
   under parallelism. Scope the state or serialise those tests explicitly.
