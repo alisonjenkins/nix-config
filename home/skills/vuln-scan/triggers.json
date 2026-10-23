@@ -1,0 +1,10 @@
+{
+  "fire": [
+    "run vulnix against this machine",
+    "check my NixOS hosts for known vulnerabilities",
+    "which packages in the desktop closure have CVEs",
+    "triage the vulnix report and whitelist the false positives",
+    "patch the vulnerable curl in my nix config",
+    "audit the home-manager closure for security vulnerabilities"
+  ]
+}
