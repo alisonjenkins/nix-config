@@ -427,7 +427,11 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${username} = { config, ... }: {
-          imports = [ self.homeModules.home-macos self.homeModules.memory-recall ];
+          imports = [ self.homeModules.home-macos self.homeModules.memory-recall self.homeModules.observability-stack ];
+
+          # Local Loki, Tempo, Prometheus and Grafana for Claude Code token spend.
+          # Design: specs/007-local-observability-stack.
+          modules.observabilityStack.enable = true;
 
           programs.nix-pull-build = {
             enable = true;
