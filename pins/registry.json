@@ -141,6 +141,20 @@
       "reason": "Jovian's decky-loader build pins pnpm 9.15.9, flagged insecure in nixpkgs 26.11, to assemble Decky's static frontend. Build-time only, runs in the sandbox, never in the runtime closure.",
       "removal": "Remove when Jovian's decky-loader moves to a supported pnpm (jovian-nixos input).",
       "manual_test": "Delete the permit and evaluate nixosConfigurations.ali-steam-deck; if it evaluates, delete this entry."
+    },
+    {
+      "id": "ffmpeg-git",
+      "class": "workaround",
+      "kind": "overlay-override",
+      "site": { "file": "pkgs/ffmpeg-git/default.nix", "match": "19c06936fd78b9249fc65045c9d855b6c28758e1" },
+      "pinned": "FFmpeg master 19c06936 (2026-10-23) used for citron and zen-browser",
+      "since": "2026-10-24",
+      "reviewed": "2026-10-24",
+      "review_by": "2026-12-08",
+      "reason": "No ffmpeg release has the fixes for the CVEs vulnix reports on 9.0.2 and 8.1.x: the NVD texts read \"through 9.0.2\" and \"before 9.0\", and the five fix commits they cite (4da9812, 5d7112c, 8670835, aafb5c6, b506faf) are in master but in no release. blender (5.1.1, ffmpeg 7), makemkv (2.0.0, ffmpeg 8) and lutris (FHS ffmpeg 6) cannot take master: it removed AVCodec::sample_fmts, ch_layouts and supported_samplerates, which blender's audaspace and makemkv's libffabi use, so they stay on vulnerable releases.",
+      "removal": "Delete pkgs/ffmpeg-git, the ffmpeg-git and ffmpeg-git-unstable entries in pkgs/default.nix, the citron ffmpeg argument and the zen-browser unwrappedPackage override, then rescan with vulnix -C.",
+      "upstream": "https://github.com/FFmpeg/FFmpeg",
+      "probe": { "type": "version-at-least", "input": "nixpkgs_unstable", "attr": "ffmpeg", "version": "9.1" }
     }
   ]
 }
