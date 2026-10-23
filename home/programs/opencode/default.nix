@@ -148,7 +148,7 @@ in {
         };
         nixos = {
           type = "local";
-          command = [ "${pkgs.master.mcp-nixos}/bin/mcp-nixos" ];
+          command = [ "${pkgs.mcp-nixos-preferred}/bin/mcp-nixos" ];
         };
       } // lib.optionalAttrs cavememEnabled {
         cavemem = {

@@ -749,7 +749,7 @@ in
       # NixOS/Home Manager options and package search — kept direct (first-class;
       # used constantly in this repo).
       nixos = {
-        command = "${pkgs.master.mcp-nixos}/bin/mcp-nixos";
+        command = "${pkgs.mcp-nixos-preferred}/bin/mcp-nixos";
       };
 
       # Cavemem: persistent cross-session memory (search, timeline, get_observations)
