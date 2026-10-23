@@ -1,0 +1,69 @@
+# vulnix whitelist: verified false positives only (see the vuln-scan skill).
+# Every entry was checked against the full CVE descriptions on 2026-10-23.
+# Use: vulnix -C -w vulnix-whitelist.toml <built output path>
+# Entries expire at `until`; re-verify instead of extending blindly.
+
+["XD-0.4.8"]
+cve = ["CVE-2026-71399"]
+comment = "CVE is for Adobe XD, not this XD package"
+until = "2027-01-20"
+
+["cargo-1.95.0"]
+cve = ["CVE-2026-14363", "CVE-2026-39837", "CVE-2026-39839", "CVE-2026-39840", "CVE-2026-39841", "CVE-2026-58519", "CVE-2026-58521"]
+comment = "CVEs are for the MediaWiki Cargo extension, not the Rust cargo"
+until = "2027-01-20"
+
+["element-1.0.1"]
+cve = ["CVE-2021-40824", "CVE-2021-44538", "CVE-2022-41904", "CVE-2024-26132", "CVE-2025-27606"]
+comment = "CVEs are for Element iOS/Android and libolm, not this element package"
+until = "2027-01-20"
+
+["git-2.54.0"]
+cve = ["CVE-2021-21684", "CVE-2022-30947", "CVE-2022-36882", "CVE-2022-36883", "CVE-2022-36884", "CVE-2022-38663"]
+comment = "CVEs are for the Jenkins Git Plugin, not git"
+until = "2027-01-20"
+
+["git-2.56.0"]
+cve = ["CVE-2021-21684", "CVE-2022-30947", "CVE-2022-36882", "CVE-2022-36883", "CVE-2022-36884", "CVE-2022-38663"]
+comment = "CVEs are for the Jenkins Git Plugin, not git"
+until = "2027-01-20"
+
+["orc-0.4.41"]
+cve = ["CVE-2025-47436"]
+comment = "CVE is for Apache ORC, not the Oil Runtime Compiler"
+until = "2027-01-20"
+
+["orc-0.4.44"]
+cve = ["CVE-2025-47436"]
+comment = "CVE is for Apache ORC, not the Oil Runtime Compiler"
+until = "2027-01-20"
+
+["perl-5.42.3"]
+cve = ["CVE-2026-13221", "CVE-2026-57432", "CVE-2026-8376"]
+comment = "NVD range ends before 5.42.3-RC1; vulnix does not order the RC suffix, installed 5.42.3 is fixed"
+until = "2027-01-20"
+
+["perl-5.42.3-env"]
+cve = ["CVE-2026-13221", "CVE-2026-57432", "CVE-2026-8376"]
+comment = "NVD range ends before 5.42.3-RC1; vulnix does not order the RC suffix, installed 5.42.3 is fixed"
+until = "2027-01-20"
+
+["shellcheck-0.11.0"]
+cve = ["CVE-2021-28794"]
+comment = "CVE is for the unofficial VS Code ShellCheck extension"
+until = "2027-01-20"
+
+["snappy-1.2.2"]
+cve = ["CVE-2023-28115", "CVE-2023-41330"]
+comment = "CVEs are for the PHP knp-snappy library, not Google snappy"
+until = "2027-01-20"
+
+["terraform-1.15.3"]
+cve = ["CVE-2021-36230"]
+comment = "CVE is for Terraform Enterprise 2021, not the CLI"
+until = "2027-01-20"
+
+["zlib-1.3.2"]
+cve = ["CVE-2023-6992", "CVE-2026-27820"]
+comment = "CVEs are for the Ruby zlib gem and the Cloudflare zlib fork, not reference zlib"
+until = "2027-01-20"
