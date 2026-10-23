@@ -13,7 +13,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-DEFAULT_URL = "http://127.0.0.1:8080"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from endpoint import default_url  # noqa: E402
+
 DRM_ROOT = "/sys/class/drm"
 FALLBACK_VRAM_FILE = f"{DRM_ROOT}/card0/device/mem_info_vram_used"
 REQUEST_TIMEOUT_SECONDS = 600
@@ -267,7 +269,7 @@ def run_speed(base_url, model, vram_file):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--url", default=DEFAULT_URL)
+    parser.add_argument("--url", default=default_url())
     parser.add_argument("--model", default=None)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--vram-file", default=default_vram_file())
