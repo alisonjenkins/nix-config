@@ -348,27 +348,6 @@ in
             ];
           });
 
-          # Ghidra 12.1.3/12.1.4's bundled decompiler binary dies on launch
-          # inside the Nix build sandbox: `rea doctor` accepts the version,
-          # but any real decompile fails during analysis and again in REA's
-          # bridge script with "Decompiler process died" / "Ghidra decompiler
-          # could not open the imported Program" (checks.x86_64-linux.rea-ghidra
-          # on CI, reproduced on two separate nightly flake-lock bumps). No
-          # matching nixpkgs packaging change or upstream Ghidra issue found —
-          # the nixpkgs derivation itself (patchelf via autoPatchelfHook) is
-          # unchanged between 12.1.2 and 12.1.4, so this looks like a
-          # regression in the prebuilt 12.1.3/12.1.4 release binaries
-          # themselves. Pin to the last known-good release until that's
-          # confirmed fixed upstream.
-          ghidra-bin = mprev.ghidra-bin.overrideAttrs (_finalAttrs: old: {
-            version = "12.1.2";
-            versiondate = "20260605";
-            src = mprev.fetchzip {
-              url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.2_build/ghidra_12.1.2_PUBLIC_20260605.zip";
-              hash = "sha256-ulIBecjWAnrM8iJmqQZAZRerUCKpIBcXyv6KIB7I/ZA=";
-            };
-          });
-
           # nixos-unstable and master both lag the upstream Copilot CLI release
           # by a few versions. Drop this once nixpkgs reaches 1.0.93.
           github-copilot-cli = mprev.github-copilot-cli.overrideAttrs (finalAttrs: _old: {
