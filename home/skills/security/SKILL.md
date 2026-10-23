@@ -5,7 +5,8 @@ description: >-
   run vulnix on a Nix flake's hosts, NixOS or home-manager closures, scan the
   packages a repo defines (for example a flake's packages.<system>.* outputs,
   OCI images, Rust crates), cargo audit or cargo deny advisories, RustSec,
-  dependency vulnerabilities, triage a vulnerability report, whitelist or
+  dependency vulnerabilities, generate an SBOM (sbomnix, bombon, Syft, Grype),
+  triage a vulnerability report, whitelist or
   ignore false positives, or patch, bump or override a vulnerable package or
   bundled library. Scans and builds only, never a live switch.
 metadata:
@@ -23,6 +24,7 @@ tool is blind to what the other sees.
 | A library a package bundles itself (ffmpeg and the like), no release has the fix | [bundled-libs.md](bundled-libs.md) |
 | Rust crates (`Cargo.lock`, `deny.toml`): cargo-deny, RustSec | [rust.md](rust.md) |
 | Packages a repo defines (flake `packages.<system>.*`, OCI images, charts) | [repo-packages.md](repo-packages.md) |
+| An SBOM, a second scanner opinion, a dependency graph, SLSA provenance: sbomnix, bombon, Syft, Grype | [sbom.md](sbom.md) |
 
 ## Rules that hold for every scanner
 
