@@ -80,6 +80,7 @@ for the live-maintenance runbook.
 | # | Decision | Status |
 |---|---|---|
 | [0044](0044-parallel-pr-check.md) | Run the PR check's sections in parallel, one eval per output set | Accepted |
+| [0051](0051-register-time-box-and-probe-every-pin.md) | Register, time-box and probe every pin | Accepted |
 
 ## Build environment
 
