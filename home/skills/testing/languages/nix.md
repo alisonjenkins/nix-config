@@ -26,6 +26,12 @@
 ## Practice
 - `git add` new files before any of the above; flakes ignore untracked files
   and the error message does not say so.
+- A repo-local package under `pkgs/` is usually not a flake output. Build it
+  through a host's package set, which also applies the overlays:
+  `nix build .#nixosConfigurations.<host>.pkgs.<attr>`.
+- A compile of a large package outlasts a tool timeout. Run it in the
+  background and read the result when it finishes; on failure `nix log <drv>`
+  gives the real error, since the build summary prints only its last line.
 - Assert on the built result, not on the fact that evaluation succeeded — for
   example, list the produced directory when the change is about file layout.
 - NixOS VM tests (`pkgs.testers.runNixOSTest`) for service modules whose
