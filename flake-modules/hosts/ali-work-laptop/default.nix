@@ -247,11 +247,12 @@ in {
             "amd_iommu=off"
             "amdgpu.runpm=0"  # Disable GPU runtime power management to prevent SMU race after suspend
 
-            # Strix Halo unified memory: expose ~115GB to GPU via GTT/TTM
-            # instead of relying on BIOS UMA carve-out (keep BIOS at Auto/512MB)
-            "amdgpu.gttsize=117760"
+            # Strix Halo unified memory: expose 109GiB to GPU via TTM instead
+            # of relying on BIOS UMA carve-out (keep BIOS at Auto/512MB).
+            # MemTotal is 125.06GiB, so this leaves the OS ~16GiB.
+            # Pages are 4KiB: 109GiB = 109 * 262144.
+            "ttm.pages_limit=28573696"
             "ttm.page_pool_size=25600000"
-            "ttm.pages_limit=25600000"
           ];
 
         };
