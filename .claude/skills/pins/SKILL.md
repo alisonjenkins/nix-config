@@ -66,8 +66,12 @@ A probe passes (exit 0 or true) when the condition holds. Types:
   passing means the pin is no longer needed. `meaning` is `removable` (default)
   or `update-available`.
 - `issue-closed`: `{"repo": "NixOS/nixpkgs", "number": 571232}`.
-- `version-at-least`: `{"flake_ref", "attr", "version"}` for "drop this
-  override once nixpkgs reaches X".
+- `version-at-least`: `{"input", "attr", "version"}` for "drop this override
+  once nixpkgs reaches X". `input` names the nixpkgs input (`nixpkgs_master`,
+  `nixpkgs_unstable`) and the probe tests the rev **flake.lock holds**, which is
+  what the override competes with. Do not use `flake_ref` (a channel head) for
+  this: it can say "removable" while the lock is still too old, and removing the
+  override then downgrades the package until the next lock update.
 - `newer-release`: `{"repo", "current"}` for tracked and lockstep pins (falls
   back to tags when a project publishes no GitHub releases).
 
