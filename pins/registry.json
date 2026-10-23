@@ -210,20 +210,6 @@
       "removal": "Delete the github-copilot-cli override once nixpkgs reaches 1.0.93.",
       "probe": { "type": "version-at-least", "input": "nixpkgs_unstable",
                  "attr": "github-copilot-cli", "version": "1.0.93" }
-    },
-    {
-      "id": "linux-firmware-override",
-      "class": "workaround",
-      "kind": "overlay-override",
-      "site": { "file": "overlays/default.nix", "match": "version = \"20260514-unstable-5b2bc2e\"" },
-      "pinned": "linux-firmware 20260514-unstable-5b2bc2e (kernel.org main HEAD)",
-      "since": "2026-05-18",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-06",
-      "reason": "Pinned to kernel.org main HEAD for GFX1201 fixes (af5e4f0e). The overlay also works around a fetchpatch that strips binary blobs from the amdxdna NPU firmware patch, producing 0-byte files.",
-      "removal": "Revert to final.unstable.linux-firmware (or drop the overlay) once a tagged release containing the 7 May amdgpu updates is in nixpkgs.",
-      "probe": { "type": "version-at-least", "input": "nixpkgs_unstable",
-                 "attr": "linux-firmware", "version": "20260514" }
     }
   ]
 }
