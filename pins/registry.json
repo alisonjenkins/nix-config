@@ -182,20 +182,6 @@
       "reason": "heroic-unwrapped (stable.heroic-unwrapped, enabled in modules/desktop) pins electron_39, which upstream marked EOL/insecure. A channel bump does not help; heroic has to move to a supported electron.",
       "removal": "Remove when heroic upstream moves to a supported electron.",
       "manual_test": "Delete the permit and evaluate a desktop host with modules/desktop enabled."
-    },
-    {
-      "id": "github-copilot-cli-override",
-      "class": "workaround",
-      "kind": "overlay-override",
-      "site": { "file": "overlays/default.nix", "match": "version = \"1.0.93\"" },
-      "pinned": "github-copilot-cli 1.0.93",
-      "since": "2026-10-08",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-05",
-      "reason": "nixos-unstable and master both lagged the upstream Copilot CLI release by a few versions.",
-      "removal": "Delete the github-copilot-cli override once nixpkgs reaches 1.0.93.",
-      "probe": { "type": "version-at-least", "input": "nixpkgs_unstable",
-                 "attr": "github-copilot-cli", "version": "1.0.93" }
     }
   ]
 }
