@@ -17,5 +17,11 @@
   narrow interface a function accepts (`io.Reader`, a small repository
   interface) beats a generated mock — see this skill's general mocking
   policy.
+- **Validate the tests with `gremlins`** (mutation testing,
+  `gremlins unleash ./...`, scope to changed packages). It mutates the code
+  (flips conditionals, arithmetic, negations) and re-runs the suite; a
+  *LIVED* or *NOT COVERED* mutant is a test gap: add an assertion that kills it, or justify
+  the survivor. Green tests only count as evidence once mutants die. See
+  `../property-based.md` (saboteurs) for the manual form.
 - `go test -bench=. ./...` (`testing.B`) for benchmarks; keep them in
   `_test.go` files beside the code they measure, not a separate package.
