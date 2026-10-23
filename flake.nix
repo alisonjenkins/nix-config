@@ -60,7 +60,7 @@
       # following nixpkgs forces full LTO rebuild from source. Rev tracks
       # upstream's `release` branch, which upstream only advances once its
       # own Hydra CI has built and cached that revision.
-      url = "github:xddxdd/nix-cachyos-kernel/0a054a248fa276d781b4d18533e0d5aa4847fd3e";
+      url = "github:xddxdd/nix-cachyos-kernel/02ba4db52e62e1fbece80402d369127ae77cbbeb";
     };
     niks3 = {
       # Pinned to v1.7.0 to match the server running in aws-k3s.

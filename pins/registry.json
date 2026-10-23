@@ -47,15 +47,15 @@
       "class": "tracked",
       "kind": "flake-input",
       "site": { "input": "nix-cachyos-kernel" },
-      "pinned": "0a054a24 (upstream release branch)",
-      "since": "2026-10-16",
+      "pinned": "02ba4db5 (upstream master)",
+      "since": "2026-10-23",
       "reviewed": "2026-10-23",
       "review_by": "2026-11-20",
-      "reason": "Kept as a rev pin, not branch-following, so upstream Hydra/Garnix caches keep hitting: following nixpkgs forces a full LTO kernel rebuild. The rev tracks upstream's `release` branch, which upstream only advances once its own CI has built and cached that revision.",
-      "removal": "Bump to the current upstream release rev when the probe says one exists.",
+      "reason": "Kept as a rev pin, not branch-following, so a kernel bump is a reviewed change and the CI builder builds and caches the LTO kernel before it reaches a host. Upstream's `release` branch has been frozen since 2026-09-28, so the pin tracks `master`.",
+      "removal": "Bump to the current upstream master rev when the probe says one exists.",
       "probe": {
         "type": "command",
-        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/release | jq -r .locked.rev)\" != 0a054a248fa276d781b4d18533e0d5aa4847fd3e"],
+        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/master | jq -r .locked.rev)\" != 02ba4db52e62e1fbece80402d369127ae77cbbeb"],
         "meaning": "update-available"
       }
     },
