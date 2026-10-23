@@ -30,6 +30,7 @@
         cursor-style-blink = false
         # custom-shader = ${ghostty-shaders}/matrix-hallway.glsl
         font-family = ${font-family}
+        font-codepoint-map = U+23F1,U+23F8=Noto Sans Symbols 2
         font-size = 11
         font-style = Regular
         font-thicken = true
