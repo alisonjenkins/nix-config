@@ -9,7 +9,6 @@
       ./home-common.nix
       ./programs
       ./programs/linux-only
-      inputs.nixcord.homeModules.nixcord
       inputs.sops-nix.homeManagerModules.sops
       inputs.zen-browser.homeModules.default
     ]

@@ -10,7 +10,6 @@
     ./lucien
     ./mangohud
     ./niri
-    ./nixcord
     ./openal
     ./scopebuddy
     ./session-gate.nix
