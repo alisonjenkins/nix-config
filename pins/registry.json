@@ -155,19 +155,6 @@
       "reason": "Jovian's decky-loader build pins pnpm 9.15.9, flagged insecure in nixpkgs 26.11, to assemble Decky's static frontend. Build-time only, runs in the sandbox, never in the runtime closure.",
       "removal": "Remove when Jovian's decky-loader moves to a supported pnpm (jovian-nixos input).",
       "manual_test": "Delete the permit and evaluate nixosConfigurations.ali-steam-deck; if it evaluates, delete this entry."
-    },
-    {
-      "id": "electron-39.8.10",
-      "class": "exception",
-      "kind": "insecure-package",
-      "site": { "file": "overlays/default.nix", "match": "electron-39.8.10" },
-      "pinned": "electron-39.8.10 permitted as insecure on the stable package set",
-      "since": "2026-06-06",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-20",
-      "reason": "heroic-unwrapped (stable.heroic-unwrapped, enabled in modules/desktop) pins electron_39, which upstream marked EOL/insecure. A channel bump does not help; heroic has to move to a supported electron.",
-      "removal": "Remove when heroic upstream moves to a supported electron.",
-      "manual_test": "Delete the permit and evaluate a desktop host with modules/desktop enabled."
     }
   ]
 }
