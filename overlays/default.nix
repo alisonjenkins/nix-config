@@ -508,6 +508,12 @@ in
         })
       ];
     };
+
+    # Ghidra and the JDK for REA, held where Ghidra's decompiler still works;
+    # see nixpkgs_rea_pin in flake.nix.
+    rea-toolchain = import inputs.nixpkgs_rea_pin {
+      system = final.stdenv.hostPlatform.system;
+    };
   };
 
   # When applied, the master nixpkgs set (declared in the flake inputs) will
