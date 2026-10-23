@@ -36,7 +36,7 @@
   spec-kit = pkgs.callPackage ./spec-kit {};
   ffmpeg-git = pkgs.callPackage ./ffmpeg-git { base = pkgs.ffmpeg_8; };
   ffmpeg-git-unstable = pkgs.callPackage ./ffmpeg-git { base = pkgs.unstable.ffmpeg_9; };
-  citron = pkgs.callPackage ./citron {};
+  citron = pkgs.callPackage ./citron { ffmpeg = ffmpeg-git; };
   eden = pkgs.callPackage ./eden {};
   sift = pkgs.callPackage ./sift {};
   vr-foveation-bench = pkgs.callPackage ./vr-foveation-bench {};
