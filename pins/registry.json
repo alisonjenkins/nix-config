@@ -60,20 +60,6 @@
       }
     },
     {
-      "id": "nix-cachyos-kernel.inputs.nixpkgs",
-      "class": "workaround",
-      "kind": "flake-input",
-      "site": { "input": "nix-cachyos-kernel.inputs.nixpkgs" },
-      "pinned": "nixpkgs 545c226a (2026-09-27)",
-      "since": "2026-10-16",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-13",
-      "reason": "nixpkgs lld_21 built with gcc16 corrupts `ld -r`, failing the LTO kernel at resolve_btfids (NixOS/nixpkgs#571232). Held at 2026-09-27, before that lld landed. The fix was on staging when pinned.",
-      "removal": "Delete the `inputs.nixpkgs.url` line in the nix-cachyos-kernel block so it follows its own default again, then build the kernel.",
-      "upstream": "https://github.com/NixOS/nixpkgs/issues/571232",
-      "probe": { "type": "issue-closed", "repo": "NixOS/nixpkgs", "number": 571232 }
-    },
-    {
       "id": "niks3",
       "class": "lockstep",
       "kind": "flake-input",

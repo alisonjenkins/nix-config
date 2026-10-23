@@ -61,10 +61,6 @@
       # upstream's `release` branch, which upstream only advances once its
       # own Hydra CI has built and cached that revision.
       url = "github:xddxdd/nix-cachyos-kernel/0a054a248fa276d781b4d18533e0d5aa4847fd3e";
-      # nixpkgs lld_21 built with gcc16 corrupts `ld -r`, failing the LTO
-      # kernel at resolve_btfids (NixOS/nixpkgs#571232, fix is on staging).
-      # Hold the kernel's nixpkgs at 2026-09-27, before that lld landed.
-      inputs.nixpkgs.url = "github:NixOS/nixpkgs/545c226a9af7f59fba5c3873f7c6a65e014c8f5f";
     };
     niks3 = {
       # Pinned to v1.7.0 to match the server running in aws-k3s.
