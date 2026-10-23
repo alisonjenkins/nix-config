@@ -252,7 +252,9 @@ in {
             # MemTotal is 125.06GiB, so this leaves the OS ~16GiB.
             # Pages are 4KiB: 109GiB = 109 * 262144.
             "ttm.pages_limit=28573696"
-            "ttm.page_pool_size=25600000"
+            # Half the limit: a full-size pool keeps freed GPU pages parked
+            # instead of returning them to the OS.
+            "ttm.page_pool_size=14286848"
           ];
 
         };
