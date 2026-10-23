@@ -55,5 +55,14 @@ jobs:
       - uses: actions/checkout@v7
       - name: Configure host Nix
         uses: ./.github/actions/setup-host-nix
+      # A new pin without a registry entry (reason, deadline, probe) fails
+      # here, and so does an entry whose pin has gone. Overdue pins only warn:
+      # the weekly pins workflow raises issues for those, so an unrelated PR
+      # is never blocked by someone else's deadline.
+      - name: Pin registry
+        run: >-
+          nix shell --inputs-from . nixpkgs#python3 --command bash -c
+          "python3 scripts/pins.py check
+          && python3 -m unittest discover -s scripts/tests -p test_pins.py"
       - name: PR check (modules, overlays, devShells, packages, aarch64 hosts)
         run: .github/scripts/pr-check-x86_64-linux.sh

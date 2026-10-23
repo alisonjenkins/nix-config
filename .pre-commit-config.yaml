@@ -40,6 +40,15 @@ repos:
         language: system
         pass_filenames: false
         files: ^home/skills/[^/]+/SKILL\.md$
+      # Every pin needs a registry entry with a reason and a deadline; this
+      # fails the commit that adds a pin without one, or removes a pin and
+      # leaves its entry behind. See .claude/skills/pins/SKILL.md.
+      - id: pins-registry
+        name: pin registry matches the code
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command bash -c "python3 scripts/pins.py check && python3 -m unittest discover -s scripts/tests -p test_pins.py"
+        language: system
+        pass_filenames: false
+        files: ^(flake\.nix|pins/registry\.json|scripts/pins\.py|scripts/tests/test_pins\.py|overlays/default\.nix|modules/base/default\.nix|flake-modules/hosts/[^/]+/default\.nix)$
       - id: nix-pull-build-tests
         name: nix-pull-build integration tests
         entry: bash home/programs/nix-pull-build/tests.sh
