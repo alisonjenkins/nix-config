@@ -5,6 +5,12 @@
     "which packages in the desktop closure have CVEs",
     "triage the vulnix report and whitelist the false positives",
     "patch the vulnerable curl in my nix config",
-    "audit the home-manager closure for security vulnerabilities"
+    "audit the home-manager closure for security vulnerabilities",
+    "audit the packages defined in this repo for vulnerabilities",
+    "scan what this repo builds for known CVEs",
+    "run cargo deny advisories on this Rust workspace and fix what it finds",
+    "check the rustls and zip crates in Cargo.lock for RustSec advisories",
+    "security audit of the packages this flake defines",
+    "are there vulnerable dependencies in the OCI image this repo builds"
   ]
 }
