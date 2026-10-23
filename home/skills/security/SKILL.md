@@ -1,5 +1,5 @@
 ---
-name: vuln-scan
+name: security
 description: >-
   Use when asked to check a Nix flake's hosts for vulnerabilities, run vulnix,
   audit a NixOS or home-manager closure, triage CVEs, or patch or bump a
