@@ -167,6 +167,7 @@ Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enab
 Detail in `docs/subsystems.md`; read the entry before touching the code.
 
 - **Skills** (auto-load on their paths): `minecraft-modpack-packaging` (`pkgs/create-*-server`), `beatsaber-modding` (`pkgs/beatsaber-mods`, `home/modules/beatsaber`), `helldivers2-modding` (`pkgs/arsenal`, `pkgs/hd2-repatcher`, `home/modules/helldivers2-mods`).
+- **Pins** (`pins/registry.json`, `scripts/pins.py`, skill `.claude/skills/pins`, ADR 0051): every pinned flake input, insecure-package permit and overlay version override is registered with a reason, a review deadline and a probe. Read the skill before adding, extending or removing a pin; CI fails a pin without an entry.
 - **`modules.memoryRecall`** (`home/modules/memory-recall`, `scripts/retrieval-eval`): `docs/memory-recall.md`, ADRs 0029, 0030.
 - **`claude-monitor`** (AI control centre): `docs/ai-control-centre.md`, ADRs 0040, 0041.
 - **`modules.observabilityStack`** (`home/modules/observability-stack`, `scripts/token-tools`): `docs/observability-stack.md`, ADRs 0034, 0035, 0037.
