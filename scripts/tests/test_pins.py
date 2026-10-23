@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pins  # noqa: E402
@@ -254,11 +256,12 @@ class IssueTests(unittest.TestCase):
                 return subprocess.CompletedProcess(cmd, 0, title, "")
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
-        pins.cmd_issues(registry(pin(review_by="2026-10-22")), [], "o/r", False, run)
-        self.assertFalse(any(c[:3] == ["gh", "issue", "create"] for c in calls))
-        calls.clear()
-        pins.cmd_issues(registry(pin(review_by="2026-10-23")), [], "o/r", False, run)
-        self.assertEqual(calls, [])  # due today is not overdue, nothing planned
+        with mock.patch.dict(os.environ, {"PINS_TODAY": NOW.isoformat()}):
+            pins.cmd_issues(registry(pin(review_by="2026-10-22")), [], "o/r", False, run)
+            self.assertFalse(any(c[:3] == ["gh", "issue", "create"] for c in calls))
+            calls.clear()
+            pins.cmd_issues(registry(pin(review_by="2026-10-23")), [], "o/r", False, run)
+            self.assertEqual(calls, [])  # due today is not overdue, nothing planned
 
     def test_real_registry_is_valid(self) -> None:
         reg = copy.deepcopy(pins.load_registry())
