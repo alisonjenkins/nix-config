@@ -11,6 +11,8 @@
     "run cargo deny advisories on this Rust workspace and fix what it finds",
     "check the rustls and zip crates in Cargo.lock for RustSec advisories",
     "security audit of the packages this flake defines",
-    "are there vulnerable dependencies in the OCI image this repo builds"
+    "are there vulnerable dependencies in the OCI image this repo builds",
+    "generate an SBOM for this flake and scan it with sbomnix",
+    "cross-check the vulnix result with a second scanner"
   ]
 }
