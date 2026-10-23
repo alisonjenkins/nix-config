@@ -28,12 +28,15 @@ apply_overlay() {
   local overlay=$1 work=$2
   [[ -d "$overlay" ]] || return 0
   find "$overlay" -mindepth 1 -maxdepth 1 ! -name "$REPLY_FILE_NAME" -exec cp -a {} "$work"/ \;
+  chmod -R u+w "$work"
 }
 
 fresh_copy() {
   local input=$1 work=$2
   mkdir -p "$work"
   cp -a "$input"/. "$work"/
+  # cp -a keeps the source modes, and the nix store holds the fixtures read-only
+  chmod -R u+w "$work"
 }
 
 abs_dir() {
