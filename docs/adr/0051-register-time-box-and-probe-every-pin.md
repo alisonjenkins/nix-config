@@ -76,10 +76,15 @@ be. The deadline guarantees a human looks regardless.
 
 ## Evidence
 
-- First `pins.py probe` run on 2026-10-23: the `claude-code`, Copilot CLI and
-  `linux-firmware` overlay overrides are all satisfied by current nixpkgs
-  (2.1.308, 1.0.98 and 20261019 against 2.1.293, 1.0.93 and 20260514), the
-  cachyos nixpkgs hold's upstream issue NixOS/nixpkgs#571232 is closed, and
+- First `pins.py probe` run on 2026-10-23, against the nixpkgs revs flake.lock
+  holds: the `claude-code` override is satisfied (2.1.302 at the locked
+  nixpkgs_master, needs 2.1.293) and so is the `linux-firmware` override
+  (20260916, needs 20260514). The Copilot CLI override is not: the locked
+  nixpkgs_unstable has 1.0.91 and the override provides 1.0.93, so removing it
+  would downgrade until the next lock update. The first draft of the probe
+  compared the channel head (1.0.98) and wrongly called it removable, which is
+  why `version-at-least` tests the lock.
+- The cachyos nixpkgs hold's upstream issue NixOS/nixpkgs#571232 is closed, and
   `niks3` is pinned at v1.7.0 while v1.15.0 exists.
 - The nightly `flake.lock` PRs failed from 2026-10-17 to 2026-10-23 on two
   pin-shaped problems (see the PR that introduced `nixpkgs_rea_pin`).
