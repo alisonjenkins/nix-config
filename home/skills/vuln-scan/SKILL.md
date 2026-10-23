@@ -11,28 +11,36 @@ metadata:
 # vuln-scan: vulnix per host, then patch
 
 vulnix matches every derivation in a closure (name + version) against the NVD
-CVE feed. Scan the **evaluated config**, not the running system: it is
-reproducible, needs no build, and works for hosts you are not sitting at.
+CVE feed. **Always scan the runtime closure with `-C`.** Without it vulnix walks
+the whole *derivation* closure, build-time tools included (fetchers' `curl`,
+bootstrap compilers, `cargo`): on `ali-desktop` that gave 329 hits against 131
+for `-C`, and the extra ones are not shipped to the machine.
 
 ## 1. Scan
 
 ```bash
 command -v vulnix || alias vulnix='nix run nixpkgs#vulnix --'   # probe first; not on every machine
 host=ali-desktop
-drv=$(nix eval --raw ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath")
-vulnix --json "$drv" > "$SCRATCH/vulnix-$host.json"             # SCRATCH = session scratchpad
-vulnix "$drv"                                                   # human summary
+out=$(nix build --no-link --print-out-paths ".#nixosConfigurations.$host.config.system.build.toplevel")
+vulnix -C --json "$out" > "$SCRATCH/vulnix-$host.json"          # SCRATCH = session scratchpad
+vulnix -C "$out"                                                # human summary
 ```
 
-- `.drv` scan needs no build; `-S` scans only the *current* machine's
-  `/run/current-system`. Use `-S` only for "what is running here now".
+- `-C` needs a built output path. For the machine you are on, scan
+  `/run/current-system` (no build). For another host, build its toplevel; CI's
+  binary cache usually substitutes it. Only fall back to a `.drv` path
+  (`nix eval --raw ...toplevel.drvPath`, no build, aarch64-safe) when a build is
+  impossible, and expect build-tool noise.
 - Scan several hosts in parallel as separate calls; they share the NVD cache
   (`~/.cache/vulnix`). First run downloads the feed (minutes); it can fail on NVD
   rate limits, so retry with backoff.
 - Home-manager configs: `.#homeConfigurations.<name>.activationPackage.drvPath`.
-- aarch64 hosts evaluate fine from x86 for `drvPath`; do not build them to scan.
-- vulnix exits non-zero when it finds anything (1 on a `.drv` scan, 2 on `-S`),
-  so do not treat that as failure in scripts (`|| true`, or read the JSON).
+- vulnix exits non-zero when it finds anything (1 or 2 seen), so do not treat
+  that as failure in scripts (`|| true`, or read the JSON).
+- A hit can come from an input other than `nixpkgs` (`unstable`, `master`,
+  `stable`, other flakes carry their own locks). Find the source with
+  `nix why-depends --derivation <toplevel.drv> <hit.drv>` before choosing a fix;
+  bumping `nixpkgs` does nothing for a package that arrives from another input.
 - Inspect keys before scripting against the JSON: `jq '.[0] | keys'`.
 
 ## 2. Triage
