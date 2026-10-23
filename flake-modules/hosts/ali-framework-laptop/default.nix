@@ -44,6 +44,7 @@ in {
       self.nixosModules.rocm
       self.nixosModules.tts
       self.nixosModules.vr
+      self.nixosModules.wifi-regdom-from-timezone
 
       # External flake modules
       inputs.disko.nixosModules.disko
@@ -156,6 +157,7 @@ in {
         };
 
         services.automatic-timezoned.enable = true;
+        modules.wifiRegdomFromTimezone.enable = true;
         modules.locale.enable = true;
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
