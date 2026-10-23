@@ -34,9 +34,15 @@ sweep_stale_results "$state_dir"
 # sysfs tree. A machine can expose several DRM devices (a real dGPU plus a
 # tiny display-only one) — picking the largest VRAM pool, not whichever
 # sorts first, is what actually matters: that's the one a model loads onto.
+#
+# On a unified-memory APU (Strix Halo) the VRAM figure is only the BIOS
+# carve-out (512MiB) and models load into GTT, so when no device has a VRAM
+# pool of at least 4GiB the pool is the largest GTT instead. A real dGPU
+# always clears that bar, which keeps an iGPU's GTT from shadowing it.
 gpu_vram_bytes() {
   local drm_glob="${LOCAL_LLM_DRM_GLOB:-/sys/class/drm/card*/device}"
-  local dev_dir used total best_total=-1 best_used=0
+  local dedicated_vram_floor=$((4 * 1073741824))
+  local dev_dir used total best_total=-1 best_used=0 best_gtt_total=-1 best_gtt_used=0
   # shellcheck disable=SC2231 # word-splitting the glob is the intended behavior here
   for dev_dir in $drm_glob; do
     [[ -f "$dev_dir/mem_info_vram_used" && -f "$dev_dir/mem_info_vram_total" ]] || continue
@@ -46,7 +52,17 @@ gpu_vram_bytes() {
       best_total="$total"
       best_used="$used"
     fi
+    used="$(cat "$dev_dir/mem_info_gtt_used" 2>/dev/null || true)"
+    total="$(cat "$dev_dir/mem_info_gtt_total" 2>/dev/null || true)"
+    if [[ "$used" =~ ^[0-9]+$ && "$total" =~ ^[0-9]+$ && "$total" -gt "$best_gtt_total" ]]; then
+      best_gtt_total="$total"
+      best_gtt_used="$used"
+    fi
   done
+  if [[ "$best_total" -lt "$dedicated_vram_floor" && "$best_gtt_total" -gt "$best_total" ]]; then
+    best_total="$best_gtt_total"
+    best_used="$best_gtt_used"
+  fi
   if [[ "$best_total" -gt 0 ]]; then
     echo "$best_used $best_total"
   else

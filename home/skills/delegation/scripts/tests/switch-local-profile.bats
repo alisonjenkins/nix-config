@@ -114,6 +114,20 @@ fake_drm_vram_second_device() {
   echo "$total" >"$dev_dir/mem_info_vram_total"
 }
 
+# Adds a fake DRM device with VRAM used/total and, when given, GTT used/total
+# (bytes). Unlike the helpers above it builds the path from its own argument.
+fake_drm_device() {
+  local dev_dir="$BATS_TEST_TMPDIR/fake-drm/$1/device"
+  mkdir -p "$dev_dir"
+  echo "$2" >"$dev_dir/mem_info_vram_used"
+  echo "$3" >"$dev_dir/mem_info_vram_total"
+  if [[ -n "${4:-}" ]]; then
+    echo "$4" >"$dev_dir/mem_info_gtt_used"
+    echo "$5" >"$dev_dir/mem_info_gtt_total"
+  fi
+  export LOCAL_LLM_DRM_GLOB="$BATS_TEST_TMPDIR/fake-drm/card*/device"
+}
+
 teardown() {
   local pid
   if [[ -f "$(active_file)" ]]; then
@@ -366,6 +380,25 @@ TOML
   export FAKE_CURL_UP="http://localhost:8080"
   run bash "$switch" "fast"
   [ "$status" -eq 0 ] # judged against card1's huge free space, not card0's near-full 512MB
+}
+
+@test "unified memory: a 512MiB carve-out is judged by GTT, so a model that fits there loads" {
+  # Strix Halo: the sysfs VRAM figure is only the BIOS carve-out, models
+  # live in GTT.
+  fake_drm_device card0 100000000 536870912 2147483648 126000000000
+  export FAKE_CURL_UP="http://localhost:8081"
+  run bash "$switch" "quality"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"profile 'quality' active"* ]]
+}
+
+@test "an iGPU's large GTT does not shadow a dGPU that is nearly full" {
+  fake_drm_device card0 100000000 536870912 0 33000000000
+  fake_drm_device card1 17079869184 17179869184 # ~100MiB free, no GTT files
+  export FAKE_CURL_UP="http://localhost:8080"
+  run bash "$switch" "fast"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"profile 'fast' needs ~"* ]]
 }
 
 @test "cannot determine VRAM usage (no sysfs data): fails open and proceeds" {
