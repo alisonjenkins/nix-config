@@ -15,6 +15,8 @@ import argparse
 import json
 import urllib.request
 
+from endpoint import default_url
+
 EDIT_TOOL = {
     "type": "function",
     "function": {
@@ -124,7 +126,7 @@ def raw(url, scenario, temperature):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--url", default="http://127.0.0.1:8080")
+    ap.add_argument("--url", default=default_url())
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--scenario", choices=sorted(SCENARIOS), default="whitespace")
     ap.add_argument("--temperature", type=float, default=0.0)
