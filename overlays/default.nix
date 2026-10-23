@@ -597,6 +597,16 @@ in
         })
       ];
     };
+
+    # mcp-nixos 3.x needs fastmcp-slim, which nixpkgs_master marks broken
+    # (2026-10-23: not built by Hydra, not in any cache, and evaluating it
+    # fails the whole host). Use master's when it evaluates, otherwise the
+    # channel's older mcp-nixos so one broken package cannot block a lock bump.
+    mcp-nixos-preferred =
+      let
+        latest = final.master.mcp-nixos;
+      in
+      if (builtins.tryEval latest.drvPath).success then latest else final.mcp-nixos;
   };
 
   lqx-pin-packages = final: _prev: {
