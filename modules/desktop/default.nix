@@ -425,6 +425,17 @@ in
       '';
     };
 
+    logitech.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Install Solaar and its udev rules (hardware.logitech.wireless) so
+        Logitech Lightspeed/Unifying mice can be inspected and configured,
+        e.g. the report rate, without root. Without the rules the hidraw
+        nodes are root-only and `solaar show` finds no device.
+      '';
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -1607,6 +1618,11 @@ in
 
     hardware = {
       ksm.enable = true;
+
+      logitech.wireless = mkIf cfg.logitech.enable {
+        enable = true;
+        enableGraphical = true;
+      };
 
       bluetooth.settings = mkMerge [
         # Base Bluetooth settings - always enabled when desktop module is active

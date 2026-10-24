@@ -248,6 +248,7 @@ in {
           enable = true;
           # Jovian provides the Deck's own boot splash.
           flickerFreeBoot.enable = false;
+          logitech.enable = false;
         };
 
         # Built-in-speaker audio underruns under demanding games: the 15 W APU
