@@ -150,7 +150,14 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
 - Sub-agent calls and requests reach the ledger through the `SubagentStop` hook, which
   reads `<session>/subagents/agent-<id>.jsonl` and tags records `agent=subagent` plus
   `agent_id`. A sub-agent still running when the session ends, or a session started
-  before the hook was installed, is missing its tail until its next stop.
+  before the hook was installed, is missing its tail until its next stop. Many SubagentStop
+  events name an agent with no transcript anywhere and no mention in any main
+  transcript; each is counted in
+  `cc_obs_ledger_subagent_transcript_missing_total{agent_type}`. The ledger-backed
+  views (`top session --by requests`, `--by context-growth`, `repeats`, `automate`)
+  report the count as a gap (`subagent: N sub-agent runs left no transcript, so their
+  requests, context and tool calls are not in this view`); `top subagent` ranks
+  Claude Code's own token and cost metrics and is unaffected.
 - `seq` and `turn` are numbered per transcript, so each sub-agent restarts at 0 and
   `(session, agent, seq)` is not unique across the sub-agents of one session; the unique
   key is `(session, agent, agent_id, seq)`. On 2026-10-25 `cc-obs-query repeats` reported

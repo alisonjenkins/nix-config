@@ -24,7 +24,7 @@ questions:
     threshold: { min_share: 0.03, min_calls: 20 }
   - id: repeat-calls
     title: Which tool calls are repeated or near-identical within a session?
-    signals: [cc_obs_ledger.tool_call]
+    signals: [cc_obs_ledger.tool_call, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query repeats" }
     decision_kind: build-tool | configure | dismiss
     threshold: { min_calls: 5 }
@@ -33,7 +33,7 @@ questions:
     # identity needs the ledger's command_shape attribute; without it the command falls back
     # to input_prefix_hash groups and says so in a gap note.
     title: Which repeated Bash commands or sequences would a script or tool replace?
-    signals: [cc_obs_ledger.tool_call]
+    signals: [cc_obs_ledger.tool_call, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query automate" }
     decision_kind: build-tool | dismiss
     threshold: { min_calls: 3, min_value: 0.01 }
@@ -51,7 +51,7 @@ questions:
     # to `top mcp --idle` and the title to "connected but never called" once the ledger emits
     # cc_obs_ledger_mcp_server_connected (README "Not yet answerable").
     title: Which MCP servers return the most tokens in tool results?
-    signals: [claude_code.tool_result.tool_result_size_bytes, cc_obs_ledger_mcp_server_connected]
+    signals: [claude_code.tool_result.tool_result_size_bytes, cc_obs_ledger_mcp_server_connected, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query top mcp --by tokens" }
     decision_kind: configure | dismiss
     threshold: { min_share: 0.02 }
@@ -65,13 +65,13 @@ questions:
     threshold: { min_value: 0.05 }
   - id: reread-same-file
     title: Which sessions read the same file input three or more times?
-    signals: [cc_obs_ledger.tool_call]
+    signals: [cc_obs_ledger.tool_call, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query repeats --tool Read" }
     decision_kind: build-tool | configure | dismiss
     threshold: { min_calls: 3 }
   - id: cache-hit-low-sessions
     title: Which sessions have a low prompt-cache hit ratio?
-    signals: [cc_obs_ledger_cache_hit_ratio, claude_code.token.usage]
+    signals: [cc_obs_ledger_cache_hit_ratio, claude_code.token.usage, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query top session --by cache-hit" }
     decision_kind: configure | dismiss
   - id: subagent-overhead
@@ -100,13 +100,13 @@ questions:
     decision_kind: build-tool | configure | dismiss
   - id: agent-run-length
     title: Which sessions and sub-agents made the most API requests?
-    signals: [cc_obs_ledger_requests_total]
+    signals: [cc_obs_ledger_requests_total, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query top session --by requests" }
     decision_kind: build-tool | configure | dismiss
     threshold: { min_value: 100 }
   - id: agent-context-growth
     title: Which sessions and sub-agents grew their context the most between the first and the largest turn?
-    signals: [cc_obs_ledger_context_tokens]
+    signals: [cc_obs_ledger_context_tokens, cc_obs_ledger_subagent_transcript_missing_total]
     query: { command: "cc-obs-query top session --by context-growth" }
     decision_kind: build-tool | configure | dismiss
     threshold: { min_value: 200000 }
