@@ -232,6 +232,32 @@ fn agents_of_one_session_keep_separate_cursors() {
 }
 
 #[test]
+fn sub_agents_each_number_seq_from_zero_so_agent_id_makes_a_call_unique() {
+    let env = Env::new();
+    env.write_lines(&env.agent_file(AGENT), &first_part());
+    env.write_lines(&env.agent_file("other"), &first_part());
+    env.stop(AGENT);
+    env.stop("other");
+
+    let mut keys: Vec<(String, String)> = env
+        .tool_call_records()
+        .iter()
+        .map(|c| (attr(c, "agent_id").unwrap(), attr(c, "seq").unwrap()))
+        .collect();
+    keys.sort();
+    assert_eq!(
+        keys,
+        [
+            (AGENT.to_owned(), "0".to_owned()),
+            (AGENT.to_owned(), "1".to_owned()),
+            ("other".to_owned(), "0".to_owned()),
+            ("other".to_owned(), "1".to_owned()),
+        ],
+        "(session, agent kind, seq) alone repeats across sub-agents; readers must key on agent_id too"
+    );
+}
+
+#[test]
 fn an_explicit_agent_transcript_path_wins_over_the_derived_one() {
     let env = Env::new();
     let elsewhere = env.home.path().join("elsewhere.jsonl");
