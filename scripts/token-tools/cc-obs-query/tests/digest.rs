@@ -586,3 +586,32 @@ fn digest_write_accepts_baseline_evidence_for_zero_injection_service() {
     let run = cli(&fake, &write_args(s(&file), s(&pack)));
     assert_eq!(run.code, 0, "{}", run.err);
 }
+
+#[test]
+fn baseline_with_a_down_store_names_it_and_still_passes_write() {
+    let rules: Vec<(&'static str, String)> = digest_rules(fixture("loki_tool_results.json"))
+        .into_iter()
+        .filter(|(needle, _)| *needle != "/tempo/ready")
+        .collect();
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), TOOL_PACK);
+    let fake = serve(rules);
+    let digest = valid_digest(&fake, s(&pack));
+    assert_eq!(digest["stack"]["stores_ok"], json!(false), "{digest}");
+    let gaps = digest["stack"]["gaps"].as_array().unwrap();
+    let gap = gaps
+        .iter()
+        .find_map(|g| g.as_str().filter(|g| g.starts_with("tempo not ready: ")));
+    assert!(gap.is_some(), "no tempo gap in {gaps:?}");
+    assert!(gap.unwrap().contains("HTTP 404"), "{gap:?}");
+    assert!(
+        !gaps
+            .iter()
+            .any(|g| g.as_str().is_some_and(|g| g.starts_with("loki not ready"))),
+        "{gaps:?}"
+    );
+    let file = dir.path().join("in.json");
+    fs::write(&file, digest.to_string()).unwrap();
+    let run = cli(&fake, &write_args(s(&file), s(&pack)));
+    assert_eq!(run.code, 0, "{}", run.err);
+}

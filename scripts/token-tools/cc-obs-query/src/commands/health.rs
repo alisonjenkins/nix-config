@@ -8,21 +8,21 @@ use crate::error::Error;
 const GUARD_OVER_BUDGET: &str = "observability_guard_over_budget";
 
 pub struct State {
-    pub stores: Vec<(Store, bool)>,
+    pub stores: Vec<(Store, Option<String>)>,
     /// `ok`, `over_budget` (ingestion continues), or `None` when the guard published no metric.
     pub guard: Option<&'static str>,
 }
 
 impl State {
     pub fn stores_ok(&self) -> bool {
-        self.stores.iter().all(|(_, up)| *up)
+        self.stores.iter().all(|(_, reason)| reason.is_none())
     }
 }
 
 pub fn state(ctx: &Ctx) -> State {
     let stores = Store::ALL
         .iter()
-        .map(|s| (*s, ctx.backend.ready(*s)))
+        .map(|s| (*s, ctx.backend.ready(*s).err().map(|e| e.to_string())))
         .collect();
     let guard = ctx
         .backend
@@ -45,7 +45,10 @@ pub fn run(ctx: &Ctx) -> Result<Report, Error> {
     report.rows = state
         .stores
         .iter()
-        .map(|(store, up)| json!({"key": store.name(), "value": if *up { "up" } else { "down" }}))
+        .map(|(store, reason)| match reason {
+            Some(reason) => json!({"key": store.name(), "value": "down", "reason": reason}),
+            None => json!({"key": store.name(), "value": "up"}),
+        })
         .collect();
     Ok(report)
 }

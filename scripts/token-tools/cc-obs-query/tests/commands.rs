@@ -364,6 +364,11 @@ fn health_flags_an_unreachable_store() {
     let out = run.json();
     assert_eq!(out["stores_ok"], json!(false));
     assert_eq!(row(&out, "tempo")["value"], json!("down"));
+    let reason = row(&out, "tempo")["reason"]
+        .as_str()
+        .expect("a down store carries a reason");
+    assert!(reason.contains("HTTP 404"), "{reason}");
+    assert!(row(&out, "loki").get("reason").is_none());
 }
 
 #[test]
