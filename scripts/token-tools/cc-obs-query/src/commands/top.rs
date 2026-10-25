@@ -299,6 +299,7 @@ fn session_agent_values(ctx: &Ctx, query: &str) -> Result<Vec<(String, String, f
 }
 
 fn rank_cache_hit(ctx: &Ctx, min_requests: u64) -> Result<Ranked, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     let requests = requests_by_session(ctx)?;
     let hits = cache_hit_by_session(ctx)?;
     let mut untokened = 0_u64;
@@ -395,6 +396,7 @@ fn label_of(s: &Sample, name: &str) -> String {
 }
 
 fn rank_requests(ctx: &Ctx) -> Result<Ranked, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     // a ranking by request count must not fall back to the series count, which undercounts tool loops
     let counted = counted_requests(ctx)?;
     if counted.is_empty() {
@@ -424,6 +426,7 @@ fn rank_requests(ctx: &Ctx) -> Result<Ranked, Error> {
 /// turn's. A turn holds several series when it ran on more than one model; the
 /// largest one stands for the turn. Series without a numeric turn are noted.
 fn rank_context_growth(ctx: &Ctx) -> Result<Ranked, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     let query = format!(
         "last_over_time({}[{}])",
         ctx.selector(CONTEXT, &[]),
@@ -528,6 +531,7 @@ fn normalise_server(name: &str) -> String {
 /// Result tokens and calls per MCP server, read from the ledger's `tool_call`
 /// records: the claude-code `tool_result` stream names every MCP call `mcp_tool`.
 fn mcp_ranked(ctx: &Ctx) -> Result<Vec<RankRow>, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     let mut servers: BTreeMap<String, (f64, u64)> = BTreeMap::new();
     for record in ctx.logs(&ctx.logql("cc-obs-ledger", "cc_obs_ledger.tool_call"))? {
         let Some(server) = record.fields.get("tool_name").and_then(|n| mcp_server(n)) else {

@@ -27,6 +27,8 @@ pub mod unused;
 pub const TOKENS: &str = "claude_code_token_usage_tokens_total";
 pub const COST: &str = "claude_code_cost_usage_USD_total";
 pub const CONTEXT: &str = "cc_obs_ledger_context_tokens";
+/// Sub-agent runs whose transcript was nowhere on disk when the ledger's hook ran.
+pub const LEDGER_SUBAGENT_MISSING: &str = "cc_obs_ledger_subagent_transcript_missing_total";
 pub const CACHE_HIT: &str = "cc_obs_ledger_cache_hit_ratio";
 pub const FIXED: &str = "cc_obs_ledger_fixed_context_tokens";
 pub const RECALL_REQUESTS: &str = "recall_requests_total";
@@ -129,6 +131,23 @@ impl<'a> Ctx<'a> {
 
     pub fn instant(&self, query: &str) -> Result<Vec<Sample>, Error> {
         self.backend.prom_instant(query, self.window.end)
+    }
+
+    /// Notes how many sub-agent runs the ledger counted without a transcript. Views built
+    /// from ledger series and records lack those runs; `claude_code_*` views do not.
+    pub fn note_missing_subagent_transcripts(&self) -> Result<(), Error> {
+        let query = format!(
+            "round(sum(increase({}[{}])))",
+            self.selector(LEDGER_SUBAGENT_MISSING, &[]),
+            self.window.prom()
+        );
+        let missing = self.scalar(&query)?.unwrap_or(0.0);
+        if missing > 0.0 {
+            self.note_gap(format!(
+                "subagent: {missing} sub-agent runs left no transcript, so their requests, context and tool calls are not in this view"
+            ));
+        }
+        Ok(())
     }
 
     pub fn scalar(&self, query: &str) -> Result<Option<f64>, Error> {

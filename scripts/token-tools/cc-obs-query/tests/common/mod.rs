@@ -67,7 +67,13 @@ fn percent_decode(text: &str) -> String {
 /// First rule whose needle is contained in the decoded request target wins; no
 /// match answers 404.
 pub fn serve(rules: Vec<(&str, String)>) -> Fake {
-    let rules: Vec<(String, String)> = rules.into_iter().map(|(n, b)| (n.to_owned(), b)).collect();
+    let mut rules: Vec<(String, String)> =
+        rules.into_iter().map(|(n, b)| (n.to_owned(), b)).collect();
+    // Every ledger-backed view asks for this counter; a test that cares lists its own rule first.
+    rules.push((
+        "cc_obs_ledger_subagent_transcript_missing_total".to_owned(),
+        fixture("prom_empty.json"),
+    ));
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
     let seen = Arc::new(Mutex::new(Vec::new()));

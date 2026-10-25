@@ -94,6 +94,7 @@ fn fixed_tokens(ctx: &Ctx, id: &str) -> Result<Option<f64>, Error> {
 pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
     let command = format!("session {id}");
     let (series, dropped) = per_series(ctx, CONTEXT, id)?;
+    ctx.note_missing_subagent_transcripts()?;
     if series.is_empty() {
         let why = if dropped > 0 {
             format!("{dropped} cc_obs_ledger series for session {id} have no numeric turn label")

@@ -272,6 +272,7 @@ fn sequences(calls: &[&Call], counts: &mut BTreeMap<String, (u64, BTreeSet<Strin
 }
 
 pub fn run(ctx: &Ctx, min_count: u64, tool: Option<&str>) -> Result<Report, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     let mut calls = load(ctx)?;
     if calls.is_empty() {
         return Ok(Report::unavailable("repeats", NO_RECORDS));
