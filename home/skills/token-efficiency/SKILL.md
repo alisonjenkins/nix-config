@@ -23,7 +23,9 @@ command -v cc-obs-query && cc-obs-query health
 ```
 
 If `cc-obs-query` is missing or `health` fails, the stack is not enabled on this machine:
-say so, and stop. Do not guess at numbers.
+say so, and stop. Do not guess at numbers. A `down` row carries a `reason` (HTTP status
+and the store's message); report it rather than the bare word, and treat a readiness
+answer with no reason as a bug in the tool (`docs/observability-stack.md`, Health).
 
 ## Rules that hold in both jobs
 
