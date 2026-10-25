@@ -289,6 +289,33 @@ fn an_empty_transcript_path_and_no_main_transcript_is_still_a_missing_field_erro
 }
 
 #[test]
+fn an_unreadable_transcript_location_is_an_error_not_a_missing_run() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let env = Env::new();
+    let file = env.agent_file(AGENT);
+    env.write_lines(&file, &first_part());
+    let dir = file.parent().unwrap().to_owned();
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o000)).unwrap();
+    // Root ignores the mode, so the failure cannot be provoked; skip then.
+    let blocked = fs::metadata(&file).is_err();
+    let hook = format!(
+        r#"{{"session_id":"{SESSION}","transcript_path":"{}","agent_id":"{AGENT}","agent_type":"general-purpose"}}"#,
+        env.main_transcript().display()
+    );
+    let out = blocked.then(|| env.output("subagent", &hook));
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o755)).unwrap();
+    let Some(out) = out else { return };
+    assert!(!out.status.success(), "must fail under --check");
+    let log = fs::read_to_string(env.state.path().join("cc-obs-ledger/ledger.log")).unwrap();
+    assert!(log.contains("Permission denied"), "{log}");
+    assert!(
+        env.metrics().is_empty(),
+        "an I/O error must not be counted as missing"
+    );
+}
+
+#[test]
 fn an_agent_id_cannot_walk_out_of_the_subagents_directory() {
     let env = Env::new();
     // `agent-x/../../evil.jsonl` from the subagents directory is `<session dir>/evil.jsonl`.
@@ -302,6 +329,31 @@ fn an_agent_id_cannot_walk_out_of_the_subagents_directory() {
     env.write_lines(&outside, &first_part());
     env.stop("x/../../evil");
     assert!(env.tool_call_records().is_empty());
+}
+
+#[test]
+fn a_run_with_no_transcript_is_counted_by_agent_type_and_is_not_an_error() {
+    let env = Env::new();
+    env.stop("ghost");
+
+    let points: Vec<Value> = env
+        .metrics()
+        .iter()
+        .filter(|m| m["name"] == "cc_obs_ledger_subagent_transcript_missing_total")
+        .flat_map(|m| m["sum"]["dataPoints"].as_array().unwrap().clone())
+        .collect();
+    assert_eq!(points.len(), 1, "{points:?}");
+    assert_eq!(points[0]["asInt"], "1");
+    assert_eq!(
+        attr(&points[0], "agent_type").as_deref(),
+        Some("general-purpose")
+    );
+    assert!(env.tool_call_records().is_empty());
+    let log = fs::read_to_string(env.state.path().join("cc-obs-ledger/ledger.log")).unwrap();
+    assert!(
+        log.contains("agent_type general-purpose") && log.contains("agent_transcript_path absent"),
+        "{log}"
+    );
 }
 
 #[test]
