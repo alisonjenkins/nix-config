@@ -104,7 +104,9 @@
         (file/dir names) when present, but do not assume they are installed
         or at any fixed path: probe with `command -v` first, fall back to
         `grep -r` / `find`, and note `fd` may be packaged as `fdfind` on
-        Debian/Ubuntu.
+        Debian/Ubuntu. Read a file in ranges (`offset`/`limit`) after a search
+        has located the lines; whole-file Reads averaged 6.4 KB and were 39% of
+        tool-result tokens in the 2026-10-25 review.
       - Invoke the `delegation` skill before spawning a sub-agent: it
         carries the model-tier decision test, when NOT to delegate at all,
         Explore vs general-purpose, and how to write a self-contained prompt.
