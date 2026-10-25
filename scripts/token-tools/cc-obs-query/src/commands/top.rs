@@ -794,7 +794,7 @@ fn add_cache_hit(ctx: &Ctx, rows: &mut [RankRow]) {
 /// `total` is the sum the row's share is taken of; `None` for a ratio, which has no share.
 pub fn row_json(category: Category, row: &RankRow, total: Option<f64>) -> Value {
     let mut object = Map::new();
-    object.insert("key".to_owned(), json!(row.key));
+    object.insert("key".to_owned(), json!(row.evidence_name()));
     object.insert("value".to_owned(), num(row.value));
     if let Some(total) = total {
         let share = if total > 0.0 { row.value / total } else { 0.0 };

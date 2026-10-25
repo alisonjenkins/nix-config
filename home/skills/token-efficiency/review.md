@@ -92,8 +92,8 @@ and proposes `effective`, `ineffective` or `inconclusive`.
   floor). Tiny sessions used to dominate it because their only requests include the cold
   start; do not read a low ratio from a session under five requests as a finding.
 - **`top subagent` splits by agent and model.** A row is one agent on one model, with the
-  evidence reference `subagent:<agent>@<model>` (for example
-  `subagent:general-purpose@claude-sonnet-5-5`); `--format detailed` shows the model as its
+  row key and evidence reference `<agent>@<model>` (for example
+  `general-purpose@claude-sonnet-5-5`, cited as `subagent:general-purpose@claude-sonnet-5-5`); `--format detailed` shows the model as its
   own field. The same agent on two models is two rows, so add them for an agent total.
 - **A tool "saves tokens" only if it replaces the result.** A PostToolUse hook that only adds
   `additionalContext` adds tokens. Test replacement with a positive control: on Claude Code

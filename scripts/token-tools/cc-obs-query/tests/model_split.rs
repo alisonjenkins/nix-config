@@ -79,17 +79,17 @@ fn top_subagent_by_cost_groups_by_agent_and_model() {
         model_of_rows(&out),
         vec![
             (
-                "general-purpose".to_owned(),
+                "general-purpose@claude-sonnet-5-5".to_owned(),
                 "claude-sonnet-5-5".to_owned(),
                 "subagent:general-purpose@claude-sonnet-5-5".to_owned()
             ),
             (
-                "general-purpose".to_owned(),
+                "general-purpose@claude-haiku-5-5".to_owned(),
                 "claude-haiku-5-5".to_owned(),
                 "subagent:general-purpose@claude-haiku-5-5".to_owned()
             ),
             (
-                "Explore".to_owned(),
+                "Explore@claude-haiku-5-5".to_owned(),
                 "claude-haiku-5-5".to_owned(),
                 "subagent:Explore@claude-haiku-5-5".to_owned()
             ),
@@ -161,4 +161,61 @@ fn a_digest_with_split_subagent_rows_stays_schema_valid() {
     let write = cli(&fake, &common_args(s(&pack), &["--write", s(&file)]));
     assert_eq!(write.code, 0, "{}", write.err);
     assert_eq!(write.json()["valid"], json!(true));
+}
+
+#[test]
+fn a_sub_agent_decision_metric_resolves_by_agent_and_model() {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), SUBAGENT_PACK);
+    fs::create_dir(dir.path().join("decisions")).unwrap();
+    fs::write(
+        dir.path().join("decisions/0001-subagent.md"),
+        "---\nid: \"0001\"\nhost: test-host\ndate: 2026-09-01T00:00:00Z\nfinding: 2026-09-01-test-host#1\ndecision: configure\nreason: because\nmetric: { question: subagent-overhead, key: general-purpose@claude-sonnet-5-5, baseline: 49.83, unit: usd/week }\nacted_on: abc1234\noutcome: null\noutcome_review: null\n---\n",
+    )
+    .unwrap();
+    let mut rules = vec![(SPLIT, subagent_body())];
+    rules.extend(digest_rules(fixture("loki_tool_results.json")));
+    let fake = serve(rules);
+    let run = cli(
+        &fake,
+        &[
+            "digest",
+            "--baseline",
+            "--pack",
+            s(&pack),
+            "--since",
+            "7d",
+            "--until",
+            "2026-10-09",
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    let after = &run.json()["prior_decisions"][0]["after"];
+    assert!(after.is_number(), "{after}");
+}
+
+#[test]
+fn compare_finds_a_sub_agent_row_by_agent_and_model() {
+    let dir = tempfile::tempdir().unwrap();
+    let pack = write_pack(dir.path(), SUBAGENT_PACK);
+    let fake = serve(vec![(SPLIT, subagent_body())]);
+    let run = cli(
+        &fake,
+        &[
+            "compare",
+            "subagent-overhead",
+            "--a",
+            "2026-09-01..2026-09-08",
+            "--b",
+            "2026-09-08..2026-09-15",
+            "--pack",
+            s(&pack),
+        ],
+    );
+    assert_eq!(run.code, 0, "{}", run.err);
+    let out = run.json();
+    assert_eq!(
+        common::row(&out, "general-purpose@claude-sonnet-5-5")["b"],
+        json!(5)
+    );
 }

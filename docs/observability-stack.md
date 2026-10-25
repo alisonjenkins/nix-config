@@ -56,7 +56,7 @@ split and keyed hashes of tool inputs. `memory-recall` adds its recall records.
 
 Two `cc-obs-query top` rankings have a definition worth knowing:
 
-- `top subagent` has one row per agent and model, referenced as `subagent:<agent>@<model>`;
+- `top subagent` has one row per agent and model, keyed `<agent>@<model>` and referenced as `subagent:<agent>@<model>`;
   `--format detailed` shows the model as its own field.
 - `top session --by cache-hit` ranks sessions by prompt-cache hit ratio, lowest first. The
   ratio is weighted by tokens: cacheRead divided by cacheRead + cacheCreation + input,

@@ -47,8 +47,8 @@ fn top_subagent_keeps_series_without_an_agent_name() {
     .to_string();
     let fake = serve(with_own(vec![("by (agent_name, model)", result)]));
     let out = cli(&fake, &["top", "subagent", "--by", "tokens"]).json();
-    assert_eq!(share_of(&out, "Explore"), Some(0.7), "{out}");
-    assert_eq!(share_of(&out, "(unattributed)"), Some(0.3), "{out}");
+    assert_eq!(share_of(&out, "Explore@opus"), Some(0.7), "{out}");
+    assert_eq!(share_of(&out, "(unattributed)@opus"), Some(0.3), "{out}");
 }
 
 #[test]
