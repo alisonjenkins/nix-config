@@ -17,7 +17,7 @@ const SEQUENCE_LEN: usize = 3;
 /// large_then_narrow pair, or non-overlapping occurrences of a sequence.
 const VALUE_MEANS: &str = "calls saved: identical = repeat calls beyond the first (calls separated by an edit by the same agent do not repeat each other: Edit, Write, NotebookEdit and MultiEdit end a run), near_identical = distinct inputs beyond the first, large_then_narrow = 1 per pair, sequence = occurrences x (length - 1) if one tool replaced the triple";
 /// Identical and near-identical calls are a within-session, within-agent notion (each
-/// agent has its own context), so their threshold applies per (session, agent); a
+/// agent has its own context), so their threshold applies per (session, agent, agent_id); a
 /// sequence is "frequent" across the window, so its threshold applies to occurrences
 /// summed over all sessions.
 const MIN_COUNT_MEANS: &str = "--min-count (floor 2): identical and near_identical = calls per session and agent (a subagent repeating a main-agent call is not a repeat); sequence = occurrences across all sessions";
@@ -70,26 +70,46 @@ pub(super) fn load(ctx: &Ctx) -> Result<Vec<Call>, Error> {
             "repeats: {skipped} of {received} tool_call records lacked session_id, tool_name or input_hash and were skipped"
         ));
     }
-    // Ingest may deliver a record twice; the first (session, agent, seq) wins.
-    let mut seen: BTreeSet<(String, String, u64)> = BTreeSet::new();
+    // Ingest may deliver a record twice; the first one per key wins. Every sub-agent
+    // numbers its own seq from 0, so the agent id is part of the key.
+    let mut seen: BTreeSet<(String, String, String, u64)> = BTreeSet::new();
     let before = calls.len();
-    calls.retain(|c| seen.insert((c.session.clone(), c.agent.clone(), c.seq)));
+    calls.retain(|c| {
+        seen.insert((
+            c.session.clone(),
+            c.agent.clone(),
+            c.agent_id.clone(),
+            c.seq,
+        ))
+    });
     let duplicates = before.saturating_sub(calls.len());
     if duplicates > 0 {
         ctx.note_gap(format!(
-            "repeats: {duplicates} duplicate tool_call records (same session, agent, seq) ignored"
+            "repeats: {duplicates} duplicate tool_call records (same session, agent, agent_id, seq) ignored"
         ));
     }
-    calls.sort_by(|a, b| (&a.session, a.turn, a.seq).cmp(&(&b.session, b.turn, b.seq)));
+    calls.sort_by(|a, b| {
+        (&a.session, &a.agent, &a.agent_id, a.turn, a.seq).cmp(&(
+            &b.session,
+            &b.agent,
+            &b.agent_id,
+            b.turn,
+            b.seq,
+        ))
+    });
     Ok(calls)
 }
 
-fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str), Vec<&Call>> {
-    let mut map: BTreeMap<(&str, &str), Vec<&Call>> = BTreeMap::new();
+fn by_agent(calls: &[Call]) -> BTreeMap<(&str, &str, &str), Vec<&Call>> {
+    let mut map: BTreeMap<(&str, &str, &str), Vec<&Call>> = BTreeMap::new();
     for call in calls {
-        map.entry((call.session.as_str(), call.agent.as_str()))
-            .or_default()
-            .push(call);
+        map.entry((
+            call.session.as_str(),
+            call.agent.as_str(),
+            call.agent_id.as_str(),
+        ))
+        .or_default()
+        .push(call);
     }
     map
 }
@@ -101,9 +121,16 @@ pub fn repeat_rate(ctx: &Ctx, tool: &str) -> Result<Option<f64>, Error> {
     if calls.is_empty() {
         return Ok(None);
     }
-    let distinct: BTreeSet<(&str, &str, &str)> = calls
+    let distinct: BTreeSet<(&str, &str, &str, &str)> = calls
         .iter()
-        .map(|c| (c.session.as_str(), c.agent.as_str(), c.input_hash.as_str()))
+        .map(|c| {
+            (
+                c.session.as_str(),
+                c.agent.as_str(),
+                c.agent_id.as_str(),
+                c.input_hash.as_str(),
+            )
+        })
         .collect();
     Ok(Some(
         (calls.len().saturating_sub(distinct.len())) as f64 / calls.len() as f64,
@@ -262,7 +289,7 @@ pub fn run(ctx: &Ctx, min_count: u64, tool: Option<&str>) -> Result<Report, Erro
     let mut seqs = BTreeMap::new();
     // A subagent's calls are interleaved with the main agent's by (turn, seq) and its
     // seq may restart, and each agent has its own context, so every pattern is read per
-    // (session, agent), never across them.
+    // (session, agent, agent_id), never across them.
     for stream in by_agent(&calls).values() {
         identical(stream, min_count, &mut findings);
         near_identical(stream, min_count, &mut findings);
