@@ -151,6 +151,13 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
   reads `<session>/subagents/agent-<id>.jsonl` and tags records `agent=subagent` plus
   `agent_id`. A sub-agent still running when the session ends, or a session started
   before the hook was installed, is missing its tail until its next stop.
+- `seq` and `turn` are numbered per transcript, so each sub-agent restarts at 0 and
+  `(session, agent, seq)` is not unique across the sub-agents of one session; the unique
+  key is `(session, agent, agent_id, seq)`. On 2026-10-25 `cc-obs-query repeats` reported
+  7111 of 14836 week-old records as duplicates under the shorter key; none were (every
+  collision had a distinct `agent_id`, `request_id` and `input_hash`, all `agent=subagent`),
+  and the ledger's per-transcript cursors emit each call once. The query's dedupe stays as
+  a safety net on the full key and its gap line names the key.
 
 ## Troubleshooting
 
