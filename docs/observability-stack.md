@@ -159,6 +159,46 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
   and the ledger's per-transcript cursors emit each call once. The query's dedupe stays as
   a safety net on the full key and its gap line names the key.
 
+### Ledger gap after a stack restart
+
+Symptom: the stack restarted (a home-manager activation) and for ~20 minutes no turn
+reached Grafana, though sessions were busy. On 2026-10-25 the hooks shipped at 12:38,
+then nothing until 13:01, when one hand-run `cc-obs-ledger --check turn` ended the gap.
+The collector took Claude Code's own OTLP data throughout.
+
+How to spot it: a session's file in `~/.local/state/cc-obs-ledger/cursors/` has an
+mtime older than its last turn, `spool/` is empty, and `ledger.log` has no `ship:`
+lines for the period (a `ship:` line is written whenever a run sent, expired or failed
+something, or skipped because another sender held `spool/.lock`). Lines like
+`subagent: reading ...: No such file` still appearing show the binary itself was being
+run by `SubagentStop`.
+
+What was ruled out, by reproducing against throwaway servers
+(`cc-obs-ledger/tests/hook_timeout.rs`): `turn` does not wait for the collector. It
+spools, starts `ship` detached and writes the cursor, and returned in ~2 ms against a
+server that accepts and never answers, one that refuses and one that answers 503. A
+blocked `ship` therefore cannot make a later `turn` time out, and a held spool lock
+cannot stop a cursor advancing. With nothing spooled and no cursor movement, `turn`
+did not reach its spool step; the log has no error from it, so the cause is upstream
+of the binary (Claude Code not running the `Stop` command, for instance after
+`settings.json` changed under running sessions) and is not proven.
+
+What changed so the next gap is diagnosable: a `ship` that finds the lock held now logs
+`ship: skipped, another sender holds ...`, an unreadable spool directory is logged, and
+one `ship` run stops starting files after 30 s so a hung collector cannot hold the
+lock for N times the 3 s request timeout.
+
+Recovery: nothing is lost that the transcript still holds, because the cursor only
+moves forward when `turn` runs. Run it by hand per session:
+
+```bash
+echo '{"session_id":"<id>","transcript_path":"<path>.jsonl","cwd":"<dir>"}' \
+  | cc-obs-ledger --check turn
+```
+
+then check `ledger.log` for a `ship: sent=` line. Spooled files that failed to send
+stay for 24 h and go out with the next successful `ship`.
+
 ## Troubleshooting
 
 | Symptom | Look at |
@@ -167,3 +207,4 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
 | Grafana shows no data | `curl http://127.0.0.1:4318/` reaches the collector? Claude Code reads `OTEL_*` only from user-level settings, not a project's `.claude/settings.json` |
 | Disk budget exceeded | `cat ~/.local/state/observability-stack/guard.json`: `over` means the stores passed `maxDiskGB`; ingestion is still running |
 | Hook problems | `~/.local/state/cc-obs-ledger/ledger.log` |
+| Turns missing after a restart | `cursors/` mtimes against the last turn, and no `ship:` lines in `ledger.log`; see "Ledger gap after a stack restart" |
