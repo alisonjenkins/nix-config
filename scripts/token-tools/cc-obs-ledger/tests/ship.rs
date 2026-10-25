@@ -6,49 +6,19 @@
 )]
 
 use std::fs;
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::io::Write;
+use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier};
 use std::thread;
 use std::time::Duration;
 
 use cc_obs_ledger::otlp::{Payload, Signal};
-use cc_obs_ledger::ship::{ship_spool, write_spool, ShipReport};
+use cc_obs_ledger::ship::{ship_spool, ship_spool_within, write_spool, ShipReport};
 
-/// Reads one HTTP request and returns "<path> <body>".
-fn read_request(stream: &mut TcpStream) -> String {
-    stream
-        .set_read_timeout(Some(Duration::from_secs(2)))
-        .unwrap();
-    let mut buf = Vec::new();
-    let mut chunk = [0u8; 4096];
-    loop {
-        let n = stream.read(&mut chunk).unwrap_or(0);
-        if n == 0 {
-            break;
-        }
-        buf.extend_from_slice(&chunk[..n]);
-        let text = String::from_utf8_lossy(&buf).to_string();
-        if let Some(split) = text.find("\r\n\r\n") {
-            let length = text
-                .lines()
-                .find_map(|l| {
-                    l.to_ascii_lowercase()
-                        .strip_prefix("content-length:")
-                        .map(|v| v.trim().parse::<usize>().unwrap())
-                })
-                .unwrap_or(0);
-            if buf.len() >= split.saturating_add(4).saturating_add(length) {
-                break;
-            }
-        }
-    }
-    let text = String::from_utf8_lossy(&buf).to_string();
-    let path = text.split_whitespace().nth(1).unwrap_or("").to_string();
-    let body = text.split("\r\n\r\n").nth(1).unwrap_or("").to_string();
-    format!("{path} {body}")
-}
+mod common;
+
+use common::read_request;
 
 /// Accepts `count` requests, answers 200, returns "<path> <body>" for each.
 fn serve(count: usize) -> (String, thread::JoinHandle<Vec<String>>) {
@@ -230,4 +200,109 @@ fn a_spool_file_older_than_a_day_is_dropped_instead_of_retried_forever() {
     let report = ship_spool(dir.path(), "http://127.0.0.1:1", Duration::from_secs(1));
     assert_eq!(report.expired, 1);
     assert_eq!(spooled(dir.path()), 0);
+}
+
+/// Answers 200 to each of `count` requests after `delay`, then runs `on_request(n)`.
+fn serve_slowly(
+    count: usize,
+    delay: Duration,
+    on_request: impl Fn(usize) + Send + 'static,
+) -> (String, thread::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let handle = thread::spawn(move || {
+        for n in 0..count {
+            let (mut stream, _) = listener.accept().unwrap();
+            read_request(&mut stream);
+            thread::sleep(delay);
+            on_request(n);
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
+                .unwrap();
+        }
+    });
+    (url, handle)
+}
+
+#[test]
+fn a_run_that_spends_its_budget_leaves_the_rest_and_says_so() {
+    let dir = tempfile::tempdir().unwrap();
+    write_spool(dir.path(), &payload(Signal::Metrics)).unwrap();
+    write_spool(dir.path(), &payload(Signal::Logs)).unwrap();
+    let (url, server) = serve_slowly(1, Duration::from_millis(300), |_| {});
+    let report = ship_spool_within(
+        dir.path(),
+        &url,
+        Duration::from_secs(3),
+        Duration::from_millis(100),
+    );
+    server.join().unwrap();
+    assert_eq!(report.sent, 1);
+    assert_eq!(spooled(dir.path()), 1, "the second payload must stay");
+    let summary = report.summary().unwrap();
+    assert!(summary.contains("run budget"), "{summary}");
+    assert!(summary.contains("1 files left"), "{summary}");
+    assert!(summary.contains("failed=0"), "{summary}");
+}
+
+#[test]
+fn a_payload_spooled_during_the_second_pass_is_not_stranded() {
+    let dir = tempfile::tempdir().unwrap();
+    write_spool(dir.path(), &payload(Signal::Metrics)).unwrap();
+    let spool = dir.path().to_owned();
+    let (url, server) = serve_slowly(3, Duration::ZERO, move |n| {
+        if n < 2 {
+            write_spool(&spool, &payload(Signal::Logs)).unwrap();
+        }
+    });
+    let report = ship_spool(dir.path(), &url, Duration::from_secs(3));
+    server.join().unwrap();
+    assert_eq!(report.sent, 3, "{:?}", report.failed);
+    assert_eq!(spooled(dir.path()), 0);
+}
+
+#[test]
+fn files_that_are_not_payloads_do_not_count_as_left_by_the_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    write_spool(dir.path(), &payload(Signal::Metrics)).unwrap();
+    fs::write(dir.path().join("zz-notes.txt"), "x").unwrap();
+    let (url, server) = serve_slowly(1, Duration::from_millis(300), |_| {});
+    let report = ship_spool_within(
+        dir.path(),
+        &url,
+        Duration::from_secs(3),
+        Duration::from_millis(100),
+    );
+    server.join().unwrap();
+    assert_eq!(report.sent, 1);
+    assert!(report.failed.is_empty(), "{:?}", report.failed);
+}
+
+#[test]
+fn a_payload_spooled_while_the_sender_was_posting_goes_out_in_the_same_run() {
+    let dir = tempfile::tempdir().unwrap();
+    write_spool(dir.path(), &payload(Signal::Metrics)).unwrap();
+    let spool = dir.path().to_owned();
+    let (url, server) = serve_slowly(2, Duration::ZERO, move |n| {
+        if n == 0 {
+            write_spool(&spool, &payload(Signal::Logs)).unwrap();
+        }
+    });
+    let report = ship_spool(dir.path(), &url, Duration::from_secs(3));
+    server.join().unwrap();
+    assert_eq!(report.sent, 2, "{:?}", report.failed);
+    assert_eq!(spooled(dir.path()), 0);
+}
+
+#[test]
+fn a_spool_path_that_is_not_a_directory_is_reported_not_skipped_silently() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("spool");
+    fs::write(&file, "x").unwrap();
+    let report = ship_spool(&file, "http://127.0.0.1:1", Duration::from_secs(1));
+    assert_eq!(report.failed.len(), 1, "{report:?}");
+    assert!(
+        report.failed[0].contains("is not a directory"),
+        "{report:?}"
+    );
 }
