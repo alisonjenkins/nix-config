@@ -70,6 +70,16 @@ impl Env {
     }
 
     fn run(&self, subcommand: &str, hook: &str) {
+        let out = self.output(subcommand, hook);
+        assert!(
+            out.status.success(),
+            "{subcommand} failed; log: {:?}",
+            fs::read_to_string(self.state.path().join("cc-obs-ledger/ledger.log"))
+        );
+        assert!(out.stdout.is_empty(), "stdout must stay empty");
+    }
+
+    fn output(&self, subcommand: &str, hook: &str) -> std::process::Output {
         let mut child = Command::new(env!("CARGO_BIN_EXE_cc-obs-ledger"))
             .arg("--check")
             .arg(subcommand)
@@ -87,13 +97,7 @@ impl Env {
             .unwrap()
             .write_all(hook.as_bytes())
             .unwrap();
-        let out = child.wait_with_output().unwrap();
-        assert!(
-            out.status.success(),
-            "{subcommand} failed; log: {:?}",
-            fs::read_to_string(self.state.path().join("cc-obs-ledger/ledger.log"))
-        );
-        assert!(out.stdout.is_empty(), "stdout must stay empty");
+        child.wait_with_output().unwrap()
     }
 
     /// SubagentStop with the transcript path derived from the main transcript's location.
@@ -269,6 +273,35 @@ fn an_explicit_agent_transcript_path_wins_over_the_derived_one() {
     );
     env.run("subagent", &hook);
     assert_eq!(env.tool_call_records().len(), 2);
+}
+
+#[test]
+fn an_empty_transcript_path_and_no_main_transcript_is_still_a_missing_field_error() {
+    let env = Env::new();
+    let hook = format!(
+        r#"{{"session_id":"{SESSION}","transcript_path":"","agent_id":"{AGENT}","agent_transcript_path":""}}"#
+    );
+    let out = env.output("subagent", &hook);
+    assert!(!out.status.success(), "must fail under --check");
+    let log = fs::read_to_string(env.state.path().join("cc-obs-ledger/ledger.log")).unwrap();
+    assert!(log.contains("agent_transcript_path"), "{log}");
+    assert!(env.metrics().is_empty(), "no counter for a malformed hook");
+}
+
+#[test]
+fn an_agent_id_cannot_walk_out_of_the_subagents_directory() {
+    let env = Env::new();
+    // `agent-x/../../evil.jsonl` from the subagents directory is `<session dir>/evil.jsonl`.
+    fs::create_dir_all(
+        env.main_transcript()
+            .with_extension("")
+            .join("subagents/agent-x"),
+    )
+    .unwrap();
+    let outside = env.main_transcript().with_extension("").join("evil.jsonl");
+    env.write_lines(&outside, &first_part());
+    env.stop("x/../../evil");
+    assert!(env.tool_call_records().is_empty());
 }
 
 #[test]

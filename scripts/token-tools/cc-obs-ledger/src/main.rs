@@ -266,17 +266,11 @@ fn subagent_cmd(state: &Path) -> Result<(), LedgerError> {
         .filter(|id| !id.is_empty())
         .ok_or(LedgerError::MissingField { field: "agent_id" })?
         .to_owned();
-    let transcript = match (&hook.agent_transcript_path, &hook.transcript_path) {
-        (Some(path), _) => PathBuf::from(path),
-        (None, Some(main)) => PathBuf::from(main)
-            .with_extension("")
-            .join("subagents")
-            .join(format!("agent-{agent_id}.jsonl")),
-        (None, None) => {
-            return Err(LedgerError::MissingField {
-                field: "agent_transcript_path",
-            })
-        }
+    let candidates = transcript_candidates(&hook, &agent_id);
+    let Some(transcript) = candidates.iter().find(|path| path.is_file()).cloned() else {
+        return Err(LedgerError::MissingField {
+            field: "agent_transcript_path",
+        });
     };
     let cursor_file = state
         .join("cursors")
@@ -290,6 +284,29 @@ fn subagent_cmd(state: &Path) -> Result<(), LedgerError> {
         Some(&agent_id),
         &spawn_ship,
     )
+}
+
+/// Where a sub-agent transcript can be: the path the hook names, then the
+/// id-named file under the main transcript's session directory. Empty strings
+/// count as absent, and the id is reduced to safe characters so it cannot
+/// leave the `subagents` directory.
+fn transcript_candidates(hook: &Hook, agent_id: &str) -> Vec<PathBuf> {
+    let named = hook
+        .agent_transcript_path
+        .as_deref()
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from);
+    let derived = hook
+        .transcript_path
+        .as_deref()
+        .filter(|path| !path.is_empty())
+        .map(|main| {
+            PathBuf::from(main)
+                .with_extension("")
+                .join("subagents")
+                .join(format!("agent-{}.jsonl", safe_name(agent_id)))
+        });
+    named.into_iter().chain(derived).collect()
 }
 
 fn turn_run(
