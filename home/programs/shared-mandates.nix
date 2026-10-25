@@ -92,9 +92,9 @@
       - Step up to a "sonnet" sub-agent only when the task itself needs
         judgement, multi-step reasoning, or code whose design is still open.
       - Use `subagent_type: "haiku-worker"` for a haiku-shaped step; it is
-        pinned to Haiku. For any other Agent call, set `model`: without it the
-        sub-agent runs on the main loop's model, so "haiku" only happens if the
-        call says so.
+        pinned to Haiku. For any other Agent call, set `model` when the step
+        needs more than Haiku: without it the sub-agent falls through to
+        `CLAUDE_CODE_SUBAGENT_MODEL`, which this config sets to `haiku`.
       - Run independent delegations in parallel: several Agent calls in one
         message, and run_in_background for anything not needed before your
         next step. Parallel writers each get their own worktree.

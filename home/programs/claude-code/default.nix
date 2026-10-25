@@ -433,6 +433,7 @@ in
         DISABLE_AUTOUPDATER = "1";
         DISABLE_ERROR_REPORTING = "1";
         DISABLE_BUG_COMMAND = "1";
+        CLAUDE_CODE_SUBAGENT_MODEL = "haiku";
       };
 
       alwaysThinkingEnabled = true;
@@ -450,8 +451,9 @@ in
       # Note this key is now nix-managed, so the activation script at the foot
       # of this file replaces it on every rebuild: a `/model` chosen mid-session
       # lasts for that session and is reset to sonnet on the next switch.
-      # `CLAUDE_CODE_SUBAGENT_MODEL` is deliberately NOT set — it overrides
-      # every subagent's model and would defeat the per-agent `model:` below.
+      # Main loop only. Sub-agents that name no model fall through to
+      # CLAUDE_CODE_SUBAGENT_MODEL (env above); per-agent `model:` still wins since
+      # Claude Code 2.1.251. Never set CLAUDE_CODE_SUBAGENT_MODEL_FORCE: it would override them.
       model = "sonnet";
 
       # Skill listing visibility. The listing budget is 1% of the model's

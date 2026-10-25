@@ -142,14 +142,16 @@ For a haiku-shaped step with no need for MCP tools, spawn `subagent_type: "haiku
 it is pinned to Haiku and carries a short tool list, so forgetting `model` cannot make
 it run on Sonnet.
 
-**Set `model` on every other Agent call.** An Agent call without `model` runs on the
-main loop's model (Sonnet here), so the haiku default above only holds if the
-call says `model: "haiku"`. Measured by the observability stack over
+**Set `model` on every Agent call that should not run on Haiku.** An Agent call without
+`model` now falls through to `CLAUDE_CODE_SUBAGENT_MODEL`, which the nix config sets to
+`haiku`; name `sonnet` or a higher tier explicitly when the step needs judgement.
+Measured by the observability stack over
 2026-10-09/16 on `ali-desktop`: `general-purpose` sub-agents were 55.8% of
 estimated cost, and `cc-obs-query top subagent --by cost` (which splits by model)
-put 99.78% of sub-agent cost on Sonnet and 0.18% on Haiku. Do not set
-`CLAUDE_CODE_SUBAGENT_MODEL` to fix this: it overrides every sub-agent,
-including the consultant agents whose `model:` is deliberate.
+put 99.78% of sub-agent cost on Sonnet and 0.18% on Haiku. The nix config sets
+`CLAUDE_CODE_SUBAGENT_MODEL` to `haiku`; since Claude Code 2.1.251 it only applies when
+neither the Agent call nor the agent definition names a model, so per-agent `model:`
+still wins, including the consultant agents whose `model:` is deliberate.
 
 **Put edit-and-build workers on Haiku, and bound their runs.** One orchestration day on
 `ali-desktop` (2026-10-16, 37 sub-agents, $452 at list price) showed that 36 of 37 runs were
