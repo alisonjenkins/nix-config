@@ -178,6 +178,12 @@
         settings.server = "rtmp://stream.redwood-guild.com:1935/app";
       };
     };
+
+    # device_id is the PipeWire node.name of the OBSBOT Tiny 2 Lite.
+    sceneCollections.Untitled.sources."Webcam source" = {
+      id = "pipewire-camera-source";
+      settings.device_id = "v4l2_input.pci-0000_15_00.0-usb-0_1.1_1.0";
+    };
   };
 
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
