@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, outputs, ... }:
 
 with lib;
 
@@ -1615,6 +1615,8 @@ in
         })
       ];
     };
+
+    nixpkgs.overlays = mkIf cfg.logitech.enable [ outputs.overlays.solaar-pro-x3-superstrike ];
 
     hardware = {
       ksm.enable = true;
