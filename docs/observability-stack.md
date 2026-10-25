@@ -80,6 +80,16 @@ only expire by age, so a guard checks the data directories every five minutes ag
 and reports through the `observability_guard_over_budget` metric, the stack-health
 dashboard, a session-start notice and a desktop notification (at most once per 24 h).
 
+## Health
+
+`cc-obs-query health` probes `/-/ready` on Prometheus, and `/ready` on Loki and Tempo.
+A `down` row carries a `reason` field with the HTTP status and upstream message.
+Both stores run with `min_ready_duration` set to 0s: dskit starts that timer on the
+first `/ready` call, so the first probe after a start would otherwise answer 503 for
+15 s ([ADR 0052](adr/0052-readiness-counts-from-the-first-probe.md)).
+Tempo 2.10.8 answers `GET /status/buildinfo` with a nil-pointer panic in the handler
+and resets the connection (the process survives); probe `/ready` or `/status` instead.
+
 ## Checks
 
 ```bash
