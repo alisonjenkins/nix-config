@@ -41,3 +41,29 @@ obsPatchJson() {
   fi
   rm -f "$tmp"
 }
+
+# obsPatchSource TARGET SOURCE_NAME ID SETTINGS_JSON_FILE
+# Sets the id and replaces the settings of the scene source named SOURCE_NAME.
+# Settings are replaced, not merged: keys from the old source type are garbage.
+obsPatchSource() {
+  local target="$1" name="$2" id="$3" settings="$4" tmp
+  if [ ! -e "$target" ]; then
+    warnEcho "obs: $target does not exist, source $name left unpatched"
+    return 0
+  fi
+  tmp=$(mktemp)
+  if "$OBS_JQ" \
+      --slurpfile settings "$settings" \
+      --arg name "$name" \
+      --arg id "$id" '
+    if (.sources | map(select(.name == $name)) | length) == 0
+    then error("no source named \($name)")
+    else .sources |= map(if .name == $name then (.id = $id | .settings = $settings[0]) else . end)
+    end
+  ' "$target" > "$tmp"; then
+    run install -m 0600 "$tmp" "$target"
+  else
+    warnEcho "obs: $target is not valid JSON or has no source $name, left unpatched"
+  fi
+  rm -f "$tmp"
+}

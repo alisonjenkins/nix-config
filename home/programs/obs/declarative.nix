@@ -88,6 +88,32 @@ let
       secretFile = p.streamKeyFile;
     }
   ) cfg.profiles);
+
+  sourceModule = {
+    options = {
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-camera-source";
+        description = "OBS source id, e.g. an input kind such as pipewire-camera-source.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = "Replaces the source's settings object wholesale.";
+      };
+    };
+  };
+
+  sceneCmds = lib.concatStrings (lib.mapAttrsToList (collection: c:
+    lib.concatStrings (lib.mapAttrsToList (name: s:
+      "obsPatchSource ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        name
+        s.id
+        (jsonFormat.generate "obs-scene-source-settings.json" s.settings)
+      ]}\n"
+    ) c.sources)
+  ) cfg.sceneCollections);
 in
 {
   options.programs.obs-studio.declarative = {
@@ -100,6 +126,22 @@ in
       description = ''
         Profiles keyed by their directory under basic/profiles. A profile
         that does not exist yet is created with General.Name set to the key.
+      '';
+    };
+
+    sceneCollections = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options.sources = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule sourceModule);
+          default = { };
+          description = "Scene sources keyed by name; each one's id and settings are patched in.";
+        };
+      });
+      default = { };
+      description = ''
+        Scene collections keyed by their file name under basic/scenes. A
+        source is matched by name; sources not listed are left as OBS wrote
+        them. A collection file that does not exist yet is not created.
       '';
     };
 
@@ -144,6 +186,7 @@ in
       ${patchIni "${obsDir}/global.ini" cfg.global}
       ${patchIni "${obsDir}/user.ini" cfg.user}
       ${profileCmds}
+      ${sceneCmds}
       ${patchJson {
         target = "${obsDir}/plugin_config/obs-websocket/config.json";
         inherit (cfg.websocket) settings;

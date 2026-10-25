@@ -66,3 +66,35 @@ setup() {
   obsPatchJson "$dir/service.json" "$declared" "" ""
   [ "$(stat -c %a "$dir/service.json")" = 600 ]
 }
+
+@test "source: replaces id and settings of the named source only" {
+  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","settings":{"device":"/dev/video0","resolution":"1080p"}},{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
+  echo '{"device_id":"v4l2_input.node"}' > "$dir/settings.json"
+  obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json"
+  [ "$(jq -r '.sources[0].name' "$dir/scene.json")" = "Webcam source" ]
+  [ "$(jq -r '.sources[0].id' "$dir/scene.json")" = pipewire-camera-source ]
+  [ "$(jq -c '.sources[0].settings' "$dir/scene.json")" = '{"device_id":"v4l2_input.node"}' ]
+}
+
+@test "source: other sources and the rest of the collection are untouched" {
+  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","settings":{}},{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
+  echo '{"device_id":"v4l2_input.node"}' > "$dir/settings.json"
+  obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json"
+  [ "$(jq -c '.sources[1]' "$dir/scene.json")" = '{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}' ]
+  [ "$(jq -r '.name' "$dir/scene.json")" = Untitled ]
+}
+
+@test "source: a name with no match leaves the file byte-identical" {
+  echo '{"sources":[{"name":"Mic","id":"pulse_input_capture","settings":{}}]}' > "$dir/scene.json"
+  cp "$dir/scene.json" "$dir/before.json"
+  echo '{"device_id":"x"}' > "$dir/settings.json"
+  obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json" 2>/dev/null
+  cmp "$dir/scene.json" "$dir/before.json"
+}
+
+@test "source: invalid JSON is left untouched" {
+  echo '{broken' > "$dir/scene.json"
+  echo '{"device_id":"x"}' > "$dir/settings.json"
+  obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json" 2>/dev/null
+  [ "$(cat "$dir/scene.json")" = '{broken' ]
+}
