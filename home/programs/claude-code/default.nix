@@ -437,6 +437,9 @@ in
 
       alwaysThinkingEnabled = true;
 
+      # Tokens, capped at the model's window: pulls compaction forward on 1M-window models.
+      autoCompactWindow = 350000;
+
       # Sonnet always, including plan mode: it is the fastest model that
       # isn't Haiku, and Haiku can't run auto mode. Everything Sonnet cannot
       # handle alone — a hard design call, plan mode on something with no
