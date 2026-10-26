@@ -1,12 +1,16 @@
 {
   config,
   lib,
+  osConfig,
   pkgs,
   ...
 }: let
   cameraNode = "v4l2_input.pci-0000_15_00.0-usb-0_1.1_1.0";
   nodeName = config.custom.obsbotRawCamera.nodeName;
   nodeName720p = "obsbot-raw";
+  virtualCameraNode = "obs-virtual-camera";
+  # The first v4l2loopback device, numbered by modules.virtual-cameras.
+  loopbackDevice = "/dev/video${toString osConfig.modules.virtual-cameras.firstVideoNr}";
 
   # gstreamer's core elements (capsfilter, queue) live in `out`, not the default `bin`.
   pluginPath = lib.makeSearchPath "lib/gstreamer-1.0" [
@@ -63,6 +67,10 @@
     bridge name ''
       exec gst-launch-1.0 pipewiresrc target-object=${cameraNode} ! image/jpeg,width=1920,height=1080,framerate=60/1 ! jpegdec ! ${scale}videoconvert ! video/x-raw,format=YUY2${dimensions} ! pipewiresink mode=provide stream-properties="props,media.class=Video/Source,media.role=Camera,${driverProps},node.name=${node},node.description=${description}"
     '';
+
+  obsVirtual = bridge "obs-virtual-camera" ''
+    exec gst-launch-1.0 v4l2src device=${loopbackDevice} ! videoconvert ! queue ! pipewiresink mode=provide stream-properties="props,media.class=Video/Source,media.role=Camera,${driverProps},node.name=${virtualCameraNode},node.description=OBS-Virtual-Camera"
+  '';
 in {
   options.custom.obsbotRawCamera.nodeName = lib.mkOption {
     type = lib.types.str;
@@ -94,6 +102,13 @@ in {
         };
       };
       restartSec = 5;
+    };
+
+    # v4l2src fails until OBS starts its virtual camera, so retry quietly.
+    obs-virtual-camera = bridgeUnit {
+      description = "Publish OBS's virtual camera as a PipeWire video source";
+      exe = obsVirtual;
+      restartSec = 10;
     };
   };
 }

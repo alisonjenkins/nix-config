@@ -1,7 +1,7 @@
 { config, lib, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
-    ./obsbot-raw-camera
+    ./pipewire-camera-bridges
     ../../programs/linux-only/obs-desktop-audio
     ../../programs/linux-only/steam-command-runner
     ../../programs/linux-only/sunshine-wrappers
