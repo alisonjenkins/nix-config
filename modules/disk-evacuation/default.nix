@@ -6,6 +6,10 @@ let
     { flakeIgnore = [ "E501" ]; }
     (builtins.readFile ./disk_evac.py);
 
+  evacApi = pkgs.writers.writePython3Bin "disk-evacuation-api"
+    { flakeIgnore = [ "E501" ]; }
+    (builtins.readFile ./evac_api.py);
+
   poolGlob = "${cfg.poolRoot}/*";
   stateDir = "/var/lib/disk-evacuation";
 
@@ -37,6 +41,25 @@ let
           --max-consecutive-errors ${toString cfg.maxConsecutiveErrors} \
           --rate-mib-s ${toString cfg.rateMiBPerSec}
       done
+    '';
+  };
+
+  # One JSON object keyed by source name, for the control API.
+  statusScript = pkgs.writeShellApplication {
+    name = "disk-evacuation-status";
+    runtimeInputs = [ diskEvac pkgs.coreutils ];
+    text = ''
+      printf '{'
+      sep=""
+      for plan in ${stateDir}/*.plan.json; do
+        [[ -e "$plan" ]] || continue
+        name=$(basename "$plan" .plan.json)
+        printf '%s"%s":' "$sep" "$name"
+        disk-evac status --plan "$plan" --pool-glob ${lib.escapeShellArg poolGlob} \
+          ${lib.escapeShellArgs skipArgs} --state "${stateDir}/$name"
+        sep=","
+      done
+      printf '}\n'
     '';
   };
 
@@ -102,6 +125,22 @@ in
       description = "Average read throttle on the failing disk, in MiB/s; 0 is unlimited.";
     };
 
+    api = {
+      enable = lib.mkEnableOption "the HTTP API an orchestrator uses to start, pause and read the evacuation";
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 8642;
+        description = "TCP port the API listens on; opened in the host firewall.";
+      };
+
+      tokenFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "File holding the bearer token every request must present (a sops secret path).";
+      };
+    };
+
     maxConsecutiveErrors = lib.mkOption {
       type = lib.types.ints.positive;
       default = 5;
@@ -110,10 +149,46 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [{
-      assertion = cfg.sources != [ ];
-      message = "modules.diskEvacuation.sources must list at least one mount point.";
-    }];
+    assertions = [
+      {
+        assertion = cfg.sources != [ ];
+        message = "modules.diskEvacuation.sources must list at least one mount point.";
+      }
+      {
+        assertion = !cfg.api.enable || cfg.api.tokenFile != null;
+        message = "modules.diskEvacuation.api.tokenFile is required when the API is enabled.";
+      }
+    ];
+
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.api.enable [ cfg.api.port ];
+
+    systemd.services.disk-evacuation-api = lib.mkIf cfg.api.enable {
+      description = "HTTP control API for disk evacuation";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" ];
+      path = [ config.systemd.package ];
+      serviceConfig = {
+        ExecStart = lib.concatStringsSep " " [
+          "${evacApi}/bin/disk-evacuation-api"
+          "--port ${toString cfg.api.port}"
+          "--token-file ${cfg.api.tokenFile}"
+          "--unit disk-evacuation.service"
+          "--state-dir ${stateDir}"
+          "--status-cmd ${statusScript}/bin/disk-evacuation-status"
+        ];
+        Restart = "on-failure";
+        RestartSec = 5;
+        StateDirectory = "disk-evacuation";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ReadWritePaths = [ stateDir ];
+        # Starting the evacuation unit goes over the system bus; reading the
+        # pool to validate plans needs DAC_READ_SEARCH. Nothing else.
+        CapabilityBoundingSet = [ "CAP_DAC_READ_SEARCH" ];
+      };
+    };
 
     environment.systemPackages = [ diskEvac ];
 
