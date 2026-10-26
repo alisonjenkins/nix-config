@@ -680,7 +680,9 @@ in
         "${patchesDir}/solaar-pro-x3-superstrike.patch"
       ];
       # The patch reads a new Device property that the suite's fake devices
-      # lack (the PR changes no tests), so these three report-rate tests fail.
+      # lack (the PR changes no tests), so three report-rate tests fail:
+      # test_get_polling_rate[responses0-1ms] and [responses1-500us], and
+      # test_simple_template[test46].
       disabledTests = (old.disabledTests or [ ]) ++ [
         "test_get_polling_rate"
         "test46"
