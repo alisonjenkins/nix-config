@@ -66,5 +66,6 @@
     # Server modules
     k8s-master = import ../modules/k8s-master;
     storage-server = import ../modules/storage-server;
+    disk-evacuation = import ../modules/disk-evacuation;
   };
 }
