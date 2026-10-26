@@ -23,6 +23,7 @@
     { layer = "fn"; key = "Q"; name = "SOS Beacon"; code = "IKLI"; }
     { layer = "fn"; key = "V"; name = "Call In Super Destroyer"; code = "IIKKJLJL"; }
     { layer = "fn"; key = "T"; name = "Reinforce"; code = "IKLJI"; }
+    { layer = "fn"; key = "4"; name = "Orbital Confetti"; code = "LKKIIKKII"; }
     # Fn2: Eagles + Sentries
     { layer = "fn2"; key = "R"; name = "Eagle Strafing Run"; code = "ILL"; }
     { layer = "fn2"; key = "A"; name = "Eagle Airstrike"; code = "ILKL"; }
@@ -44,6 +45,7 @@
     { layer = "fn2"; key = "3"; name = "Flame Sentry"; code = "KILKII"; }
     { layer = "fn2"; key = "X"; name = "Gas Mortar Sentry"; code = "KILKJ"; }
     { layer = "fn2"; key = "4"; name = "APW-1 Anti-Materiel Rifle"; code = "KJLIK"; }
+    { layer = "fn2"; key = "6"; name = "Eagle Fly By"; code = "IKKIIKKII"; }
     # Fn3: Support weapons, anti-armor/explosive
     { layer = "fn3"; key = "E"; name = "EAT-17 Expendable Anti-Tank"; code = "KKJIL"; }
     { layer = "fn3"; key = "R"; name = "GR-8 Recoilless Rifle"; code = "KJLLJ"; }
@@ -61,6 +63,7 @@
     { layer = "fn3"; key = "2"; name = "GL-28 Belt-Fed Grenade Launcher"; code = "KJIJII"; }
     { layer = "fn3"; key = "Z"; name = "RS-422 Railgun"; code = "KLKIJL"; }
     { layer = "fn3"; key = "1"; name = "GL-21 Grenade Launcher"; code = "KJIJK"; }
+    { layer = "fn3"; key = "W"; name = "AMW-20 Apex"; code = "KJJIKJ"; }
     # Fn4: Support weapons, small arms/utility
     { layer = "fn4"; key = "G"; name = "MG-43 Machine Gun"; code = "KJKIL"; }
     { layer = "fn4"; key = "S"; name = "M-105 Stalwart"; code = "KJKIIJ"; }
@@ -77,6 +80,7 @@
     { layer = "fn4"; key = "V"; name = "B/FLAM-80 Cremator"; code = "KKLKII"; }
     { layer = "fn4"; key = "Q"; name = "M-1000 Maxigun"; code = "KJLKII"; }
     { layer = "fn4"; key = "R"; name = "CQC-1 One True Flag"; code = "KJLLI"; }
+    { layer = "fn4"; key = "X"; name = "LAS-44 Nova"; code = "KJLKK"; }
     # Fn5: Backpacks + Emplacements
     { layer = "fn5"; key = "S"; name = "B-1 Supply Pack"; code = "KJKIIK"; }
     { layer = "fn5"; key = "W"; name = "LIFT-850 Jump Pack"; code = "KIIKI"; }
