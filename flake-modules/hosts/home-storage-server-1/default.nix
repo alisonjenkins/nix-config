@@ -18,6 +18,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.storage-server
+      self.nixosModules.disk-evacuation
       self.nixosModules.home-storage-server-1-hardware
       self.nixosModules.home-storage-server-1-disko-config
 
@@ -281,6 +282,28 @@ in {
         };
         modules.locale.enable = true;
         modules.storage-server.enable = true;
+        # sdg (ST5000LM000, ~5.9k pending sectors) and sdk (ST4000DM004) sit
+        # outside the pool at /mnt/rescue, mounted read-only. sdr and sdh are
+        # still pool branches with pending sectors, so they are never a
+        # destination. Start with `systemctl start disk-evacuation`.
+        modules.diskEvacuation = {
+          enable = true;
+          sources = [ "/mnt/rescue/sdg" "/mnt/rescue/sdk" ];
+          # Never fill a branch past the pool's own minfreespace floor, or
+          # mergerfs stops writing to it. Read from the mount so they cannot drift.
+          reserveGiB =
+            let
+              floors = builtins.filter (lib.hasPrefix "minfreespace=")
+                config.fileSystems."/media/storage".options;
+            in
+            assert lib.assertMsg (builtins.length floors == 1 && lib.hasSuffix "G" (builtins.head floors))
+              "/media/storage needs exactly one minfreespace=<n>G option";
+            lib.toInt (lib.removeSuffix "G" (lib.removePrefix "minfreespace=" (builtins.head floors)));
+          skipBranches = [
+            "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"
+            "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1"
+          ];
+        };
         modules.servers = {
           enable = true;
           prometheus.smartctlExporter.enable = true;
