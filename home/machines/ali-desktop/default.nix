@@ -1,6 +1,7 @@
 { config, lib, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
+    ../../programs/linux-only/obs-desktop-audio
     ../../programs/linux-only/steam-command-runner
     ../../programs/linux-only/sunshine-wrappers
     ../../programs/linux-only/steam-stream-mode
@@ -192,6 +193,35 @@
       id = "pipewire-audio-capture-application";
       settings.TargetName = "obs-game";
     };
+
+    # Whole-desktop recording without voice chat. The audio is the sink
+    # custom.obsDesktopAudio fills, which is where the exclusions live.
+    sceneCollections.Untitled.scenes.Desktop = [
+      {
+        name = "Desktop screen";
+        id = "pipewire-screen-capture-source";
+      }
+      {
+        name = "Desktop audio";
+        id = "pulse_output_capture";
+        audio = true;
+        settings.device_id = "${config.custom.obsDesktopAudio.sink}.monitor";
+      }
+    ];
+  };
+
+  # Rules match properties read off live streams with pw-dump. Game Audio is
+  # a global OBS slot that records in every scene, so the game is excluded
+  # here or it would be mixed in twice. A browser tab shares its process's
+  # binary and app name, so Element Call is matched on the tab title instead.
+  custom.obsDesktopAudio = {
+    enable = true;
+    exclude = [
+      { "application.process.binary" = "Discord"; }
+      { "application.name" = "^ringrtc$"; }
+      { "node.name" = "^obs-game$"; }
+      { "media.name" = "^Element Call"; }
+    ];
   };
 
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
