@@ -68,19 +68,21 @@ setup() {
 }
 
 @test "source: replaces id and settings of the named source only" {
-  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","settings":{"device":"/dev/video0","resolution":"1080p"}},{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
+  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","versioned_id":"v4l2_input","settings":{"device":"/dev/video0","resolution":"1080p"}},{"name":"Mic","id":"pulse_input_capture","versioned_id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
   echo '{"device_id":"v4l2_input.node"}' > "$dir/settings.json"
   obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json"
   [ "$(jq -r '.sources[0].name' "$dir/scene.json")" = "Webcam source" ]
   [ "$(jq -r '.sources[0].id' "$dir/scene.json")" = pipewire-camera-source ]
+  [ "$(jq -r '.sources[0].versioned_id' "$dir/scene.json")" = pipewire-camera-source ]
+  [ "$(jq -r '.sources[1].versioned_id' "$dir/scene.json")" = pulse_input_capture ]
   [ "$(jq -c '.sources[0].settings' "$dir/scene.json")" = '{"device_id":"v4l2_input.node"}' ]
 }
 
 @test "source: other sources and the rest of the collection are untouched" {
-  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","settings":{}},{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
+  echo '{"name":"Untitled","sources":[{"name":"Webcam source","id":"v4l2_input","versioned_id":"v4l2_input","settings":{}},{"name":"Mic","id":"pulse_input_capture","versioned_id":"pulse_input_capture","settings":{"device_id":"default"}}]}' > "$dir/scene.json"
   echo '{"device_id":"v4l2_input.node"}' > "$dir/settings.json"
   obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json"
-  [ "$(jq -c '.sources[1]' "$dir/scene.json")" = '{"name":"Mic","id":"pulse_input_capture","settings":{"device_id":"default"}}' ]
+  [ "$(jq -c '.sources[1]' "$dir/scene.json")" = '{"name":"Mic","id":"pulse_input_capture","versioned_id":"pulse_input_capture","settings":{"device_id":"default"}}' ]
   [ "$(jq -r '.name' "$dir/scene.json")" = Untitled ]
 }
 

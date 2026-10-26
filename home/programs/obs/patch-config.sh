@@ -58,7 +58,7 @@ obsPatchSource() {
       --arg id "$id" '
     if (.sources | map(select(.name == $name)) | length) == 0
     then error("no source named \($name)")
-    else .sources |= map(if .name == $name then (.id = $id | .settings = $settings[0]) else . end)
+    else .sources |= map(if .name == $name then (.id = $id | .versioned_id = $id | .settings = $settings[0]) else . end)
     end
   ' "$target" > "$tmp"; then
     run install -m 0600 "$tmp" "$target"
