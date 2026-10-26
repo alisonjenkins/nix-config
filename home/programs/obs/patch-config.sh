@@ -94,3 +94,65 @@ obsPatchAudioSlot() {
   fi
   rm -f "$tmp"
 }
+
+# obsEnsureScene TARGET SCENE SPECS_JSON_FILE
+# SPECS is a JSON list of {name, id, settings, audio}. Creates the scene and
+# any source missing from the collection, and puts each source in the scene.
+# An existing source keeps its other settings (a screen capture's portal
+# RestoreToken must survive) and has the declared ones merged over them.
+# New objects are copied from ones OBS already wrote, so the fields that
+# vary between OBS versions are not hard-coded here.
+obsEnsureScene() {
+  local target="$1" scene="$2" specs="$3" tmp uuids count
+  if [ ! -e "$target" ]; then
+    warnEcho "obs: $target does not exist, scene $scene left uncreated"
+    return 0
+  fi
+  count=$("$OBS_JQ" length "$specs")
+  uuids=$(for _ in $(seq 0 "$count"); do cat /proc/sys/kernel/random/uuid; done | "$OBS_JQ" -Rn '[inputs]')
+  tmp=$(mktemp)
+  if "$OBS_JQ" \
+      --slurpfile specs "$specs" \
+      --arg scene "$scene" \
+      --argjson uuids "$uuids" '
+    ([.sources[] | select(.id == "scene")] | first) as $sceneTpl
+    | ([.sources[] | select(.id == "scene") | .settings.items[]?] | first) as $itemTpl
+    | ([.sources[] | select(.id != "scene" and .id != "group")] | first | del(.filters)) as $srcTpl
+    | if $sceneTpl == null or $itemTpl == null or $srcTpl == null
+      then error("collection has no scene, scene item and source to copy from")
+      else . end
+    | $specs[0] as $specs
+    | reduce range(0; $specs | length) as $i (.;
+        $specs[$i] as $s
+        | if any(.sources[]; .name == $s.name)
+          then .sources |= map(if .name == $s.name
+              then .id = $s.id | .versioned_id = $s.id | .settings = ((.settings // {}) * $s.settings)
+              else . end)
+          else .sources += [$srcTpl
+              | .name = $s.name | .uuid = $uuids[$i]
+              | .id = $s.id | .versioned_id = $s.id | .settings = $s.settings
+              | .mixers = (if $s.audio then 255 else 0 end)]
+          end)
+    | if any(.sources[]; .name == $scene)
+      then .
+      else .sources += [$sceneTpl
+              | .name = $scene | .uuid = $uuids[$specs | length]
+              | .hotkeys = {"OBSBasic.SelectScene": []}
+              | .settings = {id_counter: 0, custom_size: false, items: []}]
+           | .scene_order += [{name: $scene}]
+      end
+    | reduce $specs[] as $s (.;
+        (.sources | map(select(.name == $s.name)) | first | .uuid) as $uuid
+        | .sources |= map(if .name == $scene and (.settings.items | any(.name == $s.name) | not)
+            then (.settings.id_counter + 1) as $n
+              | .settings.id_counter = $n
+              | .settings.items += [$itemTpl | .name = $s.name | .source_uuid = $uuid | .id = $n]
+              | .hotkeys += {("libobs.show_scene_item.\($n)"): [], ("libobs.hide_scene_item.\($n)"): []}
+            else . end))
+  ' "$target" > "$tmp"; then
+    run install -m 0600 "$tmp" "$target"
+  else
+    warnEcho "obs: $target is not valid JSON or cannot take scene $scene, left unpatched"
+  fi
+  rm -f "$tmp"
+}

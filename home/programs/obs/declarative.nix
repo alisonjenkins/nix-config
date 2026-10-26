@@ -104,6 +104,34 @@ let
     };
   };
 
+  sceneSourceModule = {
+    options = {
+      name = lib.mkOption {
+        type = lib.types.str;
+        example = "Desktop audio";
+        description = "Source name, unique within the collection.";
+      };
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-screen-capture-source";
+        description = "OBS source id, e.g. an input kind.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = ''
+          Merged over the settings OBS already wrote, so state OBS keeps
+          there (a screen capture's portal RestoreToken) survives a switch.
+        '';
+      };
+      audio = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether the source produces audio, so it gets mixer tracks.";
+      };
+    };
+  };
+
   audioSlotModule = {
     options = {
       name = lib.mkOption {
@@ -142,6 +170,15 @@ let
         (jsonFormat.generate "obs-audio-slot-settings.json" s.settings)
       ]}\n"
     ) c.audioSlots)
+    + lib.concatStrings (lib.mapAttrsToList (scene: sources:
+      "obsEnsureScene ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        scene
+        (jsonFormat.generate "obs-scene-sources.json" (map
+          (s: { inherit (s) name id settings audio; })
+          sources))
+      ]}\n"
+    ) c.scenes)
   ) cfg.sceneCollections);
 in
 {
@@ -164,6 +201,17 @@ in
           type = lib.types.attrsOf (lib.types.submodule sourceModule);
           default = { };
           description = "Scene sources keyed by name; each one's id and settings are patched in.";
+        };
+        options.scenes = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.listOf (lib.types.submodule sceneSourceModule));
+          default = { };
+          description = ''
+            Scenes keyed by name, each a list of sources in stacking order.
+            A scene or source missing from the collection is created and the
+            sources are put in the scene; nothing is ever removed. The
+            collection file must already exist and hold a scene, a scene item
+            and a source, which new ones are copied from.
+          '';
         };
         options.audioSlots = lib.mkOption {
           type = lib.types.attrsOf (lib.types.submodule audioSlotModule);
