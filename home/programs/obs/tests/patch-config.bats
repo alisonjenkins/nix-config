@@ -118,3 +118,60 @@ setup() {
   obsPatchAudioSlot "$dir/scene.json" DesktopAudioDevice1 x y "$dir/settings.json" 2>/dev/null
   cmp "$dir/scene.json" "$dir/before.json"
 }
+
+# One scene holding one source, written the way OBS writes them.
+scene_fixture() {
+  cat > "$dir/scene.json" <<'JSON'
+{"name":"Untitled","scene_order":[{"name":"Coding"}],"sources":[
+ {"name":"Term","uuid":"u-term","id":"pipewire-screen-capture-source","versioned_id":"pipewire-screen-capture-source","settings":{"RestoreToken":"keep-me"},"mixers":0,"hotkeys":{},"volume":1.0},
+ {"name":"Coding","uuid":"u-coding","id":"scene","versioned_id":"scene","mixers":0,"canvas_uuid":"canvas","hotkeys":{"OBSBasic.SelectScene":[],"libobs.show_scene_item.1":[],"libobs.hide_scene_item.1":[]},
+  "settings":{"id_counter":1,"custom_size":false,"items":[{"name":"Term","source_uuid":"u-term","id":1,"visible":true,"bounds_type":2}]}}]}
+JSON
+  cat > "$dir/specs.json" <<'JSON'
+[{"name":"Desktop screen","id":"pipewire-screen-capture-source","settings":{},"audio":false},
+ {"name":"Desktop audio","id":"pipewire-audio-capture-application","settings":{"ExceptApp":true},"audio":true}]
+JSON
+}
+
+@test "scene: creates the scene, its sources and its items" {
+  scene_fixture
+  obsEnsureScene "$dir/scene.json" Desktop "$dir/specs.json"
+  [ "$(jq -r '[.scene_order[].name] | join(",")' "$dir/scene.json")" = Coding,Desktop ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop audio") | .id' "$dir/scene.json")" = pipewire-audio-capture-application ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop audio") | .mixers' "$dir/scene.json")" = 255 ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop screen") | .mixers' "$dir/scene.json")" = 0 ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop") | .canvas_uuid' "$dir/scene.json")" = canvas ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop") | [.settings.items[].name] | join(",")' "$dir/scene.json")" = "Desktop screen,Desktop audio" ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop") | .settings.id_counter' "$dir/scene.json")" = 2 ]
+}
+
+@test "scene: each item points at its source's uuid, and uuids are unique" {
+  scene_fixture
+  obsEnsureScene "$dir/scene.json" Desktop "$dir/specs.json"
+  [ "$(jq -r '[.sources[].uuid] | unique | length' "$dir/scene.json")" = "$(jq '.sources | length' "$dir/scene.json")" ]
+  [ "$(jq -r '.sources[] | select(.name=="Desktop") | .settings.items[0].source_uuid' "$dir/scene.json")" = "$(jq -r '.sources[] | select(.name=="Desktop screen") | .uuid' "$dir/scene.json")" ]
+}
+
+@test "scene: running twice changes nothing" {
+  scene_fixture
+  obsEnsureScene "$dir/scene.json" Desktop "$dir/specs.json"
+  cp "$dir/scene.json" "$dir/once.json"
+  obsEnsureScene "$dir/scene.json" Desktop "$dir/specs.json"
+  cmp "$dir/scene.json" "$dir/once.json"
+}
+
+@test "scene: an existing source keeps settings OBS wrote and takes the declared ones" {
+  scene_fixture
+  echo '[{"name":"Term","id":"pipewire-screen-capture-source","settings":{"ShowCursor":true},"audio":false}]' > "$dir/specs.json"
+  obsEnsureScene "$dir/scene.json" Coding "$dir/specs.json"
+  [ "$(jq -c '.sources[] | select(.name=="Term") | .settings' "$dir/scene.json")" = '{"RestoreToken":"keep-me","ShowCursor":true}' ]
+  [ "$(jq -r '.sources[] | select(.name=="Coding") | .settings.items | length' "$dir/scene.json")" = 1 ]
+}
+
+@test "scene: a collection with nothing to copy from is left byte-identical" {
+  echo '{"scene_order":[],"sources":[]}' > "$dir/scene.json"
+  cp "$dir/scene.json" "$dir/before.json"
+  echo '[{"name":"A","id":"x","settings":{},"audio":false}]' > "$dir/specs.json"
+  obsEnsureScene "$dir/scene.json" Desktop "$dir/specs.json" 2>/dev/null
+  cmp "$dir/scene.json" "$dir/before.json"
+}
