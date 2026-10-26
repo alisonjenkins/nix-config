@@ -14,9 +14,9 @@ name: code: {
     ]
     ++ lib.concatMap
       (dir: [
-        { macroActionType = "key"; action = "press"; type = "basic"; scancode = constants.scancode.${dir}; }
+        { macroActionType = "key"; action = "press"; type = "basic"; scancode = constants.directionKey.${dir}; }
         { macroActionType = "delay"; delay = constants.holdMs; }
-        { macroActionType = "key"; action = "release"; type = "basic"; scancode = constants.scancode.${dir}; }
+        { macroActionType = "key"; action = "release"; type = "basic"; scancode = constants.directionKey.${dir}; }
         { macroActionType = "delay"; delay = constants.gapMs; }
       ])
       (lib.stringToCharacters code)
