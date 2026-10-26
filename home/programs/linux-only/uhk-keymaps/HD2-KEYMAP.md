@@ -26,129 +26,130 @@ device.
 
 ## Stratagem placement
 
-Direction codes are I/J/K/L (up/left/down/right on the D-pad), read
-left-to-right as the game shows them. Each key plays a macro that holds
-Ctrl, then presses each direction with a hold + gap between (a plain tap
+Direction codes are U/D/L/R (up/down/left/right), read left-to-right as the
+game shows them; the key each direction presses is set once in
+`constants.nix` (`directionKey`, currently WASD). Each key plays a macro that
+holds Ctrl, then presses each direction with a hold + gap between (a plain tap
 was too brief for the game to register reliably).
 
 ### fn
 
 | Key | Stratagem | Code |
 |---|---|---|
-| 1 | Orbital 120mm HE Barrage | LLKJLK |
-| 2 | M-102 Fast Recon Vehicle | JKLKLKI |
-| 3 | Orbital 380mm HE Barrage | LKIIJKK |
-| 4 | Orbital Confetti | LKKIIKKII |
-| Q | SOS Beacon | IKLI |
-| W | Orbital Walking Barrage | LKLKLK |
-| E | Orbital EMS Strike | LLJK |
-| R | Orbital Laser | LKILK |
-| T | Reinforce | IKLJI |
-| A | Orbital Precision Strike | LLI |
-| S | Orbital Smoke Strike | LLKI |
-| D | Orbital Illumination Flare | LLJJ |
-| F | Orbital Napalm Barrage | LLKJLI |
-| G | Orbital Gatling Barrage | LKJII |
-| Z | Orbital Railcannon Strike | LIKKL |
-| X | Orbital Gas Strike | LLKL |
-| C | Resupply | KKIL |
-| V | Call In Super Destroyer | IIKKJLJL |
-| B | Orbital Airburst Strike | LLL |
+| 1 | Orbital 120mm HE Barrage | RRDLRD |
+| 2 | M-102 Fast Recon Vehicle | LDRDRDU |
+| 3 | Orbital 380mm HE Barrage | RDUULDD |
+| 4 | Orbital Confetti | RDDUUDDUU |
+| Q | SOS Beacon | UDRU |
+| W | Orbital Walking Barrage | RDRDRD |
+| E | Orbital EMS Strike | RRLD |
+| R | Orbital Laser | RDURD |
+| T | Reinforce | UDRLU |
+| A | Orbital Precision Strike | RRU |
+| S | Orbital Smoke Strike | RRDU |
+| D | Orbital Illumination Flare | RRLL |
+| F | Orbital Napalm Barrage | RRDLRU |
+| G | Orbital Gatling Barrage | RDLUU |
+| Z | Orbital Railcannon Strike | RUDDR |
+| X | Orbital Gas Strike | RRDR |
+| C | Resupply | DDUR |
+| V | Call In Super Destroyer | UUDDLRLR |
+| B | Orbital Airburst Strike | RRR |
 
 ### fn2
 
 | Key | Stratagem | Code |
 |---|---|---|
-| 1 | Eagle 110mm Rocket Pods | ILIJ |
-| 2 | Eagle Gas Airstrike | ILJL |
-| 3 | Flame Sentry | KILKII |
-| 4 | APW-1 Anti-Materiel Rifle | KJLIK |
-| 5 | Eagle 500kg Bomb | ILKKK |
-| 6 | Eagle Fly By | IKKIIKKII |
-| Q | Autocannon Sentry | KILIJI |
-| W | Rocket Sentry | KILLJ |
-| E | Eagle Rearm | IIJIL |
-| R | Eagle Strafing Run | ILL |
-| T | Gatling Sentry | KILJ |
-| A | Eagle Airstrike | ILKL |
-| S | Eagle Smoke Strike | ILIK |
-| D | EMS Mortar Sentry | KILKL |
-| F | Eagle Napalm Airstrike | ILKI |
-| G | MG Sentry | KILLI |
-| Z | Tesla Tower | KILIJL |
-| X | Gas Mortar Sentry | KILKJ |
-| C | Eagle Cluster Bomb | ILKKL |
-| V | Laser Sentry | KILKIL |
-| B | Mortar Sentry | KILLK |
+| 1 | Eagle 110mm Rocket Pods | URUL |
+| 2 | Eagle Gas Airstrike | URLR |
+| 3 | Flame Sentry | DURDUU |
+| 4 | APW-1 Anti-Materiel Rifle | DLRUD |
+| 5 | Eagle 500kg Bomb | URDDD |
+| 6 | Eagle Fly By | UDDUUDDUU |
+| Q | Autocannon Sentry | DURULU |
+| W | Rocket Sentry | DURRL |
+| E | Eagle Rearm | UULUR |
+| R | Eagle Strafing Run | URR |
+| T | Gatling Sentry | DURL |
+| A | Eagle Airstrike | URDR |
+| S | Eagle Smoke Strike | URUD |
+| D | EMS Mortar Sentry | DURDR |
+| F | Eagle Napalm Airstrike | URDU |
+| G | MG Sentry | DURRU |
+| Z | Tesla Tower | DURULR |
+| X | Gas Mortar Sentry | DURDL |
+| C | Eagle Cluster Bomb | URDDR |
+| V | Laser Sentry | DURDUR |
+| B | Mortar Sentry | DURRD |
 
 ### fn3
 
 | Key | Stratagem | Code |
 |---|---|---|
-| 1 | GL-21 Grenade Launcher | KJIJK |
-| 2 | GL-28 Belt-Fed Grenade Launcher | KJIJII |
-| 4 | 40-K Meltagun | KJIJJK |
-| Q | LAS-99 Quasar Cannon | KKIJL |
-| W | AMW-20 Apex | KJJIKJ |
-| E | EAT-17 Expendable Anti-Tank | KKJIL |
-| R | GR-8 Recoilless Rifle | KJLLJ |
-| T | B/MD C4 Pack | KLIILI |
-| A | AC-8 Autocannon | KJKIIL |
-| S | FAF-14 Spear | KKIKK |
-| D | GL-52 De-Escalator | KLIJL |
-| F | EAT-700 Expendable Napalm | KKJIJ |
-| G | S-11 Speargun | KLKJIL |
-| Z | RS-422 Railgun | KLKIJL |
-| C | MLS-4X Commando | KJIKL |
-| V | EAT-411 Leveller | KKJIK |
-| B | RL-77 Airburst Rocket Launcher | KIIJL |
+| 1 | GL-21 Grenade Launcher | DLULD |
+| 2 | GL-28 Belt-Fed Grenade Launcher | DLULUU |
+| 4 | 40-K Meltagun | DLULLD |
+| Q | LAS-99 Quasar Cannon | DDULR |
+| W | AMW-20 Apex | DLLUDL |
+| E | EAT-17 Expendable Anti-Tank | DDLUR |
+| R | GR-8 Recoilless Rifle | DLRRL |
+| T | B/MD C4 Pack | DRUURU |
+| A | AC-8 Autocannon | DLDUUR |
+| S | FAF-14 Spear | DDUDD |
+| D | GL-52 De-Escalator | DRULR |
+| F | EAT-700 Expendable Napalm | DDLUL |
+| G | S-11 Speargun | DRDLUR |
+| Z | RS-422 Railgun | DRDULR |
+| C | MLS-4X Commando | DLUDR |
+| V | EAT-411 Leveller | DDLUD |
+| B | RL-77 Airburst Rocket Launcher | DUULR |
 
 ### fn4
 
 | Key | Stratagem | Code |
 |---|---|---|
-| 1 | MS-11 Solo Silo | KILKK |
-| 4 | MGX-42 Bullet Storm | KJKLIJ |
-| Q | M-1000 Maxigun | KJLKII |
-| W | MG-206 Heavy Machine Gun | KJIKK |
-| E | PLAS-45 Epoch | KJIJL |
-| R | CQC-1 One True Flag | KJLLI |
-| T | TX-41 Sterilizer | KJIKJ |
-| S | M-105 Stalwart | KJKIIJ |
-| D | CQC-9 Defoliation Tool | KJLLK |
-| F | FLAM-40 Flamethrower | KJIKI |
-| G | MG-43 Machine Gun | KJKIL |
-| Z | LAS-98 Laser Cannon | KJKIJ |
-| X | LAS-44 Nova | KJLKK |
-| C | ARC-3 Arc Thrower | KLKIJJ |
-| V | B/FLAM-80 Cremator | KKLKII |
-| B | CQC-20 Breaching Hammer | KJLJI |
+| 1 | MS-11 Solo Silo | DURDD |
+| 4 | MGX-42 Bullet Storm | DLDRUL |
+| Q | M-1000 Maxigun | DLRDUU |
+| W | MG-206 Heavy Machine Gun | DLUDD |
+| E | PLAS-45 Epoch | DLULR |
+| R | CQC-1 One True Flag | DLRRU |
+| T | TX-41 Sterilizer | DLUDL |
+| S | M-105 Stalwart | DLDUUL |
+| D | CQC-9 Defoliation Tool | DLRRD |
+| F | FLAM-40 Flamethrower | DLUDU |
+| G | MG-43 Machine Gun | DLDUR |
+| Z | LAS-98 Laser Cannon | DLDUL |
+| X | LAS-44 Nova | DLRDD |
+| C | ARC-3 Arc Thrower | DRDULL |
+| V | B/FLAM-80 Cremator | DDRDUU |
+| B | CQC-20 Breaching Hammer | DLRLU |
 
 ### fn5
 
 | Key | Stratagem | Code |
 |---|---|---|
-| 1 | Anti-Tank Mines | KJII |
-| 2 | Shield Generator Relay | KIJLJK |
-| 3 | E/GL-21 Grenadier Battlement | KLKJL |
-| 4 | Incendiary Mines | KJJK |
-| 5 | E/MG-101 HMG Emplacement | KIJLLJ |
-| 6 | E/AT-12 Anti-Tank Emplacement | KIJLLL |
-| Q | Hover Pack | KIIKJL |
-| W | LIFT-850 Jump Pack | KIIKI |
-| E | Portable Hellbomb | KLIII |
-| R | "Guard Dog" Rover | KIJILL |
-| T | Dog Breath | KIJILI |
-| A | Anti-Personnel Minefield | KJIL |
-| S | B-1 Supply Pack | KJKIIK |
-| D | Shield Generator Pack | KIJLJL |
-| F | Hot Dog | KIJIJJ |
-| G | "Guard Dog" | KIJILK |
-| Z | Gas Mines | KJJL |
-| X | Warp Pack | KJLKJL |
-| C | K-9 | KIJILJ |
-| V | Directional Shield | KIJLII |
-| B | SH-20 Ballistic Shield Backpack | KJKKIJ |
+| 1 | Anti-Tank Mines | DLUU |
+| 2 | Shield Generator Relay | DULRLD |
+| 3 | E/GL-21 Grenadier Battlement | DRDLR |
+| 4 | Incendiary Mines | DLLD |
+| 5 | E/MG-101 HMG Emplacement | DULRRL |
+| 6 | E/AT-12 Anti-Tank Emplacement | DULRRR |
+| Q | Hover Pack | DUUDLR |
+| W | LIFT-850 Jump Pack | DUUDU |
+| E | Portable Hellbomb | DRUUU |
+| R | "Guard Dog" Rover | DULURR |
+| T | Dog Breath | DULURU |
+| A | Anti-Personnel Minefield | DLUR |
+| S | B-1 Supply Pack | DLDUUD |
+| D | Shield Generator Pack | DULRLR |
+| F | Hot Dog | DULULL |
+| G | "Guard Dog" | DULURD |
+| Z | Gas Mines | DLLR |
+| X | Warp Pack | DLRDLR |
+| C | K-9 | DULURL |
+| V | Directional Shield | DULRUU |
+| B | SH-20 Ballistic Shield Backpack | DLDDUL |
 
 ## Generation and push
 
