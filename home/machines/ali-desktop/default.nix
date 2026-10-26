@@ -184,6 +184,14 @@
       id = "pipewire-camera-source";
       settings.device_id = "v4l2_input.pci-0000_15_00.0-usb-0_1.1_1.0";
     };
+
+    # The default "Desktop Audio" slot records the whole default sink; capture
+    # only streams that steamCommandRunner.innerEnv tags as obs-game.
+    sceneCollections.Untitled.audioSlots.DesktopAudioDevice1 = {
+      name = "Game Audio";
+      id = "pipewire-audio-capture-application";
+      settings.TargetName = "obs-game";
+    };
   };
 
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
@@ -194,7 +202,13 @@
     preCommand = "obs-gamecapture gamemoderun";
     defaultProton = "DW-Proton Latest";
     shimDebug = true;
-    innerEnv.MANGOHUD = "1";
+    innerEnv = {
+      MANGOHUD = "1";
+      # Names the game's audio stream for OBS's app audio capture. libpulse
+      # applies the override to the context, so Proton's winepulse inherits it
+      # and node.name becomes obs-game (docs/adr/0053).
+      PULSE_PROP_OVERRIDE = "application.name=obs-game";
+    };
     gamescopeArgs = "-w 2540 -h 1440 -W 2540 -H 1440 -b --rt --hdr-enabled --hdr-debug-force-support --force-grab-cursor -F fsr -r 120";
     # Almost every launch here goes through gamescope, so the module default
     # of skipping preCommand under gamescope would silently drop the
