@@ -300,7 +300,7 @@ def test_cli_failure_logs_traceback(
     assert record.exc_info is not None
 
 
-def test_cli_run_reports_deferred_and_passes_reserve(
+def test_cli_run_exits_3_when_everything_is_deferred(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -317,7 +317,7 @@ def test_cli_run_reports_deferred_and_passes_reserve(
         ]
     )
 
-    assert code == 0
+    assert code == 3
     out = json.loads(capsys.readouterr().out)
     assert out["deferred"] == 1 and out["verified"] == 0
 

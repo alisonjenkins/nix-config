@@ -772,6 +772,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(json.dumps(res_dict))
             if res.stopped == "too_many_errors":
                 return 2
+            if res.deferred and not res.verified:
+                # Nothing could be copied (destinations full): fail the unit
+                # so a stuck evacuation is not mistaken for a finished one.
+                return 3
             return 0
         except Exception as exc:  # noqa: BLE001
             logger.error("run_failed error=%s", exc, exc_info=True)
