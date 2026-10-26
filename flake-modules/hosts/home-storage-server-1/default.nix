@@ -289,6 +289,11 @@ in {
         modules.diskEvacuation = {
           enable = true;
           sources = [ "/mnt/rescue/sdg" "/mnt/rescue/sdk" ];
+          # n8n (home-cluster) drives the evacuation through this API.
+          api = {
+            enable = true;
+            tokenFile = config.sops.secrets."disk-evacuation-api/token".path;
+          };
           # Never fill a branch past the pool's own minfreespace floor, or
           # mergerfs stops writing to it. Read from the mount so they cannot drift.
           reserveGiB =
@@ -1068,7 +1073,15 @@ in {
               owner = config.users.users.root.name;
               sopsFile = ./secrets/samba-passwords.enc.yaml;
             };
-          }) sambaUsers);
+          }) sambaUsers) // {
+            "disk-evacuation-api/token" = {
+              format = "yaml";
+              key = "data/token";
+              mode = "0400";
+              owner = "root";
+              sopsFile = ./secrets/disk-evacuation-api.enc.yaml;
+            };
+          };
         };
 
         systemd.services.samba-setup-passwords = {
