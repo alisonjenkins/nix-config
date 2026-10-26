@@ -12,7 +12,7 @@ repos:
         name: flake8 (as writePython3Bin runs it)
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.flake8 --command flake8 --show-source --ignore=E501
         language: system
-        files: ^(home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)|pkgs/vr-foveation-bench/(vr_foveation_bench|tests)/[a-z_]+|modules/disk-evacuation/disk_evac)\.py$
+        files: ^(home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)|pkgs/vr-foveation-bench/(vr_foveation_bench|tests)/[a-z_]+|modules/disk-evacuation/(disk_evac|evac_api))\.py$
       - id: stream-mode-tests
         name: stream-mode tests
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s home/programs/linux-only/steam-stream-mode/tests
