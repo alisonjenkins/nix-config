@@ -1,6 +1,7 @@
 { config, lib, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
+    ./obsbot-raw-camera
     ../../programs/linux-only/obs-desktop-audio
     ../../programs/linux-only/steam-command-runner
     ../../programs/linux-only/sunshine-wrappers
@@ -180,10 +181,17 @@
       };
     };
 
-    # device_id is the PipeWire node.name of the OBSBOT Tiny 2 Lite.
-    sceneCollections.Untitled.sources."Webcam source" = {
-      id = "pipewire-camera-source";
-      settings.device_id = "v4l2_input.pci-0000_15_00.0-usb-0_1.1_1.0";
+    # device_id is the raw node published by the obsbot-raw-camera service;
+    # OBS's PipeWire camera source cannot use the camera's MJPEG.
+    # "Webcam source BG" is the same camera with the Background Removal filter.
+    sceneCollections.Untitled.sources = let
+      webcam = {
+        id = "pipewire-camera-source";
+        settings.device_id = config.custom.obsbotRawCamera.nodeName;
+      };
+    in {
+      "Webcam source" = webcam;
+      "Webcam source BG" = webcam;
     };
 
     # The default "Desktop Audio" slot records the whole default sink; capture
