@@ -104,6 +104,26 @@ let
     };
   };
 
+  audioSlotModule = {
+    options = {
+      name = lib.mkOption {
+        type = lib.types.str;
+        example = "Game Audio";
+        description = "Name shown in the OBS mixer.";
+      };
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-audio-capture-application";
+        description = "OBS source id the slot is switched to.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = "Replaces the slot's settings object wholesale.";
+      };
+    };
+  };
+
   sceneCmds = lib.concatStrings (lib.mapAttrsToList (collection: c:
     lib.concatStrings (lib.mapAttrsToList (name: s:
       "obsPatchSource ${lib.escapeShellArgs [
@@ -113,6 +133,15 @@ let
         (jsonFormat.generate "obs-scene-source-settings.json" s.settings)
       ]}\n"
     ) c.sources)
+    + lib.concatStrings (lib.mapAttrsToList (slot: s:
+      "obsPatchAudioSlot ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        slot
+        s.name
+        s.id
+        (jsonFormat.generate "obs-audio-slot-settings.json" s.settings)
+      ]}\n"
+    ) c.audioSlots)
   ) cfg.sceneCollections);
 in
 {
@@ -135,6 +164,15 @@ in
           type = lib.types.attrsOf (lib.types.submodule sourceModule);
           default = { };
           description = "Scene sources keyed by name; each one's id and settings are patched in.";
+        };
+        options.audioSlots = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule audioSlotModule);
+          default = { };
+          description = ''
+            Global audio slots keyed by their collection-file key, e.g.
+            DesktopAudioDevice1 or AuxAudioDevice1; each one is switched to
+            the declared source kind. A slot absent from the file is skipped.
+          '';
         };
       });
       default = { };

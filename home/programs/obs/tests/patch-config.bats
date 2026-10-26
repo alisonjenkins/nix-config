@@ -98,3 +98,23 @@ setup() {
   obsPatchSource "$dir/scene.json" "Webcam source" pipewire-camera-source "$dir/settings.json" 2>/dev/null
   [ "$(cat "$dir/scene.json")" = '{broken' ]
 }
+
+@test "audio slot: id, name and settings are replaced, the rest of the slot kept" {
+  echo '{"DesktopAudioDevice1":{"name":"Desktop Audio","id":"pulse_output_capture","versioned_id":"pulse_output_capture","settings":{"device_id":"default"},"volume":0.5},"AuxAudioDevice1":{"name":"Mic/Aux","id":"pulse_input_capture"}}' > "$dir/scene.json"
+  echo '{"TargetName":"obs-game"}' > "$dir/settings.json"
+  obsPatchAudioSlot "$dir/scene.json" DesktopAudioDevice1 "Game Audio" pipewire-audio-capture-application "$dir/settings.json"
+  [ "$(jq -r '.DesktopAudioDevice1.id' "$dir/scene.json")" = pipewire-audio-capture-application ]
+  [ "$(jq -r '.DesktopAudioDevice1.versioned_id' "$dir/scene.json")" = pipewire-audio-capture-application ]
+  [ "$(jq -r '.DesktopAudioDevice1.name' "$dir/scene.json")" = "Game Audio" ]
+  [ "$(jq -c '.DesktopAudioDevice1.settings' "$dir/scene.json")" = '{"TargetName":"obs-game"}' ]
+  [ "$(jq -r '.DesktopAudioDevice1.volume' "$dir/scene.json")" = 0.5 ]
+  [ "$(jq -r '.AuxAudioDevice1.id' "$dir/scene.json")" = pulse_input_capture ]
+}
+
+@test "audio slot: an absent slot leaves the file byte-identical" {
+  echo '{"AuxAudioDevice1":{"name":"Mic/Aux"}}' > "$dir/scene.json"
+  cp "$dir/scene.json" "$dir/before.json"
+  echo '{}' > "$dir/settings.json"
+  obsPatchAudioSlot "$dir/scene.json" DesktopAudioDevice1 x y "$dir/settings.json" 2>/dev/null
+  cmp "$dir/scene.json" "$dir/before.json"
+}

@@ -67,3 +67,30 @@ obsPatchSource() {
   fi
   rm -f "$tmp"
 }
+
+# obsPatchAudioSlot TARGET SLOT NAME ID SETTINGS_JSON_FILE
+# Re-points a global audio slot (DesktopAudioDevice1, AuxAudioDevice1, ...) at
+# another source kind. Settings are replaced, not merged, like obsPatchSource.
+obsPatchAudioSlot() {
+  local target="$1" slot="$2" name="$3" id="$4" settings="$5" tmp
+  if [ ! -e "$target" ]; then
+    warnEcho "obs: $target does not exist, audio slot $slot left unpatched"
+    return 0
+  fi
+  tmp=$(mktemp)
+  if "$OBS_JQ" \
+      --slurpfile settings "$settings" \
+      --arg slot "$slot" \
+      --arg name "$name" \
+      --arg id "$id" '
+    if .[$slot] == null
+    then error("no audio slot \($slot)")
+    else .[$slot] |= (.name = $name | .id = $id | .versioned_id = $id | .settings = $settings[0])
+    end
+  ' "$target" > "$tmp"; then
+    run install -m 0600 "$tmp" "$target"
+  else
+    warnEcho "obs: $target is not valid JSON or has no audio slot $slot, left unpatched"
+  fi
+  rm -f "$tmp"
+}
