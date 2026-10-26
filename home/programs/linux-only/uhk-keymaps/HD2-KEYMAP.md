@@ -38,6 +38,7 @@ was too brief for the game to register reliably).
 | 1 | Orbital 120mm HE Barrage | LLKJLK |
 | 2 | M-102 Fast Recon Vehicle | JKLKLKI |
 | 3 | Orbital 380mm HE Barrage | LKIIJKK |
+| 4 | Orbital Confetti | LKKIIKKII |
 | Q | SOS Beacon | IKLI |
 | W | Orbital Walking Barrage | LKLKLK |
 | E | Orbital EMS Strike | LLJK |
@@ -63,6 +64,7 @@ was too brief for the game to register reliably).
 | 3 | Flame Sentry | KILKII |
 | 4 | APW-1 Anti-Materiel Rifle | KJLIK |
 | 5 | Eagle 500kg Bomb | ILKKK |
+| 6 | Eagle Fly By | IKKIIKKII |
 | Q | Autocannon Sentry | KILIJI |
 | W | Rocket Sentry | KILLJ |
 | E | Eagle Rearm | IIJIL |
@@ -87,6 +89,7 @@ was too brief for the game to register reliably).
 | 2 | GL-28 Belt-Fed Grenade Launcher | KJIJII |
 | 4 | 40-K Meltagun | KJIJJK |
 | Q | LAS-99 Quasar Cannon | KKIJL |
+| W | AMW-20 Apex | KJJIKJ |
 | E | EAT-17 Expendable Anti-Tank | KKJIL |
 | R | GR-8 Recoilless Rifle | KJLLJ |
 | T | B/MD C4 Pack | KLIILI |
@@ -116,6 +119,7 @@ was too brief for the game to register reliably).
 | F | FLAM-40 Flamethrower | KJIKI |
 | G | MG-43 Machine Gun | KJKIL |
 | Z | LAS-98 Laser Cannon | KJKIJ |
+| X | LAS-44 Nova | KJLKK |
 | C | ARC-3 Arc Thrower | KLKIJJ |
 | V | B/FLAM-80 Cremator | KKLKII |
 | B | CQC-20 Breaching Hammer | KJLJI |
