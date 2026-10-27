@@ -473,8 +473,10 @@ in
       #   documents -> docx, pdf, pptx, xlsx, doc-coauthoring, internal-comms
       #   web-ui    -> frontend-design, web-artifacts-builder, webapp-testing
       #   skill-authoring -> skill-creator
-      # Leaves without a natural parent (mcp-builder, slack-gif-creator) keep
-      # their descriptions and stay top-level.
+      # "user-invocable-only" removes a skill from the model's listing but keeps
+      # it in the / menu: for skills only the user ever starts. Skill-doctor on
+      # 2026-10-27 showed the model had invoked none of these on either machine
+      # (ADR 0055).
       skillOverrides = {
         docx = "name-only";
         pdf = "name-only";
@@ -486,6 +488,29 @@ in
         web-artifacts-builder = "name-only";
         webapp-testing = "name-only";
         skill-creator = "name-only";
+        # Leaves without a parent, never model-invoked; the name still shows.
+        mcp-builder = "name-only";
+        slack-gif-creator = "name-only";
+        local-llm-setup = "name-only";
+        security = "name-only";
+        cavecrew = "name-only";
+        # Slash commands the user types; claude-statusbar stays listed as the
+        # router for the statusbar-* commands.
+        caveman = "user-invocable-only";
+        caveman-commit = "user-invocable-only";
+        caveman-compress = "user-invocable-only";
+        caveman-help = "user-invocable-only";
+        caveman-review = "user-invocable-only";
+        caveman-stats = "user-invocable-only";
+        statusbar = "user-invocable-only";
+        statusbar-doctor = "user-invocable-only";
+        statusbar-preview = "user-invocable-only";
+        statusbar-reset = "user-invocable-only";
+        statusbar-style = "user-invocable-only";
+        statusbar-theme = "user-invocable-only";
+        speckit-init = "user-invocable-only";
+        nix-pull-build = "user-invocable-only";
+        process-todo = "user-invocable-only";
       };
 
       # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer
