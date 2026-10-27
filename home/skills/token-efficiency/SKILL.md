@@ -3,8 +3,9 @@ name: token-efficiency
 description: >-
   Use when reviewing where Claude Code spends tokens (a token or cost review,
   "what is eating my context", top tool or skill by tokens, cache hit rate,
-  cc-obs-query, the observability stack digest) or when designing a tool, MCP
-  server, skill or CLI so it costs fewer tokens. Not for general performance
+  cc-obs-query, the observability stack digest), when designing a tool, MCP
+  server, skill or CLI so it costs fewer tokens, or when building an MCP
+  server (`mcp-builder`). Not for general performance
   work or reducing a prompt by hand.
 ---
 
@@ -44,3 +45,4 @@ answer with no reason as a bug in the tool (`docs/observability-stack.md`, Healt
 |---|---|
 | Running or reading a review, ranking findings, writing a decision record, comparing before and after | [review.md](review.md) |
 | Designing a tool, MCP server, skill or CLI to fix a finding, or judging a design | [tool-design.md](tool-design.md) |
+| Building the MCP server itself once the design is settled | invoke `mcp-builder` |

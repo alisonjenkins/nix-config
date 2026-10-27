@@ -1,7 +1,7 @@
 ---
 name: delegation
 description: >-
-  Use before doing a multi-step task yourself, not only once you're already considering a sub-agent: a multi-file sweep, several similar gh/GraphQL/API lookups, a log trawl, a round of mechanical edits across files, 2+ independent research questions, or any batch of same-shaped calls — check whether it belongs on a cheaper model, in a sub-agent, or fanned out in parallel before touching it inline. Also use when picking a model tier (haiku/sonnet/opus/fable), choosing Explore vs general-purpose, batching parallel Agent calls in one message, or when a delegated result came back wrong or incomplete. Covers background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
+  Use before doing a multi-step task yourself, not only once you're already considering a sub-agent: a multi-file sweep, several similar gh/GraphQL/API lookups, a log trawl, a round of mechanical edits across files, 2+ independent research questions, or any batch of same-shaped calls — check whether it belongs on a cheaper model, in a sub-agent, or fanned out in parallel before touching it inline. Also use when picking a model tier (haiku/sonnet/opus/fable), choosing Explore vs general-purpose, batching parallel Agent calls in one message, or when a delegated result came back wrong or incomplete. Covers background execution, self-contained prompts, Copilot CLI delegation, delegating to a locally-hosted model, setting one up or benchmarking it (`local-llm-setup`), and caveman-style sub-agents (`cavecrew`). Not for escalating to a stronger model — see `consulting`.
 metadata:
   summary: "Use before any multi-step sweep, batch of similar lookups, or mechanical edits: pick a cheaper model or sub-agent, fan out in parallel."
 ---
@@ -22,6 +22,8 @@ sub-agent, not ground through inline.
 | Delegating to Google's Antigravity CLI (Gemini, `agy`) | [delegate-to-gemini.md](delegate-to-gemini.md) |
 | Delegating to a locally-hosted model | [delegate-to-local.md](delegate-to-local.md) |
 | Several code-writing sub-agents in one project | [parallel-writers.md](parallel-writers.md) |
+| Adding, configuring or benchmarking a locally hosted model (llama.cpp, mlx_lm) for the local rung | invoke `local-llm-setup` |
+| Choosing a caveman-style sub-agent (investigator, builder, reviewer) for terse hand-backs | invoke `cavecrew` |
 
 ## Before doing it yourself, check for these
 

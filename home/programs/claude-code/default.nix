@@ -473,6 +473,10 @@ in
       #   documents -> docx, pdf, pptx, xlsx, doc-coauthoring, internal-comms
       #   web-ui    -> frontend-design, web-artifacts-builder, webapp-testing
       #   skill-authoring -> skill-creator
+      #   token-efficiency -> mcp-builder
+      #   delegation -> local-llm-setup, cavecrew
+      #   review    -> security
+      #   documents -> slack-gif-creator
       # "user-invocable-only" removes a skill from the model's listing but keeps
       # it in the / menu: for skills only the user ever starts. Skill-doctor on
       # 2026-10-27 showed the model had invoked none of these on either machine
@@ -488,7 +492,7 @@ in
         web-artifacts-builder = "name-only";
         webapp-testing = "name-only";
         skill-creator = "name-only";
-        # Leaves without a parent, never model-invoked; the name still shows.
+        # Never model-invoked; routed from the families above, the name still shows.
         mcp-builder = "name-only";
         slack-gif-creator = "name-only";
         local-llm-setup = "name-only";
