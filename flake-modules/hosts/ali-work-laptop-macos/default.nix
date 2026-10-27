@@ -433,6 +433,16 @@ in {
           # Design: specs/007-local-observability-stack.
           modules.observabilityStack.enable = true;
 
+          # Skills only, so no work memories are indexed; keyword fallback keeps
+          # prompts flowing when llama-server is down, where `block` would stop them.
+          modules.memoryRecall = {
+            enable = true;
+            memory.enable = false;
+            skills.enable = true;
+            skills.shortListing.enable = true;
+            onUnavailable = "keyword";
+          };
+
           programs.nix-pull-build = {
             enable = true;
             repository = "${config.home.homeDirectory}/git/personal/nix-config";
