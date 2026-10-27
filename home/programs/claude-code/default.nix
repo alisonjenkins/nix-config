@@ -511,6 +511,24 @@ in
         speckit-init = "user-invocable-only";
         nix-pull-build = "user-invocable-only";
         process-todo = "user-invocable-only";
+        # Skills synced from claude.ai (~/.claude/skills/synced). The docs only
+        # offer syncClaudeAiSkills = false for the whole set; a prefixed key
+        # here is undocumented but verified on 2.1.308 to take the skill out of
+        # the listing. Together they were 3,160 tokens a turn on the desktop,
+        # the single largest item, with chrome-browser the only one the model
+        # had ever run. Four duplicate the local farm (docx, pdf, pptx, xlsx).
+        "anthropic-skills:built-in-browser" = "user-invocable-only";
+        "anthropic-skills:computer-use" = "user-invocable-only";
+        "anthropic-skills:deep-research" = "user-invocable-only";
+        "anthropic-skills:docs" = "user-invocable-only";
+        "anthropic-skills:docx" = "user-invocable-only";
+        "anthropic-skills:google-workspace" = "user-invocable-only";
+        "anthropic-skills:import-memory" = "user-invocable-only";
+        "anthropic-skills:morning" = "user-invocable-only";
+        "anthropic-skills:pdf" = "user-invocable-only";
+        "anthropic-skills:pptx" = "user-invocable-only";
+        "anthropic-skills:skill-creator" = "user-invocable-only";
+        "anthropic-skills:xlsx" = "user-invocable-only";
       };
 
       # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer
