@@ -12,7 +12,7 @@ Sibling of `project-management` (ADR 0049). It reads `pm list` output and never 
 
 `tm` is a script beside `SKILL.md`. Like `pm`, it holds no state and the caller names the backend on every call: `-b i` (ics) or `-b g` (google, a stub that fails with "not implemented, use -b i").
 
-```
+```bash
 tm -b i plan [--from FILE|-] [--busy FILE]... [--ics OUT]
              [--now ISO] [--days 14] [--hours 09:00-17:00] [--tz +00:00]
              [--weekdays 1-5] [--chunk 90] [--gap 10] [--default-est 30]
@@ -36,7 +36,7 @@ tm -b i plan [--from FILE|-] [--busy FILE]... [--ics OUT]
 
 stdout, tab separated, header first:
 
-```
+```text
 # backend=ics from=<file|stdin> now=<ISO>
 slot	<id>	<start ISO>	<end ISO>	<title>	<notes>
 skip	<id>	<title>	blocked by <ids>
@@ -50,7 +50,7 @@ unscheduled	<id>	<title>	no room in <n> days
 
 ## Layout
 
-```
+```text
 home/skills/time-management/
   SKILL.md  triggers.json  ics.md
   scripts/tm

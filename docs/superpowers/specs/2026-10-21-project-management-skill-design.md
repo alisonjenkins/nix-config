@@ -29,7 +29,7 @@ It follows the family pattern: a parent `SKILL.md` with a routing table, child m
 
 ## Layout
 
-```
+```text
 home/skills/project-management/
   SKILL.md             when to use, mandate, backend rules, routing table
   triggers.json        fire / no-fire phrases
@@ -55,7 +55,7 @@ home/skills/project-management/
 
 The scripts hold no state and do no detection. The caller names the backend on every call.
 
-```
+```bash
 pm -b g -r owner/name status
 pm -b l -d docs/projects/foo list --state open
 pm show https://github.com/owner/name/issues/12

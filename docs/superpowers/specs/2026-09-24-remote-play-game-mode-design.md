@@ -166,7 +166,7 @@ events together.
 The shim prints one line to stderr per launch, which reaches the journal
 through Steam:
 
-```
+```text
 steam-command-runner: streaming to steam, launching without gamescope, overlay x86_64 only (from .../helldivers2.exe)
 ```
 
