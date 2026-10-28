@@ -280,7 +280,7 @@ in {
         # `games` left empty for now: ROMs live in a private B2 bucket that
         # isn't set up yet. content sync is therefore NOT enabled — flip
         # content.enable + provision the sops B2 creds once the bucket exists
-        # (see modules/emulation/content.nix + CLAUDE.md "emulation follow-ups").
+        # (see modules/emulation/content.nix + PENDING.md "emulation module follow-ups").
         # Switch additionally needs prod.keys/title.keys + firmware (own dumps)
         # placed via a content set before games run.
         modules.emulation = {
