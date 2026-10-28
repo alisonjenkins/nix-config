@@ -18,7 +18,7 @@ files.
 EmbeddingGemma 2 server, finds the closest memories by cosine similarity, and puts
 them in front of the model:
 
-```
+```text
 prompt ──▶ memory-recall hook ──▶ llama-server --embeddings (EmbeddingGemma 2, CPU)
               │                         │ prompt vector
               │ cached memory vectors ◀─┘

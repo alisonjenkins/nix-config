@@ -222,7 +222,7 @@ including every approach that failed, is
 
 ## How the couplings actually work
 
-```
+```text
         Steam logs ─────────────┐
                                 ▼
   niri event-stream ───────► stream-mode ──► niri msg  (output mode/enable,

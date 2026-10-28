@@ -88,7 +88,7 @@ toggle un-fullscreens a game that already is.
 
 ### Steam log signals
 
-```
+```text
 Adding window 4194306 (4) for process 2331545 and gameID 2854740
 Removing process 2163386 for gameID 2854740
 >>> Starting desktop stream

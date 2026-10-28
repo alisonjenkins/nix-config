@@ -112,7 +112,7 @@ collector, a child of the Claude Code tool span that ran it, and appends the sam
 record to `~/.local/state/delegate/gemini-calls.jsonl`. Why and how: ADR 0046. In
 Grafana's Tempo, group by the session that asked for the work:
 
-```
+```text
 { resource.service.name = "delegate-to-gemini" } | select(span.claude.session_id, span.gen_ai.request.model, span.delegate.outcome, span.gen_ai.usage.input_tokens)
 ```
 

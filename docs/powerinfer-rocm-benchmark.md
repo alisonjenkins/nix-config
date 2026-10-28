@@ -83,7 +83,7 @@ at all — consistent with, not contradicting, the earlier `--cpu-moe` finding.
 (a real, community-converted PowerInfer model: ReLU-sparsified Llama-2-7B, f16,
 14.11GB, with per-layer activation predictors), `--vram-budget 12` (GiB):
 
-```
+```text
 llm_load_sparse_model_tensors: using ROCm for GPU acceleration
 ggml_cuda_set_main_device: using device 0 (AMD Radeon RX 9070 XT) as main device
 llm_load_gpu_split: offloaded 6042.00 MiB of FFN weights to GPU
