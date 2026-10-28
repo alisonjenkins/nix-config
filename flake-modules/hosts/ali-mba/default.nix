@@ -140,6 +140,7 @@ in {
             mitmproxy2swagger
             mustache-go
             neovide
+            nh
             nix-fast-build
             nodejs
             nushell
