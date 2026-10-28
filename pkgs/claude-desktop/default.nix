@@ -3,8 +3,8 @@
 # (MIT/Apache-2.0): keep the vendored Electron tree intact rather than
 # running app.asar under nixpkgs' electron, and keep the Chromium sandbox.
 #
-# Update: read Version/SHA256 for both arches from
-# https://downloads.claude.ai/claude-desktop/apt/stable/dists/stable/main/binary-{amd64,arm64}/Packages
+# Update with ./update.sh; it rewrites the version line and the hash line in
+# each arch block below.
 {
   lib,
   stdenv,
