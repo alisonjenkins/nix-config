@@ -14,6 +14,10 @@ list:
 check:
     .github/scripts/pr-check-x86_64-linux.sh
 
+# Check the skill-authoring guidance sources for stale or overdue entries (network)
+skill-currency:
+    nix shell nixpkgs#jq nixpkgs#curl --command home/skills/skill-authoring/scripts/check-currency.sh
+
 # Build the config this system and switch on next boot
 boot:
     #!/usr/bin/env bash
