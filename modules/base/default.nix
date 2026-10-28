@@ -274,6 +274,8 @@ in
 
             # Virtual memory tuning
             "vm.swappiness" = lib.mkDefault 10;
+            # zram is random-access RAM: swap-in readahead only wastes work.
+            "vm.page-cluster" = lib.mkIf config.zramSwap.enable (lib.mkDefault 0);
             "vm.dirty_ratio" = 20;
             "vm.dirty_background_ratio" = 5;
             "vm.vfs_cache_pressure" = 25;
