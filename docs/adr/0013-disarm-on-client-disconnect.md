@@ -20,7 +20,7 @@ out of reach of game capture ([0007](0007-remote-play-game-mode.md)).
 The timeout's premise was that a client can leave without Steam logging it.
 `remote_connections.txt` shows otherwise: every connect has a disconnect.
 
-```
+```text
 Client 11334438332915102515 (ali-mba) disconnected: ping timeout
 Client 11334438332915102515 (ali-mba) disconnected: disconnecting all
 Client 5182124125287412536 (ali-framework-laptop) disconnected: told us it was offline

@@ -14,7 +14,7 @@ streaming request, Steam starts SteamVR (app 250820), and SteamVR's vrlink
 driver carries the session. A flat game shown in the headset only makes Steam
 start desktop capture once the game has a window:
 
-```
+```text
 11:58:16 Streamed game has created a window
 11:58:16 Bringing streamed game to foreground - failed
 11:58:16 >>> Starting desktop stream

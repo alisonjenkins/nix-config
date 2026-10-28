@@ -15,7 +15,7 @@ its HUD into the frame in its own layer. Whichever layer is nearer the
 application sees the frame first. Inside Steam's pressure-vessel container,
 implicit layers are renamed to numbered manifests and chained in that order:
 
-```
+```text
 03-x86_64-linux-gnu.json  VK_LAYER_VALVE_steam_overlay_64
 09-x86_64-linux-gnu.json  VK_LAYER_MANGOHUD_overlay_64_x86_64
 ```

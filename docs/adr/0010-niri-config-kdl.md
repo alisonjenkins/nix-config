@@ -10,7 +10,7 @@ niri's config is KDL, generated from Nix strings in
 `custom.niri.extraOutputs`. A comment written Nix-style (`#`) inside one of
 those strings made the whole file fail to parse:
 
-```
+```text
 Error: × found `/`, expected `)` or letter
 ```
 
@@ -26,7 +26,7 @@ caught by accident, while validating an unrelated change.
   Nix that produces the line.
 - After any change to niri config, validate the built file before switching:
 
-```
+```bash
 nix build --no-link --print-out-paths \
   '.#nixosConfigurations.ali-desktop.config.home-manager.users.ali.xdg.configFile."niri/config.kdl".source'
 niri validate -c <that path>
