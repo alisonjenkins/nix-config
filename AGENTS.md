@@ -156,24 +156,7 @@ Detail in `docs/subsystems.md`; read the entry before touching the code.
 
 ## Development Workflow
 
-### Modifying Configurations
-1. Edit relevant files in `modules/`, `home/`, or `flake-modules/hosts/`
-2. Test changes with `just test` for temporary activation
-3. Use `just build` to build without activating (error checking)
-4. Commit with `just switch` to activate and make permanent
-5. For remote hosts, use `just deploy .#<hostname>` after local testing
-
-### Adding New Hosts
-1. Create directory in `flake-modules/hosts/<hostname>/`
-2. Add `default.nix` as flake-parts module, `hardware-configuration.nix`, and `disko-config.nix`
-3. Import and enable appropriate modules via `self.nixosModules.*`
-4. Configure home-manager for the user
-
-### Managing Secrets
-1. Add age keys to `.sops.yaml` if needed
-2. Create secret files in `secrets/` or `secrets/<hostname>/`
-3. Encrypt with `sops` command
-4. Reference in host configuration via `sops.secrets.<name>`
+How to modify configs (test, build, switch, deploy), add a host or module, and manage secrets: the `nix-config-workflows` skill (`.claude/skills/nix-config-workflows/SKILL.md`). It carries the full steps.
 
 ### Pending Work
 Pending / unfinished work (niks3 cache-push enablement, emulation module follow-ups) -> `PENDING.md` (repo root).
@@ -181,11 +164,7 @@ Pending / unfinished work (niks3 cache-push enablement, emulation module follow-
 ## Code Style
 
 ### Imports & Structure
-```nix
-{ config, inputs, outputs, pkgs, lib, system, username, ... }:
-# Custom modules via flake outputs; secret/patch paths via self + "/path"
-# No relative imports (../../) -- all via flake outputs
-```
+Module arguments are `{ config, inputs, outputs, pkgs, lib, system, username, ... }`. Import rules (flake outputs only, no `../../`) are under Configuration Pattern.
 
 ### Naming Conventions
 - **Files/Directories**: kebab-case (`modules/`, `ali-desktop/`)
