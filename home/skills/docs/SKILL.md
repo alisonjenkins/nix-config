@@ -27,6 +27,7 @@ Use this skill when creating, updating or reviewing repository documentation tha
 | Doing | Read |
 |---|---|
 | Writing, restructuring or auditing a README.md | [readme.md](readme.md) |
+| Laying out a repo's docs: root files, docs/ tree, ADRs, changelog | [structure.md](structure.md) |
 
 ## Related
 
