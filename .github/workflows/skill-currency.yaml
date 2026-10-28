@@ -1,0 +1,35 @@
+name: Skill currency
+
+# Skill-authoring advice moves. Once a month, check the sources listed in
+# home/skills/skill-authoring/guidance-sources.json: open one issue when a source is
+# overdue for review, unreachable, or no longer contains a string our rules rely on,
+# and close it again when everything is current. See
+# home/skills/skill-authoring/currency.md.
+#
+# The check only fetches public pages, so it runs on a GitHub-hosted runner, not the
+# self-hosted builder. Schedule and dispatch only: there is no pull_request trigger.
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: skill-currency
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check guidance sources and raise an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          home/skills/skill-authoring/scripts/raise-currency-issue.sh --repo "$GITHUB_REPOSITORY"
