@@ -18,6 +18,7 @@
   tiny4linux-gui = pkgs.callPackage ./tiny4linux { inherit pkgs; withCli = false; };
   tiny4linux-cli = pkgs.callPackage ./tiny4linux { inherit pkgs; withGui = false; };
   lucien = pkgs.callPackage ./lucien {};
+  rootly-cli = pkgs.callPackage ./rootly-cli { inherit (pkgs.master) go_1_26; };
   photocraft = pkgs.callPackage ./photocraft {};
   filmcraft = pkgs.callPackage ./filmcraft {};
   effectcraft = pkgs.callPackage ./effectcraft {};
