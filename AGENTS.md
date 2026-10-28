@@ -31,15 +31,33 @@ just deploy [extraargs]
 # VM testing
 just test-build <hostname>  # Build VM
 just test-run <hostname>    # Run built VM
+
+# Build NixOS AMI image
+just ami-build <hostname>
+
+# Upload built AMI to AWS
+just ami-upload <hostname> [region] [bucket]
+
+# Build + upload AMI in one step
+just ami <hostname> [region] [bucket]
 ```
 
+### Commit hooks
+
+`prek install --allow-missing-config` once per clone (prek is in the dev shell); the flag keeps commits working on branches older than the config. Hooks live in `.pre-commit-config.yaml`; `prek run --all-files` runs them by hand. The flake8 hook matches `writePython3Bin`'s build-time flags: plain `flake8` ignores W503, the build does not, and that has broken the `ali-desktop` build more than once.
+
 ### Common NixOS Operations
+
 ```bash
 # Build specific host configuration
 nix build ".#nixosConfigurations.<hostname>.config.system.build.toplevel"
 
-# Check flake
+# Check flake (slow: evaluates every host's toplevel + builds all `checks`)
 nix flake check
+
+# Fast sanity check for routine iteration (modules/overlays/devShells/packages
+# only, no host evaluation) -- same script CI's flake-check job runs
+just check
 
 # Show flake outputs
 nix flake show
@@ -48,32 +66,93 @@ nix flake show
 nix flake lock --update-input <input-name>
 ```
 
-No automated linting/formating tools configured.
-
 ## Architecture
 
+**Dendritic Pattern**: flake-parts + haumea. Modular, auto-discovered.
+
 ### Directory Structure
-- **`flake.nix`**: Main entry point defining all system configurations
-- **`flake-modules/hosts/`**: Per-machine configurations (hardware-configuration.nix, machine-specific settings)
-- **`modules/`**: Reusable NixOS modules (base, desktop, hardware, server roles, specialized functionality)
-- **`home/`**: Home-manager configurations (programs, wms, themes, wallpapers)
-- **`pkgs/`**: Custom packages and overrides
-- **`overlays/`**: Nixpkgs overlays (stable/unstable/master package sets)
-- **`secrets/`**: SOPS-encrypted secrets
-- **`templates/`**: Flake templates
+
+- **`flake.nix`**: minimal entry (~50 lines outputs). Inputs + haumea auto-discovers flake-parts modules from `flake-modules/`.
+- **`flake-modules/`**: all flake outputs, haumea auto-discovered:
+  - `overlays.nix`: `flake.overlays` from `overlays/`
+  - `deploy.nix`: deploy-rs nodes + checks
+  - `dev-shells.nix`: `perSystem.devShells.default`
+  - `templates.nix`: flake templates
+  - `nixos-modules.nix`: `flake.nixosModules.*`
+  - `home-modules.nix`: `flake.homeModules.*`
+  - `hosts/`: one **dir** per host (NixOS/Darwin/standalone home-manager). Each: `default.nix` (flake-parts module), `hardware-configuration.nix` (-> `flake.nixosModules.<hostname>-hardware`), `disko-config.nix` (-> `flake.nixosModules.<hostname>-disko-config`)
+- **`modules/`**: reusable NixOS modules, options pattern (`options.*` / `config = mkIf cfg.enable`):
+  - `base/`: core (networking, boot, nix, impermanence, secure boot)
+  - `desktop/`, `development/` (e.g. web dev), `locale/`
+  - `libvirtd/`, `vr/`, `rocm/`, `llama-cpp/`, `servers/`: specialized
+  - `desktop-base/`, `desktop-1password/`, `desktop-aws-tools/`, `desktop-kubernetes/`, etc.: desktop features
+  - `desktop-greetd/`, `desktop-greetd-regreet/`, `desktop-sddm/`: display managers
+  - `desktop-wm-plasma6/`, `desktop-wm-sway/`: WMs
+  - `hardware-fingerprint/`, `hardware-touchpad/`: hardware features
+  - `k8s-master/`, `storage-server/`: server roles
+- **`home/`**: home-manager:
+  - `home-linux.nix`, `home-macos.nix`, `home-common.nix`
+  - `programs/`: per-program (zsh, neovim, tmux, git, ...)
+  - `wms/`: WM configs (river, plasma, ...)
+- **`pkgs/`**: custom packages/overrides
+- **`overlays/`**: system-independent overlays (accept only `{ inputs }`, use `final.stdenv.hostPlatform.system`)
+- **`secrets/`**: SOPS secrets (sops-nix, `.sops.yaml`)
+- **`templates/`**: flake templates (e.g. Rust dev env)
 
 ### Configuration Pattern
-Host configurations follow this structure:
-1. Import base modules from `modules/base` with configuration options
-2. Enable relevant modules via `modules.<name>.enable = true`
-3. Import host-specific configuration from `hosts/<hostname>/configuration.nix`
-4. Configure home-manager pointing to configurations in `home/`
+
+Host = own flake-parts dir `flake-modules/hosts/<hostname>/`:
+1. `default.nix`: defines `flake.nixosConfigurations.<hostname>` (or `darwinConfigurations`/`homeConfigurations`)
+2. `hardware-configuration.nix`: -> `flake.nixosModules.<hostname>-hardware`
+3. `disko-config.nix`: -> `flake.nixosModules.<hostname>-disko-config`
+
+Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enabled `modules.<name>.enable = true`. Home modules via `self.homeModules.*`. Secret/patch paths via `self + "/path"`. No relative imports (`../../`) -- all via flake outputs. New `flake-modules/` files auto-discovered by haumea.
+
+`modules/base` options under `modules.base`:
+- `enable`; `bootLoader` (enum `"systemd-boot"` / `"grub"` / `"secure-boot"` = Lanzaboote+TPM); `pcr15Value` (TPM PCR15 for LUKS, required when secure-boot)
+- `enableImpermanence`, `impermanencePersistencePath` (default `/persistence`)
+- `enableCachyOSKernel`
+- `enableOpenSSH`, `enableTailscale`, `enableIPv6`, `enableICMPPing`
+- `suspendState` (`"mem"` / `"standby"` / `"freeze"` / `null`), `hibernateMode` (`"platform"` / `"shutdown"`)
+- `timezone`, `consoleKeyMap`
+- `beesdFilesystems` (btrfs dedup)
 
 ### Key Systems
-- **Overlays**: Multiple nixpkgs channels (stable, unstable, master)
-- **Impermanence**: Tmpfs root filesystems with selective persistence
-- **Secrets Management**: sops-nix with age encryption
-- **Remote Deployment**: deploy-rs for remote system deployments
+
+- **Overlays** (system-independent, channel access): `pkgs.stable` (nixpkgs 26.05), `pkgs.unstable` (nixos-unstable), `pkgs.master` (master). In `overlays/default.nix`, exported `flake-modules/overlays.nix`, applied per-host.
+- **Impermanence**: some hosts tmpfs root + selective persistence; per-host paths.
+- **Secrets Management**: sops-nix with age encryption. Keys + path rules in `.sops.yaml`.
+- **Remote Deployment**: `deploy` attr via deploy-rs, in `flake-modules/deploy.nix`.
+
+### Active Hosts
+
+- **Desktop/Laptop**: `ali-desktop`, `ali-framework-laptop`, `ali-work-laptop`, `ali-mba-linux` (M1 MacBook Air, NixOS-on-Asahi, aarch64-linux)
+- **macOS**: `Alisons-MacBook-Pro` (Darwin, work)
+- **Servers**: `home-storage-server-1`, `home-kvm-hypervisor-1`, `home-k8s-master-1`, `home-k8s-server-1`, `home-vpn-gateway-1`, `download-server-1`
+- **Dev/Test**: `dev-vm` (aarch64-linux VM)
+- **Home-Manager Only**: `ali` (Arch Linux), `deck` (Steam Deck)
+
+### Notable Flake Inputs
+
+`ali-neovim` (custom neovim flake), `home-manager`, `stylix` (theming), `plasma-manager`, `sops-nix`, `disko`, `lanzaboote` (Secure Boot), `impermanence`, `deploy-rs`, `nixos-hardware` (e.g. Framework 16), `nixos-cosmic`, `rust-overlay`, `jovian-nixos` (Steam Deck), `niks3` (self-hosted binary cache push).
+
+### CI/CD Workflows
+
+- **`build-and-cache.yaml`**: builds all nixosConfigurations on push to main -> niks3 cache. Dry-run skips cached; parallel build+push via queue drain.
+- **`update.yaml`**: daily flake lock update (2 AM UTC)
+- **`ami-build-and-upload.yaml`**: builds+uploads NixOS AMIs to AWS, retention cleanup
+- **`closure-report.yaml`**: closure size reports for desktop/laptop configs
+
+### Subsystems
+
+Detail in `docs/subsystems.md`; read the entry before touching the code.
+
+- **Modpack & Modding**: `minecraft-modpack-packaging` (`pkgs/create-*-server`), `beatsaber-modding` (`pkgs/beatsaber-mods`, `home/modules/beatsaber`), `helldivers2-modding` (`pkgs/arsenal`, `pkgs/hd2-repatcher`, `home/modules/helldivers2-mods`).
+- **Pins** (`pins/registry.json`, `scripts/pins.py`, skill `.claude/skills/pins`, ADR 0051): every pinned flake input, insecure-package permit and overlay version override is registered with a reason, a review deadline and a probe. Read the skill before adding, extending or removing a pin; CI fails a pin without an entry.
+- **`modules.memoryRecall`** (`home/modules/memory-recall`, `scripts/retrieval-eval`): `docs/memory-recall.md`, ADRs 0029, 0030.
+- **`claude-monitor`** (AI control centre): `docs/ai-control-centre.md`, ADRs 0040, 0041.
+- **`modules.observabilityStack`** (`home/modules/observability-stack`, `scripts/token-tools`): `docs/observability-stack.md`, ADRs 0034, 0035, 0037.
+- **`modules.rustBuildCache`** (`home/modules/rust-build-cache`): ADR 0043.
 
 ## Development Workflow
 
@@ -88,7 +167,7 @@ Host configurations follow this structure:
 1. Create directory in `flake-modules/hosts/<hostname>/`
 2. Add `default.nix` as flake-parts module, `hardware-configuration.nix`, and `disko-config.nix`
 3. Import and enable appropriate modules via `self.nixosModules.*`
-5. Configure home-manager for the user
+4. Configure home-manager for the user
 
 ### Managing Secrets
 1. Add age keys to `.sops.yaml` if needed
@@ -96,16 +175,16 @@ Host configurations follow this structure:
 3. Encrypt with `sops` command
 4. Reference in host configuration via `sops.secrets.<name>`
 
+### Pending Work
+Pending / unfinished work (niks3 cache-push enablement, emulation module follow-ups) -> `PENDING.md` (repo root).
+
 ## Code Style
 
 ### Imports & Structure
 ```nix
 { config, inputs, outputs, pkgs, lib, system, username, ... }:
-imports = [
-  inputs.external-module.nixosModules.module  # External inputs first
-  ../../modules/base                          # Local modules
-  ./hardware-configuration.nix               # Host-specific last
-];
+# Custom modules via flake outputs; secret/patch paths via self + "/path"
+# No relative imports (../../) -- all via flake outputs
 ```
 
 ### Naming Conventions
@@ -117,7 +196,7 @@ imports = [
 - Use `lib.mkIf`, `lib.mkDefault`, `lib.mkForce` for conditional config
 - Merge with `//` operator for optional features
 - Parameterize modules with sensible defaults
-- Structure: base modules → feature modules → host-specific → home-manager
+- Structure: base modules -> feature modules -> host-specific -> home-manager
 
 ### Error Handling
 - Rely on Nix's built-in error reporting
