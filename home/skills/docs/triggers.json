@@ -4,6 +4,10 @@
     "the README is out of date, fix it",
     "what should go in the README",
     "add a quickstart and install section",
-    "document this project so a stranger can use it"
+    "document this project so a stranger can use it",
+    "how should I structure the docs in this repo",
+    "keep AGENTS.md and the README from duplicating each other",
+    "add a diagram and screenshots to the README",
+    "write runbooks and Terraform docs for this module"
   ]
 }

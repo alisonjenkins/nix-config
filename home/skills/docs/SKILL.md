@@ -1,9 +1,9 @@
 ---
 name: docs
 description: >-
-  Use when writing, restructuring or auditing a repository's documentation: README.md, quickstart, install and usage sections, "write a README", "document this project", "the docs are stale", "what should the README say". Not for polishing prose (see writing) or .docx/.pdf/.pptx deliverables (see documents).
+  Use when writing, restructuring or auditing a repository's documentation: README.md, quickstart, install and usage sections, the docs/ layout, ADRs, changelog, monorepo or polyrepo docs, AGENTS.md and CLAUDE.md versus human docs, README diagrams, screenshots and logos, API doc comments, Terraform and Helm docs, runbooks; "write a README", "document this project", "the docs are stale", "what should the README say", "how should I structure the docs". Not for polishing prose (see writing) or .docx/.pdf/.pptx deliverables (see documents).
 metadata:
-  summary: "Use when writing, restructuring or auditing a repo's docs: README.md, quickstart, install and usage sections."
+  summary: "Use when writing, restructuring or auditing a repo's docs: README, docs/ layout, ADRs, agent files, code and infra docs."
 ---
 
 # Docs
@@ -36,4 +36,4 @@ Use this skill when creating, updating or reviewing repository documentation tha
 
 ## Related
 
-See `writing` for prose, `documents` for office files, and `git/commit-messages.md` for commit text.
+The user-typed `/docs-audit` command runs a read-only check of an existing repo's README and docs. See `writing` for prose, `documents` for office files, and `git/commit-messages.md` for commit text.
