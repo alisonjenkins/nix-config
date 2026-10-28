@@ -43,3 +43,6 @@ so this narrows the risk and does not remove it. Deciding what changes in our ru
 - Evidence beats advice. A measured result (a benchmark, a study) outranks an author's recipe.
 - An `expect` string should be short and specific. A string every page contains proves nothing.
 - The check hits the network. It is opt-in, never a pre-commit hook or a PR gate.
+- The `Skill currency` workflow runs it on the 1st of each month and opens one issue,
+  "Skill guidance sources need review", while any finding stands. It closes the issue once
+  the check is clean. `scripts/raise-currency-issue.sh --dry-run` shows what it would do.
