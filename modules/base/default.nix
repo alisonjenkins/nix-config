@@ -273,7 +273,9 @@ in
             "net.ipv4.tcp_window_scaling" = 1;
 
             # Virtual memory tuning
-            "vm.swappiness" = lib.mkDefault 10;
+            # With zram, swapping cold anon pages is cheap and frees RAM for
+            # cache; a low value only keeps them resident until OOM pressure.
+            "vm.swappiness" = lib.mkDefault (if config.zramSwap.enable then 100 else 10);
             # zram is random-access RAM: swap-in readahead only wastes work.
             "vm.page-cluster" = lib.mkIf config.zramSwap.enable (lib.mkDefault 0);
             "vm.dirty_ratio" = 20;
