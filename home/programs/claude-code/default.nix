@@ -515,6 +515,7 @@ in
         speckit-init = "user-invocable-only";
         nix-pull-build = "user-invocable-only";
         process-todo = "user-invocable-only";
+        docs-audit = "user-invocable-only";
         # Skills synced from claude.ai (~/.claude/skills/synced). The docs only
         # offer syncClaudeAiSkills = false for the whole set; a prefixed key
         # here is undocumented but verified on 2.1.308 to take the skill out of
