@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "_doc": "Where current skill-authoring guidance comes from. Read currency.md before editing. `expect` lists fixed strings our skills rely on: if a fetched page no longer contains one, the guidance changed and the matching leaf is stale. `review_by` is when a human or agent must re-read the source even if every expect still matches. Moving review_by forward means you re-read it and wrote what you found in `review_note`.",
+  "max_review_days": {
+    "official": 30,
+    "community": 60
+  },
+  "sources": [
+    {
+      "id": "anthropic-best-practices",
+      "class": "official",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices",
+      "tracks": "description rules, body size, reference depth, eval-first advice",
+      "feeds": ["conventions.md", "testing-a-skill.md"],
+      "expect": ["500 lines", "1,024 characters", "third person"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Baseline read for the currency feature."
+    },
+    {
+      "id": "claude-code-skills",
+      "class": "official",
+      "url": "https://code.claude.com/docs/en/skills",
+      "tracks": "frontmatter fields, listing budget, compaction budget, fork and hooks behaviour",
+      "feeds": ["frontmatter.md", "context-budget.md"],
+      "expect": ["1,536", "skillListingBudgetFraction", "when_to_use", "skillOverrides"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Baseline read for the currency feature."
+    },
+    {
+      "id": "agentskills-spec",
+      "class": "official",
+      "url": "https://agentskills.io/specification",
+      "tracks": "the portable field set, name and description limits",
+      "feeds": ["frontmatter.md", "conventions.md"],
+      "expect": ["1024", "64 characters", "compatibility"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Baseline read. Spec moved to the Agentic AI Foundation on 2026-10-22; watch for a versioned release."
+    },
+    {
+      "id": "agentskills-evals",
+      "class": "official",
+      "url": "https://agentskills.io/skill-creation/evaluating-skills",
+      "tracks": "with-skill vs baseline evals, grading files, description tuning protocol",
+      "feeds": ["testing-a-skill.md"],
+      "expect": ["baseline", "evals.json"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Baseline read for the currency feature."
+    },
+    {
+      "id": "skill-creator-source",
+      "class": "official",
+      "url": "https://raw.githubusercontent.com/anthropics/skills/main/skills/skill-creator/SKILL.md",
+      "tracks": "Anthropic's own authoring loop and description-tuning advice",
+      "feeds": ["conventions.md", "testing-a-skill.md"],
+      "expect": ["pushy", "undertrigger"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Baseline read. Its trigger-eval harness has an open bug (claude-code issue 79998); do not trust its trigger scores until fixed."
+    },
+    {
+      "id": "anthropic-skills-news",
+      "class": "official",
+      "url": "https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation",
+      "tracks": "stewardship and any format or versioning change after the 2026-10-22 donation",
+      "feeds": ["frontmatter.md"],
+      "expect": ["Agentic AI Foundation"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "Post does not say whether the format changes."
+    },
+    {
+      "id": "codex-skills",
+      "class": "official",
+      "url": "https://learn.chatgpt.com/docs/build-skills",
+      "tracks": "Codex discovery paths and listing budget; portability of our shared skills",
+      "feeds": ["wiring.md"],
+      "expect": ["allow_implicit_invocation", "agents/openai.yaml"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-11-27",
+      "review_note": "URL redirected from developers.openai.com/codex/skills."
+    },
+    {
+      "id": "skillsbench",
+      "class": "community",
+      "url": "https://arxiv.org/abs/2602.12670",
+      "tracks": "measured effect of curated vs generated skills and of skill size",
+      "feeds": ["conventions.md"],
+      "expect": ["three modules", "Curated Skills"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-12-27",
+      "review_note": "v4 (2026-06-14): curated +16.6 pp, at most three modules beat larger bundles."
+    },
+    {
+      "id": "agents-md-study",
+      "class": "community",
+      "url": "https://arxiv.org/abs/2602.11988",
+      "tracks": "evidence on always-on context files and inference cost",
+      "feeds": ["context-budget.md"],
+      "expect": ["inference cost", "does not generally improve"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-12-27",
+      "review_note": "No general task gain, over 20% more inference cost."
+    },
+    {
+      "id": "trailofbits-skill-distribution",
+      "class": "community",
+      "url": "https://blog.trailofbits.com/2026/06/03/the-sorry-state-of-skill-distribution/",
+      "tracks": "scanner bypasses and advice on installing third-party skills",
+      "feeds": ["wiring.md"],
+      "expect": ["No amount of scanning"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-12-27",
+      "review_note": "Four malicious skills bypassed four scanner systems; pin versions, use curated sources. Feeds wiring.md only until a leaf on untrusted third-party skills exists."
+    },
+    {
+      "id": "superpowers-writing-skills",
+      "class": "community",
+      "url": "https://github.com/obra/superpowers/blob/main/skills/writing-skills/SKILL.md",
+      "tracks": "TDD-for-skills practice and description wording",
+      "feeds": ["testing-a-skill.md", "conventions.md"],
+      "expect": ["watch an agent fail"],
+      "reviewed": "2026-10-28",
+      "review_by": "2026-12-27",
+      "review_note": "Author's practice, not measured."
+    }
+  ],
+  "discovery_queries": [
+    "Agent Skills specification changes",
+    "SKILL.md best practices 2026",
+    "Claude Code skills changelog",
+    "agent skills evaluation benchmark",
+    "malicious agent skills security research"
+  ]
+}
