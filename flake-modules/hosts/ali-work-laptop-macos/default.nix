@@ -251,7 +251,6 @@ in {
             "apache-directory-studio"
             "audacity"
             "claude"
-            "discord"
             "firefox"
             "freeplane"
             "ghostty"
