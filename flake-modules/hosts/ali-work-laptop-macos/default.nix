@@ -249,7 +249,6 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
-            "discord"
             "firefox"
             "freeplane"
             "ghostty"
