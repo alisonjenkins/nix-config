@@ -412,6 +412,16 @@ in
   # skill above, and GitHub Copilot CLI via `specify init --integration copilot`.
   home.packages = [ claudeDd claudeStatusbarPkg pkgs.spec-kit ];
 
+  # nixpkgs' claude-code 2.1.308 launcher does `--set-default
+  # CLAUDE_CODE_CERT_STORE system`, so Claude Code trusts only the macOS
+  # keychain and drops its bundled CA list. On the work Mac every new session
+  # then failed with UNABLE_TO_GET_ISSUER_CERT_LOCALLY (2.1.293 sessions were
+  # fine). The launcher only sets the variable when it is unset, so an empty
+  # value both stops it and leaves Claude Code on its own default store.
+  home.sessionVariables = lib.mkIf pkgs.stdenv.isDarwin {
+    CLAUDE_CODE_CERT_STORE = "";
+  };
+
   programs.claude-code = {
     enable = true;
     package = claudeWrapped;
