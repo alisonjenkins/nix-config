@@ -30,6 +30,7 @@ Use this skill when creating, updating or reviewing repository documentation tha
 | Laying out a repo's docs: root files, docs/ tree, ADRs, changelog | [structure.md](structure.md) |
 | Docs for a monorepo, single repo or polyrepo: per-package READMEs, ownership, releases | [repo-shapes.md](repo-shapes.md) |
 | Keeping AGENTS.md or CLAUDE.md and human docs from duplicating each other | [agent-files.md](agent-files.md) |
+| Adding diagrams, screenshots, CLI demos, logos or dark-mode images to a README | [readme-visuals.md](readme-visuals.md) |
 
 ## Related
 
