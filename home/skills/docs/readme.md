@@ -30,7 +30,25 @@ Contributing (3 lines plus link to CONTRIBUTING)
 License (name or SPDX id, last)
 ```
 
-Omit any section that does not apply. A short README is the default.
+Omit any section that does not apply. A short README is the default. See readme-visuals.md.
+
+## Linking to other docs
+
+Put a Documentation section after Usage and before License (it is already in the template above). Use one descriptive line per link, relative links, in a list or small table.
+
+Link text describes the target ("Configuration reference"), never "click here" or "here" or a bare URL.
+
+Do not duplicate: the README states the one-line summary, the linked page owns the detail.
+
+Use relative links for files in the same repo so they work on every branch and fork; GitHub resolves them. Exception: crates.io resolves relative README links against the repository field when it is on github.com, gitlab.com or bitbucket.org; npm and PyPI docs and source show no such handling, so use absolute URLs for a README published there.
+
+Every page under docs/ is reachable from the README: either directly or through a docs/README.md index that lists every page with one line each. The index rule is local policy (observed in the exemplars checked, no source states it).
+
+Link CONTRIBUTING.md, SECURITY.md and CHANGELOG.md explicitly; GitHub also surfaces some of them in its own UI, but a registry page does not.
+
+Heading anchors: GitHub generates them by lowercasing, replacing spaces with hyphens and dropping punctuation; renaming a heading breaks inbound links, so check fragment links in CI. lychee with --include-fragments checks them, and markdownlint rule MD051 flags invalid fragments.
+
+Monorepo: link the single package index from the root README (see repo-shapes.md). Repo layout: see structure.md.
 
 ## Decisions where the sources disagree
 
@@ -58,7 +76,7 @@ The nixpkgs README is a pure map to its manuals, a valid pattern for a very larg
 
 A README is for humans (quick start, description, contribution guidelines). AGENTS.md or CLAUDE.md hold what a coding agent needs every session: build and test commands, code style, layout, rules. Do not duplicate between them; link instead.
 
-Claude Code reads AGENTS.md only when no CLAUDE.md exists in the working directory or above it. With both present it reads CLAUDE.md alone, unless CLAUDE.md imports AGENTS.md. Keep one source of truth and import it from the other file. Keep each agent file under about 200 lines with concrete verifiable rules. No source says to write READMEs for machines. The useful middle is stable headings and fenced code blocks with a language tag, which help both readers (inference).
+Claude Code reads AGENTS.md only when no CLAUDE.md exists in the working directory or above it. With both present it reads CLAUDE.md alone, unless CLAUDE.md imports AGENTS.md. Keep one source of truth and import it from the other file. Keep each agent file under about 200 lines with concrete verifiable rules. No source says to write READMEs for machines. The useful middle is stable headings and fenced code blocks with a language tag, which help both readers (inference). See agent-files.md for the single-source-of-truth rules.
 
 ## Keep it accurate
 
@@ -110,5 +128,7 @@ Claude Code reads AGENTS.md only when no CLAUDE.md exists in the working directo
 | lychee-action | https://github.com/lycheeverse/lychee-action | Scheduled dead link checks |
 | ripgrep | https://github.com/BurntSushi/ripgrep | Exemplar CLI README |
 | nixpkgs README | https://github.com/NixOS/nixpkgs/blob/master/README.md | Exemplar large repo router README |
+| lychee | https://github.com/lycheeverse/lychee | Fragment link checking |
+| markdownlint MD051 | https://github.com/DavidAnson/markdownlint/blob/main/doc/md051.md | Link fragment rule |
 
 Confidence: the studies show correlation only (Venigalla and Chimalakonda 2022: contribution guidelines and references go with higher popularity, no effect sizes); no study links badges to onboarding; IaC, dotfiles and monorepo guidance is from blog posts; Microsoft and 18F README rules were not verified; researched 2026-10-28.
