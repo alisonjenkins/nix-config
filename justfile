@@ -21,11 +21,11 @@ skill-currency:
 # Build the config this system and switch on next boot
 boot:
     #!/usr/bin/env bash
-    if command -v nh &>/dev/null; then
+    if [ "$(uname)" == "Darwin" ]; then
+        darwin-rebuild boot --option sandbox false --flake .
+    elif command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os boot .;
-    elif [ "$(uname)" == "Darwin" ]; then
-        darwin-rebuild boot --option sandbox false --flake .
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild boot --flake ".#$HOST"
@@ -34,11 +34,11 @@ boot:
 # Build the config for this system and activate it but only temporarily
 test *extraargs:
     #!/usr/bin/env bash
-    if command -v nh &>/dev/null; then
+    if [ "$(uname)" == "Darwin" ]; then
+        sudo darwin-rebuild test --option sandbox false {{extraargs}} --flake .
+    elif command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os test . -- {{extraargs}} ;
-    elif [ "$(uname)" == "Darwin" ]; then
-        sudo darwin-rebuild test --option sandbox false {{extraargs}} --flake .
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild test {{extraargs}} --flake ".#$HOST"
@@ -62,11 +62,15 @@ build hostname="" *extraargs:
         TARGET_HOST="$(hostname)"
     fi
 
-    if command -v nh &>/dev/null; then
+    if [ "$(uname)" == "Darwin" ]; then
+        if command -v nh &>/dev/null; then
+            nh darwin build --hostname "$TARGET_HOST" . -- --option sandbox false {{extraargs}}
+        else
+            darwin-rebuild build --option sandbox false --flake ".#$TARGET_HOST" {{extraargs}}
+        fi
+    elif command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os build --hostname "$TARGET_HOST" . -- {{extraargs}} ;
-    elif [ "$(uname)" == "Darwin" ]; then
-        darwin-rebuild build --option sandbox false --flake ".#$TARGET_HOST" {{extraargs}}
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild build --flake ".#$TARGET_HOST" {{extraargs}}
@@ -120,11 +124,15 @@ switch *extraargs:
         trap reset_power_profile EXIT
     fi
 
-    if command -v nh &>/dev/null; then
+    if [ "$(uname)" == "Darwin" ]; then
+        if command -v nh &>/dev/null; then
+            nh darwin switch . -- --option sandbox false {{extraargs}}
+        else
+            sudo darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
+        fi
+    elif command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os switch . -- {{extraargs}} ;
-    elif [ "$(uname)" == "Darwin" ]; then
-        sudo darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
     else
         rm -f ~/.gtkrc-2.0
         sudo nixos-rebuild switch --flake ".#$HOST" {{extraargs}}
