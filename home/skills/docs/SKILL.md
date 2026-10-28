@@ -32,6 +32,7 @@ Use this skill when creating, updating or reviewing repository documentation tha
 | Keeping AGENTS.md or CLAUDE.md and human docs from duplicating each other | [agent-files.md](agent-files.md) |
 | Adding diagrams, screenshots, CLI demos, logos or dark-mode images to a README | [readme-visuals.md](readme-visuals.md) |
 | Documenting code: doc comments, API docs, per-language conventions, missing-docs lints | [code.md](code.md) |
+| Documenting infrastructure: Terraform and Helm docs, runbooks, postmortems | [infrastructure.md](infrastructure.md) |
 
 ## Related
 
