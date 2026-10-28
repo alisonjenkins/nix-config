@@ -31,6 +31,7 @@ Use this skill when creating, updating or reviewing repository documentation tha
 | Docs for a monorepo, single repo or polyrepo: per-package READMEs, ownership, releases | [repo-shapes.md](repo-shapes.md) |
 | Keeping AGENTS.md or CLAUDE.md and human docs from duplicating each other | [agent-files.md](agent-files.md) |
 | Adding diagrams, screenshots, CLI demos, logos or dark-mode images to a README | [readme-visuals.md](readme-visuals.md) |
+| Documenting code: doc comments, API docs, per-language conventions, missing-docs lints | [code.md](code.md) |
 
 ## Related
 
