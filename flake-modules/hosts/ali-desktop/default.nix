@@ -340,6 +340,9 @@ in {
         # frees physical RAM) instead of compressing into RAM-resident zram and
         # driving reclaim churn during builds.
         zramSwap.memoryPercent = 50;
+        # Eager swapping would fill the halved zram early and spill to the
+        # 64G disk swap; keep the low base value so zram stays a last resort.
+        boot.kernel.sysctl."vm.swappiness" = 10;
         modules.uresourced.enable = true;
         modules.base = {
           enable = true;
