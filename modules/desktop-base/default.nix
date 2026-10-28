@@ -64,6 +64,7 @@ in
       cargo
       cargo-nextest
       cava
+      claude-desktop
       colmena
       comma
       corectrl
