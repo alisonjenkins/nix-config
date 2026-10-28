@@ -69,7 +69,7 @@ in {
             (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
             (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
             alacritty
-            unstable.aws-sam-cli
+            aws-sam-cli
             aws-vault
             awscli2
             bacon
