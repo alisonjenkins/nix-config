@@ -186,6 +186,9 @@ let
     else
       fullSkills;
 
+  # modules.rootly, read by path because this module is imported where it may not be.
+  rootly = lib.attrByPath [ "modules" "rootly" ] { enable = false; skills = null; } config;
+
   # The remaining paths are *parents* of many skills, so merging contents is right.
   fullSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
@@ -195,7 +198,8 @@ let
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
       speckitInitSkill
-    ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills;
+    ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills
+      ++ lib.optional rootly.enable rootly.skills;
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
