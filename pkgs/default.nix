@@ -51,6 +51,7 @@
   create-arkana-aeronautics-client = pkgs.callPackage ./create-arkana-aeronautics-client {};
   beatsaber-mods = pkgs.callPackage ./beatsaber-mods {};
   nbt-studio = pkgs.callPackage ./nbt-studio {};
+  claude-desktop = pkgs.callPackage ./claude-desktop {};
   scopebuddy = pkgs.callPackage ./scopebuddy {};
   pup = pkgs.callPackage ./pup {};
   pup-claude = pkgs.callPackage ./pup-claude {};
