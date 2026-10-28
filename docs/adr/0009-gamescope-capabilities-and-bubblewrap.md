@@ -11,7 +11,7 @@ descendant inherits it, including the bubblewrap that Steam's pressure-vessel
 and umu use for their containers. bubblewrap refuses to run with capabilities
 it did not expect:
 
-```
+```text
 bwrap: Unexpected capabilities but not setuid, old file caps config?
 ```
 

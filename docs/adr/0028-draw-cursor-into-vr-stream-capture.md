@@ -11,7 +11,7 @@ had no mouse cursor in the headset.
 Steam captures the `steam` output through niri's screencast and asks for the
 cursor hidden. niri's journal, for every capture Steam started that day:
 
-```
+```text
 niri::dbus::mutter_screen_cast: record_monitor connector="steam" properties=RecordMonitorProperties { cursor_mode: Some(Hidden), ... }
 ```
 

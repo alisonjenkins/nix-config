@@ -22,7 +22,7 @@ tested it on an M2 (t8112) only.
 This repo builds from nixos-26.05, which does not have it. Once the flake
 lock picked up #544, `ali-mba-linux` failed to evaluate on main:
 
-```
+```text
 error: attribute 'avd-fw' missing
 ```
 

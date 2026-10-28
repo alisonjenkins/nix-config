@@ -24,7 +24,7 @@ step did not hold.
 The 2026-10-04 hang in `journalctl -k`. The Forza Horizon 6 hangs had the
 same shape, with `msg=RESET` in place of `msg=REMOVE_QUEUE`:
 
-```
+```text
 amdgpu 0000:03:00.0: ring gfx_0.0.0 timeout, signaled seq=426174665, emitted seq=426174668
 amdgpu 0000:03:00.0:  Process helldivers2.exe pid 2835190 thread thread pool wor pid 2835897
 amdgpu 0000:03:00.0: Ring gfx_0.0.0 reset failed
