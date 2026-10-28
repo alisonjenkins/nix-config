@@ -330,6 +330,15 @@ let
   # so subcommands run clean. `@REAL@` is substituted with the absolute store
   # path of `.claude-real` at build time (below).
   claudeDispatcher = pkgs.writeShellScript "claude-dispatcher" ''
+    ${lib.optionalString pkgs.stdenv.isDarwin ''
+      # nixpkgs' launcher does `--set-default CLAUDE_CODE_CERT_STORE system`,
+      # which on the work Mac makes every session fail with
+      # UNABLE_TO_GET_ISSUER_CERT_LOCALLY. It only sets the variable when
+      # unset, so an empty value keeps Claude Code on its own default store.
+      # Set here rather than via home.sessionVariables: shells that inherit
+      # __HM_SESS_VARS_SOURCED (tmux panes) never re-source those.
+      export CLAUDE_CODE_CERT_STORE="''${CLAUDE_CODE_CERT_STORE-}"
+    ''}
     inject=()
     while [ $# -gt 0 ]; do
       case "$1" in
@@ -411,16 +420,6 @@ in
   # spec-kit (`specify`) serves both agents: Claude Code via the /speckit-init
   # skill above, and GitHub Copilot CLI via `specify init --integration copilot`.
   home.packages = [ claudeDd claudeStatusbarPkg pkgs.spec-kit ];
-
-  # nixpkgs' claude-code 2.1.308 launcher does `--set-default
-  # CLAUDE_CODE_CERT_STORE system`, so Claude Code trusts only the macOS
-  # keychain and drops its bundled CA list. On the work Mac every new session
-  # then failed with UNABLE_TO_GET_ISSUER_CERT_LOCALLY (2.1.293 sessions were
-  # fine). The launcher only sets the variable when it is unset, so an empty
-  # value both stops it and leaves Claude Code on its own default store.
-  home.sessionVariables = lib.mkIf pkgs.stdenv.isDarwin {
-    CLAUDE_CODE_CERT_STORE = "";
-  };
 
   programs.claude-code = {
     enable = true;
