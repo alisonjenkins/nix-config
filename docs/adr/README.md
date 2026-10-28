@@ -90,6 +90,12 @@ for the live-maintenance runbook.
 |---|---|---|
 | [0043](0043-rust-build-cache.md) | Share Rust compilation through sccache and sweep stale target directories | Accepted |
 
+## Memory tuning
+
+| # | Decision | Status |
+|---|---|---|
+| [0056](0056-tune-vm-sysctls-for-zram-in-base.md) | Tune swap sysctls for zram in base, per host where disk swap exists | Accepted |
+
 ## VR foveated rendering
 
 Start with the spec in
