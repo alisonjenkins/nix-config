@@ -306,7 +306,6 @@ in {
           "vm.swappiness" = lib.mkForce 180;
           "vm.watermark_boost_factor" = lib.mkForce 0;
           "vm.watermark_scale_factor" = lib.mkForce 125;
-          "vm.page-cluster" = lib.mkForce 0;
         };
 
         system = {
