@@ -16,7 +16,7 @@ in
       // { default = true; };
     repository = lib.mkOption {
       type = lib.types.str;
-      default = "${config.home.homeDirectory}/git/nix-config";
+      default = "${config.home.homeDirectory}/git/personal/nix-config";
       description = "Absolute path to the main nix-config checkout to update and build.";
     };
     package = lib.mkOption {

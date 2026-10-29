@@ -7,8 +7,8 @@ skill directories.
 
 The skill runs the Nix-managed `nix-pull-build` command without arguments. It is
 enabled by default wherever the shared programs module is imported, bound to
-`~/git/nix-config` unless overridden, and can also be run directly from a
-terminal. This Mac overrides the checkout path to `~/git/personal/nix-config`.
+`~/git/personal/nix-config` unless overridden, and can also be run directly from a
+terminal.
 It:
 
 1. Detects the operating system, hostname and current user, and requires the configured checkout's main branch to
