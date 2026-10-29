@@ -104,6 +104,7 @@ let
         scx_battery() {
           mkdir -p /run/power-management
           echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onBattery.scxArgs}" > /run/power-management/scx.env
+          systemctl reset-failed scx.service
           systemctl restart scx.service
         }
         run_step "scx-scheduler" scx_battery
@@ -223,6 +224,7 @@ let
         scx_ac() {
           mkdir -p /run/power-management
           echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onAC.scxArgs}" > /run/power-management/scx.env
+          systemctl reset-failed scx.service
           systemctl restart scx.service
         }
         run_step "scx-scheduler" scx_ac
