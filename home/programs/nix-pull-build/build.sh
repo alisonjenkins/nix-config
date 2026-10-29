@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${repository:?repository must be supplied by the Nix wrapper}"
+: "${configured_repository?configured_repository must be supplied by the Nix wrapper}"
+: "${expected_origin:?expected_origin must be supplied by the Nix wrapper}"
 
 if [[ $# -ne 0 ]]; then
-  echo "nix-pull-build takes no arguments; its repository is configured in Nix." >&2
+  echo "nix-pull-build takes no arguments; it finds its repository itself." >&2
   exit 1
 fi
 platform="$(uname -s)"
@@ -83,10 +84,34 @@ trap finish EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+normalize_remote() {
+  sed -E 's#^(https?://|ssh://)?([^@/]+@)?##; s#^([^/:]+):#\1/#; s#\.git/?$##; s#/$##' <<<"$1"
+}
+
+# Only a checkout whose origin is the expected remote may be discovered: this
+# command is pre-approved, so the working directory must not choose the repo.
+resolve_repository() {
+  local main origin
+  # The first worktree listed is the main checkout, so a PR worktree resolves to it.
+  if main="$(git worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')" \
+    && [[ -f "$main/flake.nix" ]] \
+    && origin="$(git -C "$main" remote get-url origin 2>/dev/null)" \
+    && [[ "$(normalize_remote "$origin")" = "$(normalize_remote "$expected_origin")" ]]; then
+    printf '%s\n' "$main"
+    return
+  fi
+  if [[ -n "$configured_repository" ]]; then
+    printf '%s\n' "$configured_repository"
+    return
+  fi
+  echo "Not inside a checkout of $expected_origin, and programs.nix-pull-build.repository is unset." >&2
+  return 1
+}
+repository="$(resolve_repository)"
 cd "$repository"
 repository="$(pwd -P)"
 [[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" && -f flake.nix ]] || {
-  echo "Configured path must be a Git repository root containing flake.nix: $repository" >&2
+  echo "Not a Git repository root containing flake.nix: $repository" >&2
   exit 1
 }
 [[ "$(git symbolic-ref --short HEAD)" = main ]] || {
