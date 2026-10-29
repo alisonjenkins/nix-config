@@ -27,10 +27,14 @@ llama-cpp.overrideAttrs (old: {
   # architecture; the two "model" tests do the same with larger fixtures), so
   # the whole system build stalled for 25 min and then failed. They exercise
   # upstream test logic, not this package's wiring; the rest of the suite runs.
+  # test-download-model fetches a model from huggingface.co, which the sandbox
+  # cannot resolve, and test-state-restore-fragmented never runs without it.
   disabledTests = (old.disabledTests or [ ]) ++ [
     "test-recurrent-state-rollback"
     "test-save-load-state"
     "test-gguf-model-data"
     "test-quant-type-selection"
+    "test-download-model"
+    "test-state-restore-fragmented"
   ];
 })
