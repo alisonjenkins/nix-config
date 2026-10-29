@@ -43,7 +43,7 @@
     "plist": "5.0.0",
     "semver": "7.8.5",
     "smol-toml": "1.9.1",
-    "stream-json": "3.7.0",
+    "stream-json": "3.8.0",
     "write-file-atomic": "8.0.0",
     "ws": "8.22.0",
     "zod": "4.6.7",
