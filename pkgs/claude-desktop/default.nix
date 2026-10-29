@@ -51,6 +51,7 @@
   wayland,
   bash,
   procps,
+  claude-code,
 }:
 
 let
@@ -173,7 +174,10 @@ stdenv.mkDerivation {
 
   # Copy the tree whole so /proc/self/exe and process.resourcesPath resolve
   # inside this store path. The bundled Vulkan loader only searches FHS ICD
-  # dirs, hence VK_ADD_DRIVER_FILES.
+  # dirs, hence VK_ADD_DRIVER_FILES. The app downloads a generic-Linux
+  # Claude Code ELF that NixOS cannot exec (exit 127, stub-ld);
+  # CLAUDE_CODE_LOCAL_BINARY makes it use the user's own profile `claude`
+  # (the home-manager wrapper), falling back to the nixpkgs build.
   installPhase = ''
     runHook preInstall
 
@@ -182,7 +186,14 @@ stdenv.mkDerivation {
     makeWrapper $out/lib/claude-desktop/claude-desktop \
       $out/bin/claude-desktop \
       --prefix VK_ADD_DRIVER_FILES : \
-        "${addDriverRunpath.driverLink}/share/vulkan/icd.d"
+        "${addDriverRunpath.driverLink}/share/vulkan/icd.d" \
+      --run '
+        if [ -z "$CLAUDE_CODE_LOCAL_BINARY" ]; then
+          for c in "/etc/profiles/per-user/$USER/bin/claude" "$HOME/.nix-profile/bin/claude"; do
+            if [ -x "$c" ]; then export CLAUDE_CODE_LOCAL_BINARY="$c"; break; fi
+          done
+        fi' \
+      --set-default CLAUDE_CODE_LOCAL_BINARY "${lib.getExe claude-code}"
 
     runHook postInstall
   '';
