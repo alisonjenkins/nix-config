@@ -49,7 +49,7 @@ in
         settings.default_session.command = let
           cage = lib.getExe pkgs.cage;
           regreet = lib.getExe pkgs.regreet;
-        in lib.mkForce "${pkgs.bash}/bin/bash -c 'exec ${cage} -s -- ${regreet} 2>/dev/null'";
+        in lib.mkForce "${pkgs.bash}/bin/bash -c 'exec ${cage} -s -- ${regreet}'";
       };
     };
 
