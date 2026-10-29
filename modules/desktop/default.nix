@@ -2405,6 +2405,7 @@ in
               <edit name="family" mode="prepend" binding="strong">
                 <string>Noto Sans Mono CJK SC</string>
                 <string>Symbols Nerd Font</string>
+                <string>Noto Sans Symbols 2</string>
                 <string>Twemoji</string>
               </edit>
             </match>
