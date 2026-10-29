@@ -250,6 +250,7 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
+            "claude"
             "discord"
             "firefox"
             "freeplane"
