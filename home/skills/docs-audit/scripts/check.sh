@@ -102,7 +102,7 @@ many_badges() {
     local r; r="$(find_primary_readme "$repo" || true)"
     [ -n "$r" ] || return 0
     local count
-    count="$(grep -Eoi '!\[[^]]*\]\([^)]*(badge|shields\.io|badge\.svg)[^)]*\)|<img[^>]*(badge|shields\.io|badge\.svg)[^>]*>' "$repo/$r" | wc -l | tr -d ' ')"
+    count="$({ grep -Eoi '!\[[^]]*\]\([^)]*(badge|shields\.io|badge\.svg)[^)]*\)|<img[^>]*(badge|shields\.io|badge\.svg)[^>]*>' "$repo/$r" || true; } | wc -l | tr -d ' ')"
     if [ "$count" -gt 5 ]; then
         add_finding LOW "$r" "more than 5 badge images in README ($count badges)"
     fi

@@ -159,6 +159,16 @@ EOF
     assert_contains "$out" "LOW	README.md	more than 5 badge images in README" "many_badges fires"
 }
 
+test_no_badges_script_exits_zero() {
+    # Run as a subprocess: command substitution in the other tests does not
+    # inherit errexit, so only a real invocation sees the script die.
+    local repo; repo="$(make_good_repo)"
+    local out rc=0
+    out="$(bash "$TARGET" "$repo" 2>&1)" || rc=$?
+    assert_eq "0" "$rc" "script exits 0 on a README with no badges"
+    assert_eq "0 findings" "$out" "script reports findings on a README with no badges"
+}
+
 test_fence_no_language() {
     local repo; repo="$(make_good_repo)"
     cat >> "$repo/README.md" << 'EOF'
@@ -334,6 +344,7 @@ test_readme_long
 test_no_install_or_usage
 test_no_license
 test_many_badges
+test_no_badges_script_exits_zero
 test_fence_no_language
 test_image_no_alt
 test_bad_link_text
