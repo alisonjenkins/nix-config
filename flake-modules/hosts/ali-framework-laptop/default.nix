@@ -126,7 +126,10 @@ in {
         modules.desktop-1password.enable = true;
         modules.desktop-aws-tools.enable = true;
         modules.desktop-base.enable = true;
-        modules.desktop-greetd-regreet.enable = true;
+        modules.desktop-greetd-regreet = {
+          enable = true;
+          video.enable = true;
+        };
         modules.desktop-kde-connect.enable = true;
         modules.desktop-kubernetes.enable = true;
         modules.desktop-kwallet.enable = true;
