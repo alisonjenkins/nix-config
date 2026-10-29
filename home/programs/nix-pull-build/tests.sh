@@ -195,7 +195,7 @@ grep -q 'Nix build failed' "$NOTIFICATION_LOG" || fail "missing failure notifica
 
 if script --version 2>&1 | grep -q util-linux; then
   setup build-tty
-  script -qec "bash -c 'configured_repository=\"\$1\"; expected_origin=\"\$2\"; script=\"\$3\"; shift 3; source \"\$script\"' bash '$repository' '$tmp/build-tty/origin' '$script'" /dev/null \
+  script -qec "cd '$tmp' && bash -c 'configured_repository=\"\$1\"; expected_origin=\"\$2\"; script=\"\$3\"; shift 3; source \"\$script\"' bash '$repository' '$tmp/build-tty/origin' '$script'" /dev/null \
     > "$tmp/output" 2>&1 || { cat "$tmp/output"; fail "TTY build"; }
   if grep -Fxq -- '--print-build-logs' "$BUILD_LOG"; then fail "TTY build used --print-build-logs"; fi
   [[ ! -e "$XDG_STATE_HOME" ]] || fail "TTY build wrote a log file"
