@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# git exports these while a commit hook runs; they would point the test repos at the real one.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
 script="$(cd "$(dirname "$0")" && pwd)/build.sh"
 real_git="$(command -v git)"
 export REAL_GIT="$real_git"
