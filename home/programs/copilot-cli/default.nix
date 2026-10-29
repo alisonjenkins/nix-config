@@ -40,8 +40,8 @@ in
       '';
       example = lib.literalExpression ''
         {
-          "/home/ali/git/nix-config".directories = [ "/home/ali/.agents/skills" ];
-          "/home/ali/git/nix-config".commandPatterns = [ "gh pr:*" ];
+          "/home/ali/git/personal/nix-config".directories = [ "/home/ali/.agents/skills" ];
+          "/home/ali/git/personal/nix-config".commandPatterns = [ "gh pr:*" ];
         }
       '';
     };
