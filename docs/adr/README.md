@@ -96,6 +96,12 @@ for the live-maintenance runbook.
 |---|---|---|
 | [0056](0056-tune-vm-sysctls-for-zram-in-base.md) | Tune swap sysctls for zram in base, per host where disk swap exists | Accepted |
 
+## Kernel options
+
+| # | Decision | Status |
+|---|---|---|
+| [0057](0057-manage-kernel-options-through-kernel-tuning-profiles.md) | Manage kernel options through composable `modules.kernelTuning` profiles | Proposed |
+
 ## VR foveated rendering
 
 Start with the spec in
