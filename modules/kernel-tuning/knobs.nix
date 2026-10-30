@@ -6,6 +6,9 @@
 # Sources: Arch wiki "Security" and "Gaming" pages, kernel-parameters.txt,
 # Documentation/admin-guide/sysctl.
 {
+  # Already the default on nixpkgs and CachyOS x86_64 kernels
+  # (INIT_ON_ALLOC_DEFAULT_ON), so enabling it there changes nothing; kept so
+  # the intent is explicit and a kernel that drops the default stays covered.
   initOnAlloc = {
     category = "security";
     params = [ "init_on_alloc=1" ];
@@ -24,6 +27,8 @@
     conflictsWith = [ "mitigationsOff" ];
   };
 
+  # Already the default on x86_64 kernels (RANDOMIZE_KSTACK_OFFSET_DEFAULT); kept
+  # for the same reason as initOnAlloc. Not default on aarch64 before 7.1.
   kstackRandomize = {
     category = "security";
     params = [ "randomize_kstack_offset=on" ];
