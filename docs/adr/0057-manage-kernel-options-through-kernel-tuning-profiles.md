@@ -94,6 +94,30 @@ public source and a check against the kernel the fleet ships (is it already
 the default? does it exist on that version?). Research for this record is
 public-source only.
 
+## Lockdown coverage on hibernating hosts
+
+Mainline refuses hibernation while lockdown is active
+(`hibernation_available()` checks `LOCKDOWN_HIBERNATION`; the source has no
+exemption for encrypted images), so a hibernating host runs without it. What
+`kernel_lockdown(7)` restricts, and what replaces it:
+
+| Lockdown restriction | Replacement knob |
+|---|---|
+| kexec of unsigned binaries | `kernel.kexec_load_disabled=1`, stricter than lockdown |
+| debugfs | `debugfs=off` |
+| Unsigned modules | `module.sig_enforce=1`, deferred below |
+| x86 MSR writes | `msr.allow_writes=off` (name from memory, unverified) |
+| `/dev/mem`, `/dev/kmem`, `/dev/kcore`, `/dev/ioports` | none; check strict devmem in the shipped kernel's config |
+| `ioperm`/`iopl`, PCI BAR access, KD*IO ioctls, `TIOCSSERIAL` | none; lost |
+| ACPI table override, custom methods, error injection, RDSP address | none; lost |
+| BPF and kprobes restrictions | none; lost |
+| Module parameters that set hardware parameters | none; lost |
+
+The rows marked lost are the price of hibernation. Sources: `kernel_lockdown(7)`
+(man-pages 6.19) and `kernel/power/hibernate.c` at mainline master, read
+2026-10-30. A distribution kernel such as CachyOS may patch the hibernation
+check, so confirm on the shipped kernel before relying on this.
+
 ## Deferred
 
 **Module signature enforcement.** `module.sig_enforce=1` needs a kernel built
