@@ -97,14 +97,14 @@
     params = [ "nosmt" ];
     minKernel = null; # UNVERIFIED min kernel
     cost = "high";
-    breaks = "halves the hardware threads; large loss on parallel workloads";
+    breaks = "disables simultaneous multithreading where the CPU has it; a large throughput loss on parallel workloads";
     conflictsWith = [ "mitigationsOff" ];
   };
 
   mitigationsOff = {
     category = "performance";
     params = [ "mitigations=off" ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "5.2";
     cost = "none";
     breaks = "disables CPU vulnerability mitigations; unsafe with untrusted code";
     conflictsWith = [ "nosmt" "initOnAlloc" "initOnFree" ];
