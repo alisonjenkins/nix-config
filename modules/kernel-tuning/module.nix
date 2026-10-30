@@ -17,7 +17,12 @@ let
 
   selected = lib.concatMap (p: profiles.${p}) cfg.profiles;
 
-  active =lib.filterAttrs (name: _: cfg.${name}) table;
+  kernelVersion = config.boot.kernelPackages.kernel.version;
+  supported = k: k.minKernel == null || lib.versionAtLeast kernelVersion k.minKernel;
+
+  enabled = lib.filterAttrs (name: _: cfg.${name}) table;
+  active = lib.filterAttrs (_: supported) enabled;
+  skipped = lib.filterAttrs (_: k: !supported k) enabled;
 in
 {
   options.modules.kernelTuning = lib.mapAttrs
@@ -60,6 +65,6 @@ in
     (import ./emit-params.nix { inherit lib cfg active; })
     (import ./emit-sysctl.nix { inherit lib active; })
     (import ./emit-modules.nix { inherit lib active; })
-    (import ./guards.nix { inherit lib config cfg active; })
+    (import ./guards.nix { inherit lib config cfg active skipped kernelVersion; })
   ];
 }

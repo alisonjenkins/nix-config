@@ -1,4 +1,4 @@
-{ lib, config, cfg, active }:
+{ lib, config, cfg, active, skipped, kernelVersion }:
 let
   # Parameters that legitimately repeat with different values.
   repeatable = [ "console" ];
@@ -36,7 +36,10 @@ in
       }
     ];
 
-  warnings = lib.optional (cfg.lockdown != null && config.boot.extraModulePackages != [ ]) ''
+  warnings = lib.mapAttrsToList
+    (name: k: "modules.kernelTuning.${name} needs kernel ${k.minKernel} or newer, this host runs ${kernelVersion}; the knob is skipped")
+    skipped
+  ++ lib.optional (cfg.lockdown != null && config.boot.extraModulePackages != [ ]) ''
     modules.kernelTuning.lockdown is set and boot.extraModulePackages is not empty:
     the kernel rejects out-of-tree modules that are not signed, and NixOS does not sign them.
   '';

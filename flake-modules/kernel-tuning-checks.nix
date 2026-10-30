@@ -89,6 +89,30 @@
         boot.extraModulePackages = [ config.boot.kernelPackages.evdi ];
       });
 
+      versioned = evalModules
+        (mechanism {
+          knobs = {
+            futureKnob = {
+              category = "security";
+              params = [ "future_param=1" ];
+              sysctls."fake.future" = 1;
+              blacklistedModules = [ "future_module" ];
+              minKernel = "99.0";
+              cost = "none";
+              breaks = "nothing";
+              conflictsWith = [ "oldKnob" ];
+            };
+            oldKnob = {
+              category = "security";
+              params = [ "old_param=1" ];
+              minKernel = "1.0";
+              cost = "none";
+              breaks = "nothing";
+            };
+          };
+        })
+        { modules.kernelTuning = { futureKnob = true; oldKnob = true; }; };
+
       withBlacklist = evalModules
         (mechanism {
           knobs.fakeModuleOff = {
@@ -169,6 +193,24 @@
         {
           name = "lockdown with extraModulePackages warns";
           ok = mentionsAll [ "lockdown" "extraModulePackages" ] withExtraModule.config.warnings;
+        }
+        {
+          name = "a knob above the kernel version warns, naming the knob";
+          ok = mentionsAll [ "futureKnob" "99.0" ] versioned.config.warnings;
+        }
+        {
+          name = "a knob above the kernel version emits nothing";
+          ok = !(lib.elem "future_param=1" (paramsOf versioned))
+            && !(versioned.config.boot.kernel.sysctl ? "fake.future")
+            && !(lib.elem "future_module" versioned.config.boot.blacklistedKernelModules);
+        }
+        {
+          name = "a knob within the kernel version still emits, and a skipped conflict does not assert";
+          ok = lib.elem "old_param=1" (paramsOf versioned) && failedAsserts versioned == [ ];
+        }
+        {
+          name = "no real knob is skipped on the default kernel";
+          ok = (evalWith (enable (lib.attrNames knobs))).config.warnings == [ ];
         }
         {
           name = "initOnAlloc emits init_on_alloc=1";
