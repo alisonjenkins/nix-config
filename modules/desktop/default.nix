@@ -1063,7 +1063,7 @@ in
         type = types.lines;
         readOnly = true;
         default = ''
-          export LD_LIBRARY_PATH=/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+          export LD_LIBRARY_PATH=/run/opengl-driver/lib:${pkgs.libglvnd}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
         '';
         description = ''
           Shell snippet for the Steam FHS environment's `extraProfile`. Steam
@@ -1071,7 +1071,9 @@ in
           libGL.so.1 with only $ORIGIN as RUNPATH, so nix-built processes in
           the launch chain (the steam-command-runner gamescope shim) abort
           before main with "libGL.so.1: cannot open shared object file" (exit
-          127) unless the driver directory is on LD_LIBRARY_PATH.
+          127) unless libGL is on LD_LIBRARY_PATH. The driver directory only
+          has libGL.so.1 with some drivers (not Mesa, which ships just
+          libGLX_mesa), so libglvnd's own directory is listed after it.
 
           Applied to `programs.steam.package` by default. A host that
           overrides the package must pass this as `extraProfile` itself.
