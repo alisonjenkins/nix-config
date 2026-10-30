@@ -6,6 +6,13 @@ let
     env.LD_PRELOAD = "";
     gamescope_args = "-w 2540 -h 1440 -b";
   };
+
+  # VR games: pressure-vessel has to see the host's OpenXR runtime (SteamVR),
+  # and they never ran under gamescope, so skip the global gamescope arguments.
+  vrGame = {
+    env.PRESSURE_VESSEL_IMPORT_OPENXR_1_RUNTIMES = "1";
+    gamescope_enabled = false;
+  };
 in
 {
   imports = [
@@ -35,6 +42,13 @@ in
     games."812140" = noPreloadGame; # Assassin's Creed Odyssey
     games."2464530" = noPreloadGame; # VOIN
     games."3035570" = noPreloadGame; # Assassin's Creed Mirage
+
+    games."438100" = vrGame; # VRChat
+    games."457960" = vrGame; # Holopoint
+    games."620980" = vrGame; # Beat Saber
+    games."826540" = vrGame; # Audio Trip
+    games."1079800" = vrGame; # Pistol Whip
+    games."2465270" = vrGame; # name not in the store API
   };
 
   home.packages = [
