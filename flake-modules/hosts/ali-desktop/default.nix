@@ -353,6 +353,8 @@ in {
         nix.settings.cores = 8;
         nix.settings.max-jobs = 4;
 
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
         modules.docker.enable = true;
         modules.docker.enableQemuBinfmt = true;

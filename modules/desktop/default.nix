@@ -1342,6 +1342,8 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.kernelTuning.profiles = [ "hardened-workstation" "desktop" ];
+
     home-manager = mkIf (config ? home-manager) {
       sharedModules =
         optionals cfg.rustBuildCache.enable [
@@ -1381,37 +1383,20 @@ in
       }
     ];
 
-    # Gaming-specific kernel and system optimizations
+    # Desktop and gaming kernel tuning lives in the modules.kernelTuning
+    # "desktop" and "gaming" profiles (hosts add "gaming" themselves). Only
+    # the zram-dependent value stays here.
     boot.kernel.sysctl = mkMerge [
       {
         # CAKE qdisc for per-flow fairness and DSCP-based traffic prioritisation
         "net.core.default_qdisc" = "cake";
       }
-      (mkIf cfg.gaming.enable {
-        # Memory management optimizations for gaming
-        "vm.compaction_proactiveness" = 0;          # Disable proactive compaction (reduce background CPU usage)
-        "vm.page-cluster" = 0;                      # Disable page clustering for swap (reduce latency)
-        "vm.watermark_boost_factor" = 0;            # Disable watermark boosting (reduce memory fragmentation overhead)
-        "vm.watermark_scale_factor" = 50;           # Balance between memory availability and disk caching (was 125, default is 10)
-      })
       (mkIf (cfg.gaming.enable && config.zramSwap.enable) {
         # zram swap is cheaper than refaulting file cache, so reclaim anon pages
         # first. 900 beats the base mkDefault (100); a host mkForce still wins.
         "vm.swappiness" = lib.mkOverride 900 150;
       })
-      (mkIf cfg.gaming.enable {
-
-        # Scheduler optimizations for gaming
-        # kernel.sched_child_runs_first dropped: not a real knob under
-        # CachyOS's scheduler (no /proc/sys/kernel/sched_child_runs_first —
-        # that's a legacy CFS-only tunable), was silently a no-op.
-        "kernel.sched_autogroup_enabled" = 1;       # Enable automatic process grouping for better desktop responsiveness
-        "kernel.sched_cfs_bandwidth_slice_us" = 500; # Reduce CFS bandwidth slice for lower latency
-      })
     ];
-
-    # Set transparent hugepages to madvise to prevent khugepaged latency spikes during gaming
-    boot.kernelParams = mkIf cfg.gaming.enable [ "transparent_hugepage=madvise" ];
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
     boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ])

@@ -272,6 +272,8 @@ in {
         modules.desktop-base.enable = true;
         modules.desktop-kubernetes.enable = true;
         modules.desktop-media.enable = true;
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
 
         # EmuDeck-equivalent emulation stack (modules/emulation). Initial set:

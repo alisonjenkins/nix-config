@@ -159,6 +159,8 @@ in {
         };
 
         services.automatic-timezoned.enable = true;
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
         modules.libvirtd.enable = true;
         modules.podman.enable = true;

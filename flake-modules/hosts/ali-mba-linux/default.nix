@@ -113,6 +113,10 @@ in {
         };
 
         services.automatic-timezoned.enable = true;
+        # gaming.enable is off here, so keep off the desktop-profile tuning that
+        # the gaming block never applied. The watermark sysctls are forced below.
+        modules.kernelTuning.schedAutogroup = false;
+        modules.kernelTuning.thpMadvise = false;
         modules.locale.enable = true;
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
