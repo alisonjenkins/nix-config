@@ -8,6 +8,32 @@ let
 
   binauralSurroundDefaults = import ./binaural-surround-defaults.nix;
 
+  patchesDir = builtins.path { path = inputs.self + "/patches"; name = "nix-config-patches"; };
+
+  # Steam's FHS sandbox cannot pass file capabilities to gamescope's
+  # /run/wrappers wrapper ("failed to inherit capabilities: Operation not
+  # permitted"), so it runs a bubblewrap that tolerates capabilities with
+  # --cap-add ALL.
+  steamBubblewrap = pkgs.bubblewrap.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [
+      "${patchesDir}/bubblewrap-allow-caps.patch"
+    ];
+  });
+
+  # Arguments for `steam.override`, taking the package set the override is
+  # applied to (a host may pass its own extended set).
+  steamFhsArgs = p: {
+    buildFHSEnv = args: (p.buildFHSEnv.override {
+      bubblewrap = steamBubblewrap;
+    }) (args // {
+      extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
+    });
+    extraPkgs = pp: [ steamBubblewrap pp.hidapi ];
+    extraProfile = gcfg.steamFhsProfile;
+    # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one.
+    extraEnv.BWRAP = "${steamBubblewrap}/bin/bwrap";
+  };
+
   # nixos-unstable's mesa expression, built with the system package set. Every
   # GUI process dlopen()s the graphics package, so it must link the system's
   # glibc; pkgs.unstable.mesa links unstable's, which breaks once the two
@@ -1080,6 +1106,22 @@ in
         '';
       };
 
+      steamFhsArgs = mkOption {
+        type = types.raw;
+        readOnly = true;
+        default = steamFhsArgs;
+        description = ''
+          Function from a package set to the arguments `steam.override` needs
+          for Steam's FHS sandbox: the capability-tolerant bubblewrap,
+          `--cap-add ALL`, `BWRAP` for pressure-vessel and `steamFhsProfile`.
+          Applied to `programs.steam.package` by default. A host that
+          overrides the package passes this through, so it keeps one
+          definition:
+
+              steamPkgs.steam.override (steamFhsArgs steamPkgs // { ... })
+        '';
+      };
+
       shaderCacheBasePath = mkOption {
         type = types.str;
         default = "\${HOME}/.cache";
@@ -1795,7 +1837,7 @@ in
 
       steam = mkIf cfg.gaming.enable {
         enable = true;
-        package = mkDefault (pkgs.steam.override { extraProfile = gcfg.steamFhsProfile; });
+        package = mkDefault (pkgs.steam.override (steamFhsArgs pkgs));
         # allowedTCPPorts/allowedUDPPorts are global, so this covers LAN and
         # tailnet alike. Auto-discovery is LAN broadcast only and doesn't
         # cross Tailscale — add tailnet hosts by IP/MagicDNS name manually in
