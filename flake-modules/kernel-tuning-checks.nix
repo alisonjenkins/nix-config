@@ -126,6 +126,21 @@
 
       cases = map knobCase (lib.attrNames knobs) ++ map profileCase (lib.attrNames profiles) ++ [
         {
+          # Membership is policy, and profileCase derives its expectation from
+          # profiles.nix, so pin the lists here to catch an unintended edit.
+          name = "profile membership matches the pinned lists";
+          ok =
+            let
+              pinned = {
+                hardened-workstation = [ "debugfsOff" "initOnAlloc" "kexecDisable" "kstackRandomize" "noVsyscall" "pageShuffle" "slabNomerge" ];
+                hardened-server = [ "debugfsOff" "initOnAlloc" "kexecDisable" "kstackRandomize" "noVsyscall" "pageShuffle" "slabNomerge" ];
+                gaming = [ "compactionProactivenessOff" "maxMapCountHigh" "splitLockMitigateOff" ];
+              };
+            in
+            lib.attrNames profiles == lib.attrNames pinned
+            && lib.all (n: lib.sort lib.lessThan profiles.${n} == pinned.${n}) (lib.attrNames pinned);
+        }
+        {
           name = "every profile member is a table knob";
           ok = lib.all (n: knobs ? ${n}) (lib.concatLists (lib.attrValues profiles));
         }
