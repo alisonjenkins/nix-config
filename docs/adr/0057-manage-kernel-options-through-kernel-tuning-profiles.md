@@ -1,6 +1,6 @@
 # 0057. Manage kernel options through composable `modules.kernelTuning` profiles
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-29
 
 ## Context
@@ -45,6 +45,20 @@ produce conflicting definitions and compose freely. A host switches off one
 knob with a plain `modules.kernelTuning.<knob> = false`, which beats
 `mkDefault` without `mkForce`.
 
+The shipped profiles:
+
+| Profile | Knobs | Selected by |
+|---|---|---|
+| `hardened-workstation` | `kstackRandomize`, `initOnAlloc`, `noVsyscall`, `pageShuffle`, `slabNomerge`, `debugfsOff`, `kexecDisable` | `modules.desktop` |
+| `hardened-server` | the same set | each server host |
+| `desktop` | `schedAutogroup`, `watermarkBoostOff`, `watermarkScaleBalanced`, `thpMadvise` | `modules.desktop` |
+| `gaming` | `splitLockMitigateOff`, `compactionProactivenessOff`, `maxMapCountHigh`, `cfsBandwidthSliceShort` | `ali-desktop`, `ali-framework-laptop`, `ali-steam-deck` |
+
+`desktop` holds the responsiveness tuning any interactive machine wants;
+`gaming` holds the settings that trade safety margin or latency for throughput
+in games. A host that does not want one knob of a profile sets it to `false`
+(`ali-mba-linux` does this for `schedAutogroup` and `thpMadvise`).
+
 **Value-typed settings stay out of profiles.** `lockdown` (an enum) and
 numeric settings such as a panic timeout are explicit options that a host
 sets. A profile may only set a value-typed option if exactly one profile
@@ -83,7 +97,9 @@ It never reads which profile enabled a knob.
   skipped.
 
 **Scope of the first change.** The module, table, profiles and their checks.
-No host is migrated in that change.
+No host was migrated in that change. Hosts and `modules.desktop` select
+profiles in later commits, and `modules/base` imports the module so every host
+can.
 
 **Migration is later and provable.** Existing settings move into the module
 one group at a time, one atomic commit each. A migration commit must be a
@@ -193,7 +209,7 @@ the first change.
 
 - Every kernel option the module owns has a category, a cost and a recorded
   break condition, and appears in one table.
-- A host's intent reads as `profiles = [ "hardened-server" "server-throughput" ]`
+- A host's intent reads as `profiles = [ "hardened-workstation" "gaming" ]`
   plus a short list of per-knob exceptions.
 - Until hosts are migrated, settings exist in both places; the collision check
   is what keeps that safe, and it will fire on any pre-existing disagreement.

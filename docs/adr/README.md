@@ -100,7 +100,7 @@ for the live-maintenance runbook.
 
 | # | Decision | Status |
 |---|---|---|
-| [0057](0057-manage-kernel-options-through-kernel-tuning-profiles.md) | Manage kernel options through composable `modules.kernelTuning` profiles | Proposed |
+| [0057](0057-manage-kernel-options-through-kernel-tuning-profiles.md) | Manage kernel options through composable `modules.kernelTuning` profiles | Accepted |
 | [0058](0058-set-swap-and-zswap-policy-by-swap-device.md) | Set swappiness and zswap by swap device type | Accepted |
 
 ## VR foveated rendering
