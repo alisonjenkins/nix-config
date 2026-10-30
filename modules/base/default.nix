@@ -225,16 +225,6 @@ in
         kernel = {
           sysctl = {
             # Network Perf Tuning
-            "net.core.default_qdisc" = lib.mkDefault "dualpi2";
-            "net.core.netdev_budget" = 600;
-            "net.core.netdev_budget_usecs" = 8000;
-            "net.core.netdev_max_backlog" = 16384;
-            "net.core.optmem_max" = 65536;
-            "net.core.rmem_default" = 1048576;
-            "net.core.rmem_max" = 16777216;
-            "net.core.somaxconn" = 8192;
-            "net.core.wmem_default" = 1048576;
-            "net.core.wmem_max" = 16777216;
             "net.ipv4.conf.all.accept_redirects" = 0;
             "net.ipv4.conf.all.log_martians" = 0;
             "net.ipv4.conf.all.rp_filter" = 1;
@@ -264,8 +254,6 @@ in
             "net.ipv4.tcp_timestamps" = 1;
             "net.ipv4.tcp_tw_reuse" = 1;
             "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
-            "net.ipv4.udp_rmem_min" = 8192;
-            "net.ipv4.udp_wmem_min" = 8192;
             "net.ipv6.conf.all.accept_redirects" = 0;
             "net.ipv6.conf.default.accept_redirects" = 0;
             "net.ipv4.tcp_window_scaling" = 1;
@@ -559,6 +547,11 @@ in
         vfsCachePressureLow = lib.mkDefault true;
         hpetUserFreqHigh = lib.mkDefault true;
         dentryNegative = lib.mkDefault true;
+        qdiscDualpi2 = lib.mkDefault true;
+        netRxQueueLarge = lib.mkDefault true;
+        socketBacklogHigh = lib.mkDefault true;
+        socketBuffersLarge = lib.mkDefault true;
+        udpMinBuffers = lib.mkDefault true;
       };
 
       zramSwap = {

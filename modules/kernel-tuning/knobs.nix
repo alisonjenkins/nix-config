@@ -278,4 +278,55 @@
     cost = "low";
     breaks = "negative dentries are kept after file deletion, using a little more RAM";
   };
+
+  # dualpi2 needs kernel 6.17 or newer and the sch_dualpi2 module (base loads
+  # it with the CachyOS kernel); a host that wants another qdisc overrides it.
+  qdiscDualpi2 = {
+    category = "performance";
+    sysctls."net.core.default_qdisc" = "dualpi2";
+    sysctlPriority = 1000;
+    cost = "low";
+    breaks = "new interfaces use dualpi2, which is wrong on a kernel without it (base loads sch_dualpi2 only when modules.base.enableCachyOSKernel is true) and replaces fq_codel/cake unless the host overrides it";
+  };
+
+  netRxQueueLarge = {
+    category = "performance";
+    sysctls = {
+      "net.core.netdev_budget" = 600;
+      "net.core.netdev_budget_usecs" = 8000;
+      "net.core.netdev_max_backlog" = 16384;
+    };
+    cost = "low";
+    breaks = "each softirq poll round runs longer (kernel defaults 300 packets, 2000 us), adding latency jitter under load";
+  };
+
+  socketBacklogHigh = {
+    category = "performance";
+    sysctls."net.core.somaxconn" = 8192;
+    cost = "none";
+    breaks = "listen queues may hold up to 8192 pending connections (kernel default 4096), using more memory under a connection flood";
+  };
+
+  socketBuffersLarge = {
+    category = "performance";
+    sysctls = {
+      "net.core.optmem_max" = 65536;
+      "net.core.rmem_default" = 1048576;
+      "net.core.rmem_max" = 16777216;
+      "net.core.wmem_default" = 1048576;
+      "net.core.wmem_max" = 16777216;
+    };
+    cost = "low";
+    breaks = "every socket gets 1 MiB default buffers (well above the kernel default), so many idle sockets use more RAM";
+  };
+
+  udpMinBuffers = {
+    category = "performance";
+    sysctls = {
+      "net.ipv4.udp_rmem_min" = 8192;
+      "net.ipv4.udp_wmem_min" = 8192;
+    };
+    cost = "none";
+    breaks = "each UDP socket is guaranteed 8 KiB buffers (kernel default 4096), using more memory with very many UDP sockets";
+  };
 }
