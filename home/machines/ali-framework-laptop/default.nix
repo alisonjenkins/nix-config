@@ -56,6 +56,11 @@ in
       gamescope_enabled = false;
       env.VK_LOADER_DRIVERS_DISABLE = "lvp_icd";
     };
+
+    # Launched without gamescope (FF7 Remake with only `gamemoderun`, Golf
+    # with no options), so the global gamescope arguments stay off them.
+    games."431240".gamescope_enabled = false; # Golf With Your Friends
+    games."1462040".gamescope_enabled = false; # FF7 Remake Intergrade
   };
 
   home.packages = [
