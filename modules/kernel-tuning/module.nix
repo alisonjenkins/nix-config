@@ -60,5 +60,6 @@ in
     (import ./emit-params.nix { inherit lib cfg active; })
     (import ./emit-sysctl.nix { inherit lib active; })
     (import ./emit-modules.nix { inherit lib active; })
+    (import ./guards.nix { inherit lib config cfg active; })
   ];
 }

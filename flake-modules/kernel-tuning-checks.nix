@@ -66,6 +66,29 @@
         modules.kernelTuning.initOnAlloc = false;
       };
 
+      failedAsserts = c: map (a: a.message) (lib.filter (a: !a.assertion) c.config.assertions);
+      mentionsAll = words: msgs:
+        lib.any (m: lib.all (w: lib.hasInfix w m) words) msgs;
+
+      conflicting = evalWith (enable [ "mitigationsOff" "nosmt" ]);
+      collidingHost = evalWith {
+        modules.kernelTuning.iommuIsolation = true;
+        boot.kernelParams = [ "amd_iommu=off" ];
+      };
+      repeatedSameValue = evalWith {
+        modules.kernelTuning.initOnAlloc = true;
+        boot.kernelParams = [ "init_on_alloc=1" ];
+      };
+      hibernating = evalWith {
+        modules.kernelTuning.lockdown = "integrity";
+        boot.resumeDevice = "/dev/disk/by-label/swap";
+      };
+      lockedDown = evalWith { modules.kernelTuning.lockdown = "integrity"; };
+      withExtraModule = evalWith ({ config, ... }: {
+        modules.kernelTuning.lockdown = "integrity";
+        boot.extraModulePackages = [ config.boot.kernelPackages.evdi ];
+      });
+
       withBlacklist = evalModules
         (mechanism {
           knobs.fakeModuleOff = {
@@ -106,6 +129,46 @@
           name = "host initOnAlloc = false beats the profile without mkForce";
           ok = !(lib.elem "init_on_alloc=1" (paramsOf hostOverride))
             && lib.elem "slab_nomerge" (paramsOf hostOverride);
+        }
+        {
+          name = "conflictsWith is symmetric across the table";
+          ok = lib.all
+            (a: lib.all (b: lib.elem a (knobs.${b}.conflictsWith or [ ])) (knobs.${a}.conflictsWith or [ ]))
+            (lib.attrNames knobs);
+        }
+        {
+          name = "mitigationsOff with nosmt asserts, naming both";
+          ok = mentionsAll [ "mitigationsOff" "nosmt" ] (failedAsserts conflicting);
+        }
+        {
+          name = "a declared conflict is reported once";
+          ok = lib.length (failedAsserts conflicting) == 1;
+        }
+        {
+          name = "no assertion on an empty host or on any profile";
+          ok = failedAsserts baseline == [ ]
+            && lib.all (p: failedAsserts (withProfiles [ p ]) == [ ]) (lib.attrNames profiles)
+            && failedAsserts (withProfiles (lib.attrNames profiles)) == [ ];
+        }
+        {
+          name = "iommuIsolation against a host amd_iommu=off is flagged";
+          ok = mentionsAll [ "amd_iommu" "force_isolation" "off" ] (failedAsserts collidingHost);
+        }
+        {
+          name = "the same param twice with one value is not a collision";
+          ok = failedAsserts repeatedSameValue == [ ];
+        }
+        {
+          name = "lockdown with resumeDevice asserts";
+          ok = mentionsAll [ "lockdown" "resumeDevice" ] (failedAsserts hibernating);
+        }
+        {
+          name = "lockdown without resumeDevice does not assert or warn";
+          ok = failedAsserts lockedDown == [ ] && lockedDown.config.warnings == [ ];
+        }
+        {
+          name = "lockdown with extraModulePackages warns";
+          ok = mentionsAll [ "lockdown" "extraModulePackages" ] withExtraModule.config.warnings;
         }
         {
           name = "initOnAlloc emits init_on_alloc=1";
