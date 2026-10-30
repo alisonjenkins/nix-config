@@ -150,6 +150,28 @@
       } // extra);
       sysctlEvals = c: (builtins.tryEval (builtins.deepSeq (sysctlOf c) true)).success;
 
+      # Pairs "a b" where two knobs set the same sysctl key but a does not name
+      # b in conflictsWith. Pure over a table, so a synthetic table can feed it.
+      conflictGaps = table:
+        let
+          names = lib.attrNames table;
+          keysOf = n: lib.attrNames (table.${n}.sysctls or { });
+          sharedKeys = lib.unique (lib.concatMap keysOf names);
+        in
+        lib.concatMap
+          (key:
+            let sharers = lib.filter (n: lib.elem key (keysOf n)) names; in
+            lib.concatMap
+              (a: map (b: "${a} ${b}")
+                (lib.filter (b: b != a && !(lib.elem b (table.${a}.conflictsWith or [ ]))) sharers))
+              sharers)
+          sharedKeys;
+      partialConflicts = {
+        shareA = { sysctls."fake.shared" = 1; conflictsWith = [ "shareB" ]; };
+        shareB = { sysctls."fake.shared" = 2; conflictsWith = [ "shareA" ]; };
+        shareC = { sysctls."fake.shared" = 3; };
+      };
+
       cases = map knobCase (lib.attrNames knobs) ++ map profileCase (lib.attrNames profiles) ++ [
         {
           # Membership is policy, and profileCase derives its expectation from
@@ -201,6 +223,14 @@
           ok = lib.all
             (a: lib.all (b: lib.elem a (knobs.${b}.conflictsWith or [ ])) (knobs.${a}.conflictsWith or [ ]))
             (lib.attrNames knobs);
+        }
+        {
+          name = "every knob sharing a sysctl key names every other one in conflictsWith";
+          ok = conflictGaps knobs == [ ];
+        }
+        {
+          name = "the sharing check fires when one of three sharers is left out";
+          ok = conflictGaps partialConflicts != [ ];
         }
         {
           name = "mitigationsOff with nosmt asserts, naming both";
