@@ -411,6 +411,9 @@ in {
 
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
         zramSwap.enable = lib.mkForce false;
+        # Disk-backed swap only: a compressed cache in front of it keeps cold
+        # pages off the LVM device. Trial; revert if swap-in latency regresses.
+        modules.kernelTuning.zswapOn = true;
 
         # An HBA discovery-error storm (mpt3sas, ~20 lines/s) grew the journal to
         # 3 GB and kept I/O busy; cap it so a repeat cannot fill the root volume.
