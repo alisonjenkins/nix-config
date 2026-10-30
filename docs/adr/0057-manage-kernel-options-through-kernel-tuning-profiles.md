@@ -73,9 +73,12 @@ It never reads which profile enabled a knob.
 - Environment conflicts: `lockdown` set together with `boot.resumeDevice`
   asserts; set together with `boot.extraModulePackages` warns, because NixOS
   does not sign out-of-tree modules.
-- Collisions: a check over the final `boot.kernelParams` and
-  `boot.kernel.sysctl` flags a key that two sources define with different
-  values, including settings made outside this module.
+- Collisions: a check over the final `boot.kernelParams` flags a key that
+  the module emits when another source defines it with a different value.
+  Duplicates between two other modules are left alone: the kernel takes the
+  last value, and `ali-framework-laptop` carries one from nixos-hardware
+  (`amdgpu.dcdebugmask`). Sysctls need no check, since NixOS fails evaluation
+  on conflicting definitions itself.
 - A knob whose minimum kernel version is above the host's kernel warns and is
   skipped.
 
