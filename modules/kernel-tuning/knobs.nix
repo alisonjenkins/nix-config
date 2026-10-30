@@ -145,7 +145,7 @@
   zswapOff = {
     category = "performance";
     params = [ "zswap.enabled=0" ];
-    minKernel = "3.11"; # zswap itself first shipped in 3.11, from memory, UNVERIFIED against versioned docs
+    minKernel = "3.11"; # mm/zswap.c is absent at v3.10 and declares the enabled parameter at v3.11
     cost = "none";
     breaks = "no compressed cache in front of a disk swap device";
     conflictsWith = [ "zswapOn" ];

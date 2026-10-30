@@ -43,8 +43,9 @@ problems remained:
   `vm.swappiness` at higher priority.
 - `modules/base` now depends on `modules/kernel-tuning`, which stays inert
   until a knob or profile is set.
-- The minimum kernel for both zswap knobs (3.11) is from memory; the fleet
-  runs 6.18 or newer.
+- The minimum kernel for both zswap knobs is 3.11: `mm/zswap.c` is absent at
+  v3.10 and declares the `enabled` parameter at v3.11. The fleet runs 6.18 or
+  newer.
 - Not decided: whether Kubernetes nodes tolerate swap (kubelet `failSwapOn`
   is not set in this repo), and whether hibernation interacts with zswap on
   the storage server, which has a resume device.
