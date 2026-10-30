@@ -14,9 +14,17 @@ in
 {
   hardened-workstation = hardenedWorkstation;
   hardened-server = hardenedWorkstation;
+  # Responsiveness tuning for any interactive machine.
+  desktop = [
+    "schedAutogroup"
+    "watermarkBoostOff"
+    "watermarkScaleBalanced"
+    "thpMadvise"
+  ];
   gaming = [
     "splitLockMitigateOff"
     "compactionProactivenessOff"
     "maxMapCountHigh"
+    "cfsBandwidthSliceShort"
   ];
 }

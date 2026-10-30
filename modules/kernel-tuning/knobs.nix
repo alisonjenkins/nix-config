@@ -161,4 +161,48 @@
     breaks = "the compressed cache holds RAM and spends CPU; it is not meant to sit in front of zram";
     conflictsWith = [ "zswapOff" ];
   };
+
+  # The knobs below were the gaming sysctl block in modules/desktop. minKernel
+  # is null where the first release was not checked; the fleet runs 6.18+.
+  # vm.page-cluster is not here: modules/base sets it whenever zram is on.
+  watermarkBoostOff = {
+    category = "performance";
+    sysctls."vm.watermark_boost_factor" = 0;
+    cost = "low";
+    breaks = "reclaim no longer boosts watermarks after fragmentation, so huge page availability can drop";
+  };
+
+  watermarkScaleBalanced = {
+    category = "performance";
+    sysctls."vm.watermark_scale_factor" = 50;
+    cost = "low";
+    breaks = "kswapd wakes earlier and keeps more memory free (kernel default is 10)";
+  };
+
+  # kernel.sched_child_runs_first is deliberately absent: CachyOS's scheduler
+  # has no such sysctl, so setting it was a silent no-op.
+  schedAutogroup = {
+    category = "performance";
+    sysctls."kernel.sched_autogroup_enabled" = 1;
+    cost = "none";
+    breaks = "nothing known; groups tasks per session for desktop responsiveness";
+  };
+
+  cfsBandwidthSliceShort = {
+    category = "gaming";
+    sysctls."kernel.sched_cfs_bandwidth_slice_us" = 500;
+    cost = "low";
+    breaks = "more frequent bandwidth slice refills for cgroups with CPU quotas";
+  };
+
+  # Avoids khugepaged latency spikes. Set on the command line to match the
+  # existing behaviour; the runtime form is
+  # /sys/kernel/mm/transparent_hugepage/enabled, to move when a sysfs emitter
+  # exists.
+  thpMadvise = {
+    category = "performance";
+    params = [ "transparent_hugepage=madvise" ];
+    cost = "low";
+    breaks = "programs that do not madvise lose transparent huge pages";
+  };
 }

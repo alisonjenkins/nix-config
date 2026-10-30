@@ -138,7 +138,8 @@
               pinned = {
                 hardened-workstation = [ "debugfsOff" "initOnAlloc" "kexecDisable" "kstackRandomize" "noVsyscall" "pageShuffle" "slabNomerge" ];
                 hardened-server = [ "debugfsOff" "initOnAlloc" "kexecDisable" "kstackRandomize" "noVsyscall" "pageShuffle" "slabNomerge" ];
-                gaming = [ "compactionProactivenessOff" "maxMapCountHigh" "splitLockMitigateOff" ];
+                desktop = [ "schedAutogroup" "thpMadvise" "watermarkBoostOff" "watermarkScaleBalanced" ];
+                gaming = [ "cfsBandwidthSliceShort" "compactionProactivenessOff" "maxMapCountHigh" "splitLockMitigateOff" ];
               };
             in
             lib.attrNames profiles == lib.attrNames pinned
