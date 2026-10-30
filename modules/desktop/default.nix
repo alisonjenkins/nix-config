@@ -1059,6 +1059,25 @@ in
         '';
       };
 
+      steamFhsProfile = mkOption {
+        type = types.lines;
+        readOnly = true;
+        default = ''
+          export LD_LIBRARY_PATH=/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+        '';
+        description = ''
+          Shell snippet for the Steam FHS environment's `extraProfile`. Steam
+          preloads gameoverlayrenderer.so into every game launch; it needs
+          libGL.so.1 with only $ORIGIN as RUNPATH, so nix-built processes in
+          the launch chain (the steam-command-runner gamescope shim) abort
+          before main with "libGL.so.1: cannot open shared object file" (exit
+          127) unless the driver directory is on LD_LIBRARY_PATH.
+
+          Applied to `programs.steam.package` by default. A host that
+          overrides the package must pass this as `extraProfile` itself.
+        '';
+      };
+
       shaderCacheBasePath = mkOption {
         type = types.str;
         default = "\${HOME}/.cache";
@@ -1774,6 +1793,7 @@ in
 
       steam = mkIf cfg.gaming.enable {
         enable = true;
+        package = mkDefault (pkgs.steam.override { extraProfile = gcfg.steamFhsProfile; });
         # allowedTCPPorts/allowedUDPPorts are global, so this covers LAN and
         # tailnet alike. Auto-discovery is LAN broadcast only and doesn't
         # cross Tailscale — add tailnet hosts by IP/MagicDNS name manually in
