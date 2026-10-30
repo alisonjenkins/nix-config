@@ -1,9 +1,8 @@
 { pkgs, inputs, ... }:
 let
-  # Launched as `LD_PRELOAD="" gamescope -w 2560 -h 1440 -b -- gamemoderun`:
-  # no Steam preloads reach gamescope, 1440 high with a borderless window.
-  noPreloadGame = {
-    env.LD_PRELOAD = "";
+  # 1440 high with a borderless window. These launched with `LD_PRELOAD=""`
+  # to keep Steam's preloads off gamescope; the runner no longer needs that.
+  borderless1440Game = {
     gamescope_args = "-w 2560 -h 1440 -b";
   };
 
@@ -38,10 +37,10 @@ in
     innerEnv.MANGOHUD = "1";
     gamescopeArgs = "-w 2560 -h 1600";
 
-    games."582160" = noPreloadGame; # Assassin's Creed Origins
-    games."812140" = noPreloadGame; # Assassin's Creed Odyssey
-    games."2464530" = noPreloadGame; # VOIN
-    games."3035570" = noPreloadGame; # Assassin's Creed Mirage
+    games."582160" = borderless1440Game; # Assassin's Creed Origins
+    games."812140" = borderless1440Game; # Assassin's Creed Odyssey
+    games."2464530" = borderless1440Game; # VOIN
+    games."3035570" = borderless1440Game; # Assassin's Creed Mirage
 
     games."438100" = vrGame; # VRChat
     games."457960" = vrGame; # Holopoint
