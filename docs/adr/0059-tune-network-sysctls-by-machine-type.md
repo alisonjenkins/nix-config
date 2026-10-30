@@ -83,7 +83,8 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | C11 | The mainline kernel's default congestion control is cubic (the stock `linuxPackages_latest` hosts use mainline defaults unless NixOS overrides them; its kernel config was not read) | `prompt "Default TCP congestion control"` and `default DEFAULT_CUBIC` | `https://raw.githubusercontent.com/torvalds/linux/v6.18/net/ipv4/Kconfig` |
 | C10 | Cilium's bandwidth manager sets up MQ/FQ itself and relies on an FQ qdisc on the physical device | "The base infrastructure around MQ/FQ setup provided by Cilium's bandwidth manager"; "hits the FQ queueing discipline on the physical device in the host namespace" | `https://raw.githubusercontent.com/cilium/cilium/v1.20.4/Documentation/network/kubernetes/bandwidth-manager.rst` |
 | C12 | `net/ipv4/tcp_bbr.c` at v6.18 contains no ECN code (probe: the strings `ecn` and `ECN` are absent, with `bbr_min_rtt_win_sec` present as positive control). This does not show that a BBR v1 connection ignores ECN end to end: core TCP handles ECN elsewhere | n/a | `net/ipv4/tcp_bbr.c` @v6.18 (probe) |
-| C13 | nixpkgs sets `TCP_CONG_CUBIC` and its comment calls cubic the default; mainline Kconfig makes `DEFAULT_CUBIC` the default choice. A search of that nixpkgs file found no `DEFAULT_TCP_CONG`, so the mainline default applies to its kernels. Whether `bbr` and `dualpi2` are built as modules in the nixpkgs or Jovian configs is not established (inferred from `autoModules`; no built `.config` was read) | `TCP_CONG_CUBIC = yes; # This is the default congestion control algorithm since 2.6.19`; `default DEFAULT_CUBIC`; `default "cubic" if DEFAULT_CUBIC` | `pkgs/os-specific/linux/kernel/common-config.nix` L305-306 in `github.com/NixOS/nixpkgs` @58deea6; `net/ipv4/Kconfig` @v6.18 |
+| C13 | nixpkgs sets `TCP_CONG_CUBIC` and its comment calls cubic the default; mainline Kconfig makes `DEFAULT_CUBIC` the default choice. A search of that nixpkgs file found no `DEFAULT_TCP_CONG`, so the mainline default applies to its kernels. Whether `bbr` and `dualpi2` are built in the nixpkgs `linuxPackages_latest` config is not established (inferred from `autoModules`; no built `.config` was read); for the Jovian kernel see C14 | `TCP_CONG_CUBIC = yes; # This is the default congestion control algorithm since 2.6.19`; `default DEFAULT_CUBIC`; `default "cubic" if DEFAULT_CUBIC` | `pkgs/os-specific/linux/kernel/common-config.nix` L305-306 in `github.com/NixOS/nixpkgs` @58deea6; `net/ipv4/Kconfig` @v6.18 |
+| C14 | The Steam Deck's Jovian kernel provides `bbr` and `dualpi2` as modules and defaults to cubic. Measured, not quoted: the kernel 7.2.7-valve2 configfile built locally on 2026-10-30 (`/nix/store/r5810bc83kycabgaclyr63hsbqcn6zfk-linux-config-7.2.7-valve2`) has `CONFIG_TCP_CONG_CUBIC=y`, `CONFIG_TCP_CONG_BBR=m`, `CONFIG_DEFAULT_TCP_CONG="cubic"`, `CONFIG_NET_SCH_CAKE=m`, `CONFIG_NET_SCH_FQ_CODEL=m`, `CONFIG_NET_SCH_FQ=m` and `CONFIG_NET_SCH_DUALPI2=m`. The evaluated host config sets `bbr` and `cake` (repo claims) | n/a | built configfile of `ali-steam-deck` (the checker cannot reproduce it) |
 
 ### Buffers and TCP defaults
 
@@ -103,6 +104,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | B12 | `hpet` default is 64 | `#define HPET_USER_FREQ (64)` | `drivers/char/hpet.c` @v6.12 |
 | B13 | `fs.dentry-negative` is a mainline sysctl | "Policy for negative dentries. Set to 1 to always delete the dentry when a file is removed, and 0 to disable it." | `https://docs.kernel.org/admin-guide/sysctl/fs.html` (present on the running kernel) |
 | B14 | Receive autotuning is capped by `tcp_rmem[2]`; `rmem_max` and `wmem_max` cap buffers set explicitly with `SO_RCVBUF` and `SO_SNDBUF`. The `tcp_wmem` text says its maximum "does not override" `wmem_max`, so these quotes do not show that `wmem_max` leaves send autotuning uncapped | "maximal size of receive buffer allowed for automatically selected receiver buffers for TCP socket."; "This value does not override net.core.wmem_max."; "The maximum sizes for socket buffers declared via the SO_SNDBUF and SO_RCVBUF mechanisms"; "limited by the values in the /proc/sys/net/core/rmem_max and /proc/sys/net/core/wmem_max files." | ip-sysctl (`tcp_rmem`, `tcp_wmem`); `https://man7.org/linux/man-pages/man7/tcp.7.html` |
+| B15 | A socket's `sk_rcvbuf` is a limit checked against queued data: the commit message says TCP accepts a packet while the receive queues are below it, and a `sock.c` comment says overheads allocate from the receive buffer as socket buffers are allocated. That implies memory is charged as data is queued. Neither text states or refutes preallocation. `ip-sysctl` calls only the `tcp_rmem` and `tcp_wmem` minimums guaranteed or reserved | `TCP stack accepts incoming packet if sizes of receive queues`; `are below sk->sk_rcvbuf limit.`; "allocate from the receive buffer during socket buffer allocation."; "It is guaranteed to each TCP socket, even under moderate memory pressure."; "Amount of memory reserved for send buffers for TCP sockets." | commit 1d2fbaad7cd8 (`https://api.github.com/repos/torvalds/linux/commits/1d2fbaad7cd8cc96899179f9898ad2787a15f0a0`); `net/core/sock.c` @v6.18; ip-sysctl (`tcp_rmem`, `tcp_wmem`) |
 
 ### Conntrack, neighbour table, ports
 
@@ -115,6 +117,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | K5 | Cilium keeps its own connection-tracking tables | "--bpf-ct-global-tcp-max int Maximum number of entries in TCP CT table (default 524288)" | `Documentation/cmdref/cilium-agent.md:35` in `github.com/cilium/cilium` v1.20.4 |
 | K6 | Neighbour-table kernel defaults | "purge entries if there are fewer than this number. Default: 128"; "will be cleared when over this number. Default: 512"; "with large numbers of directly-connected peers. Default: 1024" (gc_thresh1, 2, 3) | ip-sysctl L185-202 |
 | K7 | Ephemeral port range default | "The default values are 32768 and 60999 respectively." | ip-sysctl L1558 |
+| K10 | `gc_thresh3` documents a direction: raise it with many interfaces and many directly connected peers. That source gives no number. kops sets `gc_thresh1` to 0 for AWS, in code under a `# Issue #23395` comment with no rationale and no `gc_thresh2` or `gc_thresh3` value | "Increase this when using large numbers of interfaces and when communicating with large numbers of directly-connected peers."; `net.ipv4.neigh.default.gc_thresh1=0` | ip-sysctl (`neigh/default/gc_thresh3`); `nodeup/pkg/model/sysctls.go` @v1.36.2 in `github.com/kubernetes/kops` |
 
 ### VPN gateway
 
@@ -129,6 +132,14 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | W7 | MSS is the effective MTU minus the fixed IP and TCP headers, and the timestamp option adds 10 to 12 bytes to the TCP header. With MTU 9000 the advertised MSS is 9000 - 20 - 20 = 8960; the 8948 payload per segment with timestamps is derived here (8960 - 12), not quoted | "The MSS value to be sent in an MSS option should be equal to the effective MTU minus the fixed IP and TCP headers."; "adding 10 bytes (up to 12 bytes including padding) to the 20-byte TCP header." | `https://www.rfc-editor.org/rfc/rfc6691.txt` section 4; `https://www.rfc-editor.org/rfc/rfc7323.txt` section 3.2 |
 | W8 | No prose source gives WireGuard's overhead. Both pinned code lines assume the IPv6 worst case, 80 bytes (32 + 8 + 40). "60 bytes over IPv4" is arithmetic (20 + 8 + 32) that WireGuard does not state | `cmd ip link set mtu $(( mtu - 80 )) up dev "$INTERFACE"`; `dev->mtu = ETH_DATA_LEN - overhead;` | `src/wg-quick/linux.bash` @v1.0.20210914 in `github.com/WireGuard/wireguard-tools`; `drivers/net/wireguard/device.c` @v6.18 |
 | W9 | The AmneziaWG kernel-module README bounds `S1`, `S2` and `Jmax` by an assumed 1280-byte connection MTU. That is an assumption behind the parameter limits, not a recommended tunnel MTU, which stays unsourced | "Assuming a basic internet connection with an MTU value of 1280." | `README.md` @4569c4c in `github.com/amnezia-vpn/amneziawg-linux-kernel-module` |
+| W10 | The Amnezia client generates a tunnel MTU for AmneziaWG: 1280 on Android, iOS and the macOS network extension, 1376 elsewhere. This is a client code default, not documented advice. The docs page read gives no recommended MTU, only that padding stays within the internal MTU; that page is unversioned | `defaultMtu[] = "1280";`; `defaultMtu[] = "1376";`; "The padding uses the available space up to the internal MTU and does not exceed it." | `client/core/utils/constants/protocolConstants.h` (`namespace awg`) @5.0.4.2 in `github.com/amnezia-vpn/amnezia-client`; `https://docs.amnezia.org/documentation/amnezia-wg/` |
+| W11 | The laptops run Tailscale and no other VPN client in the NixOS config: `ali-framework-laptop`, `ali-work-laptop` and `ali-mba-linux` evaluate `services.tailscale.enable` to true (repo claims). Also evaluated by hand on 2026-10-30, not in the manifest: `networking.wireguard.enable` false, no `networking.wg-quick.interfaces`, no `services.openvpn.servers`, no NetworkManager VPN plugins. A VPN client installed outside the config cannot be seen | n/a | evaluated options of the three hosts |
+
+### Game streaming
+
+| ID | Finding | Quote or code | Source |
+|---|---|---|---|
+| M1 | The Moonlight client library asks for a video receive buffer of 2048 packets (times packet size) and steps the request down until the OS accepts it. With `rmem_max` below the request, `SO_RCVBUF` is capped (B14), so the client runs with less. No Sunshine or Moonlight document read recommends a sysctl (searched: the Moonlight docs wiki, Sunshine master and release `docs/`, `src/` and README; absence cannot be quoted) | "We start at the requested recv buffer value and step down until we find a value that the OS will accept."; `#define RTP_RECV_PACKETS_BUFFERED 2048` | `src/PlatformSockets.c`, `src/VideoStream.c` @5d3c0ec in `github.com/moonlight-stream/moonlight-common-c` |
 
 ### Storage, NFS and virtual machines
 
@@ -142,7 +153,8 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | V2 | Host iptables on a VM bridge blocks guest traffic unless disabled; the kernel default is 1 | "generally such processing is *not* desired, as it results in guest traffic being blocked due to host iptables rules"; "pass bridged IPv4 traffic to iptables' chains. Default: 1 (enabled)" | `https://wiki.libvirt.org/Net.bridge.bridge-nf-call_and_sysctl.conf.html`; ip-sysctl L3289-3296 |
 | V3 | k3s flags | "Disable running kube-proxy" (`--disable-kube-proxy`); Cilium's k3s guide: "If running Cilium in :ref:`kubeproxy-free` mode, add option ``--disable-kube-proxy``" (raw RST) | `https://github.com/k3s-io/docs` `docs/cli/server.md:159`; `github.com/cilium/cilium` v1.20.4 `Documentation/installation/k3s.rst:23-32` |
 | V4 | The `net.bridge.*` sysctls are registered by `br_netfilter`, which registers them when it initialises (as a module, or built in); the bridge documentation says the module is needed only to filter bridged packets with `ip(6)tables` | `register_net_sysctl_sz(net, "net/bridge", table, ARRAY_SIZE(brnf_table))`; `module_init(br_netfilter_init);`; "br_netfilter is only needed if users, for some reason, need to use ip(6)tables to filter packets forwarded by the bridge" | `net/bridge/br_netfilter_hooks.c` @v6.18; `Documentation/networking/bridge.rst` @v6.18 |
-| K8 | The Cilium 1.20.4 chart refuses to render unless `kubeProxyReplacement` is `true` or `false`, so `strict` is rejected by that chart. Repository: `k8s-setup/cilium-hr.yaml` pins chart `1.16.4` (L13) and sets `kubeProxyReplacement: strict` (L22); the master's cilium manifest is commented out in `flake-modules/hosts/home-k8s-master-1/default.nix` L161-163, so the repository cannot show which release the live cluster runs. Whether `strict` was valid in 1.16.4 is unchecked | "kubeProxyReplacement must be explicitly set to a valid value (true or false) to continue." | `install/kubernetes/cilium/templates/cilium-configmap.yaml` @v1.20.4 in `github.com/cilium/cilium` |
+| K8 | The Cilium 1.20.4 chart refuses to render unless `kubeProxyReplacement` is `true` or `false`, so `strict` is rejected by that chart. Repository: `k8s-setup/cilium-hr.yaml` pins chart `1.16.4` (L13) and sets `kubeProxyReplacement: strict` (L22); the master's cilium manifest is commented out in `flake-modules/hosts/home-k8s-master-1/default.nix` L161-163, so the repository cannot show which release the live cluster runs. Whether `strict` was valid in 1.16.4 is K9 | "kubeProxyReplacement must be explicitly set to a valid value (true or false) to continue." | `install/kubernetes/cilium/templates/cilium-configmap.yaml` @v1.20.4 in `github.com/cilium/cilium` |
+| K9 | Cilium chart 1.16.4, the version `k8s-setup/cilium-hr.yaml` pins, rejects `strict` too: its template fails unless the value is `true` or `false`. The Cilium 1.14 upgrade notes deprecate `strict`, `partial` and `disabled`; the 1.15.0 template still accepted `strict` as deprecated. So that manifest cannot render as written with chart 1.16.4. Which release the live cluster runs stays unknown: answering it needs a cluster query | "kubeProxyReplacement must be explicitly set to a valid value (true or false) to continue."; "The kube-proxy-replacement option's values strict, partial and disabled are deprecated and will be removed in v1.15."; "partial (deprecated), or strict (deprecated)) to continue." | `install/kubernetes/cilium/templates/cilium-configmap.yaml` @v1.16.4 and @v1.15.0; `Documentation/operations/upgrade.rst` @v1.14.0, all in `github.com/cilium/cilium` |
 
 ## Corrections to what we believed
 
@@ -179,7 +191,9 @@ record, and each is its own change with a before-and-after measurement.
    Neither changes yet: `awg-quick` and `wg-quick` set `src_valid_mark` for
    full tunnels (R3, R4), so strict mode may already work. Check `nstat -az |
    grep IPReversePathFilter` under load, and change a host to loose only if
-   the counter shows drops.
+   the counter shows drops. The laptops are not candidates: their only VPN
+   client in the config is Tailscale (W11), and no source read says what it does
+   to `rp_filter`, so nothing is proposed for them.
 3. **Drop `dualpi2` as the base `default_qdisc`.** The documented benefit is for
    L4S traffic only (Q5), no sender here meets the L4S requirements (Q6), and
    mainline 6.18 has no TCP Prague (Q7). The setting does not reach virtual
@@ -190,15 +204,17 @@ record, and each is its own change with a before-and-after measurement.
    `fq`, as ESnet recommends (C8). Kubernetes nodes get no base-qdisc change: Cilium's
    bandwidth manager documents its own MQ/FQ setup on the physical device
    (C10, C9). `k8s-setup/cilium-hr.yaml` sets `bandwidthManager.enabled: true`
-   and `bbr: true`, but whether that release is what runs on the master, and
-   what its NIC carries, was not checked. The gateway and the
+   and `bbr: true`, but chart 1.16.4 cannot render that file's
+   `kubeProxyReplacement: strict` (K9), so whether that release is what runs on
+   the master, and what its NIC carries, was not checked. The gateway and the
    hypervisor use `fq_codel`; there is no source that prefers it over `fq`
    there, so this is chosen by measurement (bufferbloat test through the
    tunnel).
 4. **Congestion control by role.** Storage and the hypervisor, which are
    LAN-dominated, use the mainline kernel default, cubic (C11, C13), as ESnet advises leaving the
    congestion control at its default (C8). What the name `bbr`
-   selects depends on the kernel build (C4, C6, C7). Whether
+   selects depends on the kernel build (C4, C6, C7). The Deck's Jovian kernel
+   builds `bbr` as a module and defaults to cubic (C14). Whether
    `download-server-1`, which faces WAN peers, keeps `bbr` is decided from an
    `iperf3` comparison, not from a document. The gateway's setting only affects
    its own sockets, which is a design argument, not a sourced one.
@@ -213,8 +229,10 @@ record, and each is its own change with a before-and-after measurement.
    does not override `wmem_max` (B14). Base sets all of them to 16 MiB, so the
    two agree. ESnet's examples do not agree on the
    middle value: 87380 in one, 131072 in another (B10); we keep the 6.18
-   default. The memory saving per connection is not documented; measure with
-   `ss -tm` before and after.
+   default. The memory saving per connection is not documented. `sk_rcvbuf` is a limit
+   checked against queued data (B15), which implies memory is charged as data is
+   queued, but no source states or refutes preallocation; measure with `ss -tm`
+   before and after.
 7. **Do not set conntrack values on Kubernetes nodes.** kube-proxy sets
    `nf_conntrack_max` and the established timeout itself (K4), and it is not
    disabled on the master (see the Context); Cilium keeps its own tables besides (K5). Whether to disable kube-proxy now that Cilium replaces it is a
@@ -225,7 +243,8 @@ record, and each is its own change with a before-and-after measurement.
    `oifname "awg0"` (W4). `awg-quick` derives the MTU from the endpoint route
    (W2) and the handshake and transport padding changes message sizes (W3);
    `tcp_mtu_probing` is the fallback for black holes (B8). Set `MTU =` in the client config, which is not in
-   this repository (W6). Apply the Tailscale offload advice (W5) only to the
+   this repository (W6). The Amnezia client generates 1280 or 1376 by platform
+   (W10); no document read recommends a value. Apply the Tailscale offload advice (W5) only to the
    WAN-facing device and only after checking the NIC accepts it.
 9. **NFS keeps `nconnect=8` and 1 MiB I/O sizes** (N1), and no slot-table sysctl,
    since the client grows its table dynamically (N2, since v3.1: N4). `rpc.nfsd` documents a
@@ -268,8 +287,17 @@ of what the row shows.
 - WireGuard overhead: code gives 80 (IPv6 worst case); 60 over IPv4 is
   arithmetic, not a stated figure (W8, W1).
 - AmneziaWG's README assumes a 1280 MTU for its parameter limits (W9).
-- Cilium 1.20.4 rejects `kubeProxyReplacement: strict` (K8).
+- Cilium 1.20.4 rejects `kubeProxyReplacement: strict` (K8), and so does chart
+  1.16.4, the version `k8s-setup/cilium-hr.yaml` pins (K9).
 - Cubic is the mainline and nixpkgs default congestion control (C13).
+- The Deck's Jovian kernel provides `bbr` and `dualpi2` as modules and defaults
+  to cubic (C14). This was measured by building the configfile, not read from a
+  document.
+- The laptops run Tailscale and no other VPN client in the NixOS config; a VPN
+  client installed outside the config cannot be seen (W11).
+- `gc_thresh3` is documented as "raise with many interfaces and peers", with no
+  number; kops's `gc_thresh1=0` is code without a rationale (K10).
+- `sk_rcvbuf` is a limit checked against queued data (B15).
 
 ## Not decided, no source
 
@@ -279,25 +307,23 @@ measurement answers it.
 
 - That a root qdisc on a Wi-Fi interface adds little because mac80211 queues per
   station. Q11 documents the queues only; the conclusion is inference.
-- Recommended `gc_thresh` values. Searched: the `ip-sysctl` defaults (128, 512,
-  1024; K6), Cilium tuning docs, Kubernetes sysctl docs and Calico felix docs.
-  None gives a recommendation, and Cilium keeps its own neighbour map.
-- Sunshine or Moonlight UDP buffer guidance. Searched: Sunshine v2026.914.233613
-  docs and `src/network.cpp`, `stream.cpp`, `misc.cpp`, which set no `SO_RCVBUF`
-  and mention no `rmem`. The Moonlight wiki was not searched.
+- Recommended `gc_thresh` numbers. The direction (raise) is sourced (K10); the
+  defaults are 128, 512, 1024 (K6). Searched with no number found: Cilium,
+  Calico, kubernetes/website and kubernetes/kubernetes; the kops docs tree and
+  the kernel arp docs were not grepped separately. The kops value is code only.
+- Sunshine or Moonlight sysctl guidance. The Moonlight client requests a large
+  receive buffer and steps down if the OS caps it (M1), but no Sunshine or
+  Moonlight document read recommends any sysctl.
 - That a 1 MiB default socket buffer costs meaningful memory on hosts with many
-  connections. Searched: `ip-sysctl`, `socket(7)`, `tcp(7)` and `sock.h`; none
-  says buffers are or are not preallocated. This is why decision 6 needs a
-  measurement.
-- Whether the Jovian kernel on the Steam Deck provides `bbr`, `bbr3` and
-  `dualpi2`. The nixpkgs result (C13) is inferred from `autoModules`; no built
-  `.config` was inspected.
-- Whether laptops run a VPN client. The Framework laptop's comments mention
-  Tailscale, but the option value was not evaluated.
-- Which Cilium release the live cluster runs, and whether `strict` was valid in
-  1.16.4 (K8).
-- AmneziaWG's recommended tunnel MTU. `docs.amnezia.org` was not searched; the
-  README gives only an assumption (W9).
+  connections. B15 shows `sk_rcvbuf` is a limit on queued data; no primary text
+  says buffers are or are not preallocated ("not stated"). This is why decision
+  6 needs a measurement.
+- Which Cilium release the live cluster runs. Chart 1.16.4 rejects the
+  repository's `strict` (K9), so the manifest cannot be what is applied as
+  written; answering it needs a cluster query.
+- AmneziaWG's documented tunnel MTU. The client generates 1280 or 1376 (W10)
+  and the kernel-module README assumes 1280 for its limits (W9); neither is a
+  recommendation, and `docs.amnezia.org` gives none.
 - The libvirt macvtap host-to-guest limit is dropped: guests here use bridges.
 
 ## Consequences
