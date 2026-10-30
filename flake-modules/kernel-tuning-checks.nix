@@ -128,6 +128,28 @@
         })
         { modules.kernelTuning.fakeModuleOff = true; };
 
+      priorityMechanism = mechanism {
+        knobs = {
+          softKnob = {
+            category = "performance";
+            sysctls."fake.soft" = 1;
+            sysctlPriority = 1000;
+            cost = "none";
+            breaks = "nothing";
+          };
+          plainKnob = {
+            category = "performance";
+            sysctls."fake.plain" = 1;
+            cost = "none";
+            breaks = "nothing";
+          };
+        };
+      };
+      withPriority = extra: evalModules priorityMechanism ({
+        modules.kernelTuning = { softKnob = true; plainKnob = true; };
+      } // extra);
+      sysctlEvals = c: (builtins.tryEval (builtins.deepSeq (sysctlOf c) true)).success;
+
       cases = map knobCase (lib.attrNames knobs) ++ map profileCase (lib.attrNames profiles) ++ [
         {
           # Membership is policy, and profileCase derives its expectation from
@@ -257,6 +279,22 @@
           name = "noSysrq is only kernel.sysrq = 0";
           ok = (sysctlOf (evalWith (enable [ "noSysrq" ]))).${"kernel.sysrq"} == 0
             && addedParams (evalWith (enable [ "noSysrq" ])) == [ ];
+        }
+        {
+          name = "sysctlPriority 1000 lets a plain host value win without a collision";
+          ok = let c = withPriority { boot.kernel.sysctl."fake.soft" = 2; }; in
+            sysctlEvals c && (sysctlOf c).${"fake.soft"} == 2;
+        }
+        {
+          name = "sysctlPriority 1000 loses to mkForce and mkOverride";
+          ok = (sysctlOf (withPriority { boot.kernel.sysctl."fake.soft" = lib.mkForce 3; })).${"fake.soft"} == 3
+            && (sysctlOf (withPriority { boot.kernel.sysctl."fake.soft" = lib.mkOverride 500 4; })).${"fake.soft"} == 4;
+        }
+        {
+          name = "a knob without sysctlPriority emits at plain priority";
+          ok = !(sysctlEvals (withPriority { boot.kernel.sysctl."fake.plain" = 2; }))
+            && (sysctlOf (withPriority { boot.kernel.sysctl."fake.plain" = lib.mkForce 2; })).${"fake.plain"} == 2
+            && (sysctlOf (withPriority { })).${"fake.plain"} == 1;
         }
         {
           name = "defaults emit none of the table's params";

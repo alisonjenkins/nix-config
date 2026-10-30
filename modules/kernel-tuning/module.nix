@@ -8,6 +8,7 @@ let
   withDefaults = k: {
     params = [ ];
     sysctls = { };
+    sysctlPriority = lib.modules.defaultOverridePriority;
     blacklistedModules = [ ];
     minKernel = null;
     conflictsWith = [ ];

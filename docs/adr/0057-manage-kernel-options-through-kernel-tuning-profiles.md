@@ -38,6 +38,12 @@ plain data and never reads `config`. A boolean option per knob is generated
 from it, default `false` unless a profile enables it. Adding a knob is adding
 a table entry.
 
+A knob may also set `sysctlPriority` (default 100, the plain priority). It
+exists for settings that `modules/base` used to set with `mkDefault` (1000):
+the emitter wraps their values in `mkOverride` at that priority, so a host's
+`mkOverride` or `mkForce` still wins, as it did before the setting moved into
+the table. A knob left at 100 collides with a differing plain host value.
+
 **Profiles are named sets of knob names.** `modules.kernelTuning.profiles` is
 a list of profile names. Each selected profile sets `knob = mkDefault true`
 for its members. Profiles only ever switch knobs on, so two profiles never

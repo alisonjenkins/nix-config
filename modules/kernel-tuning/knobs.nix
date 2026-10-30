@@ -1,7 +1,8 @@
 # The knob table: plain data, never reads `config`. Adding a knob is adding an
 # entry; the module generates its boolean option and the emitters read it.
 # Entry fields: category (security|performance|gaming|hardware), params,
-# sysctls, blacklistedModules, minKernel (version string or null), cost
+# sysctls, sysctlPriority (optional, default 100; mkDefault is 1000, set it
+# where a host already overrides the value), blacklistedModules, minKernel (version string or null), cost
 # (none|low|medium|high), breaks (one line), conflictsWith (knob names).
 # Sources: Arch wiki "Security" and "Gaming" pages, kernel-parameters.txt,
 # Documentation/admin-guide/sysctl.
