@@ -10,8 +10,12 @@ let
 
   paramKey = p: lib.head (lib.splitString "=" p);
   paramValue = p: lib.removePrefix "${paramKey p}=" p;
+  # Only keys this module emits: a duplicate between two other modules is not
+  # ours to block, and the kernel takes the last value anyway.
+  ownKeys = map paramKey (lib.optional (cfg.lockdown != null) "lockdown=${cfg.lockdown}"
+    ++ lib.concatMap (k: k.params) (lib.attrValues active));
   collisions = lib.filterAttrs
-    (key: values: !(lib.elem key repeatable) && lib.length values > 1)
+    (key: values: lib.elem key ownKeys && !(lib.elem key repeatable) && lib.length values > 1)
     (lib.mapAttrs (_: ps: lib.unique (map paramValue ps))
       (lib.groupBy paramKey config.boot.kernelParams));
 in

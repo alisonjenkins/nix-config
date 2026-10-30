@@ -76,6 +76,9 @@
         modules.kernelTuning.iommuIsolation = true;
         boot.kernelParams = [ "amd_iommu=off" ];
       };
+      unrelatedDuplicate = evalWith {
+        boot.kernelParams = [ "unrelated.param=1" "unrelated.param=2" ];
+      };
       repeatedSameValue = evalWith {
         modules.kernelTuning.initOnAlloc = true;
         boot.kernelParams = [ "init_on_alloc=1" ];
@@ -202,6 +205,10 @@
         {
           name = "iommuIsolation against a host amd_iommu=off is flagged";
           ok = mentionsAll [ "amd_iommu" "force_isolation" "off" ] (failedAsserts collidingHost);
+        }
+        {
+          name = "a duplicate param the module does not emit is left alone";
+          ok = failedAsserts unrelatedDuplicate == [ ];
         }
         {
           name = "the same param twice with one value is not a collision";
