@@ -292,7 +292,13 @@ of what the row shows.
   shows it is not `IFF_NO_QUEUE` and `default_qdisc` would apply (Q16; other
   brcmfmac files were not read). The repo comments name ath11k for the Deck
   and call mt7921/mt7925 "Unproven" for the work laptop; it names no Wi-Fi
-  chip for the desktop, Framework or MacBook Air hosts.
+  chip for the desktop, Framework or MacBook Air hosts. Measured on
+  `ali-framework-laptop` on 2026-10-30: `wlan0` is bound to `mt7921e` (read
+  from `/sys/class/net/wlan0/device/driver`), so the Framework uses mt76, an
+  iTXQ driver. `tc qdisc show dev wlan0` there shows `cake` as the root qdisc, not
+  `noqueue`. That is consistent with the dispatcher in `modules/desktop`
+  replacing it; the output does not show what attached it, so it neither
+  confirms nor refutes Q13.
 - `cake`'s `ack-filter` exists as a code comment in `sch_cake.c`, not as a
   documented option (Q12).
 - `tcp_bbr.c` at v6.18 has no ECN code (C12); C3 supports only the loss statement, and end-to-end ECN handling by core
@@ -333,9 +339,9 @@ measurement answers it.
   the interface is `noqueue` by default (Q13), so `default_qdisc` does not reach
   it, and mac80211 queues per station (Q11) and calls qdiscs a poor fit for
   aggregation on iTXQ drivers (Q14); every mac80211 driver is iTXQ (Q15). Not
-  sourced: any measurement of cake on Wi-Fi, and which chip the desktop,
-  Framework and MacBook Air hosts have (a `lspci -k` or `ethtool -i wlan0` on
-  each would settle it; a FullMAC chip such as brcmfmac would not be
+  sourced: any measurement of cake on Wi-Fi, and which chip the desktop and
+  MacBook Air hosts have (the Framework is `mt7921e`, measured; a `lspci -k` or
+  `ethtool -i wlan0` on each of the others would settle it; a FullMAC chip such as brcmfmac would not be
   `noqueue`, Q16).
 - Recommended `gc_thresh` numbers. The direction (raise) is sourced (K10); the
   defaults are 128, 512, 1024 (K6); kubespray ships 8192, 32768, 65536 as code
