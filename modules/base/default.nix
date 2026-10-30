@@ -8,6 +8,7 @@ in
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
     ../luksPCR15
+    ../kernel-tuning
     ./vm-variant.nix
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
@@ -559,6 +560,9 @@ in
           realtime = {};
         };
       };
+
+      # zswap in front of zram would keep pages out of it.
+      modules.kernelTuning.zswapOff = lib.mkDefault config.zramSwap.enable;
 
       zramSwap = {
         enable = true;
