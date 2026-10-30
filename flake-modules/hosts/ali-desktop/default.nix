@@ -1097,14 +1097,9 @@ in {
               # `package` here bypasses the module-level extraPackages, so we re-add it.
               # See NixOS/nixpkgs#518150 for the Steam Controller (2026) firmware updater bug.
               extraPkgs = pkgs: [ patchedBwrap pkgs.hidapi ];
-              # Steam's gameoverlayrenderer.so is preloaded into every game
-              # launch and needs libGL.so.1 with only $ORIGIN as RUNPATH.
-              # Nix-built processes (the steam-command-runner gamescope shim)
-              # do not search the FHS /usr/lib64, so the loader aborts with
-              # "libGL.so.1: cannot open shared object file" before main.
-              extraProfile = ''
-                export LD_LIBRARY_PATH=/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-              '';
+              # Overriding `package` bypasses the module's default, which is
+              # where the libGL profile is applied, so pass it on.
+              extraProfile = config.modules.desktop.gaming.steamFhsProfile;
               extraEnv = {
                 # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
                 BWRAP = "${patchedBwrap}/bin/bwrap";
