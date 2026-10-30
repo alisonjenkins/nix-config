@@ -102,6 +102,7 @@ for the live-maintenance runbook.
 |---|---|---|
 | [0057](0057-manage-kernel-options-through-kernel-tuning-profiles.md) | Manage kernel options through composable `modules.kernelTuning` profiles | Accepted |
 | [0058](0058-set-swap-and-zswap-policy-by-swap-device.md) | Set swappiness and zswap by swap device type | Accepted |
+| [0059](0059-tune-network-sysctls-by-machine-type.md) | Tune network sysctls by machine type, from sourced claims only | Proposed |
 
 ## VR foveated rendering
 
