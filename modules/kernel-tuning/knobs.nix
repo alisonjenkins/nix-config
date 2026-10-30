@@ -383,4 +383,106 @@
     breaks = "the host never answers ping, which hides it from monitoring that relies on ICMP";
     conflictsWith = [ "icmpEchoReply" ];
   };
+
+  # Base does not load tcp_bbr itself.
+  tcpBbr = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_congestion_control" = "bbr";
+    cost = "low";
+    breaks = "the write fails on a kernel without tcp_bbr, and BBR can take bandwidth from loss-based flows on shared links";
+  };
+
+  tcpEcnOn = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_ecn" = 1;
+    cost = "low";
+    breaks = "connections through middleboxes that drop ECN-marked SYNs may stall (the kernel falls back after a retry)";
+  };
+
+  tcpFastopenAll = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_fastopen" = 3;
+    cost = "low";
+    breaks = "client and server TCP Fast Open are on; some middleboxes drop SYNs carrying data, and replayed data is possible on servers";
+  };
+
+  tcpFastTeardown = {
+    category = "performance";
+    sysctls = {
+      "net.ipv4.tcp_fin_timeout" = 10;
+      "net.ipv4.tcp_max_tw_buckets" = 2000000;
+      "net.ipv4.tcp_tw_reuse" = 1;
+    };
+    cost = "low";
+    breaks = "orphaned FIN-WAIT-2 sockets are freed after 10 s (kernel default 60), so very slow peers may be cut off; tcp_tw_reuse=1 can confuse connections behind NAT or with timestamp skew, and 2000000 tw buckets use more memory";
+  };
+
+  tcpKeepaliveShort = {
+    category = "performance";
+    sysctls = {
+      "net.ipv4.tcp_keepalive_intvl" = 10;
+      "net.ipv4.tcp_keepalive_probes" = 6;
+      "net.ipv4.tcp_keepalive_time" = 60;
+    };
+    cost = "low";
+    breaks = "dead peers are detected after about 2 minutes (kernel default 2 hours) at the price of more keepalive traffic on idle connections";
+  };
+
+  tcpSynBacklogHigh = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_max_syn_backlog" = 8192;
+    cost = "none";
+    breaks = "the half-open connection queue holds up to 8192 entries (kernel default scales with RAM), using more memory under a SYN flood";
+  };
+
+  tcpSyncookies = {
+    category = "security";
+    sysctls."net.ipv4.tcp_syncookies" = 1;
+    cost = "low";
+    breaks = "when the SYN queue overflows, cookies are sent; they keep timestamps and window scaling only while TCP timestamps are on (tcpStandardFeatures turns them on in base), otherwise some TCP options are lost for connections served by a cookie";
+  };
+
+  tcpMtuProbing = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_mtu_probing" = 1;
+    cost = "low";
+    breaks = "probing starts after an ICMP black hole is detected, which can briefly shrink the segment size";
+  };
+
+  tcpRfc1337 = {
+    category = "security";
+    sysctls."net.ipv4.tcp_rfc1337" = 1;
+    cost = "none";
+    breaks = "RST segments no longer end TIME-WAIT sockets early, so ports stay busy for the full wait";
+  };
+
+  tcpBuffersLarge = {
+    category = "performance";
+    sysctls = {
+      "net.ipv4.tcp_rmem" = "4096 1048576 16777216";
+      "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
+    };
+    cost = "low";
+    breaks = "TCP sockets start with 1 MiB buffers (kernel default 128 KiB receive, 16 KiB send) and may grow to 16 MiB, using more RAM";
+  };
+
+  tcpSlowStartAfterIdleOff = {
+    category = "performance";
+    sysctls."net.ipv4.tcp_slow_start_after_idle" = 0;
+    cost = "low";
+    breaks = "idle connections resume at their old congestion window, which can burst into a path that has changed";
+  };
+
+  # Sack, timestamps and window scaling are already the kernel defaults; the
+  # knob keeps the keys explicit.
+  tcpStandardFeatures = {
+    category = "performance";
+    sysctls = {
+      "net.ipv4.tcp_sack" = 1;
+      "net.ipv4.tcp_timestamps" = 1;
+      "net.ipv4.tcp_window_scaling" = 1;
+    };
+    cost = "none";
+    breaks = "nothing; these are the kernel defaults";
+  };
 }

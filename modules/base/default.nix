@@ -222,31 +222,6 @@ in
           "preempt=full"
         ] ++ lib.optional (cfg.amdgpuPPFeatureMask != null) "amdgpu.ppfeaturemask=${cfg.amdgpuPPFeatureMask}";
 
-        kernel = {
-          sysctl = {
-            # Network Perf Tuning
-            "net.ipv4.tcp_congestion_control" = "bbr";
-            "net.ipv4.tcp_ecn" = 1;
-            "net.ipv4.tcp_fastopen" = 3;
-            "net.ipv4.tcp_fin_timeout" = 10;
-            "net.ipv4.tcp_keepalive_intvl" = 10;
-            "net.ipv4.tcp_keepalive_probes" = 6;
-            "net.ipv4.tcp_keepalive_time" = 60;
-            "net.ipv4.tcp_max_syn_backlog" = 8192;
-            "net.ipv4.tcp_max_tw_buckets" = 2000000;
-            "net.ipv4.tcp_mtu_probing" = 1;
-            "net.ipv4.tcp_rfc1337" = 1;
-            "net.ipv4.tcp_rmem" = "4096 1048576 16777216";
-            "net.ipv4.tcp_sack" = 1;
-            "net.ipv4.tcp_slow_start_after_idle" = 0;
-            "net.ipv4.tcp_syncookies" = 1;
-            "net.ipv4.tcp_timestamps" = 1;
-            "net.ipv4.tcp_tw_reuse" = 1;
-            "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
-            "net.ipv4.tcp_window_scaling" = 1;
-          };
-        };
-
         loader = {
           timeout = lib.mkDefault 5;
           efi = {
@@ -544,6 +519,18 @@ in
         martiansUnlogged = lib.mkDefault true;
         icmpEchoReply = lib.mkDefault cfg.enableICMPPing;
         icmpEchoIgnore = lib.mkDefault (!cfg.enableICMPPing);
+        tcpBbr = lib.mkDefault true;
+        tcpEcnOn = lib.mkDefault true;
+        tcpFastopenAll = lib.mkDefault true;
+        tcpFastTeardown = lib.mkDefault true;
+        tcpKeepaliveShort = lib.mkDefault true;
+        tcpSynBacklogHigh = lib.mkDefault true;
+        tcpSyncookies = lib.mkDefault true;
+        tcpMtuProbing = lib.mkDefault true;
+        tcpRfc1337 = lib.mkDefault true;
+        tcpBuffersLarge = lib.mkDefault true;
+        tcpSlowStartAfterIdleOff = lib.mkDefault true;
+        tcpStandardFeatures = lib.mkDefault true;
       };
 
       zramSwap = {
