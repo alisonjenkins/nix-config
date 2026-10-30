@@ -100,7 +100,7 @@
   nosmt = {
     category = "security";
     params = [ "nosmt" ];
-    minKernel = "4.19"; # x86 support (L1TF series); the docs list the parameter from 4.7 for s390 only. UNVERIFIED for x86
+    minKernel = "4.19"; # the generic handler (kernel/cpu.c) first appears in 4.19; before that the docs list it for s390 only
     cost = "high";
     breaks = "disables simultaneous multithreading where the CPU has it; a large throughput loss on parallel workloads";
     conflictsWith = [ "mitigationsOff" ];
@@ -163,11 +163,12 @@
   };
 
   # The knobs below were the gaming sysctl block in modules/desktop. minKernel
-  # is null where the first release was not checked; the fleet runs 6.18+.
+  # is the first mainline release that has the setting; the fleet runs 6.18+.
   # vm.page-cluster is not here: modules/base sets it whenever zram is on.
   watermarkBoostOff = {
     category = "performance";
     sysctls."vm.watermark_boost_factor" = 0;
+    minKernel = "5.0";
     cost = "low";
     breaks = "reclaim no longer boosts watermarks after fragmentation, so huge page availability can drop";
   };
@@ -175,6 +176,7 @@
   watermarkScaleBalanced = {
     category = "performance";
     sysctls."vm.watermark_scale_factor" = 50;
+    minKernel = "4.6";
     cost = "low";
     breaks = "kswapd wakes earlier and keeps more memory free (kernel default is 10)";
   };
@@ -184,6 +186,7 @@
   schedAutogroup = {
     category = "performance";
     sysctls."kernel.sched_autogroup_enabled" = 1;
+    minKernel = "2.6.38";
     cost = "none";
     breaks = "nothing known; groups tasks per session for desktop responsiveness";
   };
@@ -191,6 +194,7 @@
   cfsBandwidthSliceShort = {
     category = "gaming";
     sysctls."kernel.sched_cfs_bandwidth_slice_us" = 500;
+    minKernel = "3.2";
     cost = "low";
     breaks = "more frequent bandwidth slice refills for cgroups with CPU quotas";
   };
@@ -202,6 +206,7 @@
   thpMadvise = {
     category = "performance";
     params = [ "transparent_hugepage=madvise" ];
+    minKernel = "2.6.38";
     cost = "low";
     breaks = "programs that do not madvise lose transparent huge pages";
   };
