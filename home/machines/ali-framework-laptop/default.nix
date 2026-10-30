@@ -1,10 +1,10 @@
 { pkgs, inputs, ... }:
 let
-  # Launched as `LD_PRELOAD="" gamescope -w 2540 -h 1440 -b -- gamemoderun`:
+  # Launched as `LD_PRELOAD="" gamescope -w 2560 -h 1440 -b -- gamemoderun`:
   # no Steam preloads reach gamescope, 1440 high with a borderless window.
   noPreloadGame = {
     env.LD_PRELOAD = "";
-    gamescope_args = "-w 2540 -h 1440 -b";
+    gamescope_args = "-w 2560 -h 1440 -b";
   };
 
   # VR games: pressure-vessel has to see the host's OpenXR runtime (SteamVR),
@@ -27,7 +27,7 @@ in
 
   # Carries what the games' Steam launch options used to say
   # (docs/steam-launch-options-2026-10-30.md): most ran
-  # `gamemoderun mangohud gamescope -w 2540 -h 1600`.
+  # `gamemoderun mangohud gamescope -w 2560 -h 1600`.
   programs.steamCommandRunner = {
     enable = true;
     preCommand = "gamemoderun";
@@ -36,7 +36,7 @@ in
     shimDebug = true;
     env.LD_LIBRARY_PATH = "/run/opengl-driver/lib:/run/opengl-driver-32/lib:/run/current-system/sw/lib";
     innerEnv.MANGOHUD = "1";
-    gamescopeArgs = "-w 2540 -h 1600";
+    gamescopeArgs = "-w 2560 -h 1600";
 
     games."582160" = noPreloadGame; # Assassin's Creed Origins
     games."812140" = noPreloadGame; # Assassin's Creed Odyssey

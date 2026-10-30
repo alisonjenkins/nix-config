@@ -8,6 +8,9 @@ same account as the desktop). Grouped by option string; `?` = no store name
 `LaunchOptions` entries in the file; the capture kept the later one, and the
 earlier was empty.
 
+`-w 2540` in these strings is a typo for `-w 2560`, the width of the
+eDP-2 panel. The capture keeps it as found; the runner config uses 2560.
+
 ### `/home/ali/.local/bin/gamescope -- %command%`
 - 20 Minutes Till Dawn (1966900)
 - ? (1070560)
