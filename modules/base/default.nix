@@ -225,16 +225,6 @@ in
         kernel = {
           sysctl = {
             # Network Perf Tuning
-            "net.ipv4.conf.all.accept_redirects" = 0;
-            "net.ipv4.conf.all.log_martians" = 0;
-            "net.ipv4.conf.all.rp_filter" = 1;
-            "net.ipv4.conf.all.secure_redirects" = 0;
-            "net.ipv4.conf.all.send_redirects" = 0;
-            "net.ipv4.conf.default.accept_redirects" = 0;
-            "net.ipv4.conf.default.log_martians" = 0;
-            "net.ipv4.conf.default.rp_filter" = 1;
-            "net.ipv4.conf.default.secure_redirects" = 0;
-            "net.ipv4.conf.default.send_redirects" = 0;
             "net.ipv4.icmp_echo_ignore_all" = if cfg.enableICMPPing then 0 else 1;
             "net.ipv4.tcp_congestion_control" = "bbr";
             "net.ipv4.tcp_ecn" = 1;
@@ -254,8 +244,6 @@ in
             "net.ipv4.tcp_timestamps" = 1;
             "net.ipv4.tcp_tw_reuse" = 1;
             "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
-            "net.ipv6.conf.all.accept_redirects" = 0;
-            "net.ipv6.conf.default.accept_redirects" = 0;
             "net.ipv4.tcp_window_scaling" = 1;
           };
         };
@@ -552,6 +540,9 @@ in
         socketBacklogHigh = lib.mkDefault true;
         socketBuffersLarge = lib.mkDefault true;
         udpMinBuffers = lib.mkDefault true;
+        noIcmpRedirects = lib.mkDefault true;
+        rpFilterStrict = lib.mkDefault true;
+        martiansUnlogged = lib.mkDefault true;
       };
 
       zramSwap = {

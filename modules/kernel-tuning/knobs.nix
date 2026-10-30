@@ -329,4 +329,41 @@
     cost = "none";
     breaks = "each UDP socket is guaranteed 8 KiB buffers (kernel default 4096), using more memory with very many UDP sockets";
   };
+
+  noIcmpRedirects = {
+    category = "security";
+    sysctls = {
+      "net.ipv4.conf.all.accept_redirects" = 0;
+      "net.ipv4.conf.all.secure_redirects" = 0;
+      "net.ipv4.conf.all.send_redirects" = 0;
+      "net.ipv4.conf.default.accept_redirects" = 0;
+      "net.ipv4.conf.default.secure_redirects" = 0;
+      "net.ipv4.conf.default.send_redirects" = 0;
+      "net.ipv6.conf.all.accept_redirects" = 0;
+      "net.ipv6.conf.default.accept_redirects" = 0;
+    };
+    cost = "none";
+    breaks = "routes are never learned from ICMP redirects, and this host sends none, which a router host may need";
+  };
+
+  rpFilterStrict = {
+    category = "security";
+    sysctls = {
+      "net.ipv4.conf.all.rp_filter" = 1;
+      "net.ipv4.conf.default.rp_filter" = 1;
+    };
+    cost = "low";
+    breaks = "packets whose source would not route back out the receiving interface are dropped, breaking asymmetric routing";
+  };
+
+  # The kernel default is already 0; the knob keeps the key explicit.
+  martiansUnlogged = {
+    category = "security";
+    sysctls = {
+      "net.ipv4.conf.all.log_martians" = 0;
+      "net.ipv4.conf.default.log_martians" = 0;
+    };
+    cost = "none";
+    breaks = "packets with impossible source addresses are dropped without a log line";
+  };
 }
