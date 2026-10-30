@@ -13,6 +13,7 @@
     docker = import ../modules/docker;
     emulation = import ../modules/emulation;
     github-actions-runner = import ../modules/github-actions-runner/nixos.nix;
+    kernel-tuning = import ../modules/kernel-tuning;
     libvirtd = import ../modules/libvirtd;
     locale = import ../modules/locale;
     mosh = import ../modules/mosh;

@@ -1,0 +1,45 @@
+# The mechanism, parameterised by the knob table so the checks can feed it a
+# test table. `default.nix` applies it to the real table.
+{ knobs }:
+{ config, lib, ... }:
+let
+  cfg = config.modules.kernelTuning;
+
+  withDefaults = k: {
+    params = [ ];
+    sysctls = { };
+    blacklistedModules = [ ];
+    minKernel = null;
+    conflictsWith = [ ];
+  } // k;
+
+  table = lib.mapAttrs (_: withDefaults) knobs;
+
+  active = lib.filterAttrs (name: _: cfg.${name}) table;
+in
+{
+  options.modules.kernelTuning = lib.mapAttrs
+    (_: k: lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "${k.category} knob, cost ${k.cost}. Breaks: ${k.breaks}.";
+    })
+    table
+  // {
+    lockdown = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum [ "integrity" ]);
+      default = null;
+      description = ''
+        Kernel lockdown mode. "integrity" blocks hibernation and rejects
+        unsigned out-of-tree modules, which NixOS does not sign by default.
+        Value-typed, so it is never part of a profile.
+      '';
+    };
+  };
+
+  config = lib.mkMerge [
+    (import ./emit-params.nix { inherit lib cfg active; })
+    (import ./emit-sysctl.nix { inherit lib active; })
+    (import ./emit-modules.nix { inherit lib active; })
+  ];
+}
