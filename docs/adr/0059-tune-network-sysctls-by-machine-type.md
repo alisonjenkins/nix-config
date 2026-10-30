@@ -67,7 +67,9 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | Q11 | mac80211 documents an intermediate queueing layer between the stack and the driver, with fairness between stations. This shows per-station queues exist; it does not show that a root qdisc adds little | "mac80211 uses an intermediate queueing implementation"; "to provide some fairness between different stations/interfaces." | `include/net/mac80211.h` @v6.18 |
 | Q12 | `cake` has an ACK filter: a code comment (not a documented option; the tc-cake man page read has only the synopsis) says it scans the queue for pure ACKs of the same flow | "loop through the rest of the queue looking for pure ACKs with the same 5-tuple as the triggering one." | `net/sched/sch_cake.c` @v6.18 |
 | Q13 | A mac80211 interface is created `noqueue`, and the default-qdisc code gives an `IFF_NO_QUEUE` device `noqueue` instead of `net.core.default_qdisc`. So `default_qdisc` (cake included) never attaches to a mac80211 Wi-Fi interface. At v6.18 `ieee80211_if_setup()` sets the flag unconditionally and `iface.c` never clears it. This covers the mac80211 stack; it says nothing about drivers that bypass mac80211. A qdisc can still be attached by hand, as the desktop module's NetworkManager dispatcher does with `tc qdisc replace` | `dev->priv_flags \|= IFF_NO_QUEUE;`; `if (dev->priv_flags & IFF_NO_QUEUE)`; `ops = &noqueue_qdisc_ops;` | `net/mac80211/iface.c`, `ieee80211_if_setup()`; `net/sched/sch_generic.c`, `attach_one_default_qdisc()` @v6.18 |
-| Q14 | mac80211 made software-queuing (iTXQ) interfaces `noqueue` on purpose: the 2016 commit says qdiscs do not fit 802.11 aggregation and are off by default there, and a later commit says iTXQ drivers get `IFF_NO_QUEUE`. "For these drivers" means iTXQ drivers; with Q13 the flag is set for every mac80211 interface at v6.18, but no source read says which of the Framework, ath, mt76 or iwlwifi drivers use iTXQ, and none is claimed | "Qdiscs are designed with no regard to 802.11"; "Disabling qdiscs by default and performing"; "mac80211 must not stop netdev queues when using mac80211 iTXQs."; "For these drivers the netdev interface is created with IFF_NO_QUEUE." | commits 80a83cfc434b ("mac80211: skip netdev queue control with software queuing") and c95014e1d05b (`https://api.github.com/repos/torvalds/linux/commits/80a83cfc434b1e3afe38974570b460db4898bec6`, `.../c95014e1d05b5acfd9e6fbe5d1f048b07c6902ff`) |
+| Q14 | mac80211 made software-queuing (iTXQ) interfaces `noqueue` on purpose: the 2016 commit says qdiscs do not fit 802.11 aggregation and are off by default there, and a later commit says iTXQ drivers get `IFF_NO_QUEUE`. "For these drivers" means iTXQ drivers; with Q13 the flag is set for every mac80211 interface at v6.18, and Q15 shows every mac80211 driver is iTXQ | "Qdiscs are designed with no regard to 802.11"; "Disabling qdiscs by default and performing"; "mac80211 must not stop netdev queues when using mac80211 iTXQs."; "For these drivers the netdev interface is created with IFF_NO_QUEUE." | commits 80a83cfc434b ("mac80211: skip netdev queue control with software queuing") and c95014e1d05b (`https://api.github.com/repos/torvalds/linux/commits/80a83cfc434b1e3afe38974570b460db4898bec6`, `.../c95014e1d05b5acfd9e6fbe5d1f048b07c6902ff`) |
+| Q15 | In v6.18 `ieee80211_alloc_hw()` fails when a driver lacks `wake_tx_queue`, and the header says drivers must provide it, so every mac80211 driver uses the intermediate software queues. With Q13 every mac80211 interface is `noqueue`. Examples read: mt7921 (mt76), ath11k, iwlwifi mvm | "Drivers must provide the .wake_tx_queue driver operation by either"; `!ops->wake_tx_queue))`; `.wake_tx_queue = mt76_wake_tx_queue,`; `.wake_tx_queue = ieee80211_handle_wake_tx_queue,`; `.wake_tx_queue = iwl_mvm_mac_wake_tx_queue,` | `include/net/mac80211.h`; `net/mac80211/main.c`, `ieee80211_alloc_hw()`; `drivers/net/wireless/mediatek/mt76/mt7921/main.c`; `ath/ath11k/mac.c`; `intel/iwlwifi/mvm/mac80211.c` @v6.18 |
+| Q16 | brcmfmac is a FullMAC driver: `cfg80211.c` allocates its netdev with `alloc_netdev(..., ether_setup)` and never calls `ieee80211_alloc_hw`, so this file does not set `IFF_NO_QUEUE` and `default_qdisc` would apply. Only this one file was read, not the other brcmfmac files. The repo does not say whether any host's Wi-Fi chip uses brcmfmac | `ndev = alloc_netdev(sizeof(*ifp), name, NET_NAME_UNKNOWN, ether_setup);` | `drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c` @v6.18; absent probe for `ieee80211_alloc_hw`, `alloc_netdev` as positive control |
 
 ### Congestion control
 
@@ -205,8 +207,9 @@ record, and each is its own change with a before-and-after measurement.
    devices such as `veth` and `awg0`, which get `noqueue` (Q1, Q2); on a
    multiqueue NIC it becomes the leaf under an `mq` root (Q3). Desktops keep
    `cake` (the desktop module already forces it; Q8 lists what `cake` needs
-   in order to shape). The base setting does not reach a Wi-Fi interface either:
-   mac80211 creates it `noqueue` (Q13), so the laptops' `cake` on Wi-Fi comes
+   in order to shape). The base setting does not reach a mac80211 Wi-Fi interface,
+   which is every driver except FullMAC ones such as brcmfmac (Q13, Q15, Q16):
+   mac80211 creates it `noqueue`, so the laptops' `cake` on Wi-Fi comes
    only from the desktop module's dispatcher, and whether that helps is open
    (Q14). Hosts that send bulk data (storage, download) use
    `fq`, as ESnet recommends (C8). Kubernetes nodes get no base-qdisc change: Cilium's
@@ -282,8 +285,14 @@ of what the row shows.
 - mac80211 keeps per-station queues (Q11, Q10).
 - A mac80211 Wi-Fi interface is `noqueue`, so `net.core.default_qdisc` never
   attaches to it (Q13). The mac80211 commits call qdiscs a poor fit for 802.11
-  aggregation on iTXQ drivers (Q14). Which wireless drivers are iTXQ is not
-  established.
+  aggregation on iTXQ drivers (Q14). At v6.18 every mac80211 driver must
+  provide `wake_tx_queue`, so all of them use iTXQ (Q15); the three named
+  examples (mt76, ath11k, iwlwifi mvm) do. brcmfmac is FullMAC and calls
+  `alloc_netdev` in `cfg80211.c` without mac80211, so as far as that file
+  shows it is not `IFF_NO_QUEUE` and `default_qdisc` would apply (Q16; other
+  brcmfmac files were not read). The repo comments name ath11k for the Deck
+  and call mt7921/mt7925 "Unproven" for the work laptop; it names no Wi-Fi
+  chip for the desktop, Framework or MacBook Air hosts.
 - `cake`'s `ack-filter` exists as a code comment in `sch_cake.c`, not as a
   documented option (Q12).
 - `tcp_bbr.c` at v6.18 has no ECN code (C12); C3 supports only the loss statement, and end-to-end ECN handling by core
@@ -323,8 +332,11 @@ measurement answers it.
 - Whether a root qdisc on a Wi-Fi interface helps or hurts. The sourced part:
   the interface is `noqueue` by default (Q13), so `default_qdisc` does not reach
   it, and mac80211 queues per station (Q11) and calls qdiscs a poor fit for
-  aggregation on iTXQ drivers (Q14). Not sourced: that the Framework, ath, mt76
-  or iwlwifi drivers are iTXQ, and any measurement of cake on Wi-Fi.
+  aggregation on iTXQ drivers (Q14); every mac80211 driver is iTXQ (Q15). Not
+  sourced: any measurement of cake on Wi-Fi, and which chip the desktop,
+  Framework and MacBook Air hosts have (a `lspci -k` or `ethtool -i wlan0` on
+  each would settle it; a FullMAC chip such as brcmfmac would not be
+  `noqueue`, Q16).
 - Recommended `gc_thresh` numbers. The direction (raise) is sourced (K10); the
   defaults are 128, 512, 1024 (K6); kubespray ships 8192, 32768, 65536 as code
   with no rationale (K11). No rationale-backed recommendation was found: Cilium
