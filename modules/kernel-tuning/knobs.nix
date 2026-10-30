@@ -35,7 +35,7 @@
   noVsyscall = {
     category = "security";
     params = [ "vsyscall=none" ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "3.1";
     cost = "none";
     breaks = "binaries using the legacy vsyscall page, such as very old glibc";
   };
@@ -51,7 +51,7 @@
   slabNomerge = {
     category = "security";
     params = [ "slab_nomerge" ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "3.18";
     cost = "low";
     breaks = "slightly higher slab memory use";
   };
@@ -59,7 +59,7 @@
   debugfsOff = {
     category = "security";
     params = [ "debugfs=off" ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "5.9";
     cost = "none";
     breaks = "tools reading /sys/kernel/debug, such as some perf and tracing front ends";
   };
@@ -67,7 +67,7 @@
   kexecDisable = {
     category = "security";
     sysctls."kernel.kexec_load_disabled" = 1;
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "3.14";
     cost = "none";
     breaks = "kexec and kdump crash capture; the setting is one-way until reboot";
   };
@@ -75,7 +75,7 @@
   noSysrq = {
     category = "security";
     sysctls."kernel.sysrq" = 0;
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "2.6.12"; # earliest tree checked, the sysctl is older
     cost = "none";
     breaks = "magic SysRq recovery keys";
   };
@@ -87,7 +87,7 @@
       "amd_iommu=force_isolation"
       "intel_iommu=on"
     ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "3.3"; # amd_iommu=force_isolation, the newest of the three
     cost = "low";
     breaks = "devices that misbehave behind an IOMMU, and PCI passthrough layouts that rely on shared groups";
   };
@@ -95,7 +95,7 @@
   nosmt = {
     category = "security";
     params = [ "nosmt" ];
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "4.19"; # x86 support (L1TF series); the docs list the parameter from 4.7 for s390 only. UNVERIFIED for x86
     cost = "high";
     breaks = "disables simultaneous multithreading where the CPU has it; a large throughput loss on parallel workloads";
     conflictsWith = [ "mitigationsOff" ];
@@ -113,7 +113,7 @@
   splitLockMitigateOff = {
     category = "gaming";
     sysctls."kernel.split_lock_mitigate" = 0;
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "6.2";
     cost = "low";
     breaks = "a split-lock-heavy process no longer gets throttled and can stall other cores";
   };
@@ -121,7 +121,7 @@
   compactionProactivenessOff = {
     category = "gaming";
     sysctls."vm.compaction_proactiveness" = 0;
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "5.9";
     cost = "low";
     breaks = "less proactive huge page availability under fragmentation";
   };
@@ -129,7 +129,7 @@
   maxMapCountHigh = {
     category = "gaming";
     sysctls."vm.max_map_count" = 2147483642;
-    minKernel = null; # UNVERIFIED min kernel
+    minKernel = "2.6.12"; # earliest tree checked, the sysctl is older
     cost = "none";
     breaks = "nothing known; memory-mapping-heavy processes can use more maps";
   };
