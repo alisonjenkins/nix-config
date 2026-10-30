@@ -137,7 +137,7 @@ exemption for encrypted images), so a hibernating host runs without it. What
 | debugfs | `debugfs=off` |
 | Unsigned modules | `module.sig_enforce=1`, deferred below |
 | x86 MSR writes | `msr.allow_writes=off` (name from memory, unverified) |
-| `/dev/mem`, `/dev/kmem`, `/dev/kcore`, `/dev/ioports` | none; check strict devmem in the shipped kernel's config |
+| `/dev/mem`, `/dev/kmem`, `/dev/kcore`, `/dev/ioports` | none needed for `/dev/mem` and `/dev/ioports`: `CONFIG_STRICT_DEVMEM` and `CONFIG_IO_STRICT_DEVMEM` are on in nixpkgs kernels (`common-config.nix`) and in the running CachyOS 7.3 config; `/dev/kmem` and `/dev/kcore` unchecked |
 | `ioperm`/`iopl`, PCI BAR access, KD*IO ioctls, `TIOCSSERIAL` | none; lost |
 | ACPI table override, custom methods, error injection, RDSP address | none; lost |
 | BPF and kprobes restrictions | none; lost |
@@ -151,16 +151,17 @@ check, so confirm on the shipped kernel before relying on this.
 ## Deferred
 
 **Module signature enforcement.** `module.sig_enforce=1` needs a kernel built
-with `CONFIG_MODULE_SIG`; NixOS kernels are not, but we can build ours that
-way (`boot.kernelPatches` with `structuredExtraConfig`, or an override of the
-CachyOS input, which means a long LTO build per bump). An ephemeral build-time
-key signs only the in-tree modules, so any host with an out-of-tree module
-(NVIDIA, evdi, ZFS) cannot enforce signatures. A persistent key cannot be a
-build input, because the store is world-readable; it needs a signing step
-outside the build that feeds the binary cache. That is its own infrastructure
-and gets its own ADR. Until then the knob table may carry a `moduleSigEnforce`
-entry, off in every profile, which asserts the kernel was built with
-`MODULE_SIG` and warns about unsigned out-of-tree modules. It is not part of
+with `CONFIG_MODULE_SIG`. Both kernels we ship have it: nixpkgs'
+`common-config.nix` sets `MODULE_SIG = yes` with an empty `MODULE_SIG_KEY`
+(it signs each module with a deterministic per-module certificate from
+kmodigest instead of an ephemeral build key), and the running CachyOS 7.3
+config has `CONFIG_MODULE_SIG=y`, `MODULE_SIG_FORCE` unset. What is unknown
+is whether enforcement would accept our out-of-tree modules (NVIDIA, evdi,
+ZFS) and how the CachyOS input signs its modules; a persistent key cannot be
+a build input, because the store is world-readable. Enforcement is therefore
+a separate piece of work with its own ADR. Until then the knob table may carry
+a `moduleSigEnforce` entry, off in every profile, which asserts the kernel was
+built with `MODULE_SIG` and warns about out-of-tree modules. It is not part of
 the first change.
 
 ## Alternatives rejected
