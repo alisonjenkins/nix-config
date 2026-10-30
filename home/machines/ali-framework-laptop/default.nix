@@ -9,13 +9,18 @@
   modules.beatsaber.enable = true;
   modules.helldivers2Mods.enable = true;
 
+  # Carries what the games' Steam launch options used to say
+  # (docs/steam-launch-options-2026-10-30.md): most ran
+  # `gamemoderun mangohud gamescope -w 2540 -h 1600`.
   programs.steamCommandRunner = {
     enable = true;
     preCommand = "gamemoderun";
+    # Under gamescope too, as those launches had gamemoderun in them.
+    gamescopeSkipPreCommand = false;
     shimDebug = true;
     env.LD_LIBRARY_PATH = "/run/opengl-driver/lib:/run/opengl-driver-32/lib:/run/current-system/sw/lib";
     innerEnv.MANGOHUD = "1";
-    gamescopeArgs = "-w 2560 -h 1600 --rt -b --mangoapp --force-grab-cursor";
+    gamescopeArgs = "-w 2540 -h 1600";
   };
 
   home.packages = [
