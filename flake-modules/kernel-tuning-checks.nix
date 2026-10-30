@@ -43,6 +43,29 @@
             && removeAttrs (sysctlOf c) keys == removeAttrs (sysctlOf baseline) keys;
         };
 
+      profiles = import (self + "/modules/kernel-tuning/profiles.nix");
+      norm = k: { params = [ ]; sysctls = { }; } // k;
+      expectedParams = members: lib.sort lib.lessThan (lib.unique
+        (lib.concatMap (n: (norm knobs.${n}).params) members));
+      expectedSysctls = members:
+        lib.foldl' (acc: n: acc // (norm knobs.${n}).sysctls) { } members;
+      withProfiles = ps: evalWith { modules.kernelTuning.profiles = ps; };
+      emitsExactly = c: members:
+        lib.sort lib.lessThan (addedParams c) == expectedParams members
+        && lib.getAttrs (lib.attrNames (expectedSysctls members)) (sysctlOf c) == expectedSysctls members
+        && removeAttrs (sysctlOf c) (lib.attrNames (expectedSysctls members))
+        == removeAttrs (sysctlOf baseline) (lib.attrNames (expectedSysctls members));
+
+      profileCase = name: {
+        name = "profile ${name} alone emits exactly its members";
+        ok = emitsExactly (withProfiles [ name ]) profiles.${name};
+      };
+
+      hostOverride = evalWith {
+        modules.kernelTuning.profiles = [ "hardened-workstation" ];
+        modules.kernelTuning.initOnAlloc = false;
+      };
+
       withBlacklist = evalModules
         (mechanism {
           knobs.fakeModuleOff = {
@@ -54,7 +77,36 @@
         })
         { modules.kernelTuning.fakeModuleOff = true; };
 
-      cases = map knobCase (lib.attrNames knobs) ++ [
+      cases = map knobCase (lib.attrNames knobs) ++ map profileCase (lib.attrNames profiles) ++ [
+        {
+          name = "every profile member is a table knob";
+          ok = lib.all (n: knobs ? ${n}) (lib.concatLists (lib.attrValues profiles));
+        }
+        {
+          name = "no profile enables lockdown or a conflicting pair";
+          ok = lib.all
+            (members: lib.all (n: lib.all (o: !(lib.elem o members)) (knobs.${n}.conflictsWith or [ ]))
+              members)
+            (lib.attrValues profiles);
+        }
+        {
+          name = "hardened-workstation and gaming compose as a union";
+          ok = emitsExactly (withProfiles [ "hardened-workstation" "gaming" ])
+            (profiles.hardened-workstation ++ profiles.gaming);
+        }
+        {
+          name = "gaming profile sets vm.max_map_count";
+          ok = (sysctlOf (withProfiles [ "gaming" ])).${"vm.max_map_count"} == 2147483642;
+        }
+        {
+          name = "hardened-workstation leaves out initOnFree";
+          ok = !(lib.elem "init_on_free=1" (paramsOf (withProfiles [ "hardened-workstation" ])));
+        }
+        {
+          name = "host initOnAlloc = false beats the profile without mkForce";
+          ok = !(lib.elem "init_on_alloc=1" (paramsOf hostOverride))
+            && lib.elem "slab_nomerge" (paramsOf hostOverride);
+        }
         {
           name = "initOnAlloc emits init_on_alloc=1";
           ok = lib.elem "init_on_alloc=1" (paramsOf (evalWith (enable [ "initOnAlloc" ])));

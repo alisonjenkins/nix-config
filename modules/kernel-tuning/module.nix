@@ -1,6 +1,6 @@
 # The mechanism, parameterised by the knob table so the checks can feed it a
 # test table. `default.nix` applies it to the real table.
-{ knobs }:
+{ knobs, profiles ? { } }:
 { config, lib, ... }:
 let
   cfg = config.modules.kernelTuning;
@@ -15,7 +15,9 @@ let
 
   table = lib.mapAttrs (_: withDefaults) knobs;
 
-  active = lib.filterAttrs (name: _: cfg.${name}) table;
+  selected = lib.concatMap (p: profiles.${p}) cfg.profiles;
+
+  active =lib.filterAttrs (name: _: cfg.${name}) table;
 in
 {
   options.modules.kernelTuning = lib.mapAttrs
@@ -26,6 +28,16 @@ in
     })
     table
   // {
+    profiles = lib.mkOption {
+      type = lib.types.listOf (lib.types.enum (lib.attrNames profiles));
+      default = [ ];
+      description = ''
+        Named knob sets to enable. A profile only sets its knobs to true at
+        default priority, so a host switches one off with a plain
+        `modules.kernelTuning.<knob> = false`.
+      '';
+    };
+
     lockdown = lib.mkOption {
       type = lib.types.nullOr (lib.types.enum [ "integrity" ]);
       default = null;
@@ -38,6 +50,13 @@ in
   };
 
   config = lib.mkMerge [
+    {
+      # Keys come from the static table: a key set that depends on
+      # cfg.profiles would recurse through the module system.
+      modules.kernelTuning = lib.mapAttrs
+        (name: _: lib.mkIf (lib.elem name selected) (lib.mkDefault true))
+        table;
+    }
     (import ./emit-params.nix { inherit lib cfg active; })
     (import ./emit-sysctl.nix { inherit lib active; })
     (import ./emit-modules.nix { inherit lib active; })
