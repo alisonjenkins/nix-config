@@ -272,16 +272,6 @@ in
             "net.ipv6.conf.all.accept_redirects" = 0;
             "net.ipv6.conf.default.accept_redirects" = 0;
             "net.ipv4.tcp_window_scaling" = 1;
-
-            # Virtual memory tuning
-            # With zram, swapping cold anon pages is cheap and frees RAM for
-            # cache; a low value only keeps them resident until OOM pressure.
-            "vm.swappiness" = lib.mkDefault (if config.zramSwap.enable then 100 else 10);
-            # zram is random-access RAM: swap-in readahead only wastes work.
-            "vm.page-cluster" = lib.mkIf config.zramSwap.enable (lib.mkDefault 0);
-            "vm.dirty_ratio" = 20;
-            "vm.dirty_background_ratio" = 5;
-            "vm.vfs_cache_pressure" = 25;
           };
         };
 
@@ -562,7 +552,15 @@ in
       };
 
       # zswap in front of zram would keep pages out of it.
-      modules.kernelTuning.zswapOff = lib.mkDefault config.zramSwap.enable;
+      modules.kernelTuning = {
+        zswapOff = lib.mkDefault config.zramSwap.enable;
+        swappinessZram = lib.mkDefault config.zramSwap.enable;
+        swappinessDisk = lib.mkDefault (!config.zramSwap.enable);
+        pageClusterZero = lib.mkDefault config.zramSwap.enable;
+        dirtyRatioLow = lib.mkDefault true;
+        dirtyBackgroundRatioLow = lib.mkDefault true;
+        vfsCachePressureLow = lib.mkDefault true;
+      };
 
       zramSwap = {
         enable = true;

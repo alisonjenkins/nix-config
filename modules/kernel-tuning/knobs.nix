@@ -211,4 +211,56 @@
     cost = "low";
     breaks = "programs that do not madvise lose transparent huge pages";
   };
+
+  # The vm.* block below was set directly in modules/base. Base turns these on
+  # for every host; the mkDefault-priority ones (sysctlPriority 1000) keep the
+  # priority base used so a host's mkForce or mkOverride still wins.
+  # With zram as swap, swapping cold anon pages is cheap and frees RAM for cache.
+  swappinessZram = {
+    category = "performance";
+    sysctls."vm.swappiness" = 100;
+    sysctlPriority = 1000;
+    cost = "low";
+    breaks = "anonymous pages are swapped out eagerly; wrong on a disk swap device";
+    conflictsWith = [ "swappinessDisk" ];
+  };
+
+  swappinessDisk = {
+    category = "performance";
+    sysctls."vm.swappiness" = 10;
+    sysctlPriority = 1000;
+    cost = "low";
+    breaks = "cold anonymous pages stay resident until memory pressure";
+    conflictsWith = [ "swappinessZram" ];
+  };
+
+  # zram is random-access RAM: swap-in readahead only wastes work.
+  pageClusterZero = {
+    category = "performance";
+    sysctls."vm.page-cluster" = 0;
+    sysctlPriority = 1000;
+    cost = "none";
+    breaks = "no swap-in readahead, which hurts a rotational swap device";
+  };
+
+  dirtyRatioLow = {
+    category = "performance";
+    sysctls."vm.dirty_ratio" = 20;
+    cost = "low";
+    breaks = "writers block once 20% of memory is dirty";
+  };
+
+  dirtyBackgroundRatioLow = {
+    category = "performance";
+    sysctls."vm.dirty_background_ratio" = 5;
+    cost = "low";
+    breaks = "background writeback starts at 5% dirty memory (kernel default 10), so writes reach disk sooner";
+  };
+
+  vfsCachePressureLow = {
+    category = "performance";
+    sysctls."vm.vfs_cache_pressure" = 25;
+    cost = "low";
+    breaks = "dentry and inode caches are reclaimed less eagerly (kernel default 100), using more RAM";
+  };
 }
