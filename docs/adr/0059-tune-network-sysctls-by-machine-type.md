@@ -66,6 +66,8 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | Q10 | mac80211 keeps its own per-station queues | "Intermediate queues (struct ieee80211_txq) are kept per-sta per-tid"; "The queuing discipline layer was removed entirely" | `include/net/mac80211.h` @v6.18; `https://lwn.net/Articles/705884/` |
 | Q11 | mac80211 documents an intermediate queueing layer between the stack and the driver, with fairness between stations. This shows per-station queues exist; it does not show that a root qdisc adds little | "mac80211 uses an intermediate queueing implementation"; "to provide some fairness between different stations/interfaces." | `include/net/mac80211.h` @v6.18 |
 | Q12 | `cake` has an ACK filter: a code comment (not a documented option; the tc-cake man page read has only the synopsis) says it scans the queue for pure ACKs of the same flow | "loop through the rest of the queue looking for pure ACKs with the same 5-tuple as the triggering one." | `net/sched/sch_cake.c` @v6.18 |
+| Q13 | A mac80211 interface is created `noqueue`, and the default-qdisc code gives an `IFF_NO_QUEUE` device `noqueue` instead of `net.core.default_qdisc`. So `default_qdisc` (cake included) never attaches to a mac80211 Wi-Fi interface. At v6.18 `ieee80211_if_setup()` sets the flag unconditionally and `iface.c` never clears it. This covers the mac80211 stack; it says nothing about drivers that bypass mac80211. A qdisc can still be attached by hand, as the desktop module's NetworkManager dispatcher does with `tc qdisc replace` | `dev->priv_flags \|= IFF_NO_QUEUE;`; `if (dev->priv_flags & IFF_NO_QUEUE)`; `ops = &noqueue_qdisc_ops;` | `net/mac80211/iface.c`, `ieee80211_if_setup()`; `net/sched/sch_generic.c`, `attach_one_default_qdisc()` @v6.18 |
+| Q14 | mac80211 made software-queuing (iTXQ) interfaces `noqueue` on purpose: the 2016 commit says qdiscs do not fit 802.11 aggregation and are off by default there, and a later commit says iTXQ drivers get `IFF_NO_QUEUE`. "For these drivers" means iTXQ drivers; with Q13 the flag is set for every mac80211 interface at v6.18, but no source read says which of the Framework, ath, mt76 or iwlwifi drivers use iTXQ, and none is claimed | "Qdiscs are designed with no regard to 802.11"; "Disabling qdiscs by default and performing"; "mac80211 must not stop netdev queues when using mac80211 iTXQs."; "For these drivers the netdev interface is created with IFF_NO_QUEUE." | commits 80a83cfc434b ("mac80211: skip netdev queue control with software queuing") and c95014e1d05b (`https://api.github.com/repos/torvalds/linux/commits/80a83cfc434b1e3afe38974570b460db4898bec6`, `.../c95014e1d05b5acfd9e6fbe5d1f048b07c6902ff`) |
 
 ### Congestion control
 
@@ -105,6 +107,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | B13 | `fs.dentry-negative` is a mainline sysctl | "Policy for negative dentries. Set to 1 to always delete the dentry when a file is removed, and 0 to disable it." | `https://docs.kernel.org/admin-guide/sysctl/fs.html` (present on the running kernel) |
 | B14 | Receive autotuning is capped by `tcp_rmem[2]`; `rmem_max` and `wmem_max` cap buffers set explicitly with `SO_RCVBUF` and `SO_SNDBUF`. The `tcp_wmem` text says its maximum "does not override" `wmem_max`, so these quotes do not show that `wmem_max` leaves send autotuning uncapped | "maximal size of receive buffer allowed for automatically selected receiver buffers for TCP socket."; "This value does not override net.core.wmem_max."; "The maximum sizes for socket buffers declared via the SO_SNDBUF and SO_RCVBUF mechanisms"; "limited by the values in the /proc/sys/net/core/rmem_max and /proc/sys/net/core/wmem_max files." | ip-sysctl (`tcp_rmem`, `tcp_wmem`); `https://man7.org/linux/man-pages/man7/tcp.7.html` |
 | B15 | A socket's `sk_rcvbuf` is a limit checked against queued data: the commit message says TCP accepts a packet while the receive queues are below it, and a `sock.c` comment says overheads allocate from the receive buffer as socket buffers are allocated. That implies memory is charged as data is queued. Neither text states or refutes preallocation. `ip-sysctl` calls only the `tcp_rmem` and `tcp_wmem` minimums guaranteed or reserved | `TCP stack accepts incoming packet if sizes of receive queues`; `are below sk->sk_rcvbuf limit.`; "allocate from the receive buffer during socket buffer allocation."; "It is guaranteed to each TCP socket, even under moderate memory pressure."; "Amount of memory reserved for send buffers for TCP sockets." | commit 1d2fbaad7cd8 (`https://api.github.com/repos/torvalds/linux/commits/1d2fbaad7cd8cc96899179f9898ad2787a15f0a0`); `net/core/sock.c` @v6.18; ip-sysctl (`tcp_rmem`, `tcp_wmem`) |
+| B16 | A local measurement on one kernel (7.3.0-cachyos-lto, `rmem_max` = `wmem_max` = 16777216, loopback): 1000 connected TCP pairs, each requesting 16 MiB for `SO_RCVBUF` and `SO_SNDBUF` (`getsockopt` reports 33554432), left the `mem` field of `TCP` in `/proc/net/sockstat` unchanged while idle (0 pages in 3 runs). After 64 KiB was queued unread on 100 of the connections it rose by 1557, 1824 and 1820 pages (100 x 64 KiB is 1600 pages, plus overhead). `MemAvailable` moved by tens of MiB from unrelated activity and is unusable at this resolution. Run 3 left 257 pages after close, not investigated. One machine, one kernel, loopback only; not a document | n/a | measured locally on 2026-10-30 |
 
 ### Conntrack, neighbour table, ports
 
@@ -118,6 +121,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | K6 | Neighbour-table kernel defaults | "purge entries if there are fewer than this number. Default: 128"; "will be cleared when over this number. Default: 512"; "with large numbers of directly-connected peers. Default: 1024" (gc_thresh1, 2, 3) | ip-sysctl L185-202 |
 | K7 | Ephemeral port range default | "The default values are 32768 and 60999 respectively." | ip-sysctl L1558 |
 | K10 | `gc_thresh3` documents a direction: raise it with many interfaces and many directly connected peers. That source gives no number. kops sets `gc_thresh1` to 0 for AWS, in code under a `# Issue #23395` comment with no rationale and no `gc_thresh2` or `gc_thresh3` value | "Increase this when using large numbers of interfaces and when communicating with large numbers of directly-connected peers."; `net.ipv4.neigh.default.gc_thresh1=0` | ip-sysctl (`neigh/default/gc_thresh3`); `nodeup/pkg/model/sysctls.go` @v1.36.2 in `github.com/kubernetes/kops` |
+| K11 | One upstream installer ships neighbour-table thresholds as code: kubespray sets `gc_thresh1`, `gc_thresh2` and `gc_thresh3` to 8192, 32768 and 65536 (IPv6 the same), with no comment or rationale. Searched, not quotable: Cilium v1.20.4 and Calico v3.32.3 full-tree greps for `gc_thresh` found nothing, and kubernetes v1.38.0-alpha.3 has only a 1.3 changelog line about kops-style `gc_thresh1=0` | `net.ipv4.neigh.default.gc_thresh1: 8192`; `net.ipv4.neigh.default.gc_thresh2: 32768`; `net.ipv4.neigh.default.gc_thresh3: 65536` | `roles/kubespray_defaults/vars/main/main.yml` @a3d30ad in `github.com/kubernetes-sigs/kubespray` |
 
 ### VPN gateway
 
@@ -140,6 +144,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
 | ID | Finding | Quote or code | Source |
 |---|---|---|---|
 | M1 | The Moonlight client library asks for a video receive buffer of 2048 packets (times packet size) and steps the request down until the OS accepts it. With `rmem_max` below the request, `SO_RCVBUF` is capped (B14), so the client runs with less. No Sunshine or Moonlight document read recommends a sysctl (searched: the Moonlight docs wiki, Sunshine master and release `docs/`, `src/` and README; absence cannot be quoted) | "We start at the requested recv buffer value and step down until we find a value that the OS will accept."; `#define RTP_RECV_PACKETS_BUFFERED 2048` | `src/PlatformSockets.c`, `src/VideoStream.c` @5d3c0ec in `github.com/moonlight-stream/moonlight-common-c` |
+| M2 | Sunshine's own troubleshooting page describes the stream as bursts and suggests slowing the NIC or shaping traffic at the OS level for packet loss. Its `docs/` at tag v2026.1028.122642 contain no `rmem`, `wmem`, `SO_RCVBUF` or sysctl guidance (a search, not a quote). The rendered docs site blocked bulk fetching (HTTP 429), so only the `docs/` source was searched | "Sunshine emits its stream in bursts every 16 ms (for 60 fps)"; "A technically more advanced solution would be to configure traffic shaping rules at the OS level" | `docs/troubleshooting.md` @d7e5fe0 in `github.com/LizardByte/Sunshine` |
 
 ### Storage, NFS and virtual machines
 
@@ -200,7 +205,10 @@ record, and each is its own change with a before-and-after measurement.
    devices such as `veth` and `awg0`, which get `noqueue` (Q1, Q2); on a
    multiqueue NIC it becomes the leaf under an `mq` root (Q3). Desktops keep
    `cake` (the desktop module already forces it; Q8 lists what `cake` needs
-   in order to shape). Hosts that send bulk data (storage, download) use
+   in order to shape). The base setting does not reach a Wi-Fi interface either:
+   mac80211 creates it `noqueue` (Q13), so the laptops' `cake` on Wi-Fi comes
+   only from the desktop module's dispatcher, and whether that helps is open
+   (Q14). Hosts that send bulk data (storage, download) use
    `fq`, as ESnet recommends (C8). Kubernetes nodes get no base-qdisc change: Cilium's
    bandwidth manager documents its own MQ/FQ setup on the physical device
    (C10, C9). `k8s-setup/cilium-hr.yaml` sets `bandwidthManager.enabled: true`
@@ -231,8 +239,9 @@ record, and each is its own change with a before-and-after measurement.
    middle value: 87380 in one, 131072 in another (B10); we keep the 6.18
    default. The memory saving per connection is not documented. `sk_rcvbuf` is a limit
    checked against queued data (B15), which implies memory is charged as data is
-   queued, but no source states or refutes preallocation; measure with `ss -tm`
-   before and after.
+   queued, but no document states or refutes preallocation. A loopback
+   measurement on one kernel found idle sockets with 16 MiB requests add no TCP
+   memory (B16); measure with `ss -tm` on the target hosts before and after.
 7. **Do not set conntrack values on Kubernetes nodes.** kube-proxy sets
    `nf_conntrack_max` and the established timeout itself (K4), and it is not
    disabled on the master (see the Context); Cilium keeps its own tables besides (K5). Whether to disable kube-proxy now that Cilium replaces it is a
@@ -270,8 +279,11 @@ record, and each is its own change with a before-and-after measurement.
 These started as unsourced items. Each is now backed by a row, with the limit
 of what the row shows.
 
-- mac80211 keeps per-station queues (Q11, Q10). That a root qdisc on a Wi-Fi
-  interface therefore adds little stays inference.
+- mac80211 keeps per-station queues (Q11, Q10).
+- A mac80211 Wi-Fi interface is `noqueue`, so `net.core.default_qdisc` never
+  attaches to it (Q13). The mac80211 commits call qdiscs a poor fit for 802.11
+  aggregation on iTXQ drivers (Q14). Which wireless drivers are iTXQ is not
+  established.
 - `cake`'s `ack-filter` exists as a code comment in `sch_cake.c`, not as a
   documented option (Q12).
 - `tcp_bbr.c` at v6.18 has no ECN code (C12); C3 supports only the loss statement, and end-to-end ECN handling by core
@@ -296,8 +308,11 @@ of what the row shows.
 - The laptops run Tailscale and no other VPN client in the NixOS config; a VPN
   client installed outside the config cannot be seen (W11).
 - `gc_thresh3` is documented as "raise with many interfaces and peers", with no
-  number; kops's `gc_thresh1=0` is code without a rationale (K10).
-- `sk_rcvbuf` is a limit checked against queued data (B15).
+  number; kops's `gc_thresh1=0` is code without a rationale (K10), and kubespray
+  ships 8192, 32768 and 65536 as code, also without one (K11).
+- `sk_rcvbuf` is a limit checked against queued data (B15). A loopback
+  measurement on one kernel shows idle sockets that request 16 MiB add no TCP
+  memory (B16).
 
 ## Not decided, no source
 
@@ -305,19 +320,28 @@ These came from the first round of research. No primary source read states
 them; each line says what was searched. Each stays open until one does or a
 measurement answers it.
 
-- That a root qdisc on a Wi-Fi interface adds little because mac80211 queues per
-  station. Q11 documents the queues only; the conclusion is inference.
+- Whether a root qdisc on a Wi-Fi interface helps or hurts. The sourced part:
+  the interface is `noqueue` by default (Q13), so `default_qdisc` does not reach
+  it, and mac80211 queues per station (Q11) and calls qdiscs a poor fit for
+  aggregation on iTXQ drivers (Q14). Not sourced: that the Framework, ath, mt76
+  or iwlwifi drivers are iTXQ, and any measurement of cake on Wi-Fi.
 - Recommended `gc_thresh` numbers. The direction (raise) is sourced (K10); the
-  defaults are 128, 512, 1024 (K6). Searched with no number found: Cilium,
-  Calico, kubernetes/website and kubernetes/kubernetes; the kops docs tree and
-  the kernel arp docs were not grepped separately. The kops value is code only.
+  defaults are 128, 512, 1024 (K6); kubespray ships 8192, 32768, 65536 as code
+  with no rationale (K11). No rationale-backed recommendation was found: Cilium
+  and Calico full-tree greps, kubernetes/website and kubernetes/kubernetes
+  found none; the kops docs tree and the kernel arp docs were not grepped
+  separately. The kops and kubespray values are code only.
 - Sunshine or Moonlight sysctl guidance. The Moonlight client requests a large
-  receive buffer and steps down if the OS caps it (M1), but no Sunshine or
-  Moonlight document read recommends any sysctl.
-- That a 1 MiB default socket buffer costs meaningful memory on hosts with many
-  connections. B15 shows `sk_rcvbuf` is a limit on queued data; no primary text
-  says buffers are or are not preallocated ("not stated"). This is why decision
-  6 needs a measurement.
+  receive buffer and steps down if the OS caps it (M1). Sunshine's `docs/`
+  contain no sysctl guidance and suggest only a slower NIC or OS traffic
+  shaping for bursty-stream loss (M2). Sunshine's rendered docs site was not
+  searched (HTTP 429).
+- Whether a 1 MiB default socket buffer costs meaningful memory on hosts with
+  many connections. B15 shows `sk_rcvbuf` is a limit on queued data, and no
+  document states whether buffers are preallocated ("not stated"). A loopback
+  measurement on one kernel (B16) shows idle sockets that request 16 MiB add no
+  TCP memory, and queued data adds about what was queued. It is one machine and
+  one kernel, so decision 6 still measures on the target hosts.
 - Which Cilium release the live cluster runs. Chart 1.16.4 rejects the
   repository's `strict` (K9), so the manifest cannot be what is applied as
   written; answering it needs a cluster query.
