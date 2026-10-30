@@ -1036,11 +1036,6 @@ in {
           };
 
           steam = let
-            patchedBwrap = pkgs.bubblewrap.overrideAttrs (old: {
-              patches = (old.patches or []) ++ [
-                "${patchesDir}/bubblewrap-allow-caps.patch"
-              ];
-            });
             # Remote Play input reaches niri through extest. niri never maps
             # an absolute libinput device to a specific output (its own
             # backend_ext.rs FIXME), so positions are computed in global
@@ -1073,6 +1068,10 @@ in {
             # from source for a fault only Steam's private FHS actually has.
             package = let
               steamPkgs = pkgs.extend (_final: prev: { libva = prev.unstable.libva; });
+              # Patched bubblewrap, --cap-add ALL, hidapi and the libGL profile,
+              # shared with every gaming host. Overriding `package` bypasses the
+              # module default that applies them, so pass them on.
+              shared = config.modules.desktop.gaming.steamFhsArgs steamPkgs;
               # steam-stream-mode's state directory: the published stream target
               # and the display filter's log live here.
               streamModeState = "${config.users.users.${username}.home}/.local/state/stream-mode";
@@ -1087,23 +1086,8 @@ in {
                   "Remote Play assumes custom.niri.virtualOutputs declares exactly one output named \"steam\"; got ${builtins.toJSON virtualOutputNames}. Pick the intended one explicitly instead of silently taking the first.";
                 lib.head virtualOutputNames;
             in steamPkgs.steam.override {
-              buildFHSEnv = args: (steamPkgs.buildFHSEnv.override {
-                bubblewrap = patchedBwrap;
-              }) (args // {
-                extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
-              });
-              # Add patched bubblewrap inside FHS environment and tell pressure-vessel to use it.
-              # hidapi mirrors programs.steam.extraPackages from modules/desktop — overriding
-              # `package` here bypasses the module-level extraPackages, so we re-add it.
-              # See NixOS/nixpkgs#518150 for the Steam Controller (2026) firmware updater bug.
-              extraPkgs = pkgs: [ patchedBwrap pkgs.hidapi ];
-              # Overriding `package` bypasses the module's default, which is
-              # where the libGL profile is applied, so pass it on.
-              extraProfile = config.modules.desktop.gaming.steamFhsProfile;
-              extraEnv = {
-                # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
-                BWRAP = "${patchedBwrap}/bin/bwrap";
-
+              inherit (shared) buildFHSEnv extraPkgs extraProfile;
+              extraEnv = shared.extraEnv // {
                 # Remote Play sizes its capture from its own idea of the
                 # desktop rather than from the PipeWire stream the portal gave
                 # it, so a Deck streaming the 1280x800 virtual output receives

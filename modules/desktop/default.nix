@@ -28,6 +28,7 @@ let
     }) (args // {
       extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
     });
+    # hidapi: see NixOS/nixpkgs#518150 (Steam Controller 2026 firmware updater).
     extraPkgs = pp: [ steamBubblewrap pp.hidapi ];
     extraProfile = gcfg.steamFhsProfile;
     # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one.
