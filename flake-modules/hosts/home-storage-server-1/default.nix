@@ -280,6 +280,8 @@ in {
           enable = true;
           enableImpermanence = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
         modules.storage-server.enable = true;
         # sdg (ST5000LM000, ~5.9k pending sectors) and sdk (ST4000DM004) sit

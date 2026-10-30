@@ -38,6 +38,8 @@ in {
           bootLoader = "grub";
         };
         modules.libvirtd.enable = true;
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
 
         # VFIO passthrough device isolation. Single source of truth for every

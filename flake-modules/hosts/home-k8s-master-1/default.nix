@@ -37,6 +37,8 @@ in {
         modules.base = {
           enable = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
 
         # AMD GPU passed through from home-kvm-hypervisor-1 for VAAPI transcode.

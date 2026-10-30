@@ -95,6 +95,8 @@ in {
           enableImpermanence = true;
           enableIPv6 = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
         modules.storage-server.enable = true;
         modules.servers = {
