@@ -49,6 +49,13 @@ in
     games."826540" = vrGame; # Audio Trip
     games."1079800" = vrGame; # Pistol Whip
     games."2465270" = vrGame; # name not in the store API
+
+    # Risk of Rain 2: was launched without gamescope, and with the lavapipe
+    # software Vulkan ICD disabled.
+    games."632360" = {
+      gamescope_enabled = false;
+      env.VK_LOADER_DRIVERS_DISABLE = "lvp_icd";
+    };
   };
 
   home.packages = [
