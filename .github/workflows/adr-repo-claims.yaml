@@ -30,6 +30,10 @@ on:
       - flake-modules/hosts/home-storage-server-1/**
       - flake-modules/hosts/home-vpn-gateway-1/**
       - flake-modules/hosts/home-k8s-master-1/**
+      - flake-modules/hosts/ali-steam-deck/**
+      - flake-modules/hosts/ali-framework-laptop/**
+      - flake-modules/hosts/ali-work-laptop/**
+      - flake-modules/hosts/ali-mba-linux/**
       - .github/workflows/adr-repo-claims.yaml
   workflow_dispatch:
 
