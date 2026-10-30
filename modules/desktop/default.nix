@@ -1393,6 +1393,13 @@ in
         "vm.page-cluster" = 0;                      # Disable page clustering for swap (reduce latency)
         "vm.watermark_boost_factor" = 0;            # Disable watermark boosting (reduce memory fragmentation overhead)
         "vm.watermark_scale_factor" = 50;           # Balance between memory availability and disk caching (was 125, default is 10)
+      })
+      (mkIf (cfg.gaming.enable && config.zramSwap.enable) {
+        # zram swap is cheaper than refaulting file cache, so reclaim anon pages
+        # first. 900 beats the base mkDefault (100); a host mkForce still wins.
+        "vm.swappiness" = lib.mkOverride 900 150;
+      })
+      (mkIf cfg.gaming.enable {
 
         # Scheduler optimizations for gaming
         # kernel.sched_child_runs_first dropped: not a real knob under
