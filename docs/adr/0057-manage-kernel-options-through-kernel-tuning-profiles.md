@@ -94,6 +94,36 @@ public source and a check against the kernel the fleet ships (is it already
 the default? does it exist on that version?). Research for this record is
 public-source only.
 
+## Where a knob is applied: command line, sysctl, sysfs or modprobe
+
+A knob lives in one table and carries one field per target it needs: `params`,
+`sysctls`, `sysfs`, `modprobe`. Each target has its own emitter file under
+`modules/kernel-tuning/` that reads only the enabled knobs, so a target can
+grow without touching the others. The rule for choosing a target:
+
+| Use | When | Examples |
+|---|---|---|
+| Kernel command line (`params`) | The setting must hold before any userspace runs, has no runtime form, or configures a built-in driver or subsystem. Sysctls apply only after the initrd, a window of several seconds. | `init_on_alloc`, `init_on_free`, `slab_nomerge`, `page_alloc.shuffle`, `vsyscall=none`, `debugfs=off`, `mitigations=`, `nosmt`, `iommu=`, `amd_iommu=`, `lockdown=` |
+| sysctl (`sysctls`) | The setting is runtime-tunable, reversible or host-specific, and applying it a few seconds into boot is early enough. Includes one-way switches that should apply after boot work finishes. | `vm.swappiness`, `vm.max_map_count`, `kernel.split_lock_mitigate`, `vm.compaction_proactiveness`, `net.core.*`, `kernel.sysrq`, `kernel.kexec_load_disabled` |
+| sysfs (`sysfs`) | There is no sysctl and no boot parameter, only a file under `/sys`. Applied through systemd-tmpfiles or udev. | transparent hugepage mode, I/O scheduler, cpufreq boost |
+| modprobe options (`modprobe`) | The setting is a parameter of a driver built as a module, so the command line form does not apply. | `msr.allow_writes` when `msr` is a module (name unverified) |
+
+When a setting has both a command-line and a runtime form (for example
+`transparent_hugepage`), prefer the runtime form unless the setting must hold
+before userspace starts, and record the choice beside the knob.
+
+Why the split matters beyond tidiness:
+
+- NixOS already fails evaluation when two modules set one sysctl to different
+  values at equal priority. `boot.kernelParams` is a plain list with no such
+  check, so the collision assertion above exists for params only.
+- Several sysctls are set in many places today (`net.core.rmem_max` in seven
+  files, diverging `vm.swappiness` values). Shared sysctl knobs, such as one
+  for large network buffers, are how those duplicates go away when hosts
+  migrate.
+- Whether `randomize_kstack_offset` has a runtime form on the shipped kernels
+  is unverified; confirm it per knob before choosing its target.
+
 ## Lockdown coverage on hibernating hosts
 
 Mainline refuses hibernation while lockdown is active
