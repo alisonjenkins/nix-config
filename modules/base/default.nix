@@ -225,7 +225,6 @@ in
         kernel = {
           sysctl = {
             # Network Perf Tuning
-            "net.ipv4.icmp_echo_ignore_all" = if cfg.enableICMPPing then 0 else 1;
             "net.ipv4.tcp_congestion_control" = "bbr";
             "net.ipv4.tcp_ecn" = 1;
             "net.ipv4.tcp_fastopen" = 3;
@@ -543,6 +542,8 @@ in
         noIcmpRedirects = lib.mkDefault true;
         rpFilterStrict = lib.mkDefault true;
         martiansUnlogged = lib.mkDefault true;
+        icmpEchoReply = lib.mkDefault cfg.enableICMPPing;
+        icmpEchoIgnore = lib.mkDefault (!cfg.enableICMPPing);
       };
 
       zramSwap = {

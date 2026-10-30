@@ -366,4 +366,21 @@
     cost = "none";
     breaks = "packets with impossible source addresses are dropped without a log line";
   };
+
+  # One of these two is on in base, chosen by modules.base.enableICMPPing.
+  icmpEchoReply = {
+    category = "security";
+    sysctls."net.ipv4.icmp_echo_ignore_all" = 0;
+    cost = "none";
+    breaks = "the host answers ping, so it is discoverable";
+    conflictsWith = [ "icmpEchoIgnore" ];
+  };
+
+  icmpEchoIgnore = {
+    category = "security";
+    sysctls."net.ipv4.icmp_echo_ignore_all" = 1;
+    cost = "none";
+    breaks = "the host never answers ping, which hides it from monitoring that relies on ICMP";
+    conflictsWith = [ "icmpEchoReply" ];
+  };
 }
