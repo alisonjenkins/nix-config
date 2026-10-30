@@ -224,9 +224,6 @@ in
 
         kernel = {
           sysctl = {
-            "dev.hpet.max-user-freq" = 1000;
-            "fs.dentry-negative" = 1;
-
             # Network Perf Tuning
             "net.core.default_qdisc" = lib.mkDefault "dualpi2";
             "net.core.netdev_budget" = 600;
@@ -560,6 +557,8 @@ in
         dirtyRatioLow = lib.mkDefault true;
         dirtyBackgroundRatioLow = lib.mkDefault true;
         vfsCachePressureLow = lib.mkDefault true;
+        hpetUserFreqHigh = lib.mkDefault true;
+        dentryNegative = lib.mkDefault true;
       };
 
       zramSwap = {

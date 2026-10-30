@@ -263,4 +263,19 @@
     cost = "low";
     breaks = "dentry and inode caches are reclaimed less eagerly (kernel default 100), using more RAM";
   };
+
+  # The remaining generic sysctls below were set directly in modules/base.
+  hpetUserFreqHigh = {
+    category = "performance";
+    sysctls."dev.hpet.max-user-freq" = 1000;
+    cost = "none";
+    breaks = "nothing; raises the per-user HPET interrupt rate cap (kernel default 64)";
+  };
+
+  dentryNegative = {
+    category = "performance";
+    sysctls."fs.dentry-negative" = 1;
+    cost = "low";
+    breaks = "negative dentries are kept after file deletion, using a little more RAM";
+  };
 }
