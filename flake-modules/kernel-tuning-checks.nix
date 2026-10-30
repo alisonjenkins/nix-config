@@ -71,6 +71,7 @@
         lib.any (m: lib.all (w: lib.hasInfix w m) words) msgs;
 
       conflicting = evalWith (enable [ "mitigationsOff" "nosmt" ]);
+      zswapBoth = evalWith (enable [ "zswapOn" "zswapOff" ]);
       collidingHost = evalWith {
         modules.kernelTuning.iommuIsolation = true;
         boot.kernelParams = [ "amd_iommu=off" ];
@@ -178,6 +179,15 @@
         {
           name = "mitigationsOff with nosmt asserts, naming both";
           ok = mentionsAll [ "mitigationsOff" "nosmt" ] (failedAsserts conflicting);
+        }
+        {
+          name = "zswapOn with zswapOff asserts, naming both";
+          ok = mentionsAll [ "zswapOn" "zswapOff" ] (failedAsserts zswapBoth);
+        }
+        {
+          name = "zswapOff and zswapOn set zswap.enabled to 0 and 1";
+          ok = lib.elem "zswap.enabled=0" (paramsOf (evalWith (enable [ "zswapOff" ])))
+            && lib.elem "zswap.enabled=1" (paramsOf (evalWith (enable [ "zswapOn" ])));
         }
         {
           name = "a declared conflict is reported once";

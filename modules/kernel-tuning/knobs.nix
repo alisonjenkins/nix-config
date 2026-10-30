@@ -133,4 +133,27 @@
     cost = "none";
     breaks = "nothing known; memory-mapping-heavy processes can use more maps";
   };
+
+  # Disable where zram is the swap device: zswap would sit in front of it as a
+  # second compressed cache and keep pages out of zram. nixpkgs kernels leave
+  # zswap off, CachyOS builds default it on (ZSWAP_DEFAULT_ON).
+  zswapOff = {
+    category = "performance";
+    params = [ "zswap.enabled=0" ];
+    minKernel = "3.11"; # zswap itself first shipped in 3.11, from memory, UNVERIFIED against versioned docs
+    cost = "none";
+    breaks = "no compressed cache in front of a disk swap device";
+    conflictsWith = [ "zswapOn" ];
+  };
+
+  # For hosts whose swap is a disk or LVM device and have no zram. The
+  # compressor is left at the kernel default (zstd in nixpkgs).
+  zswapOn = {
+    category = "performance";
+    params = [ "zswap.enabled=1" ];
+    minKernel = "3.11"; # same note as zswapOff
+    cost = "low";
+    breaks = "the compressed cache holds RAM and spends CPU; it is not meant to sit in front of zram";
+    conflictsWith = [ "zswapOff" ];
+  };
 }
