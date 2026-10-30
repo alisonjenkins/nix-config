@@ -112,7 +112,9 @@ one group at a time, one atomic commit each. A migration commit must be a
 no-op for the host: the sorted `nix eval --json` of `boot.kernelParams` and
 `boot.kernel.sysctl` is identical before and after. Hardware workarounds
 (`amd_iommu=off` on `ali-work-laptop`, GPU quirks) stay in the host's own
-configuration and are never a profile default.
+configuration and are never a profile default. The generic sysctls that
+`modules/base` used to set (vm, net, tcp, icmp, hpet, dentry) now live in the
+table and base enables them with `mkDefault`.
 
 **Candidate knobs are verified first.** A knob enters the table only with a
 public source and a check against the kernel the fleet ships (is it already
