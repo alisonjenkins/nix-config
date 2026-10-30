@@ -247,7 +247,7 @@
       # and node.name becomes obs-game (docs/adr/0053).
       PULSE_PROP_OVERRIDE = "application.name=obs-game";
     };
-    gamescopeArgs = "-w 2540 -h 1440 -W 2540 -H 1440 -b --rt --hdr-enabled --hdr-debug-force-support --force-grab-cursor -F fsr -r 120";
+    gamescopeArgs = "-w 2560 -h 1440 -W 2560 -H 1440 -b --rt --hdr-enabled --hdr-debug-force-support --force-grab-cursor -F fsr -r 120";
     # Almost every launch here goes through gamescope, so the module default
     # of skipping preCommand under gamescope would silently drop the
     # obs-gamecapture wrap for nearly all games.
