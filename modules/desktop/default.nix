@@ -460,6 +460,43 @@ in
         '';
       };
 
+      lowBattery = {
+        enable = mkOption {
+          type = types.bool;
+          default = config.boot.resumeDevice != "";
+          defaultText = lib.literalExpression ''config.boot.resumeDevice != ""'';
+          description = ''
+            Set UPower's critical-battery action and thresholds explicitly
+            instead of taking UPower's defaults (HybridSleep at 2%, which
+            leaves little time to write the hibernation image). Defaults to on
+            wherever a resume device is set, since both HybridSleep and
+            Hibernate need one. Set to false on a host that must keep another
+            module's UPower settings.
+          '';
+        };
+
+        action = mkOption {
+          type = types.enum [ "HybridSleep" "Hibernate" ];
+          default = "HybridSleep";
+          description = ''
+            UPower's CriticalPowerAction. HybridSleep writes the hibernation
+            image and then suspends to RAM, so the machine sleeps for as long
+            as the battery lasts and resumes from the image if it dies.
+            Hibernate powers off after writing the image.
+          '';
+        };
+
+        percentageAction = mkOption {
+          type = types.ints.between 3 50;
+          default = 5;
+          description = ''
+            Battery percentage at which the action runs. UPower needs
+            low > critical > action, so critical is set 5 points above this and
+            low 15 points above it.
+          '';
+        };
+      };
+
       handleLidSwitch = mkOption {
         type = types.enum [ "ignore" "poweroff" "reboot" "halt" "suspend" "hibernate" "hybrid-sleep" "suspend-then-hibernate" "lock" ];
         default = "suspend-then-hibernate";
@@ -2300,7 +2337,14 @@ in
         enable = mkDefault true;
       };
 
-      upower.enable = true;
+      upower = {
+        enable = true;
+      } // lib.optionalAttrs cfg.power.lowBattery.enable {
+        criticalPowerAction = cfg.power.lowBattery.action;
+        percentageAction = cfg.power.lowBattery.percentageAction;
+        percentageCritical = cfg.power.lowBattery.percentageAction + 5;
+        percentageLow = cfg.power.lowBattery.percentageAction + 15;
+      };
 
       printing = mkIf cfg.printing.enable {
         enable = true;

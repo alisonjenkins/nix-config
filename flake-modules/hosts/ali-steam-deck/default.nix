@@ -249,6 +249,9 @@ in {
           # Jovian provides the Deck's own boot splash.
           flickerFreeBoot.enable = false;
           logitech.enable = false;
+          # Jovian sets UPower's CriticalPowerAction to Ignore: Steam's own UI
+          # handles low battery on the Deck.
+          power.lowBattery.enable = false;
         };
 
         # Built-in-speaker audio underruns under demanding games: the 15 W APU
