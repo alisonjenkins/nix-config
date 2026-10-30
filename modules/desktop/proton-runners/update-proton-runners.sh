@@ -103,7 +103,7 @@ update_one() {
   fi
 
   mkdir -p "$tmp/extract"
-  if ! tar -xaf "$tmp/archive" --no-absolute-names -C "$tmp/extract"; then
+  if ! tar -xaf "$tmp/archive" -C "$tmp/extract"; then
     printf '[%s] WARN: extraction failed; keeping installed version\n' "$name" >&2
     return 0
   fi
