@@ -62,6 +62,18 @@
     "V1": {"reviewed": "2026-10-30", "urls": ["https://libvirt.org/formatdomain.html"]},
     "V2": {"reviewed": "2026-10-30", "urls": ["https://wiki.libvirt.org/Net.bridge.bridge-nf-call_and_sysctl.conf.html", "https://raw.githubusercontent.com/torvalds/linux/v6.18/Documentation/networking/ip-sysctl.rst"]},
     "V3": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/k3s-io/docs/main/docs/cli/server.md", "https://raw.githubusercontent.com/cilium/cilium/v1.20.4/Documentation/installation/k3s.rst"]},
+    "Q11": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/torvalds/linux/v6.18/include/net/mac80211.h"]},
+    "Q12": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/torvalds/linux/v6.18/net/sched/sch_cake.c"]},
+    "R7": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/torvalds/linux/v6.18/net/ipv4/fib_frontend.c"]},
+    "C12": {"none": "absence claim: tcp_bbr.c has no ECN code; probed for both letter cases, with a present string as the positive control", "reviewed": "2026-10-30", "probes": [{"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/net/ipv4/tcp_bbr.c", "present": ["bbr_min_rtt_win_sec"], "absent": ["ecn", "ECN"]}]},
+    "C13": {"reviewed": "2026-10-30", "urls": [{"url": "https://raw.githubusercontent.com/NixOS/nixpkgs/58deea654ec5dd0644f31c840a07c29fa0592528/pkgs/os-specific/linux/kernel/common-config.nix", "quotes": [0]}, {"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/net/ipv4/Kconfig", "quotes": [1, 2]}]},
+    "B14": {"reviewed": "2026-10-30", "urls": [{"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/Documentation/networking/ip-sysctl.rst", "quotes": [0, 1]}, {"url": "https://man7.org/linux/man-pages/man7/tcp.7.html", "quotes": [2, 3]}]},
+    "W7": {"reviewed": "2026-10-30", "floating": false, "urls": [{"url": "https://www.rfc-editor.org/rfc/rfc6691.txt", "quotes": [0]}, {"url": "https://www.rfc-editor.org/rfc/rfc7323.txt", "quotes": [1]}]},
+    "W8": {"reviewed": "2026-10-30", "urls": [{"url": "https://raw.githubusercontent.com/WireGuard/wireguard-tools/v1.0.20210914/src/wg-quick/linux.bash", "quotes": [0]}, {"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/drivers/net/wireguard/device.c", "quotes": [1]}]},
+    "W9": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/amnezia-vpn/amneziawg-linux-kernel-module/4569c4c67f3a57414969260cafbbd04694fbaae0/README.md"]},
+    "N4": {"reviewed": "2026-10-30", "floating": false, "urls": ["https://api.github.com/repos/torvalds/linux/commits/d9ba131d8f58c0d2ff5029e7002ab43f913b36f9"], "probes": [{"url": "https://raw.githubusercontent.com/torvalds/linux/v3.1/net/sunrpc/xprt.c", "present": ["xprt_dynamic_alloc_slot"]}, {"url": "https://raw.githubusercontent.com/torvalds/linux/v3.0/net/sunrpc/xprt.c", "absent": ["xprt_dynamic_alloc_slot"]}]},
+    "V4": {"reviewed": "2026-10-30", "urls": [{"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/net/bridge/br_netfilter_hooks.c", "quotes": [0, 1]}, {"url": "https://raw.githubusercontent.com/torvalds/linux/v6.18/Documentation/networking/bridge.rst", "quotes": [2]}]},
+    "K8": {"reviewed": "2026-10-30", "urls": ["https://raw.githubusercontent.com/cilium/cilium/v1.20.4/install/kubernetes/cilium/templates/cilium-configmap.yaml"]},
     "Q7": {"none": "absence claim: no tcp_prague* file in net/ipv4 at v6.18 or v7.0, so there is no quotable line; probed against the directory listing, and against master so the check fails when Prague lands", "reviewed": "2026-10-30", "probes": [
       {"url": "https://api.github.com/repos/torvalds/linux/contents/net/ipv4?ref=v6.18", "floating": false, "present": ["tcp_bbr.c", "tcp_dctcp.c"], "absent": ["tcp_prague"]},
       {"url": "https://api.github.com/repos/torvalds/linux/contents/net/ipv4?ref=v7.0", "floating": false, "present": ["tcp_bbr.c", "tcp_dctcp.c"], "absent": ["tcp_prague"]},
@@ -79,7 +91,6 @@
     "B7": "defaults of tcp_tw_reuse and tcp_fastopen recorded for the base knobs; no decision rests on them",
     "B9": "tcp_notsent_lowat default and Cloudflare's value, kept as a reference for a later server-tuning decision",
     "K3": "conntrack timeout defaults, kept as a reference; decision 7 sets no conntrack values",
-    "K6": "neighbour-table defaults, kept as a reference; no neighbour-table change is proposed",
     "K7": "ephemeral port range default, kept as a reference; no port-range change is proposed"
   },
   "repo_claims": [
