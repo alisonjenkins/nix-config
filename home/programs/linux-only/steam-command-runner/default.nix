@@ -78,7 +78,7 @@ in
     gamescopeArgs = lib.mkOption {
       type = lib.types.str;
       default = "";
-      example = "-w 2540 -h 1440 -W 2540 -H 1440 -b --rt -F fsr -r 120";
+      example = "-w 2560 -h 1440 -W 2560 -H 1440 -b --rt -F fsr -r 120";
       description = "Arguments passed to gamescope when the shim wraps a launch.";
     };
 
