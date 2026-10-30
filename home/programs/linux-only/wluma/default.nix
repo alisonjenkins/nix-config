@@ -50,6 +50,9 @@ in
         ExecStart = "${pkgs.wluma}/bin/wluma";
         Restart = "on-failure";
         RestartSec = 5;
+        # wluma never drains its system-bus socket, which fills the uid's
+        # dbus-broker quota and gets other clients (Steam) disconnected.
+        InaccessiblePaths = [ "/run/dbus/system_bus_socket" ];
       };
       Install = {
         WantedBy = [ "graphical-session.target" ];
