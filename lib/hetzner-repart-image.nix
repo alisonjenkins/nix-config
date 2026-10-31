@@ -57,8 +57,9 @@ in
   ];
 
   # UKI boot for UEFI — EFI binary and UKI placed as static files in the ESP.
+  # systemd-boot stays enabled in the config (modules/hetzner) so an in-place
+  # deploy installs its own entries; only the image's ESP contents are static.
   boot.loader.grub.enable = lib.mkForce false;
-  boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.uki.tries = 0;
 
   # Fix growpart: use /run as TMPDIR since /tmp may not be mounted early in boot.
