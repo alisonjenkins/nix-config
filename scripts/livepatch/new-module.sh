@@ -38,6 +38,7 @@ for v in "$name" "$target"; do
   [[ $v =~ $ident ]] || { echo "new-module.sh: not a C identifier: $v" >&2; exit 1; }
 done
 [ -z "$object" ] || [[ $object =~ $ident ]] || { echo "new-module.sh: not a module name: $object" >&2; exit 1; }
+[ -z "$cve" ] || [[ $cve =~ ^[A-Za-z0-9._:-]+$ ]] || { echo "new-module.sh: --cve must be an advisory id such as CVE-2026-1234, got: $cve" >&2; exit 1; }
 [ ! -e "$out" ] || { echo "new-module.sh: $out exists, not overwriting" >&2; exit 1; }
 
 object_line=""
