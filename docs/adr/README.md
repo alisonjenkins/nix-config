@@ -73,9 +73,10 @@ for the live-maintenance runbook.
 
 | # | Decision | Status |
 |---|---|---|
-| [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed |
+| [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed, superseded in part by 0060 |
 | [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
 | [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
+| [0060](0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md) | Upgrade the Hetzner master in place with systemd-boot, and defer the edge node | Accepted |
 
 ## CI
 
