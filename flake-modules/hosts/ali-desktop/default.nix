@@ -650,6 +650,10 @@ in {
           controls."PCM 02" = "DSP 1";
         };
 
+        # ddcutil (noctalia's brightness backend for the external monitor)
+        # needs i2c-dev loaded and the user in the i2c group.
+        hardware.i2c.enable = true;
+
         boot = {
           bootspec.enableValidation = true;
           # kernelPackages = pkgs.linuxPackages-rt_latest;
@@ -1391,7 +1395,7 @@ in {
               autoSubUidGidRange = true;
               isNormalUser = true;
               description = "Alison Jenkins";
-              extraGroups = [ "audio" "input" "libvirtd" "networkmanager" "docker" "video" "wheel" "realtime" ];
+              extraGroups = [ "audio" "input" "libvirtd" "networkmanager" "docker" "video" "wheel" "realtime" "i2c" ];
               hashedPasswordFile = "/persistence/passwords/ali";
               useDefaultShell = true;
 
