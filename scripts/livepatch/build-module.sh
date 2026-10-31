@@ -77,7 +77,7 @@ fi
 
 # Toolchain symbols every module carries; the kernel provides them even if Module.symvers omits one.
 ignore='^(__fentry__|__x86_return_thunk|__x86_indirect_thunk_.*|_GLOBAL_OFFSET_TABLE_)$'
-missing=$(nm -u "$out/$mod.ko" | awk '$1 == "U" { print $2 }' | grep -Ev "$ignore" | sort -u \
+missing=$(nm -u "$out/$mod.ko" | awk '$1 == "U" { print $2 }' | { grep -Ev "$ignore" || true; } | sort -u \
   | while read -r sym; do
       awk -F'\t' -v s="$sym" '$2 == s { found = 1 } END { exit !found }' "$build/Module.symvers" || echo "$sym"
     done)
