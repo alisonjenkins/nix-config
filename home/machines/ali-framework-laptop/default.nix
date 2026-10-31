@@ -21,6 +21,54 @@ in
     ../../programs/linux-only/steam-command-runner
   ];
 
+  # amdgpu_bl2 is the only backlight; pinned so the brightness keys and bar
+  # widget address the panel instead of guessing a backend.
+  custom.noctalia.settings = {
+    brightness.monitor."eDP-2" = {
+      backend = "backlight";
+      backlight_device = "amdgpu_bl2";
+    };
+
+    # Login box placed in the Settings menu for the 1707x1067 logical eDP-2.
+    lockscreen_widgets = {
+      enabled = false;
+      schema_version = 2;
+      widget_order = [ "lockscreen-login-box@eDP-2" ];
+      grid = {
+        cell_size = 16;
+        major_interval = 4;
+        visible = true;
+      };
+      widget."lockscreen-login-box@eDP-2" = {
+        type = "login_box";
+        output = "eDP-2";
+        box_height = 196.0;
+        box_width = 720.0;
+        cx = 854.0;
+        cy = 948.0;
+        placement_height = 1067.0;
+        placement_width = 1707.0;
+        rotation = 0.0;
+        settings = {
+          background_color = "surface_container";
+          background_opacity = 0.88;
+          background_radius = 12.0;
+          center_password_text = false;
+          input_opacity = 1.0;
+          input_radius = 6.0;
+          layout = "regular";
+          show_caps_lock = true;
+          show_keyboard_layout = true;
+          show_login_button = true;
+          show_media = true;
+          show_session_buttons = true;
+          show_unlock_hint = true;
+          show_weather = true;
+        };
+      };
+    };
+  };
+
   modules.beatsaber.enable = true;
   modules.helldivers2Mods.enable = true;
 
