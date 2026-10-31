@@ -78,6 +78,7 @@ while :; do
   if got=$(rssh readlink /run/current-system 2>/dev/null) && [ "$got" = "$expect" ]; then
     log verify ok "on expected generation $expect"
     align_profile
+    log unlock info "a hard reset leaves the k3s state volume locked until unlock-master.sh runs"
     exit 0
   fi
   [ "$(date +%s)" -lt "$deadline" ] || break

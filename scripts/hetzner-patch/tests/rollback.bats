@@ -133,3 +133,8 @@ teardown() { base_teardown; }
   [ "$status" -eq 4 ]
   never_called 'switch-generation'
 }
+
+@test "reminds that the LUKS state volume stays locked until unlock-master.sh runs" {
+  run_script rollback.sh "${ARGS[@]}"
+  [[ "$output" == *"unlock-master.sh"* ]]
+}
