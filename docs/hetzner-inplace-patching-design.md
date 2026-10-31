@@ -1,5 +1,7 @@
 # Patching the Hetzner master without interrupting calls
 
+Note (2026-10-31): the GRUB bootloader material here (the rollback bullet above, and "Biggest unknown: the bootloader") is superseded by [ADR 0060](adr/0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md), which uses systemd-boot on UEFI.
+
 Status: superseded by `specs/003-hetzner-inplace-patching/` and `specs/004-hetzner-encrypted-volumes/`.
 Date: 2026-10-03
 
