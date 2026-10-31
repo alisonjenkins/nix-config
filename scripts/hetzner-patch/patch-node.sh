@@ -11,17 +11,18 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 usage() {
   cat >&2 <<'USAGE'
 usage: patch-node.sh --host HOST --server-id ID --toplevel STOREPATH [--approve]
-         [--unlock-via public|edge] [--health-timeout SECS] [--health-cmd CMD]
+         [--unlock-via public|edge [--unlock-jump JUMPHOST]] [--health-timeout SECS] [--health-cmd CMD]
          [--no-snapshot-gate] [--force-reboot] [--dry-run] [--record-file FILE]
   If the new kernel, initrd and modules match the booted system the generation is activated
   live with no reboot; --force-reboot always reboots.
   env: HCLOUD_TOKEN (required), KUBECONFIG (optional, enables the node-readiness gate)
   exit: 0 patched and healthy; 1 usage; 2 refused (see output for anything already done);
-        3 unhealthy, rolled back; 4 unhealthy and rollback failed
+        3 unhealthy, rolled back; 4 unhealthy and rollback failed;
+        5 patched and healthy, but the boot default was not set (the next reboot returns to the prior entry)
 USAGE
 }
 
-host="" server_id="" toplevel="" approve=0 unlock_via="" dry_run=0 no_snapshot_gate=0 force_reboot=0
+host="" server_id="" toplevel="" approve=0 unlock_via="" unlock_jump="" dry_run=0 no_snapshot_gate=0 force_reboot=0
 health_timeout=900 health_cmd=true
 record_file="${XDG_STATE_HOME:-${HOME:-}/.local/state}/hetzner-patch/runs.jsonl"
 min_esp_mib=60
@@ -38,6 +39,7 @@ while [ $# -gt 0 ]; do
     --toplevel) toplevel=${2:?--toplevel needs a value}; shift 2 ;;
     --approve) approve=1; shift ;;
     --unlock-via) unlock_via=${2:?--unlock-via needs a value}; shift 2 ;;
+    --unlock-jump) unlock_jump=${2:?--unlock-jump needs a value}; shift 2 ;;
     --health-timeout) health_timeout=${2:?--health-timeout needs a value}; shift 2 ;;
     --health-cmd) health_cmd=${2:?--health-cmd needs a value}; shift 2 ;;
     --no-snapshot-gate) no_snapshot_gate=1; shift ;;
@@ -51,6 +53,8 @@ HP_HOST=${host:--}
 [ -n "$host" ] && [ -n "$server_id" ] && [ -n "$toplevel" ] \
   || usage_error "--host, --server-id and --toplevel are required"
 case "$unlock_via" in "" | public | edge) ;; *) usage_error "--unlock-via must be public or edge, got $unlock_via" ;; esac
+[ "$unlock_via" != edge ] || [ -n "$unlock_jump" ] || usage_error "--unlock-via edge requires --unlock-jump JUMPHOST"
+[ -z "$unlock_jump" ] || [ "$unlock_via" = edge ] || usage_error "--unlock-jump only applies to --unlock-via edge"
 case "$health_timeout" in "" | *[!0-9]*) usage_error "--health-timeout must be whole seconds, got $health_timeout" ;; esac
 
 prior_gen=""
@@ -216,7 +220,8 @@ entry_path() {
 
 register_store() {
   local count
-  if ! count=$(rssh 'nix path-info --all | wc -l' 2>/dev/null | tr -dc '0-9') || [ -z "$count" ]; then
+  # shellcheck disable=SC2016  # the remote shell must expand $t and $rc, not this one
+  if ! count=$(rssh 't=$(mktemp) && nix path-info --all >"$t" && wc -l <"$t"; rc=$?; rm -f "$t"; exit $rc' 2>/dev/null | tr -dc '0-9') || [ -z "$count" ]; then
     refuse register "ssh $host nix path-info --all failed"
   fi
   if [ "$count" -ne 0 ]; then
@@ -286,7 +291,7 @@ roll_back() {
 
 # Same test NixOS uses to decide a reboot is needed. Any failure answers "changed", i.e. reboot.
 kernel_unchanged() {
-  rssh "for f in kernel initrd kernel-modules; do [ \"\$(readlink -f /run/booted-system/\$f)\" = \"\$(readlink -f $toplevel/\$f)\" ] || exit 1; done" >/dev/null 2>&1
+  rssh "for f in kernel initrd kernel-modules; do [ \"\$(readlink -f /run/booted-system/\$f)\" = \"\$(readlink -f $toplevel/\$f)\" ] || exit 1; done; cmp -s /run/booted-system/kernel-params $toplevel/kernel-params" >/dev/null 2>&1
 }
 
 switch_unit=hetzner-patch-switch
@@ -369,6 +374,15 @@ if ! rssh test -e "$(entry_path "$prior_entry")" 2>/dev/null \
   log entries warn "booted entry $prior_entry is no longer in the ESP; using default entry $default_entry as the rollback target"
   prior_entry=$default_entry
 fi
+# shellcheck disable=SC2016  # the remote shell must expand the substitutions, not this one
+live_patched() { rssh 'test "$(readlink /run/booted-system)" != "$(readlink /run/current-system)"' 2>/dev/null; }
+# A healthy live patch moves the default past the booted entry; a hard reset then boots the default.
+if [ -n "$default_entry" ] && [ "$default_entry" != "$prior_entry" ] \
+  && live_patched \
+  && rssh test -e "$(entry_path "$default_entry")" 2>/dev/null; then
+  log entries warn "$host runs a live-patched generation; using default entry $default_entry as the rollback target, not booted entry $prior_entry"
+  prior_entry=$default_entry
+fi
 log entries ok "prior generation $prior_gen, prior entry $prior_entry"
 
 # A leftover live switch holds the switch-to-configuration lock, so activation would fail halfway.
@@ -410,7 +424,7 @@ write_boot_entry() {
 boot_entry_unwritten() {
   log "$1" fail "could not write the boot entry: $2; $host runs $toplevel but the next reboot returns to $prior_entry"
   failed_gates+=(boot-entry-not-written)
-  finish patched 1
+  finish patched 5
 }
 
 if [ "$live" -eq 1 ]; then
@@ -435,7 +449,9 @@ else
   log reboot ok "reboot issued"
 
   if [ -n "$unlock_via" ]; then
-    if ! "$DIR/unlock-master.sh" --host "$host" --via "$unlock_via"; then
+    unlock_args=(--host "$host" --via "$unlock_via")
+    [ -z "$unlock_jump" ] || unlock_args+=(--jump "$unlock_jump")
+    if ! "$DIR/unlock-master.sh" "${unlock_args[@]}"; then
       probe_state="unlock-master.sh --via $unlock_via failed"
       roll_back
     fi
@@ -456,14 +472,14 @@ fi
 if ! rssh sudo bootctl set-default "$new_entry" >/dev/null; then
   log commit fail "healthy, but bootctl set-default $new_entry failed; the next reboot returns to $prior_entry"
   failed_gates+=(default-not-set)
-  finish patched 1
+  finish patched 5
 fi
 status_out=$(rssh sudo bootctl status 2>/dev/null || true)
 default_now=$(sed -n 's/^ *Default Entry: *//p' <<<"$status_out" | head -n1)
 if [ "$default_now" != "$new_entry" ]; then
   log confirm fail "bootctl status shows Default Entry '${default_now:-none}', expected $new_entry"
   failed_gates+=(default-not-confirmed)
-  finish patched 1
+  finish patched 5
 fi
 log confirm ok "default is $new_entry"
 finish patched 0

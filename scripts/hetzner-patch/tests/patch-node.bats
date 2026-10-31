@@ -435,9 +435,43 @@ assert_only_allowed_hcloud() {
 }
 
 @test "unlock-master.sh runs after the reboot, before the health probe, only with --unlock-via" {
-  patch --unlock-via edge
+  patch --unlock-via edge --unlock-jump jump.example
   [ "$status" -eq 0 ]
-  assert_order "$REBOOT" "^unlock-master.sh --host $HOST --via edge\$" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+  assert_order "$REBOOT" "^unlock-master.sh --host $HOST --via edge --jump jump.example\$" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+}
+
+@test "--unlock-via edge without --unlock-jump is a usage error before anything runs" {
+  patch --unlock-via edge
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--unlock-jump"* ]]
+  never_called '^ssh|^nix copy'
+}
+
+@test "--unlock-jump without --unlock-via edge is a usage error" {
+  patch --unlock-via public --unlock-jump jump.example
+  [ "$status" -eq 1 ]
+}
+
+@test "the remote store-registration probe stops when nix path-info itself fails" {
+  patch
+  called 'nix path-info --all >"\$t" && wc -l'
+}
+
+@test "a diverged booted and current system makes the default entry the rollback target" {
+  rule ssh any '*booted-system*current-system*' 0 ''
+  rule ssh any '* test -e /boot/loader/entries/nixos-generation-1.conf' 0 ''
+  rule ssh pre '* sudo bootctl status' 0 "Current Entry: nixos-generation-1.conf\nDefault Entry: $PRIOR_ID"
+  rule ssh post '* sudo bootctl status' 0 "Current Entry: $NEW_ID\nDefault Entry: $NEW_ID"
+  patch
+  [ "$status" -eq 0 ]
+  called "$SET_DEFAULT_PRIOR"
+  never_called 'set-default nixos-generation-1.conf'
+}
+
+@test "the live-or-reboot decision also compares kernel-params" {
+  kernel_unchanged
+  patch
+  called 'kernel-params'
 }
 
 @test "without --unlock-via unlock-master.sh is never called" {
@@ -457,14 +491,14 @@ assert_only_allowed_hcloud() {
 @test "an unconfirmed default after a healthy boot is reported, not silently accepted" {
   rule ssh any '* sudo bootctl status' 0 "Current Entry: $PRIOR_ID\nDefault Entry: $PRIOR_ID"
   patch
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 5 ]
   [[ "$output" == *"step=confirm result=fail"* ]]
 }
 
 @test "a failing set-default NEW on a healthy host is reported, not silently accepted" {
   rule ssh any "* sudo bootctl set-default $NEW_ID" 1 ''
   patch
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 5 ]
   [[ "$output" == *"step=commit result=fail"* ]]
 }
 
@@ -526,7 +560,7 @@ switch_unit_state() { rule ssh any '*systemctl show hetzner-patch-switch*' 0 "Ac
   kernel_unchanged
   rule ssh any '*switch-to-configuration boot' 1 ''
   patch
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 5 ]
   never_called "$SET_DEFAULT_NEW"
   [[ "$output" == *"boot entry"* ]]
   [ "$(jq -r .outcome "$REC")" = patched ]
