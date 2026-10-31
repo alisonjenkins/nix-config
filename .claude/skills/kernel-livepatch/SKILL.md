@@ -63,3 +63,39 @@ rmmod <name>
 ```
 
 A module must be disabled before `rmmod`.
+
+## When a hand-written module is not enough: kpatch
+
+Use kpatch when the fix must touch a static function, an inlined function, or a symbol the kernel
+does not export (`build-module.sh` exit 3). It generates the module from a source diff and emits
+klp relocations for those symbols. It was parked on 2026-10-31 because of the blocker below; the
+work is unmerged on branch `kpatch-pkg` (three commits: `72a77c20` packages `kpatch-build` 0.9.11
+as `pkgs/kpatch-build`, `2ac75978` runs its scripts under `bashInteractive`, `a280a894` ignores
+`__pfx_` locals when matching vmlinux symbols). Its `kpatch-build` builds with `nix build .#kpatch-build`.
+
+**Blocker.** `kpatch-build` rejects `CONFIG_X86_KERNEL_IBT=y` ("kernel option not supported"), and the
+image kernel has it on. As of 2026-10-31 upstream has no IBT support. A deployable module therefore
+needs one of:
+- the image kernel built with `X86_KERNEL_IBT = no` (weaker hardening; adopting it is a reboot onto
+  a kernel with a different layout), then `kpatch-build` against that kernel's own `vmlinux`; or
+- IBT support landing upstream.
+
+Building with IBT off only in a scratch `.config` against the IBT-on `vmlinux` produces a `.ko` that
+does not match the running kernel. It was never loaded. Do not deploy one.
+
+**Recipe** (kernel 6.18.59; adapt the paths):
+1. Source tree: the kernel's `.dev` output only has a pruned symlink tree with no `.c` files. Build a
+   tree from `kernel.src` plus `kernel.patches` (unpack, then `patch -p1 -s < $p` for each patch),
+   copy it writable, and use the kernel's `.config` from the `.dev` output.
+2. Debug info is already present: `CONFIG_DEBUG_INFO`, BTF, `LIVEPATCH`, `GCC_PLUGINS` and
+   `FUNCTION_TRACER` are set, and the `.dev` output ships an unstripped `vmlinux`.
+3. `HOME=<scratch> kpatch-build -j16 -n <name> -s <src> -c <src>/.config -v <dev>/vmlinux -a <version> -o <out> -d fix.patch`
+4. The patch must be line-count neutral in the file it touches. A shifted `__LINE__` in an initcall
+   symbol name was not shown to be harmless.
+5. Prove it with `verify-on-host.sh` on the twin, as for a hand-written module.
+
+**Cost.** `kpatch-build` rebuilds the whole kernel: about 43 min on 16 cores clean, about 8 min
+incremental, and it needs a writable source copy. Every new patch pays that again.
+
+**Unverified.** That a generated module behaves correctly on a matching IBT-off kernel (only
+generation was confirmed), and that the `__pfx_` patch is complete beyond the one file tried.
