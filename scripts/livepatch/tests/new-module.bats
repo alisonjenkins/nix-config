@@ -63,3 +63,9 @@ scaffold() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
 }
+
+@test "rejects a --cve value that could end the header comment or inject code" {
+  scaffold --cve 'CVE-2026-1 */ x'
+  [ "$status" -eq 1 ]
+  [ ! -e "$OUT" ]
+}
