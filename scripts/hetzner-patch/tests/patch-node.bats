@@ -221,6 +221,259 @@ assert_refused_untouched() {
   [ "$(wc -l < "$REC")" -eq 2 ]
 }
 
+# ---- steps -------------------------------------------------------------------
+
+SET_DEFAULT_PRIOR="bootctl set-default $PRIOR_ID\$"
+SET_DEFAULT_NEW="bootctl set-default $NEW_ID\$"
+SET_ONESHOT_NEW="bootctl set-oneshot $NEW_ID\$"
+REBOOT='sudo systemctl reboot$'
+READLINK_PROBE='readlink /run/current-system$'
+
+assert_only_allowed_hcloud() {
+  ! grep '^hcloud ' "$FAKE_CALLLOG" | grep -Ev '^hcloud (server describe|image list|server reset)'
+}
+
+@test "happy path: boot-once sequence, default flipped to the new entry only after the health probe" {
+  patch
+  [ "$status" -eq 0 ]
+  assert_order \
+    "^nix path-info $TOP\$" \
+    '^ssh .* nix path-info --all' \
+    '^ssh .* sudo bootctl status$' \
+    "^nix copy --no-check-sigs --to ssh-ng://$HOST $TOP\$" \
+    "sudo nix-env -p /nix/var/nix/profiles/system --set $TOP\$" \
+    "sudo $TOP/bin/switch-to-configuration boot\$" \
+    'ls /boot/loader/entries$' \
+    "test -e /boot/loader/entries/$PRIOR_ID\$" \
+    "$SET_DEFAULT_PRIOR" "$SET_ONESHOT_NEW" "$REBOOT" "$READLINK_PROBE" ' true$' "$SET_DEFAULT_NEW"
+  never_called 'bash -s|register-validity'
+  never_called 'server reset'
+  assert_only_allowed_hcloud
+  [ "$(jq -r .outcome "$REC")" = patched ]
+}
+
+@test "the highest-numbered generation entry is chosen numerically, not lexically" {
+  patch
+  called "$SET_ONESHOT_NEW"
+  never_called 'set-oneshot nixos-generation-9.conf'
+  never_called 'set-oneshot .*specialisation'
+}
+
+@test "unregistered store: registers it, verifies, and sets a missing profile first" {
+  rule ssh any '* nix path-info --all*' 0 0
+  rule ssh any '* test -e /nix/var/nix/profiles/system' 1 ''
+  patch
+  [ "$status" -eq 0 ]
+  assert_order \
+    '^ssh .* nix path-info --all' \
+    'bash -s -- /nix/store' \
+    'sudo nix-store --register-validity' \
+    ' nix path-info /run/current-system$' \
+    'test -e /nix/var/nix/profiles/system$' \
+    'sudo nix-env -p /nix/var/nix/profiles/system --set "\$\(readlink -f /run/current-system\)"$' \
+    '^nix copy ' \
+    "sudo nix-env -p /nix/var/nix/profiles/system --set $TOP\$" \
+    "$SET_DEFAULT_NEW"
+}
+
+@test "registered store and present profile: neither is touched" {
+  patch
+  never_called 'register-validity'
+  never_called 'readlink -f'
+}
+
+@test "registration that does not make the running system valid refuses before copying" {
+  rule ssh any '* nix path-info --all*' 0 0
+  rule ssh any '* nix path-info /run/current-system' 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"register-validity"* ]]
+  never_called '^nix copy|switch-to-configuration|systemctl reboot|bootctl set-'
+}
+
+@test "copy failure refuses before activating anything" {
+  rule nix any "copy --no-check-sigs --to ssh-ng://$HOST $TOP" 1 'boom'
+  patch
+  [ "$status" -eq 2 ]
+  never_called 'switch-to-configuration|systemctl reboot|bootctl set-'
+  [ "$(jq -r .outcome "$REC")" = refused ]
+}
+
+@test "switch-to-configuration failure restores the old default and refuses without rebooting" {
+  rule ssh any '*switch-to-configuration boot' 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  called "$SET_DEFAULT_PRIOR"
+  never_called "$REBOOT|set-oneshot"
+}
+
+@test "missing prior boot entry restores the old default and refuses without rebooting" {
+  rule ssh any "* test -e /boot/loader/entries/$PRIOR_ID" 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  called "$SET_DEFAULT_PRIOR"
+  never_called "$REBOOT|set-oneshot|$SET_DEFAULT_NEW"
+  [[ "$output" == *"$PRIOR_ID"* ]]
+  [ "$(jq -r .outcome "$REC")" = refused ]
+}
+
+@test "new entry equal to the prior entry refuses without rebooting" {
+  rule ssh any '* ls /boot/loader/entries' 0 "$PRIOR_ID\nloader.conf"
+  patch
+  [ "$status" -eq 2 ]
+  called "$SET_DEFAULT_PRIOR"
+  never_called "$REBOOT|set-oneshot"
+}
+
+@test "the image's original entry nixos.efi counts as bootable via /boot/EFI/Linux" {
+  rule ssh any '* sudo bootctl status' 0 "Current Entry: nixos.efi\nDefault Entry: $NEW_ID"
+  patch
+  [ "$status" -eq 0 ]
+  assert_order 'test -e /boot/EFI/Linux/nixos.efi$' 'bootctl set-default nixos.efi$' "$SET_ONESHOT_NEW"
+}
+
+@test "nixos.efi missing from the ESP refuses without rebooting" {
+  rule ssh any '* sudo bootctl status' 0 "Current Entry: nixos.efi\nDefault Entry: $NEW_ID"
+  rule ssh any '* test -e /boot/EFI/Linux/nixos.efi' 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  never_called "$REBOOT|set-oneshot"
+}
+
+@test "an unreadable current boot entry refuses before copying" {
+  rule ssh any '* sudo bootctl status' 0 'nothing useful'
+  patch
+  [ "$status" -eq 2 ]
+  never_called '^nix copy|switch-to-configuration|systemctl reboot'
+}
+
+@test "a failed reboot command refuses and never probes health" {
+  rule ssh any '* sudo systemctl reboot' 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  never_called "$SET_DEFAULT_NEW"
+  called "$SET_DEFAULT_PRIOR"
+}
+
+@test "polls until healthy: waits through ssh outages, then flips the default" {
+  rule ssh post '* readlink /run/current-system' 255 '' 3
+  patch
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "$READLINK_PROBE" "$FAKE_CALLLOG")" -ge 5 ]
+  called '^sleep '
+  assert_order "$REBOOT" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+}
+
+@test "never healthy: rolls back via rollback.sh, never sets the new default, exit 3" {
+  rule ssh post '* readlink /run/current-system' 255 ''
+  patch --health-timeout 60
+  [ "$status" -eq 3 ]
+  assert_order "$REBOOT" '^hcloud server reset '"$SID"'$'
+  never_called "$SET_DEFAULT_NEW"
+  assert_only_allowed_hcloud
+  [ "$(cat "$FAKE_DIR/clock")" -ge $((CLOCK0 + 60)) ]
+  jq -e '.outcome == "rolled-back" and .from == "'"$PRIOR_GEN"'" and .to == "'"$TOP"'"' "$REC"
+}
+
+@test "rollback.sh is called with host, server id and the prior generation" {
+  stub_rollback 0
+  rule ssh post '* readlink /run/current-system' 255 ''
+  patch --health-timeout 30
+  [ "$status" -eq 3 ]
+  called "^rollback.sh --host $HOST --server-id $SID --expect-generation $PRIOR_GEN\$"
+}
+
+@test "rollback.sh failing gives exit 4 and outcome rollback-failed" {
+  stub_rollback 4
+  rule ssh post '* readlink /run/current-system' 255 ''
+  patch --health-timeout 30
+  [ "$status" -eq 4 ]
+  never_called "$SET_DEFAULT_NEW"
+  [ "$(jq -r .outcome "$REC")" = rollback-failed ]
+}
+
+@test "real rollback.sh that cannot get the old generation back also ends in exit 4" {
+  rule ssh post '* readlink /run/current-system' 255 ''
+  rule ssh reset '* readlink /run/current-system' 255 ''
+  patch --health-timeout 30
+  [ "$status" -eq 4 ]
+  called "^hcloud server reset $SID\$"
+  [[ "$output" == *"web console"* ]]
+}
+
+@test "ssh up on the wrong generation counts as unhealthy" {
+  rule ssh post '* readlink /run/current-system' 0 "$PRIOR_GEN"
+  patch --health-timeout 30
+  [ "$status" -eq 3 ]
+  never_called "$SET_DEFAULT_NEW"
+  called "^hcloud server reset $SID\$"
+}
+
+@test "a failing --health-cmd on the host counts as unhealthy" {
+  rule ssh any '* check-k3s' 1 ''
+  patch --health-timeout 30 --health-cmd check-k3s
+  [ "$status" -eq 3 ]
+  called ' check-k3s$'
+  never_called "$SET_DEFAULT_NEW"
+}
+
+@test "a passing --health-cmd runs on the host before the default is flipped" {
+  rule ssh any '* check-k3s' 0 ''
+  patch --health-cmd check-k3s
+  [ "$status" -eq 0 ]
+  assert_order "$REBOOT" ' check-k3s$' "$SET_DEFAULT_NEW"
+}
+
+@test "unlock-master.sh runs after the reboot, before the health probe, only with --unlock-via" {
+  patch --unlock-via edge
+  [ "$status" -eq 0 ]
+  assert_order "$REBOOT" "^unlock-master.sh --host $HOST --via edge\$" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+}
+
+@test "without --unlock-via unlock-master.sh is never called" {
+  patch
+  never_called 'unlock-master'
+}
+
+@test "a failing unlock is unhealthy: rolled back, default never flipped" {
+  echo 1 > "$FAKE_DIR/unlock.rc"
+  patch --unlock-via public --health-timeout 30
+  [ "$status" -eq 3 ]
+  called "^unlock-master.sh --host $HOST --via public\$"
+  never_called "$SET_DEFAULT_NEW"
+  called "^hcloud server reset $SID\$"
+}
+
+@test "an unconfirmed default after a healthy boot is reported, not silently accepted" {
+  rule ssh any '* sudo bootctl status' 0 "Current Entry: $PRIOR_ID\nDefault Entry: $PRIOR_ID"
+  patch
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"step=confirm result=fail"* ]]
+}
+
+@test "a failing set-default NEW on a healthy host is reported, not silently accepted" {
+  rule ssh any "* sudo bootctl set-default $NEW_ID" 1 ''
+  patch
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"step=commit result=fail"* ]]
+}
+
+@test "records a patched run as valid JSON with zero servers created or deleted" {
+  patch
+  [ "$(wc -l < "$REC")" -eq 1 ]
+  jq -e --arg f "$PRIOR_GEN" --arg t "$TOP" '
+    .outcome == "patched" and .from == $f and .to == $t and .gates_failed == []
+    and .servers_created == 0 and .servers_deleted == 0' "$REC"
+}
+
+@test "all output of a full run is timestamped and the token never appears anywhere" {
+  rule ssh post '* readlink /run/current-system' 255 ''
+  patch --health-timeout 30
+  assert_timestamped
+  [[ "$output" != *"$TOKEN"* ]]
+  ! grep -F "$TOKEN" "$REC" "$FAKE_CALLLOG"
+}
+
 @test "the default record file is under XDG_STATE_HOME" {
   rule nix any "path-info $TOP" 1 ''
   run_script patch-node.sh --host "$HOST" --server-id "$SID" --toplevel "$TOP" --approve
