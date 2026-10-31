@@ -279,7 +279,7 @@ assert_only_allowed_hcloud() {
 @test "registered store and present profile: neither is touched" {
   patch
   never_called 'register-validity'
-  never_called 'readlink -f'
+  never_called 'readlink -f /run/current-system'
 }
 
 @test "registration that does not make the running system valid refuses before copying" {
@@ -307,14 +307,24 @@ assert_only_allowed_hcloud() {
   never_called "$REBOOT|set-oneshot"
 }
 
-@test "missing prior boot entry restores the old default and refuses without rebooting" {
+@test "missing prior boot entry refuses without rebooting and never points the default at it" {
   rule ssh any "* test -e /boot/loader/entries/$PRIOR_ID" 1 ''
   patch
   [ "$status" -eq 2 ]
-  called "$SET_DEFAULT_PRIOR"
-  never_called "$REBOOT|set-oneshot|$SET_DEFAULT_NEW"
+  never_called "$REBOOT|set-oneshot|$SET_DEFAULT_NEW|$SET_DEFAULT_PRIOR"
   [[ "$output" == *"$PRIOR_ID"* ]]
   [ "$(jq -r .outcome "$REC")" = refused ]
+}
+
+@test "a pruned booted entry falls back to the default entry as the rollback target" {
+  rule ssh pre '* sudo bootctl status' 0 "Current Entry: nixos-generation-1.conf\nDefault Entry: $PRIOR_ID"
+  rule ssh post '* sudo bootctl status' 0 "Current Entry: $NEW_ID\nDefault Entry: $NEW_ID"
+  rule ssh any '* test -e /boot/loader/entries/nixos-generation-1.conf' 1 ''
+  patch
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no longer in the ESP"* ]]
+  called "$SET_DEFAULT_PRIOR"
+  never_called 'set-default nixos-generation-1.conf'
 }
 
 @test "new entry equal to the prior entry refuses without rebooting" {
@@ -478,4 +488,150 @@ assert_only_allowed_hcloud() {
   rule nix any "path-info $TOP" 1 ''
   run_script patch-node.sh --host "$HOST" --server-id "$SID" --toplevel "$TOP" --approve
   [ -s "$XDG_STATE_HOME/hetzner-patch/runs.jsonl" ]
+}
+
+# ---- rebootless: kernel, initrd and modules unchanged --------------------
+
+LIVE_SWITCH="sudo systemd-run .*--unit=hetzner-patch-switch .*$TOP/bin/switch-to-configuration test\$"
+PRIOR_LIVE_SWITCH="sudo systemd-run .*--unit=hetzner-patch-switch .*$PRIOR_GEN/bin/switch-to-configuration test\$"
+STOP_SWITCH_UNIT='systemctl stop hetzner-patch-switch'
+
+kernel_unchanged() { rule ssh any '*/run/booted-system/*' 0 ''; }
+switch_unit_state() { rule ssh any '*systemctl show hetzner-patch-switch*' 0 "ActiveState=$1\nSubState=$2\nResult=$3\nExecMainStatus=$4"; }
+
+@test "rebootless: unchanged kernel activates live, never reboots, flips the default only when healthy" {
+  kernel_unchanged
+  patch
+  [ "$status" -eq 0 ]
+  assert_order "^nix copy " "$LIVE_SWITCH" "$READLINK_PROBE" ' true$' \
+    "sudo nix-env -p /nix/var/nix/profiles/system --set $TOP\$" "switch-to-configuration boot\$" "$SET_DEFAULT_NEW"
+  never_called "$REBOOT"
+  never_called 'bootctl set-oneshot'
+  never_called 'server reset'
+  [[ "$output" == *"no reboot"* ]]
+  [ "$(jq -r .outcome "$REC")" = patched ]
+}
+
+@test "rebootless: no generation or boot entry is written until the host is healthy" {
+  kernel_unchanged
+  rule ssh any '* check-k3s' 1 ''
+  patch --health-timeout 30 --health-cmd check-k3s
+  [ "$status" -eq 3 ]
+  never_called 'nix-env'
+  never_called 'switch-to-configuration boot'
+  never_called 'bootctl set-'
+}
+
+@test "rebootless: a boot entry that cannot be written after a healthy switch is reported, not silent" {
+  kernel_unchanged
+  rule ssh any '*switch-to-configuration boot' 1 ''
+  patch
+  [ "$status" -eq 1 ]
+  never_called "$SET_DEFAULT_NEW"
+  [[ "$output" == *"boot entry"* ]]
+  [ "$(jq -r .outcome "$REC")" = patched ]
+}
+
+@test "rebootless: a changed kernel still reboots" {
+  patch
+  [ "$status" -eq 0 ]
+  called "$REBOOT"
+  never_called "$LIVE_SWITCH"
+}
+
+@test "rebootless: --force-reboot reboots even when the kernel is unchanged" {
+  kernel_unchanged
+  patch --force-reboot
+  [ "$status" -eq 0 ]
+  called "$REBOOT"
+  never_called "$LIVE_SWITCH"
+}
+
+@test "rebootless: a failing kernel comparison reboots rather than assuming it is unchanged" {
+  rule ssh any '*/run/booted-system/*' 255 ''
+  patch
+  [ "$status" -eq 0 ]
+  called "$REBOOT"
+  never_called "$LIVE_SWITCH"
+}
+
+@test "rebootless: unhealthy after the live switch goes back live, with no reset and no reboot" {
+  kernel_unchanged
+  rule ssh any '* check-k3s' 1 ''
+  patch --health-timeout 30 --health-cmd check-k3s
+  [ "$status" -eq 3 ]
+  assert_order "$LIVE_SWITCH" "$STOP_SWITCH_UNIT" "$PRIOR_LIVE_SWITCH"
+  never_called "$REBOOT"
+  never_called 'server reset'
+  never_called "$SET_DEFAULT_NEW"
+  [ "$(jq -r .outcome "$REC")" = rolled-back ]
+}
+
+@test "rebootless: a switch that failed after activating goes back live even though the probe passes" {
+  kernel_unchanged
+  switch_unit_state failed failed exit-code 4
+  patch --health-timeout 30
+  [ "$status" -eq 3 ]
+  called "$PRIOR_LIVE_SWITCH"
+  never_called 'server reset'
+  never_called "$SET_DEFAULT_NEW"
+}
+
+@test "rebootless: a switch stuck on slow units is stopped after a bounded wait so the boot entry can be written" {
+  kernel_unchanged
+  switch_unit_state active running success 0
+  patch
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"still running"* ]]
+  assert_order "$LIVE_SWITCH" "$STOP_SWITCH_UNIT" "sudo nix-env -p /nix/var/nix/profiles/system --set $TOP\$" "$SET_DEFAULT_NEW"
+  [ "$(cat "$FAKE_DIR/clock")" -ge $((CLOCK0 + 60)) ]
+}
+
+@test "rebootless: a switch that finishes within the wait is left alone" {
+  kernel_unchanged
+  rule ssh any '*systemctl show hetzner-patch-switch*' 0 'ActiveState=active\nSubState=running\nResult=success\nExecMainStatus=0' 3
+  patch
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "$STOP_SWITCH_UNIT" "$FAKE_CALLLOG")" -eq 1 ]
+  [[ "$output" == *"switch-to-configuration finished"* ]]
+}
+
+@test "a previous live switch still holding the lock refuses before copying anything" {
+  rule ssh any '*systemctl show hetzner-patch-switch.service -p SubState --value*' 0 running
+  patch
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"hetzner-patch-switch.service"* ]]
+  never_called '^nix copy|switch-to-configuration|systemctl reboot|bootctl set-|nix-env'
+}
+
+@test "rebootless: the switch unit failing to start refuses and has changed nothing on the host" {
+  kernel_unchanged
+  rule ssh any "*systemd-run*$TOP/bin/switch-to-configuration test" 1 ''
+  patch
+  [ "$status" -eq 2 ]
+  never_called "$REBOOT"
+  never_called 'bootctl set-|nix-env|switch-to-configuration boot'
+}
+
+@test "rebootless: a live rollback that fails falls back to the hard reset" {
+  kernel_unchanged
+  rule ssh any '* check-k3s' 1 ''
+  rule ssh any "*systemd-run*$PRIOR_GEN/bin/switch-to-configuration test" 1 ''
+  patch --health-timeout 30 --health-cmd check-k3s
+  [ "$status" -eq 3 ]
+  assert_order "$LIVE_SWITCH" "$PRIOR_LIVE_SWITCH" "^hcloud server reset $SID\$"
+  never_called "$SET_DEFAULT_NEW"
+}
+
+@test "rebootless: unlock-master.sh is never called, since nothing was locked" {
+  kernel_unchanged
+  patch --unlock-via public
+  [ "$status" -eq 0 ]
+  never_called '^unlock-master.sh'
+}
+
+@test "--dry-run announces the rebootless branch" {
+  patch --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no reboot"* ]]
 }
