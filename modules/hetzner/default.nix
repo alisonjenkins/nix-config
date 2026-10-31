@@ -29,7 +29,21 @@ in
 
     # Boot speed optimizations
     boot = {
-      loader.timeout = lib.mkForce 0;
+      loader = {
+        timeout = lib.mkForce 0;
+
+        # The image's ESP boots one fixed UKI, so without this a reboot never
+        # applies an in-place deploy. The image's own UKI stays in the ESP as
+        # an extra entry, i.e. the fallback generation.
+        systemd-boot = {
+          enable = true;
+          editor = false;
+          # 256 MB ESP holds a kernel and initrd per generation.
+          configurationLimit = 3;
+        };
+        # The image boots via the ESP fallback path, so never rely on NVRAM.
+        efi.canTouchEfiVariables = false;
+      };
 
       initrd = {
         systemd.enable = true;
