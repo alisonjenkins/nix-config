@@ -13,6 +13,7 @@
           node = self.nixosConfigurations.hetzner-karpenter-node-amd64.extendModules {
             modules = [ (self + "/lib/hetzner-store-registration.nix") ];
           };
+          rootContents = node.config.image.repart.partitions."10-root".contents;
           svc = node.config.systemd.services.nix-path-registration or null;
           has = x: xs: builtins.elem x xs;
           expectations = {
@@ -25,6 +26,8 @@
               svc != null && has "nix-daemon.socket" svc.before;
             "it is pulled in at boot" =
               svc != null && (has "sysinit.target" svc.wantedBy || has "multi-user.target" svc.wantedBy);
+            "the image root partition carries /nix-path-registration" =
+              rootContents ? "/nix-path-registration";
           };
           failed = lib.attrNames (lib.filterAttrs (_: ok: !ok) expectations);
         in
@@ -37,5 +40,19 @@
               exit 1
             ''
         );
+
+      # Builds the toplevel closure info: slower than the eval check above.
+      checks.hetzner-registration-closure =
+        let
+          node = self.nixosConfigurations.hetzner-karpenter-node-amd64.config;
+          registration = node.image.repart.partitions."10-root".contents."/nix-path-registration".source;
+        in
+        pkgs.runCommand "hetzner-registration-closure-test" { } ''
+          if ! grep -qxF ${node.system.build.toplevel} ${registration}; then
+            echo "FAIL: ${registration} does not list ${node.system.build.toplevel}"
+            exit 1
+          fi
+          touch $out
+        '';
     };
 }
