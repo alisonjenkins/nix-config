@@ -47,9 +47,18 @@ fail() {
 }
 
 log reset start "hcloud server reset id=$server_id"
-if ! hcloud server reset "$server_id" >/dev/null; then
-  fail "hcloud server reset id=$server_id failed"
-fi
+# A hard reset is safe to repeat; one transient API error should not hand the rollback to a human.
+reset_attempts=3
+attempt=0
+while :; do
+  attempt=$((attempt + 1))
+  hcloud server reset "$server_id" >/dev/null && break
+  if [ "$attempt" -eq "$reset_attempts" ]; then
+    fail "hcloud server reset id=$server_id failed $reset_attempts times"
+  fi
+  log reset retry "hcloud server reset id=$server_id failed (attempt $attempt of $reset_attempts)"
+  sleep $((attempt * poll_interval))
+done
 
 # The failed generation's link is still the profile's current one; repoint it at what booted.
 # Best effort: boot is already correct, so a failure here warns instead of failing the rollback.

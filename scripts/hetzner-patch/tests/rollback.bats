@@ -54,6 +54,20 @@ teardown() { base_teardown; }
   [[ "$output" == *"web console"* ]]
 }
 
+@test "a transient reset error is retried and the rollback goes on" {
+  rule hcloud any "server reset $SID" 1 'rate limited' 2
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "^hcloud server reset $SID\$" "$FAKE_CALLLOG")" -eq 3 ]
+}
+
+@test "exit 4 after three failed reset attempts" {
+  rule hcloud any "server reset $SID" 1 'api error'
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 4 ]
+  [ "$(grep -c "^hcloud server reset $SID\$" "$FAKE_CALLLOG")" -eq 3 ]
+}
+
 @test "only describe/list/reset hcloud calls are ever made" {
   run_script rollback.sh "${ARGS[@]}"
   [ "$status" -eq 0 ]
