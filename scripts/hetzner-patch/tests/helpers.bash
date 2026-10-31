@@ -59,6 +59,12 @@ if [ -f "$rules" ]; then
     [ -z "$out" ] || printf '%b\n' "$out"
     [ "$name" != hcloud ] || [ "$1 $2" != "server reset" ] || echo reset > "$FAKE_DIR/state"
     [ "$name" != ssh ] || case "$args" in *"systemctl reboot"*) [ "$state" != pre ] || echo post > "$FAKE_DIR/state" ;; esac
+    if [ "$name" = ssh ] && [ "$rc" -eq 0 ]; then
+      case "$args" in
+        *"$PRIOR_GEN/bin/switch-to-configuration test"*) echo reset > "$FAKE_DIR/state" ;;
+        *"switch-to-configuration test"*) echo post > "$FAKE_DIR/state" ;;
+      esac
+    fi
     exit "$rc"
   done < "$rules"
 fi
@@ -96,6 +102,10 @@ happy_rules() {
   rule ssh any '* sudo bootctl set-default*' 0 ''
   rule ssh any '* sudo bootctl set-oneshot*' 0 ''
   rule ssh any '* sudo systemctl reboot' 255 ''
+  rule ssh any '*/run/booted-system/*' 1 ''
+  rule ssh any '*systemd-run*/bin/switch-to-configuration test' 0 ''
+  rule ssh any '*systemctl stop hetzner-patch-switch*' 0 ''
+  rule ssh any '*systemctl show hetzner-patch-switch*' 0 'ActiveState=active\nSubState=exited\nResult=success\nExecMainStatus=0'
   rule ssh any '* true' 0 ''
   rule ssh any '* bash -s -- /nix/store' 0 'REGISTRATION'
   rule ssh any '* sudo nix-store --register-validity' 0 ''
@@ -118,7 +128,7 @@ base_setup() {
   SD="$BATS_TEST_TMPDIR/scripts"
   REC="$BATS_TEST_TMPDIR/runs.jsonl"
   mkdir -p "$STUBS" "$FARM" "$SD"
-  export FAKE_DIR
+  export FAKE_DIR PRIOR_GEN
   export FAKE_CALLLOG="$FAKE_DIR/calls.log"
   : > "$FAKE_CALLLOG"
   echo "$CLOCK0" > "$FAKE_DIR/clock"
