@@ -76,7 +76,7 @@ Observations from 2026-10-31. The "Where" column names the machine each one came
 | Boot firmware | UEFI | `cpx22` rehearsal server |
 | Boot firmware | BIOS | `cx23` |
 | Image EFI entry | one static unified kernel image, `EFI/Linux/nixos.efi` | `cpx32` master |
-| Nix database paths before registration | 0 (store populated) | `cpx32` master |
+| Nix database paths before registration | 0 (`nix path-info --all` printed 0 while `/nix/store` had 598 entries) | `cpx32` master, read-only check; the twin also showed 0 |
 | ESP size | 253 MB | rehearsal server |
 | ESP used, 3 generations | 115 MB | rehearsal server |
 | `configurationLimit` | 3 | rehearsal server |
@@ -90,8 +90,9 @@ Observations from 2026-10-31. The "Where" column names the machine each one came
 - Nothing has been done on the live master beyond the read-only checks above. The
   registration, the deploy, the one-shot boot and the hard reset are proven on the
   rehearsal server only.
-- The LUKS unlock automation is untested. The unlock script has not run against a locked
-  volume.
+- The LUKS unlock mechanism (answering `systemd-ask-password` through `systemd-reply-password`)
+  was proven on the throwaway twin on 2026-10-31. It has not run against the master's locked
+  state volume.
 - Call behaviour during a master reboot is unknown. No test call has run through a reboot.
 
 ## Revisit when
