@@ -180,8 +180,9 @@ hard reset. It falls back to `rollback.sh` only if that fails. Nothing was writt
 or the ESP before the host was healthy, so there is nothing to clean up.
 
 Kernel updates still reboot. A kernel CVE fix can be loaded as a livepatch module on the
-x86_64 image (`CONFIG_LIVEPATCH=y`, `modules/hetzner`); producing that module is not automated yet.
-Proven on the twin on 2026-10-31 with the kernel's `livepatch-sample` module.
+x86_64 image (`CONFIG_LIVEPATCH=y`, `modules/hetzner`). `scripts/livepatch` scaffolds, builds and verifies a
+hand-written module; see the `kernel-livepatch` skill. Proven on the twin on 2026-10-31 with the kernel's
+`livepatch-sample` module and with a generated `version_proc_show` patch.
 
 The booted boot entry can be pruned by `configurationLimit` after a few live patches. The script
 then uses the default entry as the rollback target, and never sets the default to an entry whose
@@ -224,6 +225,31 @@ rollback.sh --host HOST --server-id ID --expect-generation STOREPATH [--wait SEC
 |---|---|
 | 0 | The host is back on the expected generation |
 | 4 | The host is not back on the expected generation within `--wait` |
+
+## Apply-day checklist
+
+For the first run on the real master. Each line is one action; stop at the first one that fails.
+The master serves live Matrix calls, so pick a window the owner accepts: a reboot-path patch
+drops them for several minutes, a rebootless one should not.
+
+1. Owner confirms the window and is on hand for the unlock prompt (reboot path only).
+2. Snapshot is under 30 days old (prerequisite 5). If not, take one and wait for `available`.
+3. `--toplevel` is built and in the local store (prerequisite 6). Note its kernel, initrd and
+   modules paths against the master's `/run/booted-system`; they decide rebootless or reboot.
+4. Export `KUBECONFIG` for the master so gate G5 runs. On the twin it was skipped, so G5 has not
+   been seen passing end to end here.
+5. Record before-values: `k3s kubectl get pods -A` restart counts, `uname -r`, `cat /proc/sys/kernel/random/boot_id`.
+6. Dry run, which changes nothing:
+   `scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 165673643 --toplevel <path> --dry-run`
+   Read the plan: it says whether the live or the reboot path applies.
+7. Refusal check: run the same command without `--approve` and without `--dry-run`. It must exit 2 at G1.
+8. Real run: the command in "Patching the master", with `--approve`.
+9. Exit 0: compare restart counts, check Cilium, Envoy and CoreDNS, confirm `bootctl status` shows the new default.
+10. Exit 3: confirm `/readyz`, record `rolled-back`. Exit 4: go to "Recovery layers" layer 2.
+11. After a rollback by hard reset the k3s volume stays locked until the unlock runs again.
+
+Dry run, no-approve refusal and the gates were repeated against the twin on 2026-10-31 and behave
+as described; the twin never exercises the real LUKS volume, Cilium or Matrix.
 
 ## Recovery layers
 
