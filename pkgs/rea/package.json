@@ -45,7 +45,7 @@
     "smol-toml": "1.9.1",
     "stream-json": "3.8.0",
     "write-file-atomic": "8.0.0",
-    "ws": "8.22.0",
+    "ws": "8.22.1",
     "zod": "4.6.7",
     "evmole": "0.9.4",
     "yaml": "2.9.1"
