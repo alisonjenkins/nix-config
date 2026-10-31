@@ -45,6 +45,19 @@ in
         efi.canTouchEfiVariables = false;
       };
 
+      # Stock NixOS kernels ship CONFIG_LIVEPATCH off; on, a kernel CVE fix can be
+      # loaded as a patch module without a reboot. x86_64 only: mainline arm64
+      # has no HAVE_LIVEPATCH, so the option would fail the kernel config.
+      kernelPatches = lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+        {
+          name = "livepatch";
+          patch = null;
+          structuredExtraConfig = with lib.kernel; {
+            LIVEPATCH = yes;
+          };
+        }
+      ];
+
       initrd = {
         systemd.enable = true;
         includeDefaultModules = false;
