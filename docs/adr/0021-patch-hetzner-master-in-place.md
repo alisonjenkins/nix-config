@@ -2,6 +2,11 @@
 
 - Status: Proposed
 - Date: 2026-10-03
+- Superseded in part by: [0060](0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md), 2026-10-31
+
+> Superseded in part by ADR 0060 (2026-10-31). The master boots UEFI, so the GRUB on BIOS
+> boot path is replaced by systemd-boot. The separate edge node is deferred, not dropped.
+> The rest of this record still applies.
 
 ## Context
 
