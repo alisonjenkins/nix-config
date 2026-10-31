@@ -64,7 +64,8 @@ The steps are in [the runbook](../hetzner-inplace-upgrade-runbook.md).
 - The store registration is a required step until images bake it in.
 - `cx23` boots BIOS, so this boot path does not apply to it. A `cx23` server would need its
   own check. The rehearsal uses `cpx22`, which boots UEFI.
-- The LUKS unlock script is not tested against the live master.
+- The LUKS unlock script is tested against a simulated prompt on the rehearsal server, not
+  against the live master.
 
 ## Evidence
 
@@ -82,7 +83,7 @@ Observations from 2026-10-31. The "Where" column names the machine each one came
 | `configurationLimit` | 3 | rehearsal server |
 | Store paths registered | 598, in about 100 seconds | rehearsal server |
 | Registered reference sets matching cache.nixos.org | 507 of 508 | rehearsal server |
-| Reference set not matching | one local-only path | rehearsal server |
+| Reference set not matching | one path (`getty`) whose local content (371 bytes) differs from the cached path of the same name (176 bytes); the local scan is the correct answer for it | rehearsal server |
 | Hard reset to the default generation | about 20 seconds | rehearsal server |
 
 ## Unproven
@@ -91,8 +92,10 @@ Observations from 2026-10-31. The "Where" column names the machine each one came
   registration, the deploy, the one-shot boot and the hard reset are proven on the
   rehearsal server only.
 - The LUKS unlock mechanism (answering `systemd-ask-password` through `systemd-reply-password`)
-  was proven on the throwaway twin on 2026-10-31. It has not run against the master's locked
-  state volume.
+  was proven on the throwaway twin on 2026-10-31, and `unlock-master.sh` ran against a
+  simulated prompt there: correct passphrase, wrong then right, always wrong (stops after two
+  sends), prompt absent, already unlocked, and a failing passphrase command. It has not run
+  against the master's locked state volume.
 - Call behaviour during a master reboot is unknown. No test call has run through a reboot.
 
 ## Revisit when
