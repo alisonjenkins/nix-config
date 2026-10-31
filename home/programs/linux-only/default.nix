@@ -10,6 +10,7 @@
     ./lucien
     ./mangohud
     ./niri
+    ./noctalia
     ./openal
     ./scopebuddy
     ./session-gate.nix
