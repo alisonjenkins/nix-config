@@ -118,7 +118,7 @@
     {"claim": "base sets dualpi2 on the k8s master (Context, decision 3)", "host": "home-k8s-master-1", "option": "boot.kernel.sysctl", "key": "net.core.default_qdisc", "equals": "dualpi2"},
     {"claim": "base sets congestion control bbr (decision 4)", "host": "home-storage-server-1", "option": "boot.kernel.sysctl", "key": "net.ipv4.tcp_congestion_control", "equals": "bbr"},
     {"claim": "base sets strict rp_filter (decisions 1 and 2)", "host": "home-storage-server-1", "option": "boot.kernel.sysctl", "key": "net.ipv4.conf.all.rp_filter", "equals": 1},
-    {"claim": "base sets a 64 KiB optmem_max (decision 5)", "host": "home-storage-server-1", "option": "boot.kernel.sysctl", "key": "net.core.optmem_max", "equals": 65536},
+    {"claim": "base no longer sets optmem_max, leaving the kernel default (decision 5)", "host": "home-storage-server-1", "option": "boot.kernel.sysctl", "key": "net.core.optmem_max", "equals": null},
     {"claim": "base no longer sets log_martians, leaving the kernel default (decision 5)", "host": "home-storage-server-1", "option": "boot.kernel.sysctl", "key": "net.ipv4.conf.all.log_martians", "equals": null},
     {"claim": "the k8s master sets accept_local (Context)", "host": "home-k8s-master-1", "option": "boot.kernel.sysctl", "key": "net.ipv4.conf.all.accept_local", "equals": 1},
     {"claim": "the gateway module forces ip_forward (W6)", "host": "home-vpn-gateway-1", "option": "boot.kernel.sysctl", "key": "net.ipv4.ip_forward", "equals": 1},

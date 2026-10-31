@@ -232,7 +232,8 @@ record, and each is its own change with a before-and-after measurement.
 5. **Drop settings that equal or undercut the kernel default.** Remove
    `log_martians = 0`, which is the kernel default (B11); applied, base no longer
    sets it, and the gateway still forces 1. Remove the `optmem_max`
-   override: base sets 64 KiB and the documented default is 128 KB (B4).
+   override: base set 64 KiB and the documented default is 128 KB (B4); applied,
+   base no longer sets it.
 6. **Return `tcp_rmem` and `tcp_wmem` defaults to the kernel's** (131072 and
    16384, B1) on `download-server-1` and the Kubernetes nodes, keeping the
    16 MiB maxima, which exceed the documented 4 MiB default (B2, B3). For
