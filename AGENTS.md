@@ -152,6 +152,7 @@ Detail in `docs/subsystems.md`; read the entry before touching the code.
 - **`modules.memoryRecall`** (`home/modules/memory-recall`, `scripts/retrieval-eval`): `docs/memory-recall.md`, ADRs 0029, 0030.
 - **`claude-monitor`** (AI control centre): `docs/ai-control-centre.md`, ADRs 0040, 0041.
 - **`modules.observabilityStack`** (`home/modules/observability-stack`, `scripts/token-tools`): `docs/observability-stack.md`, ADRs 0034, 0035, 0037.
+- **Kernel livepatch** (`scripts/livepatch`, skill `.claude/skills/kernel-livepatch`): hand-written rebootless kernel patches for the Hetzner nodes (x86_64, `CONFIG_LIVEPATCH`).
 - **`modules.rustBuildCache`** (`home/modules/rust-build-cache`): ADR 0043.
 
 ## Development Workflow
