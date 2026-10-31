@@ -516,7 +516,6 @@ in
         udpMinBuffers = lib.mkDefault true;
         noIcmpRedirects = lib.mkDefault true;
         rpFilterStrict = lib.mkDefault true;
-        martiansUnlogged = lib.mkDefault true;
         icmpEchoReply = lib.mkDefault cfg.enableICMPPing;
         icmpEchoIgnore = lib.mkDefault (!cfg.enableICMPPing);
         tcpBbr = lib.mkDefault true;

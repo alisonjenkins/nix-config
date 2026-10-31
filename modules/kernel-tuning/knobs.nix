@@ -356,17 +356,6 @@
     breaks = "packets whose source would not route back out the receiving interface are dropped, breaking asymmetric routing";
   };
 
-  # The kernel default is already 0; the knob keeps the key explicit.
-  martiansUnlogged = {
-    category = "security";
-    sysctls = {
-      "net.ipv4.conf.all.log_martians" = 0;
-      "net.ipv4.conf.default.log_martians" = 0;
-    };
-    cost = "none";
-    breaks = "packets with impossible source addresses are dropped without a log line";
-  };
-
   # One of these two is on in base, chosen by modules.base.enableICMPPing.
   icmpEchoReply = {
     category = "security";

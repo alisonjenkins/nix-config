@@ -177,7 +177,7 @@ is `admin-guide/sysctl/net.rst`; `nf-sysctl` is
   override (C5). Which module `bbr` names depends on the kernel layout (C6);
   on the running 7.3 kernel BBRv3 is the separate `bbr3`.
 - `fs.dentry-negative` is a mainline sysctl, not a CachyOS patch (B13).
-- `log_martians = 0` in base is the kernel default (B11).
+- `log_martians = 0`, which base used to set, is the kernel default (B11).
 - Cilium overrides a global `rp_filter = 1` at startup (R5), so the strict
   `rp_filter` that base sets does not hold on Cilium nodes after the agent
   starts.
@@ -230,7 +230,8 @@ record, and each is its own change with a before-and-after measurement.
    `iperf3` comparison, not from a document. The gateway's setting only affects
    its own sockets, which is a design argument, not a sourced one.
 5. **Drop settings that equal or undercut the kernel default.** Remove
-   `log_martians = 0`, which is the kernel default (B11). Remove the `optmem_max`
+   `log_martians = 0`, which is the kernel default (B11); applied, base no longer
+   sets it, and the gateway still forces 1. Remove the `optmem_max`
    override: base sets 64 KiB and the documented default is 128 KB (B4).
 6. **Return `tcp_rmem` and `tcp_wmem` defaults to the kernel's** (131072 and
    16384, B1) on `download-server-1` and the Kubernetes nodes, keeping the
