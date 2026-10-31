@@ -56,6 +56,12 @@ build() { run "$SD/build-module.sh" --kernel-dev "$KDEV" --src "$SRC" --out "$W/
   [ "$status" -eq 0 ]
 }
 
+@test "a module whose only undefined symbols are toolchain ones still builds" {
+  printf '                 U __fentry__\n' > "$W/undefined"
+  build
+  [ "$status" -eq 0 ]
+}
+
 @test "missing Module.symvers is a refusal, not a pass" {
   rm "$BUILD/Module.symvers"
   build
