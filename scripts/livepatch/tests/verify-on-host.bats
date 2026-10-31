@@ -17,8 +17,8 @@ setup() {
 cmd="\${*: -1}"
 echo "ssh \$cmd" >> "$W/calls"
 case "\$cmd" in
-  *boot_id*) if [ -f "$W/rebooted" ]; then echo boot-2; else cat "$W/boot_id"; fi ;;
-  "uname -r") cat "$W/uname" 2>/dev/null || echo 6.18.59 ;;
+  *boot_id*) if [ -f "$W/boot.ssh.fails" ] && [ -f "$W/loaded" ]; then exit 255; fi; if [ -f "$W/rebooted" ]; then echo boot-2; else cat "$W/boot_id"; fi ;;
+  "uname -r") [ -f "$W/uname.ssh.fails" ] && exit 255; cat "$W/uname" 2>/dev/null || echo 6.18.59 ;;
   *insmod*) [ -f "$W/insmod.fails" ] && exit 1; touch "$W/loaded"; [ ! -f "$W/reboot.on.load" ] || touch "$W/rebooted" ;;
   *livepatch/lp_example/transition*) cat "$W/transition" ;;
   *"tee /sys/kernel/livepatch"*) [ -f "$W/disable.fails" ] || rm -f "$W/loaded" ;;
@@ -104,4 +104,19 @@ calls() { grep -n -- "$1" "$W/calls" | head -n1 | cut -d: -f1; }
   run "$SD/verify-on-host.sh" --host h1
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
+}
+
+@test "a failed boot_id read is an ssh failure (exit 7), not a reboot, and the patch is unloaded" {
+  touch "$W/boot.ssh.fails"
+  verify
+  [ "$status" -eq 7 ]
+  [[ "$output" != *"host rebooted"* ]]
+  [ ! -e "$W/loaded" ]
+}
+
+@test "an unreachable host before loading exits 7, not a bare ssh status" {
+  touch "$W/uname.ssh.fails"
+  verify
+  [ "$status" -eq 7 ]
+  ! grep -q insmod "$W/calls"
 }

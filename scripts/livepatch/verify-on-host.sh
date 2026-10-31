@@ -11,7 +11,7 @@ usage: verify-on-host.sh --host HOST --ko FILE.ko --check 'CMD' --expect REGEX [
   --keep leaves the patch loaded (the revert step is skipped).
   exit: 0 proven; 1 usage; 2 refused before loading (kernel mismatch, or CMD already matches);
         3 load or transition failed; 4 CMD did not change; 5 did not revert or unload;
-        6 the host rebooted
+        6 the host rebooted; 7 ssh to the host failed
 USAGE
 }
 
@@ -60,13 +60,23 @@ unload() {
   rssh "rm -f $remote_ko" 2>/dev/null || true
 }
 
+# 0 while the host answers with the same boot_id; 6 if it changed; 7 if it cannot be read (not a reboot).
+boot_unchanged() {
+  local now
+  now=$(rssh "cat /proc/sys/kernel/random/boot_id") && [ -n "$now" ] || {
+    log boot failed "cannot read boot_id on $host; this is an ssh failure, not proof of a reboot"
+    return 7
+  }
+  [ "$now" = "$boot_before" ] || { log boot failed "boot_id changed: the host rebooted"; return 6; }
+}
+
 want=$(modinfo -F vermagic "$ko" | awk '{ print $1 }')
-have=$(rssh "uname -r")
+have=$(rssh "uname -r") || { log kernel failed "ssh to $host failed"; exit 7; }
 if [ "$want" != "$have" ]; then
   log kernel refused "module is built for $want, host runs $have"
   exit 2
 fi
-boot_before=$(rssh "cat /proc/sys/kernel/random/boot_id")
+boot_before=$(rssh "cat /proc/sys/kernel/random/boot_id") || { log boot failed "cannot read boot_id on $host"; exit 7; }
 
 if before=$(rssh "$check" 2>&1) && grep -Eq -- "$expect" <<<"$before"; then
   log before refused "the check already matches /$expect/ without the patch, so it proves nothing"
@@ -94,9 +104,11 @@ if ! grep -Eq -- "$expect" <<<"$after"; then
 fi
 log check ok "behaviour changed: $after"
 
-if [ "$(rssh "cat /proc/sys/kernel/random/boot_id")" != "$boot_before" ]; then
-  log boot failed "boot_id changed: the host rebooted"
-  exit 6
+rc=0
+boot_unchanged || rc=$?
+if [ "$rc" -ne 0 ]; then
+  [ "$rc" -ne 7 ] || unload || true
+  exit "$rc"
 fi
 
 if [ "$keep" -eq 1 ]; then
@@ -110,8 +122,5 @@ if grep -Eq -- "$expect" <<<"$reverted"; then
   log revert failed "check still matches /$expect/ after unloading"
   exit 5
 fi
-if [ "$(rssh "cat /proc/sys/kernel/random/boot_id")" != "$boot_before" ]; then
-  log boot failed "boot_id changed: the host rebooted"
-  exit 6
-fi
+boot_unchanged || exit $?
 log revert ok "behaviour reverted, boot_id unchanged"
