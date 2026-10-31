@@ -176,7 +176,7 @@ stdenv.mkDerivation {
   # inside this store path. The bundled Vulkan loader only searches FHS ICD
   # dirs, hence VK_ADD_DRIVER_FILES. The app downloads a generic-Linux
   # Claude Code ELF that NixOS cannot exec (exit 127, stub-ld);
-  # CLAUDE_CODE_LOCAL_BINARY makes it use the user's own profile `claude`
+  # CLAUDE_CODE_LOCAL_BINARY (revived by the postInstall patch) makes it use the user's own profile `claude`
   # (the home-manager wrapper), falling back to the nixpkgs build.
   installPhase = ''
     runHook preInstall
@@ -209,6 +209,21 @@ stdenv.mkDerivation {
     asar extract "$resources/app.asar" "$work/app"
 
     ${lib.concatStrings (lib.mapAttrsToList rewriteHelper hostHelpers)}
+
+    # Since 4.29.0 the bundle never calls initLocalBinary, so the override is
+    # dead and the app downloads a generic-Linux ELF that NixOS cannot exec.
+    # Restore the call at the end of the constructor that precedes it.
+    files=$(grep -rlF --include='*.js' '}async initLocalBinary(e){' "$work/app" || true)
+    if [[ -z $files ]]; then
+      echo "claude-desktop: CLAUDE_CODE_LOCAL_BINARY stub not found in app.asar" >&2
+      exit 1
+    fi
+    for f in $files; do
+      substituteInPlace "$f" \
+        --replace-fail '}async initLocalBinary(e){' \
+        ',process.env.CLAUDE_CODE_LOCAL_BINARY&&(this.localBinaryInitPromise=this.initLocalBinary(process.env.CLAUDE_CODE_LOCAL_BINARY))}async initLocalBinary(e){'
+      patched+=("$f")
+    done
 
     for f in "''${patched[@]}"; do
       rm -f "$work/app/compile-cache/$(basename "$f")".*.jsc
