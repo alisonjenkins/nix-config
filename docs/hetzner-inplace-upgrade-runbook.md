@@ -139,6 +139,7 @@ scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 1656
 | `--approve` | Owner approval for this run. Without it the script refuses |
 | `--unlock-via public` | Unlock over the master's public address from the allow-listed admin address. The unlock cannot use Tailscale, because the state volume is locked |
 | `--health-cmd` | Command that must succeed on the new generation before the default changes |
+| `--force-reboot` | Always reboot, even when the kernel, initrd and modules are unchanged (see "Rebootless patches") |
 
 The script runs the gates from [spec 003's patch contract](../specs/003-hetzner-inplace-patching/contracts/patch-gates.md),
 then:
@@ -161,6 +162,30 @@ then:
 | 2 | Refused at a gate. Nothing remote changed. A harmless store registration or profile step may already have run, and the script reports it | Read the failing gate in the output, fix it, and run again. |
 | 3 | Unhealthy, rolled back successfully. A hard reset booted the prior generation | Record `rolled-back`. Confirm with `k3s kubectl get --raw=/readyz` and the generation in the run record. |
 | 4 | Unhealthy, and the rollback failed | Manual recovery is needed. Start at layer 2 of "Recovery layers" below. |
+
+### Rebootless patches
+
+If the target's kernel, initrd and kernel modules are the same store paths as the booted
+system's, `patch-node.sh` does not reboot and no unlock is needed. It runs
+`switch-to-configuration test` as the transient unit `hetzner-patch-switch.service`, so the
+switch survives an ssh drop and a unit that never finishes cannot hang the script. Then:
+
+1. It polls for `current-system` and the health command, as in the reboot path.
+2. It reads the unit's result. A failed switch counts as unhealthy.
+3. If the switch is still waiting on queued units after 60 s, it stops the unit to free the switch lock.
+4. Only now does it write the generation and boot entry, then `bootctl set-default`.
+
+Unhealthy: the script switches back to the prior generation the same way, with no reboot and no
+hard reset. It falls back to `rollback.sh` only if that fails. Nothing was written to the profile
+or the ESP before the host was healthy, so there is nothing to clean up.
+
+Kernel updates still reboot. A kernel CVE fix can be loaded as a livepatch module on the
+x86_64 image (`CONFIG_LIVEPATCH=y`, `modules/hetzner`); producing that module is not automated yet.
+Proven on the twin on 2026-10-31 with the kernel's `livepatch-sample` module.
+
+The booted boot entry can be pruned by `configurationLimit` after a few live patches. The script
+then uses the default entry as the rollback target, and never sets the default to an entry whose
+file is gone.
 
 ### Unlock
 
