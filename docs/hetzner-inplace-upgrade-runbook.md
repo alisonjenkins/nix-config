@@ -29,16 +29,16 @@ Check each item before the run. Stop at the first one that fails.
    hcloud server create-image 165673643 --type snapshot --description "pre-patch-$(date -u +%Y%m%dT%H%M%SZ)"
    ```
 
-   Check that the image is listed and `available` before the run. Snapshot consistency on a
-   running server is untested here.
+   Check that the image is listed and `available` before the run. The flags were checked against
+   `hcloud server create-image --help`. The command has not been run against the master.
 6. **The target closure is built.** Build the toplevel from the flake that the run deploys:
 
    ```sh
    nix build .#nixosConfigurations.hetzner-k8s-master-1.config.system.build.toplevel --no-link --print-out-paths
    ```
 
-   Keep the printed `/nix/store/...` path. It is the `--toplevel` argument. This command is
-   untested against the master's flake revision.
+   Keep the printed `/nix/store/...` path. It is the `--toplevel` argument. The flags were
+   checked against `nix build --help`. The command has not been run against the master's flake revision.
 7. **The rehearsal passed.** See the next section. Do not skip it for a new flake revision.
 
 ## Rehearsal on a throwaway server
@@ -147,32 +147,66 @@ then:
 2. Deploys the new generation with `--boot`.
 3. Checks that the new boot entry exists.
 4. Sets the new entry as a one-shot, then reboots.
-5. Waits for the unlock prompt. It answers only after the owner approves, and the passphrase
-   comes from the password manager at that moment.
+5. Unlocks the state volume with `unlock-master.sh` (see "Unlock" below). The unlock answers
+   only after the owner approves, and the passphrase comes from the password manager at that moment.
 6. Waits up to 15 minutes for SSH and a passing health command.
 7. Sets the new entry as the default with `bootctl set-default`.
 8. Writes a run record.
 
 ### Exit codes
 
-These codes are the intended contract. Check them against the script's exit paths before the
-first live run.
-
 | Code | Meaning | What the operator does |
 |---|---|---|
-| 0 | Patched. The new generation passed the health check and is the default | Record the run. Compare the master's pod restart counts with the values before the run. Check Cilium, Envoy and CoreDNS health. |
-| 2 | A gate refused the run before any change | Read the failing gate in the output, fix it, and run again. Nothing changed on the master. |
-| 3 | The new generation booted but failed the health check. The default was not changed | Hard reset with `hcloud server reset 165673643`. The old default boots. Confirm with `k3s kubectl get --raw=/readyz`. |
-| 4 | The master did not answer SSH or the unlock in time | Check the Hetzner web console. If the master is still unreachable, hard reset as for code 3. |
+| 0 | Patched and healthy. The new generation is the default | Record the run. Compare the master's pod restart counts with the values before the run. Check Cilium, Envoy and CoreDNS health. |
+| 2 | Refused at a gate. Nothing remote changed. A harmless store registration or profile step may already have run, and the script reports it | Read the failing gate in the output, fix it, and run again. |
+| 3 | Unhealthy, rolled back successfully. A hard reset booted the prior generation | Record `rolled-back`. Confirm with `k3s kubectl get --raw=/readyz` and the generation in the run record. |
+| 4 | Unhealthy, and the rollback failed | Manual recovery is needed. Start at layer 2 of "Recovery layers" below. |
 
-Any other non-zero code: treat it as code 4.
+### Unlock
+
+`unlock-master.sh` unlocks the state volume and waits until the host answers SSH.
+
+```sh
+unlock-master.sh --host HOST --via public|edge [--jump JUMPHOST] [--approve] [--wait-prompt SECS=600] [--wait-unlock SECS=120] [--max-attempts N=2]
+```
+
+The passphrase comes from the environment variable `UNLOCK_PASSPHRASE_CMD`. Its default is
+`op item get ifnbgrbsk6ltkwry3g7r4obtwi --fields label=password --reveal`. The script never prints
+the passphrase or puts it on a command line.
+
+The script waits for the pending `systemd-ask-password` prompt. It reads the `Socket=` value from
+the matching `/run/systemd/ask-password/ask.*` file, then sends the passphrase on stdin to
+`systemd-reply-password 1 <socket path>`. This mechanism was proven on the throwaway twin on 2026-10-31.
+
+| Code | Meaning |
+|---|---|
+| 0 | Unlocked. The host answers SSH |
+| 2 | Refused, or not approved with `--approve` |
+| 3 | The unlock prompt never appeared within `--wait-prompt` |
+| 4 | Not unlocked after `--max-attempts` attempts |
+| 5 | The passphrase command failed or returned an empty value |
+
+### Rollback
+
+`rollback.sh` hard resets the server through the Hetzner API, then waits for it to boot the
+expected generation.
+
+```sh
+rollback.sh --host HOST --server-id ID --expect-generation STOREPATH [--wait SECS (default 300)]
+```
+
+| Code | Meaning |
+|---|---|
+| 0 | The host is back on the expected generation |
+| 4 | The host is not back on the expected generation within `--wait` |
 
 ## Recovery layers
 
 Work through these in order. Stop at the first one that brings the master back on its
 previous generation.
 
-1. **Hard reset to the default generation.** Run `hcloud server reset 165673643`. The default
+1. **Hard reset to the default generation.** Run `rollback.sh` (see "Rollback"), or
+   `hcloud server reset 165673643` by hand. The default
    generation boots, which is the old one if the default was not changed. Rehearsal measured
    about 20 seconds. Then unlock with the owner present.
 2. **Hetzner web console and boot menu.** Open the server's console in the Hetzner web UI.
