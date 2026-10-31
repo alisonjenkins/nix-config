@@ -449,7 +449,8 @@ else
   log reboot ok "reboot issued"
 
   if [ -n "$unlock_via" ]; then
-    unlock_args=(--host "$host" --via "$unlock_via")
+    # G1 already holds --approve, and no one can type at unlock's tty mid-reboot
+    unlock_args=(--host "$host" --via "$unlock_via" --approve)
     [ -z "$unlock_jump" ] || unlock_args+=(--jump "$unlock_jump")
     if ! "$DIR/unlock-master.sh" "${unlock_args[@]}"; then
       probe_state="unlock-master.sh --via $unlock_via failed"

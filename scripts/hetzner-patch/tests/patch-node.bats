@@ -437,7 +437,13 @@ assert_only_allowed_hcloud() {
 @test "unlock-master.sh runs after the reboot, before the health probe, only with --unlock-via" {
   patch --unlock-via edge --unlock-jump jump.example
   [ "$status" -eq 0 ]
-  assert_order "$REBOOT" "^unlock-master.sh --host $HOST --via edge --jump jump.example\$" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+  assert_order "$REBOOT" "^unlock-master.sh --host $HOST --via edge --approve --jump jump.example\$" "$READLINK_PROBE" "$SET_DEFAULT_NEW"
+}
+
+@test "unlock-master.sh gets --approve: nobody can type at its tty mid-reboot, and --approve was already given" {
+  patch --unlock-via public
+  [ "$status" -eq 0 ]
+  called "^unlock-master.sh --host $HOST --via public --approve\$"
 }
 
 @test "--unlock-via edge without --unlock-jump is a usage error before anything runs" {
@@ -483,7 +489,7 @@ assert_only_allowed_hcloud() {
   echo 1 > "$FAKE_DIR/unlock.rc"
   patch --unlock-via public --health-timeout 30
   [ "$status" -eq 3 ]
-  called "^unlock-master.sh --host $HOST --via public\$"
+  called "^unlock-master.sh --host $HOST --via public --approve\$"
   never_called "$SET_DEFAULT_NEW"
   called "^hcloud server reset $SID\$"
 }
