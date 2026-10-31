@@ -12,6 +12,46 @@
     # ./audio-context
   ];
 
+  custom.noctalia.settings = {
+    # The 5120x1440 DP-2 monitor has no backlight; it dims over DDC/CI.
+    brightness.enable_ddcutil = true;
+
+    # Login box placed in the Settings menu for DP-2.
+    lockscreen_widgets = {
+      enabled = false;
+      schema_version = 2;
+      widget_order = [ "lockscreen-login-box@DP-2" ];
+      grid = {
+        cell_size = 16;
+        major_interval = 4;
+        visible = true;
+      };
+      widget."lockscreen-login-box@DP-2" = {
+        type = "login_box";
+        output = "DP-2";
+        box_height = 196.0;
+        box_width = 810.0;
+        cx = 2560.0;
+        cy = 1317.0;
+        placement_height = 1440.0;
+        placement_width = 5120.0;
+        rotation = 0.0;
+        settings = {
+          center_password_text = false;
+          layout = "regular";
+          show_caps_lock = true;
+          show_keyboard_layout = true;
+          show_login_button = true;
+          show_media = true;
+          show_password_reveal = true;
+          show_session_buttons = true;
+          show_unlock_hint = true;
+          show_weather = true;
+        };
+      };
+    };
+  };
+
   modules.vr.enableOpenSourceVR = true;
   modules.vr.steamvrSettings = {
     driver_vrlink = {
