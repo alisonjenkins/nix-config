@@ -92,7 +92,7 @@ happy_rules() {
   rule ssh any "* test -e /boot/loader/entries/$PRIOR_ID" 0 ''
   rule ssh any '* test -e /boot/EFI/Linux/nixos.efi' 0 ''
   rule ssh any '* sudo nix-env -p /nix/var/nix/profiles/system --set*' 0 ''
-  rule ssh any '* switch-to-configuration boot' 0 ''
+  rule ssh any '*switch-to-configuration boot' 0 ''
   rule ssh any '* sudo bootctl set-default*' 0 ''
   rule ssh any '* sudo bootctl set-oneshot*' 0 ''
   rule ssh any '* sudo systemctl reboot' 255 ''
