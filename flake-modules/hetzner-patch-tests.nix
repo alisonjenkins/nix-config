@@ -14,6 +14,8 @@
             pkgs.findutils
             pkgs.gawk
             pkgs.gnugrep
+            pkgs.gnused
+            pkgs.jq
             pkgs.shellcheck
           ];
         } ''
@@ -30,8 +32,19 @@
           echo "hetzner-patch-scripts: no *.sh under $dir" >&2
           exit 1
         fi
-        bats "''${tests[@]}"
-        shellcheck "''${scripts[@]}"
+        for s in "''${scripts[@]}"; do
+          if [[ "$(head -c 2 "$s")" == '#!' && ! -x "$s" ]]; then
+            echo "hetzner-patch-scripts: $s has a shebang but is not executable" >&2
+            exit 1
+          fi
+        done
+        shellcheck -x -P SCRIPTDIR "''${scripts[@]}" "$dir"/tests/*.bash
+        # The sandbox has no /usr/bin/env; run the tests on a copy with patched shebangs.
+        work=$(mktemp -d)/hetzner-patch
+        cp -r "$dir" "$work"
+        chmod -R u+w "$work"
+        patchShebangs "$work"
+        bats "$work"/tests/*.bats
         touch $out
       '';
     };
