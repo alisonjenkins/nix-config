@@ -9,7 +9,10 @@ set -euo pipefail
 
 readonly PROMPT_MSG="Unlock k3s state volume:"
 readonly ASK_DIR="/run/systemd/ask-password"
+readonly REPLY_BIN="/run/current-system/sw/lib/systemd/systemd-reply-password"
+readonly DEFAULT_PASS_CMD='op item get ifnbgrbsk6ltkwry3g7r4obtwi --fields label=password --reveal'
 readonly POLL_PROMPT_SECS=5
+readonly POLL_UNLOCK_SECS=2
 
 # Remote probe: prints "unlocked" once the mapper and mount exist, then each
 # pending ask file as an "ask-file NAME" marker followed by its contents.
@@ -160,15 +163,69 @@ await_prompt() {
   done
 }
 
-await_prompt "$wait_prompt" || {
-  log "status=no-prompt waited_secs=$wait_prompt host=$host"
-  exit 3
+# Runs the passphrase command for one attempt and prints its output. Re-run per
+# attempt so the source is read at the moment of sending.
+fetch_passphrase() {
+  local cmd="${UNLOCK_PASSPHRASE_CMD:-$DEFAULT_PASS_CMD}" out="" rc=0
+  # stderr is dropped: it can echo arguments, and the exit code is what we log.
+  out="$(bash -c "$cmd" 2>/dev/null)" || rc=$?
+  if (( rc != 0 )); then
+    log "status=passphrase-unavailable reason=command-failed exit=$rc"
+    return 1
+  fi
+  if [[ -z "$out" ]]; then
+    log "status=passphrase-unavailable reason=empty-output"
+    return 1
+  fi
+  printf '%s' "$out"
 }
 
-if (( PROBE_UNLOCKED )); then
-  log "status=unlocked host=$host sent=0"
-  exit 0
-fi
+# The passphrase travels on stdin only; the remote argv names the socket.
+send_passphrase() {
+  local sock="$1"
+  log "event=send socket=$sock attempt=$attempts host=$host"
+  if ! printf '%s' "$pass" | "${ssh_cmd[@]}" "$host" "sudo $REPLY_BIN 1 $sock" >&2; then
+    log "event=send status=failed host=$host"
+  fi
+}
 
-log "status=error reason=send-not-implemented host=$host"
-exit 1
+# Returns 0 once unlocked or the prompt moved to a new socket (a wrong passphrase
+# re-prompts); returns 1 when neither happens within the window.
+await_result() {
+  local sock="$1" deadline=$(( $(date +%s) + $2 ))
+  while :; do
+    if probe && { (( PROBE_UNLOCKED )) || [[ -n "$PROBE_SOCKET" && "$PROBE_SOCKET" != "$sock" ]]; }; then
+      return 0
+    fi
+    if (( $(date +%s) >= deadline )); then
+      return 1
+    fi
+    sleep "$POLL_UNLOCK_SECS"
+  done
+}
+
+attempts=0
+pass=""
+while :; do
+  await_prompt "$wait_prompt" || {
+    log "status=no-prompt waited_secs=$wait_prompt host=$host"
+    exit 3
+  }
+
+  if (( PROBE_UNLOCKED )); then
+    log "status=unlocked host=$host sent=$attempts"
+    exit 0
+  fi
+
+  if (( attempts >= max_attempts )); then
+    log "status=not-unlocked host=$host sent=$attempts wrong passphrase? the prompt is still pending, ask the owner"
+    exit 4
+  fi
+
+  sock="$PROBE_SOCKET"
+  pass="$(fetch_passphrase)" || exit 5
+  attempts=$(( attempts + 1 ))
+  send_passphrase "$sock"
+  unset pass
+  await_result "$sock" "$wait_unlock" || true
+done

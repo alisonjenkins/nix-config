@@ -157,3 +157,14 @@ unlock_assert_timestamped() {
     fi
   done <<<"$1"
 }
+
+# unlock_reply_argv: argv file of the first systemd-reply-password call, or nothing.
+unlock_reply_argv() {
+  grep -l systemd-reply-password "$FX"/calls/argv.* 2>/dev/null | head -n 1
+}
+
+# unlock_call_stdin ARGV_FILE: stdin file recorded for the same ssh call.
+unlock_call_stdin() {
+  local n="${1##*.}"
+  printf '%s\n' "$FX/calls/stdin.$n"
+}
