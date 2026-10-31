@@ -149,7 +149,7 @@ EOF
 install_scripts() {
   local here=$BATS_TEST_DIRNAME/..
   local f
-  for f in "$@"; do cp "$here/$f" "$SD/$f"; done
+  for f in "$@"; do install -m 0755 "$here/$f" "$SD/$f"; done
   printf '# stub register-store\n' > "$SD/register-store.sh"
   cat > "$SD/unlock-master.sh" <<EOF
 #!$BASH_BIN
