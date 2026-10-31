@@ -6,6 +6,9 @@ setup() {
   base_setup
   install_scripts rollback.sh lib.sh
   ARGS=(--host "$HOST" --server-id "$SID" --expect-generation "$PRIOR_GEN")
+  rule ssh any '*for l in /nix/var/nix/profiles/system-*-link*' 0 \
+    "/nix/var/nix/profiles/system-2-link $PRIOR_GEN\n/nix/var/nix/profiles/system-3-link $TOP"
+  rule ssh any '* sudo nix-env -p /nix/var/nix/profiles/system --switch-generation*' 0 ''
 }
 
 teardown() { base_teardown; }
@@ -90,4 +93,43 @@ teardown() { base_teardown; }
   run_script rollback.sh --host "$HOST" --server-id "$SID"
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage:"* ]]
+}
+
+@test "points the system profile back at the booted generation after verifying it" {
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 0 ]
+  assert_order "^hcloud server reset $SID\$" \
+    "^ssh .* readlink /run/current-system\$" \
+    "^ssh .* sudo nix-env -p /nix/var/nix/profiles/system --switch-generation 2\$"
+}
+
+@test "picks the highest-numbered link when several point at the booted generation" {
+  rule ssh any '*for l in /nix/var/nix/profiles/system-*-link*' 0 \
+    "/nix/var/nix/profiles/system-2-link $PRIOR_GEN\n/nix/var/nix/profiles/system-10-link $PRIOR_GEN\n/nix/var/nix/profiles/system-11-link $TOP"
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 0 ]
+  called '--switch-generation 10$'
+}
+
+@test "no link for the booted generation: exit 0 with a profile warning and no switch" {
+  rule ssh any '*for l in /nix/var/nix/profiles/system-*-link*' 0 \
+    "/nix/var/nix/profiles/system-3-link $TOP"
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"step=profile result=warn"* ]]
+  never_called 'switch-generation'
+}
+
+@test "a failing switch-generation is a warning, not a rollback failure" {
+  rule ssh any '* sudo nix-env -p /nix/var/nix/profiles/system --switch-generation*' 1 ''
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"step=profile result=warn"* ]]
+}
+
+@test "the profile is left alone when the server is not on the expected generation" {
+  rule ssh reset '* readlink /run/current-system' 0 "$TOP"
+  run_script rollback.sh "${ARGS[@]}"
+  [ "$status" -eq 4 ]
+  never_called 'switch-generation'
 }
