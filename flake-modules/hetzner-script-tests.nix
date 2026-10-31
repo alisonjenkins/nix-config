@@ -73,5 +73,51 @@
           echo "ALL PASS"
           touch $out
         '';
+
+      # cloud-init applies the Hetzner server name once per instance, so every
+      # later boot comes up under the image's static hostName. This script puts
+      # the name back each boot; the test drives it against fixture metadata.
+      #   nix build .#checks.x86_64-linux.hetzner-set-hostname
+      checks.hetzner-set-hostname =
+        pkgs.runCommand "hetzner-set-hostname-test"
+          { nativeBuildInputs = [ pkgs.bash pkgs.gnugrep ]; } ''
+          set -euo pipefail
+          run() {
+            env INSTANCE_DATA="$PWD/instance-data.json" HOSTNAME_FILE="$PWD/hostname" \
+              PATH="${lib.makeBinPath [ pkgs.coreutils pkgs.jq ]}" \
+              ${pkgs.bash}/bin/bash ${../lib/hetzner-set-hostname.sh}
+          }
+
+          echo "## A: metadata names the server -> hostname written"
+          echo karpenter-node-amd64 > hostname
+          echo '{"v1":{"local_hostname":"hetzner-k8s-master-1"}}' > instance-data.json
+          run
+          [ "$(cat hostname)" = hetzner-k8s-master-1 ] || { echo "FAIL A: got $(cat hostname)"; exit 1; }
+
+          echo "## B: second run changes nothing"
+          run
+          [ "$(cat hostname)" = hetzner-k8s-master-1 ] || { echo "FAIL B: got $(cat hostname)"; exit 1; }
+
+          echo "## C: no instance-data -> exit 0, hostname untouched, reason logged"
+          echo keep-me > hostname
+          rm instance-data.json
+          outC=$(run 2>&1) || { echo "FAIL C: exit!=0: $outC"; exit 1; }
+          grep -q "reason=no-instance-data" <<<"$outC" || { echo "FAIL C: no reason logged: $outC"; exit 1; }
+          [ "$(cat hostname)" = keep-me ] || { echo "FAIL C: touched hostname"; exit 1; }
+
+          echo "## D: missing, empty or malformed name -> exit 0, hostname untouched"
+          for doc in '{"v1":{}}' '{"v1":{"local_hostname":""}}' '{"v1":{"local_hostname":null}}' \
+                     '{"v1":{"local_hostname":"has space"}}' '{"v1":{"local_hostname":"a/b"}}' \
+                     '{"v1":{"local_hostname":"-leading"}}'; do
+            echo keep-me > hostname
+            echo "$doc" > instance-data.json
+            outD=$(run 2>&1) || { echo "FAIL D: exit!=0 for $doc: $outD"; exit 1; }
+            grep -q "reason=no-valid-name" <<<"$outD" || { echo "FAIL D: no reason for $doc: $outD"; exit 1; }
+            [ "$(cat hostname)" = keep-me ] || { echo "FAIL D: touched hostname for $doc"; exit 1; }
+          done
+
+          echo "ALL PASS"
+          touch $out
+        '';
     };
 }
