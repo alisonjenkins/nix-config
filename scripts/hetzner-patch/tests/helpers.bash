@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2034,SC2154
 # Shared bats harness for the hetzner-patch scripts.
 #
 # Every external tool the scripts call (ssh, nix, hcloud, kubectl, sleep, date) is a stub that
