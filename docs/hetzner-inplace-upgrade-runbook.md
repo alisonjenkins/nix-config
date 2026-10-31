@@ -34,8 +34,12 @@ Check each item before the run. Stop at the first one that fails.
 6. **The target closure is built.** Build the toplevel from the flake that the run deploys:
 
    ```sh
-   nix build .#nixosConfigurations.hetzner-k8s-master-1.config.system.build.toplevel --no-link --print-out-paths
+   nix build .#nixosConfigurations.hetzner-karpenter-node-amd64.config.system.build.toplevel --no-link --print-out-paths
    ```
+
+   The master has no flake output of its own: it runs the `hetzner-karpenter-node-amd64` image with the
+   server role chosen at boot. Before the first run, compare what the target changes against the master
+   (`k3s --version`, `uname -r`): a k3s minor-version step or a kernel jump is a cluster change, not a patch.
 
    Keep the printed `/nix/store/...` path. It is the `--toplevel` argument. The flags were
    checked against `nix build --help`. The command has not been run against the master's flake revision.
