@@ -139,6 +139,7 @@ scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 1656
 | `--approve` | Owner approval for this run. Without it the script refuses |
 | `--unlock-via public` | Unlock over the master's public address from the allow-listed admin address. The unlock cannot use Tailscale, because the state volume is locked |
 | `--health-cmd` | Command that must succeed on the new generation before the default changes |
+| `--unlock-jump` | Jump host for `--unlock-via edge`; required with it, rejected otherwise |
 | `--force-reboot` | Always reboot, even when the kernel, initrd and modules are unchanged (see "Rebootless patches") |
 
 The script runs the gates from [spec 003's patch contract](../specs/003-hetzner-inplace-patching/contracts/patch-gates.md),
@@ -162,6 +163,7 @@ then:
 | 2 | Refused at a gate. Nothing remote changed. A harmless store registration or profile step may already have run, and the script reports it | Read the failing gate in the output, fix it, and run again. |
 | 3 | Unhealthy, rolled back successfully. A hard reset booted the prior generation | Record `rolled-back`. Confirm with `k3s kubectl get --raw=/readyz` and the generation in the run record. |
 | 4 | Unhealthy, and the rollback failed | Manual recovery is needed. Start at layer 2 of "Recovery layers" below. |
+| 5 | Patched and healthy, but the boot default could not be set or confirmed. The host runs the new generation; the next reboot returns to the prior entry | Run `bootctl set-default` for the new entry by hand and confirm with `bootctl status`. |
 
 ### Rebootless patches
 
