@@ -1,0 +1,197 @@
+# Hetzner master in-place upgrade runbook
+
+Status: not yet run on the live master. The rehearsal on a throwaway `cpx22` is the only
+proof so far. Decision record: [ADR 0060](adr/0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md).
+
+This runbook is for the operator who patches and reboots `hetzner-k8s-master-1` (server ID
+`165673643`, `cpx32`, UEFI). The owner must be present for every reboot, because the state
+volume unlocks with a passphrase at each boot. A reboot drops calls and chat for a few minutes.
+
+## Prerequisites
+
+Check each item before the run. Stop at the first one that fails.
+
+1. **Owner present.** The owner approves this run and has the LUKS passphrase in the password
+   manager.
+2. **No call running.** `scripts/hetzner-volume-verify/check-no-call.sh` (spec 004) reports `calls=0`. Post a notice in the
+   household chat at least 10 minutes before the reboot.
+3. **Hetzner API works.** `HCLOUD_TOKEN` is set, and this read-only command returns the master:
+
+   ```sh
+   hcloud server describe 165673643
+   ```
+
+4. **SSH over Tailscale works.** `ssh ali@hetzner-k8s-master-1 true` exits 0.
+5. **A snapshot exists from before the first in-place patch, and it is under 30 days old.**
+   Create one if it does not:
+
+   ```sh
+   hcloud server create-image 165673643 --type snapshot --description "pre-patch-$(date -u +%Y%m%dT%H%M%SZ)"
+   ```
+
+   Check that the image is listed and `available` before the run. Snapshot consistency on a
+   running server is untested here.
+6. **The target closure is built.** Build the toplevel from the flake that the run deploys:
+
+   ```sh
+   nix build .#nixosConfigurations.hetzner-k8s-master-1.config.system.build.toplevel --no-link --print-out-paths
+   ```
+
+   Keep the printed `/nix/store/...` path. It is the `--toplevel` argument. This command is
+   untested against the master's flake revision.
+7. **The rehearsal passed.** See the next section. Do not skip it for a new flake revision.
+
+## Rehearsal on a throwaway server
+
+The rehearsal runs on a throwaway `cpx22`. Do not use `cx23` for it. A `cx23` boots BIOS, so
+it does not test the UEFI path that the master uses.
+
+The rehearsal needs the owner's approval to create and later delete the throwaway server.
+Record its ID as `TWIN_ID` and its address as `TWIN_HOST`. The rule against creating or deleting
+servers covers the master only.
+
+1. Check the store registration state. It must be `0` before the first registration:
+
+   ```sh
+   ssh ali@TWIN_HOST 'nix path-info --all | wc -l'
+   ```
+
+2. Register the store. Generate the registration on the target, then load it into the Nix
+   database:
+
+   ```sh
+   ssh ali@TWIN_HOST 'bash -s -- /nix/store' < scripts/hetzner-patch/register-store.sh > reg.txt
+   ssh ali@TWIN_HOST 'sudo nix-store --register-validity' < reg.txt
+   ```
+
+   Check the count again. Expect about `598` on the rehearsal image. Do not run the
+   registration when the count is not `0`.
+
+3. Record the running system as the first generation:
+
+   ```sh
+   ssh ali@TWIN_HOST 'sudo nix-env -p /nix/var/nix/profiles/system --set "$(readlink -f /run/current-system)"'
+   ```
+
+4. Copy the new toplevel to the twin. The copy needs `--no-check-sigs`, because the
+   signing key is not in the target's trusted set:
+
+   ```sh
+   nix copy --no-check-sigs --to ssh-ng://ali@TWIN_HOST <toplevel>
+   ```
+
+5. Set the new generation as the profile, and install its boot entry:
+
+   ```sh
+   ssh ali@TWIN_HOST "sudo nix-env -p /nix/var/nix/profiles/system --set <toplevel> && sudo <toplevel>/bin/switch-to-configuration boot"
+   ```
+
+6. Confirm the new entry exists. Note its ID, for example `nixos-generation-2.conf`:
+
+   ```sh
+   ssh ali@TWIN_HOST 'sudo bootctl list'
+   ```
+
+7. Set the new entry as a one-shot, then reboot:
+
+   ```sh
+   ssh ali@TWIN_HOST 'sudo bootctl set-oneshot nixos-generation-2.conf && sudo systemctl reboot'
+   ```
+
+8. After the server answers, check that the one-shot booted and that the default did not
+   change:
+
+   ```sh
+   ssh ali@TWIN_HOST 'sudo bootctl status | grep -E "Current Entry|Default Entry"'
+   ```
+
+9. Test the fall-back. Set the new entry as a one-shot again, do not set the default, and reset
+   the server as if the health check had failed. Time it. The old default generation should boot.
+   Rehearsal measured about 20 seconds:
+
+   ```sh
+   ssh ali@TWIN_HOST 'sudo bootctl set-oneshot nixos-generation-2.conf'
+   hcloud server reset TWIN_ID
+   ```
+
+10. Confirm the default boots, and set it explicitly:
+
+    ```sh
+    ssh ali@TWIN_HOST 'sudo bootctl set-default nixos-generation-2.conf'
+    ```
+
+11. Delete the throwaway server when the owner agrees. Record the result in the run notes.
+
+## Patching the master
+
+Run this from a machine with the `scripts/hetzner-patch/` scripts and the Hetzner API token.
+The owner must be on hand for the unlock prompt.
+
+```sh
+scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 165673643 --toplevel <path> --approve --unlock-via public --health-cmd 'k3s kubectl get --raw=/readyz'
+```
+
+| Flag | Meaning |
+|---|---|
+| `--host` | Tailscale name used for SSH before the reboot |
+| `--server-id` | Hetzner server ID, used for the snapshot check and the hard reset |
+| `--toplevel` | `/nix/store` path of the target system, from prerequisite 6 |
+| `--approve` | Owner approval for this run. Without it the script refuses |
+| `--unlock-via public` | Unlock over the master's public address from the allow-listed admin address. The unlock cannot use Tailscale, because the state volume is locked |
+| `--health-cmd` | Command that must succeed on the new generation before the default changes |
+
+The script runs the gates from [spec 003's patch contract](../specs/003-hetzner-inplace-patching/contracts/patch-gates.md),
+then:
+
+1. Registers the running system as a generation, if the profile does not have one.
+2. Deploys the new generation with `--boot`.
+3. Checks that the new boot entry exists.
+4. Sets the new entry as a one-shot, then reboots.
+5. Waits for the unlock prompt. It answers only after the owner approves, and the passphrase
+   comes from the password manager at that moment.
+6. Waits up to 15 minutes for SSH and a passing health command.
+7. Sets the new entry as the default with `bootctl set-default`.
+8. Writes a run record.
+
+### Exit codes
+
+These codes are the intended contract. Check them against the script's exit paths before the
+first live run.
+
+| Code | Meaning | What the operator does |
+|---|---|---|
+| 0 | Patched. The new generation passed the health check and is the default | Record the run. Compare the master's pod restart counts with the values before the run. Check Cilium, Envoy and CoreDNS health. |
+| 2 | A gate refused the run before any change | Read the failing gate in the output, fix it, and run again. Nothing changed on the master. |
+| 3 | The new generation booted but failed the health check. The default was not changed | Hard reset with `hcloud server reset 165673643`. The old default boots. Confirm with `k3s kubectl get --raw=/readyz`. |
+| 4 | The master did not answer SSH or the unlock in time | Check the Hetzner web console. If the master is still unreachable, hard reset as for code 3. |
+
+Any other non-zero code: treat it as code 4.
+
+## Recovery layers
+
+Work through these in order. Stop at the first one that brings the master back on its
+previous generation.
+
+1. **Hard reset to the default generation.** Run `hcloud server reset 165673643`. The default
+   generation boots, which is the old one if the default was not changed. Rehearsal measured
+   about 20 seconds. Then unlock with the owner present.
+2. **Hetzner web console and boot menu.** Open the server's console in the Hetzner web UI.
+   The systemd-boot menu lists the old generation. Select it. This needs the console and the
+   menu timeout to allow a choice. Untested on the master.
+3. **Rescue mode.** Boot the Hetzner rescue system. Unlock the root volume with the owner's
+   passphrase, mount it, and run `bootctl set-default` on the old entry from a chroot. Then
+   reboot normally. Untested on the master.
+4. **Snapshot restore, last.** Restore the pre-patch snapshot. This needs Hetzner capacity for
+   a new server, so it can fail. A restore replaces the server and changes its ID. It also
+   loses everything written after the snapshot. The owner decides before this step.
+
+## What never to do
+
+- Never create or delete `hetzner-k8s-master-1` (server ID `165673643`). The patch path
+  exists so that a replacement is never needed.
+- Never set the default to a generation before it passes the health check.
+- Never skip the snapshot gate on the master.
+- Never answer the unlock prompt without the owner. Never put the passphrase on a command
+  line, in a log, or in a file.
+- Never rely on `loader.conf` alone to change the default. `bootctl set-default` writes an
+  EFI variable that overrides it. Set the default explicitly on every patch.
