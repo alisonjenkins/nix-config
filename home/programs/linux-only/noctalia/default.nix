@@ -22,6 +22,12 @@ in
 
   config.custom.noctalia.settings = lib.mapAttrsRecursive (_: lib.mkDefault) {
     location.auto_locate = true;
+    # Grace only after an idle lock (needs the patched noctalia): swayidle's
+    # idle timer passes `lock-session 30`, every other lock asks for the password.
+    lockscreen = {
+      grace_period_seconds = 30;
+      grace_period_idle_only = true;
+    };
     nightlight.enabled = true;
     theme = {
       source = "wallpaper";
