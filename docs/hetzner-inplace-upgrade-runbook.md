@@ -132,7 +132,7 @@ Run this from a machine with the `scripts/hetzner-patch/` scripts and the Hetzne
 The owner must be on hand for the unlock prompt.
 
 ```sh
-scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 165673643 --toplevel <path> --approve --unlock-via public --health-cmd 'k3s kubectl get --raw=/readyz'
+scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 165673643 --toplevel <path> --approve --unlock-via public --health-cmd 'sudo -n k3s kubectl get --raw=/readyz'
 ```
 
 | Flag | Meaning |
@@ -142,7 +142,7 @@ scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 1656
 | `--toplevel` | `/nix/store` path of the target system, from prerequisite 6 |
 | `--approve` | Owner approval for this run. Without it the script refuses |
 | `--unlock-via public` | Unlock over the master's public address from the allow-listed admin address. The unlock cannot use Tailscale, because the state volume is locked |
-| `--health-cmd` | Command that must succeed on the new generation before the default changes |
+| `--health-cmd` | Command that must succeed on the new generation before the default changes. It runs over SSH as the login user, not root: `k3s kubectl` needs `sudo -n`, or the check fails until the timeout and the run rolls back |
 | `--unlock-jump` | Jump host for `--unlock-via edge`; required with it, rejected otherwise |
 | `--force-reboot` | Always reboot, even when the kernel, initrd and modules are unchanged (see "Rebootless patches") |
 
@@ -165,7 +165,7 @@ then:
 |---|---|---|
 | 0 | Patched and healthy. The new generation is the default | Record the run. Compare the master's pod restart counts with the values before the run. Check Cilium, Envoy and CoreDNS health. |
 | 2 | Refused at a gate. Nothing remote changed. A harmless store registration or profile step may already have run, and the script reports it | Read the failing gate in the output, fix it, and run again. |
-| 3 | Unhealthy, rolled back successfully. A hard reset booted the prior generation | Record `rolled-back`. Confirm with `k3s kubectl get --raw=/readyz` and the generation in the run record. |
+| 3 | Unhealthy, rolled back successfully. A hard reset booted the prior generation | Record `rolled-back`. Confirm with `sudo k3s kubectl get --raw=/readyz` and the generation in the run record. |
 | 4 | Unhealthy, and the rollback failed | Manual recovery is needed. Start at layer 2 of "Recovery layers" below. |
 | 5 | Patched and healthy, but the boot default could not be set or confirmed. The host runs the new generation; the next reboot returns to the prior entry | Run `bootctl set-default` for the new entry by hand and confirm with `bootctl status`. |
 
@@ -244,7 +244,7 @@ drops them for several minutes, a rebootless one should not.
    modules paths against the master's `/run/booted-system`; they decide rebootless or reboot.
 4. Export `KUBECONFIG` for the master so gate G5 runs. On the twin it was skipped, so G5 has not
    been seen passing end to end here.
-5. Record before-values: `k3s kubectl get pods -A` restart counts, `uname -r`, `cat /proc/sys/kernel/random/boot_id`.
+5. Record before-values: `sudo k3s kubectl get pods -A` restart counts, `uname -r`, `cat /proc/sys/kernel/random/boot_id`.
 6. Dry run, which changes nothing:
    `scripts/hetzner-patch/patch-node.sh --host hetzner-k8s-master-1 --server-id 165673643 --toplevel <path> --dry-run`
    Read the plan: it says whether the live or the reboot path applies.
